@@ -7,10 +7,13 @@ import { WorkspaceIteratorService } from 'src/database/commands/command-runners/
 import { type RunOnWorkspaceArgs } from 'src/database/commands/command-runners/workspace.command-runner';
 import { ApplicationService } from 'src/engine/core-modules/application/application.service';
 import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-workspace-command.decorator';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 import { ArxenaStandardApplicationService } from 'src/engine/workspace-manager/arxena-standard-metadata/services/arxena-standard-application.service';
 import { prefillOutreachWorkflows } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-workflows.util';
+
+const CANDIDATE_TABLE_NAME = '_candidate';
 
 @RegisteredWorkspaceCommand('2.25.0', 1785600000090)
 @Command({
@@ -24,6 +27,7 @@ export class SyncOutreachConversationStageAndWorkflowCCommand extends Provisione
     private readonly arxenaStandardApplicationService: ArxenaStandardApplicationService,
     private readonly applicationService: ApplicationService,
     private readonly workspaceCacheService: WorkspaceCacheService,
+    private readonly workspaceQueryService: WorkspaceQueryService,
     @InjectDataSource()
     private readonly coreDataSource: DataSource,
   ) {
@@ -49,18 +53,10 @@ export class SyncOutreachConversationStageAndWorkflowCCommand extends Provisione
       { workspaceId },
     );
 
-    await this.coreDataSource.query(
-      `
-        UPDATE "${schemaName}"."candidate"
-        SET "outreachConversationStage" = 'NOT_INTERESTED'
-        WHERE "outreachConversationStage" IN ('LEAD_LOST', 'IRRELEVANT')
-          AND "deletedAt" IS NULL
-      `,
-    );
-
-    this.logger.log(
-      `Remapped LEAD_LOST/IRRELEVANT → NOT_INTERESTED for workspace ${workspaceId}`,
-    );
+    await this.remapLegacyConversationStages({
+      schemaName,
+      workspaceId,
+    });
 
     const { workspaceCustomFlatApplication } =
       await this.applicationService.findWorkspaceTwentyStandardAndCustomApplicationOrThrow(
@@ -100,6 +96,56 @@ export class SyncOutreachConversationStageAndWorkflowCCommand extends Provisione
 
     this.logger.log(
       `Outreach conversation stage and workflow C sync complete for workspace ${workspaceId}`,
+    );
+  }
+
+  // Arxena Candidate physical table is `_candidate` (custom object), not `candidate`
+  private async remapLegacyConversationStages({
+    schemaName,
+    workspaceId,
+  }: {
+    schemaName: string;
+    workspaceId: string;
+  }): Promise<void> {
+    const tableExists = await this.workspaceQueryService.checkIfTableExists(
+      schemaName,
+      CANDIDATE_TABLE_NAME,
+    );
+
+    if (!tableExists) {
+      this.logger.log(
+        `Workspace ${workspaceId}: ${CANDIDATE_TABLE_NAME} table missing; skipping LEAD_LOST/IRRELEVANT remap`,
+      );
+
+      return;
+    }
+
+    const columnExists = await this.workspaceQueryService.checkIfColumnExists(
+      schemaName,
+      CANDIDATE_TABLE_NAME,
+      'outreachConversationStage',
+      { silent: true },
+    );
+
+    if (!columnExists) {
+      this.logger.log(
+        `Workspace ${workspaceId}: outreachConversationStage column missing; skipping LEAD_LOST/IRRELEVANT remap`,
+      );
+
+      return;
+    }
+
+    await this.coreDataSource.query(
+      `
+        UPDATE "${schemaName}"."${CANDIDATE_TABLE_NAME}"
+        SET "outreachConversationStage" = 'NOT_INTERESTED'
+        WHERE "outreachConversationStage" IN ('LEAD_LOST', 'IRRELEVANT')
+          AND "deletedAt" IS NULL
+      `,
+    );
+
+    this.logger.log(
+      `Remapped LEAD_LOST/IRRELEVANT → NOT_INTERESTED for workspace ${workspaceId}`,
     );
   }
 }

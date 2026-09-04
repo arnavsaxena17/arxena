@@ -298,8 +298,9 @@ export class OrgChartS3Service {
    * Same key as {@link saveOrgChart} / {@link persistedCompanyFolderKey}.
    *
    * When {@link variant} is provided, only that sub-folder is deleted. When
-   * omitted, only the legacy default folder is removed (variant sub-folders
-   * are left untouched on purpose).
+   * omitted, deletes the default folder prefix — which can also remove sibling
+   * variant keys under some S3 drivers. Prefer
+   * {@link deleteDefaultOrgChartArtifacts} when `unipile_raw` must survive.
    */
   async deletePersistedCompanyFolder(
     persistedKey: string,
@@ -317,6 +318,25 @@ export class OrgChartS3Service {
         `Failed to delete org chart S3 folder ${folderPath}`,
         error as Error,
       );
+    }
+  }
+
+  // Deletes only default orgchart.json + candidates.json so variants like
+  // unipile_raw / in_progress_* survive rebuilds.
+  async deleteDefaultOrgChartArtifacts(persistedKey: string): Promise<void> {
+    const folderPath =
+      this.buildRelativeFolderPathFromPersistedKey(persistedKey);
+
+    for (const filename of ['orgchart.json', 'candidates.json'] as const) {
+      try {
+        await this.fileStorageService.delete({ folderPath, filename });
+        this.logger.log(`Deleted org chart S3 file: ${folderPath}/${filename}`);
+      } catch (error) {
+        this.logger.warn(
+          `Failed to delete org chart S3 file ${folderPath}/${filename}`,
+          error as Error,
+        );
+      }
     }
   }
 

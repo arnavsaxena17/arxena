@@ -3251,6 +3251,8 @@ export class OrgChartController {
       industryCategory?: string;
       asOfMonth?: string;
       companyLinkedinUrl?: string;
+      functionRoot?: string;
+      country?: string;
     },
     @Req() req: Request,
   ) {
@@ -3283,6 +3285,8 @@ export class OrgChartController {
           industryCategory: body?.industryCategory?.trim() || undefined,
           asOfMonth: body?.asOfMonth?.trim() || undefined,
           companyLinkedinUrl: body?.companyLinkedinUrl?.trim() || undefined,
+          functionRoot: body?.functionRoot?.trim() || undefined,
+          country: body?.country?.trim() || undefined,
         });
 
       return {
@@ -3290,6 +3294,9 @@ export class OrgChartController {
         itemCount: rebuilt.itemCount,
         orgChart: await this.proxyOrgChartPayload(rebuilt.orgChart),
         candidateSource: rebuilt.candidateSource,
+        functionRoot: rebuilt.functionRoot,
+        country: rebuilt.country,
+        mode: rebuilt.mode,
       };
     } catch (error) {
       this.logger.error(

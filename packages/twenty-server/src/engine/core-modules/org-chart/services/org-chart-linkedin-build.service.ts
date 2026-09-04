@@ -197,6 +197,10 @@ export class OrgChartLinkedInBuildService {
     asOfMonth?: string;
     /** Canonical company LinkedIn URL for matching experience rows when the display name differs. */
     companyLinkedinUrl?: string;
+    /** Optional override; otherwise taken from Unipile raw search metadata. */
+    functionRoot?: string;
+    /** Optional override; otherwise taken from Unipile raw search metadata. */
+    country?: string;
   }): Promise<{
     success: true;
     companyName: string;
@@ -205,6 +209,9 @@ export class OrgChartLinkedInBuildService {
     items: Record<string, unknown>[];
     orgChart: OrgChartData;
     candidateSource: 'saved_people' | 'unipile_raw';
+    functionRoot?: string;
+    country?: string;
+    mode: string;
   }> {
     const resolvedCompanyName = normalizeCompanyName(input.companyName);
     const resolvedCompanyId = normalizeCompanyId(
@@ -221,6 +228,8 @@ export class OrgChartLinkedInBuildService {
 
     let savedItems: Record<string, unknown>[] = [];
     let candidateSource: 'saved_people' | 'unipile_raw' = 'saved_people';
+    let searchTypeForCache: 'classic' | 'sales_navigator' | 'recruiter' =
+      'classic';
 
     if (unipileRawSearch && unipileRawSearch.items.length > 0) {
       const transformed =
@@ -230,10 +239,31 @@ export class OrgChartLinkedInBuildService {
         );
       savedItems = transformed as unknown as Record<string, unknown>[];
       candidateSource = 'unipile_raw';
+      searchTypeForCache = unipileRawSearch.searchType;
       this.logger.log(
         `Rebuild using saved people: transforming ${unipileRawSearch.items.length} Unipile raw items → ${savedItems.length} candidates for company="${resolvedCompanyName || resolvedCompanyId}"`,
       );
     }
+
+    // Prefer explicit request overrides, then Unipile raw search scope.
+    const functionRoot =
+      input.functionRoot?.trim() ||
+      unipileRawSearch?.functionRoot?.trim() ||
+      undefined;
+    const country =
+      input.country?.trim() || unipileRawSearch?.country?.trim() || undefined;
+    const hasFunctionScope =
+      hasMeaningfulOrgChartFunctionRootFilter(functionRoot);
+    const rawMode = unipileRawSearch?.mode?.trim().toLowerCase();
+    const rebuildMode: OrgchartSearchMode = hasFunctionScope
+      ? rawMode === 'super_impose' ||
+        rawMode === 'function_grade' ||
+        rawMode === 'business_division_map'
+        ? (rawMode as OrgchartSearchMode)
+        : 'function_grade'
+      : rawMode === 'leadership'
+        ? 'leadership'
+        : 'entire_company';
 
     if (savedItems.length === 0) {
       const cachedCandidateList =
@@ -272,8 +302,12 @@ export class OrgChartLinkedInBuildService {
       resolvedCompanyId,
       resolvedCompanyName || resolvedCompanyId,
     );
-    // Default folder only — leaves `unipile_raw` variant intact for re-runs.
-    await this.orgChartS3Service.deletePersistedCompanyFolder(s3CompanyId);
+    // Default artifacts only — leave `unipile_raw` (and other variants) intact.
+    await this.orgChartS3Service.deleteDefaultOrgChartArtifacts(s3CompanyId);
+
+    this.logger.log(
+      `Rebuild using saved people: preserving scope functionRoot="${functionRoot ?? ''}" country="${country ?? 'global'}" mode="${rebuildMode}" for company="${resolvedCompanyName || resolvedCompanyId}"`,
+    );
 
     const orgChart =
       await this.orgChartSearchService.buildOrgChartFromLinkedInCompanyCandidates(
@@ -281,7 +315,8 @@ export class OrgChartLinkedInBuildService {
         {
           companyName: resolvedCompanyName || resolvedCompanyId,
           companyId: resolvedCompanyId,
-          mode: 'entire_company',
+          mode: rebuildMode,
+          function: hasFunctionScope ? functionRoot : undefined,
           industry: input.industry,
           industryCategory: input.industryCategory,
           companyLinkedinUrl: input.companyLinkedinUrl?.trim() || undefined,
@@ -289,24 +324,40 @@ export class OrgChartLinkedInBuildService {
         },
       );
 
-    await this.orgChartCacheService.setCachedCompanyCandidateList({
-      companyName: resolvedCompanyName,
-      companyId: resolvedCompanyId,
-      mode: 'entire_company',
-      searchType: 'classic',
-      items: savedItems,
-      itemCount: savedItems.length,
-    });
-    await this.orgChartCacheService.setCachedCompanyOrgChart({
-      companyName: resolvedCompanyName,
-      companyId: resolvedCompanyId,
-      mode: 'entire_company',
-      searchType: 'classic',
-      orgChart,
-      items: savedItems,
-      itemCount: savedItems.length,
-      creditsDebited: true,
-    });
+    if (hasFunctionScope && functionRoot) {
+      await this.orgChartCacheService.setCachedFunctionGradeSearch({
+        companyName: resolvedCompanyName,
+        companyId: resolvedCompanyId,
+        functionRoot,
+        country: country || 'global',
+        searchType: searchTypeForCache,
+        strategyCap: 1,
+        keywordsHash: 'rebuild-saved-people',
+        items: savedItems,
+        itemCount: savedItems.length,
+        orgChart,
+      });
+    } else {
+      await this.orgChartCacheService.setCachedCompanyCandidateList({
+        companyName: resolvedCompanyName,
+        companyId: resolvedCompanyId,
+        mode: 'entire_company',
+        searchType: searchTypeForCache,
+        items: savedItems,
+        itemCount: savedItems.length,
+      });
+      await this.orgChartCacheService.setCachedCompanyOrgChart({
+        companyName: resolvedCompanyName,
+        companyId: resolvedCompanyId,
+        mode: 'entire_company',
+        searchType: searchTypeForCache,
+        orgChart,
+        items: savedItems,
+        itemCount: savedItems.length,
+        creditsDebited: true,
+      });
+    }
+
     await Promise.all([
       this.orgChartS3Service.saveOrgChart(s3CompanyId, orgChart),
       this.orgChartS3Service.saveCandidates(s3CompanyId, savedItems),
@@ -319,12 +370,14 @@ export class OrgChartLinkedInBuildService {
     );
     await this.orgChartRecordWorkspaceService.tryPersistOrgChartRecord({
       apiToken: input.apiToken,
-      mode: 'entire_company',
-      searchType: 'classic',
+      mode: rebuildMode,
+      searchType: searchTypeForCache,
       resolvedCompanyName: resolvedCompanyName || resolvedCompanyId,
       companyId: resolvedCompanyId,
       itemCount: savedItems.length,
       orgChartS3RelativePath: creditMetaForRow.orgChartS3RelativePath,
+      functionRoot: hasFunctionScope ? functionRoot : undefined,
+      country,
     });
 
     return {
@@ -335,6 +388,9 @@ export class OrgChartLinkedInBuildService {
       items: savedItems,
       orgChart,
       candidateSource,
+      functionRoot: hasFunctionScope ? functionRoot : undefined,
+      country,
+      mode: rebuildMode,
     };
   }
 
