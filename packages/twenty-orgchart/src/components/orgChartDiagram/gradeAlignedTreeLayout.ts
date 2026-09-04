@@ -5,6 +5,8 @@ import {
   type OrgChartGradeTier,
 } from 'twenty-shared/utils';
 
+import { LevelColoredTreeLayout } from './levelColoredTreeLayout';
+
 // Only push these tiers; leadership defines the reference band and must not move.
 const ALIGNABLE_GRADE_TIERS: OrgChartGradeTier[] = [
   'managers',
@@ -225,7 +227,7 @@ export const rerouteMixedDepthTreeLinks = (layout: go.TreeLayout): void => {
   });
 };
 
-export class GradeAlignedTreeLayout extends go.TreeLayout {
+export class GradeAlignedTreeLayout extends LevelColoredTreeLayout {
   constructor(init?: Partial<go.TreeLayout>) {
     super();
     this.sorting = go.TreeSorting.Ascending;

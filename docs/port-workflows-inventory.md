@@ -174,7 +174,7 @@ Adaptations vs workflows originals:
 Caveats before first prod run: branch must exist on `origin`; AMI / SG / subnet defaults still arxmukti; builder needs Node 22 + nest + yarn + docker (Chatwoot). App/Chatwoot/e2e all default to baked AMI `ami-0cb194b5ec6f48d24` (from `scripts/aws/bake-arm64-builder-ami.sh` / `.arm64-builder-ami-id`); bake input base is stock Ubuntu `ami-02c4144237becae44`.
 
 - `npx nx build twenty-shared` — pass
-- `npx nx build twenty-orgchart` — pass
+- `npx nx build twenty-orgchart` — pass (GoJS `commitNodes` via `LevelColoredTreeLayout` subclass; Vite 8 `resolve.tsconfigPaths`)
 - `npx nest build` (twenty-server / SWC) — pass (7630 files)
 - `npx nx build twenty-front` — not green yet; ported modules still need API adaptation against current Twenty front (Recoil/Jotai, UI, imports). Nest/core wiring is in place for Phase-1 routes.
 - Recoil→Jotai **setter call-site** sweep (Aug 2026): fixed declared-vs-called mismatches (`setJobs`→`setProjects`, `setTableState`→`setTableStateAtom`, HotTable `setMain*`→`setContextStore*`, etc.) across candidate-table / arx-ai-filtering / arx-jd-upload / gtm-home / orgchart / unipile — see `docs/port-front-migration-track.md` §0 / §2.1. Follow-up: `UnipileContext` passed `setLinkedinUnipileOwnerProfileCache` shorthand into `applyInferredOrgChartLinkedinSearchType` (expects `setOwnerProfileCache`) → prod `r is not a function` on tab-visible refresh.

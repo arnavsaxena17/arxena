@@ -1,29 +1,25 @@
-import {
-    callRestAPI,
-    callRestAPIDelete,
-    callRestAPIGet,
-} from '../api/rest-client';
+import { callRestAPI, callRestAPIDelete } from '../api/rest-client';
 import { ArxenaConfig } from '../config';
 import { McpTool } from '../types/tool-types';
 import {
-    LINKEDIN_UNIPILE_CHECKPOINT_INPUT_DESCRIPTOR,
-    LINKEDIN_UNIPILE_CONNECT_COOKIE_INPUT_DESCRIPTOR,
-    LINKEDIN_UNIPILE_CONNECT_CREDENTIALS_INPUT_DESCRIPTOR,
-    LINKEDIN_UNIPILE_EXTENSION_SYNC_COOKIES_INPUT_DESCRIPTOR,
-    LINKEDIN_UNIPILE_GET_PROFILE_INPUT_DESCRIPTOR,
-    LINKEDIN_UNIPILE_GET_PROFILE_OVERVIEW_INPUT_DESCRIPTOR,
-    LINKEDIN_UNIPILE_GET_USER_POSTS_INPUT_DESCRIPTOR,
-    LINKEDIN_UNIPILE_HOSTED_AUTH_INPUT_DESCRIPTOR,
-    LINKEDIN_UNIPILE_ORG_CHART_ENSURE_ACCOUNT_INPUT_DESCRIPTOR,
-    LINKEDIN_UNIPILE_PERSIST_COOKIES_INPUT_DESCRIPTOR,
-    LINKEDIN_UNIPILE_RECONNECT_FROM_STORED_PROFILE_INPUT_DESCRIPTOR,
-    LINKEDIN_UNIPILE_SEND_INVITATION_INPUT_DESCRIPTOR,
-    LINKEDIN_UNIPILE_SEND_MESSAGE_INPUT_DESCRIPTOR,
-    LINKEDIN_UNIPILE_UPDATE_MEMBER_ACCOUNT_INPUT_DESCRIPTOR,
-    LINKEDIN_UNIPILE_VALIDATE_SESSION_INPUT_DESCRIPTOR,
-    UNIPILE_ACCOUNT_ID_INPUT_DESCRIPTOR,
-    WHATSAPP_UNIPILE_UPDATE_MEMBER_ACCOUNT_INPUT_DESCRIPTOR,
-    type McpInputFieldDescriptor,
+  LINKEDIN_UNIPILE_CHECKPOINT_INPUT_DESCRIPTOR,
+  LINKEDIN_UNIPILE_CONNECT_COOKIE_INPUT_DESCRIPTOR,
+  LINKEDIN_UNIPILE_CONNECT_CREDENTIALS_INPUT_DESCRIPTOR,
+  LINKEDIN_UNIPILE_EXTENSION_SYNC_COOKIES_INPUT_DESCRIPTOR,
+  LINKEDIN_UNIPILE_GET_PROFILE_INPUT_DESCRIPTOR,
+  LINKEDIN_UNIPILE_GET_PROFILE_OVERVIEW_INPUT_DESCRIPTOR,
+  LINKEDIN_UNIPILE_GET_USER_POSTS_INPUT_DESCRIPTOR,
+  LINKEDIN_UNIPILE_HOSTED_AUTH_INPUT_DESCRIPTOR,
+  LINKEDIN_UNIPILE_ORG_CHART_ENSURE_ACCOUNT_INPUT_DESCRIPTOR,
+  LINKEDIN_UNIPILE_PERSIST_COOKIES_INPUT_DESCRIPTOR,
+  LINKEDIN_UNIPILE_RECONNECT_FROM_STORED_PROFILE_INPUT_DESCRIPTOR,
+  LINKEDIN_UNIPILE_SEND_INVITATION_INPUT_DESCRIPTOR,
+  LINKEDIN_UNIPILE_SEND_MESSAGE_INPUT_DESCRIPTOR,
+  LINKEDIN_UNIPILE_UPDATE_MEMBER_ACCOUNT_INPUT_DESCRIPTOR,
+  LINKEDIN_UNIPILE_VALIDATE_SESSION_INPUT_DESCRIPTOR,
+  UNIPILE_ACCOUNT_ID_INPUT_DESCRIPTOR,
+  WHATSAPP_UNIPILE_UPDATE_MEMBER_ACCOUNT_INPUT_DESCRIPTOR,
+  type McpInputFieldDescriptor,
 } from '../utils/McpToolSchemas';
 import { descriptorToInputSchema } from '../utils/input-schema';
 
@@ -247,7 +243,7 @@ export const unipileControllersTools: McpTool[] = [
   ),
   postUnipileTool(
     'linkedin_unipile_get_profile_overview',
-    'Fetch a LinkedIn person\'s full profile, recent posts, and activity in a single call. Profile and posts are fetched in parallel. NOTE: Unipile has no standalone activity endpoint — activity is sourced from posts (always) and the recruiting_activity profile section (LinkedIn Recruiter accounts only, opt-in via include_recruiting_activity=true).',
+    "Fetch a LinkedIn person's full profile, recent posts, and activity in a single call. Profile and posts are fetched in parallel. NOTE: Unipile has no standalone activity endpoint — activity is sourced from posts (always) and the recruiting_activity profile section (LinkedIn Recruiter accounts only, opt-in via include_recruiting_activity=true).",
     'linkedin-unipile',
     'profile/overview',
     LINKEDIN_UNIPILE_GET_PROFILE_OVERVIEW_INPUT_DESCRIPTOR,

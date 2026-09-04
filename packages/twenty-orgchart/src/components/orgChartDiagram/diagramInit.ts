@@ -7,9 +7,12 @@ import {
   GradeAlignedTreeLayout,
   compareTreeVertexByGradeTier,
 } from './gradeAlignedTreeLayout';
+import { LevelColoredTreeLayout } from './levelColoredTreeLayout';
 
-const createDefaultTreeLayout = ($: typeof go.GraphObject.make): go.TreeLayout =>
-  $(go.TreeLayout, {
+const createDefaultTreeLayout = (
+  $: typeof go.GraphObject.make,
+): LevelColoredTreeLayout =>
+  $(LevelColoredTreeLayout, {
     angle: 90,
     layerSpacing: 35,
     arrangement: go.TreeLayout.ArrangementHorizontal,
@@ -88,44 +91,6 @@ export const initOrgChartDiagram = ({
   );
 
   diagram.scrollMargin = new go.Margin(800, 4000, 800, 4000);
-
-  const levelColors: string[] = [
-    '#AC193D',
-    '#2672EC',
-    '#8C0095',
-    '#5133AB',
-    '#008299',
-    '#D24726',
-    '#008A00',
-    '#094AB2',
-  ];
-
-  const layout = diagram.layout as go.TreeLayout;
-  const baseCommitNodes = layout.commitNodes.bind(layout);
-
-  layout.commitNodes = function commitNodesWithLevelColors() {
-    baseCommitNodes();
-    const network = layout.network;
-    if (!network) return;
-
-    network.vertexes.each((v) => {
-      const tv = v as go.TreeVertex;
-      const node = tv.node;
-      if (!node) return;
-
-      const level = tv.level % levelColors.length;
-      const color = levelColors[level];
-      const shape = node.findObject('SHAPE') as go.Shape | null;
-      if (!shape) return;
-
-      shape.stroke = $(go.Brush, 'Linear', {
-        0: color,
-        1: go.Brush.lightenBy(color, 0.05),
-        start: go.Spot.Left,
-        end: go.Spot.Right,
-      });
-    });
-  };
 
   if (onBackgroundContextAction) {
     const $c = go.GraphObject.make;

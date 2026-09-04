@@ -4,14 +4,16 @@ import react from '@vitejs/plugin-react-swc';
 import wyw from '@wyw-in-js/vite';
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
-import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
   root: __dirname,
   cacheDir: '../../node_modules/.vite/packages/twenty-orgchart',
 
+  resolve: {
+    tsconfigPaths: true,
+  },
+
   plugins: [
-    tsconfigPaths(),
     react(),
     wyw({
       include: [path.resolve(__dirname, 'src') + '/**/*.{ts,tsx}'],

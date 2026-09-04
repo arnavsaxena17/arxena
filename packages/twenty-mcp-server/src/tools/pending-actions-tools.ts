@@ -23,16 +23,16 @@ async function getIsOrgChartEnabled(
     if (!res.ok) {
       return resolveIsOrgChartEnabledFromWorkspace(undefined);
     }
-    const keys = await res.json();
-    return resolveIsOrgChartEnabledFromWorkspace(keys?.is_org_chart_enabled);
+    const keys = (await res.json()) as {
+      is_org_chart_enabled?: string | null;
+    };
+    return resolveIsOrgChartEnabledFromWorkspace(keys.is_org_chart_enabled);
   } catch {
     return resolveIsOrgChartEnabledFromWorkspace(undefined);
   }
 }
 
-function extractProjects(
-  data: unknown,
-): Array<{ id: string; name?: string }> {
+function extractProjects(data: unknown): Array<{ id: string; name?: string }> {
   const result = data as {
     projects?: {
       edges?: Array<{ node: { id: string; name?: string } }>;
@@ -42,8 +42,16 @@ function extractProjects(
   return edges.map((edge) => edge.node);
 }
 
-function extractCandidates(data: unknown): Array<{ id: string; status?: string; projectsId?: string }> {
-  const result = data as { candidates?: { edges?: Array<{ node: { id: string; status?: string; projectsId?: string } }> } };
+function extractCandidates(
+  data: unknown,
+): Array<{ id: string; status?: string; projectsId?: string }> {
+  const result = data as {
+    candidates?: {
+      edges?: Array<{
+        node: { id: string; status?: string; projectsId?: string };
+      }>;
+    };
+  };
   const edges = result?.candidates?.edges ?? [];
   return edges.map((e) => e.node);
 }
@@ -68,18 +76,23 @@ export const pendingActionsTools: McpTool[] = [
         properties: {
           maxJobs: {
             type: 'number',
-            description: 'Maximum number of active jobs to include (default: 20)',
+            description:
+              'Maximum number of active jobs to include (default: 20)',
           },
           maxCandidatesPerJob: {
             type: 'number',
-            description: 'When aggregating by status per job, max candidates to fetch per project(default: 200)',
+            description:
+              'When aggregating by status per job, max candidates to fetch per project(default: 200)',
           },
         },
       },
     },
     handler: async (args, config) => {
       const maxJobs = typeof args.maxJobs === 'number' ? args.maxJobs : 20;
-      const maxCandidatesPerJob = typeof args.maxCandidatesPerJob === 'number' ? args.maxCandidatesPerJob : 200;
+      const maxCandidatesPerJob =
+        typeof args.maxCandidatesPerJob === 'number'
+          ? args.maxCandidatesPerJob
+          : 200;
 
       const isOrgChartEnabled = await getIsOrgChartEnabled(
         config.baseUrl,
@@ -93,18 +106,31 @@ export const pendingActionsTools: McpTool[] = [
           limit: maxJobs,
           orderBy: [{ updatedAt: 'DescNullsLast' }],
         }),
-        executeGraphQL(config.baseUrl, config.apiToken, graphqlQueryToFindShortlists, {
-          limit: 500,
-          orderBy: [{ updatedAt: 'DescNullsLast' }],
-        }),
-        executeGraphQL(config.baseUrl, config.apiToken, graphqlQueryToFindCvsent, {
-          limit: 500,
-          orderBy: [{ createdAt: 'DescNullsLast' }],
-        }),
+        executeGraphQL(
+          config.baseUrl,
+          config.apiToken,
+          graphqlQueryToFindShortlists,
+          {
+            limit: 500,
+            orderBy: [{ updatedAt: 'DescNullsLast' }],
+          },
+        ),
+        executeGraphQL(
+          config.baseUrl,
+          config.apiToken,
+          graphqlQueryToFindCvsent,
+          {
+            limit: 500,
+            orderBy: [{ createdAt: 'DescNullsLast' }],
+          },
+        ),
       ]);
 
       const projects = extractProjects(jobsData);
-      const shortlistsCount = extractCountFromConnection(shortlistsData, 'shortlists');
+      const shortlistsCount = extractCountFromConnection(
+        shortlistsData,
+        'shortlists',
+      );
       const cvSentsCount = extractCountFromConnection(cvSentsData, 'cvsent');
 
       const candidatesByJob: Record<string, Record<string, number>> = {};

@@ -1,14 +1,11 @@
 import { currentProjectIdState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import {
   CandidateOutreachJourneyTab,
   resolveJourneyHeaderLabels,
 } from '@/candidate-table/CandidateOutreachJourneyTab';
 import { CandidateWorkflowRunsTab } from '@/candidate-table/CandidateWorkflowRunsTab';
-import { useCandidateOutreachJourney } from '@/outreach-home/hooks/useCandidateOutreachJourney';
-import { useStopOutreach } from '@/outreach-home/hooks/useStopOutreach';
-import { outreachContextState } from '@/outreach-home/states/outreachContextState';
-import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import {
   findSelectedTableRow,
   isUUID,
@@ -21,6 +18,9 @@ import {
   tableStateAtom,
   unreadMessagesCountsState,
 } from '@/candidate-table/states/states';
+import { useCandidateOutreachJourney } from '@/outreach-home/hooks/useCandidateOutreachJourney';
+import { useStopOutreach } from '@/outreach-home/hooks/useStopOutreach';
+import { outreachContextState } from '@/outreach-home/states/outreachContextState';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TabList } from '@/ui/layout/tab-list/components/TabList';
 import { activeTabIdComponentState } from '@/ui/layout/tab-list/states/activeTabIdComponentState';
@@ -503,7 +503,7 @@ export const CandidateChatDrawer = React.memo(() => {
     return findSelectedTableRow(selectedCandidateId, [
       ...searchResults,
       ...processedData,
-      ...((tableState.rawData || []) as Record<string, unknown>[]),
+      ...((tableState.rawData || []) as unknown as Record<string, unknown>[]),
     ]);
   }, [processedData, searchResults, selectedCandidateId, tableState.rawData]);
 
