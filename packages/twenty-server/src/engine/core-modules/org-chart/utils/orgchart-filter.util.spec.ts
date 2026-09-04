@@ -72,4 +72,29 @@ describe('filterOrgChartCandidatesByCountryAndFunctionRoot', () => {
       ),
     ).toEqual(items);
   });
+
+  it('keeps unclassified LinkedIn rows when filtering by function root', () => {
+    const items = [
+      { name: 'A', headline: 'CTO at British Airways' },
+      {
+        name: 'B',
+        std_function_root: 'sales',
+      },
+      {
+        name: 'C',
+        std_function_root: 'technology',
+      },
+    ];
+
+    const filtered = filterOrgChartCandidatesByCountryAndFunctionRoot(
+      items,
+      'global',
+      'technology',
+    );
+
+    expect(filtered.map((item) => (item as { name: string }).name)).toEqual([
+      'A',
+      'C',
+    ]);
+  });
 });

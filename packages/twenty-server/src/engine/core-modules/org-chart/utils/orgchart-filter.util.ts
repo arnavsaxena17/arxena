@@ -63,8 +63,11 @@ export const candidateRowMatchesOrgChartFunctionRootFilter = (
     'function_root',
   ]);
 
+  // Fresh LinkedIn/Unipile rows are already scoped by the Sales Nav / classic
+  // function query; std_function_root is only filled later by Python classify.
+  // Dropping unclassified rows here zeroed technology builds after a successful fetch.
   if (possibleFunctionRootValues.length === 0) {
-    return false;
+    return true;
   }
 
   return possibleFunctionRootValues.some((value) =>
