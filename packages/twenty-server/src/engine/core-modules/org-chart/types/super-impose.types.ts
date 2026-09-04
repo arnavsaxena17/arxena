@@ -79,7 +79,12 @@ export type SuperImposeQueryPlan = {
   mode: 'entire_company' | 'function_grade';
   candidateSource: 'harvest' | 'unipile';
   searchType: 'classic' | 'sales_navigator' | 'recruiter';
+  /** Combined clause for harvest / legacy single-field consumers */
   mergedSearchClause?: string;
+  /** Sales Nav current-title boolean (`role.include`) from manual CSV / Python */
+  mergedJobTitle?: string;
+  /** Free-text keywords field (BD / leadership extras / distinct CSV keywords) */
+  mergedKeywords?: string;
   /** LinkedIn-searchable company names for a single combined people query */
   companySearchNames: string[];
   resolvedCompanies: SuperImposeResolvedCompany[];

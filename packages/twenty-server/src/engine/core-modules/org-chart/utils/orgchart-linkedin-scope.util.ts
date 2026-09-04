@@ -51,10 +51,10 @@ export const getOrgChartLinkedInMaxCandidates = (): number => {
   const raw = Number(
     process.env.ORGCHART_MAX_LINKEDIN_CANDIDATES ??
       process.env.SUPER_IMPOSE_MAX_CANDIDATES ??
-      '500',
+      '1000',
   );
 
-  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 500;
+  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 1000;
 };
 
 export const getOrgChartLinkedInPageSize = (

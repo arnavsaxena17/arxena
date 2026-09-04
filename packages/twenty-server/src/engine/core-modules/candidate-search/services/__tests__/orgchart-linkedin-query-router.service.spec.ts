@@ -415,6 +415,85 @@ describe('OrgchartLinkedInQueryRouterService', () => {
       );
     });
 
+    it('function_grade sales_navigator: maps manual boolean_query onto role.include', async () => {
+      const titleBoolean =
+        '(technology OR software OR data OR IT OR AI OR Architect OR Architecture OR CTO OR CIO)';
+      titleTaxonomyRemoteService.getManualBooleanQueries.mockResolvedValue({
+        items: [
+          {
+            kind: 'std_function_root',
+            label: 'technology',
+            std_grade: '',
+            boolean_query: titleBoolean,
+            keywords: titleBoolean,
+          },
+        ],
+      });
+
+      const params = await service.buildGeneratedSearchParametersForOrgchart({
+        rawQuery: REQUIREMENT,
+        cleanedQuery: REQUIREMENT,
+        requirement: REQUIREMENT,
+        searchType: 'sales_navigator',
+        mode: 'function_grade',
+        primaryCompanyName: COMPANY,
+        country: '',
+        functionRoot: 'technology',
+        isAllPeopleInCompanyMode: false,
+        apiToken: API_TOKEN,
+        queryGenerator: 'python',
+      });
+
+      expect(
+        pythonQueryGenerationService.generateSearchParameters,
+      ).not.toHaveBeenCalled();
+      const strategy = params.salesNavigatorPeopleSearchStrategies?.[0];
+      expect(strategy?.parameters.role).toEqual({
+        include: [titleBoolean],
+      });
+      expect(strategy?.parameters.keywords).toBeUndefined();
+    });
+
+    it('function_grade sales_navigator with company ids: estimate/search use role.include', async () => {
+      const titleBoolean =
+        '(technology OR software OR data OR IT OR AI OR Architect OR Architecture OR CTO OR CIO)';
+      titleTaxonomyRemoteService.getManualBooleanQueries.mockResolvedValue({
+        items: [
+          {
+            kind: 'std_function_root',
+            label: 'technology',
+            std_grade: '',
+            boolean_query: titleBoolean,
+            keywords: 'technology OR software',
+          },
+        ],
+      });
+
+      const { strategies } = await service.buildOrgchartLinkedInStrategies({
+        rawQuery: REQUIREMENT,
+        cleanedQuery: REQUIREMENT,
+        requirement: REQUIREMENT,
+        searchType: 'sales_navigator',
+        mode: 'function_grade',
+        primaryCompanyName: COMPANY,
+        country: '',
+        functionRoot: 'technology',
+        isAllPeopleInCompanyMode: false,
+        apiToken: API_TOKEN,
+        queryGenerator: 'python',
+        linkedinCompanyIds: ['2962'],
+      });
+
+      expect(strategies).toHaveLength(1);
+      expect(strategies[0].parameters.role).toEqual({
+        include: [titleBoolean],
+      });
+      expect(strategies[0].parameters.keywords).toBe('technology OR software');
+      expect(strategies[0].parameters.company).toEqual({
+        include: ['2962'],
+      });
+    });
+
     it('function_grade: Python receives function_root and job titles', async () => {
       await service.buildGeneratedSearchParametersForOrgchart({
         rawQuery: REQUIREMENT,

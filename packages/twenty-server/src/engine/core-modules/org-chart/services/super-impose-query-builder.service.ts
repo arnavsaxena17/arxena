@@ -3,23 +3,27 @@ import { randomUUID } from 'crypto';
 
 import { OrgChartIntentService } from 'src/engine/core-modules/candidate-search/services/org-chart-intent.service';
 import { PythonQueryGenerationService } from 'src/engine/core-modules/candidate-search/services/python-query-generation.service';
+import { TitleTaxonomyRemoteService } from 'src/engine/core-modules/candidate-search/services/title-taxonomy-remote.service';
 import type {
-    SuperImposeHarvestQueryParams,
-    SuperImposeQueryPlan,
-    SuperImposeResolvedCompany,
+  SuperImposeHarvestQueryParams,
+  SuperImposeQueryPlan,
+  SuperImposeResolvedCompany,
 } from 'src/engine/core-modules/org-chart/types/super-impose.types';
 import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 import { hasOrgChartLinkedInLeadershipOnlyFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-linkedin-scope.util';
 import {
-    resolveHarvestFunctionIdsForFunctionRoot,
-    resolveHarvestLocationForCountry,
+  resolveHarvestFunctionIdsForFunctionRoot,
+  resolveHarvestLocationForCountry,
 } from 'src/engine/core-modules/org-chart/utils/super-impose-harvest-scope.util';
 import { resolveSuperImposeCompanySearchNames } from 'src/engine/core-modules/org-chart/utils/super-impose-input-resolver.util';
 import {
-    andMergeBooleanSearchClauses,
-    extractLinkedInSearchClauseFromGeneratedSearchParameters,
+  andMergeBooleanSearchClauses,
+  extractJobTitleClauseFromGeneratedSearchParameters,
+  extractKeywordsClauseFromGeneratedSearchParameters,
+  extractLinkedInSearchClauseFromGeneratedSearchParameters,
 } from 'src/engine/core-modules/org-chart/utils/super-impose-keyword-merge.util';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { pickBlankGradeManualBooleanQueryItem } from 'src/engine/core-modules/candidate-search/utils/pick-blank-grade-manual-boolean-query-item.util';
 
 export type BuildSuperImposeQueryPlanInput = {
   resolvedCompanies: SuperImposeResolvedCompany[];
@@ -39,6 +43,11 @@ export type BuildSuperImposeQueryPlanInput = {
   linkedinCompanyParameterId?: string;
 };
 
+type MergedSearchParts = {
+  keywords?: string;
+  jobTitle?: string;
+};
+
 @Injectable()
 export class SuperImposeQueryBuilderService {
   private readonly logger = new Logger(SuperImposeQueryBuilderService.name);
@@ -47,6 +56,7 @@ export class SuperImposeQueryBuilderService {
     private readonly pythonQueryGenerationService: PythonQueryGenerationService,
     private readonly orgChartIntentService: OrgChartIntentService,
     private readonly workspaceQueryService: WorkspaceQueryService,
+    private readonly titleTaxonomyRemoteService: TitleTaxonomyRemoteService,
   ) {}
 
   async buildQueryPlan(
@@ -70,10 +80,15 @@ export class SuperImposeQueryBuilderService {
       hasOrgChartLinkedInLeadershipOnlyFilter(input.leadershipOnly);
     const mode = hasScopeFilter ? 'function_grade' : 'entire_company';
 
-    const mergedSearchClause = await this.buildMergedSearchClause({
+    const mergedParts = await this.buildMergedSearchParts({
       ...input,
       searchType,
     });
+    // Harvest / legacy single-clause consumers still need one combined string.
+    const mergedSearchClause = andMergeBooleanSearchClauses([
+      mergedParts.jobTitle,
+      mergedParts.keywords,
+    ]);
 
     const companyUrls = input.resolvedCompanies.map((company) => company.linkedinUrl);
     const companySearchNames = resolveSuperImposeCompanySearchNames(
@@ -129,6 +144,8 @@ export class SuperImposeQueryBuilderService {
       candidateSource: input.candidateSource,
       searchType,
       mergedSearchClause,
+      mergedJobTitle: mergedParts.jobTitle,
+      mergedKeywords: mergedParts.keywords,
       companySearchNames,
       resolvedCompanies: input.resolvedCompanies,
       salesNavigatorSearchUrls,
@@ -146,7 +163,7 @@ export class SuperImposeQueryBuilderService {
     };
   }
 
-  private async buildMergedSearchClause(input: {
+  private async buildMergedSearchParts(input: {
     functionRoot?: string;
     leadershipOnly?: boolean;
     linkedinSearchKeywords?: string;
@@ -154,31 +171,54 @@ export class SuperImposeQueryBuilderService {
     primaryCompanyName: string;
     searchType: 'classic' | 'sales_navigator' | 'recruiter';
     apiToken?: string;
-  }): Promise<string | undefined> {
-    let functionRootClause: string | undefined;
+  }): Promise<MergedSearchParts> {
+    let functionRootKeywords: string | undefined;
+    let functionRootJobTitle: string | undefined;
+
     if (hasMeaningfulOrgChartFunctionRootFilter(input.functionRoot)) {
-      try {
-        const generated =
-          await this.pythonQueryGenerationService.generateSearchParameters(
-            {
-              function_root: [
-                { name: input.functionRoot!.trim(), exclude: false },
-              ],
-              company_names: input.primaryCompanyName
-                ? [input.primaryCompanyName]
-                : [],
-            },
-            input.searchType,
-            `Function root search for ${input.primaryCompanyName}`,
+      const manualTerms = await this.lookupManualFunctionRootSearchTerms(
+        input.functionRoot!.trim(),
+        input.searchType,
+      );
+      if (manualTerms) {
+        functionRootKeywords = manualTerms.keywords;
+        functionRootJobTitle = manualTerms.jobTitle;
+      } else {
+        try {
+          const generated =
+            await this.pythonQueryGenerationService.generateSearchParameters(
+              {
+                function_root: [
+                  { name: input.functionRoot!.trim(), exclude: false },
+                ],
+                company_names: input.primaryCompanyName
+                  ? [input.primaryCompanyName]
+                  : [],
+              },
+              input.searchType,
+              `Function root search for ${input.primaryCompanyName}`,
+            );
+          const jobTitleClause =
+            extractJobTitleClauseFromGeneratedSearchParameters(generated);
+          const keywordsClause =
+            extractKeywordsClauseFromGeneratedSearchParameters(generated);
+          const fallbackClause =
+            extractLinkedInSearchClauseFromGeneratedSearchParameters(generated);
+
+          if (input.searchType === 'sales_navigator') {
+            functionRootJobTitle =
+              jobTitleClause || keywordsClause || fallbackClause;
+          } else {
+            functionRootKeywords = keywordsClause || fallbackClause;
+            functionRootJobTitle = jobTitleClause;
+          }
+        } catch (error) {
+          this.logger.warn(
+            `Super impose function-root keyword generation failed: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
           );
-        functionRootClause =
-          extractLinkedInSearchClauseFromGeneratedSearchParameters(generated);
-      } catch (error) {
-        this.logger.warn(
-          `Super impose function-root keyword generation failed: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        );
+        }
       }
     }
 
@@ -236,12 +276,70 @@ export class SuperImposeQueryBuilderService {
       }
     }
 
-    return andMergeBooleanSearchClauses([
-      functionRootClause,
-      leadershipClause,
-      businessDivisionClause,
-      input.linkedinSearchKeywords?.trim(),
-    ]);
+    return {
+      jobTitle: functionRootJobTitle,
+      keywords: andMergeBooleanSearchClauses([
+        functionRootKeywords,
+        leadershipClause,
+        businessDivisionClause,
+        input.linkedinSearchKeywords?.trim(),
+      ]),
+    };
+  }
+
+  // Blank-grade CSV: boolean_query → Sales Nav role.include; keywords → keywords.
+  private async lookupManualFunctionRootSearchTerms(
+    functionRoot: string,
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+  ): Promise<{ keywords?: string; jobTitle?: string } | null> {
+    try {
+      const manualResult =
+        await this.titleTaxonomyRemoteService.getManualBooleanQueries({
+          kind: 'std_function_root',
+          label: functionRoot,
+          stdGrade: '',
+        });
+      const manualRow = pickBlankGradeManualBooleanQueryItem(
+        manualResult?.items,
+      );
+      const booleanQuery = manualRow?.boolean_query?.trim() || undefined;
+      const keywordsColumn = manualRow?.keywords?.trim() || undefined;
+      if (!booleanQuery && !keywordsColumn) {
+        return null;
+      }
+
+      if (searchType === 'sales_navigator') {
+        const jobTitle = booleanQuery ?? keywordsColumn;
+        const keywords =
+          booleanQuery &&
+          keywordsColumn &&
+          keywordsColumn !== booleanQuery
+            ? keywordsColumn
+            : undefined;
+        this.logger.log(
+          `Super impose: manual boolean for functionRoot="${functionRoot}" jobTitle="${jobTitle ?? ''}" keywords="${keywords ?? ''}"`,
+        );
+        return {
+          ...(keywords ? { keywords } : {}),
+          ...(jobTitle ? { jobTitle } : {}),
+        };
+      }
+
+      this.logger.log(
+        `Super impose: manual boolean for functionRoot="${functionRoot}" searchType=${searchType} keywords="${keywordsColumn ?? ''}" jobTitle="${booleanQuery ?? ''}"`,
+      );
+      return {
+        ...(keywordsColumn ? { keywords: keywordsColumn } : {}),
+        ...(booleanQuery ? { jobTitle: booleanQuery } : {}),
+      };
+    } catch (error) {
+      this.logger.warn(
+        `Super impose: manual boolean lookup for functionRoot="${functionRoot}" failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return null;
+    }
   }
 
   private stripFunctionTermsFromClause(

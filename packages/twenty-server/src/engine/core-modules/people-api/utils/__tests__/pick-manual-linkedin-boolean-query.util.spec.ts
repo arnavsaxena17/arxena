@@ -31,6 +31,37 @@ describe('pickManualLinkedInBooleanQuery', () => {
     });
   });
 
+  it('prefers blank-grade root row when no grade is requested', () => {
+    expect(
+      pickManualLinkedInBooleanQuery(
+        [
+          {
+            kind: 'std_function_root',
+            label: 'technology',
+            stdGrade: 'entry',
+            booleanQuery: 'entry title boolean',
+            keywords: 'entry keywords',
+          },
+          {
+            kind: 'std_function_root',
+            label: 'technology',
+            stdGrade: '',
+            booleanQuery:
+              '(technology OR software OR data OR IT OR AI OR Architect OR Architecture OR CTO OR CIO)',
+            keywords:
+              '(technology OR software OR data OR IT OR AI OR Architect OR Architecture OR CTO OR CIO)',
+          },
+        ],
+        { stdFunctionRoot: 'technology' },
+      ),
+    ).toEqual({
+      jobTitle:
+        '(technology OR software OR data OR IT OR AI OR Architect OR Architecture OR CTO OR CIO)',
+      keywords:
+        '(technology OR software OR data OR IT OR AI OR Architect OR Architecture OR CTO OR CIO)',
+    });
+  });
+
   it('keeps keywords when boolean_query is empty', () => {
     expect(
       pickManualLinkedInBooleanQuery(

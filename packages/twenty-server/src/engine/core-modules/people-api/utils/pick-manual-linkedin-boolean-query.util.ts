@@ -50,6 +50,9 @@ const toManualLinkedInQuery = (
   };
 };
 
+const isBlankGrade = (row: ManualBooleanQueryRow): boolean =>
+  !(row.stdGrade ?? '').trim();
+
 const matchesKindAndLabel = (
   row: ManualBooleanQueryRow,
   kind: string,
@@ -88,6 +91,27 @@ export const pickManualLinkedInBooleanQuery = (
     normalizeTaxonomyLabel(criteria.stdFunctionRoot) || undefined;
 
   const withText = items.filter(hasCuratedText);
+
+  // No grade → prefer blank-grade (any-seniority) catalog row over entry/mid/…
+  if (!grade) {
+    const blankByFunction = withText.find(
+      (row) =>
+        isBlankGrade(row) &&
+        matchesKindAndLabel(row, 'std_function', stdFunction),
+    );
+    if (blankByFunction) {
+      return toManualLinkedInQuery(blankByFunction);
+    }
+
+    const blankByRoot = withText.find(
+      (row) =>
+        isBlankGrade(row) &&
+        matchesKindAndLabel(row, 'std_function_root', stdFunctionRoot),
+    );
+    if (blankByRoot) {
+      return toManualLinkedInQuery(blankByRoot);
+    }
+  }
 
   const byFunction = withText.find((row) =>
     matchesKindAndLabel(row, 'std_function', stdFunction, grade),

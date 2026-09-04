@@ -71,9 +71,16 @@ describe('OrgchartLinkedInQueryRouterService pre-resolved facets', () => {
     expect(parameters.location).toEqual({ include: ['102713980'] });
   });
 
-  it('includes function-root keywords on pre-resolved sales navigator strategy', async () => {
+  it('includes function-root title boolean on pre-resolved sales navigator role.include', async () => {
     titleTaxonomyRemoteService.getManualBooleanQueries.mockResolvedValue({
       items: [
+        {
+          kind: 'std_function_root',
+          label: 'sales',
+          std_grade: 'entry',
+          boolean_query: 'entry should not win',
+          keywords: 'entry should not win',
+        },
         {
           kind: 'std_function_root',
           label: 'sales',
@@ -106,10 +113,13 @@ describe('OrgchartLinkedInQueryRouterService pre-resolved facets', () => {
     expect(strategies.length).toBeGreaterThan(0);
     const parameters = strategies[0]?.parameters as Record<string, unknown>;
     expect(parameters.company).toEqual({ include: ['1441'] });
-    expect(parameters.keywords).toBe('(sales OR "business development")');
+    expect(parameters.role).toEqual({
+      include: ['(sales OR "business development")'],
+    });
+    expect(parameters.keywords).toBeUndefined();
   });
 
-  it('uses pre-computed linkedinKeywords without calling Python', async () => {
+  it('uses pre-computed linkedinJobTitle on role without calling Python', async () => {
     const { strategies } = await service.buildOrgchartLinkedInStrategies({
       rawQuery: 'Find people',
       cleanedQuery: 'Find people',
@@ -117,15 +127,60 @@ describe('OrgchartLinkedInQueryRouterService pre-resolved facets', () => {
       searchType: 'sales_navigator',
       primaryCompanyName: 'Acme',
       country: '',
-      functionRoot: 'sales',
+      functionRoot: 'technology',
       isAllPeopleInCompanyMode: false,
       apiToken: 'token',
       linkedinCompanyIds: ['1441'],
-      linkedinKeywords: 'marketing OR brand',
+      linkedinJobTitle:
+        '(technology OR software OR data OR IT OR AI OR Architect OR Architecture OR CTO OR CIO)',
+    });
+
+    expect(pythonQueryGenerationService.generateSearchParameters).not.toHaveBeenCalled();
+    expect(titleTaxonomyRemoteService.getManualBooleanQueries).not.toHaveBeenCalled();
+    const parameters = strategies[0]?.parameters as Record<string, unknown>;
+    expect(parameters.role).toEqual({
+      include: [
+        '(technology OR software OR data OR IT OR AI OR Architect OR Architecture OR CTO OR CIO)',
+      ],
+    });
+    expect(parameters.keywords).toBeUndefined();
+  });
+
+  it('remaps legacy linkedinKeywords onto role for sales_navigator function root', async () => {
+    titleTaxonomyRemoteService.getManualBooleanQueries.mockResolvedValue({
+      items: [
+        {
+          kind: 'std_function_root',
+          label: 'technology',
+          std_grade: '',
+          boolean_query:
+            '(technology OR software OR data OR IT OR AI OR Architect OR Architecture OR CTO OR CIO)',
+          keywords:
+            '(technology OR software OR data OR IT OR AI OR Architect OR Architecture OR CTO OR CIO)',
+        },
+      ],
+    });
+
+    const { strategies } = await service.buildOrgchartLinkedInStrategies({
+      rawQuery: 'Find people',
+      cleanedQuery: 'Find people',
+      requirement: 'Find people at Acme',
+      searchType: 'sales_navigator',
+      primaryCompanyName: 'Acme',
+      country: '',
+      functionRoot: 'technology',
+      isAllPeopleInCompanyMode: false,
+      apiToken: 'token',
+      linkedinCompanyIds: ['1441'],
+      linkedinKeywords: 'development OR technical OR software OR it OR technology OR data',
     });
 
     expect(pythonQueryGenerationService.generateSearchParameters).not.toHaveBeenCalled();
     const parameters = strategies[0]?.parameters as Record<string, unknown>;
-    expect(parameters.keywords).toBe('marketing OR brand');
-  });
-});
+    expect(parameters.role).toEqual({
+      include: [
+        '(technology OR software OR data OR IT OR AI OR Architect OR Architecture OR CTO OR CIO)',
+      ],
+    });
+    expect(parameters.keywords).toBeUndefined();
+  });});

@@ -248,8 +248,8 @@ export class OrgChartSuperImposeService {
   }
 
   getSuperImposeThreshold(): number {
-    const raw = Number(process.env.SUPER_IMPOSE_MAX_CANDIDATES ?? '500');
-    return Number.isFinite(raw) && raw > 0 ? raw : 500;
+    const raw = Number(process.env.SUPER_IMPOSE_MAX_CANDIDATES ?? '1000');
+    return Number.isFinite(raw) && raw > 0 ? raw : 1000;
   }
 
   async estimateFromPlan(
@@ -395,7 +395,8 @@ export class OrgChartSuperImposeService {
                     companyParameterIds.length > 0
                       ? companyParameterIds
                       : undefined,
-                  linkedinKeywords: plan.mergedSearchClause,
+                  linkedinKeywords: plan.mergedKeywords,
+                  linkedinJobTitle: plan.mergedJobTitle,
                   leadershipOnly: plan.leadershipOnly,
                 },
               );
@@ -569,7 +570,8 @@ export class OrgChartSuperImposeService {
               plan.linkedinCompanyParameterId ?? context.linkedinCompanyParameterId,
             linkedinCompanyParameterIds:
               companyParameterIds.length > 0 ? companyParameterIds : undefined,
-            linkedinKeywords: plan.mergedSearchClause,
+            linkedinKeywords: plan.mergedKeywords,
+            linkedinJobTitle: plan.mergedJobTitle,
             leadershipOnly: plan.leadershipOnly,
           },
         );

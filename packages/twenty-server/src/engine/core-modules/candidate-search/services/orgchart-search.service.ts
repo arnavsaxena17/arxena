@@ -176,8 +176,10 @@ export class OrgChartSearchService {
       linkedinCompanyParameterId?: string;
       /** Multiple LinkedIn company facet ids (super-impose multi-company). Takes precedence over singular id. */
       linkedinCompanyParameterIds?: string[];
-      /** Pre-computed boolean keyword clause (e.g. super-impose mergedSearchClause). */
+      /** Pre-computed boolean keyword clause (e.g. super-impose mergedKeywords). */
       linkedinKeywords?: string;
+      /** Pre-computed current-title boolean (e.g. super-impose mergedJobTitle → role.include). */
+      linkedinJobTitle?: string;
       /** When true, counts as a LinkedIn subset scope filter for threshold gating. */
       leadershipOnly?: boolean;
     },
@@ -439,6 +441,7 @@ export class OrgChartSearchService {
               ]
             : undefined,
           linkedinKeywords: options?.linkedinKeywords,
+          linkedinJobTitle: options?.linkedinJobTitle,
         },
       );
     const strategies = routerOutcome.strategies;
@@ -761,8 +764,10 @@ export class OrgChartSearchService {
       linkedinCompanyParameterId?: string;
       /** Multiple LinkedIn company facet ids (super-impose multi-company). Takes precedence over singular id. */
       linkedinCompanyParameterIds?: string[];
-      /** Pre-computed boolean keyword clause (e.g. super-impose mergedSearchClause). */
+      /** Pre-computed boolean keyword clause (e.g. super-impose mergedKeywords). */
       linkedinKeywords?: string;
+      /** Pre-computed current-title boolean (e.g. super-impose mergedJobTitle → role.include). */
+      linkedinJobTitle?: string;
       leadershipOnly?: boolean;
     },
   ): Promise<{
@@ -885,6 +890,7 @@ export class OrgChartSearchService {
               ]
             : undefined,
           linkedinKeywords: options?.linkedinKeywords,
+          linkedinJobTitle: options?.linkedinJobTitle,
         },
       );
 
