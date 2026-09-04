@@ -9,6 +9,7 @@ describe('OrgChartLinkedInBuildService.rebuildOrgChartUsingSavedPeople', () => {
     const builtOrgChart = { type: 'fullcompany', orgchart: [] };
 
     const ctx = {
+      logger: { log: jest.fn() },
       orgChartCacheService: {
         getCachedCompanyCandidateList: jest.fn(async () => ({
           items: savedItems,
@@ -21,6 +22,7 @@ describe('OrgChartLinkedInBuildService.rebuildOrgChartUsingSavedPeople', () => {
       },
       orgChartS3Service: {
         persistedCompanyFolderKey: jest.fn(() => 'acme'),
+        getUnipileRawSearch: jest.fn(async () => null),
         getCandidates: jest.fn(async () => []),
         deletePersistedCompanyFolder: jest.fn(async () => {
           events.push('s3-cleared');
@@ -33,6 +35,7 @@ describe('OrgChartLinkedInBuildService.rebuildOrgChartUsingSavedPeople', () => {
           events.push('python-build');
           return builtOrgChart;
         }),
+        transformUnipileRawItemsToOrgChartCandidates: jest.fn(),
       },
       buildOrgChartCreditMetadata: jest.fn(async () => ({
         orgChartS3RelativePath: 'org-charts/acme',
@@ -58,14 +61,97 @@ describe('OrgChartLinkedInBuildService.rebuildOrgChartUsingSavedPeople', () => {
     expect(events).toEqual(['cache-cleared', 's3-cleared', 'python-build']);
   });
 
-  it('throws not found when no saved people exist in Redis or S3', async () => {
+  it('prefers Unipile raw search: transform then Python build', async () => {
+    const events: string[] = [];
+    const rawItems = [{ id: 'ACwAA', name: 'Raw Person' }];
+    const transformed = [{ id: 'ACwAA', full_name: 'Raw Person' }];
+    const builtOrgChart = { type: 'fullcompany', orgchart: [] };
+
     const ctx = {
+      logger: { log: jest.fn() },
+      orgChartCacheService: {
+        getCachedCompanyCandidateList: jest.fn(async () => undefined),
+        invalidateEntireCompanyCaches: jest.fn(async () => {
+          events.push('cache-cleared');
+        }),
+        setCachedCompanyCandidateList: jest.fn(async () => undefined),
+        setCachedCompanyOrgChart: jest.fn(async () => undefined),
+      },
+      orgChartS3Service: {
+        persistedCompanyFolderKey: jest.fn(() => 'british-airways'),
+        getUnipileRawSearch: jest.fn(async () => ({
+          version: 1,
+          savedAt: '2026-09-04T08:27:52.000Z',
+          searchType: 'sales_navigator',
+          itemCount: 1,
+          items: rawItems,
+        })),
+        getCandidates: jest.fn(async () => []),
+        deletePersistedCompanyFolder: jest.fn(async () => {
+          events.push('s3-cleared');
+        }),
+        saveOrgChart: jest.fn(async () => undefined),
+        saveCandidates: jest.fn(async () => undefined),
+      },
+      orgChartSearchService: {
+        transformUnipileRawItemsToOrgChartCandidates: jest.fn(() => {
+          events.push('transform');
+          return transformed;
+        }),
+        buildOrgChartFromLinkedInCompanyCandidates: jest.fn(async () => {
+          events.push('python-build');
+          return builtOrgChart;
+        }),
+      },
+      buildOrgChartCreditMetadata: jest.fn(async () => ({
+        orgChartS3RelativePath: 'org-charts/british_airways',
+      })),
+      orgChartRecordWorkspaceService: {
+        tryPersistOrgChartRecord: jest.fn(async () => undefined),
+      },
+    } as unknown as OrgChartLinkedInBuildService;
+
+    const result =
+      await OrgChartLinkedInBuildService.prototype.rebuildOrgChartUsingSavedPeople.call(
+        ctx,
+        {
+          apiToken: 'token',
+          companyId: 'british-airways',
+          companyName: 'british airways',
+        },
+      );
+
+    expect(result.success).toBe(true);
+    expect(result.itemCount).toBe(1);
+    expect(result.candidateSource).toBe('unipile_raw');
+    expect(events).toEqual([
+      'transform',
+      'cache-cleared',
+      's3-cleared',
+      'python-build',
+    ]);
+    expect(
+      (
+        ctx.orgChartSearchService as {
+          transformUnipileRawItemsToOrgChartCandidates: jest.Mock;
+        }
+      ).transformUnipileRawItemsToOrgChartCandidates,
+    ).toHaveBeenCalledWith(rawItems, 'sales_navigator');
+  });
+
+  it('throws not found when no saved people or Unipile raw exist', async () => {
+    const ctx = {
+      logger: { log: jest.fn() },
       orgChartCacheService: {
         getCachedCompanyCandidateList: jest.fn(async () => undefined),
       },
       orgChartS3Service: {
         persistedCompanyFolderKey: jest.fn(() => 'acme'),
+        getUnipileRawSearch: jest.fn(async () => null),
         getCandidates: jest.fn(async () => []),
+      },
+      orgChartSearchService: {
+        transformUnipileRawItemsToOrgChartCandidates: jest.fn(),
       },
     } as unknown as OrgChartLinkedInBuildService;
 

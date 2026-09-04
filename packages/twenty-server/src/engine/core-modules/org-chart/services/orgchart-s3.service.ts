@@ -6,6 +6,11 @@ import { OrgChartData } from 'twenty-shared';
 
 import { CandidateAvatarStorageService } from 'src/engine/core-modules/candidate-avatar/services/candidate-avatar-storage.service';
 import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
+import {
+  ORG_CHART_UNIPILE_RAW_S3_VARIANT,
+  ORG_CHART_UNIPILE_RAW_SEARCH_FILENAME,
+  type OrgChartUnipileRawSearchPayload,
+} from 'src/engine/core-modules/org-chart/types/orgchart-unipile-raw-search.types';
 
 const ORG_CHART_S3_FOLDER = 'org-charts';
 
@@ -215,6 +220,73 @@ export class OrgChartS3Service {
     } catch (error) {
       this.logger.log(
         `No candidates found in S3 for companyId=${companyId} variant=${variant ?? 'default'}: ${(error as Error).message}`,
+      );
+
+      return null;
+    }
+  }
+
+  // Stored under variant `unipile_raw` so default rebuild folder deletes leave it intact.
+  async saveUnipileRawSearch(
+    companyId: string,
+    payload: OrgChartUnipileRawSearchPayload,
+  ): Promise<void> {
+    const folder = this.buildFolderPath(
+      companyId,
+      ORG_CHART_UNIPILE_RAW_S3_VARIANT,
+    );
+
+    try {
+      await this.fileStorageService.write({
+        file: Buffer.from(JSON.stringify(payload)),
+        name: ORG_CHART_UNIPILE_RAW_SEARCH_FILENAME,
+        folder,
+        mimeType: 'application/json',
+      });
+      this.logger.log(
+        `Saved ${payload.itemCount} Unipile raw search items to S3: ${folder}/${ORG_CHART_UNIPILE_RAW_SEARCH_FILENAME}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to save Unipile raw search for companyId=${companyId}`,
+        error as Error,
+      );
+    }
+  }
+
+  async getUnipileRawSearch(
+    companyId: string,
+  ): Promise<OrgChartUnipileRawSearchPayload | null> {
+    const folder = this.buildFolderPath(
+      companyId,
+      ORG_CHART_UNIPILE_RAW_S3_VARIANT,
+    );
+
+    try {
+      const stream = await this.fileStorageService.read({
+        folderPath: folder,
+        filename: ORG_CHART_UNIPILE_RAW_SEARCH_FILENAME,
+      });
+      const content = await this.streamToString(stream);
+      const parsed = JSON.parse(content) as OrgChartUnipileRawSearchPayload;
+
+      if (
+        !parsed ||
+        typeof parsed !== 'object' ||
+        !Array.isArray(parsed.items) ||
+        parsed.items.length === 0
+      ) {
+        return null;
+      }
+
+      this.logger.log(
+        `Loaded ${parsed.items.length} Unipile raw search items from S3 for companyId=${companyId}`,
+      );
+
+      return parsed;
+    } catch (error) {
+      this.logger.log(
+        `No Unipile raw search found in S3 for companyId=${companyId}: ${(error as Error).message}`,
       );
 
       return null;

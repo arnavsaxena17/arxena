@@ -204,32 +204,54 @@ export class OrgChartLinkedInBuildService {
     itemCount: number;
     items: Record<string, unknown>[];
     orgChart: OrgChartData;
-    candidateSource: 'saved_people';
+    candidateSource: 'saved_people' | 'unipile_raw';
   }> {
     const resolvedCompanyName = normalizeCompanyName(input.companyName);
     const resolvedCompanyId = normalizeCompanyId(
       input.companyId,
       resolvedCompanyName,
     );
+    const s3PersistKey = this.orgChartS3Service.persistedCompanyFolderKey(
+      resolvedCompanyId,
+      resolvedCompanyName || resolvedCompanyId,
+    );
 
-    const cachedCandidateList =
-      await this.orgChartCacheService.getCachedCompanyCandidateList({
-        companyName: resolvedCompanyName,
-        companyId: resolvedCompanyId,
-        mode: 'entire_company',
-        searchType: 'classic',
-      });
+    const unipileRawSearch =
+      await this.orgChartS3Service.getUnipileRawSearch(s3PersistKey);
 
-    let savedItems = Array.isArray(cachedCandidateList?.items)
-      ? (cachedCandidateList?.items as Record<string, unknown>[])
-      : [];
+    let savedItems: Record<string, unknown>[] = [];
+    let candidateSource: 'saved_people' | 'unipile_raw' = 'saved_people';
+
+    if (unipileRawSearch && unipileRawSearch.items.length > 0) {
+      const transformed =
+        this.orgChartSearchService.transformUnipileRawItemsToOrgChartCandidates(
+          unipileRawSearch.items,
+          unipileRawSearch.searchType,
+        );
+      savedItems = transformed as unknown as Record<string, unknown>[];
+      candidateSource = 'unipile_raw';
+      this.logger.log(
+        `Rebuild using saved people: transforming ${unipileRawSearch.items.length} Unipile raw items → ${savedItems.length} candidates for company="${resolvedCompanyName || resolvedCompanyId}"`,
+      );
+    }
 
     if (savedItems.length === 0) {
-      const s3PersistKey = this.orgChartS3Service.persistedCompanyFolderKey(
-        resolvedCompanyId,
-        resolvedCompanyName || resolvedCompanyId,
-      );
-      const s3Candidates = await this.orgChartS3Service.getCandidates(s3PersistKey);
+      const cachedCandidateList =
+        await this.orgChartCacheService.getCachedCompanyCandidateList({
+          companyName: resolvedCompanyName,
+          companyId: resolvedCompanyId,
+          mode: 'entire_company',
+          searchType: 'classic',
+        });
+
+      savedItems = Array.isArray(cachedCandidateList?.items)
+        ? (cachedCandidateList?.items as Record<string, unknown>[])
+        : [];
+    }
+
+    if (savedItems.length === 0) {
+      const s3Candidates =
+        await this.orgChartS3Service.getCandidates(s3PersistKey);
       savedItems = Array.isArray(s3Candidates)
         ? (s3Candidates as Record<string, unknown>[])
         : [];
@@ -250,6 +272,7 @@ export class OrgChartLinkedInBuildService {
       resolvedCompanyId,
       resolvedCompanyName || resolvedCompanyId,
     );
+    // Default folder only — leaves `unipile_raw` variant intact for re-runs.
     await this.orgChartS3Service.deletePersistedCompanyFolder(s3CompanyId);
 
     const orgChart =
@@ -311,7 +334,7 @@ export class OrgChartLinkedInBuildService {
       itemCount: savedItems.length,
       items: savedItems,
       orgChart,
-      candidateSource: 'saved_people',
+      candidateSource,
     };
   }
 

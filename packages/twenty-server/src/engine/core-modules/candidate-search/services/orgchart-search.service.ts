@@ -5,15 +5,22 @@ import { LinkedinUnipileSessionService } from 'src/engine/core-modules/arx-chat/
 import { resolveEffectiveLinkedinSearchType } from 'src/engine/core-modules/arx-chat/utils/resolve-effective-linkedin-search-type.util';
 import { CandidateAvatarStorageService } from 'src/engine/core-modules/candidate-avatar/services/candidate-avatar-storage.service';
 import { OrgChartIntentService } from 'src/engine/core-modules/candidate-search/services/org-chart-intent.service';
-import type { TransformedCandidateForTable } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
+import { LinkedInRecruiterPeopleTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-recruiter-people-transformer.service';
+import {
+  LinkedInSearchTransformerService,
+  type TransformedCandidateForTable,
+} from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-sourcing/services/orgchart-progress-redis.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
+import type { LinkedInSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { OrgChartLinkedInScopeRequiredError } from 'src/engine/core-modules/org-chart/errors/orgchart-linkedin-scope-required.error';
 import { OrgChartProfileDataSourceMapperService } from 'src/engine/core-modules/org-chart/services/org-chart-profile-data-source-mapper.service';
 import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services/orgchart-cache.service';
+import { OrgChartS3Service } from 'src/engine/core-modules/org-chart/services/orgchart-s3.service';
 import { OrgchartCancelRegistryService } from 'src/engine/core-modules/org-chart/services/orgchart-cancel-registry.service';
 import { PythonOrgChartService } from 'src/engine/core-modules/org-chart/services/python-org-chart.service';
 import type { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
+import type { OrgChartUnipileRawSearchPayload } from 'src/engine/core-modules/org-chart/types/orgchart-unipile-raw-search.types';
 import { applyOrgChartCompanyMetadata } from 'src/engine/core-modules/org-chart/utils/apply-org-chart-company-metadata.util';
 import { mergeOrgChartCompanyTenureOntoOrgChartData } from 'src/engine/core-modules/org-chart/utils/merge-orgchart-company-tenure.util';
 import {
@@ -127,12 +134,15 @@ export class OrgChartSearchService {
     private readonly orgchartCancelRegistry: OrgchartCancelRegistryService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly orgChartCacheService: OrgChartCacheService,
+    private readonly orgChartS3Service: OrgChartS3Service,
     private readonly orgChartIntentService: OrgChartIntentService,
     private readonly orgChartProfileDataSourceMapperService: OrgChartProfileDataSourceMapperService,
     private readonly candidateAvatarStorageService: CandidateAvatarStorageService,
     private readonly linkedinUnipileSessionService: LinkedinUnipileSessionService,
     private readonly linkedinUnipileEstimateAccountService: LinkedinUnipileEstimateAccountService,
     private readonly environmentService: EnvironmentService,
+    private readonly linkedinSearchResultTransformer: LinkedInSearchTransformerService,
+    private readonly linkedinRecruiterPeopleTransformer: LinkedInRecruiterPeopleTransformerService,
   ) {}
 
   /**
@@ -658,6 +668,18 @@ export class OrgChartSearchService {
         strategy,
         result: preview as SearchExecutionResult | null,
       });
+
+      // Persist raw Unipile pages even if transform/filter later drops everyone.
+      await this.persistUnipileRawSearchFromStrategyResults({
+        strategyResults,
+        searchType: effectiveSearchType,
+        companyId: primaryCompanyId,
+        companyName: primaryCompanyName,
+        mode,
+        functionRoot,
+        country: normalizedCountry,
+        requestId,
+      });
     }
 
     const allCandidates = strategyResults.flatMap(
@@ -738,6 +760,113 @@ export class OrgChartSearchService {
     };
       },
     );
+  }
+
+  transformUnipileRawItemsToOrgChartCandidates(
+    items: LinkedInSearchResult[],
+    searchType: 'classic' | 'sales_navigator' | 'recruiter',
+  ): TransformedCandidateForTable[] {
+    if (!Array.isArray(items) || items.length === 0) {
+      return [];
+    }
+
+    const transformer =
+      searchType === 'recruiter'
+        ? this.linkedinRecruiterPeopleTransformer
+        : this.linkedinSearchResultTransformer;
+
+    const transformed = transformer.transformSearchResultsToTableFormat(
+      items,
+      'linkedin_search_job',
+      `${searchType} people search results`,
+    );
+
+    return transformer.addMetadataToCandidates(transformed, {
+      searchType,
+      searchCategory: 'people',
+      timestamp: new Date().toISOString(),
+      processingTime: 0,
+    });
+  }
+
+  private extractRawLinkedInItemsFromStrategyResults(
+    strategyResults: Array<{
+      strategy: PeopleSearchStrategyResult;
+      result: SearchExecutionResult | null;
+    }>,
+  ): LinkedInSearchResult[] {
+    const seenKeys = new Set<string>();
+    const items: LinkedInSearchResult[] = [];
+
+    for (const strategyResult of strategyResults) {
+      const searchResults = strategyResult.result?.searchResults as
+        | { items?: LinkedInSearchResult[] }
+        | null
+        | undefined;
+      const pageItems = Array.isArray(searchResults?.items)
+        ? searchResults.items
+        : [];
+
+      for (const item of pageItems) {
+        const key =
+          (item as { public_identifier?: string }).public_identifier ??
+          item.id ??
+          (item as { name?: string }).name ??
+          '';
+        if (!key || seenKeys.has(key)) {
+          continue;
+        }
+        seenKeys.add(key);
+        items.push(item);
+      }
+    }
+
+    return items;
+  }
+
+  private async persistUnipileRawSearchFromStrategyResults(input: {
+    strategyResults: Array<{
+      strategy: PeopleSearchStrategyResult;
+      result: SearchExecutionResult | null;
+    }>;
+    searchType: 'classic' | 'sales_navigator' | 'recruiter';
+    companyId?: string;
+    companyName?: string;
+    mode?: string;
+    functionRoot?: string;
+    country?: string;
+    requestId?: string;
+  }): Promise<void> {
+    const persistKey = this.orgChartS3Service.persistedCompanyFolderKey(
+      input.companyId,
+      input.companyName || input.companyId || '',
+    );
+    if (!persistKey.trim()) {
+      return;
+    }
+
+    const items = this.extractRawLinkedInItemsFromStrategyResults(
+      input.strategyResults,
+    );
+    if (items.length === 0) {
+      return;
+    }
+
+    const payload: OrgChartUnipileRawSearchPayload = {
+      version: 1,
+      savedAt: new Date().toISOString(),
+      companyId: input.companyId || undefined,
+      companyName: input.companyName || undefined,
+      searchType: input.searchType,
+      mode: input.mode,
+      functionRoot: input.functionRoot,
+      country: input.country,
+      requestId: input.requestId,
+      itemCount: items.length,
+      items,
+    };
+
+    await this.orgChartS3Service.saveUnipileRawSearch(persistKey, payload);
   }
 
   async estimateLinkedInOrgChartSearch(
