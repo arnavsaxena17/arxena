@@ -1,7 +1,14 @@
 import { CHAT_INTENT_SKILLS } from 'src/engine/metadata-modules/ai/ai-chat/constants/chat-intent-skills.const';
 
-const { setup, search, outreach, crm, workflowBuilding, dashboardBuilding } =
-  CHAT_INTENT_SKILLS;
+const {
+  setup,
+  search,
+  outreach,
+  orgStructureInsights,
+  crm,
+  workflowBuilding,
+  dashboardBuilding,
+} = CHAT_INTENT_SKILLS;
 
 /**
  * Neutral CRM copy glossary (shared Ask AI + MCP playbook):
@@ -31,6 +38,7 @@ For ANY non-trivial task, follow this order:
 
 - ICP / send prefs / campaign setup → \`load_skills(["${setup}"])\`
 - Find companies or people / LinkedIn / Harvest / Sales Nav → \`load_skills(["${search}"])\` — choose destination **before** providers (see Destination verbs). Do NOT enroll until the user confirms Add to CRM / Enroll.
+- Find / show / highlight people or teams on an org chart, or who-owns / buying-committee / structure at a company → \`load_skills(["${orgStructureInsights}"])\`. Then call \`highlight_org_chart\` when a chart is open. Keep LinkedIn sourcing on \`${search}\`.
 - Start outreach / activate harvest / enroll / sequencer workflows → \`load_skills(["${outreach}", "${workflowBuilding}"])\`. Finish with \`list_workflow_runs\`.
 - Generic workflow create/edit (non-outreach) → \`load_skills(["${workflowBuilding}"])\`
 - Dashboard create/change → \`load_skills(["${dashboardBuilding}"])\`
@@ -55,7 +63,7 @@ Prefer pack intent over inventing tool names. Exact names come from the compact 
 
 - prospecting — people/company search (pack id; describe as people/company search to users)
 - enrichment — emails/phones (prefer waterfall \`check_contact_availability\`, \`fetch_contacts\` unless the user names a provider)
-- orgchart — account maps (\`get_org_chart\` when the company is known)
+- orgchart — account maps (\`get_org_chart\` when the company is known; \`highlight_org_chart\` to paint the open canvas)
 - outreach — messaging
 - accounts — companies/contacts/projects
 - connected apps — tools the workspace added under Settings → AI → MCP servers (namespaced \`{slug}__{tool}\`)
@@ -122,6 +130,7 @@ Intent gate: purely informational dashboard questions are NOT build requests. An
 - User asks to export data to Excel → \`load_skills(["xlsx", "code-interpreter"])\` then \`learn_tools({toolNames: ["code_interpreter"]})\` then \`execute_tool({toolName: "code_interpreter", arguments: {...}})\`
 - Campaign setup / ICP prefs → follow browsing context; load \`${setup}\` when asked. Prefer \`ask_questions\` for consequential choices.
 - Find companies / Find people on this campaign → load \`${search}\`; persist with the Find destination tools named in that skill (not CRM enroll until confirmed).
+- On an org chart, find / highlight teams or people → load \`${orgStructureInsights}\` and call \`highlight_org_chart\` (do not tell the user to type in the search box).
 - Start outreach / enroll / harvest automation → load \`${outreach}\` (+ \`${workflowBuilding}\` as needed).
 
 ## Spilled / large tool outputs

@@ -21,7 +21,6 @@ import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomStat
 import {
     type OrgChartDiagramHandle,
     normalizeCompanyIdForUrl,
-    useCompanyInfoLookup,
     useOrgChartData,
     useOrgChartFilterOptions,
 } from 'twenty-orgchart';
@@ -35,6 +34,8 @@ import { OrgChartSuperImposeModal } from '../components/OrgChartSuperImposeModal
 import type { OrgChartTitleQueryResolved } from '../components/OrgChartTitleQueryBar';
 import { useProjectOrgChartData } from '../hooks/useProjectOrgChartData';
 import { useOrgChartActions, type OrgChartLinkedInSearchEstimate } from '../hooks/useOrgChartActions';
+import { useApplyOrgChartAiHighlight } from '../hooks/useApplyOrgChartAiHighlight';
+import { useSyncOrgChartBrowsingContext } from '../hooks/useSyncOrgChartBrowsingContext';
 import { isDifferentSuperImposeTargetCompany } from '../types/superImposeTypes';
 import { mapStdGradeToOrgChartGradeVisibility } from '../utils/mapStdGradeToOrgChartGradeVisibility';
 import { extractCompanyDomainFromWebsite, extractOrgChartSavedCompanyMetadata, needsOrgChartCompanyInfoLookup, orgChartSelectionSearch } from '../utils/orgChartUtils';
@@ -257,7 +258,7 @@ export const ArxOrgChartContainer = ({
     companyNameFromQuery ??
     domainResolveResult?.companyName ??
     undefined;
-  /** Props/query/Unipile only — merged with autocomplete fallback below for API calls + header. */
+  /** Props/query/Unipile/domain-resolve only — not filled from PDL page-load autocomplete. */
   const baseCompanyWebsite =
     website ??
     unipileCompanyProfile?.website ??
@@ -342,25 +343,17 @@ export const ArxOrgChartContainer = ({
   const [pendingPreviewNodePeopleChoice, setPendingPreviewNodePeopleChoice] =
     useState<OrgChartNodeData | null>(null);
 
-  const {
-    company: fallbackCompanyInfo,
-    isLoading: isCompanyInfoLookupLoading,
-    lookupByName,
-  } = useCompanyInfoLookup({ baseUrl, accessToken });
-
   const effectiveIndustry =
     industry ??
-    fallbackCompanyInfo?.industry ??
     (Array.isArray(unipileCompanyProfile?.industry) &&
     typeof unipileCompanyProfile?.industry?.[0] === 'string'
       ? unipileCompanyProfile.industry[0]
       : undefined);
 
-  const effectiveCompanyWebsite =
-    baseCompanyWebsite ?? fallbackCompanyInfo?.website ?? undefined;
+  const effectiveCompanyWebsite = baseCompanyWebsite ?? undefined;
   const effectiveCompanyDomain =
     baseCompanyDomain ||
-    extractCompanyDomainFromWebsite(fallbackCompanyInfo?.website) ||
+    extractCompanyDomainFromWebsite(baseCompanyWebsite) ||
     undefined;
 
   const fetchOrgChartAfterQueuedBuildRef = useRef<() => void>(() => {});
@@ -403,8 +396,7 @@ export const ArxOrgChartContainer = ({
       asOfMonth: asOfMonth || undefined,
       expectedEmployeeCount:
         effectiveEmployeeCount ??
-        profileCount ??
-        fallbackCompanyInfo?.profileCount,
+        profileCount,
     },
     { baseUrl, accessToken },
   );
@@ -546,7 +538,7 @@ export const ArxOrgChartContainer = ({
     if (
       !isJobMode &&
       needsCompanyInfoLookup &&
-      (isCompanyInfoLookupLoading === true || isDomainResolveLoading === true)
+      isDomainResolveLoading === true
     ) {
       return;
     }
@@ -556,7 +548,6 @@ export const ArxOrgChartContainer = ({
     selectedCountry,
     selectedFunctionRoot,
     fetchOrgChart,
-    isCompanyInfoLookupLoading,
     isDomainResolveLoading,
     isJobMode,
     needsCompanyInfoLookup,
@@ -613,7 +604,7 @@ export const ArxOrgChartContainer = ({
   const displayCompanyName =
     effectiveCompanyName ?? savedCompanyMetadata.companyName;
   const displayLinkedinUrl =
-    linkedinUrl ?? savedCompanyMetadata.linkedinUrl ?? fallbackCompanyInfo?.linkedinUrl;
+    linkedinUrl ?? savedCompanyMetadata.linkedinUrl;
 
   useEffect(() => {
     const next = hydrateContactsByKeyFromOrgData({
@@ -738,69 +729,66 @@ export const ArxOrgChartContainer = ({
       return;
     }
 
+    const nameFromPropsOrQuery =
+      companyName?.trim() || companyNameFromQuery?.trim() || undefined;
+    if (nameFromPropsOrQuery) {
+      setDomainResolveResult(null);
+      setIsDomainResolveLoading(false);
+      return;
+    }
+
+    const domainForResolve =
+      baseCompanyDomain ||
+      extractCompanyDomainFromWebsite(baseCompanyWebsite);
+
+    if (!domainForResolve || !baseUrl) {
+      setDomainResolveResult(null);
+      setIsDomainResolveLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
-    const bootstrapCompanyInfo = async () => {
-      const nameFromPropsOrQuery =
-        companyName?.trim() || companyNameFromQuery?.trim() || undefined;
+    const resolveFromDomain = async () => {
+      setIsDomainResolveLoading(true);
+      try {
+        const resolveUrl = `${baseUrl.replace(/\/$/, '')}/org-chart/companies/resolve-by-domain?domain=${encodeURIComponent(domainForResolve)}`;
+        const response = await fetch(resolveUrl, {
+          headers: accessToken
+            ? { Authorization: `Bearer ${accessToken}` }
+            : undefined,
+        });
+        const data = (await response.json()) as {
+          found?: boolean;
+          companyName?: string;
+          website?: string;
+        };
 
-      if (nameFromPropsOrQuery) {
-        setDomainResolveResult(null);
-        await lookupByName(nameFromPropsOrQuery);
-        return;
-      }
-
-      const domainForResolve =
-        baseCompanyDomain ||
-        extractCompanyDomainFromWebsite(baseCompanyWebsite);
-
-      if (domainForResolve && baseUrl) {
-        setIsDomainResolveLoading(true);
-        try {
-          const resolveUrl = `${baseUrl.replace(/\/$/, '')}/org-chart/companies/resolve-by-domain?domain=${encodeURIComponent(domainForResolve)}`;
-          const response = await fetch(resolveUrl, {
-            headers: accessToken
-              ? { Authorization: `Bearer ${accessToken}` }
-              : undefined,
-          });
-          const data = (await response.json()) as {
-            found?: boolean;
-            companyName?: string;
-            website?: string;
-          };
-
-          if (cancelled) {
-            return;
-          }
-
-          if (data.found && data.companyName?.trim()) {
-            const resolved = {
-              companyName: data.companyName.trim(),
-              website: data.website?.trim() || undefined,
-            };
-            setDomainResolveResult(resolved);
-            await lookupByName(resolved.companyName);
-            return;
-          }
-
-          setDomainResolveResult(null);
-        } catch {
-          if (!cancelled) {
-            setDomainResolveResult(null);
-          }
-        } finally {
-          if (!cancelled) {
-            setIsDomainResolveLoading(false);
-          }
+        if (cancelled) {
+          return;
         }
-      }
 
-      if (!cancelled && companyId?.trim()) {
-        await lookupByName(companyId);
+        if (data.found && data.companyName?.trim()) {
+          setDomainResolveResult({
+            companyName: data.companyName.trim(),
+            website: data.website?.trim() || undefined,
+          });
+          return;
+        }
+
+        setDomainResolveResult(null);
+      } catch {
+        if (!cancelled) {
+          setDomainResolveResult(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsDomainResolveLoading(false);
+        }
       }
     };
 
-    void bootstrapCompanyInfo();
+    void resolveFromDomain();
 
     return () => {
       cancelled = true;
@@ -810,25 +798,23 @@ export const ArxOrgChartContainer = ({
     baseCompanyDomain,
     baseCompanyWebsite,
     baseUrl,
-    companyId,
     companyName,
     companyNameFromQuery,
-    lookupByName,
     needsCompanyInfoLookup,
   ]);
 
   useEffect(() => {
-    if (!fallbackCompanyInfo && !savedCompanyMetadata.website && !savedCompanyMetadata.companyName) {
+    if (!savedCompanyMetadata.website && !savedCompanyMetadata.companyName) {
       return;
     }
     setOrgChartSelectedCompanyInfo({
-      companyId: fallbackCompanyInfo?.companyId ?? companyId,
+      companyId,
       companyName:
-        displayCompanyName ?? fallbackCompanyInfo?.companyName ?? companyId,
-      website: displayCompanyWebsite ?? fallbackCompanyInfo?.website,
-      locationName: fallbackCompanyInfo?.locationName ?? locationName,
-      industry: fallbackCompanyInfo?.industry ?? industry,
-      profileCount: fallbackCompanyInfo?.profileCount ?? profileCount,
+        displayCompanyName ?? companyId,
+      website: displayCompanyWebsite,
+      locationName,
+      industry,
+      profileCount,
       linkedinUrl: displayLinkedinUrl,
     });
   }, [
@@ -836,7 +822,6 @@ export const ArxOrgChartContainer = ({
     displayCompanyName,
     displayCompanyWebsite,
     displayLinkedinUrl,
-    fallbackCompanyInfo,
     industry,
     locationName,
     profileCount,
@@ -936,6 +921,24 @@ export const ArxOrgChartContainer = ({
     });
   }, [nodeDataArray, gradeVisibility, titleQueryResolved]);
 
+  useSyncOrgChartBrowsingContext({
+    companyId,
+    companyName: effectiveCompanyName,
+    country: selectedCountry,
+    functionRoot: selectedFunctionRoot,
+    titleQuery,
+    searchTerm,
+  });
+
+  useApplyOrgChartAiHighlight({
+    diagramHandleRef,
+    setSearchTerm,
+    setSearchResultCount,
+    setTitleQuery,
+    setTitleQueryResolved,
+    displayedNodeDataArrayLength: displayedNodeDataArray.length,
+  });
+
   const handleGradeVisibilityChange = useCallback(
     (tier: OrgChartGradeTier, checked: boolean) => {
       setGradeVisibility((current: OrgChartGradeVisibility) => ({
@@ -946,8 +949,7 @@ export const ArxOrgChartContainer = ({
     [],
   );
 
-  const orgChartViewCompanyName =
-    effectiveCompanyName ?? fallbackCompanyInfo?.companyName;
+  const orgChartViewCompanyName = effectiveCompanyName;
 
   useEffect(() => {
     if (!companyId?.trim()) return;
@@ -1858,15 +1860,15 @@ export const ArxOrgChartContainer = ({
   );
 
   const headerProps = {
-    companyName: displayCompanyName ?? fallbackCompanyInfo?.companyName,
+    companyName: displayCompanyName,
     website: displayCompanyWebsite,
-    locationName: locationName ?? fallbackCompanyInfo?.locationName,
-    industry: industry ?? fallbackCompanyInfo?.industry,
-    profileCount: profileCount ?? fallbackCompanyInfo?.profileCount,
+    locationName,
+    industry,
+    profileCount,
     hideProfileCountWhenUnipile: !!unipileCompanyProfile,
     linkedinUrl: displayLinkedinUrl,
-    employeeCount: effectiveEmployeeCount ?? fallbackCompanyInfo?.employeeCount,
-    linkedinDisplayName: fallbackCompanyInfo?.linkedinDisplayName,
+    employeeCount: effectiveEmployeeCount,
+    linkedinDisplayName: undefined,
     description: unipileCompanyProfile?.description,
     tagline: unipileCompanyProfile?.tagline,
     logoUrl: undefined,
@@ -2106,7 +2108,7 @@ export const ArxOrgChartContainer = ({
           isOpen={isShareModalOpen}
           onClose={() => setIsShareModalOpen(false)}
           companyId={companyId}
-          companyName={effectiveCompanyName ?? fallbackCompanyInfo?.companyName}
+          companyName={effectiveCompanyName}
           accessToken={accessToken}
           serverBaseUrl={baseUrl}
           arxenaSiteBaseUrl={getArxenaSiteBaseUrl()}
@@ -2117,7 +2119,7 @@ export const ArxOrgChartContainer = ({
           isOpen={isSuperImposeModalOpen}
           onClose={() => setIsSuperImposeModalOpen(false)}
           companyId={companyId}
-          companyName={effectiveCompanyName ?? fallbackCompanyInfo?.companyName}
+          companyName={effectiveCompanyName}
           linkedinCompanyUrl={linkedinUrlToUse}
           accessToken={accessToken}
           serverBaseUrl={baseUrl}

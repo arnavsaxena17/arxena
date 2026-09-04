@@ -82,7 +82,8 @@ export type OrgChartDiagramProps = {
 };
 
 export type OrgChartDiagramHandle = {
-  search: (keyword: string) => number;
+  search: (keyword: string | readonly string[]) => number;
+  highlightKeys: (keys: ReadonlyArray<string | number>) => number;
   focusNextResult: () => void;
   focusPreviousResult: () => void;
   clearSearch: () => void;

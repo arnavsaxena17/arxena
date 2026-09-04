@@ -19,6 +19,14 @@ export class OrgChartNodePeopleDto {
 
   @IsOptional()
   @IsString()
+  stdFunctionRoot?: string;
+
+  @IsOptional()
+  @IsNumber()
+  nodeKey?: number;
+
+  @IsOptional()
+  @IsString()
   country?: string;
 
   @IsOptional()

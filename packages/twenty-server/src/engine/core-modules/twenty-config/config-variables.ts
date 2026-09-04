@@ -2604,6 +2604,46 @@ export class ConfigVariables {
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,
     isSensitive: true,
+    description:
+      'PDL API key (Parag). Used for org-chart company autocomplete rotation.',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  PARAG_PDL_API_KEY?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    isSensitive: true,
+    description:
+      'PDL API key (Arxena Co). Used for org-chart company autocomplete rotation.',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  ARXENACO_PDL_API_KEY?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    isSensitive: true,
+    description:
+      'PDL API key (Ravi). Used for org-chart company autocomplete rotation.',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  RAVI_PDL_API_KEY?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    isSensitive: true,
+    description:
+      'PDL API key (Jawahar). Reserved for twenty-front org-chart autocomplete.',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  JAWAHAR_PDL_API_KEY?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    isSensitive: true,
     description: 'Lusha API key',
     type: ConfigVariableType.STRING,
   })

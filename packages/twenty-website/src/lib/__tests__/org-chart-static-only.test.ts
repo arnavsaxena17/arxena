@@ -39,6 +39,21 @@ describe('org-chart-static-only', () => {
     ).toBe(true);
   });
 
+  it('resolveOrgChartStaticOnly is true for crawl-rate IPs even with browser signals', () => {
+    expect(
+      resolveOrgChartStaticOnly({
+        headers: new Headers({
+          'user-agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+          'sec-fetch-site': 'none',
+          'sec-fetch-mode': 'navigate',
+        }),
+        isVerifiedBot: false,
+        isCrawlStaticOnly: true,
+      }),
+    ).toBe(true);
+  });
+
   it('resolveOrgChartStaticOnly is true without browser signals', () => {
     expect(
       resolveOrgChartStaticOnly({

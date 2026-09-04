@@ -29,6 +29,7 @@ import { HttpTool } from 'src/engine/core-modules/tool/tools/http-tool/http-tool
 import { UpsertOutreachTargetCompaniesTool } from 'src/engine/core-modules/tool/tools/outreach-target-companies-tool/upsert-outreach-target-companies-tool';
 import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
 import { NavigateAppTool } from 'src/engine/core-modules/tool/tools/navigate-tool/navigate-app-tool';
+import { HighlightOrgChartTool } from 'src/engine/core-modules/tool/tools/highlight-org-chart-tool/highlight-org-chart-tool';
 import { ExtractJsonPathsTool } from 'src/engine/core-modules/tool/tools/output-navigation-tool/extract-json-paths-tool';
 import { SearchOutputTool } from 'src/engine/core-modules/tool/tools/output-navigation-tool/search-output-tool';
 import { SearchHelpCenterTool } from 'src/engine/core-modules/tool/tools/search-help-center-tool/search-help-center-tool';
@@ -50,6 +51,7 @@ export class ActionToolProvider implements ToolProvider {
     private readonly searchHelpCenterTool: SearchHelpCenterTool,
     private readonly codeInterpreterTool: CodeInterpreterTool,
     private readonly navigateAppTool: NavigateAppTool,
+    private readonly highlightOrgChartTool: HighlightOrgChartTool,
     private readonly upsertOutreachTargetCompaniesTool: UpsertOutreachTargetCompaniesTool,
     private readonly upsertOutreachTargetPeopleTool: UpsertOutreachTargetPeopleTool,
     private readonly extractJsonPathsTool: ExtractJsonPathsTool,
@@ -66,7 +68,11 @@ export class ActionToolProvider implements ToolProvider {
       ['search_help_center', this.searchHelpCenterTool],
       ['code_interpreter', this.codeInterpreterTool],
       ['navigate_app', this.navigateAppTool],
-      ['upsert_outreach_target_companies', this.upsertOutreachTargetCompaniesTool],
+      ['highlight_org_chart', this.highlightOrgChartTool],
+      [
+        'upsert_outreach_target_companies',
+        this.upsertOutreachTargetCompaniesTool,
+      ],
       ['upsert_outreach_target_people', this.upsertOutreachTargetPeopleTool],
       ['extract_json_paths', this.extractJsonPathsTool],
       ['search_output', this.searchOutputTool],
@@ -157,6 +163,15 @@ export class ActionToolProvider implements ToolProvider {
       this.buildDescriptor(
         'navigate_app',
         this.navigateAppTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'highlight_org_chart',
+        this.highlightOrgChartTool,
         includeSchemas,
         context.locale,
       ),

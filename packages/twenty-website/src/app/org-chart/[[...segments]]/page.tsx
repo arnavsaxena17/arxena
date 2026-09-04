@@ -458,6 +458,32 @@ export default async function OrgChartPage({
       : undefined;
     const industry = industryRaw ? toTitleCase(industryRaw) : undefined;
 
+    if (staticOnly) {
+      return (
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
+            width: '100%',
+          }}
+        >
+          <StaticOrgChartPage
+            companyId={companyId}
+            companyName={displayCompanyName}
+            website={website}
+            locationName={locationName}
+            industry={industry}
+            profileCount={profileCount}
+            linkedinUrl={linkedinUrl}
+            nodeDataArray={nodeDataArray}
+            signUpUrl={getSignUpUrl()}
+          />
+        </div>
+      );
+    }
+
     return (
       <div
         style={{

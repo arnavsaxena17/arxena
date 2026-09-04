@@ -1,14 +1,24 @@
 import { processedToolExecutionPartIdsComponentState } from '@/ai/states/processedToolExecutionPartIdsComponentState';
 import { extractUIToolCallParts } from '@/ai/utils/extractUIToolCallParts';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
+import { orgChartAiHighlightState } from '@/orgchart/states/orgChartAiHighlightState';
 import { useAtomComponentStateCallbackState } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateCallbackState';
 
 import { useStore } from 'jotai';
-import { type ExtendedUIMessage } from 'twenty-shared/ai';
+import {
+  type ExtendedUIMessage,
+  type HighlightOrgChartToolOutput,
+  type NavigateAppToolOutput,
+} from 'twenty-shared/ai';
 import { AppPath } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { useNavigateApp } from '~/hooks/useNavigateApp';
 import { sleep } from '~/utils/sleep';
+
+const isHighlightOrgChartOutput = (
+  result: NavigateAppToolOutput | HighlightOrgChartToolOutput,
+): result is HighlightOrgChartToolOutput =>
+  result.action === 'applySearch' || result.action === 'clear';
 
 export const useProcessUIToolCallMessage = () => {
   const navigateApp = useNavigateApp();
@@ -51,22 +61,29 @@ export const useProcessUIToolCallMessage = () => {
         toolExecutionPart.toolCallId,
       ]);
 
-      const navigateAppOutput = toolExecutionPart.output.result;
+      const toolResult = toolExecutionPart.output.result;
 
-      if (!isDefined(navigateAppOutput)) {
+      if (!isDefined(toolResult)) {
         continue;
       }
 
-      switch (navigateAppOutput.action) {
+      if (isHighlightOrgChartOutput(toolResult)) {
+        store.set(orgChartAiHighlightState.atom, {
+          ...toolResult,
+          requestId: toolExecutionPart.toolCallId,
+        });
+        continue;
+      }
+
+      switch (toolResult.action) {
         case 'navigateToObject': {
           const objectNamePlural = objectMetadataItems.find(
-            (item) =>
-              item.nameSingular === navigateAppOutput.objectNameSingular,
+            (item) => item.nameSingular === toolResult.objectNameSingular,
           )?.namePlural;
 
           if (!isDefined(objectNamePlural)) {
             throw new Error(
-              `Object with singular name ${navigateAppOutput.objectNameSingular} not found, cannot navigate to object page from chat.`,
+              `Object with singular name ${toolResult.objectNameSingular} not found, cannot navigate to object page from chat.`,
             );
           }
 
@@ -78,34 +95,33 @@ export const useProcessUIToolCallMessage = () => {
         }
         case 'navigateToRecord': {
           navigateApp(AppPath.RecordShowPage, {
-            objectNameSingular: navigateAppOutput.objectNameSingular,
-            objectRecordId: navigateAppOutput.recordId,
+            objectNameSingular: toolResult.objectNameSingular,
+            objectRecordId: toolResult.recordId,
           });
 
           break;
         }
         case 'navigateToView': {
           const viewObjectNamePlural = objectMetadataItems.find(
-            (item) =>
-              item.nameSingular === navigateAppOutput.objectNameSingular,
+            (item) => item.nameSingular === toolResult.objectNameSingular,
           )?.namePlural;
 
           if (!isDefined(viewObjectNamePlural)) {
             throw new Error(
-              `Object with singular name ${navigateAppOutput.objectNameSingular} not found, cannot navigate to view from chat.`,
+              `Object with singular name ${toolResult.objectNameSingular} not found, cannot navigate to view from chat.`,
             );
           }
 
           navigateApp(
             AppPath.RecordIndexPage,
             { objectNamePlural: viewObjectNamePlural },
-            { viewId: navigateAppOutput.viewId },
+            { viewId: toolResult.viewId },
           );
 
           break;
         }
         case 'wait': {
-          await sleep(navigateAppOutput.durationMs);
+          await sleep(toolResult.durationMs);
           break;
         }
         default:

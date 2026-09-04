@@ -11,6 +11,11 @@ import {
     resolveOrgChartRateLimitProfile,
 } from '@/lib/org-chart-api-guard';
 import {
+    isOrgChartCrawlStaticOnly,
+    ORG_CHART_CRAWL_STATIC_HEADER,
+    recordOrgChartDocumentViewFromPath,
+} from '@/lib/org-chart-crawl-static';
+import {
     getArxStaticCookieOptions,
     hasArxStaticAssetCookie,
     ORG_CHART_STATIC_ONLY_HEADER,
@@ -95,20 +100,35 @@ export async function middleware(request: NextRequest) {
   const isLikelyBrowser =
     guardAllowed?.isLikelyBrowser ?? resolveIsLikelyBrowser(request.headers);
 
+  const clientIp = getClientIpFromHeaders(request.headers);
   let isVerifiedBot = guardAllowed?.isVerifiedBot ?? false;
   if (!guardResult && isOrgChartDocumentPath(pathname)) {
-    const clientIp = getClientIpFromHeaders(request.headers);
     isVerifiedBot =
       clientIp !== null ? await isVerifiedSearchBot(clientIp) : false;
+  }
+
+  let isCrawlStaticOnly = false;
+  if (isOrgChartDocumentPath(pathname) && request.method === 'GET') {
+    isCrawlStaticOnly = recordOrgChartDocumentViewFromPath(
+      clientIp,
+      pathname,
+    );
+  } else {
+    isCrawlStaticOnly = isOrgChartCrawlStaticOnly(clientIp);
   }
 
   const staticOnly = resolveOrgChartStaticOnly({
     headers: request.headers,
     isVerifiedBot,
+    isCrawlStaticOnly,
   });
 
   if (isOrgChartDocumentPath(pathname)) {
     requestHeaders.set(ORG_CHART_STATIC_ONLY_HEADER, staticOnly ? '1' : '0');
+  }
+
+  if (isCrawlStaticOnly) {
+    requestHeaders.set(ORG_CHART_CRAWL_STATIC_HEADER, '1');
   }
 
   if (orgChartProfile && guardAllowed) {

@@ -187,7 +187,7 @@ export const extractOrgChartSavedCompanyMetadata = (
   linkedinUrl: pickTrimmedStringField(orgData, 'job_company_linkedin_url'),
 });
 
-/** True when header metadata should be enriched via PDL autocomplete / domain resolve. */
+/** True when header metadata should be enriched via domain resolve. */
 export const needsOrgChartCompanyInfoLookup = (metadata: {
   website?: string;
   locationName?: string;

@@ -121,6 +121,8 @@ describe('SystemPromptBuilderService', () => {
       expect(prompt).toContain('Plan → Skill → Learn → Execute');
       expect(prompt).toContain('load_skills(["search"])');
       expect(prompt).toContain('load_skills(["setup"])');
+      expect(prompt).toContain('load_skills(["org-structure-insights"])');
+      expect(prompt).toContain('highlight_org_chart');
       expect(prompt).toContain('Destination verbs');
       expect(prompt).not.toContain('Category `ARXENA`');
       expect(prompt).not.toContain('Category `EXTERNAL_MCP`');

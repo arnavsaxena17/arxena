@@ -1713,6 +1713,7 @@ export class OrgChartController {
           isPdlProxyAuthorized:
             isOrgChartPdlProxyAuthorized(req, this.environmentService) &&
             isLikelyBrowserRequest(req.headers),
+          includeTwentyFrontReservedKey: Boolean(authToken?.trim()),
         },
       );
 

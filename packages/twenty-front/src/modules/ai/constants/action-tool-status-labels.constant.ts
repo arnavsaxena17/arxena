@@ -19,4 +19,8 @@ export const ACTION_TOOL_STATUS_LABELS: Record<string, ToolStatusLabels> = {
     loading: msg`Navigating in the app`,
     completed: msg`Navigated in the app`,
   },
+  highlight_org_chart: {
+    loading: msg`Highlighting the org chart`,
+    completed: msg`Highlighted the org chart`,
+  },
 };

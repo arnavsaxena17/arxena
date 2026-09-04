@@ -32,6 +32,7 @@ import {
     applyBlankOrgChartSubsetFilter,
 } from '../utils/blank-org-chart-subset.util';
 import { mergeManualCompanyAutocompleteResults } from '../utils/manual-company-autocomplete.util';
+import { mapCompanyEsDocumentsToAutocompleteItems } from '../utils/map-company-es-to-autocomplete.util';
 import { buildOrgChartS3RelativePathCandidates } from '../utils/org-chart-company-alias.util';
 import {
     collectDomainLookupCandidates,
@@ -46,6 +47,7 @@ import {
 } from '../utils/org-chart-subset-filter.util';
 import { buildCompanyOrgChartLogicalCacheKey } from '../utils/orgchart-cache-keys.util';
 import { ArxenaBackendService } from './arxena-backend.service';
+import { CompaniesEsService } from './companies-es.service';
 import { OrgChartEsService } from './org-chart-es.service';
 import { normalizeOrgChartPayload } from './org-chart-payload-normalize';
 import { OrgChartS3Service } from './orgchart-s3.service';
@@ -75,6 +77,7 @@ export class OrgChartService {
     private readonly environmentService: EnvironmentService,
     private readonly arxenaBackend: ArxenaBackendService,
     private readonly pdlAutocomplete: PdlAutocompleteService,
+    private readonly companiesEsService: CompaniesEsService,
     private readonly orgChartEsService: OrgChartEsService,
     private readonly peopleEsService: PeopleEsService,
     private readonly contactEnrichmentWaterfall: ContactEnrichmentWaterfallService,
@@ -521,7 +524,10 @@ export class OrgChartService {
   async getCompanyAutocomplete(
     inputText: string,
     authToken?: string,
-    options?: { isPdlProxyAuthorized?: boolean },
+    options?: {
+      isPdlProxyAuthorized?: boolean;
+      includeTwentyFrontReservedKey?: boolean;
+    },
   ): Promise<
     {
       name: string;
@@ -536,20 +542,79 @@ export class OrgChartService {
   > {
     const hasAuth = Boolean(authToken?.trim());
     const allowPdl = hasAuth || options?.isPdlProxyAuthorized === true;
+    const includeTwentyFrontReservedKey =
+      options?.includeTwentyFrontReservedKey === true;
 
     let baseResults: Awaited<
       ReturnType<PdlAutocompleteService['getCompanyAutocomplete']>
     > = [];
 
-    if (allowPdl && this.pdlAutocomplete.isConfigured()) {
-      baseResults = await this.pdlAutocomplete.getCompanyAutocomplete(inputText);
+    if (
+      allowPdl &&
+      this.pdlAutocomplete.isConfigured(includeTwentyFrontReservedKey)
+    ) {
+      const isPdlCoolingDown = await this.pdlAutocomplete.isCoolingDown(
+        includeTwentyFrontReservedKey,
+      );
+      if (!isPdlCoolingDown) {
+        baseResults = await this.pdlAutocomplete.getCompanyAutocomplete(
+          inputText,
+          { includeTwentyFrontReservedKey },
+        );
+      }
+      // PDL 429/empty must still hit ES. Cooldown-only fallback left search
+      // dead while PDL was rate-limited or had cached empty results.
+      const shouldFallback = baseResults.length === 0;
+      if (shouldFallback) {
+        this.logger.warn(
+          'PDL autocomplete unavailable; falling back to Arxena/ES company search',
+        );
+        baseResults = await this.getNonPdlCompanyAutocomplete(
+          inputText,
+          authToken,
+        );
+      }
     } else if (hasAuth) {
-      baseResults = await this.arxenaBackend.getCompanyAutocomplete(
+      baseResults = await this.getNonPdlCompanyAutocomplete(
         inputText,
         authToken,
       );
     }
     return mergeManualCompanyAutocompleteResults(inputText, baseResults);
+  }
+
+  private async getNonPdlCompanyAutocomplete(
+    inputText: string,
+    authToken?: string,
+  ): Promise<
+    Awaited<ReturnType<PdlAutocompleteService['getCompanyAutocomplete']>>
+  > {
+    const fromArxena = await this.arxenaBackend.getCompanyAutocomplete(
+      inputText,
+      authToken,
+    );
+    if (fromArxena.length > 0) {
+      return fromArxena;
+    }
+
+    if (!this.companiesEsService.isEnabled()) {
+      return [];
+    }
+
+    try {
+      const esResult = await this.companiesEsService.searchCompanies({
+        companyName: inputText,
+        limit: 10,
+      });
+      return mapCompanyEsDocumentsToAutocompleteItems(esResult.items);
+    } catch (error) {
+      this.logger.warn(
+        `Companies ES autocomplete fallback failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return [];
+    }
   }
 
   async getOrgChart(
@@ -1016,6 +1081,7 @@ export class OrgChartService {
       companyName?: string;
       website?: string;
       stdFunction?: string;
+      stdFunctionRoot?: string;
       stdGrade?: string;
       country?: string;
       limit?: number;
@@ -1026,7 +1092,7 @@ export class OrgChartService {
       companyId,
       companyName: payload.companyName,
       website: payload.website,
-      stdFunction: payload.stdFunction,
+      stdFunction: payload.stdFunction ?? payload.stdFunctionRoot,
       stdGrade: payload.stdGrade,
       country: payload.country,
       limit: payload.limit,

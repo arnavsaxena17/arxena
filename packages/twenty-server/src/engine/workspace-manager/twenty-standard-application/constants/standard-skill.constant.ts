@@ -54,6 +54,9 @@ export const STANDARD_SKILL = {
     // formerly gtm-outreach-workflows
     universalIdentifier: '20202020-b8d4-4c2e-9a71-5e3f0d8a6b12',
   },
+  'org-structure-insights': {
+    universalIdentifier: '20202020-e6f8-4c9a-b2d1-7a4e0c3f5b28',
+  },
 } as const satisfies Record<
   string,
   {

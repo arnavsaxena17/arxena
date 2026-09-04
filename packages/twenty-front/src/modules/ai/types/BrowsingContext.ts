@@ -27,4 +27,13 @@ export type BrowsingContext =
       linkedinConnected: boolean;
       gmailConnected: boolean;
       whatsappConnected: boolean;
+    }
+  | {
+      type: 'orgChart';
+      companyId: string | null;
+      companyName: string | null;
+      country: string | null;
+      functionRoot: string | null;
+      titleQuery: string | null;
+      searchTerm: string | null;
     };

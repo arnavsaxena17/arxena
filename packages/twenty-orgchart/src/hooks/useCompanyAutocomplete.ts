@@ -51,6 +51,7 @@ export const useCompanyAutocomplete = (options: UseCompanyAutocompleteOptions) =
         const response = await fetch(autocompleteUrl, {
           method: 'POST',
           headers: {
+            Accept: 'application/json',
             'Content-Type': 'application/json',
             ...(accessToken && {
               Authorization: `Bearer ${accessToken}`,
@@ -154,6 +155,7 @@ export const useCompanyInfoLookup = (options: UseCompanyAutocompleteOptions) => 
         const response = await fetch(autocompleteUrl, {
           method: 'POST',
           headers: {
+            Accept: 'application/json',
             'Content-Type': 'application/json',
             ...(accessToken && {
               Authorization: `Bearer ${accessToken}`,

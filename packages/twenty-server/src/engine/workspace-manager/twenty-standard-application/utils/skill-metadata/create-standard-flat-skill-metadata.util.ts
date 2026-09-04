@@ -156,6 +156,14 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
       'Source companies and people (Apollo/LinkedIn/Harvest/Exa); Find → ephemeral tabs, Save/Enroll/Harvest per destination verbs',
     icon: 'IconBuildingSkyscraper',
   }),
+  'org-structure-insights': createStandardSkillBuilder({
+    skillName: 'org-structure-insights',
+    name: 'org-structure-insights',
+    label: 'Org Structure Insights',
+    description:
+      'Find and highlight people or teams on an org chart; answer who-owns and structure questions from stamped taxonomy nodes',
+    icon: 'IconSitemap',
+  }),
   pptx: createStandardSkillBuilder({
     skillName: 'pptx',
     name: 'pptx',

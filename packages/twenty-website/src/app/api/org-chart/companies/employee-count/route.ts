@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { resolveIsLikelyBrowser } from '@/lib/org-chart-api-guard';
+import { isOrgChartCrawlStaticRequest } from '@/lib/org-chart-crawl-static';
 import { buildOrgChartUpstreamHeaders } from '@/lib/org-chart-proxy-headers';
 
 export const dynamic = 'force-dynamic';
@@ -16,7 +17,9 @@ const getServerBaseUrl = () => {
 const BACKEND_PATH = '/org-chart/companies/employee-count';
 
 export async function GET(request: NextRequest) {
-  const allowPdlProxy = resolveIsLikelyBrowser(request.headers);
+  const allowPdlProxy =
+    resolveIsLikelyBrowser(request.headers) &&
+    !isOrgChartCrawlStaticRequest(request.headers);
   if (!allowPdlProxy) {
     return NextResponse.json(
       { employeeCount: null, status: 'ok' },

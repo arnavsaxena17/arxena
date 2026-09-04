@@ -473,6 +473,13 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
       'Search Org Charts By Function (orgchart pack). Use for GTM orgchart workflows.',
   },
   {
+    name: 'get_org_chart_node_people',
+    pack: 'orgchart',
+    label: 'Get Org Chart Node People',
+    description:
+      'List people on a shortlisted org-chart node (stdFunction / stdFunctionRoot / stdGrade). Use after get_org_chart for who-owns and named-person drills.',
+  },
+  {
     name: 'get_pending_recruiter_actions',
     pack: 'accounts',
     label: 'Get Pending Recruiter Actions',

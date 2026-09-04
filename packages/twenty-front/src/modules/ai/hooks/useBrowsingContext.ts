@@ -14,8 +14,9 @@ import { contextStoreCurrentViewTypeComponentState } from '@/context-store/state
 import { contextStoreFiltersComponentState } from '@/context-store/states/contextStoreFiltersComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { ContextStoreViewType } from '@/context-store/types/ContextStoreViewType';
-import { outreachContextState } from '@/outreach-home/states/outreachContextState';
 import { objectMetadataItemsSelector } from '@/object-metadata/states/objectMetadataItemsSelector';
+import { orgChartBrowsingContextState } from '@/orgchart/states/orgChartBrowsingContextState';
+import { outreachContextState } from '@/outreach-home/states/outreachContextState';
 import { recordStoreFamilySelector } from '@/object-record/record-store/states/selectors/recordStoreFamilySelector';
 import { getTabListInstanceIdFromPageLayoutId } from '@/page-layout/utils/getTabListInstanceIdFromPageLayoutId';
 import { activeTabIdComponentState } from '@/ui/layout/tab-list/states/activeTabIdComponentState';
@@ -27,10 +28,17 @@ const isOutreachHomePath = (pathname: string): boolean =>
   pathname.endsWith(`/${AppPath.OutreachHome}`) ||
   pathname.includes(`/${AppPath.OutreachHome}/`);
 
+const isOrgChartPath = (pathname: string): boolean =>
+  pathname === `/${AppPath.OrgChart}` ||
+  pathname.startsWith(`/${AppPath.OrgChart}/`);
+
 export const useGetBrowsingContext = () => {
   const store = useStore();
   const location = useLocation();
   const outreachContext = useAtomStateValue(outreachContextState);
+  const orgChartBrowsingContext = useAtomStateValue(
+    orgChartBrowsingContextState,
+  );
 
   const getBrowsingContext = useCallback((): BrowsingContext | null => {
     if (isOutreachHomePath(location.pathname)) {
@@ -48,6 +56,18 @@ export const useGetBrowsingContext = () => {
         linkedinConnected: outreachContext.linkedinConnected,
         gmailConnected: outreachContext.gmailConnected,
         whatsappConnected: outreachContext.whatsappConnected,
+      };
+    }
+
+    if (isOrgChartPath(location.pathname)) {
+      return {
+        type: 'orgChart',
+        companyId: orgChartBrowsingContext?.companyId ?? null,
+        companyName: orgChartBrowsingContext?.companyName ?? null,
+        country: orgChartBrowsingContext?.country ?? null,
+        functionRoot: orgChartBrowsingContext?.functionRoot ?? null,
+        titleQuery: orgChartBrowsingContext?.titleQuery ?? null,
+        searchTerm: orgChartBrowsingContext?.searchTerm ?? null,
       };
     }
 
@@ -178,7 +198,7 @@ export const useGetBrowsingContext = () => {
     }
 
     return null;
-  }, [outreachContext, location.pathname, store]);
+  }, [outreachContext, orgChartBrowsingContext, location.pathname, store]);
 
   return { getBrowsingContext };
 };

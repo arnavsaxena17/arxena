@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { resolveIsLikelyBrowser } from '@/lib/org-chart-api-guard';
+import { isOrgChartCrawlStaticRequest } from '@/lib/org-chart-crawl-static';
 import { buildOrgChartUpstreamHeaders } from '@/lib/org-chart-proxy-headers';
 
 export const dynamic = 'force-dynamic';
@@ -48,7 +49,9 @@ async function proxyToBackend(
 }
 
 export async function GET(request: NextRequest) {
-  const allowPdlProxy = resolveIsLikelyBrowser(request.headers);
+  const allowPdlProxy =
+    resolveIsLikelyBrowser(request.headers) &&
+    !isOrgChartCrawlStaticRequest(request.headers);
   if (!allowPdlProxy) {
     return NextResponse.json({ result: [], status: 'ok' }, { status: 200 });
   }
@@ -84,7 +87,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const allowPdlProxy = resolveIsLikelyBrowser(request.headers);
+  const allowPdlProxy =
+    resolveIsLikelyBrowser(request.headers) &&
+    !isOrgChartCrawlStaticRequest(request.headers);
   if (!allowPdlProxy) {
     return NextResponse.json({ result: [], status: 'ok' }, { status: 200 });
   }

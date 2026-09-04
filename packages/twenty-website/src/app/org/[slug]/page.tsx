@@ -10,10 +10,12 @@ import {
 import { OrgChartDiagramLoader } from '@/app/org-chart/[[...segments]]/OrgChartDiagramLoader';
 import { OrgChartPageClient } from '@/app/org-chart/[[...segments]]/OrgChartPageClient';
 import { OrgChartStructureSSR } from '@/app/org-chart/[[...segments]]/OrgChartStructureSSR';
+import { StaticOrgChartPage } from '@/app/org-chart/[[...segments]]/StaticOrgChartPage';
 import { getSignUpUrl } from '@/lib/auth-urls';
 import { getBaseUrl } from '@/lib/base-url';
 import { fetchPublishedOrgChart } from '@/lib/fetch-published-org-chart';
 import { extractOrgChartCompanyMetadataFromPayload } from '@/lib/org-chart-company-metadata';
+import { readOrgChartStaticOnlyFromHeaders } from '@/lib/org-chart-static-only';
 import { processPublishedOrgChartPayload } from '@/lib/process-published-org-chart-payload';
 import { decodeOverEncodedPath } from '@/lib/url-utils';
 
@@ -100,6 +102,7 @@ export default async function PublishedOrgChartPage({
 
   const headersList = await headers();
   const forwardedUserAgent = headersList.get('user-agent') ?? undefined;
+  const staticOnly = readOrgChartStaticOnlyFromHeaders(headersList);
 
   const rawData = await fetchPublishedOrgChart({
     publishSlug,
@@ -141,6 +144,32 @@ export default async function PublishedOrgChartPage({
     ? toTitleCase(locationNameRaw)
     : undefined;
   const industry = industryRaw ? toTitleCase(industryRaw) : undefined;
+
+  if (staticOnly) {
+    return (
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+          width: '100%',
+        }}
+      >
+        <StaticOrgChartPage
+          companyId={companyId}
+          companyName={displayCompanyName}
+          website={website}
+          locationName={locationName}
+          industry={industry}
+          profileCount={profileCount}
+          linkedinUrl={linkedinUrl}
+          nodeDataArray={nodeDataArray}
+          signUpUrl={getSignUpUrl()}
+        />
+      </div>
+    );
+  }
 
   return (
     <div

@@ -150,6 +150,8 @@ export const useOrgChartData = (
       const response = await fetch(url, {
         method: 'GET',
         headers: {
+          // nginx serves SPA HTML for /org-chart when Accept matches text/html
+          Accept: 'application/json',
           ...(accessToken && {
             Authorization: `Bearer ${accessToken}`,
           }),

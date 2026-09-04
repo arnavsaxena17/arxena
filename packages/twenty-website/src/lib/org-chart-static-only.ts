@@ -61,6 +61,7 @@ export const isClientIpInScraperCidrs = (clientIp: string | null): boolean => {
 export type ResolveOrgChartStaticOnlyInput = {
   headers: Headers;
   isVerifiedBot: boolean;
+  isCrawlStaticOnly?: boolean;
 };
 
 /**
@@ -69,6 +70,10 @@ export type ResolveOrgChartStaticOnlyInput = {
 export const resolveOrgChartStaticOnly = (
   input: ResolveOrgChartStaticOnlyInput,
 ): boolean => {
+  if (input.isCrawlStaticOnly === true) {
+    return true;
+  }
+
   if (input.isVerifiedBot) {
     return true;
   }

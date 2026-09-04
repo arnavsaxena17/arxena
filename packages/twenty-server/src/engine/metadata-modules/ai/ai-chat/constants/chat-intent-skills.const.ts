@@ -10,6 +10,7 @@ export const CHAT_INTENT_SKILLS = {
   setup: 'setup',
   search: 'search',
   outreach: 'outreach',
+  orgStructureInsights: 'org-structure-insights',
   crm: 'data-manipulation',
   workflowBuilding: 'workflow-building',
   dashboardBuilding: 'dashboard-building',
@@ -61,9 +62,7 @@ export const buildSeededOutreachWorkflowInventoryLines = (
         ? ` [bound: outreachWorkflowId=${outreachWorkflowId}]`
         : '';
 
-    lines.push(
-      `- ${entry.name} (${entry.trigger}) — ${entry.role}${bound}`,
-    );
+    lines.push(`- ${entry.name} (${entry.trigger}) — ${entry.role}${bound}`);
   }
 
   return lines;

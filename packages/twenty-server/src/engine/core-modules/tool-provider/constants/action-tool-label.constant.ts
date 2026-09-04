@@ -11,6 +11,7 @@ export const ACTION_TOOL_IDS = [
   'search_help_center',
   'code_interpreter',
   'navigate_app',
+  'highlight_org_chart',
   'upsert_outreach_target_companies',
   'upsert_outreach_target_people',
 ] as const;
@@ -38,6 +39,9 @@ export const ACTION_TOOL_LABELS: Record<ActionToolId, ActionToolLabel> = {
   },
   navigate_app: {
     label: i18nLabel(msg`Navigate App`),
+  },
+  highlight_org_chart: {
+    label: i18nLabel(msg`Highlight Org Chart`),
   },
   upsert_outreach_target_companies: {
     label: i18nLabel(msg`Upsert GTM Target Companies`),

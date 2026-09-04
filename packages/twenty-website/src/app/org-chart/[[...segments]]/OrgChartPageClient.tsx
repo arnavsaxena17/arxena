@@ -20,8 +20,6 @@ import { FREE_TRIAL_CTA_LABEL } from '@/lib/free-trial-flow';
 import { trackWebsiteEvent } from '@/lib/mixpanel';
 import {
   extractOrgChartCompanyMetadataFromPayload,
-  mergeOrgChartCompanyField,
-  needsOrgChartCompanyInfoLookup,
   normalizeOptionalCompanyField,
 } from '@/lib/org-chart-company-metadata';
 import { processPublishedOrgChartPayload } from '@/lib/process-published-org-chart-payload';
@@ -32,7 +30,6 @@ import {
   OrgChartSearchControls,
   OrgChartSignUpModal,
   OrgChartTimelineSlider,
-  useCompanyInfoLookup,
   useOrgChartFilterOptions,
 } from 'twenty-orgchart/orgchart-core';
 import { loadOrgChartDiagramComponent } from './loadOrgChartDiagram';
@@ -797,68 +794,17 @@ export const OrgChartPageClient = ({
 
   const showTimelineSlider = timelineEnabled && timelineMetrics !== null;
 
-  const { company: fallbackCompanyInfo, lookupByName } = useCompanyInfoLookup({
-    baseUrl: '/api/org-chart',
-    autocompletePath: '/autocomplete',
-  });
+  const displayWebsite = normalizeOptionalCompanyField(website);
+  const displayLocationName = normalizeOptionalCompanyField(locationName);
+  const displayIndustry = normalizeOptionalCompanyField(industry);
+  const displayProfileCount = profileCount;
+  const displayLinkedinUrl = normalizeOptionalCompanyField(linkedinUrl);
+  const displayEmployeeCount = exactEmployeeCount;
 
-  const ssrCompanyMetadata = useMemo(
-    () => ({
-      website: normalizeOptionalCompanyField(website),
-      locationName: normalizeOptionalCompanyField(locationName),
-      industry: normalizeOptionalCompanyField(industry),
-      linkedinUrl: normalizeOptionalCompanyField(linkedinUrl),
-    }),
-    [website, locationName, industry, linkedinUrl],
-  );
-
-  const needsCompanyInfoLookup =
-    needsOrgChartCompanyInfoLookup(ssrCompanyMetadata);
-
-  // Fill missing header fields via public autocomplete (PDL proxy).
+  // Employee count uses Apify when SSR already has a LinkedIn URL.
   useEffect(() => {
-    if (!needsCompanyInfoLookup) {
-      return;
-    }
-    const lookupKey = companyName?.trim() || companyId;
-    if (lookupKey) {
-      lookupByName(lookupKey);
-    }
-  }, [needsCompanyInfoLookup, lookupByName, companyName, companyId]);
-
-  const displayWebsite = mergeOrgChartCompanyField(
-    website,
-    fallbackCompanyInfo?.website,
-  );
-  const displayLocationName = mergeOrgChartCompanyField(
-    locationName,
-    fallbackCompanyInfo?.locationName,
-  );
-  const displayIndustry = mergeOrgChartCompanyField(
-    industry,
-    fallbackCompanyInfo?.industry,
-  );
-  const displayProfileCount = profileCount ?? fallbackCompanyInfo?.profileCount;
-  const displayLinkedinUrl = mergeOrgChartCompanyField(
-    linkedinUrl,
-    fallbackCompanyInfo?.linkedinUrl,
-  );
-  const displayEmployeeCount =
-    exactEmployeeCount ?? fallbackCompanyInfo?.employeeCount;
-
-  // Employee count uses Apify on the server when autocomplete did not provide it.
-  useEffect(() => {
-    if (typeof fallbackCompanyInfo?.employeeCount === 'number') {
-      return;
-    }
-
     const linkedinUrlToUse = displayLinkedinUrl;
-    if (!linkedinUrlToUse && needsCompanyInfoLookup && !fallbackCompanyInfo) {
-      return;
-    }
-
-    const identifier = linkedinUrlToUse ?? companyId;
-    if (!identifier?.trim()) {
+    if (!linkedinUrlToUse?.trim()) {
       return;
     }
 
@@ -866,11 +812,7 @@ export const OrgChartPageClient = ({
     const fetchEmployeeCount = async () => {
       try {
         const params = new URLSearchParams();
-        if (linkedinUrlToUse) {
-          params.set('linkedinUrl', linkedinUrlToUse);
-        } else {
-          params.set('companyId', companyId);
-        }
+        params.set('linkedinUrl', linkedinUrlToUse);
         const res = await fetch(
           `/api/org-chart/companies/employee-count?${params.toString()}`,
         );
@@ -891,12 +833,7 @@ export const OrgChartPageClient = ({
     return () => {
       cancelled = true;
     };
-  }, [
-    companyId,
-    displayLinkedinUrl,
-    fallbackCompanyInfo,
-    needsCompanyInfoLookup,
-  ]);
+  }, [displayLinkedinUrl]);
 
   const buildPath = useCallback(
     (country?: string, fn?: string) => {

@@ -23,6 +23,14 @@ describe('loadStandardSkillContent', () => {
     );
   });
 
+  it('loads org-structure-insights from a single markdown file', () => {
+    const content = loadStandardSkillContent('org-structure-insights');
+
+    expect(content).toContain('# Org Structure Insights Skill');
+    expect(content).toContain('highlight_org_chart');
+    expect(content).toContain('Canvas search');
+  });
+
   it('preserves Apollo marker comments for runtime filtering', () => {
     const content = loadStandardSkillContent('search');
 

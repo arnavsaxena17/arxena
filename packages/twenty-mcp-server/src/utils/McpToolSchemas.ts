@@ -284,6 +284,17 @@ export const SEARCH_ORG_CHARTS_BY_FUNCTION_INPUT_DESCRIPTOR: readonly McpInputFi
   { key: 'limit', type: 'number', description: 'Maximum number of results to return (default: 10)', required: false },
 ] as const;
 
+/** Descriptor for get_org_chart_node_people tool input. */
+export const GET_ORG_CHART_NODE_PEOPLE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
+  { key: 'companyId', type: 'string', description: 'The company ID / slug of the open org chart (optional if companyName provided)', required: false },
+  { key: 'companyName', type: 'string', description: 'Company name (required if companyId not provided)', required: false },
+  { key: 'stdFunction', type: 'string', description: 'std_function label stamped on the node (e.g. product design, software)', required: false },
+  { key: 'stdFunctionRoot', type: 'string', description: 'std_function_root label (e.g. technology, sales)', required: false },
+  { key: 'stdGrade', type: 'string', description: 'std_grade: entry, mid, or leadership', required: false },
+  { key: 'country', type: 'string', description: 'Optional country filter', required: false },
+  { key: 'limit', type: 'number', description: 'Maximum people to return (default 50)', required: false },
+] as const;
+
 // ==================== Elasticsearch Index Search Tools ====================
 
 /** Descriptor for search_people_index tool input (Arxena people_all ES index). */

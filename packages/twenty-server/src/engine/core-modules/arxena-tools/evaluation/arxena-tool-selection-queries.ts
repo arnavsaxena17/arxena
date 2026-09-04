@@ -48,6 +48,18 @@ export const ARXENA_TOOL_SELECTION_QUERIES: ToolSelectionQuery[] = [
     expectedToolHints: ['get_org_chart', 'search_org_charts'],
   },
   {
+    id: 's6b',
+    persona: 'sales',
+    query: 'Highlight IT directors on this org chart',
+    expectedToolHints: ['highlight_org_chart', 'get_org_chart'],
+  },
+  {
+    id: 's6c',
+    persona: 'sales',
+    query: 'Who are the IT directors at British Airways?',
+    expectedToolHints: ['get_org_chart_node_people', 'get_org_chart'],
+  },
+  {
     id: 's7',
     persona: 'sales',
     query: 'Send a LinkedIn chat to this candidate',

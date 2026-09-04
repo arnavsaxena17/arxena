@@ -59,3 +59,45 @@ export async function fetchOrgChart(
     clearTimeout(timeoutId);
   }
 }
+
+export async function fetchOrgChartNodePeople(
+  baseUrl: string,
+  apiToken: string,
+  companyId: string,
+  body: {
+    companyName?: string;
+    stdFunction?: string;
+    stdFunctionRoot?: string;
+    stdGrade?: string;
+    country?: string;
+    limit?: number;
+  },
+): Promise<Record<string, unknown>> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  try {
+    const url = `${baseUrl}/org-chart/${encodeURIComponent(companyId)}/node-people`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiToken}`,
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(
+        `Failed to fetch org chart node people: ${response.status} ${text}`,
+      );
+    }
+
+    return (await response.json()) as Record<string, unknown>;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}

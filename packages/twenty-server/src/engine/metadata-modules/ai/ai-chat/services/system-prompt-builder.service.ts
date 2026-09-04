@@ -570,6 +570,7 @@ export class SystemPromptBuilderService {
 
       Preferred tools (learn only these unless a skill names others):
       - \`get_org_chart\`
+      - \`get_org_chart_node_people\`
       - \`check_contact_availability\`
       - \`fetch_contacts\``;
   }

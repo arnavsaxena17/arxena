@@ -1,28 +1,33 @@
 import * as go from 'gojs';
 import { ReactDiagram } from 'gojs-react';
 import {
-    forwardRef,
-    useCallback,
-    useEffect,
-    useImperativeHandle,
-    useMemo,
-    useRef,
-    useSyncExternalStore,
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
 } from 'react';
 import '../../gojs-runtime-patch';
 
 import {
-    OrgChartDiagramHandle,
-    OrgChartDiagramProps,
+  OrgChartDiagramHandle,
+  OrgChartDiagramProps,
 } from '../OrgChartDiagram.types';
 import { DEFAULT_AVATAR } from './constants';
 import { initOrgChartDiagram } from './diagramInit';
 import { createNodeTemplate } from './nodeTemplate/createNodeTemplate';
 import {
-    StyledDiagramWrapper,
-    StyledOverviewContainer,
+  StyledDiagramWrapper,
+  StyledOverviewContainer,
 } from './OrgChartDiagram.styles';
-import { clearSearch, focusResultAtIndex, performSearch } from './search';
+import {
+  clearSearch,
+  focusResultAtIndex,
+  highlightKeys,
+  performSearch,
+} from './search';
 import { applyZoomAroundNode, getOrgChartRootNode } from './zoomAndRoot';
 
 /** Match org chart mobile layout elsewhere (filters, website header). */
@@ -199,9 +204,20 @@ export const OrgChartDiagram = forwardRef<
     }, [getDiagram]);
 
     const performSearchImpl = useCallback(
-      (keyword: string): number =>
+      (keyword: string | readonly string[]): number =>
         performSearch({
           keyword,
+          getDiagram,
+          searchResultsKeysRef,
+          currentResultIndexRef,
+        }),
+      [getDiagram],
+    );
+
+    const highlightKeysImpl = useCallback(
+      (keys: ReadonlyArray<string | number>): number =>
+        highlightKeys({
+          keys,
           getDiagram,
           searchResultsKeysRef,
           currentResultIndexRef,
@@ -243,6 +259,7 @@ export const OrgChartDiagram = forwardRef<
     const handle = useMemo<OrgChartDiagramHandle>(
       () => ({
         search: performSearchImpl,
+        highlightKeys: highlightKeysImpl,
         focusNextResult,
         focusPreviousResult,
         clearSearch: clearSearchImpl,
@@ -252,6 +269,7 @@ export const OrgChartDiagram = forwardRef<
       }),
       [
         performSearchImpl,
+        highlightKeysImpl,
         focusNextResult,
         focusPreviousResult,
         clearSearchImpl,
@@ -262,6 +280,7 @@ export const OrgChartDiagram = forwardRef<
 
     useImperativeHandle(ref, () => handle, [
       performSearchImpl,
+      highlightKeysImpl,
       focusNextResult,
       focusPreviousResult,
       clearSearchImpl,

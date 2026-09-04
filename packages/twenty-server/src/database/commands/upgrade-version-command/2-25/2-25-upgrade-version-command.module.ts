@@ -82,6 +82,7 @@ import { FoldCandidateFlagsIntoJsonCommand } from 'src/database/commands/upgrade
 import { ReBackfillOutreachCompanyRollupsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000085-re-backfill-outreach-company-rollups.command';
 import { MoveCandidateEnrichmentToArxenaStandardCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000086-move-candidate-enrichment-to-arxena-standard.command';
 import { SyncSearchSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000087-sync-search-skill-content.command';
+import { SyncOrgStructureInsightsSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000091-sync-org-structure-insights-skill-content.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { MigrateOtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/migrate-other-fields.service';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
@@ -196,6 +197,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     ReBackfillOutreachCompanyRollupsCommand,
     MoveCandidateEnrichmentToArxenaStandardCommand,
     SyncSearchSkillContentCommand,
+    SyncOrgStructureInsightsSkillContentCommand,
     MigrateOtherFieldsService,
     DropCandidateFieldObjectsCommand,
   ],

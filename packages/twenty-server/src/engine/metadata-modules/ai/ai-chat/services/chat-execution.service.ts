@@ -200,7 +200,9 @@ export class ChatExecutionService {
       (entry) => entry.category === ToolCategory.EXTERNAL_MCP,
     ).length;
 
-    const searchToolsConfig = resolveSearchToolsConfig(this.twentyConfigService);
+    const searchToolsConfig = resolveSearchToolsConfig(
+      this.twentyConfigService,
+    );
     const disabledSearchToolNames = new Set(
       getDisabledSearchToolNames(searchToolsConfig),
     );
@@ -474,9 +476,7 @@ export class ChatExecutionService {
     );
 
     const emitTurnUsageEvent = async (steps: StepResult<ToolSet>[]) => {
-      this.logger.log(
-        `[AI_CHAT] emitTurnUsageEvent stepCount=${steps.length}`,
-      );
+      this.logger.log(`[AI_CHAT] emitTurnUsageEvent stepCount=${steps.length}`);
 
       const usage = steps.reduce<LanguageModelUsage>(
         (acc, step) => ({
@@ -709,9 +709,7 @@ export class ChatExecutionService {
       onStepFinish: async (step) => {
         const currentStepIndex = ++stepIndex;
         const stepLatencyMs = Math.round(performance.now() - stepStartedAt);
-        const toolNames = step.toolCalls.map(
-          (toolCall) => toolCall.toolName,
-        );
+        const toolNames = step.toolCalls.map((toolCall) => toolCall.toolName);
         const cacheCreationTokens = extractCacheCreationTokens(
           step.providerMetadata,
         );
@@ -839,9 +837,7 @@ export class ChatExecutionService {
 
     Promise.all([stream.usage, stream.steps])
       .then(async ([, steps]) => {
-        this.logger.log(
-          `[AI_CHAT] stream completed steps=${steps.length}`,
-        );
+        this.logger.log(`[AI_CHAT] stream completed steps=${steps.length}`);
         await emitTurnUsageEvent(steps);
       })
       .catch((error) => {
@@ -892,7 +888,9 @@ export class ChatExecutionService {
     const note =
       browsingContextType === 'outreachCommand'
         ? 'When the user asks to find/fetch/add/build target companies for this GTM project, follow the GTM rules below and call upsert_outreach_target_companies with this projectId. When they ask to find people (MD/CEO, buyers, etc.), call upsert_outreach_target_people — never create CRM Candidates until the user confirms Add to CRM / Enroll. Do not stop at a chat-only list.'
-        : 'Only use this if the user explicitly asks about the current page, record, or view. Do not call any tools based on this context.';
+        : browsingContextType === 'orgChart'
+          ? 'When the user asks to find, show, or highlight people or teams on this org chart, load org-structure-insights and call highlight_org_chart for this companyId. Only use this context if the user asks about the current chart.'
+          : 'Only use this if the user explicitly asks about the current page, record, or view. Do not call any tools based on this context.';
     const browsingContextPart = {
       type: 'text' as const,
       text: `<browsing_context note="${note}">\n${contextString}\n</browsing_context>`,
@@ -930,7 +928,33 @@ export class ChatExecutionService {
       return this.buildOutreachCommandContext(browsingContext);
     }
 
+    if (browsingContext.type === 'orgChart') {
+      return this.buildOrgChartContext(browsingContext);
+    }
+
     return '';
+  }
+
+  private buildOrgChartContext(
+    browsingContext: Extract<BrowsingContextType, { type: 'orgChart' }>,
+  ): string {
+    const { orgStructureInsights } = CHAT_INTENT_SKILLS;
+
+    return [
+      'The user is viewing an org chart.',
+      `companyId: ${browsingContext.companyId ?? 'none'}`,
+      `companyName: ${browsingContext.companyName ?? 'none'}`,
+      `country: ${browsingContext.country ?? 'none'}`,
+      `functionRoot: ${browsingContext.functionRoot ?? 'none'}`,
+      `titleQuery: ${browsingContext.titleQuery ?? 'none'}`,
+      `searchTerm: ${browsingContext.searchTerm ?? 'none'}`,
+      'When they ask to find, show, highlight, or map people or teams on this chart:',
+      `1. load_skills(["${orgStructureInsights}"])`,
+      '2. Resolve 1–3 search words that match node headlines, names, or titles',
+      '3. learn_tools({toolNames:["highlight_org_chart"]}) then execute_tool with a JSON-object arguments field',
+      '4. Call highlight_org_chart({ searchTerms: [...] }) before ending the turn — do not tell them to type in the search box',
+      'Do not navigate to a different company unless they name one.',
+    ].join('\n');
   }
 
   private buildOutreachCommandContext(
