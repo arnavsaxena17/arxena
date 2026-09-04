@@ -6,8 +6,10 @@ import { type ObjectLiteral } from 'typeorm';
 
 import {
   readProjectExperimentConfig,
+  type OutreachExperimentConfig,
   type OutreachExperimentWorkflowBinding,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
+import { isOutreachSequencerWorkflow } from 'src/engine/core-modules/outreach-command/utils/resolve-outreach-pause-resume-workflow-ids.util';
 import { OutreachWorkflowRunRepairService } from 'src/engine/core-modules/outreach-command/services/outreach-workflow-run-repair.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
@@ -29,6 +31,7 @@ type CandidateExperimentRecord = ObjectLiteral & {
 
 type ProjectExperimentRecord = ObjectLiteral & {
   id: string;
+  outreachWorkflowId?: string | null;
   outreachConfig?: unknown;
   experimentConfig?: string | null;
 };
@@ -79,6 +82,16 @@ export class OutreachWorkflowRunFlowSyncService {
           });
 
         if (workflowRun.status !== WorkflowRunStatus.RUNNING) {
+          return { synced: false, workflowRunId };
+        }
+
+        const isSequencerWorkflow = await this.isOutreachSequencerWorkflowRun({
+          workspaceId,
+          projectId,
+          workflowRun,
+        });
+
+        if (!isSequencerWorkflow) {
           return { synced: false, workflowRunId };
         }
 
@@ -256,9 +269,7 @@ export class OutreachWorkflowRunFlowSyncService {
     experimentConfig,
     workflowId,
   }: {
-    experimentConfig: NonNullable<
-      ReturnType<typeof parseOutreachExperimentConfig>
-    >;
+    experimentConfig: OutreachExperimentConfig;
     workflowId: string;
   }): OutreachExperimentWorkflowBinding | null {
     if (experimentConfig.workflows?.perCandidate?.workflowId === workflowId) {
@@ -271,10 +282,43 @@ export class OutreachWorkflowRunFlowSyncService {
       return experimentConfig.workflows.candidateUpdated;
     }
 
-    if (experimentConfig.workflows?.companySearch?.workflowId === workflowId) {
-      return experimentConfig.workflows.companySearch;
-    }
-
     return null;
+  }
+
+  private async isOutreachSequencerWorkflowRun({
+    workspaceId,
+    projectId,
+    workflowRun,
+  }: {
+    workspaceId: string;
+    projectId: string;
+    workflowRun: WorkflowRunWorkspaceEntity;
+  }): Promise<boolean> {
+    const workflowRepository =
+      await this.globalWorkspaceOrmManager.getRepository<WorkflowWorkspaceEntity>(
+        workspaceId,
+        'workflow',
+        { shouldBypassPermissionChecks: true },
+      );
+    const workflow = await workflowRepository.findOne({
+      where: { id: workflowRun.workflowId },
+    });
+    const projectRepository =
+      await this.globalWorkspaceOrmManager.getRepository<ProjectExperimentRecord>(
+        workspaceId,
+        'project',
+        { shouldBypassPermissionChecks: true },
+      );
+    const project = await projectRepository.findOne({
+      where: { id: projectId },
+    });
+
+    return isOutreachSequencerWorkflow({
+      workflowId: workflowRun.workflowId,
+      workflowName: workflow?.name,
+      outreachWorkflowId: project?.outreachWorkflowId,
+      outreachConfig: project?.outreachConfig,
+      experimentConfig: project?.experimentConfig,
+    });
   }
 }

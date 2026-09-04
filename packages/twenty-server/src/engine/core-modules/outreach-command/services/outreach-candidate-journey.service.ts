@@ -31,6 +31,7 @@ import {
   SEQUENCE_DELAY_PENDING_REASON,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
 import { parseOutreachResumeAtFromHint } from 'src/engine/core-modules/outreach-command/utils/parse-outreach-resume-at.util';
+import { filterOutreachPauseResumeWorkflowRuns } from 'src/engine/core-modules/outreach-command/utils/resolve-outreach-pause-resume-workflow-ids.util';
 import { buildFailedRunSummaryFields } from 'src/engine/core-modules/outreach-command/utils/extract-workflow-run-failed-step.util';
 import {
   buildWorkflowRunStepDeferralClearPatch,
@@ -434,9 +435,19 @@ export class OutreachCandidateJourneyService {
       async () => {
         await this.getCandidateOrFail({ workspaceId, projectId, candidateId });
 
-        const runs = await this.findActiveRunsForCandidate({
-          workspaceId,
-          candidateId,
+        const allowedWorkflowIds =
+          await this.outreachProjectOutreachControlService.resolvePauseResumeWorkflowIds(
+            {
+              workspaceId,
+              projectId,
+            },
+          );
+        const runs = filterOutreachPauseResumeWorkflowRuns({
+          runs: await this.findActiveRunsForCandidate({
+            workspaceId,
+            candidateId,
+          }),
+          allowedWorkflowIds,
         });
 
         let pausedSteps = 0;
@@ -502,9 +513,19 @@ export class OutreachCandidateJourneyService {
           });
         }
 
-        const runs = await this.findActiveRunsForCandidate({
-          workspaceId,
-          candidateId,
+        const allowedWorkflowIds =
+          await this.outreachProjectOutreachControlService.resolvePauseResumeWorkflowIds(
+            {
+              workspaceId,
+              projectId,
+            },
+          );
+        const runs = filterOutreachPauseResumeWorkflowRuns({
+          runs: await this.findActiveRunsForCandidate({
+            workspaceId,
+            candidateId,
+          }),
+          allowedWorkflowIds,
         });
 
         let resumedSteps = 0;

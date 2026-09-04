@@ -1,13 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
+import { type ObjectLiteral } from 'typeorm';
 
 import { planStaleFormAfterSendRepairs } from 'src/engine/core-modules/outreach-command/utils/plan-stale-form-after-send-repairs.util';
 import { buildWorkflowRunStepDeferralClearPatch } from 'src/engine/core-modules/outreach-command/utils/read-workflow-run-step-pending-fields.util';
+import { isOutreachSequencerWorkflow } from 'src/engine/core-modules/outreach-command/utils/resolve-outreach-pause-resume-workflow-ids.util';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
+import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { WorkflowRunStatus } from 'src/modules/workflow/common/standard-objects/workflow-run.workspace-entity';
+import { type WorkflowWorkspaceEntity } from 'src/modules/workflow/common/standard-objects/workflow.workspace-entity';
 import { RUN_WORKFLOW_JOB_NAME } from 'src/modules/workflow/workflow-runner/constants/run-workflow-job-name';
 import { type RunWorkflowJobData } from 'src/modules/workflow/workflow-runner/types/run-workflow-job-data.type';
 import { buildRunWorkflowJobOptions } from 'src/modules/workflow/workflow-runner/utils/build-run-workflow-job-options.util';
@@ -24,6 +28,7 @@ export class OutreachWorkflowRunRepairService {
   private readonly logger = new Logger(OutreachWorkflowRunRepairService.name);
 
   constructor(
+    private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     private readonly workflowRunWorkspaceService: WorkflowRunWorkspaceService,
     @InjectMessageQueue(MessageQueue.workflowQueue)
     private readonly workflowQueue: MessageQueueService,
@@ -36,6 +41,12 @@ export class OutreachWorkflowRunRepairService {
     workspaceId: string;
     workflowRunId: string;
   }): Promise<RepairStaleFormAfterSendResult> {
+    const emptyResult: RepairStaleFormAfterSendResult = {
+      repaired: false,
+      repairedFormStepIds: [],
+      continuedFromSendStepIds: [],
+    };
+
     const workflowRun =
       await this.workflowRunWorkspaceService.getWorkflowRunOrFail({
         workflowRunId,
@@ -43,11 +54,18 @@ export class OutreachWorkflowRunRepairService {
       });
 
     if (workflowRun.status !== WorkflowRunStatus.RUNNING) {
-      return {
-        repaired: false,
-        repairedFormStepIds: [],
-        continuedFromSendStepIds: [],
-      };
+      return emptyResult;
+    }
+
+    const isSequencerWorkflow = await this.isOutreachSequencerWorkflowRun({
+      workspaceId,
+      workflowRunId: workflowRun.id,
+      workflowId: workflowRun.workflowId,
+      candidateId: workflowRun.candidateId,
+    });
+
+    if (!isSequencerWorkflow) {
+      return emptyResult;
     }
 
     const plans = planStaleFormAfterSendRepairs(workflowRun.state);
@@ -138,5 +156,67 @@ export class OutreachWorkflowRunRepairService {
     }
 
     return { repairedRunIds };
+  }
+
+  private async isOutreachSequencerWorkflowRun({
+    workspaceId,
+    workflowId,
+    candidateId,
+  }: {
+    workspaceId: string;
+    workflowRunId: string;
+    workflowId: string;
+    candidateId?: string | null;
+  }): Promise<boolean> {
+    const workflowRepository =
+      await this.globalWorkspaceOrmManager.getRepository<WorkflowWorkspaceEntity>(
+        workspaceId,
+        'workflow',
+        { shouldBypassPermissionChecks: true },
+      );
+    const workflow = await workflowRepository.findOne({
+      where: { id: workflowId },
+    });
+
+    let project:
+      | (ObjectLiteral & {
+          outreachWorkflowId?: string | null;
+          outreachConfig?: unknown;
+          experimentConfig?: string | null;
+        })
+      | null = null;
+
+    if (isNonEmptyString(candidateId)) {
+      const candidateRepository =
+        await this.globalWorkspaceOrmManager.getRepository<
+          ObjectLiteral & { id: string; projectsId?: string | null }
+        >(workspaceId, 'candidate', { shouldBypassPermissionChecks: true });
+      const candidate = await candidateRepository.findOne({
+        where: { id: candidateId },
+      });
+
+      if (isNonEmptyString(candidate?.projectsId)) {
+        const projectRepository =
+          await this.globalWorkspaceOrmManager.getRepository<
+            ObjectLiteral & {
+              id: string;
+              outreachWorkflowId?: string | null;
+              outreachConfig?: unknown;
+              experimentConfig?: string | null;
+            }
+          >(workspaceId, 'project', { shouldBypassPermissionChecks: true });
+        project = await projectRepository.findOne({
+          where: { id: candidate.projectsId },
+        });
+      }
+    }
+
+    return isOutreachSequencerWorkflow({
+      workflowId,
+      workflowName: workflow?.name,
+      outreachWorkflowId: project?.outreachWorkflowId,
+      outreachConfig: project?.outreachConfig,
+      experimentConfig: project?.experimentConfig,
+    });
   }
 }

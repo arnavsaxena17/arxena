@@ -36,11 +36,20 @@ import {
 } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/utils/resume-delayed-workflow-job-scheduler.util';
 import { OutreachWorkflowRunFlowSyncService } from 'src/engine/core-modules/outreach-command/services/outreach-workflow-run-flow-sync.service';
 import { OutreachWorkflowRunRepairService } from 'src/engine/core-modules/outreach-command/services/outreach-workflow-run-repair.service';
+import {
+  collectOutreachSequencerWorkflowIdsFromProject,
+  filterOutreachPauseResumeWorkflowRuns,
+  mergeOutreachSequencerWorkflowIds,
+  OUTREACH_SEQUENCER_SEEDED_WORKFLOW_NAMES,
+} from 'src/engine/core-modules/outreach-command/utils/resolve-outreach-pause-resume-workflow-ids.util';
 import { WorkflowRunWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.workspace-service';
 
 type ProjectRecord = ObjectLiteral & {
   id: string;
   outreachStatus?: string | null;
+  outreachWorkflowId?: string | null;
+  outreachConfig?: unknown;
+  experimentConfig?: string | null;
 };
 
 type CandidateRecord = ObjectLiteral & {
@@ -52,6 +61,7 @@ type WorkflowRunRecord = ObjectLiteral & {
   id: string;
   status: WorkflowRunStatus;
   candidateId?: string | null;
+  workflowId?: string | null;
   state?: {
     stepInfos?: Record<
       string,
@@ -106,9 +116,16 @@ export class OutreachProjectOutreachControlService {
           outreachStatus: 'PAUSED',
         });
 
-        const runs = await this.findProjectRunningRuns({
+        const allowedWorkflowIds = await this.resolvePauseResumeWorkflowIds({
           workspaceId,
           projectId,
+        });
+        const runs = filterOutreachPauseResumeWorkflowRuns({
+          runs: await this.findProjectRunningRuns({
+            workspaceId,
+            projectId,
+          }),
+          allowedWorkflowIds,
         });
 
         let pausedRuns = 0;
@@ -217,9 +234,16 @@ export class OutreachProjectOutreachControlService {
           outreachStatus: 'LIVE',
         });
 
-        const runs = await this.findProjectRunningRuns({
+        const allowedWorkflowIds = await this.resolvePauseResumeWorkflowIds({
           workspaceId,
           projectId,
+        });
+        const runs = filterOutreachPauseResumeWorkflowRuns({
+          runs: await this.findProjectRunningRuns({
+            workspaceId,
+            projectId,
+          }),
+          allowedWorkflowIds,
         });
 
         let resumedRuns = 0;
@@ -463,6 +487,48 @@ export class OutreachProjectOutreachControlService {
       },
       authContext,
     );
+  }
+
+  // Stage B (pinned / Per Enrolled Candidate) + Stage C (Enrolled Person Updated).
+  async resolvePauseResumeWorkflowIds({
+    workspaceId,
+    projectId,
+  }: {
+    workspaceId: string;
+    projectId: string;
+  }): Promise<Set<string>> {
+    const projectRepository =
+      await this.globalWorkspaceOrmManager.getRepository<ProjectRecord>(
+        workspaceId,
+        'project',
+        { shouldBypassPermissionChecks: true },
+      );
+    const project = await projectRepository.findOne({
+      where: { id: projectId },
+    });
+
+    const projectWorkflowIds = collectOutreachSequencerWorkflowIdsFromProject({
+      outreachWorkflowId: project?.outreachWorkflowId,
+      outreachConfig: project?.outreachConfig,
+      experimentConfig: project?.experimentConfig,
+    });
+
+    const workflowRepository =
+      await this.globalWorkspaceOrmManager.getRepository<
+        ObjectLiteral & { id: string; name?: string | null }
+      >(workspaceId, 'workflow', { shouldBypassPermissionChecks: true });
+    const workflowsMatchedByName = await workflowRepository.find({
+      where: {
+        name: In([...OUTREACH_SEQUENCER_SEEDED_WORKFLOW_NAMES]),
+      },
+      select: { id: true },
+      take: 50,
+    });
+
+    return mergeOutreachSequencerWorkflowIds({
+      projectWorkflowIds,
+      workflowsMatchedByName,
+    });
   }
 
   async isProjectPaused({

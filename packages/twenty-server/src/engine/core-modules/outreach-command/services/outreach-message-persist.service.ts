@@ -11,8 +11,11 @@ import { OutreachWorkspaceAuthTokenService } from 'src/engine/core-modules/outre
 import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
 import { concatenatedUserBurst } from 'src/engine/core-modules/outreach-command/utils/inbound-reply-window.util';
 import { type OutreachCandidateEventKind } from 'src/engine/core-modules/outreach-command/utils/outreach-command-materialize.util';
+import { isOutreachSequencerWorkflow } from 'src/engine/core-modules/outreach-command/utils/resolve-outreach-pause-resume-workflow-ids.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
+import { type WorkflowRunWorkspaceEntity } from 'src/modules/workflow/common/standard-objects/workflow-run.workspace-entity';
+import { type WorkflowWorkspaceEntity } from 'src/modules/workflow/common/standard-objects/workflow.workspace-entity';
 
 export type OutreachTranscriptChannel = 'LINKEDIN' | 'WHATSAPP' | 'EMAIL';
 
@@ -70,6 +73,7 @@ export class OutreachMessagePersistService {
     externalMessageId,
     chatId,
     materializeOutbound = true,
+    workflowRunId,
   }: {
     workspaceId: string;
     channel: OutreachTranscriptChannel;
@@ -80,7 +84,19 @@ export class OutreachMessagePersistService {
     externalMessageId?: string | null;
     chatId?: string | null;
     materializeOutbound?: boolean;
+    workflowRunId?: string | null;
   }): Promise<void> {
+    if (isNonEmptyString(workflowRunId)) {
+      const isSequencerWorkflow = await this.isOutreachSequencerWorkflowRun({
+        workspaceId,
+        workflowRunId,
+      });
+
+      if (!isSequencerWorkflow) {
+        return;
+      }
+    }
+
     const text = body.trim();
 
     if (!isNonEmptyString(text)) {
@@ -133,6 +149,7 @@ export class OutreachMessagePersistService {
           : channel === 'EMAIL'
             ? MessagingChannel.EMAIL
             : MessagingChannel.LINKEDIN_CONNECT,
+      workflowRunId,
     });
   }
 
@@ -143,6 +160,7 @@ export class OutreachMessagePersistService {
     linkedinProfileId,
     messagingChannel,
     outboundMessageKind,
+    workflowRunId,
   }: {
     workspaceId: string;
     event: OutreachCandidateEventKind;
@@ -150,8 +168,21 @@ export class OutreachMessagePersistService {
     linkedinProfileId?: string | null;
     messagingChannel?: string | null;
     outboundMessageKind?: string | null;
+    workflowRunId?: string | null;
   }): Promise<void> {
     try {
+      if (isNonEmptyString(workflowRunId)) {
+        const isSequencerWorkflow =
+          await this.isOutreachSequencerWorkflowRun({
+            workspaceId,
+            workflowRunId,
+          });
+
+        if (!isSequencerWorkflow) {
+          return;
+        }
+      }
+
       const resolvedCandidateId = await this.resolveCandidateId({
         workspaceId,
         candidateId,
@@ -568,5 +599,85 @@ export class OutreachMessagePersistService {
     }
 
     return merged;
+  }
+
+  // Workflow action side-effects only for Stage B / Stage C runs.
+  private async isOutreachSequencerWorkflowRun({
+    workspaceId,
+    workflowRunId,
+  }: {
+    workspaceId: string;
+    workflowRunId: string;
+  }): Promise<boolean> {
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const workflowRunRepository =
+          await this.globalWorkspaceOrmManager.getRepository<WorkflowRunWorkspaceEntity>(
+            workspaceId,
+            'workflowRun',
+            { shouldBypassPermissionChecks: true },
+          );
+        const workflowRun = await workflowRunRepository.findOne({
+          where: { id: workflowRunId },
+        });
+
+        if (!isDefined(workflowRun?.workflowId)) {
+          return false;
+        }
+
+        const workflowRepository =
+          await this.globalWorkspaceOrmManager.getRepository<WorkflowWorkspaceEntity>(
+            workspaceId,
+            'workflow',
+            { shouldBypassPermissionChecks: true },
+          );
+        const workflow = await workflowRepository.findOne({
+          where: { id: workflowRun.workflowId },
+        });
+
+        let project:
+          | (ObjectLiteral & {
+              outreachWorkflowId?: string | null;
+              outreachConfig?: unknown;
+              experimentConfig?: string | null;
+            })
+          | null = null;
+
+        if (isNonEmptyString(workflowRun.candidateId)) {
+          const candidate = await this.loadCandidate(
+            workspaceId,
+            workflowRun.candidateId,
+          );
+
+          if (isNonEmptyString(candidate?.projectsId)) {
+            const projectRepository =
+              await this.globalWorkspaceOrmManager.getRepository<
+                ObjectLiteral & {
+                  id: string;
+                  outreachWorkflowId?: string | null;
+                  outreachConfig?: unknown;
+                  experimentConfig?: string | null;
+                }
+              >(workspaceId, 'project', {
+                shouldBypassPermissionChecks: true,
+              });
+            project = await projectRepository.findOne({
+              where: { id: candidate.projectsId },
+            });
+          }
+        }
+
+        return isOutreachSequencerWorkflow({
+          workflowId: workflowRun.workflowId,
+          workflowName: workflow?.name,
+          outreachWorkflowId: project?.outreachWorkflowId,
+          outreachConfig: project?.outreachConfig,
+          experimentConfig: project?.experimentConfig,
+        });
+      },
+      authContext,
+    );
   }
 }

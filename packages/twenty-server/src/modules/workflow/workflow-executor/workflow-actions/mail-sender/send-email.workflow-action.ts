@@ -77,6 +77,7 @@ export class SendEmailWorkflowAction extends EmailWorkflowActionBase {
         candidateId,
         messagingChannel: 'EMAIL',
         outboundMessageKind: 'EMAIL',
+        workflowRunId: workflowActionInput.runInfo.workflowRunId,
       });
     } catch (error) {
       this.logger.warn(

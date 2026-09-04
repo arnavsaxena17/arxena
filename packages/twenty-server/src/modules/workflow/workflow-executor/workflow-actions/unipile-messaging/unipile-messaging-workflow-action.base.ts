@@ -221,6 +221,7 @@ export abstract class UnipileMessagingWorkflowActionBase<
             externalMessageId: extractProviderMessageId(toolOutput.result),
             // Prefer explicit getMaterializeEvent path (stamps message kinds).
             materializeOutbound: !isDefined(materializeEvent),
+            workflowRunId: runInfo.workflowRunId,
           });
         } catch (error) {
           this.logger.warn(
@@ -255,6 +256,7 @@ export abstract class UnipileMessagingWorkflowActionBase<
             linkedinProfileId: resolvedLinkedinProfileId,
             messagingChannel: this.getMaterializeMessagingChannel(),
             outboundMessageKind,
+            workflowRunId: runInfo.workflowRunId,
           });
         } catch (error) {
           this.logger.warn(

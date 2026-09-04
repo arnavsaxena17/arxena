@@ -86,6 +86,7 @@ export class CreateCalendarEventWorkflowAction extends ToolBackedWorkflowAction<
         workspaceId: workflowActionInput.runInfo.workspaceId,
         event: 'meeting_booked',
         candidateId,
+        workflowRunId: workflowActionInput.runInfo.workflowRunId,
       });
     } catch (error) {
       this.logger.warn(

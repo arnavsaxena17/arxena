@@ -7,6 +7,7 @@ import { isDefined } from 'twenty-shared/utils';
 import { type ObjectLiteral } from 'typeorm';
 
 import { readProjectExperimentConfig } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
+import { isOutreachSequencerWorkflow } from 'src/engine/core-modules/outreach-command/utils/resolve-outreach-pause-resume-workflow-ids.util';
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
@@ -34,6 +35,7 @@ type CandidateExperimentRecord = ObjectLiteral & {
 
 type ProjectExperimentRecord = ObjectLiteral & {
   id: string;
+  outreachWorkflowId?: string | null;
   outreachConfig?: unknown;
   experimentConfig?: string | null;
 };
@@ -90,6 +92,7 @@ export class WorkflowTriggerJob {
       const workflowVersionId = await this.resolveWorkflowVersionId({
         workspaceId: data.workspaceId,
         workflowId: data.workflowId,
+        workflowName: workflow.name,
         controlVersionId: workflow.lastPublishedVersionId,
         payload: data.payload,
       });
@@ -131,17 +134,19 @@ export class WorkflowTriggerJob {
   }
 
   /**
-   * If the project has a running experiment and the candidate is variant B,
-   * run the EXPERIMENT version when configured; otherwise the ACTIVE control.
+   * Stage B/C only: if the project has a running experiment and the candidate
+   * is variant B, run the EXPERIMENT version when configured; otherwise control.
    */
   private async resolveWorkflowVersionId({
     workspaceId,
     workflowId,
+    workflowName,
     controlVersionId,
     payload,
   }: {
     workspaceId: string;
     workflowId: string;
+    workflowName?: string | null;
     controlVersionId: string;
     payload: object;
   }): Promise<string> {
@@ -191,6 +196,19 @@ export class WorkflowTriggerJob {
       const project = await projectRepository.findOne({
         where: { id: candidate.projectsId },
       });
+
+      if (
+        !isOutreachSequencerWorkflow({
+          workflowId,
+          workflowName,
+          outreachWorkflowId: project?.outreachWorkflowId,
+          outreachConfig: project?.outreachConfig,
+          experimentConfig: project?.experimentConfig,
+        })
+      ) {
+        return controlVersionId;
+      }
+
       const experimentConfig = readProjectExperimentConfig(project ?? {});
 
       if (experimentConfig?.status !== 'running') {
@@ -203,10 +221,7 @@ export class WorkflowTriggerJob {
           : experimentConfig.workflows?.candidateUpdated?.workflowId ===
               workflowId
             ? experimentConfig.workflows.candidateUpdated
-            : experimentConfig.workflows?.companySearch?.workflowId ===
-                workflowId
-              ? experimentConfig.workflows.companySearch
-              : null;
+            : null;
 
       if (isNonEmptyString(binding?.versionB)) {
         return binding.versionB;
