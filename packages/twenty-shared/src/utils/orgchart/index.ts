@@ -4,10 +4,12 @@ export {
     hasActiveOrgChartGradeFilter,
     hasMeaningfulOrgChartCountryFilter,
     hasMeaningfulOrgChartFunctionRootFilter,
+    resolveNodeGradeTier,
     type OrgChartGradeTier,
     type OrgChartGradeVisibility,
     type OrgChartNodeDataFilterOptions
 } from './filterOrgChartNodeDataArray';
+export { computeOrgChartGradeBandYs } from './computeOrgChartGradeBandYs';
 export { getProxiedImageUrl } from './getProxiedImageUrl';
 export { isValidLinkedInProfileUrl } from './isValidLinkedInProfileUrl';
 export {

@@ -3,6 +3,7 @@ import {
     hasActiveOrgChartGradeFilter,
     hasMeaningfulOrgChartCountryFilter,
     hasMeaningfulOrgChartFunctionRootFilter,
+    resolveNodeGradeTier,
 } from './filterOrgChartNodeDataArray';
 import type { OrgChartNodeData } from './orgChartDataUtils';
 
@@ -194,5 +195,26 @@ describe('filterOrgChartNodeDataArray', () => {
       },
     });
     expect(executivesOnly.map((node) => node.key).sort()).toEqual([1, 2, 3]);
+  });
+
+  it('resolveNodeGradeTier maps std_grade and category to filter tiers', () => {
+    expect(
+      resolveNodeGradeTier({
+        std_grade: 'mid',
+        std_grade_category: 'mid',
+      }),
+    ).toBe('managers');
+    expect(
+      resolveNodeGradeTier({
+        std_grade: 'entry',
+        std_grade_category: 'entry',
+      }),
+    ).toBe('executives');
+    expect(
+      resolveNodeGradeTier({
+        std_grade: 'leadership',
+        std_grade_category: 'senior',
+      }),
+    ).toBe('leadership');
   });
 });

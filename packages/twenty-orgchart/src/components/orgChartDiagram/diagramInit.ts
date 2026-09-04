@@ -3,6 +3,7 @@ import * as go from 'gojs';
 import type { OrgChartDiagramProps } from '../OrgChartDiagram.types';
 import { PREVIEW_CAPABILITIES_TOOLTIP_DURATION_MS } from './constants';
 import { buildOrgChartBackgroundContextMenu } from './contextMenus';
+import { GradeAlignedTreeLayout } from './gradeAlignedTreeLayout';
 
 export const initOrgChartDiagram = ({
   createNodeTemplate,
@@ -37,7 +38,7 @@ export const initOrgChartDiagram = ({
       initialContentAlignment: go.Spot.Default,
       validCycle: go.Diagram.CycleDestinationTree,
       layout: $(
-        go.TreeLayout,
+        GradeAlignedTreeLayout,
         {
           angle: 90,
           layerSpacing: 35,
@@ -80,12 +81,10 @@ export const initOrgChartDiagram = ({
     '#094AB2',
   ];
 
-  const layout = diagram.layout as go.TreeLayout;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const baseCommitNodes = (layout as any).commitNodes.bind(layout);
+  const layout = diagram.layout as GradeAlignedTreeLayout;
+  const baseCommitNodes = layout.commitNodes.bind(layout);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (layout as any).commitNodes = function () {
+  layout.commitNodes = function commitNodesWithLevelColors() {
     baseCommitNodes();
     const network = layout.network;
     if (!network) return;
@@ -120,4 +119,3 @@ export const initOrgChartDiagram = ({
 
   return diagram;
 };
-

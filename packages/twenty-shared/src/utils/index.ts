@@ -273,7 +273,9 @@ export {
   hasMeaningfulOrgChartCountryFilter,
   hasMeaningfulOrgChartFunctionRootFilter,
   filterOrgChartNodeDataArray,
+  resolveNodeGradeTier,
 } from './orgchart/filterOrgChartNodeDataArray';
+export { computeOrgChartGradeBandYs } from './orgchart/computeOrgChartGradeBandYs';
 export { getProxiedImageUrl } from './orgchart/getProxiedImageUrl';
 export { isValidLinkedInProfileUrl } from './orgchart/isValidLinkedInProfileUrl';
 export type {

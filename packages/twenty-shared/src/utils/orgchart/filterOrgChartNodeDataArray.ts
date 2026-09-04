@@ -37,8 +37,8 @@ export const hasActiveOrgChartGradeFilter = (
   );
 };
 
-const resolveNodeGradeTier = (
-  node: FilterableOrgChartNode,
+export const resolveNodeGradeTier = (
+  node: Pick<FilterableOrgChartNode, 'std_grade' | 'std_grade_category'>,
 ): OrgChartGradeTier | null => {
   const category =
     typeof node.std_grade_category === 'string'
