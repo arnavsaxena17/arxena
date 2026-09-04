@@ -49,39 +49,33 @@ export const initOrgChartDiagram = ({
 }): go.Diagram => {
   const $ = go.GraphObject.make;
 
-  const diagram = $(
-    go.Diagram,
-    {
-      ...(showNodeCapabilitiesHoverHint ||
-      m7kqContactMode ||
-      showLinkedInUrlOnNodes
-        ? {
-            'toolManager.hoverDelay': 0,
-            'toolManager.toolTipDuration':
-              PREVIEW_CAPABILITIES_TOOLTIP_DURATION_MS,
-          }
-        : {}),
-      'undoManager.isEnabled': true,
-      initialContentAlignment: go.Spot.Default,
-      validCycle: go.Diagram.CycleDestinationTree,
-      layout: gradeAlignedLayout
-        ? createGradeAlignedTreeLayout($)
-        : createDefaultTreeLayout($),
-      model: $(
-        go.TreeModel,
-        {
-          nodeKeyProperty: 'key',
-          nodeParentKeyProperty: 'parent',
-          makeUniqueKeyFunction: (m: go.Model, data: go.ObjectData) => {
-            let k = (data.key as number) || 1;
-            while (m.findNodeDataForKey(k)) k += 1;
-            data.key = k;
-            return k;
-          },
-        },
-      ),
-    },
-  );
+  const diagram = $(go.Diagram, {
+    ...(showNodeCapabilitiesHoverHint ||
+    m7kqContactMode ||
+    showLinkedInUrlOnNodes
+      ? {
+          'toolManager.hoverDelay': 0,
+          'toolManager.toolTipDuration':
+            PREVIEW_CAPABILITIES_TOOLTIP_DURATION_MS,
+        }
+      : {}),
+    'undoManager.isEnabled': true,
+    initialContentAlignment: go.Spot.Default,
+    validCycle: go.Diagram.CycleDestinationTree,
+    layout: gradeAlignedLayout
+      ? createGradeAlignedTreeLayout($)
+      : createDefaultTreeLayout($),
+    model: $(go.TreeModel, {
+      nodeKeyProperty: 'key',
+      nodeParentKeyProperty: 'parent',
+      makeUniqueKeyFunction: (m: go.Model, data: go.ObjectData) => {
+        let k = (data.key as number) || 1;
+        while (m.findNodeDataForKey(k)) k += 1;
+        data.key = k;
+        return k;
+      },
+    }),
+  });
 
   diagram.nodeTemplate = createNodeTemplate();
   diagram.linkTemplate = $(

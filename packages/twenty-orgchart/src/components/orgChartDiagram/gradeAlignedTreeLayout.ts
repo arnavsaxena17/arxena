@@ -8,10 +8,7 @@ import {
 import { LevelColoredTreeLayout } from './levelColoredTreeLayout';
 
 // Only push these tiers; leadership defines the reference band and must not move.
-const ALIGNABLE_GRADE_TIERS: OrgChartGradeTier[] = [
-  'managers',
-  'executives',
-];
+const ALIGNABLE_GRADE_TIERS: OrgChartGradeTier[] = ['managers', 'executives'];
 
 // Leadership subtrees first; long-drop managers/teams pack to the right.
 const GRADE_SORT_RANK: Record<OrgChartGradeTier, number> = {
@@ -29,15 +26,12 @@ type GradeLayoutNode = {
   y: number;
 };
 
-const readNodeTier = (
-  data: go.ObjectData | null,
-): OrgChartGradeTier | null => {
+const readNodeTier = (data: go.ObjectData | null): OrgChartGradeTier | null => {
   if (!data) {
     return null;
   }
   return resolveNodeGradeTier({
-    std_grade:
-      typeof data.std_grade === 'string' ? data.std_grade : undefined,
+    std_grade: typeof data.std_grade === 'string' ? data.std_grade : undefined,
     std_grade_category:
       typeof data.std_grade_category === 'string'
         ? data.std_grade_category
