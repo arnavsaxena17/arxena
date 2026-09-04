@@ -205,13 +205,29 @@ const collectStepIdsToReset = ({
     }
 
     if (
-      shouldResetStepOnContentChange({
+      !shouldResetStepOnContentChange({
         previousStatus: previousStepInfo.status,
         stepType: nextStep.type,
       })
     ) {
-      resetStepIds.add(nextStep.id);
+      continue;
     }
+
+    // Do not reopen draft/approve after a downstream send already succeeded —
+    // resetting FORM while preserving SEND SUCCESS yields Approve PENDING +
+    // Send SUCCESS (Abdullah-style corrupted diagram).
+    if (
+      hasSuccessfulDownstreamSend({
+        startStepId: nextStep.id,
+        nextStepById,
+        oldStepByName,
+        oldStepInfos,
+      })
+    ) {
+      continue;
+    }
+
+    resetStepIds.add(nextStep.id);
   }
 
   const queue = [...resetStepIds];
@@ -260,6 +276,61 @@ const collectStepIdsToReset = ({
   }
 
   return resetStepIds;
+};
+
+const hasSuccessfulDownstreamSend = ({
+  startStepId,
+  nextStepById,
+  oldStepByName,
+  oldStepInfos,
+}: {
+  startStepId: string;
+  nextStepById: Map<string, WorkflowAction>;
+  oldStepByName: Map<string, WorkflowAction>;
+  oldStepInfos: Record<string, WorkflowRunStepInfo>;
+}): boolean => {
+  const visitedStepIds = new Set<string>();
+  const queue = [startStepId];
+
+  while (queue.length > 0) {
+    const currentStepId = queue.shift();
+
+    if (!isDefined(currentStepId) || visitedStepIds.has(currentStepId)) {
+      continue;
+    }
+
+    visitedStepIds.add(currentStepId);
+
+    const currentStep = nextStepById.get(currentStepId);
+
+    if (!isDefined(currentStep?.nextStepIds)) {
+      continue;
+    }
+
+    for (const nextStepId of currentStep.nextStepIds) {
+      const nextStep = nextStepById.get(nextStepId);
+
+      if (!isDefined(nextStep)) {
+        continue;
+      }
+
+      const oldStep = oldStepByName.get(normalizeStepName(nextStep.name));
+      const previousStepInfo = isDefined(oldStep)
+        ? oldStepInfos[oldStep.id]
+        : undefined;
+
+      if (
+        SEND_ACTION_TYPES.has(nextStep.type) &&
+        previousStepInfo?.status === StepStatus.SUCCESS
+      ) {
+        return true;
+      }
+
+      queue.push(nextStepId);
+    }
+  }
+
+  return false;
 };
 
 const shouldResetStepOnContentChange = ({

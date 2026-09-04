@@ -8,6 +8,7 @@ import {
   readProjectExperimentConfig,
   type OutreachExperimentWorkflowBinding,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
+import { OutreachWorkflowRunRepairService } from 'src/engine/core-modules/outreach-command/services/outreach-workflow-run-repair.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import { WorkflowVersionStatus } from 'src/modules/workflow/common/standard-objects/workflow-version.workspace-entity';
@@ -44,6 +45,7 @@ export type SyncOutreachWorkflowRunFlowResult = {
   previousWorkflowVersionId?: string;
   nextWorkflowVersionId?: string;
   resetStepIds?: string[];
+  repairedStaleFormAfterSend?: boolean;
 };
 
 @Injectable()
@@ -54,6 +56,7 @@ export class OutreachWorkflowRunFlowSyncService {
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     private readonly workflowCommonWorkspaceService: WorkflowCommonWorkspaceService,
     private readonly workflowRunWorkspaceService: WorkflowRunWorkspaceService,
+    private readonly outreachWorkflowRunRepairService: OutreachWorkflowRunRepairService,
   ) {}
 
   async syncRunToLatestPublishedVersion({
@@ -132,12 +135,30 @@ export class OutreachWorkflowRunFlowSyncService {
               : ''),
         );
 
+        let repairedStaleFormAfterSend = false;
+
+        try {
+          const repairResult =
+            await this.outreachWorkflowRunRepairService.repairStaleFormAfterSend({
+              workspaceId,
+              workflowRunId,
+            });
+          repairedStaleFormAfterSend = repairResult.repaired;
+        } catch (error) {
+          this.logger.warn(
+            `Failed stale FORM-after-send repair after sync for run ${workflowRunId}: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
+
         return {
           synced: true,
           workflowRunId,
           previousWorkflowVersionId: workflowRun.workflowVersionId,
           nextWorkflowVersionId: targetVersionId,
           resetStepIds: mergeResult.resetStepIds,
+          repairedStaleFormAfterSend,
         };
       },
       authContext,

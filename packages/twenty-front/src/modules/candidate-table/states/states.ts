@@ -1,5 +1,6 @@
 import { type Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { parsedJDInternalState } from '@/arx-jd-upload/states/arxJDFormStepperState';
+import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { activeAssistantThreadIdState } from '@/candidate-search/states/searchConfigState';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { ProcessedData } from '@/candidate-table/ProcessedData';
@@ -197,12 +198,18 @@ export const processedDataSelector = createAtomSelector({
     // or column defs — that retriggers HotTable updateSettings → afterSelectionEnd
     // → setState → max update depth.
     const { rawData } = get(tableStateAtom);
+    const currentWorkspaceMember = get(currentWorkspaceMemberState);
 
     if (!rawData || !Array.isArray(rawData) || rawData.length === 0) {
       return EMPTY_PROCESSED_DATA;
     }
 
-    return ProcessedData({ rawData, selectedRowIds: [] });
+    return ProcessedData({
+      rawData,
+      selectedRowIds: [],
+      outboundSenderFirstName:
+        currentWorkspaceMember?.name?.firstName?.trim() || null,
+    });
   },
   areEqual: areProcessedDataRowsEqual,
 });

@@ -30,6 +30,7 @@ import {
   buildWorkflowRunName,
   extractWorkflowRunTriggerRecord,
 } from 'src/modules/workflow/workflow-runner/utils/extract-workflow-run-trigger-record.util';
+import { mergeWorkflowRunStepInfo } from 'src/modules/workflow/workflow-runner/utils/merge-workflow-run-step-info.util';
 
 @Injectable()
 export class WorkflowRunWorkspaceService {
@@ -299,10 +300,10 @@ export class WorkflowRunWorkspaceService {
         ...workflowRunToUpdate.state,
         stepInfos: {
           ...workflowRunToUpdate.state?.stepInfos,
-          [stepId]: {
-            ...workflowRunToUpdate.state?.stepInfos[stepId],
-            ...stepInfo,
-          },
+          [stepId]: mergeWorkflowRunStepInfo(
+            workflowRunToUpdate.state?.stepInfos[stepId],
+            stepInfo,
+          ),
         },
       },
     };
@@ -330,10 +331,10 @@ export class WorkflowRunWorkspaceService {
     const mergedStepInfos = { ...existingStepInfos };
 
     for (const [stepId, info] of Object.entries(stepInfos)) {
-      mergedStepInfos[stepId] = {
-        ...existingStepInfos[stepId],
-        ...info,
-      };
+      mergedStepInfos[stepId] = mergeWorkflowRunStepInfo(
+        existingStepInfos[stepId],
+        info,
+      );
     }
 
     const partialUpdate = {

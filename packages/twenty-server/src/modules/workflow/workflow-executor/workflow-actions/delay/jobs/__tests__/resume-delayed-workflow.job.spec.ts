@@ -52,7 +52,14 @@ describe('ResumeDelayedWorkflowJob', () => {
       workflowRunWorkspaceService.updateWorkflowRunStepInfo,
     ).toHaveBeenCalledWith({
       stepId,
-      stepInfo: { status: StepStatus.NOT_STARTED },
+      stepInfo: {
+        status: StepStatus.NOT_STARTED,
+        pendingReason: undefined,
+        waitMs: undefined,
+        scheduledAt: undefined,
+        remainingMs: undefined,
+        method: undefined,
+      },
       workspaceId,
       workflowRunId,
     });

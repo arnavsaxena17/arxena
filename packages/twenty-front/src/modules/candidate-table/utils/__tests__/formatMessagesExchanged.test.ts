@@ -2,15 +2,40 @@ import { formatLastInboundMessage, formatMessagesExchanged } from '@/candidate-t
 
 describe('formatMessagesExchanged', () => {
   it('formats recruiter and candidate messages in chronological order', () => {
+    const formatted = formatMessagesExchanged(
+      {
+        edges: [
+          {
+            node: {
+              name: 'candidateMessage',
+              message: 'Yes, send a deck',
+              createdAt: '2026-08-01T11:00:00.000Z',
+            },
+          },
+          {
+            node: {
+              name: 'botMessage',
+              message: 'Hi — are you hiring?',
+              createdAt: '2026-08-01T10:00:00.000Z',
+            },
+          },
+        ],
+      },
+      { outboundSenderFirstName: 'Naresh' },
+    );
+
+    expect(formatted).toContain('Naresh: Hi — are you hiring?');
+    expect(formatted).toContain('Candidate: Yes, send a deck');
+    expect(formatted.indexOf('Hi — are you hiring?')).toBeLessThan(
+      formatted.indexOf('Yes, send a deck'),
+    );
+    expect(formatted).toMatch(/\[\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2}/);
+    expect(formatted).not.toMatch(/\d{1,2}:\d{2}:\d{2}/);
+  });
+
+  it('falls back to Recruiter when no sender first name is provided', () => {
     const formatted = formatMessagesExchanged({
       edges: [
-        {
-          node: {
-            name: 'candidateMessage',
-            message: 'Yes, send a deck',
-            createdAt: '2026-08-01T11:00:00.000Z',
-          },
-        },
         {
           node: {
             name: 'botMessage',
@@ -22,40 +47,37 @@ describe('formatMessagesExchanged', () => {
     });
 
     expect(formatted).toContain('Recruiter: Hi — are you hiring?');
-    expect(formatted).toContain('Candidate: Yes, send a deck');
-    expect(formatted.indexOf('Hi — are you hiring?')).toBeLessThan(
-      formatted.indexOf('Yes, send a deck'),
-    );
-    expect(formatted).toMatch(/\[\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2}/);
-    expect(formatted).not.toMatch(/\d{1,2}:\d{2}:\d{2}/);
   });
 
   it('expands unexpanded LinkedIn transcript rows', () => {
-    const formatted = formatMessagesExchanged({
-      edges: [
-        {
-          node: {
-            name: 'LINKEDIN abc',
-            message: 'latest',
-            createdAt: '2026-08-01T00:00:00.000Z',
-            messageObj: [
-              {
-                role: 'assistant',
-                content: 'Hi — are you hiring?',
-                timestamp: '2026-08-01T10:00:00.000Z',
-              },
-              {
-                role: 'user',
-                content: 'Yes, send a deck',
-                timestamp: '2026-08-01T11:00:00.000Z',
-              },
-            ],
+    const formatted = formatMessagesExchanged(
+      {
+        edges: [
+          {
+            node: {
+              name: 'LINKEDIN abc',
+              message: 'latest',
+              createdAt: '2026-08-01T00:00:00.000Z',
+              messageObj: [
+                {
+                  role: 'assistant',
+                  content: 'Hi — are you hiring?',
+                  timestamp: '2026-08-01T10:00:00.000Z',
+                },
+                {
+                  role: 'user',
+                  content: 'Yes, send a deck',
+                  timestamp: '2026-08-01T11:00:00.000Z',
+                },
+              ],
+            },
           },
-        },
-      ],
-    });
+        ],
+      },
+      { outboundSenderFirstName: 'Naresh' },
+    );
 
-    expect(formatted).toContain('Recruiter: Hi — are you hiring?');
+    expect(formatted).toContain('Naresh: Hi — are you hiring?');
     expect(formatted).toContain('Candidate: Yes, send a deck');
   });
 

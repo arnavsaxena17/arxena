@@ -1379,6 +1379,7 @@ export const CandidateChatDrawer = React.memo(() => {
             {activeTabId === 'workflow-runs' && enrolledCandidateId ? (
               <CandidateWorkflowRunsTab
                 activeRuns={outreachJourney?.activeRuns ?? []}
+                failedRuns={outreachJourney?.failedRuns ?? []}
                 lastFailedRun={outreachJourney?.lastFailedRun ?? null}
                 isLoading={isOutreachJourneyLoading}
               />

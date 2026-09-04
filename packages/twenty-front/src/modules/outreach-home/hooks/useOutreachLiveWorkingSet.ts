@@ -22,6 +22,7 @@ import {
 import { ConnectedAccountProvider } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 
+import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useProjectRefetch } from '@/candidate-table/hooks/useProjectRefetch';
@@ -190,6 +191,7 @@ export const useOutreachLiveWorkingSet = () => {
   const projectIdFromQuery = searchParams.get(OUTREACH_PROJECT_ID_QUERY_PARAM);
 
   const currentWorkspace = useAtomStateValue(currentWorkspaceState);
+  const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
   const [tokenPair] = useAtomState(tokenPairState);
   const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
   // Same signal as Projects menu: accounts-list selector OR server member status.
@@ -256,6 +258,27 @@ export const useOutreachLiveWorkingSet = () => {
       name: true,
     },
   });
+
+  const { records: workspaceMemberProfiles } = useFindManyRecords<{
+    id: string;
+    firstName?: string | null;
+  }>({
+    objectNameSingular: 'workspaceMemberProfile',
+    filter: currentWorkspaceMember?.id
+      ? { workspaceMemberId: { eq: currentWorkspaceMember.id } }
+      : undefined,
+    limit: 1,
+    skip: !isDefined(currentWorkspaceMember?.id),
+    recordGqlFields: {
+      id: true,
+      firstName: true,
+    },
+  });
+
+  const outboundSenderFirstName =
+    workspaceMemberProfiles[0]?.firstName?.trim() ||
+    currentWorkspaceMember?.name?.firstName?.trim() ||
+    null;
 
   const {
     records: allProjects,
@@ -765,7 +788,9 @@ export const useOutreachLiveWorkingSet = () => {
           experimentVariant: normalizeExperimentVariant(
             candidate.experimentVariant,
           ),
-          messagesExchanged: formatMessagesExchanged(candidate.chatMessages),
+          messagesExchanged: formatMessagesExchanged(candidate.chatMessages, {
+            outboundSenderFirstName,
+          }),
           outreachConversationStage:
             candidate.outreachConversationStage ?? 'NONE',
           lastInboundCopy: formatLastInboundMessage(candidate.chatMessages),
@@ -777,7 +802,7 @@ export const useOutreachLiveWorkingSet = () => {
           replyAfterTouch: formatReplyAfterTouch(candidate),
         };
       }),
-    [journeySummary?.byCandidateId, projectCandidates],
+    [journeySummary?.byCandidateId, outboundSenderFirstName, projectCandidates],
   );
 
   const crmPeopleSignature = outreachPersonSignature(crmPeople);

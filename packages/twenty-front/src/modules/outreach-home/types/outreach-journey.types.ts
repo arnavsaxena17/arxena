@@ -23,6 +23,7 @@ export type CandidateOutreachJourney = {
   outreachResumeAt: string | null;
   outreachPaused: boolean;
   activeRuns: CandidateOutreachJourneyActiveRun[];
+  failedRuns: CandidateOutreachJourneyActiveRun[];
   lastFailedRun: CandidateOutreachJourneyActiveRun | null;
   stageHistory: Array<{ stage: string; at: string }>;
 };

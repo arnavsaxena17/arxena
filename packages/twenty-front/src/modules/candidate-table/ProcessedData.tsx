@@ -14,9 +14,11 @@ import { formatLastInboundMessage, formatMessagesExchanged } from './utils/forma
 export const ProcessedData = ({
   rawData,
   selectedRowIds,
+  outboundSenderFirstName,
 }: {
   rawData: CandidateNode[];
   selectedRowIds: string[];
+  outboundSenderFirstName?: string | null;
 }): ProcessedDataItem[] => {
   if (!rawData || !rawData.length) return [];
   return rawData.map((candidate) => {
@@ -73,6 +75,7 @@ export const ProcessedData = ({
       lastMessage: formatLastInboundMessage(flattenedCandidate?.chatMessages),
       messagesExchanged: formatMessagesExchanged(
         flattenedCandidate?.chatMessages,
+        { outboundSenderFirstName },
       ),
       hasCv: flattenedCandidate?.attachments?.edges?.length > 0 || false,
       cvAvailability:

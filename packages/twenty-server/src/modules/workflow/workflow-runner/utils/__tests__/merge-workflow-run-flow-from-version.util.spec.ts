@@ -266,4 +266,107 @@ describe('mergeWorkflowRunFlowFromVersion', () => {
     });
     expect(result.state.flow.steps[0].settings.input.body).toBe('New body');
   });
+
+  it('does not reopen approve when the LinkedIn send already succeeded', () => {
+    const oldApproveId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    const newApproveId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+    const oldSendId = '33333333-3333-4333-8333-333333333333';
+    const newSendId = '44444444-4444-4444-8444-444444444444';
+    const oldWaitId = '55555555-5555-4555-8555-555555555555';
+    const newWaitId = '66666666-6666-4666-8666-666666666666';
+
+    const buildFormStep = ({
+      id,
+      body,
+      nextStepIds,
+    }: {
+      id: string;
+      body: string;
+      nextStepIds: string[];
+    }): WorkflowAction =>
+      ({
+        id,
+        name: 'Approve / edit first message',
+        type: WorkflowActionType.FORM,
+        valid: true,
+        settings: {
+          input: [{ name: 'editedBody', type: 'TEXT', value: body }],
+        },
+        nextStepIds,
+      }) as WorkflowAction;
+
+    const currentState: WorkflowRunState = {
+      flow: {
+        trigger: { type: 'MANUAL', nextStepIds: [oldApproveId] } as never,
+        steps: [
+          buildFormStep({
+            id: oldApproveId,
+            body: 'Old draft',
+            nextStepIds: [oldSendId],
+          }),
+          buildSendStep({
+            id: oldSendId,
+            name: 'Send LinkedIn message',
+            body: 'Old body',
+          }),
+          {
+            id: oldWaitId,
+            name: 'Wait 2-5 days before follow-up',
+            type: WorkflowActionType.DELAY,
+            valid: true,
+            settings: { input: { days: 3 } },
+            nextStepIds: [],
+          } as WorkflowAction,
+        ],
+      },
+      stepInfos: {
+        trigger: { status: StepStatus.SUCCESS, result: {} },
+        [oldApproveId]: {
+          status: StepStatus.SUCCESS,
+          result: { editedBody: 'Approved copy' },
+        },
+        [oldSendId]: {
+          status: StepStatus.SUCCESS,
+          result: { sent: true },
+        },
+        [oldWaitId]: {
+          status: StepStatus.PENDING,
+          pendingReason: 'outreach_sequence_delay',
+          remainingMs: 86_400_000,
+        },
+      },
+    };
+
+    const result = mergeWorkflowRunFlowFromVersion({
+      currentState,
+      nextTrigger: { type: 'MANUAL', nextStepIds: [newApproveId] } as never,
+      nextSteps: [
+        buildFormStep({
+          id: newApproveId,
+          body: 'New draft template',
+          nextStepIds: [newSendId],
+        }),
+        buildSendStep({
+          id: newSendId,
+          name: 'Send LinkedIn message',
+          body: 'New body',
+        }),
+        {
+          id: newWaitId,
+          name: 'Wait 2-5 days before follow-up',
+          type: WorkflowActionType.DELAY,
+          valid: true,
+          settings: { input: { days: 3 } },
+          nextStepIds: [],
+        } as WorkflowAction,
+      ],
+    });
+
+    expect(result.resetStepIds).toEqual([]);
+    expect(result.state.stepInfos[newApproveId]?.status).toBe(
+      StepStatus.SUCCESS,
+    );
+    expect(result.state.stepInfos[newSendId]?.status).toBe(StepStatus.SUCCESS);
+    expect(result.state.stepInfos[newWaitId]?.status).toBe(StepStatus.PENDING);
+  });
 });

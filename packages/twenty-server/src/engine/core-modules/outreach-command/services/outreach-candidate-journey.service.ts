@@ -33,6 +33,7 @@ import {
 import { parseOutreachResumeAtFromHint } from 'src/engine/core-modules/outreach-command/utils/parse-outreach-resume-at.util';
 import { buildFailedRunSummaryFields } from 'src/engine/core-modules/outreach-command/utils/extract-workflow-run-failed-step.util';
 import {
+  buildWorkflowRunStepDeferralClearPatch,
   normalizeWorkflowRunStepDeferralFields,
   readWorkflowRunStepPendingReason,
   readWorkflowRunStepScheduledAt,
@@ -55,6 +56,7 @@ import { getRunnableStepIds } from 'src/modules/workflow/workflow-runner/utils/g
 import { WorkflowRunWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.workspace-service';
 import { WorkflowRunnerWorkspaceService } from 'src/modules/workflow/workflow-runner/workspace-services/workflow-runner.workspace-service';
 import { OutreachWorkflowRunFlowSyncService } from 'src/engine/core-modules/outreach-command/services/outreach-workflow-run-flow-sync.service';
+import { OutreachWorkflowRunRepairService } from 'src/engine/core-modules/outreach-command/services/outreach-workflow-run-repair.service';
 import { OutreachProjectOutreachControlService } from 'src/engine/core-modules/outreach-command/services/outreach-project-outreach-control.service';
 import {
   cancelResumeDelayedWorkflowJobs,
@@ -139,6 +141,7 @@ export class OutreachCandidateJourneyService {
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     private readonly workflowRunWorkspaceService: WorkflowRunWorkspaceService,
     private readonly outreachWorkflowRunFlowSyncService: OutreachWorkflowRunFlowSyncService,
+    private readonly outreachWorkflowRunRepairService: OutreachWorkflowRunRepairService,
     private readonly outreachProjectOutreachControlService: OutreachProjectOutreachControlService,
     @InjectMessageQueue(MessageQueue.delayedJobsQueue)
     private readonly delayedQueue: MessageQueueService,
@@ -179,19 +182,36 @@ export class OutreachCandidateJourneyService {
           workspaceId,
           candidateId,
         });
-        const lastFailedRun =
-          activeRuns.length === 0
-            ? await this.findLatestFailedRunForCandidate({
-                workspaceId,
-                candidateId,
-              })
-            : null;
+
+        for (const run of activeRuns) {
+          try {
+            await this.outreachWorkflowRunRepairService.repairStaleFormAfterSend({
+              workspaceId,
+              workflowRunId: run.id,
+            });
+          } catch (error) {
+            this.logger.warn(
+              `Failed stale FORM-after-send repair for run ${run.id}: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            );
+          }
+        }
+
+        const repairedActiveRuns = await this.findActiveRunsForCandidate({
+          workspaceId,
+          candidateId,
+        });
+        const failedRuns = await this.findFailedRunsForCandidate({
+          workspaceId,
+          candidateId,
+        });
 
         return this.buildJourneyResponse({
           candidate,
           projectId,
-          activeRuns,
-          lastFailedRun,
+          activeRuns: repairedActiveRuns,
+          failedRuns,
         });
       },
       authContext,
@@ -502,6 +522,19 @@ export class OutreachCandidateJourneyService {
           } catch (error) {
             this.logger.warn(
               `Failed to sync run ${run.id}: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            );
+          }
+
+          try {
+            await this.outreachWorkflowRunRepairService.repairStaleFormAfterSend({
+              workspaceId,
+              workflowRunId: run.id,
+            });
+          } catch (error) {
+            this.logger.warn(
+              `Failed stale FORM-after-send repair for run ${run.id}: ${
                 error instanceof Error ? error.message : String(error)
               }`,
             );
@@ -859,19 +892,18 @@ export class OutreachCandidateJourneyService {
     candidate,
     projectId,
     activeRuns,
-    lastFailedRun,
+    failedRuns,
   }: {
     candidate: CandidateRecord;
     projectId: string;
     activeRuns: WorkflowRunRecord[];
-    lastFailedRun: WorkflowRunRecord | null;
+    failedRuns: WorkflowRunRecord[];
   }): CandidateOutreachJourney {
     const mappedRuns: CandidateOutreachJourneyActiveRun[] = activeRuns.map(
       (run) => this.mapRunToJourneyActiveRun(run),
     );
-    const mappedFailedRun = isDefined(lastFailedRun)
-      ? this.mapRunToJourneyActiveRun(lastFailedRun)
-      : null;
+    const mappedFailedRuns: CandidateOutreachJourneyActiveRun[] =
+      failedRuns.map((run) => this.mapRunToJourneyActiveRun(run));
 
     const outreachPaused = mappedRuns.some(
       (run) => run.pendingReason === OUTREACH_CANDIDATE_PAUSED_PENDING_REASON,
@@ -891,7 +923,8 @@ export class OutreachCandidateJourneyService {
       outreachResumeAt: resolveOutreachResumeAt(candidate.outreachAnalytics),
       outreachPaused,
       activeRuns: mappedRuns,
-      lastFailedRun: mappedFailedRun,
+      failedRuns: mappedFailedRuns,
+      lastFailedRun: mappedFailedRuns[0] ?? null,
       stageHistory: this.buildStageHistory(candidate),
     };
   }
@@ -1001,13 +1034,13 @@ export class OutreachCandidateJourneyService {
     });
   }
 
-  private async findLatestFailedRunForCandidate({
+  private async findFailedRunsForCandidate({
     workspaceId,
     candidateId,
   }: {
     workspaceId: string;
     candidateId: string;
-  }): Promise<WorkflowRunRecord | null> {
+  }): Promise<WorkflowRunRecord[]> {
     const workflowRunRepository =
       await this.globalWorkspaceOrmManager.getRepository<WorkflowRunRecord>(
         workspaceId,
@@ -1015,12 +1048,13 @@ export class OutreachCandidateJourneyService {
         { shouldBypassPermissionChecks: true },
       );
 
-    return workflowRunRepository.findOne({
+    return workflowRunRepository.find({
       where: {
         candidateId,
         status: WorkflowRunStatus.FAILED,
       },
       order: { createdAt: 'DESC' },
+      take: 20,
     });
   }
 
@@ -1144,6 +1178,24 @@ export class OutreachCandidateJourneyService {
           delayedQueue: this.delayedQueue,
           data: { workspaceId, workflowRunId: run.id, stepId },
           delay: remainingMs,
+        });
+        resumedSteps += 1;
+        continue;
+      }
+
+      const stepType = run.state?.flow?.steps?.find(
+        (step) => step.id === stepId,
+      )?.type;
+
+      if (stepType === WorkflowActionType.FORM) {
+        await this.workflowRunWorkspaceService.updateWorkflowRunStepInfo({
+          stepId,
+          stepInfo: {
+            status: StepStatus.PENDING,
+            ...buildWorkflowRunStepDeferralClearPatch(),
+          },
+          workspaceId,
+          workflowRunId: run.id,
         });
         resumedSteps += 1;
         continue;

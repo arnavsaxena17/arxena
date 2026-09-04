@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
-import { StepStatus } from 'twenty-shared/workflow';
+import { StepStatus, WorkflowActionType } from 'twenty-shared/workflow';
 import { In, type ObjectLiteral } from 'typeorm';
 
 import { getRegisteredAccountRateLimiter } from 'src/engine/core-modules/account-rate-limit/account-rate-limiter.registry';
@@ -12,6 +12,7 @@ import {
   SEQUENCE_DELAY_PENDING_REASON,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
 import {
+  buildWorkflowRunStepDeferralClearPatch,
   normalizeWorkflowRunStepDeferralFields,
   readWorkflowRunStepPendingReason,
   readWorkflowRunStepScheduledAt,
@@ -34,6 +35,7 @@ import {
   scheduleResumeDelayedWorkflowJob,
 } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/utils/resume-delayed-workflow-job-scheduler.util';
 import { OutreachWorkflowRunFlowSyncService } from 'src/engine/core-modules/outreach-command/services/outreach-workflow-run-flow-sync.service';
+import { OutreachWorkflowRunRepairService } from 'src/engine/core-modules/outreach-command/services/outreach-workflow-run-repair.service';
 import { WorkflowRunWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.workspace-service';
 
 type ProjectRecord = ObjectLiteral & {
@@ -75,6 +77,7 @@ export class OutreachProjectOutreachControlService {
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     private readonly workflowRunWorkspaceService: WorkflowRunWorkspaceService,
     private readonly outreachWorkflowRunFlowSyncService: OutreachWorkflowRunFlowSyncService,
+    private readonly outreachWorkflowRunRepairService: OutreachWorkflowRunRepairService,
     @InjectMessageQueue(MessageQueue.delayedJobsQueue)
     private readonly delayedQueue: MessageQueueService,
     @InjectMessageQueue(MessageQueue.workflowQueue)
@@ -239,6 +242,19 @@ export class OutreachProjectOutreachControlService {
             );
           }
 
+          try {
+            await this.outreachWorkflowRunRepairService.repairStaleFormAfterSend({
+              workspaceId,
+              workflowRunId: run.id,
+            });
+          } catch (error) {
+            this.logger.warn(
+              `Failed stale FORM-after-send repair for run ${run.id}: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            );
+          }
+
           const freshRun =
             await this.workflowRunWorkspaceService.getWorkflowRunOrFail({
               workflowRunId: run.id,
@@ -291,6 +307,26 @@ export class OutreachProjectOutreachControlService {
                   stepId,
                 },
                 delay: remainingMs,
+              });
+              resumedRuns += 1;
+              continue;
+            }
+
+            const stepType = freshRun.state?.flow?.steps?.find(
+              (step) => step.id === stepId,
+            )?.type;
+
+            // Keep FORM parked for approval; only clear the stale pause reason
+            // so the diagram does not say "waiting until outreach resumes".
+            if (stepType === WorkflowActionType.FORM) {
+              await this.workflowRunWorkspaceService.updateWorkflowRunStepInfo({
+                stepId,
+                stepInfo: {
+                  status: StepStatus.PENDING,
+                  ...buildWorkflowRunStepDeferralClearPatch(),
+                },
+                workspaceId,
+                workflowRunId: freshRun.id,
               });
               resumedRuns += 1;
               continue;

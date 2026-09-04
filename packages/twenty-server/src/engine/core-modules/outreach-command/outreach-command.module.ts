@@ -57,6 +57,7 @@ import { OutreachDeferredResumeCronService } from 'src/engine/core-modules/outre
 import { OutreachDeferredResumeService } from 'src/engine/core-modules/outreach-command/services/outreach-deferred-resume.service';
 import { OutreachDeferredResumeJob } from 'src/engine/core-modules/outreach-command/jobs/outreach-deferred-resume.job';
 import { OutreachWorkflowRunFlowSyncService } from 'src/engine/core-modules/outreach-command/services/outreach-workflow-run-flow-sync.service';
+import { OutreachWorkflowRunRepairService } from 'src/engine/core-modules/outreach-command/services/outreach-workflow-run-repair.service';
 import { OutreachWikidataCompanyEnrichmentSource } from 'src/engine/core-modules/outreach-command/services/outreach-wikidata-company-enrichment.source';
 import { OutreachWebSearchCompanyEnrichmentSource } from 'src/engine/core-modules/outreach-command/services/outreach-web-search-company-enrichment.source';
 import { OutreachWorkspaceAuthTokenService } from 'src/engine/core-modules/outreach-command/services/outreach-workspace-auth-token.service';
@@ -169,6 +170,7 @@ import { WebSocketModule } from 'src/modules/websocket/websocket.module';
     OutreachDeferredResumeJob,
     OutreachDeferredResumeCronService,
     OutreachWorkflowRunFlowSyncService,
+    OutreachWorkflowRunRepairService,
     OutreachInboundReplyWindowService,
   ],
   exports: [
@@ -198,6 +200,7 @@ import { WebSocketModule } from 'src/modules/websocket/websocket.module';
     OutreachCandidateJourneyService,
     OutreachDeferredResumeService,
     OutreachWorkflowRunFlowSyncService,
+    OutreachWorkflowRunRepairService,
     OutreachInboundReplyWindowService,
   ],
 })

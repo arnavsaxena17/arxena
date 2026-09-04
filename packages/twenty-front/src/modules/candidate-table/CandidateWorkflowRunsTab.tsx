@@ -1,5 +1,5 @@
 import { styled } from '@linaria/react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { isDefined } from 'twenty-shared/utils';
 import { Loader } from 'twenty-ui/feedback';
 import { type SelectOption } from 'twenty-ui/input';
@@ -64,30 +64,62 @@ const StyledCanvas = styled.div`
   }
 `;
 
+const formatWorkflowRunOptionLabel = (
+  run: CandidateOutreachJourneyActiveRun,
+): string => {
+  const statusLabel =
+    run.status === 'FAILED'
+      ? 'Failed'
+      : run.status === 'RUNNING'
+        ? 'Running'
+        : run.status === 'ENQUEUED'
+          ? 'Queued'
+          : run.status === 'NOT_STARTED'
+            ? 'Not started'
+            : run.status;
+
+  return `${run.workflowName} · ${statusLabel}`;
+};
+
 type CandidateWorkflowRunsTabProps = {
   activeRuns: CandidateOutreachJourneyActiveRun[];
+  failedRuns?: CandidateOutreachJourneyActiveRun[];
   lastFailedRun?: CandidateOutreachJourneyActiveRun | null;
   isLoading: boolean;
 };
 
 export const CandidateWorkflowRunsTab = ({
   activeRuns,
+  failedRuns = [],
   lastFailedRun = null,
   isLoading,
 }: CandidateWorkflowRunsTabProps) => {
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
 
+  const selectableRuns = useMemo(() => {
+    const failedRunIds = new Set(
+      failedRuns.map((run) => run.workflowRunId),
+    );
+    const legacyFailedRuns =
+      isDefined(lastFailedRun) &&
+      !failedRunIds.has(lastFailedRun.workflowRunId)
+        ? [lastFailedRun]
+        : [];
+
+    return [...activeRuns, ...failedRuns, ...legacyFailedRuns];
+  }, [activeRuns, failedRuns, lastFailedRun]);
+
   const selectedRun =
-    activeRuns.find((run) => run.workflowRunId === selectedRunId) ??
-    activeRuns[0] ??
+    selectableRuns.find((run) => run.workflowRunId === selectedRunId) ??
+    selectableRuns[0] ??
     null;
 
-  const runOptions: SelectOption<string>[] = activeRuns.map((run) => ({
-    label: run.workflowName,
+  const runOptions: SelectOption<string>[] = selectableRuns.map((run) => ({
+    label: formatWorkflowRunOptionLabel(run),
     value: run.workflowRunId,
   }));
 
-  if (isLoading && activeRuns.length === 0 && !isDefined(lastFailedRun)) {
+  if (isLoading && selectableRuns.length === 0) {
     return (
       <StyledContainer>
         <Loader />
@@ -95,47 +127,34 @@ export const CandidateWorkflowRunsTab = ({
     );
   }
 
-  if (activeRuns.length === 0 || !isDefined(selectedRun)) {
-    if (isDefined(lastFailedRun)) {
-      const failureLabel = resolveOutreachPendingStepLabel({
-        currentStepName: lastFailedRun.currentStepName,
-        currentStepKind: lastFailedRun.currentStepKind,
-        pendingReason: lastFailedRun.pendingReason,
-        errorMessage: lastFailedRun.errorMessage,
-        status: lastFailedRun.status,
-      });
-
-      return (
-        <StyledContainer>
-          <StyledFailureBanner>
-            <StyledSectionTitle>Last failed run</StyledSectionTitle>
-            <StyledMuted>{lastFailedRun.workflowName}</StyledMuted>
-            <strong>{failureLabel}</strong>
-          </StyledFailureBanner>
-          <StyledCanvas>
-            <OutreachWorkflowRunDiagramEmbed
-              key={lastFailedRun.workflowRunId}
-              workflowRunId={lastFailedRun.workflowRunId}
-            />
-          </StyledCanvas>
-        </StyledContainer>
-      );
-    }
-
+  if (selectableRuns.length === 0 || !isDefined(selectedRun)) {
     return (
       <StyledContainer>
-        <StyledMuted>No active workflow runs for this candidate.</StyledMuted>
+        <StyledMuted>
+          No active or failed workflow runs for this candidate.
+        </StyledMuted>
       </StyledContainer>
     );
   }
+
+  const isFailedRun = selectedRun.status === 'FAILED';
+  const failureLabel = isFailedRun
+    ? resolveOutreachPendingStepLabel({
+        currentStepName: selectedRun.currentStepName,
+        currentStepKind: selectedRun.currentStepKind,
+        pendingReason: selectedRun.pendingReason,
+        errorMessage: selectedRun.errorMessage,
+        status: selectedRun.status,
+      })
+    : null;
 
   return (
     <StyledContainer>
       <StyledHeader>
         <StyledSectionTitle>
-          Active runs ({activeRuns.length})
+          Workflow runs ({selectableRuns.length})
         </StyledSectionTitle>
-        {activeRuns.length > 1 ? (
+        {selectableRuns.length > 1 ? (
           <Select<string>
             dropdownId="candidate-workflow-runs-select"
             label="Workflow run"
@@ -145,12 +164,24 @@ export const CandidateWorkflowRunsTab = ({
             fullWidth
             selectSizeVariant="small"
             needIconCheck={false}
-            withSearchInput={activeRuns.length > 5}
+            withSearchInput={selectableRuns.length > 5}
           />
         ) : (
-          <StyledMuted>{selectedRun.workflowName}</StyledMuted>
+          <StyledMuted>
+            {formatWorkflowRunOptionLabel(selectedRun)}
+          </StyledMuted>
         )}
       </StyledHeader>
+      {isFailedRun ? (
+        <StyledFailureBanner>
+          <StyledSectionTitle>Failed run</StyledSectionTitle>
+          <StyledMuted>{selectedRun.workflowName}</StyledMuted>
+          {isDefined(failureLabel) ? <strong>{failureLabel}</strong> : null}
+          {isDefined(selectedRun.errorMessage) ? (
+            <StyledMuted>{selectedRun.errorMessage}</StyledMuted>
+          ) : null}
+        </StyledFailureBanner>
+      ) : null}
       <StyledCanvas>
         <OutreachWorkflowRunDiagramEmbed
           key={selectedRun.workflowRunId}

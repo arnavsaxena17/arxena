@@ -351,6 +351,11 @@ describe('WorkflowExecutorWorkspaceService', () => {
         stepId: 'step-1',
         stepInfo: {
           status: StepStatus.PENDING,
+          pendingReason: undefined,
+          waitMs: undefined,
+          scheduledAt: undefined,
+          remainingMs: undefined,
+          method: undefined,
         },
         workflowRunId: mockWorkflowRunId,
         workspaceId: 'workspace-id',

@@ -4,6 +4,7 @@ import {
   OUTREACH_SEND_WINDOW_PENDING_REASON,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
 import {
+  buildWorkflowRunStepDeferralClearPatch,
   normalizeWorkflowRunStepDeferralFields,
   readWorkflowRunStepPendingReason,
   readWorkflowRunStepScheduledAt,
@@ -47,6 +48,16 @@ describe('readWorkflowRunStepPendingFields', () => {
         pendingReason: OUTREACH_SEND_WINDOW_PENDING_REASON,
         scheduledAt: '2026-09-01T02:41:30.609Z',
       },
+    });
+  });
+
+  it('builds an explicit clear patch for merge deletes', () => {
+    expect(buildWorkflowRunStepDeferralClearPatch()).toEqual({
+      pendingReason: undefined,
+      waitMs: undefined,
+      scheduledAt: undefined,
+      remainingMs: undefined,
+      method: undefined,
     });
   });
 });

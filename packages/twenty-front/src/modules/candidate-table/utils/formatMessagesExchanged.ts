@@ -54,13 +54,27 @@ const asTurns = (value: unknown): ChatTurn[] => {
   });
 };
 
-const resolveSenderLabel = (name?: string | null): string => {
+export type FormatMessagesExchangedOptions = {
+  outboundSenderFirstName?: string | null;
+};
+
+const resolveOutboundSenderLabel = (
+  outboundSenderFirstName?: string | null,
+): string =>
+  isNonEmptyString(outboundSenderFirstName?.trim())
+    ? outboundSenderFirstName.trim()
+    : 'Recruiter';
+
+const resolveSenderLabel = (
+  name?: string | null,
+  outboundSenderFirstName?: string | null,
+): string => {
   if (name === 'candidateMessage') {
     return 'Candidate';
   }
 
   if (name === 'botMessage' || name === 'recruiterMessage') {
-    return 'Recruiter';
+    return resolveOutboundSenderLabel(outboundSenderFirstName);
   }
 
   return isNonEmptyString(name) ? name : 'Message';
@@ -82,7 +96,10 @@ const flattenChatMessageNodes = (
     return turns.map((turn) => ({
       ...node,
       message: turn.content,
-      name: turn.role === 'assistant' ? 'botMessage' : 'candidateMessage',
+      name:
+        turn.role === 'assistant' || turn.role === 'recruiter'
+          ? 'botMessage'
+          : 'candidateMessage',
       createdAt: turn.timestamp || node.createdAt,
     }));
   });
@@ -109,6 +126,7 @@ const formatTimestamp = (createdAt?: string | null): string => {
 
 export const formatMessagesExchanged = (
   chatMessages?: ChatMessagesForTable,
+  options?: FormatMessagesExchangedOptions,
 ): string => {
   const nodes = (chatMessages?.edges ?? [])
     .map((edge) => edge?.node)
@@ -127,7 +145,10 @@ export const formatMessagesExchanged = (
   return sorted
     .map((node) => {
       const timestamp = formatTimestamp(node.createdAt);
-      const sender = resolveSenderLabel(node.name);
+      const sender = resolveSenderLabel(
+        node.name,
+        options?.outboundSenderFirstName,
+      );
 
       return timestamp
         ? `[${timestamp}] ${sender}: ${node.message}`

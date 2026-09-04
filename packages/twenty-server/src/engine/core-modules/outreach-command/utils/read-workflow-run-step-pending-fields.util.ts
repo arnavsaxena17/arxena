@@ -76,3 +76,19 @@ export const normalizeWorkflowRunStepDeferralFields = (
     result,
   };
 };
+
+// Explicit undefined so mergeWorkflowRunStepInfo deletes stale pause /
+// capacity fields (including nested result mirrors).
+export const buildWorkflowRunStepDeferralClearPatch = (): {
+  pendingReason: undefined;
+  waitMs: undefined;
+  scheduledAt: undefined;
+  remainingMs: undefined;
+  method: undefined;
+} => ({
+  pendingReason: undefined,
+  waitMs: undefined,
+  scheduledAt: undefined,
+  remainingMs: undefined,
+  method: undefined,
+});
