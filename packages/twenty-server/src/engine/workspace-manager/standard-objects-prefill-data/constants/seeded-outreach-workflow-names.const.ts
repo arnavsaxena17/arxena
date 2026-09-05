@@ -50,6 +50,8 @@ const SEEDED_OUTREACH_WORKFLOW_LEGACY_ALIASES: Record<string, string[]> = {
   [SEEDED_OUTREACH_WORKFLOW.candidateUpdated.name]: [
     'GTM Outreach — Candidate Updated',
     'GTM Outreach — Candidate Updated - Connection Accepted',
+    // Projectivetech / legacy live name (never matched without this alias)
+    'GTM Outreach — Candidate Updated - Connection Accepted Onwards',
     'GTM Outreach — Connection Accepted',
     'GTM Outreach — Reply',
     'GTM Outreach — Negotiating',
@@ -76,8 +78,7 @@ export const OUTREACH_WORKFLOW_NAMES_TO_DEACTIVATE = [
   'Outreach — Meeting Booked',
 ] as const;
 
-export type SeededOutreachWorkflowKey =
-  keyof typeof SEEDED_OUTREACH_WORKFLOW;
+export type SeededOutreachWorkflowKey = keyof typeof SEEDED_OUTREACH_WORKFLOW;
 
 export const seededOutreachWorkflowNameAliases = (
   canonicalName: string,

@@ -14,6 +14,7 @@ const OUTREACH_WORKFLOW_C_NAME_ALIASES = [
   OUTREACH_WORKFLOW_C_NAME,
   'GTM Outreach — Candidate Updated',
   'GTM Outreach — Candidate Updated - Connection Accepted',
+  'GTM Outreach — Candidate Updated - Connection Accepted Onwards',
   'GTM Outreach — Connection Accepted',
   'GTM Outreach — Reply',
   'GTM Outreach — Negotiating',
