@@ -10,13 +10,15 @@ import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/deco
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 
-@RegisteredWorkspaceCommand('2.25.0', 1785600000066)
+// Follow-up for workspaces that completed 1785600000066 while it was a no-op
+// after the Arxena-manifest index approach failed.
+@RegisteredWorkspaceCommand('2.25.0', 1785600000092)
 @Command({
-  name: 'upgrade:2-25:unique-company-linkedin-id',
+  name: 'upgrade:2-25:ensure-unique-company-linkedin-id',
   description:
-    'Null empty/duplicate Company.linkedinId values and ensure a unique Postgres index (workspace SQL, not Arxena manifest)',
+    'Re-apply unique Company.linkedinId via workspace SQL for workspaces that skipped the original unique-index command',
 })
-export class UniqueCompanyLinkedinIdCommand extends ProvisionedWorkspaceCommandRunner {
+export class EnsureUniqueCompanyLinkedinIdCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly workspaceQueryService: WorkspaceQueryService,
@@ -34,7 +36,7 @@ export class UniqueCompanyLinkedinIdCommand extends ProvisionedWorkspaceCommandR
     const schemaName = getWorkspaceSchemaName(workspaceId);
 
     this.logger.log(
-      `${isDryRun ? '[DRY RUN] ' : ''}Ensuring unique Company.linkedinId for workspace ${workspaceId}`,
+      `${isDryRun ? '[DRY RUN] ' : ''}Re-ensuring unique Company.linkedinId for workspace ${workspaceId}`,
     );
 
     if (isDryRun) {

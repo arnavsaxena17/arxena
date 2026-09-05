@@ -3,13 +3,14 @@ import { type QueryRunner } from 'typeorm';
 import { RegisteredInstanceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-instance-command.decorator';
 import { type FastInstanceCommand } from 'src/engine/core-modules/upgrade/interfaces/fast-instance-command.interface';
 
-// Auto-generated TypeORM sync dump also tried to recreate ARX billing / MCP /
-// org-chart objects. On arxanalytics those already exist from earlier 2.25
-// commands, so only create the net-new tables here.
+// Original TypeORM sync dump started with unconditional
+// `ALTER TABLE core.billingSubscription DROP CONSTRAINT "FK_6e7dda21…"` (and
+// other billing / MCP / org-chart DDL). That FK is not present on every
+// instance (already dropped or never created), so production failed with
+// 42704. Keep this command scoped to net-new tables only, with IF NOT EXISTS /
+// duplicate_object guards so re-runs are idempotent.
 @RegisteredInstanceCommand('2.25.0', 1785138251592)
-export class AddAiProviderCredentialFastInstanceCommand
-  implements FastInstanceCommand
-{
+export class AddAiProviderCredentialFastInstanceCommand implements FastInstanceCommand {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "core"."aiProviderCredential" (
