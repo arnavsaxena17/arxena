@@ -2,7 +2,7 @@ import { useQuery } from '@apollo/client/react';
 import { styled } from '@linaria/react';
 import { isNonEmptyString } from '@sniptt/guards';
 import { useStore } from 'jotai';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { buildProjectConfigUpdate } from 'twenty-shared/arx';
 import { isDefined } from 'twenty-shared/utils';
@@ -44,7 +44,6 @@ import {
 } from '@/outreach-home/utils/outreach-effective-icp.util';
 import { regenerateOutreachWorkspaceProfile } from '@/outreach-home/utils/outreach-workspace-profile-regenerate';
 import { useGetResourceCreditUsage } from '@/settings/billing/hooks/useGetResourceCreditUsage';
-import { useOpenAskAiPageInSidePanel } from '@/side-panel/hooks/useOpenAskAiPageInSidePanel';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
@@ -140,7 +139,6 @@ const OutreachHomePageContent = () => {
   } = useOutreachLiveWorkingSet();
   const isSetupTab = activeTab === 'setup';
   const { openAskAiPageWithPreprompt } = useOpenAskAiPageWithPreprompt();
-  const { openAskAiPage } = useOpenAskAiPageInSidePanel();
   const { updateOneRecord } = useUpdateOneRecord();
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
   const setOutreachContext = useSetAtomState(outreachContextState);
@@ -196,17 +194,6 @@ const OutreachHomePageContent = () => {
       aiCreditsDisplay = undefined;
     }
   }
-
-  // Show Ask AI on Outreach entry (URL / reload), not only nav click.
-  // Guard: opening the panel must not recreate this effect (max update depth).
-  const hasOpenedAskAiOnEntryRef = useRef(false);
-  useEffect(() => {
-    if (hasOpenedAskAiOnEntryRef.current) {
-      return;
-    }
-    hasOpenedAskAiOnEntryRef.current = true;
-    openAskAiPage({ resetNavigationStack: true });
-  }, [openAskAiPage]);
 
   const selectedCandidateStage =
     people.find((person) => person.id === selectedPersonId)?.stage ?? null;

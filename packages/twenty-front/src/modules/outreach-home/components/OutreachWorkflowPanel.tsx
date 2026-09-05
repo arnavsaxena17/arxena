@@ -1,12 +1,10 @@
 import { styled } from '@linaria/react';
-import { useEffect, useRef } from 'react';
 import { Loader } from 'twenty-ui/feedback';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { OutreachWorkflowDiagramEmbed } from '@/outreach-home/components/OutreachWorkflowDiagramEmbed';
 import { OutreachWorkflowRunDiagramEmbed } from '@/outreach-home/components/OutreachWorkflowRunDiagramEmbed';
 import { type OutreachWorkflowEmbedMode } from '@/outreach-home/hooks/useOutreachWorkflowEmbed';
-import { useOpenAskAiPageInSidePanel } from '@/side-panel/hooks/useOpenAskAiPageInSidePanel';
 
 const StyledPanel = styled.div`
   display: flex;
@@ -37,7 +35,6 @@ const StyledEmpty = styled.div`
 `;
 
 type OutreachWorkflowPanelProps = {
-  isActive: boolean;
   mode: OutreachWorkflowEmbedMode;
   workflowId: string | null;
   workflowRunId: string | null;
@@ -48,7 +45,6 @@ type OutreachWorkflowPanelProps = {
 };
 
 export const OutreachWorkflowPanel = ({
-  isActive,
   mode,
   workflowId,
   workflowRunId,
@@ -57,24 +53,6 @@ export const OutreachWorkflowPanel = ({
   workflowsLoading,
   runsLoading,
 }: OutreachWorkflowPanelProps) => {
-  const { openAskAiPage } = useOpenAskAiPageInSidePanel();
-  const lastOpenedForActiveRef = useRef(false);
-
-  useEffect(() => {
-    if (!isActive) {
-      lastOpenedForActiveRef.current = false;
-      return;
-    }
-
-    if (lastOpenedForActiveRef.current) {
-      return;
-    }
-
-    lastOpenedForActiveRef.current = true;
-    // Keep the existing chat thread; do not auto-send a new kickoff.
-    openAskAiPage({ resetNavigationStack: true });
-  }, [isActive, openAskAiPage]);
-
   if (workflowsLoading) {
     return (
       <StyledEmpty>

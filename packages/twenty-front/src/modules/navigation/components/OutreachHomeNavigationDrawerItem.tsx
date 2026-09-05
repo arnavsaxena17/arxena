@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { AppPath } from 'twenty-shared/types';
 import { getAppPath } from 'twenty-shared/utils';
 import { IconLayoutDashboard, IconTargetArrow } from 'twenty-ui/icon';
@@ -8,7 +8,6 @@ import {
   useCanQueryDashboardRecords,
   useOutreachCommandDashboardPath,
 } from '@/outreach-home/hooks/useOutreachCommandDashboardPath';
-import { useOpenAskAiPageInSidePanel } from '@/side-panel/hooks/useOpenAskAiPageInSidePanel';
 import { NavigationDrawerItem } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import { NavigationDrawerSection } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerSection';
 import { NavigationDrawerSectionTitle } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerSectionTitle';
@@ -41,8 +40,6 @@ const OutreachHomeNavigationDrawerItemView = ({
   dashboardPath,
 }: OutreachHomeNavigationDrawerItemViewProps) => {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { openAskAiPage } = useOpenAskAiPageInSidePanel();
 
   // AppPath.OutreachHome is relative (`outreach-home`); prefix `/` so Link is absolute.
   const shellPath = `/${getAppPath(AppPath.OutreachHome)}`;
@@ -61,11 +58,6 @@ const OutreachHomeNavigationDrawerItemView = ({
         to={shellPath}
         Icon={IconTargetArrow}
         active={isShellActive}
-        onClick={() => {
-          // useMouseDownNavigation skips navigate(to) when onClick is set
-          navigate(shellPath);
-          openAskAiPage({ resetNavigationStack: true });
-        }}
       />
       <NavigationDrawerItem
         label="CRM dashboard"

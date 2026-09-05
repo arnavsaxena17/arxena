@@ -14,6 +14,7 @@ import { useContext } from 'react';
 
 import { useSwitchToNewAiChat } from '@/ai/hooks/useSwitchToNewAiChat';
 import { useHasPermissionFlag } from '@/settings/roles/hooks/useHasPermissionFlag';
+import { useOpenAskAiPageInSidePanel } from '@/side-panel/hooks/useOpenAskAiPageInSidePanel';
 import { NavigationDrawerAnimatedCollapseWrapper } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerAnimatedCollapseWrapper';
 import { isNavigationDrawerExpandedState } from '@/ui/navigation/states/isNavigationDrawerExpanded';
 import { navigationDrawerActiveTabState } from '@/ui/navigation/states/navigationDrawerActiveTabState';
@@ -152,9 +153,8 @@ export const MainNavigationDrawerTabsRow = ({
   );
   const [navigationDrawerActiveTab, setNavigationDrawerActiveTab] =
     useAtomState(navigationDrawerActiveTabState);
-  const { switchToNewChat } = useSwitchToNewAiChat({
-    shouldOpenInFullPage: true,
-  });
+  const { switchToNewChat } = useSwitchToNewAiChat();
+  const { openAskAiPage } = useOpenAskAiPageInSidePanel();
   const setIsNavigationDrawerExpanded = useSetAtomState(
     isNavigationDrawerExpandedState,
   );
@@ -166,15 +166,23 @@ export const MainNavigationDrawerTabsRow = ({
     return null;
   }
 
-  const handleTabClick = (tab: NavigationDrawerActiveTab) => () => {
+  const openChatTab = (tab: NavigationDrawerActiveTab) => {
     setNavigationDrawerActiveTab(tab);
+
+    if (tab === NAVIGATION_DRAWER_TABS.AI_CHAT_HISTORY) {
+      openAskAiPage({ resetNavigationStack: true });
+    }
+  };
+
+  const handleTabClick = (tab: NavigationDrawerActiveTab) => () => {
+    openChatTab(tab);
   };
 
   const handleTabKeyDown =
     (tab: NavigationDrawerActiveTab) => (event: React.KeyboardEvent) => {
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
-        setNavigationDrawerActiveTab(tab);
+        openChatTab(tab);
       }
     };
 

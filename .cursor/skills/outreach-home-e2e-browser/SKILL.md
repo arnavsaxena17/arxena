@@ -108,7 +108,8 @@ Show the browser: `browser_navigate` / `browser_tabs` with `position: "active"`.
 ### Step 1 — Companies discovery
 
 1. Menu → **Add New Project** (creates Project; URL gains new `projectId`).
-2. Ask AI right drawer opens with ICP preprompt — clear/replace composer text.
+2. Click the sidebar chat icon or **+ New chat** to open the Ask AI right drawer
+   (Outreach no longer opens it on entry).
 3. Send exactly (or close equivalent):
 
 > Give me textile manufacturing companies from india

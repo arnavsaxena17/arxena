@@ -28,7 +28,7 @@ Workflow topology:
 | Working set | `/outreach-home?projectId=` | Companies (ephemeral) / People / Workflow + Ask AI |
 | CRM dashboard | `/object/dashboard/:id` (**Outreach**) | Funnel / coverage / stage / channel / speed / outcomes / **workflow control**. Prefilled on workspace create; existing workspaces: `upgrade:2-25:prefill-gtm-command-dashboard` and `upgrade:2-25:sync-outreach-workflow-control-dashboard`. |
 
-On entry, Ask AI prefills an ICP onboarding kickoff (user hits Enter to send). Chrome is two rows: **PageHeader** (`Outreach` + project picker / pause-resume / Menu) and **main tabs** (Companies / People / Workflow; workflow mode + outreach picker trail on the same row). Switch projects via the header Project picker; create projects via Menu → Add New Project. Workflow tab prefers / auto-creates **`Outreach — Per Enrolled Candidate`** and binds `Project.outreachWorkflowId` when the Project has none. The Stage B dropdown lists ACTIVE workflows only; selecting one rebinds the Project pin and prefills Ask AI with that `outreachWorkflowId` context.
+Ask AI stays closed on `/outreach-home` until the user opens it from the nav chat icon or **+ New chat**. Chrome is two rows: **PageHeader** (`Outreach` + project picker / pause-resume / Menu) and **main tabs** (Companies / People / Setup). Switch projects via the header Project picker; create projects via Menu → Add New Project. Stage B workflow still auto-binds **`Outreach — Per Enrolled Candidate`** via `useOutreachWorkflowEmbed` when the Project has no `outreachWorkflowId`.
 
 Optional: `?workflowId=` / `?workflowRunId=`
 

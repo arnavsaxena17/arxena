@@ -3,24 +3,29 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 
 import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
 import {
-    getOAuthProtectedResourceMetadataUrl,
-    mcpAuthMetadataRouter,
-    mcpAuthRouter,
+  getOAuthProtectedResourceMetadataUrl,
+  mcpAuthMetadataRouter,
+  mcpAuthRouter,
 } from '@modelcontextprotocol/sdk/server/auth/router.js';
+import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
 import { createMcpExpressApp } from '@modelcontextprotocol/sdk/server/express.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { Request, Response } from 'express';
 
 import {
-    buildArxenaConfigFromToken,
-    extractApiTokenFromHeaders,
-    validateApiToken,
+  buildArxenaConfigFromToken,
+  extractApiTokenFromHeaders,
+  validateApiToken,
 } from './auth';
 import { ArxenaConfig, HttpServerConfig, loadHttpServerConfig } from './config';
 import { ArxenaOAuthProvider } from './oauth/arxena-oauth-provider';
 import { buildMcpServer } from './server';
 import { allTools, publicTools } from './tools/index';
 import { McpTool } from './types/tool-types';
+
+type AuthenticatedRequest = Request & {
+  auth?: AuthInfo;
+};
 
 type SessionEntry = {
   transport: StreamableHTTPServerTransport;
@@ -314,7 +319,9 @@ const resolveTools = (config: HttpServerConfig): McpTool[] =>
 const getResourceMetadataUrl = (config: HttpServerConfig): string =>
   getOAuthProtectedResourceMetadataUrl(new URL(config.mcpPublicUrl));
 
-export const createHttpApp = (config: HttpServerConfig = loadHttpServerConfig()) => {
+export const createHttpApp = (
+  config: HttpServerConfig = loadHttpServerConfig(),
+) => {
   const app = createMcpExpressApp({
     host: '0.0.0.0',
     allowedHosts: ['mcp.arxena.com', 'localhost', '127.0.0.1'],
@@ -365,7 +372,8 @@ export const createHttpApp = (config: HttpServerConfig = loadHttpServerConfig())
           state: String(req.query.state ?? ''),
           codeChallenge: String(req.query.code_challenge ?? ''),
           resource: String(req.query.resource ?? config.mcpPublicUrl),
-          error: typeof req.query.error === 'string' ? req.query.error : undefined,
+          error:
+            typeof req.query.error === 'string' ? req.query.error : undefined,
         }),
       );
     });
@@ -378,31 +386,38 @@ export const createHttpApp = (config: HttpServerConfig = loadHttpServerConfig())
       const apiToken = String(req.body.api_token ?? '').trim();
 
       if (!clientId || !redirectUri || !codeChallenge || !apiToken) {
-        res.status(400).type('html').send(
-          renderConsentPage({
-            clientId,
-            redirectUri,
-            state,
-            codeChallenge,
-            resource: String(req.body.resource ?? config.mcpPublicUrl),
-            error: 'All fields are required.',
-          }),
-        );
+        res
+          .status(400)
+          .type('html')
+          .send(
+            renderConsentPage({
+              clientId,
+              redirectUri,
+              state,
+              codeChallenge,
+              resource: String(req.body.resource ?? config.mcpPublicUrl),
+              error: 'All fields are required.',
+            }),
+          );
         return;
       }
 
       const isValid = await validateApiToken(config.arxenaBaseUrl, apiToken);
       if (!isValid) {
-        res.status(401).type('html').send(
-          renderConsentPage({
-            clientId,
-            redirectUri,
-            state,
-            codeChallenge,
-            resource: String(req.body.resource ?? config.mcpPublicUrl),
-            error: 'Invalid API key token. Generate one in Arxena Settings → Developers → API Keys.',
-          }),
-        );
+        res
+          .status(401)
+          .type('html')
+          .send(
+            renderConsentPage({
+              clientId,
+              redirectUri,
+              state,
+              codeChallenge,
+              resource: String(req.body.resource ?? config.mcpPublicUrl),
+              error:
+                'Invalid API key token. Generate one in Arxena Settings → Developers → API Keys.',
+            }),
+          );
         return;
       }
 
@@ -469,7 +484,7 @@ export const createHttpApp = (config: HttpServerConfig = loadHttpServerConfig())
   });
 
   const authenticateRequest = async (
-    req: Request,
+    req: AuthenticatedRequest,
   ): Promise<ArxenaConfig | undefined> => {
     const headerToken = extractApiTokenFromHeaders(
       req.headers as Record<string, string | string[] | undefined>,
@@ -500,7 +515,7 @@ export const createHttpApp = (config: HttpServerConfig = loadHttpServerConfig())
       };
 
   const mcpAuthMiddleware = async (
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: () => void,
   ) => {
@@ -527,20 +542,24 @@ export const createHttpApp = (config: HttpServerConfig = loadHttpServerConfig())
           next();
           return;
         }
-        res.status(401).setHeader(
-          'WWW-Authenticate',
-          `Bearer resource_metadata="${resourceMetadataUrl}"`,
-        );
+        res
+          .status(401)
+          .setHeader(
+            'WWW-Authenticate',
+            `Bearer resource_metadata="${resourceMetadataUrl}"`,
+          );
         res.status(401).json({ error: 'Unauthorized' });
       });
       return;
     }
 
     if (config.oauthEnabled) {
-      res.status(401).setHeader(
-        'WWW-Authenticate',
-        `Bearer resource_metadata="${resourceMetadataUrl}"`,
-      );
+      res
+        .status(401)
+        .setHeader(
+          'WWW-Authenticate',
+          `Bearer resource_metadata="${resourceMetadataUrl}"`,
+        );
     }
     res.status(401).json({ error: 'Unauthorized' });
   };
@@ -549,10 +568,12 @@ export const createHttpApp = (config: HttpServerConfig = loadHttpServerConfig())
     const arxenaConfig = await authenticateRequest(req);
     if (!arxenaConfig) {
       if (config.oauthEnabled) {
-        res.status(401).setHeader(
-          'WWW-Authenticate',
-          `Bearer resource_metadata="${resourceMetadataUrl}"`,
-        );
+        res
+          .status(401)
+          .setHeader(
+            'WWW-Authenticate',
+            `Bearer resource_metadata="${resourceMetadataUrl}"`,
+          );
         res.status(401).json({ error: 'Unauthorized' });
       } else {
         res.status(401).json({ error: 'Unauthorized' });

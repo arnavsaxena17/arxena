@@ -50,7 +50,14 @@ export async function handleStreamingResponse(
 ): Promise<StreamingResult> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  console.log('handleStreamingResponse', baseUrl, apiToken, pathPrefix, endpoint, body);
+  console.log(
+    'handleStreamingResponse',
+    baseUrl,
+    apiToken,
+    pathPrefix,
+    endpoint,
+    body,
+  );
   try {
     const url = `${baseUrl}/${pathPrefix}/${endpoint}`;
 
@@ -74,11 +81,11 @@ export async function handleStreamingResponse(
     // Check if response is streaming (SSE)
     const contentType = response.headers.get('content-type');
     if (!contentType?.includes('text/event-stream')) {
-      // Not streaming, return as JSON
+      const payload = (await response.json()) as Partial<StreamingResult>;
       return {
-        text: '',
-        events: [],
-        ...(await response.json()),
+        text: payload.text ?? '',
+        events: payload.events ?? [],
+        ...payload,
       };
     }
 
@@ -137,7 +144,9 @@ export async function handleStreamingResponse(
 
           // Handle table data
           if (eventType === 'table_data') {
-            const columns = Array.isArray(data.columns) ? (data.columns as string[]) : [];
+            const columns = Array.isArray(data.columns)
+              ? (data.columns as string[])
+              : [];
             const rows = Array.isArray(data.rows) ? data.rows : [];
             if (columns.length > 0 && rows.length > 0) {
               if (!result.tableDataList) {
@@ -152,14 +161,16 @@ export async function handleStreamingResponse(
 
           // Handle org chart
           if (eventType === 'org_chart') {
-            const orgChartData = data.orgChart as {
-              companyId?: string;
-              companyName?: string;
-              slug?: string;
-              viewUrl?: string;
-              country?: string;
-              functionRoot?: string;
-            } | undefined;
+            const orgChartData = data.orgChart as
+              | {
+                  companyId?: string;
+                  companyName?: string;
+                  slug?: string;
+                  viewUrl?: string;
+                  country?: string;
+                  functionRoot?: string;
+                }
+              | undefined;
             if (orgChartData?.companyId && orgChartData?.viewUrl) {
               if (!result.orgCharts) {
                 result.orgCharts = [];

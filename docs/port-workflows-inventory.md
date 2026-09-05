@@ -22,7 +22,7 @@ Not marked done until Ask AI can discover/execute Arxena GTM tools and workspace
 - [x] `WorkspaceMcpServer` entity + `DownstreamMcpToolProvider`
 - [x] Settings → AI → MCP servers UI
 - [x] Soft-retire `/assistant` toward Ask AI — page is now a stub that opens side-panel Ask AI; removed `AssistantChatColumn` / MCP client chat / thread sidebar+results
-- [x] Enlarged Ask AI at `/chat/:threadId?` (Twenty upstream full-page chat) — centered composer, suggested prompts, expand/collapse handoff from side panel; `/workspace-setup` redirects to `/chat`
+- [x] Enlarged Ask AI at `/chat/:threadId?` (Twenty upstream full-page chat) — centered composer, suggested prompts, expand/collapse handoff from side panel; `/workspace-setup` redirects to `/chat`. Nav chat icon and **New chat** open the side panel; expand still goes to `/chat`.
 - [x] Moved Handsontable details table into GTM as `GtmDetailsTable` (was `AssistantDetailsTable`)
 - [x] Removed Project `SearchPanel` / `SearchParametersForm` (+ parameter manager/renderers); Ask AI side panel remains
 - [x] Removed unused candidate-search `AIChatAssistant` / `CandidateSearchModal` / `FloatingAIChat`
@@ -38,6 +38,7 @@ Not marked done until Ask AI can discover/execute Arxena GTM tools and workspace
 - [x] Ask AI → GTM Companies tab: `upsert_gtm_target_companies` action tool + `/gtm-home` browsing context + skill/system-prompt routing + skill content sync cmd `1785600000013`
 - [x] Ask AI → GTM People tab: `upsert_gtm_target_people` action tool + Redis People cache + UI poll/merge + prompt/skill routing (no CRM until enroll) + skill sync cmd `1785600000014`
 - [x] `/outreach-home` no longer crashes when the latest workflow run has `workflowVersionId: null` (deleted version SET_NULL); Zod parse is non-throwing
+- [x] `/outreach-home` does not auto-open Ask AI; drawer opens from nav chat / New chat only
 - [x] "Publish as experiment" — `EXPERIMENT` added to `workflowVersion.status` SELECT + core enum (`1785600000076` instance + `1785600000077` workspace). Existing DBs: `database:migrate` then `upgrade:2-25:add-workflow-version-experiment-status`
 
 ## Bucket B — Nest `core-modules`
