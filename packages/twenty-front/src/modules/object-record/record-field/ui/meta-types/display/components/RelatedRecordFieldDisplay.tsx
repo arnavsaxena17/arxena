@@ -37,8 +37,8 @@ export const RelatedRecordFieldDisplay = () => {
     useContext(FieldContext);
   const recordStore = useAtomFamilyStateValue(recordStoreFamilyState, recordId);
 
-  const relatedRecordId = readNonEmptyString(record?.relatedRecordId);
-  const relatedObjectName = readNonEmptyString(record?.relatedObjectName);
+  const relatedRecordId = readNonEmptyString(recordStore?.relatedRecordId);
+  const relatedObjectName = readNonEmptyString(recordStore?.relatedObjectName);
 
   const objectMetadataItem = useAtomFamilySelectorValue(
     objectMetadataItemFamilySelector,
@@ -63,7 +63,7 @@ export const RelatedRecordFieldDisplay = () => {
   }
 
   const displayName =
-    extractRelatedRecordLabelFromWorkflowRunName(record?.name) ??
+    extractRelatedRecordLabelFromWorkflowRunName(recordStore?.name) ??
     objectMetadataItem?.labelSingular ??
     relatedObjectName;
 

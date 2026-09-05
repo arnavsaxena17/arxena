@@ -26,6 +26,7 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| Workflow Runs `record is not defined` | Recoil→Jotai leftover in `RelatedRecordFieldDisplay`: local was renamed to `recordStore` but chip still read `record?.relatedRecordId` / `relatedObjectName` / `name`. Crashed Workflow Runs index (`ReferenceError` → error boundary). | `RelatedRecordFieldDisplay.tsx`, §2.1 |
 | Outreach home no auto Ask AI | `/outreach-home` and Outreach nav no longer open the Ask AI side panel. Chat icon and **New chat** open the drawer (not `/chat`). Find companies/people still open it as explicit actions. | `OutreachHomePage.tsx`, `OutreachHomeNavigationDrawerItem.tsx`, `OutreachWorkflowPanel.tsx`, `MainNavigationDrawerTabsRow.tsx` |
 | OrgChart `commitNodes` dts TS2445 | GoJS `TreeLayout.commitNodes` is protected; monkey-patch in `diagramInit` failed `vite-plugin-dts`. Subclass `LevelColoredTreeLayout` (grade-aligned extends it). Drop `vite-tsconfig-paths` for Vite 8 `resolve.tsconfigPaths`. | `twenty-orgchart/.../levelColoredTreeLayout.ts`, `diagramInit.ts`, `vite.config.ts` |
 | People tab status columns split | Recruiter `status`, bot `candConversationStatus`, outreach `outreachSequenceStage`, and workflow `workflowRunStatus` are separate HotTable columns. People rows no longer stuff sequence stage into Status. Journey summary includes run `status`. | `OutreachPeoplePanel.tsx`, `useOutreachLiveWorkingSet.ts`, `TableColumns.tsx`, `ProcessedData.tsx`, `outreach-stages.ts`, `outreach-candidate-journey.service.ts` |
@@ -235,6 +236,7 @@ rg "use(Mutation|Query|LazyQuery)\(" packages/twenty-front/src/modules/{candidat
 | `RecoilRoot` (tests) | `Provider` from `jotai` + `jotaiStore` |
 | `mainContextStoreComponentInstanceId` | `MAIN_CONTEXT_STORE_INSTANCE_ID` |
 | Declared setter `setProjects` / `setTableStateAtom` / `setChatSearchQuery` / … but call sites still use old `setJobs` / `setTableState` / `setSearchQuery` | Rename **call sites + deps** to the declared Jotai setter name (do not invent new state) |
+| Declared `const recordStore = useAtomFamilyStateValue(recordStoreFamilyState, …)` but body still uses Recoil-era `record?.` | Use **`recordStore?.`**. Vite prod does not typecheck; ships as `record is not defined` (Workflow Runs chip). |
 | Helper expects `setOwnerProfileCache` but call site shorthand is `setLinkedinUnipileOwnerProfileCache` | Pass the **option key the helper typed**, not the local variable name (`setOwnerProfileCache: setLinkedinUnipileOwnerProfileCache`). Vite prod builds do not typecheck, so this ships as `r is not a function`. |
 | HotTable `setMainTargetedRecordsRule` / `setMainPageType` / … | Matching `setContextStore*` setters already declared for `MAIN_CONTEXT_STORE_INSTANCE_ID` |
 
@@ -246,6 +248,9 @@ rg -n "setJobs\b|setTableState\b|setSearchQuery\b|setSelectedStatus\b|setFiltere
 
 # Helper option-key vs local setter shorthand (Unipile owner-profile cache)
 rg -n "applyInferredOrgChartLinkedinSearchType\(" -A 20 packages/twenty-front/src/modules/unipile --glob '!**/__tests__/**'
+
+# Recoil `record` left after Jotai `recordStore` rename
+rg -n "const recordStore = useAtomFamilyStateValue\(recordStoreFamilyState" -A 8 packages/twenty-front --glob '!**/__tests__/**' | rg "record\?\.|recordStore"
 ```
 
 ### 2.2 UI packages
@@ -870,6 +875,7 @@ Not in `diff-filter=M`, but live next to core and matter for rebases:
 | `auth/utils/arxenaSiteUrl.ts` | Site URL helper |
 | `twenty-shared/src/{arx,graphql,utils/orgchart,…}` | New shared barrels (paired with §9.1 index edits) |
 | `workflow/utils/parseWorkflowRunRecord.ts` | Lenient WorkflowRun parse (null `workflowVersionId`) so outreach-home snackbar cannot crash the page |
+| `object-record/record-field/.../RelatedRecordFieldDisplay.tsx` | Workflow Runs related-record chip; Recoil `record` → Jotai `recordStore` leftover crashed the index |
 
 ### 9.5 Refresh commands
 

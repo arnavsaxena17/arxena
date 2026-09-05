@@ -116,6 +116,11 @@ export const itemByIdState = createAtomFamilyState<Item | null, string>({
 
 Hooks: `useAtomFamilyStateValue(family, key)`, `useSetAtomFamilyState(family, key)`.
 
+After renaming Recoil `const record = useRecoilValue(recordStoreFamilyState(id))`
+to Jotai `const recordStore = useAtomFamilyStateValue(recordStoreFamilyState, id)`,
+update **every** `record?.` / `record.` usage to `recordStore`. Vite prod does not
+typecheck; leftovers ship as `record is not defined` (Workflow Runs chip).
+
 ### Component state (V2 Recoil hooks)
 
 | Recoil | Jotai |

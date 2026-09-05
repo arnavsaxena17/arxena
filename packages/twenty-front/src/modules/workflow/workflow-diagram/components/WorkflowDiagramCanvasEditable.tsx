@@ -1,5 +1,8 @@
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useSetAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useSetAtomComponentState';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { outreachContextState } from '@/outreach-home/states/outreachContextState';
+import { isOutreachSequencerWorkflowName } from '@/outreach-home/utils/is-outreach-sequencer-workflow-name';
 import { useActivateWorkflowVersion } from '@/workflow/hooks/useActivateWorkflowVersion';
 import { usePublishExperimentVersion } from '@/workflow/hooks/usePublishExperimentVersion';
 import { useWorkflowWithCurrentVersion } from '@/workflow/hooks/useWorkflowWithCurrentVersion';
@@ -76,6 +79,7 @@ export const WorkflowDiagramCanvasEditable = () => {
   const { activateWorkflowVersion } = useActivateWorkflowVersion();
   const [isPublishingExperiment, setIsPublishingExperiment] = useState(false);
   const [isPromotingWinner, setIsPromotingWinner] = useState(false);
+  const outreachContext = useAtomStateValue(outreachContextState);
 
   const onConnect = async (edgeConnect: WorkflowConnection) => {
     const steps = workflowWithCurrentVersion?.currentVersion?.steps;
@@ -180,11 +184,17 @@ export const WorkflowDiagramCanvasEditable = () => {
     return null;
   }
 
-  const currentVersionStatus =
-    workflowWithCurrentVersion.currentVersion.status;
+  const currentVersionStatus = workflowWithCurrentVersion.currentVersion.status;
   const tagProps = getWorkflowVersionStatusTagProps({
     workflowVersionStatus: currentVersionStatus,
   });
+
+  // A/B publish-as-experiment is Stage B / Stage C outreach only
+  // (seeded names, or the Project-pinned Stage B clone).
+  const supportsOutreachExperiment =
+    isOutreachSequencerWorkflowName(workflowWithCurrentVersion.name) ||
+    (isDefined(outreachContext.outreachWorkflowId) &&
+      outreachContext.outreachWorkflowId === workflowWithCurrentVersion.id);
 
   const hasActiveVersion = workflowWithCurrentVersion.versions.some(
     (version) => version.status === 'ACTIVE',
@@ -193,7 +203,7 @@ export const WorkflowDiagramCanvasEditable = () => {
     (version) => version.status === 'EXPERIMENT',
   );
   const abSubtitle =
-    hasActiveVersion && hasExperimentVersion
+    supportsOutreachExperiment && hasActiveVersion && hasExperimentVersion
       ? 'Active (A) · Experiment (B) · 50/50'
       : null;
 
@@ -234,12 +244,10 @@ export const WorkflowDiagramCanvasEditable = () => {
       {isDefined(abSubtitle) && (
         <StyledAbSubtitle>{abSubtitle}</StyledAbSubtitle>
       )}
-      {currentVersionStatus === 'DRAFT' && (
+      {supportsOutreachExperiment && currentVersionStatus === 'DRAFT' && (
         <Button
           title={
-            isPublishingExperiment
-              ? 'Publishing…'
-              : 'Publish as experiment'
+            isPublishingExperiment ? 'Publishing…' : 'Publish as experiment'
           }
           variant="secondary"
           size="small"
@@ -249,7 +257,7 @@ export const WorkflowDiagramCanvasEditable = () => {
           }}
         />
       )}
-      {currentVersionStatus === 'EXPERIMENT' && (
+      {supportsOutreachExperiment && currentVersionStatus === 'EXPERIMENT' && (
         <Button
           title={isPromotingWinner ? 'Promoting…' : 'Promote winner'}
           variant="secondary"

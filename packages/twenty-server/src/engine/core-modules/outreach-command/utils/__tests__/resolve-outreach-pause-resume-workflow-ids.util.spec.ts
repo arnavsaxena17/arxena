@@ -3,6 +3,7 @@ import {
   isOutreachSequencerWorkflow,
   isOutreachSequencerWorkflowName,
   OUTREACH_SEQUENCER_SEEDED_WORKFLOW_NAMES,
+  resolveOutreachSequencerStageFromName,
 } from 'src/engine/core-modules/outreach-command/utils/resolve-outreach-pause-resume-workflow-ids.util';
 import { SEEDED_OUTREACH_WORKFLOW } from 'src/engine/workspace-manager/standard-objects-prefill-data/constants/seeded-outreach-workflow-names.const';
 
@@ -45,6 +46,24 @@ describe('resolve-outreach-sequencer-workflow-ids', () => {
     ).toBe(false);
   });
 
+  it('resolves Stage B vs Stage C from workflow name', () => {
+    expect(
+      resolveOutreachSequencerStageFromName(
+        SEEDED_OUTREACH_WORKFLOW.perCandidate.name,
+      ),
+    ).toBe('perCandidate');
+    expect(
+      resolveOutreachSequencerStageFromName(
+        SEEDED_OUTREACH_WORKFLOW.candidateUpdated.name,
+      ),
+    ).toBe('candidateUpdated');
+    expect(
+      resolveOutreachSequencerStageFromName(
+        SEEDED_OUTREACH_WORKFLOW.harvest.name,
+      ),
+    ).toBeNull();
+  });
+
   it('matches custom Stage B via project pin / experiment ids', () => {
     expect(
       collectOutreachSequencerWorkflowIdsFromProject({
@@ -61,11 +80,7 @@ describe('resolve-outreach-sequencer-workflow-ids', () => {
           },
         },
       }).sort(),
-    ).toEqual([
-      'experiment-stage-b',
-      'experiment-stage-c',
-      'pinned-stage-b',
-    ]);
+    ).toEqual(['experiment-stage-b', 'experiment-stage-c', 'pinned-stage-b']);
 
     expect(
       isOutreachSequencerWorkflow({

@@ -24,13 +24,37 @@ export const OUTREACH_SEQUENCER_SEEDED_WORKFLOW_NAMES = [
 export const OUTREACH_PAUSE_RESUME_SEEDED_WORKFLOW_NAMES =
   OUTREACH_SEQUENCER_SEEDED_WORKFLOW_NAMES;
 
+export type OutreachSequencerStage = 'perCandidate' | 'candidateUpdated';
+
+export const resolveOutreachSequencerStageFromName = (
+  workflowName?: string | null,
+): OutreachSequencerStage | null => {
+  if (!isNonEmptyString(workflowName)) {
+    return null;
+  }
+
+  const perCandidateNames = seededOutreachWorkflowNameAliases(
+    SEEDED_OUTREACH_WORKFLOW.perCandidate.name,
+  );
+
+  if (perCandidateNames.includes(workflowName)) {
+    return 'perCandidate';
+  }
+
+  const candidateUpdatedNames = seededOutreachWorkflowNameAliases(
+    SEEDED_OUTREACH_WORKFLOW.candidateUpdated.name,
+  );
+
+  if (candidateUpdatedNames.includes(workflowName)) {
+    return 'candidateUpdated';
+  }
+
+  return null;
+};
+
 export const isOutreachSequencerWorkflowName = (
   workflowName?: string | null,
-): boolean =>
-  isNonEmptyString(workflowName) &&
-  (OUTREACH_SEQUENCER_SEEDED_WORKFLOW_NAMES as readonly string[]).includes(
-    workflowName,
-  );
+): boolean => resolveOutreachSequencerStageFromName(workflowName) !== null;
 
 export const collectOutreachSequencerWorkflowIdsFromProject = ({
   outreachWorkflowId,

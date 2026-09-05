@@ -11,6 +11,10 @@ import {
   buildProjectExperimentConfigUpdate,
   readProjectExperimentConfig,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
+import {
+  resolveOutreachSequencerStageFromName,
+  type OutreachSequencerStage,
+} from 'src/engine/core-modules/outreach-command/utils/resolve-outreach-pause-resume-workflow-ids.util';
 import { WorkflowVersionCoreSyncService } from 'src/engine/core-modules/workflow/services/workflow-version-core-sync.service';
 import { CommandMenuItemService } from 'src/engine/metadata-modules/command-menu-item/command-menu-item.service';
 import { CommandMenuItemAvailabilityType } from 'src/engine/metadata-modules/command-menu-item/enums/command-menu-item-availability-type.enum';
@@ -41,7 +45,7 @@ import { AutomatedTriggerWorkspaceService } from 'src/modules/workflow/workflow-
 import { type DatabaseEventTriggerSettings } from 'src/modules/workflow/workflow-trigger/automated-trigger/constants/automated-trigger-settings';
 import { WORKFLOW_CRON_TRIGGER_CACHE_KEY } from 'src/modules/workflow/workflow-trigger/automated-trigger/crons/constants/workflow-cron-trigger-cache-key.constant';
 import { type CachedCronTrigger } from 'src/modules/workflow/workflow-trigger/automated-trigger/crons/types/cached-cron-trigger.type';
-import { type ObjectLiteral } from 'typeorm';
+import { type ObjectLiteral, IsNull, Not } from 'typeorm';
 import {
   WorkflowTriggerException,
   WorkflowTriggerExceptionCode,
@@ -307,6 +311,22 @@ export class WorkflowTriggerWorkspaceService {
           );
         }
 
+        const sequencerStage = await this.resolvePublishExperimentStage({
+          workspaceId,
+          workflowId: workflow.id,
+          workflowName: workflow.name,
+        });
+
+        if (!isDefined(sequencerStage)) {
+          throw new WorkflowTriggerException(
+            'Publish as experiment is only available for Outreach Stage B and Stage C workflows',
+            WorkflowTriggerExceptionCode.FORBIDDEN,
+            {
+              userFriendlyMessage: msg`Publish as experiment is only available for Outreach Per Enrolled Candidate and Enrolled Person Updated workflows`,
+            },
+          );
+        }
+
         await this.assertPickRecordLoadBalanceConfigIsValid({
           steps: workflowVersion.steps ?? [],
           workspaceId,
@@ -361,6 +381,7 @@ export class WorkflowTriggerWorkspaceService {
           workflowId: workflow.id,
           versionA: workflow.lastPublishedVersionId,
           versionB: workflowVersion.id,
+          stage: sequencerStage,
         });
 
         return true;
@@ -369,16 +390,49 @@ export class WorkflowTriggerWorkspaceService {
     );
   }
 
+  private async resolvePublishExperimentStage({
+    workspaceId,
+    workflowId,
+    workflowName,
+  }: {
+    workspaceId: string;
+    workflowId: string;
+    workflowName?: string | null;
+  }): Promise<OutreachSequencerStage | null> {
+    const stageFromName = resolveOutreachSequencerStageFromName(workflowName);
+
+    if (isDefined(stageFromName)) {
+      return stageFromName;
+    }
+
+    // Custom-named Stage B clone pinned on a Project.
+    const projectRepository =
+      await this.globalWorkspaceOrmManager.getRepository<
+        ObjectLiteral & { id: string; outreachWorkflowId?: string | null }
+      >(workspaceId, 'project', { shouldBypassPermissionChecks: true });
+    const pinnedProject = await projectRepository.findOne({
+      where: { outreachWorkflowId: workflowId },
+    });
+
+    if (isDefined(pinnedProject)) {
+      return 'perCandidate';
+    }
+
+    return null;
+  }
+
   private async bindExperimentConfigToProjects({
     workspaceId,
     workflowId,
     versionA,
     versionB,
+    stage,
   }: {
     workspaceId: string;
     workflowId: string;
     versionA: string;
     versionB: string;
+    stage: OutreachSequencerStage;
   }): Promise<void> {
     try {
       const projectRepository =
@@ -391,24 +445,33 @@ export class WorkflowTriggerWorkspaceService {
           }
         >(workspaceId, 'project', { shouldBypassPermissionChecks: true });
 
-      const projects = await projectRepository.find({
-        where: { outreachWorkflowId: workflowId },
-        take: 100,
-      });
+      const projects =
+        stage === 'perCandidate'
+          ? await projectRepository.find({
+              where: { outreachWorkflowId: workflowId },
+              take: 100,
+            })
+          : await projectRepository.find({
+              where: { outreachWorkflowId: Not(IsNull()) },
+              take: 100,
+            });
 
       for (const project of projects) {
         const existing = readProjectExperimentConfig(project);
+        const binding = {
+          workflowId,
+          versionA,
+          versionB,
+        };
         const nextConfig = {
           status: 'running' as const,
           split: existing?.split ?? 0.5,
           name: existing?.name,
           workflows: {
             ...existing?.workflows,
-            perCandidate: {
-              workflowId,
-              versionA,
-              versionB,
-            },
+            ...(stage === 'perCandidate'
+              ? { perCandidate: binding }
+              : { candidateUpdated: binding }),
           },
         };
 
