@@ -11,11 +11,14 @@ import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queu
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { MetricsService } from 'src/engine/core-modules/metrics/metrics.service';
 import { MetricsKeys } from 'src/engine/core-modules/metrics/types/metrics-keys.type';
+import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
+import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import {
   WorkflowVersionStepException,
   WorkflowVersionStepExceptionCode,
 } from 'src/modules/workflow/common/exceptions/workflow-version-step.exception';
 import { WorkflowRunStatus } from 'src/modules/workflow/common/standard-objects/workflow-run.workspace-entity';
+import { type WorkflowWorkspaceEntity } from 'src/modules/workflow/common/standard-objects/workflow.workspace-entity';
 import { setAllIteratorsStepInfosAsStopped } from 'src/modules/workflow/common/utils/set-all-iterators-step-infos-as-stopped.util';
 import { workflowHasRunningSteps } from 'src/modules/workflow/common/utils/workflow-has-running-steps.util';
 import { WorkflowCommonWorkspaceService } from 'src/modules/workflow/common/workspace-services/workflow-common.workspace-service';
@@ -30,13 +33,13 @@ import { type RunWorkflowJobData } from 'src/modules/workflow/workflow-runner/ty
 import { buildRetryStepInfos } from 'src/modules/workflow/workflow-runner/utils/build-retry-step-infos.util';
 import { buildRunWorkflowJobOptions } from 'src/modules/workflow/workflow-runner/utils/build-run-workflow-job-options.util';
 import { getRunnableStepIds } from 'src/modules/workflow/workflow-runner/utils/get-runnable-step-ids.util';
+import { shouldImmediatelyEnqueueWorkflowRun } from 'src/modules/workflow/workflow-runner/utils/should-immediately-enqueue-workflow-run.util';
 import {
   WorkflowRunEnqueueJob,
   type WorkflowRunEnqueueJobData,
 } from 'src/modules/workflow/workflow-runner/workflow-run-queue/jobs/workflow-run-enqueue.job';
 import { WorkflowThrottlingWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run-queue/workspace-services/workflow-throttling.workspace-service';
 import { WorkflowRunWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.workspace-service';
-import { WorkflowTriggerType } from 'src/modules/workflow/workflow-trigger/types/workflow-trigger.type';
 
 @Injectable()
 export class WorkflowRunnerWorkspaceService {
@@ -44,6 +47,7 @@ export class WorkflowRunnerWorkspaceService {
   constructor(
     private readonly workflowRunWorkspaceService: WorkflowRunWorkspaceService,
     private readonly workflowCommonWorkspaceService: WorkflowCommonWorkspaceService,
+    private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     @InjectMessageQueue(MessageQueue.workflowQueue)
     private readonly messageQueueService: MessageQueueService,
     private readonly billingUsageService: BillingUsageService,
@@ -81,8 +85,10 @@ export class WorkflowRunnerWorkspaceService {
         workflowVersionId,
       });
 
-    const isManualTrigger =
-      workflowVersion.trigger?.type === WorkflowTriggerType.MANUAL;
+    const workflowName = await this.getWorkflowName({
+      workspaceId,
+      workflowId: workflowVersion.workflowId,
+    });
 
     const isHardThrottled = await this.checkHardThrottleLimit(workspaceId);
 
@@ -97,7 +103,13 @@ export class WorkflowRunnerWorkspaceService {
       });
     }
 
-    if (isManualTrigger) {
+    // Soft throttle (100/min) only for Outreach Stage B/C; Test/webhook/other enqueue now.
+    if (
+      shouldImmediatelyEnqueueWorkflowRun({
+        triggerType: workflowVersion.trigger?.type,
+        workflowName,
+      })
+    ) {
       return this.enqueueWorkflowRun({
         workspaceId,
         workflowVersionId,
@@ -392,6 +404,38 @@ export class WorkflowRunnerWorkspaceService {
 
       return true;
     }
+  }
+
+  private async getWorkflowName({
+    workspaceId,
+    workflowId,
+  }: {
+    workspaceId: string;
+    workflowId: string;
+  }): Promise<string | null> {
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const workflowRepository =
+          await this.globalWorkspaceOrmManager.getRepository<WorkflowWorkspaceEntity>(
+            workspaceId,
+            'workflow',
+            { shouldBypassPermissionChecks: true },
+          );
+
+        const workflow = await workflowRepository.findOne({
+          where: { id: workflowId },
+          select: {
+            id: true,
+            name: true,
+          },
+        });
+
+        return workflow?.name ?? null;
+      },
+      authContext,
+    );
   }
 
   private async createFailedWorkflowRun({

@@ -41,11 +41,12 @@ import {
 import { WorkflowRunnerWorkspaceService } from 'src/modules/workflow/workflow-runner/workspace-services/workflow-runner.workspace-service';
 import { WORKFLOW_VERSION_STATUS_UPDATED } from 'src/modules/workflow/workflow-status/constants/workflow-version-status-updated.constants';
 import { type WorkflowVersionStatusUpdate } from 'src/modules/workflow/workflow-status/jobs/workflow-statuses-update.job';
+import { computeWorkflowStatuses } from 'src/modules/workflow/workflow-status/utils/compute-workflow-statuses.util';
 import { AutomatedTriggerWorkspaceService } from 'src/modules/workflow/workflow-trigger/automated-trigger/automated-trigger.workspace-service';
 import { type DatabaseEventTriggerSettings } from 'src/modules/workflow/workflow-trigger/automated-trigger/constants/automated-trigger-settings';
 import { WORKFLOW_CRON_TRIGGER_CACHE_KEY } from 'src/modules/workflow/workflow-trigger/automated-trigger/crons/constants/workflow-cron-trigger-cache-key.constant';
 import { type CachedCronTrigger } from 'src/modules/workflow/workflow-trigger/automated-trigger/crons/types/cached-cron-trigger.type';
-import { type ObjectLiteral, IsNull, Not } from 'typeorm';
+import { In, IsNull, Not, type ObjectLiteral } from 'typeorm';
 import {
   WorkflowTriggerException,
   WorkflowTriggerExceptionCode,
@@ -619,6 +620,15 @@ export class WorkflowTriggerWorkspaceService {
         queryRunner.manager,
       );
 
+      // Write statuses in the same transaction so the table badge doesn't wait
+      // on WorkflowStatusesUpdateJob behind the outreach soft-throttle queue.
+      await this.syncWorkflowStatusesInTransaction({
+        workflowId: workflow.id,
+        workflowRepository,
+        workflowVersionRepository,
+        entityManager: queryRunner.manager,
+      });
+
       await this.enableAutomatedTrigger(workflowVersion, workspaceId, {
         entityManager: queryRunner.manager,
       });
@@ -665,6 +675,13 @@ export class WorkflowTriggerWorkspaceService {
 
     await this.deleteCommandMenuItem(workflowVersion, workspaceId);
 
+    const workflowRepository =
+      await this.globalWorkspaceOrmManager.getRepository<WorkflowWorkspaceEntity>(
+        workspaceId,
+        'workflow',
+        { shouldBypassPermissionChecks: true },
+      );
+
     const workspaceDataSource =
       await this.globalWorkspaceOrmManager.getGlobalWorkspaceDataSource();
 
@@ -687,6 +704,13 @@ export class WorkflowTriggerWorkspaceService {
         workflowVersionRepository,
         queryRunner.manager,
       );
+
+      await this.syncWorkflowStatusesInTransaction({
+        workflowId: workflowVersion.workflowId,
+        workflowRepository,
+        workflowVersionRepository,
+        entityManager: queryRunner.manager,
+      });
 
       await this.disableAutomatedTrigger(workflowVersion, workspaceId, {
         entityManager: queryRunner.manager,
@@ -931,6 +955,46 @@ export class WorkflowTriggerWorkspaceService {
       default:
         assertNever(workflowVersion.trigger);
     }
+  }
+
+  private async syncWorkflowStatusesInTransaction({
+    workflowId,
+    workflowRepository,
+    workflowVersionRepository,
+    entityManager,
+  }: {
+    workflowId: string;
+    workflowRepository: WorkspaceRepository<WorkflowWorkspaceEntity>;
+    workflowVersionRepository: WorkspaceRepository<WorkflowVersionWorkspaceEntity>;
+    entityManager: WorkspaceEntityManager;
+  }) {
+    const workflowVersions = await workflowVersionRepository.find(
+      {
+        where: {
+          workflowId,
+          status: In([
+            WorkflowVersionStatus.ACTIVE,
+            WorkflowVersionStatus.DRAFT,
+            WorkflowVersionStatus.DEACTIVATED,
+          ]),
+        },
+        select: {
+          status: true,
+        },
+      },
+      entityManager,
+    );
+
+    await workflowRepository.update(
+      { id: workflowId },
+      {
+        statuses: computeWorkflowStatuses(
+          workflowVersions.map((version) => version.status),
+        ),
+      },
+      undefined,
+      entityManager,
+    );
   }
 
   private async emitStatusUpdateEvents(

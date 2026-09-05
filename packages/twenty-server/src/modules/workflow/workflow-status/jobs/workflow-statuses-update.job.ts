@@ -13,10 +13,8 @@ import {
   WorkflowVersionStatus,
   type WorkflowVersionWorkspaceEntity,
 } from 'src/modules/workflow/common/standard-objects/workflow-version.workspace-entity';
-import {
-  WorkflowStatus,
-  type WorkflowWorkspaceEntity,
-} from 'src/modules/workflow/common/standard-objects/workflow.workspace-entity';
+import { type WorkflowWorkspaceEntity } from 'src/modules/workflow/common/standard-objects/workflow.workspace-entity';
+import { computeWorkflowStatuses } from 'src/modules/workflow/workflow-status/utils/compute-workflow-statuses.util';
 
 export enum WorkflowVersionEventType {
   CREATE = 'CREATE',
@@ -196,8 +194,6 @@ export class WorkflowStatusesUpdateJob {
     workflowId: string;
     workflowVersionRepository: WorkspaceRepository<WorkflowVersionWorkspaceEntity>;
   }) {
-    const statuses: WorkflowStatus[] = [];
-
     const workflowVersions = await workflowVersionRepository.find({
       where: {
         workflowId,
@@ -207,32 +203,13 @@ export class WorkflowStatusesUpdateJob {
           WorkflowVersionStatus.DEACTIVATED,
         ]),
       },
+      select: {
+        status: true,
+      },
     });
 
-    const hasDraftVersion = workflowVersions.some(
-      (version) => version.status === WorkflowVersionStatus.DRAFT,
+    return computeWorkflowStatuses(
+      workflowVersions.map((version) => version.status),
     );
-
-    if (hasDraftVersion) {
-      statuses.push(WorkflowStatus.DRAFT);
-    }
-
-    const hasActiveVersion = workflowVersions.some(
-      (version) => version.status === WorkflowVersionStatus.ACTIVE,
-    );
-
-    if (hasActiveVersion) {
-      statuses.push(WorkflowStatus.ACTIVE);
-    }
-
-    const hasDeactivatedVersion = workflowVersions.some(
-      (version) => version.status === WorkflowVersionStatus.DEACTIVATED,
-    );
-
-    if (!hasActiveVersion && hasDeactivatedVersion) {
-      statuses.push(WorkflowStatus.DEACTIVATED);
-    }
-
-    return statuses;
   }
 }
