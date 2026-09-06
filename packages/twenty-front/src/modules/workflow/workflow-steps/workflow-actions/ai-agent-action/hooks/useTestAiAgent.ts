@@ -52,9 +52,15 @@ export const useTestAiAgent = (actionId: string) => {
   const testAiAgent = async ({
     agentId,
     prompt,
+    candidateId,
+    workflowVersionId,
+    stepId,
   }: {
     agentId: string;
     prompt: string;
+    candidateId?: string;
+    workflowVersionId?: string;
+    stepId?: string;
   }) => {
     setIsTesting(true);
     const startTime = Date.now();
@@ -65,6 +71,9 @@ export const useTestAiAgent = (actionId: string) => {
           input: {
             agentId,
             prompt,
+            ...(isDefined(candidateId) ? { candidateId } : {}),
+            ...(isDefined(workflowVersionId) ? { workflowVersionId } : {}),
+            ...(isDefined(stepId) ? { stepId } : {}),
           },
         },
       });

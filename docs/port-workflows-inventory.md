@@ -40,6 +40,7 @@ Not marked done until Ask AI can discover/execute Arxena GTM tools and workspace
 - [x] `/outreach-home` no longer crashes when the latest workflow run has `workflowVersionId: null` (deleted version SET_NULL); Zod parse is non-throwing
 - [x] `/outreach-home` does not auto-open Ask AI; drawer opens from nav chat / New chat only
 - [x] "Publish as experiment" — `EXPERIMENT` added to `workflowVersion.status` SELECT + core enum (`1785600000076` instance + `1785600000077` workspace). Existing DBs: `database:migrate` then `upgrade:2-25:add-workflow-version-experiment-status`
+- [x] AI_AGENT Test tab Candidate picker hydrates previous FIND / LinkedIn fetch / calendar nodes for that person (no recent-run `stepInfos` required)
 
 ## Bucket B — Nest `core-modules`
 

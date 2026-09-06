@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { isNonEmptyString } from '@sniptt/guards';
 import { FieldActorSource } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 
@@ -8,6 +9,7 @@ import { isUserAuthContext } from 'src/engine/core-modules/auth/guards/is-user-a
 import { getWorkspaceAuthContext } from 'src/engine/core-modules/auth/storage/workspace-auth-context.storage';
 import { UsageOperationType } from 'src/engine/core-modules/usage/enums/usage-operation-type.enum';
 import { TestAiAgentDTO } from 'src/engine/core-modules/workflow/dtos/test-ai-agent.dto';
+import { WorkflowAiAgentTestContextService } from 'src/engine/core-modules/workflow/services/workflow-ai-agent-test-context.service';
 import { AgentAsyncExecutorService } from 'src/engine/metadata-modules/ai/ai-agent-execution/services/agent-async-executor.service';
 import { AgentEntity } from 'src/engine/metadata-modules/ai/ai-agent/entities/agent.entity';
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
@@ -19,16 +21,23 @@ export class WorkflowAiAgentTestService {
     private readonly agentAsyncExecutorService: AgentAsyncExecutorService,
     @InjectWorkspaceScopedRepository(AgentEntity)
     private readonly agentRepository: WorkspaceScopedRepository<AgentEntity>,
+    private readonly workflowAiAgentTestContextService: WorkflowAiAgentTestContextService,
   ) {}
 
   async test({
     workspaceId,
     agentId,
     prompt,
+    candidateId,
+    workflowVersionId,
+    stepId,
   }: {
     workspaceId: string;
     agentId: string;
     prompt: string;
+    candidateId?: string;
+    workflowVersionId?: string;
+    stepId?: string;
   }): Promise<TestAiAgentDTO> {
     const startedAtMs = Date.now();
 
@@ -43,6 +52,14 @@ export class WorkflowAiAgentTestService {
           startedAtMs,
         });
       }
+
+      const userPrompt = await this.resolveUserPrompt({
+        workspaceId,
+        prompt,
+        candidateId,
+        workflowVersionId,
+        stepId,
+      });
 
       const authContext = getWorkspaceAuthContext();
       const userWorkspaceId = isUserAuthContext(authContext)
@@ -59,7 +76,7 @@ export class WorkflowAiAgentTestService {
       const executionResult = await this.agentAsyncExecutorService.executeAgent(
         {
           agent,
-          userPrompt: prompt,
+          userPrompt,
           actorContext,
           authContext,
           workspaceId,
@@ -94,6 +111,38 @@ export class WorkflowAiAgentTestService {
         startedAtMs,
       });
     }
+  }
+
+  private async resolveUserPrompt({
+    workspaceId,
+    prompt,
+    candidateId,
+    workflowVersionId,
+    stepId,
+  }: {
+    workspaceId: string;
+    prompt: string;
+    candidateId?: string;
+    workflowVersionId?: string;
+    stepId?: string;
+  }): Promise<string> {
+    if (!isNonEmptyString(candidateId)) {
+      return prompt;
+    }
+
+    if (!isNonEmptyString(workflowVersionId) || !isNonEmptyString(stepId)) {
+      throw new Error(
+        'workflowVersionId and stepId are required when testing with a candidate',
+      );
+    }
+
+    return this.workflowAiAgentTestContextService.resolvePromptForCandidate({
+      workspaceId,
+      workflowVersionId,
+      stepId,
+      candidateId,
+      prompt,
+    });
   }
 
   private buildFailure({

@@ -79,6 +79,48 @@ describe('useTestAiAgent', () => {
     expect(result.current.aiAgentTestData.output.duration).toBe(120);
   });
 
+  it('sends candidateId with the workflow version and step when testing a candidate', async () => {
+    mockMutate.mockResolvedValueOnce({
+      data: {
+        testAiAgent: {
+          success: true,
+          message: 'AI agent test completed successfully',
+          result: { message: 'Hi Jane' },
+          error: null,
+          durationMs: 80,
+        },
+      },
+    });
+
+    const { result } = renderHook(() => useTestAiAgent(actionId), {
+      wrapper,
+    });
+    const candidateId = '11111111-1111-4111-8111-111111111111';
+    const workflowVersionId = '22222222-2222-4222-8222-222222222222';
+
+    await act(async () => {
+      await result.current.testAiAgent({
+        agentId,
+        prompt: 'Name: {{acceptFind.first.name}}',
+        candidateId,
+        workflowVersionId,
+        stepId: actionId,
+      });
+    });
+
+    expect(mockMutate).toHaveBeenCalledWith({
+      variables: {
+        input: {
+          agentId,
+          prompt: 'Name: {{acceptFind.first.name}}',
+          candidateId,
+          workflowVersionId,
+          stepId: actionId,
+        },
+      },
+    });
+  });
+
   it('stores an error when the mutation fails', async () => {
     mockMutate.mockResolvedValueOnce({
       data: {

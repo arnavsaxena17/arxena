@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { WorkflowApprovalModule } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-approval.module';
+import { LogicFunctionExecutorModule } from 'src/engine/core-modules/logic-function/logic-function-executor/logic-function-executor.module';
 import { ToolModule } from 'src/engine/core-modules/tool/tool.module';
 import { WorkflowTriggerController } from 'src/engine/core-modules/workflow/controllers/workflow-trigger.controller';
 import { WorkflowBuilderResolver } from 'src/engine/core-modules/workflow/resolvers/workflow-builder.resolver';
@@ -9,6 +10,7 @@ import { WorkflowTriggerResolver } from 'src/engine/core-modules/workflow/resolv
 import { WorkflowVersionEdgeResolver } from 'src/engine/core-modules/workflow/resolvers/workflow-version-edge.resolver';
 import { WorkflowVersionStepResolver } from 'src/engine/core-modules/workflow/resolvers/workflow-version-step.resolver';
 import { WorkflowVersionResolver } from 'src/engine/core-modules/workflow/resolvers/workflow-version.resolver';
+import { WorkflowAiAgentTestContextService } from 'src/engine/core-modules/workflow/services/workflow-ai-agent-test-context.service';
 import { WorkflowAiAgentTestService } from 'src/engine/core-modules/workflow/services/workflow-ai-agent-test.service';
 import { WorkflowVersionCoreModule } from 'src/engine/core-modules/workflow/workflow-version-core.module';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -41,6 +43,7 @@ import { WorkflowTriggerModule } from 'src/modules/workflow/workflow-trigger/wor
     ToolModule,
     WorkflowApprovalModule,
     LogicFunctionModule,
+    LogicFunctionExecutorModule,
     CodeStepBuildModule,
     WorkspaceManyOrAllFlatEntityMapsCacheModule,
     ConnectedAccountMetadataModule,
@@ -54,6 +57,7 @@ import { WorkflowTriggerModule } from 'src/modules/workflow/workflow-trigger/wor
     WorkflowVersionEdgeResolver,
     WorkflowVersionResolver,
     WorkflowAiAgentTestService,
+    WorkflowAiAgentTestContextService,
     provideWorkspaceScopedRepository(AgentEntity),
   ],
 })

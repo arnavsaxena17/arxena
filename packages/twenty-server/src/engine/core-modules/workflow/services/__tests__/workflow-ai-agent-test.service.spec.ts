@@ -24,6 +24,9 @@ describe('WorkflowAiAgentTestService', () => {
 
   let agentRepository: { findOne: jest.Mock };
   let agentAsyncExecutorService: { executeAgent: jest.Mock };
+  let workflowAiAgentTestContextService: {
+    resolvePromptForCandidate: jest.Mock;
+  };
   let service: WorkflowAiAgentTestService;
 
   const agent = {
@@ -47,11 +50,15 @@ describe('WorkflowAiAgentTestService', () => {
   beforeEach(() => {
     agentRepository = { findOne: jest.fn() };
     agentAsyncExecutorService = { executeAgent: jest.fn() };
+    workflowAiAgentTestContextService = {
+      resolvePromptForCandidate: jest.fn(),
+    };
     getWorkspaceAuthContextMock.mockReturnValue(userAuthContext);
 
     service = new WorkflowAiAgentTestService(
       agentAsyncExecutorService as unknown as AgentAsyncExecutorService,
       agentRepository as unknown as WorkspaceScopedRepository<AgentEntity>,
+      workflowAiAgentTestContextService as never,
     );
   });
 
@@ -124,5 +131,43 @@ describe('WorkflowAiAgentTestService', () => {
 
     expect(response.success).toBe(false);
     expect(response.error).toBe('model unavailable');
+  });
+
+  it('hydrates chips from a candidate before running the agent', async () => {
+    const resolvedPrompt = 'Name: Jane Doe\nAbout: B2B sales leader';
+
+    agentRepository.findOne.mockResolvedValue(agent);
+    workflowAiAgentTestContextService.resolvePromptForCandidate.mockResolvedValue(
+      resolvedPrompt,
+    );
+    agentAsyncExecutorService.executeAgent.mockResolvedValue({
+      result: { message: 'Hi Jane' },
+      hasNoMoreAvailableCredits: false,
+    });
+
+    const response = await service.test({
+      workspaceId,
+      agentId,
+      prompt,
+      candidateId: '11111111-1111-4111-8111-111111111111',
+      workflowVersionId: 'version-1',
+      stepId: 'step-1',
+    });
+
+    expect(
+      workflowAiAgentTestContextService.resolvePromptForCandidate,
+    ).toHaveBeenCalledWith({
+      workspaceId,
+      workflowVersionId: 'version-1',
+      stepId: 'step-1',
+      candidateId: '11111111-1111-4111-8111-111111111111',
+      prompt,
+    });
+    expect(agentAsyncExecutorService.executeAgent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userPrompt: resolvedPrompt,
+      }),
+    );
+    expect(response.success).toBe(true);
   });
 });

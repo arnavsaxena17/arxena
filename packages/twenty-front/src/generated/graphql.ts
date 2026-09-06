@@ -518,8 +518,20 @@ export type TestAiAgent = {
 export type TestAiAgentInput = {
   /** Agent id to execute */
   agentId: Scalars['UUID']['input'];
-  /** Prompt to send to the agent, with workflow variables already substituted */
+  /**
+   * Candidate to hydrate previous FIND / LinkedIn fetch nodes from before
+   * running the prompt
+   */
+  candidateId?: InputMaybe<Scalars['UUID']['input']>;
+  /**
+   * Prompt to send to the agent. When candidateId is set, leave workflow chips
+   * in place so previous nodes can fill them.
+   */
   prompt: Scalars['String']['input'];
+  /** AI_AGENT step id whose previous nodes should be hydrated */
+  stepId?: InputMaybe<Scalars['UUID']['input']>;
+  /** Workflow version that owns the AI_AGENT step being tested */
+  workflowVersionId?: InputMaybe<Scalars['UUID']['input']>;
 };
 
 export type TestHttpRequest = {

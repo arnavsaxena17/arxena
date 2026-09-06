@@ -26,6 +26,7 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| AI agent Test tab Candidate picker | Test hydrates previous FIND / native LinkedIn-calendar nodes for a picked Candidate (and prompt-referenced steps on other branches), then runs the agent. Fallback remains “fill chips from a recent run”. | `WorkflowAiAgentTestTab.tsx`, `workflow-ai-agent-test-context.service.ts`, `test-ai-agent.input.ts` |
 | Org-chart Ask AI people from S3 + gated web search | `get_org_chart_node_people` hydrates stored chart people (`orgchart.json` node rows + `candidates.json` headline/summary), not `people_all`. New `google_serp_search` REST/MCP tool. Ask AI Exa + SERP gated by `IS_SEARCH_EXA_ENABLED` / `IS_SEARCH_SERP_ENABLED` (default on). | `org-chart-node-people.util.ts`, `org-chart.service.ts` `getNodePeople`, `google-serp-search`, `search-tools-config.util.ts`, `org-structure-insights.md` |
 | Admin grant org chart to workspace | Shared S3/Redis stay company-keyed (`org-charts/{slug}`); workspace access via `credit_transactions` debit/grant on `orgChartS3RelativePath`. Admin mutation grants existing chart + optional CRM `orgChart` UUID + Project. Authenticated Redis entire-company GET now requires workspace access (same as S3). | `org-chart-grant-admin.service.ts`, `adminGrantOrgChartToWorkspace`, `SettingsAdminGrantOrgCharts.tsx`, `org-chart.service.ts` |
 | Front rename/mismatch audit | Detector script + §2.1.1; gated Outreach dashboard path via `OutreachSafeDashboardPath` (People tab + nav). | `find-front-rename-mismatches.mjs`, `OutreachSafeDashboardPath.tsx`, `OutreachPeoplePanel.tsx`, `OutreachHomeNavigationDrawerItem.tsx` |
@@ -869,6 +870,13 @@ Edit these carefully on rebase — product integration points.
 | `packages/twenty-front/src/modules/ui/layout/page/components/PagePanel.tsx` | working · intent | Restore `flex:1` / `min-height:0` on panel (workflows parity) for full-height project table |
 | `packages/twenty-front/src/modules/workflow/workflow-diagram/components/WorkflowDiagramCanvasBase.tsx` | working · intent | Center GTM/full workflow canvas on real container width (no double side-panel subtract); account for `flowBounds.x/y`; ResizeObserver on canvas resize |
 | `packages/twenty-front/src/modules/workflow/hooks/useWorkflowRun.ts` | working · intent | Do not throw ZodError when a run has null `workflowVersionId` (SET_NULL); outreach-home snackbar was crashing the page |
+| `packages/twenty-front/src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowEditActionAiAgent.tsx` | working · intent | Test tab Candidate picker; pass `candidateId` / version / step into `testAiAgent` |
+| `packages/twenty-front/src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/hooks/useTestAiAgent.ts` | working · intent | Optional candidate hydration fields on `testAiAgent` mutation |
+| `packages/twenty-server/src/engine/core-modules/workflow/dtos/test-ai-agent.input.ts` | working · intent | Optional `candidateId`, `workflowVersionId`, `stepId` |
+| `packages/twenty-server/src/engine/core-modules/workflow/services/workflow-ai-agent-test.service.ts` | working · intent | Hydrate prompt from candidate when those fields are set |
+| `packages/twenty-server/src/engine/core-modules/workflow/resolvers/workflow-version-step.resolver.ts` | working · intent | Pass candidate hydration fields through `testAiAgent` |
+| `packages/twenty-server/src/engine/core-modules/workflow/workflow-api.module.ts` | working · intent | Register `WorkflowAiAgentTestContextService` + LF executor / flat maps |
+| `packages/twenty-front/src/generated/graphql.ts` | working · intent | `TestAiAgentInput` candidate hydration fields |
 | `packages/twenty-server/src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-workflow-version-standard-flat-field-metadata.util.ts` | working · intent | `EXPERIMENT` option on `workflowVersion.status` SELECT (A/B publish) |
 | `packages/twenty-server/src/engine/core-modules/workflow/entities/workflow-version.entity.ts` | working · intent | Core `WorkflowVersionStatus.EXPERIMENT` |
 | `packages/twenty-server/src/database/commands/upgrade-version-command/instance-commands.constant.ts` | working · intent | Register `1785600000076` add-experiment-to-workflow-version-status |
@@ -913,6 +921,8 @@ Not in `diff-filter=M`, but live next to core and matter for rebases:
 | `auth/utils/arxenaSiteUrl.ts` | Site URL helper |
 | `twenty-shared/src/{arx,graphql,utils/orgchart,…}` | New shared barrels (paired with §9.1 index edits) |
 | `workflow/utils/parseWorkflowRunRecord.ts` | Lenient WorkflowRun parse (null `workflowVersionId`) so outreach-home snackbar cannot crash the page |
+| `workflow-ai-agent-test-context.service.ts` + previous-step / prompt-resolve utils | Candidate Test hydrates FIND + native LFs without a prior run |
+| `WorkflowAiAgentTestTab.tsx` | Candidate picker on the AI node Test tab |
 | `object-record/record-field/.../RelatedRecordFieldDisplay.tsx` | Workflow Runs related-record chip; Recoil `record` → Jotai `recordStore` leftover crashed the index |
 
 ### 9.5 Refresh commands

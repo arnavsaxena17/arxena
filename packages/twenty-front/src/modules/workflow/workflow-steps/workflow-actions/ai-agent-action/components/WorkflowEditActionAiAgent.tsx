@@ -4,11 +4,11 @@ import { type SingleTabProps } from '@/ui/layout/tab-list/types/SingleTabProps';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { workflowVisualizerWorkflowIdComponentState } from '@/workflow/states/workflowVisualizerWorkflowIdComponentState';
+import { workflowVisualizerWorkflowVersionIdComponentState } from '@/workflow/states/workflowVisualizerWorkflowVersionIdComponentState';
 import { type WorkflowAiAgentAction } from '@/workflow/types/Workflow';
 import { WorkflowStepBody } from '@/workflow/workflow-steps/components/WorkflowStepBody';
 import { WorkflowStepCmdEnterButton } from '@/workflow/workflow-steps/components/WorkflowStepCmdEnterButton';
 import { WorkflowStepFooter } from '@/workflow/workflow-steps/components/WorkflowStepFooter';
-import { AiAgentExecutionResult } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/components/AiAgentExecutionResult';
 import { WorkflowAiAgentPermissionsTab } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentPermissionsTab';
 import { WORKFLOW_AI_AGENT_TAB_LIST_COMPONENT_ID } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/constants/WorkflowAiAgentTabListComponentId';
 import { WORKFLOW_AI_AGENT_TABS } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/constants/WorkflowAiAgentTabs';
@@ -20,16 +20,11 @@ import { workflowAiAgentPermissionsIsAddingPermissionState } from '@/workflow/wo
 import { useQuery } from '@apollo/client/react';
 import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
+import { isNonEmptyString } from '@sniptt/guards';
 import { useEffect, useState } from 'react';
 import { SettingsPath } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
-import { Callout } from 'twenty-ui/feedback';
-import {
-  IconAlertTriangle,
-  IconLock,
-  IconPlayerPlay,
-  IconSparkles,
-} from 'twenty-ui/icon';
+import { IconLock, IconPlayerPlay, IconSparkles } from 'twenty-ui/icon';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useDebouncedCallback } from 'use-debounce';
 import {
@@ -39,6 +34,7 @@ import {
 import { useNavigateSettings } from '~/hooks/useNavigateSettings';
 import { SidePanelSkeletonLoader } from '~/loading/components/SidePanelSkeletonLoader';
 import { WorkflowAiAgentPromptTab } from './WorkflowAiAgentPromptTab';
+import { WorkflowAiAgentTestTab } from './WorkflowAiAgentTestTab';
 
 export type WorkflowAiAgentTabId =
   (typeof WORKFLOW_AI_AGENT_TABS)[keyof typeof WORKFLOW_AI_AGENT_TABS];
@@ -56,15 +52,6 @@ type WorkflowEditActionAiAgentProps = {
 const StyledTabListContainer = styled.div`
   background-color: ${themeCssVariables.background.secondary};
   padding-left: ${themeCssVariables.spacing[2]};
-`;
-
-const StyledTestTabContent = styled.div`
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: ${themeCssVariables.spacing[4]};
-  height: 100%;
-  min-height: 400px;
 `;
 
 export const WorkflowEditActionAiAgent = ({
@@ -94,8 +81,12 @@ export const WorkflowEditActionAiAgent = ({
 
   const actionPrompt = action.settings.input.prompt || '';
   const [prompt, setPrompt] = useState(actionPrompt);
+  const [candidateId, setCandidateId] = useState<string | undefined>(undefined);
   const workflowVisualizerWorkflowId = useAtomComponentStateValue(
     workflowVisualizerWorkflowIdComponentState,
+  );
+  const workflowVisualizerWorkflowVersionId = useAtomComponentStateValue(
+    workflowVisualizerWorkflowVersionIdComponentState,
   );
   const { resolvePrompt } = useResolveAiAgentTestPromptFromLatestRun(
     workflowVisualizerWorkflowId,
@@ -130,13 +121,34 @@ export const WorkflowEditActionAiAgent = ({
       return;
     }
 
+    if (isNonEmptyString(candidateId)) {
+      if (!isNonEmptyString(workflowVisualizerWorkflowVersionId)) {
+        showTestError(
+          t`Open this step from a workflow version to test with a candidate.`,
+        );
+
+        return;
+      }
+
+      await testAiAgent({
+        agentId,
+        prompt,
+        candidateId,
+        workflowVersionId: workflowVisualizerWorkflowVersionId,
+        stepId: action.id,
+      });
+
+      return;
+    }
+
     const { resolvedPrompt, missingVariablePaths } =
       await resolvePrompt(prompt);
 
     if (missingVariablePaths.length > 0) {
       showTestError(
-        t`This prompt uses values from previous steps. Test fills those chips from a recent workflow run that produced them. Run this branch once, or temporarily replace the chips with sample text.`,
+        t`Pick a candidate to fetch LinkedIn profile and prior messages, or run this branch once so chips can fill from a recent run.`,
       );
+
       return;
     }
 
@@ -255,30 +267,21 @@ export const WorkflowEditActionAiAgent = ({
         </WorkflowStepBody>
       ) : currentTabId === WORKFLOW_AI_AGENT_TABS.TEST ? (
         <WorkflowStepBody>
-          <StyledTestTabContent>
-            <Callout
-              variant={'warning'}
-              Icon={IconAlertTriangle}
-              title={t`Runs the agent with its tools`}
-              description={t`Use the same prompt, model, and output as this step. Variable chips are filled from a recent workflow run. Record changes and credit usage are real.`}
-            />
-            <WorkflowAiAgentPromptTab
-              action={action}
-              prompt={prompt}
-              readonly={actionOptions.readonly === true}
-              modelSelectDropdownId={`select-agent-model-test-${action.id}`}
-              onPromptChange={handleAgentPromptChange}
-              onActionUpdate={
-                actionOptions.readonly === true
-                  ? undefined
-                  : actionOptions.onActionUpdate
-              }
-            />
-            <AiAgentExecutionResult
-              aiAgentTestData={aiAgentTestData}
-              isTesting={isTesting}
-            />
-          </StyledTestTabContent>
+          <WorkflowAiAgentTestTab
+            action={action}
+            prompt={prompt}
+            candidateId={candidateId}
+            readonly={actionOptions.readonly === true}
+            isTesting={isTesting}
+            aiAgentTestData={aiAgentTestData}
+            onCandidateChange={setCandidateId}
+            onPromptChange={handleAgentPromptChange}
+            onActionUpdate={
+              actionOptions.readonly === true
+                ? undefined
+                : actionOptions.onActionUpdate
+            }
+          />
         </WorkflowStepBody>
       ) : (
         <WorkflowStepBody>

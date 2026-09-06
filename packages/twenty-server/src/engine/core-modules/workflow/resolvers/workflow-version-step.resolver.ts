@@ -192,6 +192,9 @@ export class WorkflowVersionStepResolver {
       workspaceId: workspace.id,
       agentId: input.agentId,
       prompt: input.prompt,
+      candidateId: input.candidateId,
+      workflowVersionId: input.workflowVersionId,
+      stepId: input.stepId,
     });
   }
 
