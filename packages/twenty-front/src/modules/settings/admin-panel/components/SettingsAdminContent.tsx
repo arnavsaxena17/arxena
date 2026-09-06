@@ -15,6 +15,7 @@ import {
   IconHierarchy,
   IconKey,
   IconSettings2,
+  IconShare,
   IconSparkles,
   IconUsers,
   IconVariable,
@@ -81,6 +82,12 @@ export const SettingsAdminContent = () => {
       id: SETTINGS_ADMIN_TABS.PUBLISHED_ORG_CHARTS,
       title: t`Published charts`,
       Icon: IconHierarchy,
+      disabled: !canAccessFullAdminPanel,
+    },
+    {
+      id: SETTINGS_ADMIN_TABS.GRANT_ORG_CHARTS,
+      title: t`Grant charts`,
+      Icon: IconShare,
       disabled: !canAccessFullAdminPanel,
     },
     {

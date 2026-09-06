@@ -7,6 +7,7 @@ export const SEARCH_FIND_CANDIDATE_INTERNAL_TOOL_NAME =
   'find_candidate_in_arxena_internal';
 export const SEARCH_EXA_TOOL_NAME = 'exa_web_search';
 export const SEARCH_EXA_APP_TOOL_NAME = 'app_exa_web_search';
+export const SEARCH_SERP_TOOL_NAME = 'google_serp_search';
 export const SEARCH_COMPANIES_INDEX_TOOL_NAME = 'search_companies_index';
 export const SEARCH_WIKIDATA_COMPANIES_TOOL_NAME = 'search_wikidata_companies';
 
@@ -16,6 +17,7 @@ export type SearchToolsConfig = {
   isSearchPeopleIndexEnabled: boolean;
   isSearchFindCandidateInternalEnabled: boolean;
   isSearchExaEnabled: boolean;
+  isSearchSerpEnabled: boolean;
   isSearchCompaniesIndexEnabled: boolean;
   isSearchWikidataCompaniesEnabled: boolean;
 };
@@ -37,6 +39,8 @@ export const resolveSearchToolsConfig = (
     false,
   isSearchExaEnabled:
     twentyConfigService.get('IS_SEARCH_EXA_ENABLED') !== false,
+  isSearchSerpEnabled:
+    twentyConfigService.get('IS_SEARCH_SERP_ENABLED') !== false,
   isSearchCompaniesIndexEnabled:
     twentyConfigService.get('IS_SEARCH_COMPANIES_INDEX_ENABLED') !== false,
   isSearchWikidataCompaniesEnabled:
@@ -69,6 +73,10 @@ export const getDisabledSearchToolNames = (
 
   if (!config.isSearchExaEnabled) {
     disabledToolNames.push(SEARCH_EXA_TOOL_NAME, SEARCH_EXA_APP_TOOL_NAME);
+  }
+
+  if (!config.isSearchSerpEnabled) {
+    disabledToolNames.push(SEARCH_SERP_TOOL_NAME);
   }
 
   if (!config.isSearchCompaniesIndexEnabled) {
@@ -251,6 +259,43 @@ export const filterSearchSkillContent = (
       filteredContent,
       'search-find-candidate-internal-learn-tools-line',
     );
+  }
+
+  if (!config.isSearchExaEnabled && !config.isSearchSerpEnabled) {
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'org-structure-web-search-section',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'org-structure-exa-learn-tools-line',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'org-structure-serp-learn-tools-line',
+    );
+  } else {
+    if (!config.isSearchExaEnabled) {
+      filteredContent = stripMarkedSection(
+        filteredContent,
+        'org-structure-exa-learn-tools-line',
+      );
+      filteredContent = stripMarkedSection(
+        filteredContent,
+        'org-structure-exa-playbook',
+      );
+    }
+
+    if (!config.isSearchSerpEnabled) {
+      filteredContent = stripMarkedSection(
+        filteredContent,
+        'org-structure-serp-learn-tools-line',
+      );
+      filteredContent = stripMarkedSection(
+        filteredContent,
+        'org-structure-serp-playbook',
+      );
+    }
   }
 
   return filteredContent;

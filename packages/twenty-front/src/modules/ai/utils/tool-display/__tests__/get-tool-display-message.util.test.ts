@@ -154,6 +154,20 @@ describe('getToolDisplayMessage', () => {
     });
   });
 
+  describe('google_serp_search', () => {
+    it('should show the same searching-the-web message as native web_search', () => {
+      const message = getToolDisplayMessage({
+        input: { query: 'Julian Lord British Airways EC2' },
+        toolName: 'google_serp_search',
+        isFinished: false,
+        displayContext: emptyDisplayContext,
+      });
+
+      expect(message).toContain('Searching');
+      expect(message).toContain('Julian Lord British Airways EC2');
+    });
+  });
+
   describe('learn_tools', () => {
     it('should show tool names when provided', () => {
       const message = getToolDisplayMessage({

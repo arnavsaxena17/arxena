@@ -10,6 +10,7 @@ import {
   SEARCH_EXA_TOOL_NAME,
   SEARCH_FIND_CANDIDATE_INTERNAL_TOOL_NAME,
   SEARCH_PEOPLE_INDEX_TOOL_NAME,
+  SEARCH_SERP_TOOL_NAME,
   SEARCH_WIKIDATA_COMPANIES_TOOL_NAME,
 } from 'src/engine/core-modules/arxena-tools/utils/search-tools-config.util';
 import { type TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
@@ -20,6 +21,7 @@ type SearchToolsConfigKey =
   | 'IS_SEARCH_PEOPLE_INDEX_ENABLED'
   | 'IS_SEARCH_FIND_CANDIDATE_INTERNAL_ENABLED'
   | 'IS_SEARCH_EXA_ENABLED'
+  | 'IS_SEARCH_SERP_ENABLED'
   | 'IS_SEARCH_COMPANIES_INDEX_ENABLED'
   | 'IS_SEARCH_WIKIDATA_COMPANIES_ENABLED';
 
@@ -35,12 +37,12 @@ describe('search-tools-config.util', () => {
     const config = resolveSearchToolsConfig(buildConfigService({}));
 
     expect(getDisabledSearchToolNames(config)).toEqual([]);
-    expect(
-      isSearchToolEnabled(SEARCH_APOLLO_PEOPLE_TOOL_NAME, config),
-    ).toBe(true);
-    expect(
-      isSearchToolEnabled(SEARCH_COMPANIES_INDEX_TOOL_NAME, config),
-    ).toBe(true);
+    expect(isSearchToolEnabled(SEARCH_APOLLO_PEOPLE_TOOL_NAME, config)).toBe(
+      true,
+    );
+    expect(isSearchToolEnabled(SEARCH_COMPANIES_INDEX_TOOL_NAME, config)).toBe(
+      true,
+    );
   });
 
   it('disables search tools when env flags are false', () => {
@@ -51,6 +53,7 @@ describe('search-tools-config.util', () => {
         IS_SEARCH_PEOPLE_INDEX_ENABLED: false,
         IS_SEARCH_FIND_CANDIDATE_INTERNAL_ENABLED: false,
         IS_SEARCH_EXA_ENABLED: false,
+        IS_SEARCH_SERP_ENABLED: false,
         IS_SEARCH_COMPANIES_INDEX_ENABLED: false,
         IS_SEARCH_WIKIDATA_COMPANIES_ENABLED: false,
       }),
@@ -63,6 +66,7 @@ describe('search-tools-config.util', () => {
       SEARCH_FIND_CANDIDATE_INTERNAL_TOOL_NAME,
       SEARCH_EXA_TOOL_NAME,
       SEARCH_EXA_APP_TOOL_NAME,
+      SEARCH_SERP_TOOL_NAME,
       SEARCH_COMPANIES_INDEX_TOOL_NAME,
       SEARCH_WIKIDATA_COMPANIES_TOOL_NAME,
     ]);
@@ -100,5 +104,58 @@ describe('search-tools-config.util', () => {
     expect(filtered).not.toContain('search_people_index');
     expect(filtered).not.toContain('find_candidate_in_arxena_internal');
     expect(filtered).toContain('LinkedIn, Harvest, and Apollo intro');
+  });
+
+  it('strips org-structure Exa and SERP sections when those flags are false', () => {
+    const content = [
+      'learn_tools([',
+      '  "get_org_chart_node_people",',
+      '<!-- org-structure-exa-learn-tools-line:start -->',
+      '  "app_exa_web_search",',
+      '<!-- org-structure-exa-learn-tools-line:end -->',
+      '<!-- org-structure-serp-learn-tools-line:start -->',
+      '  "google_serp_search",',
+      '<!-- org-structure-serp-learn-tools-line:end -->',
+      '  "highlight_org_chart"',
+      '])',
+      '<!-- org-structure-web-search-section:start -->',
+      '## Playbook C — Web corroboration',
+      '<!-- org-structure-exa-playbook:start -->',
+      '- `app_exa_web_search`',
+      '<!-- org-structure-exa-playbook:end -->',
+      '<!-- org-structure-serp-playbook:start -->',
+      '- `google_serp_search`',
+      '<!-- org-structure-serp-playbook:end -->',
+      '<!-- org-structure-web-search-section:end -->',
+    ].join('\n');
+
+    const bothDisabled = filterSearchSkillContent(
+      content,
+      resolveSearchToolsConfig(
+        buildConfigService({
+          IS_SEARCH_EXA_ENABLED: false,
+          IS_SEARCH_SERP_ENABLED: false,
+        }),
+      ),
+    );
+
+    expect(bothDisabled).not.toContain('app_exa_web_search');
+    expect(bothDisabled).not.toContain('google_serp_search');
+    expect(bothDisabled).not.toContain('Web corroboration');
+    expect(bothDisabled).toContain('get_org_chart_node_people');
+
+    const serpOnly = filterSearchSkillContent(
+      content,
+      resolveSearchToolsConfig(
+        buildConfigService({
+          IS_SEARCH_EXA_ENABLED: true,
+          IS_SEARCH_SERP_ENABLED: false,
+        }),
+      ),
+    );
+
+    expect(serpOnly).toContain('app_exa_web_search');
+    expect(serpOnly).not.toContain('google_serp_search');
+    expect(serpOnly).toContain('Web corroboration');
   });
 });

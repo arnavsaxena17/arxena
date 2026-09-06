@@ -1,4 +1,5 @@
 import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class OrgChartNodePeopleDto {
   @IsOptional()
@@ -22,6 +23,7 @@ export class OrgChartNodePeopleDto {
   stdFunctionRoot?: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   nodeKey?: number;
 
@@ -30,7 +32,7 @@ export class OrgChartNodePeopleDto {
   country?: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   limit?: number;
 }
-

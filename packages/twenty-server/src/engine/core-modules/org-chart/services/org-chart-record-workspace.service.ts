@@ -40,7 +40,7 @@ export class OrgChartRecordWorkspaceService {
 
   async tryPersistOrgChartRecord(
     params: PersistOrgChartWorkspaceRecordParams,
-  ): Promise<void> {
+  ): Promise<string | undefined> {
     const { apiToken } = params;
     this.logger.log(
       `Attempting to persist orgChart CRM row for company="${params.resolvedCompanyName}" mode=${params.mode} searchType=${params.searchType} path=${params.orgChartS3RelativePath}`,
@@ -49,7 +49,7 @@ export class OrgChartRecordWorkspaceService {
       this.logger.warn(
         `Skipping orgChart CRM persist for company="${params.resolvedCompanyName}": no apiToken`,
       );
-      return;
+      return undefined;
     }
 
     try {
@@ -59,7 +59,7 @@ export class OrgChartRecordWorkspaceService {
         );
 
       if (!workspaceMemberId) {
-        return;
+        return undefined;
       }
 
       const workspaceId =
@@ -149,7 +149,7 @@ export class OrgChartRecordWorkspaceService {
         this.logger.warn(
           `OrgChart CRM row NOT persisted for company="${params.resolvedCompanyName}" chartKind=${chartKind} path=${params.orgChartS3RelativePath}: ${summary}`,
         );
-        return;
+        return undefined;
       }
 
       const createdId = this.extractCreatedOrgChartId(gqlResult);
@@ -159,12 +159,16 @@ export class OrgChartRecordWorkspaceService {
           createdId ? ` id=${createdId}` : ''
         }`,
       );
+
+      return createdId;
     } catch (error) {
       this.logger.warn(
         `Could not persist orgChart CRM row: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );
+
+      return undefined;
     }
   }
 

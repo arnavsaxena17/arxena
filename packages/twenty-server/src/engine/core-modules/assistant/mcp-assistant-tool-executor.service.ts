@@ -79,6 +79,7 @@ export class McpAssistantToolExecutorService {
   ): void {
     if (
       toolName !== 'get_org_chart' &&
+      toolName !== 'list_org_chart_positions' &&
       toolName !== 'search_org_charts_by_country' &&
       toolName !== 'search_org_charts_by_function'
     ) {
@@ -105,8 +106,7 @@ export class McpAssistantToolExecutorService {
               typeof o.companyName === 'string' && o.companyName
                 ? o.companyName
                 : companyId,
-            slug:
-              typeof o.slug === 'string' && o.slug ? o.slug : companyId,
+            slug: typeof o.slug === 'string' && o.slug ? o.slug : companyId,
             viewUrl,
             ...(typeof o.country === 'string' ? { country: o.country } : {}),
             ...(typeof o.functionRoot === 'string'
@@ -116,7 +116,10 @@ export class McpAssistantToolExecutorService {
         });
       };
 
-      if (toolName === 'get_org_chart') {
+      if (
+        toolName === 'get_org_chart' ||
+        toolName === 'list_org_chart_positions'
+      ) {
         emitOne(parsed);
         return;
       }

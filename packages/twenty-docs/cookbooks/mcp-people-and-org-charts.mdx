@@ -57,7 +57,7 @@ Quit Claude Desktop fully after editing.
 
 Prefer `search_people_api` with **naturalLanguage** (e.g. “CEO at StayVista”). Use explicit std filters only when you already have them. Public vocabulary nouns: [taxonomy constants](/api-reference/taxonomy/list-taxonomy-constants).
 
-In Ask AI on an open org chart, load `org-structure-insights` then `highlight_org_chart` to paint matching nodes (structure / budget questions still use `get_org_chart` + `get_org_chart_node_people`).
+In Ask AI on an open org chart, load `org-structure-insights`, map with `list_org_chart_positions`, paint with `highlight_org_chart({ nodeKeys })`, and drill stored people with `get_org_chart_node_people({ nodeKey })` so answers cite node keys plus profile `headline` / `summary`. Optional web corroboration: `app_exa_web_search` and `google_serp_search` (Ask AI catalog flags `IS_SEARCH_EXA_ENABLED` / `IS_SEARCH_SERP_ENABLED`).
 
 ## Related
 

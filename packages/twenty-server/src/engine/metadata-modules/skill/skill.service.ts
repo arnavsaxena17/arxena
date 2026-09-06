@@ -36,7 +36,10 @@ export class SkillService {
   ) {}
 
   private applySearchSkillContentFilters(flatSkill: FlatSkill): FlatSkill {
-    if (flatSkill.name !== 'search') {
+    if (
+      flatSkill.name !== 'search' &&
+      flatSkill.name !== 'org-structure-insights'
+    ) {
       return flatSkill;
     }
 

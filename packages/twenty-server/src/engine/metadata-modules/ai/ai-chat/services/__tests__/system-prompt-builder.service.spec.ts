@@ -5,12 +5,10 @@ import { SystemPromptBuilderService } from 'src/engine/metadata-modules/ai/ai-ch
 import { type ToolIndexEntry } from 'src/engine/core-modules/tool-provider/types/tool-index-entry.type';
 
 describe('SystemPromptBuilderService', () => {
-  const buildService = (
-    overrides?: {
-      toolRegistry?: { buildToolIndex: jest.Mock };
-      skillService?: { findAllFlatSkills: jest.Mock };
-    },
-  ) =>
+  const buildService = (overrides?: {
+    toolRegistry?: { buildToolIndex: jest.Mock };
+    skillService?: { findAllFlatSkills: jest.Mock };
+  }) =>
     new SystemPromptBuilderService(
       (overrides?.toolRegistry ?? {}) as never,
       (overrides?.skillService ?? {}) as never,
@@ -141,7 +139,7 @@ describe('SystemPromptBuilderService', () => {
 
       expect(prompt).toContain('Prospecting & enrichment');
       expect(prompt).toContain('prospecting');
-      expect(prompt).toContain('get_org_chart');
+      expect(prompt).toContain('list_org_chart_positions');
       expect(prompt).not.toContain('`search_people_api`');
     });
   });
@@ -158,7 +156,7 @@ describe('SystemPromptBuilderService', () => {
       expect(section).toContain('find_many');
       expect(section).toContain('companies');
       expect(section).toContain('prospecting');
-      expect(section).toContain('get_org_chart');
+      expect(section).toContain('list_org_chart_positions');
       expect(section).toContain('check_contact_availability');
       expect(section).not.toContain('`code_interpreter`');
       expect(section).not.toContain('inputSchema');

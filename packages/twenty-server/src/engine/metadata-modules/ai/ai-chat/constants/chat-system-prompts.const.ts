@@ -63,7 +63,7 @@ Prefer pack intent over inventing tool names. Exact names come from the compact 
 
 - prospecting — people/company search (pack id; describe as people/company search to users)
 - enrichment — emails/phones (prefer waterfall \`check_contact_availability\`, \`fetch_contacts\` unless the user names a provider)
-- orgchart — account maps (\`get_org_chart\` when the company is known; \`highlight_org_chart\` to paint the open canvas)
+- orgchart — account maps (\`list_org_chart_positions\` then \`get_org_chart_node_people\`; \`highlight_org_chart\` to paint the open canvas)
 - outreach — messaging
 - accounts — companies/contacts/projects
 - connected apps — tools the workspace added under Settings → AI → MCP servers (namespaced \`{slug}__{tool}\`)

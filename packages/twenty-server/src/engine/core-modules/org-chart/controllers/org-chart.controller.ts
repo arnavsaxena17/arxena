@@ -45,9 +45,11 @@ import { OrgChartService } from 'src/engine/core-modules/org-chart/services/org-
 import { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+import { NoPermissionGuard } from 'src/engine/guards/no-permission.guard';
 import { LinkedinXraySearchEngine } from 'src/modules/linkedin-xray/types/linkedin-xray-search-job.types';
 
 import { CompanyAutocompleteDto } from '../dto/company-autocomplete.dto';
+import { GoogleSerpSearchDto } from '../dto/google-serp-search.dto';
 import { OrgChartNodePeopleDto } from '../dto/org-chart-node-people.dto';
 import { OrgChartQueryDto } from '../dto/org-chart-query.dto';
 import { CompanyLogoService } from '../services/company-logo.service';
@@ -66,6 +68,11 @@ import { OrgChartS3Service } from '../services/orgchart-s3.service';
 import { PythonOrgChartService } from '../services/python-org-chart.service';
 import type { SuperImposeInputs } from '../types/super-impose.types';
 import { resolveFirstAutocompleteSource } from '../utils/first-autocomplete-source.util';
+import {
+  buildGoogleSerpSearchUrl,
+  mapGoogleSerpOrganicResults,
+  resolveGoogleSerpResultLimit,
+} from '../utils/map-google-serp-organic.util';
 import {
   isOrgPublishForeverTtl,
   ORG_PUBLISH_MAX_TTL_SECONDS,
@@ -237,8 +244,9 @@ export class OrgChartController {
       'entire_company',
       'classic',
     );
-    const cached =
-      await this.orgChartCacheStorageService.get<{ items?: unknown }>(cacheKey);
+    const cached = await this.orgChartCacheStorageService.get<{
+      items?: unknown;
+    }>(cacheKey);
     const cachedItems = cached?.items;
     if (Array.isArray(cachedItems) && cachedItems.length > 0) {
       return cachedItems.filter(
@@ -247,9 +255,8 @@ export class OrgChartController {
       );
     }
 
-    const s3Candidates = await this.orgChartS3Service.getCandidates(
-      normalizedCompanyId,
-    );
+    const s3Candidates =
+      await this.orgChartS3Service.getCandidates(normalizedCompanyId);
     if (Array.isArray(s3Candidates) && s3Candidates.length > 0) {
       return s3Candidates.filter(
         (row): row is Record<string, unknown> =>
@@ -276,7 +283,9 @@ export class OrgChartController {
 
     const companyName =
       input.companyName?.trim() || input.normalizedCompanyId || 'Company';
-    const candidates = await this.loadTimelineCandidates(input.normalizedCompanyId);
+    const candidates = await this.loadTimelineCandidates(
+      input.normalizedCompanyId,
+    );
 
     if (candidates.length === 0) {
       return null;
@@ -587,7 +596,9 @@ export class OrgChartController {
     }
 
     const publishCompanyName =
-      typeof body.companyName === 'string' ? body.companyName.trim() : undefined;
+      typeof body.companyName === 'string'
+        ? body.companyName.trim()
+        : undefined;
 
     const requestedPublishSlug =
       typeof body.publishSlug === 'string' && body.publishSlug.trim()
@@ -728,7 +739,8 @@ export class OrgChartController {
       await this.resolvePublishedOrgChartMapping(publishSlugParam);
     const normalizedCompanyId = this.normalizeCompanyId(companyId);
 
-    const orgChart = await this.loadShareableOrgChartFromS3(normalizedCompanyId);
+    const orgChart =
+      await this.loadShareableOrgChartFromS3(normalizedCompanyId);
 
     const payload: Record<string, unknown> = {
       ...(orgChart as unknown as Record<string, unknown>),
@@ -1578,9 +1590,12 @@ export class OrgChartController {
       Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 10;
 
     try {
-      const items = await this.orgChartSuperImposeAutocompleteService.searchLocations(
-        { apiToken, keywords: trimmed, limit },
-      );
+      const items =
+        await this.orgChartSuperImposeAutocompleteService.searchLocations({
+          apiToken,
+          keywords: trimmed,
+          limit,
+        });
 
       return { status: 'ok' as const, items };
     } catch (error) {
@@ -1624,9 +1639,13 @@ export class OrgChartController {
       );
 
     try {
-      const items = await this.orgChartSuperImposeAutocompleteService.searchCompanies(
-        { apiToken, keywords: trimmed, limit, searchType },
-      );
+      const items =
+        await this.orgChartSuperImposeAutocompleteService.searchCompanies({
+          apiToken,
+          keywords: trimmed,
+          limit,
+          searchType,
+        });
 
       return { status: 'ok' as const, items };
     } catch (error) {
@@ -2030,7 +2049,9 @@ export class OrgChartController {
         ? {
             ...storage,
             mergedNewsItems:
-              this.orgChartCompanyNewsService.mergeNewsItemsFromStorage(storage),
+              this.orgChartCompanyNewsService.mergeNewsItemsFromStorage(
+                storage,
+              ),
           }
         : null,
     };
@@ -2065,8 +2086,7 @@ export class OrgChartController {
     }
 
     const normalizedCompanyId = this.normalizeCompanyId(companyId);
-    const companyName =
-      (body?.companyName ?? '').trim() || normalizedCompanyId;
+    const companyName = (body?.companyName ?? '').trim() || normalizedCompanyId;
     const location = (body?.location ?? '').trim() || undefined;
 
     try {
@@ -2091,9 +2111,7 @@ export class OrgChartController {
         throw error;
       }
       throw new HttpException(
-        error instanceof Error
-          ? error.message
-          : 'Failed to fetch company news',
+        error instanceof Error ? error.message : 'Failed to fetch company news',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -2160,8 +2178,7 @@ export class OrgChartController {
     }
 
     const normalizedCompanyId = this.normalizeCompanyId(companyId);
-    const companyName =
-      (body?.companyName ?? '').trim() || normalizedCompanyId;
+    const companyName = (body?.companyName ?? '').trim() || normalizedCompanyId;
     const domainInput = (body?.domain ?? body?.website ?? '').trim();
 
     if (!domainInput) {
@@ -2237,10 +2254,7 @@ export class OrgChartController {
     expectedEmployeeCountRaw: string | undefined,
     @Req() req: Request,
   ) {
-    if (
-      companyId === 'companies' &&
-      country === 'resolve-by-domain'
-    ) {
+    if (companyId === 'companies' && country === 'resolve-by-domain') {
       const domainParam =
         typeof req.query.domain === 'string' ? req.query.domain : '';
       return this.resolveCompanyByDomain(domainParam, req);
@@ -2717,6 +2731,49 @@ export class OrgChartController {
     };
   }
 
+  @UseGuards(JwtAuthGuard, NoPermissionGuard)
+  @Post('google-serp-search')
+  async googleSerpSearch(@Body() body: GoogleSerpSearchDto) {
+    const query = body.query?.trim() ?? '';
+
+    if (!query) {
+      throw new HttpException(
+        'Body field "query" is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (!this.brightDataSerpService.isConfigured()) {
+      throw new HttpException(
+        'Google SERP search is not configured (BRIGHT_DATA_API_KEY)',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
+    const limit = resolveGoogleSerpResultLimit(body.limit);
+    const searchUrl = buildGoogleSerpSearchUrl(query, limit);
+
+    try {
+      const serp =
+        await this.brightDataSerpService.requestSerpGoogleJson(searchUrl);
+      const items = mapGoogleSerpOrganicResults(serp.organic, limit);
+
+      return {
+        status: 'ok',
+        query,
+        searchUrl,
+        items,
+        itemCount: items.length,
+      };
+    } catch (error) {
+      this.logger.error('Google SERP search failed', error);
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Google SERP search failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Post(':companyId/node-people')
   async getNodePeople(
     @Param('companyId') companyId: string,
@@ -2951,7 +3008,10 @@ export class OrgChartController {
       functionRoot?: string;
       stdFunction?: string;
       stdGrade?: string;
-      selectedNodeStdScopes?: Array<{ stdFunction?: string; stdGrade?: string }>;
+      selectedNodeStdScopes?: Array<{
+        stdFunction?: string;
+        stdGrade?: string;
+      }>;
       businessDivisionRawQuery?: string;
       queryGenerator?: 'python' | 'multi_agent';
       linkedinUnipileAccountId?: string;
@@ -3016,7 +3076,8 @@ export class OrgChartController {
       );
     }
 
-    const candidateSource = body.candidateSource === 'harvest' ? 'harvest' : 'unipile';
+    const candidateSource =
+      body.candidateSource === 'harvest' ? 'harvest' : 'unipile';
     const targetCompany = body.superImpose.targetCompany;
     const resolvedCompanyName =
       targetCompany?.title?.trim() ||
@@ -3037,32 +3098,33 @@ export class OrgChartController {
         apiToken,
       });
 
-    const plan = await this.orgChartSuperImposeService.buildQueryPlanFromContext(
-      {
-        apiToken,
-        primaryCompanyName: resolvedCompanyName,
-        companyId: effectiveCompanyId,
-        country:
-          body.linkedinLocationName ??
-          body.superImpose.targetLocation?.title ??
-          body.country,
-        functionRoot: body.functionRoot,
-        businessDivisionRawQuery: body.businessDivisionRawQuery,
-        leadershipOnly: body.leadershipOnly,
-        linkedinSearchKeywords: body.superImpose.linkedinSearchKeywords,
-        candidateSource,
-        searchType: body.searchType,
-        linkedinUnipileAccountId: body.linkedinUnipileAccountId,
-        linkedinLocationId:
-          body.linkedinLocationId ?? body.superImpose.targetLocation?.id,
-        linkedinLocationName:
-          body.linkedinLocationName ?? body.superImpose.targetLocation?.title,
-        linkedinCompanyParameterId:
-          body.linkedinCompanyParameterId ?? targetCompany?.id,
-      },
-      resolvedCompanies,
-      salesNavigatorSearchUrls,
-    );
+    const plan =
+      await this.orgChartSuperImposeService.buildQueryPlanFromContext(
+        {
+          apiToken,
+          primaryCompanyName: resolvedCompanyName,
+          companyId: effectiveCompanyId,
+          country:
+            body.linkedinLocationName ??
+            body.superImpose.targetLocation?.title ??
+            body.country,
+          functionRoot: body.functionRoot,
+          businessDivisionRawQuery: body.businessDivisionRawQuery,
+          leadershipOnly: body.leadershipOnly,
+          linkedinSearchKeywords: body.superImpose.linkedinSearchKeywords,
+          candidateSource,
+          searchType: body.searchType,
+          linkedinUnipileAccountId: body.linkedinUnipileAccountId,
+          linkedinLocationId:
+            body.linkedinLocationId ?? body.superImpose.targetLocation?.id,
+          linkedinLocationName:
+            body.linkedinLocationName ?? body.superImpose.targetLocation?.title,
+          linkedinCompanyParameterId:
+            body.linkedinCompanyParameterId ?? targetCompany?.id,
+        },
+        resolvedCompanies,
+        salesNavigatorSearchUrls,
+      );
 
     const estimate =
       await this.orgChartSuperImposeService.estimateFromPlan(plan);
@@ -3277,17 +3339,19 @@ export class OrgChartController {
 
     try {
       const rebuilt =
-        await this.orgChartLinkedInBuildService.rebuildOrgChartUsingSavedPeople({
-          apiToken: authToken,
-          companyId: companyId || undefined,
-          companyName: companyName || undefined,
-          industry: body?.industry?.trim() || undefined,
-          industryCategory: body?.industryCategory?.trim() || undefined,
-          asOfMonth: body?.asOfMonth?.trim() || undefined,
-          companyLinkedinUrl: body?.companyLinkedinUrl?.trim() || undefined,
-          functionRoot: body?.functionRoot?.trim() || undefined,
-          country: body?.country?.trim() || undefined,
-        });
+        await this.orgChartLinkedInBuildService.rebuildOrgChartUsingSavedPeople(
+          {
+            apiToken: authToken,
+            companyId: companyId || undefined,
+            companyName: companyName || undefined,
+            industry: body?.industry?.trim() || undefined,
+            industryCategory: body?.industryCategory?.trim() || undefined,
+            asOfMonth: body?.asOfMonth?.trim() || undefined,
+            companyLinkedinUrl: body?.companyLinkedinUrl?.trim() || undefined,
+            functionRoot: body?.functionRoot?.trim() || undefined,
+            country: body?.country?.trim() || undefined,
+          },
+        );
 
       return {
         status: 'ok' as const,

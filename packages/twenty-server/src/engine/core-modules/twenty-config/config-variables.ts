@@ -2330,7 +2330,8 @@ export class ConfigVariables {
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.RATE_LIMITING,
-    description: 'Contact enrichment rate limit for Lusha (requests per minute)',
+    description:
+      'Contact enrichment rate limit for Lusha (requests per minute)',
     type: ConfigVariableType.NUMBER,
   })
   @CastToPositiveNumber()
@@ -2541,11 +2542,20 @@ export class ConfigVariables {
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,
     description:
-      'Include exa_web_search / app_exa_web_search in Ask AI tool catalog and search skill (REST API and standalone MCP server are unaffected)',
+      'Include exa_web_search / app_exa_web_search in Ask AI tool catalog, search skill, and org-structure-insights skill (REST API and standalone MCP server are unaffected)',
     type: ConfigVariableType.BOOLEAN,
   })
   @IsOptional()
   IS_SEARCH_EXA_ENABLED = true;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Include google_serp_search in Ask AI tool catalog and org-structure-insights skill (REST API and standalone MCP server are unaffected)',
+    type: ConfigVariableType.BOOLEAN,
+  })
+  @IsOptional()
+  IS_SEARCH_SERP_ENABLED = true;
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,
@@ -2713,7 +2723,8 @@ export class ConfigVariables {
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,
-    description: 'Unipile v2 API base URL (Sales Navigator account-list browse)',
+    description:
+      'Unipile v2 API base URL (Sales Navigator account-list browse)',
     type: ConfigVariableType.STRING,
   })
   @IsOptional()
@@ -2867,7 +2878,8 @@ export class ConfigVariables {
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,
     isSensitive: true,
-    description: 'Bright Data API key (SERP, LinkedIn profile scrape, unlocker)',
+    description:
+      'Bright Data API key (SERP, LinkedIn profile scrape, unlocker)',
     type: ConfigVariableType.STRING,
   })
   @IsOptional()
@@ -2942,8 +2954,7 @@ export class ConfigVariables {
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,
-    description:
-      'Org-chart public access guard mode (off | log | enforce)',
+    description: 'Org-chart public access guard mode (off | log | enforce)',
     type: ConfigVariableType.STRING,
   })
   @IsOptional()

@@ -71,6 +71,7 @@ export async function fetchOrgChartNodePeople(
     stdGrade?: string;
     country?: string;
     limit?: number;
+    nodeKey?: number;
   },
 ): Promise<Record<string, unknown>> {
   const controller = new AbortController();

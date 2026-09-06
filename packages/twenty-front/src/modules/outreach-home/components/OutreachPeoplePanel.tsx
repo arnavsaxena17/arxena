@@ -32,8 +32,8 @@ import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTabl
 import { tableStateAtom } from '@/candidate-table/states/states';
 import { ContextStoreComponentInstanceContext } from '@/context-store/states/contexts/ContextStoreComponentInstanceContext';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
+import { OutreachSafeDashboardPath } from '@/outreach-home/components/OutreachSafeDashboardPath';
 import { useAddOutreachRecordsToCrm } from '@/outreach-home/hooks/useAddOutreachRecordsToCrm';
-import { useOutreachCommandDashboardPath } from '@/outreach-home/hooks/useOutreachCommandDashboardPath';
 import { useOutreachEnroll } from '@/outreach-home/hooks/useOutreachEnroll';
 import { useOutreachProjectJourneySummary } from '@/outreach-home/hooks/useOutreachProjectJourneySummary';
 import { useStopOutreach } from '@/outreach-home/hooks/useStopOutreach';
@@ -321,7 +321,6 @@ export const OutreachPeoplePanel = ({
     isLoading: isJourneySummaryLoading,
     refetch: refetchJourneySummary,
   } = useOutreachProjectJourneySummary(projectId);
-  const { dashboardPath } = useOutreachCommandDashboardPath();
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
   const [stageFilter, setStageFilter] =
     useState<OutreachPeopleQueueFilter>('all');
@@ -634,11 +633,15 @@ export const OutreachPeoplePanel = ({
           {formatChipLabel(chip.label, getQueueCount(chip.id))}
         </StyledStageChip>
       ))}
-      {isDefined(dashboardPath) && (
-        <StyledDashboardLink to={dashboardPath}>
-          Open Outreach dashboard
-        </StyledDashboardLink>
-      )}
+      <OutreachSafeDashboardPath>
+        {(dashboardPath) =>
+          isDefined(dashboardPath) ? (
+            <StyledDashboardLink to={dashboardPath}>
+              Open Outreach dashboard
+            </StyledDashboardLink>
+          ) : null
+        }
+      </OutreachSafeDashboardPath>
     </StyledStageFilters>
   );
 

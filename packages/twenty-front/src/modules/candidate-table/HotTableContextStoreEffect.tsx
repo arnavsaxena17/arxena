@@ -84,6 +84,8 @@ export const HotTableContextStoreEffect = ({
     setContextStoreCurrentPageType(ContextStorePageType.Index);
 
     return () => {
+      setTableContextStoreCurrentObjectMetadataItemId(undefined);
+      setTableContextStoreCurrentPageType(null);
       setContextStoreCurrentObjectMetadataItemId(undefined);
       setContextStoreCurrentPageType(null);
       setContextStoreNumberOfSelectedRecords(0);

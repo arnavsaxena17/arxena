@@ -59,7 +59,8 @@ const buildToolDisplayMessage = ({
 }): string => {
   switch (toolName) {
     case 'web_search':
-    case 'app_exa_web_search': {
+    case 'app_exa_web_search':
+    case 'google_serp_search': {
       const query = extractSearchQuery(input);
 
       if (isNonEmptyString(query)) {

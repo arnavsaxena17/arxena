@@ -1,7 +1,10 @@
 import { currentProjectIdState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { buildSelectedMetadataFieldsForPersist } from '@/arx-ai-filtering/utils/resumeMetadata';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { type TableState, tableStateAtom } from '@/candidate-table/states/states';
+import {
+  type TableState,
+  tableStateAtom,
+} from '@/candidate-table/states/states';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import axios from 'axios';
@@ -10,7 +13,10 @@ import { type OtherFieldKey, type TokenAnalysis } from '../types';
 
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
-export const useApiCalls = (index: number, onError: (error: string) => void) => {
+export const useApiCalls = (
+  index: number,
+  onError: (error: string) => void,
+) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isComputingTokens, setIsComputingTokens] = useState(false);
   const [tokenAnalysis, setTokenAnalysis] = useState<TokenAnalysis | null>(
@@ -19,7 +25,7 @@ export const useApiCalls = (index: number, onError: (error: string) => void) => 
 
   const currentProjectId = useAtomStateValue(currentProjectIdState);
   const [tokenPair] = useAtomState(tokenPairState);
-  const tableStateAtom = useAtomStateValue<TableState>(tableStateAtom);
+  const tableState = useAtomStateValue<TableState>(tableStateAtom);
 
   const getSelectedOrAllRecordIds = () => {
     return tableState?.selectedRowIds?.length > 0

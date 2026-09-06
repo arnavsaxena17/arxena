@@ -1,4 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AccountRateLimitModule } from 'src/engine/core-modules/account-rate-limit/account-rate-limit.module';
 import { ApifyModule } from 'src/engine/core-modules/apify/apify.module';
@@ -17,6 +18,7 @@ import { TheOfficialBoardModule } from 'src/engine/core-modules/theofficialboard
 import { BuiltWithModule } from 'src/engine/core-modules/builtwith/builtwith.module';
 import { TheOrgModule } from 'src/engine/core-modules/theorg/theorg.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { LinkedinXrayModule } from 'src/modules/linkedin-xray/linkedin-xray.module';
@@ -53,6 +55,7 @@ import { OrgChartPublishedAdminService } from './services/org-chart-published-ad
 import { OrgChartPublishedSlugService } from './services/org-chart-published-slug.service';
 import { OrgChartCompanyNewsService } from './services/org-chart-company-news.service';
 import { OrgChartCompanyTechnologyService } from './services/org-chart-company-technology.service';
+import { OrgChartGrantAdminService } from './services/org-chart-grant-admin.service';
 import { OrgChartS3Service } from './services/orgchart-s3.service';
 import { PdlAutocompleteService } from './services/pdl-autocomplete.service';
 import { PdlPersonOrgMovementService } from './services/pdl-person-org-movement.service';
@@ -63,6 +66,7 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
 
 @Module({
   imports: [
+    TypeOrmModule.forFeature([WorkspaceEntity]),
     CandidateAvatarModule,
     OrgChartClientIpModule,
     ApifyModule,
@@ -96,6 +100,7 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     HarvestLinkedinService,
     HarvestLinkedinTransformerService,
     OrgChartRecordWorkspaceService,
+    OrgChartGrantAdminService,
     OrgChartTheOrgEnrichmentService,
     ArxenaBackendService,
     OrgChartEsService,
@@ -127,6 +132,8 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     OrgChartS3Service,
     OrgChartPublishedAdminService,
     OrgChartPublishedSlugService,
+    OrgChartGrantAdminService,
+    OrgChartRecordWorkspaceService,
     OrgChartCacheService,
     OrgchartCancelRegistryService,
     OrgChartIncrementalBuildCacheService,

@@ -85,6 +85,7 @@ import { SyncSearchSkillContentCommand } from 'src/database/commands/upgrade-ver
 import { SyncOrgStructureInsightsSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000091-sync-org-structure-insights-skill-content.command';
 import { EnsureUniqueCompanyLinkedinIdCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000092-ensure-unique-company-linkedin-id.command';
 import { ResyncOutreachWorkflowGraphsWithOnwardsAliasCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000093-resync-outreach-workflow-graphs-with-onwards-alias.command';
+import { SyncOrgStructureInsightsPositionsFirstSkillCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000094-sync-org-structure-insights-positions-first-skill.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { MigrateOtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/migrate-other-fields.service';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
@@ -202,6 +203,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     SyncOrgStructureInsightsSkillContentCommand,
     EnsureUniqueCompanyLinkedinIdCommand,
     ResyncOutreachWorkflowGraphsWithOnwardsAliasCommand,
+    SyncOrgStructureInsightsPositionsFirstSkillCommand,
     MigrateOtherFieldsService,
     DropCandidateFieldObjectsCommand,
   ],

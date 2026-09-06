@@ -35,7 +35,9 @@ export const HighlightOrgChartInputZodSchema = z
       .array(z.union([z.string(), z.number()]))
       .max(50)
       .optional()
-      .describe('Exact org-chart node keys from get_org_chart when known.'),
+      .describe(
+        'Exact org-chart node keys from list_org_chart_positions. Prefer these over searchTerms when discussing specific positions.',
+      ),
     clear: z
       .boolean()
       .optional()

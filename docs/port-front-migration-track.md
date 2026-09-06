@@ -26,6 +26,12 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| Org-chart Ask AI people from S3 + gated web search | `get_org_chart_node_people` hydrates stored chart people (`orgchart.json` node rows + `candidates.json` headline/summary), not `people_all`. New `google_serp_search` REST/MCP tool. Ask AI Exa + SERP gated by `IS_SEARCH_EXA_ENABLED` / `IS_SEARCH_SERP_ENABLED` (default on). | `org-chart-node-people.util.ts`, `org-chart.service.ts` `getNodePeople`, `google-serp-search`, `search-tools-config.util.ts`, `org-structure-insights.md` |
+| Admin grant org chart to workspace | Shared S3/Redis stay company-keyed (`org-charts/{slug}`); workspace access via `credit_transactions` debit/grant on `orgChartS3RelativePath`. Admin mutation grants existing chart + optional CRM `orgChart` UUID + Project. Authenticated Redis entire-company GET now requires workspace access (same as S3). | `org-chart-grant-admin.service.ts`, `adminGrantOrgChartToWorkspace`, `SettingsAdminGrantOrgCharts.tsx`, `org-chart.service.ts` |
+| Front rename/mismatch audit | Detector script + §2.1.1; gated Outreach dashboard path via `OutreachSafeDashboardPath` (People tab + nav). | `find-front-rename-mismatches.mjs`, `OutreachSafeDashboardPath.tsx`, `OutreachPeoplePanel.tsx`, `OutreachHomeNavigationDrawerItem.tsx` |
+| Re-fix `projectIdAtom`/`tableStateAtom` TDZ | Self-shadow `const projectIdAtom = useAtomStateValue(projectIdAtom)` (and `tableStateAtom`) reappeared; crashed `GlobalArxJDUploadModal`. Restored value locals at 23 call sites; detector clean. | `GlobalArxJDUploadModal.tsx`, orgchart/JD/spreadsheet/candidate-table/arx CMI siblings |
+| Enrich modal `isMinimized` undefined | `ArxEnrichmentModal` read undeclared `isMinimized` after rename to `isArxEnrichModalMinimized` (Options → Create Enrichments crash). Also re-fixed TDZ `tableStateAtom` self-shadow + stale `enrichments`/`activeEnrichment` locals → `aiFilters`/`activeAiFilter`. | `arxEnrichmentModal.tsx`, `ArxEnrichRightSideContainer.tsx`, `useApiCalls.ts` |
+| Upload JD `assistantThread` metadata crash | `useArxJDUpload` called `useCreateOneRecord('assistantThread')` on mount; throws when Assistant app not installed. Replaced with call-time `useCreateAssistantThreadRecord`. | `useCreateAssistantThreadRecord.ts`, `useArxJDUpload.ts` |
 | Workflow Runs `record is not defined` | Recoil→Jotai leftover in `RelatedRecordFieldDisplay`: local was renamed to `recordStore` but chip still read `record?.relatedRecordId` / `relatedObjectName` / `name`. Crashed Workflow Runs index (`ReferenceError` → error boundary). | `RelatedRecordFieldDisplay.tsx`, §2.1 |
 | Outreach home no auto Ask AI | `/outreach-home` and Outreach nav no longer open the Ask AI side panel. Chat icon and **New chat** open the drawer (not `/chat`). Find companies/people still open it as explicit actions. | `OutreachHomePage.tsx`, `OutreachHomeNavigationDrawerItem.tsx`, `OutreachWorkflowPanel.tsx`, `MainNavigationDrawerTabsRow.tsx` |
 | OrgChart `commitNodes` dts TS2445 | GoJS `TreeLayout.commitNodes` is protected; monkey-patch in `diagramInit` failed `vite-plugin-dts`. Subclass `LevelColoredTreeLayout` (grade-aligned extends it). Drop `vite-tsconfig-paths` for Vite 8 `resolve.tsconfigPaths`. | `twenty-orgchart/.../levelColoredTreeLayout.ts`, `diagramInit.ts`, `vite.config.ts` |
@@ -252,6 +258,38 @@ rg -n "applyInferredOrgChartLinkedinSearchType\(" -A 20 packages/twenty-front/sr
 # Recoil `record` left after Jotai `recordStore` rename
 rg -n "const recordStore = useAtomFamilyStateValue\(recordStoreFamilyState" -A 8 packages/twenty-front --glob '!**/__tests__/**' | rg "record\?\.|recordStore"
 ```
+
+### 2.1.1 Front mismatch sweep (Vite-prod ReferenceError / optional metadata)
+
+Vite production builds do **not** typecheck. Incomplete Recoil→Jotai / Job→Project renames and ungated optional CRM objects ship as runtime crashes (`currentProjectId is not defined`, `isMinimized is not defined`, `Object metadata item "assistantThread"|"dashboard" cannot be found`).
+
+Run after any ARX front rename or optional-object wiring:
+
+```bash
+# Default: ARX-heavy modules (orgchart, arx-ai-filtering, arx-jd-upload,
+# candidate-table, outreach-home, unipile, spreadsheet-import, arx CMIs, nav)
+node packages/twenty-utils/find-front-rename-mismatches.mjs
+
+# Full modules tree
+node packages/twenty-utils/find-front-rename-mismatches.mjs --all
+
+# Print fails but exit 0
+node packages/twenty-utils/find-front-rename-mismatches.mjs --warn-only
+```
+
+The script flags:
+
+| Kind | Pattern |
+| --- | --- |
+| `tdz-self-shadow` | `const X = useAtomStateValue(X)` (and `useSetAtomState` / `useAtomState`) |
+| `undeclared-identifier` | High-risk names used without declaration (`currentProjectId`, `isMinimized`, `activeEnrichment`, `setJobs`, …) |
+| `recordStore-rename-leftover` | `recordStore` declared but nearby body still uses `record?.` |
+| `stale-setter` | Recoil-era `setJobs` / `setMain*` call sites |
+| `ungated-dashboard-path` | `useOutreachCommandDashboardPath()` without `useCanQueryDashboardRecords` / `OutreachSafeDashboardPath` |
+| `optional-object-mount-create` | Mount-time `useCreateOneRecord({ objectNameSingular: 'assistantThread' })` |
+| `optional-object-ungated-hook` | `dashboard` / `orgChart` / `assistantThread` via throwing metadata hooks without a gate |
+
+**Correct optional-dashboard pattern:** wrap consumers in [`OutreachSafeDashboardPath`](packages/twenty-front/src/modules/outreach-home/components/OutreachSafeDashboardPath.tsx) (nav + People tab). Do not call `useOutreachCommandDashboardPath` from a panel that mounts when dashboard metadata may be missing.
 
 ### 2.2 UI packages
 
@@ -803,15 +841,15 @@ Edit these carefully on rebase — product integration points.
 | `packages/twenty-front/src/modules/client-config/hooks/useClientConfig.ts` | working · intent | Set `chromeExtensionIdState` from `/client-config` |
 | `packages/twenty-server/src/engine/core-modules/client-config/services/client-config.service.ts` | working · intent | Expose `chromeExtensionId` from `CHROME_EXTENSION_ID` |
 | `packages/twenty-server/src/engine/core-modules/client-config/client-config.entity.ts` | working · intent | `chromeExtensionId` field |
-| `packages/twenty-server/src/engine/core-modules/twenty-config/config-variables.ts` | working · intent | `CHROME_EXTENSION_ID` (ARXENA group) |
+| `packages/twenty-server/src/engine/core-modules/twenty-config/config-variables.ts` | working · intent | `CHROME_EXTENSION_ID`; `IS_SEARCH_SERP_ENABLED` (+ Exa skill comment) |
 | `packages/twenty-front/src/modules/app/components/SettingsRoutes.tsx` | working · intent | Accounts Contacts / WhatsApp / Facebook / Baileys / LinkedIn / Website routes; Org chart embed new/detail routes |
 | `packages/twenty-front/src/pages/settings/general/SettingsGeneral.tsx` | working · intent | Grouped workspace integration keys form (`ApiKeysForm`; provider now in `WorkspaceAppProviders`) |
 | `packages/twenty-front/src/modules/navigation/components/MainNavigationDrawerScrollableItems.tsx` | working · intent | Mount `ProjectsNavigationDrawerItems` + `OrgChartsNavigationDrawerItems` |
 | `packages/twenty-front/src/modules/settings/hooks/useSettingsNavigationItems.tsx` | working · intent | Nav entries for Google Contacts / messaging accounts / Website |
-| `packages/twenty-front/src/modules/settings/admin-panel/constants/SettingsAdminTabs.ts` | working · intent | Admin tabs: credits, org-chart IPs, published charts, LinkedIn cache, WhatsApp monitoring, users |
-| `packages/twenty-front/src/modules/settings/admin-panel/components/SettingsAdminContent.tsx` | working · intent | Host new admin tab panels |
+| `packages/twenty-front/src/modules/settings/admin-panel/constants/SettingsAdminTabs.ts` | working · intent | Admin tabs: credits, org-chart IPs, published charts, grant charts, LinkedIn cache, WhatsApp monitoring, users |
+| `packages/twenty-front/src/modules/settings/admin-panel/components/SettingsAdminContent.tsx` | working · intent | Host new admin tab panels (incl. Grant charts) |
 | `packages/twenty-front/src/modules/settings/admin-panel/components/SettingsAdminGeneral.tsx` | working · intent | Admin general extensions |
-| `packages/twenty-front/src/modules/settings/admin-panel/components/SettingsAdminTabContent.tsx` | working · intent | Tab content switch |
+| `packages/twenty-front/src/modules/settings/admin-panel/components/SettingsAdminTabContent.tsx` | working · intent | Tab content switch (incl. SettingsAdminGrantOrgCharts) |
 | `packages/twenty-front/src/modules/settings/billing/components/SettingsBillingContent.tsx` | working · intent | Maps/reveals + Razorpay catalog; hide Stripe AI credits section when no RESOURCE_CREDIT usage |
 | `packages/twenty-server/src/engine/core-modules/billing/services/billing-usage.service.ts` | working · intent | `getResourceCreditProductUsage` returns `[]` when no subscription / no RESOURCE_CREDIT item (Razorpay) |
 | `packages/twenty-front/src/modules/settings/billing/graphql/mutations/checkoutSession.ts` | working · intent | Billing checkout for dual-wallet |

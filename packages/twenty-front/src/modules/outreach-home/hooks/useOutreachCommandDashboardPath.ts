@@ -1,7 +1,10 @@
 import { AppPath } from 'twenty-shared/types';
 import { getAppPath, isDefined } from 'twenty-shared/utils';
 
-import { OUTREACH_DASHBOARD_TITLE, OUTREACH_PROJECT_ID_QUERY_PARAM } from '@/outreach-home/constants/outreach-command.constants';
+import {
+  OUTREACH_DASHBOARD_TITLE,
+  OUTREACH_PROJECT_ID_QUERY_PARAM,
+} from '@/outreach-home/constants/outreach-command.constants';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';

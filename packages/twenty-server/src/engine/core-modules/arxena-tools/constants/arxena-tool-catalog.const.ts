@@ -35,8 +35,7 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
     name: 'send_chat',
     pack: 'outreach',
     label: 'Send Chat',
-    description:
-      'Send Chat (outreach pack). Use for GTM outreach workflows.',
+    description: 'Send Chat (outreach pack). Use for GTM outreach workflows.',
   },
   {
     name: 'get_all_messages_by_candidate_id',
@@ -452,11 +451,18 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
       'Get Contact Enrichment Job (enrichment pack). Use for GTM enrichment workflows.',
   },
   {
+    name: 'list_org_chart_positions',
+    pack: 'orgchart',
+    label: 'List Org Chart Positions',
+    description:
+      'List compact org-chart positions (headline, taxonomy, peopleCount, node keys) without embedded people. Use first for account mapping; then get_org_chart_node_people for shortlisted nodes.',
+  },
+  {
     name: 'get_org_chart',
     pack: 'orgchart',
     label: 'Get Org Chart',
     description:
-      'Load an account org chart for a known company. Use for account mapping and buying-committee research.',
+      'Load the full org-chart payload (includes embedded people). Prefer list_org_chart_positions for Ask AI structure walks — full charts often exceed size limits.',
   },
   {
     name: 'search_org_charts_by_country',
@@ -477,7 +483,14 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
     pack: 'orgchart',
     label: 'Get Org Chart Node People',
     description:
-      'List people on a shortlisted org-chart node (stdFunction / stdFunctionRoot / stdGrade). Use after get_org_chart for who-owns and named-person drills.',
+      'List stored org-chart people for a shortlisted node (name, job title, headline, summary). REQUIRED: nodeKey (preferred, from list_org_chart_positions) or stdFunction / stdFunctionRoot — do not call with only companyId. Source is the saved chart + candidates.json, not people_all.',
+  },
+  {
+    name: 'google_serp_search',
+    pack: 'orgchart',
+    label: 'Google Serp Search',
+    description:
+      'Google organic web search (title, url, snippet). Use after get_org_chart_node_people to corroborate named people; do not use it as the people source.',
   },
   {
     name: 'get_pending_recruiter_actions',

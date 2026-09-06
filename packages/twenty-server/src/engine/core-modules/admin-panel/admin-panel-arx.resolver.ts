@@ -2,13 +2,21 @@ import { UseFilters, UseGuards, UsePipes } from '@nestjs/common';
 import { Args, Context, Mutation, Query } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { AI_CREDIT_MICRO_FACTOR, PermissionFlagType } from 'twenty-shared/constants';
+import {
+  AI_CREDIT_MICRO_FACTOR,
+  PermissionFlagType,
+} from 'twenty-shared/constants';
 import { IsNull, type Repository } from 'typeorm';
 
 import { AdminResolver } from 'src/engine/api/graphql/graphql-config/decorators/admin-resolver.decorator';
 import { AdminPanelArxService } from 'src/engine/core-modules/admin-panel/services/admin-panel-arx.service';
 import { AddAdminPublishedOrgChartAliasInput } from 'src/engine/core-modules/admin-panel/dtos/add-admin-published-org-chart-alias.input';
 import { AdminConnectMemberLinkedinUnipileOutput } from 'src/engine/core-modules/admin-panel/dtos/admin-connect-member-linkedin-unipile.output';
+import { AdminGrantOrgChartToWorkspaceInput } from 'src/engine/core-modules/admin-panel/dtos/admin-grant-org-chart-to-workspace.input';
+import {
+  AdminGrantOrgChartToWorkspaceOutput,
+  AdminOrgChartArtifactOutput,
+} from 'src/engine/core-modules/admin-panel/dtos/admin-grant-org-chart-to-workspace.output';
 import { AdminLinkedinParameterCacheEntry } from 'src/engine/core-modules/admin-panel/dtos/admin-linkedin-parameter-cache-entry.output';
 import { AdminPanelWorkspaceMemberRow } from 'src/engine/core-modules/admin-panel/dtos/admin-panel-workspace-member-row.output';
 import { AdminPublishedOrgChart } from 'src/engine/core-modules/admin-panel/dtos/admin-published-org-chart.output';
@@ -38,6 +46,7 @@ import { ResolverValidationPipe } from 'src/engine/core-modules/graphql/pipes/re
 import { UserInputError } from 'src/engine/core-modules/graphql/utils/graphql-errors.util';
 import { OrgChartClientIpRuleEntity } from 'src/engine/core-modules/org-chart/org-chart-client-ip-rule.entity';
 import { OrgChartClientIpService } from 'src/engine/core-modules/org-chart/services/org-chart-client-ip.service';
+import { OrgChartGrantAdminService } from 'src/engine/core-modules/org-chart/services/org-chart-grant-admin.service';
 import { OrgChartPublishedAdminService } from 'src/engine/core-modules/org-chart/services/org-chart-published-admin.service';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { WhatsAppHealthStatus } from 'src/engine/core-modules/whiskeysocket-baileys/dtos/whatsapp-health-status.dto';
@@ -71,6 +80,7 @@ export class AdminPanelArxResolver {
   constructor(
     private readonly adminPanelArxService: AdminPanelArxService,
     private readonly orgChartPublishedAdminService: OrgChartPublishedAdminService,
+    private readonly orgChartGrantAdminService: OrgChartGrantAdminService,
     private readonly orgChartClientIpService: OrgChartClientIpService,
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
     private readonly workspaceCreditsService: WorkspaceCreditsService,
@@ -124,6 +134,22 @@ export class AdminPanelArxResolver {
   @Query(() => [AdminPublishedOrgChart])
   async adminPublishedOrgCharts(): Promise<AdminPublishedOrgChart[]> {
     return this.orgChartPublishedAdminService.listPublishedOrgCharts();
+  }
+
+  @UseGuards(AdminPanelGuard)
+  @Query(() => AdminOrgChartArtifactOutput)
+  async adminOrgChartArtifact(
+    @Args('companyId') companyId: string,
+  ): Promise<AdminOrgChartArtifactOutput> {
+    return this.orgChartGrantAdminService.lookupOrgChartArtifact(companyId);
+  }
+
+  @UseGuards(AdminPanelGuard)
+  @Mutation(() => AdminGrantOrgChartToWorkspaceOutput)
+  async adminGrantOrgChartToWorkspace(
+    @Args('input') input: AdminGrantOrgChartToWorkspaceInput,
+  ): Promise<AdminGrantOrgChartToWorkspaceOutput> {
+    return this.orgChartGrantAdminService.grantOrgChartToWorkspace(input);
   }
 
   @UseGuards(AdminPanelGuard)

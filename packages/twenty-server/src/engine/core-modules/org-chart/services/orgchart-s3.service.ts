@@ -170,6 +170,21 @@ export class OrgChartS3Service {
     return null;
   }
 
+  async tryGetCandidatesFromLookupEntries(
+    entries: Array<{ companyId: string; s3Variant?: OrgChartS3Variant }>,
+  ): Promise<unknown[] | null> {
+    for (const entry of entries) {
+      const candidates = await this.getCandidates(
+        entry.companyId,
+        entry.s3Variant,
+      );
+      if (Array.isArray(candidates) && candidates.length > 0) {
+        return candidates;
+      }
+    }
+    return null;
+  }
+
   async getOrgChart(
     companyId: string,
     variant?: OrgChartS3Variant,

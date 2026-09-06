@@ -3,33 +3,19 @@ import { AppPath } from 'twenty-shared/types';
 import { getAppPath } from 'twenty-shared/utils';
 import { IconLayoutDashboard, IconTargetArrow } from 'twenty-ui/icon';
 
-import {
-  getOutreachDashboardFallbackPath,
-  useCanQueryDashboardRecords,
-  useOutreachCommandDashboardPath,
-} from '@/outreach-home/hooks/useOutreachCommandDashboardPath';
+import { OutreachSafeDashboardPath } from '@/outreach-home/components/OutreachSafeDashboardPath';
 import { NavigationDrawerItem } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import { NavigationDrawerSection } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerSection';
 import { NavigationDrawerSectionTitle } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerSectionTitle';
 
 export const OutreachHomeNavigationDrawerItem = () => {
-  const canQueryDashboard = useCanQueryDashboardRecords();
-
-  if (!canQueryDashboard) {
-    return (
-      <OutreachHomeNavigationDrawerItemView
-        dashboardPath={getOutreachDashboardFallbackPath()}
-      />
-    );
-  }
-
-  return <OutreachHomeNavigationDrawerItemWithDashboardQuery />;
-};
-
-const OutreachHomeNavigationDrawerItemWithDashboardQuery = () => {
-  const { dashboardPath } = useOutreachCommandDashboardPath();
-
-  return <OutreachHomeNavigationDrawerItemView dashboardPath={dashboardPath} />;
+  return (
+    <OutreachSafeDashboardPath>
+      {(dashboardPath) => (
+        <OutreachHomeNavigationDrawerItemView dashboardPath={dashboardPath} />
+      )}
+    </OutreachSafeDashboardPath>
+  );
 };
 
 type OutreachHomeNavigationDrawerItemViewProps = {

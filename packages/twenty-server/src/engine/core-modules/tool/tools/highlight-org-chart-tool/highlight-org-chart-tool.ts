@@ -14,8 +14,8 @@ import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
 @Injectable()
 export class HighlightOrgChartTool implements Tool {
   description = `Highlight matching nodes on the org chart currently open in Ask AI.
-    Call this after resolving 1–3 search words (headlines, names, titles) or taxonomy labels.
-    Use clear: true to reset highlights. Does not navigate away from the open chart.`;
+    Prefer nodeKeys from list_org_chart_positions for exact node paint (ties discussion to node numbers).
+    searchTerms / taxonomy still work for broader canvas search. Use clear: true to reset.`;
 
   inputSchema = HighlightOrgChartInputZodSchema;
 

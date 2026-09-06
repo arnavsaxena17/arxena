@@ -16,6 +16,7 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 
+import { useCreateAssistantThreadRecord } from '@/arx-jd-upload/hooks/useCreateAssistantThreadRecord';
 import { useParsedJDState } from '@/arx-jd-upload/hooks/useParsedJDState';
 import { useIsAssistantAppInstalled } from '@/applications/hooks/useIsAssistantAppInstalled';
 import type { AssistantThread } from '@/assistant/types/assistant.types';
@@ -23,7 +24,10 @@ import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMembe
 import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
 import type { companyInfoType } from 'twenty-shared/arx';
 import { graphQLToUpdateOneWorkspaceMemberProfile } from 'twenty-shared/graphql';
-import type { LinkedInSearchCategory, LinkedInSearchType } from 'twenty-shared/types';
+import type {
+  LinkedInSearchCategory,
+  LinkedInSearchType,
+} from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { type RecruiterDetails } from '../components/ProjectDetailsForm';
 import type { AssistantThreadSummary } from '../types/ParsedJD';
@@ -42,23 +46,28 @@ const normalizeWebsiteUrlForMatch = (raw: string): string => {
     return '';
   }
   try {
-    const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    const withProtocol = /^https?:\/\//i.test(trimmed)
+      ? trimmed
+      : `https://${trimmed}`;
     const u = new URL(withProtocol);
     const host = u.hostname.toLowerCase().replace(/^www\./, '');
     const path = (u.pathname || '/').replace(/\/+$/, '') || '';
     return path ? `${host}${path}` : host;
   } catch {
-    return trimmed.toLowerCase().replace(/^www\./, '').replace(/\/+$/, '');
+    return trimmed
+      .toLowerCase()
+      .replace(/^www\./, '')
+      .replace(/\/+$/, '');
   }
 };
 
 /** GraphQL / Postgres reject `companyId: ""`; omit the field instead of clearing the relation incorrectly. */
-const omitEmptyStringCompanyId = <T extends Record<string, unknown>>(payload: T): T => {
+const omitEmptyStringCompanyId = <T extends Record<string, unknown>>(
+  payload: T,
+): T => {
   const id = payload.companyId;
   const isEmpty =
-    id === '' ||
-    id === null ||
-    (typeof id === 'string' && id.trim() === '');
+    id === '' || id === null || (typeof id === 'string' && id.trim() === '');
   if (!isEmpty) {
     return payload;
   }
@@ -66,90 +75,115 @@ const omitEmptyStringCompanyId = <T extends Record<string, unknown>>(payload: T)
   return rest as T;
 };
 
-export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' | 'edit') => {
+export const useArxJDUpload = (
+  objectNameSingular: string,
+  modalMode?: 'create' | 'edit',
+) => {
   const navigate = useNavigate();
   const tokenPair = useAtomStateValue(tokenPairState);
   const { keys: apiKeys, updateSpecificApiKey } = useApiKeysState();
   const [parsedJD, setParsedJD] = useParsedJDState();
   const [isUploading, setIsUploading] = useState(false);
-  const [recruiterDetails, storeRecruiterDetails] = useState<RecruiterDetails | null>(null);
+  const [recruiterDetails, storeRecruiterDetails] =
+    useState<RecruiterDetails | null>(null);
   const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
 
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
   const { triggerJobsRefetch } = useProjectRefetch();
-  const { parseJobDescriptionFromDetails, parseJobDescriptionFromFile } = useProjectDescriptionParser();
+  const { parseJobDescriptionFromDetails, parseJobDescriptionFromFile } =
+    useProjectDescriptionParser();
   const { generateResolvedSearchParameters } = useSearchParameters();
 
   const [error, setError] = useState<string | null>(null);
   const { createOneRecord } = useCreateOneRecord({ objectNameSingular });
   const { updateOneRecord } = useUpdateOneRecord();
-  const { destroyOneRecord } = useDestroyOneRecord({ objectNameSingular: 'attachment' });
+  const { destroyOneRecord } = useDestroyOneRecord({
+    objectNameSingular: 'attachment',
+  });
   const { uploadAttachmentFile } = useUploadAttachmentFile();
   const { records: companies = [] } = useFindManyRecords({
     objectNameSingular: 'company',
   });
   const { records: attachments = [] } = useFindManyRecords({
     objectNameSingular: 'attachment',
-    filter: parsedJD?.id && modalMode === 'edit' ? {
-      targetProjectId: { eq: parsedJD.id },
-    } : undefined,
+    filter:
+      parsedJD?.id && modalMode === 'edit'
+        ? {
+            targetProjectId: { eq: parsedJD.id },
+          }
+        : undefined,
     skip: !parsedJD?.id || modalMode === 'create',
   });
   const { createOneRecord: createOneCompanyRecord } = useCreateOneRecord({
-    objectNameSingular: 'company'
+    objectNameSingular: 'company',
   });
   const { updateOneRecord: updateOneCompanyRecord } = useUpdateOneRecord();
 
-
-  const { createOneRecord: createOneAssistantThreadRecord } = useCreateOneRecord({
-    objectNameSingular: 'assistantThread',
-  });
-  const { updateOneRecord: updateOneAssistantThreadRecord } = useUpdateOneRecord();
+  const { createOneAssistantThreadRecord } = useCreateAssistantThreadRecord();
+  const { updateOneRecord: updateOneAssistantThreadRecord } =
+    useUpdateOneRecord();
   const isAssistantAppInstalled = useIsAssistantAppInstalled();
 
   const apolloCoreClient = useApolloCoreClient();
-  const [updateWorkspaceMemberProfile] = useMutation(gql`
-    ${graphQLToUpdateOneWorkspaceMemberProfile}
-  `, { client: apolloCoreClient });
+  const [updateWorkspaceMemberProfile] = useMutation(
+    gql`
+      ${graphQLToUpdateOneWorkspaceMemberProfile}
+    `,
+    { client: apolloCoreClient },
+  );
 
   // Function to update company record with companyDetails as descriptionOneliner
-  const updateCompanyWithDetails = useCallback(async (companyId: string, companyDetails: string) => {
-    if (!companyId || !companyDetails) {
-      return;
-    }
-    try {
-      await updateOneCompanyRecord({
-        objectNameSingular: 'company',
-        idToUpdate: companyId,
-        updateOneRecordInput: {
-          descriptionOneliner: companyDetails,
-        },
-      });
-      enqueueSuccessSnackBar({ message: 'Company details updated successfully' });
-    } catch (error) {
-      console.error('Error updating company details:', error);
-      enqueueErrorSnackBar({
-        message: `Failed to update company details: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      });
-    }
-  }, [updateOneCompanyRecord, enqueueSuccessSnackBar, enqueueErrorSnackBar]);
+  const updateCompanyWithDetails = useCallback(
+    async (companyId: string, companyDetails: string) => {
+      if (!companyId || !companyDetails) {
+        return;
+      }
+      try {
+        await updateOneCompanyRecord({
+          objectNameSingular: 'company',
+          idToUpdate: companyId,
+          updateOneRecordInput: {
+            descriptionOneliner: companyDetails,
+          },
+        });
+        enqueueSuccessSnackBar({
+          message: 'Company details updated successfully',
+        });
+      } catch (error) {
+        console.error('Error updating company details:', error);
+        enqueueErrorSnackBar({
+          message: `Failed to update company details: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        });
+      }
+    },
+    [updateOneCompanyRecord, enqueueSuccessSnackBar, enqueueErrorSnackBar],
+  );
 
   // Handler to update recruiter details from ProjectDetailsForm
-  const updateRecruiterDetails = useCallback((details: RecruiterDetails) => {
-    // Only update the state if something actually changed
-    const hasChanged = !recruiterDetails ||
-      JSON.stringify(recruiterDetails.missingRecruiterInfo) !== JSON.stringify(details.missingRecruiterInfo) ||
-      recruiterDetails.recruiterProfileId !== details.recruiterProfileId ||
-      recruiterDetails.showRecruiterFields !== details.showRecruiterFields ||
-      recruiterDetails.workspaceMemberId !== details.workspaceMemberId;
+  const updateRecruiterDetails = useCallback(
+    (details: RecruiterDetails) => {
+      // Only update the state if something actually changed
+      const hasChanged =
+        !recruiterDetails ||
+        JSON.stringify(recruiterDetails.missingRecruiterInfo) !==
+          JSON.stringify(details.missingRecruiterInfo) ||
+        recruiterDetails.recruiterProfileId !== details.recruiterProfileId ||
+        recruiterDetails.showRecruiterFields !== details.showRecruiterFields ||
+        recruiterDetails.workspaceMemberId !== details.workspaceMemberId;
 
-    if (hasChanged) {
-      storeRecruiterDetails(details);
-    }
-  }, [recruiterDetails]);
+      if (hasChanged) {
+        storeRecruiterDetails(details);
+      }
+    },
+    [recruiterDetails],
+  );
 
   const updateRecruiterProfile = useCallback(async () => {
-    if (!recruiterDetails || !recruiterDetails.recruiterProfileId || !recruiterDetails.showRecruiterFields) {
+    if (
+      !recruiterDetails ||
+      !recruiterDetails.recruiterProfileId ||
+      !recruiterDetails.showRecruiterFields
+    ) {
       return true; // No update needed, return success
     }
 
@@ -158,15 +192,26 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
       const workspaceMemberId = recruiterDetails.workspaceMemberId;
 
       if (!workspaceMemberId) {
-        enqueueErrorSnackBar({ message: 'Unable to update recruiter profile: No recruiter ID found' });
+        enqueueErrorSnackBar({
+          message: 'Unable to update recruiter profile: No recruiter ID found',
+        });
         return false;
       }
 
       const updateWorkspaceMemberProfileInput = {
-        ...(recruiterDetails.missingRecruiterInfo.name && { name: recruiterDetails.missingRecruiterInfo.name }),
-        ...(recruiterDetails.missingRecruiterInfo.phoneNumber && { phoneNumber: recruiterDetails.missingRecruiterInfo.phoneNumber }),
-        ...(recruiterDetails.missingRecruiterInfo.companyDescription && { companyDescription: recruiterDetails.missingRecruiterInfo.companyDescription }),
-        ...(recruiterDetails.missingRecruiterInfo.jobTitle && { jobTitle: recruiterDetails.missingRecruiterInfo.jobTitle }),
+        ...(recruiterDetails.missingRecruiterInfo.name && {
+          name: recruiterDetails.missingRecruiterInfo.name,
+        }),
+        ...(recruiterDetails.missingRecruiterInfo.phoneNumber && {
+          phoneNumber: recruiterDetails.missingRecruiterInfo.phoneNumber,
+        }),
+        ...(recruiterDetails.missingRecruiterInfo.companyDescription && {
+          companyDescription:
+            recruiterDetails.missingRecruiterInfo.companyDescription,
+        }),
+        ...(recruiterDetails.missingRecruiterInfo.jobTitle && {
+          jobTitle: recruiterDetails.missingRecruiterInfo.jobTitle,
+        }),
         workspaceMemberId,
       };
 
@@ -185,7 +230,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
         try {
           const success = await updateSpecificApiKey(
             'whatsapp_web_phone_number',
-            recruiterDetails.missingRecruiterInfo.phoneNumber
+            recruiterDetails.missingRecruiterInfo.phoneNumber,
           );
 
           if (success) {
@@ -195,11 +240,15 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
           }
         } catch (error) {
           console.error('Error updating WhatsApp phone number:', error);
-          enqueueErrorSnackBar({ message: 'Failed to update WhatsApp phone number' });
+          enqueueErrorSnackBar({
+            message: 'Failed to update WhatsApp phone number',
+          });
         }
       }
 
-      enqueueSuccessSnackBar({ message: 'Recruiter profile updated successfully' });
+      enqueueSuccessSnackBar({
+        message: 'Recruiter profile updated successfully',
+      });
 
       return true;
     } catch (error) {
@@ -218,8 +267,7 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
 
   const seedProjectPrompts = useCallback(
     async (projectId: string) => {
-      const token =
-        tokenPair?.accessOrWorkspaceAgnosticToken?.token;
+      const token = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
       if (!token) {
         return;
       }
@@ -245,13 +293,21 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
   );
 
   const findBestCompanyMatch = useCallback(
-    (companyName: string, companyWebsiteUrl?: string): companyInfoType | null => {
+    (
+      companyName: string,
+      companyWebsiteUrl?: string,
+    ): companyInfoType | null => {
       if (!Array.isArray(companies) || companies.length === 0) {
         return null;
       }
 
       const companiesWithName = companies.filter(
-        (company): company is (ObjectRecord & { name: string; domainName: { primaryLinkUrl: string } }) =>
+        (
+          company,
+        ): company is ObjectRecord & {
+          name: string;
+          domainName: { primaryLinkUrl: string };
+        } =>
           typeof company === 'object' &&
           company !== null &&
           'name' in company &&
@@ -272,7 +328,8 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
         const domainMatch = companiesWithName.find(
           (company) =>
             needle !== '' &&
-            normalizeWebsiteUrlForMatch(company.domainName.primaryLinkUrl) === needle,
+            normalizeWebsiteUrlForMatch(company.domainName.primaryLinkUrl) ===
+              needle,
         );
         if (domainMatch) {
           return {
@@ -304,23 +361,26 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
   );
 
   // Function to remove existing attachments for a job
-  const removeExistingAttachments = useCallback(async (projectId: string) => {
-    try {
-      // Use the existing attachments data
-      const existingAttachments = attachments.filter(
-        (attachment) => attachment.targetProjectId === projectId,
-      );
+  const removeExistingAttachments = useCallback(
+    async (projectId: string) => {
+      try {
+        // Use the existing attachments data
+        const existingAttachments = attachments.filter(
+          (attachment) => attachment.targetProjectId === projectId,
+        );
 
-      // Delete all existing attachments
-      for (const attachment of existingAttachments) {
-        if (attachment.id) {
-          await destroyOneRecord(attachment.id);
+        // Delete all existing attachments
+        for (const attachment of existingAttachments) {
+          if (attachment.id) {
+            await destroyOneRecord(attachment.id);
+          }
         }
+      } catch (error) {
+        console.error('Error removing existing attachments:', error);
       }
-    } catch (error) {
-      console.error('Error removing existing attachments:', error);
-    }
-  }, [destroyOneRecord, attachments]);
+    },
+    [destroyOneRecord, attachments],
+  );
 
   // Function to handle file removal in edit mode
   const handleFileRemoval = useCallback(async () => {
@@ -336,7 +396,9 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
       };
       setParsedJD(blankJD);
 
-      enqueueSuccessSnackBar({ message: 'Project description file removed successfully' });
+      enqueueSuccessSnackBar({
+        message: 'Project description file removed successfully',
+      });
     } catch (error) {
       console.error('Error removing file:', error);
       enqueueErrorSnackBar({ message: 'Failed to remove file' });
@@ -390,14 +452,18 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
         }
 
         // Original code for creating a new job
-        const baseJobCode = file.name.split('.')[0].replace(/ /g, '-').slice(0, 8);
+        const baseJobCode = file.name
+          .split('.')[0]
+          .replace(/ /g, '-')
+          .slice(0, 8);
         const jobCode = `${baseJobCode}-${Date.now().toString().slice(-4)}`;
         const createdJob = await createOneRecord({
           name: file.name.split('.')[0],
           jobCode: jobCode,
           chatFlowOrder: ['startChat'],
           isActive: true,
-          recruiterId: recruiterDetails?.workspaceMemberId  || currentWorkspaceMember?.id
+          recruiterId:
+            recruiterDetails?.workspaceMemberId || currentWorkspaceMember?.id,
         });
         createdProjectId = createdJob.id;
 
@@ -405,7 +471,6 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
           targetObjectNameSingular: 'project',
           id: createdJob.id,
         });
-
 
         const uploadJDResponse = await axios({
           method: 'post',
@@ -426,22 +491,36 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
           let companyId = '';
 
           if (data?.companyName) {
-            matchedCompany = findBestCompanyMatch(data.companyName, data.companyWebsiteUrl);
+            matchedCompany = findBestCompanyMatch(
+              data.companyName,
+              data.companyWebsiteUrl,
+            );
 
             if (!matchedCompany && data.companyName.trim() !== '') {
               try {
                 const newCompany = await createOneCompanyRecord({
                   name: data?.companyName,
-                  ...(data?.companyDetails ? { descriptionOneliner: data?.companyDetails } : {}),
-                  ...(data?.companyWebsiteUrl ? { domainName: { primaryLinkUrl: data?.companyWebsiteUrl } } : {}),
+                  ...(data?.companyDetails
+                    ? { descriptionOneliner: data?.companyDetails }
+                    : {}),
+                  ...(data?.companyWebsiteUrl
+                    ? {
+                        domainName: { primaryLinkUrl: data?.companyWebsiteUrl },
+                      }
+                    : {}),
                 });
 
                 if (newCompany && newCompany.id) {
                   companyId = newCompany.id;
-                  enqueueSuccessSnackBar({ message: 'Created new company record' });
+                  enqueueSuccessSnackBar({
+                    message: 'Created new company record',
+                  });
                 }
               } catch (companyCreateError) {
-                console.error("Couldn't create new company", companyCreateError);
+                console.error(
+                  "Couldn't create new company",
+                  companyCreateError,
+                );
                 enqueueErrorSnackBar({
                   message: `Failed to create new company: ${companyCreateError instanceof Error ? companyCreateError.message : 'Unknown error'}`,
                 });
@@ -451,7 +530,9 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
                 );
                 if (existingAfterDuplicate?.companyId) {
                   companyId = existingAfterDuplicate.companyId;
-                  enqueueSuccessSnackBar({ message: 'Linked job to existing company' });
+                  enqueueSuccessSnackBar({
+                    message: 'Linked job to existing company',
+                  });
                 }
               }
             } else if (matchedCompany && matchedCompany.companyId) {
@@ -468,9 +549,12 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
                 data?.name || '',
                 data?.companyName || '',
                 data?.jobLocation || '',
-                data?.companyName || ''
+                data?.companyName || '',
               );
-          console.log('ParsedJobDescription from backend:', parsedJobDescription);
+          console.log(
+            'ParsedJobDescription from backend:',
+            parsedJobDescription,
+          );
 
           const parsedData = createDefaultParsedJD({
             name: data?.name || '',
@@ -502,14 +586,24 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
           } = parsedData;
 
           setParsedJD(parsedData);
-          console.log('parsedData in useArxJDUpload after setParsedJD::', parsedData);
+          console.log(
+            'parsedData in useArxJDUpload after setParsedJD::',
+            parsedData,
+          );
 
           // Update company details if we have a companyId and companyDetails
-          if (companyId && parsedData.companyDetails && parsedData.companyDetails.trim() !== '') {
+          if (
+            companyId &&
+            parsedData.companyDetails &&
+            parsedData.companyDetails.trim() !== ''
+          ) {
             try {
               await updateCompanyWithDetails(companyId, parsedData.description);
             } catch (companyUpdateError) {
-              console.error("Couldn't update company details", companyUpdateError);
+              console.error(
+                "Couldn't update company details",
+                companyUpdateError,
+              );
               // Continue with process even if updating company details fails
             }
           }
@@ -529,12 +623,13 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
 
           await seedProjectPrompts(createdJob.id);
         } else {
-          throw new Error(uploadJDResponse?.data?.message || 'Failed to process JD');
+          throw new Error(
+            uploadJDResponse?.data?.message || 'Failed to process JD',
+          );
         }
 
         // Ensure any consumers (e.g. navigation drawer) immediately see the new job.
         triggerJobsRefetch();
-
 
         return createdJob.id;
       } catch (error: any) {
@@ -572,7 +667,6 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
     ],
   );
 
-
   const handleCreateJob = useCallback(async () => {
     if (parsedJD === null) {
       return;
@@ -598,7 +692,9 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
           console.error('Error updating recruiter profile:', error);
         }
       }
-      let createdJob: ObjectRecord & { id?: string; name?: string } | undefined;
+      let createdJob:
+        | (ObjectRecord & { id?: string; name?: string })
+        | undefined;
 
       // If we're in edit mode (parsedJD.id exists), only update the existing job
       if (parsedJD.id) {
@@ -620,9 +716,16 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
         ) as typeof jobData;
 
         // If we have a company name, try to match it and update the companyId
-        if (typeof parsedJD?.companyName === 'string' && parsedJD?.companyName !== '') {
+        if (
+          typeof parsedJD?.companyName === 'string' &&
+          parsedJD?.companyName !== ''
+        ) {
           const matchedCompany = findBestCompanyMatch(parsedJD.companyName, '');
-          if (matchedCompany !== null && typeof matchedCompany.companyId === 'string' && matchedCompany.companyId !== '') {
+          if (
+            matchedCompany !== null &&
+            typeof matchedCompany.companyId === 'string' &&
+            matchedCompany.companyId !== ''
+          ) {
             createdJob = await updateOneRecord({
               objectNameSingular,
               idToUpdate: parsedJD.id,
@@ -633,8 +736,14 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
             });
 
             // Update company details if available
-            if (parsedJD.companyDetails && parsedJD.companyDetails.trim() !== '') {
-              await updateCompanyWithDetails(matchedCompany.companyId, parsedJD.companyDetails);
+            if (
+              parsedJD.companyDetails &&
+              parsedJD.companyDetails.trim() !== ''
+            ) {
+              await updateCompanyWithDetails(
+                matchedCompany.companyId,
+                parsedJD.companyDetails,
+              );
             }
           } else {
             // No company match found, just update the job without companyId
@@ -687,8 +796,14 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
             });
 
             // Update company details if available
-            if (parsedJD.companyDetails && parsedJD.companyDetails.trim() !== '') {
-              await updateCompanyWithDetails(matchedCompany.companyId, parsedJD.companyDetails);
+            if (
+              parsedJD.companyDetails &&
+              parsedJD.companyDetails.trim() !== ''
+            ) {
+              await updateCompanyWithDetails(
+                matchedCompany.companyId,
+                parsedJD.companyDetails,
+              );
             }
           } else {
             // No company match found, create job without companyId
@@ -737,7 +852,6 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
           });
         }
       }
-
 
       // Send job to Arxena after creation
       // if (
@@ -826,155 +940,173 @@ export const useArxJDUpload = (objectNameSingular: string, modalMode?: 'create' 
   };
 
   // Persist search plan state to assistant thread
-  const updateAssistantThreadRecord = useCallback(async (
-    assistantThread: AssistantThread,
-    assistantThreads: AssistantThreadSummary[],
-    searchType: LinkedInSearchType,
-    searchCategory: LinkedInSearchCategory,
-    generatedParameters: unknown,
-    resolvedParameters: unknown,
-  ) => {
-    if (!isAssistantAppInstalled) {
-      enqueueErrorSnackBar({
-        message:
-          'Assistant app is not installed. Install it from Settings → Applications to save search threads.',
-      });
-      return;
-    }
-
-    const assistantParameters = {
-      generatedSearchParameters: toRecord(generatedParameters),
-      resolvedSearchParameters: toRecord(resolvedParameters),
-    };
-
-    if (assistantThreads.length === 0) {
-      if (!parsedJD?.id || !currentWorkspaceMember?.id) {
-        enqueueErrorSnackBar({ message: 'Cannot create assistant thread - no job or recruiter' });
+  const updateAssistantThreadRecord = useCallback(
+    async (
+      assistantThread: AssistantThread,
+      assistantThreads: AssistantThreadSummary[],
+      searchType: LinkedInSearchType,
+      searchCategory: LinkedInSearchCategory,
+      generatedParameters: unknown,
+      resolvedParameters: unknown,
+    ) => {
+      if (!isAssistantAppInstalled) {
+        enqueueErrorSnackBar({
+          message:
+            'Assistant app is not installed. Install it from Settings → Applications to save search threads.',
+        });
         return;
       }
-      try {
-        const displayName = `Search - ${searchType}_${searchCategory} - ${new Date().toISOString().slice(0, 10)}`;
-        const newThread = await createOneAssistantThreadRecord({
-          name: displayName,
-          projectId: parsedJD.id,
-          recruiterId: currentWorkspaceMember.id,
-          assistantParameters,
-          messages: [],
-        });
-        if (newThread?.id) {
-          setParsedJD(prev =>
-            prev
-              ? {
-                  ...prev,
-                  assistantThreads: [
-                    {
-                      id: newThread.id,
-                      name: displayName,
-                      assistantParameters,
-                      enrichmentConfigs: [],
-                      columnFilters: [],
-                    },
-                    ...(prev.assistantThreads || []),
-                  ],
-                }
-              : null,
-          );
+
+      const assistantParameters = {
+        generatedSearchParameters: toRecord(generatedParameters),
+        resolvedSearchParameters: toRecord(resolvedParameters),
+      };
+
+      if (assistantThreads.length === 0) {
+        if (!parsedJD?.id || !currentWorkspaceMember?.id) {
+          enqueueErrorSnackBar({
+            message: 'Cannot create assistant thread - no job or recruiter',
+          });
           return;
         }
-      } catch (createError) {
-        console.error('Failed to create assistant thread:', createError);
-        enqueueErrorSnackBar({ message: `Failed to create thread: ${createError instanceof Error ? createError.message : 'Unknown error'}` });
+        try {
+          const displayName = `Search - ${searchType}_${searchCategory} - ${new Date().toISOString().slice(0, 10)}`;
+          const newThread = await createOneAssistantThreadRecord({
+            name: displayName,
+            projectId: parsedJD.id,
+            recruiterId: currentWorkspaceMember.id,
+            assistantParameters,
+            messages: [],
+          });
+          if (newThread?.id) {
+            setParsedJD((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    assistantThreads: [
+                      {
+                        id: newThread.id,
+                        name: displayName,
+                        assistantParameters,
+                        enrichmentConfigs: [],
+                        columnFilters: [],
+                      },
+                      ...(prev.assistantThreads || []),
+                    ],
+                  }
+                : null,
+            );
+            return;
+          }
+        } catch (createError) {
+          console.error('Failed to create assistant thread:', createError);
+          enqueueErrorSnackBar({
+            message: `Failed to create thread: ${createError instanceof Error ? createError.message : 'Unknown error'}`,
+          });
+        }
+        return;
       }
-      return;
-    }
 
-    const assistantThreadId = assistantThread?.id ?? assistantThreads[0]?.id;
-    if (!assistantThreadId) {
-      enqueueErrorSnackBar({ message: 'Cannot update assistant thread - missing thread id' });
-      return;
-    }
-    const displayName = `${searchType}_${searchCategory}`;
-    try {
-      await updateOneAssistantThreadRecord({
-        objectNameSingular: 'assistantThread',
-        idToUpdate: assistantThreadId,
-        updateOneRecordInput: {
-          name: displayName,
-          assistantParameters,
-        },
-      });
-    } catch (error) {
-      console.error('Failed to update assistant thread:', error);
-      enqueueErrorSnackBar({ message: `Failed to update thread: ${error instanceof Error ? error.message : 'Unknown error'}` });
-    }
-  }, [
-    isAssistantAppInstalled,
-    createOneAssistantThreadRecord,
-    updateOneAssistantThreadRecord,
-    enqueueErrorSnackBar,
-    parsedJD?.id,
-    currentWorkspaceMember?.id,
-    setParsedJD,
-  ]);
+      const assistantThreadId = assistantThread?.id ?? assistantThreads[0]?.id;
+      if (!assistantThreadId) {
+        enqueueErrorSnackBar({
+          message: 'Cannot update assistant thread - missing thread id',
+        });
+        return;
+      }
+      const displayName = `${searchType}_${searchCategory}`;
+      try {
+        await updateOneAssistantThreadRecord({
+          objectNameSingular: 'assistantThread',
+          idToUpdate: assistantThreadId,
+          updateOneRecordInput: {
+            name: displayName,
+            assistantParameters,
+          },
+        });
+      } catch (error) {
+        console.error('Failed to update assistant thread:', error);
+        enqueueErrorSnackBar({
+          message: `Failed to update thread: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        });
+      }
+    },
+    [
+      isAssistantAppInstalled,
+      createOneAssistantThreadRecord,
+      updateOneAssistantThreadRecord,
+      enqueueErrorSnackBar,
+      parsedJD?.id,
+      currentWorkspaceMember?.id,
+      setParsedJD,
+    ],
+  );
 
   // Function to create a job from just the name
-  const handleCreateJobFromName = useCallback(async (jobName: string) => {
-    if (!jobName || !jobName.trim()) {
-      enqueueErrorSnackBar({ message: 'Project name is required' });
-      return;
-    }
-
-    try {
-      setIsUploading(true);
-      setError(null);
-
-      // Generate a job code from the name
-      const baseJobCode = jobName.replace(/ /g, '-').slice(0, 8).toLowerCase();
-      const jobCode = `${baseJobCode}-${Date.now().toString().slice(-4)}`;
-
-      // Create the job with just the name, active status, and recruiter ID
-      const createdJob = await createOneRecord({
-        name: jobName.trim(),
-        jobCode: jobCode,
-        chatFlowOrder: ['startChat'],
-        isActive: true,
-        recruiterId: recruiterDetails?.workspaceMemberId || currentWorkspaceMember?.id,
-      });
-
-      if (!createdJob?.id) {
-        throw new Error('Failed to create job');
+  const handleCreateJobFromName = useCallback(
+    async (jobName: string) => {
+      if (!jobName || !jobName.trim()) {
+        enqueueErrorSnackBar({ message: 'Project name is required' });
+        return;
       }
 
-      await seedProjectPrompts(createdJob.id);
+      try {
+        setIsUploading(true);
+        setError(null);
 
-      // Trigger job refetch
-      triggerJobsRefetch();
+        // Generate a job code from the name
+        const baseJobCode = jobName
+          .replace(/ /g, '-')
+          .slice(0, 8)
+          .toLowerCase();
+        const jobCode = `${baseJobCode}-${Date.now().toString().slice(-4)}`;
 
-      enqueueSuccessSnackBar({ message: 'Project created successfully' });
+        // Create the job with just the name, active status, and recruiter ID
+        const createdJob = await createOneRecord({
+          name: jobName.trim(),
+          jobCode: jobCode,
+          chatFlowOrder: ['startChat'],
+          isActive: true,
+          recruiterId:
+            recruiterDetails?.workspaceMemberId || currentWorkspaceMember?.id,
+        });
 
-      // Navigate to the project page and close modal
-      setTimeout(() => {
-        navigate(`/project/${createdJob.id}`);
-      }, 100);
-    } catch (error: any) {
-      console.error('Error creating job from name:', error);
-      setError(error?.message || 'Failed to create job');
-      enqueueErrorSnackBar({
-        message: `Failed to create job: ${error?.message || 'Unknown error'}`,
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  }, [
-    createOneRecord,
-    currentWorkspaceMember?.id,
-    recruiterDetails?.workspaceMemberId,
-    triggerJobsRefetch,
-    navigate,
-    enqueueSuccessSnackBar,
-    enqueueErrorSnackBar,
-    seedProjectPrompts,
-  ]);
+        if (!createdJob?.id) {
+          throw new Error('Failed to create job');
+        }
+
+        await seedProjectPrompts(createdJob.id);
+
+        // Trigger job refetch
+        triggerJobsRefetch();
+
+        enqueueSuccessSnackBar({ message: 'Project created successfully' });
+
+        // Navigate to the project page and close modal
+        setTimeout(() => {
+          navigate(`/project/${createdJob.id}`);
+        }, 100);
+      } catch (error: any) {
+        console.error('Error creating job from name:', error);
+        setError(error?.message || 'Failed to create job');
+        enqueueErrorSnackBar({
+          message: `Failed to create job: ${error?.message || 'Unknown error'}`,
+        });
+      } finally {
+        setIsUploading(false);
+      }
+    },
+    [
+      createOneRecord,
+      currentWorkspaceMember?.id,
+      recruiterDetails?.workspaceMemberId,
+      triggerJobsRefetch,
+      navigate,
+      enqueueSuccessSnackBar,
+      enqueueErrorSnackBar,
+      seedProjectPrompts,
+    ],
+  );
 
   return {
     parsedJD,

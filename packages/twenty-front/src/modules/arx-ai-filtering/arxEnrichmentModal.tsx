@@ -139,15 +139,18 @@ export const ArxEnrichmentModal = ({
   const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useAtomState(
     isArxEnrichModalOpenState,
   );
-  const [isArxEnrichModalMinimized, setIsArxEnrichModalMinimized] = useAtomState(
-    isArxEnrichModalMinimizedState,
-  );
+  const [isArxEnrichModalMinimized, setIsArxEnrichModalMinimized] =
+    useAtomState(isArxEnrichModalMinimizedState);
   const [currentProjectId] = useAtomState(currentProjectIdState);
   const { otherFieldKeys, isLoadingFields, apiError, fetchOtherFieldKeys } =
     useFetchOtherFieldKeys();
 
-  const { aiFilteringProgress, isConnected, error: sseError, reconnect } =
-    useAiFilteringProgress();
+  const {
+    aiFilteringProgress,
+    isConnected,
+    error: sseError,
+    reconnect,
+  } = useAiFilteringProgress();
 
   const { pushFocusItemToFocusStack } = usePushFocusItemToFocusStack();
   const { removeFocusItemFromFocusStackById } =
@@ -206,7 +209,7 @@ export const ArxEnrichmentModal = ({
     return null;
   }
 
-  if (isMinimized) {
+  if (isArxEnrichModalMinimized) {
     return (
       <StyledMinimizedModalContainer>
         <ArxEnrichRightSideContainer

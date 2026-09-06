@@ -57,9 +57,15 @@ export const useApplyOrgChartAiHighlight = ({
       isDefined(orgChartAiHighlight.stdFunction) ||
       isDefined(orgChartAiHighlight.stdFunctionRoot) ||
       isDefined(orgChartAiHighlight.stdGrade);
+    const hasNodeKeys =
+      isDefined(orgChartAiHighlight.nodeKeys) &&
+      orgChartAiHighlight.nodeKeys.length > 0;
+    const nodeKeys = hasNodeKeys ? orgChartAiHighlight.nodeKeys : undefined;
 
+    // Exact node keys take precedence over taxonomy Title Query filtering
     if (
       hasTaxonomy &&
+      !hasNodeKeys &&
       appliedTaxonomyRequestId !== orgChartAiHighlight.requestId
     ) {
       const resolvedTitle =
@@ -103,13 +109,15 @@ export const useApplyOrgChartAiHighlight = ({
           orgChartAiHighlight.stdFunctionRoot ??
           '');
     const count =
-      isDefined(orgChartAiHighlight.nodeKeys) &&
-      orgChartAiHighlight.nodeKeys.length > 0
-        ? handle.highlightKeys(orgChartAiHighlight.nodeKeys)
+      isDefined(nodeKeys) && nodeKeys.length > 0
+        ? handle.highlightKeys(nodeKeys)
         : handle.search(searchQuery);
 
     setSearchTerm(
       searchTermsDisplay ||
+        (isDefined(nodeKeys) && nodeKeys.length > 0
+          ? `${nodeKeys.length} nodes`
+          : '') ||
         orgChartAiHighlight.stdFunction ||
         orgChartAiHighlight.stdFunctionRoot ||
         '',

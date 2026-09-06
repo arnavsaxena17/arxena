@@ -315,8 +315,7 @@ export class SystemPromptBuilderService {
         connected: true,
         accountId,
         inferredSearchType: capabilities?.inferredSearchType ?? 'classic',
-        salesNavigatorAvailable:
-          capabilities?.salesNavigatorAvailable ?? false,
+        salesNavigatorAvailable: capabilities?.salesNavigatorAvailable ?? false,
         recruiterAvailable: capabilities?.recruiterAvailable ?? false,
       };
     } catch (error) {
@@ -569,7 +568,7 @@ export class SystemPromptBuilderService {
       ${packLines}
 
       Preferred tools (learn only these unless a skill names others):
-      - \`get_org_chart\`
+      - \`list_org_chart_positions\`
       - \`get_org_chart_node_people\`
       - \`check_contact_availability\`
       - \`fetch_contacts\``;
