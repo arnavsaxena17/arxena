@@ -4,6 +4,7 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { FeatureFlagKey } from 'twenty-shared/types';
 
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
+import { withAcquiredAccountRateLimit } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
 import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/outreach-command/services/linkedin-provider-id.store';
 import {
@@ -91,17 +92,26 @@ export class SendLinkedinConnectionRequestTool implements Tool {
           `IS_OUTREACH_MOCK_UNIPILE_ENABLED: skipping Unipile connection request for ${linkedinProfileId}`,
         );
 
-        return {
-          success: true,
-          message: 'LinkedIn connection request sent successfully',
-          result: {
-            mock: true,
-            unipileAccountId,
-            linkedinProfileId,
-            message,
-            response: { id: OUTREACH_MOCK_UNIPILE_CONNECTION_RESPONSE_ID },
+        // Still acquire so send-window pre-reservations commit on resume
+        // instead of leaving orphaned Redis holds.
+        return withAcquiredAccountRateLimit(
+          {
+            provider: 'linkedin',
+            accountId: unipileAccountId,
+            method: 'connection_request',
           },
-        };
+          async () => ({
+            success: true,
+            message: 'LinkedIn connection request sent successfully',
+            result: {
+              mock: true,
+              unipileAccountId,
+              linkedinProfileId,
+              message,
+              response: { id: OUTREACH_MOCK_UNIPILE_CONNECTION_RESPONSE_ID },
+            },
+          }),
+        );
       }
 
       const messagingService = createLinkedinUnipileMessagingServiceForTools();
@@ -110,7 +120,10 @@ export class SendLinkedinConnectionRequestTool implements Tool {
         candidateId: input.candidateId,
         identifier: linkedinProfileId,
         fetchProviderId: () =>
-          messagingService.resolveProviderId(unipileAccountId, linkedinProfileId),
+          messagingService.resolveProviderId(
+            unipileAccountId,
+            linkedinProfileId,
+          ),
       });
       const result = await messagingService.sendInvitation(
         unipileAccountId,

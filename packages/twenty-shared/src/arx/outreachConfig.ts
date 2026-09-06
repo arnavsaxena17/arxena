@@ -27,9 +27,9 @@ export const DEFAULT_OUTREACH_CONFIG_VALUES: Omit<OutreachConfig, 'v'> = {
   maxPersonasPerCompany: 2,
   inMailFallbackEnabled: false,
   sendTimezone: 'Asia/Kolkata',
-  sendWindowStart: '08:00',
-  sendWindowEnd: '10:00',
-  sendWindowDays: '2,3,4',
+  sendWindowStart: '10:00',
+  sendWindowEnd: '20:00',
+  sendWindowDays: '1,2,3,4,5,6',
   icpSpec: null,
   experimentConfig: null,
 };
@@ -205,7 +205,7 @@ export const resolveOutreachConfigSendWindowStart = (
   parseOutreachConfig(config)?.sendWindowStart ??
   flatFallback ??
   DEFAULT_OUTREACH_CONFIG_VALUES.sendWindowStart ??
-  '08:00';
+  '10:00';
 
 export const resolveOutreachConfigSendWindowEnd = (
   config: unknown,
@@ -214,7 +214,7 @@ export const resolveOutreachConfigSendWindowEnd = (
   parseOutreachConfig(config)?.sendWindowEnd ??
   flatFallback ??
   DEFAULT_OUTREACH_CONFIG_VALUES.sendWindowEnd ??
-  '10:00';
+  '20:00';
 
 export const resolveOutreachConfigSendWindowDays = (
   config: unknown,
@@ -223,7 +223,7 @@ export const resolveOutreachConfigSendWindowDays = (
   parseOutreachConfig(config)?.sendWindowDays ??
   flatFallback ??
   DEFAULT_OUTREACH_CONFIG_VALUES.sendWindowDays ??
-  '2,3,4';
+  '1,2,3,4,5,6';
 
 export const resolveOutreachConfigIcpSpecString = (
   config: unknown,
@@ -333,9 +333,9 @@ export const applyOutreachConfigPatch = ({
     maxPersonasPerCompany: base.maxPersonasPerCompany ?? 2,
     inMailFallbackEnabled: base.inMailFallbackEnabled ?? false,
     sendTimezone: base.sendTimezone ?? 'Asia/Kolkata',
-    sendWindowStart: base.sendWindowStart ?? '08:00',
-    sendWindowEnd: base.sendWindowEnd ?? '10:00',
-    sendWindowDays: base.sendWindowDays ?? '2,3,4',
+    sendWindowStart: base.sendWindowStart ?? '10:00',
+    sendWindowEnd: base.sendWindowEnd ?? '20:00',
+    sendWindowDays: base.sendWindowDays ?? '1,2,3,4,5,6',
     icpSpec: base.icpSpec ?? null,
     experimentConfig: base.experimentConfig ?? null,
     updatedAt: base.updatedAt ?? nowIso,

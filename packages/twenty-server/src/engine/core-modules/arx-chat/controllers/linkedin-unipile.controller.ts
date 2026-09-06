@@ -1794,11 +1794,30 @@ export class LinkedinUnipileController {
       workspace.id,
       accountId,
     );
-    const usage = await this.accountRateLimiterService.getUsage({
-      provider: 'linkedin',
-      accountId,
-    });
-    return { success: true, limits, usage };
+    const usageBreakdown =
+      await this.accountRateLimiterService.getUsageBreakdown({
+        provider: 'linkedin',
+        accountId,
+      });
+    const usage = Object.fromEntries(
+      Object.entries(usageBreakdown).map(([fieldKey, breakdown]) => [
+        fieldKey,
+        breakdown.used,
+      ]),
+    );
+    const reserved = Object.fromEntries(
+      Object.entries(usageBreakdown).map(([fieldKey, breakdown]) => [
+        fieldKey,
+        breakdown.reserved,
+      ]),
+    );
+    const nextSlotAt = Object.fromEntries(
+      Object.entries(usageBreakdown).map(([fieldKey, breakdown]) => [
+        fieldKey,
+        breakdown.nextSlotAt,
+      ]),
+    );
+    return { success: true, limits, usage, reserved, nextSlotAt };
   }
 
   @Post('accounts/:accountId/rate-limits')

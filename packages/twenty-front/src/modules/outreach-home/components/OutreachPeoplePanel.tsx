@@ -28,6 +28,7 @@ import { ProjectTopBar } from '@/candidate-table/components/ProjectTopBar';
 import { TableContainer } from '@/candidate-table/components/styled';
 import { HotTableActionMenu } from '@/candidate-table/HotTableActionMenu';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
+import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTableRefreshFunctionState';
 import { tableStateAtom } from '@/candidate-table/states/states';
 import { ContextStoreComponentInstanceContext } from '@/context-store/states/contexts/ContextStoreComponentInstanceContext';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
@@ -305,6 +306,9 @@ export const OutreachPeoplePanel = ({
   const setSearchResults = useSetAtomState(searchResultsState);
   const setTableStateAtom = useSetAtomState(tableStateAtom);
   const setChatSearchQuery = useSetAtomState(chatSearchQueryState);
+  const setDataTableRefreshFunction = useSetAtomState(
+    dataTableRefreshFunctionState,
+  );
   const [isTableDataReady, setIsTableDataReady] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -400,6 +404,9 @@ export const OutreachPeoplePanel = ({
       } else if (stageFilter === 'awaiting_reply') {
         if (
           person.stage !== 'connection_accepted' &&
+          person.stage !== 'followed_up' &&
+          person.stage !== 'followed_up_2' &&
+          person.stage !== 'followed_up_3' &&
           person.stage !== 'waiting_reply'
         ) {
           return false;
@@ -464,12 +471,33 @@ export const OutreachPeoplePanel = ({
       return;
     }
 
+    // Must compare Stage/Next (and related) fields — ID-only equality left
+    // Handsontable stuck on stale journey labels after refresh/live refetch.
     setSearchResults((previous) => {
       if (
         previous.length === tableRows.length &&
-        previous.every(
-          (row, index) => (row.tempId || row.id) === tableRows[index]?.id,
-        )
+        previous.every((row, index) => {
+          const nextRow = tableRows[index];
+
+          if (!isDefined(nextRow)) {
+            return false;
+          }
+
+          return (
+            (row.tempId || row.id) === nextRow.id &&
+            row.outreachSequenceStage === nextRow.outreachSequenceStage &&
+            row.nextStep === nextRow.nextStep &&
+            row.nextRetry === nextRow.nextRetry &&
+            row.outreachConversationStage ===
+              nextRow.outreachConversationStage &&
+            row.workflowRunStatus === nextRow.workflowRunStatus &&
+            row.needsApproval === nextRow.needsApproval &&
+            row.messagesExchanged === nextRow.messagesExchanged &&
+            row.lastInboundAt === nextRow.lastInboundAt &&
+            row.lastOutboundAt === nextRow.lastOutboundAt &&
+            row.nextFollowUp === nextRow.nextFollowUp
+          );
+        })
       ) {
         return previous;
       }
@@ -565,6 +593,21 @@ export const OutreachPeoplePanel = ({
     onRefresh,
     refetchJourneySummary,
   ]);
+
+  // Cmd+K delete (and other actions) call dataTableRefreshFunctionState; point it
+  // at the outreach working-set refresh instead of candidate-table project fetch.
+  useEffect(() => {
+    setDataTableRefreshFunction(() => async () => {
+      await Promise.all([
+        onRefresh?.() ?? Promise.resolve(),
+        refetchJourneySummary(),
+      ]);
+    });
+
+    return () => {
+      setDataTableRefreshFunction(null);
+    };
+  }, [onRefresh, refetchJourneySummary, setDataTableRefreshFunction]);
 
   const handleClearFilters = useCallback(() => {
     setStageFilter('all');

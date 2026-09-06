@@ -1,24 +1,58 @@
-import { type Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import {
+  type Enrichment,
+  enrichmentsState,
+  sampleEnrichmentsState,
+} from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { getCandidateSearchFromFileUrl } from '@/candidate-search/constants/candidateSearchApiPaths';
-import { fetchSearchResultsCache, persistSearchMetadataToStorage, persistSearchResultsToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
+import {
+  fetchSearchResultsCache,
+  persistSearchMetadataToStorage,
+  persistSearchResultsToStorage,
+  searchMetadataState,
+  searchResultsState,
+} from '@/candidate-search/states/searchResultsState';
 import { NaukriQueueStatusEffect } from '@/candidate-table/components/NaukriQueueStatusEffect';
 import { SortingControls } from '@/candidate-table/components/SortingControls';
 import { CANDIDATE_CONVERSATION_STATUS_LABELS } from '@/candidate-table/constants/candidate-status-labels';
-import { afterChange, afterSelectionEnd, getPermanentId, isUUID, performRedo, performUndo, resolveChatLookupIds, updateUnreadMessagesStatus } from '@/candidate-table/HotHooks';
+import {
+  afterChange,
+  afterSelectionEnd,
+  getPermanentId,
+  isUUID,
+  performRedo,
+  performUndo,
+  resolveChatLookupIds,
+  updateUnreadMessagesStatus,
+} from '@/candidate-table/HotHooks';
 import '@/candidate-table/initHandsontable';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { dataTableApplySortsFunctionState } from '@/candidate-table/states/dataTableApplySortsFunctionState';
 import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTableRefreshFunctionState';
-import { candidateStateSelector, columnsSelector, type FilterCondition, filteredCandidatesCountState, getRowBorderColor, processedDataSelector, selectedCandidateIdState, selectedConversationStatusState, type SortConfig, tableStateAtom, unreadMessagesCountsState } from "@/candidate-table/states/states";
-import { getCustomSortFunction, needsCustomSorting } from '@/candidate-table/utils/enumSortingUtils';
+import {
+  candidateStateSelector,
+  columnsSelector,
+  type FilterCondition,
+  filteredCandidatesCountState,
+  getRowBorderColor,
+  processedDataSelector,
+  selectedCandidateIdState,
+  selectedConversationStatusState,
+  type SortConfig,
+  tableStateAtom,
+  unreadMessagesCountsState,
+} from '@/candidate-table/states/states';
+import {
+  getCustomSortFunction,
+  needsCustomSorting,
+} from '@/candidate-table/utils/enumSortingUtils';
 import { isAiFilterField } from '@/candidate-table/utils/is-ai-filter-field';
 import {
-    clearPersistedTableFilters,
-    isBackendBackedDataTableProjectId,
-    loadPersistedTableFilters,
-    mapPersistedFiltersToColumnIndexes,
-    savePersistedTableFilters,
+  clearPersistedTableFilters,
+  isBackendBackedDataTableProjectId,
+  loadPersistedTableFilters,
+  mapPersistedFiltersToColumnIndexes,
+  savePersistedTableFilters,
 } from '@/candidate-table/utils/persist-table-filters';
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
@@ -34,12 +68,21 @@ import { styled } from '@linaria/react';
 import axios from 'axios';
 import type Handsontable from 'handsontable';
 import { type CellChange, type ChangeSource } from 'handsontable';
-import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  memo,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Loader } from 'twenty-ui/feedback';
 import { IconPlus, IconX } from 'twenty-ui/icon';
 import {
-    themeCssVariables,
-    useThemeColorScheme,
+  themeCssVariables,
+  useThemeColorScheme,
 } from 'twenty-ui/theme-constants';
 
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
@@ -221,8 +264,8 @@ const StyledClearButton = styled.button`
 `;
 
 interface DataTableProps {
-    projectId: string;
-    onImportCandidatesClick?: () => void;
+  projectId: string;
+  onImportCandidatesClick?: () => void;
 }
 
 type ColumnRenderer = (
@@ -232,183 +275,222 @@ type ColumnRenderer = (
   column: number,
   prop: string | number,
   value: any,
-  cellProperties: Handsontable.CellProperties
+  cellProperties: Handsontable.CellProperties,
 ) => HTMLTableCellElement;
 
 const MemoHotTable = memo(HotTable);
 const ENTER_MOVES = { row: 1, col: 0 };
 
-export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void; clearAllFiltersAndSorts: () => void; toggleSortingControls?: () => void; applyGeneratedSorts?: (sorts: any) => void; loadMoreCandidates?: (pages?: number) => Promise<void>; hasMoreCandidates?: boolean; isLoadingMore?: boolean }, DataTableProps>(({ projectId, onImportCandidatesClick }, ref) => {
-    const colorScheme = useThemeColorScheme();
-    const tableRef = useRef<any>(null);
-    const tableState = useAtomStateValue(tableStateAtom);
-    const setTableStateAtom = useSetAtomState(tableStateAtom);
-    const setFilteredCandidatesCount = useSetAtomState(filteredCandidatesCountState);
-    const [tokenPair] = useAtomState(tokenPairState);
-    const [isSortingControlsVisible, setIsSortingControlsVisible] = useState(false);
-    const processedData = useAtomStateValue(processedDataSelector);
-    const [searchResults, setSearchResults] = useAtomState(searchResultsState);
-    const [searchMetadata, setSearchMetadata] = useAtomState(searchMetadataState);
-    const candidateState = useAtomStateValue(candidateStateSelector);
-    const enrichments = useAtomStateValue(enrichmentsState);
-    const sampleEnrichments = useAtomStateValue(sampleEnrichmentsState);
-    const selectedConversationStatus = useAtomStateValue(selectedConversationStatusState);
-    const setSelectedConversationStatus = useSetAtomState(selectedConversationStatusState);
-    const setDataTableRefreshFunction = useSetAtomState(dataTableRefreshFunctionState);
-    const setDataTableApplySortsFunction = useSetAtomState(dataTableApplySortsFunctionState);
-    const { showNotification } = useNotification();
+export const DataTable = forwardRef<
+  {
+    refreshData: () => Promise<void>;
+    removeFilter: (columnIndex: number) => void;
+    clearAllFilters: () => void;
+    clearAllFiltersAndSorts: () => void;
+    toggleSortingControls?: () => void;
+    applyGeneratedSorts?: (sorts: any) => void;
+    loadMoreCandidates?: (pages?: number) => Promise<void>;
+    hasMoreCandidates?: boolean;
+    isLoadingMore?: boolean;
+  },
+  DataTableProps
+>(({ projectId, onImportCandidatesClick }, ref) => {
+  const colorScheme = useThemeColorScheme();
+  const tableRef = useRef<any>(null);
+  const tableState = useAtomStateValue(tableStateAtom);
+  const setTableStateAtom = useSetAtomState(tableStateAtom);
+  const setFilteredCandidatesCount = useSetAtomState(
+    filteredCandidatesCountState,
+  );
+  const [tokenPair] = useAtomState(tokenPairState);
+  const [isSortingControlsVisible, setIsSortingControlsVisible] =
+    useState(false);
+  const processedData = useAtomStateValue(processedDataSelector);
+  const [searchResults, setSearchResults] = useAtomState(searchResultsState);
+  const [searchMetadata, setSearchMetadata] = useAtomState(searchMetadataState);
+  const candidateState = useAtomStateValue(candidateStateSelector);
+  const enrichments = useAtomStateValue(enrichmentsState);
+  const sampleEnrichments = useAtomStateValue(sampleEnrichmentsState);
+  const selectedConversationStatus = useAtomStateValue(
+    selectedConversationStatusState,
+  );
+  const setSelectedConversationStatus = useSetAtomState(
+    selectedConversationStatusState,
+  );
+  const setDataTableRefreshFunction = useSetAtomState(
+    dataTableRefreshFunctionState,
+  );
+  const setDataTableApplySortsFunction = useSetAtomState(
+    dataTableApplySortsFunctionState,
+  );
+  const { showNotification } = useNotification();
 
-    // Pagination state
-    const [isLoadingMore, setIsLoadingMore] = useState(false);
+  // Pagination state
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-    // Helper function for consistent deduplication of search results
-    const deduplicateSearchResults = useCallback((results: any[]): any[] => {
-      const seen = new Map<string, any>();
-      const deduplicated: any[] = [];
+  // Helper function for consistent deduplication of search results
+  const deduplicateSearchResults = useCallback((results: any[]): any[] => {
+    const seen = new Map<string, any>();
+    const deduplicated: any[] = [];
 
-      for (const result of results) {
-        // Use consistent ID: tempId || id (same as addSearchResults)
-        const resultId = result.tempId || result.id;
-        if (!resultId) continue;
+    for (const result of results) {
+      // Use consistent ID: tempId || id (same as addSearchResults)
+      const resultId = result.tempId || result.id;
+      if (!resultId) continue;
 
-        if (!seen.has(resultId)) {
-          seen.set(resultId, result);
-          deduplicated.push(result);
-        }
+      if (!seen.has(resultId)) {
+        seen.set(resultId, result);
+        deduplicated.push(result);
       }
+    }
 
-      return deduplicated;
+    return deduplicated;
+  }, []);
+
+  // Merge database candidates with search results
+  // Note: searchResults now contain TransformedCandidateForTable (extends UserProfile)
+  const mergedData = useMemo(() => {
+    // In contexts like Assistant, processedData can be empty even though
+    // rawData (from get-candidates-by-project-id) has candidates. In that case,
+    // fall back to using rawData as the base dataset.
+    const baseProcessedData =
+      processedData.length > 0 ? processedData : (tableState.rawData ?? []);
+    // Search results are already transformed to the correct format by the backend
+    // They extend UserProfile and have all necessary fields including:
+    // - __isFetched, tempId (UI fields)
+    // - jobTitle, company, location (display aliases)
+    // - candConversationStatus, status (UI state)
+    // - All UserProfile fields (experience, education, skills, etc.)
+    console.log('DataTable mergedData calculation:', {
+      searchResultsCount: searchResults.length,
+      processedDataCount: processedData.length,
+      firstSearchResult: searchResults[0],
+      firstProcessedData: processedData[0],
+    });
+
+    // Deduplicate when merging: baseProcessedData (saved/raw candidates) takes priority
+    // Create a set of all unique identifiers from baseProcessedData
+    const processedDataIds = new Set<string>();
+    baseProcessedData.forEach((candidate: any) => {
+      const candidateId = candidate.tempId || candidate.id;
+      if (candidateId) {
+        processedDataIds.add(candidateId);
+      }
+    });
+
+    // Filter searchResults to exclude any that are already in processedData
+    const uniqueSearchResults = searchResults.filter((candidate: any) => {
+      const candidateId = candidate.tempId || candidate.id;
+      return !candidateId || !processedDataIds.has(candidateId);
+    });
+
+    // Merge with processedData first (saved candidates), then unique searchResults
+    const mergedData = [...baseProcessedData, ...uniqueSearchResults];
+
+    // Also deduplicate within each array to be safe
+    const deduplicatedMergedData = deduplicateSearchResults(mergedData);
+
+    if (deduplicatedMergedData.length !== mergedData.length) {
+      console.log(
+        `Deduplicated mergedData: ${mergedData.length} -> ${deduplicatedMergedData.length} (removed ${mergedData.length - deduplicatedMergedData.length} duplicates)`,
+      );
+    }
+
+    console.log('mergedData total count:', deduplicatedMergedData.length);
+    console.log(
+      'mergedData sample (first 2):',
+      deduplicatedMergedData.slice(0, 2),
+    );
+    return deduplicatedMergedData;
+  }, [
+    searchResults,
+    processedData,
+    tableState.rawData,
+    deduplicateSearchResults,
+  ]);
+
+  // Merge enrichments
+  const allAiFilters = useMemo(() => {
+    const merged = [...enrichments, ...sampleEnrichments];
+    // Deduplicate by modelName, preferring custom enrichments over samples
+    return merged.reduce<Enrichment[]>((acc, current) => {
+      const exists = acc.find((item) => item.modelName === current.modelName);
+      if (!exists) {
+        return [...acc, current];
+      }
+      return acc;
     }, []);
+  }, [enrichments, sampleEnrichments]);
 
-    // Merge database candidates with search results
-    // Note: searchResults now contain TransformedCandidateForTable (extends UserProfile)
-    const mergedData = useMemo(() => {
-      // In contexts like Assistant, processedData can be empty even though
-      // rawData (from get-candidates-by-project-id) has candidates. In that case,
-      // fall back to using rawData as the base dataset.
-      const baseProcessedData =
-        processedData.length > 0 ? processedData : (tableState.rawData ?? []);
-      // Search results are already transformed to the correct format by the backend
-      // They extend UserProfile and have all necessary fields including:
-      // - __isFetched, tempId (UI fields)
-      // - jobTitle, company, location (display aliases)
-      // - candConversationStatus, status (UI state)
-      // - All UserProfile fields (experience, education, skills, etc.)
-      console.log("DataTable mergedData calculation:", {
-        searchResultsCount: searchResults.length,
-        processedDataCount: processedData.length,
-        firstSearchResult: searchResults[0],
-        firstProcessedData: processedData[0]
-      });
+  const columns = useAtomStateValue(columnsSelector);
+  const chatSearchQuery = useAtomStateValue(chatSearchQueryState);
+  const setChatSearchQuery = useSetAtomState(chatSearchQueryState);
+  const { openRightDrawer } = useRightDrawer();
+  const setContextStoreTargetedRecordsRule = useSetAtomComponentState(
+    contextStoreTargetedRecordsRuleComponentState,
+    projectId,
+  );
+  const setContextStoreNumberOfSelectedRecords = useSetAtomComponentState(
+    contextStoreNumberOfSelectedRecordsComponentState,
+    projectId,
+  );
+  const setSelectedCandidateId = useSetAtomState(selectedCandidateIdState);
+  const setUnreadMessagesCounts = useSetAtomState(unreadMessagesCountsState);
 
-      // Deduplicate when merging: baseProcessedData (saved/raw candidates) takes priority
-      // Create a set of all unique identifiers from baseProcessedData
-      const processedDataIds = new Set<string>();
-      baseProcessedData.forEach((candidate: any) => {
-        const candidateId = candidate.tempId || candidate.id;
-        if (candidateId) {
-          processedDataIds.add(candidateId);
-        }
-      });
+  // Guard to prevent sort/apply loops
+  const isApplyingSortRef = useRef(false);
+  // Guard to prevent afterFilter from clearing persisted filters while restoring
+  const isApplyingFilterRef = useRef(false);
+  const hasRestoredFiltersRef = useRef(false);
+  const filterRestoreStartedAtRef = useRef<number | null>(null);
+  // Store sortConfig in ref to avoid recreating refreshData callback
+  const sortConfigRef = useRef<SortConfig[]>(tableState.sortConfig);
 
-      // Filter searchResults to exclude any that are already in processedData
-      const uniqueSearchResults = searchResults.filter((candidate: any) => {
-        const candidateId = candidate.tempId || candidate.id;
-        return !candidateId || !processedDataIds.has(candidateId);
-      });
+  // Sync ref with state on mount and when state changes externally
+  useEffect(() => {
+    sortConfigRef.current = tableState.sortConfig;
+  }, [tableState.sortConfig]);
 
-      // Merge with processedData first (saved candidates), then unique searchResults
-      const mergedData = [...baseProcessedData, ...uniqueSearchResults];
+  useEffect(() => {
+    hasRestoredFiltersRef.current = false;
+    filterRestoreStartedAtRef.current = null;
+  }, [projectId]);
 
-      // Also deduplicate within each array to be safe
-      const deduplicatedMergedData = deduplicateSearchResults(mergedData);
-
-      if (deduplicatedMergedData.length !== mergedData.length) {
-        console.log(`Deduplicated mergedData: ${mergedData.length} -> ${deduplicatedMergedData.length} (removed ${mergedData.length - deduplicatedMergedData.length} duplicates)`);
-      }
-
-      console.log("mergedData total count:", deduplicatedMergedData.length);
-      console.log("mergedData sample (first 2):", deduplicatedMergedData.slice(0, 2));
-      return deduplicatedMergedData;
-    }, [searchResults, processedData, tableState.rawData, deduplicateSearchResults]);
-
-    // Merge enrichments
-    const allAiFilters = useMemo(() => {
-      const merged = [...enrichments, ...sampleEnrichments];
-      // Deduplicate by modelName, preferring custom enrichments over samples
-      return merged.reduce<Enrichment[]>((acc, current) => {
-        const exists = acc.find(item => item.modelName === current.modelName);
-        if (!exists) {
-          return [...acc, current];
-        }
-        return acc;
-      }, []);
-    }, [enrichments, sampleEnrichments]);
-
-    const columns = useAtomStateValue(columnsSelector);
-    const chatSearchQuery = useAtomStateValue(chatSearchQueryState);
-    const setChatSearchQuery = useSetAtomState(chatSearchQueryState);
-    const { openRightDrawer } = useRightDrawer();
-    const setContextStoreTargetedRecordsRule = useSetAtomComponentState(
-      contextStoreTargetedRecordsRuleComponentState,
-      projectId
-    );
-    const setContextStoreNumberOfSelectedRecords = useSetAtomComponentState(
-      contextStoreNumberOfSelectedRecordsComponentState,
-      projectId
-    );
-    const setSelectedCandidateId = useSetAtomState(selectedCandidateIdState);
-    const setUnreadMessagesCounts = useSetAtomState(unreadMessagesCountsState);
-
-    // Guard to prevent sort/apply loops
-    const isApplyingSortRef = useRef(false);
-    // Guard to prevent afterFilter from clearing persisted filters while restoring
-    const isApplyingFilterRef = useRef(false);
-    const hasRestoredFiltersRef = useRef(false);
-    const filterRestoreStartedAtRef = useRef<number | null>(null);
-    // Store sortConfig in ref to avoid recreating refreshData callback
-    const sortConfigRef = useRef<SortConfig[]>(tableState.sortConfig);
-
-    // Sync ref with state on mount and when state changes externally
-    useEffect(() => {
-      sortConfigRef.current = tableState.sortConfig;
-    }, [tableState.sortConfig]);
-
-    useEffect(() => {
+  useEffect(() => {
+    if (tableState.isLoading) {
       hasRestoredFiltersRef.current = false;
       filterRestoreStartedAtRef.current = null;
-    }, [projectId]);
+    }
+  }, [tableState.isLoading]);
 
-    useEffect(() => {
-      if (tableState.isLoading) {
-        hasRestoredFiltersRef.current = false;
-        filterRestoreStartedAtRef.current = null;
-      }
-    }, [tableState.isLoading]);
+  const areSortConfigsEqual = (
+    a?: SortConfig[] | null,
+    b?: SortConfig[] | null,
+  ) => {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i].column !== b[i].column || a[i].sortOrder !== b[i].sortOrder)
+        return false;
+    }
+    return true;
+  };
 
-    const areSortConfigsEqual = (a?: SortConfig[] | null, b?: SortConfig[] | null) => {
-      if (!a && !b) return true;
-      if (!a || !b) return false;
-      if (a.length !== b.length) return false;
-      for (let i = 0; i < a.length; i++) {
-        if (a[i].column !== b[i].column || a[i].sortOrder !== b[i].sortOrder) return false;
-      }
-      return true;
-    };
-
-    // Sorting functionality
-    const handleSortChange = useCallback((sortConfig: SortConfig[]) => {
-      console.log("handleSortChange called with:", sortConfig);
+  // Sorting functionality
+  const handleSortChange = useCallback(
+    (sortConfig: SortConfig[]) => {
+      console.log('handleSortChange called with:', sortConfig);
       sortConfigRef.current = sortConfig;
-      setTableStateAtom(prev => ({
+      setTableStateAtom((prev) => ({
         ...prev,
-        sortConfig
+        sortConfig,
       }));
 
       // Apply sorting immediately when configuration changes
       const hot = tableRef.current?.hotInstance;
       if (hot && sortConfig.length > 0) {
-        console.log("Applying multi-column sort:", sortConfig);
+        console.log('Applying multi-column sort:', sortConfig);
         const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
         if (multiColumnSortingPlugin) {
           const current = multiColumnSortingPlugin.getSortConfig();
@@ -419,142 +501,166 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
           // Register custom sorting functions for enum columns
           const columns = hot.getSettings().columns;
-          sortConfig.forEach(sortItem => {
+          sortConfig.forEach((sortItem) => {
             const column = columns?.[sortItem.column];
             if (column && needsCustomSorting(column.data)) {
-              const customSortFunction = getCustomSortFunction(column.data, sortItem.sortOrder);
+              const customSortFunction = getCustomSortFunction(
+                column.data,
+                sortItem.sortOrder,
+              );
               if (customSortFunction) {
                 // Register the custom sort function for this column
-                multiColumnSortingPlugin.setSortFunction(sortItem.column, customSortFunction);
-                console.log(`Registered custom sort function for column ${column.data}`);
+                multiColumnSortingPlugin.setSortFunction(
+                  sortItem.column,
+                  customSortFunction,
+                );
+                console.log(
+                  `Registered custom sort function for column ${column.data}`,
+                );
               }
             }
           });
 
-          console.log("Multi-column sorting plugin found, applying sort");
+          console.log('Multi-column sorting plugin found, applying sort');
           isApplyingSortRef.current = true;
           multiColumnSortingPlugin.sort(sortConfig);
 
           // Verify the sort was applied
           setTimeout(() => {
             const currentSortConfig = multiColumnSortingPlugin.getSortConfig();
-            console.log("Current sort config after applying:", currentSortConfig);
+            console.log(
+              'Current sort config after applying:',
+              currentSortConfig,
+            );
             // safety reset in case afterColumnSort didn't run
             isApplyingSortRef.current = false;
           }, 100);
         } else {
-          console.error("Multi-column sorting plugin not found");
+          console.error('Multi-column sorting plugin not found');
         }
       } else if (hot && sortConfig.length === 0) {
-        console.log("Clearing multi-column sort");
+        console.log('Clearing multi-column sort');
         // Clear sorting if no sort config
         const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
         if (multiColumnSortingPlugin) {
           multiColumnSortingPlugin.clearSort();
         }
       } else {
-        console.log("Hot instance not available or no sort config");
+        console.log('Hot instance not available or no sort config');
       }
-    }, [setTableStateAtom]);
+    },
+    [setTableStateAtom],
+  );
 
-    const handleClearSort = useCallback(() => {
-      const hot = tableRef.current?.hotInstance;
-      if (!hot) return;
+  const handleClearSort = useCallback(() => {
+    const hot = tableRef.current?.hotInstance;
+    if (!hot) return;
 
-      const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
-      if (multiColumnSortingPlugin) {
-        multiColumnSortingPlugin.clearSort();
-      }
+    const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
+    if (multiColumnSortingPlugin) {
+      multiColumnSortingPlugin.clearSort();
+    }
 
-      setTableStateAtom(prev => ({
-        ...prev,
-        sortConfig: []
-      }));
-    }, [setTableStateAtom]);
-    // const searchPlanFilters = useSearchPlanFilters();
+    setTableStateAtom((prev) => ({
+      ...prev,
+      sortConfig: [],
+    }));
+  }, [setTableStateAtom]);
+  // const searchPlanFilters = useSearchPlanFilters();
 
-    const filteredData = useMemo(() => {
-      let filtered = mergedData;
+  const filteredData = useMemo(() => {
+    let filtered = mergedData;
 
-      // Apply status filter if selected
-      if (selectedConversationStatus) {
-        filtered = filtered.filter((candidate: any) =>
-          candidate.candConversationStatus === selectedConversationStatus
-        );
-      }
+    // Apply status filter if selected
+    if (selectedConversationStatus) {
+      filtered = filtered.filter(
+        (candidate: any) =>
+          candidate.candConversationStatus === selectedConversationStatus,
+      );
+    }
 
-      // Apply search filter
-      if (chatSearchQuery) {
-        const query = chatSearchQuery.toLowerCase();
-        filtered = filtered.filter((candidate: any) => {
-          return Object.values(candidate).some(value => {
-            if (typeof value === 'string') {
-              return value.toLowerCase().includes(query);
-            }
-            return false;
-          });
+    // Apply search filter
+    if (chatSearchQuery) {
+      const query = chatSearchQuery.toLowerCase();
+      filtered = filtered.filter((candidate: any) => {
+        return Object.values(candidate).some((value) => {
+          if (typeof value === 'string') {
+            return value.toLowerCase().includes(query);
+          }
+          return false;
         });
-      }
+      });
+    }
 
-      // Apply search plan filters
-      // if (searchPlanFilters.filters.isActive) {
-      //   filtered = searchPlanFilters.getFilteredData(filtered);
-      // }
+    // Apply search plan filters
+    // if (searchPlanFilters.filters.isActive) {
+    //   filtered = searchPlanFilters.getFilteredData(filtered);
+    // }
 
-      // Note: We don't set filtered count here anymore as it's handled by afterFilter
-      return filtered;
-    }, [mergedData, chatSearchQuery, selectedConversationStatus]);
+    // Note: We don't set filtered count here anymore as it's handled by afterFilter
+    return filtered;
+  }, [mergedData, chatSearchQuery, selectedConversationStatus]);
 
-    // Keep this independent of selectedRowIds. Selection checkboxes are synced
-    // onto the live Handsontable instance below; putting them in `data` would
-    // force HotTable updateSettings on every click and loop with afterRender.
-    const mutatableData = useMemo(() => {
-      return filteredData.map((candidate: any) => ({
-        ...candidate,
-        isEditable: true,
-        checkbox: Boolean(candidate.checkbox),
-      }));
-    }, [filteredData]);
+  // Keep this independent of selectedRowIds. Selection checkboxes are synced
+  // onto the live Handsontable instance below; putting them in `data` would
+  // force HotTable updateSettings on every click and loop with afterRender.
+  const mutatableData = useMemo(() => {
+    return filteredData.map((candidate: any) => ({
+      ...candidate,
+      isEditable: true,
+      checkbox: Boolean(candidate.checkbox),
+    }));
+  }, [filteredData]);
 
-    // const keyDownHandler = (event: KeyboardEvent) => {
-    //   handleKeyDown(event, tableRef, tableState, setTableStateAtom);
-    // };
+  // const keyDownHandler = (event: KeyboardEvent) => {
+  //   handleKeyDown(event, tableRef, tableState, setTableStateAtom);
+  // };
 
-    // Create a function to get the latest token
-    const getLatestToken = useCallback(() => {
-      return tokenPair?.accessOrWorkspaceAgnosticToken?.token;
-    }, [tokenPair]);
+  // Create a function to get the latest token
+  const getLatestToken = useCallback(() => {
+    return tokenPair?.accessOrWorkspaceAgnosticToken?.token;
+  }, [tokenPair]);
 
-    const refreshData = useCallback(async (specificIds?: string[]) => {
+  const refreshData = useCallback(
+    async (specificIds?: string[]) => {
       if (!isBackendBackedDataTableProjectId(projectId)) return;
       try {
         const requestBody = specificIds?.length
           ? { projectId, candidateIds: specificIds }
           : { projectId };
 
-        console.log("This is the request body in refreshData::::", requestBody);
+        console.log('This is the request body in refreshData::::', requestBody);
         const response = await axios.post(
           `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-candidates-by-project-id`,
           requestBody,
-          { headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` } }
+          {
+            headers: {
+              Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
+            },
+          },
         );
         const rawData = response.data;
         const unreadMessagesCounts: Record<string, number> = {};
         rawData.forEach((candidate: any) => {
-          if (!candidate || typeof candidate !== 'object' || !candidate.id) return;
-          const unreadCount = candidate?.chatMessages?.edges
-            ?.filter((edge: any) => edge?.node?.whatsappDeliveryStatus === 'receivedFromCandidate')
-            ?.length || 0;
+          if (!candidate || typeof candidate !== 'object' || !candidate.id)
+            return;
+          const unreadCount =
+            candidate?.chatMessages?.edges?.filter(
+              (edge: any) =>
+                edge?.node?.whatsappDeliveryStatus === 'receivedFromCandidate',
+            )?.length || 0;
           unreadMessagesCounts[candidate.id] = unreadCount;
         });
 
         if (specificIds?.length) {
-          setTableStateAtom(prev => {
-            console.log("Partial refresh in refreshData", rawData);
+          setTableStateAtom((prev) => {
+            console.log('Partial refresh in refreshData', rawData);
             const updatedRawData = [...prev.rawData];
             for (const newData of rawData) {
               if (!newData || !newData.id) continue;
-              const index = updatedRawData.findIndex(item => item.id === newData.id);
+              const index = updatedRawData.findIndex(
+                (item) => item.id === newData.id,
+              );
               if (index >= 0) {
                 updatedRawData[index] = newData;
               } else {
@@ -566,17 +672,22 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
               rawData: updatedRawData,
             };
           });
-          setUnreadMessagesCounts(prev => ({ ...prev, ...unreadMessagesCounts }));
+          setUnreadMessagesCounts((prev) => ({
+            ...prev,
+            ...unreadMessagesCounts,
+          }));
         } else {
-          setTableStateAtom(prev => ({
+          setTableStateAtom((prev) => ({
             ...prev,
             rawData,
             isLoading: false,
-            selectedRowIds: [] // Clear selected rows on full refresh
+            selectedRowIds: [], // Clear selected rows on full refresh
           }));
           setUnreadMessagesCounts(unreadMessagesCounts);
           setSelectedCandidateId(null);
-          setFilteredCandidatesCount(Array.isArray(rawData) ? rawData.length : 0);
+          setFilteredCandidatesCount(
+            Array.isArray(rawData) ? rawData.length : 0,
+          );
 
           // Clear context store states when clearing selected rows
           setContextStoreNumberOfSelectedRecords(0);
@@ -591,27 +702,46 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           const hot = tableRef.current?.hotInstance;
           const currentSortConfig = sortConfigRef.current;
           if (hot && currentSortConfig.length > 0) {
-            console.log("Reapplying multi-column sort after data refresh:", currentSortConfig);
-            const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
+            console.log(
+              'Reapplying multi-column sort after data refresh:',
+              currentSortConfig,
+            );
+            const multiColumnSortingPlugin =
+              hot.getPlugin('multiColumnSorting');
             if (multiColumnSortingPlugin) {
               const current = multiColumnSortingPlugin.getSortConfig();
-              if (!areSortConfigsEqual(current as SortConfig[] | null, currentSortConfig)) {
+              if (
+                !areSortConfigsEqual(
+                  current as SortConfig[] | null,
+                  currentSortConfig,
+                )
+              ) {
                 // Register custom sorting functions for enum columns
                 const columns = hot.getSettings().columns;
-                currentSortConfig.forEach(sortItem => {
+                currentSortConfig.forEach((sortItem) => {
                   const column = columns?.[sortItem.column];
                   if (column && needsCustomSorting(column.data)) {
-                    const customSortFunction = getCustomSortFunction(column.data, sortItem.sortOrder);
+                    const customSortFunction = getCustomSortFunction(
+                      column.data,
+                      sortItem.sortOrder,
+                    );
                     if (customSortFunction) {
-                      multiColumnSortingPlugin.setSortFunction(sortItem.column, customSortFunction);
-                      console.log(`Registered custom sort function for column ${column.data} after data refresh`);
+                      multiColumnSortingPlugin.setSortFunction(
+                        sortItem.column,
+                        customSortFunction,
+                      );
+                      console.log(
+                        `Registered custom sort function for column ${column.data} after data refresh`,
+                      );
                     }
                   }
                 });
 
                 isApplyingSortRef.current = true;
                 multiColumnSortingPlugin.sort(currentSortConfig);
-                setTimeout(() => { isApplyingSortRef.current = false; }, 50);
+                setTimeout(() => {
+                  isApplyingSortRef.current = false;
+                }, 50);
               }
             }
           }
@@ -632,19 +762,50 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         await showNotification({
           title: 'Refresh Failed',
           body: 'Failed to refresh candidate data. Please try again.',
-          icon: '/favicon.ico'
+          icon: '/favicon.ico',
         });
         setUnreadMessagesCounts({});
         setSelectedCandidateId(null);
         throw error;
       }
-    }, [projectId, setTableStateAtom, tokenPair, showNotification, setUnreadMessagesCounts, setSelectedCandidateId, setFilteredCandidatesCount]);
+    },
+    [
+      projectId,
+      setTableStateAtom,
+      tokenPair,
+      showNotification,
+      setUnreadMessagesCounts,
+      setSelectedCandidateId,
+      setFilteredCandidatesCount,
+    ],
+  );
 
-    const afterChangeHandler = useCallback((changes: CellChange[] | null, source: ChangeSource) => {
-      afterChange(tableRef, changes, source, projectId, getLatestToken, setTableStateAtom, setSelectedCandidateId, refreshData, tableState.rawData);
-    }, [projectId, getLatestToken, setTableStateAtom, setSelectedCandidateId, refreshData, tableState.rawData]);
+  const afterChangeHandler = useCallback(
+    (changes: CellChange[] | null, source: ChangeSource) => {
+      afterChange(
+        tableRef,
+        changes,
+        source,
+        projectId,
+        getLatestToken,
+        setTableStateAtom,
+        setSelectedCandidateId,
+        refreshData,
+        tableState.rawData,
+      );
+    },
+    [
+      projectId,
+      getLatestToken,
+      setTableStateAtom,
+      setSelectedCandidateId,
+      refreshData,
+      tableState.rawData,
+    ],
+  );
 
-    const reapplyPersistedFilters = useCallback((force = false) => {
+  const reapplyPersistedFilters = useCallback(
+    (force = false) => {
       if (!force && hasRestoredFiltersRef.current) {
         return false;
       }
@@ -674,8 +835,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         columns,
       );
 
-      const allColumnsReady =
-        filtersToApply.length === persistedFilters.length;
+      const allColumnsReady = filtersToApply.length === persistedFilters.length;
 
       if (!allColumnsReady) {
         if (filterRestoreStartedAtRef.current === null) {
@@ -719,91 +879,99 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       }, 50);
 
       return true;
-    }, [projectId, setTableStateAtom]);
+    },
+    [projectId, setTableStateAtom],
+  );
 
-    // Method to remove a specific filter
-    const removeFilter = useCallback((columnIndex: number) => {
-      const hot = tableRef.current?.hotInstance;
-      if (!hot) return;
+  // Method to remove a specific filter
+  const removeFilter = useCallback((columnIndex: number) => {
+    const hot = tableRef.current?.hotInstance;
+    if (!hot) return;
 
-      console.log('Removing filter for column:', columnIndex);
+    console.log('Removing filter for column:', columnIndex);
 
-      // Get the filters plugin
-      const filtersPlugin = hot.getPlugin('filters');
+    // Get the filters plugin
+    const filtersPlugin = hot.getPlugin('filters');
 
-      // Remove conditions for the specific column
-      filtersPlugin.removeConditions(columnIndex);
+    // Remove conditions for the specific column
+    filtersPlugin.removeConditions(columnIndex);
 
-      // Reapply filters to update the table display
-      filtersPlugin.filter();
+    // Reapply filters to update the table display
+    filtersPlugin.filter();
 
-      console.log('Filter removal completed');
-    }, []);
+    console.log('Filter removal completed');
+  }, []);
 
-    // Method to clear all filters
-    const clearAllFilters = useCallback(() => {
-      const hot = tableRef.current?.hotInstance;
-      if (!hot) return;
+  // Method to clear all filters
+  const clearAllFilters = useCallback(() => {
+    const hot = tableRef.current?.hotInstance;
+    if (!hot) return;
 
-      console.log('Clearing all filters');
+    console.log('Clearing all filters');
 
-      const filtersPlugin = hot.getPlugin('filters');
-      filtersPlugin.clearConditions();
-      filtersPlugin.filter();
-      clearPersistedTableFilters(projectId);
-      setTableStateAtom((prev) => ({
-        ...prev,
-        activeFilters: [],
-      }));
-      setChatSearchQuery('');
+    const filtersPlugin = hot.getPlugin('filters');
+    filtersPlugin.clearConditions();
+    filtersPlugin.filter();
+    clearPersistedTableFilters(projectId);
+    setTableStateAtom((prev) => ({
+      ...prev,
+      activeFilters: [],
+    }));
+    setChatSearchQuery('');
 
-      console.log('All filters cleared');
-    }, [projectId, setChatSearchQuery, setTableStateAtom]);
+    console.log('All filters cleared');
+  }, [projectId, setChatSearchQuery, setTableStateAtom]);
 
-    // Method to clear all sorts
-    const clearAllSorts = useCallback(() => {
-      const hot = tableRef.current?.hotInstance;
-      if (!hot) return;
+  // Method to clear all sorts
+  const clearAllSorts = useCallback(() => {
+    const hot = tableRef.current?.hotInstance;
+    if (!hot) return;
 
-      console.log('Clearing all sorts');
+    console.log('Clearing all sorts');
 
-      const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
-      if (multiColumnSortingPlugin) {
-        multiColumnSortingPlugin.clearSort();
-      }
+    const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
+    if (multiColumnSortingPlugin) {
+      multiColumnSortingPlugin.clearSort();
+    }
 
-      // Clear sort config from state
-      sortConfigRef.current = [];
-      setTableStateAtom(prev => ({
-        ...prev,
-        sortConfig: []
-      }));
+    // Clear sort config from state
+    sortConfigRef.current = [];
+    setTableStateAtom((prev) => ({
+      ...prev,
+      sortConfig: [],
+    }));
 
-      console.log('All sorts cleared');
-    }, [setTableStateAtom]);
+    console.log('All sorts cleared');
+  }, [setTableStateAtom]);
 
-    // Method to clear all filters and sorts
-    const clearAllFiltersAndSorts = useCallback(() => {
-      console.log('Clearing all filters and sorts');
+  // Method to clear all filters and sorts
+  const clearAllFiltersAndSorts = useCallback(() => {
+    console.log('Clearing all filters and sorts');
 
-      // Clear filters
-      clearAllFilters();
+    // Clear filters
+    clearAllFilters();
 
-      // Clear sorts
-      clearAllSorts();
+    // Clear sorts
+    clearAllSorts();
 
-      // Clear selected conversation status
-      setSelectedConversationStatus(null);
+    // Clear selected conversation status
+    setSelectedConversationStatus(null);
 
-      console.log('All filters, sorts, and search cleared');
-    }, [clearAllFilters, clearAllSorts, setSelectedConversationStatus]);
+    console.log('All filters, sorts, and search cleared');
+  }, [clearAllFilters, clearAllSorts, setSelectedConversationStatus]);
 
-    // Method to apply generated sorts
-    const applyGeneratedSorts = useCallback((sorts: any) => {
-      console.log("applyGeneratedSorts called with:", JSON.stringify(sorts, null, 2));
+  // Method to apply generated sorts
+  const applyGeneratedSorts = useCallback(
+    (sorts: any) => {
+      console.log(
+        'applyGeneratedSorts called with:',
+        JSON.stringify(sorts, null, 2),
+      );
       const hot = tableRef.current?.hotInstance;
       if (!hot || !sorts?.sortStrategy?.sortColumns) {
-        console.warn('Cannot apply sorts: Hot instance not available or invalid sorts data');
+        console.warn(
+          'Cannot apply sorts: Hot instance not available or invalid sorts data',
+        );
         return;
       }
 
@@ -815,19 +983,28 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
       sorts.sortStrategy.sortColumns.forEach((sortColumn: any) => {
         // Find the column index by matching the column name
-        const columnIndex = columns?.findIndex((col: any) =>
-          col.data === sortColumn.column || col.title === sortColumn.column
+        const columnIndex = columns?.findIndex(
+          (col: any) =>
+            col.data === sortColumn.column || col.title === sortColumn.column,
         );
 
         if (columnIndex !== undefined && columnIndex >= 0) {
           sortConfig.push({
             column: columnIndex,
-            sortOrder: sortColumn.sortOrder
+            sortOrder: sortColumn.sortOrder,
           });
-          console.log(`Mapped column "${sortColumn.column}" to index ${columnIndex} with order ${sortColumn.sortOrder}`);
+          console.log(
+            `Mapped column "${sortColumn.column}" to index ${columnIndex} with order ${sortColumn.sortOrder}`,
+          );
         } else {
-          console.warn(`Column "${sortColumn.column}" not found in table columns. Available columns:`,
-            columns?.map((col: any, idx: number) => `${idx}: ${col.data || col.title}`).join(', '));
+          console.warn(
+            `Column "${sortColumn.column}" not found in table columns. Available columns:`,
+            columns
+              ?.map(
+                (col: any, idx: number) => `${idx}: ${col.data || col.title}`,
+              )
+              .join(', '),
+          );
         }
       });
 
@@ -835,13 +1012,20 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         console.log('Converted sort config:', sortConfig);
         handleSortChange(sortConfig);
       } else {
-        console.warn('No valid sort columns found. Available columns:',
-          columns?.map((col: any, idx: number) => `${idx}: ${col.data || col.title}`).join(', '));
+        console.warn(
+          'No valid sort columns found. Available columns:',
+          columns
+            ?.map((col: any, idx: number) => `${idx}: ${col.data || col.title}`)
+            .join(', '),
+        );
       }
-    }, [handleSortChange]);
+    },
+    [handleSortChange],
+  );
 
-    // Method to load more candidates from search results
-    const loadMoreCandidates = useCallback(async (pagesToLoad: number = 1) => {
+  // Method to load more candidates from search results
+  const loadMoreCandidates = useCallback(
+    async (pagesToLoad: number = 1) => {
       console.log('DataTable.loadMoreCandidates called with:', {
         cursor: searchMetadata.cursor,
         isLoadingMore,
@@ -879,14 +1063,14 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           requestBody,
           {
             headers: {
-              'Authorization': `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
-              'Content-Type': 'application/json'
+              Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
+              'Content-Type': 'application/json',
             },
             params: {
               cursor: searchMetadata.cursor,
-              limit: 10 * pagesToLoad
-            }
-          }
+              limit: 10 * pagesToLoad,
+            },
+          },
         );
 
         // Prioritize transformed candidates (which extend UserProfile)
@@ -906,7 +1090,10 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           nextCursor = searchResults.cursor;
           paging = searchResults.paging;
         } else {
-          console.error('No search results or transformed candidates returned from API:', response.data);
+          console.error(
+            'No search results or transformed candidates returned from API:',
+            response.data,
+          );
           throw new Error('No search results returned');
         }
 
@@ -914,7 +1101,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           newResultsCount: newResults.length,
           nextCursor: nextCursor,
           paging: paging,
-          newResults: newResults.slice(0, 3) // Log first 3 results for debugging
+          newResults: newResults.slice(0, 3), // Log first 3 results for debugging
         });
 
         // Check if LinkedIn API returned empty results
@@ -932,7 +1119,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
             await showNotification({
               title: 'No More Results',
               body: 'You have reached the end of available search results.',
-              icon: '/favicon.ico'
+              icon: '/favicon.ico',
             });
             return;
           }
@@ -940,7 +1127,9 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
         // Deduplicate new results against existing ones
         // Use consistent ID field: tempId || id (same as addSearchResults)
-        const existingIds = new Set(searchResults.map((r: any) => r.tempId || r.id));
+        const existingIds = new Set(
+          searchResults.map((r: any) => r.tempId || r.id),
+        );
         const uniqueNewResults = newResults.filter((result: any) => {
           const resultId = result.tempId || result.id;
           return resultId && !existingIds.has(resultId);
@@ -949,14 +1138,22 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         console.log('Deduplication details:', {
           existingIdsCount: existingIds.size,
           uniqueNewResultsCount: uniqueNewResults.length,
-          duplicateCount: newResults.length - uniqueNewResults.length
+          duplicateCount: newResults.length - uniqueNewResults.length,
         });
 
         // Check if all new results are duplicates
         if (newResults.length > 0 && uniqueNewResults.length === 0) {
-          console.warn('All new results are duplicates! This suggests the LinkedIn API is returning the same results.');
-          console.log('First few new result IDs:', newResults.slice(0, 3).map((r: any) => r.id));
-          console.log('First few existing result IDs:', Array.from(existingIds).slice(0, 3));
+          console.warn(
+            'All new results are duplicates! This suggests the LinkedIn API is returning the same results.',
+          );
+          console.log(
+            'First few new result IDs:',
+            newResults.slice(0, 3).map((r: any) => r.id),
+          );
+          console.log(
+            'First few existing result IDs:',
+            Array.from(existingIds).slice(0, 3),
+          );
 
           // LinkedIn API cursor issue - it's returning the same results
           // Clear the cursor to prevent further attempts
@@ -975,8 +1172,8 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
 
           await showNotification({
             title: 'LinkedIn API Limitation',
-            body: 'LinkedIn API is returning duplicate results. This is a known limitation with LinkedIn\'s pagination. Try refining your search criteria for better results.',
-            icon: '/favicon.ico'
+            body: "LinkedIn API is returning duplicate results. This is a known limitation with LinkedIn's pagination. Try refining your search criteria for better results.",
+            icon: '/favicon.ico',
           });
           return;
         }
@@ -985,19 +1182,21 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         console.log('Before updating searchResults:', {
           prevCount: searchResults.length,
           uniqueNewResultsCount: uniqueNewResults.length,
-          firstNewResult: uniqueNewResults[0]
+          firstNewResult: uniqueNewResults[0],
         });
         setSearchResults((prev: any[]) => {
           const updated = [...prev, ...uniqueNewResults];
           // DEDUPLICATE the entire array to remove any duplicates that might exist in prev
           const deduplicated = deduplicateSearchResults(updated);
           if (deduplicated.length !== updated.length) {
-            console.log(`Deduplicated after loadMore: ${updated.length} -> ${deduplicated.length} (removed ${updated.length - deduplicated.length} duplicates)`);
+            console.log(
+              `Deduplicated after loadMore: ${updated.length} -> ${deduplicated.length} (removed ${updated.length - deduplicated.length} duplicates)`,
+            );
           }
           console.log('After updating searchResults:', {
             prevCount: prev.length,
             updatedCount: deduplicated.length,
-            firstUpdatedItem: deduplicated[0]
+            firstUpdatedItem: deduplicated[0],
           });
           return deduplicated;
         });
@@ -1015,7 +1214,7 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           newCursor: nextCursor,
           oldPage: searchMetadata.currentPage,
           newPage: updatedMetadata.currentPage,
-          totalCount: updatedMetadata.totalCount
+          totalCount: updatedMetadata.totalCount,
         });
 
         setSearchMetadata(updatedMetadata);
@@ -1024,94 +1223,117 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           results: searchResults,
         });
 
-        console.log(`Successfully loaded ${pagesToLoad} more pages with ${uniqueNewResults.length} new candidates`);
+        console.log(
+          `Successfully loaded ${pagesToLoad} more pages with ${uniqueNewResults.length} new candidates`,
+        );
 
         await showNotification({
           title: 'Load More Success',
           body: `Successfully loaded ${uniqueNewResults.length} more candidates`,
-          icon: '/favicon.ico'
+          icon: '/favicon.ico',
         });
       } catch (error) {
         console.error('Load more error:', error);
         await showNotification({
           title: 'Load More Failed',
           body: 'Failed to load more candidates. Please try again.',
-          icon: '/favicon.ico'
+          icon: '/favicon.ico',
         });
       } finally {
         setIsLoadingMore(false);
       }
-    }, [searchMetadata.cursor, isLoadingMore, searchMetadata.searchType, searchMetadata.searchCategory, searchMetadata.searchParameters, searchResults, setSearchResults, setSearchMetadata, tokenPair, showNotification, deduplicateSearchResults]);
+    },
+    [
+      searchMetadata.cursor,
+      isLoadingMore,
+      searchMetadata.searchType,
+      searchMetadata.searchCategory,
+      searchMetadata.searchParameters,
+      searchResults,
+      setSearchResults,
+      setSearchMetadata,
+      tokenPair,
+      showNotification,
+      deduplicateSearchResults,
+    ],
+  );
 
-    // Check if there are more candidates to load
-    const hasMoreCandidates = useMemo(() => {
-      // If we have a cursor, there might be more results
-      // If we don't have a cursor, we've reached the end
-      // Also check if we've detected LinkedIn API issues (cursor is null but we have results)
-      return !!searchMetadata.cursor && searchResults.length > 0;
-    }, [searchMetadata.cursor, searchResults.length]);
+  // Check if there are more candidates to load
+  const hasMoreCandidates = useMemo(() => {
+    // If we have a cursor, there might be more results
+    // If we don't have a cursor, we've reached the end
+    // Also check if we've detected LinkedIn API issues (cursor is null but we have results)
+    return !!searchMetadata.cursor && searchResults.length > 0;
+  }, [searchMetadata.cursor, searchResults.length]);
 
-    // Expose the refreshData method through the ref
-    useImperativeHandle(ref, () => ({
-      refreshData,
-      removeFilter,
-      clearAllFilters,
-      clearAllFiltersAndSorts,
-      toggleSortingControls: () => setIsSortingControlsVisible(prev => !prev),
-      applyGeneratedSorts,
-      loadMoreCandidates,
-      hasMoreCandidates,
-      isLoadingMore
-    }));
+  // Expose the refreshData method through the ref
+  useImperativeHandle(ref, () => ({
+    refreshData,
+    removeFilter,
+    clearAllFilters,
+    clearAllFiltersAndSorts,
+    toggleSortingControls: () => setIsSortingControlsVisible((prev) => !prev),
+    applyGeneratedSorts,
+    loadMoreCandidates,
+    hasMoreCandidates,
+    isLoadingMore,
+  }));
 
-    // Set the refresh function in global state so actions can access it
-    // Use refs to store the latest functions to avoid recreating this effect
-    const refreshDataRef = useRef(refreshData);
-    const applyGeneratedSortsRef = useRef(applyGeneratedSorts);
+  // Set the refresh function in global state so actions can access it
+  // Use refs to store the latest functions to avoid recreating this effect
+  const refreshDataRef = useRef(refreshData);
+  const applyGeneratedSortsRef = useRef(applyGeneratedSorts);
 
-    // Update refs when functions change
-    useEffect(() => {
-      refreshDataRef.current = refreshData;
-      applyGeneratedSortsRef.current = applyGeneratedSorts;
-    }, [refreshData, applyGeneratedSorts]);
+  // Update refs when functions change
+  useEffect(() => {
+    refreshDataRef.current = refreshData;
+    applyGeneratedSortsRef.current = applyGeneratedSorts;
+  }, [refreshData, applyGeneratedSorts]);
 
-    // Register functions only once on mount/unmount.
-    // Wrap in () => value so jotai does not treat the function as an updater
-    // (which would call applyGeneratedSorts(null) and store undefined).
-    useEffect(() => {
-      console.log('DataTable: Registering functions in global state');
-      setDataTableRefreshFunction(
-        () => (specificIds?: string[]) => refreshDataRef.current(specificIds),
-      );
-      setDataTableApplySortsFunction(
-        () => (sorts: any) => applyGeneratedSortsRef.current(sorts),
-      );
-      return () => {
-        console.log('DataTable: Cleaning up global state functions');
-        setDataTableRefreshFunction(null);
-        setDataTableApplySortsFunction(null);
-      };
-    }, [setDataTableRefreshFunction, setDataTableApplySortsFunction]);
+  // Register functions only once on mount/unmount.
+  // Wrap in () => value so jotai does not treat the function as an updater
+  // (which would call applyGeneratedSorts(null) and store undefined).
+  // Outreach People embeds DataTable with a synthetic projectId and registers its
+  // own working-set refresh — do not overwrite or clear that on mount/unmount.
+  useEffect(() => {
+    if (!isBackendBackedDataTableProjectId(projectId)) {
+      return;
+    }
 
-    const selectedRowIdsRef = useRef(tableState.selectedRowIds);
-    useEffect(() => {
-      selectedRowIdsRef.current = tableState.selectedRowIds;
-    }, [tableState.selectedRowIds]);
-    const rawDataRef = useRef(tableState.rawData);
-    rawDataRef.current = tableState.rawData;
-    const openRightDrawerRef = useRef(openRightDrawer);
-    openRightDrawerRef.current = openRightDrawer;
-    const tokenPairRef = useRef(tokenPair);
-    tokenPairRef.current = tokenPair;
+    console.log('DataTable: Registering functions in global state');
+    setDataTableRefreshFunction(
+      () => (specificIds?: string[]) => refreshDataRef.current(specificIds),
+    );
+    setDataTableApplySortsFunction(
+      () => (sorts: any) => applyGeneratedSortsRef.current(sorts),
+    );
+    return () => {
+      console.log('DataTable: Cleaning up global state functions');
+      setDataTableRefreshFunction(null);
+      setDataTableApplySortsFunction(null);
+    };
+  }, [projectId, setDataTableRefreshFunction, setDataTableApplySortsFunction]);
 
-    const afterSelectionEndHandler = useCallback((
+  const selectedRowIdsRef = useRef(tableState.selectedRowIds);
+  useEffect(() => {
+    selectedRowIdsRef.current = tableState.selectedRowIds;
+  }, [tableState.selectedRowIds]);
+  const rawDataRef = useRef(tableState.rawData);
+  rawDataRef.current = tableState.rawData;
+  const openRightDrawerRef = useRef(openRightDrawer);
+  openRightDrawerRef.current = openRightDrawer;
+  const tokenPairRef = useRef(tokenPair);
+  tokenPairRef.current = tokenPair;
+
+  const afterSelectionEndHandler = useCallback(
+    (
       row: number,
       column: number,
       row2: number,
       column2: number,
       _selectionLayerLevel: number,
     ) => {
-      console.log("row in afterSelectionEndHandler", row);
+      console.log('row in afterSelectionEndHandler', row);
       afterSelectionEnd(
         tableRef,
         column,
@@ -1128,308 +1350,385 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         rawDataRef.current,
         selectedRowIdsRef,
       );
-    }, [
+    },
+    [
       setTableStateAtom,
       setSelectedCandidateId,
       setUnreadMessagesCounts,
       setContextStoreNumberOfSelectedRecords,
       setContextStoreTargetedRecordsRule,
-    ]);
+    ],
+  );
 
-    const dropdownMenuItems = useMemo(
-      () => [
-        'undo',
-        'redo',
-        '---------',
-        'filter_by_condition',
-        'filter_action_bar',
-        'filter_by_value',
-      ],
-      [],
-    );
+  const dropdownMenuItems = useMemo(
+    () => [
+      'undo',
+      'redo',
+      '---------',
+      'filter_by_condition',
+      'filter_action_bar',
+      'filter_by_value',
+    ],
+    [],
+  );
 
-    const loadData = useCallback(async () => {
-      if (!isBackendBackedDataTableProjectId(projectId)) {
-        // For virtual job IDs (assistant search / GTM People), ensure we're not
-        // stuck in a loading state left over from a previous real-job DataTable render.
-        setTableStateAtom(prev => prev.isLoading ? { ...prev, isLoading: false } : prev);
-        return;
-      }
+  const loadData = useCallback(async () => {
+    if (!isBackendBackedDataTableProjectId(projectId)) {
+      // For virtual job IDs (assistant search / GTM People), ensure we're not
+      // stuck in a loading state left over from a previous real-job DataTable render.
+      setTableStateAtom((prev) =>
+        prev.isLoading ? { ...prev, isLoading: false } : prev,
+      );
+      return;
+    }
 
-      try {
-        setTableStateAtom(prev => ({ ...prev, isLoading: true }));
-        const requestBody = { projectId };
-        console.log("This is the request body in loadData::::", requestBody);
-        const response = await axios.post(
-          `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-candidates-by-project-id`,
-          requestBody,
-          { headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` } }
-        );
+    try {
+      setTableStateAtom((prev) => ({ ...prev, isLoading: true }));
+      const requestBody = { projectId };
+      console.log('This is the request body in loadData::::', requestBody);
+      const response = await axios.post(
+        `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-candidates-by-project-id`,
+        requestBody,
+        {
+          headers: {
+            Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
+          },
+        },
+      );
 
-        // Verify the response is valid
-        const rawData = Array.isArray(response.data) ? response.data : [];
-        console.log("This is raw data::", rawData);
+      // Verify the response is valid
+      const rawData = Array.isArray(response.data) ? response.data : [];
+      console.log('This is raw data::', rawData);
 
-        // Process unread messages for each candidate
-        const unreadMessagesCounts: Record<string, number> = {};
-        rawData.forEach(candidate => {
-          if (!candidate || typeof candidate !== 'object') return;
+      // Process unread messages for each candidate
+      const unreadMessagesCounts: Record<string, number> = {};
+      rawData.forEach((candidate) => {
+        if (!candidate || typeof candidate !== 'object') return;
 
-          const unreadCount = candidate?.chatMessages?.edges
-            ?.filter((edge: any) => edge?.node?.whatsappDeliveryStatus === 'receivedFromCandidate')
-            ?.length || 0;
+        const unreadCount =
+          candidate?.chatMessages?.edges?.filter(
+            (edge: any) =>
+              edge?.node?.whatsappDeliveryStatus === 'receivedFromCandidate',
+          )?.length || 0;
 
-          if (candidate.id) {
-            unreadMessagesCounts[candidate.id] = unreadCount;
-          }
-        });
+        if (candidate.id) {
+          unreadMessagesCounts[candidate.id] = unreadCount;
+        }
+      });
 
-        setTableStateAtom(prev => ({
-          ...prev,
-          rawData,
-          isLoading: false
-        }));
-        setUnreadMessagesCounts(unreadMessagesCounts);
-        // afterFilter only fires on Handsontable filter changes; sync count on load
-        setFilteredCandidatesCount(rawData.length);
+      setTableStateAtom((prev) => ({
+        ...prev,
+        rawData,
+        isLoading: false,
+      }));
+      setUnreadMessagesCounts(unreadMessagesCounts);
+      // afterFilter only fires on Handsontable filter changes; sync count on load
+      setFilteredCandidatesCount(rawData.length);
 
-        // Reapply multi-column sorting after initial data load
-        setTimeout(() => {
-          const hot = tableRef.current?.hotInstance;
-          const currentSortConfig = sortConfigRef.current;
-          if (hot && currentSortConfig.length > 0) {
-            console.log("Reapplying multi-column sort after initial load:", currentSortConfig);
-            const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
-            if (multiColumnSortingPlugin) {
-              const current = multiColumnSortingPlugin.getSortConfig();
-              if (!areSortConfigsEqual(current as SortConfig[] | null, currentSortConfig)) {
-                // Register custom sorting functions for enum columns
-                const columns = hot.getSettings().columns;
-                currentSortConfig.forEach(sortItem => {
-                  const column = columns?.[sortItem.column];
-                  if (column && needsCustomSorting(column.data)) {
-                    const customSortFunction = getCustomSortFunction(column.data, sortItem.sortOrder);
-                    if (customSortFunction) {
-                      multiColumnSortingPlugin.setSortFunction(sortItem.column, customSortFunction);
-                      console.log(`Registered custom sort function for column ${column.data} after initial load`);
-                    }
+      // Reapply multi-column sorting after initial data load
+      setTimeout(() => {
+        const hot = tableRef.current?.hotInstance;
+        const currentSortConfig = sortConfigRef.current;
+        if (hot && currentSortConfig.length > 0) {
+          console.log(
+            'Reapplying multi-column sort after initial load:',
+            currentSortConfig,
+          );
+          const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
+          if (multiColumnSortingPlugin) {
+            const current = multiColumnSortingPlugin.getSortConfig();
+            if (
+              !areSortConfigsEqual(
+                current as SortConfig[] | null,
+                currentSortConfig,
+              )
+            ) {
+              // Register custom sorting functions for enum columns
+              const columns = hot.getSettings().columns;
+              currentSortConfig.forEach((sortItem) => {
+                const column = columns?.[sortItem.column];
+                if (column && needsCustomSorting(column.data)) {
+                  const customSortFunction = getCustomSortFunction(
+                    column.data,
+                    sortItem.sortOrder,
+                  );
+                  if (customSortFunction) {
+                    multiColumnSortingPlugin.setSortFunction(
+                      sortItem.column,
+                      customSortFunction,
+                    );
+                    console.log(
+                      `Registered custom sort function for column ${column.data} after initial load`,
+                    );
                   }
-                });
+                }
+              });
 
-                isApplyingSortRef.current = true;
-                multiColumnSortingPlugin.sort(currentSortConfig);
-                setTimeout(() => { isApplyingSortRef.current = false; }, 50);
-              }
+              isApplyingSortRef.current = true;
+              multiColumnSortingPlugin.sort(currentSortConfig);
+              setTimeout(() => {
+                isApplyingSortRef.current = false;
+              }, 50);
             }
           }
-        }, 100);
-      } catch (error) {
-        console.error('Failed to load candidate data:', error);
-        setTableStateAtom(prev => ({
-          ...prev,
-          isLoading: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-          rawData: [],
-        }));
-        setUnreadMessagesCounts({});
-        setSelectedCandidateId(null);
-        setFilteredCandidatesCount(0);
-      }
-    }, [projectId, setTableStateAtom, tokenPair, setUnreadMessagesCounts, setSelectedCandidateId, setFilteredCandidatesCount]);
+        }
+      }, 100);
+    } catch (error) {
+      console.error('Failed to load candidate data:', error);
+      setTableStateAtom((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        rawData: [],
+      }));
+      setUnreadMessagesCounts({});
+      setSelectedCandidateId(null);
+      setFilteredCandidatesCount(0);
+    }
+  }, [
+    projectId,
+    setTableStateAtom,
+    tokenPair,
+    setUnreadMessagesCounts,
+    setSelectedCandidateId,
+    setFilteredCandidatesCount,
+  ]);
 
-
-    // Load persisted search results and metadata from backend cache on mount or when projectId changes
-    useEffect(() => {
-      // Virtual projectIds (assistant search / GTM People) keep searchResults
-      // populated by the parent; do not clear or hydrate from backend cache.
-      if (!isBackendBackedDataTableProjectId(projectId)) {
+  // Load persisted search results and metadata from backend cache on mount or when projectId changes
+  useEffect(() => {
+    // Virtual projectIds (assistant search / GTM People) keep searchResults
+    // populated by the parent; do not clear or hydrate from backend cache.
+    if (!isBackendBackedDataTableProjectId(projectId)) {
+      return;
+    }
+    setSearchResults([]);
+    setSearchMetadata({ totalCount: 0, currentPage: 0, totalPages: 0 });
+    const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
+    let cancelled = false;
+    fetchSearchResultsCache(projectId, accessToken).then((cached) => {
+      if (cancelled || !isBackendBackedDataTableProjectId(projectId)) return;
+      if (!cached) {
         return;
       }
-      setSearchResults([]);
-      setSearchMetadata({ totalCount: 0, currentPage: 0, totalPages: 0 });
-      const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
-      let cancelled = false;
-      fetchSearchResultsCache(projectId, accessToken).then((cached) => {
-        if (cancelled || !isBackendBackedDataTableProjectId(projectId)) return;
-        if (!cached) {
-          return;
-        }
-        const deduplicatedResults = deduplicateSearchResults(cached.results);
+      const deduplicatedResults = deduplicateSearchResults(cached.results);
+      setSearchResults(deduplicatedResults);
+      setSearchMetadata(cached.metadata);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    projectId,
+    setSearchResults,
+    setSearchMetadata,
+    deduplicateSearchResults,
+    tokenPair?.accessOrWorkspaceAgnosticToken?.token,
+  ]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Persist search results and metadata to backend cache whenever they change
+  useEffect(() => {
+    if (!isBackendBackedDataTableProjectId(projectId)) return;
+    const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
+    if (!accessToken) return;
+    if (searchResults.length > 0) {
+      const deduplicatedResults = deduplicateSearchResults(searchResults);
+      if (deduplicatedResults.length !== searchResults.length) {
         setSearchResults(deduplicatedResults);
-        setSearchMetadata(cached.metadata);
-      });
-      return () => { cancelled = true; };
-    }, [projectId, setSearchResults, setSearchMetadata, deduplicateSearchResults, tokenPair?.accessOrWorkspaceAgnosticToken?.token]);
+        persistSearchResultsToStorage(deduplicatedResults, projectId, {
+          accessToken,
+          metadata: searchMetadata,
+        });
+      } else {
+        persistSearchResultsToStorage(searchResults, projectId, {
+          accessToken,
+          metadata: searchMetadata,
+        });
+      }
+    }
+  }, [
+    searchResults,
+    searchMetadata,
+    projectId,
+    deduplicateSearchResults,
+    setSearchResults,
+    tokenPair?.accessOrWorkspaceAgnosticToken?.token,
+  ]);
 
-    useEffect(() => {
-      loadData();
-    }, [loadData]);
-
-    // Persist search results and metadata to backend cache whenever they change
-    useEffect(() => {
-      if (!isBackendBackedDataTableProjectId(projectId)) return;
-      const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
-      if (!accessToken) return;
-      if (searchResults.length > 0) {
-        const deduplicatedResults = deduplicateSearchResults(searchResults);
-        if (deduplicatedResults.length !== searchResults.length) {
-          setSearchResults(deduplicatedResults);
-          persistSearchResultsToStorage(deduplicatedResults, projectId, {
-            accessToken,
-            metadata: searchMetadata,
-          });
-        } else {
-          persistSearchResultsToStorage(searchResults, projectId, {
-            accessToken,
-            metadata: searchMetadata,
-          });
+  // Reapply sorting when filtered data changes (due to search/status filters)
+  useEffect(() => {
+    const hot = tableRef.current?.hotInstance;
+    const currentSortConfig = sortConfigRef.current;
+    if (hot && currentSortConfig.length > 0) {
+      console.log(
+        'Reapplying multi-column sort after filter data change:',
+        currentSortConfig,
+      );
+      const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
+      if (multiColumnSortingPlugin) {
+        const current = multiColumnSortingPlugin.getSortConfig();
+        if (
+          !areSortConfigsEqual(
+            current as SortConfig[] | null,
+            currentSortConfig,
+          )
+        ) {
+          isApplyingSortRef.current = true;
+          multiColumnSortingPlugin.sort(currentSortConfig);
+          setTimeout(() => {
+            isApplyingSortRef.current = false;
+          }, 50);
         }
       }
-    }, [searchResults, searchMetadata, projectId, deduplicateSearchResults, setSearchResults, tokenPair?.accessOrWorkspaceAgnosticToken?.token]);
+    }
+  }, [filteredData]);
 
-    // Reapply sorting when filtered data changes (due to search/status filters)
-    useEffect(() => {
-      const hot = tableRef.current?.hotInstance;
-      const currentSortConfig = sortConfigRef.current;
-      if (hot && currentSortConfig.length > 0) {
-        console.log("Reapplying multi-column sort after filter data change:", currentSortConfig);
-        const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
-        if (multiColumnSortingPlugin) {
-          const current = multiColumnSortingPlugin.getSortConfig();
-          if (!areSortConfigsEqual(current as SortConfig[] | null, currentSortConfig)) {
-            isApplyingSortRef.current = true;
-            multiColumnSortingPlugin.sort(currentSortConfig);
-            setTimeout(() => { isApplyingSortRef.current = false; }, 50);
-          }
-        }
-      }
-    }, [filteredData]);
+  // Restore Handsontable filters after full data load / remount (filters are not in persistentState)
+  useEffect(() => {
+    if (tableState.isLoading) {
+      return;
+    }
 
-    // Restore Handsontable filters after full data load / remount (filters are not in persistentState)
-    useEffect(() => {
-      if (tableState.isLoading) {
-        return;
-      }
+    if (!isBackendBackedDataTableProjectId(projectId)) {
+      return;
+    }
 
-      if (!isBackendBackedDataTableProjectId(projectId)) {
-        return;
-      }
+    if (hasRestoredFiltersRef.current) {
+      return;
+    }
 
-      if (hasRestoredFiltersRef.current) {
-        return;
-      }
+    const timeoutId = window.setTimeout(() => {
+      reapplyPersistedFilters();
+    }, 150);
 
-      const timeoutId = window.setTimeout(() => {
-        reapplyPersistedFilters();
-      }, 150);
-
-      // Late retry once enrichments/columns have had time to appear
-      const lateRetryId = window.setTimeout(() => {
-        if (!hasRestoredFiltersRef.current) {
-          reapplyPersistedFilters();
-        }
-      }, 2200);
-
-      return () => {
-        window.clearTimeout(timeoutId);
-        window.clearTimeout(lateRetryId);
-      };
-    }, [
-      tableState.isLoading,
-      filteredData.length,
-      columns,
-      projectId,
-      reapplyPersistedFilters,
-    ]);
-
-    // Keep plugin filters applied when the underlying row set changes after restore
-    const previousFilteredDataRef = useRef(filteredData);
-    useEffect(() => {
+    // Late retry once enrichments/columns have had time to appear
+    const lateRetryId = window.setTimeout(() => {
       if (!hasRestoredFiltersRef.current) {
-        previousFilteredDataRef.current = filteredData;
-        return;
+        reapplyPersistedFilters();
       }
+    }, 2200);
 
-      if (previousFilteredDataRef.current === filteredData) {
-        return;
-      }
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.clearTimeout(lateRetryId);
+    };
+  }, [
+    tableState.isLoading,
+    filteredData.length,
+    columns,
+    projectId,
+    reapplyPersistedFilters,
+  ]);
 
+  // Keep plugin filters applied when the underlying row set changes after restore
+  const previousFilteredDataRef = useRef(filteredData);
+  useEffect(() => {
+    if (!hasRestoredFiltersRef.current) {
       previousFilteredDataRef.current = filteredData;
+      return;
+    }
 
-      const hot = tableRef.current?.hotInstance;
-      const filtersPlugin = hot?.getPlugin('filters');
-      if (!filtersPlugin) {
-        return;
-      }
+    if (previousFilteredDataRef.current === filteredData) {
+      return;
+    }
 
-      const exportedConditions = filtersPlugin.exportConditions?.() ?? [];
-      if (exportedConditions.length > 0) {
-        filtersPlugin.filter();
-        return;
-      }
+    previousFilteredDataRef.current = filteredData;
 
-      reapplyPersistedFilters(true);
-    }, [filteredData, reapplyPersistedFilters]);
+    const hot = tableRef.current?.hotInstance;
+    const filtersPlugin = hot?.getPlugin('filters');
+    if (!filtersPlugin) {
+      return;
+    }
 
-    // Sync checkbox values with selectedRowIds when selection changes.
-    // Do not call hot.render() — that retriggers AutoColumnSize injectTable
-    // and loops with AppTooltip's document MutationObserver.
-    useEffect(() => {
-      const hot = tableRef.current?.hotInstance;
-      if (!hot) return;
+    const exportedConditions = filtersPlugin.exportConditions?.() ?? [];
+    if (exportedConditions.length > 0) {
+      filtersPlugin.filter();
+      return;
+    }
 
-      const checkboxColIndex = hot.propToCol('checkbox');
-      if (checkboxColIndex === null || checkboxColIndex === undefined) return;
+    reapplyPersistedFilters(true);
+  }, [filteredData, reapplyPersistedFilters]);
 
-      const selectedIdsSet = new Set(tableState.selectedRowIds);
-      const totalRows = hot.countRows();
+  // Sync checkbox values with selectedRowIds when selection changes.
+  // Do not call hot.render() — that retriggers AutoColumnSize injectTable
+  // and loops with AppTooltip's document MutationObserver.
+  useEffect(() => {
+    const hot = tableRef.current?.hotInstance;
+    if (!hot) return;
 
-      for (let visualRow = 0; visualRow < totalRows; visualRow++) {
-        const physicalRow = hot.toPhysicalRow(visualRow);
-        if (physicalRow === null || physicalRow === undefined) continue;
+    const checkboxColIndex = hot.propToCol('checkbox');
+    if (checkboxColIndex === null || checkboxColIndex === undefined) return;
 
-        const rowData = hot.getSourceDataAtRow(physicalRow);
-        const candidateId = getPermanentId(rowData, tableState.rawData);
+    const selectedIdsSet = new Set(tableState.selectedRowIds);
+    const totalRows = hot.countRows();
 
-        if (candidateId) {
-          const shouldBeChecked = selectedIdsSet.has(candidateId);
-          const currentChecked = rowData?.checkbox || false;
+    for (let visualRow = 0; visualRow < totalRows; visualRow++) {
+      const physicalRow = hot.toPhysicalRow(visualRow);
+      if (physicalRow === null || physicalRow === undefined) continue;
 
-          if (shouldBeChecked !== currentChecked) {
-            hot.setDataAtCell(visualRow, checkboxColIndex, shouldBeChecked, 'external');
-          }
+      const rowData = hot.getSourceDataAtRow(physicalRow);
+      const candidateId = getPermanentId(rowData, tableState.rawData);
+
+      if (candidateId) {
+        const shouldBeChecked = selectedIdsSet.has(candidateId);
+        const currentChecked = rowData?.checkbox || false;
+
+        if (shouldBeChecked !== currentChecked) {
+          hot.setDataAtCell(
+            visualRow,
+            checkboxColIndex,
+            shouldBeChecked,
+            'external',
+          );
         }
       }
-    }, [tableState.selectedRowIds, tableState.rawData]);
+    }
+  }, [tableState.selectedRowIds, tableState.rawData]);
 
-    const allVisibleIds = useMemo(() => {
-      const hot = tableRef.current?.hotInstance;
-      if (!hot) return [];
+  const allVisibleIds = useMemo(() => {
+    const hot = tableRef.current?.hotInstance;
+    if (!hot) return [];
 
-      return filteredData.map((row: any, index: number) => {
+    return filteredData
+      .map((row: any, index: number) => {
         const physicalRow = hot?.toPhysicalRow(index);
-        const rowData = physicalRow !== undefined ? hot.getSourceDataAtRow(physicalRow) : row;
+        const rowData =
+          physicalRow !== undefined ? hot.getSourceDataAtRow(physicalRow) : row;
         // Get permanent ID - check if LinkedIn candidate has been saved to database
         return getPermanentId(rowData, tableState.rawData);
-      }).filter((id): id is string => Boolean(id));
-    }, [filteredData, tableState.rawData]);
+      })
+      .filter((id): id is string => Boolean(id));
+  }, [filteredData, tableState.rawData]);
 
-    const allSelected = allVisibleIds.length > 0 && allVisibleIds.every((id: string) => tableState.selectedRowIds.includes(id));
-    const noneSelected = allVisibleIds.every((id: string) => !tableState.selectedRowIds.includes(id));
-    const someSelected = !allSelected && !noneSelected;
+  const allSelected =
+    allVisibleIds.length > 0 &&
+    allVisibleIds.every((id: string) => tableState.selectedRowIds.includes(id));
+  const noneSelected = allVisibleIds.every(
+    (id: string) => !tableState.selectedRowIds.includes(id),
+  );
+  const someSelected = !allSelected && !noneSelected;
 
-    const handleSelectAll = useCallback((checked: boolean) => {
+  const handleSelectAll = useCallback(
+    (checked: boolean) => {
       const hot = tableRef.current?.hotInstance;
       if (!hot) return;
-      const visibleIds = filteredData.map((row: any, index: number) => {
-        const physicalRow = hot?.toPhysicalRow(index);
-        const rowData = physicalRow !== undefined ? hot.getSourceDataAtRow(physicalRow) : row;
-        return getPermanentId(rowData, tableState.rawData);
-      }).filter((id): id is string => Boolean(id));
+      const visibleIds = filteredData
+        .map((row: any, index: number) => {
+          const physicalRow = hot?.toPhysicalRow(index);
+          const rowData =
+            physicalRow !== undefined
+              ? hot.getSourceDataAtRow(physicalRow)
+              : row;
+          return getPermanentId(rowData, tableState.rawData);
+        })
+        .filter((id): id is string => Boolean(id));
 
-      setTableStateAtom(prev => ({
+      setTableStateAtom((prev) => ({
         ...prev,
-        selectedRowIds: checked ? visibleIds : []
+        selectedRowIds: checked ? visibleIds : [],
       }));
       setSelectedCandidateId(checked ? (visibleIds[0] ?? null) : null);
 
@@ -1438,46 +1737,52 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         mode: 'selection',
         selectedRecordIds: checked ? visibleIds : [],
       });
-    }, [
+    },
+    [
       filteredData,
       setContextStoreNumberOfSelectedRecords,
       setContextStoreTargetedRecordsRule,
       setSelectedCandidateId,
       setTableStateAtom,
       tableState.rawData,
-    ]);
+    ],
+  );
 
-    const headerSelectRef = useRef({
-      allSelected: false,
-      someSelected: false,
-      handleSelectAll,
-    });
-    headerSelectRef.current = { allSelected, someSelected, handleSelectAll };
+  const headerSelectRef = useRef({
+    allSelected: false,
+    someSelected: false,
+    handleSelectAll,
+  });
+  headerSelectRef.current = { allSelected, someSelected, handleSelectAll };
 
-    useEffect(() => {
-      const hot = tableRef.current?.hotInstance;
-      if (!hot) {
-        return;
-      }
+  useEffect(() => {
+    const hot = tableRef.current?.hotInstance;
+    if (!hot) {
+      return;
+    }
 
-      const headerCheckbox = hot.rootElement?.querySelector(
-        'th input[type="checkbox"]',
-      ) as HTMLInputElement | null;
+    const headerCheckbox = hot.rootElement?.querySelector(
+      'th input[type="checkbox"]',
+    ) as HTMLInputElement | null;
 
-      if (!headerCheckbox) {
-        return;
-      }
+    if (!headerCheckbox) {
+      return;
+    }
 
-      headerCheckbox.checked = allSelected;
-      headerCheckbox.indeterminate = someSelected;
-    }, [allSelected, someSelected]);
+    headerCheckbox.checked = allSelected;
+    headerCheckbox.indeterminate = someSelected;
+  }, [allSelected, someSelected]);
 
-    const colHeaders = useCallback((col: number) => {
+  const colHeaders = useCallback(
+    (col: number) => {
       if (col === 0) return '';
       return columns[col]?.title || '';
-    }, [columns]);
+    },
+    [columns],
+  );
 
-    const afterGetColHeader = useCallback((col: number, TH: HTMLTableCellElement) => {
+  const afterGetColHeader = useCallback(
+    (col: number, TH: HTMLTableCellElement) => {
       if (col === 0) {
         if (TH.querySelector('input[type="checkbox"]')) return;
         const checkbox = document.createElement('input');
@@ -1499,14 +1804,18 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         TH.title = columnTitle;
         TH.style.cursor = 'help';
       }
-    }, [columns]);
+    },
+    [columns],
+  );
 
-    // Add WebSocket event listener for WhatsApp message updates
-    useWebSocketEvent<{
-      candidateId: string;
-      projectId: string;
-      messageId: string;
-    }>('chat_message_updated', async (data) => {
+  // Add WebSocket event listener for WhatsApp message updates
+  useWebSocketEvent<{
+    candidateId: string;
+    projectId: string;
+    messageId: string;
+  }>(
+    'chat_message_updated',
+    async (data) => {
       // Only refresh if the message is for the current job
       if (data.projectId === projectId) {
         await refreshData();
@@ -1522,29 +1831,43 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
               // Fetch and update messages for the open chat
               // Get permanent ID (UUID) - ensure we only send UUIDs, not LinkedIn IDs or tempIds
               const lookup = resolveChatLookupIds(
-                getPermanentId(selectedRow, tableState.rawData || []) || selectedRow?.id,
+                getPermanentId(selectedRow, tableState.rawData || []) ||
+                  selectedRow?.id,
                 selectedRow as Record<string, unknown>,
               );
               if (
                 (!lookup.candidateId || !isUUID(lookup.candidateId)) &&
                 (!lookup.personId || !isUUID(lookup.personId))
               ) {
-                console.log(`Skipping fetch messages for candidate ${data.candidateId} - no valid UUID found`);
+                console.log(
+                  `Skipping fetch messages for candidate ${data.candidateId} - no valid UUID found`,
+                );
                 return;
               }
 
               try {
                 const response = await axios.post(
                   `${REACT_APP_SERVER_BASE_URL}/arx-chat/get-all-messages-by-candidate-id`,
-                  { candidateId: lookup.candidateId, personId: lookup.personId },
-                  { headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` } }
+                  {
+                    candidateId: lookup.candidateId,
+                    personId: lookup.personId,
+                  },
+                  {
+                    headers: {
+                      Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
+                    },
+                  },
                 );
-                const unreadMessageIds = response.data
-                  ?.filter((msg: any) => msg.whatsappDeliveryStatus === 'receivedFromCandidate')
-                  ?.map((msg: any) => msg.id) || [];
-                setUnreadMessagesCounts(prev => ({
+                const unreadMessageIds =
+                  response.data
+                    ?.filter(
+                      (msg: any) =>
+                        msg.whatsappDeliveryStatus === 'receivedFromCandidate',
+                    )
+                    ?.map((msg: any) => msg.id) || [];
+                setUnreadMessagesCounts((prev) => ({
                   ...prev,
-                  [data.candidateId]: unreadMessageIds.length
+                  [data.candidateId]: unreadMessageIds.length,
                 }));
                 if (unreadMessageIds.length > 0) {
                   await updateUnreadMessagesStatus(unreadMessageIds, tokenPair);
@@ -1556,12 +1879,16 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           }
         }
       }
-    }, [projectId, tokenPair, setUnreadMessagesCounts]);
+    },
+    [projectId, tokenPair, setUnreadMessagesCounts],
+  );
 
-    // Add WebSocket event handler for refresh_table_data
-    useWebSocketEvent<{
-      message: string;
-    }>('refresh_table_data', async () => {
+  // Add WebSocket event handler for refresh_table_data
+  useWebSocketEvent<{
+    message: string;
+  }>(
+    'refresh_table_data',
+    async () => {
       console.log('Received refresh_table_data event, refreshing entire table');
       try {
         await refreshData();
@@ -1569,108 +1896,109 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
       } catch (error) {
         console.error('Error refreshing table data:', error);
       }
-    }, [refreshData]);
+    },
+    [refreshData],
+  );
 
-    const mergedDataRef = useRef(mergedData);
-    mergedDataRef.current = mergedData;
-    const candidateStateRef = useRef(candidateState);
-    candidateStateRef.current = candidateState;
-    const allAiFiltersRef = useRef(allAiFilters);
-    allAiFiltersRef.current = allAiFilters;
+  const mergedDataRef = useRef(mergedData);
+  mergedDataRef.current = mergedData;
+  const candidateStateRef = useRef(candidateState);
+  candidateStateRef.current = candidateState;
+  const allAiFiltersRef = useRef(allAiFilters);
+  allAiFiltersRef.current = allAiFilters;
 
-    const hotColumns = useMemo(
-      () =>
-        columns.map((col) => ({
-          ...col,
-          renderer: ((
-            instance: Handsontable.Core,
-            td: HTMLTableCellElement,
-            row: number,
-            column: number,
-            prop: string | number,
-            value: any,
-            cellProperties: Handsontable.CellProperties,
+  const hotColumns = useMemo(
+    () =>
+      columns.map((col) => ({
+        ...col,
+        renderer: ((
+          instance: Handsontable.Core,
+          td: HTMLTableCellElement,
+          row: number,
+          column: number,
+          prop: string | number,
+          value: any,
+          cellProperties: Handsontable.CellProperties,
+        ) => {
+          const defaultRenderer = (
+            _instance: Handsontable.Core,
+            cellTd: HTMLTableCellElement,
+            _row: number,
+            _column: number,
+            _prop: string | number,
+            cellValue: any,
+            _cellProperties: Handsontable.CellProperties,
           ) => {
-            const defaultRenderer = (
-              _instance: Handsontable.Core,
-              cellTd: HTMLTableCellElement,
-              _row: number,
-              _column: number,
-              _prop: string | number,
-              cellValue: any,
-              _cellProperties: Handsontable.CellProperties,
-            ) => {
-              cellTd.innerHTML =
-                cellValue !== null && cellValue !== undefined
-                  ? String(cellValue)
-                  : '';
-              return cellTd;
-            };
+            cellTd.innerHTML =
+              cellValue !== null && cellValue !== undefined
+                ? String(cellValue)
+                : '';
+            return cellTd;
+          };
 
-            const originalRenderer = col.renderer as ColumnRenderer | undefined;
-            const renderedTd = (originalRenderer || defaultRenderer)(
-              instance,
-              td,
-              row,
-              column,
-              prop,
-              value,
-              cellProperties,
+          const originalRenderer = col.renderer as ColumnRenderer | undefined;
+          const renderedTd = (originalRenderer || defaultRenderer)(
+            instance,
+            td,
+            row,
+            column,
+            prop,
+            value,
+            cellProperties,
+          );
+
+          if (column === 0 && mergedDataRef.current[row]) {
+            const candidate = mergedDataRef.current[row];
+            const borderColor = getRowBorderColor(
+              candidate,
+              candidateStateRef.current,
             );
 
-            if (column === 0 && mergedDataRef.current[row]) {
-              const candidate = mergedDataRef.current[row];
-              const borderColor = getRowBorderColor(
-                candidate,
-                candidateStateRef.current,
-              );
+            Object.assign(renderedTd.style, {
+              borderLeft: `4px solid ${borderColor}`,
+              transition: 'border-color 150ms ease',
+            });
+          }
 
-              Object.assign(renderedTd.style, {
-                borderLeft: `4px solid ${borderColor}`,
-                transition: 'border-color 150ms ease',
-              });
-            }
+          if (isAiFilterField(String(prop), allAiFiltersRef.current)) {
+            Object.assign(renderedTd.style, {
+              backgroundColor: '#f0f7ff',
+              fontStyle: 'italic',
+              position: 'relative',
+            });
+          }
 
-            if (isAiFilterField(String(prop), allAiFiltersRef.current)) {
-              Object.assign(renderedTd.style, {
-                backgroundColor: '#f0f7ff',
-                fontStyle: 'italic',
-                position: 'relative',
-              });
-            }
+          return renderedTd;
+        }) as ColumnRenderer,
+      })),
+    [columns],
+  );
 
-            return renderedTd;
-          }) as ColumnRenderer,
-        })),
-      [columns],
-    );
-
-    const afterFilterHandler = useCallback((conditionsStack: any) => {
+  const afterFilterHandler = useCallback(
+    (conditionsStack: any) => {
       const hot = tableRef.current?.hotInstance;
       if (!hot) return;
 
-      const activeFilters: FilterCondition[] = (conditionsStack || []).map((condition: any) => ({
-        column: condition.column,
-        conditions: condition.conditions.map((cond: any) => ({
-          name: cond.name || 'unknown',
-          args: cond.args || []
-        })),
-        operation: condition.operation || 'conjunction'
-      }));
-      setTableStateAtom(prev => ({
+      const activeFilters: FilterCondition[] = (conditionsStack || []).map(
+        (condition: any) => ({
+          column: condition.column,
+          conditions: condition.conditions.map((cond: any) => ({
+            name: cond.name || 'unknown',
+            args: cond.args || [],
+          })),
+          operation: condition.operation || 'conjunction',
+        }),
+      );
+      setTableStateAtom((prev) => ({
         ...prev,
-        activeFilters
+        activeFilters,
       }));
 
       const columnsForPersist = hot.getSettings().columns as
         | Array<{ data?: string | number } | undefined>
         | undefined;
       if (!isApplyingFilterRef.current) {
-        savePersistedTableFilters(
-          projectId,
-          activeFilters,
-          columnsForPersist,
-        );
+        savePersistedTableFilters(projectId, activeFilters, columnsForPersist);
       }
 
       if (!conditionsStack || Object.keys(conditionsStack).length === 0) {
@@ -1685,40 +2013,67 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
           const multiColumnSortingPlugin = hot.getPlugin('multiColumnSorting');
           if (multiColumnSortingPlugin) {
             const current = multiColumnSortingPlugin.getSortConfig();
-            if (!areSortConfigsEqual(current as SortConfig[] | null, currentSortConfig)) {
+            if (
+              !areSortConfigsEqual(
+                current as SortConfig[] | null,
+                currentSortConfig,
+              )
+            ) {
               const settingsColumns = hot.getSettings().columns;
-              currentSortConfig.forEach(sortItem => {
+              currentSortConfig.forEach((sortItem) => {
                 const column = settingsColumns?.[sortItem.column];
                 if (column && needsCustomSorting(column.data)) {
-                  const customSortFunction = getCustomSortFunction(column.data, sortItem.sortOrder);
+                  const customSortFunction = getCustomSortFunction(
+                    column.data,
+                    sortItem.sortOrder,
+                  );
                   if (customSortFunction) {
-                    multiColumnSortingPlugin.setSortFunction(sortItem.column, customSortFunction);
+                    multiColumnSortingPlugin.setSortFunction(
+                      sortItem.column,
+                      customSortFunction,
+                    );
                   }
                 }
               });
 
               isApplyingSortRef.current = true;
               multiColumnSortingPlugin.sort(currentSortConfig);
-              setTimeout(() => { isApplyingSortRef.current = false; }, 50);
+              setTimeout(() => {
+                isApplyingSortRef.current = false;
+              }, 50);
             }
           }
         }
       }, 100);
-    }, [projectId, setFilteredCandidatesCount, setTableStateAtom]);
+    },
+    [projectId, setFilteredCandidatesCount, setTableStateAtom],
+  );
 
-    const beforeKeyDownHandler = useCallback((event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key === 'z' && !event.shiftKey) {
+  const beforeKeyDownHandler = useCallback(
+    (event: KeyboardEvent) => {
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        event.key === 'z' &&
+        !event.shiftKey
+      ) {
         event.preventDefault();
         performUndo(tableRef, setTableStateAtom);
       }
-      if (((event.ctrlKey || event.metaKey) && event.key === 'z' && event.shiftKey) ||
-          ((event.ctrlKey || event.metaKey) && event.key === 'y')) {
+      if (
+        ((event.ctrlKey || event.metaKey) &&
+          event.key === 'z' &&
+          event.shiftKey) ||
+        ((event.ctrlKey || event.metaKey) && event.key === 'y')
+      ) {
         event.preventDefault();
         performRedo(tableRef, setTableStateAtom);
       }
-    }, [setTableStateAtom]);
+    },
+    [setTableStateAtom],
+  );
 
-    const afterColumnSortHandler = useCallback((
+  const afterColumnSortHandler = useCallback(
+    (
       _currentSortConfig: SortConfig[] | undefined,
       destinationSortConfigs: SortConfig[] | undefined,
     ) => {
@@ -1727,124 +2082,136 @@ export const DataTable = forwardRef<{ refreshData: () => Promise<void>; removeFi
         return;
       }
       const newSortConfig = destinationSortConfigs || [];
-      if (!areSortConfigsEqual(newSortConfig as SortConfig[] | null, sortConfigRef.current)) {
+      if (
+        !areSortConfigsEqual(
+          newSortConfig as SortConfig[] | null,
+          sortConfigRef.current,
+        )
+      ) {
         sortConfigRef.current = newSortConfig;
-        setTableStateAtom(prev => ({
+        setTableStateAtom((prev) => ({
           ...prev,
-          sortConfig: newSortConfig
+          sortConfig: newSortConfig,
         }));
       }
-    }, [setTableStateAtom]);
+    },
+    [setTableStateAtom],
+  );
 
-    if (tableState.isLoading) {
-      return (
-        <StyledLoadingContainer>
-          <Loader />
-          <span style={{ marginLeft: '8px' }}>Loading candidates data...</span>
-        </StyledLoadingContainer>
-      )
-    }
-    if (tableState.error) {
-      return <StyledErrorContainer>Error: {tableState.error}</StyledErrorContainer>
-    }
-
-    if (!mergedData.length && !tableState.isLoading) {
-      return (
-        <StyledEmptyContainer>
-          {onImportCandidatesClick ? (
-            <StyledEmptyIconButton
-              type="button"
-              aria-label="Import candidates"
-              onClick={onImportCandidatesClick}
-            >
-              <IconPlus size={24} />
-            </StyledEmptyIconButton>
-          ) : (
-            <StyledEmptyIcon>
-              <IconPlus size={24} />
-            </StyledEmptyIcon>
-          )}
-          <StyledEmptyTitle>No candidates found</StyledEmptyTitle>
-          <StyledEmptyDescription>
-            There are no candidates available for this job.
-            <br />
-            Add candidates to get started.
-          </StyledEmptyDescription>
-        </StyledEmptyContainer>
-      );
-    }
-
+  if (tableState.isLoading) {
     return (
-      <StyledTableWrapper>
-        <NaukriQueueStatusEffect />
-        {selectedConversationStatus && (
-          <StyledFilterBadge>
-            <span>Filtered by: {CANDIDATE_CONVERSATION_STATUS_LABELS[selectedConversationStatus]}</span>
-            <StyledClearButton onClick={() => setSelectedConversationStatus(null)}>
-              <IconX size={16} />
-            </StyledClearButton>
-          </StyledFilterBadge>
-        )}
-
-        <StyledControlsContainer>
-          {isSortingControlsVisible && (
-            <SortingControls
-              columns={columns}
-              sortConfig={tableState.sortConfig}
-              onSortChange={handleSortChange}
-              onClearSort={handleClearSort}
-            />
-          )}
-        </StyledControlsContainer>
-
-        <StyledTableContainer>
-          <MemoHotTable
-            id={`candidate-table-${projectId}`}
-            ref={tableRef}
-            data={mutatableData}
-            columns={hotColumns}
-            colHeaders={colHeaders}
-            afterGetColHeader={afterGetColHeader}
-            rowHeaders={true}
-            height="100%"
-            themeName={
-              colorScheme === 'dark' ? 'ht-theme-main-dark' : 'ht-theme-main'
-            }
-            licenseKey="non-commercial-and-evaluation"
-            stretchH="all"
-            readOnly={false}
-            className="htCenter"
-            columnSorting={false}
-            multiColumnSorting={true}
-            copyPaste={true}
-            selectionMode="range"
-            autoWrapRow={false}
-            fixedRowsTop={0}
-            afterSelectionEnd={afterSelectionEndHandler}
-            afterChange={afterChangeHandler}
-            autoWrapCol={false}
-            autoColumnSize={false}
-            autoRowSize={false}
-            rowHeights={30}
-            manualRowResize={true}
-            manualColumnResize={true}
-            manualColumnMove={true}
-            filters={true}
-            dropdownMenu={dropdownMenuItems}
-            fixedColumnsLeft={2}
-            customBorders={true}
-            outsideClickDeselects={false}
-            enterBeginsEditing={true}
-            enterMoves={ENTER_MOVES}
-            fillHandle={true}
-            persistentState={true}
-            afterFilter={afterFilterHandler}
-            beforeKeyDown={beforeKeyDownHandler}
-            afterColumnSort={afterColumnSortHandler}
-          />
-        </StyledTableContainer>
-
-      </StyledTableWrapper>
-
+      <StyledLoadingContainer>
+        <Loader />
+        <span style={{ marginLeft: '8px' }}>Loading candidates data...</span>
+      </StyledLoadingContainer>
     );
-  });
+  }
+  if (tableState.error) {
+    return (
+      <StyledErrorContainer>Error: {tableState.error}</StyledErrorContainer>
+    );
+  }
+
+  if (!mergedData.length && !tableState.isLoading) {
+    return (
+      <StyledEmptyContainer>
+        {onImportCandidatesClick ? (
+          <StyledEmptyIconButton
+            type="button"
+            aria-label="Import candidates"
+            onClick={onImportCandidatesClick}
+          >
+            <IconPlus size={24} />
+          </StyledEmptyIconButton>
+        ) : (
+          <StyledEmptyIcon>
+            <IconPlus size={24} />
+          </StyledEmptyIcon>
+        )}
+        <StyledEmptyTitle>No candidates found</StyledEmptyTitle>
+        <StyledEmptyDescription>
+          There are no candidates available for this job.
+          <br />
+          Add candidates to get started.
+        </StyledEmptyDescription>
+      </StyledEmptyContainer>
+    );
+  }
+
+  return (
+    <StyledTableWrapper>
+      <NaukriQueueStatusEffect />
+      {selectedConversationStatus && (
+        <StyledFilterBadge>
+          <span>
+            Filtered by:{' '}
+            {CANDIDATE_CONVERSATION_STATUS_LABELS[selectedConversationStatus]}
+          </span>
+          <StyledClearButton
+            onClick={() => setSelectedConversationStatus(null)}
+          >
+            <IconX size={16} />
+          </StyledClearButton>
+        </StyledFilterBadge>
+      )}
+
+      <StyledControlsContainer>
+        {isSortingControlsVisible && (
+          <SortingControls
+            columns={columns}
+            sortConfig={tableState.sortConfig}
+            onSortChange={handleSortChange}
+            onClearSort={handleClearSort}
+          />
+        )}
+      </StyledControlsContainer>
+
+      <StyledTableContainer>
+        <MemoHotTable
+          id={`candidate-table-${projectId}`}
+          ref={tableRef}
+          data={mutatableData}
+          columns={hotColumns}
+          colHeaders={colHeaders}
+          afterGetColHeader={afterGetColHeader}
+          rowHeaders={true}
+          height="100%"
+          themeName={
+            colorScheme === 'dark' ? 'ht-theme-main-dark' : 'ht-theme-main'
+          }
+          licenseKey="non-commercial-and-evaluation"
+          stretchH="all"
+          readOnly={false}
+          className="htCenter"
+          columnSorting={false}
+          multiColumnSorting={true}
+          copyPaste={true}
+          selectionMode="range"
+          autoWrapRow={false}
+          fixedRowsTop={0}
+          afterSelectionEnd={afterSelectionEndHandler}
+          afterChange={afterChangeHandler}
+          autoWrapCol={false}
+          autoColumnSize={false}
+          autoRowSize={false}
+          rowHeights={30}
+          manualRowResize={true}
+          manualColumnResize={true}
+          manualColumnMove={true}
+          filters={true}
+          dropdownMenu={dropdownMenuItems}
+          fixedColumnsLeft={2}
+          customBorders={true}
+          outsideClickDeselects={false}
+          enterBeginsEditing={true}
+          enterMoves={ENTER_MOVES}
+          fillHandle={true}
+          persistentState={true}
+          afterFilter={afterFilterHandler}
+          beforeKeyDown={beforeKeyDownHandler}
+          afterColumnSort={afterColumnSortHandler}
+        />
+      </StyledTableContainer>
+    </StyledTableWrapper>
+  );
+});

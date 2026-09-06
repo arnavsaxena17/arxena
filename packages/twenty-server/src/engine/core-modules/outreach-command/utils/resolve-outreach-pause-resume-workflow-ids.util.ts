@@ -33,11 +33,17 @@ export const resolveOutreachSequencerStageFromName = (
     return null;
   }
 
+  // Local compressed-delay copies are named "... (30 seconds)" / "... (3 minutes)".
+  const normalizedName = workflowName.replace(/\s*\([^)]*\)\s*$/, '').trim();
+
   const perCandidateNames = seededOutreachWorkflowNameAliases(
     SEEDED_OUTREACH_WORKFLOW.perCandidate.name,
   );
 
-  if (perCandidateNames.includes(workflowName)) {
+  if (
+    perCandidateNames.includes(workflowName) ||
+    perCandidateNames.includes(normalizedName)
+  ) {
     return 'perCandidate';
   }
 
@@ -45,7 +51,10 @@ export const resolveOutreachSequencerStageFromName = (
     SEEDED_OUTREACH_WORKFLOW.candidateUpdated.name,
   );
 
-  if (candidateUpdatedNames.includes(workflowName)) {
+  if (
+    candidateUpdatedNames.includes(workflowName) ||
+    candidateUpdatedNames.includes(normalizedName)
+  ) {
     return 'candidateUpdated';
   }
 

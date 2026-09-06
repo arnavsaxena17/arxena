@@ -63,6 +63,63 @@ export class OutreachMockController {
     });
   }
 
+  // WhatsApp-style HITL: yes / no / change message on the pending FORM.
+  // approve → send draft (or editedBody); edit → send editedBody; reject → stop run (no send).
+  @Post('candidates/:candidateId/hitl')
+  async decideHitl(
+    @Param('candidateId') candidateId: string,
+    @Body()
+    body: {
+      decision?: string;
+      editedBody?: string;
+      startsAt?: string;
+      endsAt?: string;
+      projectId?: string;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const { apiToken, workspaceId } = await this.requireAuthWithWorkspace(
+      request,
+    );
+    this.requireCandidateId(candidateId);
+
+    let decision: 'approve' | 'reject' | 'edit';
+
+    try {
+      decision = this.outreachMockLifecycleService.resolveHitlDecision(
+        body?.decision,
+      );
+    } catch (error) {
+      throw new HttpException(
+        error instanceof Error ? error.message : String(error),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      return await this.outreachMockLifecycleService.decideHitlForm({
+        workspaceId,
+        candidateId,
+        apiToken,
+        decision,
+        editedBody: body?.editedBody,
+        startsAt: body?.startsAt,
+        endsAt: body?.endsAt,
+        projectId: body?.projectId,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `HITL mock failed for ${candidateId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      throw new HttpException(
+        error instanceof Error ? error.message : 'HITL mock failed',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
   @Post('candidates/:candidateId/reset')
   async resetFromConnectionRequest(
     @Param('candidateId') candidateId: string,
@@ -91,6 +148,38 @@ export class OutreachMockController {
       apiToken,
       to: resetTarget,
     });
+  }
+
+  // Queue N synthetic LinkedIn profiles onto a project for Stage B/C workflow testing.
+  @Post('projects/:projectId/upload-profiles')
+  async uploadMockProfiles(
+    @Param('projectId') projectId: string,
+    @Body() body: { count?: number },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const { workspaceId } = await this.requireAuthWithWorkspace(request);
+
+    if (!isNonEmptyString(projectId)) {
+      throw new HttpException('projectId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      return await this.outreachMockLifecycleService.uploadMockProfiles({
+        workspaceId,
+        projectId,
+        count: body?.count,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Mock upload-profiles failed for ${projectId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Mock upload-profiles failed',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 
   private requireAuth(request: {

@@ -354,10 +354,7 @@ export const OutreachSetupPanel = ({
     timezoneDraft !== sendTimezone ||
     windowStartDraft !== sendWindowStart ||
     windowEndDraft !== sendWindowEnd ||
-    !areSendWindowDaysEqual(
-      sendDaysDraft,
-      parseSendWindowDays(sendWindowDays),
-    );
+    !areSendWindowDaysEqual(sendDaysDraft, parseSendWindowDays(sendWindowDays));
   const canSaveSetup =
     (isIcpDirty && canPersist) ||
     (hasProject && (isPolicyDirty || isScheduleDirty));
@@ -383,7 +380,7 @@ export const OutreachSetupPanel = ({
       timezoneOptions.find((option) => option.value === timezoneDraft)?.label ??
       timezoneDraft;
 
-    return `${daySummary} · ${windowStartDraft || '08:00'}–${windowEndDraft || '10:00'} · ${timezoneLabel}`;
+    return `${daySummary} · ${windowStartDraft || '10:00'}–${windowEndDraft || '20:00'} · ${timezoneLabel}`;
   }, [
     sendDaysDraft,
     timezoneDraft,
@@ -667,7 +664,7 @@ export const OutreachSetupPanel = ({
                   <TextInput
                     value={windowStartDraft}
                     onChange={setWindowStartDraft}
-                    placeholder="08:00"
+                    placeholder="10:00"
                     disabled={!hasProject}
                     fullWidth
                   />
@@ -678,7 +675,7 @@ export const OutreachSetupPanel = ({
                   <TextInput
                     value={windowEndDraft}
                     onChange={setWindowEndDraft}
-                    placeholder="10:00"
+                    placeholder="20:00"
                     disabled={!hasProject}
                     fullWidth
                   />

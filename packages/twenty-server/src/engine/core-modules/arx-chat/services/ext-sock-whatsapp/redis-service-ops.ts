@@ -347,6 +347,73 @@ export class RedisService implements OnModuleInit {
     });
   }
 
+  async getSlidingWindowUsageBreakdown(
+    windows: Array<{ key: string; windowMs: number }>,
+    now: number,
+  ): Promise<
+    Array<{ used: number; reserved: number; maxScore: number | null }>
+  > {
+    if (windows.length === 0) {
+      return [];
+    }
+
+    const pipeline = this.redisClient.pipeline();
+    for (const window of windows) {
+      pipeline.zcount(window.key, `(${now - window.windowMs}`, now);
+      pipeline.zcount(window.key, `(${now}`, '+inf');
+      pipeline.zrevrange(window.key, 0, 0, 'WITHSCORES');
+    }
+
+    const results = await pipeline.exec();
+    const readCount = (result: [Error | null, unknown] | undefined): number => {
+      if (!result) {
+        return 0;
+      }
+
+      const [error, count] = result;
+      if (error || typeof count !== 'number' || !Number.isFinite(count)) {
+        return 0;
+      }
+
+      return Math.max(0, Math.floor(count));
+    };
+
+    const readMaxScore = (
+      result: [Error | null, unknown] | undefined,
+    ): number | null => {
+      if (!result) {
+        return null;
+      }
+
+      const [error, members] = result;
+      if (error || !Array.isArray(members) || members.length < 2) {
+        return null;
+      }
+
+      const score = Number(members[1]);
+      if (!Number.isFinite(score)) {
+        return null;
+      }
+
+      return score;
+    };
+
+    return windows.map((_, index) => {
+      const baseIndex = index * 3;
+      const used = readCount(results?.[baseIndex] as
+        | [Error | null, unknown]
+        | undefined);
+      const reserved = readCount(results?.[baseIndex + 1] as
+        | [Error | null, unknown]
+        | undefined);
+      const maxScore = readMaxScore(results?.[baseIndex + 2] as
+        | [Error | null, unknown]
+        | undefined);
+
+      return { used, reserved, maxScore };
+    });
+  }
+
   async getString(key: string): Promise<string | null> {
     return this.redisClient.get(key);
   }

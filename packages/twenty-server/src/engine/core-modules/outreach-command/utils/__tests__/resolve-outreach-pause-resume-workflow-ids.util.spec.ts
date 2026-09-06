@@ -46,6 +46,19 @@ describe('resolve-outreach-sequencer-workflow-ids', () => {
     ).toBe(false);
   });
 
+  it('matches local compressed-delay name suffixes', () => {
+    expect(
+      resolveOutreachSequencerStageFromName(
+        'Outreach — Per Enrolled Candidate (30 seconds)',
+      ),
+    ).toBe('perCandidate');
+    expect(
+      isOutreachSequencerWorkflowName(
+        'Outreach — Enrolled Person Updated (3 minutes)',
+      ),
+    ).toBe(true);
+  });
+
   it('resolves Stage B vs Stage C from workflow name', () => {
     expect(
       resolveOutreachSequencerStageFromName(

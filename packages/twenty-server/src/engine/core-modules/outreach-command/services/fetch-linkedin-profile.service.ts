@@ -1,10 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
+import { FeatureFlagKey } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { type ObjectLiteral } from 'typeorm';
 
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
+import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/outreach-command/services/linkedin-provider-id.store';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
 import { isValidLinkedInProviderId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-attendee-id.util';
@@ -40,6 +42,7 @@ export class FetchLinkedinProfileService {
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
     private readonly linkedinProviderIdStore: LinkedinProviderIdStoreService,
+    private readonly featureFlagService: FeatureFlagService,
   ) {}
 
   async execute({
@@ -71,6 +74,57 @@ export class FetchLinkedinProfileService {
     people: Array<Record<string, unknown>>;
     error: string;
   }> {
+    const isOutreachMockEnabled =
+      await this.featureFlagService.isFeatureEnabled(
+        FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
+        workspaceId,
+      );
+
+    if (isOutreachMockEnabled) {
+      const identifier =
+        extractLinkedinProfileId(input.linkedinProfileId) ||
+        extractLinkedinProfileId(input.linkedinUrl) ||
+        'mock-linkedin-profile';
+      const linkedinUrl = isNonEmptyString(input.linkedinUrl)
+        ? input.linkedinUrl
+        : `https://www.linkedin.com/in/${identifier}`;
+
+      this.logger.log(
+        `IS_OUTREACH_MOCK_UNIPILE_ENABLED: mock LinkedIn profile for ${identifier}`,
+      );
+
+      const mapped = {
+        success: true as const,
+        linkedinProfileId: identifier,
+        firstName: 'Mock',
+        lastName: identifier.split('-').slice(-2).join(' ') || 'Profile',
+        headline: 'Mock headline for outreach path testing',
+        about: 'Mock about section',
+        location: 'Bengaluru, India',
+        linkedinUrl,
+        profilePictureUrl: '',
+        experience: [
+          {
+            company: 'Mock Co',
+            position: 'VP Talent',
+            location: 'Bengaluru',
+            description: '',
+            start: '2020-01',
+            end: '',
+          },
+        ],
+        skills: ['Recruiting'],
+        snapshot: `Mock profile for ${identifier}`,
+      };
+      const person = toUploadProfilesPerson(mapped);
+
+      return {
+        ...mapped,
+        people: person ? [person] : [],
+        error: '',
+      };
+    }
+
     const authContext = buildSystemAuthContext(workspaceId);
 
     const resolved = await this.globalWorkspaceOrmManager.executeInWorkspaceContext(

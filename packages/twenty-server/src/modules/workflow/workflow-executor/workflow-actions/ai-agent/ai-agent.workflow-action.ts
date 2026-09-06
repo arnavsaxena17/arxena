@@ -1,9 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { FeatureFlagKey } from 'twenty-shared/types';
 import { resolveInput } from 'twenty-shared/utils';
 
 import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/interfaces/workflow-action.interface';
 
+import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { UsageOperationType } from 'src/engine/core-modules/usage/enums/usage-operation-type.enum';
 import { AgentAsyncExecutorService } from 'src/engine/metadata-modules/ai/ai-agent-execution/services/agent-async-executor.service';
 import { type AgentExecutionResult } from 'src/engine/metadata-modules/ai/ai-agent-execution/types/agent-execution-result.type';
@@ -19,6 +21,7 @@ import { type WorkflowActionInput } from 'src/modules/workflow/workflow-executor
 import { type WorkflowActionOutput } from 'src/modules/workflow/workflow-executor/types/workflow-action-output.type';
 import { findStepOrThrow } from 'src/modules/workflow/workflow-executor/utils/find-step-or-throw.util';
 import { buildAiAgentStepLog } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-agent/utils/build-ai-agent-step-log.util';
+import { buildOutreachMockAiAgentResult } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-agent/utils/build-outreach-mock-ai-agent-result.util';
 import { WorkflowRunStepLogWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run-step-log.workspace-service';
 
 import { isWorkflowAiAgentAction } from './guards/is-workflow-ai-agent-action.guard';
@@ -31,6 +34,7 @@ export class AiAgentWorkflowAction implements WorkflowAction {
     private readonly aiAgentExecutionService: AgentAsyncExecutorService,
     private readonly workflowExecutionContextService: WorkflowExecutionContextService,
     private readonly workflowRunStepLogService: WorkflowRunStepLogWorkspaceService,
+    private readonly featureFlagService: FeatureFlagService,
     @InjectWorkspaceScopedRepository(AgentEntity)
     private readonly agentRepository: WorkspaceScopedRepository<AgentEntity>,
   ) {}
@@ -55,6 +59,23 @@ export class AiAgentWorkflowAction implements WorkflowAction {
 
     const { agentId, prompt } = step.settings.input;
     const workspaceId = runInfo.workspaceId;
+    const userPrompt = resolveInput(prompt, context) as string;
+
+    const isOutreachMockEnabled =
+      await this.featureFlagService.isFeatureEnabled(
+        FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
+        workspaceId,
+      );
+
+    if (isOutreachMockEnabled) {
+      const mockResult = buildOutreachMockAiAgentResult(userPrompt);
+
+      this.logger.log(
+        `IS_OUTREACH_MOCK_UNIPILE_ENABLED: mock AI_AGENT draft for step ${currentStepId}`,
+      );
+
+      return { result: mockResult };
+    }
 
     let agent: AgentEntity | null = null;
 
@@ -83,7 +104,7 @@ export class AiAgentWorkflowAction implements WorkflowAction {
 
     const executionResult = await this.aiAgentExecutionService.executeAgent({
       agent,
-      userPrompt: resolveInput(prompt, context) as string,
+      userPrompt,
       actorContext: executionContext.isActingOnBehalfOfUser
         ? executionContext.initiator
         : undefined,

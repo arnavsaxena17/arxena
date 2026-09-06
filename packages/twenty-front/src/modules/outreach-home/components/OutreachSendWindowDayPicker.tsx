@@ -72,7 +72,7 @@ const StyledSummary = styled.span`
 `;
 
 const WEEKDAY_PRESET: SendWindowWeekday[] = [1, 2, 3, 4, 5];
-const TUE_THU_PRESET: SendWindowWeekday[] = [2, 3, 4];
+const MON_SAT_PRESET: SendWindowWeekday[] = [1, 2, 3, 4, 5, 6];
 
 type OutreachSendWindowDayPickerProps = {
   selectedDays: SendWindowWeekday[];
@@ -128,19 +128,19 @@ export const OutreachSendWindowDayPicker = ({
       </StyledDayRow>
       <StyledPresetRow>
         <Button
+          title="Mon–Sat"
+          variant="secondary"
+          size="small"
+          disabled={disabled}
+          onClick={() => onChange([...MON_SAT_PRESET])}
+        />
+        <Button
           title="Weekdays"
           variant="secondary"
           size="small"
           disabled={disabled}
           onClick={() => onChange([...WEEKDAY_PRESET])}
         />
-        {/* <Button
-          title="Tue–Thu"
-          variant="secondary"
-          size="small"
-          disabled={disabled}
-          onClick={() => onChange([...TUE_THU_PRESET])}
-        /> */}
         <StyledSummary>
           {formatSendWindowDaysSummary(selectedDays)} selected
         </StyledSummary>

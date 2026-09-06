@@ -93,7 +93,7 @@ const StyledInlineAttachmentContainer = styled.div<{ isOpen: boolean }>`
 const ChatView = styled.div`
   display: flex;
   flex: 1;
-  flex-direction: column-reverse;
+  flex-direction: column;
   height: 100%; /* Add extra padding at bottom to prevent overlap with input */
   overflow-y: auto;
   padding: 20px;
@@ -584,7 +584,8 @@ export const CandidateChatDrawer = React.memo(() => {
 
   const scrollToBottom = useCallback(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = 0;
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
     }
   }, []);
 
@@ -665,8 +666,9 @@ export const CandidateChatDrawer = React.memo(() => {
           },
         );
 
+        // Oldest first so chat renders chronologically (top → bottom)
         const sortedMessages = response.data.sort(
-          (a: any, b: any) => b.position - a.position,
+          (a: any, b: any) => a.position - b.position,
         );
 
         // Check if messages have actually changed by comparing with current state
@@ -676,9 +678,13 @@ export const CandidateChatDrawer = React.memo(() => {
             JSON.stringify(prevMessageHistory);
 
           if (hasMessagesChanged) {
-            // Fetch candidate name if available in the messages
-            if (sortedMessages.length > 0 && sortedMessages[0].candidateName) {
-              setCandidateName(sortedMessages[0].candidateName);
+            const messageWithCandidateName = sortedMessages.find(
+              (message: MessageNode) =>
+                typeof message.candidateName === 'string' &&
+                message.candidateName.length > 0,
+            );
+            if (messageWithCandidateName?.candidateName) {
+              setCandidateName(messageWithCandidateName.candidateName);
             }
             return sortedMessages;
           } else {
@@ -1037,7 +1043,7 @@ export const CandidateChatDrawer = React.memo(() => {
         whatsappDeliveryStatus: 'sent',
       };
 
-      setMessageHistory((prev) => [newMessage, ...prev]);
+      setMessageHistory((prev) => [...prev, newMessage]);
 
       // Clear input
       if (inputRef.current) {
@@ -1110,7 +1116,7 @@ export const CandidateChatDrawer = React.memo(() => {
         messageObj: { content: templateName },
         whatsappDeliveryStatus: 'sent',
       };
-      setMessageHistory((prev) => [newMessage, ...prev]);
+      setMessageHistory((prev) => [...prev, newMessage]);
     } catch (error) {
       showSnackbar('Failed to send template', 'error');
       console.error('Error sending template:', error);

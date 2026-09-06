@@ -17,7 +17,10 @@ const DEFAULT_AVATAR =
   'https://st2.depositphotos.com/4111759/12123/v/950/depositphotos_121232442-stock-illustration-male-default-placeholder-avatar-profile.jpg';
 
 import type { OrgChartNodeData } from 'twenty-shared/utils';
-import { getProxiedImageUrl, isValidLinkedInProfileUrl } from 'twenty-shared/utils';
+import {
+  getProxiedImageUrl,
+  isValidLinkedInProfileUrl,
+} from 'twenty-shared/utils';
 import type { ContextResultItem } from '../types';
 import { uploadOrgChartCandidatesToJob } from '../utils/orgChartUtils';
 
@@ -200,10 +203,15 @@ function buildCandidatesFromNode(
       rows.push({
         id: `${node.key}-${i}`,
         fullName: name.trim(),
-        headline: (typeof node[titleKey] === 'string' ? node[titleKey] : '') as string,
+        headline: (typeof node[titleKey] === 'string'
+          ? node[titleKey]
+          : '') as string,
         company: companyName ?? '',
         linkedinUrl,
-        raw: typeof image === 'string' ? { image, profile_picture_url: image } : {},
+        raw:
+          typeof image === 'string'
+            ? { image, profile_picture_url: image }
+            : {},
       });
     }
   }
@@ -219,7 +227,13 @@ const getCandidateAvatarUrl = (c: ContextResultItem): string | undefined => {
   return typeof img === 'string' && img.trim().length > 0 ? img : undefined;
 };
 
-const CandidateAvatar = ({ src, size = 30 }: { src: string; size?: number }) => {
+const CandidateAvatar = ({
+  src,
+  size = 30,
+}: {
+  src: string;
+  size?: number;
+}) => {
   const [effectiveSrc, setEffectiveSrc] = useState(src);
 
   useEffect(() => {
@@ -260,11 +274,15 @@ export const OrgChartAddToProjectModal = ({
   const projectId = useAtomStateValue(projectIdAtom);
   const projects = useAtomStateValue(projectsState);
   const { refetchJobs } = useProjectRefetch();
-  const { beginUploadProgressSseSession, endUploadProgressSseSessionAfterDelay } =
-    useUploadProgressSseSession();
+  const {
+    beginUploadProgressSseSession,
+    endUploadProgressSseSessionAfterDelay,
+  } = useUploadProgressSseSession();
 
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
-  const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(new Set());
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isJobsLoading, setIsJobsLoading] = useState(false);
 
@@ -304,16 +322,16 @@ export const OrgChartAddToProjectModal = ({
     }
 
     if (
-      currentProjectId &&
-      currentProjectId !== 'project-id' &&
-      activeJobs.some((job) => job.id === currentProjectId)
+      projectId &&
+      projectId !== 'project-id' &&
+      activeJobs.some((job) => job.id === projectId)
     ) {
-      setSelectedProjectId(currentProjectId);
+      setSelectedProjectId(projectId);
       return;
     }
 
     setSelectedProjectId('');
-  }, [activeJobs, currentProjectId, isOpen]);
+  }, [activeJobs, projectId, isOpen]);
 
   const selectedJob = useMemo(
     () => activeJobs.find((j) => j.id === selectedProjectId),
@@ -353,10 +371,10 @@ export const OrgChartAddToProjectModal = ({
     try {
       const baseUrl = REACT_APP_SERVER_BASE_URL ?? '';
       const nodeStdFunction = node
-        ? (node as Record<string, unknown>).std_function as string | undefined
+        ? ((node as Record<string, unknown>).std_function as string | undefined)
         : undefined;
       const nodeStdGrade = node
-        ? (node as Record<string, unknown>).std_grade as string | undefined
+        ? ((node as Record<string, unknown>).std_grade as string | undefined)
         : undefined;
       const upload = await uploadOrgChartCandidatesToJob({
         baseUrl,
@@ -367,7 +385,7 @@ export const OrgChartAddToProjectModal = ({
         recruiterId: currentWorkspaceMember?.id,
         queueStartChatAfter,
         orgChartSelectedNodes:
-          nodeStdFunction ?? nodeStdGrade
+          (nodeStdFunction ?? nodeStdGrade)
             ? {
                 ...(nodeStdFunction && { std_function: nodeStdFunction }),
                 ...(nodeStdGrade && { std_grade: nodeStdGrade }),
@@ -385,7 +403,8 @@ export const OrgChartAddToProjectModal = ({
         throw new Error(upload.message);
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to add candidates to job';
+      const message =
+        err instanceof Error ? err.message : 'Failed to add candidates to job';
       enqueueSnackBar(message, {
         variant: SnackBarVariant.Error,
         duration: 5000,
@@ -448,10 +467,16 @@ export const OrgChartAddToProjectModal = ({
             </StyledSectionLabel>
             {candidates.length > 1 && (
               <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
-                <StyledSecondaryButton type="button" onClick={selectAllCandidates}>
+                <StyledSecondaryButton
+                  type="button"
+                  onClick={selectAllCandidates}
+                >
                   Select all
                 </StyledSecondaryButton>
-                <StyledSecondaryButton type="button" onClick={deselectAllCandidates}>
+                <StyledSecondaryButton
+                  type="button"
+                  onClick={deselectAllCandidates}
+                >
                   Deselect all
                 </StyledSecondaryButton>
               </div>
@@ -499,7 +524,9 @@ export const OrgChartAddToProjectModal = ({
             type="button"
             onClick={handleSubmit}
             disabled={
-              isSubmitting || !selectedProjectId || selectedCandidateIds.size === 0
+              isSubmitting ||
+              !selectedProjectId ||
+              selectedCandidateIds.size === 0
             }
           >
             {isSubmitting ? 'Adding…' : 'Add to job'}

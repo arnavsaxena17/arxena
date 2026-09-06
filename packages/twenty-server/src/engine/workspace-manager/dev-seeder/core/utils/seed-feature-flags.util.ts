@@ -58,7 +58,7 @@ export const seedFeatureFlags = async ({
       {
         key: FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
         workspaceId: workspaceId,
-        value: false,
+        value: true,
       },
     ])
     .execute();

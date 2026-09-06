@@ -1,3 +1,4 @@
+import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { runWithAccountRateLimitAcquireScope } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-reservation.context';
 import { getRegisteredAccountRateLimiter } from 'src/engine/core-modules/account-rate-limit/account-rate-limiter.registry';
 import {
@@ -40,7 +41,10 @@ export const withAcquiredAccountRateLimit = async <T>(
 
       return result;
     } catch (error) {
-      await limiter.releaseLastAcquisition();
+      // Deferred waiters keep their reserved slot so resumes stay staggered.
+      if (!isAccountRateLimitDeferredError(error)) {
+        await limiter.releaseLastAcquisition();
+      }
 
       throw error;
     }

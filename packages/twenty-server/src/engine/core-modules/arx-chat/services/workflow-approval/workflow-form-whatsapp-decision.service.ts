@@ -1,12 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 
+import { StepStatus } from 'twenty-shared/workflow';
+
 import { mapFlowResponseToFormFields } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-flow-json.builder';
 import { WorkflowFormDecisionPointerService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-decision-pointer.service';
 import {
   parseWorkflowFormQuickReplyPayload,
   verifyWorkflowFormDecisionPointer,
 } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-decision-pointer.util';
+import { WorkflowRunWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.workspace-service';
 import { WorkflowRunnerWorkspaceService } from 'src/modules/workflow/workflow-runner/workspace-services/workflow-runner.workspace-service';
 
 @Injectable()
@@ -22,6 +25,12 @@ export class WorkflowFormWhatsappDecisionService {
 
   private getWorkflowRunner(): WorkflowRunnerWorkspaceService {
     return this.moduleRef.get(WorkflowRunnerWorkspaceService, {
+      strict: false,
+    });
+  }
+
+  private getWorkflowRunWorkspaceService(): WorkflowRunWorkspaceService {
+    return this.moduleRef.get(WorkflowRunWorkspaceService, {
       strict: false,
     });
   }
@@ -148,6 +157,39 @@ export class WorkflowFormWhatsappDecisionService {
       );
 
     if (capturedTest) {
+      return { status: 'ok' };
+    }
+
+    const approveValue = formResponse.approve;
+    const isRejected =
+      input.decision === 'reject' ||
+      approveValue === false ||
+      approveValue === 'false';
+
+    // Reject must not resume into SEND_* when FORM→SEND has no IF_ELSE gate.
+    if (isRejected === true) {
+      await this.getWorkflowRunWorkspaceService().updateWorkflowRunStepInfo({
+        stepId: parts.stepId,
+        stepInfo: {
+          status: StepStatus.SUCCESS,
+          result: {
+            ...formResponse,
+            approve: false,
+          },
+        },
+        workspaceId: parts.workspaceId,
+        workflowRunId: parts.workflowRunId,
+      });
+
+      await this.getWorkflowRunner().stopWorkflowRun(
+        parts.workspaceId,
+        parts.workflowRunId,
+      );
+
+      this.logger.log(
+        `Workflow form rejected via WhatsApp for run ${parts.workflowRunId} step ${parts.stepId}`,
+      );
+
       return { status: 'ok' };
     }
 

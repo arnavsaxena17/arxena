@@ -112,12 +112,12 @@ const resolveAllowedWeekdays = (
   sendWindowDays?: string | null,
 ): Set<SendWindowWeekday> => new Set(parseSendWindowDays(sendWindowDays));
 
-// Default window: Tue–Thu 08:00–10:00 in project timezone (or UTC)
+// Default window: Mon–Sat 10:00–20:00 in project timezone (or UTC)
 export const computeNextSendWindow = ({
   now,
   timezone = 'UTC',
-  sendWindowStart = '08:00',
-  sendWindowEnd = '10:00',
+  sendWindowStart = '10:00',
+  sendWindowEnd = '20:00',
   sendWindowDays,
   delayMsOverride,
 }: OutreachSendWindowInput): OutreachSendWindowResult => {
@@ -136,8 +136,8 @@ export const computeNextSendWindow = ({
   }
 
   const resolvedTimezone = timezone || 'UTC';
-  const startMinutes = parseHhMmToMinutes(sendWindowStart) ?? 8 * 60;
-  const endMinutes = parseHhMmToMinutes(sendWindowEnd) ?? 10 * 60;
+  const startMinutes = parseHhMmToMinutes(sendWindowStart) ?? 10 * 60;
+  const endMinutes = parseHhMmToMinutes(sendWindowEnd) ?? 20 * 60;
   const allowedWeekdays = resolveAllowedWeekdays(sendWindowDays);
   const { weekday, minutes } = getZonedParts(now, resolvedTimezone);
 

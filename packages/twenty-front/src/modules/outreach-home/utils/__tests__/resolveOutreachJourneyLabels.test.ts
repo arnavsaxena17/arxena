@@ -1,4 +1,6 @@
 import {
+  resolveOutreachJourneyStageLabel,
+  resolveOutreachJourneyTimelineStageId,
   resolveOutreachNextRetryAt,
   resolveOutreachNextRetryLabel,
   resolveOutreachNextStepLabel,
@@ -73,7 +75,7 @@ describe('resolveOutreachJourneyLabels', () => {
         currentStepKind: 'FORM',
         pendingReason: null,
       }),
-    ).toBe('Needs approval');
+    ).toBe('Review opener');
   });
 
   it('should surface failed workflow step errors', () => {
@@ -86,5 +88,80 @@ describe('resolveOutreachJourneyLabels', () => {
         status: 'FAILED',
       }),
     ).toBe('Fetch LinkedIn messages · Attendee not found');
+  });
+
+  it('should prefer follow-up count over bare CONNECTION_ACCEPTED for Stage', () => {
+    expect(
+      resolveOutreachJourneyStageLabel({
+        outreachSequenceStage: 'CONNECTION_ACCEPTED',
+        linkedinFollowUpCount: 0,
+      }),
+    ).toBe('Connection accepted');
+
+    expect(
+      resolveOutreachJourneyStageLabel({
+        outreachSequenceStage: 'CONNECTION_ACCEPTED',
+        linkedinFollowUpCount: 2,
+      }),
+    ).toBe('Followed up 2');
+
+    expect(
+      resolveOutreachJourneyTimelineStageId({
+        outreachSequenceStage: 'CONNECTION_ACCEPTED',
+        linkedinFollowUpCount: 3,
+      }),
+    ).toBe('FOLLOW_UP_3');
+  });
+
+  it('should not treat FORM pending as a Stage label', () => {
+    expect(
+      resolveOutreachJourneyStageLabel({
+        outreachSequenceStage: 'CONNECTION_ACCEPTED',
+        linkedinFollowUpCount: 1,
+        hasFormPending: true,
+      }),
+    ).toBe('Followed up 1');
+  });
+
+  it('should keep late CRM stages ahead of follow-up count', () => {
+    expect(
+      resolveOutreachJourneyTimelineStageId({
+        outreachSequenceStage: 'REPLIED',
+        linkedinFollowUpCount: 2,
+      }),
+    ).toBe('REPLIED');
+
+    expect(
+      resolveOutreachJourneyTimelineStageId({
+        outreachSequenceStage: 'FAILED_NO_REPLY',
+        linkedinFollowUpCount: 3,
+      }),
+    ).toBe('FAILED_NO_REPLY');
+
+    expect(
+      resolveOutreachJourneyTimelineStageId({
+        outreachSequenceStage: 'REPLIED',
+        linkedinFollowUpCount: 0,
+        outreachConversationStage: 'MEETING_BOOKED',
+      }),
+    ).toBe('MEETING_BOOKED');
+  });
+
+  it('should replace generic Human in the Loop FORM names with Needs approval', () => {
+    expect(
+      resolveOutreachPendingStepLabel({
+        currentStepName: 'Human in the Loop',
+        currentStepKind: 'FORM',
+        pendingReason: null,
+      }),
+    ).toBe('Needs approval');
+
+    expect(
+      resolveOutreachPendingStepLabel({
+        currentStepName: 'Approve follow-up 3',
+        currentStepKind: 'FORM',
+        pendingReason: null,
+      }),
+    ).toBe('Approve follow-up 3');
   });
 });

@@ -13,12 +13,14 @@ type UseOutreachCacheSocketProps = {
   projectId: string | null;
   onPeopleUpdated: () => void;
   onCompaniesUpdated: () => void;
+  onJourneyUpdated?: () => void;
 };
 
 export const useOutreachCacheSocket = ({
   projectId,
   onPeopleUpdated,
   onCompaniesUpdated,
+  onJourneyUpdated,
 }: UseOutreachCacheSocketProps) => {
   const { socket } = useWebSocket();
 
@@ -54,8 +56,14 @@ export const useOutreachCacheSocket = ({
         return;
       }
 
+      if (payload.kind === 'journey') {
+        onJourneyUpdated?.();
+
+        return;
+      }
+
       onCompaniesUpdated();
     },
-    [onCompaniesUpdated, onPeopleUpdated, projectId],
+    [onCompaniesUpdated, onJourneyUpdated, onPeopleUpdated, projectId],
   );
 };

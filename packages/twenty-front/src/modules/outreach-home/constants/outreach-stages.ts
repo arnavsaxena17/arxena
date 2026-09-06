@@ -25,8 +25,14 @@ export const OUTREACH_STAGE_LABELS: Record<string, string> = {
   INMAIL_SENT: 'InMail sent',
   whatsapp_sent: 'WhatsApp sent',
   WHATSAPP_SENT: 'WhatsApp sent',
-  deferred: 'Deferred',
-  DEFERRED: 'Deferred',
+  followed_up: 'Followed up 1',
+  FOLLOW_UP_1: 'Followed up 1',
+  followed_up_2: 'Followed up 2',
+  FOLLOW_UP_2: 'Followed up 2',
+  followed_up_3: 'Followed up 3',
+  FOLLOW_UP_3: 'Followed up 3',
+  deferred: 'Waiting for slot',
+  DEFERRED: 'Waiting for slot',
   stopped: 'Stopped',
   STOPPED: 'Stopped',
   replied: 'Replied',
@@ -42,8 +48,6 @@ export const OUTREACH_STAGE_LABELS: Record<string, string> = {
   failed_no_reply: 'Failed no reply',
   WAITING_REPLY: 'Waiting for reply',
   waiting_reply: 'Waiting for reply',
-  WHATSAPP_SENT: 'WhatsApp sent',
-  whatsapp_sent: 'WhatsApp sent',
 };
 
 export const WORKFLOW_RUN_STATUS_LABELS: Record<string, string> = {
@@ -191,6 +195,16 @@ export const mapCrmStageToOutreachStage = (
       return 'inmail_sent';
     case 'WHATSAPP_SENT':
       return 'whatsapp_sent';
+    case 'FOLLOW_UP_1':
+    case 'FOLLOWED_UP':
+    case 'FOLLOWED_UP_1':
+      return 'followed_up';
+    case 'FOLLOW_UP_2':
+    case 'FOLLOWED_UP_2':
+      return 'followed_up_2';
+    case 'FOLLOW_UP_3':
+    case 'FOLLOWED_UP_3':
+      return 'followed_up_3';
     case 'WAITING_REPLY':
       return 'waiting_reply';
     case 'DEFERRED':

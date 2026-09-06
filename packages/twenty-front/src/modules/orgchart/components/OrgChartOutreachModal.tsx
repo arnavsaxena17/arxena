@@ -227,15 +227,15 @@ export const OrgChartOutreachModal = ({
       return;
     }
     if (
-      currentProjectId &&
-      currentProjectId !== 'project-id' &&
-      activeJobs.some((job) => job.id === currentProjectId)
+      projectId &&
+      projectId !== 'project-id' &&
+      activeJobs.some((job) => job.id === projectId)
     ) {
-      setSelectedProjectId(currentProjectId);
+      setSelectedProjectId(projectId);
       return;
     }
     setSelectedProjectId('');
-  }, [activeJobs, currentProjectId, isOpen]);
+  }, [activeJobs, projectId, isOpen]);
 
   const selectedJob = useMemo(
     () => activeJobs.find((j) => j.id === selectedProjectId),
@@ -271,7 +271,8 @@ export const OrgChartOutreachModal = ({
       });
       return;
     }
-    const requiresJob = !allowSkipJob || alsoAddToJob || channel !== 'linkedin_invite';
+    const requiresJob =
+      !allowSkipJob || alsoAddToJob || channel !== 'linkedin_invite';
     if (requiresJob && !selectedJob) {
       enqueueSnackBar('Select a job and try again.', {
         variant: SnackBarVariant.Error,
@@ -348,7 +349,7 @@ export const OrgChartOutreachModal = ({
           recruiterId: currentWorkspaceMember?.id,
           queueStartChatAfter: false,
           orgChartSelectedNodes:
-            nodeStdFunction ?? nodeStdGrade
+            (nodeStdFunction ?? nodeStdGrade)
               ? {
                   ...(nodeStdFunction && { std_function: nodeStdFunction }),
                   ...(nodeStdGrade && { std_grade: nodeStdGrade }),
@@ -669,9 +670,13 @@ export const OrgChartOutreachModal = ({
           onClick={() => void handleSubmit()}
           disabled={
             isSubmitting ||
-            ((!(allowSkipJob && channel === 'linkedin_invite' && !alsoAddToJob) &&
+            (!(
+              allowSkipJob &&
+              channel === 'linkedin_invite' &&
+              !alsoAddToJob
+            ) &&
               !selectedProjectId) ||
-              (channel !== 'google_contact' && !message.trim()))
+            (channel !== 'google_contact' && !message.trim())
           }
           dataTestId="orgchart-outreach-send"
         />

@@ -13,6 +13,7 @@ import {
 import { isDefined } from 'twenty-shared/utils';
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
+import { OutreachCacheRealtimeService } from 'src/engine/core-modules/outreach-command/services/outreach-cache-realtime.service';
 import {
   buildCandidateEventUpdate,
   computeAttentionReason,
@@ -41,7 +42,10 @@ type GraphqlEnvelope = {
 export class OutreachCommandMaterializeService {
   private readonly logger = new Logger(OutreachCommandMaterializeService.name);
 
-  constructor(private readonly staticGraphQLService: StaticGraphQLService) {}
+  constructor(
+    private readonly staticGraphQLService: StaticGraphQLService,
+    private readonly outreachCacheRealtimeService: OutreachCacheRealtimeService,
+  ) {}
 
   async applyCandidateEvent({
     candidateId,
@@ -82,7 +86,8 @@ export class OutreachCommandMaterializeService {
         candidateSnapshot?.outreachAnalytics,
       );
       let convertedOn =
-        existingConvertedOnMessageKind ?? snapshotAnalytics?.convertedOnMessageKind;
+        existingConvertedOnMessageKind ??
+        snapshotAnalytics?.convertedOnMessageKind;
       let lastOutboundKind =
         existingLastOutboundMessageKind ??
         snapshotAnalytics?.lastOutboundMessageKind;
@@ -147,6 +152,17 @@ export class OutreachCommandMaterializeService {
           },
           apiToken,
         );
+
+        const projectId =
+          candidateSnapshot?.projectsId ??
+          (await this.fetchCandidateProjectId(candidateId, apiToken));
+
+        if (isDefined(projectId)) {
+          this.outreachCacheRealtimeService.notifyProjectCacheUpdated(
+            projectId,
+            'journey',
+          );
+        }
       }
 
       const resolvedCompanyId =
@@ -159,7 +175,8 @@ export class OutreachCommandMaterializeService {
           companyCreatedAt,
           event,
           apiToken,
-          firstContactChannel: mapMessagingChannelToOutreachChannel(messagingChannel),
+          firstContactChannel:
+            mapMessagingChannelToOutreachChannel(messagingChannel),
         });
       }
     } catch (error) {
@@ -186,12 +203,13 @@ export class OutreachCommandMaterializeService {
     companyCreatedAt?: string | null;
     messagingChannel?: string | null;
   }): Promise<void> {
-    const eventByTouch: Record<OutreachTouchKind, OutreachCandidateEventKind> = {
-      outbound: 'outbound_message',
-      inbound: 'inbound_reply',
-      meeting_booked: 'meeting_booked',
-      meeting_held: 'meeting_held',
-    };
+    const eventByTouch: Record<OutreachTouchKind, OutreachCandidateEventKind> =
+      {
+        outbound: 'outbound_message',
+        inbound: 'inbound_reply',
+        meeting_booked: 'meeting_booked',
+        meeting_held: 'meeting_held',
+      };
 
     await this.applyCandidateEvent({
       candidateId,
@@ -376,13 +394,13 @@ export class OutreachCommandMaterializeService {
         return;
       }
 
-      const existingAnalytics = parseOutreachAnalytics(company.outreachAnalytics);
+      const existingAnalytics = parseOutreachAnalytics(
+        company.outreachAnalytics,
+      );
       const candidates = await this.fetchCompanyCandidates(companyId, apiToken);
       const peopleTargeted = candidates.length;
       const reachedCandidates = candidates.filter((candidate) =>
-        isDefined(
-          resolveOutreachFirstOutboundAt(candidate.outreachAnalytics),
-        ),
+        isDefined(resolveOutreachFirstOutboundAt(candidate.outreachAnalytics)),
       );
       const peopleReached = reachedCandidates.length;
       const earliestCandidateFirstContactMs = candidates.reduce(
@@ -477,7 +495,7 @@ export class OutreachCommandMaterializeService {
         existingAnalytics?.firstContactChannel ??
         (event === 'connection_accepted'
           ? 'LINKEDIN_CONNECT'
-          : firstContactChannel ?? null);
+          : (firstContactChannel ?? null));
 
       const analyticsUpdate = buildCompanyAnalyticsRollup({
         existingAnalytics: company.outreachAnalytics,
@@ -532,12 +550,13 @@ export class OutreachCommandMaterializeService {
     touch: OutreachTouchKind;
     apiToken: string;
   }): Promise<void> {
-    const eventByTouch: Record<OutreachTouchKind, OutreachCandidateEventKind> = {
-      outbound: 'outbound_message',
-      inbound: 'inbound_reply',
-      meeting_booked: 'meeting_booked',
-      meeting_held: 'meeting_held',
-    };
+    const eventByTouch: Record<OutreachTouchKind, OutreachCandidateEventKind> =
+      {
+        outbound: 'outbound_message',
+        inbound: 'inbound_reply',
+        meeting_booked: 'meeting_booked',
+        meeting_held: 'meeting_held',
+      };
 
     await this.recomputeCompanyRollup({
       companyId,
@@ -553,6 +572,7 @@ export class OutreachCommandMaterializeService {
   ): Promise<{
     createdAt?: string;
     outreachAnalytics?: unknown;
+    projectsId?: string | null;
   } | null> {
     try {
       const response = (await this.staticGraphQLService.executeGraphQL(
@@ -563,6 +583,7 @@ export class OutreachCommandMaterializeService {
                 id
                 createdAt
                 outreachAnalytics
+                projectsId
               }
             }
           }
@@ -578,10 +599,43 @@ export class OutreachCommandMaterializeService {
               node: {
                 createdAt?: string;
                 outreachAnalytics?: unknown;
+                projectsId?: string | null;
               };
             }>;
           }
         )?.edges?.[0]?.node ?? null
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  private async fetchCandidateProjectId(
+    candidateId: string,
+    apiToken: string,
+  ): Promise<string | null> {
+    try {
+      const response = (await this.staticGraphQLService.executeGraphQL(
+        `query CandidateProjectId($filter: CandidateFilterInput) {
+          candidates(first: 1, filter: $filter) {
+            edges {
+              node {
+                id
+                projectsId
+              }
+            }
+          }
+        }`,
+        { filter: { id: { eq: candidateId } } },
+        apiToken,
+      )) as GraphqlEnvelope;
+
+      return (
+        (
+          response?.data?.data?.candidates as {
+            edges?: Array<{ node: { projectsId?: string | null } }>;
+          }
+        )?.edges?.[0]?.node?.projectsId ?? null
       );
     } catch {
       return null;
@@ -654,7 +708,9 @@ export class OutreachCommandMaterializeService {
 
     const node = (
       response?.data?.data?.candidates as {
-        edges?: Array<{ node: Parameters<typeof resolveCompanyIdFromCandidate>[0] }>;
+        edges?: Array<{
+          node: Parameters<typeof resolveCompanyIdFromCandidate>[0];
+        }>;
       }
     )?.edges?.[0]?.node;
 
@@ -689,13 +745,11 @@ export class OutreachCommandMaterializeService {
       apiToken,
     )) as GraphqlEnvelope;
 
-    return (
-      (
-        response?.data?.data?.companies as {
-          edges?: Array<{ node: unknown }>;
-        }
-      )?.edges?.[0]?.node ?? null
-    ) as {
+    return ((
+      response?.data?.data?.companies as {
+        edges?: Array<{ node: unknown }>;
+      }
+    )?.edges?.[0]?.node ?? null) as {
       id: string;
       createdAt?: string;
       outreachAnalytics?: unknown;
@@ -746,13 +800,16 @@ export class OutreachCommandMaterializeService {
         response?.data?.data?.candidates as {
           edges?: Array<{ node: unknown }>;
         }
-      )?.edges?.map((edge) => edge.node as {
-        id: string;
-        outreachAnalytics?: unknown;
-        messagingChannel?: string | null;
-        enrichStatus?: string | null;
-        outreachSequenceStage?: string | null;
-      }) ?? []
+      )?.edges?.map(
+        (edge) =>
+          edge.node as {
+            id: string;
+            outreachAnalytics?: unknown;
+            messagingChannel?: string | null;
+            enrichStatus?: string | null;
+            outreachSequenceStage?: string | null;
+          },
+      ) ?? []
     );
   }
 }

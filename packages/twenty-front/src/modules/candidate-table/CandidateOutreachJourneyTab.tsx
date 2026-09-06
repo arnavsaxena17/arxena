@@ -12,6 +12,7 @@ import { OUTREACH_JOURNEY_TIMELINE_STAGES } from '@/outreach-home/constants/outr
 import { type CandidateOutreachJourney } from '@/outreach-home/types/outreach-journey.types';
 import {
   resolveOutreachJourneyStageLabel,
+  resolveOutreachJourneyTimelineStageId,
   resolveOutreachNextRetryLabel,
   resolveOutreachPendingStepLabel,
 } from '@/outreach-home/utils/resolveOutreachJourneyLabels';
@@ -152,9 +153,9 @@ export const CandidateOutreachJourneyTab = ({
     return resolveOutreachJourneyStageLabel({
       outreachSequenceStage: journey.outreachSequenceStage,
       linkedinFollowUpCount: journey.linkedinFollowUpCount,
-      hasFormPending,
+      outreachConversationStage: journey.outreachConversationStage,
     });
-  }, [hasFormPending, journey]);
+  }, [journey]);
 
   const pendingStepLabel = useMemo(() => {
     if (primaryRun) {
@@ -213,15 +214,11 @@ export const CandidateOutreachJourneyTab = ({
 
   const draftValue = editedDraft || primaryRun?.draftPreview || '';
 
-  const activeTimelineStage = hasFormPending
-    ? 'FORM_PENDING'
-    : journey.linkedinFollowUpCount >= 3
-      ? 'FOLLOW_UP_3'
-      : journey.linkedinFollowUpCount === 2
-        ? 'FOLLOW_UP_2'
-        : journey.linkedinFollowUpCount === 1
-          ? 'FOLLOW_UP_1'
-          : journey.outreachSequenceStage;
+  const activeTimelineStage = resolveOutreachJourneyTimelineStageId({
+    outreachSequenceStage: journey.outreachSequenceStage,
+    linkedinFollowUpCount: journey.linkedinFollowUpCount,
+    outreachConversationStage: journey.outreachConversationStage,
+  });
 
   return (
     <StyledContainer>
@@ -428,14 +425,13 @@ export const resolveJourneyHeaderLabels = (
   const primaryRun = journey?.activeRuns[0] ?? null;
   const failedRun = journey?.lastFailedRun ?? null;
   const displayRun = primaryRun ?? failedRun;
-  const hasFormPending = primaryRun?.currentStepKind === 'FORM';
 
   return {
     outreachStageLabel: journey
       ? resolveOutreachJourneyStageLabel({
           outreachSequenceStage: journey.outreachSequenceStage,
           linkedinFollowUpCount: journey.linkedinFollowUpCount,
-          hasFormPending,
+          outreachConversationStage: journey.outreachConversationStage,
         })
       : null,
     outreachNextStepLabel: displayRun

@@ -1,10 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
+import { FeatureFlagKey } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { type ObjectLiteral } from 'typeorm';
 
 import { ContactEnrichmentWaterfallService } from 'src/engine/core-modules/contact-enrichment/services/contact-enrichment-waterfall.service';
+import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
+import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
@@ -34,6 +37,7 @@ export class EnrichContactService {
   constructor(
     private readonly contactEnrichmentWaterfallService: ContactEnrichmentWaterfallService,
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
+    private readonly featureFlagService: FeatureFlagService,
   ) {}
 
   async execute({
@@ -70,7 +74,6 @@ export class EnrichContactService {
         if (isDefined(candidateRepository) && isNonEmptyString(candidateId)) {
           const candidate = await candidateRepository.findOne({
             where: { id: candidateId },
-            select: ['id', 'linkedinUrl', 'personId'],
           });
 
           if (!isDefined(candidate)) {
@@ -107,6 +110,73 @@ export class EnrichContactService {
             source: '',
             enrichStatus: 'FAILED',
             error: 'linkedinUrl is required',
+          };
+        }
+
+        const isOutreachMockEnabled =
+          await this.featureFlagService.isFeatureEnabled(
+            FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
+            workspaceId,
+          );
+
+        if (isOutreachMockEnabled) {
+          const slug =
+            extractLinkedinProfileId(linkedinUrl) || linkedinUrl.toLowerCase();
+          const shouldFail = slug.includes('enrich-fail');
+
+          if (shouldFail) {
+            this.logger.log(
+              `IS_OUTREACH_MOCK_UNIPILE_ENABLED: mock enrich miss for ${slug}`,
+            );
+            await this.stampCandidate(
+              candidateRepository,
+              candidateId,
+              'FAILED',
+              'FAILED_ENRICH',
+            );
+
+            return {
+              success: false,
+              email: '',
+              emails: [],
+              phones: [],
+              source: 'mock',
+              enrichStatus: 'FAILED',
+              error: 'No email found',
+            };
+          }
+
+          const email = `${slug.replace(/[^a-z0-9-]/gi, '')}@bc-matrix.test`;
+
+          this.logger.log(
+            `IS_OUTREACH_MOCK_UNIPILE_ENABLED: mock enrich hit ${email}`,
+          );
+          await this.stampCandidate(candidateRepository, candidateId, 'FOUND');
+
+          if (isNonEmptyString(personId)) {
+            const personRepository =
+              await this.globalWorkspaceOrmManager.getRepository<PersonRecord>(
+                workspaceId,
+                'person',
+                { shouldBypassPermissionChecks: true },
+              );
+
+            await personRepository.update(personId, {
+              emails: {
+                primaryEmail: email,
+                additionalEmails: [],
+              },
+            });
+          }
+
+          return {
+            success: true,
+            email,
+            emails: [email],
+            phones: [],
+            source: 'mock',
+            enrichStatus: 'FOUND',
+            error: '',
           };
         }
 

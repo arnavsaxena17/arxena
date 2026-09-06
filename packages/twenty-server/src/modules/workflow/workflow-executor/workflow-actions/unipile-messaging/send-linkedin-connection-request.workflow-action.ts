@@ -49,6 +49,11 @@ export class SendLinkedinConnectionRequestWorkflowAction extends UnipileMessagin
     return 'connect' as const;
   }
 
+  // Persist the connection note into chatMessage.messageObj (same as DMs).
+  protected override getTranscriptChannel() {
+    return 'LINKEDIN' as const;
+  }
+
   protected override getMaterializeEvent() {
     return 'connection_sent' as const;
   }

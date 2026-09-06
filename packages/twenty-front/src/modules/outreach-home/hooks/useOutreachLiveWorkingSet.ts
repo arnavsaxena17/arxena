@@ -36,9 +36,7 @@ import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import {
   OUTREACH_PROJECT_ID_QUERY_PARAM,
-  OUTREACH_PROJECT_NAME_PREFIX,
   OUTREACH_WORKFLOW_B_NAME,
-  isOutreachProjectName,
 } from '@/outreach-home/constants/outreach-command.constants';
 import { mapCrmStageToOutreachStage } from '@/outreach-home/constants/outreach-stages';
 import { useOutreachCacheSocket } from '@/outreach-home/hooks/useOutreachCacheSocket';
@@ -63,6 +61,7 @@ import {
   resolveCandidateOutreachResumeAt,
   type OutreachProjectCandidateRecord,
 } from '@/outreach-home/utils/fetch-outreach-project-candidates';
+import { isOutreachProject } from '@/outreach-home/utils/is-outreach-project';
 import {
   fetchOutreachCompaniesCache,
   persistOutreachCompaniesCache,
@@ -74,8 +73,9 @@ import {
 } from '@/outreach-home/utils/outreach-people-cache';
 import {
   resolveOutreachJourneyStageLabel,
+  resolveOutreachJourneyTimelineStageId,
   resolveOutreachNextRetryAt,
-  resolveOutreachPendingStepLabel,
+  resolveOutreachNextStepLabel,
 } from '@/outreach-home/utils/resolveOutreachJourneyLabels';
 import { useMyConnectedAccounts } from '@/settings/accounts/hooks/useMyConnectedAccounts';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
@@ -102,13 +102,6 @@ const normalizeExperimentVariant = (
 
   return null;
 };
-
-const isOutreachProject = (project: OutreachProjectRecord): boolean =>
-  isNonEmptyString(project.outreachWorkflowId) ||
-  isNonEmptyString(
-    resolveOutreachConfigIcpSpecString(project.outreachConfig, project.icpSpec),
-  ) ||
-  isOutreachProjectName(project.name);
 
 const dedupeCompaniesById = (
   companies: OutreachCompanyRow[],
@@ -499,19 +492,9 @@ export const useOutreachLiveWorkingSet = () => {
     };
   }, [accessToken, activeProjectId, refreshPeopleCache]);
 
-  const handlePeopleCacheSocketUpdate = useCallback(() => {
-    void refreshPeopleCache({ silent: true });
-  }, [refreshPeopleCache]);
-
   const handleCompaniesCacheSocketUpdate = useCallback(() => {
     void refreshCompaniesCache({ silent: true });
   }, [refreshCompaniesCache]);
-
-  useOutreachCacheSocket({
-    projectId: activeProjectId,
-    onPeopleUpdated: handlePeopleCacheSocketUpdate,
-    onCompaniesUpdated: handleCompaniesCacheSocketUpdate,
-  });
 
   const setCompanies = useCallback(
     async (companies: OutreachCompanyRow[]) => {
@@ -550,37 +533,44 @@ export const useOutreachLiveWorkingSet = () => {
   );
 
   // Paginated REST fetch — same source as candidate table (no 100-record cap).
-  const refreshProjectCandidates = useCallback(async () => {
-    if (!isDefined(scopeKey) || !isDefined(accessToken)) {
-      setProjectCandidates([]);
+  const refreshProjectCandidates = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (!isDefined(scopeKey) || !isDefined(accessToken)) {
+        setProjectCandidates([]);
 
-      return;
-    }
-
-    const requestId = ++projectCandidatesRequestIdRef.current;
-    setProjectCandidatesLoading(true);
-
-    try {
-      const candidates = await fetchOutreachProjectCandidates(
-        scopeKey,
-        accessToken,
-      );
-
-      if (requestId !== projectCandidatesRequestIdRef.current) {
         return;
       }
 
-      setProjectCandidates(candidates);
-    } catch {
-      if (requestId === projectCandidatesRequestIdRef.current) {
-        setProjectCandidates([]);
+      const requestId = ++projectCandidatesRequestIdRef.current;
+      const isSilent = options?.silent === true;
+
+      if (!isSilent) {
+        setProjectCandidatesLoading(true);
       }
-    } finally {
-      if (requestId === projectCandidatesRequestIdRef.current) {
-        setProjectCandidatesLoading(false);
+
+      try {
+        const candidates = await fetchOutreachProjectCandidates(
+          scopeKey,
+          accessToken,
+        );
+
+        if (requestId !== projectCandidatesRequestIdRef.current) {
+          return;
+        }
+
+        setProjectCandidates(candidates);
+      } catch {
+        if (requestId === projectCandidatesRequestIdRef.current) {
+          setProjectCandidates([]);
+        }
+      } finally {
+        if (requestId === projectCandidatesRequestIdRef.current) {
+          setProjectCandidatesLoading(false);
+        }
       }
-    }
-  }, [accessToken, scopeKey]);
+    },
+    [accessToken, scopeKey],
+  );
 
   useEffect(() => {
     void refreshProjectCandidates();
@@ -590,6 +580,18 @@ export const useOutreachLiveWorkingSet = () => {
     };
   }, [refreshProjectCandidates]);
 
+  // Stage/Next come from CRM candidates + journey-summary (not Redis people
+  // cache). Refresh both silently so the People table tracks workflow progress.
+  const refreshEnrolledProgress = useCallback(
+    async (options?: { silent?: boolean }) => {
+      await Promise.all([
+        refreshProjectCandidates(options),
+        refetchJourneySummary(options),
+      ]);
+    },
+    [refreshProjectCandidates, refetchJourneySummary],
+  );
+
   const refreshPeopleWorkingSet = useCallback(async () => {
     await Promise.all([
       refreshPeopleCache(),
@@ -597,6 +599,21 @@ export const useOutreachLiveWorkingSet = () => {
       refetchJourneySummary(),
     ]);
   }, [refreshPeopleCache, refreshProjectCandidates, refetchJourneySummary]);
+
+  const handlePeopleCacheSocketUpdate = useCallback(() => {
+    void refreshPeopleCache({ silent: true });
+  }, [refreshPeopleCache]);
+
+  const handleJourneySocketUpdate = useCallback(() => {
+    void refreshEnrolledProgress({ silent: true });
+  }, [refreshEnrolledProgress]);
+
+  useOutreachCacheSocket({
+    projectId: activeProjectId,
+    onPeopleUpdated: handlePeopleCacheSocketUpdate,
+    onCompaniesUpdated: handleCompaniesCacheSocketUpdate,
+    onJourneyUpdated: handleJourneySocketUpdate,
+  });
 
   const createOutreachProject = useCallback(async () => {
     let outreachWorkflowId = defaultOutreachWorkflows[0]?.id ?? null;
@@ -610,7 +627,7 @@ export const useOutreachLiveWorkingSet = () => {
     }
 
     const created = await createProject({
-      name: `${OUTREACH_PROJECT_NAME_PREFIX} · ${new Date().toLocaleString()}`,
+      name: `New Project · ${new Date().toLocaleString()}`,
       isActive: true,
       outreachSendMode: 'APPROVAL',
       outreachConfig: buildDefaultOutreachConfig(),
@@ -740,22 +757,31 @@ export const useOutreachLiveWorkingSet = () => {
           journeySummary?.byCandidateId?.[candidate.id] ?? null;
         const outreachResumeAt = resolveCandidateOutreachResumeAt(candidate);
 
+        const sequenceStage = candidate.outreachSequenceStage ?? 'QUEUED';
+        const followUpCount = candidate.linkedinFollowUpCount ?? 0;
+        const conversationStage = candidate.outreachConversationStage ?? 'NONE';
+        const displayStageId = resolveOutreachJourneyTimelineStageId({
+          outreachSequenceStage: sequenceStage,
+          linkedinFollowUpCount: followUpCount,
+          outreachConversationStage: conversationStage,
+        });
         const nextStepLabel = runSummary
-          ? resolveOutreachPendingStepLabel({
+          ? resolveOutreachNextStepLabel({
               currentStepName: runSummary.currentStepName,
               currentStepKind: runSummary.currentStepKind,
               pendingReason: runSummary.pendingReason,
               errorMessage: runSummary.errorMessage,
               status: runSummary.status,
+              resumeAt: runSummary.resumeAt,
             })
           : candidate.pendingChannel
             ? `Pending ${candidate.pendingChannel}`
             : outreachResumeAt
               ? `Snoozed until ${new Date(outreachResumeAt).toLocaleDateString()}`
               : resolveOutreachJourneyStageLabel({
-                  outreachSequenceStage:
-                    candidate.outreachSequenceStage ?? 'QUEUED',
-                  linkedinFollowUpCount: candidate.linkedinFollowUpCount ?? 0,
+                  outreachSequenceStage: sequenceStage,
+                  linkedinFollowUpCount: followUpCount,
+                  outreachConversationStage: conversationStage,
                 });
         const nextRetryAt = runSummary
           ? resolveOutreachNextRetryAt({
@@ -774,13 +800,13 @@ export const useOutreachLiveWorkingSet = () => {
           companyName: candidate.jobCompanyName ?? '',
           linkedinUrl,
           warmPath: '—',
-          stage: mapCrmStageToOutreachStage(candidate.outreachSequenceStage),
+          stage: mapCrmStageToOutreachStage(displayStageId),
           recruiterStatus: candidate.status ?? undefined,
           candConversationStatus: candidate.candConversationStatus ?? undefined,
           workflowRunStatus: runSummary?.status ?? null,
           email: candidate.email?.primaryEmail ?? '',
           pendingChannel: candidate.pendingChannel ?? undefined,
-          linkedinFollowUpCount: candidate.linkedinFollowUpCount ?? 0,
+          linkedinFollowUpCount: followUpCount,
           outreachResumeAt,
           nextStepLabel,
           nextRetryAt,
@@ -791,8 +817,7 @@ export const useOutreachLiveWorkingSet = () => {
           messagesExchanged: formatMessagesExchanged(candidate.chatMessages, {
             outboundSenderFirstName,
           }),
-          outreachConversationStage:
-            candidate.outreachConversationStage ?? 'NONE',
+          outreachConversationStage: conversationStage,
           lastInboundCopy: formatLastInboundMessage(candidate.chatMessages),
           lastInboundAt:
             resolveCandidateLastInboundAt(candidate) ??

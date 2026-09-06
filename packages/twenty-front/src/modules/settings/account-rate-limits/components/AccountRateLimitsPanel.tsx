@@ -36,6 +36,8 @@ export type AccountRateLimitFieldConfig<TKey extends string> = {
 export type AccountRateLimitSnapshot<TLimits extends Record<string, number>> = {
   limits: TLimits;
   usage?: Partial<Record<Extract<keyof TLimits, string>, number>>;
+  reserved?: Partial<Record<Extract<keyof TLimits, string>, number>>;
+  nextSlotAt?: Partial<Record<Extract<keyof TLimits, string>, string | null>>;
 };
 
 type AccountRateLimitsPanelProps<TLimits extends Record<string, number>> = {
@@ -66,17 +68,26 @@ export const AccountRateLimitsPanel = <TLimits extends Record<string, number>>({
   const [usage, setUsage] = useState<
     Partial<Record<Extract<keyof TLimits, string>, number>>
   >({});
+  const [reserved, setReserved] = useState<
+    Partial<Record<Extract<keyof TLimits, string>, number>>
+  >({});
+  const [nextSlotAt, setNextSlotAt] = useState<
+    Partial<Record<Extract<keyof TLimits, string>, string | null>>
+  >({});
   const [saving, setSaving] = useState(false);
   const [flushing, setFlushing] = useState(false);
-  const [pendingFlushField, setPendingFlushField] = useState<
-    AccountRateLimitFieldConfig<Extract<keyof TLimits, string>> | null
-  >(null);
+  const [pendingFlushField, setPendingFlushField] =
+    useState<AccountRateLimitFieldConfig<
+      Extract<keyof TLimits, string>
+    > | null>(null);
   const flushModalId = `flush-account-rate-limit-usage-${accountId}`;
 
   const applySnapshot = useCallback(
     (snapshot: AccountRateLimitSnapshot<TLimits>) => {
       setLimits(snapshot.limits);
       setUsage(snapshot.usage ?? {});
+      setReserved(snapshot.reserved ?? {});
+      setNextSlotAt(snapshot.nextSlotAt ?? {});
     },
     [],
   );
@@ -127,6 +138,8 @@ export const AccountRateLimitsPanel = <TLimits extends Record<string, number>>({
     try {
       await flushUsage(field.key);
       setUsage((current) => ({ ...current, [field.key]: 0 }));
+      setReserved((current) => ({ ...current, [field.key]: 0 }));
+      setNextSlotAt((current) => ({ ...current, [field.key]: null }));
       try {
         const snapshot = await loadLimits();
         applySnapshot(snapshot);
@@ -134,14 +147,14 @@ export const AccountRateLimitsPanel = <TLimits extends Record<string, number>>({
         // Keep the local zero if the refresh fails.
       }
       enqueueSuccessSnackBar({
-        message: t`Cleared used requests for ${fieldLabel} (${fieldWindowLabel}). New requests can run immediately.`,
+        message: t`Cleared used and reserved requests for ${fieldLabel} (${fieldWindowLabel}). New requests can run immediately.`,
       });
     } catch (error) {
       enqueueErrorSnackBar({
         message:
           error instanceof Error
             ? error.message
-            : t`Failed to clear used request counters.`,
+            : t`Failed to clear used and reserved request counters.`,
       });
     } finally {
       setFlushing(false);
@@ -178,6 +191,8 @@ export const AccountRateLimitsPanel = <TLimits extends Record<string, number>>({
                 windowLabel={field.windowLabel}
                 value={limits[field.key]}
                 used={usage[field.key] ?? 0}
+                reserved={reserved[field.key] ?? 0}
+                nextSlotAt={nextSlotAt[field.key] ?? null}
                 min={field.min}
                 max={field.max}
                 recommended={field.recommended}
@@ -193,9 +208,7 @@ export const AccountRateLimitsPanel = <TLimits extends Record<string, number>>({
                 }
                 onChange={(value) =>
                   setLimits((current) =>
-                    current
-                      ? { ...current, [field.key]: value }
-                      : current,
+                    current ? { ...current, [field.key]: value } : current,
                   )
                 }
               />
@@ -217,13 +230,13 @@ export const AccountRateLimitsPanel = <TLimits extends Record<string, number>>({
       {flushUsage && (
         <ConfirmationModal
           modalInstanceId={flushModalId}
-          title={t`Clear used requests?`}
+          title={t`Clear used and reserved requests?`}
           subtitle={
             pendingFlushLabel && pendingFlushWindowLabel
-              ? t`This resets used request counters for ${pendingFlushLabel} (${pendingFlushWindowLabel}) so this action is no longer blocked by existing usage. Saved limit values are kept. Queued workflow retries still resume on their schedule, but will no longer wait on this counter.`
-              : t`This resets used request counters for this limit so the action is no longer blocked by existing usage. Saved limit values are kept.`
+              ? t`This resets used and reserved request counters for ${pendingFlushLabel} (${pendingFlushWindowLabel}) so this action is no longer blocked by existing usage or deferred holds. Saved limit values are kept. Queued workflow retries still resume on their schedule, but will no longer wait on this counter.`
+              : t`This resets used and reserved request counters for this limit so the action is no longer blocked by existing usage or deferred holds. Saved limit values are kept.`
           }
-          confirmButtonText={t`Clear used requests`}
+          confirmButtonText={t`Clear used and reserved`}
           confirmButtonAccent="danger"
           loading={flushing}
           onConfirmClick={() => {

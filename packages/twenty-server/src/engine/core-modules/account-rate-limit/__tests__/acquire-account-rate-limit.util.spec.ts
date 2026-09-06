@@ -82,7 +82,7 @@ describe('withAcquiredAccountRateLimit', () => {
     );
   });
 
-  it('releases the deferred reservation so daily caps are not inflated', async () => {
+  it('keeps the deferred reservation so waiters stay on unique slots', async () => {
     const { limiter, redisService } = createLimiter(
       jest.fn().mockResolvedValue({ acquired: false, waitMs: 3_600_000 }),
     );
@@ -99,12 +99,6 @@ describe('withAcquiredAccountRateLimit', () => {
       ),
     ).rejects.toThrow(AccountRateLimitDeferredError);
 
-    expect(redisService.removeMemberFromWindows).toHaveBeenCalledWith(
-      [
-        'linkedin:acc-1:connection_request:5m',
-        'linkedin:acc-1:connection_request:day',
-      ],
-      expect.any(String),
-    );
+    expect(redisService.removeMemberFromWindows).not.toHaveBeenCalled();
   });
 });

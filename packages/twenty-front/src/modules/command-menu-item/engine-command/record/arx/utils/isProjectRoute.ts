@@ -1,5 +1,9 @@
 export const isProjectRoute = (pathname: string): boolean => {
-  return pathname.includes('/project/') || pathname.includes('/job/');
+  return (
+    pathname.includes('/project/') ||
+    pathname.includes('/job/') ||
+    pathname.includes('/outreach-home')
+  );
 };
 
 export const getProjectIdFromPathname = (

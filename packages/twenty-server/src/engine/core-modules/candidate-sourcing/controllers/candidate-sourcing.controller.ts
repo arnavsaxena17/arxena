@@ -47,7 +47,7 @@ import {
   queries,
   resolveIsOrgChartEnabledFromWorkspace,
   UpdateOneProject,
-  UserProfile
+  UserProfile,
 } from 'twenty-shared';
 import { v4 } from 'uuid';
 
@@ -67,7 +67,10 @@ import { JDParserService } from 'src/engine/core-modules/candidate-sourcing/serv
 import { OtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/other-fields.service';
 import { PersonService } from 'src/engine/core-modules/candidate-sourcing/services/person.service';
 import { UploadProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/upload-progress-pubsub.service';
-import { createProjectIdErrorResponse, validateAndExtractProjectId } from 'src/engine/core-modules/candidate-sourcing/utils/project-id.utils';
+import {
+  createProjectIdErrorResponse,
+  validateAndExtractProjectId,
+} from 'src/engine/core-modules/candidate-sourcing/utils/project-id.utils';
 import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
 import { hydrateLinkedinPremiumCandidates } from 'src/engine/core-modules/candidate-sourcing/utils/hydrate-linkedin-premium-from-fetch.util';
 import { FetchLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-profile.service';
@@ -101,7 +104,12 @@ const getCandidateProjectIdForByLinkedInUrls = (
     return jobId.trim();
   }
   const projects = candidate['projects'];
-  if (projects && typeof projects === 'object' && projects !== null && 'id' in projects) {
+  if (
+    projects &&
+    typeof projects === 'object' &&
+    projects !== null &&
+    'id' in projects
+  ) {
     const id = (projects as { id?: unknown }).id;
     if (typeof id === 'string' && id.trim()) {
       return id.trim();
@@ -141,9 +149,14 @@ export class CandidateSourcingController {
   @Post('update-candidate')
   @UseGuards(JwtAuthGuard)
   async updateCandidateSpreadsheet(@Req() request: any): Promise<object> {
-    console.log('Updating candidate spreadsheet', 'CandidateSourcingController');
+    console.log(
+      'Updating candidate spreadsheet',
+      'CandidateSourcingController',
+    );
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const { candidate, jobId, jobName } = request.body;
       const jobObject = await this.findJob(jobName, apiToken);
 
@@ -179,17 +192,25 @@ export class CandidateSourcingController {
     }
   }
 
-
   @Post('find-many-ai-filters')
   @UseGuards(JwtAuthGuard)
   async findManyAiFilters(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
     try {
-      const response = await this.staticGraphQLService.executeGraphQL(graphQlTofindManyCandidateEnrichments, {}, apiToken);
-      const candidateEnrichments = response?.data?.data?.candidateEnrichments as {
-        edges: CandidateEnrichmentEdge[];
-        pageInfo: PageInfo;
-      } | undefined;
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphQlTofindManyCandidateEnrichments,
+        {},
+        apiToken,
+      );
+      const candidateEnrichments = response?.data?.data
+        ?.candidateEnrichments as
+        | {
+            edges: CandidateEnrichmentEdge[];
+            pageInfo: PageInfo;
+          }
+        | undefined;
 
       return {
         status: 'Success',
@@ -205,11 +226,12 @@ export class CandidateSourcingController {
     }
   }
 
-
   @Post('update-snapshot-profiles')
   @UseGuards(JwtAuthGuard)
   async updateProfiles(@Req() request: any) {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
     const { candidateIds, uniqueStringKeys, personIds, objectNameSingular } =
       request.body as {
         candidateIds: string[];
@@ -253,7 +275,9 @@ export class CandidateSourcingController {
   async processAiFilters(@Req() request: any): Promise<object> {
     try {
       console.log('Processing AI filters via controller - queueing job');
-      const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '');
+      const apiToken = request?.headers?.authorization
+        ?.split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const origin = request.headers.origin;
 
       const projectId = request.body.projectId ?? request.body.jobId;
@@ -266,7 +290,8 @@ export class CandidateSourcingController {
         aiFilters: request?.body?.aiFilters ?? request?.body?.enrichments,
         objectNameSingular: request?.body?.objectNameSingular,
         availableSortDefinitions: request?.body?.availableSortDefinitions || [],
-        availableFilterDefinitions: request?.body?.availableFilterDefinitions || [],
+        availableFilterDefinitions:
+          request?.body?.availableFilterDefinitions || [],
         objectRecordId: request?.body?.objectRecordId,
         selectedRecordIds: request?.body?.selectedRecordIds,
         projectId: projectIdValidation.projectId!,
@@ -294,8 +319,6 @@ export class CandidateSourcingController {
     }
   }
 
-
-
   async findJob(path_position: string, apiToken: string): Promise<any> {
     console.log('Going to find job by path_position id:', path_position);
     const workspaceId =
@@ -316,10 +339,12 @@ export class CandidateSourcingController {
       variables,
       apiToken,
     );
-    const projects = response?.data?.data?.projects as {
-      edges: ProjectEdge[];
-      pageInfo: PageInfo;
-    } | undefined;
+    const projects = response?.data?.data?.projects as
+      | {
+          edges: ProjectEdge[];
+          pageInfo: PageInfo;
+        }
+      | undefined;
     const project = projects?.edges[0]?.node;
     console.log('This is the project:', project);
     return project;
@@ -328,7 +353,9 @@ export class CandidateSourcingController {
   @Post('process-job-candidate-refresh-data')
   @UseGuards(JwtAuthGuard)
   async refreshChats(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, ''); // Assuming Bearer token
 
     try {
       // const { candidateIds } = body;
@@ -363,7 +390,9 @@ export class CandidateSourcingController {
   @Post('transcribe-call')
   @UseGuards(JwtAuthGuard)
   async transcribeCall(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '')  ; // Assuming Bearer token
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, ''); // Assuming Bearer token
 
     try {
       // const { candidateIds } = body;
@@ -377,7 +406,12 @@ export class CandidateSourcingController {
       const response = await axios.post(
         url,
         { phoneCallIds: phoneCallIds },
-        { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiToken}`, }, },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiToken}`,
+          },
+        },
       );
       console.log('Received this response:', response.data);
       return { status: 'Success' };
@@ -406,11 +440,16 @@ export class CandidateSourcingController {
       .replace(/[-_\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : ''));
   }
 
-  @Post(['create-project-in-arxena-and-sheets', 'create-job-in-arxena-and-sheets'])
+  @Post([
+    'create-project-in-arxena-and-sheets',
+    'create-job-in-arxena-and-sheets',
+  ])
   @UseGuards(JwtAuthGuard)
   async createJobInArxena(@Req() req: any): Promise<any> {
     console.log('going to create job in arxena');
-    const apiToken = req.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const apiToken = req.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
     const origin = req.headers['x-origin-domain'] || req.headers.origin;
     try {
       if (!req?.body?.job_name || !req?.body?.new_job_id) {
@@ -480,7 +519,9 @@ export class CandidateSourcingController {
         jobId,
       );
       const videoInterviewModels =
-        await this.candidateWorkspaceGraphQLService.getVideoInterviewModels(apiToken);
+        await this.candidateWorkspaceGraphQLService.getVideoInterviewModels(
+          apiToken,
+        );
 
       console.log('videoInterviewModels:', videoInterviewModels);
       const videoInterviewModelId = videoInterviewModels[0]?.node?.id;
@@ -512,7 +553,11 @@ export class CandidateSourcingController {
       console.log('Thesea are the variables:', variables);
       const query = CreateOneVideoInterviewTemplate;
       const data = { query, variables };
-      const response = await this.staticGraphQLService.executeGraphQL(CreateOneVideoInterviewTemplate, variables, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(
+        CreateOneVideoInterviewTemplate,
+        variables,
+        apiToken,
+      );
 
       console.log('response:', response.data);
     } catch {
@@ -528,39 +573,46 @@ export class CandidateSourcingController {
     apiToken: string,
     idToUpdate: string,
     origin: string,
-
   ) {
     try {
-      const jobCode = `${String.fromCharCode(65 + Math.floor(Math.random() * 10))}${String.fromCharCode(65 + Math.floor(Math.random() * 10))} ${Math.floor( Math.random() * 100 ).toString().padStart(2, '0')}`;
+      const jobCode = `${String.fromCharCode(65 + Math.floor(Math.random() * 10))}${String.fromCharCode(65 + Math.floor(Math.random() * 10))} ${Math.floor(
+        Math.random() * 100,
+      )
+        .toString()
+        .padStart(2, '0')}`;
       console.log('Going to get current user in updateTwentyJob');
-      const currentUser = await new RecruiterProfileService(this.staticGraphQLService). getCurrentUser(apiToken, origin);
+      const currentUser = await new RecruiterProfileService(
+        this.staticGraphQLService,
+      ).getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
-      console.log( 'This is the currentUser?.workspaces:', JSON.stringify(currentUser?.workspaces) );
+      console.log(
+        'This is the currentUser?.workspaces:',
+        JSON.stringify(currentUser?.workspaces),
+      );
       console.log('This is the current user:', currentUser);
       console.log('This is the recruiter id:', recruiterId);
 
-
-
-      const responseToUpdateJob = await this.staticGraphQLService.executeGraphQL(
-        UpdateOneProject,
-        {
-          idToUpdate: idToUpdate,
-          input: {
-            pathPosition: this.getJobCandidatePathPosition(jobName),
-            recruiterId: recruiterId,
-            arxenaSiteId: newJobId,
-            jobCode: jobCode,
-            isActive: true,
-            jobLocation: 'India',
-            googleSheetUrl: {
-              primaryLinkLabel: googleSheetUrl,
-              primaryLinkUrl: googleSheetUrl,
+      const responseToUpdateJob =
+        await this.staticGraphQLService.executeGraphQL(
+          UpdateOneProject,
+          {
+            idToUpdate: idToUpdate,
+            input: {
+              pathPosition: this.getJobCandidatePathPosition(jobName),
+              recruiterId: recruiterId,
+              arxenaSiteId: newJobId,
+              jobCode: jobCode,
+              isActive: true,
+              jobLocation: 'India',
+              googleSheetUrl: {
+                primaryLinkLabel: googleSheetUrl,
+                primaryLinkUrl: googleSheetUrl,
+              },
+              ...(googleSheetId && { googleSheetId: googleSheetId }),
             },
-            ...(googleSheetId && { googleSheetId: googleSheetId }),
           },
-        },
-        apiToken,
-      );
+          apiToken,
+        );
 
       console.log(
         'Response from update job in create Job IN Arxena:',
@@ -617,8 +669,8 @@ export class CandidateSourcingController {
     googleSheetUrl: string | null,
     apiToken: string,
   ): Promise<any> {
-    console.log("Creating new job in Arxena::", jobName, newJobId, apiToken);
-    console.log("ENV NODE::", process.env.ENV_NODE);
+    console.log('Creating new job in Arxena::', jobName, newJobId, apiToken);
+    console.log('ENV NODE::', process.env.ENV_NODE);
     try {
       const url =
         process.env.ENV_NODE === 'production'
@@ -639,7 +691,7 @@ export class CandidateSourcingController {
           },
         },
       );
-      console.log("Response from create new job in Arxena::", response.data);
+      console.log('Response from create new job in Arxena::', response.data);
 
       return response.data;
     } catch (error) {
@@ -652,25 +704,27 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async refreshTableData(@Req() req) {
     console.log('Called refresh table data API');
-    const apiToken = req.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const apiToken = req.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
     const recruiterId = req.body?.recruiterId;
-    console.log("recruiterId::", recruiterId);
+    console.log('recruiterId::', recruiterId);
 
     // Note: Table refresh is now handled via other mechanisms
     // This endpoint is kept for backward compatibility
     return {
       status: 'Success',
-      message: 'Table refresh request received'
+      message: 'Table refresh request received',
     };
   }
-
-
 
   @Post('upload-profiles')
   @UseGuards(JwtAuthGuard)
   async uploadProfiles(@Req() req) {
     console.log('Called upload profiles API');
-    const apiToken = req.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const apiToken = req.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
     const origin = req.headers['x-origin-domain'] || req.headers.origin;
 
     try {
@@ -679,11 +733,14 @@ export class CandidateSourcingController {
       if (!data) {
         return {
           status: 'fail',
-          message: 'No data provided'
+          message: 'No data provided',
         };
       }
 
-      console.log('Received upload profiles request data keys:', Object.keys(data));
+      console.log(
+        'Received upload profiles request data keys:',
+        Object.keys(data),
+      );
       console.log('Data source:', data.data_source);
       console.log('Popup data:', data.popup_data);
       console.log('Job data:', data.job);
@@ -722,7 +779,7 @@ export class CandidateSourcingController {
         console.log('Processing CSV/Excel data upload');
         return {
           status: 'fail',
-          message: 'CSV/Excel upload not yet implemented in NestJS'
+          message: 'CSV/Excel upload not yet implemented in NestJS',
         };
       } else if (data.popup_data?.job_data_source === 'spreadsheet_import') {
         // Handle spreadsheet import
@@ -730,14 +787,22 @@ export class CandidateSourcingController {
         dataSource = data.popup_data.job_data_source;
         jobId = resolveUploadProjectId(data);
         jobName = resolveUploadProjectName(data);
-        recruiterId = data.popup_data.recruiterId || data.job?.recruiterId || data.recruiterId || '';
+        recruiterId =
+          data.popup_data.recruiterId ||
+          data.job?.recruiterId ||
+          data.recruiterId ||
+          '';
       } else if (data.candidates) {
         // Handle general candidates upload
         candidates = data.candidates;
         dataSource = data.data_source || '';
         jobId = resolveUploadProjectId(data);
         jobName = resolveUploadProjectName(data);
-        recruiterId = data.popup_data?.recruiterId || data.job?.recruiterId || data.recruiterId || '';
+        recruiterId =
+          data.popup_data?.recruiterId ||
+          data.job?.recruiterId ||
+          data.recruiterId ||
+          '';
       } else if (data.resdex_profile_data) {
         // Handle Resdex profile data
         candidates = JSON.parse(data.resdex_profile_data);
@@ -745,13 +810,15 @@ export class CandidateSourcingController {
         jobId = resolveUploadProjectId(data);
         jobName = resolveUploadProjectName(data);
         recruiterId = data.recruiterId || data.job?.recruiterId || '';
-      } else if (data.linkedin_premium_profile_data || data.linkedinUrl || data.linkedin_url) {
-        const premiumPayload =
-          data.linkedin_premium_profile_data ??
-          {
-            linkedin_url: data.linkedinUrl || data.linkedin_url,
-            linkedinUrl: data.linkedinUrl || data.linkedin_url,
-          };
+      } else if (
+        data.linkedin_premium_profile_data ||
+        data.linkedinUrl ||
+        data.linkedin_url
+      ) {
+        const premiumPayload = data.linkedin_premium_profile_data ?? {
+          linkedin_url: data.linkedinUrl || data.linkedin_url,
+          linkedinUrl: data.linkedinUrl || data.linkedin_url,
+        };
         candidates = Array.isArray(premiumPayload)
           ? premiumPayload
           : [premiumPayload];
@@ -770,9 +837,18 @@ export class CandidateSourcingController {
       } else if (data.json_data) {
         // Handle generic JSON data with nested structure
         try {
-          const jsonData = typeof data.json_data === 'string' ? JSON.parse(data.json_data) : data.json_data;
-          console.log('Parsed JSON data structure:', Array.isArray(jsonData) ? 'Array' : typeof jsonData);
-          console.log('JSON data sample:', JSON.stringify(jsonData).substring(0, 200) + '...');
+          const jsonData =
+            typeof data.json_data === 'string'
+              ? JSON.parse(data.json_data)
+              : data.json_data;
+          console.log(
+            'Parsed JSON data structure:',
+            Array.isArray(jsonData) ? 'Array' : typeof jsonData,
+          );
+          console.log(
+            'JSON data sample:',
+            JSON.stringify(jsonData).substring(0, 200) + '...',
+          );
           if (jsonData.data?.users) {
             candidates = jsonData.data.users;
             console.log('Using jsonData.data.users, count:', candidates.length);
@@ -788,23 +864,31 @@ export class CandidateSourcingController {
           return {
             status: 'fail',
             message: 'Invalid JSON data format',
-            error: parseError.message
+            error: parseError.message,
           };
         }
 
         dataSource = data.data_source || '';
         jobId = resolveUploadProjectId(data);
         jobName = resolveUploadProjectName(data);
-        recruiterId = data.popup_data?.recruiterId || data.job?.recruiterId || data.recruiterId || '';
+        recruiterId =
+          data.popup_data?.recruiterId ||
+          data.job?.recruiterId ||
+          data.recruiterId ||
+          '';
       } else {
         return {
           status: 'fail',
-          message: 'No valid data format found in request'
+          message: 'No valid data format found in request',
         };
       }
 
-      console.log(`Processing ${candidates.length} candidates from data source: ${dataSource}`);
-      console.log(`Job ID: ${jobId}, Job Name: ${jobName}, Recruiter ID: ${recruiterId}`);
+      console.log(
+        `Processing ${candidates.length} candidates from data source: ${dataSource}`,
+      );
+      console.log(
+        `Job ID: ${jobId}, Job Name: ${jobName}, Recruiter ID: ${recruiterId}`,
+      );
 
       // Additional debugging for job information extraction
       console.log('Job information extraction debug:');
@@ -815,21 +899,21 @@ export class CandidateSourcingController {
       if (!candidates || candidates.length === 0) {
         return {
           status: 'fail',
-          message: 'No candidates found in request data'
+          message: 'No candidates found in request data',
         };
       }
 
       if (!dataSource) {
         return {
           status: 'fail',
-          message: 'Data source not specified'
+          message: 'Data source not specified',
         };
       }
 
       if (!jobId || !jobName) {
         return {
           status: 'fail',
-          message: 'Job ID and Job Name are required'
+          message: 'Job ID and Job Name are required',
         };
       }
 
@@ -842,16 +926,30 @@ export class CandidateSourcingController {
       let actualRecruiterId = recruiterId;
       if (!actualRecruiterId) {
         try {
-          const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+          const currentUser = await new RecruiterProfileService(
+            this.staticGraphQLService,
+          ).getCurrentUser(apiToken, origin);
           actualRecruiterId = currentUser?.workspaceMember?.id;
-          console.log('🔍 [UploadProfiles] Extracted recruiter ID from current user:', actualRecruiterId);
-          console.log('🔍 [UploadProfiles] Current user workspace member:', currentUser?.workspaceMember?.userEmail);
+          console.log(
+            '🔍 [UploadProfiles] Extracted recruiter ID from current user:',
+            actualRecruiterId,
+          );
+          console.log(
+            '🔍 [UploadProfiles] Current user workspace member:',
+            currentUser?.workspaceMember?.userEmail,
+          );
           console.log('🔍 [UploadProfiles] Current user id:', currentUser?.id);
         } catch (userError) {
-          console.warn('Could not get current user for progress reporting:', userError.message);
+          console.warn(
+            'Could not get current user for progress reporting:',
+            userError.message,
+          );
         }
       } else {
-        console.log('🔍 [UploadProfiles] Using provided recruiter ID:', actualRecruiterId);
+        console.log(
+          '🔍 [UploadProfiles] Using provided recruiter ID:',
+          actualRecruiterId,
+        );
       }
 
       // Calculate total batches for progress tracking
@@ -865,14 +963,16 @@ export class CandidateSourcingController {
           await this.uploadProgressPubSubService.publishUploadStarted(
             actualRecruiterId,
             candidates.length,
-            totalBatches
+            totalBatches,
           );
           console.log('Successfully published upload started notification');
         } catch (pubSubError) {
           console.warn('Pub-sub notification failed:', pubSubError.message);
         }
       } else {
-        console.warn('No recruiterId available, skipping upload started notification');
+        console.warn(
+          'No recruiterId available, skipping upload started notification',
+        );
       }
 
       if (dataSource === 'linkedin_premium') {
@@ -897,7 +997,9 @@ export class CandidateSourcingController {
 
       // Check if we support this data source with new transformation pipeline
       if (this.processCandidatesService.isDataSourceSupported(dataSource)) {
-        console.log(`Using new transformation pipeline for data source: ${dataSource}`);
+        console.log(
+          `Using new transformation pipeline for data source: ${dataSource}`,
+        );
         const queueStartChatAfter =
           data.queue_start_chat_after === true || data.start_chat === true;
         const options =
@@ -917,7 +1019,9 @@ export class CandidateSourcingController {
           options,
         );
       } else {
-        console.log(`Data source ${dataSource} not supported by new pipeline, using legacy processing`);
+        console.log(
+          `Data source ${dataSource} not supported by new pipeline, using legacy processing`,
+        );
 
         // For backward compatibility, fall back to legacy processing
         await this.processCandidatesService.send(
@@ -927,7 +1031,7 @@ export class CandidateSourcingController {
           timestamp,
           apiToken,
           actualRecruiterId || '',
-          origin
+          origin,
         );
       }
 
@@ -935,20 +1039,21 @@ export class CandidateSourcingController {
         status: 'ok',
         data: { isMultiprocess: true },
         message: 'Profiles upload processing queued successfully',
-        jobId: jobId
+        jobId: jobId,
       };
-
     } catch (error) {
       console.error('Error in uploadProfiles:', error);
 
       // Publish upload error notification
       try {
-        const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+        const currentUser = await new RecruiterProfileService(
+          this.staticGraphQLService,
+        ).getCurrentUser(apiToken, origin);
         const recruiterId = currentUser?.workspaceMember?.id;
         if (recruiterId) {
           await this.uploadProgressPubSubService.publishUploadError(
             recruiterId,
-            error.message || 'Unknown error occurred'
+            error.message || 'Unknown error occurred',
           );
         }
       } catch (pubSubError) {
@@ -958,7 +1063,7 @@ export class CandidateSourcingController {
       return {
         status: 'fail',
         message: 'Failed to perform operation',
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -967,7 +1072,9 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async sourceCandidates(@Req() req) {
     console.log('Called post candidates API');
-    const apiToken = req.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '')  ;
+    const apiToken = req.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
     const jobId = req.body?.job_id;
     const jobName = req.body?.job_name;
     const recruiterId = req.body?.recruiterId;
@@ -977,7 +1084,10 @@ export class CandidateSourcingController {
     console.log('dataSource:', dataSource);
     const data: UserProfile[] = req.body?.data;
 
-    console.log('Data len of candidates received in post candidates API:', data.length);
+    console.log(
+      'Data len of candidates received in post candidates API:',
+      data.length,
+    );
     console.log('First candidats:', data[0]);
     await new Promise((resolve) => setTimeout(resolve, Math.random() * 1000));
     const timestamp = req.body?.timestamp || new Date().toISOString();
@@ -990,9 +1100,9 @@ export class CandidateSourcingController {
         timestamp,
         apiToken,
         recruiterId || '',
-        origin
+        origin,
       );
-      console.log("recruiterId::", recruiterId);
+      console.log('recruiterId::', recruiterId);
       // const gateway = this.webSocketGateway.sendToUser.getInstance();
 
       // Note: Progress notifications are now handled via Redis pub-sub
@@ -1018,7 +1128,9 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async getJobById(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const projectId = request.body.projectId ?? request.body.jobId;
 
       if (!projectId) {
@@ -1074,7 +1186,9 @@ export class CandidateSourcingController {
   @Post(['get-all-projects', 'get-all-jobs'])
   @UseGuards(JwtAuthGuard)
   async getJobs(@Req() request: any) {
-    const apiToken = request?.headers?.authorization?.split(' ')[1].replace(/[\r\n]+/g, '')  ;
+    const apiToken = request?.headers?.authorization
+      ?.split(' ')[1]
+      .replace(/[\r\n]+/g, '');
     let projects = [];
 
     if (!apiToken) {
@@ -1101,7 +1215,9 @@ export class CandidateSourcingController {
     let uuid;
 
     try {
-        const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '')  ;
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const data = request.body;
 
       const graphqlVariables = {
@@ -1116,13 +1232,19 @@ export class CandidateSourcingController {
         },
       };
 
-      const responseNew = await this.staticGraphQLService.executeGraphQL(graphqlToAddNewProject, graphqlVariables, apiToken);
+      const responseNew = await this.staticGraphQLService.executeGraphQL(
+        graphqlToAddNewProject,
+        graphqlVariables,
+        apiToken,
+      );
       console.log('responseNew:', responseNew);
       await this.markOldJobsInactive(apiToken);
 
-      const createProject = responseNew?.data?.data?.createProject as {
-        id: string;
-      } | undefined;
+      const createProject = responseNew?.data?.data?.createProject as
+        | {
+            id: string;
+          }
+        | undefined;
       console.log('Response from create project', responseNew.data);
       uuid = createProject?.id;
 
@@ -1134,7 +1256,6 @@ export class CandidateSourcingController {
     }
   }
 
-
   @Post(['mark-old-projects-inactive', 'mark-old-jobs-inactive'])
   @UseGuards(JwtAuthGuard)
   async markOldJobsInactive(@Req() req: any) {
@@ -1145,7 +1266,12 @@ export class CandidateSourcingController {
         ? req
         : req.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
     console.log('Marking old projects inactive in this function');
-    const responseForAllProjects = await this.staticGraphQLService.executeGraphQL(graphqlToFindManyProjects, {}, apiToken);
+    const responseForAllProjects =
+      await this.staticGraphQLService.executeGraphQL(
+        graphqlToFindManyProjects,
+        {},
+        apiToken,
+      );
     console.log('responseForAllProjects:', responseForAllProjects);
     const projects = responseForAllProjects?.data?.data?.projects?.edges || [];
 
@@ -1159,36 +1285,37 @@ export class CandidateSourcingController {
       const isActive = sortedProjects[i].node.isActive;
       if (isActive && i >= 5) {
         console.log('Marking project inactive:', projectId);
-        await this.staticGraphQLService.executeGraphQL(UpdateOneProject,
+        await this.staticGraphQLService.executeGraphQL(
+          UpdateOneProject,
           {
             idToUpdate: projectId,
             input: {
               id: projectId,
-              isActive: false
-            }
+              isActive: false,
+            },
           },
-          apiToken
+          apiToken,
         );
       }
     }
   }
 
-
-
-
   @Post('add-questions')
   @UseGuards(JwtAuthGuard)
   async addQuestions(@Req() request: any) {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '')  ;
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const data = request.body;
       const arxenaSiteId = data?.job_id;
       const jobName = data?.job_name;
-      const jobObject: Project = await this.candidateWorkspaceGraphQLService.getJobDetails(
-        arxenaSiteId,
-        jobName,
-        apiToken,
-      );
+      const jobObject: Project =
+        await this.candidateWorkspaceGraphQLService.getJobDetails(
+          arxenaSiteId,
+          jobName,
+          apiToken,
+        );
 
       if (!jobObject?.id) {
         return {
@@ -1198,10 +1325,11 @@ export class CandidateSourcingController {
       }
 
       const questions = Array.isArray(data?.questions) ? data.questions : [];
-      const existingQuestions = await this.otherFieldsService.fetchJobChatQuestions(
-        jobObject.id,
-        apiToken,
-      );
+      const existingQuestions =
+        await this.otherFieldsService.fetchJobChatQuestions(
+          jobObject.id,
+          apiToken,
+        );
 
       console.log('Number Questions:', questions?.length);
       const mergedQuestions = mergeChatQuestionsPreservingOrder(
@@ -1227,7 +1355,9 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async updateChatQuestions(@Req() request: any) {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const projectId = request.body.projectId ?? request.body.jobId;
       const { chatQuestions, previousQuestions } = request.body;
 
@@ -1257,9 +1387,11 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async updateCandidateFieldValue(@Req() request: any): Promise<object> {
     try {
-      console.log("Going to update candidate field value::");
-      console.log("request.body::", request.body);
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '')  ;
+      console.log('Going to update candidate field value::');
+      console.log('request.body::', request.body);
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const { candidateId, fieldName, value } = request.body;
 
       if (!candidateId || !fieldName) {
@@ -1294,10 +1426,12 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async updateCandidateField(@Req() request: any): Promise<object> {
     try {
-      const origin = request.headers['x-origin-domain'] || request.headers.origin;
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '')  ;
+      const origin =
+        request.headers['x-origin-domain'] || request.headers.origin;
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const { candidateId, fieldName, value, personId } = request.body;
-
 
       if (!candidateId || !fieldName) {
         return {
@@ -1320,7 +1454,6 @@ export class CandidateSourcingController {
         message: 'Candidate field updated successfully',
         result,
       };
-
     } catch (err) {
       console.error('Error updating candidate field:', err);
       return {
@@ -1334,7 +1467,9 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async getCandidateFieldsByJob(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const projectId = request.body.projectId ?? request.body.jobId;
 
       console.log('Fetching candidate fields for projectId:', projectId);
@@ -1347,14 +1482,17 @@ export class CandidateSourcingController {
       const actualProjectId = projectIdValidation.projectId!;
       console.log('Using actual projectId:', actualProjectId);
 
-      const candidateFields = await this.candidateService.getCandidateFieldsByProjectId(
-        actualProjectId,
-        apiToken,
+      const candidateFields =
+        await this.candidateService.getCandidateFieldsByProjectId(
+          actualProjectId,
+          apiToken,
+        );
+
+      console.log(
+        `Found ${candidateFields?.length || 0} candidate fields for project ${actualProjectId}`,
       );
 
-      console.log(`Found ${candidateFields?.length || 0} candidate fields for project ${actualProjectId}`);
-
-      const formattedFields = candidateFields.map(field => ({
+      const formattedFields = candidateFields.map((field) => ({
         name: field || '',
         label: field || '',
       }));
@@ -1381,7 +1519,9 @@ export class CandidateSourcingController {
   @Post('find-job')
   @UseGuards(JwtAuthGuard)
   async findJobByPathPosition(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
     const { path_position } = request.body;
 
     try {
@@ -1407,11 +1547,16 @@ export class CandidateSourcingController {
     }
   }
 
-  @Post(['update-project-in-arxena-and-sheets', 'update-job-in-arxena-and-sheets'])
+  @Post([
+    'update-project-in-arxena-and-sheets',
+    'update-job-in-arxena-and-sheets',
+  ])
   @UseGuards(JwtAuthGuard)
   async updateJobInArxena(@Req() req: any): Promise<any> {
     console.log('going to update job in arxena');
-    const apiToken = req.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const apiToken = req.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
 
     try {
       if (!req?.body?.job_name || !req?.body?.arxena_site_id) {
@@ -1453,8 +1598,13 @@ export class CandidateSourcingController {
       console.log('url:', url);
       const response = await axios.post(
         url,
-        { job_name: jobName, arxena_site_id: arxenaSiteId, },
-        { headers: {'Content-Type': 'application/json', Authorization: `Bearer ${apiToken}`}},
+        { job_name: jobName, arxena_site_id: arxenaSiteId },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiToken}`,
+          },
+        },
       );
       console.log('response:', response.data);
       return response.data;
@@ -1485,7 +1635,7 @@ export class CandidateSourcingController {
         // Calculate delay with exponential backoff (2^retryCount * initialDelay)
         delay = Math.min(initialDelayMs * Math.pow(2, retryCount), 10000); // Cap at 10 seconds
         console.log(`Retry ${retryCount} failed. Retrying in ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
   }
@@ -1505,15 +1655,23 @@ export class CandidateSourcingController {
 
       console.log(`Processing filter description: ${filterDescription}`);
 
-      const filterConfig = await this.filterDescriptionProcessorService.generateSingleFilter(filterDescription);
+      const filterConfig =
+        await this.filterDescriptionProcessorService.generateSingleFilter(
+          filterDescription,
+        );
 
       // Validate that the selected metadata fields are valid
-      const validatedFields = this.filterDescriptionProcessorService.validateSelectedFields(
-        filterConfig.selectedMetadataFields
-      );
+      const validatedFields =
+        this.filterDescriptionProcessorService.validateSelectedFields(
+          filterConfig.selectedMetadataFields,
+        );
 
-      if (validatedFields.length !== filterConfig.selectedMetadataFields.length) {
-        console.warn('Some selected metadata fields were invalid and filtered out');
+      if (
+        validatedFields.length !== filterConfig.selectedMetadataFields.length
+      ) {
+        console.warn(
+          'Some selected metadata fields were invalid and filtered out',
+        );
         filterConfig.selectedMetadataFields = validatedFields;
       }
 
@@ -1534,7 +1692,9 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async computeTokens(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const aiFilters = request.body.aiFilters ?? request.body.enrichments;
       const selectedRecordIds = request.body.selectedRecordIds;
       const projectId = request.body.projectId ?? request.body.jobId;
@@ -1563,7 +1723,7 @@ export class CandidateSourcingController {
 
       const tokenAnalysis = await this.aiFilteringService.computeTokens(
         aiFiltersRequest,
-        apiToken
+        apiToken,
       );
 
       return {
@@ -1583,7 +1743,9 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async testSnackbar(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const { recruiterId, message, variant } = request.body;
 
       if (!recruiterId) {
@@ -1594,7 +1756,11 @@ export class CandidateSourcingController {
       }
 
       // Note: Test snackbar functionality is now handled via Redis pub-sub
-      console.log('Test snackbar request received:', { recruiterId, message, variant });
+      console.log('Test snackbar request received:', {
+        recruiterId,
+        message,
+        variant,
+      });
 
       return {
         status: 'Success',
@@ -1613,7 +1779,9 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async testWhatsAppFailureNotification(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const { recruiterId, phoneNumber, message, error } = request.body;
 
       if (!recruiterId) {
@@ -1629,18 +1797,22 @@ export class CandidateSourcingController {
         message: message || 'Test WhatsApp message',
         error: error || 'Connection timeout',
         timestamp: new Date().toISOString(),
-        jid: `${phoneNumber || '918976372055'}@s.whatsapp.net`
+        jid: `${phoneNumber || '918976372055'}@s.whatsapp.net`,
       };
 
       console.log('Test WhatsApp failure notification received:', testData);
 
       return {
         status: 'Success',
-        message: 'Test WhatsApp failure notification received (handled via pub-sub)',
-        data: testData
+        message:
+          'Test WhatsApp failure notification received (handled via pub-sub)',
+        data: testData,
       };
     } catch (err) {
-      console.error('Error processing test WhatsApp failure notification:', err);
+      console.error(
+        'Error processing test WhatsApp failure notification:',
+        err,
+      );
       return {
         status: 'Failed',
         error: err.message,
@@ -1652,9 +1824,20 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async sendAiFilteringProgress(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-      const { recruiterId, step, message, progress_percentage, total_records,
-              processed_records, current_enrichment, total_enrichments, timestamp } = request.body;
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
+      const {
+        recruiterId,
+        step,
+        message,
+        progress_percentage,
+        total_records,
+        processed_records,
+        current_enrichment,
+        total_enrichments,
+        timestamp,
+      } = request.body;
 
       if (!recruiterId) {
         return {
@@ -1672,99 +1855,103 @@ export class CandidateSourcingController {
         processed_records,
         current_enrichment,
         total_enrichments,
-        timestamp
+        timestamp,
       });
 
       return {
         status: 'Success',
-        message: 'AI filtering progress update received (handled via pub-sub)'
+        message: 'AI filtering progress update received (handled via pub-sub)',
       };
     } catch (err) {
       console.error('Error processing AI filtering progress:', err);
       return {
         status: 'Failed',
-        error: err.message
+        error: err.message,
       };
     }
   }
-
 
   @Post('update-table-data')
   @UseGuards(JwtAuthGuard)
   async updateDataTable(@Req() request: any): Promise<object> {
     try {
-      console.log("Going to update table data");
-      console.log("request.body::", request.body);
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      console.log('Going to update table data');
+      console.log('request.body::', request.body);
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const { recruiterId } = request.body;
 
       if (!recruiterId) {
         return {
           status: 'Failed',
-          message: 'Missing required field: recruiterId'
+          message: 'Missing required field: recruiterId',
         };
       }
 
       // Note: Table data updates are now handled via Redis pub-sub
-      console.log('Table data update request received for recruiter:', recruiterId);
+      console.log(
+        'Table data update request received for recruiter:',
+        recruiterId,
+      );
 
       return {
         status: 'Success',
-        message: 'Data table refresh request received (handled via pub-sub)'
+        message: 'Data table refresh request received (handled via pub-sub)',
       };
-
     } catch (err) {
       console.error('Error processing table data update:', err);
       return {
         status: 'Failed',
-        error: err.message
+        error: err.message,
       };
     }
   }
-
-
-
 
   @Post('send-notification-to-recruiter')
   @UseGuards(JwtAuthGuard)
   async sendNotificationToRecruiter(@Req() request: any): Promise<object> {
     try {
-      console.log("Going to send notification to recruiter");
-      console.log("request.body::", request.body);
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      console.log('Going to send notification to recruiter');
+      console.log('request.body::', request.body);
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const { message } = request.body;
       const origin = request.headers.origin;
 
       console.log('Origin in sendNotificationToRecruiter:', origin);
 
-      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+      const currentUser = await new RecruiterProfileService(
+        this.staticGraphQLService,
+      ).getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
 
       if (!recruiterId) {
         return {
           status: 'Failed',
-          message: 'Missing required field: recruiterId'
+          message: 'Missing required field: recruiterId',
         };
       }
 
-      console.log("recruiterId::", recruiterId);
+      console.log('recruiterId::', recruiterId);
 
       // Note: Notifications are now handled via Redis pub-sub
       console.log('Notification request received:', {
         recruiterId,
         message: message || 'Sending notification to recruiter',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       return {
         status: 'Success',
-        message: 'Notification request received (handled via pub-sub)'
+        message: 'Notification request received (handled via pub-sub)',
       };
     } catch (err) {
       console.error('Error processing notification:', err);
       return {
         status: 'Failed',
-        error: err.message
+        error: err.message,
       };
     }
   }
@@ -1835,34 +2022,41 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async updateCandidateStatus(@Req() request: any): Promise<object> {
     try {
-      console.log("Going to update candidate status");
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      console.log('Going to update candidate status');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const { phone_number, candidate_status, candidate_id } = request.body;
 
-      console.log(`Got phone number: ${phone_number}, status: ${candidate_status}, candidate_id: ${candidate_id}`);
+      console.log(
+        `Got phone number: ${phone_number}, status: ${candidate_status}, candidate_id: ${candidate_id}`,
+      );
 
       // Status mapping from labels to values (matching the STATUS_LABELS_REVERSE)
       const STATUS_LABELS_REVERSE = {
         'Not Interested': 'NOT_INTERESTED',
-        'Interested': 'INTERESTED',
+        Interested: 'INTERESTED',
         'CV Received': 'CV_RECEIVED',
         'Not Fit': 'NOT_FIT',
-        'Screening': 'SCREENING',
+        Screening: 'SCREENING',
         'Recruiter Interview': 'RECRUITER_INTERVIEW',
         'CV Sent': 'CV_SENT',
         'Client Interview': 'CLIENT_INTERVIEW',
-        'Negotiation': 'NEGOTIATION'
+        Negotiation: 'NEGOTIATION',
       };
 
       // Map status from label to value
-      const status_value = STATUS_LABELS_REVERSE[candidate_status] || candidate_status;
-      console.log(`Mapped status from '${candidate_status}' to '${status_value}'`);
+      const status_value =
+        STATUS_LABELS_REVERSE[candidate_status] || candidate_status;
+      console.log(
+        `Mapped status from '${candidate_status}' to '${status_value}'`,
+      );
 
       if (!candidate_id) {
-        console.error("No candidate_id provided for status update");
+        console.error('No candidate_id provided for status update');
         return {
           status: 'Failed',
-          message: 'Missing required field: candidate_id'
+          message: 'Missing required field: candidate_id',
         };
       }
 
@@ -1872,42 +2066,46 @@ export class CandidateSourcingController {
       const variables = {
         idToUpdate: candidate_id,
         input: {
-          status: status_value
-        }
+          status: status_value,
+        },
       };
 
-      console.log("Making GraphQL request to update candidate status:", { variables });
+      console.log('Making GraphQL request to update candidate status:', {
+        variables,
+      });
 
       // Make the GraphQL request
       const response = await this.staticGraphQLService.executeGraphQL(
         graphQltoUpdateOneCandidate,
         variables,
-        apiToken
+        apiToken,
       );
 
       if (response?.data?.data?.updateCandidate) {
-        console.log("Successfully updated candidate status in Twenty:", response.data);
+        console.log(
+          'Successfully updated candidate status in Twenty:',
+          response.data,
+        );
 
         return {
           status: 'Success',
           candidate_id: candidate_id,
           candidate_status: status_value,
-          message: 'Candidate status updated successfully in Twenty'
+          message: 'Candidate status updated successfully in Twenty',
         };
       } else {
-        console.error("Failed to update candidate status in Twenty:", response);
+        console.error('Failed to update candidate status in Twenty:', response);
         return {
           status: 'Failed',
           message: 'Failed to update candidate status',
-          error: response?.data?.errors || 'Unknown error'
+          error: response?.data?.errors || 'Unknown error',
         };
       }
-
     } catch (err) {
       console.error('Error updating candidate status:', err);
       return {
         status: 'Failed',
-        error: err.message
+        error: err.message,
       };
     }
   }
@@ -1916,11 +2114,12 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async getUserObj(@Req() request: any): Promise<object> {
     try {
-
-      console.log("Going to get user object", 'CandidateSourcingController');
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-      const origin = request.headers['x-origin-domain'] || request.headers.origin;
-
+      console.log('Going to get user object', 'CandidateSourcingController');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
+      const origin =
+        request.headers['x-origin-domain'] || request.headers.origin;
 
       let chromeExtensionId = 'najjmciobphkllanmfgffjjjcbejnbci'; // default
 
@@ -1928,34 +2127,46 @@ export class CandidateSourcingController {
       if (origin && origin.startsWith('chrome-extension://')) {
         chromeExtensionId = origin.replace('chrome-extension://', '');
       }
-      console.log(`chromeExtensionId in getUserObj: ${chromeExtensionId}`, 'CandidateSourcingController');
-      // Get current user data using the same approach as RecruiterProfileService
-      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
-      // Get all jobs for the user using staticGraphQLService
-      const responseFromGetAllJobs = await this.staticGraphQLService.executeGraphQL(
-        graphqlToFindManyProjects,
-        { filter: { isActive: { eq: true } }, limit: 30, orderBy: [{ position: 'AscNullsFirst' }] },
-        apiToken,
+      console.log(
+        `chromeExtensionId in getUserObj: ${chromeExtensionId}`,
+        'CandidateSourcingController',
       );
+      // Get current user data using the same approach as RecruiterProfileService
+      const currentUser = await new RecruiterProfileService(
+        this.staticGraphQLService,
+      ).getCurrentUser(apiToken, origin);
+      // Get all jobs for the user using staticGraphQLService
+      const responseFromGetAllJobs =
+        await this.staticGraphQLService.executeGraphQL(
+          graphqlToFindManyProjects,
+          {
+            filter: { isActive: { eq: true } },
+            limit: 30,
+            orderBy: [{ position: 'AscNullsFirst' }],
+          },
+          apiToken,
+        );
       const jobs = responseFromGetAllJobs?.data?.data?.projects?.edges || [];
 
       // Use the workspace member data from currentUser instead of separate query
       const workspaceMember = currentUser?.workspaceMember;
 
       // Create a mock recruiter profile from the workspace member data
-      const recruiterProfile = workspaceMember ? {
-        id: workspaceMember.id,
-        phoneNumber: '+1234567890', // Default phone number since it's not in workspaceMember
-        name: `${workspaceMember.name?.firstName || ''} ${workspaceMember.name?.lastName || ''}`.trim(),
-        email: workspaceMember.userEmail,
-        jobTitle: 'Recruiter', // Default job title
-        companyName: currentUser?.currentWorkspace?.displayName || 'Arxena',
-        companyDescription: 'Recruitment Company',
-        linkedinUrl: '',
-        firstName: workspaceMember.name?.firstName || '',
-        lastName: workspaceMember.name?.lastName || '',
-        typeWorkspaceMember: 'MEMBER'
-      } : null;
+      const recruiterProfile = workspaceMember
+        ? {
+            id: workspaceMember.id,
+            phoneNumber: '+1234567890', // Default phone number since it's not in workspaceMember
+            name: `${workspaceMember.name?.firstName || ''} ${workspaceMember.name?.lastName || ''}`.trim(),
+            email: workspaceMember.userEmail,
+            jobTitle: 'Recruiter', // Default job title
+            companyName: currentUser?.currentWorkspace?.displayName || 'Arxena',
+            companyDescription: 'Recruitment Company',
+            linkedinUrl: '',
+            firstName: workspaceMember.name?.firstName || '',
+            lastName: workspaceMember.name?.lastName || '',
+            typeWorkspaceMember: 'MEMBER',
+          }
+        : null;
 
       // Map jobs to the expected format
       const mappedJobs = jobs.map((jobEdge: any) => {
@@ -1967,34 +2178,41 @@ export class CandidateSourcingController {
           jobCode: job.jobCode || '',
           job_company_name: job.name, // Using job name as company name for now
           job_company_id: job.pathPosition || 'dummy_company_id',
-          sublists: [{
-            sublist_name: job.name,
-            sublist_id: job.id,
-            created_date: job.createdAt
-          }],
+          sublists: [
+            {
+              sublist_name: job.name,
+              sublist_id: job.id,
+              created_date: job.createdAt,
+            },
+          ],
           start_date: job.createdAt,
           status: job.isActive ? 'active' : 'inactive',
           hot_columns: this.getDefaultHotColumns(),
-          statuses: this.getDefaultStatuses()
+          statuses: this.getDefaultStatuses(),
         };
       });
 
       // Create the user object matching the expected structure
       const userObj = {
         _id: currentUser?.id || 'dummy_user_id',
-        full_name: recruiterProfile?.name || `${currentUser?.firstName || ''} ${currentUser?.lastName || ''}`.trim() || 'Dummy User',
+        full_name:
+          recruiterProfile?.name ||
+          `${currentUser?.firstName || ''} ${currentUser?.lastName || ''}`.trim() ||
+          'Dummy User',
         email: currentUser?.email || 'dummy@example.com',
         phone: recruiterProfile?.phoneNumber || '+1234567890',
         token: 'some',
         origin: currentUser?.currentWorkspace?.subdomain || 'colorful-panther',
-        currentWorkspaceMemberId: currentUser?.workspaceMember?.id || 'dummy_workspace_member_id',
+        currentWorkspaceMemberId:
+          currentUser?.workspaceMember?.id || 'dummy_workspace_member_id',
         twentyId: currentUser?.id || 'dummy_twenty_id',
-        currentWorkspaceId: currentUser?.currentWorkspace?.id || 'dummy_workspace_id',
+        currentWorkspaceId:
+          currentUser?.currentWorkspace?.id || 'dummy_workspace_id',
         plan: {
           credits: 0,
           queries: 10,
           customer_status: 'plan_0',
-          plan: 'plan_0'
+          plan: 'plan_0',
         },
         grouped_users: [],
         registration_ip_address: '127.0.0.1',
@@ -2004,25 +2222,24 @@ export class CandidateSourcingController {
         twenty_api_key: apiToken,
         jobs: mappedJobs,
         chrome_extension_id: chromeExtensionId,
-        all_jobs: mappedJobs.map(job => ({
+        all_jobs: mappedJobs.map((job) => ({
           user_id: job.user_id,
           job_id: job.job_id,
           job_name: job.job_name,
           start_date: job.start_date,
-          status: job.status
-        }))
+          status: job.status,
+        })),
       };
-
 
       return {
         status: 'successful_fid',
-        user_obj: userObj
+        user_obj: userObj,
       };
     } catch (err) {
       console.error('Error in getUserObj:', err);
       return {
         status: 'Failed',
-        error: err.message
+        error: err.message,
       };
     }
   }
@@ -2034,7 +2251,10 @@ export class CandidateSourcingController {
   @Post('set-chrome-extension-id')
   @UseGuards(JwtAuthGuard)
   async setChromeExtensionId(@Req() request: any): Promise<object> {
-    console.log("Going to set chrome extension id", 'CandidateSourcingController');
+    console.log(
+      'Going to set chrome extension id',
+      'CandidateSourcingController',
+    );
     try {
       const apiToken = request.headers.authorization
         .split(' ')[1]
@@ -2186,13 +2406,37 @@ export class CandidateSourcingController {
     return [
       { status_name: 'Sourced', status_value: 'sourced', progress_value: 1 },
       { status_name: 'Enriched', status_value: 'enriched', progress_value: 2 },
-      { status_name: 'Contacted', status_value: 'contacted', progress_value: 3 },
-      { status_name: 'Disinterested', status_value: 'disinterested', progress_value: 4 },
-      { status_name: 'Interested', status_value: 'interested', progress_value: 5 },
-      { status_name: 'On Hold', status_value: 'on_hold_by_recruiter', progress_value: 6 },
-      { status_name: 'CV Sent', status_value: 'on_hold_by_recruiter', progress_value: 7 },
-      { status_name: 'Client Interview', status_value: 'client_interview', progress_value: 8 },
-      { status_name: 'Joined', status_value: 'joined', progress_value: 9 }
+      {
+        status_name: 'Contacted',
+        status_value: 'contacted',
+        progress_value: 3,
+      },
+      {
+        status_name: 'Disinterested',
+        status_value: 'disinterested',
+        progress_value: 4,
+      },
+      {
+        status_name: 'Interested',
+        status_value: 'interested',
+        progress_value: 5,
+      },
+      {
+        status_name: 'On Hold',
+        status_value: 'on_hold_by_recruiter',
+        progress_value: 6,
+      },
+      {
+        status_name: 'CV Sent',
+        status_value: 'on_hold_by_recruiter',
+        progress_value: 7,
+      },
+      {
+        status_name: 'Client Interview',
+        status_value: 'client_interview',
+        progress_value: 8,
+      },
+      { status_name: 'Joined', status_value: 'joined', progress_value: 9 },
     ];
   }
 
@@ -2201,36 +2445,47 @@ export class CandidateSourcingController {
   async updateContact(@Req() request: any): Promise<object> {
     try {
       console.log('This is the request in update contact:', request.body);
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const contactData = request.body || {};
-      const origin = request.headers['x-origin-domain'] || request.headers.origin;
+      const origin =
+        request.headers['x-origin-domain'] || request.headers.origin;
       console.log('This is the data in update contact:', contactData);
 
       // Check if this is a direct download (skip processing if true)
       const directDownload = contactData.direct_download || false;
-      console.log('This is the direct_download in update contact:', directDownload);
+      console.log(
+        'This is the direct_download in update contact:',
+        directDownload,
+      );
 
       if (!directDownload) {
         // Process the contact data using candidateService
         // This is similar to the Flask implementation's update_contact_with_contact_data
-        await this.candidateService.processContactData(contactData, origin, apiToken);
+        await this.candidateService.processContactData(
+          contactData,
+          origin,
+          apiToken,
+        );
       } else {
-        console.log('Ignoring the update of contact as direct_download is true');
+        console.log(
+          'Ignoring the update of contact as direct_download is true',
+        );
       }
 
       const responseObj = {
-        status: 'success'
+        status: 'success',
       };
 
       console.log('This is the response_obj from update_contact:', responseObj);
       return responseObj;
-
     } catch (error) {
       console.error('Error in update-contact:', error);
       return {
         status: 'fail',
         message: 'Failed to update contact',
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -2250,16 +2505,19 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async replicateCvAttachments(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const candidateId = request.body?.candidateId;
       if (!candidateId) {
         return { status: 'error', message: 'Missing candidateId' };
       }
 
-      const result = await this.candidateService.replicateCvAttachmentsAcrossMatchingCandidates(
-        candidateId,
-        apiToken,
-      );
+      const result =
+        await this.candidateService.replicateCvAttachmentsAcrossMatchingCandidates(
+          candidateId,
+          apiToken,
+        );
 
       return {
         status: 'success',
@@ -2270,7 +2528,10 @@ export class CandidateSourcingController {
       console.error('Error replicating CV attachments:', error);
       return {
         status: 'error',
-        message: error instanceof Error ? error.message : 'Failed to replicate CV attachments',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to replicate CV attachments',
       };
     }
   }
@@ -2280,7 +2541,9 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async bulkBackfillCvAttachments(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const dryRun = request.body?.dryRun === true;
       const projectId =
         request.body?.projectId ?? request.body?.jobId ?? undefined;
@@ -2303,7 +2566,10 @@ export class CandidateSourcingController {
       console.error('Error in bulk CV attachment backfill:', error);
       return {
         status: 'error',
-        message: error instanceof Error ? error.message : 'Failed to run bulk CV attachment backfill',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to run bulk CV attachment backfill',
       };
     }
   }
@@ -2315,58 +2581,65 @@ export class CandidateSourcingController {
   }
 
   @Post('test-file-upload-no-auth')
-  @UseInterceptors(FileInterceptor('file', {
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
-    storage: multer.memoryStorage(), // Store in memory temporarily
-    fileFilter: (req, file, callback) => {
-      console.log('Multer file filter called (no auth):', {
-        fieldname: file.fieldname,
-        originalname: file.originalname,
-        mimetype: file.mimetype
-      });
-      callback(null, true);
-    }
-  }))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+      storage: multer.memoryStorage(), // Store in memory temporarily
+      fileFilter: (req, file, callback) => {
+        console.log('Multer file filter called (no auth):', {
+          fieldname: file.fieldname,
+          originalname: file.originalname,
+          mimetype: file.mimetype,
+        });
+        callback(null, true);
+      },
+    }),
+  )
   async testFileUploadNoAuth(
     @Req() request: any,
     @UploadedFile() file: Express.Multer.File,
   ): Promise<object> {
     console.log('Test file upload endpoint reached (no auth)');
     console.log('File:', file);
-    return { status: 'success', message: 'Test file upload reached (no auth)', file: file?.originalname };
+    return {
+      status: 'success',
+      message: 'Test file upload reached (no auth)',
+      file: file?.originalname,
+    };
   }
 
   @Post('update-contact-with-cv-no-auth')
-  @UseInterceptors(FileInterceptor('file', {
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
-    storage: multer.memoryStorage(), // Store in memory temporarily
-    fileFilter: (req, file, callback) => {
-      console.log('Multer file filter called (no auth):', {
-        fieldname: file.fieldname,
-        originalname: file.originalname,
-        mimetype: file.mimetype
-      });
-      callback(null, true);
-    }
-  }))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+      storage: multer.memoryStorage(), // Store in memory temporarily
+      fileFilter: (req, file, callback) => {
+        console.log('Multer file filter called (no auth):', {
+          fieldname: file.fieldname,
+          originalname: file.originalname,
+          mimetype: file.mimetype,
+        });
+        callback(null, true);
+      },
+    }),
+  )
   async updateContactWithCvNoAuth(
     @Req() request: any,
     @UploadedFile() file: Express.Multer.File,
   ): Promise<object> {
     try {
-
       if (!file) {
         console.error('No file provided in request');
         return {
           status: 'error',
-          message: 'No file provided'
+          message: 'No file provided',
         };
       }
 
       console.log('File details:', {
         originalname: file.originalname,
         mimetype: file.mimetype,
-        size: file.size
+        size: file.size,
       });
 
       return {
@@ -2374,54 +2647,66 @@ export class CandidateSourcingController {
         message: 'CV upload test successful (no auth)',
         file: file.originalname,
         candidateData: request.body.candidate_data,
-        uniqueStringKey: request.body.uniqueStringKey
+        uniqueStringKey: request.body.uniqueStringKey,
       };
-
     } catch (error) {
       console.error('Error processing CV upload test:', error);
       return {
         status: 'error',
         message: error.message || 'Failed to process CV upload test',
-        details: error.stack
+        details: error.stack,
       };
     }
   }
 
   @Post('update-contact-with-cv')
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileInterceptor('file', {
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
-    storage: multer.memoryStorage(), // Store in memory temporarily
-    fileFilter: (req, file, callback) => {
-      console.log('Multer file filter called:', {
-        fieldname: file.fieldname,
-        originalname: file.originalname,
-        mimetype: file.mimetype
-      });
-      callback(null, true);
-    }
-  }))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+      storage: multer.memoryStorage(), // Store in memory temporarily
+      fileFilter: (req, file, callback) => {
+        console.log('Multer file filter called:', {
+          fieldname: file.fieldname,
+          originalname: file.originalname,
+          mimetype: file.mimetype,
+        });
+        callback(null, true);
+      },
+    }),
+  )
   async updateContactWithCv(
     @Req() request: any,
     @UploadedFile() file: Express.Multer.File,
   ): Promise<object> {
     try {
-      console.log('Received direct CV upload from extension hit update-contact-with-cv');
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-      console.log('Request body x-origin-domain:', request.body['x-origin-domain']);
+      console.log(
+        'Received direct CV upload from extension hit update-contact-with-cv',
+      );
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
+      console.log(
+        'Request body x-origin-domain:',
+        request.body['x-origin-domain'],
+      );
       if (!request.headers['x-origin-domain']) {
-      // Check if 'x-origin-domain' is present in the form fields in addition to headers
-      if (!request.headers['x-origin-domain'] && request.body['x-origin-domain']) {
-        request.headers['x-origin-domain'] = request.body['x-origin-domain'];
+        // Check if 'x-origin-domain' is present in the form fields in addition to headers
+        if (
+          !request.headers['x-origin-domain'] &&
+          request.body['x-origin-domain']
+        ) {
+          request.headers['x-origin-domain'] = request.body['x-origin-domain'];
+        }
       }
-      }
-      const origin = request.headers['x-origin-domain'] || request.headers.origin || '';
+      const origin =
+        request.headers['x-origin-domain'] || request.headers.origin || '';
       console.log('Origin in updateContactWithCv:', origin);
       if (!file) {
         console.error('No file provided in request');
         return {
           status: 'error',
-          message: 'No file provided'
+          message: 'No file provided',
         };
       }
 
@@ -2443,7 +2728,8 @@ export class CandidateSourcingController {
         // Extract Resdex identity fields when present
         resdex_key = candidateData.resdex_key;
         resdex_encryptedResId = candidateData.resdex_encryptedResId;
-        resdex_doubleEncryptedUserName = candidateData.resdex_doubleEncryptedUserName;
+        resdex_doubleEncryptedUserName =
+          candidateData.resdex_doubleEncryptedUserName;
         resdex_download_resId = candidateData.resdex_download_resId;
         resdex_download_uname = candidateData.resdex_download_uname;
       } catch (parseError) {
@@ -2451,7 +2737,7 @@ export class CandidateSourcingController {
         return {
           status: 'error',
           message: 'Invalid form data format',
-          error: parseError.message
+          error: parseError.message,
         };
       }
 
@@ -2464,24 +2750,36 @@ export class CandidateSourcingController {
           const profileData = JSON.parse(profileDataStr);
           const directDownload = profileData.direct_download || false;
           console.log('This is the profileData:', profileData);
-          console.log('This is the direct_download in updateContactWithCv:', directDownload);
+          console.log(
+            'This is the direct_download in updateContactWithCv:',
+            directDownload,
+          );
           // Extract job name from popup_data
           if (profileData.popup_data?.job_name) {
             jobName = profileData.popup_data.job_name;
           }
 
           if (!directDownload) {
-            console.log('This is the direct_download in updateContactWithCv if condition:', directDownload);
+            console.log(
+              'This is the direct_download in updateContactWithCv if condition:',
+              directDownload,
+            );
             const contactData = {
               json_data: profileData.json_data || '{}',
               popup_data: profileData.popup_data || {},
-              data_source: profileData.data_source || ''
+              data_source: profileData.data_source || '',
             };
-            await this.candidateService.processContactData(contactData, origin, apiToken);
+            await this.candidateService.processContactData(
+              contactData,
+              origin,
+              apiToken,
+            );
           } else {
             // Even for direct downloads, ensure candidate exists in the specified job
             // This ensures CV uploads are associated with the correct job
-            console.log('Direct download detected, but ensuring candidate exists in specified job');
+            console.log(
+              'Direct download detected, but ensuring candidate exists in specified job',
+            );
             const contactData = {
               json_data: profileData.json_data || '{}',
               popup_data: profileData.popup_data || {},
@@ -2490,10 +2788,14 @@ export class CandidateSourcingController {
             };
             // Process contact data to ensure candidate is created/updated in the job
             // This is important for CV uploads to be associated with the correct job
-            await this.candidateService.processContactData(contactData, origin,   apiToken);
+            await this.candidateService.processContactData(
+              contactData,
+              origin,
+              apiToken,
+            );
             // Add a small delay to allow candidate creation/update to complete
             // This ensures the candidate exists in the job before CV upload
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 1000));
           }
 
           // Extract job info from profile data
@@ -2506,14 +2808,17 @@ export class CandidateSourcingController {
           if (!resdex_encryptedResId && jsonData.resdex_encryptedResId) {
             resdex_encryptedResId = jsonData.resdex_encryptedResId;
           }
-          if (!resdex_doubleEncryptedUserName && jsonData.resdex_doubleEncryptedUserName) {
-            resdex_doubleEncryptedUserName = jsonData.resdex_doubleEncryptedUserName;
+          if (
+            !resdex_doubleEncryptedUserName &&
+            jsonData.resdex_doubleEncryptedUserName
+          ) {
+            resdex_doubleEncryptedUserName =
+              jsonData.resdex_doubleEncryptedUserName;
           }
           const profileUrl = jsonData.profile_url || jsonData.window_url;
           if (profileUrl) {
             console.log('Profile URL found:', profileUrl);
           }
-
         } catch (error) {
           console.error('Error extracting job info from profile data:', error);
           // Continue processing even if profile data parsing fails
@@ -2530,7 +2835,8 @@ export class CandidateSourcingController {
       // Get workspace information
       let workspaceId;
       try {
-        workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+        workspaceId =
+          await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
         if (!workspaceId) {
           throw new Error('Could not get workspace ID from token');
         }
@@ -2539,11 +2845,14 @@ export class CandidateSourcingController {
         return {
           status: 'error',
           message: 'Failed to get workspace information',
-          error: error.message
+          error: error.message,
         };
       }
 
-      const fileName = file.originalname || request.body.file_name || `cv_${uniqueStringKey}.pdf`;
+      const fileName =
+        file.originalname ||
+        request.body.file_name ||
+        `cv_${uniqueStringKey}.pdf`;
       const filePath = `workspace-${workspaceId}/client_uploads/client_cv_uploads/${jobName}/${fileName}`;
 
       try {
@@ -2566,7 +2875,7 @@ export class CandidateSourcingController {
         return {
           status: 'error',
           message: 'Failed to save file',
-          error: fileError.message
+          error: fileError.message,
         };
       }
 
@@ -2589,13 +2898,18 @@ export class CandidateSourcingController {
       if (!popupData.job_name && jobName && jobName !== 'default_job') {
         popupData.job_name = jobName;
       }
-      if (!popupData.twenty_job_id && !popupData.job_id && candidateData.job_id) {
+      if (
+        !popupData.twenty_job_id &&
+        !popupData.job_id &&
+        candidateData.job_id
+      ) {
         popupData.twenty_job_id = candidateData.job_id;
       }
       if (!popupData.recruiterId) {
         try {
-          const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService)
-            .getRecruiterProfileFromCurrentUser(apiToken, origin);
+          const recruiterProfile = await new RecruiterProfileService(
+            this.staticGraphQLService,
+          ).getRecruiterProfileFromCurrentUser(apiToken, origin);
           if (recruiterProfile?.workspaceMemberId) {
             popupData.recruiterId = recruiterProfile.workspaceMemberId;
           }
@@ -2614,48 +2928,60 @@ export class CandidateSourcingController {
           contactData = {
             profile_url: profileUrl,
             json_data: jsonDataStr,
-            popup_data: popupData // Include popup_data with job information
+            popup_data: popupData, // Include popup_data with job information
           };
         } catch (error) {
-          console.error('Error parsing profileData for contact processing:', error);
+          console.error(
+            'Error parsing profileData for contact processing:',
+            error,
+          );
           // Fallback to candidateData
           profileUrl = candidateData.profile_url || '';
           contactData = {
             profile_url: profileUrl,
             json_data: JSON.stringify(candidateData),
-            popup_data: popupData // Include popup_data with job information
+            popup_data: popupData, // Include popup_data with job information
           };
         }
       } else {
         // Fallback to candidateData if no profileData
         profileUrl = candidateData.profile_url || '';
-        console.log('Using candidateData for contact processing, profile_url:', profileUrl);
+        console.log(
+          'Using candidateData for contact processing, profile_url:',
+          profileUrl,
+        );
 
         contactData = {
           profile_url: profileUrl,
           json_data: JSON.stringify(candidateData),
-          popup_data: popupData // Include popup_data with job information
+          popup_data: popupData, // Include popup_data with job information
         };
       }
 
       // If Resdex identity says this CV/contact pairing is unsafe, strip phone/email from json_data
-      if (resdex_encryptedResId && resdex_download_resId && resdex_encryptedResId !== resdex_download_resId) {
+      if (
+        resdex_encryptedResId &&
+        resdex_download_resId &&
+        resdex_encryptedResId !== resdex_download_resId
+      ) {
         try {
           const parsed = JSON.parse(contactData.json_data || '{}');
           if (parsed.phone_number || parsed.email_address) {
             console.warn(
               '[updateContactWithCv] Resdex encryptedResId mismatch for CV upload. ' +
-              'Removing phone_number and email_address from contact data to avoid wrong merge.'
+                'Removing phone_number and email_address from contact data to avoid wrong merge.',
             );
             delete parsed.phone_number;
             delete parsed.email_address;
             contactData.json_data = JSON.stringify(parsed);
           }
         } catch (stripError) {
-          console.warn('[updateContactWithCv] Failed to strip phone/email on identifier mismatch:', stripError);
+          console.warn(
+            '[updateContactWithCv] Failed to strip phone/email on identifier mismatch:',
+            stripError,
+          );
         }
       }
-
 
       // Process the CV upload with error handling
       try {
@@ -2664,7 +2990,7 @@ export class CandidateSourcingController {
           filePath,
           uniqueStringKey,
           apiToken,
-          origin
+          origin,
         );
         console.log('CV processing completed successfully');
       } catch (cvError) {
@@ -2680,10 +3006,14 @@ export class CandidateSourcingController {
 
       // Update table data with error handling
       try {
-        const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService)
-            .getRecruiterProfileFromCurrentUser(apiToken, origin);
+        const recruiterProfile = await new RecruiterProfileService(
+          this.staticGraphQLService,
+        ).getRecruiterProfileFromCurrentUser(apiToken, origin);
 
-        await this.candidateService.updateTableData(recruiterProfile?.workspaceMemberId || workspaceId, apiToken);
+        await this.candidateService.updateTableData(
+          recruiterProfile?.workspaceMemberId || workspaceId,
+          apiToken,
+        );
         console.log('[CV-Upload] Update table data completed');
       } catch (error) {
         console.error('[CV-Upload] Error updating table data:', error);
@@ -2695,7 +3025,7 @@ export class CandidateSourcingController {
         status: 'success',
         message: 'CV uploaded and processed successfully',
         file_path: filePath,
-        uniqueStringKey: uniqueStringKey
+        uniqueStringKey: uniqueStringKey,
       };
 
       // Add job info to response if available
@@ -2708,13 +3038,12 @@ export class CandidateSourcingController {
 
       console.log('CV upload completed successfully:', responseObj);
       return responseObj;
-
     } catch (error) {
       console.error('Error processing CV upload:', error);
       return {
         status: 'error',
         message: error.message || 'Failed to process CV upload',
-        details: error.stack
+        details: error.stack,
       };
     }
   }
@@ -2723,7 +3052,9 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async createChatKitSession(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const { workflowId, userId } = request.body;
 
       if (!workflowId) {
@@ -2744,7 +3075,9 @@ export class CandidateSourcingController {
       }
 
       // Generate a device/user ID if not provided
-      const deviceId = userId || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const deviceId =
+        userId ||
+        `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       try {
         const response = await axios.post(
@@ -2759,7 +3092,7 @@ export class CandidateSourcingController {
               'OpenAI-Beta': 'chatkit_beta=v1',
               Authorization: `Bearer ${openaiApiKey}`,
             },
-          }
+          },
         );
 
         return {
@@ -2767,11 +3100,15 @@ export class CandidateSourcingController {
           client_secret: response.data.client_secret,
         };
       } catch (openaiError: any) {
-        console.error('Error creating ChatKit session:', openaiError.response?.data || openaiError.message);
+        console.error(
+          'Error creating ChatKit session:',
+          openaiError.response?.data || openaiError.message,
+        );
         return {
           status: 'Failed',
           message: 'Failed to create ChatKit session',
-          error: openaiError.response?.data?.error?.message || openaiError.message,
+          error:
+            openaiError.response?.data?.error?.message || openaiError.message,
         };
       }
     } catch (err) {
@@ -2791,7 +3128,9 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async updateContactFromEnrichment(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const { linkedinUrl, emails, phones, candidateId } = request.body;
       const projectId = request.body.projectId ?? request.body.jobId;
 
@@ -2806,20 +3145,30 @@ export class CandidateSourcingController {
 
       let candidates: any[] = [];
       if (candidateId) {
-        const foundCandidates = await this.candidateService.findCandidatesByProfileUrl(linkedinUrl, apiToken);
+        const foundCandidates =
+          await this.candidateService.findCandidatesByProfileUrl(
+            linkedinUrl,
+            apiToken,
+          );
         if (foundCandidates.length > 0) {
-          const foundCandidate = foundCandidates.find((c: any) => c.id === candidateId);
+          const foundCandidate = foundCandidates.find(
+            (c: any) => c.id === candidateId,
+          );
           candidates = foundCandidate ? [foundCandidate] : [];
         }
       } else {
-        candidates = await this.candidateService.findCandidatesByProfileUrl(linkedinUrl, apiToken);
+        candidates = await this.candidateService.findCandidatesByProfileUrl(
+          linkedinUrl,
+          apiToken,
+        );
 
         if (projectId && candidates.length > 0) {
-          const project = await this.candidateWorkspaceGraphQLService.getJobDetails(
-            projectId,
-            '',
-            apiToken,
-          );
+          const project =
+            await this.candidateWorkspaceGraphQLService.getJobDetails(
+              projectId,
+              '',
+              apiToken,
+            );
           if (project) {
             candidates = candidates.filter((candidate: any) => {
               return (
@@ -2835,7 +3184,8 @@ export class CandidateSourcingController {
       if (!candidates || candidates.length === 0) {
         return {
           status: 'error',
-          message: 'Candidate not found. Please save the candidate to a job first using upload-profiles.',
+          message:
+            'Candidate not found. Please save the candidate to a job first using upload-profiles.',
         };
       }
 
@@ -2896,11 +3246,13 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async getCandidatesByLinkedInUrls(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const linkedinUrls = request.query.linkedinUrls
-        ? (Array.isArray(request.query.linkedinUrls)
-            ? request.query.linkedinUrls
-            : request.query.linkedinUrls.split(','))
+        ? Array.isArray(request.query.linkedinUrls)
+          ? request.query.linkedinUrls
+          : request.query.linkedinUrls.split(',')
         : [];
       const projectId = request.query.projectId ?? request.query.jobId;
 
@@ -2925,10 +3277,11 @@ export class CandidateSourcingController {
 
       for (const linkedinUrl of linkedinUrls) {
         try {
-          const candidates = await this.candidateService.findCandidatesByProfileUrl(
-            linkedinUrl,
-            apiToken,
-          );
+          const candidates =
+            await this.candidateService.findCandidatesByProfileUrl(
+              linkedinUrl,
+              apiToken,
+            );
 
           if (candidates && candidates.length > 0) {
             const candidateIds = candidates.map((c: any) => c.id);
@@ -2961,9 +3314,13 @@ export class CandidateSourcingController {
                     ? filteredCandidates.map((c: any) => c.id)
                     : undefined,
                 projectIds:
-                  filteredProjectIds.length > 0 ? filteredProjectIds : undefined,
+                  filteredProjectIds.length > 0
+                    ? filteredProjectIds
+                    : undefined,
                 jobIds:
-                  filteredProjectIds.length > 0 ? filteredProjectIds : undefined,
+                  filteredProjectIds.length > 0
+                    ? filteredProjectIds
+                    : undefined,
               };
             } else {
               results[linkedinUrl] = {
@@ -3016,8 +3373,11 @@ export class CandidateSourcingController {
       let lastStepTime = startTime;
       const timings: Record<string, number> = {};
       const body = request.body;
-      const token = request.headers.authorization.split(' ')[1].replace(/\r|\n/g, '');
-      const payload = await this.workspaceQueryService.getWorkspaceIdFromToken(token);
+      const token = request.headers.authorization
+        .split(' ')[1]
+        .replace(/\r|\n/g, '');
+      const payload =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(token);
       timings['extract_and_token'] = performance.now() - lastStepTime;
       lastStepTime = performance.now();
 
@@ -3030,10 +3390,14 @@ export class CandidateSourcingController {
         );
       }
       if (!body.limit || typeof body.limit !== 'number') {
-        throw new HttpException('Invalid limit parameter', HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          'Invalid limit parameter',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
-      const dataSourceSchema = this.workspaceQueryService.getDataSourceSchema(payload);
+      const dataSourceSchema =
+        this.workspaceQueryService.getDataSourceSchema(payload);
       const sql = `
         SELECT
           c.id, c.name, c."updatedAt", c."createdAt", c."status", c."jobTitle", c."whatsappProvider",
@@ -3062,8 +3426,16 @@ export class CandidateSourcingController {
       const maxPages = body.maxPages || 100;
 
       while (hasMorePages && pageCount < maxPages) {
-        const params = [projectIdsFilter, body.limit, ...(currentCursor ? [new Date(currentCursor)] : [])];
-        const batch = await this.workspaceQueryService.executeWorkspaceRawQuery(sql, params, payload);
+        const params = [
+          projectIdsFilter,
+          body.limit,
+          ...(currentCursor ? [new Date(currentCursor)] : []),
+        ];
+        const batch = await this.workspaceQueryService.executeWorkspaceRawQuery(
+          sql,
+          params,
+          payload,
+        );
         lastBatchLength = batch.length;
         allResults = allResults.concat(batch);
         hasMorePages = batch.length === body.limit;
@@ -3096,17 +3468,35 @@ export class CandidateSourcingController {
           messagingChannel: row.messagingChannel,
           candidateFlags: row.candidateFlags,
           uniqueStringKey: row.uniqueStringKey,
-          hiringNaukriUrl: row.hiring_naukri_url || { primaryLinkUrl: '', primaryLinkLabel: '' },
-          resdexNaukriUrl: row.resdex_naukri_url || { primaryLinkUrl: '', primaryLinkLabel: '' },
-          linkedinUrl: row.linkedin_url || { primaryLinkUrl: '', primaryLinkLabel: '' },
+          hiringNaukriUrl: row.hiring_naukri_url || {
+            primaryLinkUrl: '',
+            primaryLinkLabel: '',
+          },
+          resdexNaukriUrl: row.resdex_naukri_url || {
+            primaryLinkUrl: '',
+            primaryLinkLabel: '',
+          },
+          linkedinUrl: row.linkedin_url || {
+            primaryLinkUrl: '',
+            primaryLinkLabel: '',
+          },
           otherFields: parseRowOtherFields(row),
-          chatMessages: { edges: (row.chatMessages || row.whatsapp_messages || []).map((wm: any) => ({ node: wm })) },
+          chatMessages: {
+            edges: (row.chatMessages || row.whatsapp_messages || []).map(
+              (wm: any) => ({ node: wm }),
+            ),
+          },
           chatCount: row.chatCount,
         },
       }));
       const pageInfo = {
-        hasNextPage: shouldFetchAllPages ? false : lastBatchLength === body.limit,
-        endCursor: result.length > 0 ? result[result.length - 1].updatedAt.toISOString() : null,
+        hasNextPage: shouldFetchAllPages
+          ? false
+          : lastBatchLength === body.limit,
+        endCursor:
+          result.length > 0
+            ? result[result.length - 1].updatedAt.toISOString()
+            : null,
       };
       return {
         data: { candidates: { edges, pageInfo } },
@@ -3122,9 +3512,17 @@ export class CandidateSourcingController {
   }
 
   @Post('get-candidates-graphql-queries-execution-service')
-  async getCandidatesGraphQLQueriesExecutionService(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization?.split(' ')[1]?.replace(/[\r\n]+/g, '');
-    const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateDataWithFieldValues, {}, apiToken);
+  async getCandidatesGraphQLQueriesExecutionService(
+    @Req() request: any,
+  ): Promise<object> {
+    const apiToken = request.headers.authorization
+      ?.split(' ')[1]
+      ?.replace(/[\r\n]+/g, '');
+    const response = await this.staticGraphQLService.executeGraphQL(
+      graphqlToFetchAllCandidateDataWithFieldValues,
+      {},
+      apiToken,
+    );
     return response;
   }
 
@@ -3132,12 +3530,20 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async getCandidateIdsByHiringNaukriURL(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const hiringNaukriUrl = request.body.hiringNaukriUrl;
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, {
-        filter: { hiringNaukriUrl: { url: { eq: hiringNaukriUrl } } },
-      }, apiToken);
-      const candidates = response?.data?.data?.candidates as { edges: CandidateEdge[]; pageInfo: PageInfo } | undefined;
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFetchAllCandidateData,
+        {
+          filter: { hiringNaukriUrl: { url: { eq: hiringNaukriUrl } } },
+        },
+        apiToken,
+      );
+      const candidates = response?.data?.data?.candidates as
+        | { edges: CandidateEdge[]; pageInfo: PageInfo }
+        | undefined;
       const candidateId = candidates?.edges[0]?.node?.id;
       return { candidateId };
     } catch (err) {
@@ -3149,12 +3555,20 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async getCandidateIdsByResdexNaukriURL(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const resdexNaukriUrl = request.body.resdexNaukriUrl;
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, {
-        filter: { resdexNaukriUrl: { url: { eq: resdexNaukriUrl } } },
-      }, apiToken);
-      const candidates = response?.data?.data?.candidates as { edges: CandidateEdge[]; pageInfo: PageInfo } | undefined;
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFetchAllCandidateData,
+        {
+          filter: { resdexNaukriUrl: { url: { eq: resdexNaukriUrl } } },
+        },
+        apiToken,
+      );
+      const candidates = response?.data?.data?.candidates as
+        | { edges: CandidateEdge[]; pageInfo: PageInfo }
+        | undefined;
       const candidateId = candidates?.edges[0]?.node?.id;
       return { candidateId };
     } catch (err) {
@@ -3164,14 +3578,27 @@ export class CandidateSourcingController {
 
   @Post('get-ids-by-unique-string-key')
   @UseGuards(JwtAuthGuard)
-  async getIdsByUniqueStringKey(@Req() request: any): Promise<{ candidateIds: string[]; personId: string | undefined }> {
+  async getIdsByUniqueStringKey(
+    @Req() request: any,
+  ): Promise<{ candidateIds: string[]; personId: string | undefined }> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, {
-        filter: { uniqueStringKey: { eq: request.body.uniqueStringKey } },
-      }, apiToken);
-      const people = response?.data?.data?.people as { edges: PersonEdge[]; pageInfo: PageInfo } | undefined;
-      const candidateIds = people?.edges[0]?.node?.candidates?.edges?.map((edge: any) => edge.node?.id).filter((id: string) => id) || [];
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlQueryToFindManyPeople,
+        {
+          filter: { uniqueStringKey: { eq: request.body.uniqueStringKey } },
+        },
+        apiToken,
+      );
+      const people = response?.data?.data?.people as
+        | { edges: PersonEdge[]; pageInfo: PageInfo }
+        | undefined;
+      const candidateIds =
+        people?.edges[0]?.node?.candidates?.edges
+          ?.map((edge: any) => edge.node?.id)
+          .filter((id: string) => id) || [];
       return { candidateIds, personId: people?.edges[0]?.node?.id };
     } catch (err) {
       return { candidateIds: [], personId: undefined };
@@ -3180,15 +3607,28 @@ export class CandidateSourcingController {
 
   @Post('get-id-by-naukri-url')
   @UseGuards(JwtAuthGuard)
-  async getCandidateIdByNaukriURL(@Req() request: any): Promise<{ candidateId: string | null }> {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+  async getCandidateIdByNaukriURL(
+    @Req() request: any,
+  ): Promise<{ candidateId: string | null }> {
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
     try {
-      const url = request.body[request.body.resdexNaukriUrl ? 'resdexNaukriUrl' : 'hiringNaukriUrl'];
+      const url =
+        request.body[
+          request.body.resdexNaukriUrl ? 'resdexNaukriUrl' : 'hiringNaukriUrl'
+        ];
       const type = request.body.resdexNaukriUrl ? 'resdex' : 'hiring';
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, {
-        filter: { [`${type}NaukriUrl`]: { url: { eq: url } } },
-      }, apiToken);
-      const candidates = response?.data?.data?.candidates as { edges: CandidateEdge[]; pageInfo: PageInfo } | undefined;
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFetchAllCandidateData,
+        {
+          filter: { [`${type}NaukriUrl`]: { url: { eq: url } } },
+        },
+        apiToken,
+      );
+      const candidates = response?.data?.data?.candidates as
+        | { edges: CandidateEdge[]; pageInfo: PageInfo }
+        | undefined;
       const candidateId = candidates?.edges[0]?.node?.id || null;
       return { candidateId };
     } catch (err) {
@@ -3200,12 +3640,20 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async deletePeopleFromCandidateIds(@Req() request: any): Promise<object> {
     const candidateId = request.body.candidateId;
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
 
-    const candidateObjresponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, {
-      filter: { id: { eq: candidateId } },
-    }, apiToken);
-    const candidateObj = candidateObjresponse?.data?.data?.candidates as { edges: CandidateEdge[]; pageInfo: PageInfo } | undefined;
+    const candidateObjresponse = await this.staticGraphQLService.executeGraphQL(
+      graphqlToFetchAllCandidateData,
+      {
+        filter: { id: { eq: candidateId } },
+      },
+      apiToken,
+    );
+    const candidateObj = candidateObjresponse?.data?.data?.candidates as
+      | { edges: CandidateEdge[]; pageInfo: PageInfo }
+      | undefined;
     const candidateNode = candidateObj?.edges[0]?.node;
 
     if (!candidateNode) {
@@ -3217,16 +3665,24 @@ export class CandidateSourcingController {
     }
 
     try {
-      await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyCandidates, {
-        filter: { id: { in: [candidateId] } },
-      }, apiToken);
+      await this.staticGraphQLService.executeGraphQL(
+        graphqlMutationToDeleteManyCandidates,
+        {
+          filter: { id: { in: [candidateId] } },
+        },
+        apiToken,
+      );
     } catch (err) {
       return { status: 'Failed', message: 'Error deleting candidate' };
     }
     try {
-      await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyPeople, {
-        filter: { id: { in: [personId] } },
-      }, apiToken);
+      await this.staticGraphQLService.executeGraphQL(
+        graphqlMutationToDeleteManyPeople,
+        {
+          filter: { id: { in: [personId] } },
+        },
+        apiToken,
+      );
       return { status: 'Success' };
     } catch (err) {
       return { status: 'Failed', message: 'Error deleting person' };
@@ -3237,12 +3693,20 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async deletePeopleFromPersonIds(@Req() request: any): Promise<object> {
     const personId = request.body.personId;
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
 
-    const personresponse = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, {
-      filter: { id: { eq: personId } },
-    }, apiToken);
-    const personObj = personresponse?.data?.data?.people as { edges: PersonEdge[]; pageInfo: PageInfo } | undefined;
+    const personresponse = await this.staticGraphQLService.executeGraphQL(
+      graphqlQueryToFindManyPeople,
+      {
+        filter: { id: { eq: personId } },
+      },
+      apiToken,
+    );
+    const personObj = personresponse?.data?.data?.people as
+      | { edges: PersonEdge[]; pageInfo: PageInfo }
+      | undefined;
     const personNode = personObj?.edges[0]?.node;
 
     if (!personNode) {
@@ -3254,16 +3718,24 @@ export class CandidateSourcingController {
     }
 
     try {
-      await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyCandidates, {
-        filter: { id: { in: [candidateId] } },
-      }, apiToken);
+      await this.staticGraphQLService.executeGraphQL(
+        graphqlMutationToDeleteManyCandidates,
+        {
+          filter: { id: { in: [candidateId] } },
+        },
+        apiToken,
+      );
     } catch (err) {
       return { status: 'Failed', message: 'Error deleting candidate' };
     }
     try {
-      await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyPeople, {
-        filter: { id: { in: [personId] } },
-      }, apiToken);
+      await this.staticGraphQLService.executeGraphQL(
+        graphqlMutationToDeleteManyPeople,
+        {
+          filter: { id: { in: [personId] } },
+        },
+        apiToken,
+      );
       return { status: 'Success' };
     } catch (err) {
       return { status: 'Failed', message: 'Error deleting person' };
@@ -3273,71 +3745,173 @@ export class CandidateSourcingController {
   @Post('delete-people-and-candidates-bulk')
   @UseGuards(JwtAuthGuard)
   async deletePeopleAndCandidatesBulk(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
     const { candidateIds, personIds } = request.body;
     const BATCH_SIZE = 100;
-    const results: { succeeded: string[]; failed: string[] } = { succeeded: [], failed: [] };
+    const results: { succeeded: string[]; failed: string[] } = {
+      succeeded: [],
+      failed: [],
+    };
 
-    const processBatch = async <T>(items: T[], batchSize: number, processor: (batch: T[]) => Promise<void>): Promise<void> => {
+    if (!candidateIds?.length && !personIds?.length) {
+      return {
+        status: 'Failed',
+        message: 'No personIds or candidateIds provided',
+        results,
+      };
+    }
+
+    const processBatch = async <T>(
+      items: T[],
+      batchSize: number,
+      processor: (batch: T[]) => Promise<void>,
+    ): Promise<void> => {
       for (let i = 0; i < items.length; i += batchSize) {
         await processor(items.slice(i, i + batchSize));
       }
     };
 
     if (candidateIds?.length) {
-      await processBatch<string>(candidateIds as string[], BATCH_SIZE, async (batchCandidateIds) => {
-        try {
-          const candidatesResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, {
-            filter: { id: { in: batchCandidateIds } },
-          }, apiToken);
-          const candidates = candidatesResponse?.data?.data?.candidates as { edges: CandidateEdge[]; pageInfo: PageInfo } | undefined;
-          const candidateNodes = candidates?.edges || [];
-          const personIdsFromCandidates = candidateNodes.map((edge: any) => edge.node?.people?.id).filter((id: any) => id);
+      await processBatch<string>(
+        candidateIds as string[],
+        BATCH_SIZE,
+        async (batchCandidateIds) => {
+          try {
+            const candidatesResponse =
+              await this.staticGraphQLService.executeGraphQL(
+                graphqlToFetchAllCandidateData,
+                {
+                  filter: { id: { in: batchCandidateIds } },
+                },
+                apiToken,
+              );
+            const candidates = candidatesResponse?.data?.data?.candidates as
+              | { edges: CandidateEdge[]; pageInfo: PageInfo }
+              | undefined;
+            const candidateNodes = candidates?.edges || [];
+            const foundCandidateIds = candidateNodes
+              .map((edge: CandidateEdge) => edge.node?.id)
+              .filter((id: string | undefined): id is string => Boolean(id));
+            const personIdsFromCandidates = candidateNodes
+              .map((edge: CandidateEdge) => edge.node?.people?.id)
+              .filter((id: string | undefined): id is string => Boolean(id));
 
-          await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyCandidates, {
-            filter: { id: { in: batchCandidateIds } },
-          }, apiToken);
-          if (personIdsFromCandidates.length > 0) {
-            await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyPeople, {
-              filter: { id: { in: personIdsFromCandidates } },
-            }, apiToken);
+            if (foundCandidateIds.length === 0) {
+              results.failed.push(...batchCandidateIds);
+
+              return;
+            }
+
+            await this.staticGraphQLService.executeGraphQL(
+              graphqlMutationToDeleteManyCandidates,
+              {
+                filter: { id: { in: foundCandidateIds } },
+              },
+              apiToken,
+            );
+            if (personIdsFromCandidates.length > 0) {
+              await this.staticGraphQLService.executeGraphQL(
+                graphqlMutationToDeleteManyPeople,
+                {
+                  filter: { id: { in: personIdsFromCandidates } },
+                },
+                apiToken,
+              );
+            }
+            results.succeeded.push(...foundCandidateIds);
+            const missingCandidateIds = batchCandidateIds.filter(
+              (candidateId) => !foundCandidateIds.includes(candidateId),
+            );
+            results.failed.push(...missingCandidateIds);
+          } catch (err) {
+            results.failed.push(...batchCandidateIds);
           }
-          results.succeeded.push(...batchCandidateIds);
-        } catch (err) {
-          results.failed.push(...batchCandidateIds);
-        }
-      });
+        },
+      );
     }
 
     if (personIds?.length) {
-      await processBatch<string>(personIds as string[], BATCH_SIZE, async (batchPersonIds) => {
-        try {
-          const peopleResponse = await this.staticGraphQLService.executeGraphQL(graphqlQueryToFindManyPeople, {
-            filter: { id: { in: batchPersonIds } },
-          }, apiToken);
-          const people = peopleResponse?.data?.data?.people as { edges: PersonEdge[]; pageInfo: PageInfo } | undefined;
-          const peopleNodes = people?.edges || [];
-          const candidateIdsFromPeople = peopleNodes.flatMap((edge: any) => edge.node?.candidates?.edges || []).map((edge: any) => edge?.node?.id).filter((id: any) => id);
+      await processBatch<string>(
+        personIds as string[],
+        BATCH_SIZE,
+        async (batchPersonIds) => {
+          try {
+            const peopleResponse =
+              await this.staticGraphQLService.executeGraphQL(
+                graphqlQueryToFindManyPeople,
+                {
+                  filter: { id: { in: batchPersonIds } },
+                },
+                apiToken,
+              );
+            const people = peopleResponse?.data?.data?.people as
+              | { edges: PersonEdge[]; pageInfo: PageInfo }
+              | undefined;
+            const peopleNodes = people?.edges || [];
+            const foundPersonIds = peopleNodes
+              .map((edge: PersonEdge) => edge.node?.id)
+              .filter((id: string | undefined): id is string => Boolean(id));
+            const candidateIdsFromPeople = peopleNodes
+              .flatMap((edge: PersonEdge) => edge.node?.candidates?.edges || [])
+              .map((edge) => edge?.node?.id)
+              .filter((id: string | undefined): id is string => Boolean(id));
 
-          if (candidateIdsFromPeople.length > 0) {
-            await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyCandidates, {
-              filter: { id: { in: candidateIdsFromPeople } },
-            }, apiToken);
+            if (foundPersonIds.length === 0) {
+              results.failed.push(...batchPersonIds);
+
+              return;
+            }
+
+            if (candidateIdsFromPeople.length > 0) {
+              await this.staticGraphQLService.executeGraphQL(
+                graphqlMutationToDeleteManyCandidates,
+                {
+                  filter: { id: { in: candidateIdsFromPeople } },
+                },
+                apiToken,
+              );
+            }
+            await this.staticGraphQLService.executeGraphQL(
+              graphqlMutationToDeleteManyPeople,
+              {
+                filter: { id: { in: foundPersonIds } },
+              },
+              apiToken,
+            );
+            results.succeeded.push(...foundPersonIds);
+            const missingPersonIds = batchPersonIds.filter(
+              (personId) => !foundPersonIds.includes(personId),
+            );
+            results.failed.push(...missingPersonIds);
+          } catch (err) {
+            results.failed.push(...batchPersonIds);
           }
-          await this.staticGraphQLService.executeGraphQL(graphqlMutationToDeleteManyPeople, {
-            filter: { id: { in: batchPersonIds } },
-          }, apiToken);
-          results.succeeded.push(...batchPersonIds);
-        } catch (err) {
-          results.failed.push(...batchPersonIds);
-        }
-      });
+        },
+      );
+    }
+
+    if (results.succeeded.length === 0 && results.failed.length > 0) {
+      return {
+        status: 'Failed',
+        message: `Failed to delete ${results.failed.length} items`,
+        results,
+      };
     }
 
     if (results.failed.length > 0) {
-      return { status: 'Partial', message: `Successfully deleted ${results.succeeded.length} items, failed to delete ${results.failed.length} items`, results };
+      return {
+        status: 'Partial',
+        message: `Successfully deleted ${results.succeeded.length} items, failed to delete ${results.failed.length} items`,
+        results,
+      };
     }
-    return { status: 'Success', message: `Successfully deleted ${results.succeeded.length} items`, results };
+    return {
+      status: 'Success',
+      message: `Successfully deleted ${results.succeeded.length} items`,
+      results,
+    };
   }
 
   @Post('delete-project')
@@ -3441,10 +4015,7 @@ export class CandidateSourcingController {
       let candidatesFailed = 0;
 
       for (let index = 0; index < candidateIds.length; index += BATCH_SIZE) {
-        const batchCandidateIds = candidateIds.slice(
-          index,
-          index + BATCH_SIZE,
-        );
+        const batchCandidateIds = candidateIds.slice(index, index + BATCH_SIZE);
 
         try {
           const candidatesResponse =
@@ -3567,7 +4138,8 @@ export class CandidateSourcingController {
     @Req() req: any,
   ): Promise<ParsedJobDescription> {
     try {
-      const hasJobDescription = (request.jobDescription?.trim().length ?? 0) > 0;
+      const hasJobDescription =
+        (request.jobDescription?.trim().length ?? 0) > 0;
       const hasFilePath = (request.filePath?.trim().length ?? 0) > 0;
 
       if (!hasJobDescription && !hasFilePath) {
@@ -3577,12 +4149,20 @@ export class CandidateSourcingController {
         );
       }
 
-      const apiToken = req.headers.authorization?.replace('Bearer ', '').replace(/[\r\n]+/g, '');
+      const apiToken = req.headers.authorization
+        ?.replace('Bearer ', '')
+        .replace(/[\r\n]+/g, '');
       if (!apiToken) {
-        throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+        throw new HttpException(
+          'API token is required',
+          HttpStatus.UNAUTHORIZED,
+        );
       }
 
-      return await this.jdParserService.parseToParsedJobDescription(request, apiToken);
+      return await this.jdParserService.parseToParsedJobDescription(
+        request,
+        apiToken,
+      );
     } catch (error: any) {
       throw new HttpException(
         error?.message || 'Failed to parse job description',
@@ -3595,7 +4175,9 @@ export class CandidateSourcingController {
   @UseGuards(JwtAuthGuard)
   async createPrompts(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const projectId = request.body.projectId ?? request.body.jobId;
       const projectIdValidation = validateAndExtractProjectId(projectId);
       if (!projectIdValidation.isValid) {
@@ -3622,24 +4204,30 @@ export class CandidateSourcingController {
   @Post('get-candidate-status-by-phone-number')
   @UseGuards(JwtAuthGuard)
   async getCandidateStatusByPhoneNumber(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
     const personObj: PersonNode | undefined = await new FilterCandidates(
       this.workspaceQueryService,
       this.staticGraphQLService,
     ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
-    const candidateStatus = personObj?.candidates?.edges[0]?.node?.status || 'Unknown';
+    const candidateStatus =
+      personObj?.candidates?.edges[0]?.node?.status || 'Unknown';
     return { status: candidateStatus };
   }
 
   @Post('get-candidate-by-phone-number')
   @UseGuards(JwtAuthGuard)
   async getCandidateIdsByPhoneNumbers(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
     const personObj: PersonNode | undefined = await new FilterCandidates(
       this.workspaceQueryService,
       this.staticGraphQLService,
     ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
-    const candidateId: string | undefined = personObj?.candidates?.edges[0]?.node?.id;
+    const candidateId: string | undefined =
+      personObj?.candidates?.edges[0]?.node?.id;
     return { candidateId: candidateId as string };
   }
 
@@ -3668,13 +4256,20 @@ export class CandidateSourcingController {
     while (hasNextPage) {
       const response = await this.staticGraphQLService.executeGraphQL(
         graphqlToFetchAllCandidateDataWithFieldValues,
-        { lastCursor, limit: 400, filter: timestampedFilter, orderBy: [{ createdAt: 'DESC' }] },
+        {
+          lastCursor,
+          limit: 400,
+          filter: timestampedFilter,
+          orderBy: [{ createdAt: 'DESC' }],
+        },
         apiToken,
       );
-      const candidates = response?.data?.data?.candidates as {
-        edges: CandidateEdge[];
-        pageInfo: PageInfo;
-      } | undefined;
+      const candidates = response?.data?.data?.candidates as
+        | {
+            edges: CandidateEdge[];
+            pageInfo: PageInfo;
+          }
+        | undefined;
       if (!candidates?.edges?.length) {
         break;
       }

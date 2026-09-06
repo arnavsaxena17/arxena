@@ -1,6 +1,6 @@
 export const OUTREACH_CACHE_UPDATED_EVENT = 'outreach-cache-updated';
 
-export type OutreachCacheKind = 'people' | 'companies';
+export type OutreachCacheKind = 'people' | 'companies' | 'journey';
 
 export type OutreachCacheUpdatedPayload = {
   projectId: string;

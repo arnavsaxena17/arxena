@@ -2,8 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 import moment from 'moment';
+import { FeatureFlagKey } from 'twenty-shared/types';
 
 import { GoogleCalendarService } from 'src/engine/core-modules/calendar-events/google-calendar.service';
+import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { OutreachWorkspaceAuthTokenService } from 'src/engine/core-modules/outreach-command/services/outreach-workspace-auth-token.service';
 
 export type GetCalendarAvailabilityInput = {
@@ -24,6 +26,7 @@ export class GetCalendarAvailabilityService {
   constructor(
     private readonly googleCalendarService: GoogleCalendarService,
     private readonly gtmWorkspaceAuthTokenService: OutreachWorkspaceAuthTokenService,
+    private readonly featureFlagService: FeatureFlagService,
   ) {}
 
   async execute({
@@ -41,6 +44,33 @@ export class GetCalendarAvailabilityService {
     const slotMinutes = Math.min(Math.max(15, input.slotMinutes ?? 30), 120);
     const timeMin = moment().startOf('hour').toISOString();
     const timeMax = moment().add(days, 'days').endOf('day').toISOString();
+
+    const isOutreachMockEnabled =
+      await this.featureFlagService.isFeatureEnabled(
+        FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
+        workspaceId,
+      );
+
+    if (isOutreachMockEnabled) {
+      const slots: CalendarSlot[] = [];
+      const cursor = moment().add(1, 'day').hour(11).minute(0).second(0);
+
+      while (slots.length < 6) {
+        if (cursor.isoWeekday() <= 5) {
+          slots.push({
+            startsAt: cursor.toISOString(),
+            endsAt: cursor.clone().add(slotMinutes, 'minutes').toISOString(),
+          });
+        }
+        cursor.add(1, 'day');
+      }
+
+      this.logger.log(
+        `IS_OUTREACH_MOCK_UNIPILE_ENABLED: mock calendar slots (${slots.length})`,
+      );
+
+      return { success: true, slots, error: '' };
+    }
 
     try {
       const apiToken =

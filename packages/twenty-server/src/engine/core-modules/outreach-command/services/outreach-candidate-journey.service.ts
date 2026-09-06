@@ -851,7 +851,7 @@ export class OutreachCandidateJourneyService {
     workflowRunId: string;
     stepId: string;
     response: object;
-  }): Promise<{ ok: boolean }> {
+  }): Promise<{ ok: boolean; decision: 'approve' | 'reject' }> {
     const authContext = buildSystemAuthContext(workspaceId);
 
     return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
@@ -869,17 +869,159 @@ export class OutreachCandidateJourneyService {
           throw new Error('Workflow run does not belong to candidate');
         }
 
+        const step = run.state?.flow?.steps?.find(
+          (flowStep) => flowStep.id === stepId,
+        );
+
+        if (step?.type !== WorkflowActionType.FORM) {
+          throw new Error('Step is not a pending FORM');
+        }
+
+        if (run.state?.stepInfos?.[stepId]?.status !== StepStatus.PENDING) {
+          throw new Error('FORM step is not pending');
+        }
+
+        const responseRecord = response as Record<string, unknown>;
+        const approveValue = responseRecord.approve;
+        const isRejected =
+          approveValue === false || approveValue === 'false';
+
+        // Reject must not resume into SEND_* — seeded graphs wire FORM→SEND
+        // without an IF_ELSE on approve (WhatsApp yes/no/edit pattern).
+        if (isRejected === true) {
+          await this.workflowRunWorkspaceService.updateWorkflowRunStepInfo({
+            stepId,
+            stepInfo: {
+              status: StepStatus.SUCCESS,
+              result: {
+                ...responseRecord,
+                approve: false,
+              },
+            },
+            workspaceId,
+            workflowRunId,
+          });
+
+          await this.getWorkflowRunnerWorkspaceService().stopWorkflowRun(
+            workspaceId,
+            workflowRunId,
+          );
+
+          return { ok: true, decision: 'reject' };
+        }
+
+        const editedBody =
+          typeof responseRecord.editedBody === 'string'
+            ? responseRecord.editedBody.trim()
+            : '';
+
+        if (!isNonEmptyString(editedBody)) {
+          throw new Error(
+            'editedBody is required when approving a FORM (edited copy must go out)',
+          );
+        }
+
         await this.getWorkflowRunnerWorkspaceService().submitFormStep({
           workspaceId,
           workflowRunId,
           stepId,
-          response,
+          response: {
+            ...responseRecord,
+            approve: true,
+            editedBody,
+          },
         });
 
-        return { ok: true };
+        return { ok: true, decision: 'approve' };
       },
       authContext,
     );
+  }
+
+  // Resolve the pending FORM for a candidate and apply WhatsApp-style
+  // yes / no / edit without requiring workflowRunId + stepId from the caller.
+  async decidePendingHitlForm({
+    workspaceId,
+    projectId,
+    candidateId,
+    decision,
+    editedBody,
+    startsAt,
+    endsAt,
+  }: {
+    workspaceId: string;
+    projectId: string;
+    candidateId: string;
+    decision: 'approve' | 'reject' | 'edit';
+    editedBody?: string;
+    startsAt?: string;
+    endsAt?: string;
+  }): Promise<{
+    ok: boolean;
+    decision: 'approve' | 'reject';
+    workflowRunId: string;
+    stepId: string;
+    editedBody: string | null;
+  }> {
+    const journey = await this.getJourney({
+      workspaceId,
+      projectId,
+      candidateId,
+    });
+
+    const pendingRun = journey?.activeRuns.find(
+      (run) => isNonEmptyString(run.pendingFormStepId),
+    );
+
+    if (!isDefined(pendingRun) || !isNonEmptyString(pendingRun.pendingFormStepId)) {
+      throw new Error('No pending HITL FORM for candidate');
+    }
+
+    const draftPreview = pendingRun.draftPreview?.trim() ?? '';
+    const resolvedEditedBody =
+      decision === 'edit'
+        ? (editedBody?.trim() ?? '')
+        : (editedBody?.trim() || draftPreview);
+
+    if (decision === 'edit' && !isNonEmptyString(resolvedEditedBody)) {
+      throw new Error('editedBody is required for decision=edit');
+    }
+
+    if (decision !== 'reject' && !isNonEmptyString(resolvedEditedBody)) {
+      throw new Error(
+        'No draft preview available — pass editedBody explicitly',
+      );
+    }
+
+    const response: Record<string, unknown> = {
+      approve: decision !== 'reject',
+      editedBody: resolvedEditedBody,
+    };
+
+    if (isNonEmptyString(startsAt)) {
+      response.startsAt = startsAt;
+    }
+
+    if (isNonEmptyString(endsAt)) {
+      response.endsAt = endsAt;
+    }
+
+    const result = await this.approveFormStep({
+      workspaceId,
+      projectId,
+      candidateId,
+      workflowRunId: pendingRun.workflowRunId,
+      stepId: pendingRun.pendingFormStepId,
+      response,
+    });
+
+    return {
+      ok: result.ok,
+      decision: result.decision,
+      workflowRunId: pendingRun.workflowRunId,
+      stepId: pendingRun.pendingFormStepId,
+      editedBody: decision === 'reject' ? null : resolvedEditedBody,
+    };
   }
 
   persistResumeAtFromClassifierHint({

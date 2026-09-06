@@ -144,6 +144,8 @@ export class AccountRateLimiterService implements OnModuleInit {
     method: AccountRateLimitMethod;
     startChatPerMinuteOverride?: number;
     member?: string;
+    // Reserve as if "now" were this instant (e.g. next send-window open)
+    asOfMs?: number;
   }): Promise<{ acquired: boolean; waitMs: number }> {
     const accountId = params.accountId.trim();
     if (!accountId) {
@@ -159,7 +161,10 @@ export class AccountRateLimiterService implements OnModuleInit {
       return { acquired: true, waitMs: 0 };
     }
 
-    const now = Date.now();
+    const now =
+      typeof params.asOfMs === 'number' && Number.isFinite(params.asOfMs)
+        ? params.asOfMs
+        : Date.now();
     const member =
       params.member ??
       takeAccountRateLimitReservationMember() ??
@@ -324,10 +329,15 @@ export class AccountRateLimiterService implements OnModuleInit {
     return { deletedKeys };
   }
 
-  async getUsage(params: {
+  async getUsageBreakdown(params: {
     provider: AccountRateLimitProvider;
     accountId: string;
-  }): Promise<Record<string, number>> {
+  }): Promise<
+    Record<
+      string,
+      { used: number; reserved: number; nextSlotAt: string | null }
+    >
+  > {
     const accountId = params.accountId.trim();
     if (!accountId) {
       return {};
@@ -363,19 +373,48 @@ export class AccountRateLimiterService implements OnModuleInit {
     });
 
     const now = Date.now();
-    const counts = await this.redisService.countSlidingWindowMembers(
-      fields.map(({ key, windowMs }) => ({
-        key,
-        windowMs,
-        // Only count slots due now or earlier. Future deferred reservations
-        // must not inflate usage or block new requests on daily caps.
-        maxScore: now,
-      })),
+    const breakdowns = await this.redisService.getSlidingWindowUsageBreakdown(
+      fields.map(({ key, windowMs }) => ({ key, windowMs })),
       now,
     );
 
     return Object.fromEntries(
-      fields.map((field, index) => [field.fieldKey, counts[index] ?? 0]),
+      fields.map((field, index) => {
+        const breakdown = breakdowns[index] ?? {
+          used: 0,
+          reserved: 0,
+          maxScore: null,
+        };
+        const nextSlotAt =
+          breakdown.reserved > 0 &&
+          typeof breakdown.maxScore === 'number' &&
+          breakdown.maxScore > now
+            ? new Date(breakdown.maxScore).toISOString()
+            : null;
+
+        return [
+          field.fieldKey,
+          {
+            used: breakdown.used,
+            reserved: breakdown.reserved,
+            nextSlotAt,
+          },
+        ];
+      }),
+    );
+  }
+
+  async getUsage(params: {
+    provider: AccountRateLimitProvider;
+    accountId: string;
+  }): Promise<Record<string, number>> {
+    const breakdown = await this.getUsageBreakdown(params);
+
+    return Object.fromEntries(
+      Object.entries(breakdown).map(([fieldKey, fieldBreakdown]) => [
+        fieldKey,
+        fieldBreakdown.used,
+      ]),
     );
   }
 
@@ -386,7 +425,8 @@ export class AccountRateLimiterService implements OnModuleInit {
     startChatPerMinuteOverride?: number;
     maxInProcessWaitMs?: number;
   }): Promise<void> {
-    const maxInProcessWaitMs = params.maxInProcessWaitMs ?? MAX_IN_PROCESS_WAIT_MS;
+    const maxInProcessWaitMs =
+      params.maxInProcessWaitMs ?? MAX_IN_PROCESS_WAIT_MS;
     const member =
       takeAccountRateLimitReservationMember() ??
       `${Date.now()}:${Math.random().toString(36).slice(2)}`;
@@ -401,10 +441,10 @@ export class AccountRateLimiterService implements OnModuleInit {
       }
 
       if (waitMs > maxInProcessWaitMs) {
-        // Release the future slot reservation so deferred workflows do not
-        // consume daily quota before the retry actually runs.
-        await this.releaseLastAcquisition();
-
+        // Keep the reserved future slot so deferred waiters stay spaced
+        // instead of all waking at the same instant (thundering herd).
+        // Usage / day-cap counts only scores <= now, so future holds do not
+        // inflate live quota. Ghost cleanup releases the hold if the run stops.
         throw new AccountRateLimitDeferredError({
           waitMs,
           accountId: params.accountId,
@@ -656,7 +696,7 @@ export class AccountRateLimiterService implements OnModuleInit {
         MS_PER_DAY,
       ),
     ];
-     }
+  }
 
   private window(
     accountId: string,

@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { isNonEmptyString } from '@sniptt/guards';
 import { PermissionFlagType } from 'twenty-shared/constants';
+import { FeatureFlagKey } from 'twenty-shared/types';
 
+import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { CreateCalendarEventToolInputZodSchema } from 'src/engine/core-modules/tool/tools/calendar-tool/calendar-tool.schema';
 import { type CreateCalendarEventToolInput } from 'src/engine/core-modules/tool/tools/calendar-tool/types/create-calendar-event-tool-input.type';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
@@ -23,12 +26,42 @@ export class CreateCalendarEventTool implements Tool {
   constructor(
     private readonly calendarEventComposerService: CalendarEventComposerService,
     private readonly createCalendarEventService: CreateCalendarEventService,
+    private readonly featureFlagService: FeatureFlagService,
   ) {}
 
   async execute(
     parameters: CreateCalendarEventToolInput,
     context: ToolExecutionContext,
   ): Promise<ToolOutput> {
+    const isOutreachMockEnabled =
+      await this.featureFlagService.isFeatureEnabled(
+        FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
+        context.workspaceId,
+      );
+
+    if (isOutreachMockEnabled) {
+      this.logger.log(
+        `IS_OUTREACH_MOCK_UNIPILE_ENABLED: mock calendar event "${parameters.title ?? 'Meeting'}"`,
+      );
+
+      return {
+        success: true,
+        message: 'Mock calendar event created',
+        result: {
+          iCalUid: `mock-ical-${Date.now()}`,
+          externalEventId: `mock-event-${Date.now()}`,
+          title: parameters.title ?? 'Mock outreach meeting',
+          startsAt: parameters.startsAt,
+          endsAt: parameters.endsAt,
+          conferenceLink: 'https://meet.google.com/mock-outreach',
+          attendeeCount: isNonEmptyString(parameters.attendees)
+            ? parameters.attendees.split(',').filter(Boolean).length
+            : 0,
+          connectedAccountId: 'mock-connected-account',
+        },
+      };
+    }
+
     try {
       const result =
         await this.calendarEventComposerService.composeCalendarEvent(

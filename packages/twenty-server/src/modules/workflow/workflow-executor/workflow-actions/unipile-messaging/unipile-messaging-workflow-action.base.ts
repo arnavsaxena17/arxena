@@ -3,7 +3,11 @@ import { type MessagingChannel } from 'twenty-shared/arx';
 import { isDefined, isValidUuid, resolveInput } from 'twenty-shared/utils';
 
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
-import { runWithAccountRateLimitReservation } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-reservation.context';
+import {
+  runWithAccountRateLimitAcquireScope,
+  runWithAccountRateLimitReservation,
+} from 'src/engine/core-modules/account-rate-limit/account-rate-limit-reservation.context';
+import { getRegisteredAccountRateLimiter } from 'src/engine/core-modules/account-rate-limit/account-rate-limiter.registry';
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';
 import { OutreachUnipilePacingService } from 'src/engine/core-modules/outreach-command/services/outreach-unipile-pacing.service';
 import {
@@ -11,7 +15,11 @@ import {
   type OutreachTranscriptChannel,
 } from 'src/engine/core-modules/outreach-command/services/outreach-message-persist.service';
 import { type OutreachCandidateEventKind } from 'src/engine/core-modules/outreach-command/utils/outreach-command-materialize.util';
-import { resolveOutreachOutboundMessageKind, OUTREACH_SEND_WINDOW_PENDING_REASON } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
+import {
+  resolveOutreachOutboundMessageKind,
+  OUTREACH_SEND_WINDOW_PENDING_REASON,
+} from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
+import { outreachThrottleChannelToLinkedinRateLimitMethod } from 'src/engine/core-modules/outreach-command/utils/outreach-throttle-channel-rate-limit-method.util';
 import { type OutreachThrottleChannel } from 'src/engine/core-modules/outreach-command/utils/outreach-throttle.util';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
@@ -24,7 +32,10 @@ import { type WorkflowActionInput } from 'src/modules/workflow/workflow-executor
 import { type WorkflowActionOutput } from 'src/modules/workflow/workflow-executor/types/workflow-action-output.type';
 import { findStepOrThrow } from 'src/modules/workflow/workflow-executor/utils/find-step-or-throw.util';
 import { deferWorkflowForAccountRateLimit } from 'src/modules/workflow/workflow-executor/utils/defer-workflow-for-account-rate-limit.util';
-import { OUTREACH_PROJECT_PAUSED_PENDING_REASON } from 'src/engine/core-modules/outreach-command/services/outreach-throttle.service';
+import {
+  type OutreachThrottleCheckResult,
+  OUTREACH_PROJECT_PAUSED_PENDING_REASON,
+} from 'src/engine/core-modules/outreach-command/services/outreach-throttle.service';
 import { ToolBackedWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/tool-backed/tool-backed.workflow-action';
 import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
 import { type UnipileMessagingAccountType } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/unipile-messaging-account-type.type';
@@ -109,9 +120,7 @@ export abstract class UnipileMessagingWorkflowActionBase<
     return null;
   }
 
-  protected getOutboundMessageKind(
-    _resolvedInput: TInput,
-  ): string | null {
+  protected getOutboundMessageKind(_resolvedInput: TInput): string | null {
     return null;
   }
 
@@ -165,9 +174,17 @@ export abstract class UnipileMessagingWorkflowActionBase<
       }
 
       if (!check.allowed && check.delayMs > 0) {
+        const waitMs = await this.resolveStaggeredSendWindowWaitMs({
+          check,
+          pacingChannel,
+          unipileAccountId: resolvedInput.unipileAccountId,
+          workflowRunId: runInfo.workflowRunId,
+          currentStepId,
+        });
+
         return deferWorkflowForAccountRateLimit({
           delayedQueue: this.delayedQueue,
-          waitMs: check.delayMs,
+          waitMs,
           currentStepId,
           workspaceId: runInfo.workspaceId,
           workflowRunId: runInfo.workflowRunId,
@@ -209,7 +226,10 @@ export abstract class UnipileMessagingWorkflowActionBase<
       const transcriptChannel = this.getTranscriptChannel();
       const materializeEvent = this.getMaterializeEvent();
 
-      if (isDefined(transcriptChannel) && isDefined(this.gtmOutreachMessagePersistService)) {
+      if (
+        isDefined(transcriptChannel) &&
+        isDefined(this.gtmOutreachMessagePersistService)
+      ) {
         try {
           await this.gtmOutreachMessagePersistService.appendOutbound({
             workspaceId: runInfo.workspaceId,
@@ -245,19 +265,21 @@ export abstract class UnipileMessagingWorkflowActionBase<
               explicitKind:
                 typeof (resolvedInput as { messageKind?: unknown })
                   .messageKind === 'string'
-                  ? ((resolvedInput as { messageKind: string }).messageKind)
+                  ? (resolvedInput as { messageKind: string }).messageKind
                   : null,
             });
 
-          await this.gtmOutreachMessagePersistService.materializeCandidateEvent({
-            workspaceId: runInfo.workspaceId,
-            event: materializeEvent,
-            candidateId: resolvedInput.candidateId,
-            linkedinProfileId: resolvedLinkedinProfileId,
-            messagingChannel: this.getMaterializeMessagingChannel(),
-            outboundMessageKind,
-            workflowRunId: runInfo.workflowRunId,
-          });
+          await this.gtmOutreachMessagePersistService.materializeCandidateEvent(
+            {
+              workspaceId: runInfo.workspaceId,
+              event: materializeEvent,
+              candidateId: resolvedInput.candidateId,
+              linkedinProfileId: resolvedLinkedinProfileId,
+              messagingChannel: this.getMaterializeMessagingChannel(),
+              outboundMessageKind,
+              workflowRunId: runInfo.workflowRunId,
+            },
+          );
         } catch (error) {
           this.logger.warn(
             `Failed to materialize GTM ${materializeEvent}: ${
@@ -309,7 +331,10 @@ export abstract class UnipileMessagingWorkflowActionBase<
   ): Promise<TInput> {
     let workspaceMemberId = resolvedInput.workspaceMemberId?.trim() ?? '';
 
-    if (!isNonEmptyString(workspaceMemberId) || !isValidUuid(workspaceMemberId)) {
+    if (
+      !isNonEmptyString(workspaceMemberId) ||
+      !isValidUuid(workspaceMemberId)
+    ) {
       workspaceMemberId = await this.resolveDefaultWorkspaceMemberId({
         workspaceId,
         accountType: this.getAccountType(),
@@ -427,5 +452,62 @@ export abstract class UnipileMessagingWorkflowActionBase<
       },
       authContext,
     );
+  }
+
+  // Pre-book a LinkedIn rate-limit slot at window open so many connects
+  // deferred together resume on unique paced times instead of one instant.
+  private async resolveStaggeredSendWindowWaitMs({
+    check,
+    pacingChannel,
+    unipileAccountId,
+    workflowRunId,
+    currentStepId,
+  }: {
+    check: OutreachThrottleCheckResult;
+    pacingChannel: OutreachThrottleChannel;
+    unipileAccountId: string | undefined;
+    workflowRunId: string;
+    currentStepId: string;
+  }): Promise<number> {
+    if (check.reason !== 'outside_send_window') {
+      return check.delayMs;
+    }
+
+    const accountId = unipileAccountId?.trim() ?? '';
+    const rateLimitMethod =
+      outreachThrottleChannelToLinkedinRateLimitMethod(pacingChannel);
+    const limiter = getRegisteredAccountRateLimiter();
+    const asOfMs =
+      check.nextSendAt?.getTime() ?? Date.now() + Math.max(0, check.delayMs);
+
+    if (
+      !limiter ||
+      !isNonEmptyString(accountId) ||
+      !isDefined(rateLimitMethod) ||
+      !Number.isFinite(asOfMs)
+    ) {
+      return check.delayMs;
+    }
+
+    let slotWaitMs = 0;
+
+    await runWithAccountRateLimitReservation(
+      `${workflowRunId}:${currentStepId}`,
+      async () => {
+        await runWithAccountRateLimitAcquireScope(async () => {
+          const result = await limiter.tryAcquire({
+            provider: 'linkedin',
+            accountId,
+            method: rateLimitMethod,
+            asOfMs,
+          });
+
+          slotWaitMs = result.waitMs;
+          // Leave the reservation held across the Bull delay (no release).
+        });
+      },
+    );
+
+    return Math.max(0, asOfMs + slotWaitMs - Date.now());
   }
 }

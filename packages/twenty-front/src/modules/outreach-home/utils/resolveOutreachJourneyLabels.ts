@@ -1,4 +1,7 @@
-import { OUTREACH_JOURNEY_TIMELINE_STAGES } from '@/outreach-home/constants/outreach-journey-stages';
+import {
+  OUTREACH_JOURNEY_TIMELINE_STAGES,
+  type OutreachJourneyTimelineStageId,
+} from '@/outreach-home/constants/outreach-journey-stages';
 import {
   LINKEDIN_RATE_LIMIT_PENDING_REASON,
   OUTREACH_PROJECT_PAUSED_PENDING_REASON,
@@ -9,6 +12,9 @@ import {
 } from '@/unipile/utils/accountRateLimitError';
 
 const OUTREACH_CANDIDATE_PAUSED_PENDING_REASON = 'outreach_candidate_paused';
+
+const GENERIC_FORM_STEP_NAME_PATTERN =
+  /^(human in the loop|form|needs approval)$/i;
 
 type OutreachRunProgressInput = {
   currentStepName: string | null;
@@ -58,59 +64,123 @@ const resolveNormalizedPendingReason = ({
   return undefined;
 };
 
-export function resolveOutreachJourneyStageLabel({
+const timelineLabelById = Object.fromEntries(
+  OUTREACH_JOURNEY_TIMELINE_STAGES.map((timelineStage) => [
+    timelineStage.id,
+    timelineStage.label,
+  ]),
+) as Record<OutreachJourneyTimelineStageId, string>;
+
+const isKnownTimelineStageId = (
+  stageId: string,
+): stageId is OutreachJourneyTimelineStageId =>
+  Object.prototype.hasOwnProperty.call(timelineLabelById, stageId);
+
+// Progress on the LinkedIn spine: late CRM stages win; follow-up count
+// overlays bare CONNECTION_ACCEPTED; FORM is never a stage.
+export function resolveOutreachJourneyTimelineStageId({
   outreachSequenceStage,
   linkedinFollowUpCount,
-  hasFormPending,
+  outreachConversationStage,
 }: {
   outreachSequenceStage: string;
   linkedinFollowUpCount?: number;
-  hasFormPending?: boolean;
-  isPersonaDeferred?: boolean;
+  outreachConversationStage?: string | null;
 }): string {
   const stage = outreachSequenceStage.toUpperCase();
+  const followUpCount = linkedinFollowUpCount ?? 0;
+  const conversationStage = (outreachConversationStage ?? '').toUpperCase();
 
-  if (hasFormPending === true) {
-    return 'Follow-up with action / reminder';
-  }
-
-  if (stage === 'WAITING_REPLY') {
-    return 'Waiting for reply';
+  if (stage === 'STOPPED') {
+    return 'STOPPED';
   }
 
   if (stage === 'FAILED_NO_REPLY') {
-    return 'Failed no reply';
+    return 'FAILED_NO_REPLY';
+  }
+
+  if (stage === 'FAILED_ENRICH') {
+    return 'FAILED_ENRICH';
   }
 
   if (stage === 'DEFERRED') {
-    return 'Waiting for slot';
+    return 'DEFERRED';
   }
 
-  if (stage === 'CONNECTION_ACCEPTED') {
-    return 'Connection accepted';
+  if (stage === 'MEETING_BOOKED' || conversationStage === 'MEETING_BOOKED') {
+    return 'MEETING_BOOKED';
   }
 
-  if (stage === 'NEGOTIATING') {
-    return 'Negotiating';
+  if (stage === 'WAITING_REPLY') {
+    return 'WAITING_REPLY';
   }
 
-  if ((linkedinFollowUpCount ?? 0) >= 3) {
-    return 'Followed up 3';
+  if (stage === 'REPLIED' || stage === 'NEGOTIATING') {
+    return 'REPLIED';
   }
 
-  if ((linkedinFollowUpCount ?? 0) === 2) {
-    return 'Followed up 2';
+  if (
+    stage === 'EMAIL_SENT' ||
+    stage === 'INMAIL_SENT' ||
+    stage === 'WHATSAPP_SENT'
+  ) {
+    return 'EMAIL_SENT';
   }
 
-  if ((linkedinFollowUpCount ?? 0) === 1) {
-    return 'Followed up';
+  if (stage === 'QUEUED') {
+    return 'QUEUED';
   }
 
-  return (
-    OUTREACH_JOURNEY_TIMELINE_STAGES.find(
-      (timelineStage) => timelineStage.id === stage,
-    )?.label ?? stage.replaceAll('_', ' ').toLowerCase()
-  );
+  if (stage === 'CONNECTION_SENT') {
+    return 'CONNECTION_SENT';
+  }
+
+  // Accept + silent follow-ups: count advances display while CRM stage stays
+  // CONNECTION_ACCEPTED until FU3 fails or inbound flips to REPLIED.
+  if (stage === 'CONNECTION_ACCEPTED' || followUpCount > 0) {
+    if (followUpCount >= 3) {
+      return 'FOLLOW_UP_3';
+    }
+
+    if (followUpCount === 2) {
+      return 'FOLLOW_UP_2';
+    }
+
+    if (followUpCount === 1) {
+      return 'FOLLOW_UP_1';
+    }
+
+    if (stage === 'CONNECTION_ACCEPTED') {
+      return 'CONNECTION_ACCEPTED';
+    }
+  }
+
+  return stage;
+}
+
+export function resolveOutreachJourneyStageLabel({
+  outreachSequenceStage,
+  linkedinFollowUpCount,
+  outreachConversationStage,
+}: {
+  outreachSequenceStage: string;
+  linkedinFollowUpCount?: number;
+  outreachConversationStage?: string | null;
+  // Kept for call-site compatibility; FORM is Next, not Stage.
+  hasFormPending?: boolean;
+  isPersonaDeferred?: boolean;
+}): string {
+  const timelineStageId = resolveOutreachJourneyTimelineStageId({
+    outreachSequenceStage,
+    linkedinFollowUpCount,
+    outreachConversationStage,
+  });
+
+  if (isKnownTimelineStageId(timelineStageId)) {
+    return timelineLabelById[timelineStageId];
+  }
+
+  return timelineStageId.replaceAll('_', ' ').toLowerCase();
 }
 
 export function resolveOutreachPendingStepLabel({
@@ -141,6 +211,14 @@ export function resolveOutreachPendingStepLabel({
   }
 
   if (currentStepKind === 'FORM') {
+    if (
+      currentStepName !== null &&
+      currentStepName.length > 0 &&
+      !GENERIC_FORM_STEP_NAME_PATTERN.test(currentStepName.trim())
+    ) {
+      return currentStepName;
+    }
+
     return 'Needs approval';
   }
 

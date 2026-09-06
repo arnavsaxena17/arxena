@@ -1,8 +1,8 @@
-import { tokenPairState } from '@/auth/states/tokenPairState';
 import { HeadlessEngineCommandWrapperEffect } from '@/command-menu-item/engine-command/components/HeadlessEngineCommandWrapperEffect';
 import { useArxCandidateRecordsFromHeadlessContext } from '@/command-menu-item/engine-command/record/arx/hooks/useArxCandidateRecordsFromHeadlessContext';
 import { useArxCommandConfirmationFlow } from '@/command-menu-item/engine-command/record/arx/hooks/useArxCommandConfirmationFlow';
 import { ARX_DELETE_CANDIDATES_MODAL_ID } from '@/command-menu-item/engine-command/record/arx/constants/arxCommandModalIds';
+import { buildDeletePeopleAndCandidatesPayload } from '@/command-menu-item/engine-command/record/arx/utils/build-delete-people-and-candidates-payload.util';
 import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTableRefreshFunctionState';
 import { useExecuteDeleteCandidatesAndPeople } from '@/object-record/hooks/useExecuteDeleteCandidatesAndPeople';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -12,15 +12,22 @@ import { useCallback, useState } from 'react';
 import { isDefined } from 'twenty-shared/utils';
 
 export const ArxDeleteCandidatesAndPeopleCommand = () => {
-  const { objectMetadataItem, selectedRecordCount, resolveRecordIds } =
-    useArxCandidateRecordsFromHeadlessContext({ recordGqlFields: { id: true } });
+  const { objectMetadataItem, selectedRecordCount, resolveRecords } =
+    useArxCandidateRecordsFromHeadlessContext({
+      recordGqlFields: {
+        id: true,
+        peopleId: true,
+        personId: true,
+        candidateId: true,
+        people: true,
+      },
+    });
   const dataTableRefreshFunction = useAtomStateValue(
     dataTableRefreshFunctionState,
   );
   const { isConfirmed, handleCancel, handleConfirm } =
     useArxCommandConfirmationFlow(ARX_DELETE_CANDIDATES_MODAL_ID);
-  const { enqueueSuccessSnackBar, enqueueErrorSnackBar, enqueueWarningSnackBar } =
-    useSnackBar();
+  const { enqueueErrorSnackBar, enqueueWarningSnackBar } = useSnackBar();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const { deleteCandidatesAndPeople } = useExecuteDeleteCandidatesAndPeople({
@@ -35,9 +42,13 @@ export const ArxDeleteCandidatesAndPeopleCommand = () => {
 
     try {
       setIsProcessing(true);
-      const recordIds = await resolveRecordIds();
+      const records = await resolveRecords();
+      const payload = buildDeletePeopleAndCandidatesPayload(
+        records,
+        objectMetadataItem.nameSingular,
+      );
 
-      if (recordIds.length === 0) {
+      if (payload.personIds.length === 0 && payload.candidateIds.length === 0) {
         enqueueWarningSnackBar({
           message: 'No records selected for deletion',
           options: { duration: 3000 },
@@ -45,11 +56,7 @@ export const ArxDeleteCandidatesAndPeopleCommand = () => {
         return;
       }
 
-      await deleteCandidatesAndPeople(recordIds);
-      enqueueSuccessSnackBar({
-        message: 'Records deleted successfully',
-        options: { duration: 3000 },
-      });
+      await deleteCandidatesAndPeople(payload);
     } catch (error) {
       enqueueErrorSnackBar({
         message:
@@ -62,11 +69,10 @@ export const ArxDeleteCandidatesAndPeopleCommand = () => {
   }, [
     deleteCandidatesAndPeople,
     enqueueErrorSnackBar,
-    enqueueSuccessSnackBar,
     enqueueWarningSnackBar,
     isProcessing,
     objectMetadataItem,
-    resolveRecordIds,
+    resolveRecords,
   ]);
 
   return (

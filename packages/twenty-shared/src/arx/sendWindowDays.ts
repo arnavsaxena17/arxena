@@ -1,6 +1,9 @@
 export type SendWindowWeekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
-export const DEFAULT_SEND_WINDOW_DAYS: SendWindowWeekday[] = [2, 3, 4];
+// Mon–Sat (exclude Sunday) — default outreach send days
+export const DEFAULT_SEND_WINDOW_DAYS: SendWindowWeekday[] = [
+  1, 2, 3, 4, 5, 6,
+];
 
 export const SEND_WINDOW_WEEKDAY_OPTIONS: {
   value: SendWindowWeekday;
@@ -71,6 +74,15 @@ export const formatSendWindowDaysSummary = (
     [1, 2, 3, 4, 5].every((weekday) => days.includes(weekday as SendWindowWeekday))
   ) {
     return 'Weekdays';
+  }
+
+  if (
+    labels.length === 6 &&
+    [1, 2, 3, 4, 5, 6].every((weekday) =>
+      days.includes(weekday as SendWindowWeekday),
+    )
+  ) {
+    return 'Mon–Sat';
   }
 
   return labels.join(', ');

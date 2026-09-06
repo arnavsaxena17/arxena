@@ -45,7 +45,7 @@ export const LinkedinAccountRateLimitsPanel = ({
   return (
     <AccountRateLimitsPanel<LinkedinAccountRateLimits>
       title="Rate limits for this LinkedIn account"
-      description="For each request type, the maximum number of requests in the next interval, and how many have been used so far."
+      description="For each request type: used (due now), reserved (future deferred slots in Redis), and the max allowed. Clear removes both used and reserved holds."
       accountId={accountId}
       loadLimits={loadLimits}
       saveLimits={saveLimits}

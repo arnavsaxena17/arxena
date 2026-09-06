@@ -1,12 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
+import { FeatureFlagKey } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { type ObjectLiteral } from 'typeorm';
 
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { withAcquiredAccountRateLimit } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
+import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/outreach-command/services/linkedin-provider-id.store';
 import {
   isValidLinkedInProviderId,
@@ -92,6 +94,7 @@ export class FetchLinkedinMessagesService {
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
     private readonly gtmOutreachMessagePersistService: OutreachMessagePersistService,
     private readonly linkedinProviderIdStore: LinkedinProviderIdStoreService,
+    private readonly featureFlagService: FeatureFlagService,
   ) {}
 
   async execute({
@@ -108,6 +111,32 @@ export class FetchLinkedinMessagesService {
     messages: FetchLinkedinMessageItem[];
     error?: string;
   }> {
+    const isOutreachMockEnabled =
+      await this.featureFlagService.isFeatureEnabled(
+        FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
+        workspaceId,
+      );
+
+    if (isOutreachMockEnabled) {
+      const identifier =
+        extractLinkedinProfileId(input.linkedinProfileId) ||
+        extractLinkedinProfileId(input.linkedinUrl) ||
+        'mock-attendee';
+
+      this.logger.log(
+        `IS_OUTREACH_MOCK_UNIPILE_ENABLED: mock LinkedIn messages for ${identifier}`,
+      );
+
+      return {
+        success: true,
+        chatId: `mock-chat-${identifier}`,
+        attendeeId: identifier,
+        total: 0,
+        messages: [],
+        error: '',
+      };
+    }
+
     const authContext = buildSystemAuthContext(workspaceId);
     const limit = Math.min(Math.max(1, input.limit ?? 50), 250);
 

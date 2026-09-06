@@ -7,12 +7,16 @@ import { AppTooltip, TooltipDelay } from 'twenty-ui/surfaces';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { SettingsTextInput } from '@/ui/input/components/SettingsTextInput';
+import { formatScheduledAtLabel } from '@/unipile/utils/accountRateLimitError';
 
 const Row = styled.div`
   align-items: center;
   display: grid;
   gap: ${themeCssVariables.spacing[3]};
-  grid-template-columns: minmax(140px, 1.2fr) 92px minmax(120px, 1.4fr) 72px max-content auto;
+  grid-template-columns: minmax(140px, 1.2fr) 120px minmax(
+      120px,
+      1.4fr
+    ) 72px max-content auto;
   padding: ${themeCssVariables.spacing[2]} 0;
 `;
 
@@ -68,6 +72,12 @@ const UsageCaption = styled.span`
   white-space: nowrap;
 `;
 
+const NextFreeLabel = styled.span`
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.xs};
+  white-space: nowrap;
+`;
+
 const RecommendedSlot = styled.div`
   justify-self: start;
   min-height: ${themeCssVariables.spacing[4]};
@@ -79,6 +89,8 @@ export type AccountRateLimitSliderRowProps = {
   windowLabel: string;
   value: number;
   used: number;
+  reserved: number;
+  nextSlotAt?: string | null;
   min: number;
   max: number;
   recommended: number;
@@ -94,6 +106,8 @@ export const AccountRateLimitSliderRow = ({
   windowLabel,
   value,
   used,
+  reserved,
+  nextSlotAt = null,
   min,
   max,
   recommended,
@@ -106,14 +120,23 @@ export const AccountRateLimitSliderRow = ({
     onChange(Number(event.target.value));
   };
   const tooltipId = `rate-limit-recommended-${instanceId.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
-  const atCap = used >= value;
+  const atCap = used + reserved >= value;
+  const isWaiting = reserved > 0;
+  const nextFreeLabel =
+    isWaiting && typeof nextSlotAt === 'string' && nextSlotAt.length > 0
+      ? formatScheduledAtLabel(nextSlotAt)
+      : null;
 
   return (
     <Row>
       <LabelBlock>
         <LabelRow>
           <Label>{label}</Label>
-          <InfoAnchor id={tooltipId} tabIndex={0} aria-label="Recommended limit">
+          <InfoAnchor
+            id={tooltipId}
+            tabIndex={0}
+            aria-label="Recommended limit"
+          >
             <IconInfoCircle size={14} />
           </InfoAnchor>
           <AppTooltip
@@ -128,19 +151,23 @@ export const AccountRateLimitSliderRow = ({
         <WindowLabel>{windowLabel}</WindowLabel>
       </LabelBlock>
       <UsageBlock
-        aria-label={`${used} used of ${value} maximum ${windowLabel}`}
-        title={`${used} used of ${value} maximum ${windowLabel}`}
+        aria-label={`${used} used, ${reserved} reserved of ${value} maximum ${windowLabel}`}
+        title={`${used} used, ${reserved} reserved of ${value} maximum ${windowLabel}`}
       >
         <UsageCounts
           style={{
-            color: atCap
-              ? themeCssVariables.font.color.danger
-              : themeCssVariables.font.color.primary,
+            color:
+              atCap || isWaiting
+                ? themeCssVariables.font.color.danger
+                : themeCssVariables.font.color.primary,
           }}
         >
-          {used} / {value}
+          {used} · {reserved} / {value}
         </UsageCounts>
-        <UsageCaption>used / max</UsageCaption>
+        <UsageCaption>used · reserved / max</UsageCaption>
+        {nextFreeLabel !== null && (
+          <NextFreeLabel>Next free: {nextFreeLabel}</NextFreeLabel>
+        )}
       </UsageBlock>
       <Slider
         aria-label={label}
@@ -172,8 +199,8 @@ export const AccountRateLimitSliderRow = ({
       {onClearUsage && (
         <LightIconButton
           Icon={IconEraser}
-          aria-label={`Clear used requests for ${label} ${windowLabel}`}
-          title={`Clear used requests for ${label} ${windowLabel}`}
+          aria-label={`Clear used and reserved requests for ${label} ${windowLabel}`}
+          title={`Clear used and reserved requests for ${label} ${windowLabel}`}
           disabled={disabled || clearing}
           onClick={onClearUsage}
         />

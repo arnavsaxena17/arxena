@@ -15,7 +15,10 @@ export class WhatsappUnipileBackendService {
     } else {
       const serverBaseUrl = REACT_APP_SERVER_BASE_URL;
       this.baseUrl = `${serverBaseUrl}/whatsapp-unipile`;
-      console.log('WhatsApp Unipile Backend Service initialized with baseUrl:', this.baseUrl);
+      console.log(
+        'WhatsApp Unipile Backend Service initialized with baseUrl:',
+        this.baseUrl,
+      );
     }
   }
 
@@ -26,7 +29,7 @@ export class WhatsappUnipileBackendService {
     accessToken?: string,
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    
+
     console.log('WhatsApp Unipile Backend Service making request:', {
       url,
       method,
@@ -34,7 +37,7 @@ export class WhatsappUnipileBackendService {
       baseUrl: this.baseUrl,
       hasAccessToken: !!accessToken,
     });
-    
+
     const config: AxiosRequestConfig = {
       method: method.toLowerCase() as 'get' | 'post' | 'put' | 'delete',
       url,
@@ -57,14 +60,15 @@ export class WhatsappUnipileBackendService {
       return response.data;
     } catch (error) {
       console.error('Backend API request failed:', error);
-      
+
       if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data?.message || 
-                           `HTTP ${error.response?.status}: ${error.response?.statusText}` ||
-                           error.message;
+        const errorMessage =
+          error.response?.data?.message ||
+          `HTTP ${error.response?.status}: ${error.response?.statusText}` ||
+          error.message;
         throw new Error(errorMessage);
       }
-      
+
       throw error;
     }
   }
@@ -85,7 +89,10 @@ export class WhatsappUnipileBackendService {
   /**
    * Check account status (for polling)
    */
-  async checkAccountStatus(accountId: string, accessToken?: string): Promise<{
+  async checkAccountStatus(
+    accountId: string,
+    accessToken?: string,
+  ): Promise<{
     status: 'connected' | 'disconnected' | 'pending' | 'connecting';
     account_id: string;
   }> {
@@ -103,33 +110,35 @@ export class WhatsappUnipileBackendService {
   /**
    * Get all WhatsApp accounts
    */
-  async getAllAccounts(accessToken?: string): Promise<UnipileWhatsappAccount[]> {
-    const response = await this.makeRequest<{ accounts: UnipileWhatsappAccount[] }>(
-      '/accounts',
-      'POST',
-      undefined,
-      accessToken,
-    );
+  async getAllAccounts(
+    accessToken?: string,
+  ): Promise<UnipileWhatsappAccount[]> {
+    const response = await this.makeRequest<{
+      accounts: UnipileWhatsappAccount[];
+    }>('/accounts', 'POST', undefined, accessToken);
     return response.accounts || [];
   }
 
   /**
    * Get WhatsApp account details
    */
-  async getAccount(accountId: string, accessToken?: string): Promise<UnipileWhatsappAccount> {
-    const response = await this.makeRequest<{ account: UnipileWhatsappAccount }>(
-      `/accounts/${accountId}`,
-      'POST',
-      undefined,
-      accessToken,
-    );
+  async getAccount(
+    accountId: string,
+    accessToken?: string,
+  ): Promise<UnipileWhatsappAccount> {
+    const response = await this.makeRequest<{
+      account: UnipileWhatsappAccount;
+    }>(`/accounts/${accountId}`, 'POST', undefined, accessToken);
     return response.account;
   }
 
   /**
    * Resync WhatsApp account
    */
-  async resyncAccount(accountId: string, accessToken?: string): Promise<{ status: string }> {
+  async resyncAccount(
+    accountId: string,
+    accessToken?: string,
+  ): Promise<{ status: string }> {
     const response = await this.makeRequest<{ status: string }>(
       `/accounts/${accountId}/resync`,
       'POST',
@@ -143,7 +152,10 @@ export class WhatsappUnipileBackendService {
    * Update workspace member profile with WhatsApp Unipile account ID.
    * Call this when a new account is connected (e.g. after QR code scan).
    */
-  async updateMemberAccount(accountId: string, accessToken?: string): Promise<{ success: boolean }> {
+  async updateMemberAccount(
+    accountId: string,
+    accessToken?: string,
+  ): Promise<{ success: boolean }> {
     try {
       await this.makeRequest<{ success: boolean }>(
         '/accounts/update-member',
@@ -161,9 +173,17 @@ export class WhatsappUnipileBackendService {
   /**
    * Disconnect WhatsApp account
    */
-  async disconnectAccount(accountId: string, accessToken?: string): Promise<{ success: boolean }> {
+  async disconnectAccount(
+    accountId: string,
+    accessToken?: string,
+  ): Promise<{ success: boolean }> {
     try {
-      await this.makeRequest(`/accounts/${accountId}`, 'DELETE', undefined, accessToken);
+      await this.makeRequest(
+        `/accounts/${accountId}`,
+        'DELETE',
+        undefined,
+        accessToken,
+      );
       return { success: true };
     } catch (error) {
       console.error('Failed to disconnect WhatsApp account:', error);
@@ -177,19 +197,22 @@ export class WhatsappUnipileBackendService {
   ): Promise<{
     limits: WhatsappAccountRateLimits;
     usage: Partial<Record<keyof WhatsappAccountRateLimits, number>>;
+    reserved: Partial<Record<keyof WhatsappAccountRateLimits, number>>;
+    nextSlotAt: Partial<Record<keyof WhatsappAccountRateLimits, string | null>>;
   }> {
     const response = await this.makeRequest<{
       limits: WhatsappAccountRateLimits;
       usage?: Partial<Record<keyof WhatsappAccountRateLimits, number>>;
-    }>(
-      `/accounts/${accountId}/rate-limits`,
-      'GET',
-      undefined,
-      accessToken,
-    );
+      reserved?: Partial<Record<keyof WhatsappAccountRateLimits, number>>;
+      nextSlotAt?: Partial<
+        Record<keyof WhatsappAccountRateLimits, string | null>
+      >;
+    }>(`/accounts/${accountId}/rate-limits`, 'GET', undefined, accessToken);
     return {
       limits: response.limits,
       usage: response.usage ?? {},
+      reserved: response.reserved ?? {},
+      nextSlotAt: response.nextSlotAt ?? {},
     };
   }
 
@@ -198,12 +221,9 @@ export class WhatsappUnipileBackendService {
     limits: WhatsappAccountRateLimits,
     accessToken?: string,
   ): Promise<WhatsappAccountRateLimits> {
-    const response = await this.makeRequest<{ limits: WhatsappAccountRateLimits }>(
-      `/accounts/${accountId}/rate-limits`,
-      'POST',
-      { limits },
-      accessToken,
-    );
+    const response = await this.makeRequest<{
+      limits: WhatsappAccountRateLimits;
+    }>(`/accounts/${accountId}/rate-limits`, 'POST', { limits }, accessToken);
     return response.limits;
   }
 
@@ -237,15 +257,16 @@ export class WhatsappUnipileBackendService {
 // Singleton instance for frontend use
 let whatsappUnipileBackendService: WhatsappUnipileBackendService | null = null;
 
-export const getWhatsappUnipileService = (baseUrl?: string): WhatsappUnipileBackendService => {
+export const getWhatsappUnipileService = (
+  baseUrl?: string,
+): WhatsappUnipileBackendService => {
   if (!whatsappUnipileBackendService || baseUrl) {
     whatsappUnipileBackendService = new WhatsappUnipileBackendService(baseUrl);
   }
-  
+
   return whatsappUnipileBackendService;
 };
 
 export const initializeWhatsappUnipileService = (baseUrl?: string): void => {
   whatsappUnipileBackendService = new WhatsappUnipileBackendService(baseUrl);
 };
-

@@ -36,9 +36,9 @@ const DEFAULT_OUTREACH_CONFIG = {
   maxPersonasPerCompany: 2,
   inMailFallbackEnabled: true,
   sendTimezone: 'Asia/Kolkata',
-  sendWindowStart: '08:00',
-  sendWindowEnd: '10:00',
-  sendWindowDays: '2,3,4',
+  sendWindowStart: '10:00',
+  sendWindowEnd: '20:00',
+  sendWindowDays: '1,2,3,4,5,6',
   icpSpec: null as {
     targetTitles: string[];
     locations: string[];

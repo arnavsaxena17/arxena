@@ -15,8 +15,9 @@ describe('RedisService.tryAcquireMultiWindowSlots', () => {
       eval: jest.fn().mockResolvedValue(5_000),
     };
     const redisService = new RedisService({ get: jest.fn() } as never);
-    (redisService as unknown as { redisClient: typeof redisClient }).redisClient =
-      redisClient;
+    (
+      redisService as unknown as { redisClient: typeof redisClient }
+    ).redisClient = redisClient;
 
     const result = await redisService.tryAcquireMultiWindowSlots(
       [
@@ -57,8 +58,9 @@ describe('RedisService.tryAcquireMultiWindowSlots', () => {
       eval: jest.fn().mockResolvedValue(0),
     };
     const redisService = new RedisService({ get: jest.fn() } as never);
-    (redisService as unknown as { redisClient: typeof redisClient }).redisClient =
-      redisClient;
+    (
+      redisService as unknown as { redisClient: typeof redisClient }
+    ).redisClient = redisClient;
 
     const result = await redisService.tryAcquireMultiWindowSlots(
       [{ key: 'linkedin:a:endpoint:minute', windowMs: 60_000, limit: 5 }],
@@ -80,8 +82,9 @@ describe('RedisService.deleteByPattern', () => {
       del: jest.fn().mockResolvedValue(1),
     };
     const redisService = new RedisService({ get: jest.fn() } as never);
-    (redisService as unknown as { redisClient: typeof redisClient }).redisClient =
-      redisClient;
+    (
+      redisService as unknown as { redisClient: typeof redisClient }
+    ).redisClient = redisClient;
 
     const deleted = await redisService.deleteByPattern('linkedin:acc-1:*');
 
@@ -102,8 +105,9 @@ describe('RedisService.deleteByPattern', () => {
       del: jest.fn().mockResolvedValue(1),
     };
     const redisService = new RedisService({ get: jest.fn() } as never);
-    (redisService as unknown as { redisClient: typeof redisClient }).redisClient =
-      redisClient;
+    (
+      redisService as unknown as { redisClient: typeof redisClient }
+    ).redisClient = redisClient;
 
     await expect(
       redisService.deleteKeys('linkedin:acc-1:connection_request:5m'),
@@ -127,8 +131,9 @@ describe('RedisService.countSlidingWindowMembers', () => {
       pipeline: jest.fn().mockReturnValue(pipeline),
     };
     const redisService = new RedisService({ get: jest.fn() } as never);
-    (redisService as unknown as { redisClient: typeof redisClient }).redisClient =
-      redisClient;
+    (
+      redisService as unknown as { redisClient: typeof redisClient }
+    ).redisClient = redisClient;
 
     const counts = await redisService.countSlidingWindowMembers(
       [
@@ -162,8 +167,9 @@ describe('RedisService.countSlidingWindowMembers', () => {
       pipeline: jest.fn().mockReturnValue(pipeline),
     };
     const redisService = new RedisService({ get: jest.fn() } as never);
-    (redisService as unknown as { redisClient: typeof redisClient }).redisClient =
-      redisClient;
+    (
+      redisService as unknown as { redisClient: typeof redisClient }
+    ).redisClient = redisClient;
 
     await redisService.countSlidingWindowMembers(
       [
@@ -197,8 +203,9 @@ describe('RedisService.removeMemberFromWindows', () => {
       pipeline: jest.fn().mockReturnValue(pipeline),
     };
     const redisService = new RedisService({ get: jest.fn() } as never);
-    (redisService as unknown as { redisClient: typeof redisClient }).redisClient =
-      redisClient;
+    (
+      redisService as unknown as { redisClient: typeof redisClient }
+    ).redisClient = redisClient;
 
     await expect(
       redisService.removeMemberFromWindows(
@@ -223,9 +230,7 @@ describe('RedisService.removeMemberFromWindows', () => {
 });
 
 describe('AccountRateLimiterService', () => {
-  const createLimiter = (
-    acquire: jest.Mock,
-  ): AccountRateLimiterService => {
+  const createLimiter = (acquire: jest.Mock): AccountRateLimiterService => {
     const redisService = {
       tryAcquireMultiWindowSlots: acquire,
       getString: jest.fn().mockResolvedValue(null),
@@ -493,21 +498,69 @@ describe('AccountRateLimiterService', () => {
     expect(acquire.mock.calls[0][1].length).toBeGreaterThan(0);
   });
 
+  it('reserves future slots relative to asOfMs for send-window pre-booking', async () => {
+    const windowOpenMs = 1_700_000_000_000;
+    const acquire = jest
+      .fn()
+      .mockResolvedValueOnce({ acquired: true, waitMs: 0 })
+      .mockResolvedValueOnce({ acquired: false, waitMs: 300_000 });
+    const limiter = createLimiter(acquire);
+
+    await limiter.tryAcquire({
+      provider: 'linkedin',
+      accountId: 'acc-1',
+      method: 'connection_request',
+      asOfMs: windowOpenMs,
+      member: 'run-1:step-1:0',
+    });
+    await limiter.tryAcquire({
+      provider: 'linkedin',
+      accountId: 'acc-1',
+      method: 'connection_request',
+      asOfMs: windowOpenMs,
+      member: 'run-2:step-1:0',
+    });
+
+    expect(acquire.mock.calls[0][2]).toBe(windowOpenMs);
+    expect(acquire.mock.calls[1][2]).toBe(windowOpenMs);
+  });
+
   it('defers instead of waiting in-process when the wait exceeds the cap', async () => {
     const acquire = jest.fn().mockResolvedValue({
       acquired: false,
       waitMs: 3_600_000,
     });
-    const limiter = createLimiter(acquire);
+    const removeMemberFromWindows = jest.fn().mockResolvedValue(2);
+    const redisService = {
+      tryAcquireMultiWindowSlots: acquire,
+      addSetMembers: jest.fn().mockResolvedValue(undefined),
+      removeSetMembers: jest.fn().mockResolvedValue(undefined),
+      removeMemberFromWindows,
+      getString: jest.fn().mockResolvedValue(null),
+      setString: jest.fn(),
+      deleteKeys: jest.fn().mockResolvedValue(0),
+      deleteByPattern: jest.fn().mockResolvedValue(0),
+    };
+    const limiter = new AccountRateLimiterService(
+      redisService as never,
+      {
+        readCachedLinkedinLimits: jest.fn().mockResolvedValue(null),
+        readCachedWhatsappLimits: jest.fn().mockResolvedValue(null),
+      } as never,
+    );
 
     await expect(
-      limiter.acquireOrDefer({
-        provider: 'linkedin',
-        accountId: 'acc-1',
-        method: 'connection_request',
-        maxInProcessWaitMs: 1_000,
-      }),
+      runWithAccountRateLimitAcquireScope(async () =>
+        limiter.acquireOrDefer({
+          provider: 'linkedin',
+          accountId: 'acc-1',
+          method: 'connection_request',
+          maxInProcessWaitMs: 1_000,
+        }),
+      ),
     ).rejects.toBeInstanceOf(AccountRateLimitDeferredError);
+
+    expect(removeMemberFromWindows).not.toHaveBeenCalled();
   });
 
   it('flushes only this account usage keys and skips empty account ids', async () => {
@@ -556,16 +609,18 @@ describe('AccountRateLimiterService', () => {
   });
 
   it('returns used request counts for each LinkedIn field', async () => {
-    const countSlidingWindowMembers = jest.fn(
+    const getSlidingWindowUsageBreakdown = jest.fn(
       async (windows: Array<{ key: string; windowMs: number }>) =>
         windows.map((window) =>
-          window.key === 'linkedin:acc-1:connection_request:5m' ? 3 : 0,
+          window.key === 'linkedin:acc-1:connection_request:5m'
+            ? { used: 3, reserved: 0, maxScore: Date.now() - 1_000 }
+            : { used: 0, reserved: 0, maxScore: null },
         ),
     );
     const limiter = new AccountRateLimiterService(
       {
         tryAcquireMultiWindowSlots: jest.fn(),
-        countSlidingWindowMembers,
+        getSlidingWindowUsageBreakdown,
         getString: jest.fn(),
         setString: jest.fn(),
         deleteKeys: jest.fn(),
@@ -584,39 +639,77 @@ describe('AccountRateLimiterService', () => {
 
     expect(usage.connectionRequestPer5Minutes).toBe(3);
     expect(usage.searchPerDay).toBe(0);
-    expect(countSlidingWindowMembers).toHaveBeenCalledWith(
+    expect(getSlidingWindowUsageBreakdown).toHaveBeenCalledWith(
       expect.arrayContaining([
         expect.objectContaining({
           key: 'linkedin:acc-1:connection_request:5m',
           windowMs: 300_000,
-          maxScore: expect.any(Number),
         }),
         expect.objectContaining({
           key: 'linkedin:acc-1:profile:day',
           windowMs: 86_400_000,
-          maxScore: expect.any(Number),
         }),
         expect.objectContaining({
           key: 'linkedin:acc-1:search:day',
           windowMs: 86_400_000,
-          maxScore: expect.any(Number),
         }),
         expect.objectContaining({
           key: 'linkedin:acc-1:connection_request:day',
           windowMs: 86_400_000,
-          maxScore: expect.any(Number),
         }),
       ]),
       expect.any(Number),
     );
   });
 
-  it('returns no usage for an empty account id', async () => {
-    const countSlidingWindowMembers = jest.fn();
+  it('returns reserved future slots without counting them as used', async () => {
+    const nextSlotMs = Date.now() + 2 * 24 * 60 * 60 * 1000;
+    const getSlidingWindowUsageBreakdown = jest.fn(
+      async (windows: Array<{ key: string; windowMs: number }>) =>
+        windows.map((window) =>
+          window.key === 'linkedin:acc-1:connection_request:5m'
+            ? { used: 0, reserved: 5, maxScore: nextSlotMs }
+            : { used: 0, reserved: 0, maxScore: null },
+        ),
+    );
     const limiter = new AccountRateLimiterService(
       {
         tryAcquireMultiWindowSlots: jest.fn(),
-        countSlidingWindowMembers,
+        getSlidingWindowUsageBreakdown,
+        getString: jest.fn(),
+        setString: jest.fn(),
+        deleteKeys: jest.fn(),
+        deleteByPattern: jest.fn(),
+      } as never,
+      {
+        readCachedLinkedinLimits: jest.fn(),
+        readCachedWhatsappLimits: jest.fn(),
+      } as never,
+    );
+
+    const breakdown = await limiter.getUsageBreakdown({
+      provider: 'linkedin',
+      accountId: 'acc-1',
+    });
+
+    expect(breakdown.connectionRequestPer5Minutes).toEqual({
+      used: 0,
+      reserved: 5,
+      nextSlotAt: new Date(nextSlotMs).toISOString(),
+    });
+    expect(breakdown.searchPerDay).toEqual({
+      used: 0,
+      reserved: 0,
+      nextSlotAt: null,
+    });
+  });
+
+  it('returns no usage for an empty account id', async () => {
+    const getSlidingWindowUsageBreakdown = jest.fn();
+    const limiter = new AccountRateLimiterService(
+      {
+        tryAcquireMultiWindowSlots: jest.fn(),
+        getSlidingWindowUsageBreakdown,
         getString: jest.fn(),
         setString: jest.fn(),
         deleteKeys: jest.fn(),
@@ -631,7 +724,10 @@ describe('AccountRateLimiterService', () => {
     await expect(
       limiter.getUsage({ provider: 'linkedin', accountId: '  ' }),
     ).resolves.toEqual({});
-    expect(countSlidingWindowMembers).not.toHaveBeenCalled();
+    await expect(
+      limiter.getUsageBreakdown({ provider: 'linkedin', accountId: '  ' }),
+    ).resolves.toEqual({});
+    expect(getSlidingWindowUsageBreakdown).not.toHaveBeenCalled();
   });
 
   it('escapes redis glob characters in account ids', () => {

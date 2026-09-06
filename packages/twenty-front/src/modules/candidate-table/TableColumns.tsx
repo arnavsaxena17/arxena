@@ -1,8 +1,8 @@
 import { type Enrichment } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import {
-    CANDIDATE_CONVERSATION_STATUS_LABELS,
-    MESSAGING_CHANNEL_OPTIONS,
-    STATUS_LABELS,
+  CANDIDATE_CONVERSATION_STATUS_LABELS,
+  MESSAGING_CHANNEL_OPTIONS,
+  STATUS_LABELS,
 } from '@/candidate-table/constants/candidate-status-labels';
 import { isAiFilterField } from '@/candidate-table/utils/is-ai-filter-field';
 import {
@@ -49,7 +49,10 @@ export type ProcessedDataItem = {
 };
 
 // Union type for all candidate data sources
-export type CandidateDataItem = (ProcessedDataItem | TransformedCandidateForTable) & { [key: string]: any };
+export type CandidateDataItem = (
+  | ProcessedDataItem
+  | TransformedCandidateForTable
+) & { [key: string]: any };
 
 const StyledSelectedRow = styled.tr`
   &.selected-row td {
@@ -65,11 +68,96 @@ type ColumnRenderer = (
   column: number,
   prop: string | number,
   value: any,
-  cellProperties: Handsontable.CellProperties
+  cellProperties: Handsontable.CellProperties,
 ) => HTMLTableCellElement;
 
-const urlFields = ['profileUrl', 'linkedinUrl', 'githubUrl', 'portfolioUrl','profilePhotoUrl','englishAudioIntroUrl', 'resdexNaukriUrl', 'hiringNaukriUrl', 'website', 'websiteUrl','resumeDownloadUrl'];
-const excludedFields = ['id', 'checkbox', 'people','attachments','emailMessages','chatMessages','videoInterview','tempId','_isFetched','__isFetched','whatsappProvider','location','company','campaign','name','profileUrl', 'uniqueId','uniqueStringKey','peopleId','candidateId','hasCv','fullName','title','firstName','lastName','jobName','dataSources','education','emailAddresses','experienceStats','jobProcessEvents','jobs','lastSeen','linkedinSpecificData','otherFields','token','hiringNaukriCookie','dataSource', 'personId', 'searchId','phoneNumbers','mobilePhone','filterQueryHash','mayAlsoKnow','languages','englishLevel','baseQueryHash','creationDate','apnaSearchToken', 'emailAddress', 'industries', 'profiles', 'jobProcess', 'locations', 'experienceStats', 'lastUpdated','interests','dataSources','allNumbers','uploadId','allMails','socialprofiles','tables','created','middleName','middleInitial','creationSource','contactDetails','queryId','socialProfiles','isOutreachHomeRow','outreachProjectId'];
+const urlFields = [
+  'profileUrl',
+  'linkedinUrl',
+  'githubUrl',
+  'portfolioUrl',
+  'profilePhotoUrl',
+  'englishAudioIntroUrl',
+  'resdexNaukriUrl',
+  'hiringNaukriUrl',
+  'website',
+  'websiteUrl',
+  'resumeDownloadUrl',
+];
+const excludedFields = [
+  'id',
+  'checkbox',
+  'people',
+  'attachments',
+  'emailMessages',
+  'chatMessages',
+  'videoInterview',
+  'tempId',
+  '_isFetched',
+  '__isFetched',
+  'whatsappProvider',
+  'location',
+  'company',
+  'campaign',
+  'name',
+  'profileUrl',
+  'uniqueId',
+  'uniqueStringKey',
+  'peopleId',
+  'candidateId',
+  'hasCv',
+  'fullName',
+  'title',
+  'firstName',
+  'lastName',
+  'jobName',
+  'dataSources',
+  'education',
+  'emailAddresses',
+  'experienceStats',
+  'jobProcessEvents',
+  'jobs',
+  'lastSeen',
+  'linkedinSpecificData',
+  'otherFields',
+  'token',
+  'hiringNaukriCookie',
+  'dataSource',
+  'personId',
+  'searchId',
+  'phoneNumbers',
+  'mobilePhone',
+  'filterQueryHash',
+  'mayAlsoKnow',
+  'languages',
+  'englishLevel',
+  'baseQueryHash',
+  'creationDate',
+  'apnaSearchToken',
+  'emailAddress',
+  'industries',
+  'profiles',
+  'jobProcess',
+  'locations',
+  'experienceStats',
+  'lastUpdated',
+  'interests',
+  'dataSources',
+  'allNumbers',
+  'uploadId',
+  'allMails',
+  'socialprofiles',
+  'tables',
+  'created',
+  'middleName',
+  'middleInitial',
+  'creationSource',
+  'contactDetails',
+  'queryId',
+  'socialProfiles',
+  'isOutreachHomeRow',
+  'outreachProjectId',
+];
 
 const CV_AVAILABILITY_OPTIONS = ['CV Available', 'CV Not found'] as const;
 
@@ -79,23 +167,28 @@ const MESSAGES_EXCHANGED_COLUMN_WIDTH = 280;
 
 const COLUMN_TITLE_OVERRIDES: Record<string, string> = {
   candConversationStatus: 'Bot Status',
-  outreachSequenceStage: 'Outreach Stage',
-  outreachConversationStage: 'Conversation Stage',
+  outreachSequenceStage: 'Stage',
+  outreachConversationStage: 'Intent',
   workflowRunStatus: 'Run Status',
   cvAvailability: 'CV',
   messagesExchanged: 'Messages exchanged',
-  lastMessage: 'Last inbound',
-  lastInboundAt: 'Last inbound at',
+  lastMessage: 'Last touch',
+  lastInboundAt: 'Last touch at',
   lastOutboundAt: 'Last outbound at',
   replyAfterTouch: 'Reply after',
-  nextFollowUp: 'Next follow-up',
-  nextStep: 'Next step',
+  nextFollowUp: 'Snooze until',
+  nextStep: 'Next',
   nextRetry: 'Next retry',
   needsApproval: 'Needs approval',
 };
 
 const getColumnTitle = (key: string) =>
-  COLUMN_TITLE_OVERRIDES[key] ?? (key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1').trim());
+  COLUMN_TITLE_OVERRIDES[key] ??
+  key.charAt(0).toUpperCase() +
+    key
+      .slice(1)
+      .replace(/([A-Z])/g, ' $1')
+      .trim();
 
 /** True when value is safe to show in a grid cell (not object/array/JSON blob). Allows string, boolean, number, Date, nullish. */
 const isScalarTableCellValue = (value: unknown): boolean => {
@@ -121,7 +214,10 @@ const isScalarTableCellValue = (value: unknown): boolean => {
 };
 
 /** Hide column if any row has array, object, or JSON-encoded object/array string. */
-const columnHasOnlyScalarValues = (columnName: string, processedData: CandidateDataItem[]): boolean =>
+const columnHasOnlyScalarValues = (
+  columnName: string,
+  processedData: CandidateDataItem[],
+): boolean =>
   processedData.every((item) => isScalarTableCellValue(item[columnName]));
 
 const RECRUITING_COLUMNS_HIDDEN_ON_OUTREACH = [
@@ -132,21 +228,31 @@ const RECRUITING_COLUMNS_HIDDEN_ON_OUTREACH = [
   'stopChat',
 ];
 
+// Default People grid: Stage + Intent + Next + full message transcript.
+// Workflow internals stay in journey drawer / filters, not as peer columns.
 const OUTREACH_HOME_ALWAYS_SHOW_COLUMNS = [
+  'outreachSequenceStage',
+  'outreachConversationStage',
+  'nextStep',
+  'messagesExchanged',
+];
+
+const OUTREACH_HOME_HIDDEN_COLUMNS = [
+  'workflowRunStatus',
+  'needsApproval',
+  'nextRetry',
+  'nextFollowUp',
+  'replyAfterTouch',
   'lastMessage',
   'lastInboundAt',
   'lastOutboundAt',
-  'replyAfterTouch',
-  'outreachConversationStage',
-  'nextFollowUp',
-  'needsApproval',
-  'nextStep',
-  'nextRetry',
-  'outreachSequenceStage',
 ];
 
 // Function to check if a column has all empty or 'N/A' values
-const hasAllEmptyValues = (columnName: string, processedData: CandidateDataItem[]): boolean => {
+const hasAllEmptyValues = (
+  columnName: string,
+  processedData: CandidateDataItem[],
+): boolean => {
   if (!processedData.length) return true;
 
   const isOutreachHomeTable = processedData.some(
@@ -162,18 +268,43 @@ const hasAllEmptyValues = (columnName: string, processedData: CandidateDataItem[
 
   if (
     isOutreachHomeTable &&
+    OUTREACH_HOME_HIDDEN_COLUMNS.includes(columnName)
+  ) {
+    return true;
+  }
+
+  if (
+    isOutreachHomeTable &&
     OUTREACH_HOME_ALWAYS_SHOW_COLUMNS.includes(columnName)
   ) {
     return false;
   }
 
   // Special cases: always show these columns even if they have default values
-  const alwaysShowColumns = ['jobTitle','jobCompanyName','locationName','status', 'candConversationStatus', 'checkbox', 'name','remarks', 'hasCv', 'cvAvailability', 'startChat', 'startChatCompleted', 'stopChat', 'relevanceScore', 'relevanceLabel', 'messagingChannel', 'messagesExchanged'];
+  const alwaysShowColumns = [
+    'jobTitle',
+    'jobCompanyName',
+    'locationName',
+    'status',
+    'candConversationStatus',
+    'checkbox',
+    'name',
+    'remarks',
+    'hasCv',
+    'cvAvailability',
+    'startChat',
+    'startChatCompleted',
+    'stopChat',
+    'relevanceScore',
+    'relevanceLabel',
+    'messagingChannel',
+    'messagesExchanged',
+  ];
   if (alwaysShowColumns.includes(columnName)) {
     return false;
   }
 
-  return processedData.every(item => {
+  return processedData.every((item) => {
     const value = item[columnName];
     // For boolean values, we should show the column even if all values are false
     if (typeof value === 'boolean') {
@@ -184,7 +315,9 @@ const hasAllEmptyValues = (columnName: string, processedData: CandidateDataItem[
       return true;
     }
     // Check for empty or default values
-    return value === undefined || value === null || value === '' || value === 'N/A';
+    return (
+      value === undefined || value === null || value === '' || value === 'N/A'
+    );
   });
 };
 
@@ -192,7 +325,7 @@ const hasAllEmptyValues = (columnName: string, processedData: CandidateDataItem[
 const enrichmentFieldStyle = {
   backgroundColor: '#f0f7ff', // Light blue background
   fontStyle: 'italic',
-  position: 'relative'
+  position: 'relative',
 };
 
 export const TableColumns = ({
@@ -201,25 +334,32 @@ export const TableColumns = ({
   selectAllIndeterminate,
   onSelectAllChange,
   unreadMessagesCounts = {},
-  enrichments = []
+  enrichments = [],
 }: {
-  processedData: CandidateDataItem[],
-  selectAllChecked?: boolean,
-  selectAllIndeterminate?: boolean,
-  onSelectAllChange?: (checked: boolean) => void,
-  unreadMessagesCounts?: Record<string, number>,
-  enrichments?: Enrichment[]
+  processedData: CandidateDataItem[];
+  selectAllChecked?: boolean;
+  selectAllIndeterminate?: boolean;
+  onSelectAllChange?: (checked: boolean) => void;
+  unreadMessagesCounts?: Record<string, number>;
+  enrichments?: Enrichment[];
 }) => {
   if (!processedData.length) return [];
-  console.log("these are the enrichments in table columns", enrichments);
-  console.log("enrichments length:", enrichments.length);
+  console.log('these are the enrichments in table columns', enrichments);
+  console.log('enrichments length:', enrichments.length);
   const allKeys = new Set<string>();
-  processedData.forEach(item => {
-    Object.keys(item).forEach(key => allKeys.add(key));
+  processedData.forEach((item) => {
+    Object.keys(item).forEach((key) => allKeys.add(key));
   });
 
-
-  const checkboxRenderer: ColumnRenderer = (instance, td, row, column, prop, value, cellProperties) => {
+  const checkboxRenderer: ColumnRenderer = (
+    instance,
+    td,
+    row,
+    column,
+    prop,
+    value,
+    cellProperties,
+  ) => {
     td.innerHTML = '';
     // Get the physical row index after sorting
     const physicalRow = instance.toPhysicalRow(row);
@@ -258,14 +398,22 @@ export const TableColumns = ({
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
     display: 'block',
-    width: '100%'
+    width: '100%',
   };
 
   // Simple renderer for text cells
-  const simpleRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
+  const simpleRenderer: ColumnRenderer = (
+    instance,
+    td,
+    row,
+    column,
+    prop,
+    value,
+  ) => {
     const div = document.createElement('div');
     Object.assign(div.style, truncatedCellStyle);
-    div.textContent = value !== undefined && value !== null ? String(value) : 'N/A';
+    div.textContent =
+      value !== undefined && value !== null ? String(value) : 'N/A';
     td.innerHTML = '';
     td.appendChild(div);
 
@@ -289,7 +437,14 @@ export const TableColumns = ({
   };
 
   // Relevance score renderer - displays as percentage with color coding
-  const relevanceScoreRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
+  const relevanceScoreRenderer: ColumnRenderer = (
+    instance,
+    td,
+    row,
+    column,
+    prop,
+    value,
+  ) => {
     td.innerHTML = '';
     const div = document.createElement('div');
     Object.assign(div.style, truncatedCellStyle);
@@ -317,15 +472,22 @@ export const TableColumns = ({
   };
 
   // Relevance label renderer - displays human-readable labels
-  const relevanceLabelRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
+  const relevanceLabelRenderer: ColumnRenderer = (
+    instance,
+    td,
+    row,
+    column,
+    prop,
+    value,
+  ) => {
     td.innerHTML = '';
     const div = document.createElement('div');
     Object.assign(div.style, truncatedCellStyle);
 
     const labelMap: Record<string, string> = {
-      'highly_relevant': 'Highly Relevant',
-      'somewhat_relevant': 'Somewhat Relevant',
-      'less_relevant': 'Less Relevant'
+      highly_relevant: 'Highly Relevant',
+      somewhat_relevant: 'Somewhat Relevant',
+      less_relevant: 'Less Relevant',
     };
 
     if (value && typeof value === 'string' && labelMap[value]) {
@@ -350,7 +512,14 @@ export const TableColumns = ({
   };
 
   // Array renderer for match/mismatch reasons - displays as comma-separated list
-  const arrayRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
+  const arrayRenderer: ColumnRenderer = (
+    instance,
+    td,
+    row,
+    column,
+    prop,
+    value,
+  ) => {
     td.innerHTML = '';
     const div = document.createElement('div');
     Object.assign(div.style, truncatedCellStyle);
@@ -392,7 +561,14 @@ export const TableColumns = ({
   };
 
   // Name renderer with unread message count
-  const nameRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
+  const nameRenderer: ColumnRenderer = (
+    instance,
+    td,
+    row,
+    column,
+    prop,
+    value,
+  ) => {
     td.innerHTML = '';
     // Get physical row index for proper data access after sorting/filtering
     const physicalRow = instance.toPhysicalRow(row);
@@ -406,19 +582,27 @@ export const TableColumns = ({
       linkedinUrl?: string | { primaryLinkUrl?: string };
     };
 
-
-    const candidateId = rowData && typeof rowData === 'object' && 'id' in rowData ? rowData.id : null;
-    const unreadCount = candidateId && unreadMessagesCounts[candidateId] ? unreadMessagesCounts[candidateId] : 0;
+    const candidateId =
+      rowData && typeof rowData === 'object' && 'id' in rowData
+        ? rowData.id
+        : null;
+    const unreadCount =
+      candidateId && unreadMessagesCounts[candidateId]
+        ? unreadMessagesCounts[candidateId]
+        : 0;
     const hasCv = rowData?.hasCv;
     // console.log('This is the rowData::', rowData?.hasCv);
     // console.log('This is the rowData::', rowData);
     const hasStartedChat = rowData?.startChat;
 
     // Extract profile URL in priority order: hiringNaukriUrl > resdexNaukriUrl > linkedinUrl
-    const getUrlValue = (url: string | { primaryLinkUrl?: string } | undefined): string => {
+    const getUrlValue = (
+      url: string | { primaryLinkUrl?: string } | undefined,
+    ): string => {
       if (!url) return '';
       if (typeof url === 'string') return url.trim();
-      if (typeof url === 'object' && url.primaryLinkUrl) return url.primaryLinkUrl.trim();
+      if (typeof url === 'object' && url.primaryLinkUrl)
+        return url.primaryLinkUrl.trim();
       return '';
     };
 
@@ -444,11 +628,17 @@ export const TableColumns = ({
 
     const nameDiv = document.createElement('div');
     Object.assign(nameDiv.style, truncatedCellStyle);
-    const originalName = rowData.name !== undefined && rowData.name !== null ? String(rowData.name) : 'N/A';
+    const originalName =
+      rowData.name !== undefined && rowData.name !== null
+        ? String(rowData.name)
+        : 'N/A';
 
     // Check if this is a LinkedIn Member and transform to "Out of Network Profile"
-    const isLinkedInMember = originalName === 'Linkedin Member' || originalName === 'LinkedIn Member';
-    const displayName = isLinkedInMember ? 'Out of Network Profile' : originalName;
+    const isLinkedInMember =
+      originalName === 'Linkedin Member' || originalName === 'LinkedIn Member';
+    const displayName = isLinkedInMember
+      ? 'Out of Network Profile'
+      : originalName;
 
     // Special styling for "Out of Network Profile"
     if (isLinkedInMember) {
@@ -501,7 +691,8 @@ export const TableColumns = ({
       chatIcon.style.marginRight = '8px';
       chatIcon.style.width = '16px';
       chatIcon.style.height = '16px';
-      chatIcon.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="#1976d2"><path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M6,9H18V11H6M14,14H6V12H14M18,8H6V6H18"/></svg>';
+      chatIcon.innerHTML =
+        '<svg viewBox="0 0 24 24" width="16" height="16" fill="#1976d2"><path d="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M6,9H18V11H6M14,14H6V12H14M18,8H6V6H18"/></svg>';
       chatIcon.title = 'Contacted';
       container.appendChild(chatIcon);
     }
@@ -521,7 +712,8 @@ export const TableColumns = ({
       linkIcon.style.height = '16px';
       linkIcon.style.cursor = 'pointer';
       linkIcon.style.textDecoration = 'none';
-      linkIcon.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="#1976d2"><path d="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z"/></svg>';
+      linkIcon.innerHTML =
+        '<svg viewBox="0 0 24 24" width="16" height="16" fill="#1976d2"><path d="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z"/></svg>';
       linkIcon.title = 'Open Profile';
       linkIcon.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -560,19 +752,31 @@ export const TableColumns = ({
     return td;
   };
 
-  const urlRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
+  const urlRenderer: ColumnRenderer = (
+    instance,
+    td,
+    row,
+    column,
+    prop,
+    value,
+  ) => {
     td.innerHTML = '';
     if (!value || value === 'N/A' || typeof value !== 'string') {
       const div = document.createElement('div');
       Object.assign(div.style, truncatedCellStyle);
-      div.textContent = value !== undefined && value !== null ? String(value) : 'N/A';
+      div.textContent =
+        value !== undefined && value !== null ? String(value) : 'N/A';
       td.appendChild(div);
       return td;
     }
 
     // Format URL if needed (make sure it has http/https prefix)
     let url = value;
-    if (typeof url === 'string' && !url.startsWith('http://') && !url.startsWith('https://')) {
+    if (
+      typeof url === 'string' &&
+      !url.startsWith('http://') &&
+      !url.startsWith('https://')
+    ) {
       url = 'https://' + url;
     }
 
@@ -613,7 +817,14 @@ export const TableColumns = ({
     return td;
   };
 
-  const dateRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
+  const dateRenderer: ColumnRenderer = (
+    instance,
+    td,
+    row,
+    column,
+    prop,
+    value,
+  ) => {
     td.innerHTML = '';
     const div = document.createElement('div');
     Object.assign(div.style, truncatedCellStyle);
@@ -623,16 +834,25 @@ export const TableColumns = ({
       try {
         div.textContent = formatToHumanReadableDateTime(value);
       } catch (error) {
-        console.warn(`Failed to format date for field ${String(prop)}:`, value, error);
+        console.warn(
+          `Failed to format date for field ${String(prop)}:`,
+          value,
+          error,
+        );
         div.textContent = 'Invalid Date';
       }
     } else {
       // Log when dateRenderer receives non-date values for debugging
       if (value && value !== 'N/A' && value !== '') {
-        console.warn(`dateRenderer received non-date value for field ${String(prop)}:`, value);
+        console.warn(
+          `dateRenderer received non-date value for field ${String(prop)}:`,
+          value,
+        );
         // If it's an array or object, provide more specific error message
         if (Array.isArray(value)) {
-          console.warn(`Field ${String(prop)} contains an array with ${value.length} items`);
+          console.warn(
+            `Field ${String(prop)} contains an array with ${value.length} items`,
+          );
         } else if (typeof value === 'object') {
           console.warn(`Field ${String(prop)} contains an object:`, value);
         }
@@ -644,7 +864,14 @@ export const TableColumns = ({
     return td;
   };
 
-  const booleanToggleRenderer: ColumnRenderer = (instance, td, row, column, prop, value) => {
+  const booleanToggleRenderer: ColumnRenderer = (
+    instance,
+    td,
+    row,
+    column,
+    prop,
+    value,
+  ) => {
     td.innerHTML = '';
     const container = document.createElement('div');
     container.style.display = 'flex';
@@ -674,7 +901,7 @@ export const TableColumns = ({
     'startMeetingSchedulingChatCompleted',
     'startVideoInterviewChat',
     'startVideoInterviewChatCompleted',
-    'stopChat'
+    'stopChat',
   ];
 
   // Status mapping
@@ -699,8 +926,15 @@ export const TableColumns = ({
     renderer: nameRenderer,
   });
 
-
-  const statusRenderer: ColumnRenderer = (instance, td, row, column, prop, value, cellProperties) => {
+  const statusRenderer: ColumnRenderer = (
+    instance,
+    td,
+    row,
+    column,
+    prop,
+    value,
+    cellProperties,
+  ) => {
     const isDropdownStatus =
       prop === 'status' ||
       prop === 'candConversationStatus' ||
@@ -729,23 +963,35 @@ export const TableColumns = ({
     }
 
     if (value) {
-      if (prop === 'candConversationStatus' && CANDIDATE_CONVERSATION_STATUS_LABELS[value]) {
+      if (
+        prop === 'candConversationStatus' &&
+        CANDIDATE_CONVERSATION_STATUS_LABELS[value]
+      ) {
         td.textContent = CANDIDATE_CONVERSATION_STATUS_LABELS[value];
       } else if (prop === 'status' && STATUS_LABELS[value]) {
         td.textContent = STATUS_LABELS[value];
-      } else if (prop === 'outreachSequenceStage' && OUTREACH_STAGE_LABELS[value]) {
-        td.textContent = OUTREACH_STAGE_LABELS[value];
       } else if (
-        prop === 'outreachConversationStage' &&
-        OUTREACH_CONVERSATION_STAGE_LABELS[
-          value as keyof typeof OUTREACH_CONVERSATION_STAGE_LABELS
-        ]
+        prop === 'outreachSequenceStage' &&
+        OUTREACH_STAGE_LABELS[value]
       ) {
-        td.textContent =
+        td.textContent = OUTREACH_STAGE_LABELS[value];
+      } else if (prop === 'outreachConversationStage') {
+        if (value === 'NONE' || value === '' || value == null) {
+          td.textContent = '';
+        } else if (
           OUTREACH_CONVERSATION_STAGE_LABELS[
             value as keyof typeof OUTREACH_CONVERSATION_STAGE_LABELS
-          ];
-      } else if (prop === 'workflowRunStatus' && WORKFLOW_RUN_STATUS_LABELS[value]) {
+          ]
+        ) {
+          td.textContent =
+            OUTREACH_CONVERSATION_STAGE_LABELS[
+              value as keyof typeof OUTREACH_CONVERSATION_STAGE_LABELS
+            ];
+        }
+      } else if (
+        prop === 'workflowRunStatus' &&
+        WORKFLOW_RUN_STATUS_LABELS[value]
+      ) {
         td.textContent = WORKFLOW_RUN_STATUS_LABELS[value];
       }
     }
@@ -807,42 +1053,74 @@ export const TableColumns = ({
     return td;
   };
 
-  const cvAvailabilityRenderer: ColumnRenderer = (instance, td, row, column, prop, value, cellProperties) => {
+  const cvAvailabilityRenderer: ColumnRenderer = (
+    instance,
+    td,
+    row,
+    column,
+    prop,
+    value,
+    cellProperties,
+  ) => {
     // Use dropdown renderer so the value shows consistently with other dropdown columns.
-    Handsontable.renderers.DropdownRenderer(instance, td, row, column, prop, value, cellProperties);
+    Handsontable.renderers.DropdownRenderer(
+      instance,
+      td,
+      row,
+      column,
+      prop,
+      value,
+      cellProperties,
+    );
     return td;
   };
 
-  const messagingChannelRenderer: ColumnRenderer = (instance, td, row, column, prop, value, cellProperties) => {
-    Handsontable.renderers.DropdownRenderer(instance, td, row, column, prop, value, cellProperties);
+  const messagingChannelRenderer: ColumnRenderer = (
+    instance,
+    td,
+    row,
+    column,
+    prop,
+    value,
+    cellProperties,
+  ) => {
+    Handsontable.renderers.DropdownRenderer(
+      instance,
+      td,
+      row,
+      column,
+      prop,
+      value,
+      cellProperties,
+    );
     td.style.whiteSpace = 'nowrap';
     return td;
   };
 
-
   // First, add enrichment columns before common columns
   // Only include enrichment fields that actually exist in the data and are not empty
-  const aiFilterFields = Array.from(allKeys).filter(key =>
-    !excludedFields.includes(key) &&
-    !hasAllEmptyValues(key, processedData) &&
-    columnHasOnlyScalarValues(key, processedData) &&
-    isAiFilterField(key, enrichments)
+  const aiFilterFields = Array.from(allKeys).filter(
+    (key) =>
+      !excludedFields.includes(key) &&
+      !hasAllEmptyValues(key, processedData) &&
+      columnHasOnlyScalarValues(key, processedData) &&
+      isAiFilterField(key, enrichments),
   );
 
   // Add AI filter columns first
-  aiFilterFields.forEach(column => {
+  aiFilterFields.forEach((column) => {
     columns.push({
       data: column,
       title: column.charAt(0).toUpperCase() + column.slice(1),
       width: 150,
       renderer: simpleRenderer,
-      type: 'text'
+      type: 'text',
     });
     allKeys.delete(column);
   });
-  console.log("Available keys in processed data:", Array.from(allKeys));
-  console.log("AI filter fields found in data:", aiFilterFields);
-  console.log("Total columns after enrichment fields:", columns.length);
+  console.log('Available keys in processed data:', Array.from(allKeys));
+  console.log('AI filter fields found in data:', aiFilterFields);
+  console.log('Total columns after enrichment fields:', columns.length);
 
   const commonColumns = [
     'jobTitle',
@@ -853,22 +1131,27 @@ export const TableColumns = ({
     'candConversationStatus',
     'outreachSequenceStage',
     'outreachConversationStage',
-    'workflowRunStatus',
     'nextStep',
+    'messagesExchanged',
+    'lastMessage',
+    'lastInboundAt',
+    'workflowRunStatus',
     'nextRetry',
     'needsApproval',
     'replyAfterTouch',
-    'lastMessage',
-    'lastInboundAt',
     'lastOutboundAt',
     'nextFollowUp',
-    'messagesExchanged',
     'email',
     'phone',
     'messagingChannel',
   ];
-  commonColumns.forEach(column => {
-    if (allKeys.has(column) && !excludedFields.includes(column) && !hasAllEmptyValues(column, processedData) && columnHasOnlyScalarValues(column, processedData)) {
+  commonColumns.forEach((column) => {
+    if (
+      allKeys.has(column) &&
+      !excludedFields.includes(column) &&
+      !hasAllEmptyValues(column, processedData) &&
+      columnHasOnlyScalarValues(column, processedData)
+    ) {
       const isRecruiterStatusField =
         column === 'status' || column === 'candConversationStatus';
       const isOutreachStageField = column === 'outreachSequenceStage';
@@ -897,63 +1180,122 @@ export const TableColumns = ({
             : isConversationStageField || isNextRetryField
               ? 180
               : column === 'nextStep'
-                ? 220
-                : 150,
-        renderer: isLabeledStatusField ? statusRenderer :
-                 isMessagingChannelField ? messagingChannelRenderer :
-                 isMessagesExchangedField ? messagesExchangedRenderer :
-                 isNextFollowUpField || isNextRetryField ? nextFollowUpRenderer :
-                 isNeedsApprovalField ? needsApprovalRenderer :
-                 isOutreachDateField ? dateRenderer :
-                 simpleRenderer,
-        type: isRecruiterStatusField || isMessagingChannelField || isConversationStageField ? 'dropdown' : 'text',
-        source: column === 'status' ? Object.values(STATUS_LABELS) as string[] :
-                column === 'candConversationStatus' ? Object.values(CANDIDATE_CONVERSATION_STATUS_LABELS) as string[] :
-                isConversationStageField ? Object.values(OUTREACH_CONVERSATION_STAGE_LABELS) :
-                isMessagingChannelField ? MESSAGING_CHANNEL_OPTIONS : undefined,
-        editor: isRecruiterStatusField || isMessagingChannelField || isConversationStageField ? 'dropdown' : undefined,
-        readOnly: isOutreachStageField || isWorkflowRunStatusField || isMessagesExchangedField || isNextFollowUpField || isNextRetryField || isNeedsApprovalField || isOutreachDateField || column === 'nextStep' || column === 'replyAfterTouch' || column === 'lastMessage',
+                ? 260
+                : column === 'lastMessage'
+                  ? 200
+                  : 150,
+        renderer: isLabeledStatusField
+          ? statusRenderer
+          : isMessagingChannelField
+            ? messagingChannelRenderer
+            : isMessagesExchangedField
+              ? messagesExchangedRenderer
+              : isNextFollowUpField || isNextRetryField
+                ? nextFollowUpRenderer
+                : isNeedsApprovalField
+                  ? needsApprovalRenderer
+                  : isOutreachDateField
+                    ? dateRenderer
+                    : simpleRenderer,
+        type:
+          isRecruiterStatusField ||
+          isMessagingChannelField ||
+          isConversationStageField
+            ? 'dropdown'
+            : 'text',
+        source:
+          column === 'status'
+            ? (Object.values(STATUS_LABELS) as string[])
+            : column === 'candConversationStatus'
+              ? (Object.values(
+                  CANDIDATE_CONVERSATION_STATUS_LABELS,
+                ) as string[])
+              : isConversationStageField
+                ? Object.values(OUTREACH_CONVERSATION_STAGE_LABELS)
+                : isMessagingChannelField
+                  ? MESSAGING_CHANNEL_OPTIONS
+                  : undefined,
+        editor:
+          isRecruiterStatusField ||
+          isMessagingChannelField ||
+          isConversationStageField
+            ? 'dropdown'
+            : undefined,
+        readOnly:
+          isOutreachStageField ||
+          isWorkflowRunStatusField ||
+          isMessagesExchangedField ||
+          isNextFollowUpField ||
+          isNextRetryField ||
+          isNeedsApprovalField ||
+          isOutreachDateField ||
+          column === 'nextStep' ||
+          column === 'replyAfterTouch' ||
+          column === 'lastMessage',
       });
       allKeys.delete(column);
     }
   });
 
   // Add relevance columns after status and before other columns
-  const relevanceColumns = ['relevanceScore', 'relevanceLabel', 'matchReasons', 'mismatchReasons'];
-  relevanceColumns.forEach(column => {
-    if (allKeys.has(column) && !excludedFields.includes(column) && !hasAllEmptyValues(column, processedData) && columnHasOnlyScalarValues(column, processedData)) {
+  const relevanceColumns = [
+    'relevanceScore',
+    'relevanceLabel',
+    'matchReasons',
+    'mismatchReasons',
+  ];
+  relevanceColumns.forEach((column) => {
+    if (
+      allKeys.has(column) &&
+      !excludedFields.includes(column) &&
+      !hasAllEmptyValues(column, processedData) &&
+      columnHasOnlyScalarValues(column, processedData)
+    ) {
       const isRelevanceScoreField = column === 'relevanceScore';
       const isRelevanceLabelField = column === 'relevanceLabel';
-      const isArrayField = column === 'matchReasons' || column === 'mismatchReasons';
+      const isArrayField =
+        column === 'matchReasons' || column === 'mismatchReasons';
 
       columns.push({
         data: column,
         title: getColumnTitle(column),
-        width: isRelevanceScoreField ? 100 :
-               isRelevanceLabelField ? 140 :
-               isArrayField ? 200 : 150,
-        renderer: isRelevanceScoreField ? relevanceScoreRenderer :
-                  isRelevanceLabelField ? relevanceLabelRenderer :
-                  isArrayField ? arrayRenderer : simpleRenderer,
-        type: 'text'
+        width: isRelevanceScoreField
+          ? 100
+          : isRelevanceLabelField
+            ? 140
+            : isArrayField
+              ? 200
+              : 150,
+        renderer: isRelevanceScoreField
+          ? relevanceScoreRenderer
+          : isRelevanceLabelField
+            ? relevanceLabelRenderer
+            : isArrayField
+              ? arrayRenderer
+              : simpleRenderer,
+        type: 'text',
       });
       allKeys.delete(column);
     }
   });
 
-
-  const smallFields = chatColumns.concat(['inferredSalary', 'inferredYearsExperience']);
+  const smallFields = chatColumns.concat([
+    'inferredSalary',
+    'inferredYearsExperience',
+  ]);
   Array.from(allKeys)
-    .filter(key => !excludedFields.includes(key))
-    .filter(key => !hasAllEmptyValues(key, processedData))
-    .filter(key => columnHasOnlyScalarValues(key, processedData))
-    .filter(key => !isAiFilterField(key, enrichments)) // Exclude enrichment fields as they're already processed
+    .filter((key) => !excludedFields.includes(key))
+    .filter((key) => !hasAllEmptyValues(key, processedData))
+    .filter((key) => columnHasOnlyScalarValues(key, processedData))
+    .filter((key) => !isAiFilterField(key, enrichments)) // Exclude enrichment fields as they're already processed
     // .sort()
-    .forEach(key => {
+    .forEach((key) => {
       const isUrlField = urlFields.includes(key);
-      const isDateField = key === 'createdAt' || key === 'updatedAt' || key === 'deletedAt';
+      const isDateField =
+        key === 'createdAt' || key === 'updatedAt' || key === 'deletedAt';
       const isChatField = chatColumns.includes(key);
-      const isStatusField = key === 'candConversationStatus' || key === 'status';
+      const isStatusField =
+        key === 'candConversationStatus' || key === 'status';
       const isOutreachStageField = key === 'outreachSequenceStage';
       const isWorkflowRunStatusField = key === 'workflowRunStatus';
       const isLabeledStatusField =
@@ -968,24 +1310,39 @@ export const TableColumns = ({
       const isArrayField = key === 'matchReasons' || key === 'mismatchReasons';
 
       // Check if the field contains arrays or objects that shouldn't use dateRenderer
-      const sampleValue = processedData.find(item => item[key] !== undefined && item[key] !== null)?.[key];
-      const isArrayOrObject = Array.isArray(sampleValue) || (sampleValue && typeof sampleValue === 'object' && !(sampleValue instanceof Date));
+      const sampleValue = processedData.find(
+        (item) => item[key] !== undefined && item[key] !== null,
+      )?.[key];
+      const isArrayOrObject =
+        Array.isArray(sampleValue) ||
+        (sampleValue &&
+          typeof sampleValue === 'object' &&
+          !(sampleValue instanceof Date));
 
       // Don't use dateRenderer for arrays or objects
       const shouldUseDateRenderer = isDateField && !isArrayOrObject;
 
       // Debug logging for problematic fields
       if (isArrayOrObject && isDateField) {
-        console.warn(`Field "${key}" is marked as date field but contains array/object:`, sampleValue);
+        console.warn(
+          `Field "${key}" is marked as date field but contains array/object:`,
+          sampleValue,
+        );
       }
 
       // Additional safety check: if any sample value is an array or object, don't use dateRenderer
-      const hasArrayOrObjectValues = processedData.some(item => {
+      const hasArrayOrObjectValues = processedData.some((item) => {
         const val = item[key];
-        return val !== undefined && val !== null && (Array.isArray(val) || (typeof val === 'object' && !(val instanceof Date)));
+        return (
+          val !== undefined &&
+          val !== null &&
+          (Array.isArray(val) ||
+            (typeof val === 'object' && !(val instanceof Date)))
+        );
       });
 
-      const finalShouldUseDateRenderer = shouldUseDateRenderer && !hasArrayOrObjectValues;
+      const finalShouldUseDateRenderer =
+        shouldUseDateRenderer && !hasArrayOrObjectValues;
 
       // Determine the appropriate renderer
       let renderer: ColumnRenderer = simpleRenderer;
@@ -1014,24 +1371,45 @@ export const TableColumns = ({
       columns.push({
         data: key,
         title: getColumnTitle(key),
-        width: isChatField ? 40 :
-               isRelevanceScoreField ? 100 :
-               isRelevanceLabelField ? 140 :
-               isArrayField ? 200 :
-               isMessagingChannelField ? MESSAGING_CHANNEL_COLUMN_WIDTH :
-               isMessagesExchangedField ? MESSAGES_EXCHANGED_COLUMN_WIDTH :
-               isCvAvailabilityField ? 160 :
-               smallFields.includes(key) ? 40 : 150,
+        width: isChatField
+          ? 40
+          : isRelevanceScoreField
+            ? 100
+            : isRelevanceLabelField
+              ? 140
+              : isArrayField
+                ? 200
+                : isMessagingChannelField
+                  ? MESSAGING_CHANNEL_COLUMN_WIDTH
+                  : isMessagesExchangedField
+                    ? MESSAGES_EXCHANGED_COLUMN_WIDTH
+                    : isCvAvailabilityField
+                      ? 160
+                      : smallFields.includes(key)
+                        ? 40
+                        : 150,
         renderer: renderer,
-        type: isStatusField || isMessagingChannelField || isCvAvailabilityField ? 'dropdown' : 'text',
-        source: isStatusField ? (key === 'candConversationStatus' ?
-          Object.values(CANDIDATE_CONVERSATION_STATUS_LABELS) as string[] :
-          Object.values(STATUS_LABELS) as string[]) :
-          isMessagingChannelField ? MESSAGING_CHANNEL_OPTIONS :
-          isCvAvailabilityField ? [...CV_AVAILABILITY_OPTIONS] :
-          undefined,
-        editor: isStatusField || isMessagingChannelField || isCvAvailabilityField ? 'dropdown' : undefined,
-        readOnly: isOutreachStageField || isWorkflowRunStatusField || isMessagesExchangedField,
+        type:
+          isStatusField || isMessagingChannelField || isCvAvailabilityField
+            ? 'dropdown'
+            : 'text',
+        source: isStatusField
+          ? key === 'candConversationStatus'
+            ? (Object.values(CANDIDATE_CONVERSATION_STATUS_LABELS) as string[])
+            : (Object.values(STATUS_LABELS) as string[])
+          : isMessagingChannelField
+            ? MESSAGING_CHANNEL_OPTIONS
+            : isCvAvailabilityField
+              ? [...CV_AVAILABILITY_OPTIONS]
+              : undefined,
+        editor:
+          isStatusField || isMessagingChannelField || isCvAvailabilityField
+            ? 'dropdown'
+            : undefined,
+        readOnly:
+          isOutreachStageField ||
+          isWorkflowRunStatusField ||
+          isMessagesExchangedField,
       });
     });
 

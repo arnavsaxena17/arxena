@@ -15,29 +15,37 @@ export const useOutreachProjectJourneySummary = (
   );
   const [isLoading, setIsLoading] = useState(false);
 
-  const accessToken =
-    tokenPair?.accessOrWorkspaceAgnosticToken?.token ?? '';
+  const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token ?? '';
 
-  const refetch = useCallback(async () => {
-    if (!isDefined(projectId) || !accessToken) {
-      setSummary(null);
-      return;
-    }
+  const refetch = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (!isDefined(projectId) || !accessToken) {
+        setSummary(null);
+        return;
+      }
 
-    setIsLoading(true);
+      const isSilent = options?.silent === true;
 
-    try {
-      const data = await fetchOutreachProjectJourneySummary({
-        projectId,
-        accessToken,
-      });
-      setSummary(data);
-    } catch {
-      setSummary(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [accessToken, projectId]);
+      if (!isSilent) {
+        setIsLoading(true);
+      }
+
+      try {
+        const data = await fetchOutreachProjectJourneySummary({
+          projectId,
+          accessToken,
+        });
+        setSummary(data);
+      } catch {
+        setSummary(null);
+      } finally {
+        if (!isSilent) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [accessToken, projectId],
+  );
 
   useEffect(() => {
     void refetch();

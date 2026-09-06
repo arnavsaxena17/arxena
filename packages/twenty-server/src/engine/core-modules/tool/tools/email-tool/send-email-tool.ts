@@ -1,5 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { FeatureFlagKey } from 'twenty-shared/types';
+
+import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { EmailComposerService } from 'src/engine/core-modules/tool/tools/email-tool/email-composer.service';
 import { EmailToolInputZodSchema } from 'src/engine/core-modules/tool/tools/email-tool/email-tool.schema';
 import { EmailToolException } from 'src/engine/core-modules/tool/tools/email-tool/exceptions/email-tool.exception';
@@ -21,12 +24,36 @@ export class SendEmailTool implements Tool {
   constructor(
     private readonly emailComposerService: EmailComposerService,
     private readonly sendEmailService: SendEmailService,
+    private readonly featureFlagService: FeatureFlagService,
   ) {}
 
   async execute(
     parameters: EmailToolInput,
     context: ToolExecutionContext,
   ): Promise<ToolOutput> {
+    const isOutreachMockEnabled =
+      await this.featureFlagService.isFeatureEnabled(
+        FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
+        context.workspaceId,
+      );
+
+    if (isOutreachMockEnabled) {
+      this.logger.log(
+        `IS_OUTREACH_MOCK_UNIPILE_ENABLED: skipping real email send to ${parameters.recipients?.to ?? ''}`,
+      );
+
+      return {
+        success: true,
+        message: 'Mock email sent (IS_OUTREACH_MOCK_UNIPILE_ENABLED)',
+        result: {
+          recipients: parameters.recipients?.to,
+          subject: parameters.subject ?? '',
+          connectedAccountId: 'mock-connected-account',
+          headerMessageId: `mock-email-${Date.now()}`,
+        },
+      };
+    }
+
     try {
       const result = await this.emailComposerService.composeEmail(
         parameters,

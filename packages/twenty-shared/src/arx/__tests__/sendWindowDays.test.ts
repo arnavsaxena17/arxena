@@ -26,6 +26,7 @@ describe('sendWindowDays', () => {
 
   it('summarizes weekday presets', () => {
     expect(formatSendWindowDaysSummary([1, 2, 3, 4, 5])).toBe('Weekdays');
+    expect(formatSendWindowDaysSummary([1, 2, 3, 4, 5, 6])).toBe('Mon–Sat');
     expect(formatSendWindowDaysSummary([2, 3, 4])).toBe('Tue, Wed, Thu');
     expect(formatSendWindowDaysSummary([0, 1, 2, 3, 4, 5, 6])).toBe(
       'Every day',

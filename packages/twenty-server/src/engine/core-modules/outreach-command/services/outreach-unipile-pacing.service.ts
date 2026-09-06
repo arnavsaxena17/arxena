@@ -119,9 +119,9 @@ export class OutreachUnipilePacingService {
           }
         : {
             timezone: 'Asia/Kolkata',
-            sendWindowStart: '08:00',
-            sendWindowEnd: '10:00',
-            sendWindowDays: '2,3,4',
+            sendWindowStart: '10:00',
+            sendWindowEnd: '20:00',
+            sendWindowDays: '1,2,3,4,5,6',
           },
     });
 

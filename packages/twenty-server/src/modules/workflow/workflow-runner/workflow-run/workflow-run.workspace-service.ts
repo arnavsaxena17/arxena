@@ -10,6 +10,7 @@ import { WithLock } from 'src/engine/core-modules/cache-lock/with-lock.decorator
 import { getRegisteredAccountRateLimiter } from 'src/engine/core-modules/account-rate-limit/account-rate-limiter.registry';
 import { MetricsService } from 'src/engine/core-modules/metrics/metrics.service';
 import { MetricsKeys } from 'src/engine/core-modules/metrics/types/metrics-keys.type';
+import { OutreachCacheRealtimeService } from 'src/engine/core-modules/outreach-command/services/outreach-cache-realtime.service';
 import { RecordPositionService } from 'src/engine/core-modules/record-position/services/record-position.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
@@ -32,6 +33,10 @@ import {
 } from 'src/modules/workflow/workflow-runner/utils/extract-workflow-run-trigger-record.util';
 import { mergeWorkflowRunStepInfo } from 'src/modules/workflow/workflow-runner/utils/merge-workflow-run-step-info.util';
 
+type CandidateProjectIdRecord = {
+  projectsId?: string | null;
+};
+
 @Injectable()
 export class WorkflowRunWorkspaceService {
   constructor(
@@ -39,6 +44,7 @@ export class WorkflowRunWorkspaceService {
     private readonly workflowCommonWorkspaceService: WorkflowCommonWorkspaceService,
     private readonly recordPositionService: RecordPositionService,
     private readonly metricsService: MetricsService,
+    private readonly outreachCacheRealtimeService: OutreachCacheRealtimeService,
   ) {}
 
   async createWorkflowRun({
@@ -491,6 +497,26 @@ export class WorkflowRunWorkspaceService {
         undefined,
         ['id'],
       );
+
+      // Outreach People Stage/Next read journey-summary from this run.
+      if (isDefined(workflowRunToUpdate.candidateId)) {
+        const candidateRepository =
+          await this.globalWorkspaceOrmManager.getRepository<CandidateProjectIdRecord>(
+            workspaceId,
+            'candidate',
+            { shouldBypassPermissionChecks: true },
+          );
+        const candidate = await candidateRepository.findOne({
+          where: { id: workflowRunToUpdate.candidateId },
+        });
+
+        if (isDefined(candidate?.projectsId)) {
+          this.outreachCacheRealtimeService.notifyProjectCacheUpdated(
+            candidate.projectsId,
+            'journey',
+          );
+        }
+      }
     }, authContext);
   }
 

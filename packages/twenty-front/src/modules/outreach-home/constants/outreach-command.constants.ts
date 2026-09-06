@@ -1,5 +1,6 @@
 export const OUTREACH_DASHBOARD_TITLE = 'Outreach';
 
+// Legacy name prefix — kept so older projects without outreachConfig still list.
 export const OUTREACH_PROJECT_NAME_PREFIX = 'Outreach Project';
 
 export const isOutreachProjectName = (

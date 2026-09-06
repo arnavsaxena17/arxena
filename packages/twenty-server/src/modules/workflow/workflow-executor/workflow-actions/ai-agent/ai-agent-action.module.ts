@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
+import { FeatureFlagModule } from 'src/engine/core-modules/feature-flag/feature-flag.module';
 import { UserWorkspaceModule } from 'src/engine/core-modules/user-workspace/user-workspace.module';
 import { AiAgentExecutionModule } from 'src/engine/metadata-modules/ai/ai-agent-execution/ai-agent-execution.module';
 import { AgentEntity } from 'src/engine/metadata-modules/ai/ai-agent/entities/agent.entity';
@@ -17,6 +18,7 @@ import { AiAgentWorkflowAction } from './ai-agent.workflow-action';
   imports: [
     ApplicationModule,
     AiAgentExecutionModule,
+    FeatureFlagModule,
     TypeOrmModule.forFeature([AgentEntity]),
     WorkflowRunModule,
     UserWorkspaceModule,

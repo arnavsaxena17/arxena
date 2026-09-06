@@ -4,6 +4,7 @@ import { WorkspaceIteratorModule } from 'src/database/commands/command-runners/w
 import { CacheLockModule } from 'src/engine/core-modules/cache-lock/cache-lock.module';
 import { FeatureFlagModule } from 'src/engine/core-modules/feature-flag/feature-flag.module';
 import { MetricsModule } from 'src/engine/core-modules/metrics/metrics.module';
+import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-command/outreach-cache-realtime.module';
 import { RecordPositionModule } from 'src/engine/core-modules/record-position/record-position.module';
 import { WorkflowCommonModule } from 'src/modules/workflow/common/workflow-common.module';
 import { DeleteWorkflowRunsCommand } from 'src/modules/workflow/workflow-runner/workflow-run/command/delete-workflow-runs.command';
@@ -18,6 +19,7 @@ import { WorkflowRunWorkspaceService } from 'src/modules/workflow/workflow-runne
     MetricsModule,
     WorkspaceIteratorModule,
     FeatureFlagModule,
+    OutreachCacheRealtimeModule,
   ],
   providers: [
     WorkflowRunWorkspaceService,

@@ -186,7 +186,9 @@ export const OrgChartResultsAddToProjectPanel = ({
         initialSelectedIds && initialSelectedIds.length > 0
           ? initialSelectedIds.filter((id) => results.some((r) => r.id === id))
           : results.map((c) => c.id);
-      setSelectedCandidateIds(new Set(ids.length > 0 ? ids : results.map((c) => c.id)));
+      setSelectedCandidateIds(
+        new Set(ids.length > 0 ? ids : results.map((c) => c.id)),
+      );
     }
   }, [results, initialSelectedIds]);
 
@@ -196,18 +198,18 @@ export const OrgChartResultsAddToProjectPanel = ({
 
   useEffect(() => {
     if (
-      currentProjectId &&
-      currentProjectId !== 'project-id' &&
-      activeJobs.some((job) => job.id === currentProjectId)
+      projectId &&
+      projectId !== 'project-id' &&
+      activeJobs.some((job) => job.id === projectId)
     ) {
       setJobMode('existing');
-      setSelectedProjectId(currentProjectId);
+      setSelectedProjectId(projectId);
       return;
     }
 
     setJobMode('new');
     setSelectedProjectId('');
-  }, [activeJobs, currentProjectId]);
+  }, [activeJobs, projectId]);
 
   const toggleCandidate = useCallback((id: string) => {
     setSelectedCandidateIds((prev) => {
