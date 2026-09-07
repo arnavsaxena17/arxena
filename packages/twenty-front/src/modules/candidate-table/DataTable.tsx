@@ -30,6 +30,7 @@ import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQuerySt
 import { dataTableApplySortsFunctionState } from '@/candidate-table/states/dataTableApplySortsFunctionState';
 import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTableRefreshFunctionState';
 import {
+  candidateJourneySummaryState,
   candidateStateSelector,
   columnsSelector,
   type FilterCondition,
@@ -57,6 +58,8 @@ import {
 import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { useNotification } from '@/notification-context/NotificationContextProvider';
+import { useOutreachCacheSocket } from '@/outreach-home/hooks/useOutreachCacheSocket';
+import { useOutreachProjectJourneySummary } from '@/outreach-home/hooks/useOutreachProjectJourneySummary';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
@@ -306,6 +309,9 @@ export const DataTable = forwardRef<
   const [isSortingControlsVisible, setIsSortingControlsVisible] =
     useState(false);
   const processedData = useAtomStateValue(processedDataSelector);
+  const setCandidateJourneySummary = useSetAtomState(
+    candidateJourneySummaryState,
+  );
   const [searchResults, setSearchResults] = useAtomState(searchResultsState);
   const [searchMetadata, setSearchMetadata] = useAtomState(searchMetadataState);
   const candidateState = useAtomStateValue(candidateStateSelector);
@@ -324,6 +330,32 @@ export const DataTable = forwardRef<
     dataTableApplySortsFunctionState,
   );
   const { showNotification } = useNotification();
+
+  const journeyProjectId = isBackendBackedDataTableProjectId(projectId)
+    ? projectId
+    : null;
+  const { summary: journeySummary, refetch: refetchJourneySummary } =
+    useOutreachProjectJourneySummary(journeyProjectId);
+
+  useEffect(() => {
+    setCandidateJourneySummary({
+      projectId: journeyProjectId,
+      summary: journeySummary,
+    });
+  }, [journeyProjectId, journeySummary, setCandidateJourneySummary]);
+
+  const handleJourneyCacheUpdated = useCallback(() => {
+    void refetchJourneySummary({ silent: true });
+  }, [refetchJourneySummary]);
+
+  const ignoreOutreachCacheUpdate = useCallback(() => {}, []);
+
+  useOutreachCacheSocket({
+    projectId: journeyProjectId,
+    onPeopleUpdated: ignoreOutreachCacheUpdate,
+    onCompaniesUpdated: ignoreOutreachCacheUpdate,
+    onJourneyUpdated: handleJourneyCacheUpdated,
+  });
 
   // Pagination state
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -697,6 +729,8 @@ export const DataTable = forwardRef<
           });
         }
 
+        void refetchJourneySummary({ silent: true });
+
         // Reapply multi-column sorting after data refresh
         setTimeout(() => {
           const hot = tableRef.current?.hotInstance;
@@ -777,6 +811,7 @@ export const DataTable = forwardRef<
       setUnreadMessagesCounts,
       setSelectedCandidateId,
       setFilteredCandidatesCount,
+      refetchJourneySummary,
     ],
   );
 

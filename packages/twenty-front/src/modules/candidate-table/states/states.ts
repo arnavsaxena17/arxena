@@ -1,15 +1,23 @@
-import { type Enrichment, enrichmentsState, sampleEnrichmentsState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
+import {
+  type Enrichment,
+  enrichmentsState,
+  sampleEnrichmentsState,
+} from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { parsedJDInternalState } from '@/arx-jd-upload/states/arxJDFormStepperState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { activeAssistantThreadIdState } from '@/candidate-search/states/searchConfigState';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
 import { ProcessedData } from '@/candidate-table/ProcessedData';
 import { TableColumns } from '@/candidate-table/TableColumns';
+import { type OutreachProjectJourneySummary } from '@/outreach-home/types/outreach-journey.types';
 import { createAtomSelector } from '@/ui/utilities/state/jotai/utils/createAtomSelector';
 import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 import { createAtomWritableSelector } from '@/ui/utilities/state/jotai/utils/createAtomWritableSelector';
 import type { CandidateNode } from 'twenty-shared/arx';
-import type { LinkedInSearchCategory, LinkedInSearchType } from 'twenty-shared/types';
+import type {
+  LinkedInSearchCategory,
+  LinkedInSearchType,
+} from 'twenty-shared/types';
 import { sortCandidates } from '../utils/customSortUtils';
 import { customSortState } from './customSortState';
 
@@ -122,6 +130,17 @@ export const projectIdAtom = createAtomState<string>({
   defaultValue: 'project-id',
 });
 
+export type CandidateJourneySummaryState = {
+  projectId: string | null;
+  summary: OutreachProjectJourneySummary | null;
+};
+
+export const candidateJourneySummaryState =
+  createAtomState<CandidateJourneySummaryState>({
+    key: 'candidate-table/candidateJourneySummaryState',
+    defaultValue: { projectId: null, summary: null },
+  });
+
 export const jobIdAtom = projectIdAtom;
 
 export const projectsState = createAtomState<ProjectStateItem[]>({
@@ -159,7 +178,9 @@ export const selectedCandidateIdState = createAtomState<string | null>({
   defaultValue: null,
 });
 
-export const unreadMessagesCountsState = createAtomState<Record<string, number>>({
+export const unreadMessagesCountsState = createAtomState<
+  Record<string, number>
+>({
   key: 'candidate-table/unreadMessagesCountsState',
   defaultValue: {},
 });
@@ -188,7 +209,17 @@ const areProcessedDataRowsEqual = (
     return false;
   }
 
-  return previous.every((item, index) => item.id === next[index]?.id);
+  // ID-only equality left Run Status / Next stuck after journey refetch.
+  return previous.every((item, index) => {
+    const other = next[index];
+
+    return (
+      item.id === other?.id &&
+      item.workflowRunStatus === other?.workflowRunStatus &&
+      item.nextStep === other?.nextStep &&
+      item.outreachSequenceStage === other?.outreachSequenceStage
+    );
+  });
 };
 
 export const processedDataSelector = createAtomSelector({
@@ -199,6 +230,12 @@ export const processedDataSelector = createAtomSelector({
     // → setState → max update depth.
     const { rawData } = get(tableStateAtom);
     const currentWorkspaceMember = get(currentWorkspaceMemberState);
+    const projectId = get(projectIdAtom);
+    const journeySummaryState = get(candidateJourneySummaryState);
+    const journeyByCandidateId =
+      journeySummaryState.projectId === projectId
+        ? (journeySummaryState.summary?.byCandidateId ?? {})
+        : {};
 
     if (!rawData || !Array.isArray(rawData) || rawData.length === 0) {
       return EMPTY_PROCESSED_DATA;
@@ -209,6 +246,7 @@ export const processedDataSelector = createAtomSelector({
       selectedRowIds: [],
       outboundSenderFirstName:
         currentWorkspaceMember?.name?.firstName?.trim() || null,
+      journeyByCandidateId,
     });
   },
   areEqual: areProcessedDataRowsEqual,
@@ -513,10 +551,8 @@ export const resolvedParametersSelector = createAtomWritableSelector({
         (thread) => thread.id === activeId,
       );
       if (activeThread?.assistantParameters?.resolvedSearchParameters) {
-        return activeThread.assistantParameters.resolvedSearchParameters as Record<
-          string,
-          unknown
-        >;
+        return activeThread.assistantParameters
+          .resolvedSearchParameters as Record<string, unknown>;
       }
     }
     const job = projects.find((jobItem) => jobItem.id === projectId);
@@ -604,10 +640,7 @@ export const filtersSelector = createAtomSelector({
     const assistantThreadEdges = (job as any)?.assistantThread?.edges || [];
     if (assistantThreadEdges.length > 0) {
       const threadNode = assistantThreadEdges[0]?.node;
-      if (
-        threadNode?.columnFilters &&
-        threadNode.columnFilters.length > 0
-      ) {
+      if (threadNode?.columnFilters && threadNode.columnFilters.length > 0) {
         return threadNode.columnFilters;
       }
     }

@@ -31,6 +31,7 @@ export type ProcessedDataItem = {
   outreachSequenceStage?: string;
   outreachConversationStage?: string;
   workflowRunStatus?: string;
+  nextStep?: string;
   checkbox: boolean;
   startChat: boolean;
   startChatCompleted: boolean;
@@ -248,6 +249,9 @@ const OUTREACH_HOME_HIDDEN_COLUMNS = [
   'lastOutboundAt',
 ];
 
+// Same as Outreach People: Stage + Next on the grid, run status in the drawer.
+const PROJECT_TABLE_HIDDEN_COLUMNS = ['workflowRunStatus'];
+
 // Function to check if a column has all empty or 'N/A' values
 const hasAllEmptyValues = (
   columnName: string,
@@ -273,6 +277,13 @@ const hasAllEmptyValues = (
     return true;
   }
 
+  // if (
+  //   !isOutreachHomeTable &&
+  //   PROJECT_TABLE_HIDDEN_COLUMNS.includes(columnName)
+  // ) {
+  //   return true;
+  // }
+
   if (
     isOutreachHomeTable &&
     OUTREACH_HOME_ALWAYS_SHOW_COLUMNS.includes(columnName)
@@ -292,13 +303,14 @@ const hasAllEmptyValues = (
     'remarks',
     'hasCv',
     'cvAvailability',
-    'startChat',
-    'startChatCompleted',
-    'stopChat',
+    // 'startChat',
+    // 'startChatCompleted',
+    // 'stopChat',
     'relevanceScore',
     'relevanceLabel',
     'messagingChannel',
     'messagesExchanged',
+    'workflowRunStatus',
   ];
   if (alwaysShowColumns.includes(columnName)) {
     return false;
@@ -350,6 +362,16 @@ export const TableColumns = ({
   processedData.forEach((item) => {
     Object.keys(item).forEach((key) => allKeys.add(key));
   });
+
+  const isOutreachPeopleTable = processedData.some(
+    (item) => item.isOutreachHomeRow === true,
+  );
+
+  if (isOutreachPeopleTable) {
+    for (const columnName of RECRUITING_COLUMNS_HIDDEN_ON_OUTREACH) {
+      allKeys.delete(columnName);
+    }
+  }
 
   const checkboxRenderer: ColumnRenderer = (
     instance,
@@ -895,13 +917,13 @@ export const TableColumns = ({
   };
 
   const chatColumns = [
-    'startChat',
-    'startChatCompleted',
-    'startMeetingSchedulingChat',
-    'startMeetingSchedulingChatCompleted',
-    'startVideoInterviewChat',
-    'startVideoInterviewChatCompleted',
-    'stopChat',
+    // 'startChat',
+    // 'startChatCompleted',
+    // 'startMeetingSchedulingChat',
+    // 'startMeetingSchedulingChatCompleted',
+    // 'startVideoInterviewChat',
+    // 'startVideoInterviewChatCompleted',
+    // 'stopChat',
   ];
 
   // Status mapping
@@ -993,6 +1015,10 @@ export const TableColumns = ({
         WORKFLOW_RUN_STATUS_LABELS[value]
       ) {
         td.textContent = WORKFLOW_RUN_STATUS_LABELS[value];
+
+        if (value === 'FAILED') {
+          td.style.color = themeCssVariables.color.red;
+        }
       }
     }
     return td;

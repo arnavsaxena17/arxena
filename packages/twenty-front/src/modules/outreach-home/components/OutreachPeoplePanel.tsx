@@ -202,8 +202,6 @@ const mapOutreachPersonToDataTableRow = (
       : { primaryLinkUrl: '' },
     phoneNumber: { primaryPhoneNumber: '' },
     email: { primaryEmail: person.email || '' },
-    status: '',
-    candConversationStatus: '',
     outreachSequenceStage: person.stage,
     outreachConversationStage: person.outreachConversationStage ?? 'NONE',
     workflowRunStatus: person.workflowRunStatus ?? '',

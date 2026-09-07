@@ -23,8 +23,14 @@ import { useLingui } from '@lingui/react/macro';
 import { isNonEmptyString } from '@sniptt/guards';
 import { useEffect, useState } from 'react';
 import { SettingsPath } from 'twenty-shared/types';
-import { isDefined } from 'twenty-shared/utils';
-import { IconLock, IconPlayerPlay, IconSparkles } from 'twenty-ui/icon';
+import { isDefined, isValidUuid } from 'twenty-shared/utils';
+import { Callout } from 'twenty-ui/feedback';
+import {
+  IconAlertTriangle,
+  IconLock,
+  IconPlayerPlay,
+  IconSparkles,
+} from 'twenty-ui/icon';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useDebouncedCallback } from 'use-debounce';
 import {
@@ -61,6 +67,8 @@ export const WorkflowEditActionAiAgent = ({
   const { t } = useLingui();
   const componentInstanceId = `${WORKFLOW_AI_AGENT_TAB_LIST_COMPONENT_ID}-${action.id}`;
   const agentId = action.settings.input.agentId;
+  const hasResolvableAgentId =
+    isNonEmptyString(agentId) && isValidUuid(agentId);
   const [workflowAiAgentActionAgent, setWorkflowAiAgentActionAgent] =
     useAtomState(workflowAiAgentActionAgentState);
   const {
@@ -69,14 +77,22 @@ export const WorkflowEditActionAiAgent = ({
     refetch: refetchAgent,
   } = useQuery(FindOneAgentDocument, {
     variables: { id: agentId || '' },
-    skip: !agentId,
+    skip: !hasResolvableAgentId,
   });
 
   useEffect(() => {
-    if (agentData?.findOneAgent) {
-      setWorkflowAiAgentActionAgent(agentData.findOneAgent);
-    }
-  }, [agentData, setWorkflowAiAgentActionAgent]);
+    setWorkflowAiAgentActionAgent((currentAgent) => {
+      if (agentData?.findOneAgent?.id === agentId) {
+        return agentData.findOneAgent;
+      }
+
+      if (isDefined(currentAgent) && currentAgent.id !== agentId) {
+        return undefined;
+      }
+
+      return currentAgent;
+    });
+  }, [agentData, agentId, setWorkflowAiAgentActionAgent]);
   useResetWorkflowAiAgentPermissionsStateOnSidePanelClose();
 
   const actionPrompt = action.settings.input.prompt || '';
@@ -198,6 +214,8 @@ export const WorkflowEditActionAiAgent = ({
   const isCurrentAgentLoaded =
     isDefined(workflowAiAgentActionAgent) &&
     workflowAiAgentActionAgent.id === agentId;
+  const isWaitingForAgent =
+    hasResolvableAgentId && agentLoading && !isCurrentAgentLoaded;
 
   const handleViewRole = () => {
     if (isDefined(role?.id)) {
@@ -245,7 +263,7 @@ export const WorkflowEditActionAiAgent = ({
     ];
   };
 
-  return agentLoading || !isCurrentAgentLoaded ? (
+  return isWaitingForAgent ? (
     <SidePanelSkeletonLoader />
   ) : (
     <>
@@ -256,6 +274,16 @@ export const WorkflowEditActionAiAgent = ({
           behaveAsLinks={false}
         />
       </StyledTabListContainer>
+      {!isCurrentAgentLoaded ? (
+        <WorkflowStepBody>
+          <Callout
+            variant="warning"
+            Icon={IconAlertTriangle}
+            title={t`Agent is missing`}
+            description={t`The prompt is still editable. Bind an agent on this step to test generation.`}
+          />
+        </WorkflowStepBody>
+      ) : null}
       {currentTabId === WORKFLOW_AI_AGENT_TABS.PERMISSIONS ? (
         <WorkflowStepBody paddingBlock="0" paddingInline="0">
           <WorkflowAiAgentPermissionsTab

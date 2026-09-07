@@ -1,0 +1,36 @@
+# GraphQL SSE (/metadata) — must not buffer long-lived agent-chat subscriptions.
+# Insert before the catch-all API regex location in twenty.conf.
+# `^~` wins over that regex so /metadata is not buffered with normal JSON APIs.
+#
+# Deploy on production:
+#   1. Insert this location block above the catch-all `location ~ ^/(client-config|...|metadata|...)`
+#   2. sudo nginx -t && sudo systemctl reload nginx
+
+    location ^~ /metadata {
+        access_log /var/log/nginx/api_endpoints_debug.log;
+        error_log /var/log/nginx/api_endpoints_error.log warn;
+        client_max_body_size 10M;
+
+        if ($request_method = 'OPTIONS') {
+            add_header 'Access-Control-Allow-Origin' "$http_origin" always;
+            add_header 'Access-Control-Allow-Credentials' 'true' always;
+            add_header 'Vary' 'Origin' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, PATCH, DELETE, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'authorization,content-type,x-locale,x-schema-version, x-origin-domain,X-Origin-Domain,origin' always;
+            add_header 'Access-Control-Max-Age' 1728000;
+            return 204;
+        }
+
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Connection '';
+        proxy_buffering off;
+        proxy_cache off;
+        chunked_transfer_encoding on;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+    }

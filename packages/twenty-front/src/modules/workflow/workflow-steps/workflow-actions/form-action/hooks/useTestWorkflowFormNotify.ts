@@ -49,17 +49,17 @@ export const useTestWorkflowFormNotify = (actionId: string) => {
 
   const applyOutput = useCallback(
     (output: WorkflowFormNotifyTestOutput, duration?: number) => {
-      setTestData((prev) => ({
-        ...prev,
+      setWorkflowFormNotifyTestData((previousTestData) => ({
+        ...previousTestData,
         language: 'json',
         output: {
-          ...prev.output,
+          ...previousTestData.output,
           ...output,
-          duration: duration ?? prev.output.duration,
+          duration: duration ?? previousTestData.output.duration,
         },
       }));
     },
-    [],
+    [setWorkflowFormNotifyTestData],
   );
 
   const pollTest = useCallback(
@@ -77,8 +77,8 @@ export const useTestWorkflowFormNotify = (actionId: string) => {
     [apolloCoreClient],
   );
 
-  const testId = testData.output.testId;
-  const outputStatus = testData.output.status;
+  const testId = workflowFormNotifyTestData.output.testId;
+  const outputStatus = workflowFormNotifyTestData.output.status;
 
   useEffect(() => {
     if (!testId || outputStatus !== 'waiting') {
@@ -143,7 +143,7 @@ export const useTestWorkflowFormNotify = (actionId: string) => {
             stepId: action.id,
             fields: action.settings.input,
             notifyOnPending: notifyOnPending ?? {},
-            variableValues: testData.variableValues,
+            variableValues: workflowFormNotifyTestData.variableValues,
           },
         },
       });
@@ -177,7 +177,7 @@ export const useTestWorkflowFormNotify = (actionId: string) => {
   return {
     testWorkflowFormNotify,
     isSending,
-    isWaiting: testData.output.status === 'waiting',
-    testData,
+    isWaiting: workflowFormNotifyTestData.output.status === 'waiting',
+    testData: workflowFormNotifyTestData,
   };
 };

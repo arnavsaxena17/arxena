@@ -137,7 +137,11 @@ export const WorkflowStepExecutionResult = ({
           value={result}
           language={language}
           height={height}
-          options={{ readOnly: true, domReadOnly: true }}
+          options={{
+            readOnly: true,
+            domReadOnly: true,
+            wordWrap: 'on',
+          }}
           isLoading={isTesting}
           variant="with-header"
         />

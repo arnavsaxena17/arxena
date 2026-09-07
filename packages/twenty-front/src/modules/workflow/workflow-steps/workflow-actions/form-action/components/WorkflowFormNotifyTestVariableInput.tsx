@@ -110,10 +110,10 @@ export const WorkflowFormNotifyTestVariableInput = ({
   });
 
   const handleVariableChange = (variablePath: string, value: string) => {
-    setTestData((prev) => ({
-      ...prev,
+    setWorkflowFormNotifyTestData((previousTestData) => ({
+      ...previousTestData,
       variableValues: {
-        ...prev.variableValues,
+        ...previousTestData.variableValues,
         [variablePath]: value,
       },
     }));
@@ -130,7 +130,9 @@ export const WorkflowFormNotifyTestVariableInput = ({
           <WorkflowFormNotifyTestVariableField
             key={variablePath}
             variablePath={variablePath}
-            value={testData.variableValues[variablePath] || ''}
+            value={
+              workflowFormNotifyTestData.variableValues[variablePath] || ''
+            }
             readonly={readonly}
             onChange={(value) => handleVariableChange(variablePath, value)}
           />

@@ -1,5 +1,8 @@
 import { ProcessedData } from '@/candidate-table/ProcessedData';
-import { tableStateAtom } from '@/candidate-table/states/states';
+import {
+  candidateJourneySummaryState,
+  tableStateAtom,
+} from '@/candidate-table/states/states';
 import { HeadlessEngineCommandWrapperEffect } from '@/command-menu-item/engine-command/components/HeadlessEngineCommandWrapperEffect';
 import { useArxCommandConfirmationFlow } from '@/command-menu-item/engine-command/record/arx/hooks/useArxCommandConfirmationFlow';
 import { ARX_DOWNLOAD_EXCEL_MODAL_ID } from '@/command-menu-item/engine-command/record/arx/constants/arxCommandModalIds';
@@ -12,10 +15,14 @@ import * as XLSX from 'xlsx';
 
 export const ArxDownloadAsExcelCommand = () => {
   const tableState = useAtomStateValue(tableStateAtom);
+  const journeySummaryState = useAtomStateValue(candidateJourneySummaryState);
   const { isConfirmed, handleCancel, handleConfirm } =
     useArxCommandConfirmationFlow(ARX_DOWNLOAD_EXCEL_MODAL_ID);
-  const { enqueueSuccessSnackBar, enqueueErrorSnackBar, enqueueWarningSnackBar } =
-    useSnackBar();
+  const {
+    enqueueSuccessSnackBar,
+    enqueueErrorSnackBar,
+    enqueueWarningSnackBar,
+  } = useSnackBar();
   const [isDownloading, setIsDownloading] = useState(false);
 
   const handleExecute = useCallback(async () => {
@@ -33,6 +40,7 @@ export const ArxDownloadAsExcelCommand = () => {
       const processedData = ProcessedData({
         rawData: tableState.rawData,
         selectedRowIds: tableState.selectedRowIds,
+        journeyByCandidateId: journeySummaryState.summary?.byCandidateId ?? {},
       });
 
       if (!processedData || processedData.length === 0) {
@@ -82,6 +90,7 @@ export const ArxDownloadAsExcelCommand = () => {
     enqueueSuccessSnackBar,
     enqueueWarningSnackBar,
     isDownloading,
+    journeySummaryState.summary?.byCandidateId,
     tableState.rawData,
     tableState.selectedRowIds,
   ]);

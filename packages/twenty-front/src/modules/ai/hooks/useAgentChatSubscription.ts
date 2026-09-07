@@ -3,7 +3,10 @@ import { useEffect } from 'react';
 import { readUIMessageStream, type UIMessageChunk } from 'ai';
 import { print, type ExecutionResult } from 'graphql';
 import { useStore } from 'jotai';
-import type { AgentChatSubscriptionEvent, ExtendedUIMessage } from 'twenty-shared/ai';
+import type {
+  AgentChatSubscriptionEvent,
+  ExtendedUIMessage,
+} from 'twenty-shared/ai';
 import { isDefined } from 'twenty-shared/utils';
 import { v4 } from 'uuid';
 
@@ -392,11 +395,12 @@ export const useAgentChatSubscription = (threadId: string | null) => {
               ...currentWorkspace,
               currentBillingSubscription: {
                 ...currentBillingSubscription,
-                billingSubscriptionItems: billingSubscriptionItems.map((item) =>
-                  item.billingProduct.metadata?.['productKey'] ===
-                  BillingProductKey.RESOURCE_CREDIT
-                    ? { ...item, hasReachedCurrentPeriodCap: true }
-                    : item,
+                billingSubscriptionItems: billingSubscriptionItems.map(
+                  (item) =>
+                    item.billingProduct.metadata?.['productKey'] ===
+                    BillingProductKey.RESOURCE_CREDIT
+                      ? { ...item, hasReachedCurrentPeriodCap: true }
+                      : item,
                 ),
               },
             };
@@ -450,12 +454,14 @@ export const useAgentChatSubscription = (threadId: string | null) => {
     return () => {
       disposed = true;
       chunkSequencer.reset();
-      store.set(isAwaitingFirstChunkAtom, false);
       store.set(handleEventCallbackAtom, null);
       if (isDefined(throttleTimer)) {
         clearTimeout(throttleTimer);
+        throttleTimer = null;
       }
-      cleanupStream();
+      // Keep isAwaitingFirstChunk / isStreaming across SSE resubscribe so the
+      // pending "..." indicator is not cleared while the turn is still in flight.
+      closeWriter();
       dispose();
     };
   }, [

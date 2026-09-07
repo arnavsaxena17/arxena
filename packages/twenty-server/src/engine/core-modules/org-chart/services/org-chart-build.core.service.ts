@@ -1,9 +1,9 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
 import {
-    graphqlToAddNewProject,
-    OrgChartData,
-    OrgchartSearchMode,
+  graphqlToAddNewProject,
+  OrgChartData,
+  OrgchartSearchMode,
 } from 'twenty-shared';
 
 import { ApifyService } from 'src/engine/core-modules/apify/services/apify.service';
@@ -18,9 +18,9 @@ import { OrgchartLinkedinXrayBuildJobData } from 'src/engine/core-modules/candid
 import { OrgchartMultiSourceBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-multisource-build.types';
 import { OrgchartUnipileBuildJobData } from 'src/engine/core-modules/candidate-search/jobs/orgchart-unipile-build.types';
 import {
-    ApolloIoRestService,
-    ApolloPeopleSearchParams,
-    isApolloOrganizationId,
+  ApolloIoRestService,
+  ApolloPeopleSearchParams,
+  isApolloOrganizationId,
 } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
 import { ApolloPeopleSearchTransformerService } from 'src/engine/core-modules/candidate-search/services/apollo-people-search-transformer.service';
 import { OrgChartSearchService } from 'src/engine/core-modules/candidate-search/services/orgchart-search.service';
@@ -35,8 +35,8 @@ import { linkedInPeopleSearchResultMatchesTargetCompany } from 'src/engine/core-
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import {
-    LinkedInSearchService,
-    parseApifyLinkedinCompanyScraperLogLine,
+  LinkedInSearchService,
+  parseApifyLinkedinCompanyScraperLogLine,
 } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
@@ -46,9 +46,11 @@ import { OrgChartCacheService } from 'src/engine/core-modules/org-chart/services
 import { OrgchartCancelRegistryService } from 'src/engine/core-modules/org-chart/services/orgchart-cancel-registry.service';
 import { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
 import { dedupeAndMergeOrgChartCandidates } from 'src/engine/core-modules/org-chart/utils/orgchart-candidate-dedupe.util';
-import { hasMeaningfulOrgChartFunctionRootFilter } from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
+import {
+  filterOrgChartCandidatesByCountryAndFunctionRoot,
+  hasMeaningfulOrgChartFunctionRootFilter,
+} from 'src/engine/core-modules/org-chart/utils/orgchart-filter.util';
 import { filterOrgChartCandidatesByNodeStdLabels } from 'src/engine/core-modules/org-chart/utils/orgchart-node-scope-filter.util';
-import { normalizeCountry } from 'src/engine/core-modules/org-chart/utils/orgchart-normalization.util';
 import { TheOfficialBoardService } from 'src/engine/core-modules/theofficialboard/services/theofficialboard.service';
 import { TheOfficialBoardCandidate } from 'src/engine/core-modules/theofficialboard/types/theofficialboard.types';
 import { TheOrgService } from 'src/engine/core-modules/theorg/services/theorg.service';
@@ -63,7 +65,9 @@ import { OrgChartIncrementalBuildCacheService } from './orgchart-incremental-bui
 import { OrgChartS3Service } from './orgchart-s3.service';
 import { PythonOrgChartService } from './python-org-chart.service';
 
-type OrgChartBuildCandidateRow = TransformedCandidateForTable | Record<string, unknown>;
+type OrgChartBuildCandidateRow =
+  | TransformedCandidateForTable
+  | Record<string, unknown>;
 type OrgchartSearchType = 'classic' | 'sales_navigator' | 'recruiter';
 const APIFY_ORG_INTELLIGENCE_SOURCE_TAG = 'apify-org-intelligence';
 type SearchOrgchartLinkedInBody = {
@@ -337,6 +341,8 @@ export class OrgChartBuildService {
     candidates: Array<Record<string, unknown>>;
     candidateSourceLabel: string;
     message: string;
+    functionRoot?: string;
+    companyLinkedinUrl?: string;
   }): Promise<void> {
     const requestId = args.requestId?.trim();
 
@@ -347,6 +353,9 @@ export class OrgChartBuildService {
       args.resolvedCompanyName,
     );
     const inProgressVariant = `in-progress_${requestId}`;
+    const functionRoot = args.functionRoot?.trim();
+    const hasFunctionScope =
+      hasMeaningfulOrgChartFunctionRootFilter(functionRoot);
 
     const deduped = dedupeAndMergeOrgChartCandidates(args.candidates);
 
@@ -380,8 +389,9 @@ export class OrgChartBuildService {
             companyName: args.resolvedCompanyName,
             companyId: args.companyId,
             mode: args.mode,
-            function: undefined,
-            companyLinkedinUrl: undefined,
+            // Keep progressive charts scoped so Python does not inject CEO/fullcompany
+            function: hasFunctionScope ? functionRoot : undefined,
+            companyLinkedinUrl: args.companyLinkedinUrl,
             profileSourceFallback: 'm7kq',
           },
         );
@@ -580,7 +590,10 @@ export class OrgChartBuildService {
             };
           }
 
-          if (requestId && (await this.orgchartCancelRegistry.isCancelled(requestId))) {
+          if (
+            requestId &&
+            (await this.orgchartCancelRegistry.isCancelled(requestId))
+          ) {
             return {
               candidates: [],
               continuePagination: false,
@@ -662,7 +675,10 @@ export class OrgChartBuildService {
               },
             );
 
-          if (requestId && (await this.orgchartCancelRegistry.isCancelled(requestId))) {
+          if (
+            requestId &&
+            (await this.orgchartCancelRegistry.isCancelled(requestId))
+          ) {
             return {
               candidates: [],
               continuePagination: false,
@@ -742,7 +758,10 @@ export class OrgChartBuildService {
           };
         },
         onStatus: async (update) => {
-          if (requestId && (await this.orgchartCancelRegistry.isCancelled(requestId))) {
+          if (
+            requestId &&
+            (await this.orgchartCancelRegistry.isCancelled(requestId))
+          ) {
             return;
           }
 
@@ -764,7 +783,10 @@ export class OrgChartBuildService {
           });
         },
         onPageFetched: async (update) => {
-          if (requestId && (await this.orgchartCancelRegistry.isCancelled(requestId))) {
+          if (
+            requestId &&
+            (await this.orgchartCancelRegistry.isCancelled(requestId))
+          ) {
             return;
           }
 
@@ -836,7 +858,10 @@ export class OrgChartBuildService {
       `LinkedIn x-ray search complete for company="${resolvedCompanyName}" includePaginatedHtml=${body.includePaginatedHtml === true} itemCount=${results.candidates.length}`,
     );
 
-    if (requestId && (await this.orgchartCancelRegistry.isCancelled(requestId))) {
+    if (
+      requestId &&
+      (await this.orgchartCancelRegistry.isCancelled(requestId))
+    ) {
       return {
         items: [],
         itemCount: 0,
@@ -953,8 +978,9 @@ export class OrgChartBuildService {
     let apolloSearchStrategy:
       | 'domain_only'
       | 'domain_then_org_resolution'
-      | 'org_resolution_first' =
-      shouldStartWithDomain ? 'domain_only' : 'org_resolution_first';
+      | 'org_resolution_first' = shouldStartWithDomain
+      ? 'domain_only'
+      : 'org_resolution_first';
 
     if (shouldStartWithDomain) {
       resolvedOrgDomain = companyDomain;
@@ -1541,7 +1567,10 @@ export class OrgChartBuildService {
       const projectId = body?.projectId;
 
       if (!projectId || projectId === 'job-id') {
-        throw new HttpException('projectId is required', HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          'projectId is required',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       // Fetch all candidates currently attached to this job
@@ -1702,60 +1731,11 @@ export class OrgChartBuildService {
     items: Record<string, unknown>[],
     state: EntireCompanyFilterState,
   ): Record<string, unknown>[] {
-    const {
-      hasCountryFilter,
-      hasFunctionRootFilter,
-      normalizedCountryRaw,
-      normalizedFunctionRootRaw,
-    } = state;
-
-    if (!hasCountryFilter && !hasFunctionRootFilter) {
-      return items;
-    }
-
-    return items.filter((item) => {
-      const raw = item;
-
-      if (hasCountryFilter) {
-        const filterCountry = normalizeCountry(normalizedCountryRaw);
-        const possibleCountryValues = [
-          raw.locationCountry,
-          raw.location_country,
-          raw.country,
-        ].filter(
-          (v): v is string => typeof v === 'string' && v.trim().length > 0,
-        );
-
-        const normalizedCountry = normalizeCountry(possibleCountryValues[0]);
-
-        if (normalizedCountry !== filterCountry) {
-          return false;
-        }
-      }
-
-      if (hasFunctionRootFilter) {
-        const filterFunctionRoot = normalizedFunctionRootRaw.toLowerCase();
-        const possibleFunctionRootValues = [
-          (raw as { std_function_root?: unknown }).std_function_root,
-          (raw as { functionRoot?: unknown }).functionRoot,
-          (raw as { function_root?: unknown }).function_root,
-        ].filter(
-          (v): v is string => typeof v === 'string' && v.trim().length > 0,
-        );
-
-        const normalizedFunctionRoot =
-          possibleFunctionRootValues[0]?.trim().toLowerCase() ?? '';
-
-        if (
-          normalizedFunctionRoot === '' ||
-          !normalizedFunctionRoot.includes(filterFunctionRoot)
-        ) {
-          return false;
-        }
-      }
-
-      return true;
-    });
+    return filterOrgChartCandidatesByCountryAndFunctionRoot(
+      items,
+      state.hasCountryFilter ? state.normalizedCountryRaw : undefined,
+      state.hasFunctionRootFilter ? state.normalizedFunctionRootRaw : undefined,
+    ) as Record<string, unknown>[];
   }
 
   private isFullCompanyOrgChartPayload(orgChartPayload: unknown): boolean {
@@ -2977,6 +2957,55 @@ export class OrgChartBuildService {
           ...(orgChart ? { orgChart } : {}),
         });
       }
+
+      if (orgChart && !orgChartError) {
+        const s3CompanyId = this.orgChartS3Service.persistedCompanyFolderKey(
+          companyId,
+          resolvedCompanyName,
+        );
+
+        await Promise.all([
+          this.orgChartS3Service.saveOrgChart(s3CompanyId, orgChart),
+          this.orgChartS3Service.saveCandidates(s3CompanyId, result.items),
+        ]);
+
+        const creditMetaForRow = await this.buildOrgChartCreditMetadata(
+          apiToken,
+          companyId,
+          resolvedCompanyName,
+        );
+
+        await this.orgChartRecordWorkspaceService.tryPersistOrgChartRecord({
+          apiToken,
+          mode,
+          searchType,
+          resolvedCompanyName,
+          companyId,
+          linkedinCompanyUrl:
+            canonicalCompanyLinkedinUrl ?? body.linkedinCompanyUrl,
+          itemCount: result.itemCount,
+          orgChartS3RelativePath: creditMetaForRow.orgChartS3RelativePath,
+          functionRoot: body.functionRoot,
+          country: body.country,
+          keywordsHash: result.functionGradeCacheMeta?.keywordsHash,
+        });
+
+        if (process.env.IS_BILLING_ENABLED !== 'true' && apiToken) {
+          const workspaceIdForGrant =
+            await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+          if (workspaceIdForGrant && creditMetaForRow.workspaceMemberId) {
+            await this.creditTransactionService.recordOrgChartAccessGrant({
+              workspaceId: workspaceIdForGrant,
+              workspaceMemberId: creditMetaForRow.workspaceMemberId,
+              orgChartS3RelativePath: creditMetaForRow.orgChartS3RelativePath,
+              companyName: creditMetaForRow.companyName,
+              companyId: creditMetaForRow.companyId,
+              employeeCount: result.itemCount,
+            });
+          }
+        }
+      }
     }
 
     if (mode === 'business_division_map' && result.itemCount > 0) {
@@ -3372,11 +3401,9 @@ export class OrgChartBuildService {
   async enqueueApolloOrgChartBuildJob(
     jobData: OrgchartApolloBuildJobData,
   ): Promise<void> {
-    await this.orgchartApifyQueue.add(
-      'OrgchartApolloBuildProcessor',
-      jobData,
-      { retryLimit: 0 },
-    );
+    await this.orgchartApifyQueue.add('OrgchartApolloBuildProcessor', jobData, {
+      retryLimit: 0,
+    });
   }
 
   async handleApolloOrgChartJob(
@@ -3494,7 +3521,10 @@ export class OrgChartBuildService {
         event: 'complete',
         data: {
           itemCount: apolloPeopleResult.itemCount,
-          items: apolloPeopleResult.items as unknown as Record<string, unknown>[],
+          items: apolloPeopleResult.items as unknown as Record<
+            string,
+            unknown
+          >[],
           orgChart: orgChart ?? undefined,
           candidateSource: 'm7kq',
           message: `Org chart ready for ${companyName} (${apolloPeopleResult.itemCount} people)`,
@@ -3502,7 +3532,9 @@ export class OrgChartBuildService {
       });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Apollo org chart build failed.';
+        error instanceof Error
+          ? error.message
+          : 'Apollo org chart build failed.';
       this.logger.error(
         `Apollo org chart worker job failed for company="${companyName}": ${message}`,
         error as Error,
@@ -3541,7 +3573,10 @@ export class OrgChartBuildService {
     console.log('Org Chart Build :', jobData);
     const modeForOrgChartBuild: OrgchartSearchMode = jobData.mode;
 
-    if (requestId && (await this.orgchartCancelRegistry.isCancelled(requestId))) {
+    if (
+      requestId &&
+      (await this.orgchartCancelRegistry.isCancelled(requestId))
+    ) {
       this.logger.log(
         `Apify org chart job skipped (cancelled) requestId=${requestId}`,
       );
@@ -3960,7 +3995,10 @@ export class OrgChartBuildService {
 
     const modeForOrgChartBuild = jobData.mode;
 
-    if (requestId && (await this.orgchartCancelRegistry.isCancelled(requestId))) {
+    if (
+      requestId &&
+      (await this.orgchartCancelRegistry.isCancelled(requestId))
+    ) {
       this.logger.log(
         `LinkedIn x-ray org chart job skipped (cancelled) requestId=${requestId}`,
       );
@@ -4147,7 +4185,10 @@ export class OrgChartBuildService {
     const isMultiSourceRequested =
       jobData.multiSource === true && requestedSources.length > 0;
 
-    if (requestId && (await this.orgchartCancelRegistry.isCancelled(requestId))) {
+    if (
+      requestId &&
+      (await this.orgchartCancelRegistry.isCancelled(requestId))
+    ) {
       this.logger.log(
         `Unipile org chart job skipped (cancelled) requestId=${requestId}`,
       );
@@ -4382,7 +4423,10 @@ export class OrgChartBuildService {
 
     const modeForOrgChartBuild: OrgchartSearchMode = mode;
 
-    if (requestId && (await this.orgchartCancelRegistry.isCancelled(requestId))) {
+    if (
+      requestId &&
+      (await this.orgchartCancelRegistry.isCancelled(requestId))
+    ) {
       this.logger.log(
         `Multi-source org chart job skipped (cancelled) requestId=${requestId}`,
       );
@@ -4418,6 +4462,8 @@ export class OrgChartBuildService {
         candidates: aggregated,
         candidateSourceLabel: sourceLabel,
         message,
+        functionRoot: jobData.functionRoot ?? rawBody.functionRoot,
+        companyLinkedinUrl: canonicalCompanyLinkedinUrl,
       });
     };
 

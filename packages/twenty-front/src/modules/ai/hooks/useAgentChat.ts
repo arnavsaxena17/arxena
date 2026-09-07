@@ -22,6 +22,7 @@ import {
   AGENT_CHAT_NEW_THREAD_DRAFT_KEY,
   agentChatDraftsByThreadIdState,
 } from '@/ai/states/agentChatDraftsByThreadIdState';
+import { agentChatDisplayedThreadState } from '@/ai/states/agentChatDisplayedThreadState';
 import { agentChatErrorComponentFamilyState } from '@/ai/states/agentChatErrorComponentFamilyState';
 import { agentChatInputState } from '@/ai/states/agentChatInputState';
 import { agentChatIsAwaitingFirstChunkComponentFamilyState } from '@/ai/states/agentChatIsAwaitingFirstChunkComponentFamilyState';
@@ -99,6 +100,10 @@ export const useAgentChat = (
     if (draftKey === AGENT_CHAT_NEW_THREAD_DRAFT_KEY) {
       setCurrentAiChatThread(threadId);
     }
+
+    // Sync displayed thread before optimistic UI so the message list and
+    // pending "..." indicator (keyed by displayedThread) show immediately.
+    store.set(agentChatDisplayedThreadState.atom, threadId);
 
     setAgentChatInput('');
     setAgentChatDraftsByThreadId((prev) => ({

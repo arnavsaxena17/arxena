@@ -109,7 +109,17 @@ export const WorkflowAiAgentPromptTab = ({
   );
 
   if (!workflowAiAgentActionAgent) {
-    return null;
+    return (
+      <FormTextFieldInput
+        multiline
+        VariablePicker={WorkflowVariablePicker}
+        label={t`Input (Prompt)`}
+        placeholder={t`Describe what you want the AI to do...`}
+        defaultValue={prompt}
+        onChange={onPromptChange}
+        readonly={readonly}
+      />
+    );
   }
 
   const agent = workflowAiAgentActionAgent;

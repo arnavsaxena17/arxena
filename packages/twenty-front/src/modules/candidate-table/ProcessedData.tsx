@@ -4,21 +4,59 @@ import {
   getResolvedOtherFields,
   otherFieldsToFlatRow,
 } from 'twenty-shared/utils';
+
+import { type OutreachCandidateRunSummary } from '@/outreach-home/types/outreach-journey.types';
+import { resolveOutreachNextStepLabel } from '@/outreach-home/utils/resolveOutreachJourneyLabels';
+
 import {
   isLinkedInUrl,
   reconstructLinkedInUrlForDisplay,
 } from '../../utils/linkedinUrlUtils';
 import { type ProcessedDataItem } from './TableColumns';
-import { formatLastInboundMessage, formatMessagesExchanged } from './utils/formatMessagesExchanged';
+import {
+  formatLastInboundMessage,
+  formatMessagesExchanged,
+} from './utils/formatMessagesExchanged';
+
+export const applyCandidateJourneySummaryToRow = ({
+  row,
+  runSummary,
+}: {
+  row: ProcessedDataItem;
+  runSummary: OutreachCandidateRunSummary | undefined;
+}): ProcessedDataItem => {
+  if (!runSummary?.status) {
+    return {
+      ...row,
+      workflowRunStatus: row.workflowRunStatus ?? '',
+      nextStep: row.nextStep ?? '',
+    };
+  }
+
+  return {
+    ...row,
+    workflowRunStatus: runSummary.status,
+    nextStep: resolveOutreachNextStepLabel({
+      currentStepName: runSummary.currentStepName,
+      currentStepKind: runSummary.currentStepKind,
+      pendingReason: runSummary.pendingReason,
+      errorMessage: runSummary.errorMessage,
+      status: runSummary.status,
+      resumeAt: runSummary.resumeAt,
+    }),
+  };
+};
 
 export const ProcessedData = ({
   rawData,
   selectedRowIds,
   outboundSenderFirstName,
+  journeyByCandidateId = {},
 }: {
   rawData: CandidateNode[];
   selectedRowIds: string[];
   outboundSenderFirstName?: string | null;
+  journeyByCandidateId?: Record<string, OutreachCandidateRunSummary>;
 }): ProcessedDataItem[] => {
   if (!rawData || !rawData.length) return [];
   return rawData.map((candidate) => {
@@ -42,6 +80,8 @@ export const ProcessedData = ({
         ).outreachSequenceStage || '',
       outreachConversationStage:
         flattenedCandidate.outreachConversationStage || '',
+      workflowRunStatus: '',
+      nextStep: '',
       checkbox: selectedRowIds.includes(flattenedCandidate?.id || ''),
       startChat: flattenedCandidate?.startChat || false,
       startChatCompleted: flattenedCandidate?.startChatCompleted || false,
@@ -92,6 +132,10 @@ export const ProcessedData = ({
       ...baseData,
       ...otherFieldValues,
     };
-    return processedData;
+
+    return applyCandidateJourneySummaryToRow({
+      row: processedData,
+      runSummary: journeyByCandidateId[processedData.id],
+    });
   });
 };
