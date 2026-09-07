@@ -547,6 +547,10 @@ export class OrgChartService {
     options?: {
       isPdlProxyAuthorized?: boolean;
       includeTwentyFrontReservedKey?: boolean;
+      /** Company-search UI intent header — required for PDL on HTTP org-chart paths. */
+      isPdlSearchIntentAuthorized?: boolean;
+      /** Internal server callers (e.g. people-api) that are not browser page-load. */
+      skipPdlSearchIntentCheck?: boolean;
     },
   ): Promise<
     {
@@ -561,7 +565,11 @@ export class OrgChartService {
     }[]
   > {
     const hasAuth = Boolean(authToken?.trim());
-    const allowPdl = hasAuth || options?.isPdlProxyAuthorized === true;
+    const searchIntentOk =
+      options?.skipPdlSearchIntentCheck === true ||
+      options?.isPdlSearchIntentAuthorized === true;
+    const allowPdl =
+      (hasAuth || options?.isPdlProxyAuthorized === true) && searchIntentOk;
     const includeTwentyFrontReservedKey =
       options?.includeTwentyFrontReservedKey === true;
 
@@ -594,7 +602,8 @@ export class OrgChartService {
           authToken,
         );
       }
-    } else if (hasAuth) {
+    } else if (hasAuth || options?.isPdlProxyAuthorized === true) {
+      // No search intent (e.g. page-load resolve): ES / Arxena only — never PDL.
       baseResults = await this.getNonPdlCompanyAutocomplete(
         inputText,
         authToken,
@@ -1261,12 +1270,11 @@ export class OrgChartService {
 
   /**
    * Resolve org-chart company slug from a corporate website domain.
-   * ES org-charts index first, then companies index, then shared alias groups,
-   * then autocomplete by TLD-stripped company name stem.
+   * ES org-charts index, companies index, alias groups, then stem id lookup.
+   * Never calls company autocomplete / PDL (page-load and hired-from must not fan out).
    */
   async resolveCompanyByDomain(
     rawDomain: string,
-    options?: { authToken?: string; isPdlProxyAuthorized?: boolean },
   ): Promise<ResolveCompanyByDomainResult> {
     const bareDomain = normalizeBareCompanyDomain(rawDomain);
     if (!bareDomain) {
@@ -1334,17 +1342,9 @@ export class OrgChartService {
       }
     }
 
+    // No PDL / autocomplete stem fallback — page-load and hired-from navigation
+    // must not fan out company autocomplete calls.
     if (!hit && stem) {
-      const autocompleteHit = await this.resolveCompanySlugFromAutocompleteStem(
-        stem,
-        bareDomain,
-        rootDomain,
-        options,
-      );
-      if (autocompleteHit) {
-        return autocompleteHit;
-      }
-
       return {
         found: true,
         companyId: resolveOrgChartCanonicalCompanyId(stem),
@@ -1369,98 +1369,6 @@ export class OrgChartService {
           : 'orgcharts'
         : 'companies',
       hasOrgChart: hit.hasOrgChart,
-    };
-  }
-
-  private scoreAutocompleteMatch(input: {
-    stem: string;
-    bareDomain: string;
-    rootDomain: string;
-    item: {
-      name: string;
-      meta: { id: string; website?: string };
-    };
-  }): number {
-    const normalizedStem = input.stem.trim().toLowerCase();
-    const itemId = resolveOrgChartCanonicalCompanyId(input.item.meta.id);
-    const itemWebsite = normalizeBareCompanyDomain(input.item.meta.website);
-    const itemRoot = itemWebsite
-      ? extractRootCompanyDomain(itemWebsite)
-      : undefined;
-    const itemStem = itemWebsite
-      ? extractCompanyNameStemFromDomain(itemWebsite)
-      : undefined;
-    const normalizedName = input.item.name.trim().toLowerCase();
-
-    if (itemWebsite === input.bareDomain || itemRoot === input.rootDomain) {
-      return 100;
-    }
-    if (itemStem === normalizedStem || itemId === normalizedStem) {
-      return 80;
-    }
-    if (normalizedName === normalizedStem) {
-      return 70;
-    }
-    if (normalizedName.includes(normalizedStem)) {
-      return 50;
-    }
-    return 0;
-  }
-
-  private async resolveCompanySlugFromAutocompleteStem(
-    stem: string,
-    bareDomain: string,
-    rootDomain: string,
-    options?: { authToken?: string; isPdlProxyAuthorized?: boolean },
-  ): Promise<ResolveCompanyByDomainResult | null> {
-    const normalizedStem = stem.trim();
-    if (!normalizedStem) {
-      return null;
-    }
-
-    this.logger.log(
-      `resolveCompanySlugFromAutocompleteStem stem=${normalizedStem} domain=${bareDomain}`,
-    );
-
-    const results = await this.getCompanyAutocomplete(
-      normalizedStem,
-      options?.authToken,
-      { isPdlProxyAuthorized: options?.isPdlProxyAuthorized },
-    );
-
-    if (results.length === 0) {
-      return null;
-    }
-
-    const ranked = results
-      .map((item) => ({
-        item,
-        score: this.scoreAutocompleteMatch({
-          stem: normalizedStem,
-          bareDomain,
-          rootDomain,
-          item,
-        }),
-      }))
-      .sort((a, b) => b.score - a.score);
-
-    const best =
-      ranked.find((entry) => entry.score > 0)?.item ?? ranked[0]?.item;
-    if (!best) {
-      return null;
-    }
-
-    const companyId = resolveOrgChartCanonicalCompanyId(best.meta.id);
-    const orgChart =
-      await this.orgChartEsService.findOrgChartByCompanyId(companyId);
-
-    return {
-      found: true,
-      companyId,
-      companyName: best.name,
-      website: best.meta.website ?? rootDomain,
-      source: 'autocomplete',
-      hasOrgChart: Boolean(orgChart),
     };
   }
 

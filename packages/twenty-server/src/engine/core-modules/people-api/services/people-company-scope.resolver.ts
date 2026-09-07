@@ -213,6 +213,7 @@ export class PeopleCompanyScopeResolver {
       const results = await this.orgChartService.getCompanyAutocomplete(
         companyName,
         authToken,
+        { skipPdlSearchIntentCheck: true },
       );
       const ranked = results
         .map((item) =>
@@ -373,9 +374,7 @@ export class PeopleCompanyScopeResolver {
         (fromDomain?.companyId
           ? (normalizeLinkedinCompanyUrl(fromDomain.companyId) ?? undefined)
           : undefined),
-      resolvedVia: fromDomain?.usedSerpLinkedin
-        ? 'serp_linkedin'
-        : 'provided',
+      resolvedVia: fromDomain?.usedSerpLinkedin ? 'serp_linkedin' : 'provided',
     };
   }
 
@@ -460,7 +459,6 @@ export class PeopleCompanyScopeResolver {
     try {
       const resolved = await this.orgChartService.resolveCompanyByDomain(
         input.website,
-        { authToken: input.authToken },
       );
       if (resolved.found && resolved.companyId?.trim()) {
         fromIndex = {

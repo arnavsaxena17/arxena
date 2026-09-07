@@ -1,8 +1,8 @@
 import {
-    getOrgChartScraperCidrs,
-    isClientIpInScraperCidrs,
-    resolveOrgChartStaticOnly,
-    shouldBlockOrgChartStaticChunkRequest,
+  getOrgChartScraperCidrs,
+  isClientIpInScraperCidrs,
+  resolveOrgChartStaticOnly,
+  shouldBlockOrgChartStaticChunkRequest,
 } from '@/lib/org-chart-static-only';
 
 describe('org-chart-static-only', () => {
@@ -39,7 +39,7 @@ describe('org-chart-static-only', () => {
     ).toBe(true);
   });
 
-  it('resolveOrgChartStaticOnly is true for crawl-rate IPs even with browser signals', () => {
+  it('resolveOrgChartStaticOnly stays interactive for crawl-rate IPs with browser signals', () => {
     expect(
       resolveOrgChartStaticOnly({
         headers: new Headers({
@@ -49,7 +49,15 @@ describe('org-chart-static-only', () => {
           'sec-fetch-mode': 'navigate',
         }),
         isVerifiedBot: false,
-        isCrawlStaticOnly: true,
+      }),
+    ).toBe(false);
+  });
+
+  it('resolveOrgChartStaticOnly is true for non-browser clients', () => {
+    expect(
+      resolveOrgChartStaticOnly({
+        headers: new Headers({ 'user-agent': 'python-requests/2.31.0' }),
+        isVerifiedBot: false,
       }),
     ).toBe(true);
   });

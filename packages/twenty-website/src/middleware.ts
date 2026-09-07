@@ -3,24 +3,24 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getClientIpFromHeaders } from '@/lib/bot-detection';
 import { isVerifiedSearchBot } from '@/lib/verified-search-bot';
 import {
-    applyOrgChartLikelyBrowserRequestHeader,
-    applyOrgChartVerifiedBotRequestHeader,
-    checkOrgChartApiGuard,
-    orgChartApiGuardToResponse,
-    resolveIsLikelyBrowser,
-    resolveOrgChartRateLimitProfile,
+  applyOrgChartLikelyBrowserRequestHeader,
+  applyOrgChartVerifiedBotRequestHeader,
+  checkOrgChartApiGuard,
+  orgChartApiGuardToResponse,
+  resolveIsLikelyBrowser,
+  resolveOrgChartRateLimitProfile,
 } from '@/lib/org-chart-api-guard';
 import {
-    isOrgChartCrawlStaticOnly,
-    ORG_CHART_CRAWL_STATIC_HEADER,
-    recordOrgChartDocumentViewFromPath,
+  isOrgChartCrawlStaticOnly,
+  ORG_CHART_CRAWL_STATIC_HEADER,
+  recordOrgChartDocumentViewFromPath,
 } from '@/lib/org-chart-crawl-static';
 import {
-    getArxStaticCookieOptions,
-    hasArxStaticAssetCookie,
-    ORG_CHART_STATIC_ONLY_HEADER,
-    resolveOrgChartStaticOnly,
-    shouldBlockOrgChartStaticChunkRequest,
+  getArxStaticCookieOptions,
+  hasArxStaticAssetCookie,
+  ORG_CHART_STATIC_ONLY_HEADER,
+  resolveOrgChartStaticOnly,
+  shouldBlockOrgChartStaticChunkRequest,
 } from '@/lib/org-chart-static-only';
 
 /**
@@ -107,20 +107,24 @@ export async function middleware(request: NextRequest) {
       clientIp !== null ? await isVerifiedSearchBot(clientIp) : false;
   }
 
+  // Track unique-company crawl bursts only for non-browser clients so power
+  // users / debugging never enter crawl_static_only. Scrapers still get SSR-only
+  // HTML + PDL disabled via the crawl header below.
   let isCrawlStaticOnly = false;
-  if (isOrgChartDocumentPath(pathname) && request.method === 'GET') {
-    isCrawlStaticOnly = recordOrgChartDocumentViewFromPath(
-      clientIp,
-      pathname,
-    );
-  } else {
-    isCrawlStaticOnly = isOrgChartCrawlStaticOnly(clientIp);
+  if (!isLikelyBrowser) {
+    if (isOrgChartDocumentPath(pathname) && request.method === 'GET') {
+      isCrawlStaticOnly = recordOrgChartDocumentViewFromPath(
+        clientIp,
+        pathname,
+      );
+    } else {
+      isCrawlStaticOnly = isOrgChartCrawlStaticOnly(clientIp);
+    }
   }
 
   const staticOnly = resolveOrgChartStaticOnly({
     headers: request.headers,
     isVerifiedBot,
-    isCrawlStaticOnly,
   });
 
   if (isOrgChartDocumentPath(pathname)) {
@@ -172,7 +176,7 @@ export async function middleware(request: NextRequest) {
     );
     res.headers.append(
       'Access-Control-Allow-Headers',
-      'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, x-origin-domain, x-domain-origin, X-Origin-Domain, X-Domain-Origin, X-Embed-Key',
+      'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, x-origin-domain, x-domain-origin, X-Origin-Domain, X-Domain-Origin, X-Embed-Key, x-arx-company-search',
     );
   }
 

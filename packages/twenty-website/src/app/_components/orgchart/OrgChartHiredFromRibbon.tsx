@@ -177,12 +177,17 @@ function RibbonCompanyLink({ id, name, website }: RibbonCompanyLinkProps) {
   const logoUrl = getLogoUrl(website);
   const displayName = toTitleCase(name);
   const logoAbbreviation = getLogoAbbreviation(website, displayName);
+  // Pass name/website so the next page skips domain-resolve / autocomplete fan-out.
+  const hrefParams = new URLSearchParams();
+  if (name.trim()) hrefParams.set('companyName', name.trim());
+  if (website?.trim()) hrefParams.set('website', website.trim());
+  const hrefQuery = hrefParams.toString();
+  const href = `/org-chart/${encodeURIComponent(id)}${
+    hrefQuery ? `?${hrefQuery}` : ''
+  }`;
 
   return (
-    <StyledRibbonLink
-      href={`/org-chart/${encodeURIComponent(id)}`}
-      prefetch={false}
-    >
+    <StyledRibbonLink href={href} prefetch={false}>
       {logoUrl && !logoError ? (
         <StyledRibbonLogo
           src={logoUrl}

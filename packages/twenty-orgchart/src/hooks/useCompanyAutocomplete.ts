@@ -1,6 +1,11 @@
 import { useCallback, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
+import {
+  ORG_CHART_COMPANY_SEARCH_HEADER,
+  ORG_CHART_COMPANY_SEARCH_HEADER_VALUE,
+} from 'twenty-shared';
+
 export type CompanyAutocompleteItem = {
   name: string;
   meta: {
@@ -23,6 +28,19 @@ export type UseCompanyAutocompleteOptions = {
   /** Path to autocomplete endpoint. Default: /org-chart/companies/autocomplete (append to baseUrl). Use /autocomplete for Next.js proxy. */
   autocompletePath?: string;
 };
+
+const buildCompanySearchRequestHeaders = (
+  accessToken?: string,
+): Record<string, string> => ({
+  Accept: 'application/json',
+  'Content-Type': 'application/json',
+  [ORG_CHART_COMPANY_SEARCH_HEADER]: ORG_CHART_COMPANY_SEARCH_HEADER_VALUE,
+  ...(accessToken
+    ? {
+        Authorization: `Bearer ${accessToken}`,
+      }
+    : {}),
+});
 
 export const useCompanyAutocomplete = (options: UseCompanyAutocompleteOptions) => {
   const {
@@ -50,13 +68,7 @@ export const useCompanyAutocomplete = (options: UseCompanyAutocompleteOptions) =
         const autocompleteUrl = `${baseUrl.replace(/\/$/, '')}${path}`;
         const response = await fetch(autocompleteUrl, {
           method: 'POST',
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            ...(accessToken && {
-              Authorization: `Bearer ${accessToken}`,
-            }),
-          },
+          headers: buildCompanySearchRequestHeaders(accessToken),
           body: JSON.stringify({
             input_text: inputText.trim(),
             query: {},
@@ -154,13 +166,7 @@ export const useCompanyInfoLookup = (options: UseCompanyAutocompleteOptions) => 
         const autocompleteUrl = `${baseUrl.replace(/\/$/, '')}${path}`;
         const response = await fetch(autocompleteUrl, {
           method: 'POST',
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            ...(accessToken && {
-              Authorization: `Bearer ${accessToken}`,
-            }),
-          },
+          headers: buildCompanySearchRequestHeaders(accessToken),
           body: JSON.stringify({
             input_text: trimmed,
             query: {},

@@ -3,11 +3,15 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-import { buildCompanyLogoPath, resolveOrgChartCanonicalCompanyId, toTitleCase } from 'twenty-shared/utils';
+import {
+  buildCompanyLogoPath,
+  resolveOrgChartCanonicalCompanyId,
+  toTitleCase,
+} from 'twenty-shared/utils';
 
 import {
-    CompanyAutocompleteItem,
-    useCompanyAutocomplete,
+  CompanyAutocompleteItem,
+  useCompanyAutocomplete,
 } from '../hooks/useCompanyAutocomplete';
 
 export type CompanySearchAutocompleteProps = {
@@ -291,6 +295,9 @@ export const CompanySearchAutocomplete = ({
 
   const [inputValue, setInputValue] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  // PDL/ES autocomplete only after the user focuses/clicks the field — never
+  // from page load, hired-from ribbon, or other background mounts.
+  const [isSearchArmed, setIsSearchArmed] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition>({
     top: 0,
     left: 0,
@@ -335,12 +342,23 @@ export const CompanySearchAutocomplete = ({
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
       setInputValue(value);
+      if (!isSearchArmed) {
+        if (!value) clear();
+        return;
+      }
       search(value);
       setIsOpen(true);
       if (!value) clear();
     },
-    [search, clear],
+    [isSearchArmed, search, clear],
   );
+
+  const handleFocus = useCallback(() => {
+    setIsSearchArmed(true);
+    if (companies.length > 0) {
+      setIsOpen(true);
+    }
+  }, [companies.length]);
 
   const handleSelect = useCallback(
     (company: CompanyAutocompleteItem) => {
@@ -503,7 +521,7 @@ export const CompanySearchAutocomplete = ({
           value={inputValue}
           onChange={handleInputChange}
           onBlur={handleBlur}
-          onFocus={() => companies.length > 0 && setIsOpen(true)}
+          onFocus={handleFocus}
           placeholder={placeholder}
           disabled={disabled || isSelecting}
           autoComplete="off"

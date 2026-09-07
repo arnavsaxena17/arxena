@@ -30,10 +30,7 @@ const parsePositiveInt = (
 };
 
 export const getOrgChartCrawlWindowMs = (): number =>
-  parsePositiveInt(
-    process.env.ORG_CHART_CRAWL_WINDOW_MS,
-    WINDOW_MS_DEFAULT,
-  );
+  parsePositiveInt(process.env.ORG_CHART_CRAWL_WINDOW_MS, WINDOW_MS_DEFAULT);
 
 export const getOrgChartCrawlUniquePagesMax = (): number =>
   parsePositiveInt(
@@ -48,10 +45,7 @@ export const getOrgChartCrawlStaticTtlMs = (): number =>
   );
 
 const pruneCrawlMaps = (now: number): void => {
-  if (
-    uniquePathWindows.size + crawlStaticUntil.size <
-    PRUNE_MAP_SIZE
-  ) {
+  if (uniquePathWindows.size + crawlStaticUntil.size < PRUNE_MAP_SIZE) {
     return;
   }
   for (const [ip, window] of uniquePathWindows) {
@@ -144,6 +138,7 @@ export const recordOrgChartCompanyView = (
       uniqueCompanyCount: window.companyKeys.size,
       companyKey,
       timestamp: now,
+      note: 'Applies to non-browser clients only; likely browsers are not tracked',
     });
     return true;
   }

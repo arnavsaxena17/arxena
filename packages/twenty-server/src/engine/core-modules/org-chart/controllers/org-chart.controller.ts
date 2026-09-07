@@ -78,6 +78,7 @@ import {
   ORG_PUBLISH_MAX_TTL_SECONDS,
   toOrgChartCacheTtlMs,
 } from '../utils/org-chart-cache-ttl.util';
+import { isOrgChartPdlCompanySearchIntentAllowed } from '../utils/org-chart-pdl-company-search-intent.util';
 import { isOrgChartPdlProxyAuthorized } from '../utils/org-chart-pdl-proxy.util';
 import {
   isLikelyBrowserOrgChartRequest,
@@ -1331,18 +1332,8 @@ export class OrgChartController {
     }
 
     try {
-      const authToken = this.getAuthToken(req);
-      const isPdlProxyAuthorized =
-        isOrgChartPdlProxyAuthorized(req, this.environmentService) &&
-        isLikelyBrowserRequest(req.headers);
-
-      const result = await this.orgChartService.resolveCompanyByDomain(
-        normalizedDomain,
-        {
-          authToken,
-          isPdlProxyAuthorized,
-        },
-      );
+      const result =
+        await this.orgChartService.resolveCompanyByDomain(normalizedDomain);
 
       return { ...result, status: 'ok' };
     } catch (error) {
@@ -1725,13 +1716,17 @@ export class OrgChartController {
 
     try {
       const authToken = this.getAuthToken(req);
+      const isPdlSearchIntentAuthorized =
+        isOrgChartPdlCompanySearchIntentAllowed(req);
       const results = await this.orgChartService.getCompanyAutocomplete(
         dto.input_text,
         authToken,
         {
           isPdlProxyAuthorized:
             isOrgChartPdlProxyAuthorized(req, this.environmentService) &&
-            isLikelyBrowserRequest(req.headers),
+            isLikelyBrowserRequest(req.headers) &&
+            isPdlSearchIntentAuthorized,
+          isPdlSearchIntentAuthorized,
           includeTwentyFrontReservedKey: Boolean(authToken?.trim()),
         },
       );

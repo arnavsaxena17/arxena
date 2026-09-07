@@ -138,7 +138,11 @@ export { MULTI_ITEM_FIELD_MIN_MAX_VALUES } from './MultiItemFieldMinMaxValues';
 export { MUTATION_MAX_MERGE_RECORDS } from './MutationMaxMergeRecords';
 export { OBJECTS_WITH_CHANNEL_VISIBILITY_CONSTRAINTS } from './ObjectsWithChannelVisibilityConstraints';
 export { ORG_CHART_VERIFIED_BOT_HEADER } from './org-chart-guard.constant';
-export { ORG_CHART_PDL_PROXY_HEADER } from './org-chart-pdl-proxy.constant';
+export {
+  ORG_CHART_PDL_PROXY_HEADER,
+  ORG_CHART_COMPANY_SEARCH_HEADER,
+  ORG_CHART_COMPANY_SEARCH_HEADER_VALUE,
+} from './org-chart-pdl-proxy.constant';
 export { PermissionFlagType } from './PermissionFlagType';
 export { PermissionsOnAllObjectRecords } from './PermissionsOnAllObjectRecords';
 export type {

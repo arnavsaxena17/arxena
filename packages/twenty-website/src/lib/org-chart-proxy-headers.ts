@@ -31,6 +31,7 @@ export const buildOrgChartUpstreamHeaders = (
     'sec-ch-ua',
     'sec-ch-ua-mobile',
     'sec-ch-ua-platform',
+    'x-arx-company-search',
   ] as const;
 
   for (const headerName of passthroughHeaderNames) {

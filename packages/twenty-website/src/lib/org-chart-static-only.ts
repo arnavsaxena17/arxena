@@ -61,19 +61,19 @@ export const isClientIpInScraperCidrs = (clientIp: string | null): boolean => {
 export type ResolveOrgChartStaticOnlyInput = {
   headers: Headers;
   isVerifiedBot: boolean;
-  isCrawlStaticOnly?: boolean;
 };
 
 /**
  * SSR-only org-chart HTML (no interactive client tree) for bots and scrapers.
+ *
+ * Likely browsers (Sec-Fetch-* / Sec-CH-UA) always stay interactive. Unique-page
+ * crawl bursts must not swap the document for a signup shell — middleware only
+ * applies crawl_static (PDL off) to non-browser clients; browsers rely on API
+ * rate limits instead.
  */
 export const resolveOrgChartStaticOnly = (
   input: ResolveOrgChartStaticOnlyInput,
 ): boolean => {
-  if (input.isCrawlStaticOnly === true) {
-    return true;
-  }
-
   if (input.isVerifiedBot) {
     return true;
   }
