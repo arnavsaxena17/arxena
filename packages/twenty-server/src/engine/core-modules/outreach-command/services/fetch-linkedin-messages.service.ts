@@ -122,17 +122,29 @@ export class FetchLinkedinMessagesService {
         extractLinkedinProfileId(input.linkedinProfileId) ||
         extractLinkedinProfileId(input.linkedinUrl) ||
         'mock-attendee';
+      const limit = Math.min(Math.max(1, input.limit ?? 50), 250);
+      const transcript =
+        await this.gtmOutreachMessagePersistService.readLinkedinTranscriptMessages(
+          {
+            workspaceId,
+            candidateId: input.candidateId,
+            linkedinProfileId: identifier,
+            limit,
+          },
+        );
 
       this.logger.log(
-        `IS_OUTREACH_MOCK_UNIPILE_ENABLED: mock LinkedIn messages for ${identifier}`,
+        `IS_OUTREACH_MOCK_UNIPILE_ENABLED: mock LinkedIn messages for ${identifier} (${transcript.messages.length} from chatMessage)`,
       );
 
       return {
         success: true,
-        chatId: `mock-chat-${identifier}`,
+        chatId: isNonEmptyString(transcript.chatId)
+          ? transcript.chatId
+          : `mock-chat-${identifier}`,
         attendeeId: identifier,
-        total: 0,
-        messages: [],
+        total: transcript.messages.length,
+        messages: transcript.messages,
         error: '',
       };
     }
@@ -140,67 +152,68 @@ export class FetchLinkedinMessagesService {
     const authContext = buildSystemAuthContext(workspaceId);
     const limit = Math.min(Math.max(1, input.limit ?? 50), 250);
 
-    const resolved = await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
-      async () => {
-        const profileRepository =
-          await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberProfileRecord>(
-            workspaceId,
-            'workspaceMemberProfile',
-            { shouldBypassPermissionChecks: true },
-          );
-
-        let accountId = '';
-        let workspaceMemberId = input.workspaceMemberId?.trim() ?? '';
-
-        if (isNonEmptyString(workspaceMemberId)) {
-          const profile = await profileRepository.findOne({
-            where: { workspaceMemberId },
-          });
-
-          accountId = profile?.linkedinUnipileAccountId?.trim() ?? '';
-        }
-
-        if (!isNonEmptyString(accountId)) {
-          const anyProfile = await profileRepository.find({
-            where: {},
-            take: 20,
-          });
-          const withAccount = anyProfile.find((row) =>
-            isNonEmptyString(row.linkedinUnipileAccountId),
-          );
-
-          accountId = withAccount?.linkedinUnipileAccountId?.trim() ?? '';
-          workspaceMemberId =
-            withAccount?.workspaceMemberId ?? workspaceMemberId;
-        }
-
-        let identifier =
-          extractLinkedinProfileId(input.linkedinProfileId) ||
-          extractLinkedinProfileId(input.linkedinUrl);
-
-        if (
-          !isNonEmptyString(identifier) &&
-          isNonEmptyString(input.candidateId)
-        ) {
-          const candidateRepository =
-            await this.globalWorkspaceOrmManager.getRepository<CandidateRecord>(
+    const resolved =
+      await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+        async () => {
+          const profileRepository =
+            await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberProfileRecord>(
               workspaceId,
-              'candidate',
+              'workspaceMemberProfile',
               { shouldBypassPermissionChecks: true },
             );
-          const candidate = await candidateRepository.findOne({
-            where: { id: input.candidateId },
-          });
 
-          identifier =
-            extractLinkedinProfileId(candidate?.linkedinProfileId) ||
-            extractLinkedinProfileId(candidate?.linkedinUrl?.primaryLinkUrl);
-        }
+          let accountId = '';
+          let workspaceMemberId = input.workspaceMemberId?.trim() ?? '';
 
-        return { accountId, identifier };
-      },
-      authContext,
-    );
+          if (isNonEmptyString(workspaceMemberId)) {
+            const profile = await profileRepository.findOne({
+              where: { workspaceMemberId },
+            });
+
+            accountId = profile?.linkedinUnipileAccountId?.trim() ?? '';
+          }
+
+          if (!isNonEmptyString(accountId)) {
+            const anyProfile = await profileRepository.find({
+              where: {},
+              take: 20,
+            });
+            const withAccount = anyProfile.find((row) =>
+              isNonEmptyString(row.linkedinUnipileAccountId),
+            );
+
+            accountId = withAccount?.linkedinUnipileAccountId?.trim() ?? '';
+            workspaceMemberId =
+              withAccount?.workspaceMemberId ?? workspaceMemberId;
+          }
+
+          let identifier =
+            extractLinkedinProfileId(input.linkedinProfileId) ||
+            extractLinkedinProfileId(input.linkedinUrl);
+
+          if (
+            !isNonEmptyString(identifier) &&
+            isNonEmptyString(input.candidateId)
+          ) {
+            const candidateRepository =
+              await this.globalWorkspaceOrmManager.getRepository<CandidateRecord>(
+                workspaceId,
+                'candidate',
+                { shouldBypassPermissionChecks: true },
+              );
+            const candidate = await candidateRepository.findOne({
+              where: { id: input.candidateId },
+            });
+
+            identifier =
+              extractLinkedinProfileId(candidate?.linkedinProfileId) ||
+              extractLinkedinProfileId(candidate?.linkedinUrl?.primaryLinkUrl);
+          }
+
+          return { accountId, identifier };
+        },
+        authContext,
+      );
 
     const empty = {
       success: false as const,
@@ -267,13 +280,15 @@ export class FetchLinkedinMessagesService {
       const messages = rawMessages.map((item) => this.mapMessage(item));
 
       try {
-        await this.gtmOutreachMessagePersistService.mergeFetchedLinkedinMessages({
-          workspaceId,
-          candidateId: input.candidateId,
-          linkedinProfileId: resolved.identifier,
-          chatId,
-          messages,
-        });
+        await this.gtmOutreachMessagePersistService.mergeFetchedLinkedinMessages(
+          {
+            workspaceId,
+            candidateId: input.candidateId,
+            linkedinProfileId: resolved.identifier,
+            chatId,
+            messages,
+          },
+        );
       } catch (error) {
         this.logger.warn(
           `Failed to merge LinkedIn history into messageObj: ${

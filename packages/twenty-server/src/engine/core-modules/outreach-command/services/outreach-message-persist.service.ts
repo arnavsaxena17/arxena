@@ -172,11 +172,10 @@ export class OutreachMessagePersistService {
   }): Promise<void> {
     try {
       if (isNonEmptyString(workflowRunId)) {
-        const isSequencerWorkflow =
-          await this.isOutreachSequencerWorkflowRun({
-            workspaceId,
-            workflowRunId,
-          });
+        const isSequencerWorkflow = await this.isOutreachSequencerWorkflowRun({
+          workspaceId,
+          workflowRunId,
+        });
 
         if (!isSequencerWorkflow) {
           return;
@@ -190,9 +189,7 @@ export class OutreachMessagePersistService {
       });
 
       if (!isNonEmptyString(resolvedCandidateId)) {
-        this.logger.warn(
-          `Skip GTM materialize ${event}: no candidate`,
-        );
+        this.logger.warn(`Skip GTM materialize ${event}: no candidate`);
 
         return;
       }
@@ -214,7 +211,8 @@ export class OutreachMessagePersistService {
         apiToken,
         messagingChannel,
         outboundMessageKind,
-        existingConvertedOnMessageKind: candidateAnalytics?.convertedOnMessageKind,
+        existingConvertedOnMessageKind:
+          candidateAnalytics?.convertedOnMessageKind,
         existingLastOutboundMessageKind:
           candidateAnalytics?.lastOutboundMessageKind,
       });
@@ -225,6 +223,75 @@ export class OutreachMessagePersistService {
         }`,
       );
     }
+  }
+
+  // Read LINKEDIN chatMessage.messageObj for mock Unipile / local transcript replay.
+  async readLinkedinTranscriptMessages({
+    workspaceId,
+    candidateId,
+    linkedinProfileId,
+    limit = 50,
+  }: {
+    workspaceId: string;
+    candidateId?: string | null;
+    linkedinProfileId?: string | null;
+    limit?: number;
+  }): Promise<{
+    candidateId: string | null;
+    chatId: string;
+    messages: Array<{
+      id: string;
+      text: string;
+      timestamp: string;
+      senderId: string;
+      isSender: boolean;
+    }>;
+  }> {
+    const resolvedCandidateId = await this.resolveCandidateId({
+      workspaceId,
+      candidateId,
+      linkedinProfileId,
+    });
+
+    if (!isNonEmptyString(resolvedCandidateId)) {
+      return { candidateId: null, chatId: '', messages: [] };
+    }
+
+    const authContext = buildSystemAuthContext(workspaceId);
+    const pageLimit = Math.min(Math.max(1, limit), 250);
+
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const messageRepository =
+          await this.globalWorkspaceOrmManager.getRepository<ChatMessageRecord>(
+            workspaceId,
+            'chatMessage',
+            { shouldBypassPermissionChecks: true },
+          );
+        const existing = await this.findChannelRow(
+          messageRepository,
+          resolvedCandidateId,
+          'LINKEDIN',
+        );
+        const turns = this.asTurns(
+          existing?.messageObjWithTimeStamp ?? existing?.messageObj,
+        );
+        const messages = turns.slice(-pageLimit).map((turn) => ({
+          id: turn.id ?? '',
+          text: turn.content,
+          timestamp: turn.timestamp ?? '',
+          senderId: '',
+          isSender: turn.role === 'assistant',
+        }));
+
+        return {
+          candidateId: resolvedCandidateId,
+          chatId: existing?.externalChatId?.trim() ?? '',
+          messages,
+        };
+      },
+      authContext,
+    );
   }
 
   async mergeFetchedLinkedinMessages({
@@ -425,95 +492,93 @@ export class OutreachMessagePersistService {
   }): Promise<void> {
     const authContext = buildSystemAuthContext(workspaceId);
 
-    await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
-      async () => {
-        const messageRepository =
-          await this.globalWorkspaceOrmManager.getRepository<ChatMessageRecord>(
-            workspaceId,
-            'chatMessage',
-            { shouldBypassPermissionChecks: true },
-          );
-        const candidateRepository =
-          await this.globalWorkspaceOrmManager.getRepository<CandidateRecord>(
-            workspaceId,
-            'candidate',
-            { shouldBypassPermissionChecks: true },
-          );
-        const candidate = await candidateRepository.findOne({
-          where: { id: candidateId },
-        });
-        const existing = await this.findChannelRow(
-          messageRepository,
-          candidateId,
-          channel,
+    await this.globalWorkspaceOrmManager.executeInWorkspaceContext(async () => {
+      const messageRepository =
+        await this.globalWorkspaceOrmManager.getRepository<ChatMessageRecord>(
+          workspaceId,
+          'chatMessage',
+          { shouldBypassPermissionChecks: true },
         );
-        const mergedObj = this.mergeChatTurns(
-          this.asTurns(existing?.messageObj),
-          turns,
+      const candidateRepository =
+        await this.globalWorkspaceOrmManager.getRepository<CandidateRecord>(
+          workspaceId,
+          'candidate',
+          { shouldBypassPermissionChecks: true },
         );
-        const mergedTs = this.mergeChatTurns(
-          this.asTurns(existing?.messageObjWithTimeStamp),
-          turns,
-        );
-        const lastContent = mergedObj.at(-1)?.content ?? '';
-        const burstContent = concatenatedUserBurst(mergedObj);
-        const patch: Record<string, unknown> = {
-          message: messageFromUserBurst && burstContent ? burstContent : lastContent,
-          messageObj: mergedObj,
-          messageObjWithTimeStamp: mergedTs,
-          typeOfMessage,
-          channel,
-          candidateId,
-          personId: candidate?.peopleId ?? existing?.personId ?? null,
-          projectsId: candidate?.projectsId ?? existing?.projectsId ?? null,
-        };
+      const candidate = await candidateRepository.findOne({
+        where: { id: candidateId },
+      });
+      const existing = await this.findChannelRow(
+        messageRepository,
+        candidateId,
+        channel,
+      );
+      const mergedObj = this.mergeChatTurns(
+        this.asTurns(existing?.messageObj),
+        turns,
+      );
+      const mergedTs = this.mergeChatTurns(
+        this.asTurns(existing?.messageObjWithTimeStamp),
+        turns,
+      );
+      const lastContent = mergedObj.at(-1)?.content ?? '';
+      const burstContent = concatenatedUserBurst(mergedObj);
+      const patch: Record<string, unknown> = {
+        message:
+          messageFromUserBurst && burstContent ? burstContent : lastContent,
+        messageObj: mergedObj,
+        messageObjWithTimeStamp: mergedTs,
+        typeOfMessage,
+        channel,
+        candidateId,
+        personId: candidate?.peopleId ?? existing?.personId ?? null,
+        projectsId: candidate?.projectsId ?? existing?.projectsId ?? null,
+      };
 
-        if (isNonEmptyString(latestExternalMessageId)) {
-          patch.externalMessageId = latestExternalMessageId;
-        }
+      if (isNonEmptyString(latestExternalMessageId)) {
+        patch.externalMessageId = latestExternalMessageId;
+      }
 
-        if (isNonEmptyString(chatId)) {
-          patch.externalChatId = chatId;
-        }
+      if (isNonEmptyString(chatId)) {
+        patch.externalChatId = chatId;
+      }
 
-        if (isDefined(existing)) {
-          try {
-            await messageRepository.update(existing.id, patch);
-          } catch {
-            const { channel: _channel, externalChatId: _chat, ...rest } = patch;
-
-            await messageRepository.update(existing.id, rest);
-          }
-
-          return;
-        }
-
-        // Direct ORM insert skips GraphQL actor side-effects. Pass the nested
-        // actor on a plain object (do not repository.create() first — TypeORM
-        // create() only copies real columns and drops composite createdBy).
-        const systemActor = buildCreatedByFromSystem();
-        const createPayload = {
-          name: `${channel} ${candidateId.slice(0, 8)}`,
-          createdBy: systemActor,
-          updatedBy: systemActor,
-          ...patch,
-        };
-
+      if (isDefined(existing)) {
         try {
-          await messageRepository.save(createPayload);
+          await messageRepository.update(existing.id, patch);
         } catch {
           const { channel: _channel, externalChatId: _chat, ...rest } = patch;
 
-          await messageRepository.save({
-            name: `${channel} ${candidateId.slice(0, 8)}`,
-            createdBy: systemActor,
-            updatedBy: systemActor,
-            ...rest,
-          });
+          await messageRepository.update(existing.id, rest);
         }
-      },
-      authContext,
-    );
+
+        return;
+      }
+
+      // Direct ORM insert skips GraphQL actor side-effects. Pass the nested
+      // actor on a plain object (do not repository.create() first — TypeORM
+      // create() only copies real columns and drops composite createdBy).
+      const systemActor = buildCreatedByFromSystem();
+      const createPayload = {
+        name: `${channel} ${candidateId.slice(0, 8)}`,
+        createdBy: systemActor,
+        updatedBy: systemActor,
+        ...patch,
+      };
+
+      try {
+        await messageRepository.save(createPayload);
+      } catch {
+        const { channel: _channel, externalChatId: _chat, ...rest } = patch;
+
+        await messageRepository.save({
+          name: `${channel} ${candidateId.slice(0, 8)}`,
+          createdBy: systemActor,
+          updatedBy: systemActor,
+          ...rest,
+        });
+      }
+    }, authContext);
   }
 
   private async findChannelRow(
@@ -540,7 +605,9 @@ export class OutreachMessagePersistService {
           (row) =>
             row.typeOfMessage === 'linkedin' ||
             `${row.phoneFrom ?? ''} ${row.phoneTo ?? ''}`.includes('linkedin'),
-        ) ?? rows[0] ?? null
+        ) ??
+        rows[0] ??
+        null
       );
     }
 
@@ -581,7 +648,10 @@ export class OutreachMessagePersistService {
     });
   }
 
-  private mergeChatTurns(existing: ChatTurn[], incoming: ChatTurn[]): ChatTurn[] {
+  private mergeChatTurns(
+    existing: ChatTurn[],
+    incoming: ChatTurn[],
+  ): ChatTurn[] {
     const merged = [...existing];
     const seen = new Set(
       existing.map((turn) => turn.id || `${turn.role}:${turn.content}`),

@@ -1,6 +1,9 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 
-import { graphQltoUpdateOneCandidate, graphqlQueryToRemoveMessages } from 'twenty-shared';
+import {
+  graphQltoUpdateOneCandidate,
+  graphqlQueryToRemoveMessages,
+} from 'twenty-shared';
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { OutreachInboundReplyWindowService } from 'src/engine/core-modules/outreach-command/jobs/outreach-inbound-reply-window.job';
@@ -201,16 +204,16 @@ describe('OutreachMockLifecycleService', () => {
         projectId,
         people: expect.arrayContaining([
           expect.objectContaining({
-            name: 'Mock Profile 1',
-            linkedinProfileId: expect.stringMatching(/^mock-bc-profile-/),
+            name: 'Arvind Pathak',
+            company: 'Dangote Cement',
+            title: 'GMD and CEO',
+            linkedinProfileId: 'ACoAAAup_vUBg-znzOwjDf7Ro5xmidw6dCrh58I',
             projectId,
           }),
         ]),
       },
     });
-    expect(
-      uploadProfilesExecute.mock.calls[0][0].input.people,
-    ).toHaveLength(3);
+    expect(uploadProfilesExecute.mock.calls[0][0].input.people).toHaveLength(3);
     expect(result).toEqual({
       ok: true,
       projectId,

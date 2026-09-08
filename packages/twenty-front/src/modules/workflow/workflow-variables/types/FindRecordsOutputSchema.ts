@@ -5,4 +5,5 @@ export type FindRecordsOutputSchema = {
   first: RecordNode;
   all: Leaf | undefined;
   totalCount: Leaf;
+  text: Leaf;
 };

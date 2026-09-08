@@ -2677,6 +2677,35 @@ export const LINKEDIN_UNIPILE_GET_USER_POSTS_INPUT_DESCRIPTOR: readonly McpInput
     },
   ] as const;
 
+export const LINKEDIN_UNIPILE_GET_USER_COMMENTS_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
+  [
+    {
+      key: 'account_id',
+      type: 'string',
+      description: 'LinkedIn Unipile account ID',
+      required: true,
+    },
+    {
+      key: 'identifier',
+      type: 'string',
+      description:
+        'LinkedIn user id / provider_id, or `me` for the connected account owner',
+      required: true,
+    },
+    {
+      key: 'limit',
+      type: 'number',
+      description: 'Number of comments to return (1-100, default 20)',
+      required: false,
+    },
+    {
+      key: 'cursor',
+      type: 'string',
+      description: 'Pagination cursor from a previous response',
+      required: false,
+    },
+  ] as const;
+
 export const LINKEDIN_UNIPILE_SEND_MESSAGE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
   [
     {

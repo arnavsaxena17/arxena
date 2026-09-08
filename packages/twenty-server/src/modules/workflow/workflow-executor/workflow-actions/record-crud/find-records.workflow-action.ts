@@ -107,12 +107,17 @@ export class FindRecordsWorkflowAction implements WorkflowAction {
 
     const records = toolOutput.result?.records ?? [];
     const totalCount = toolOutput.result?.count ?? 0;
+    const structuredResult = {
+      first: records[0],
+      all: records,
+      totalCount,
+    };
 
     return {
       result: {
-        first: records[0],
-        all: records,
-        totalCount,
+        ...structuredResult,
+        // Pretty-printed JSON for AI_AGENT prompts ({{step.text}})
+        text: JSON.stringify(structuredResult, null, 2),
       },
     };
   }

@@ -1,0 +1,134 @@
+{
+    "object": "UserProfile",
+    "provider": "LINKEDIN",
+    "provider_id": "ACoAABTJ0ccBBDQstaBbEyivmn9qS35HtIY8-5c",
+    "public_identifier": "divyesh-shah-b1b97698",
+    "member_urn": "348770759",
+    "first_name": "Divyesh",
+    "last_name": "Shah",
+    "headline": "Chief Executive Officer @ Indiabulls Ltd",
+    "primary_locale": {
+        "country": "US",
+        "language": "en"
+    },
+    "is_open_profile": true,
+    "is_premium": true,
+    "is_influencer": false,
+    "is_creator": false,
+    "is_relationship": false,
+    "is_verified": true,
+    "network_distance": "SECOND_DEGREE",
+    "is_self": false,
+    "websites": [],
+    "follower_count": 1269,
+    "connections_count": 885,
+    "location": "Mumbai, Maharashtra, India",
+    "birthdate": {
+        "month": 10,
+        "day": 13
+    },
+    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D4D03AQHn8TWuFbONig/profile-displayphoto-shrink_100_100/B4DZcf1Dl0GYAU-/0/1748585692482?e=1790208000&v=beta&t=LhnFeRFNpICZ1hAnDI4vUZSot4NwzKHmZBCP4JhXKEg",
+    "profile_picture_url_large": "https://media.licdn.com/dms/image/v2/D4D03AQHn8TWuFbONig/profile-displayphoto-shrink_800_800/B4DZcf1Dl0GYAc-/0/1748585692499?e=1790208000&v=beta&t=EJD78YOeoSByY9ItukiZgMb2y9aclgaBPKg8LMnby64",
+    "education_total_count": 1,
+    "education": [
+        {
+            "school_id": "3300543",
+            "school": "St. Mary's High School",
+            "school_picture_url": "https://media.licdn.com/dms/image/v2/D560BAQEh4gPE1SDwKw/company-logo_200_200/company-logo_200_200/0/1683143821772/st_marys_high_school_logo?e=1790208000&v=beta&t=KN9QP0uh9CGtVtaT60u3rDo_Q0rxZswKR5E29KUHfxQ",
+            "start": null,
+            "end": null
+        }
+    ],
+    "work_experience_total_count": 4,
+    "work_experience": [
+        {
+            "company": "Indiabulls Limited",
+            "position": "Chief Executive Officer",
+            "skills": [],
+            "start": "4/1/2023",
+            "end": null
+        },
+        {
+            "company": "Indiabulls Limited",
+            "position": "Chief Operating Officer ",
+            "skills": [],
+            "start": "8/1/2020",
+            "end": null
+        },
+        {
+            "company_id": "7951529",
+            "company": "Indiabulls Ventures Limited",
+            "position": "Chief Executive Officer & Whole Time Director",
+            "description": "Indiabulls  Ventures Ltd focusses on capital market ,third party distribution.  In 2017 it  launched its app - Dhani which provides digital healthcare and digital transactional finance to its customers",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C510BAQE_g-Kx8CFexA/company-logo_200_200/company-logo_200_200/0/1630617701884/indiabulls_ventures_limited_logo?e=1790208000&v=beta&t=aVgHRNUiILEVHFzgiYkCidi1uR_EHLeGO33rNbSX00c",
+            "skills": [],
+            "start": "1/1/2007",
+            "end": "8/1/2020"
+        },
+        {
+            "company_id": "7951529",
+            "company": "Indiabulls Ventures Limited",
+            "position": "Executive Vice President",
+            "description": "Indiabulls Ventures is one of the largest capital market player with a Pan India presence . The company  over the last 3 years has successfully forayed online into  Personal Loan , E- Pharmacy via its app - Dhani",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C510BAQE_g-Kx8CFexA/company-logo_200_200/company-logo_200_200/0/1630617701884/indiabulls_ventures_limited_logo?e=1790208000&v=beta&t=aVgHRNUiILEVHFzgiYkCidi1uR_EHLeGO33rNbSX00c",
+            "skills": [],
+            "start": "8/1/2000",
+            "end": "9/1/2007"
+        }
+    ],
+    "skills_total_count": 6,
+    "skills": [
+        {
+            "name": "Wealth Management",
+            "endorsement_count": 3,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Business Strategy",
+            "endorsement_count": 7,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Team Management",
+            "endorsement_count": 4,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Relationship Management",
+            "endorsement_count": 0,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Strategic Planning",
+            "endorsement_count": 6,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Leadership",
+            "endorsement_count": 3,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        }
+    ],
+    "languages_total_count": 0,
+    "languages": [],
+    "certifications_total_count": 0,
+    "certifications": [],
+    "summary": "Divyesh Shah is the Group CEO of Indiabulls Ltd, leading the company’s transformation into a diversified enterprise spanning real estate and digital financial services. With over two decades of experience, he focuses on building scalable, technology-driven businesses that are future-ready and create long-term stakeholder value.\n\nIn real estate, Divyesh is driving sustainable and smart urban growth through design-led residential and commercial projects located in prime, high-growth markets such as Gurgaon, Mumbai, and Ludhiana. His emphasis on smart design, efficient execution, and lasting value is shaping the next phase of urban development for the group.\n\nIn digital financial services, his vision is to empower investors through technology and data-driven innovation. By advancing solutions across NBFCs, capital markets, and asset reconstruction, he aims to make financial services simpler, more accessible, and digitally enabled for the modern investor.\n\nBeyond his professional role, Divyesh is an avid traveller, health enthusiast, and nature lover—passions that reflect his belief in continuous learning, balance, and inspired leadership.",
+    "volunteering_experience_total_count": 0,
+    "volunteering_experience": [],
+    "projects_total_count": 0,
+    "projects": [],
+    "shared_connections_count": 1
+}

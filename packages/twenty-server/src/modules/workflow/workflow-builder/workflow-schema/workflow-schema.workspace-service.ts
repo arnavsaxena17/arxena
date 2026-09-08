@@ -367,7 +367,15 @@ export class WorkflowSchemaWorkspaceService {
       value: 'Count of matching records',
     };
 
-    return { first, all, totalCount } satisfies OutputSchema;
+    const text: Leaf = {
+      isLeaf: true,
+      label: 'Formatted text (for AI agent)',
+      icon: 'IconFileText',
+      type: 'string',
+      value: 'Pretty-printed JSON of first/all/totalCount',
+    };
+
+    return { first, all, totalCount, text } satisfies OutputSchema;
   }
 
   private async computeRecordOutputSchema({

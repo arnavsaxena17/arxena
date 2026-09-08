@@ -4,7 +4,8 @@ import { baseWorkflowActionSettingsSchema } from './base-workflow-action-setting
 export const workflowCreateCalendarEventActionSettingsSchema =
   baseWorkflowActionSettingsSchema.extend({
     input: z.object({
-      connectedAccountId: z.string(),
+      // Incomplete steps may persist null before an account is chosen
+      connectedAccountId: z.string().nullable(),
       title: z.string(),
       description: z.string().optional(),
       location: z.string().optional(),

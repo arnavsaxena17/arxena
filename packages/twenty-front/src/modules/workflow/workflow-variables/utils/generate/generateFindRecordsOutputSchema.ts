@@ -28,5 +28,12 @@ export const generateFindRecordsOutputSchema = (
       type: 'number',
       value: 'Count of matching records',
     },
+    text: {
+      isLeaf: true,
+      icon: 'IconFileText',
+      label: 'Formatted text (for AI agent)',
+      type: 'string',
+      value: 'Pretty-printed JSON of first/all/totalCount',
+    },
   };
 };

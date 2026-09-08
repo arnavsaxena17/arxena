@@ -198,3 +198,96 @@ describe('OutreachMessagePersistService.mergeFetchedLinkedinMessages', () => {
     expect(messageRepository.save).not.toHaveBeenCalled();
   });
 });
+
+describe('OutreachMessagePersistService.readLinkedinTranscriptMessages', () => {
+  const applyCandidateEvent = jest.fn();
+  const resolveOrMint = jest.fn();
+  const candidateRepository = {
+    findOne: jest.fn(),
+    find: jest.fn(),
+  };
+  const messageRepository = {
+    find: jest.fn(),
+    save: jest.fn(),
+    update: jest.fn(),
+  };
+  const globalWorkspaceOrmManager = {
+    getRepository: jest.fn(async (_workspaceId: string, objectName: string) =>
+      objectName === 'chatMessage' ? messageRepository : candidateRepository,
+    ),
+    executeInWorkspaceContext: jest.fn(
+      async (callback: () => Promise<unknown>) => callback(),
+    ),
+  };
+
+  const service = new OutreachMessagePersistService(
+    globalWorkspaceOrmManager as never,
+    { applyCandidateEvent } as never,
+    { resolveOrMint } as never,
+  );
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    candidateRepository.findOne.mockResolvedValue({
+      id: 'cand-1',
+      linkedinProfileId: 'divyesh-shah-b1b97698',
+    });
+    messageRepository.find.mockResolvedValue([
+      {
+        id: 'msg-row-1',
+        candidateId: 'cand-1',
+        channel: 'LINKEDIN',
+        externalChatId: 'mock-chat-divyesh',
+        messageObjWithTimeStamp: [
+          {
+            role: 'assistant',
+            content: 'Hi Divyesh',
+            id: 'out-1',
+            timestamp: '2026-09-01T00:00:00.000Z',
+          },
+          {
+            role: 'user',
+            content: 'Thanks',
+            id: 'in-1',
+            timestamp: '2026-09-01T01:00:00.000Z',
+          },
+        ],
+      },
+    ]);
+    globalWorkspaceOrmManager.getRepository.mockImplementation(
+      async (_workspaceId: string, objectName: string) =>
+        objectName === 'chatMessage' ? messageRepository : candidateRepository,
+    );
+    globalWorkspaceOrmManager.executeInWorkspaceContext.mockImplementation(
+      async (callback: () => Promise<unknown>) => callback(),
+    );
+  });
+
+  it('maps LINKEDIN chatMessage.messageObj turns into fetch output shape', async () => {
+    await expect(
+      service.readLinkedinTranscriptMessages({
+        workspaceId: 'ws-1',
+        linkedinProfileId: 'divyesh-shah-b1b97698',
+      }),
+    ).resolves.toEqual({
+      candidateId: 'cand-1',
+      chatId: 'mock-chat-divyesh',
+      messages: [
+        {
+          id: 'out-1',
+          text: 'Hi Divyesh',
+          timestamp: '2026-09-01T00:00:00.000Z',
+          senderId: '',
+          isSender: true,
+        },
+        {
+          id: 'in-1',
+          text: 'Thanks',
+          timestamp: '2026-09-01T01:00:00.000Z',
+          senderId: '',
+          isSender: false,
+        },
+      ],
+    });
+  });
+});

@@ -156,6 +156,12 @@ const FIND_RECORDS_OUTPUT_SCHEMA = {
     value: 42,
     type: 'number',
   },
+  text: {
+    isLeaf: true,
+    label: 'Formatted text (for AI agent)',
+    value: '{}',
+    type: 'string',
+  },
 };
 
 const buildFindRecordsStepWithOutputSchema = (

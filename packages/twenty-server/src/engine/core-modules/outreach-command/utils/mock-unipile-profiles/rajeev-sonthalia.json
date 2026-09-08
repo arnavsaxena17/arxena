@@ -1,0 +1,280 @@
+{
+    "object": "UserProfile",
+    "provider": "LINKEDIN",
+    "provider_id": "ACoAAAALrZgBE2XbPZZB4BjSjcwxWZFtyRHPwBA",
+    "public_identifier": "rajeev-sonthalia-aa030a",
+    "member_urn": "765336",
+    "first_name": "Rajeev",
+    "last_name": "Sonthalia",
+    "headline": "Founder and CEO, ScaleIQ Pvt Ltd",
+    "primary_locale": {
+        "country": "US",
+        "language": "en"
+    },
+    "is_open_profile": false,
+    "is_premium": false,
+    "is_influencer": false,
+    "is_creator": false,
+    "is_relationship": false,
+    "is_verified": true,
+    "network_distance": "SECOND_DEGREE",
+    "is_self": false,
+    "websites": [],
+    "follower_count": 3852,
+    "connections_count": 2055,
+    "location": "Mumbai, Maharashtra, India",
+    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D4E03AQGpl4C13NSfog/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1667188324456?e=1790208000&v=beta&t=K2noUfrTguTuiLQbvBtJb2YMJRGPQoUGi3q5ZJe1nxw",
+    "profile_picture_url_large": "https://media.licdn.com/dms/image/v2/D4E03AQGpl4C13NSfog/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1667188324456?e=1790208000&v=beta&t=k69eNAUHakGtDM8MPP46Os3Yu8Uwo5y23fpHAsgsKAU",
+    "education_total_count": 2,
+    "education": [
+        {
+            "degree": "Master of Business Administration (MBA)",
+            "school_id": "165790",
+            "school": "Rotterdam School of Management, Erasmus University",
+            "school_picture_url": "https://media.licdn.com/dms/image/v2/C4E0BAQGxI95CurHtdA/company-logo_200_200/company-logo_200_200/0/1657183585803/rotterdam_school_of_management_erasmus_university_logo?e=1790208000&v=beta&t=zqtdkPipRIb-FTUvHTDM_caKezn-hy7CAzS-I1aNYWA",
+            "start": "1/1/2004",
+            "end": "1/1/2007"
+        },
+        {
+            "degree": "B. Tech, Engineering Physics",
+            "school_id": "157266",
+            "school": "Indian Institute of Technology, Bombay",
+            "school_picture_url": "https://media.licdn.com/dms/image/v2/C4D0BAQGmDoDCx_FYpA/company-logo_200_200/company-logo_200_200/0/1660636307357/indian_institute_of_technology_bombay_logo?e=1790208000&v=beta&t=gPjKSVE3HxhUIvjxysZjLWzmPwLqQ0yqRck4NwfhhqY",
+            "start": "1/1/1987",
+            "end": "1/1/1991"
+        }
+    ],
+    "work_experience_total_count": 15,
+    "work_experience": [
+        {
+            "company_id": "115114266",
+            "company": "ScaleIQ Pvt. Ltd.",
+            "position": "Founder and CEO",
+            "location": "Mumbai, Maharashtra, India · On-site",
+            "description": "ScaleIQ is creating a portfolio of companies with the goal of becoming the Digital Engineering partner for the Energy Sector. ScaleIQ and its portfolio companies will scale by co-innovating with our customers to solve the real barriers to technology adoption and transformation in the Energy Sector.",
+            "status": "Full-time",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/D560BAQGOPB9XwL5k7w/company-logo_200_200/B56Z298NtRHgAI-/0/1777008172315/scaleiq_pvt_ltd_logo?e=1790208000&v=beta&t=0Cu8xiC3rPWIa3AYztBvUDy5XnytsLG9zSHR8VkxzbA",
+            "skills": [],
+            "start": "7/1/2025",
+            "end": null
+        },
+        {
+            "company_id": "3875992",
+            "company": "Oges (P) Ltd",
+            "position": "Director",
+            "location": "India",
+            "status": "Part-time",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C560BAQGXZOpbK-UHPg/company-logo_200_200/company-logo_200_200/0/1631343399995?e=1790208000&v=beta&t=Oybwiy7koLtUcXtJRtzPcF-pj5wvSoak6l4R2LVaxRg",
+            "skills": [],
+            "start": "1/1/2026",
+            "end": "4/1/2026"
+        },
+        {
+            "company_id": "162288",
+            "company": "Aditya Birla Group",
+            "position": "Business Director and Member of Executive Leadership Team",
+            "location": "Mumbai, Maharashtra, India · On-site",
+            "description": "Business Director Birla Pivot, B2B e-commerce platform\nBusiness Director Birla Carbon, Specialty Chemicals\nDirector Group Corporate Strategy and Business Development",
+            "status": "Full-time",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C560BAQEUbjMZ2EBV4g/company-logo_200_200/company-logo_200_200/0/1631335210878?e=1790208000&v=beta&t=zu_EaIiB2q_D3jD_BbBb3IgLYoWeKciwx3XmOldlKKk",
+            "skills": [],
+            "start": "4/1/2023",
+            "end": "3/1/2025"
+        },
+        {
+            "company_id": "1468",
+            "company": "Schlumberger",
+            "position": "President Digital and Integration and Member of Executive Leadership Team",
+            "status": "Full-time",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/D560BAQFwhnoORL25KA/company-logo_200_200/company-logo_200_200/0/1666604496648/slbdigital_logo?e=1790208000&v=beta&t=y76U2IhPXn53bloLIOok8bn6X1lIT88jShjN_zrs9XI",
+            "skills": [],
+            "start": "6/1/2020",
+            "end": "4/1/2023"
+        },
+        {
+            "company_id": "1468",
+            "company": "Schlumberger",
+            "position": "Senior Vice President, Marketing and Corporate Strategy",
+            "status": "Full-time",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/D560BAQFwhnoORL25KA/company-logo_200_200/company-logo_200_200/0/1666604496648/slbdigital_logo?e=1790208000&v=beta&t=y76U2IhPXn53bloLIOok8bn6X1lIT88jShjN_zrs9XI",
+            "skills": [],
+            "start": "4/1/2018",
+            "end": "6/1/2020"
+        },
+        {
+            "company_id": "1468",
+            "company": "Schlumberger",
+            "position": "President Reservoir Characterization Group Eastern Hemisphere",
+            "status": "Full-time",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/D560BAQFwhnoORL25KA/company-logo_200_200/company-logo_200_200/0/1666604496648/slbdigital_logo?e=1790208000&v=beta&t=y76U2IhPXn53bloLIOok8bn6X1lIT88jShjN_zrs9XI",
+            "skills": [],
+            "start": "8/1/2017",
+            "end": "4/1/2018"
+        },
+        {
+            "company_id": "1468",
+            "company": "Schlumberger",
+            "position": "President, Integrated Project Management and Schlumberger Production Management",
+            "status": "Full-time",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/D560BAQFwhnoORL25KA/company-logo_200_200/company-logo_200_200/0/1666604496648/slbdigital_logo?e=1790208000&v=beta&t=y76U2IhPXn53bloLIOok8bn6X1lIT88jShjN_zrs9XI",
+            "skills": [],
+            "start": "6/1/2014",
+            "end": "7/1/2017"
+        },
+        {
+            "company_id": "1468",
+            "company": "Schlumberger",
+            "position": "President, Asia Pacific",
+            "status": "Full-time",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/D560BAQFwhnoORL25KA/company-logo_200_200/company-logo_200_200/0/1666604496648/slbdigital_logo?e=1790208000&v=beta&t=y76U2IhPXn53bloLIOok8bn6X1lIT88jShjN_zrs9XI",
+            "skills": [],
+            "start": "7/1/2013",
+            "end": "5/1/2014"
+        },
+        {
+            "company_id": "1468",
+            "company": "Schlumberger",
+            "position": "Vice President and Global Head Well Construction IPM",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/D560BAQFwhnoORL25KA/company-logo_200_200/company-logo_200_200/0/1666604496648/slbdigital_logo?e=1790208000&v=beta&t=y76U2IhPXn53bloLIOok8bn6X1lIT88jShjN_zrs9XI",
+            "skills": [],
+            "start": "5/1/2012",
+            "end": "7/1/2013"
+        },
+        {
+            "company_id": "1468",
+            "company": "Schlumberger",
+            "position": "Vice President and Head South Asia",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/D560BAQFwhnoORL25KA/company-logo_200_200/company-logo_200_200/0/1666604496648/slbdigital_logo?e=1790208000&v=beta&t=y76U2IhPXn53bloLIOok8bn6X1lIT88jShjN_zrs9XI",
+            "skills": [],
+            "start": "8/1/2007",
+            "end": "5/1/2012"
+        },
+        {
+            "company_id": "1468",
+            "company": "Schlumberger",
+            "position": "Business Unit Manager",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/D560BAQFwhnoORL25KA/company-logo_200_200/company-logo_200_200/0/1666604496648/slbdigital_logo?e=1790208000&v=beta&t=y76U2IhPXn53bloLIOok8bn6X1lIT88jShjN_zrs9XI",
+            "skills": [],
+            "start": "7/1/2006",
+            "end": "7/1/2007"
+        },
+        {
+            "company_id": "1468",
+            "company": "Schlumberger",
+            "position": "Business Unit Manager",
+            "status": "Full-time",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/D560BAQFwhnoORL25KA/company-logo_200_200/company-logo_200_200/0/1666604496648/slbdigital_logo?e=1790208000&v=beta&t=y76U2IhPXn53bloLIOok8bn6X1lIT88jShjN_zrs9XI",
+            "skills": [],
+            "start": "7/1/2004",
+            "end": "6/1/2006"
+        },
+        {
+            "company_id": "1468",
+            "company": "Schlumberger",
+            "position": "Brand Manager Drilling Optimisation",
+            "status": "Full-time",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/D560BAQFwhnoORL25KA/company-logo_200_200/company-logo_200_200/0/1666604496648/slbdigital_logo?e=1790208000&v=beta&t=y76U2IhPXn53bloLIOok8bn6X1lIT88jShjN_zrs9XI",
+            "skills": [],
+            "start": "4/1/2002",
+            "end": "6/1/2004"
+        },
+        {
+            "company_id": "1468",
+            "company": "Schlumberger",
+            "position": "HR Head. South Asia",
+            "status": "Full-time",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/D560BAQFwhnoORL25KA/company-logo_200_200/company-logo_200_200/0/1666604496648/slbdigital_logo?e=1790208000&v=beta&t=y76U2IhPXn53bloLIOok8bn6X1lIT88jShjN_zrs9XI",
+            "skills": [],
+            "start": "8/1/1999",
+            "end": "3/1/2002"
+        },
+        {
+            "company_id": "1468",
+            "company": "Schlumberger",
+            "position": "Field Service Manager",
+            "status": "Full-time",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/D560BAQFwhnoORL25KA/company-logo_200_200/company-logo_200_200/0/1666604496648/slbdigital_logo?e=1790208000&v=beta&t=y76U2IhPXn53bloLIOok8bn6X1lIT88jShjN_zrs9XI",
+            "skills": [],
+            "start": "7/1/1996",
+            "end": "7/1/1999"
+        },
+        {
+            "company_id": "1468",
+            "company": "Schlumberger",
+            "position": "Field Engineer",
+            "status": "Full-time",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/D560BAQFwhnoORL25KA/company-logo_200_200/company-logo_200_200/0/1666604496648/slbdigital_logo?e=1790208000&v=beta&t=y76U2IhPXn53bloLIOok8bn6X1lIT88jShjN_zrs9XI",
+            "skills": [],
+            "start": "3/1/1992",
+            "end": "6/1/1996"
+        }
+    ],
+    "skills_total_count": 2,
+    "skills": [
+        {
+            "name": "Agile Leadership",
+            "endorsement_count": 3,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Drilling",
+            "endorsement_count": 32,
+            "insights": [
+                "Endorsed by Karl Lindsell and 1 other who is highly skilled at this",
+                "Endorsed by 20 colleagues at SLB"
+            ],
+            "endorsement_id": null,
+            "endorsed": false
+        }
+    ],
+    "languages_total_count": 0,
+    "languages": [],
+    "certifications_total_count": 1,
+    "certifications": [
+        {
+            "name": "Schlumberger Leading Through Digital",
+            "organization": "UC Berkeley Executive Education",
+            "url": "https://www.credential.net/1db90da1-ea92-4fa5-8a38-e42805947b05"
+        }
+    ],
+    "summary": "Formerly part of the Executive Leadership Team of the Aditya Birla Group, one of the largest conglomerates in India, spanning industries from metals to mining and fashion to construction. \nPreviously a key member of the Executive Leadership Team at SLB (formerly Schlumberger), the world's leading provider of technology and services to unlock access to energy.\nSeasoned business leader with unique experience at the intersection of Digital, Energy and Industrials with more than 30 years of cross functional international experience in global and regional roles.\n• Business head with direct P&L responsibility across several businesses at country, regional and global levels managing diverse portfolios with multibillion $ revenues\n• Achieved diverse goals in different businesses – successful turnaround, high growth, cost management and new market entry.\n• Successfully led the transformation of the Digital business of SLB from the desktop to the cloud and established partnerships with hyperscalers like Microsoft, AWS as well as specific technology providers both on the “CLOUD” and on the “EDGE”.  Grew SaaS business to several $100M with high double digit growth across every geography establishing strong global deployment capability.",
+    "volunteering_experience_total_count": 0,
+    "volunteering_experience": [],
+    "projects_total_count": 0,
+    "projects": [],
+    "recommendations": {
+        "given_total_count": 2,
+        "given": [
+            {
+                "caption": "July 26, 2025, Rajeev managed Rakesh directly",
+                "text": "Rakesh and I worked together for 3 years when I was heading the Digital & Integration (D&I) Division, a newly created Division of SLB.  In this time of transition there were several strategic moves we needed to make to improve the health and ROA of the business.  \n\n1. The software business was undergoing massive change with the transition of our business from the Desktop to the Cloud. This involved new business models changing from one time license sale to the recurring revenue (and cost) of SaaS. \n2. Renegotiating, shutting down and selling several poorly performing IPM contracts and supporting growth by improving our commercial oversight in new bids.\n3. Winding up and exiting several legacy assets in our Seismic data acquisition business (ex-Western Geco), while ensuring we grew the business with strategic investments while maintaining positive FCF at all times.\n4. Constantly evaluating new inorganic growth opportunities in the production domain where we had a weak portfolio of solutions. \n\nIn all these initiatives, Rakesh was a key player and was effectively my right hand to ensure we brought the business back to a healthy state as it should have been. \n\nNot only was he an effective CFO, where he struck the right balance between accounting and business process improvement to being a core part of the strategic initiatives above, he found the time to mentor upcoming talent, several of whom are holding senior positions in SLB today. \n\nI owe Rakesh for my success as head of D&I and wiich him the best in his new endeavours.",
+                "actor": {
+                    "first_name": "Rakesh",
+                    "last_name": "Adhia",
+                    "provider_id": "ACoAAAD-cVYBVWoe6zVSWSn0iKnDpTDxtPoSQug",
+                    "public_identifier": "rakesh-adhia-b867015",
+                    "headline": "Global Finance & Commercial Director | Board & CEO Advisor | Transformation & Global Business Support Leader | Enterprise Digital Cloud & AI implementation",
+                    "public_profile_url": "https://www.linkedin.com/in/rakesh-adhia-b867015",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C4D03AQEdh8MFU-f1KQ/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1600074505940?e=1790208000&v=beta&t=amCyz6lOs3s_KBhKdrMee2m9HxThaa37_mFiGqzPPNA"
+                }
+            },
+            {
+                "caption": "December 13, 2016, Rajeev managed Ashish directly",
+                "text": "I know Ashish from the date I took the decision to hire him into Schlumberger during my time as the HR Head for India. He has impressed me from the day one with his commitment and passion for the HR function, this coupled with his understanding of the business makes him an invaluable business contributor. He takes the trouble to dive into technical aspects which many HR folk would shy away from, going well beyond his call of duty.\r\n\r\nA testament to his commitment and passion was when we went through a very rough union situation in India and Ashish turned a very volatile environment into an environment of trust to the extent that all the unionized employees resigned voluntarily from the union and formed one of the strongest teams in the years to follow.\r\n \r\nOn the second time when we worked closely, he was part of the prized project team which established the Engineering and Manufacturing Centre in India and it was impressive to see how quickly he ramped up the center from zero to a team which was then deployed across our centres in the world. He built a very strong and thorough HR team which set the  stage for the same centre to be one of our strongest and largest centres of over 1000 employees today.  \r\n\r\nHe believes in the theme work hard and play hard and continues to challenge the team, his peers and even his managers, which quickly earns him the respect and followership, this makes him a natural Leader.\r\n",
+                "actor": {
+                    "first_name": "Ashish",
+                    "last_name": "PATRO",
+                    "provider_id": "ACoAAABHHMsB0tuCI1MGdUoLG9nNNvjrP0xd7UY",
+                    "public_identifier": "ashishpatro",
+                    "headline": "FCIPD | Total Rewards and HR Director with experience in APAC, ME, Africa & Europe | Career & Executive Coach | Ethics Matter.",
+                    "public_profile_url": "https://www.linkedin.com/in/ashishpatro"
+                }
+            }
+        ],
+        "received_total_count": 0,
+        "received": []
+    },
+    "shared_connections_count": 1
+}

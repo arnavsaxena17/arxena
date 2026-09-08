@@ -16,6 +16,13 @@ import { MessageQueueService } from 'src/engine/core-modules/message-queue/servi
 
 import { LogicFunctionExecutorService } from 'src/engine/core-modules/logic-function/logic-function-executor/logic-function-executor.service';
 import { NativeLogicFunctionRegistry } from 'src/engine/core-modules/logic-function/logic-function-executor/native-logic-function.registry';
+import {
+  OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME,
+  OUTREACH_SEARCH_POSTS_LOGIC_FUNCTION_NAME,
+} from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-names.const';
+import { withLlmFormattedText } from 'src/engine/core-modules/outreach-command/utils/with-llm-formatted-text.util';
 import { findFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps.util';
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import {
@@ -28,6 +35,24 @@ import { deferWorkflowForAccountRateLimit } from 'src/modules/workflow/workflow-
 import { findStepOrThrow } from 'src/modules/workflow/workflow-executor/utils/find-step-or-throw.util';
 import { isWorkflowLogicFunctionAction } from 'src/modules/workflow/workflow-executor/workflow-actions/logic-function/guards/is-workflow-logic-function-action.guard';
 import { WorkflowLogicFunctionActionInput } from 'src/modules/workflow/workflow-executor/workflow-actions/logic-function/types/workflow-logic-function-action-input.type';
+
+const LLM_FORMATTED_TEXT_LOGIC_FUNCTION_NAMES = new Set([
+  OUTREACH_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME,
+  OUTREACH_SEARCH_POSTS_LOGIC_FUNCTION_NAME,
+]);
+
+const maybeWithLlmFormattedText = (
+  logicFunctionName: string,
+  result: object,
+): object => {
+  if (!LLM_FORMATTED_TEXT_LOGIC_FUNCTION_NAMES.has(logicFunctionName)) {
+    return result;
+  }
+
+  return withLlmFormattedText(result);
+};
 
 @Injectable()
 export class LogicFunctionWorkflowAction implements WorkflowAction {
@@ -136,7 +161,9 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
                     workspaceId,
                     workflowRunId: runInfo.workflowRunId,
                     method:
-                      parseMethodFromAccountRateLimitMessage(nativeErrorMessage),
+                      parseMethodFromAccountRateLimitMessage(
+                        nativeErrorMessage,
+                      ),
                   });
                 }
               }
@@ -153,11 +180,19 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
             if (isPending) {
               return {
                 pendingEvent: true,
-                result: nativeResult,
+                result: maybeWithLlmFormattedText(
+                  logicFunction.name,
+                  nativeResult,
+                ),
               };
             }
 
-            return { result: nativeResult };
+            return {
+              result: maybeWithLlmFormattedText(
+                logicFunction.name,
+                nativeResult,
+              ),
+            };
           } catch (error) {
             if (isAccountRateLimitDeferredError(error) && error.waitMs > 0) {
               return this.deferForLinkedinRateLimit({

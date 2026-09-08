@@ -1,0 +1,1148 @@
+{
+    "object": "UserProfile",
+    "provider": "LINKEDIN",
+    "provider_id": "ACoAAABEWa4BNHKktG1wPK2cTLZFD9O-0GPEKcU",
+    "public_identifier": "saurabhsinghz",
+    "member_urn": "4479406",
+    "first_name": "SAURABH",
+    "last_name": "SINGH",
+    "headline": "CEO @ Appinventiv | Entrepreneur | Building AI-Led Future Intelligence | Forbes Iconic Leader",
+    "primary_locale": {
+        "country": "US",
+        "language": "en"
+    },
+    "is_open_profile": false,
+    "is_premium": true,
+    "is_influencer": false,
+    "is_creator": true,
+    "is_relationship": false,
+    "is_verified": true,
+    "network_distance": "SECOND_DEGREE",
+    "is_self": false,
+    "websites": [
+        "https://instagram.com/saurabh.singh.official",
+        "https://twitter.com/SaurabhSingh"
+    ],
+    "follower_count": 222894,
+    "connections_count": 30000,
+    "location": "Noida, Uttar Pradesh, India",
+    "birthdate": {
+        "month": 1,
+        "day": 13
+    },
+    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D5603AQHb6V7aGjoiTg/profile-displayphoto-scale_100_100/B56Ze_YvoBGoAc-/0/1751262624939?e=1790208000&v=beta&t=siWPbLtZuqV3PDVDA8z84z3G2y6-eGnTjAlw6ZGYOuE",
+    "profile_picture_url_large": "https://media.licdn.com/dms/image/v2/D5603AQHb6V7aGjoiTg/profile-displayphoto-crop_800_800/B56Ze_YvoBGoAI-/0/1751262624833?e=1790208000&v=beta&t=ZY-LVvqMMZITOrPt7noDTbduKcKoJPYN8g_UJfREwUc",
+    "background_picture_url": "https://media.licdn.com/dms/image/v2/C5116AQFoblLqw9vTaQ/profile-displaybackgroundimage-shrink_200_800/profile-displaybackgroundimage-shrink_200_800/0/1561537641001?e=1790208000&v=beta&t=TiUMC5a-kLLQU60Pjwpt4S5Y8M1uycbQ8mDDf-7ZmC8",
+    "education_total_count": 2,
+    "education": [
+        {
+            "degree": "Integrated Degree, Entrepreneurial Management",
+            "school_id": "1119167",
+            "school": "EMPI Business School",
+            "school_picture_url": "https://media.licdn.com/dms/image/v2/C4E0BAQEK0XIWMxLPqA/company-logo_200_200/company-logo_200_200/0/1630612688365/empi_business_school_logo?e=1790208000&v=beta&t=GnW8JeQvCh41WfW32Cn3iVNSSL7O96LS16DMCNK4Oh8",
+            "start": "1/1/2001",
+            "end": "1/1/2005",
+            "activities": "(Adcom) Advertising",
+            "description": "Won the award for the Best Team Member in a creative workshop on “Building Strong Brands” through integrated marketing communication, conducted by Mr. Noorul Islam, Chairman (T&D), Advertising Agencies Association of India."
+        },
+        {
+            "degree": "High School, Business/Commerce, General",
+            "school": "Delhi Public School",
+            "start": "1/1/1987",
+            "end": "1/1/2001",
+            "description": "Delhi Public School, India (DPS) is among the largest institutions providing education at school level in India with over 100+ branches."
+        }
+    ],
+    "work_experience_total_count": 14,
+    "work_experience": [
+        {
+            "company_id": "9322687",
+            "company": "Appinventiv",
+            "position": "Director & CEO",
+            "location": "Noida, Uttar Pradesh, India",
+            "description": "🏆  Best Place to Work 2022 - By Outlook India\n🏆 App Development Company of the Year 2020 - By Entrepreneur.com\n🏆 Global Leaders in Mobile App Development 2019 - By Clutch\n🏆 Most Promising Mobile App Solution Provider 2018 - By CIOReview\n\nA 1600+ People Strong - Digital Transformation & Scaling Global Tech Teams | Building AI-Led Futures",
+            "status": "Full-time",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/D560BAQGBK6Fu1xdBag/company-logo_200_200/B56ZWKXzaiHsAM-/0/1741783251218/appinventiv_logo?e=1790208000&v=beta&t=AkvEJKajojYQVmOWeZYIzZ4KYTEvG0-y4CIjDvsyLJw",
+            "skills": [],
+            "start": "4/1/2020",
+            "end": null
+        },
+        {
+            "company": "On Board with Multiple startups ",
+            "position": "Investor & Mentor",
+            "location": "Greater Delhi Area",
+            "description": "Invested in 4 Startups till now, \nThe total number of strength is 600+ people of all 4 companies with over 10+ million USD in revenue.\nMy expertise is to provide 10X growth to Startups & Entrepreneurs.",
+            "skills": [],
+            "start": "8/1/2016",
+            "end": null
+        },
+        {
+            "company_id": "82474103",
+            "company": "Indian Red Cross Society (IRCS)",
+            "position": "Chairman Noida RedCross Society ",
+            "location": "Noida, Uttar Pradesh, India · Hybrid",
+            "status": "Part-time",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C560BAQGtkyJIZCG1Ow/company-logo_200_200/company-logo_200_200/0/1658579032628/indian_red_cross_society_ircs_logo?e=1790208000&v=beta&t=evOqkGXHUbeDiMDhGjdp4On5qyo8AU-MsH800imoQcM",
+            "skills": [],
+            "start": "8/1/2023",
+            "end": "3/1/2026"
+        },
+        {
+            "company_id": "7803768",
+            "company": "Gullak",
+            "position": "Founder & CEO",
+            "location": "Noida, Uttar Pradesh, India",
+            "description": "Gullak is a financial wellness company applying data science, predictive analytics and mobile technology to help people reinvent their relationship with money.\n\n► Under TOP 25 FREE App (Finance category) \n► Trusted by 1 Million Indians | Rated ★★★★★ by over 25000+ \n\nThe world is ready for a different approach to Savings. Lets accelerate your journey to financial wellness with more benefits & savings.\n \nGullak is a user-friendly Android app that uses information from SMS's sent from banks, merchants and other billers and aggregate your financial activity. It lets you enjoy the Power of Unique Data Analysis of your spendings. ",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C510BAQH--Yc6YWoUiw/company-logo_200_200/company-logo_200_200/0/1631315607642?e=1790208000&v=beta&t=G1UcivdET-3-2mVkGA-jyxyK-oJzKaJHPs196cZmoPI",
+            "skills": [],
+            "start": "1/1/2015",
+            "end": "9/1/2016"
+        },
+        {
+            "company_id": "2281950",
+            "company": "AppStudioz",
+            "position": "Managing Director",
+            "description": "AppStudioz acquired by Affle",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C560BAQFTIlgtqioPAA/company-logo_200_200/company-logo_200_200/0/1641573886433/affle_mtraction_enterprise_logo?e=1790208000&v=beta&t=QTaTtqtGnMatKGZNEVD4aGRBlkLJKJ9PCH7YnGT068g",
+            "skills": [],
+            "start": "4/1/2014",
+            "end": "10/1/2014"
+        },
+        {
+            "company_id": "2281950",
+            "company": "AppStudioz",
+            "position": "CEO & Founder",
+            "description": "AppStudioz | ► www.AppStudioz.com ◄\n\nAppStudioz (One of the largest App Development Company in India in 2014) a team of 260+ App Developer & App Designer. AppStudioz has emerged as the Global leader of building outstanding mobile applications with an experience of developing over 1000+ Successful Apps.",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C560BAQFTIlgtqioPAA/company-logo_200_200/company-logo_200_200/0/1641573886433/affle_mtraction_enterprise_logo?e=1790208000&v=beta&t=QTaTtqtGnMatKGZNEVD4aGRBlkLJKJ9PCH7YnGT068g",
+            "skills": [],
+            "start": "5/1/2011",
+            "end": "4/1/2014"
+        },
+        {
+            "company": "AwakIND.com (Awake India)",
+            "position": "Founder",
+            "description": "www,AwakIND.com (NON-Profit Initiative)\nAwakIND is India's first socio-political network for people who want to raise their voices on a common platform. It has been designed to initiate a change in the society and existing systems.",
+            "skills": [],
+            "start": "1/1/2009",
+            "end": "12/1/2011"
+        },
+        {
+            "company_id": "729780",
+            "company": "TechAhead",
+            "position": "Co-Founder & Director",
+            "location": "Noida",
+            "description": "Co-Founder @ TechAhead ► www.TechAheadCorp.com ◄\nA custom & enterprise mobile application development Company\nTook an exit after 1.5 years from the board and founded AppStudioz",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/D560BAQGrht7WMQ8VfQ/company-logo_200_200/B56ZsrGKjrHAAI-/0/1765954595568/techahead_logo?e=1790208000&v=beta&t=oxqTvs4-JYuhm__dQeGmuQwpoN8bnaX0BTuSGdb0a_o",
+            "skills": [],
+            "start": "11/1/2009",
+            "end": "5/1/2011"
+        },
+        {
+            "company_id": "329706",
+            "company": "C&B Electronics Pvt Ltd",
+            "position": "Founding Partner",
+            "location": "Greater Bengaluru Area",
+            "description": "Market leader in container yard management solutions delivering high-quality, smart and secure products to the customers worldwide.",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C4E0BAQEHnz_yHP7x6g/company-logo_200_200/company-logo_200_200/0/1631314978143?e=1790208000&v=beta&t=GijBWe3i0Gp3AwxGfA4fPE5whL4bP93xGqkQZzlT0-g",
+            "skills": [],
+            "start": "1/1/2009",
+            "end": "11/1/2009"
+        },
+        {
+            "company_id": "205175",
+            "company": "N-NET Technologies Pvt. Ltd.",
+            "position": "Director Marketing and Business Development",
+            "description": "A NASSCOM Certified Company which got listed in Top 50 \"Best Managed\" Global Outsourcing Vendors 2009  --  by BlackBook of Outsourcing.\n\nRef: - http://www.theblackbookofoutsourcing.com/top-outsourcing-vendors-2009.aspx",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C4E0BAQHc0SS1Ud-NKg/company-logo_200_200/company-logo_200_200/0/1631324587697?e=1790208000&v=beta&t=z1WLipnvdWteCaSq9um7UNEpf2D0_kguuynz3luEyQA",
+            "skills": [],
+            "start": "4/1/2008",
+            "end": "11/1/2009"
+        },
+        {
+            "company_id": "381761",
+            "company": "SKAN DbyDx Software Pvt Ltd",
+            "position": "Vice President",
+            "description": "Acquired by Kellton Tech (A CMMi Level 3 & ISO 9001:2008 certified company, Kellton Tech is also listed on India’s largest stock exchange, BSE)\n\n@DbyDx \nStrategic Planning / Business Development / Sales and Marketing\n\nBeing a part of Management team, I developed the strategies and business for DbyDX growth, Successfully signed few major contracts and was instrumental in helping the company develop the scale to handle large IT projects.",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C4E0BAQEZL4GEuwJ0mw/company-logo_200_200/company-logo_200_200/0/1631318455501?e=1790208000&v=beta&t=jyklgN4AUJN-PRHVk60wWS_qlstsOLmt7PG9Co29qIk",
+            "skills": [],
+            "start": "9/1/2007",
+            "end": "4/1/2008"
+        },
+        {
+            "company_id": "34380",
+            "company": "BrickRed Technologies",
+            "position": "Manager Business Development",
+            "description": "Acquired by 3Pillar Global\nA product lifecycle management and development company that accelerates business growth.\n\nSaurabh served as a Manager Business Development at BrickRed Technologies for three years where he had been honored twice with the “Nistha award” and “Pride of Ownership award” for the excellence and dedication towards work for two consecutive years in 2005 and 2006 respectively, Saurabh was instrumental in executing the entire Business Development team at BrickRed, Along with heading the team he was also responsible for marketing efforts towards the promotion of BrickRed’s technical services and solutions through numerous ways with direct reporting to CEO,",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C4D0BAQGUgLgdzmyvSw/company-logo_200_200/company-logo_200_200/0/1631306655894?e=1790208000&v=beta&t=R6eMq7gSt-k-xrIhdkUxuIXT1E7Hxa5Twzd92LuuzlY",
+            "skills": [],
+            "start": "11/1/2004",
+            "end": "9/1/2007"
+        },
+        {
+            "company_id": "34380",
+            "company": "BrickRed Technologies",
+            "position": "Sr. Executive Business Development",
+            "description": "•Responsible for Lead Generation, Follow-up, Conferences, conceptualizing, planning, managing all the campaigns.\n•Responsible for Scheduling Conferences and Meeting.\n•Prepared and structured the complete business development team and processes.\n•Develop all marketing collaterals (case studies, flyers, brochures and corporate presentations including conceptualization and writing the content \n•Responsible for monthly Press Releases and News Letter (Internal and External). \n•Defined roles and responsibilities to improve company processes and strengthen communication channels.",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C4D0BAQGUgLgdzmyvSw/company-logo_200_200/company-logo_200_200/0/1631306655894?e=1790208000&v=beta&t=R6eMq7gSt-k-xrIhdkUxuIXT1E7Hxa5Twzd92LuuzlY",
+            "skills": [],
+            "start": "11/1/2004",
+            "end": "3/1/2006"
+        },
+        {
+            "company": "DSA Idea Cellular (Sales Agency)",
+            "position": "Proprietor (College Startup)",
+            "description": "Started my first venture in 2003 while studying in college and launched a successful official DSA (Direct Sales Agency) of iDea cellular in South Delhi, later added TouchTel as the second largest client.\n\n•Responsible for all proprietary functionalities of the organization.  \n•Responsible for all pre-sales and post-sales strategies and functionalities.\n\n________________________________________________________________\nLION | Toplinked | OpenNetworker | Mobile App | MyLink500 | Invite Me | All Invitation Accept | LION | TopLinked.com | LION | No IDK | LinkedIn Open Networker | Invites Welcomed | Open Networker | Invite Me | All Invitation Accept | LION | Mobile App",
+            "skills": [],
+            "start": "8/1/2002",
+            "end": "10/1/2003"
+        }
+    ],
+    "skills_total_count": 50,
+    "skills": [
+        {
+            "name": "Entrepreneurship",
+            "endorsement_count": 99,
+            "insights": [
+                "Endorsed by 61 people who know the skill"
+            ],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Business Strategy",
+            "endorsement_count": 99,
+            "insights": [
+                "Endorsed by 6 people who know the skill"
+            ],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Mobile Applications",
+            "endorsement_count": 99,
+            "insights": [
+                "Endorsed by 63 people who know the skill"
+            ],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Leadership",
+            "endorsement_count": 99,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Android",
+            "endorsement_count": 99,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Start-ups",
+            "endorsement_count": 99,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Product Management",
+            "endorsement_count": 79,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Management",
+            "endorsement_count": 99,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Marketing Strategy",
+            "endorsement_count": 99,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Lead Generation",
+            "endorsement_count": 99,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Marketing",
+            "endorsement_count": 99,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Business Development",
+            "endorsement_count": 99,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Team Management",
+            "endorsement_count": 99,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Strategy",
+            "endorsement_count": 99,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Visionary",
+            "endorsement_count": 42,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Strategic Planning",
+            "endorsement_count": 91,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "E-commerce",
+            "endorsement_count": 62,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Outsourcing",
+            "endorsement_count": 91,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Social Media",
+            "endorsement_count": 99,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Project Management",
+            "endorsement_count": 99,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Pre-sales",
+            "endorsement_count": 79,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Social Networking",
+            "endorsement_count": 43,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Mobile Devices",
+            "endorsement_count": 99,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Philanthropy",
+            "endorsement_count": 36,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Online Marketing",
+            "endorsement_count": 48,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Account Management",
+            "endorsement_count": 52,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Project Coordination",
+            "endorsement_count": 35,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "iOS development",
+            "endorsement_count": 46,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Strategic Partnerships",
+            "endorsement_count": 48,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Enterprise Software",
+            "endorsement_count": 74,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "CRM",
+            "endorsement_count": 54,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Outsourcing Management",
+            "endorsement_count": 36,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Mobile Technology",
+            "endorsement_count": 38,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "iPhone",
+            "endorsement_count": 30,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Software Development",
+            "endorsement_count": 35,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Networking",
+            "endorsement_count": 35,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "New Business Development",
+            "endorsement_count": 99,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Vendor Management",
+            "endorsement_count": 39,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Expertise in strategic planning",
+            "endorsement_count": 26,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Entrepreneurial Endeavors",
+            "endorsement_count": 27,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Cloud Computing",
+            "endorsement_count": 33,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Project Planning",
+            "endorsement_count": 27,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Offshore Management",
+            "endorsement_count": 26,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Business Analysis",
+            "endorsement_count": 34,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Software Project Management",
+            "endorsement_count": 26,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Sales",
+            "endorsement_count": 27,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Integrated Marketing",
+            "endorsement_count": 27,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Competitive Analysis",
+            "endorsement_count": 27,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Go-to-market Strategy",
+            "endorsement_count": 25,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Consulting",
+            "endorsement_count": 31,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        }
+    ],
+    "languages_total_count": 2,
+    "languages": [
+        {
+            "name": "English",
+            "proficiency": "Full professional proficiency"
+        },
+        {
+            "name": "Hindi",
+            "proficiency": "Native or bilingual proficiency"
+        }
+    ],
+    "certifications_total_count": 0,
+    "certifications": [],
+    "summary": "🏆 CEO at Appinventiv\n🏆 Forbes Iconic Leader 2021\n🏆 Entrepreneur Since 2008\n🏆 Listed on INDIA's Top 25 Most Inspiring Startup Stories of 2013 by YourStory\n🏆 Done 10 Startups - 5 Failed ❎ & 5 Successful ✅\n\n___________________________________________________\n\nOther Hats:\n✔ Investor & Mentor to Multiple Start-ups \n✔ Political Advisor & Consultant\n✔ Nationalist | HinduEcosystem\n✔ Mobile Evangelist & Product Guy\n✔ Digital Marketing Strategist & Growth Architect\n\nOther Social Media Handles\n\n✔ Follow on Instagram: Saurabh.Singh.Official\n✔ Follow on Twitter @SaurabhSingh\n\n★ The Companies he has led have created over 7,000 jobs during his leadership tenure.\n★ In the past, he has built successful companies from the startup stage (Bootstrapped) to multi-million dollars in revenue.\n\nFounded passion-driven niche startups where he served many Top Fortune companies & leading brands in making their Mobile Strategy successful as a CEO & Founder of 250+ people company, AppStudioz \"India's leading mobile app development company\" (★Acquired in 2014). He also Co-founded TechAhead in 2009 & was the founding partner at C&B Electronics. \n\n✔ Passionate for building and scaling businesses\n\n✔ ​Strong experience in working in ambiguity to solve complex problems. Skilled at designing and executing successful innovative strategies.\n\n✔ Extensive experience in developing many successful products for the entire spectrum of users, from conceptualising the business ideas to preparing product feature road map, from consumer facing front-end to business facing back-end, designing & wire framing with unmatched track record of Success & Performance.\n\nIf you're building the next big idea, scaling a tech venture, or shaping governance with innovation\n — let’s connect.",
+    "volunteering_experience_total_count": 0,
+    "volunteering_experience": [],
+    "projects_total_count": 0,
+    "projects": [],
+    "recommendations": {
+        "given_total_count": 20,
+        "given": [
+            {
+                "caption": "March 25, 2021, Andrea was SAURABH’s client",
+                "text": "Andrea is a remarkable and professional person, reliable and trustworthy. I remember he came here in Bangalore more than a decade of years ago explaining us his vision on the monetary framework and technological path, and I am impressed about his excellent capabilities of entrepreneurship. It is undeniably true that with Andrea we are talking about investments opportunities on a global scale.",
+                "actor": {
+                    "first_name": "Andrea",
+                    "last_name": "L.",
+                    "provider_id": "ACoAAAHaUxMBD38Sf6wM3BHQREtYqu89RPOOaCo",
+                    "public_identifier": "andrea-lupini",
+                    "headline": "Dottore Commercialista | Chartered Accountant | Strong knowledge of relevant laws, financial regulations and cross-border rules, corporate law, contracts, corporate governance, employment, IP, litigation, Compliance.",
+                    "public_profile_url": "https://www.linkedin.com/in/andrea-lupini"
+                }
+            },
+            {
+                "caption": "February 27, 2016, SAURABH and Pallavi studied together",
+                "text": "Pallavi was always a trusted & perfect partner in all the crimes :)\r\nJokes apart, Pallavi being the best of friends is also the most trusted & lively person. There are absolutely no memories of school without her. Always been very helpful and smiling. She still is a great asset by being life time support.",
+                "actor": {
+                    "first_name": "Pallavi",
+                    "last_name": "Bhardwaj",
+                    "provider_id": "ACoAAAGWBQwBe5Rc0f7TF3UF82vSNQhM22lzPnM",
+                    "public_identifier": "pallavijha",
+                    "headline": "Program Manager - Galent",
+                    "public_profile_url": "https://www.linkedin.com/in/pallavijha",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C4E03AQE2k1zbDmWwmA/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1517745995312?e=1790208000&v=beta&t=O5uSdONFweXqIMxhv8aiLF0XrF4Sby0yUkiDtmc89wg"
+                }
+            },
+            {
+                "caption": "February 27, 2016, SAURABH was senior to Praween Kumar but didn't manage Praween Kumar directly",
+                "text": "Praween is highly capable technical Android leader with high work ethics. He is a strong team player and a great asset for any organisation. He keeps himself up-to-date with emerging technology. That makes him real achiever. I would love to have him in my team again.",
+                "actor": {
+                    "first_name": "Praween Kumar",
+                    "last_name": "Mishra",
+                    "provider_id": "ACoAAAXKjjYBMSxfRkt-G4oeeP-FLVMFg7Cx8w0",
+                    "public_identifier": "praweenmishra",
+                    "headline": "Engineering Leader | Scaling High-Performing Teams & Distributed Systems | 14+ Years Experience | Dedicated to Developer Velocity & Growth",
+                    "public_profile_url": "https://www.linkedin.com/in/praweenmishra",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D5603AQEOQqH8U3tJ-w/profile-displayphoto-scale_400_400/B56Z0MWxI6H0Ag-/0/1774028795781?e=1790208000&v=beta&t=r_Gltrm39YpG4WHKrQZDTcX3Apej07dPux9kZ8GOsmc"
+                }
+            },
+            {
+                "caption": "December 28, 2015, SAURABH managed ANKIT directly",
+                "text": "One of the Sharpest Brain AppStudioz had! Ankit successfully managed and delivered every project. He kept Client on his toe with his fast pace development speed. He is known for managing the most complex technology projects and has always over delivered. No doubt, he was a big asset for the company. \r\nKeep Rocking!",
+                "actor": {
+                    "first_name": "ANKIT",
+                    "last_name": "SHUKLA",
+                    "provider_id": "ACoAAAUt_ZIBPWV_ISeQTTz8w3hr_x9mxZvqkio",
+                    "public_identifier": "gshukla67",
+                    "headline": "Web Architect Java, JavaScript & Open Source | Technical Consultant to Startups",
+                    "public_profile_url": "https://www.linkedin.com/in/gshukla67"
+                }
+            },
+            {
+                "caption": "January 25, 2015, SAURABH worked with Ankit on the same team",
+                "text": "Ankit was fantastic to work with; very passionate about the ideas and driving new business. He has qualities that add value to any project. Ankit’s business acumen is also a positive trait that makes him a ‘real nice guy’ to work with. He has great business vision and brilliant business plans. I totally admire his involvement & the commitment. I would highly recommend him to anyone in need of his services.",
+                "actor": {
+                    "first_name": "Ankit",
+                    "last_name": "Pandey",
+                    "provider_id": "ACoAAAE_Fg8BzMlqRBnYDjv9CFDYls7T3IDkNPE",
+                    "public_identifier": "ankitpand",
+                    "headline": "Director - Product Management @Avasant",
+                    "public_profile_url": "https://www.linkedin.com/in/ankitpand",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D5603AQFaS0JndzjMqA/profile-displayphoto-scale_200_200/B56Z3aWZNoKUAY-/0/1777484800442?e=1790208000&v=beta&t=iMyE6PFokI5wfRSm-n4CC8JRKI3OkziKDzuosIhQDeg"
+                }
+            },
+            {
+                "caption": "January 25, 2015, SAURABH managed Akhil directly",
+                "text": "Akhil is a Great Guy who is full of ideas and solutions. A very intelligent, focused and performance driven individual who pursues excellence fearlessly. He has shown himself to be an exceptional leader and great team player too. He is a sharp thinker that always brings creativity to problem solving. As a person, Akhil is a very polite, has high level of integrity, friendly and sincere individual. ",
+                "actor": {
+                    "first_name": "Akhil",
+                    "last_name": "Dad",
+                    "provider_id": "ACoAAAeXwTUBWbPQP-XPVN559esS3BToTB-2Jjk",
+                    "public_identifier": "akhildad",
+                    "headline": "Director Software Engineering | Senior Architect | PayU",
+                    "public_profile_url": "https://www.linkedin.com/in/akhildad",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C5603AQGmVW_9S3jYOA/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1516637197816?e=1790208000&v=beta&t=9VVFnAThCRUsn07vQGJn3ynHNhYlVJcxLX77HJnzCjY"
+                }
+            },
+            {
+                "caption": "January 25, 2015, SAURABH was senior to Seema but didn't manage Seema directly",
+                "text": "It was great pleasure working with Seema, an extremely well-organized professional. She impress everyone by her overall general knowledge, enthusiasm, positive outlook and analytical abilities. Seema is a great team player, very result driven and have a practical approach. \r\nI wish her all the best for her present and future!",
+                "actor": {
+                    "first_name": "Seema",
+                    "last_name": "Gurtatta",
+                    "provider_id": "ACoAABZ5B_8BwtouVAvi8Vhv28z03ynvTTQzXrc",
+                    "public_identifier": "seema-gurtatta-053325a6",
+                    "headline": "Actively looking for job at Melbourne | Prince2 certified | Certified Scrum Master | mobile app development lead",
+                    "public_profile_url": "https://www.linkedin.com/in/seema-gurtatta-053325a6",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C4E03AQGpGPScaquD2Q/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1555433540896?e=1790208000&v=beta&t=Z2GkPotLMkMKVWHTq6kssapVenQgWkbECI0ykLPD3xo"
+                }
+            },
+            {
+                "caption": "August 3, 2009, SAURABH worked with Kawaljeet but on different teams",
+                "text": "Very determined, hard working & a dedicated professional. There is not much that he cannot handled or do. He is the most trustworthy and caring individuals and an outstanding human being. Overall an asset to any organization.",
+                "actor": {
+                    "first_name": "Kawaljeet",
+                    "last_name": "Singh",
+                    "provider_id": "ACoAAAHBGMkB9TWN3LsnF6GTHj42oRfuqsSsf2M",
+                    "public_identifier": "kawaljeetsingh",
+                    "headline": "Transforming IT with Vision | Driving Innovation, Security & Scalable Solutions 🚀",
+                    "public_profile_url": "https://www.linkedin.com/in/kawaljeetsingh",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C5603AQFk927DyumDvg/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1517673166962?e=1790208000&v=beta&t=0BwbB0TmJOnKHYa7dkEBEDANbxalyN_arvMAzEXLx_M"
+                }
+            },
+            {
+                "caption": "July 14, 2009, SAURABH was Himanshu’s client",
+                "text": "Himanshu is a highly skilled Flash Programmer, He is one of the most trustworthy, dedicated & passionate professional. He can work independently and is able to follow through to ensure that the job gets done. His technical skills combined with his business management skills produces outstanding results.",
+                "actor": {
+                    "first_name": "Himanshu",
+                    "last_name": "Vyas",
+                    "provider_id": "ACoAAAIB2UQBEXde29YqU5rKLLrKKTo8mwUnp2c",
+                    "public_identifier": "whohimanshuvyas",
+                    "headline": "A Storyteller focused on Growth | Branding | Marketing | Operational Improvement & Management | Team Management",
+                    "public_profile_url": "https://www.linkedin.com/in/whohimanshuvyas",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D5603AQHvLr4Wy0Ct6g/profile-displayphoto-scale_100_100/B56ZtwLktlK8Ag-/0/1767113641670?e=1790208000&v=beta&t=6qP0Aq7eqKEPCMT821-0utnutxjNg6wPeI2AQ3HLvJ4"
+                }
+            },
+            {
+                "caption": "May 24, 2009, SAURABH worked with Amaan but on different teams",
+                "text": "Aman is a very enthusiastic, passionate and hard working person. He has excellent written and verbal communication skills, is extremely organized, can work independently and is able to follow through to ensure that the job gets done. Its really nice to know him as a person.",
+                "actor": {
+                    "first_name": "Amaan",
+                    "last_name": "G.",
+                    "provider_id": "ACoAAAEoWOwBnm28OmHJg9sn4UGFenUqX36lPGY",
+                    "public_identifier": "groveramaan",
+                    "headline": "Serial AI Techpreneur, Lifestyle Consultant & a Care Giver | Svastithi Care™ | Marquee Estate Advisory to UHNWI’s | Driving Sports Tech Innovation | Hustler | Collaborative Partnerships & New Growth Ventures 🚀",
+                    "public_profile_url": "https://www.linkedin.com/in/groveramaan",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D5603AQGI5dSD4Fs_ag/profile-displayphoto-scale_100_100/B56ZobuHnDJYAc-/0/1761401670404?e=1790208000&v=beta&t=aflcNM0HGsIFkUDzpTEv9DAyNg1_JAObPZMoxTcL7lc"
+                }
+            },
+            {
+                "caption": "February 25, 2009, SAURABH worked with Kalyan but on different teams",
+                "text": "Kalyan is a dedicated, confident and accomplished Project Manager. His technical skills combined with her business management skills produces outstanding results to projects which are large, complex & time sensitive. Overall an outstanding Leader and Manager.",
+                "actor": {
+                    "first_name": "Kalyan",
+                    "last_name": "Krishna",
+                    "provider_id": "ACoAAADOPB8B9b3fdwexmGGa_bIke00eVGRl8PE",
+                    "public_identifier": "kalyankrishna",
+                    "headline": "Principal Software Engineer| Ex-Microsoft",
+                    "public_profile_url": "https://www.linkedin.com/in/kalyankrishna",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C4D03AQGTyOhoHwuD2Q/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1615193778688?e=1790208000&v=beta&t=HVsZZm3sM6RPzJjSXYvpEH9qwaCGqG6nMWv0Mqwk0yA"
+                }
+            },
+            {
+                "caption": "February 4, 2009, SAURABH worked with Swati but on different teams",
+                "text": "Swati is a highly skilled QA Lead I have ever known, There is not much that she cannot handled or do. A very intellectual and passionate individual who makes a difference. She is the most trustworthy and caring individuals and an outstanding human being. Overall an asset to any organization.",
+                "actor": {
+                    "first_name": "Swati",
+                    "last_name": "Nighoskar",
+                    "provider_id": "ACoAAAHDeTQBoOWvNNOoNYZposQx7bhSOIGd6Qc",
+                    "public_identifier": "swatinighoskar",
+                    "headline": "AVP – Delivery at TechAhead",
+                    "public_profile_url": "https://www.linkedin.com/in/swatinighoskar",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C5103AQGA-WCr3ru82g/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1526900074205?e=1790208000&v=beta&t=BOosJsgxk0RFdKiqgWJputpJ5WCe-949sApqM0IOdsA"
+                }
+            },
+            {
+                "caption": "February 2, 2009, SAURABH worked with Ashish but on different teams",
+                "text": "Ashish is a very confident, enthusiastic, lively and passionate person. He is one of the most trustworthy and caring individuals that I have ever known. His technical skills combined with his business management skills produces outstanding results. The best thing I can say about him is that I can honestly call him a friend for a life time!!",
+                "actor": {
+                    "first_name": "Ashish",
+                    "last_name": "Aggarwal",
+                    "provider_id": "ACoAAAHEL-gBWuzKedBvk2jVvJTp2iYeIRsODsQ",
+                    "public_identifier": "ashish-aggarwal-748b119",
+                    "headline": "Senior Product Leader | Data-Driven Innovator | Scalable Tech Strategist | DPO & Compliance Leader",
+                    "public_profile_url": "https://www.linkedin.com/in/ashish-aggarwal-748b119",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D4D03AQGuuRRFYS4eGQ/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1669208524580?e=1790208000&v=beta&t=4Ulvse5StniP0CVjoNcJmtNHVmXSJGxMSMqyQEnsssk"
+                }
+            },
+            {
+                "caption": "January 19, 2009, SAURABH worked with Pramod but on different teams",
+                "text": "Pramod is a diligent and thorough individual who likes to apply his technical abilities whenever required. I found his approach and ideas to be highly well thought of, planned with accuracy and with a practical way of implementing his proposals. I admire his dedication and I’m sure he will always prove himself as a valuable asset for any organization.",
+                "actor": {
+                    "first_name": "Pramod",
+                    "last_name": "Kumar",
+                    "provider_id": "ACoAAAD9SysBYx86V2HuYhbR1FpeVoGrRqVp6Ys",
+                    "public_identifier": "pramod-kumar-48b6865",
+                    "headline": "IAM Consultant - Saviynt & Sailpoint IIQ/INOW  | Open for new opportunity",
+                    "public_profile_url": "https://www.linkedin.com/in/pramod-kumar-48b6865",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D5603AQHpc7y3hg8fJQ/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1731072077940?e=1790208000&v=beta&t=58NLvc1A5SzkH7efzflpBdApmT-VguzsDTzoeOZc7lI"
+                }
+            },
+            {
+                "caption": "January 19, 2009, SAURABH worked with Vikas on the same team",
+                "text": "It is not only doing the things right, but more doing the right things, what drives Vikas. I admire his dedication and I’m sure he will always prove himself as a valuable asset for any organization. He is a detailist and a hard worker. Always positive and overall a lifetime friend.",
+                "actor": {
+                    "first_name": "Vikas",
+                    "last_name": "Sharma",
+                    "provider_id": "ACoAAAHo10EBqAXVv6tBisqsS5VN6VX6rCIBUYA",
+                    "public_identifier": "vikassharma16",
+                    "headline": "Recruitment & Talent Acquisition Leader | Technology & Engineering Hiring | Client & Stakeholder Management",
+                    "public_profile_url": "https://www.linkedin.com/in/vikassharma16",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D4D03AQF_O3XJ4xAS6A/profile-displayphoto-scale_200_200/B4DaA4wvurKUAg-/0/1787658698900?e=1790208000&v=beta&t=pZDnfjLlG92lDYhvU_X31mHN50hmEdPvxeJl1WCBCfQ"
+                }
+            },
+            {
+                "caption": "January 7, 2009, SAURABH worked with Mohd but on different teams",
+                "text": "Rizwan is a Quality Assurance Lead who is a dynamic, intelligent, and focused person. He is very knowledgeable, detail-oriented, fun to work with and a life time friend.",
+                "actor": {
+                    "first_name": "Mohd",
+                    "last_name": "Rizwan",
+                    "provider_id": "ACoAAAFbF1MBm-RTcVlLX7Za36OzVL0E8O2HnNg",
+                    "public_identifier": "mohd-rizwan-90374b7",
+                    "headline": "Lead Consultant- Testing/QA at STC, Scrum Fundamentals Certified (SFC)",
+                    "public_profile_url": "https://www.linkedin.com/in/mohd-rizwan-90374b7",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D4D03AQGzTuWucr7U8Q/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1718293425643?e=1790208000&v=beta&t=CS3kSjGzRe9WRKlX5sJC7YdU-yUiD_EFWnesc-ESlZ0"
+                }
+            },
+            {
+                "caption": "August 21, 2008, SAURABH worked with Vijay Santosh but on different teams",
+                "text": "Vijay is a highly dedicated and committed professional with sound process. He has a solid grasp of QA methodology and practices. He has also played a pivotal role in BrickRed in getting and setting the QA team up and running from scratch to a team of 50+. He is an EXCELLENT manager and a BIG asset to a organization.",
+                "actor": {
+                    "first_name": "Vijay Santosh",
+                    "last_name": "Alla",
+                    "provider_id": "ACoAAACa3wUBBaq3RTG0647VV072l4QlEjco-oQ",
+                    "public_identifier": "vijaysantosh",
+                    "headline": "Assistant Vice President at Verisk",
+                    "public_profile_url": "https://www.linkedin.com/in/vijaysantosh",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C5103AQGoiyBYuh-miA/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1549901897289?e=1790208000&v=beta&t=nqcGybRlv9JZf8iKTLPKKqZoMF9oEzSWDHMgICT_KJ4"
+                }
+            },
+            {
+                "caption": "June 16, 2008, SAURABH worked with Umesh but on different teams",
+                "text": "A soft spoken gentleman to the core, He is sharp and very thorough professional. If you got Umesh on your side, you've got a 'fleet of genius' at your hand.\r\nA great team member and friend to work with!! Good Luck Umesh.",
+                "actor": {
+                    "first_name": "Umesh",
+                    "last_name": "Kumar",
+                    "provider_id": "ACoAAAGLsy4Brr5x54_x8QonwsovJ9BR9swJmxs",
+                    "public_identifier": "umeshsgh",
+                    "headline": "Solution Architect | Engineering Leader | Cloud-Native Expert | 19+ Years in Tech",
+                    "public_profile_url": "https://www.linkedin.com/in/umeshsgh",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C5103AQH6MoOtN7hiuQ/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1555262091733?e=1790208000&v=beta&t=_JYB08vSOng9gmrZY6yYDvRNV7PErKskqyb66kp7xmc"
+                }
+            },
+            {
+                "caption": "February 26, 2008, Vikas was senior to SAURABH but didn't manage SAURABH directly",
+                "text": "I had the good fortune to work with Vikas in a same company, He is an amazing guy with a rare combination of great people skills, technical insight and a very approachable personality.\r\nHis leadership, innovation, dedication and personal style make him an asset to the organization. I have the highest regards and recommendations for Vikas.",
+                "actor": {
+                    "first_name": "Vikas",
+                    "last_name": "K.",
+                    "provider_id": "ACoAAABmHTMBoT31MPumulzAIAxQa7OU-bNsvRg",
+                    "public_identifier": "kaushikvicks",
+                    "headline": "CEO, TechAhead | OpenAI Service Partner | AI-Powered Apps, Agents & Platforms | Helping Enterprises Build with AI | Since 2009",
+                    "public_profile_url": "https://www.linkedin.com/in/kaushikvicks",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C5603AQEMQRwxKl5smw/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1642290948543?e=1790208000&v=beta&t=EUIX6IkW_zjv50ULCeEjKb8Zmc2stPYHDMXDHKLm2Bo"
+                }
+            },
+            {
+                "caption": "December 22, 2007, SAURABH worked with Prashant but they were at different companies",
+                "text": "I have worked with Prashant since we both were in BrickRed and he was the first to extend his welcome or offer assistance whenever I needed help with subjects pertaining to SEO, Search Engine Marketing & Submissions. As a true professional in SEO, He is well informed, professional and supportive. He delivers on his word and is great fun to work with - a rare gem!!",
+                "actor": {
+                    "first_name": "Prashant",
+                    "last_name": "Srivastava",
+                    "provider_id": "ACoAAACQjCQB0aLyQtxSXdY04SgiG6TA8Lm9BZ8",
+                    "public_identifier": "pksrivastava81",
+                    "headline": "Digital Marketing Leader | AI-Powered Growth Strategist | Business-Aligned Brand Builder With nearly two decades of experience across diverse sectors—SaaS, healthcare, real estate, D2C, and B2B marketplaces",
+                    "public_profile_url": "https://www.linkedin.com/in/pksrivastava81",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D5603AQFDRxU4M9b2sA/profile-displayphoto-scale_200_200/B56aAFNbKuKsAc-/0/1786793800999?e=1790208000&v=beta&t=TDq2jYuBoiqjtgmOUEBYHRGr-B4q_fUbekCNeSaIeX0"
+                }
+            }
+        ],
+        "received_total_count": 23,
+        "received": [
+            {
+                "caption": "May 31, 2016, ANKUR worked with SAURABH on the same team",
+                "text": "Saurabh is a powerhouse resource in building and inculcating great stuff to realisation and practicality with candid results achievement ! Kudos ",
+                "actor": {
+                    "first_name": "ANKUR",
+                    "last_name": "BHASIN",
+                    "provider_id": "ACoAABxoNoEB8NTc0I7anURRSuhTPQrVfUMu9Yw",
+                    "public_identifier": "ankur-bhasin-4a9739113",
+                    "headline": "Business Mgmt. Consulting / eMarketing Consulting / Startup Consulting / Biz. Strategist / Enterpreneur / M&A evangelist",
+                    "public_profile_url": "https://www.linkedin.com/in/ankur-bhasin-4a9739113",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C5103AQHBWQsBr02PSw/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1524818029339?e=1790208000&v=beta&t=JPfz9AGnEu7Qye3slQSdd36Omkh_rzNC_AtvzNaE_Ng"
+                }
+            },
+            {
+                "caption": "April 3, 2015, Akhil reported directly to SAURABH",
+                "text": "Few people get chance to work with great leader like Saurabh, Saurabh was the CEO when I worked at AppStudioz. During his tenure the AppStudioz's growth graph was exponential and same curve follows for every individual. He is a great leader who motivates every individual in company to do something creative and extra to make them different from the crowd. He is also a great adviser and always have handful of best opinions on the idea you share with him. He can be a catalyst for any business to reach new heights.\r\n",
+                "actor": {
+                    "first_name": "Akhil",
+                    "last_name": "Dad",
+                    "provider_id": "ACoAAAeXwTUBWbPQP-XPVN559esS3BToTB-2Jjk",
+                    "public_identifier": "akhildad",
+                    "headline": "Director Software Engineering | Senior Architect | PayU",
+                    "public_profile_url": "https://www.linkedin.com/in/akhildad",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C5603AQGmVW_9S3jYOA/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1516637197816?e=1790208000&v=beta&t=9VVFnAThCRUsn07vQGJn3ynHNhYlVJcxLX77HJnzCjY"
+                }
+            },
+            {
+                "caption": "January 28, 2015, Seema reported directly to SAURABH",
+                "text": "I’ve had the privilege of working with Saurabh for around 2 years and in that time I have known him to be a well-grounded and down to earth boss and colleague.\r\nSaurabh is a dedicated, ambitious, result driven leader and thoughtful individual. He is great in dealing with difficult situations and a fantastic problem solver. His creative thinking, expertise, positive can-do attitude make him an absolute pleasure to work with. He is enthusiastic, personable and a brilliant networker. His strengths in staying across issues, pro-actively offering solutions and ideas and being adapt at all aspects of communications make him a valuable contributor to any situation or team. He has built a strong (and deserved) reputation as someone with vision, diligence and honor – someone who gets things done.\r\nIt was always a very nice experience working with him and under his guidance.\r\n",
+                "actor": {
+                    "first_name": "Seema",
+                    "last_name": "Gurtatta",
+                    "provider_id": "ACoAABZ5B_8BwtouVAvi8Vhv28z03ynvTTQzXrc",
+                    "public_identifier": "seema-gurtatta-053325a6",
+                    "headline": "Actively looking for job at Melbourne | Prince2 certified | Certified Scrum Master | mobile app development lead",
+                    "public_profile_url": "https://www.linkedin.com/in/seema-gurtatta-053325a6",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C4E03AQGpGPScaquD2Q/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1555433540896?e=1790208000&v=beta&t=Z2GkPotLMkMKVWHTq6kssapVenQgWkbECI0ykLPD3xo"
+                }
+            },
+            {
+                "caption": "July 21, 2011, David was SAURABH’s client",
+                "text": "Mr Singh has been an excellent find for my business, he bares an enormous skill in understanding assorted mobile platforms and the different obstacles which come in the way when developing an application with multiple compatibly.\r\n\r\nI feel very lucky to have found an honest and knowledgeable company and person like Saurabh to deal with and highly recommend them for your mobile application queries, developments and upgrades.\r\n\r\nTheir portfolio is very extensive and makes explaining and communicating a breeze based on their past precedent experience dealing with all situations.\r\n\r\nLook forward to working together again soon in the future!",
+                "actor": {
+                    "first_name": "David",
+                    "last_name": "Sinclair",
+                    "provider_id": "ACoAAAdL4ggBeNcnHZCLV-RSanVuLxWiHi_gogU",
+                    "public_identifier": "david-sinclair-234bb534",
+                    "headline": "Marketing Co-Ordinator at Your Fans and Followers",
+                    "public_profile_url": "https://www.linkedin.com/in/david-sinclair-234bb534",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C5603AQE3zKg1veqd9g/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1516576118357?e=1790208000&v=beta&t=fDcqRua_ocGIAwY198O7vnztMP_a_4dM_UVpYlTsE6Q"
+                }
+            },
+            {
+                "caption": "June 24, 2011, Alok worked with SAURABH but they were at different companies",
+                "text": "Saurabh is a wonderful leader and a visionary. AwakIND is his most aspiring and humble initiatives. It’s very interesting to see a Technology entrepreneur to take such initiative for a social cause. Portals like AwakIND will transform the way politics work in India with the educated class of people also actively participating in the national concerns. My best wishes for AwakIND.",
+                "actor": {
+                    "first_name": "Alok",
+                    "last_name": "Vermaa",
+                    "provider_id": "ACoAAAHvcXAB_-lQIns8205sIeqjkB7aU-IOrr0",
+                    "public_identifier": "alokinme",
+                    "headline": "Keynote Speaker on Teams, Leadership and Culture | 3x TEDx | Limca Book of Records | Founder, Success Tea Consultants | 1000+ workshops with Reckitt, HUL, Google, BCG, Abbott, BASF | #WeBeforeMe",
+                    "public_profile_url": "https://www.linkedin.com/in/alokinme",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D4D03AQF_AUYw5s3JPQ/profile-displayphoto-scale_400_400/B4DaBrboBaJoAk-/0/1788508802546?e=1790208000&v=beta&t=eqUvJcETrXYOAo1VwbWvzjh9ZqzAa11Xyj_-ELkMfFs"
+                }
+            },
+            {
+                "caption": "April 9, 2010, Aninda worked with SAURABH but they were at different companies",
+                "text": "I know Saurabh for a long time now. He is a man of substance,great visionary,creative, innovative and high energy leader of the current time. His hard work has resulted in many positive outcomes. A True networker(open-stragtegic). I wish him luck in the future.",
+                "actor": {
+                    "first_name": "Aninda",
+                    "last_name": "Das",
+                    "provider_id": "ACoAAAJhT6IBmPeRcsrAEbJAD3c9Ah76wl4yDz0",
+                    "public_identifier": "anindadas",
+                    "headline": "Vice President Marketing - Infinity | IT Real Estate Kolkata | Senior Living | Residential | Krishna Bhumi Vrindavan | Thought Leader | Heritage Retail Brands | Influencer | Ex NASSCOM | PRSI Vice Chairman",
+                    "public_profile_url": "https://www.linkedin.com/in/anindadas",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D4D03AQHmWN7FOxp5DQ/profile-displayphoto-scale_200_200/B4DaA0sutrJ8Ag-/0/1787590538036?e=1790208000&v=beta&t=LWrQ2eArL9j5QiySsVZ9Zge5ThQtOl1HazVHDZ96fRY"
+                }
+            },
+            {
+                "caption": "June 12, 2009, Amaan worked with SAURABH but on different teams",
+                "text": "Well, to write a few lines for Saurabh would be a selfish move. To write a lot about him would be \"being over generous\". Jokes apart. I could never have the exact word frame to write about this guy.\r\nHe’s full of energy, enthusiasm,  idea’s and is very active most of the times. The few times I worked with him, I found him extremely charged up and always looking for new ventures.\r\nI am sure he’s going to go a long way in his career. I wish him all the best for all his future endeavors.",
+                "actor": {
+                    "first_name": "Amaan",
+                    "last_name": "G.",
+                    "provider_id": "ACoAAAEoWOwBnm28OmHJg9sn4UGFenUqX36lPGY",
+                    "public_identifier": "groveramaan",
+                    "headline": "Serial AI Techpreneur, Lifestyle Consultant & a Care Giver | Svastithi Care™ | Marquee Estate Advisory to UHNWI’s | Driving Sports Tech Innovation | Hustler | Collaborative Partnerships & New Growth Ventures 🚀",
+                    "public_profile_url": "https://www.linkedin.com/in/groveramaan",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D5603AQGI5dSD4Fs_ag/profile-displayphoto-scale_100_100/B56ZobuHnDJYAc-/0/1761401670404?e=1790208000&v=beta&t=aflcNM0HGsIFkUDzpTEv9DAyNg1_JAObPZMoxTcL7lc"
+                }
+            },
+            {
+                "caption": "March 22, 2009, Steven worked with SAURABH but they were at different companies",
+                "text": "Great to be part of Saurabh's trusted network!  A consummate professional and a reliable connection.  Highly recommend to all others.  Thank you, and good luck!",
+                "actor": {
+                    "first_name": "Steven",
+                    "last_name": "Burda, MBA",
+                    "provider_id": "ACoAAABVhToBsKA8D8HyDye1YPNijuTOrjptN5c",
+                    "public_identifier": "burda",
+                    "headline": "Entrepreneur at Steven-Buys-Cemetery-Plots",
+                    "public_profile_url": "https://www.linkedin.com/in/burda",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D4E03AQG8ys-3zDOehA/profile-displayphoto-scale_400_400/B4EZsG2f7ZIUAg-/0/1765346509412?e=1790208000&v=beta&t=BHtpusqbqfvPtf2FaTDyYTu5UrKgwO7N126m1cmTVgg"
+                }
+            },
+            {
+                "caption": "March 18, 2009, Jeff was SAURABH’s client",
+                "text": "I have found working with Saurabh to be a complete pleasure.  His company has done a couple of iPhone apps for our company.  We shopped other vendors prior to awarding a contract to his company XEN GlobalTech.  We were consistently and pleasantly surprised by our experience with this company.\r\n\r\nHis employees were consistently helpful and quick in responding to concerns or challenges.  I highly recommend working with this company. We will continue to seek bids from other companies on our future projects but we will also be pulling for XEN GlobalTech to win each contract for future development because of their excellent customer service.",
+                "actor": {
+                    "first_name": "Jeff",
+                    "last_name": "Wright",
+                    "provider_id": "ACoAAAKLZ6cBU5rlEdSeHgrg4g--HKhVWlTcP4I",
+                    "public_identifier": "jeff-wright-17336912",
+                    "headline": "Mentor",
+                    "public_profile_url": "https://www.linkedin.com/in/jeff-wright-17336912"
+                }
+            },
+            {
+                "caption": "February 23, 2009, Swati worked with SAURABH but on different teams",
+                "text": "Saurabh is a very focused and determined individual and can handle loads of things simultaneously.He is both a good leader and colleague. His work ethics are attributed to his integrity to succeed. He is a valuable asset to any organization, specifically in a leadership capacity with great responsibility.",
+                "actor": {
+                    "first_name": "Swati",
+                    "last_name": "Nighoskar",
+                    "provider_id": "ACoAAAHDeTQBoOWvNNOoNYZposQx7bhSOIGd6Qc",
+                    "public_identifier": "swatinighoskar",
+                    "headline": "AVP – Delivery at TechAhead",
+                    "public_profile_url": "https://www.linkedin.com/in/swatinighoskar",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C5103AQGA-WCr3ru82g/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1526900074205?e=1790208000&v=beta&t=BOosJsgxk0RFdKiqgWJputpJ5WCe-949sApqM0IOdsA"
+                }
+            },
+            {
+                "caption": "January 19, 2009, Vikas worked with SAURABH on the same team",
+                "text": "From the onset, Saurabh had some tremendous entrepreneurial capability and he always harnessed his energy towards the right direction. Perseverence, commitment and dedication were his few skills which led to his success in BrickRed and I am sure as he has some good relationship building skills he will go a long way.",
+                "actor": {
+                    "first_name": "Vikas",
+                    "last_name": "Sharma",
+                    "provider_id": "ACoAAAHo10EBqAXVv6tBisqsS5VN6VX6rCIBUYA",
+                    "public_identifier": "vikassharma16",
+                    "headline": "Recruitment & Talent Acquisition Leader | Technology & Engineering Hiring | Client & Stakeholder Management",
+                    "public_profile_url": "https://www.linkedin.com/in/vikassharma16",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D4D03AQF_O3XJ4xAS6A/profile-displayphoto-scale_200_200/B4DaA4wvurKUAg-/0/1787658698900?e=1790208000&v=beta&t=pZDnfjLlG92lDYhvU_X31mHN50hmEdPvxeJl1WCBCfQ"
+                }
+            },
+            {
+                "caption": "August 10, 2008, Vikas was senior to SAURABH but didn't manage SAURABH directly",
+                "text": "Saurabh has tremendous energy and zeal to do something extraordinary. His friendly and supportive nature are enough to catch people's attention towards him and are really a big plus to his personality. I wish him all the very best for his new venture.",
+                "actor": {
+                    "first_name": "Vikas",
+                    "last_name": "K.",
+                    "provider_id": "ACoAAABmHTMBoT31MPumulzAIAxQa7OU-bNsvRg",
+                    "public_identifier": "kaushikvicks",
+                    "headline": "CEO, TechAhead | OpenAI Service Partner | AI-Powered Apps, Agents & Platforms | Helping Enterprises Build with AI | Since 2009",
+                    "public_profile_url": "https://www.linkedin.com/in/kaushikvicks",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C5603AQEMQRwxKl5smw/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1642290948543?e=1790208000&v=beta&t=EUIX6IkW_zjv50ULCeEjKb8Zmc2stPYHDMXDHKLm2Bo"
+                }
+            },
+            {
+                "caption": "June 27, 2008, Shubhankar worked with SAURABH on the same team",
+                "text": "<b>Saurabh's</b> visionary talent is one of the finest I ever witnessed in my yet experience of IT  business. He is a born leader full of energy and ideas, a good manager and leader, and a person of high integrity. Saurabh is always aware of his team's activities and keep on motivating them, he trust each one of his direct reports to give him the very best of service. And because of that trust, because of his vision, each of Teams is always ready to write a new Success Story and add a new mile stone in <b>XEN InfoTech</b> journey in the insurance and technology industry. He never dawned on us that we would fail! Saurabh gave us the sense that we were awesome professionals and that we could make anything happen with the right steps. My tenure working with Saurabh will continue as it is one of my fondest IT working experience. I consider Saurabh a dear friend and trusted confidant and more over as my elder Brother and want to be always a part of his learning. <b>He has keen understanding of business and is committed for giving the best IT solution to his Clients</b>.\r\nAll the Best XEN.... and We are committed for XEN InfoTech growth and prosperity..\r\nShubhankar Rahul",
+                "actor": {
+                    "first_name": "Shubhankar",
+                    "last_name": "Rahul",
+                    "provider_id": "ACoAAAFXbwYBna8qoUmR-C6w_FSniG1konCjgBY",
+                    "public_identifier": "shubhankarrahul",
+                    "headline": "GovTech & Digital Transformation Leader | Public Sector Modernization | AI-Enabled Citizen Platforms | Enterprise Consulting | Strategic Growth & Technology Advisory | CBO @Appventurez",
+                    "public_profile_url": "https://www.linkedin.com/in/shubhankarrahul",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D5603AQF9LN3XjgjhBQ/profile-displayphoto-scale_400_400/B56Z0prcBDJkAg-/0/1774520752691?e=1790208000&v=beta&t=FszUYohkvmDnLvKrN83EVx5Fuxtbj2kMmeaCZ3oWYSw"
+                }
+            },
+            {
+                "caption": "March 19, 2008, Nitin managed SAURABH directly",
+                "text": "Saurabh is a smart professional with in-depth knowledge of Sales, Marketing and brand building. I found him to have high energy, a great sense of self, and very result oriented person. He is very enthusiastic and target driven personality with a smart work attitude. He is bright, inquisitive, productive, and aggressive at finding better ways to do things.",
+                "actor": {
+                    "first_name": "Nitin",
+                    "last_name": "Verma",
+                    "provider_id": "ACoAAACD_1YBneMBe0nJR3RyPC-DFaxK9NKrd5s",
+                    "public_identifier": "nitinv97",
+                    "headline": "Founder & CEO @ InstaAstro (We are hiring), 3X Entrepreneur",
+                    "public_profile_url": "https://www.linkedin.com/in/nitinv97",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D5603AQEn2SlgpuwnPg/profile-displayphoto-scale_400_400/B56Z0ZoZO_KAAg-/0/1774251513612?e=1790208000&v=beta&t=MksWKLXEfmqs8Db36i-5BiFFUUICjirn5gMVcIfQAWY"
+                }
+            },
+            {
+                "caption": "February 20, 2008, Prashant worked with SAURABH but on different teams",
+                "text": "Saurabh is a very intelligent, capable and hard working individual. He has a strong background in  Marketing IT Services  and a proven record in getting the job done.",
+                "actor": {
+                    "first_name": "Prashant",
+                    "last_name": "Srivastava",
+                    "provider_id": "ACoAAACQjCQB0aLyQtxSXdY04SgiG6TA8Lm9BZ8",
+                    "public_identifier": "pksrivastava81",
+                    "headline": "Digital Marketing Leader | AI-Powered Growth Strategist | Business-Aligned Brand Builder With nearly two decades of experience across diverse sectors—SaaS, healthcare, real estate, D2C, and B2B marketplaces",
+                    "public_profile_url": "https://www.linkedin.com/in/pksrivastava81",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D5603AQFDRxU4M9b2sA/profile-displayphoto-scale_200_200/B56aAFNbKuKsAc-/0/1786793800999?e=1790208000&v=beta&t=TDq2jYuBoiqjtgmOUEBYHRGr-B4q_fUbekCNeSaIeX0"
+                }
+            },
+            {
+                "caption": "February 19, 2008, Aditya worked with SAURABH but on different teams",
+                "text": "Saurabh is a well organized manager with excellent organizational and management skills, He is very a creative and focused leader. He always take his task as a mission and he put his 100% to achieve it.He has good know-how of his domain and has huge professional circle in industry.He also does an amazing job bringing them all together.Overall he is a productive and result oriented guy.",
+                "actor": {
+                    "first_name": "Aditya",
+                    "last_name": "Puri",
+                    "provider_id": "ACoAAAC7lVsBtEDE_1J4fvJNRnPCPl4SDA0pM3I",
+                    "public_identifier": "adityapuri",
+                    "headline": "Certified Scrum Master, SAFe® 5 Agilist | Preferred roles are TPM, Solution Architect, Staff Engineer with Techno Function in leadership role",
+                    "public_profile_url": "https://www.linkedin.com/in/adityapuri",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C4E03AQGKsSoz0a96Sw/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1517672241970?e=1790208000&v=beta&t=FM6fORgFJYSv149P0-0yY4rOFkoDO4NwcKCwHbOE1ZQ"
+                }
+            },
+            {
+                "caption": "February 12, 2008, Abhishek Vinod managed SAURABH directly",
+                "text": "Saurabh brings to table over 5 years of experience in driving Business Development and Strategy in IT Service Industry with lot of new innovative ideas.",
+                "actor": {
+                    "first_name": "Abhishek Vinod",
+                    "last_name": "Singh",
+                    "provider_id": "ACoAAABC_WsBf_vM-05_65HGeFskNv9EkNqH8So",
+                    "public_identifier": "abhishekvsingh",
+                    "headline": "Co-founder & CEO at AiDash",
+                    "public_profile_url": "https://www.linkedin.com/in/abhishekvsingh",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C5603AQHzGBGke_saIQ/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1607627495787?e=1790208000&v=beta&t=Na55mYBaGA1bwFts2UikSLpiQWa1PVo93GkhsTJNc1Q"
+                }
+            },
+            {
+                "caption": "December 20, 2007, Raj worked with SAURABH but on different teams",
+                "text": "Saurabh has the ambition to grow!!He would not leave any stones unturned to get  work done...He is focussed and worthy for making a mark at  all avenues of life..I wish him all the very best for his future...",
+                "actor": {
+                    "first_name": "Raj",
+                    "last_name": "Chattaraj",
+                    "provider_id": "ACoAAAElDTMBcpo6AnkP5RHIbfH2igtl2lS_OO0",
+                    "public_identifier": "chattaraj",
+                    "headline": "Product Management Senior Specialist @ Telstra Wholesale | Social Media Strategy",
+                    "public_profile_url": "https://www.linkedin.com/in/chattaraj",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D5603AQG7uSCZR-MyzQ/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1723004957760?e=1790208000&v=beta&t=eqtLN1gT-IXEtt6oLEesqHWqXGYUn1KFpwqRsSRXJzM"
+                }
+            },
+            {
+                "caption": "December 17, 2007, Soumya was senior to SAURABH but didn't manage SAURABH directly",
+                "text": "I have known Saurabh for over 3 yrs, during his stint in BrickRed. Initially I was in a different group, and what I admired was his humane approach to life. He had been of immense help to me on numerous ocassions, going out of his way in doing so. Later, when I shifted to Saurabh's group, I had the opportunity of interacting with him more closely on a professional level. I found his \"dog on a bone\" approach tuned perfectly to the job and he and I had cracked some major contracts together. I thoroughly enjoyed his company and wish him all the best for his future...",
+                "actor": {
+                    "first_name": "Soumya",
+                    "last_name": "Chatterjee",
+                    "provider_id": "ACoAAAB8xfgBUkn6C9H0BVk5e1LXtdvfm2qDK0s",
+                    "public_identifier": "soumyachatterjee",
+                    "headline": "CEO @ EasyRewardz | Driving Growth & Customer Satisfaction",
+                    "public_profile_url": "https://www.linkedin.com/in/soumyachatterjee",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C4D03AQGA-3CzDtMJJg/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1635406216999?e=1790208000&v=beta&t=zWCujxQH1QoLhxv9fnNP-uIziv6_imRdYYypfPtq6LI"
+                }
+            },
+            {
+                "caption": "November 26, 2007, Nitin worked with SAURABH but on different teams",
+                "text": "Saurabh is a smart and result oriented person. He gives his best in everything he does and has a calming influence on people around him in tense situations.He is passionate about his work and does it very methodically.All in all a precious asset for any organization",
+                "actor": {
+                    "first_name": "Nitin",
+                    "last_name": "Sirohi",
+                    "provider_id": "ACoAAAEIW5cB6V9cTTlCCS1ks_mMWfwoASa61c0",
+                    "public_identifier": "nitinsirohi",
+                    "headline": "COO at HawkTrade",
+                    "public_profile_url": "https://www.linkedin.com/in/nitinsirohi",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C5103AQEdFYLOcnVR1w/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1525012828944?e=1790208000&v=beta&t=nXL1oA4UX7I1Xeos3Xqjhno9wkMFfjSJY3gBcvBALfA"
+                }
+            },
+            {
+                "caption": "October 15, 2007, Manita was senior to SAURABH but didn't manage SAURABH directly",
+                "text": "Saurabh is a Talented & a Hardworking Guy. Long way to go Saurabh!!!",
+                "actor": {
+                    "first_name": "Manita",
+                    "last_name": "Rawat",
+                    "provider_id": "ACoAAAB6EeIBsObTm-HTwgaO2OvWGoL77x0TuFk",
+                    "public_identifier": "manitarawat",
+                    "headline": "Sr. Manager - Human Resources & Compliance",
+                    "public_profile_url": "https://www.linkedin.com/in/manitarawat",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C4D03AQGRdbd2Z8IDDg/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1598405707018?e=1790208000&v=beta&t=rkx9xjIXuXJ_reDLRitahqBsyZX2_1Yi26WulIkbESU"
+                }
+            },
+            {
+                "caption": "October 9, 2007, B (Ben) worked with SAURABH on the same team",
+                "text": "Saurabh is a great colleague to work with. He has been emphatic in his business skills. Keep up the great work PAL.",
+                "actor": {
+                    "first_name": "B (Ben)",
+                    "last_name": "Nayak",
+                    "provider_id": "ACoAAABpNxYBvC06AddEaANxBG3pd0IjI5i9zUM",
+                    "public_identifier": "bnayak",
+                    "headline": "Principal Analyst, Data + AI, Engagement & Emerging Tech at Forward Eye",
+                    "public_profile_url": "https://www.linkedin.com/in/bnayak",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C5103AQGsykT3tGhIvA/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1581511491196?e=1790208000&v=beta&t=IpBEI9ZwSw3EhWheAGpkByEOjTn0bJkzXL9EG-FlLVQ"
+                }
+            },
+            {
+                "caption": "October 8, 2007, Vijay Santosh worked with SAURABH but on different teams",
+                "text": "Saurabh is a detail-oriented manager who watches the balance sheet like a hawk without losing sight of the strategic objective.",
+                "actor": {
+                    "first_name": "Vijay Santosh",
+                    "last_name": "Alla",
+                    "provider_id": "ACoAAACa3wUBBaq3RTG0647VV072l4QlEjco-oQ",
+                    "public_identifier": "vijaysantosh",
+                    "headline": "Assistant Vice President at Verisk",
+                    "public_profile_url": "https://www.linkedin.com/in/vijaysantosh",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C5103AQGoiyBYuh-miA/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1549901897289?e=1790208000&v=beta&t=nqcGybRlv9JZf8iKTLPKKqZoMF9oEzSWDHMgICT_KJ4"
+                }
+            }
+        ]
+    },
+    "shared_connections_count": 3,
+    "hashtags": [
+        "#bharat",
+        "#entrepreneurship",
+        "#growthhacking",
+        "#startups"
+    ]
+}

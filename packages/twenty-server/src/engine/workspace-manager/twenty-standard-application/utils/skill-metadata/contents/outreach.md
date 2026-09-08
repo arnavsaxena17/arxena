@@ -41,7 +41,7 @@ Do **not** load this skill for generic CRM automations or for chat-only company/
 2. `list_logic_function_tools` — use `inputSchema` / `isNative`. Enroll with native `upload-profiles`. Persist harvested companies with native `upsert-companies`.
 3. `learn_tools` for `create_complete_workflow` (or clone tools) then execute. Do **not** grep spilled JSON Schema with `code_interpreter`.
 
-Native workflow actions (kebab-case LFs — **not** the `search` skill): `search-people-for-company`, `search-people`, `search-companies`, `search-jobs`, `fetch-linkedin-profile`, `fetch-linkedin-messages`, `fetch-company-details`, `upload-profiles`, `upsert-companies`, `enrich-contact`, `get-calendar-availability`. They have stub source — do **not** call `get_logic_function_source` for them.
+Native workflow actions (kebab-case LFs — **not** the `search` skill): `search-people-for-company`, `search-people`, `search-companies`, `search-jobs`, `search-posts`, `fetch-user-comments`, `fetch-linkedin-profile`, `fetch-linkedin-messages`, `fetch-company-details`, `upload-profiles`, `upsert-companies`, `enrich-contact`, `get-calendar-availability`. They have stub source — do **not** call `get_logic_function_source` for them.
 
 Search LFs return hits only. People persist with `upload-profiles`. Company persist for automation is CRM + `projectIds` (not Find/Redis).
 

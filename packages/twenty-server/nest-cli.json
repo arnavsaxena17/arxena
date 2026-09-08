@@ -65,6 +65,10 @@
         "outDir": "dist"
       },
       {
+        "include": "engine/core-modules/outreach-command/utils/mock-unipile-profiles/*.json",
+        "outDir": "dist"
+      },
+      {
         "include": "engine/workspace-manager/twenty-standard-application/utils/skill-metadata/contents/**/*.md",
         "outDir": "dist"
       }

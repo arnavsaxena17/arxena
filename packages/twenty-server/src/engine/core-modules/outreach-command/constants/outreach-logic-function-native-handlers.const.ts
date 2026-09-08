@@ -7,6 +7,7 @@ import {
   OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_POSTS_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME,
   OUTREACH_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME,
   OUTREACH_ENRICH_CONTACT_LOGIC_FUNCTION_NAME,
@@ -98,6 +99,22 @@ export const main = async (params: {
   dataSource?: string;
   accountId?: string;
   limit?: number;
+}) => {
+  return params;
+};
+`;
+
+const FETCH_USER_COMMENTS_HANDLER = `// Native GTM action: FetchUserCommentsService (Unipile List User Comments).
+// Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
+export const main = async (params: {
+  workspaceMemberId?: string;
+  linkedinUrl?: string;
+  linkedinProfileId?: string;
+  candidateId?: string;
+  userId?: string;
+  accountId?: string;
+  limit?: number;
+  cursor?: string;
 }) => {
   return params;
 };
@@ -211,6 +228,7 @@ const NATIVE_HANDLERS: Record<string, string> = {
   [OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME]: SEARCH_COMPANIES_HANDLER,
   [OUTREACH_SEARCH_JOBS_LOGIC_FUNCTION_NAME]: SEARCH_JOBS_HANDLER,
   [OUTREACH_SEARCH_POSTS_LOGIC_FUNCTION_NAME]: SEARCH_POSTS_HANDLER,
+  [OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME]: FETCH_USER_COMMENTS_HANDLER,
   [OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME]:
     FETCH_LINKEDIN_MESSAGES_HANDLER,
   [OUTREACH_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME]:

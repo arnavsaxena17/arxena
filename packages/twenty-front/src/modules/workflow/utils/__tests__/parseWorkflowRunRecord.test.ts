@@ -1,8 +1,6 @@
 import { parseWorkflowRunRecord } from '../parseWorkflowRunRecord';
 
-const buildWorkflowRunRecord = (
-  overrides: Record<string, unknown> = {},
-) => ({
+const buildWorkflowRunRecord = (overrides: Record<string, unknown> = {}) => ({
   __typename: 'WorkflowRun',
   id: '75702b0c-d928-4d81-b172-371e7c4924c8',
   workflowVersionId: '226f4b67-70c5-4bcf-8d51-f23f0136d29d',
@@ -72,5 +70,56 @@ describe('parseWorkflowRunRecord', () => {
     expect(
       parseWorkflowRunRecord({ __typename: 'WorkflowRun' }),
     ).toBeUndefined();
+  });
+
+  it('should parse a DRAFT_EMAIL step with null connectedAccountId', () => {
+    const result = parseWorkflowRunRecord(
+      buildWorkflowRunRecord({
+        status: 'COMPLETED',
+        name: '#4 - testing',
+        state: {
+          flow: {
+            trigger: {
+              name: 'Launch manually',
+              type: 'MANUAL',
+              settings: {
+                outputSchema: {},
+              },
+              nextStepIds: ['ca43d007-e61a-4955-9d8b-acc023bf51ce'],
+            },
+            steps: [
+              {
+                id: 'ca43d007-e61a-4955-9d8b-acc023bf51ce',
+                name: 'Draft Email',
+                type: 'DRAFT_EMAIL',
+                valid: false,
+                settings: {
+                  input: {
+                    body: 'This is a test email',
+                    files: [],
+                    subject: 'Test email',
+                    recipients: { to: '', cc: '', bcc: '' },
+                    connectedAccountId: null,
+                  },
+                  outputSchema: {},
+                  errorHandlingOptions: {
+                    retryOnFailure: { value: false },
+                    continueOnFailure: { value: false },
+                  },
+                },
+              },
+            ],
+          },
+          stepInfos: {
+            trigger: { status: 'SUCCESS' },
+            'ca43d007-e61a-4955-9d8b-acc023bf51ce': { status: 'SUCCESS' },
+          },
+        },
+      }),
+    );
+
+    expect(result?.id).toBe('75702b0c-d928-4d81-b172-371e7c4924c8');
+    expect(result?.state?.flow.steps).toHaveLength(1);
+    expect(result?.state?.flow.steps[0]?.type).toBe('DRAFT_EMAIL');
   });
 });

@@ -6,6 +6,8 @@ export const OUTREACH_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME = 'search-people';
 export const OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME = 'search-companies';
 export const OUTREACH_SEARCH_JOBS_LOGIC_FUNCTION_NAME = 'search-jobs';
 export const OUTREACH_SEARCH_POSTS_LOGIC_FUNCTION_NAME = 'search-posts';
+export const OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME =
+  'fetch-user-comments';
 export const OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME =
   'fetch-linkedin-messages';
 export const OUTREACH_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME =
@@ -14,6 +16,13 @@ export const OUTREACH_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME = 'upload-profiles';
 export const OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME =
   'detect-fake-profiles';
 export const OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME = 'filter-profiles';
+
+const withLlmFormattedText = <T extends object>(
+  result: T,
+): T & { text: string } => ({
+  ...result,
+  text: JSON.stringify(result, null, 2),
+});
 
 export const OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT = {
   success: true,
@@ -73,46 +82,47 @@ export const OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT = {
   ],
 };
 
-export const OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT = {
-  success: true,
-  linkedinProfileId: 'example',
-  firstName: 'Arapa',
-  lastName: 'Hara',
-  headline: 'Head of Sales',
-  about: 'B2B sales leader at Acme',
-  location: 'San Francisco',
-  linkedinUrl: 'https://www.linkedin.com/in/example',
-  profilePictureUrl: 'https://media.licdn.com/example.jpg',
-  experience: [
-    {
-      company: 'Acme',
-      position: 'Head of Sales',
-      location: 'San Francisco',
-      description: 'Owns enterprise revenue',
-      start: '2022-01',
-      end: '',
-    },
-  ],
-  skills: ['Sales', 'GTM'],
-  snapshot: '{}',
-  people: [
-    {
-      name: 'Arapa Hara',
-      firstName: 'Arapa',
-      lastName: 'Hara',
-      title: 'Head of Sales',
-      headline: 'Head of Sales',
-      company: 'Acme',
-      companyName: 'Acme',
-      location: 'San Francisco',
-      linkedinUrl: 'https://www.linkedin.com/in/example',
-      linkedinProfileId: 'example',
-      peopleId: 'example',
-      profilePictureUrl: 'https://media.licdn.com/example.jpg',
-    },
-  ],
-  error: '',
-};
+export const OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT =
+  withLlmFormattedText({
+    success: true,
+    linkedinProfileId: 'example',
+    firstName: 'Arapa',
+    lastName: 'Hara',
+    headline: 'Head of Sales',
+    about: 'B2B sales leader at Acme',
+    location: 'San Francisco',
+    linkedinUrl: 'https://www.linkedin.com/in/example',
+    profilePictureUrl: 'https://media.licdn.com/example.jpg',
+    experience: [
+      {
+        company: 'Acme',
+        position: 'Head of Sales',
+        location: 'San Francisco',
+        description: 'Owns enterprise revenue',
+        start: '2022-01',
+        end: '',
+      },
+    ],
+    skills: ['Sales', 'GTM'],
+    snapshot: '{}',
+    people: [
+      {
+        name: 'Arapa Hara',
+        firstName: 'Arapa',
+        lastName: 'Hara',
+        title: 'Head of Sales',
+        headline: 'Head of Sales',
+        company: 'Acme',
+        companyName: 'Acme',
+        location: 'San Francisco',
+        linkedinUrl: 'https://www.linkedin.com/in/example',
+        linkedinProfileId: 'example',
+        peopleId: 'example',
+        profilePictureUrl: 'https://media.licdn.com/example.jpg',
+      },
+    ],
+    error: '',
+  });
 
 export const OUTREACH_SEARCH_PEOPLE_SAMPLE_OUTPUT = {
   success: true,
@@ -202,7 +212,7 @@ export const OUTREACH_SEARCH_JOBS_SAMPLE_OUTPUT = {
   ],
 };
 
-export const OUTREACH_SEARCH_POSTS_SAMPLE_OUTPUT = {
+export const OUTREACH_SEARCH_POSTS_SAMPLE_OUTPUT = withLlmFormattedText({
   success: true,
   total: 1,
   dataSource: 'auto',
@@ -222,24 +232,46 @@ export const OUTREACH_SEARCH_POSTS_SAMPLE_OUTPUT = {
       isRepost: false,
     },
   ],
-};
+});
 
-export const OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT = {
+export const OUTREACH_FETCH_USER_COMMENTS_SAMPLE_OUTPUT = withLlmFormattedText({
   success: true,
-  chatId: 'chat-1',
-  attendeeId: 'ACoAAExampleProviderId1234567890',
   total: 1,
+  nextCursor: '',
   error: '',
-  messages: [
+  comments: [
     {
-      id: 'msg-1',
-      text: 'Hello',
-      timestamp: '2026-08-01T00:00:00.000Z',
-      senderId: 'ACoAAExampleProviderId1234567890',
-      isSender: false,
+      id: 'comment-1',
+      text: 'Great insights — thanks for sharing.',
+      createdAt: '2026-08-01T12:00:00.000Z',
+      threadId: '',
+      replyCounter: 0,
+      authorName: 'Jane Doe',
+      authorUrl: 'https://www.linkedin.com/in/jane-doe',
+      parentPostId: 'post-1',
+      parentPostUrl: 'https://www.linkedin.com/feed/update/urn:li:activity:1',
+      parentPostText: 'We are hiring Account Executives',
     },
   ],
-};
+});
+
+export const OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT =
+  withLlmFormattedText({
+    success: true,
+    chatId: 'chat-1',
+    attendeeId: 'ACoAAExampleProviderId1234567890',
+    total: 1,
+    error: '',
+    messages: [
+      {
+        id: 'msg-1',
+        text: 'Hello',
+        timestamp: '2026-08-01T00:00:00.000Z',
+        senderId: 'ACoAAExampleProviderId1234567890',
+        isSender: false,
+      },
+    ],
+  });
 
 export const OUTREACH_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT = {
   success: true,
@@ -288,7 +320,10 @@ export const OUTREACH_DETECT_FAKE_PROFILES_SAMPLE_OUTPUT = {
       headline: 'Change',
       summary:
         'Education ends in 2023 but elite search-firm tenure starts in 2013.',
-      redFlags: ['Education vs Egon Zehnder dates', 'Self-employed at Egon Zehnder'],
+      redFlags: [
+        'Education vs Egon Zehnder dates',
+        'Self-employed at Egon Zehnder',
+      ],
       supportingSignals: [],
       profile: {},
     },
@@ -343,6 +378,7 @@ export const OUTREACH_NATIVE_LOGIC_FUNCTION_NAMES = new Set([
   OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_POSTS_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME,
   OUTREACH_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
@@ -355,18 +391,26 @@ const SAMPLE_OUTPUT_BY_NAME: Record<string, Record<string, unknown>> = {
     OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT,
   [OUTREACH_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME]:
     OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
-  [OUTREACH_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME]: OUTREACH_SEARCH_PEOPLE_SAMPLE_OUTPUT,
-  [OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME]: OUTREACH_SEARCH_COMPANIES_SAMPLE_OUTPUT,
-  [OUTREACH_SEARCH_JOBS_LOGIC_FUNCTION_NAME]: OUTREACH_SEARCH_JOBS_SAMPLE_OUTPUT,
-  [OUTREACH_SEARCH_POSTS_LOGIC_FUNCTION_NAME]: OUTREACH_SEARCH_POSTS_SAMPLE_OUTPUT,
+  [OUTREACH_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME]:
+    OUTREACH_SEARCH_PEOPLE_SAMPLE_OUTPUT,
+  [OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME]:
+    OUTREACH_SEARCH_COMPANIES_SAMPLE_OUTPUT,
+  [OUTREACH_SEARCH_JOBS_LOGIC_FUNCTION_NAME]:
+    OUTREACH_SEARCH_JOBS_SAMPLE_OUTPUT,
+  [OUTREACH_SEARCH_POSTS_LOGIC_FUNCTION_NAME]:
+    OUTREACH_SEARCH_POSTS_SAMPLE_OUTPUT,
+  [OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME]:
+    OUTREACH_FETCH_USER_COMMENTS_SAMPLE_OUTPUT,
   [OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME]:
     OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT,
   [OUTREACH_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME]:
     OUTREACH_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT,
-  [OUTREACH_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME]: OUTREACH_UPLOAD_PROFILES_SAMPLE_OUTPUT,
+  [OUTREACH_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME]:
+    OUTREACH_UPLOAD_PROFILES_SAMPLE_OUTPUT,
   [OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME]:
     OUTREACH_DETECT_FAKE_PROFILES_SAMPLE_OUTPUT,
-  [OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME]: OUTREACH_FILTER_PROFILES_SAMPLE_OUTPUT,
+  [OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME]:
+    OUTREACH_FILTER_PROFILES_SAMPLE_OUTPUT,
 };
 
 export const isNativeOutreachLogicFunction = (name?: string | null): boolean =>

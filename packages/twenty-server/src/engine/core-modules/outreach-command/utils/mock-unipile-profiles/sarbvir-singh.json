@@ -1,0 +1,341 @@
+{
+    "object": "UserProfile",
+    "provider": "LINKEDIN",
+    "provider_id": "ACoAAAAOewkB59q5KIC03Ex8Ufp9zVLL1F0lH-I",
+    "public_identifier": "sarbvirsingh",
+    "member_urn": "949001",
+    "first_name": "Sarbvir",
+    "last_name": "Singh",
+    "headline": "CEO at Policybazaar.com",
+    "primary_locale": {
+        "country": "US",
+        "language": "en"
+    },
+    "is_open_profile": false,
+    "is_premium": false,
+    "is_influencer": false,
+    "is_creator": false,
+    "is_relationship": false,
+    "is_verified": true,
+    "network_distance": "THIRD_DEGREE",
+    "is_self": false,
+    "websites": [],
+    "follower_count": 17403,
+    "connections_count": 14005,
+    "location": "Delhi, India",
+    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C5103AQH8sDFWUmg6jA/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1582439141396?e=1790208000&v=beta&t=QuryCNhKhXjT-QsKBIt_9pGtqlglT-HlT6SZDFFJk94",
+    "profile_picture_url_large": "https://media.licdn.com/dms/image/v2/C5103AQH8sDFWUmg6jA/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1582439141471?e=1790208000&v=beta&t=Q9ewzQBL5Zn9D7NOYfG9R0DXq9eDCQ-9KjuzxY5r1QQ",
+    "background_picture_url": "https://media.licdn.com/dms/image/v2/D5616AQFYeiszhQud1A/profile-displaybackgroundimage-shrink_200_800/profile-displaybackgroundimage-shrink_200_800/0/1721672602860?e=1790208000&v=beta&t=97PBzvMiFX_drg79NsL_5BIXJpBG2d665Cxl9UfGSgg",
+    "education_total_count": 2,
+    "education": [
+        {
+            "degree": "PGDM (MBA)",
+            "school_id": "157272",
+            "school": "Indian Institute of Management Ahmedabad",
+            "school_picture_url": "https://media.licdn.com/dms/image/v2/D4D0BAQEM7igMMa_i9w/company-logo_200_200/company-logo_200_200/0/1667468152053/iimahmedabad_logo?e=1790208000&v=beta&t=aItdwHn6kj7-_EeEEO6UPfSJ1sq4UmHNwJeQZouF3Co",
+            "start": "1/1/1993",
+            "end": "1/1/1995"
+        },
+        {
+            "degree": "Integrated Masters (Maths and Computer Applications)",
+            "school_id": "157264",
+            "school": "Indian Institute of Technology, Delhi",
+            "school_picture_url": "https://media.licdn.com/dms/image/v2/D4D0BAQHQ5bnnnSexWg/company-logo_200_200/company-logo_200_200/0/1710919737785/iitdelhi_logo?e=1790208000&v=beta&t=h7S0D55DSYx-fmLa3sYSGYwfAlEultlSPgNeaJiUVzc",
+            "start": "1/1/1988",
+            "end": "1/1/1993"
+        }
+    ],
+    "work_experience_total_count": 9,
+    "work_experience": [
+        {
+            "company_id": "303524",
+            "company": "PolicyBazaar.com",
+            "position": "Chief Executive Officer",
+            "location": "Gurgaon, India",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C510BAQHLox0s6VVAyw/company-logo_200_200/company-logo_200_200/0/1630602641440/policybazaar_logo?e=1790208000&v=beta&t=JyvPxTfXIjP4vgRzur7Hm631LdZenRlW7yt7DfdUxsU",
+            "skills": [],
+            "start": "12/1/2019",
+            "end": null
+        },
+        {
+            "company_id": "13290692",
+            "company": "WaterBridge Ventures",
+            "position": "Managing Partner at WaterBridge Ventures",
+            "location": "New Delhi Area, India",
+            "description": "Early stage venture capital firm looking to invest in persistent and hard-working founders who are aiming to build scalable businesses for the long run.",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C510BAQE-xlJt1HedXw/company-logo_200_200/company-logo_200_200/0/1630564248125/waterbridgeventures_logo?e=1790208000&v=beta&t=ToSPpXnXx0KOxsui807nE2NHVWPEwjj6lh0KE1xX-fs",
+            "skills": [],
+            "start": "1/1/2018",
+            "end": "11/1/2019"
+        },
+        {
+            "company_id": "3492416",
+            "company": "J.P. Morgan Asset Management",
+            "position": "Regional Advisor to JP Morgan Private Equity Group",
+            "location": "Greater Delhi Area",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C4E0BAQEHoktivaHl-w/company-logo_200_200/company-logo_200_200/0/1658262336713/jpmorganassetmanagement_logo?e=1790208000&v=beta&t=JSgvlNveX17BqGi2i-SM1zF2Lu5G_rammzOpAPCmZgU",
+            "skills": [],
+            "start": "11/1/2015",
+            "end": "12/1/2017"
+        },
+        {
+            "company_id": "10399490",
+            "company": "Capital18 (Network18)",
+            "position": "Managing Director",
+            "location": "New Delhi, India",
+            "description": "Founding MD of Capital18 (www.capital18.com), the venture capital arm of Network18. Capital18 was a specialist fund focusing on consumer internet, mobile, media and entertainment companies.\n\nResponsible for investment strategy, deal sourcing, end to end deal execution, building investment team, helping portfolio companies scale and driving exits. The fund made 12 investments including BookMyShow (India’s leading entertainment ticketing company), Yatra.com (India's second largest online travel company), DEN Networks (leading cable company; listed on NSE/BSE), and Webchutney (digital media agency). The fund had seven exits.\n\nDirector on the Boards of BookMyShow, Yatra, Webchutney, Stargaze, Greycells18, Wespro, Newswire18, Ubona, Colosceum, 24x7 Learning and Avagmah.",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C4D0BAQHBpG2Si0IXxw/company-logo_200_200/company-logo_200_200/0/1631341331304?e=1790208000&v=beta&t=xIRo329zvC32GTd72fzy96xjxPGumxfgDah8QH6HkgQ",
+            "skills": [],
+            "start": "1/1/2007",
+            "end": "11/1/2015"
+        },
+        {
+            "company_id": "10399490",
+            "company": "Capital18 (Network18)",
+            "position": "Head, Investments",
+            "location": "New Delhi, India",
+            "description": "Managed Network18’s investments in Viacom18 (entertainment JV with Viacom Inc), Infomedia18, IndiaCast and HomeShop18. Helped drive key strategic and business decisions for the group.\n\nDirector on the Boards of Viacom18, IndiaCast and HomeShop18.\n\nLed public and private market fund raising initiatives for the group including the INR 4000 crores twin Rights Issues at TV18 and Network18 in 2012. Also responsible for the monetization of non-core assets including the sale of Yellow Pages/Ask Me business, publishing BPO and Newswire18.\n",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C4D0BAQHBpG2Si0IXxw/company-logo_200_200/company-logo_200_200/0/1631341331304?e=1790208000&v=beta&t=xIRo329zvC32GTd72fzy96xjxPGumxfgDah8QH6HkgQ",
+            "skills": [],
+            "start": "1/1/2009",
+            "end": "10/1/2015"
+        },
+        {
+            "company_id": "1678124",
+            "company": "HomeShop18",
+            "position": "Chief Financial Officer",
+            "location": "New Delhi, India",
+            "description": "Responsible for overall strategic and financial leadership. Led interventions to improve financial, operating and supply chain processes which helped drive operating performance and customer satisfaction.\n\nLed HomeShop18’s preparations for a US listing (NASDAQ), leading the company through the entire SEC process (approved public filing) and roadshows with select investors. ",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C560BAQEyy5p98N6oDA/company-logo_200_200/company-logo_200_200/0/1631326541314?e=1790208000&v=beta&t=9ESRjGkUVo_ZKAE5haxEi1JP7oXiaR4nPM3IyssvotE",
+            "skills": [],
+            "start": "1/1/2014",
+            "end": "10/1/2015"
+        },
+        {
+            "company": "Hercules Capital",
+            "position": "Co-Founder & Managing Partner",
+            "location": "Greater Delhi Area",
+            "description": "Co-founded Hercules Capital as an independent investment manager investing institutional and private client assets in the Indian equity market. The fund used a business owner mindset to identify high quality companies in the public markets and build a concentrated portfolio of 12-15 companies.",
+            "skills": [],
+            "start": "11/1/2004",
+            "end": "12/1/2006"
+        },
+        {
+            "company_id": "11448",
+            "company": "Citi",
+            "position": "Vice President",
+            "location": "Stamford | New York",
+            "description": "Started as a buy-side analyst covering global consumer staples and then moved to Smith Barney Asset Management as co-portfolio manager/analyst covering US consumer staples.",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/D4E0BAQFgF4xtqyXBcg/company-logo_200_200/company-logo_200_200/0/1719257270317/citi_logo?e=1790208000&v=beta&t=G0tanQUW5NBLkXz8D_8JG5EfAM3ZW_JTPEJdIVPvy6U",
+            "skills": [],
+            "start": "4/1/1999",
+            "end": "10/1/2004"
+        },
+        {
+            "company_id": "2753",
+            "company": "Emerson Electric (Copeland Corporation)",
+            "position": "Manager -  Marketing (China) | Business Development (Asia)",
+            "location": "Hong Kong SAR",
+            "description": "Led marketing efforts in China and helped setup a greenfield compressor manufacturing plant in Suzhou (China). Worked on acquisition and joint venture opportunities in China, Japan, Korea and Thailand.",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/D4E0BAQGR6FSAnbBWcQ/company-logo_200_200/company-logo_200_200/0/1719847292094/emerson_logo?e=1790208000&v=beta&t=ub1QcjiAdEF3HBGSDMxQcoD-xoqvnI7LOhmmM_Y9eK0",
+            "skills": [],
+            "start": "1/1/1995",
+            "end": "1/1/1999"
+        }
+    ],
+    "skills_total_count": 25,
+    "skills": [
+        {
+            "name": "Equities",
+            "endorsement_count": 39,
+            "insights": [
+                "Endorsed by Prashant Kothari and 1 other who is highly skilled at this",
+                "Endorsed by 2 colleagues at Policybazaar.com"
+            ],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Management",
+            "endorsement_count": 52,
+            "insights": [
+                "Endorsed by Sam Baisla and 1 other who is highly skilled at this",
+                "Endorsed by 2 colleagues at Policybazaar.com"
+            ],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Private Equity",
+            "endorsement_count": 14,
+            "insights": [
+                "Endorsed by 1 person in the last 6 months"
+            ],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Start-ups",
+            "endorsement_count": 13,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Venture Capital",
+            "endorsement_count": 75,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Strategy",
+            "endorsement_count": 21,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Marketing",
+            "endorsement_count": 14,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Investments",
+            "endorsement_count": 39,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Television",
+            "endorsement_count": 7,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Entrepreneurship",
+            "endorsement_count": 49,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Business Strategy",
+            "endorsement_count": 41,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Due Diligence",
+            "endorsement_count": 7,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Investment Banking",
+            "endorsement_count": 7,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Business Development",
+            "endorsement_count": 19,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Mutual Funds",
+            "endorsement_count": 11,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Valuation",
+            "endorsement_count": 10,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Financial Modeling",
+            "endorsement_count": 10,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Investment Management",
+            "endorsement_count": 9,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Mergers",
+            "endorsement_count": 6,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "BPO",
+            "endorsement_count": 5,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Team Management",
+            "endorsement_count": 15,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Financial Structuring",
+            "endorsement_count": 5,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Product Management",
+            "endorsement_count": 8,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Mergers ",
+            "endorsement_count": 5,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Mergers & Acquisitions",
+            "endorsement_count": 8,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        }
+    ],
+    "languages_total_count": 0,
+    "languages": [],
+    "certifications_total_count": 0,
+    "certifications": [],
+    "summary": "Over 20 years of global experience in corporate leadership roles, venture capital, and public markets investing. Currently, working with a super talented team at Policybazaar on a mission to help India's middle class protect themselves from death, disease and disability.",
+    "volunteering_experience_total_count": 0,
+    "volunteering_experience": [],
+    "projects_total_count": 0,
+    "projects": []
+}

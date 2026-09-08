@@ -7,6 +7,7 @@ import {
   OUTREACH_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
@@ -23,6 +24,7 @@ import {
   OUTREACH_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT,
   OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT,
   OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
+  OUTREACH_FETCH_USER_COMMENTS_SAMPLE_OUTPUT,
   OUTREACH_SEARCH_COMPANIES_SAMPLE_OUTPUT,
   OUTREACH_SEARCH_JOBS_SAMPLE_OUTPUT,
   OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT,
@@ -37,7 +39,8 @@ import {
 } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-sample-output.const';
 import { type PrefilledWorkflowCodeStepLogicFunctionDefinition } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-code-step-logic-functions.util';
 
-const OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE = '7c3e1a90-4b2d-4f11-9c6a-2e8f0d1b5a44';
+const OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE =
+  '7c3e1a90-4b2d-4f11-9c6a-2e8f0d1b5a44';
 
 const OUTREACH_PROJECT_RECORD_INPUT = {
   type: 'record' as const,
@@ -131,6 +134,10 @@ export const getOutreachLogicFunctionIds = (workspaceId: string) => ({
   ),
   searchPostsId: uuidv5(
     `${workspaceId}:search-posts`,
+    OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  fetchUserCommentsId: uuidv5(
+    `${workspaceId}:fetch-user-comments`,
     OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
   ),
   fetchLinkedinMessagesId: uuidv5(
@@ -264,9 +271,15 @@ export const getOutreachLogicFunctionDefinitions = (
           {
             type: 'object',
             properties: {
-              workspaceMemberId: { type: 'string', label: 'Workspace member ID' },
+              workspaceMemberId: {
+                type: 'string',
+                label: 'Workspace member ID',
+              },
               linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
-              linkedinProfileId: { type: 'string', label: 'LinkedIn profile ID' },
+              linkedinProfileId: {
+                type: 'string',
+                label: 'LinkedIn profile ID',
+              },
               candidateId: { type: 'string', label: 'Candidate ID' },
             },
           },
@@ -338,6 +351,10 @@ export const getOutreachLogicFunctionDefinitions = (
                 },
               },
               error: { type: 'string', label: 'Error' },
+              text: {
+                type: 'string',
+                label: 'Formatted text (for AI agent)',
+              },
             },
           },
         ],
@@ -586,6 +603,10 @@ export const getOutreachLogicFunctionDefinitions = (
               total: { type: 'number', label: 'Total' },
               dataSource: { type: 'string', label: 'Data source' },
               error: { type: 'string', label: 'Error' },
+              text: {
+                type: 'string',
+                label: 'Formatted text (for AI agent)',
+              },
               posts: {
                 type: 'array',
                 label: 'Posts',
@@ -610,6 +631,78 @@ export const getOutreachLogicFunctionDefinitions = (
           },
         ],
         sampleOutput: OUTREACH_SEARCH_POSTS_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.fetchUserCommentsId,
+      name: OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME,
+      description:
+        'Fetch comments made by a LinkedIn user via Unipile List User Comments. Pass linkedinUrl, linkedinProfileId, candidateId, or userId (`me` for the connected account). Paginates until limit (default 50, max 200).',
+      sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
+        OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Fetch user comments',
+        icon: 'IconMessageCircle',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              workspaceMemberId: {
+                type: 'string',
+                label: 'Workspace member ID',
+              },
+              linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
+              linkedinProfileId: {
+                type: 'string',
+                label: 'LinkedIn profile ID',
+              },
+              candidateId: OUTREACH_CANDIDATE_RECORD_INPUT,
+              userId: { type: 'string', label: 'User ID' },
+              accountId: { type: 'string', label: 'Account ID' },
+              limit: { type: 'number', label: 'Limit' },
+              cursor: { type: 'string', label: 'Cursor' },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              total: { type: 'number', label: 'Total' },
+              nextCursor: { type: 'string', label: 'Next cursor' },
+              error: { type: 'string', label: 'Error' },
+              text: {
+                type: 'string',
+                label: 'Formatted text (for AI agent)',
+              },
+              comments: {
+                type: 'array',
+                label: 'Comments',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string', label: 'ID' },
+                    text: { type: 'string', label: 'Text' },
+                    createdAt: { type: 'string', label: 'Created at' },
+                    threadId: { type: 'string', label: 'Thread ID' },
+                    replyCounter: { type: 'number', label: 'Reply counter' },
+                    authorName: { type: 'string', label: 'Author name' },
+                    authorUrl: { type: 'string', label: 'Author URL' },
+                    parentPostId: { type: 'string', label: 'Parent post ID' },
+                    parentPostUrl: { type: 'string', label: 'Parent post URL' },
+                    parentPostText: {
+                      type: 'string',
+                      label: 'Parent post text',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ],
+        sampleOutput: OUTREACH_FETCH_USER_COMMENTS_SAMPLE_OUTPUT,
       },
     },
     {
@@ -650,6 +743,10 @@ export const getOutreachLogicFunctionDefinitions = (
               attendeeId: { type: 'string', label: 'Attendee ID' },
               total: { type: 'number', label: 'Total' },
               error: { type: 'string', label: 'Error' },
+              text: {
+                type: 'string',
+                label: 'Formatted text (for AI agent)',
+              },
               messages: {
                 type: 'array',
                 label: 'Messages',

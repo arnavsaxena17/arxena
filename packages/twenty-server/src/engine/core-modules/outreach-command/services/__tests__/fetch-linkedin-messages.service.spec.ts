@@ -1,3 +1,5 @@
+import { FeatureFlagKey } from 'twenty-shared/types';
+
 import { FetchLinkedinMessagesService } from '../fetch-linkedin-messages.service';
 
 describe('FetchLinkedinMessagesService', () => {
@@ -14,10 +16,18 @@ describe('FetchLinkedinMessagesService', () => {
 
   const gtmOutreachMessagePersistService = {
     mergeFetchedLinkedinMessages: jest.fn().mockResolvedValue(null),
+    readLinkedinTranscriptMessages: jest.fn().mockResolvedValue({
+      candidateId: null,
+      chatId: '',
+      messages: [],
+    }),
   };
   const linkedinProviderIdStore = {
     saveProviderId: jest.fn().mockResolvedValue(undefined),
     readStoredProviderId: jest.fn().mockResolvedValue(''),
+  };
+  const featureFlagService = {
+    isFeatureEnabled: jest.fn().mockResolvedValue(false),
   };
 
   const service = new FetchLinkedinMessagesService(
@@ -25,6 +35,7 @@ describe('FetchLinkedinMessagesService', () => {
     linkedinUnipileRequestService as never,
     gtmOutreachMessagePersistService as never,
     linkedinProviderIdStore as never,
+    featureFlagService as never,
   );
 
   const requestedEndpoints = () =>
@@ -34,6 +45,14 @@ describe('FetchLinkedinMessagesService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    featureFlagService.isFeatureEnabled.mockResolvedValue(false);
+    gtmOutreachMessagePersistService.readLinkedinTranscriptMessages.mockResolvedValue(
+      {
+        candidateId: null,
+        chatId: '',
+        messages: [],
+      },
+    );
     linkedinUnipileRequestService.makeUnipileRequest.mockImplementation(
       async (endpoint: string) => {
         if (endpoint.includes('/sync')) {
@@ -194,10 +213,57 @@ describe('FetchLinkedinMessagesService', () => {
     ).toBe(false);
   });
 
-  it('rethrows LinkedIn account rate limit errors', async () => {
-    const { AccountRateLimitDeferredError } = await import(
-      'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error'
+  it('reads chatMessage transcript when IS_OUTREACH_MOCK_UNIPILE_ENABLED', async () => {
+    featureFlagService.isFeatureEnabled.mockImplementation(
+      async (key: FeatureFlagKey) =>
+        key === FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
     );
+    gtmOutreachMessagePersistService.readLinkedinTranscriptMessages.mockResolvedValue(
+      {
+        candidateId: 'cand-1',
+        chatId: 'stored-chat-1',
+        messages: [
+          {
+            id: 'msg-local-1',
+            text: 'Hi Divyesh',
+            timestamp: '2026-09-01T00:00:00.000Z',
+            senderId: '',
+            isSender: true,
+          },
+        ],
+      },
+    );
+
+    await expect(
+      service.execute({
+        workspaceId: 'ws-1',
+        input: {
+          linkedinUrl: 'https://linkedin.com/in/divyesh-shah-b1b97698',
+        },
+      }),
+    ).resolves.toMatchObject({
+      success: true,
+      chatId: 'stored-chat-1',
+      attendeeId: 'divyesh-shah-b1b97698',
+      total: 1,
+      messages: [{ id: 'msg-local-1', text: 'Hi Divyesh', isSender: true }],
+    });
+    expect(
+      gtmOutreachMessagePersistService.readLinkedinTranscriptMessages,
+    ).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      candidateId: undefined,
+      linkedinProfileId: 'divyesh-shah-b1b97698',
+      limit: 50,
+    });
+    expect(
+      linkedinUnipileRequestService.makeUnipileRequest,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('rethrows LinkedIn account rate limit errors', async () => {
+    const { AccountRateLimitDeferredError } =
+      await import('src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error');
 
     globalWorkspaceOrmManager.executeInWorkspaceContext.mockResolvedValue({
       accountId: 'acc-1',

@@ -2,6 +2,7 @@ import {
   OUTREACH_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
@@ -14,6 +15,7 @@ import {
   OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-names.const';
+import { withLlmFormattedText } from 'src/engine/core-modules/outreach-command/utils/with-llm-formatted-text.util';
 
 export const OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT = {
   success: true,
@@ -73,7 +75,7 @@ export const OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT = {
   ],
 };
 
-export const OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT = {
+export const OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT = withLlmFormattedText({
   success: true,
   linkedinProfileId: 'example',
   firstName: 'Arapa',
@@ -112,7 +114,7 @@ export const OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT = {
     },
   ],
   error: '',
-};
+});
 
 export const OUTREACH_SEARCH_PEOPLE_SAMPLE_OUTPUT = {
   success: true,
@@ -202,7 +204,7 @@ export const OUTREACH_SEARCH_JOBS_SAMPLE_OUTPUT = {
   ],
 };
 
-export const OUTREACH_SEARCH_POSTS_SAMPLE_OUTPUT = {
+export const OUTREACH_SEARCH_POSTS_SAMPLE_OUTPUT = withLlmFormattedText({
   success: true,
   total: 1,
   dataSource: 'auto',
@@ -222,9 +224,30 @@ export const OUTREACH_SEARCH_POSTS_SAMPLE_OUTPUT = {
       isRepost: false,
     },
   ],
-};
+});
 
-export const OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT = {
+export const OUTREACH_FETCH_USER_COMMENTS_SAMPLE_OUTPUT = withLlmFormattedText({
+  success: true,
+  total: 1,
+  nextCursor: '',
+  error: '',
+  comments: [
+    {
+      id: 'comment-1',
+      text: 'Great insights — thanks for sharing.',
+      createdAt: '2026-08-01T12:00:00.000Z',
+      threadId: '',
+      replyCounter: 0,
+      authorName: 'Jane Doe',
+      authorUrl: 'https://www.linkedin.com/in/jane-doe',
+      parentPostId: 'post-1',
+      parentPostUrl: 'https://www.linkedin.com/feed/update/urn:li:activity:1',
+      parentPostText: 'We are hiring Account Executives',
+    },
+  ],
+});
+
+export const OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT = withLlmFormattedText({
   success: true,
   chatId: 'chat-1',
   attendeeId: 'ACoAAExampleProviderId1234567890',
@@ -239,7 +262,7 @@ export const OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT = {
       isSender: false,
     },
   ],
-};
+});
 
 export const OUTREACH_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT = {
   success: true,
@@ -401,6 +424,8 @@ export const OUTREACH_LOGIC_FUNCTION_SAMPLE_OUTPUT_BY_NAME: Record<
   [OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME]: OUTREACH_SEARCH_COMPANIES_SAMPLE_OUTPUT,
   [OUTREACH_SEARCH_JOBS_LOGIC_FUNCTION_NAME]: OUTREACH_SEARCH_JOBS_SAMPLE_OUTPUT,
   [OUTREACH_SEARCH_POSTS_LOGIC_FUNCTION_NAME]: OUTREACH_SEARCH_POSTS_SAMPLE_OUTPUT,
+  [OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME]:
+    OUTREACH_FETCH_USER_COMMENTS_SAMPLE_OUTPUT,
   [OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME]:
     OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT,
   [OUTREACH_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME]:

@@ -16,7 +16,7 @@ const createMockObjectMetadataItem = (
   }) as EnrichedObjectMetadataItem;
 
 describe('generateFindRecordsOutputSchema', () => {
-  it('should generate schema with first, all, and totalCount properties', () => {
+  it('should generate schema with first, all, totalCount, and text properties', () => {
     const objectMetadataItem = createMockObjectMetadataItem();
 
     const result = generateFindRecordsOutputSchema(objectMetadataItem);
@@ -24,6 +24,7 @@ describe('generateFindRecordsOutputSchema', () => {
     expect(result).toHaveProperty('first');
     expect(result).toHaveProperty('all');
     expect(result).toHaveProperty('totalCount');
+    expect(result).toHaveProperty('text');
   });
 
   describe('first property', () => {
@@ -93,6 +94,21 @@ describe('generateFindRecordsOutputSchema', () => {
         label: 'Total Count',
         type: 'number',
         value: 'Count of matching records',
+      });
+    });
+  });
+
+  describe('text property', () => {
+    it('should be a leaf node with string type', () => {
+      const objectMetadataItem = createMockObjectMetadataItem();
+
+      const result = generateFindRecordsOutputSchema(objectMetadataItem);
+
+      expect(result.text).toMatchObject({
+        isLeaf: true,
+        icon: 'IconFileText',
+        label: 'Formatted text (for AI agent)',
+        type: 'string',
       });
     });
   });

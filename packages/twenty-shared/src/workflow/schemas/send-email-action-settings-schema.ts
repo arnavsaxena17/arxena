@@ -23,7 +23,8 @@ export type WorkflowEmailFiles = z.infer<typeof workflowEmailFilesSchema>;
 export const workflowSendEmailActionSettingsSchema =
   baseWorkflowActionSettingsSchema.extend({
     input: z.object({
-      connectedAccountId: z.string(),
+      // Draft/incomplete steps may persist null before an account is chosen
+      connectedAccountId: z.string().nullable(),
       recipients: z.object({
         to: z.string().optional().default(''),
         cc: z.string().optional().default(''),

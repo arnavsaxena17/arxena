@@ -1,0 +1,256 @@
+{
+    "object": "UserProfile",
+    "provider": "LINKEDIN",
+    "provider_id": "ACoAAAup_vUBg-znzOwjDf7Ro5xmidw6dCrh58I",
+    "public_identifier": "arvind-pathak-7b165255",
+    "member_urn": "195690229",
+    "first_name": "Arvind",
+    "last_name": "Pathak",
+    "headline": "Group MD and CEO at Dangote Cement Plc. ",
+    "primary_locale": {
+        "country": "US",
+        "language": "en"
+    },
+    "is_open_profile": false,
+    "is_premium": false,
+    "is_influencer": false,
+    "is_creator": false,
+    "is_relationship": false,
+    "is_verified": false,
+    "network_distance": "THIRD_DEGREE",
+    "is_self": false,
+    "websites": [],
+    "follower_count": 2387,
+    "connections_count": 1194,
+    "location": "Thane, Maharashtra, India",
+    "education_total_count": 2,
+    "education": [
+        {
+            "degree": "post graduate, Business Administration and Management, General",
+            "school_id": "15108983",
+            "school": "Indian Institute of Management Mumbai",
+            "school_picture_url": "https://media.licdn.com/dms/image/v2/D4D0BAQG2p_m0m9bbhw/company-logo_200_200/company-logo_200_200/0/1734438341229?e=1790208000&v=beta&t=-xImL72-kkMbKrWb73wsW3yxVe8zsxHlg2kxBEM5w3U",
+            "start": "1/1/1980",
+            "end": "1/1/1982"
+        },
+        {
+            "degree": "Engineer’s Degree, Elect engg",
+            "school_id": "369612",
+            "school": "Indian Institute of Technology (Banaras Hindu University), Varanasi",
+            "school_picture_url": "https://media.licdn.com/dms/image/v2/C4D0BAQHyenVUtyQrLg/company-logo_200_200/company-logo_200_200/0/1631309569195?e=1790208000&v=beta&t=11xtzAQNpirlE4aEHqIEWnf1j2-cqKYLcZum5SZiLLc",
+            "start": "1/1/1975",
+            "end": "1/1/1980",
+            "grade": "First rank"
+        }
+    ],
+    "work_experience_total_count": 8,
+    "work_experience": [
+        {
+            "company": "Dangote Cement",
+            "position": "GMD and CEO",
+            "location": "Lagos State, Nigeria · On-site",
+            "status": "Full-time",
+            "skills": [],
+            "start": "1/1/2023",
+            "end": null
+        },
+        {
+            "company": "Birla corp",
+            "position": "MD and CEO",
+            "location": "Kolkota",
+            "status": "Full-time",
+            "skills": [],
+            "start": "3/1/2021",
+            "end": "12/1/2022"
+        },
+        {
+            "company": "Dangote Cement Ltd ",
+            "position": "Dy Group Managing Director ",
+            "skills": [],
+            "start": "10/1/2019",
+            "end": "2/1/2021"
+        },
+        {
+            "company": "Dangote Cement",
+            "position": "Group COO",
+            "location": "Lagos,Nigeria ",
+            "skills": [],
+            "start": "1/1/2018",
+            "end": "10/1/2019"
+        },
+        {
+            "company_id": "87383",
+            "company": "Adani Enterprises Ltd.",
+            "position": "CEO",
+            "description": "Post CEO at Reliance I was the CEO with Dangote cement , Nigeria for 14 months .\nDue to personal problem I returned to India in Dec 2016 ",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C4D0BAQHWfWqyjHfUdw/company-logo_200_200/company-logo_200_200/0/1630574206696/adani_enterprises_ltd__logo?e=1790208000&v=beta&t=qwcpUq4iH2rXLt1pv1V0kOhuVBNtU9yew8WdvICrGQU",
+            "skills": [],
+            "start": "12/1/2016",
+            "end": "1/1/2018"
+        },
+        {
+            "company_id": "87383",
+            "company": "Adani Enterprises Ltd.",
+            "position": "CEO",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C4D0BAQHWfWqyjHfUdw/company-logo_200_200/company-logo_200_200/0/1630574206696/adani_enterprises_ltd__logo?e=1790208000&v=beta&t=qwcpUq4iH2rXLt1pv1V0kOhuVBNtU9yew8WdvICrGQU",
+            "skills": [],
+            "start": "11/1/2016",
+            "end": "1/1/2018"
+        },
+        {
+            "company": "Dangote cement ltd",
+            "position": "CEO",
+            "location": "lagos, nigeria",
+            "skills": [],
+            "start": "8/1/2015",
+            "end": "10/1/2016"
+        },
+        {
+            "company_id": "27350648",
+            "company": "RELIANCE CEMENT COMPANY PRIVATE LIMITED",
+            "position": "Chief Executive Officer",
+            "location": "Mumbai, Maharashtra, India",
+            "status": "Full-time",
+            "skills": [],
+            "start": "4/1/2008",
+            "end": "8/1/2015"
+        }
+    ],
+    "skills_total_count": 14,
+    "skills": [
+        {
+            "name": "Negotiation",
+            "endorsement_count": 5,
+            "insights": [
+                "Nohman Mahmud and 4 connections have given endorsements for this skill"
+            ],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Team Management",
+            "endorsement_count": 13,
+            "insights": [
+                "Endorsed by Vivek Agnihotri and 2 others who are highly skilled at this",
+                "Endorsed by 2 colleagues at Dangote Industries Limited"
+            ],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Business Strategy",
+            "endorsement_count": 15,
+            "insights": [
+                "Nohman Mahmud and 14 connections have given endorsements for this skill"
+            ],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Operations Management",
+            "endorsement_count": 9,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Project Planning",
+            "endorsement_count": 13,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Management",
+            "endorsement_count": 4,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Manufacturing",
+            "endorsement_count": 3,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Energy",
+            "endorsement_count": 2,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Business Development",
+            "endorsement_count": 16,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Strategic Planning",
+            "endorsement_count": 1,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Project Management",
+            "endorsement_count": 2,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Procurement",
+            "endorsement_count": 2,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Executive Management",
+            "endorsement_count": 1,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Performance Management",
+            "endorsement_count": 1,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        }
+    ],
+    "languages_total_count": 0,
+    "languages": [],
+    "certifications_total_count": 0,
+    "certifications": [],
+    "summary": "Experienced Chief Executive Officer with a demonstrated history of working in the import and export industry. Skilled in Negotiation, Manufacturing, Operations Management, Management, and Energy. Strong business development professional with a Engineer’s Degree focused in Elect engg from Indian Institute of Technology (Banaras Hindu University), Varanasi.",
+    "volunteering_experience_total_count": 0,
+    "volunteering_experience": [],
+    "projects_total_count": 0,
+    "projects": [],
+    "recommendations": {
+        "given_total_count": 1,
+        "given": [
+            {
+                "caption": "January 1, 2025, Arvind was senior to Sanjay but didn't manage Sanjay directly",
+                "text": "Sanjay is an achiever even in adverse environment/ situation. I have managed Sanjay directly / indirectly in several roles / assignments . I was very impressed by his passion and dedication. He has fire in his belly to deliver the best .\nVery passionate about his job and takes pride in achieving unparalleled results .\nVery astute leader of people , has capability of converting average team into a high performing and wining team .His team holds him in high respects and looks up-to him . \nIn very difficult and adverse situations he maintains his cool and is not unduly perturbed . I such situations he leads from team and is align his team for shared vision . I have seen leading in such situations with courage and innovative while keeping his head cool . His team members call him as stress absorber .\nHis open door policy and being approachable to all levels of people makes an asset in any team . \nAn asset to any team . ",
+                "actor": {
+                    "first_name": "Sanjay",
+                    "last_name": "Bhandari",
+                    "provider_id": "ACoAAAk33x8BfFbps9PDYI0cJfFXJJrBRigNgRc",
+                    "public_identifier": "sanjay-bhandari-39396443",
+                    "headline": "National Sales Head @ Shyam Steel India | MBA, Sales",
+                    "public_profile_url": "https://www.linkedin.com/in/sanjay-bhandari-39396443",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D5603AQG018yqLnKfKQ/profile-displayphoto-scale_200_200/B56Zv_nK66GYAY-/0/1769520019086?e=1790208000&v=beta&t=ABVQM2blv4EfiX-Yn0TQWHK2_9GYPMsq5cqF6vmhMJo"
+                }
+            }
+        ],
+        "received_total_count": 0,
+        "received": []
+    }
+}

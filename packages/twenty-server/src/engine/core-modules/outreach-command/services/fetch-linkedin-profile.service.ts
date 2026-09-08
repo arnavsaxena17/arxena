@@ -12,6 +12,10 @@ import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-comma
 import { isValidLinkedInProviderId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-attendee-id.util';
 import { mapUnipileLinkedinProfile } from 'src/engine/core-modules/outreach-command/utils/map-unipile-linkedin-profile.util';
 import { toUploadProfilesPerson } from 'src/engine/core-modules/outreach-command/utils/normalize-upload-people.util';
+import {
+  findOutreachMockUnipileRawProfile,
+  mapOutreachMockUnipileProfile,
+} from 'src/engine/core-modules/outreach-command/utils/outreach-mock-unipile-profiles.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
@@ -85,14 +89,30 @@ export class FetchLinkedinProfileService {
         extractLinkedinProfileId(input.linkedinProfileId) ||
         extractLinkedinProfileId(input.linkedinUrl) ||
         'mock-linkedin-profile';
-      const linkedinUrl = isNonEmptyString(input.linkedinUrl)
-        ? input.linkedinUrl
-        : `https://www.linkedin.com/in/${identifier}`;
 
       this.logger.log(
         `IS_OUTREACH_MOCK_UNIPILE_ENABLED: mock LinkedIn profile for ${identifier}`,
       );
 
+      const fixture = findOutreachMockUnipileRawProfile(identifier);
+
+      if (isDefined(fixture)) {
+        const mapped = mapOutreachMockUnipileProfile(fixture);
+        const person = toUploadProfilesPerson({
+          ...mapped,
+          current_positions: mapped.experience,
+        });
+
+        return {
+          ...mapped,
+          people: person ? [person] : [],
+          error: '',
+        };
+      }
+
+      const linkedinUrl = isNonEmptyString(input.linkedinUrl)
+        ? input.linkedinUrl
+        : `https://www.linkedin.com/in/${identifier}`;
       const mapped = {
         success: true as const,
         linkedinProfileId: identifier,
@@ -127,64 +147,68 @@ export class FetchLinkedinProfileService {
 
     const authContext = buildSystemAuthContext(workspaceId);
 
-    const resolved = await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
-      async () => {
-        const profileRepository =
-          await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberProfileRecord>(
-            workspaceId,
-            'workspaceMemberProfile',
-            { shouldBypassPermissionChecks: true },
-          );
-
-        let accountId = '';
-        let workspaceMemberId = input.workspaceMemberId?.trim() ?? '';
-
-        if (isNonEmptyString(workspaceMemberId)) {
-          const profile = await profileRepository.findOne({
-            where: { workspaceMemberId },
-          });
-
-          accountId = profile?.linkedinUnipileAccountId?.trim() ?? '';
-        }
-
-        if (!isNonEmptyString(accountId)) {
-          const anyProfile = await profileRepository.find({
-            where: {},
-            take: 20,
-          });
-          const withAccount = anyProfile.find((row) =>
-            isNonEmptyString(row.linkedinUnipileAccountId),
-          );
-
-          accountId = withAccount?.linkedinUnipileAccountId?.trim() ?? '';
-          workspaceMemberId =
-            withAccount?.workspaceMemberId ?? workspaceMemberId;
-        }
-
-        let identifier =
-          extractLinkedinProfileId(input.linkedinProfileId) ||
-          extractLinkedinProfileId(input.linkedinUrl);
-
-        if (!isNonEmptyString(identifier) && isNonEmptyString(input.candidateId)) {
-          const candidateRepository =
-            await this.globalWorkspaceOrmManager.getRepository<CandidateRecord>(
+    const resolved =
+      await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+        async () => {
+          const profileRepository =
+            await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberProfileRecord>(
               workspaceId,
-              'candidate',
+              'workspaceMemberProfile',
               { shouldBypassPermissionChecks: true },
             );
-          const candidate = await candidateRepository.findOne({
-            where: { id: input.candidateId },
-          });
 
-          identifier =
-            extractLinkedinProfileId(candidate?.linkedinProfileId) ||
-            extractLinkedinProfileId(candidate?.linkedinUrl?.primaryLinkUrl);
-        }
+          let accountId = '';
+          let workspaceMemberId = input.workspaceMemberId?.trim() ?? '';
 
-        return { accountId, identifier, workspaceMemberId };
-      },
-      authContext,
-    );
+          if (isNonEmptyString(workspaceMemberId)) {
+            const profile = await profileRepository.findOne({
+              where: { workspaceMemberId },
+            });
+
+            accountId = profile?.linkedinUnipileAccountId?.trim() ?? '';
+          }
+
+          if (!isNonEmptyString(accountId)) {
+            const anyProfile = await profileRepository.find({
+              where: {},
+              take: 20,
+            });
+            const withAccount = anyProfile.find((row) =>
+              isNonEmptyString(row.linkedinUnipileAccountId),
+            );
+
+            accountId = withAccount?.linkedinUnipileAccountId?.trim() ?? '';
+            workspaceMemberId =
+              withAccount?.workspaceMemberId ?? workspaceMemberId;
+          }
+
+          let identifier =
+            extractLinkedinProfileId(input.linkedinProfileId) ||
+            extractLinkedinProfileId(input.linkedinUrl);
+
+          if (
+            !isNonEmptyString(identifier) &&
+            isNonEmptyString(input.candidateId)
+          ) {
+            const candidateRepository =
+              await this.globalWorkspaceOrmManager.getRepository<CandidateRecord>(
+                workspaceId,
+                'candidate',
+                { shouldBypassPermissionChecks: true },
+              );
+            const candidate = await candidateRepository.findOne({
+              where: { id: input.candidateId },
+            });
+
+            identifier =
+              extractLinkedinProfileId(candidate?.linkedinProfileId) ||
+              extractLinkedinProfileId(candidate?.linkedinUrl?.primaryLinkUrl);
+          }
+
+          return { accountId, identifier, workspaceMemberId };
+        },
+        authContext,
+      );
 
     if (!isNonEmptyString(resolved.accountId)) {
       return {
@@ -253,8 +277,8 @@ const emptyProfile = (linkedinProfileId: string) => ({
     start: string;
     end: string;
   }>,
-    skills: [] as string[],
-    snapshot: '',
-    people: [] as Array<Record<string, unknown>>,
-    error: '',
-  });
+  skills: [] as string[],
+  snapshot: '',
+  people: [] as Array<Record<string, unknown>>,
+  error: '',
+});

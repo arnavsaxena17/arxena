@@ -1,0 +1,440 @@
+{
+    "object": "UserProfile",
+    "provider": "LINKEDIN",
+    "provider_id": "ACoAAAWqXo0BP8Pxcd2rkmq6VO1TuMn6_Je_fV8",
+    "public_identifier": "deepak-korpal-7259ba27",
+    "member_urn": "95051405",
+    "first_name": "Deepak",
+    "last_name": "Korpal",
+    "headline": "Whole Time Director, President & CEO",
+    "primary_locale": {
+        "country": "US",
+        "language": "en"
+    },
+    "is_open_profile": false,
+    "is_premium": false,
+    "is_influencer": false,
+    "is_creator": false,
+    "is_relationship": false,
+    "is_verified": false,
+    "network_distance": "THIRD_DEGREE",
+    "is_self": false,
+    "websites": [],
+    "follower_count": 3198,
+    "connections_count": 3089,
+    "location": "Mumbai, Maharashtra, India",
+    "birthdate": {
+        "month": 12,
+        "day": 5
+    },
+    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C4D03AQHRqY4_16FgsQ/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1517472503695?e=1790208000&v=beta&t=b_FzqWsZ5hyviQizgoFA6TzanI35G5gry5W4eBociFA",
+    "profile_picture_url_large": "https://media.licdn.com/dms/image/v2/C4D03AQHRqY4_16FgsQ/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1517472503660?e=1790208000&v=beta&t=XOIGrF2YrPJCGqFwNs4aCwUmAmuJM8Np_J6BycvuhyE",
+    "education_total_count": 1,
+    "education": [
+        {
+            "degree": "B.Tech, Chemical",
+            "school_id": "15095112",
+            "school": "Nagpur University",
+            "school_picture_url": "https://media.licdn.com/dms/image/v2/C560BAQGsmGlCGXWBDg/company-logo_200_200/company-logo_200_200/0/1631345474531?e=1790208000&v=beta&t=2BkEcbsRbyRGShzhWHg6OnSvupzjnFVOrTMRGC0yiA4",
+            "start": "1/1/1983",
+            "end": "1/1/1988"
+        }
+    ],
+    "work_experience_total_count": 5,
+    "work_experience": [
+        {
+            "company": "ACG Cellulose Private Ltd",
+            "position": "President & CEO",
+            "location": "Mumbai, Maharashtra, India",
+            "status": "Full-time",
+            "skills": [],
+            "start": "4/1/2021",
+            "end": null
+        },
+        {
+            "company_id": "87353",
+            "company": "ACG Worldwide",
+            "position": "CEO",
+            "location": "India",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/D4D0BAQEa4jC4llfgKQ/company-logo_200_200/company-logo_200_200/0/1692939432268/acg_world_logo?e=1790208000&v=beta&t=_8ArPNJM__5G-Ab0XN1zKfGUuXXCq2OvVIGWiNH5bk0",
+            "skills": [],
+            "start": "12/1/2012",
+            "end": "3/1/2021"
+        },
+        {
+            "company": "IDL Explosives",
+            "position": "CEO",
+            "location": "New Delhi Area, India.",
+            "skills": [],
+            "start": "2/1/2012",
+            "end": "11/1/2012"
+        },
+        {
+            "company": "Sterling Biotech Limited (Division Sterling Gelatin)",
+            "position": "President & CEO",
+            "skills": [],
+            "start": "3/1/1998",
+            "end": "1/1/2012"
+        },
+        {
+            "company": "Sterling Biotech Limited (Division Sterling Gelatin)",
+            "position": "Vice President Operations",
+            "description": "Complete Operations and Market Development.",
+            "skills": [],
+            "start": "7/1/2006",
+            "end": "6/1/2009"
+        }
+    ],
+    "skills_total_count": 42,
+    "skills": [
+        {
+            "name": "Technology Transfer",
+            "endorsement_count": 15,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Process Optimization",
+            "endorsement_count": 20,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Product Management",
+            "endorsement_count": 3,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Facilities Management",
+            "endorsement_count": 3,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Systems Engineering",
+            "endorsement_count": 1,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Talent Acquisition",
+            "endorsement_count": 9,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Cross-functional Team Leadership",
+            "endorsement_count": 11,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Training",
+            "endorsement_count": 7,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Engineering Management",
+            "endorsement_count": 3,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Technology Management",
+            "endorsement_count": 3,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Operational Excellence",
+            "endorsement_count": 9,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Business Process Improvement",
+            "endorsement_count": 3,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Marketing Strategy",
+            "endorsement_count": 7,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Leadership Development",
+            "endorsement_count": 1,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Strategic Leadership",
+            "endorsement_count": 3,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Consulting",
+            "endorsement_count": 3,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Employee Engagement",
+            "endorsement_count": 7,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Sourcing",
+            "endorsement_count": 4,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Quality System",
+            "endorsement_count": 6,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Employee Relations",
+            "endorsement_count": 5,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Resource Management",
+            "endorsement_count": 2,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "TQM",
+            "endorsement_count": 1,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Occupational Health",
+            "endorsement_count": 3,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Process Control",
+            "endorsement_count": 4,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Human Resources",
+            "endorsement_count": 10,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Quality Control",
+            "endorsement_count": 3,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Acquisitions",
+            "endorsement_count": 3,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Start-ups",
+            "endorsement_count": 8,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Business Planning",
+            "endorsement_count": 7,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Manufacturing",
+            "endorsement_count": 24,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Business Strategy",
+            "endorsement_count": 28,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Product Development",
+            "endorsement_count": 37,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Operations Management",
+            "endorsement_count": 19,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Process Engineering",
+            "endorsement_count": 14,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Budgets",
+            "endorsement_count": 5,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Mergers & Acquisitions",
+            "endorsement_count": 3,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Six Sigma",
+            "endorsement_count": 6,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "ISO",
+            "endorsement_count": 1,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Management",
+            "endorsement_count": 18,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Negotiation",
+            "endorsement_count": 4,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "New Business Development",
+            "endorsement_count": 7,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Strategic Planning",
+            "endorsement_count": 6,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        }
+    ],
+    "languages_total_count": 0,
+    "languages": [],
+    "certifications_total_count": 0,
+    "certifications": [],
+    "summary": "\nI like working on challenges and deliver guaranteed excellence. \n\nChemical Engineering graduate from Laxminarayan Institute of technology, Nagpur. 30+ years of Techno-Commercial experience. P&L responsibility, with Multi Location Manufacturing, Man & Project Management, Product development, Marketing/International Sales as domains of expertise.\n\nStand Up and deliver quality products at Optimised Costs, Product Innovation, Lean (1st time right) Manufacturing, Planning, Strategising, Team Building, Market Penetration are my strengths",
+    "volunteering_experience_total_count": 0,
+    "volunteering_experience": [],
+    "projects_total_count": 0,
+    "projects": [],
+    "recommendations": {
+        "given_total_count": 3,
+        "given": [
+            {
+                "caption": "December 14, 2012, Deepak managed A D directly",
+                "text": "A D Sao, is a man of immense knowledge. His experience in the line of Industrial Explosive is unsurpassed. Over the years, with hands on exposure to manufacturing, site management, product development excersise, coupled with his expertise in the field of developing and maintaining Client relationship make him a man of High repute in the field of Industrial Explosives.\r\n\r\nCapability to understand colleagues, identify and sharpen their strengths and at the same time identify the challenges they face, thereby guiding them through the various phases of development, make  A D Sao, a respected team leader.\r\n\r\nNever a person to shrink from responsibilities, A D Sao is known to understand market dynamics well before they are formed. His deep insight of the business, makes it easy for him to plan and stay ahead of competition at any given time. \r\n\r\nI wish ADS, all the best and I am sure, he will continue surpassing all expectations!\r\n\r\nDeepak Korpal",
+                "actor": {
+                    "first_name": "A D",
+                    "last_name": "SAO",
+                    "provider_id": "ACoAAAOak_kB5kxr1ZHUN7RlHYYPys3KKeSZdOk",
+                    "public_identifier": "a-d-sao-7612b918",
+                    "headline": "Chief Operating Officer at IDL Explosives Limited-Retd -9  Nov 2020",
+                    "public_profile_url": "https://www.linkedin.com/in/a-d-sao-7612b918",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C4D03AQHkG9Ts6EiSfQ/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1516779950772?e=1790208000&v=beta&t=c2MVNcuQ_38exFRa3dwMAIO14ymMXHVLgHYh2qn9IOA"
+                }
+            },
+            {
+                "caption": "December 14, 2012, Deepak worked with Raminder but they were at different companies",
+                "text": "I know Raminder to be a very sincere and hardworking professional. She is very committed and passionate about any assignment she handles. With a pleasing demeanor and gritty approach, making her a formidable asset for any institue she works for.\r\n\r\nI wish her all the best and a successful career ahead.\r\n\r\nDeepak Korpal",
+                "actor": {
+                    "first_name": "Raminder",
+                    "last_name": "Kaur",
+                    "provider_id": "ACoAAAHvkIIBqSsz541vF_KGv7bqw8T81EjSWCg",
+                    "public_identifier": "raminder-kaur-8aaa62a",
+                    "headline": "Global Diversity and Inclusion Specialist and Associate at Egon Zehnder",
+                    "public_profile_url": "https://www.linkedin.com/in/raminder-kaur-8aaa62a",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C5103AQERryN8LBdGDw/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1530692845100?e=1790208000&v=beta&t=tc5UOxX_4JILQbHyu50_tGxtGKbjrAkn751oLaYW1Ak"
+                }
+            },
+            {
+                "caption": "May 15, 2012, Deepak managed Rajeshkumar directly",
+                "text": "Rajesh is a very disciplined and inquisitive Manager. Kowing him from his Training days, I have seen him work diligently and determined on the path of progress he charted for himself. His depth of knowledge and its implementation on shop floor is commendable. A team builder, he is a boon for upcoming Engineers, who under his expert guidance are talents of future. His Knowledge, and handling of green field projects, makes him a enviable Manager. Not only in the field of Instrumentation, as also his quest for learning, has given him a first hand insight into all aspects of Engineering. I have no hesitation in recommending Rajesh for any assignment as and when he undertakes one. I am sure he will prove to be a invaluable asset.",
+                "actor": {
+                    "first_name": "Rajeshkumar",
+                    "last_name": "Joshi",
+                    "provider_id": "ACoAAAgbuIoB_nQK-ETfWAkdyZBVrRiCgis-Feo",
+                    "public_identifier": "rajeshkumar-joshi-77668339",
+                    "headline": "Head of E&I – ACG Worldwide | Board Advisor | B.E. (Electronics) MBA PMP® | Leading $100M+ Global Pharma Projects | M&A Due Diligence | Independent Director (IICA) | 33 Years Multi-Continent Leadership",
+                    "public_profile_url": "https://www.linkedin.com/in/rajeshkumar-joshi-77668339",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C5603AQFSv5R6F7Kguw/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1516823871118?e=1790208000&v=beta&t=DsQBfnxPf90rTLdf323jMZ2ugkIR6xF6Jo62DZ61ock"
+                }
+            }
+        ],
+        "received_total_count": 0,
+        "received": []
+    }
+}

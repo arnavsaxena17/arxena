@@ -9,6 +9,7 @@ import {
   LINKEDIN_UNIPILE_GET_PROFILE_INPUT_DESCRIPTOR,
   LINKEDIN_UNIPILE_GET_PROFILE_OVERVIEW_INPUT_DESCRIPTOR,
   LINKEDIN_UNIPILE_GET_USER_POSTS_INPUT_DESCRIPTOR,
+  LINKEDIN_UNIPILE_GET_USER_COMMENTS_INPUT_DESCRIPTOR,
   LINKEDIN_UNIPILE_HOSTED_AUTH_INPUT_DESCRIPTOR,
   LINKEDIN_UNIPILE_ORG_CHART_ENSURE_ACCOUNT_INPUT_DESCRIPTOR,
   LINKEDIN_UNIPILE_PERSIST_COOKIES_INPUT_DESCRIPTOR,
@@ -240,6 +241,13 @@ export const unipileControllersTools: McpTool[] = [
     'linkedin-unipile',
     'profile/posts',
     LINKEDIN_UNIPILE_GET_USER_POSTS_INPUT_DESCRIPTOR,
+  ),
+  postUnipileTool(
+    'linkedin_unipile_get_user_comments',
+    'Retrieve LinkedIn comments made by a user to posts (Unipile List User Comments). Use identifier `me` for the connected account owner. Returns paginated comments with parent post preview.',
+    'linkedin-unipile',
+    'profile/comments',
+    LINKEDIN_UNIPILE_GET_USER_COMMENTS_INPUT_DESCRIPTOR,
   ),
   postUnipileTool(
     'linkedin_unipile_get_profile_overview',

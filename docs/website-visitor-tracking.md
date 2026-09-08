@@ -15,12 +15,12 @@ Track companies that visit your website with a small installable script (Apollo-
 
 ```html
 <script>
-(function(w,d,s,u,a){
-  w.arxenaTracker=w.arxenaTracker||function(){(w.arxenaTracker.q=w.arxenaTracker.q||[]).push(arguments)};
-  var n=d.createElement(s);n.async=1;n.src=u;
-  var f=d.getElementsByTagName(s)[0];f.parentNode.insertBefore(n,f);
-  w.arxenaTracker('init',{appId:'trk_…',apiBaseUrl:'https://api.arxena.com'});
-})(window,document,'script','https://arxena.com/embed/website-tracker.js');
+(function(a,r,x,e,n,a){
+  a.arxenaTracker=a.arxenaTracker||function(){(a.arxenaTracker.q=a.arxenaTracker.q||[]).push(arguments)};
+  n=r.createElement(x);n.async=1;n.src=e;
+  r.getElementsByTagName(x)[0].parentNode.insertBefore(n,r.getElementsByTagName(x)[0]);
+  a.arxenaTracker('init',{appId:'trk_…',apiBaseUrl:'https://api.arxena.com'});
+})(window,document,'script','https://arxena.com/embed/website-tracker.js',0,window);
 </script>
 ```
 

@@ -1,0 +1,636 @@
+{
+    "object": "UserProfile",
+    "provider": "LINKEDIN",
+    "provider_id": "ACoAAAUkrsoBlSXeZgiT0ZwbLfczUEUYQBZd_hc",
+    "public_identifier": "vineet-sharma-4b6a9424",
+    "member_urn": "86290122",
+    "first_name": "Vineet",
+    "last_name": "Sharma",
+    "headline": "Co-founder & CEO, fleetx.io",
+    "primary_locale": {
+        "country": "US",
+        "language": "en"
+    },
+    "is_open_profile": false,
+    "is_premium": true,
+    "is_influencer": false,
+    "is_creator": false,
+    "is_relationship": false,
+    "is_verified": true,
+    "network_distance": "SECOND_DEGREE",
+    "is_self": false,
+    "websites": [],
+    "follower_count": 8064,
+    "connections_count": 8166,
+    "location": "Gurgaon, Haryana, India",
+    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C4D03AQFyNL_V4wuqfA/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1517242508517?e=1790208000&v=beta&t=ybBF3rHNkrSnuJQrRzRyuzSU5NkgsNrzRkcOAOMif1I",
+    "profile_picture_url_large": "https://media.licdn.com/dms/image/v2/C4D03AQFyNL_V4wuqfA/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1517242508390?e=1790208000&v=beta&t=R5ptbGplh_cAz-VxT9bWeK8GG8Z9_g8osAZaNFJuD4A",
+    "education_total_count": 2,
+    "education": [
+        {
+            "degree": "B.Tech",
+            "school_id": "157269",
+            "school": "Indian Institute of Technology, Roorkee",
+            "school_picture_url": "https://media.licdn.com/dms/image/v2/C510BAQFxnsvax1W4UQ/company-logo_200_200/company-logo_200_200/0/1631431492069/indian_institute_of_technology_roorkee_logo?e=1790208000&v=beta&t=T6xYeLw1DqgAlGuZy_uVt0D-PSVqtqye5yQosDPd-cc",
+            "start": "1/1/2004",
+            "end": "1/1/2008"
+        },
+        {
+            "degree": "Summer Internship, Chemical Process Technology",
+            "school_id": "3558",
+            "school": "Georgia Institute of Technology",
+            "school_picture_url": "https://media.licdn.com/dms/image/v2/D4E0BAQFgQNnDJI5zRQ/company-logo_200_200/B4EZ9mNsbEHwAE-/0/1784126293906/georgia_institute_of_technology_logo?e=1790208000&v=beta&t=3wIJjI2olNXcswK0qXZcNF15T8HrSbUUsiHNr2hEh2Y",
+            "start": "5/1/2007",
+            "end": "7/1/2007"
+        }
+    ],
+    "work_experience_total_count": 7,
+    "work_experience": [
+        {
+            "company_id": "13399832",
+            "company": "fleetx.ai",
+            "position": "Co-founder & CEO",
+            "location": "Gurugram, Haryana, India",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C510BAQGOhteaQPr0cA/company-logo_200_200/company-logo_200_200/0/1630619261968/fleetx_io_logo?e=1790208000&v=beta&t=fX3ziannZTXmU1Zb4ohMMyZM_ReB89InVK3crLZTyXs",
+            "skills": [],
+            "start": "6/1/2017",
+            "end": null
+        },
+        {
+            "company_id": "206141",
+            "company": "ixigo.com",
+            "position": "AVP - Engineering",
+            "description": "1. Design and build the scalable architecture and infrastructure\n2. Build the technology team and double the strength in 3 months.\n3. Mentoring the new joiners\n4. Work closely with Sales, Marketing/SEO, Data and Content team for technology requirements and implementation.\n5. Evaluate new cutting edge technologies and check the viability with current product implementation.",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C4D0BAQGoBqTRWTZ9_g/company-logo_200_200/company-logo_200_200/0/1634119781762?e=1790208000&v=beta&t=IZOjVzTlS3wWXdPWjdYU8POF8X5Jb93NK0eJHzC8VwM",
+            "skills": [],
+            "start": "4/1/2015",
+            "end": "5/1/2017"
+        },
+        {
+            "company_id": "206141",
+            "company": "ixigo.com",
+            "position": "Product/Software Development Manager",
+            "description": "Being a developer at heart half of my effort still goes in execution and implementation. Rest of the time  my focus is to manage end to end product lifecycle which includes Product Strategy, Product Evolution, Ownership of product roadmap and driving/leading product launches, co-ordinating across design, marketing, communications and content teams, listening closely to user requirements",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C4D0BAQGoBqTRWTZ9_g/company-logo_200_200/company-logo_200_200/0/1634119781762?e=1790208000&v=beta&t=IZOjVzTlS3wWXdPWjdYU8POF8X5Jb93NK0eJHzC8VwM",
+            "skills": [],
+            "start": "1/1/2014",
+            "end": "3/1/2015"
+        },
+        {
+            "company_id": "206141",
+            "company": "ixigo.com",
+            "position": "Product Lead",
+            "description": "Leading end to end product development in ixigo specially the new product trip planner. Currently, I am working with team of 9 people.",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C4D0BAQGoBqTRWTZ9_g/company-logo_200_200/company-logo_200_200/0/1634119781762?e=1790208000&v=beta&t=IZOjVzTlS3wWXdPWjdYU8POF8X5Jb93NK0eJHzC8VwM",
+            "skills": [],
+            "start": "1/1/2013",
+            "end": "1/1/2014"
+        },
+        {
+            "company_id": "206141",
+            "company": "ixigo.com",
+            "position": "Project Lead",
+            "description": "I handle the backend development of each and every project at ixigo which includes architecture design, development, QA, deployment strategies, releases etc. I preferably work on Java, J2EE, JibX, mysql, MongoDB, Caching Framework and other cutting edge technologies like varnish, solr, spring mongo data etc.",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C4D0BAQGoBqTRWTZ9_g/company-logo_200_200/company-logo_200_200/0/1634119781762?e=1790208000&v=beta&t=IZOjVzTlS3wWXdPWjdYU8POF8X5Jb93NK0eJHzC8VwM",
+            "skills": [],
+            "start": "1/1/2012",
+            "end": "1/1/2013"
+        },
+        {
+            "company_id": "206141",
+            "company": "ixigo.com",
+            "position": "Senior Product Associate",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/C4D0BAQGoBqTRWTZ9_g/company-logo_200_200/company-logo_200_200/0/1634119781762?e=1790208000&v=beta&t=IZOjVzTlS3wWXdPWjdYU8POF8X5Jb93NK0eJHzC8VwM",
+            "skills": [],
+            "start": "12/1/2010",
+            "end": "12/1/2011"
+        },
+        {
+            "company": "Oracle India Private Limited",
+            "position": "Applications Engineer",
+            "description": "I was a part of Oracle retail in which i have developed many modules of one of the main product in retail called \"Store Inventory Mangement\". Apart from that i was also involved in using the Oracle SOA into various retail products.",
+            "skills": [],
+            "start": "2/1/2010",
+            "end": "12/1/2010"
+        },
+        {
+            "company_id": "1033",
+            "company": "Accenture Services Pvt. Ltd.",
+            "position": "Senior Programmer",
+            "description": "I was a part of Oracle COE which basically works on Oracle Service Oriented Architecture (SOA) and its various aspects. I was a part of many ERP implementations which accenture has done for various prestigious clients in india and abroad.",
+            "company_picture_url": "https://media.licdn.com/dms/image/v2/D4D0BAQEgtOEcxlXMog/company-logo_200_200/B4DZfqEQWkHAAQ-/0/1751978673981/accenture_logo?e=1790208000&v=beta&t=eV7XsrlXAWi0PWPwfCApsaphQngsCK_AvyfKfY9D_n0",
+            "skills": [],
+            "start": "7/1/2008",
+            "end": "1/1/2010"
+        }
+    ],
+    "skills_total_count": 46,
+    "skills": [
+        {
+            "name": "MySQL",
+            "endorsement_count": 51,
+            "insights": [
+                "Endorsed by Manish Kumar and 4 others who are highly skilled at this",
+                "Endorsed by 3 colleagues at fleetx.ai"
+            ],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Java Enterprise Edition",
+            "endorsement_count": 44,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "MongoDB",
+            "endorsement_count": 36,
+            "insights": [
+                "Endorsed by Abhay Jeet Gupta and 1 other who is highly skilled at this",
+                "Endorsed by 2 colleagues at fleetx.ai"
+            ],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Java",
+            "endorsement_count": 45,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "SOA",
+            "endorsement_count": 23,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Team Management",
+            "endorsement_count": 40,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Apache",
+            "endorsement_count": 9,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Agile Methodologies",
+            "endorsement_count": 21,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Hibernate",
+            "endorsement_count": 13,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Web Services",
+            "endorsement_count": 15,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Project Management",
+            "endorsement_count": 12,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "XML",
+            "endorsement_count": 8,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "J2EE Application Development",
+            "endorsement_count": 4,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Oracle",
+            "endorsement_count": 7,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Design Patterns",
+            "endorsement_count": 4,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Varnish",
+            "endorsement_count": 4,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Web 2.0",
+            "endorsement_count": 3,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "open graph",
+            "endorsement_count": 3,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "orient db",
+            "endorsement_count": 3,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Struts",
+            "endorsement_count": 3,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "JSF",
+            "endorsement_count": 2,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "RESTful WebServices",
+            "endorsement_count": 2,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "OpenSceneGraph",
+            "endorsement_count": 1,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "REST",
+            "endorsement_count": 6,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "SEO",
+            "endorsement_count": 0,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Redis",
+            "endorsement_count": 0,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Memcached",
+            "endorsement_count": 0,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "OAuth",
+            "endorsement_count": 0,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "SQL",
+            "endorsement_count": 2,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Start-ups",
+            "endorsement_count": 3,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Scalability",
+            "endorsement_count": 0,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Agile Project Management",
+            "endorsement_count": 1,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Scrum",
+            "endorsement_count": 2,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Representational State Transfer (REST)",
+            "endorsement_count": 1,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Service-Oriented Architecture (SOA)",
+            "endorsement_count": 1,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Management",
+            "endorsement_count": 2,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Apache Spark",
+            "endorsement_count": 0,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Cassandra",
+            "endorsement_count": 0,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Apache Kafka",
+            "endorsement_count": 0,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Netty",
+            "endorsement_count": 0,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Big Data",
+            "endorsement_count": 0,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Big Data Analytics",
+            "endorsement_count": 0,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Leadership",
+            "endorsement_count": 0,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Entrepreneurship",
+            "endorsement_count": 0,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Strategy",
+            "endorsement_count": 0,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        },
+        {
+            "name": "Startups",
+            "endorsement_count": 0,
+            "insights": [],
+            "endorsement_id": null,
+            "endorsed": false
+        }
+    ],
+    "languages_total_count": 0,
+    "languages": [],
+    "certifications_total_count": 1,
+    "certifications": [
+        {
+            "name": "Sun Certified Programmer for Java SE5",
+            "organization": "Sun Microsystems"
+        }
+    ],
+    "summary": "Building fleetx.io!",
+    "volunteering_experience_total_count": 0,
+    "volunteering_experience": [],
+    "projects_total_count": 0,
+    "projects": [],
+    "recommendations": {
+        "given_total_count": 3,
+        "given": [
+            {
+                "caption": "June 18, 2017, Vineet managed Mohit directly",
+                "text": "Mohit is one of the best problem solver I have come across in my career. He loves challenges and always eager to learn. He is a champion coder who can overcome any problem on its own. He is a great mentor for other team members and keeps a perfect balance between fun and work ! Apart from great technical skills and drive for excellence, he has a trait of a natural leader which makes him a great asset to any organisation.",
+                "actor": {
+                    "first_name": "Mohit",
+                    "last_name": "Chandra",
+                    "provider_id": "ACoAAAOS9E0B8JrtrFwg-2jIG8ORky9JiHCrUOk",
+                    "public_identifier": "mohit-chandra-5a50b818",
+                    "headline": "Engineering Leader @ Amazon | Global Tech Experience (US & India) | Ex-Sr. SDE (Amazon Seattle) | Scaling People & Architectures | Ex-Ixigo | Ex-Adobe",
+                    "public_profile_url": "https://www.linkedin.com/in/mohit-chandra-5a50b818",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C4D03AQFxzv8hmdbv0g/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1516775465899?e=1790208000&v=beta&t=huperGAxwDe-t0ussP2jaGWGhOGavBB3wMCMdPfQZ6I"
+                }
+            },
+            {
+                "caption": "September 29, 2014, Vineet managed Jatin directly",
+                "text": "Jatin is a smart and quick learner who shows diligence in each task. Whether it comes to find bugs with mere ad-hoc testing or automating the critical parts  of web applications, he has his own way of doing things so swiftly that you are bound to be left dumbstruck by his speed of execution.\r\nUnlike other software testers, not only does he logs a bug, he also tries to come up with possible causes which are actually debug points for the developers in the team.\r\nPro in Redmine ! It’s a pleasure working with Jatin as he is the support system of the entire team, who tends to take the workload off our shoulders as well.",
+                "actor": {
+                    "first_name": "Jatin",
+                    "last_name": "Makhija",
+                    "provider_id": "ACoAABVCyygBTPUE-mzCM_7T4s4zOgxhJsWFL5o",
+                    "public_identifier": "jatinmakhija",
+                    "headline": "Engineering Management | Automation | Spring Boot | Quality Driven | CSM | Performance | Speaker",
+                    "public_profile_url": "https://www.linkedin.com/in/jatinmakhija"
+                }
+            },
+            {
+                "caption": "June 15, 2013, Vineet worked with Naveen on the same team",
+                "text": "I have worked with Naveen at Oracle and I can say Naveen was one of the brightest and most enthusiastic members of the team. He is full of energy and zeal, and that shows in things he does. He works best when he is in leadership kind of roles, where he has people, resources and freedom to leverage the way he wants... Having will and wisdom to take stand in difficult situations and courage to face the consequences on behalf of the team, thats what differentiates a leader from the rest. He has it. He is self-motivated, knows what he wants and goes out to come back with it. I have never seen him give up. In the nutshell, if i am to work on a project with Naveen, i can rest assured it will not fail",
+                "actor": {
+                    "first_name": "Naveen",
+                    "last_name": "PRASAD",
+                    "provider_id": "ACoAAAM_SE0BEq-xnE-zFtkZU2dWwL1AkEyubNY",
+                    "public_identifier": "naveenkp",
+                    "headline": "Founder & Managing Partner, Agilis Capital (Deeptech meets Investment banking, M&A) | 3X Founder | Angel Investor | Capital 40u40",
+                    "public_profile_url": "https://www.linkedin.com/in/naveenkp",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C4D03AQEXaAkd0RL3mA/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1630502448563?e=1790208000&v=beta&t=k68z9qUvFl0JrSG3DKxP6cPpH7T4MqCNuYMLgicNnhs"
+                }
+            }
+        ],
+        "received_total_count": 9,
+        "received": [
+            {
+                "caption": "October 2, 2017, Aashish worked with Vineet but on different teams",
+                "text": "Vineet is a cracker-jack every tech team need today. Always working with a calm sense of clarity and a firm grip on execution. I’ve watched him lead from the front in many a crisis situations, never off the focus and with a keen sense of ‘what’s right' for the end user. I wish him the best for his new startup and can say with confidence that this rockstar has miles to go!",
+                "actor": {
+                    "first_name": "Aashish",
+                    "last_name": "Chopra",
+                    "provider_id": "ACoAAAC1MTIBteUf8GkDFz3JE_ShQ5cBPUKT1Gk",
+                    "public_identifier": "acway",
+                    "headline": "Author, Fast Cheap & Viral • 80 viral videos • Experimenting at Shareworthy Labs • Helping teams earn audience love",
+                    "public_profile_url": "https://www.linkedin.com/in/acway",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D5603AQEfDzlyh1zBsA/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1718970530823?e=1790208000&v=beta&t=7UwpX42xxcaBbK-0xw2MJtrNUt_JX_wmp1f1pvUJ1VY"
+                }
+            },
+            {
+                "caption": "June 24, 2017, Aloke was senior to Vineet but didn't manage Vineet directly",
+                "text": "Vineet was a key pillar of strength in ixigo's journey, and contributed immensely to our growth. His execution and self-learning capabilities set a very high gold standard for the rest of the tech and product team to follow, and his ability to solve complex challenges blazingly fast and with limited resources sets him apart among his peers. In terms of leadership, he not only held the team together,  but also stepped up to the leadership team and shouldered wider responsibilities that he saw no-one else taking in the company. He is also a risk-taker who provided much needed support and stepped up the momentum even during the tougher days. We still miss him. ",
+                "actor": {
+                    "first_name": "Aloke",
+                    "last_name": "Bajpai",
+                    "provider_id": "ACoAAAAM2kgBSR3FFeFiyCGYw8rMYv0C-Jheo4c",
+                    "public_identifier": "alokebajpai",
+                    "headline": "Re-imagining Travel with AI ! ",
+                    "public_profile_url": "https://www.linkedin.com/in/alokebajpai",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C4D03AQFxDB_Yx9lHCQ/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1594836591529?e=1790208000&v=beta&t=Y3GEXgD4tMTi2pT-7yi1LL6XX3zpctsyZFja7FlySvQ"
+                }
+            },
+            {
+                "caption": "June 14, 2017, Dhruv reported directly to Vineet",
+                "text": "Vineet is a \"Renaissance man\".  Few people have the opportunity to report to a manager who is also a coach and mentor — but I did when I worked for Vineet. I’ve had the pleasure of working with Vineet for 3 years, during which I have seen him evolve from a developer, with excellent problem solving skills, to an astute manager, who would communicate across teams for better coordination,  to a leader with deep understanding of technology. Above all, I was impressed with his ability to motivate, coach and produce results from people. Ixigo has gone through some of the most rapid series of changes/pivots successfully under his guidance. And, of course, we would miss him as our opening batsman on our office cricket team. Also, no matter how tense a meeting/discussion, Vineet would make sure everyone left with a smile. If I ever get the chance, I would love to work for him again. ",
+                "actor": {
+                    "first_name": "Dhruv",
+                    "last_name": "Balhara",
+                    "provider_id": "ACoAAATfZGQBRSV7ygewnJAf2GnNF93XqdtSHEI",
+                    "public_identifier": "dhruvbalhara",
+                    "headline": "Senior Technical Architect | Multi-Cloud Solutions | AI & Agentic Systems",
+                    "public_profile_url": "https://www.linkedin.com/in/dhruvbalhara",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C4D03AQELV-9nzUsCKg/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1640441722930?e=1790208000&v=beta&t=ROhwXjtvXxHjbNuvue1_jXM2GSC6xTep7MHMOgtvJVk"
+                }
+            },
+            {
+                "caption": "June 9, 2017, Vineet was senior to Shveta but didn't manage Shveta directly",
+                "text": "I had a wonderful time and learnt a lot while working with Vineet. He has a great knack of learning and understanding the problem in no time. His energy and aura of hardworking are really inspiring. He is a go-getter especially in the times of deadlines and challenges. Great mentor and motivator! Do not think twice if you are getting a chance to work with him. \nAll the best, Vineet :)\n",
+                "actor": {
+                    "first_name": "Shveta",
+                    "last_name": "Berry",
+                    "provider_id": "ACoAAATfyKkBdzH9gw4KPl7Wy2s_2bLa2bC__cw",
+                    "public_identifier": "shveta-berry",
+                    "headline": "Project Management | SAFe | PSM | Six Sigma Green Belt Certified",
+                    "public_profile_url": "https://www.linkedin.com/in/shveta-berry",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C4D03AQFuPUw7jTyREg/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1654240879071?e=1790208000&v=beta&t=B7_xjK8YCD-adLQlZ9XNeft0MlRIafcxNsC1tAT76is"
+                }
+            },
+            {
+                "caption": "June 8, 2017, Mohit reported directly to Vineet",
+                "text": "Vineet is a very smart developer and a highly energetic and passionate leader. Working with him is a great experience and one gets to learn new things every now and then. He is a problem solver and won't rest until the problem in hand is solved. He always encourages people to go extra miles and also helps his sub-ordinates to build confidence and heights in their career. He is a phenomenal mentor and it was a great feeling working under him. If you ever get a chance to work with him, grab the opportunity with both hands.",
+                "actor": {
+                    "first_name": "Mohit",
+                    "last_name": "Chandra",
+                    "provider_id": "ACoAAAOS9E0B8JrtrFwg-2jIG8ORky9JiHCrUOk",
+                    "public_identifier": "mohit-chandra-5a50b818",
+                    "headline": "Engineering Leader @ Amazon | Global Tech Experience (US & India) | Ex-Sr. SDE (Amazon Seattle) | Scaling People & Architectures | Ex-Ixigo | Ex-Adobe",
+                    "public_profile_url": "https://www.linkedin.com/in/mohit-chandra-5a50b818",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C4D03AQFxzv8hmdbv0g/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1516775465899?e=1790208000&v=beta&t=huperGAxwDe-t0ussP2jaGWGhOGavBB3wMCMdPfQZ6I"
+                }
+            },
+            {
+                "caption": "April 17, 2017, Ernesto managed Vineet directly",
+                "text": "Vineet is a real startup guy. Always with an eye on product and technology and able to move a team to succeed.\r\nHe can solve any challenge and was a great motivator for my team and myself. \r\nI can only recommend Vineet on any adventure in which he participates. I just hope we can cross paths again in future. ",
+                "actor": {
+                    "first_name": "Ernesto",
+                    "last_name": "Cohnen",
+                    "provider_id": "ACoAAACd6VABPF1COMEx73eBhkvEEpLhkd_OWdw",
+                    "public_identifier": "cohnen",
+                    "headline": "Let’s change Travel together! 🚀 SVP AI Products @ ixigo | Co-founder @ triporate",
+                    "public_profile_url": "https://www.linkedin.com/in/cohnen",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C4E03AQHK1vJXgvuLgg/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1516309815451?e=1790208000&v=beta&t=DfTT-hCHt3xqwJ-ECT7H316rXixrLi67e1MQwILBKRo"
+                }
+            },
+            {
+                "caption": "February 9, 2015, Abhishek was senior to Vineet but didn't manage Vineet directly",
+                "text": "I have had a chance to work with Vineet for more than 2 year during my stint with ixigo. Vineet is a great manager who has the ability to manage a team of awesome people and ensure that the given deadlines are met. His unique ability to manage, people, technology and processes always keeps him ahead in the game. I wish Vineet all the very best for the future! :-)",
+                "actor": {
+                    "first_name": "Abhishek",
+                    "last_name": "Sharma",
+                    "provider_id": "ACoAAABFBL0BTNhijqA2shBpBF0W7AM504yrNsc",
+                    "public_identifier": "abhishek78",
+                    "headline": "Building Businesses at the Intersection of Technology, Markets & Scale | AI, Consumer Internet & Digital Platforms | Two Successful Exits",
+                    "public_profile_url": "https://www.linkedin.com/in/abhishek78",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/D5603AQHyicDKNjg5IQ/profile-displayphoto-scale_100_100/B56Zwkgu0ZKYAc-/0/1770139088890?e=1790208000&v=beta&t=0wnGSnZTe1FOgj992UOtCrWGGNpAnefS_WVcYIDP-JY"
+                }
+            },
+            {
+                "caption": "April 5, 2013, Nitin was senior to Vineet but didn't manage Vineet directly",
+                "text": "Vineet is hands on with the technology and also get the big picture quick and thus gets his hands dirty to keep a balance between business commitments and Tech limitations. Hard and smart Tech guy, committed toward making things happen within deadline and a good team lead are few traits that make him the Goto guy.",
+                "actor": {
+                    "first_name": "Nitin",
+                    "last_name": "Gurha",
+                    "provider_id": "ACoAAABSGckBCM0whTMVaEUsp6aG2pgYh4qPzbE",
+                    "public_identifier": "nitingurha",
+                    "headline": "Travel Industry Veteran, Business Head, Business Transformation professional !",
+                    "public_profile_url": "https://www.linkedin.com/in/nitingurha",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C4D03AQEpbz14X1nIbg/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1609343469922?e=1790208000&v=beta&t=dfddlny-TRaMXH_IhEPaAxsko104ueZzQLpIl_pV-yY"
+                }
+            },
+            {
+                "caption": "March 24, 2013, Naveen worked with Vineet on the same team",
+                "text": "I've had the opportunity to work closely with Vineet during my stint with Oracle. A highly competent professional, his technical skills are excellent and he adopted himself to all the new assignments with ease and completed them with high quality. He has a strong entrepreneurial acumen and his high attention to detail helps him analyse the requirements well and fathom the bigger picture. An intelligent person and a natural hard worker he has all it takes to make it big and I wish him luck in all his future endeavours!!",
+                "actor": {
+                    "first_name": "Naveen",
+                    "last_name": "PRASAD",
+                    "provider_id": "ACoAAAM_SE0BEq-xnE-zFtkZU2dWwL1AkEyubNY",
+                    "public_identifier": "naveenkp",
+                    "headline": "Founder & Managing Partner, Agilis Capital (Deeptech meets Investment banking, M&A) | 3X Founder | Angel Investor | Capital 40u40",
+                    "public_profile_url": "https://www.linkedin.com/in/naveenkp",
+                    "profile_picture_url": "https://media.licdn.com/dms/image/v2/C4D03AQEXaAkd0RL3mA/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1630502448563?e=1790208000&v=beta&t=k68z9qUvFl0JrSG3DKxP6cPpH7T4MqCNuYMLgicNnhs"
+                }
+            }
+        ]
+    },
+    "shared_connections_count": 2
+}
