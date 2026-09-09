@@ -247,7 +247,7 @@ export class OtherFieldsService {
         {
           lastCursor,
           limit: 100,
-          filter: { projectsId: { eq: projectId } },
+          filter: { projectId: { eq: projectId } },
         },
         apiToken,
       );

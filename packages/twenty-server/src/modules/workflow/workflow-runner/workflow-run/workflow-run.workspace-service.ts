@@ -34,7 +34,7 @@ import {
 import { mergeWorkflowRunStepInfo } from 'src/modules/workflow/workflow-runner/utils/merge-workflow-run-step-info.util';
 
 type CandidateProjectIdRecord = {
-  projectsId?: string | null;
+  projectId?: string | null;
 };
 
 @Injectable()
@@ -510,9 +510,9 @@ export class WorkflowRunWorkspaceService {
           where: { id: workflowRunToUpdate.candidateId },
         });
 
-        if (isDefined(candidate?.projectsId)) {
+        if (isDefined(candidate?.projectId)) {
           this.outreachCacheRealtimeService.notifyProjectCacheUpdated(
-            candidate.projectsId,
+            candidate.projectId,
             'journey',
           );
         }

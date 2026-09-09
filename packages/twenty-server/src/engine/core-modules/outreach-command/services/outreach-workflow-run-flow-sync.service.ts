@@ -25,7 +25,7 @@ import { WorkflowRunWorkspaceService } from 'src/modules/workflow/workflow-runne
 
 type CandidateExperimentRecord = ObjectLiteral & {
   id: string;
-  projectsId?: string | null;
+  projectId?: string | null;
   experimentVariant?: string | null;
 };
 
@@ -220,7 +220,7 @@ export class OutreachWorkflowRunFlowSyncService {
     if (
       !isDefined(candidate) ||
       candidate.experimentVariant !== 'B' ||
-      candidate.projectsId !== projectId
+      candidate.projectId !== projectId
     ) {
       return controlVersionId;
     }

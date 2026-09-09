@@ -25,7 +25,7 @@ type CandidateRow = ObjectLiteral & {
   id: string;
   firstOutboundAt?: string | Date | null;
   outreachSpeedTimestamps?: unknown;
-  projectsId?: string | null;
+  projectId?: string | null;
   peopleId?: string | null;
 };
 
@@ -42,6 +42,15 @@ type PersonRow = ObjectLiteral & {
   id: string;
   companyId?: string | null;
 };
+
+const columnNames = (repository: {
+  metadata?: { columns?: Array<{ propertyName?: string }> };
+}): Set<string> =>
+  new Set(
+    (repository.metadata?.columns ?? [])
+      .map((column) => column.propertyName)
+      .filter((name): name is string => isNonEmptyString(name)),
+  );
 
 const toIso = (value: string | Date | null | undefined): string | null => {
   if (!value) {
@@ -83,163 +92,175 @@ export class ReBackfillOutreachCompanyRollupsCommand extends ProvisionedWorkspac
 
     const authContext = buildSystemAuthContext(workspaceId);
 
-    await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
-      async () => {
-        const candidateRepository =
-          await this.globalWorkspaceOrmManager.getRepository<CandidateRow>(
-            workspaceId,
-            'candidate',
-            { shouldBypassPermissionChecks: true },
-          );
-        const companyRepository =
-          await this.globalWorkspaceOrmManager.getRepository<CompanyRow>(
-            workspaceId,
-            'company',
-            { shouldBypassPermissionChecks: true },
-          );
-        const personRepository =
-          await this.globalWorkspaceOrmManager.getRepository<PersonRow>(
-            workspaceId,
-            'person',
-            { shouldBypassPermissionChecks: true },
-          );
-
-        const [candidates, companies, people] = await Promise.all([
-          candidateRepository.find({ take: 20_000 }),
-          companyRepository.find({ take: 20_000 }),
-          personRepository.find({ take: 20_000 }),
-        ]);
-
-        const personById = new Map(people.map((person) => [person.id, person]));
-        const companyById = new Map(companies.map((company) => [company.id, company]));
-        const projectIdsByCompany = new Map<string, Set<string>>();
-        const reachedByCompany = new Map<string, string[]>();
-        const firstContactByCompany = new Map<string, string[]>();
-        const targetedByCompany = new Map<string, number>();
-
-        for (const candidate of candidates) {
-          const companyId =
-            personById.get(candidate.peopleId ?? '')?.companyId ?? null;
-
-          if (!isNonEmptyString(companyId)) {
-            continue;
-          }
-
-          if (isNonEmptyString(candidate.projectsId)) {
-            const projectIds =
-              projectIdsByCompany.get(companyId) ?? new Set<string>();
-
-            projectIds.add(candidate.projectsId);
-            projectIdsByCompany.set(companyId, projectIds);
-          }
-
-          targetedByCompany.set(
-            companyId,
-            (targetedByCompany.get(companyId) ?? 0) + 1,
-          );
-
-          const firstOutboundAt = resolveOutreachFirstOutboundAt(
-            candidate.outreachSpeedTimestamps,
-            toIso(candidate.firstOutboundAt),
-          );
-
-          if (isNonEmptyString(firstOutboundAt)) {
-            const reachedAt = reachedByCompany.get(companyId) ?? [];
-
-            reachedAt.push(firstOutboundAt);
-            reachedByCompany.set(companyId, reachedAt);
-          }
-
-          const firstContactAt = resolveOutreachFirstContactAt(
-            candidate.outreachSpeedTimestamps,
-          );
-
-          if (isNonEmptyString(firstContactAt)) {
-            const contacts = firstContactByCompany.get(companyId) ?? [];
-
-            contacts.push(firstContactAt);
-            firstContactByCompany.set(companyId, contacts);
-          }
-        }
-
-        const touchedCompanyIds = new Set([
-          ...projectIdsByCompany.keys(),
-          ...targetedByCompany.keys(),
-        ]);
-
-        let stampedCompanies = 0;
-
-        for (const companyId of touchedCompanyIds) {
-          const company = companyById.get(companyId);
-
-          if (!company) {
-            continue;
-          }
-
-          const reachedAt = reachedByCompany.get(companyId) ?? [];
-          const peopleReached = reachedAt.length;
-          const peopleTargeted = targetedByCompany.get(companyId) ?? 0;
-          const firstContactAt =
-            toIso(company.firstContactAt) ??
-            [...(firstContactByCompany.get(companyId) ?? [])].sort()[0] ??
-            null;
-          const outreachFunnelStage = rollupOutreachFunnelStage({
-            current: company.outreachFunnelStage ?? 'ADDED',
-            event: peopleReached > 0 ? 'connection_sent' : 'enrich_started',
-            peopleReached,
-          });
-          const nextProjectIds = appendProjectId(
-            company.projectIds,
-            ...[...(projectIdsByCompany.get(companyId) ?? [])],
-          );
-          const patch: Record<string, unknown> = {};
-
-          if (
-            JSON.stringify(parseProjectIds(company.projectIds).sort()) !==
-            JSON.stringify(nextProjectIds.sort())
-          ) {
-            patch.projectIds = nextProjectIds;
-          }
-
-          if (company.outreachFunnelStage !== outreachFunnelStage) {
-            patch.outreachFunnelStage = outreachFunnelStage;
-          }
-
-          if (
-            !isNonEmptyString(toIso(company.firstContactAt)) &&
-            isNonEmptyString(firstContactAt)
-          ) {
-            patch.firstContactAt = firstContactAt;
-          }
-
-          if ((company.peopleReached ?? 0) !== peopleReached) {
-            patch.peopleReached = peopleReached;
-          }
-
-          if ((company.peopleTargeted ?? 0) !== peopleTargeted) {
-            patch.peopleTargeted = peopleTargeted;
-          }
-
-          const coverageBucket = computeCoverageBucket(peopleReached);
-
-          patch.coverageBucket = coverageBucket;
-
-          if (Object.keys(patch).length === 0) {
-            continue;
-          }
-
-          stampedCompanies += 1;
-
-          if (!isDryRun) {
-            await companyRepository.update(company.id, patch);
-          }
-        }
-
-        this.logger.log(
-          `Re-backfilled rollups on ${stampedCompanies} of ${touchedCompanyIds.size} outreach-linked companies`,
+    await this.globalWorkspaceOrmManager.executeInWorkspaceContext(async () => {
+      const candidateRepository =
+        await this.globalWorkspaceOrmManager.getRepository<CandidateRow>(
+          workspaceId,
+          'candidate',
+          { shouldBypassPermissionChecks: true },
         );
-      },
-      authContext,
-    );
+      const companyRepository =
+        await this.globalWorkspaceOrmManager.getRepository<CompanyRow>(
+          workspaceId,
+          'company',
+          { shouldBypassPermissionChecks: true },
+        );
+      const personRepository =
+        await this.globalWorkspaceOrmManager.getRepository<PersonRow>(
+          workspaceId,
+          'person',
+          { shouldBypassPermissionChecks: true },
+        );
+
+      const companyColumns = columnNames(companyRepository);
+
+      const [candidates, companies, people] = await Promise.all([
+        candidateRepository.find({ take: 20_000 }),
+        companyRepository.find({ take: 20_000 }),
+        personRepository.find({ take: 20_000 }),
+      ]);
+
+      const personById = new Map(people.map((person) => [person.id, person]));
+      const companyById = new Map(
+        companies.map((company) => [company.id, company]),
+      );
+      const projectIdsByCompany = new Map<string, Set<string>>();
+      const reachedByCompany = new Map<string, string[]>();
+      const firstContactByCompany = new Map<string, string[]>();
+      const targetedByCompany = new Map<string, number>();
+
+      for (const candidate of candidates) {
+        const companyId =
+          personById.get(candidate.peopleId ?? '')?.companyId ?? null;
+
+        if (!isNonEmptyString(companyId)) {
+          continue;
+        }
+
+        if (isNonEmptyString(candidate.projectId)) {
+          const projectIds =
+            projectIdsByCompany.get(companyId) ?? new Set<string>();
+
+          projectIds.add(candidate.projectId);
+          projectIdsByCompany.set(companyId, projectIds);
+        }
+
+        targetedByCompany.set(
+          companyId,
+          (targetedByCompany.get(companyId) ?? 0) + 1,
+        );
+
+        const firstOutboundAt = resolveOutreachFirstOutboundAt(
+          candidate.outreachSpeedTimestamps,
+          toIso(candidate.firstOutboundAt),
+        );
+
+        if (isNonEmptyString(firstOutboundAt)) {
+          const reachedAt = reachedByCompany.get(companyId) ?? [];
+
+          reachedAt.push(firstOutboundAt);
+          reachedByCompany.set(companyId, reachedAt);
+        }
+
+        const firstContactAt = resolveOutreachFirstContactAt(
+          candidate.outreachSpeedTimestamps,
+        );
+
+        if (isNonEmptyString(firstContactAt)) {
+          const contacts = firstContactByCompany.get(companyId) ?? [];
+
+          contacts.push(firstContactAt);
+          firstContactByCompany.set(companyId, contacts);
+        }
+      }
+
+      const touchedCompanyIds = new Set([
+        ...projectIdsByCompany.keys(),
+        ...targetedByCompany.keys(),
+      ]);
+
+      let stampedCompanies = 0;
+
+      for (const companyId of touchedCompanyIds) {
+        const company = companyById.get(companyId);
+
+        if (!company) {
+          continue;
+        }
+
+        const reachedAt = reachedByCompany.get(companyId) ?? [];
+        const peopleReached = reachedAt.length;
+        const peopleTargeted = targetedByCompany.get(companyId) ?? 0;
+        const firstContactAt =
+          toIso(company.firstContactAt) ??
+          [...(firstContactByCompany.get(companyId) ?? [])].sort()[0] ??
+          null;
+        const outreachFunnelStage = rollupOutreachFunnelStage({
+          current: company.outreachFunnelStage ?? 'ADDED',
+          event: peopleReached > 0 ? 'connection_sent' : 'enrich_started',
+          peopleReached,
+        });
+        const nextProjectIds = appendProjectId(
+          company.projectIds,
+          ...[...(projectIdsByCompany.get(companyId) ?? [])],
+        );
+        const patch: Record<string, unknown> = {};
+
+        if (
+          companyColumns.has('projectIds') &&
+          JSON.stringify(parseProjectIds(company.projectIds).sort()) !==
+            JSON.stringify(nextProjectIds.sort())
+        ) {
+          patch.projectIds = nextProjectIds;
+        }
+
+        if (
+          companyColumns.has('outreachFunnelStage') &&
+          company.outreachFunnelStage !== outreachFunnelStage
+        ) {
+          patch.outreachFunnelStage = outreachFunnelStage;
+        }
+
+        if (
+          companyColumns.has('firstContactAt') &&
+          !isNonEmptyString(toIso(company.firstContactAt)) &&
+          isNonEmptyString(firstContactAt)
+        ) {
+          patch.firstContactAt = firstContactAt;
+        }
+
+        if (
+          companyColumns.has('peopleReached') &&
+          (company.peopleReached ?? 0) !== peopleReached
+        ) {
+          patch.peopleReached = peopleReached;
+        }
+
+        if (
+          companyColumns.has('peopleTargeted') &&
+          (company.peopleTargeted ?? 0) !== peopleTargeted
+        ) {
+          patch.peopleTargeted = peopleTargeted;
+        }
+
+        if (companyColumns.has('coverageBucket')) {
+          patch.coverageBucket = computeCoverageBucket(peopleReached);
+        }
+
+        if (Object.keys(patch).length === 0) {
+          continue;
+        }
+
+        stampedCompanies += 1;
+
+        if (!isDryRun) {
+          await companyRepository.update(company.id, patch);
+        }
+      }
+
+      this.logger.log(
+        `Re-backfilled rollups on ${stampedCompanies} of ${touchedCompanyIds.size} outreach-linked companies`,
+      );
+    }, authContext);
   }
 }

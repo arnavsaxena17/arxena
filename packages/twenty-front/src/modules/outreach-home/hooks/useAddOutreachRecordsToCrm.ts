@@ -353,7 +353,7 @@ export const useAddOutreachRecordsToCrm = () => {
                   '',
                 ),
               },
-              projectsId: projectId,
+              projectId,
               peopleId: createdPerson.id,
               outreachSequenceStage: sequenceFields.outreachSequenceStage,
               enrichStatus: sequenceFields.enrichStatus,

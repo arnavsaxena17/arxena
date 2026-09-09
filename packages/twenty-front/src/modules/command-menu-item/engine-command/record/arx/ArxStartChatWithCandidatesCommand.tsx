@@ -54,7 +54,7 @@ export const ArxStartChatWithCandidatesCommand = () => {
         .filter((recordId): recordId is string => isDefined(recordId));
 
       const projectIds = records
-        .map((record) => (record as { projectsId?: string; jobsId?: string }).projectsId ?? (record as { jobsId?: string }).jobsId)
+        .map((record) => (record as { projectId?: string; jobsId?: string }).projectId ?? (record as { jobsId?: string }).jobsId)
         .filter(isDefined);
 
       if (projectIds.length === 0) {

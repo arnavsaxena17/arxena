@@ -29,7 +29,7 @@ const DEFAULT_WORKFLOW_NAME = 'Workflow';
 
 type CandidateExperimentRecord = ObjectLiteral & {
   id: string;
-  projectsId?: string | null;
+  projectId?: string | null;
   experimentVariant?: string | null;
 };
 
@@ -182,7 +182,7 @@ export class WorkflowTriggerJob {
       if (
         !isDefined(candidate) ||
         candidate.experimentVariant !== 'B' ||
-        !isNonEmptyString(candidate.projectsId)
+        !isNonEmptyString(candidate.projectId)
       ) {
         return controlVersionId;
       }
@@ -194,7 +194,7 @@ export class WorkflowTriggerJob {
           { shouldBypassPermissionChecks: true },
         );
       const project = await projectRepository.findOne({
-        where: { id: candidate.projectsId },
+        where: { id: candidate.projectId },
       });
 
       if (

@@ -55,7 +55,7 @@ export const candidateTools: McpTool[] = [
       const status = args.status as string | undefined;
       const limit = typeof args.limit === 'number' ? args.limit : 50;
 
-      const filter: Record<string, unknown> = { projectsId: { eq: projectId } };
+      const filter: Record<string, unknown> = { projectId: { eq: projectId } };
       if (status) {
         filter.status = { eq: status };
       }
@@ -150,8 +150,8 @@ export const candidateTools: McpTool[] = [
               candidateId: ce.node.id,
               candidateName: ce.node.name,
               status: ce.node.status,
-              projectId: ce.node.projects?.id,
-              jobName: ce.node.projects?.name,
+              projectId: ce.node.project?.id,
+              jobName: ce.node.project?.name,
             })) ?? [],
         })),
       };
@@ -187,8 +187,8 @@ export const candidateTools: McpTool[] = [
         engagementStatus: isCandidateFlagTrue(c, 'engagementStatus'),
         remarks: c.remarks,
         peopleId: c.peopleId,
-        projectId: c.projectsId,
-        jobName: c.projects?.name,
+        projectId: c.projectId,
+        jobName: c.project?.name,
         phone: c.people?.phones?.primaryPhoneNumber,
         email: c.people?.emails?.primaryEmail,
         city: c.people?.city,
@@ -250,7 +250,7 @@ export const candidateTools: McpTool[] = [
       // Step 2: Create candidate linked to person and job
       const candidateInput: Record<string, unknown> = {
         name: fullName,
-        projectsId: projectId,
+        projectId: projectId,
         status,
         peopleId,
       };

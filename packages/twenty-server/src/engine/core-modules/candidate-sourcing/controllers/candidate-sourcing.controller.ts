@@ -49,6 +49,7 @@ import {
   UpdateOneProject,
   UserProfile,
 } from 'twenty-shared';
+import { isNonEmptyString } from '@sniptt/guards';
 import { v4 } from 'uuid';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
@@ -80,48 +81,25 @@ import { DEFAULT_PROJECT_PROMPTS } from 'src/engine/core-modules/workspace-modif
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
-/**
- * Candidate GraphQL may expose `projectsId` / nested `projects`, or legacy
- * `jobsId` / `jobs` / `jobId` — support all.
- */
 const getCandidateProjectIdForByLinkedInUrls = (
   candidate: Record<string, unknown>,
 ): string | undefined => {
-  const projectsId = candidate['projectsId'];
-  if (typeof projectsId === 'string' && projectsId.trim()) {
-    return projectsId.trim();
-  }
-  const jobsId = candidate['jobsId'];
-  if (typeof jobsId === 'string' && jobsId.trim()) {
-    return jobsId.trim();
-  }
   const projectId = candidate['projectId'];
-  if (typeof projectId === 'string' && projectId.trim()) {
+
+  if (isNonEmptyString(projectId)) {
     return projectId.trim();
   }
-  const jobId = candidate['jobId'];
-  if (typeof jobId === 'string' && jobId.trim()) {
-    return jobId.trim();
-  }
-  const projects = candidate['projects'];
-  if (
-    projects &&
-    typeof projects === 'object' &&
-    projects !== null &&
-    'id' in projects
-  ) {
-    const id = (projects as { id?: unknown }).id;
-    if (typeof id === 'string' && id.trim()) {
-      return id.trim();
+
+  const project = candidate['project'];
+
+  if (typeof project === 'object' && project !== null) {
+    const nestedProjectId = (project as { id?: unknown }).id;
+
+    if (isNonEmptyString(nestedProjectId)) {
+      return nestedProjectId.trim();
     }
   }
-  const jobs = candidate['jobs'];
-  if (jobs && typeof jobs === 'object' && jobs !== null && 'id' in jobs) {
-    const id = (jobs as { id?: unknown }).id;
-    if (typeof id === 'string' && id.trim()) {
-      return id.trim();
-    }
-  }
+
   return undefined;
 };
 
@@ -1982,7 +1960,7 @@ export class CandidateSourcingController {
       ).getPersonDetailsByPhoneNumber(String(phoneNumber), apiToken);
 
       const candidateNode = personObj?.candidates?.edges?.[0]?.node;
-      const projectInfo = candidateNode?.projects;
+      const projectInfo = candidateNode?.project;
 
       if (!candidateNode || !projectInfo) {
         console.log(
@@ -3382,10 +3360,10 @@ export class CandidateSourcingController {
       lastStepTime = performance.now();
 
       const projectIdsFilter =
-        body.filter?.projectsId?.in ?? body.filter?.jobsId?.in;
+        body.filter?.projectId?.in ?? body.filter?.jobsId?.in;
       if (!projectIdsFilter || !Array.isArray(projectIdsFilter)) {
         throw new HttpException(
-          'Invalid projectsId/jobsId filter',
+          'Invalid projectId/jobsId filter',
           HttpStatus.BAD_REQUEST,
         );
       }
@@ -3402,16 +3380,16 @@ export class CandidateSourcingController {
         SELECT
           c.id, c.name, c."updatedAt", c."createdAt", c."status", c."jobTitle", c."whatsappProvider",
           c."candConversationStatus", c."peopleId", c.source, c.campaign,
-          c."projectsId", c.remarks, c."messagingChannel", c."candidateFlags", c."uniqueStringKey",
+          c."projectId", c.remarks, c."messagingChannel", c."candidateFlags", c."uniqueStringKey",
           c."chatCount", c."otherFields",
-          COALESCE(JSON_AGG(CASE WHEN wm.id IS NOT NULL THEN JSON_BUILD_OBJECT('updatedAt', wm."updatedAt", 'messageObj', wm."messageObj", 'createdAt', wm."createdAt", 'whatsappDeliveryStatus', wm."whatsappDeliveryStatus", 'id', wm.id, 'name', wm.name, 'recruiterId', wm."recruiterId", 'message', wm.message, 'candidateId', wm."candidateId", 'projectsId', wm."projectsId", 'position', wm.position, 'phoneTo', wm."phoneTo", 'phoneFrom', wm."phoneFrom") ELSE NULL END) FILTER (WHERE wm.id IS NOT NULL), '[]'::json) as chatMessages
+          COALESCE(JSON_AGG(CASE WHEN wm.id IS NOT NULL THEN JSON_BUILD_OBJECT('updatedAt', wm."updatedAt", 'messageObj', wm."messageObj", 'createdAt', wm."createdAt", 'whatsappDeliveryStatus', wm."whatsappDeliveryStatus", 'id', wm.id, 'name', wm.name, 'recruiterId', wm."recruiterId", 'message', wm.message, 'candidateId', wm."candidateId", 'projectId', wm."projectId", 'position', wm.position, 'phoneTo', wm."phoneTo", 'phoneFrom', wm."phoneFrom") ELSE NULL END) FILTER (WHERE wm.id IS NOT NULL), '[]'::json) as chatMessages
         FROM ${dataSourceSchema}."_candidate" c
         LEFT JOIN ${dataSourceSchema}."_chatMessage" wm ON c.id = wm."candidateId"
         WHERE c."deletedAt" IS NULL
           AND COALESCE(c."candidateFlags"->>'stopChat', 'false') = 'false'
           AND COALESCE(c."candidateFlags"->>'startChat', 'false') = 'true'
           AND COALESCE(c."candidateFlags"->>'startVideoInterviewChatCompleted', 'false') != 'true'
-          AND c."projectsId" = ANY($1) ${body.lastCursor ? 'AND c."updatedAt" < $3' : ''}
+          AND c."projectId" = ANY($1) ${body.lastCursor ? 'AND c."updatedAt" < $3' : ''}
         GROUP BY c.id
         ORDER BY c."updatedAt" DESC
         LIMIT $2
@@ -3463,7 +3441,7 @@ export class CandidateSourcingController {
           peopleId: row.peopleId,
           source: row.source,
           campaign: row.campaign,
-          jobsId: row.projectsId ?? row.jobsId,
+          jobsId: row.projectId ?? row.jobsId,
           remarks: row.remarks,
           messagingChannel: row.messagingChannel,
           candidateFlags: row.candidateFlags,
@@ -3989,7 +3967,7 @@ export class CandidateSourcingController {
           await this.staticGraphQLService.executeGraphQL(
             graphqlToFetchAllCandidateData,
             {
-              filter: { projectsId: { eq: actualProjectId } },
+              filter: { projectId: { eq: actualProjectId } },
               limit: BATCH_SIZE,
               ...(lastCursor ? { lastCursor } : {}),
             },
@@ -4251,7 +4229,7 @@ export class CandidateSourcingController {
     const allCandidates: any[] = [];
     let lastCursor: string | null = null;
     let hasNextPage = true;
-    const timestampedFilter = { projectsId: { eq: actualProjectId } };
+    const timestampedFilter = { projectId: { eq: actualProjectId } };
 
     while (hasNextPage) {
       const response = await this.staticGraphQLService.executeGraphQL(

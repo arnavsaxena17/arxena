@@ -15,7 +15,7 @@ export type OutreachProjectCandidateRecord = {
   jobTitle?: string | null;
   jobCompanyName?: string | null;
   campaign?: string | null;
-  projectsId?: string | null;
+  projectId?: string | null;
   status?: string | null;
   candConversationStatus?: string | null;
   outreachSequenceStage?: string | null;

@@ -182,7 +182,7 @@ export const buildOutreachContextPrompt = (
     'Target people on the People tab are ephemeral (Find destination) until the user selects rows and confirms Add to CRM / Enroll.',
     'When the user asks to find/fetch/search people (target titles, MD/CEO, etc.) for this campaign: load_skills(["search"]), search, then upsert_outreach_target_people({ projectId, mode: "merge", people }) before ending the turn.',
     'Do NOT create_candidate / create_one_person / create_one_candidate for the People tab. Enrollment writes happen only after explicit user confirmation (Add to CRM / Enroll).',
-    'When enrolling people (user confirmed), upsert shared CRM Company + Candidate with projectsId = this projectId.',
+    'When enrolling people (user confirmed), upsert shared CRM Company + Candidate with projectId = this projectId.',
     'Prefer Candidate+Project execution; Person holds stop/compliance memory.',
     'Respect send windows, daily caps, stop-on-reply, and approval gates when editing steps.',
   ].join('\n');

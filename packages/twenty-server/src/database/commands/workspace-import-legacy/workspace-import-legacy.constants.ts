@@ -1,6 +1,6 @@
 // Source column → target column when names diverge after job→project rename
 export const LEGACY_COLUMN_RENAMES: Record<string, string> = {
-  jobsId: 'projectsId',
+  jobsId: 'projectId',
   jobId: 'projectId',
 };
 

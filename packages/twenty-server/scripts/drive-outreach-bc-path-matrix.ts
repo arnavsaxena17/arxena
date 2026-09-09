@@ -154,7 +154,7 @@ const listCandidates = async (): Promise<
         }
       }
     }`,
-    { filter: { projectsId: { eq: PROJECT_ID } } },
+    { filter: { projectId: { eq: PROJECT_ID } } },
   );
 
   return data.candidates.edges

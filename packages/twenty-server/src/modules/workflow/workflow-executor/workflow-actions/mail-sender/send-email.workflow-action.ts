@@ -1,7 +1,8 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { isDefined } from 'twenty-shared/utils';
+import { isNonEmptyString } from '@sniptt/guards';
+import { isDefined, resolveInput } from 'twenty-shared/utils';
 import { type Repository } from 'typeorm';
 
 import { SendEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/send-email-tool';
@@ -16,9 +17,12 @@ import {
 } from 'src/modules/workflow/workflow-executor/exceptions/workflow-step-executor.exception';
 import { type WorkflowActionInput } from 'src/modules/workflow/workflow-executor/types/workflow-action-input';
 import { type WorkflowActionOutput } from 'src/modules/workflow/workflow-executor/types/workflow-action-output.type';
+import { findStepOrThrow } from 'src/modules/workflow/workflow-executor/utils/find-step-or-throw.util';
 import { EmailWorkflowActionBase } from 'src/modules/workflow/workflow-executor/workflow-actions/mail-sender/email-workflow-action.base';
 import { isWorkflowSendEmailAction } from 'src/modules/workflow/workflow-executor/workflow-actions/mail-sender/guards/is-workflow-send-email-action.guard';
+import { type WorkflowSendEmailActionInput } from 'src/modules/workflow/workflow-executor/workflow-actions/mail-sender/types/workflow-send-email-action-input.type';
 import { type EmailStepLogMode } from 'src/modules/workflow/workflow-executor/workflow-actions/mail-sender/utils/build-email-step-log.util';
+import { resolveEmailBody } from 'src/modules/workflow/workflow-executor/workflow-actions/mail-sender/utils/resolve-email-body.util';
 import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
 import { WorkflowRunWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.workspace-service';
 import { WorkflowRunStepLogWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run-step-log.workspace-service';
@@ -70,6 +74,34 @@ export class SendEmailWorkflowAction extends EmailWorkflowActionBase {
       if (!isDefined(candidateId)) {
         return output;
       }
+
+      const step = findStepOrThrow({
+        stepId: workflowActionInput.currentStepId,
+        steps: workflowActionInput.steps,
+      });
+      const resolvedInput = resolveInput(
+        step.settings.input,
+        workflowActionInput.context,
+      ) as WorkflowSendEmailActionInput;
+      const emailBody = isDefined(resolvedInput.body)
+        ? await resolveEmailBody(
+            resolvedInput.body,
+            workflowActionInput.context,
+          )
+        : '';
+      const transcriptBody = [resolvedInput.subject, emailBody]
+        .filter(isNonEmptyString)
+        .join('\n\n');
+
+      await this.gtmOutreachMessagePersistService.appendOutbound({
+        workspaceId: workflowActionInput.runInfo.workspaceId,
+        channel: 'EMAIL',
+        body: transcriptBody,
+        candidateId,
+        email: resolvedInput.recipients?.to,
+        workflowRunId: workflowActionInput.runInfo.workflowRunId,
+        materializeOutbound: false,
+      });
 
       await this.gtmOutreachMessagePersistService.materializeCandidateEvent({
         workspaceId: workflowActionInput.runInfo.workspaceId,

@@ -102,7 +102,7 @@ export class UpdateChat {
 
       const updatedCandidateProfileDataNodeObj =
         candidates?.edges.filter(
-          (edge) => edge.node.projects.id === candidate.projects.id,
+          (edge) => edge.node.project.id === candidate.project.id,
         )[0]?.node;
 
       console.log(
@@ -129,9 +129,9 @@ export class UpdateChat {
         candidateId,
         touch: 'meeting_held',
         apiToken,
-        companyId: (candidate as { projects?: { companyId?: string; company?: { id?: string } } })
-          ?.projects?.companyId
-          ?? (candidate as { projects?: { company?: { id?: string } } })?.projects
+        companyId: (candidate as { project?: { companyId?: string; company?: { id?: string } } })
+          ?.project?.companyId
+          ?? (candidate as { project?: { company?: { id?: string } } })?.project
             ?.company?.id,
         messagingChannel: (candidate as { messagingChannel?: string })
           ?.messagingChannel,
@@ -336,13 +336,13 @@ export class UpdateChat {
     //   this.workspaceQueryService,
     //   this.staticGraphQLService,
     // ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
-    // const candidateJob: Project = personObj?.candidates?.edges[0]?.node?.projects as Project;
+    // const candidateJob: Project = personObj?.candidates?.edges[0]?.node?.project as Project;
     const candidate = await new FilterCandidates(
       this.workspaceQueryService,
       this.staticGraphQLService,
     ).getCandidateDetailsById(candidateId, apiToken);
 
-    const candidateJob: Project = candidate?.projects as Project;
+    const candidateJob: Project = candidate?.project as Project;
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
     if (!recruiterProfile) {
       console.warn(
@@ -420,7 +420,7 @@ export class UpdateChat {
         this.workspaceQueryService,
         this.staticGraphQLService,
       ).getCandidateDetailsById(candidateId, apiToken);
-      const slidingWindowDelayMinutes = candidate?.projects?.engagementProcessingDelayMinutes;
+      const slidingWindowDelayMinutes = candidate?.project?.engagementProcessingDelayMinutes;
       const chatControlType =
         options?.chatControlType ??
         (CANDIDATE_CHAT_START_CONTROL_FIELDS.has(interimChat)
@@ -645,7 +645,7 @@ export class UpdateChat {
           : '';
 
 
-        const recruiterId = candidate?.projects?.recruiterId;
+        const recruiterId = candidate?.project?.recruiterId;
 
         if (projectId == '') {
           console.log('Project ID is not present for the candidate::', candidateId);
@@ -680,7 +680,7 @@ export class UpdateChat {
           return {
             candidateId,
             candidateStatus,
-            googleSheetId: candidate?.projects?.googleSheetId,
+            googleSheetId: candidate?.project?.googleSheetId,
             chatMessages,
           };
         } catch (error) {
@@ -777,8 +777,8 @@ export class UpdateChat {
         whatappUpdateMessageObj?.messages[0]?.text || '',
         phoneFrom: whatappUpdateMessageObj?.phoneNumberFrom,
         phoneTo: whatappUpdateMessageObj?.phoneNumberTo,
-        projectsId: candidate?.projects?.id,
-        recruiterId: candidate?.projects?.recruiterId,
+        projectId: candidate?.project?.id,
+        recruiterId: candidate?.project?.recruiterId,
         name: whatappUpdateMessageObj?.messageType,
         lastEngagementChatControl: whatappUpdateMessageObj?.lastEngagementChatControl,
         messageObj: whatappUpdateMessageObj?.messageObj,
@@ -817,13 +817,13 @@ export class UpdateChat {
         return undefined;
       }
 
-      const recruiterId = candidate?.projects?.recruiterId;
+      const recruiterId = candidate?.project?.recruiterId;
       console.log('This is the recruiterId::', recruiterId);
       if (recruiterId) {
         console.log('Sending WebSocket event to the specific recruiter::', recruiterId);
         this.workspaceQueryService.webSocketService.sendToUser(recruiterId, 'chat_message_updated', {
           candidateId: candidate?.id,
-          projectId: candidate?.projects?.id,
+          projectId: candidate?.project?.id,
           messageId: createNewChatMessageUpdateVariables.input.id,
         });
         console.log('WebSocket event sent to the specific recruiter::', recruiterId);
@@ -874,9 +874,9 @@ export class UpdateChat {
           existingFirstOutboundAt: (candidate as { firstOutboundAt?: string })
             ?.firstOutboundAt,
           companyId:
-            (candidate as { projects?: { companyId?: string; company?: { id?: string } } })
-              ?.projects?.companyId
-            ?? (candidate as { projects?: { company?: { id?: string } } })?.projects
+            (candidate as { project?: { companyId?: string; company?: { id?: string } } })
+              ?.project?.companyId
+            ?? (candidate as { project?: { company?: { id?: string } } })?.project
               ?.company?.id,
           messagingChannel:
             options?.messagingChannelOverride ??
@@ -1024,7 +1024,7 @@ export class UpdateChat {
 
     await this.updateCandidatesWithChatCount([candidate?.id], apiToken);
 
-    const results = await this.processCandidatesChatsGetStatuses(apiToken, [candidate?.projects?.id],[candidate?.id], "updateCandidateEngagementStatusAndChatCounts");
+    const results = await this.processCandidatesChatsGetStatuses(apiToken, [candidate?.project?.id],[candidate?.id], "updateCandidateEngagementStatusAndChatCounts");
     // console.log('Results from updating candidate engagement status and chat counts::', results);
     return results;
   }

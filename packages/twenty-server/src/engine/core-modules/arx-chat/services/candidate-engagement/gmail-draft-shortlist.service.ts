@@ -151,7 +151,7 @@ export class GmailDraftShortlistService {
 
       // Get job from first candidate (assuming all candidates belong to same job)
       const firstCandidate = candidates[0].node;
-      return firstCandidate.projects;
+      return firstCandidate.project;
     } catch (error) {
       console.error('Error fetching job from candidate IDs:', error);
       return null;

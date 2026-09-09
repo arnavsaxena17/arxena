@@ -27,7 +27,7 @@ describe('OutreachMockLifecycleService', () => {
     clearInboundWindow = jest.fn().mockResolvedValue(undefined);
     executeGraphQL = jest.fn().mockResolvedValue({
       candidates: {
-        edges: [{ node: { projectsId: 'project-1' } }],
+        edges: [{ node: { projectId: 'project-1' } }],
       },
     });
     decidePendingHitlForm = jest.fn().mockResolvedValue({

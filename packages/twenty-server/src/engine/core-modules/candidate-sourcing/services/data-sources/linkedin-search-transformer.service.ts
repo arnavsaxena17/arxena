@@ -46,7 +46,7 @@ export type TransformedCandidateForTable = Omit<
   chatMessages: { edges: any[] };
   emailMessages: { edges: any[] };
   otherFields?: Record<string, unknown>;
-  projects: { id: string; name: string };
+  project: { id: string; name: string };
   people: { id: string };
   attachments: any;
   videoInterview: any;
@@ -660,7 +660,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         otherFields: {},
         attachments: { edges: [] },
         videoInterview: { edges: [] },
-        projects: { id: projectId, name: jobName },
+        project: { id: projectId, name: jobName },
         people: { id: peopleId },
         whatsappProvider: 'application03',
         input: '',

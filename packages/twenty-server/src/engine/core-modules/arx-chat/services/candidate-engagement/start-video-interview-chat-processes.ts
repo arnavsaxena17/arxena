@@ -53,7 +53,7 @@ export class VideoInterviewChatProcesses {
         this.workspaceQueryService,
         this.staticGraphQLService,
       ).fetchCandidateByCandidateId(candidateId, apiToken);
-      const projectId = candidateObj?.projects?.id;
+      const projectId = candidateObj?.project?.id;
 
 
       const publicWorkspaceDataByDomain = `query GetPublicWorkspaceDataByDomain {
@@ -101,7 +101,7 @@ export class VideoInterviewChatProcesses {
               'Interview - ' +
               candidateObj?.name +
               ' for ' +
-              candidateObj?.projects?.name,
+              candidateObj?.project?.name,
             videoInterviewTemplateId: interviewObj?.id,
             interviewStarted: false,
             interviewCompleted: false,
@@ -120,7 +120,7 @@ export class VideoInterviewChatProcesses {
         },
       });
 
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToCreateVideoInterview, { input: { id: videoInterviewId, candidateId: candidateObj?.id, name: 'Interview - ' + candidateObj?.name + ' for ' + candidateObj?.projects?.name, videoInterviewTemplateId: interviewObj?.id, interviewStarted: false, interviewCompleted: false, interviewLink: { primaryLinkUrl: videoInterviewLink, primaryLinkLabel: videoInterviewLink }, interviewReviewLink: { primaryLinkUrl: videoInterviewLink, primaryLinkLabel: videoInterviewLink }, position: 'first' } }, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToCreateVideoInterview, { input: { id: videoInterviewId, candidateId: candidateObj?.id, name: 'Interview - ' + candidateObj?.name + ' for ' + candidateObj?.project?.name, videoInterviewTemplateId: interviewObj?.id, interviewStarted: false, interviewCompleted: false, interviewLink: { primaryLinkUrl: videoInterviewLink, primaryLinkLabel: videoInterviewLink }, interviewReviewLink: { primaryLinkUrl: videoInterviewLink, primaryLinkLabel: videoInterviewLink }, position: 'first' } }, apiToken);
 
       if (response.data.errors) {
         console.log(

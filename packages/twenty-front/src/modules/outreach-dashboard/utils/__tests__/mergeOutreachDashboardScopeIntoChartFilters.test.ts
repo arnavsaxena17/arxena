@@ -38,11 +38,11 @@ describe('mergeOutreachDashboardScopeIntoChartFilters', () => {
     });
   });
 
-  it('adds projectsId filter for candidates', () => {
+  it('adds projectId filter for candidates', () => {
     const objectMetadataItem = buildObjectMetadataItem('candidate', [
       {
         id: 'projects-id-field',
-        name: 'projectsId',
+        name: 'projectId',
         label: 'Project',
         type: FieldMetadataType.RELATION,
         isActive: true,
@@ -62,7 +62,7 @@ describe('mergeOutreachDashboardScopeIntoChartFilters', () => {
     });
   });
 
-  it('scopes workflow runs through candidate.projectsId', () => {
+  it('scopes workflow runs through candidate.projectId', () => {
     const objectMetadataItem = buildObjectMetadataItem('workflowRun', [
       {
         id: 'candidate-field',
@@ -83,7 +83,7 @@ describe('mergeOutreachDashboardScopeIntoChartFilters', () => {
       fieldMetadataId: 'candidate-field',
       operand: ViewFilterOperand.IS,
       value: 'project-1',
-      subFieldName: 'projectsId',
+      subFieldName: 'projectId',
     });
   });
 

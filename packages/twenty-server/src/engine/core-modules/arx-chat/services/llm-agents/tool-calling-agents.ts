@@ -99,13 +99,13 @@ export class ToolCallingAgents {
     candidateJob: Project,
     twenty_token: string,
   ) {
-    // const jobProfile = personNode?.candidates?.edges[0]?.node?.projects;
+    // const jobProfile = personNode?.candidates?.edges[0]?.node?.project;
 
     const videoInterviewUrl =
       candidate?.videoInterview.edges[0].node?.interviewLink?.primaryLinkUrl;
     // console.log("job Profile:", jobProfile);
 
-    const companyName = candidate?.projects?.company?.name;
+    const companyName = candidate?.project?.company?.name;
 
     if (!videoInterviewUrl) {
       throw new Error('Video interview URL is undefined');
@@ -237,7 +237,7 @@ export class ToolCallingAgents {
   ) {
     // const newQuestionArray = this.questionArray
     const projectId =
-      candidate?.projects?.id;
+      candidate?.project?.id;
 
     const { questionIdArray, questionArray } = await new FilterCandidates(
       this.workspaceQueryService,
@@ -300,7 +300,7 @@ export class ToolCallingAgents {
     console.log('Function Called: scheduleMeeting');
     const calendarEventObj: CalendarEventType = {
       summary:
-        `${candidate?.name} & ${candidate?.projects?.company?.name}` ||
+        `${candidate?.name} & ${candidate?.project?.company?.name}` ||
         gptInputs?.summary ||
         'Meeting with the candidate',
       typeOfMeeting: gptInputs?.typeOfMeeting || 'Virtual',

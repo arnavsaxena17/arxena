@@ -98,7 +98,7 @@ export const StartInterviewPage: React.FC<InterviewPageProps> = ({ onStart, Inte
     }
   };
 
-  // const recruiterProfile = InterviewData?.candidate?.projects?
+  // const recruiterProfile = InterviewData?.candidate?.project?
 
   console.log("This is the intorduction interview data::", introductionVideoData)
   const introductionVideoURL = getAttachmentDownloadUrl(
@@ -108,7 +108,7 @@ export const StartInterviewPage: React.FC<InterviewPageProps> = ({ onStart, Inte
   return (
     <StyledContainer>
     <StartInterviewStyledLeftPanel>
-      <h2>{InterviewData?.candidate?.projects?.name} at {InterviewData?.candidate?.projects?.companyName}</h2>
+      <h2>{InterviewData?.candidate?.project?.name} at {InterviewData?.candidate?.project?.companyName}</h2>
       <StyledLeftPanelContentBox>
         <StyledTextLeftPanelTextHeadline>Introduction</StyledTextLeftPanelTextHeadline>
         <VideoPlayer 
@@ -128,7 +128,7 @@ export const StartInterviewPage: React.FC<InterviewPageProps> = ({ onStart, Inte
     </StartInterviewStyledLeftPanel>
     <StartInterviewStyledRightPanel>
       <InstructionSection>
-        <h2>Hi, {InterviewData?.candidate?.name} - Applicant for {InterviewData?.candidate?.projects?.name} at {InterviewData?.candidate?.projects?.companyName}</h2>
+        <h2>Hi, {InterviewData?.candidate?.name} - Applicant for {InterviewData?.candidate?.project?.name} at {InterviewData?.candidate?.project?.companyName}</h2>
         <br></br>
         <h3>Instructions: Please read this before continuing</h3>
         <InstructionList>

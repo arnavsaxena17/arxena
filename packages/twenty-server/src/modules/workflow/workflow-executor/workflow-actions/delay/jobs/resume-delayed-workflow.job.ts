@@ -28,7 +28,7 @@ type ProjectPauseRecord = ObjectLiteral & {
 
 type CandidatePauseRecord = ObjectLiteral & {
   id: string;
-  projectsId?: string | null;
+  projectId?: string | null;
 };
 
 @Processor({
@@ -180,7 +180,7 @@ export class ResumeDelayedWorkflowJob {
       where: { id: candidateId },
     });
 
-    if (!isNonEmptyString(candidate?.projectsId)) {
+    if (!isNonEmptyString(candidate?.projectId)) {
       return false;
     }
 
@@ -191,7 +191,7 @@ export class ResumeDelayedWorkflowJob {
         { shouldBypassPermissionChecks: true },
       );
     const project = await projectRepository.findOne({
-      where: { id: candidate.projectsId },
+      where: { id: candidate.projectId },
     });
 
     return (project?.outreachStatus ?? 'LIVE').toUpperCase() === 'PAUSED';

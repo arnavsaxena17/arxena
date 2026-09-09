@@ -46,7 +46,7 @@ export const EndInterviewPage: React.FC<EndInterviewPageProps> = ({
   return (
     <EndInterviewStyledContainer>
       <EndInterviewStyledLeftPanel>
-        <h2>{interviewData.candidate.projects.name}</h2>
+        <h2>{interviewData.candidate.project.name}</h2>
         <p>Interview Complete</p>
       </EndInterviewStyledLeftPanel>
       <EndInterviewStyledRightPanel>

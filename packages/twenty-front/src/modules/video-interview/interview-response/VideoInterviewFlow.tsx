@@ -195,11 +195,11 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
           id: fetchedData?.videoInterviews?.edges[0]?.node?.id || '',
           candidate: {
             id: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.id || '',
-            projects: {
-              id: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.projects?.id || '',
-              name: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.projects?.name || '',
-              recruiterId: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.projects?.recruiterId || '',
-              companyName: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.projects?.company?.name || '',
+            project: {
+              id: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.project?.id || '',
+              name: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.project?.name || '',
+              recruiterId: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.project?.recruiterId || '',
+              companyName: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.project?.company?.name || '',
             },
             peopleId: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.peopleId || '',
             name: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.name || '',

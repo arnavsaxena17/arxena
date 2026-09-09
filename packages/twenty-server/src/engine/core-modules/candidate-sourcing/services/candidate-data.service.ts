@@ -62,7 +62,7 @@ export class CandidateDataService {
     try {
       const filterParams = selectedRecordIds.length > 0
         ? { id: { in: selectedRecordIds } }
-        : { projectsId: { eq: projectId } };
+        : { projectId: { eq: projectId } };
 
       const variables = {
         filter: filterParams,

@@ -1,0 +1,35 @@
+---
+description: Do not add compatibility shims during refactors; use the new language directly and delete the old language
+alwaysApply: true
+---
+
+# No Compatibility Shims
+
+When renaming, replacing an API, or adopting new domain language: **use the new names at every call site and delete the old names in the same change.** Do not leave a bridge between old and new.
+
+Persisted data is the exception: migrate stored records with an upgrade command. Do not paper over old columns, fields, or types in application code.
+
+## Do
+
+- Rename identifiers, types, GraphQL fields, files, and comments to the new language
+- Update every in-repo caller in the same change
+- Delete the old export, type, field, constant, and fallback once callers are updated
+
+## Do not
+
+- Alias old names onto new ones (`export const oldName = newName`)
+- Re-export under the previous name (`export { ChatMessage as WhatsAppMessage }`)
+- Wrap the new API in a function or type that still uses the old name
+- Dual-read / dual-write (`record.chatMessage ?? record.whatsappMessage`)
+- Keep `@deprecated` stubs, `*Legacy*` helpers, or `compat` / `shim` modules
+- Accept both old and new field names on the same input type
+
+```typescript
+// ❌ Shim: old language still exists
+export const findWhatsAppMessages = findChatMessages;
+type WhatsAppMessage = ChatMessage;
+const body = record.chatMessage ?? record.whatsappMessage;
+
+// ✅ New language used directly; old names gone
+const body = record.chatMessage;
+```

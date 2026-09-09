@@ -5,24 +5,13 @@ import {
   readProjectExperimentConfig,
   type OutreachExperimentConfig,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
-import {
-  SEEDED_OUTREACH_WORKFLOW,
-  seededOutreachWorkflowNameAliases,
-} from 'src/engine/workspace-manager/standard-objects-prefill-data/constants/seeded-outreach-workflow-names.const';
+import { SEEDED_OUTREACH_WORKFLOW } from 'src/engine/workspace-manager/standard-objects-prefill-data/constants/seeded-outreach-workflow-names.const';
 
 // Stage B (Per Enrolled Candidate) + Stage C (Enrolled Person Updated) only.
 export const OUTREACH_SEQUENCER_SEEDED_WORKFLOW_NAMES = [
-  ...seededOutreachWorkflowNameAliases(
-    SEEDED_OUTREACH_WORKFLOW.perCandidate.name,
-  ),
-  ...seededOutreachWorkflowNameAliases(
-    SEEDED_OUTREACH_WORKFLOW.candidateUpdated.name,
-  ),
+  SEEDED_OUTREACH_WORKFLOW.perCandidate.name,
+  SEEDED_OUTREACH_WORKFLOW.candidateUpdated.name,
 ] as const;
-
-/** @deprecated Use OUTREACH_SEQUENCER_SEEDED_WORKFLOW_NAMES */
-export const OUTREACH_PAUSE_RESUME_SEEDED_WORKFLOW_NAMES =
-  OUTREACH_SEQUENCER_SEEDED_WORKFLOW_NAMES;
 
 export type OutreachSequencerStage = 'perCandidate' | 'candidateUpdated';
 
@@ -36,24 +25,16 @@ export const resolveOutreachSequencerStageFromName = (
   // Local compressed-delay copies are named "... (30 seconds)" / "... (3 minutes)".
   const normalizedName = workflowName.replace(/\s*\([^)]*\)\s*$/, '').trim();
 
-  const perCandidateNames = seededOutreachWorkflowNameAliases(
-    SEEDED_OUTREACH_WORKFLOW.perCandidate.name,
-  );
-
   if (
-    perCandidateNames.includes(workflowName) ||
-    perCandidateNames.includes(normalizedName)
+    workflowName === SEEDED_OUTREACH_WORKFLOW.perCandidate.name ||
+    normalizedName === SEEDED_OUTREACH_WORKFLOW.perCandidate.name
   ) {
     return 'perCandidate';
   }
 
-  const candidateUpdatedNames = seededOutreachWorkflowNameAliases(
-    SEEDED_OUTREACH_WORKFLOW.candidateUpdated.name,
-  );
-
   if (
-    candidateUpdatedNames.includes(workflowName) ||
-    candidateUpdatedNames.includes(normalizedName)
+    workflowName === SEEDED_OUTREACH_WORKFLOW.candidateUpdated.name ||
+    normalizedName === SEEDED_OUTREACH_WORKFLOW.candidateUpdated.name
   ) {
     return 'candidateUpdated';
   }
@@ -101,10 +82,6 @@ export const collectOutreachSequencerWorkflowIdsFromProject = ({
 
   return [...workflowIds];
 };
-
-/** @deprecated Use collectOutreachSequencerWorkflowIdsFromProject */
-export const collectOutreachPauseResumeWorkflowIdsFromProject =
-  collectOutreachSequencerWorkflowIdsFromProject;
 
 export const isOutreachSequencerWorkflow = ({
   workflowId,
@@ -183,7 +160,3 @@ export const mergeOutreachSequencerWorkflowIds = ({
 
   return workflowIds;
 };
-
-/** @deprecated Use mergeOutreachSequencerWorkflowIds */
-export const mergeOutreachPauseResumeWorkflowIds =
-  mergeOutreachSequencerWorkflowIds;

@@ -183,13 +183,13 @@ const VideoInterviewResponseViewer: React.FC<VideoInterviewResponseViewerProps> 
     console.log("videoInterview.videoInterviewQuestions:videoInterview.videoInterviewQuestions", videoInterview.videoInterviewTemplate.videoInterviewQuestions);
     const transformedData: InterviewDataJobTemplate =  {
       job: {
-        id: candidate?.projects?.id,
+        id: candidate?.project?.id,
         company: {
-          name: candidate?.projects?.company?.name,
-          id: candidate?.projects?.company?.id || '',
-          domainName: candidate?.projects?.company?.domainName || '',
+          name: candidate?.project?.company?.name,
+          id: candidate?.project?.company?.id || '',
+          domainName: candidate?.project?.company?.domainName || '',
         },
-        name: candidate?.projects?.name || '',
+        name: candidate?.project?.name || '',
         recruiterId: '',
         jobLocation: '',
         jobCode: '',

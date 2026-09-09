@@ -610,7 +610,7 @@ export type TransformedCandidateForTable = Omit<
   chatMessages: { edges: any[] };
   emailMessages: { edges: any[] };
   otherFields?: OtherFieldsRecord | null;
-  projects: { id: string; name: string };
+  project: { id: string; name: string };
   people: { id: string };
   attachments: any;
   videoInterview: any;
@@ -810,7 +810,7 @@ export interface ArxenaCandidateNode {
   linkedinUrl?: { primaryLinkLabel: string; primaryLinkUrl: string };
   displayPicture: { primaryLinkLabel: string; primaryLinkUrl: string };
   avatarUrl?: string;
-  projectsId: string;
+  projectId: string;
   peopleId: string;
   linkedinProfileId?: string;
   outreachSequenceStage?: string;
@@ -1144,7 +1144,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
     edges: [],
   },
   whatsappProvider: '',
-  projects: {
+  project: {
     name: '',
     id: '',
     isActive: false,
@@ -1165,7 +1165,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
             recruiterId: '',
             message: '',
             candidateId: '',
-            projectsId: 'string',
+            projectId: 'string',
             position: 0,
             messageType: '',
             phoneTo: '',
@@ -1211,7 +1211,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
           recruiterId: '',
           message: '',
           candidateId: '',
-          projectsId: 'string',
+          projectId: 'string',
           position: 0,
           messageType: '',
           phoneTo: '',
@@ -1236,7 +1236,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
           subject: '',
           recruiterId: '',
           candidateId: '',
-          projectsId: '',
+          projectId: '',
           messageThreadId: '',
           receivedAt: '',
           updatedAt: '',
@@ -1291,7 +1291,7 @@ export interface Attachment {
 export interface candidateProfileType {
   first_name: any;
   id: string;
-  projectsId: string;
+  projectId: string;
   status: string;
   job: jobProfileType;
   phoneNumber: string;
@@ -1687,7 +1687,7 @@ export interface MessageNode {
   message: string;
   candidateId: string;
   personId?: string;
-  projectsId: string;
+  projectId: string;
   position: number;
   messageType: string;
   phoneTo: string;
@@ -1769,7 +1769,7 @@ export interface InterviewLink {
 //   id: string;
 //   name: string;
 //   startChat: boolean;
-//   projects: Projects;
+//   project: Project;
 //   people: {
 //     id: string;
 //     name: {
@@ -1806,8 +1806,8 @@ export interface CandidateNode {
   outreachConversationStage?: string | null;
   chatMessages: ChatMessages;
   emailMessages: EmailMessages;
-  projects: Project;
-  projectsId?: string;
+  project: Project;
+  projectId?: string;
   peopleId: string;
   otherFields?: OtherFieldsRecord | null;
   people: PersonNode;
@@ -1838,7 +1838,7 @@ export interface CandidateNode {
 //   status: string;
 //   chatMessages: ChatMessages;
 //   emailMessages: EmailMessages;
-//   projects: Projects;
+//   project: Project;
 //   candidateReminders: Reminders;
 //   clientInterview?: ClientInterviews;
 //   people: PersonNode;
@@ -1868,7 +1868,7 @@ export interface EmailMessageNode {
   subject: string;
   recruiterId: string;
   candidateId: string;
-  projectsId: string;
+  projectId: string;
   // messageType: string;
   messageThreadId: string;
   receivedAt: string;
@@ -1972,7 +1972,7 @@ export const emptyInterviewData: InterviewData = {
   name: '',
   candidate: {
     id: '',
-    projects: {
+    project: {
       id: '',
       name: '',
       recruiterId: '',
@@ -2037,7 +2037,7 @@ export interface InterviewData {
   name: string;
   candidate: {
     id: string;
-    projects: {
+    project: {
       id: string;
       recruiterId: string;
       name: string;

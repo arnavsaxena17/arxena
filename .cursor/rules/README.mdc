@@ -19,6 +19,7 @@ This directory contains Twenty's development guidelines and best practices in th
 ### Code Quality
 - **typescript-guidelines.mdc** - TypeScript best practices and conventions (Auto-attached to .ts/.tsx files)
 - **code-style.mdc** - General coding standards and style guide (Auto-attached to code files)
+- **no-compatibility-shims.mdc** - During refactors, use the new language directly and delete the old names (Always Applied)
 - **file-structure.mdc** - File and directory organization patterns (Auto-attached to config files)
 
 ### React Development

@@ -225,7 +225,7 @@ export class ArxChatEndpoint {
           this.workspaceQueryService,
           this.staticGraphQLService,
         ).getCandidateDetailsById(candidateIds[0], apiToken);
-        jobForSpread = firstCandidate?.projects ?? null;
+        jobForSpread = firstCandidate?.project ?? null;
       } catch (error) {
         console.warn(
           'Could not load first candidate for start-chat spread defaults; using defaults.',
@@ -360,7 +360,7 @@ export class ArxChatEndpoint {
 
   //   try {
   //     const personCandidateNode = personObj?.candidates?.edges[0]?.node;
-  //     const candidateJob = personCandidateNode?.projects;
+  //     const candidateJob = personCandidateNode?.project;
   //     // const messagesList = personCandidateNode?.chatMessages?.edges;
   //     const messagesList: MessageNode[] = await new FilterCandidates(
   //       this.workspaceQueryService,
@@ -554,7 +554,7 @@ export class ArxChatEndpoint {
           graphQltoUpdateOneCandidate,
           {
             idToUpdate: candidateId.trim(),
-            input: { projectsId: targetProjectId },
+            input: { projectId: targetProjectId },
           },
           apiToken,
         );
@@ -585,7 +585,7 @@ export class ArxChatEndpoint {
     ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
 
     console.log('This is the chat reply:', messageToSend);
-    const candidateJob: Project | undefined = personObj?.candidates?.edges[0]?.node?.projects;
+    const candidateJob: Project | undefined = personObj?.candidates?.edges[0]?.node?.project;
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob as Project,
       apiToken,
@@ -597,7 +597,7 @@ export class ArxChatEndpoint {
     console.log('Recruiter profile', recruiterProfile);
     const chatMessages =
       personObj?.candidates?.edges.filter(
-        (candidate) => candidate.node.projects.id == candidateJob?.id,
+        (candidate) => candidate.node.project.id == candidateJob?.id,
       )[0]?.node?.chatMessages?.edges;
     let chatHistory = chatMessages?.[0]?.node?.messageObj || [];
     const chatControl: ChatControlsObjType = {
@@ -605,7 +605,7 @@ export class ArxChatEndpoint {
     };
     chatHistory =
       personObj?.candidates?.edges.filter(
-        (candidate) => candidate.node.projects.id == candidateJob?.id,
+        (candidate) => candidate.node.project.id == candidateJob?.id,
       )[0]?.node?.chatMessages?.edges[0]?.node?.messageObj;
     let messageTo:string = personObj?.phones?.primaryPhoneNumber?.length == 10
       ? '91' + personObj?.phones?.primaryPhoneNumber
@@ -624,22 +624,22 @@ export class ArxChatEndpoint {
           : personObj?.phones?.primaryPhoneNumber || '';
     }
     console.log("This is the messaging channel ::", personObj?.candidates?.edges.filter(
-      (candidate) => candidate.node.projects.id == candidateJob?.id,
+      (candidate) => candidate.node.project.id == candidateJob?.id,
     )[0]?.node.messagingChannel)
     console.log("This is the whatsapp provider ::", personObj?.candidates?.edges.filter(
-      (candidate) => candidate.node.projects.id == candidateJob?.id,
+      (candidate) => candidate.node.project.id == candidateJob?.id,
     )[0]?.node.whatsappProvider)
 
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       id: uuidv4(),
       candidateProfile: personObj?.candidates?.edges?.filter(
-        (candidate) => candidate.node.projects.id == candidateJob?.id,
+        (candidate) => candidate.node.project.id == candidateJob?.id,
       )[0]?.node as CandidateNode,
       candidateFirstName: personObj?.name?.firstName || '',
       phoneNumberFrom: recruiterProfile.phoneNumber,
       whatsappMessageType:
         personObj?.candidates?.edges.filter(
-          (candidate) => candidate.node.projects.id == candidateJob?.id,
+          (candidate) => candidate.node.project.id == candidateJob?.id,
         )[0]?.node.whatsappProvider ||
         'application03',
       phoneNumberTo: messageTo,
@@ -652,7 +652,7 @@ export class ArxChatEndpoint {
       typeOfMessage:
         toMessagingChannelTransportKey(
           personObj?.candidates?.edges.filter(
-            (candidate) => candidate.node.projects.id == candidateJob?.id,
+            (candidate) => candidate.node.project.id == candidateJob?.id,
           )[0]?.node.messagingChannel,
         ) ||
         process.env.DEFAULT_WHATSAPP_CLIENT ||
@@ -661,7 +661,7 @@ export class ArxChatEndpoint {
 
     // Use MessagingControls to send the message (handles all messaging channels)
     const candidateNode = personObj?.candidates?.edges?.filter(
-      (candidate) => candidate.node.projects.id == candidateJob?.id,
+      (candidate) => candidate.node.project.id == candidateJob?.id,
     )[0]?.node as CandidateNode;
 
     const candidateChatHistory = candidateNode?.chatMessages?.edges[0]?.node?.messageObj || [];
@@ -982,7 +982,7 @@ export class ArxChatEndpoint {
         this.workspaceMemberProfileUnipileService,
       ).shareJDtoCandidate(
         candidateNode,
-        candidateNode.projects,
+        candidateNode.project,
         chatControl,
         apiToken,
       );
@@ -1032,7 +1032,7 @@ export class ArxChatEndpoint {
       const mockCandidate = {
         id: 'test-candidate-id',
         name: 'Test Candidate',
-        projects: {
+        project: {
           id: 'test-job-id',
           title: 'Test Project',
           company: { name: 'Test Company' },

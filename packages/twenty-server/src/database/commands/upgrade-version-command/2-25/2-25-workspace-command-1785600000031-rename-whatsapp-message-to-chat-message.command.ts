@@ -75,7 +75,7 @@ export class RenameWhatsappMessageToChatMessageCommand extends ProvisionedWorksp
       `CREATE INDEX IF NOT EXISTS idx_chat_message_created_at ON "${schema}"."_chatMessage" ("createdAt")`,
       `CREATE INDEX IF NOT EXISTS idx_chat_message_delivery_status ON "${schema}"."_chatMessage" ("whatsappDeliveryStatus")`,
       `CREATE INDEX IF NOT EXISTS idx_chat_message_recruiter ON "${schema}"."_chatMessage" ("recruiterId")`,
-      `CREATE INDEX IF NOT EXISTS idx_chat_message_project ON "${schema}"."_chatMessage" ("projectsId")`,
+      `CREATE INDEX IF NOT EXISTS idx_chat_message_project ON "${schema}"."_chatMessage" ("projectId")`,
     ];
     const authContext = buildSystemAuthContext(workspaceId);
 

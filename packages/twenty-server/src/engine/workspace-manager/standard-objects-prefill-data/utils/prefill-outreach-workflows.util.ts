@@ -5,11 +5,7 @@ import { v5 } from 'uuid';
 
 import { getOutreachLogicFunctionIds } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-logic-functions.util';
 import { OUTREACH_WORKFLOW_GRAPH_TEMPLATES } from 'src/engine/workspace-manager/standard-objects-prefill-data/data/outreach-workflow-graphs';
-import {
-  SEEDED_OUTREACH_WORKFLOW,
-  seededOutreachWorkflowNameAliases,
-  resolveSeededOutreachWorkflowCanonicalName,
-} from 'src/engine/workspace-manager/standard-objects-prefill-data/constants/seeded-outreach-workflow-names.const';
+import { SEEDED_OUTREACH_WORKFLOW } from 'src/engine/workspace-manager/standard-objects-prefill-data/constants/seeded-outreach-workflow-names.const';
 import {
   OUTREACH_WF_AGENT_EMAIL,
   OUTREACH_WF_AGENT_LINKEDIN,
@@ -84,9 +80,69 @@ const FALLBACK_EMAIL_SCHEMA = {
 const REPLY_SCHEMA = {
   type: 'object' as const,
   properties: {
-    message: { type: 'string' as const, description: 'Reply body' },
+    message: {
+      type: 'string' as const,
+      description:
+        'Reply body. Use #DONTRESPOND# exactly when nothing should be sent.',
+    },
+    startsAt: {
+      type: 'string' as const,
+      description:
+        'Agreed intro start as ISO-8601, or empty if no slot is confirmed',
+    },
+    endsAt: {
+      type: 'string' as const,
+      description:
+        'Agreed intro end as ISO-8601, or empty if no slot is confirmed',
+    },
+    emailSubject: {
+      type: 'string' as const,
+      description: 'Subject when emailing details or a referral, else empty',
+    },
+    emailBody: {
+      type: 'string' as const,
+      description: 'Body for the details email to the prospect, else empty',
+    },
+    prospectEmail: {
+      type: 'string' as const,
+      description: 'Address they asked us to email details to, else empty',
+    },
+    referralName: {
+      type: 'string' as const,
+      description: 'Name of someone else to contact, else empty',
+    },
+    referralEmail: {
+      type: 'string' as const,
+      description: 'Email of someone else to contact, else empty',
+    },
+    referralPhone: {
+      type: 'string' as const,
+      description: 'WhatsApp/phone of someone else to contact, else empty',
+    },
+    referralMessage: {
+      type: 'string' as const,
+      description:
+        'Intro message to the referred person (email or WhatsApp), else empty',
+    },
+    replyChannel: {
+      type: 'string' as const,
+      description:
+        'LINKEDIN, WHATSAPP, or EMAIL — last inbound channel unless they asked to switch',
+    },
   },
-  required: ['message'],
+  required: [
+    'message',
+    'startsAt',
+    'endsAt',
+    'emailSubject',
+    'emailBody',
+    'prospectEmail',
+    'referralName',
+    'referralEmail',
+    'referralPhone',
+    'referralMessage',
+    'replyChannel',
+  ],
   additionalProperties: false as const,
 };
 
@@ -151,7 +207,10 @@ export const getOutreachAgentIds = (workspaceId: string) => ({
 });
 
 export const getOutreachHarvestProjectId = (workspaceId: string) =>
-  v5(`gtmHarvestProject:${workspaceId}`, OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE);
+  v5(
+    `gtmHarvestProject:${workspaceId}`,
+    OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
+  );
 
 const loadFieldMetadataId = async ({
   entityManager,
@@ -199,10 +258,13 @@ const substituteTokens = (
     serialized = serialized.split(token).join(replacement);
   }
 
-  if (serialized.includes('__LF_') || serialized.includes('__AGENT_') || serialized.includes('__PROJECT_') || serialized.includes('__FIELD_')) {
-    throw new Error(
-      'Unresolved GTM outreach workflow token in prefill',
-    );
+  if (
+    serialized.includes('__LF_') ||
+    serialized.includes('__AGENT_') ||
+    serialized.includes('__PROJECT_') ||
+    serialized.includes('__FIELD_')
+  ) {
+    throw new Error('Unresolved GTM outreach workflow token in prefill');
   }
 
   return JSON.parse(serialized);
@@ -248,7 +310,7 @@ const upsertAgents = async ({
       name: 'gtm-outreach-reply',
       label: 'GTM inbound reply',
       prompt:
-        'You draft short GTM replies after inbound classification. Return JSON { "message": "<body>" } only. Never invent calendar times.',
+        'You draft short GTM sales replies after inbound classification. Return JSON { "message", "startsAt", "endsAt", "replyChannel", "emailSubject", "emailBody", "prospectEmail", "referralName", "referralEmail", "referralPhone", "referralMessage" }. replyChannel is LINKEDIN, WHATSAPP, or EMAIL matching the last inbound unless they asked to switch. Empty strings when unused. Never invent calendar times. If they are the wrong person, ask for a referral. If they ask for details by email, fill prospectEmail plus emailSubject/emailBody. If they share someone else\'s contact, fill referral* so workflow nodes can create that person and email or WhatsApp them. Do not ask recruiting screening questions or share a job description.',
       responseFormat: { type: 'json', schema: REPLY_SCHEMA },
       universalIdentifier: v5(
         `gtmOutreachAgentUniversal:reply:${workspaceId}`,
@@ -417,7 +479,16 @@ const upsertHarvestProject = async ({
     columnName: 'isActive',
   });
 
-  const columns = ['id', 'name', 'createdBySource', 'createdByWorkspaceMemberId', 'createdByName', 'updatedBySource', 'updatedByWorkspaceMemberId', 'updatedByName'];
+  const columns = [
+    'id',
+    'name',
+    'createdBySource',
+    'createdByWorkspaceMemberId',
+    'createdByName',
+    'updatedBySource',
+    'updatedByWorkspaceMemberId',
+    'updatedByName',
+  ];
   const values: unknown[] = [
     projectId,
     'Harvest',
@@ -511,11 +582,11 @@ export const prefillOutreachWorkflows = async ({
     objectName: 'candidate',
     fieldNames: ['jobCompanyName'],
   });
-  const projectsIdFieldId = await loadFieldMetadataId({
+  const projectIdFieldId = await loadFieldMetadataId({
     entityManager,
     workspaceId,
     objectName: 'candidate',
-    fieldNames: ['projectsId', 'projects'],
+    fieldNames: ['projectId', 'project'],
   });
   const createdAtFieldId = await loadFieldMetadataId({
     entityManager,
@@ -535,6 +606,12 @@ export const prefillOutreachWorkflows = async ({
     objectName: 'chatMessage',
     fieldNames: ['candidateId', 'candidate'],
   });
+  const chatCreatedAtFieldId = await loadFieldMetadataId({
+    entityManager,
+    workspaceId,
+    objectName: 'chatMessage',
+    fieldNames: ['createdAt'],
+  });
 
   const harvestProjectId = await upsertHarvestProject({
     entityManager,
@@ -551,18 +628,19 @@ export const prefillOutreachWorkflows = async ({
     [OUTREACH_WF_FIELD.candidateId]: candidateIdFieldId,
     [OUTREACH_WF_FIELD.outreachSequenceStage]: outreachSequenceStageFieldId,
     [OUTREACH_WF_FIELD.jobCompanyName]: jobCompanyNameFieldId,
-    [OUTREACH_WF_FIELD.projectsId]: projectsIdFieldId,
+    [OUTREACH_WF_FIELD.projectId]: projectIdFieldId,
     [OUTREACH_WF_FIELD.createdAt]: createdAtFieldId,
     [OUTREACH_WF_FIELD.profileMemberId]: profileMemberFieldId,
     [OUTREACH_WF_FIELD.chatCandidateId]: chatCandidateFieldId,
+    [OUTREACH_WF_FIELD.chatCreatedAt]: chatCreatedAtFieldId,
   };
 
   for (const [token, idKey] of Object.entries(LF_TOKEN_TO_ID_KEY)) {
     replacements[token] = lfIds[idKey as keyof typeof lfIds];
   }
 
-  const seededNames = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.flatMap((graph) =>
-    seededOutreachWorkflowNameAliases(graph.name),
+  const seededNames = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.map(
+    (graph) => graph.name,
   );
 
   const existingRows = (await entityManager.query(
@@ -585,14 +663,15 @@ export const prefillOutreachWorkflows = async ({
     coreWorkflowVersionId: string;
   }>;
 
-  const existingByName = new Map<string, Array<(typeof existingRows)[number]>>();
+  const existingByName = new Map<
+    string,
+    Array<(typeof existingRows)[number]>
+  >();
 
   for (const row of existingRows) {
-    const canonical =
-      resolveSeededOutreachWorkflowCanonicalName(row.name) ?? row.name;
-    const rows = existingByName.get(canonical) ?? [];
+    const rows = existingByName.get(row.name) ?? [];
     rows.push(row);
-    existingByName.set(canonical, rows);
+    existingByName.set(row.name, rows);
   }
 
   const workflowRows: Array<Record<string, unknown>> = [];
@@ -643,7 +722,8 @@ export const prefillOutreachWorkflows = async ({
     }
 
     const workflowId = existing?.workflowId ?? ids.workflowId;
-    const workflowVersionId = existing?.workflowVersionId ?? ids.workflowVersionId;
+    const workflowVersionId =
+      existing?.workflowVersionId ?? ids.workflowVersionId;
     const coreWorkflowId = existing?.coreWorkflowId ?? ids.coreWorkflowId;
     const coreWorkflowVersionId =
       existing?.coreWorkflowVersionId ?? ids.coreWorkflowVersionId;
@@ -842,13 +922,10 @@ export const prefillOutreachWorkflows = async ({
         'workflowId',
       ])
       .orIgnore()
-      .values(
-        insertCoreVersions.map((row) => ({
-          ...row,
-          triggers: JSON.stringify(row.triggers),
-          steps: JSON.stringify(row.steps),
-        })),
-      )
+      // core.workflowVersion is a registered entity, so TypeORM serializes the
+      // jsonb columns itself. Pre-stringifying here double-encodes them into a
+      // json string instead of an array/object.
+      .values(insertCoreVersions)
       .execute();
   }
 };

@@ -97,7 +97,7 @@ export class LinkedInRecruiterPeopleTransformerService extends LinkedInSearchTra
         chatMessages: { edges: [] },
         emailMessages: { edges: [] },
         otherFields: {},
-        projects: { id: projectId, name: jobName },
+        project: { id: projectId, name: jobName },
         people: { id: peopleId },
         attachments: { edges: [] },
         videoInterview: { edges: [] },

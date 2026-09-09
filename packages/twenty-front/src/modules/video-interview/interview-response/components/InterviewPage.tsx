@@ -164,8 +164,8 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({
     if (InterviewData?.candidate?.id) {
       Mixpanel.identify(InterviewData.candidate.id);
       Mixpanel.track('Interview Page View', {
-        jobTitle: InterviewData?.candidate?.projects?.name,
-        company: InterviewData?.candidate?.projects?.companyName,
+        jobTitle: InterviewData?.candidate?.project?.name,
+        company: InterviewData?.candidate?.project?.companyName,
         questionCount: questions.length,
       });
     }
@@ -479,8 +479,8 @@ export const InterviewPage: React.FC<VideoInterviewPageProps> = ({
     <SnapScrollContainer>
       <StyledLeftPanel>
         <h2>
-          {InterviewData?.candidate?.projects?.name} at{' '}
-          {InterviewData?.candidate?.projects?.companyName}
+          {InterviewData?.candidate?.project?.name} at{' '}
+          {InterviewData?.candidate?.project?.companyName}
         </h2>
         <StyledLeftPanelContentBox>
           <StyledTextLeftPanelTextHeadline>

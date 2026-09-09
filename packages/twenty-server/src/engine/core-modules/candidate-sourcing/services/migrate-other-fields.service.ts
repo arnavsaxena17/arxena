@@ -324,13 +324,13 @@ export class MigrateOtherFieldsService {
   ): Promise<number> {
     const legacyRows = (await this.workspaceQueryService.executeWorkspaceRawQuery(
       `
-        SELECT cf."projectsId" as "jobId", cf.name, cf.position
+        SELECT cf."projectId" as "jobId", cf.name, cf.position
         FROM ${schema}."_candidateField" cf
         WHERE cf."deletedAt" IS NULL
-          AND cf."projectsId" IS NOT NULL
+          AND cf."projectId" IS NOT NULL
           AND cf.name IS NOT NULL
           AND btrim(cf.name::text) <> ''
-        ORDER BY cf."projectsId", cf.position ASC NULLS LAST, cf."createdAt" ASC
+        ORDER BY cf."projectId", cf.position ASC NULLS LAST, cf."createdAt" ASC
       `,
       [],
       workspaceId,

@@ -23,7 +23,7 @@ export type OutreachDeferredResumeJobData = {
 
 type CandidateRecord = ObjectLiteral & {
   id: string;
-  projectsId?: string | null;
+  projectId?: string | null;
   outreachSequenceStage?: string | null;
   outreachConversationStage?: string | null;
   outreachAnalytics?: unknown;

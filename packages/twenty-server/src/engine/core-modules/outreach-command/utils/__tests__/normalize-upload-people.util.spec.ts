@@ -89,7 +89,7 @@ describe('normalizeUploadPeople', () => {
         name: { firstName: 'Prenisha', lastName: 'Harry' },
         jobTitle: 'Senior People Director',
         jobCompanyName: 'E.L.F. BEAUTY',
-        projectsId: '99b70b94-3d4d-425b-9e3a-881c1361de7f',
+        projectId: '99b70b94-3d4d-425b-9e3a-881c1361de7f',
         peopleId: 'ACoAAAIRqlkBVrZQVLDnz6_oel2hQOLSyF77bKk',
         linkedinUrl: {
           primaryLinkUrl: 'https://www.linkedin.com/in/prenisha-harry-075760b',
@@ -128,7 +128,7 @@ describe('collectUploadCandidateIds', () => {
             linkedinUrl: {
               primaryLinkUrl: 'https://www.linkedin.com/in/example',
             },
-            projectsId: '99b70b94-3d4d-425b-9e3a-881c1361de7f',
+            projectId: '99b70b94-3d4d-425b-9e3a-881c1361de7f',
           },
         ],
         undefined,

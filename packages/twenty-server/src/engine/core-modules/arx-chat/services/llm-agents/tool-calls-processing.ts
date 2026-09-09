@@ -90,7 +90,7 @@ export class ToolCallsProcessing {
       'This is the candidateID for which we are trying to update the status:',
       candidateId,
     );
-    const candidateJob: Project = candidate?.projects;
+    const candidateJob: Project = candidate?.project;
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
     if (!recruiterProfile) {
       throw new Error('Recruiter profile not found for job');

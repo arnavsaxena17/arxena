@@ -174,7 +174,7 @@ export class FormWorkflowAction implements WorkflowAction {
         async () => {
           const candidateRepository =
             await this.globalWorkspaceOrmManager.getRepository<
-              ObjectLiteral & { id: string; projectsId?: string | null }
+              ObjectLiteral & { id: string; projectId?: string | null }
             >(workspaceId, 'candidate', {
               shouldBypassPermissionChecks: true,
             });
@@ -182,7 +182,7 @@ export class FormWorkflowAction implements WorkflowAction {
             where: { id: candidateId },
           });
 
-          if (!isNonEmptyString(candidate?.projectsId)) {
+          if (!isNonEmptyString(candidate?.projectId)) {
             return false;
           }
 
@@ -194,7 +194,7 @@ export class FormWorkflowAction implements WorkflowAction {
               }
             >(workspaceId, 'project', { shouldBypassPermissionChecks: true });
           const project = await projectRepository.findOne({
-            where: { id: candidate.projectsId },
+            where: { id: candidate.projectId },
           });
 
           return (

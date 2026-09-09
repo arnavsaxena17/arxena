@@ -76,9 +76,7 @@ const isVideoInterviewHostObjectName = (nameSingular: string): boolean =>
   nameSingular === 'project' ||
   nameSingular === 'person';
 
-const isShortlistPresentationHostObjectName = (
-  nameSingular: string,
-): boolean =>
+const isShortlistPresentationHostObjectName = (nameSingular: string): boolean =>
   nameSingular === 'candidate' ||
   nameSingular === 'project' ||
   nameSingular === 'person' ||
@@ -103,23 +101,9 @@ const ARXENA_OBJECT_UNIVERSAL_IDENTIFIER_LEGACY_NAME_SINGULAR: Record<
   chatMessage: 'whatsappMessage',
 };
 
-// Field names used for UID hashing when the live field name changed.
-const ARXENA_FIELD_UNIVERSAL_IDENTIFIER_LEGACY_NAME: Record<string, string> = {
-  'chatMessage:externalMessageId': 'whatsappMessageId',
-  'candidate:chatMessages': 'whatsappMessages',
-  'person:chatMessages': 'whatsappMessages',
-  'project:chatMessages': 'whatsappMessages',
-  'workspaceMember:chatMessages': 'whatsappMessages',
-};
-
-const resolveFieldNameForUniversalIdentifier = (
-  objectName: string,
-  fieldName: string,
-): string =>
-  ARXENA_FIELD_UNIVERSAL_IDENTIFIER_LEGACY_NAME[`${objectName}:${fieldName}`] ??
-  fieldName;
-
-const resolveObjectUniversalIdentifier = (nameSingular: string): string => {
+export const resolveObjectUniversalIdentifier = (
+  nameSingular: string,
+): string => {
   if (isStandardObjectName(nameSingular)) {
     return STANDARD_OBJECTS[nameSingular].universalIdentifier;
   }
@@ -184,7 +168,7 @@ const buildScalarFieldManifest = ({
     applicationUniversalIdentifier:
       ARXENA_STANDARD_APPLICATION_UNIVERSAL_IDENTIFIER,
     objectUniversalIdentifier,
-    name: resolveFieldNameForUniversalIdentifier(objectName, field.name),
+    name: field.name,
   });
 
   // Always use optionIndex — source data often sets every option to position 0
@@ -261,17 +245,14 @@ const buildRelationFieldManifest = ({
     applicationUniversalIdentifier:
       ARXENA_STANDARD_APPLICATION_UNIVERSAL_IDENTIFIER,
     objectUniversalIdentifier,
-    name: resolveFieldNameForUniversalIdentifier(objectName, fieldName),
+    name: fieldName,
   });
   const relationTargetFieldMetadataUniversalIdentifier =
     getFieldUniversalIdentifier({
       applicationUniversalIdentifier:
         ARXENA_STANDARD_APPLICATION_UNIVERSAL_IDENTIFIER,
       objectUniversalIdentifier: targetObjectUniversalIdentifier,
-      name: resolveFieldNameForUniversalIdentifier(
-        targetObjectName,
-        targetFieldName,
-      ),
+      name: targetFieldName,
     });
 
   return {
@@ -395,7 +376,7 @@ const getArxenaFieldUniversalIdentifier = (
     applicationUniversalIdentifier:
       ARXENA_STANDARD_APPLICATION_UNIVERSAL_IDENTIFIER,
     objectUniversalIdentifier: resolveObjectUniversalIdentifier(objectName),
-    name: resolveFieldNameForUniversalIdentifier(objectName, fieldName),
+    name: fieldName,
   });
 
 const appendVisibleViewField = ({
@@ -537,9 +518,7 @@ export const buildShortlistPresentationManifest = (
     isOrgChartEnabled,
   });
 
-export const buildAssistantManifest = (
-  isOrgChartEnabled?: boolean,
-): Manifest =>
+export const buildAssistantManifest = (isOrgChartEnabled?: boolean): Manifest =>
   buildArxenaFamilyManifest({
     owner: 'assistant',
     isOrgChartEnabled,
@@ -572,10 +551,7 @@ const buildArxenaFamilyManifest = ({
             isOrgChartEnabled,
           )
         : owner === 'assistant'
-          ? getAssistantFieldsData(
-              EMPTY_OBJECTS_NAME_ID_MAP,
-              isOrgChartEnabled,
-            )
+          ? getAssistantFieldsData(EMPTY_OBJECTS_NAME_ID_MAP, isOrgChartEnabled)
           : getFieldsData(EMPTY_OBJECTS_NAME_ID_MAP, isOrgChartEnabled);
   const relationsData =
     owner === 'video-interview'

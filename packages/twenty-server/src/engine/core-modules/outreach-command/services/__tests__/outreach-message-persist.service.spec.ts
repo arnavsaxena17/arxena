@@ -122,7 +122,7 @@ describe('OutreachMessagePersistService.mergeFetchedLinkedinMessages', () => {
     candidateRepository.findOne.mockResolvedValue({
       id: '993fcd9e-891d-413a-8a22-9342d8d2f15b',
       peopleId: 'person-1',
-      projectsId: 'project-1',
+      projectId: 'project-1',
     });
     messageRepository.find.mockResolvedValue([]);
     messageRepository.save.mockResolvedValue({});
@@ -159,6 +159,14 @@ describe('OutreachMessagePersistService.mergeFetchedLinkedinMessages', () => {
         externalChatId: 'AmEepVtWUB6M-9L6BqUsAA',
         externalMessageId: '2kuKnBpZWZCaaV8MpRN_Zg',
         candidateId: '993fcd9e-891d-413a-8a22-9342d8d2f15b',
+        messageObj: [
+          {
+            role: 'assistant',
+            content: 'Happy to connect.',
+            id: '2kuKnBpZWZCaaV8MpRN_Zg',
+            timestamp: '2026-08-25T21:18:24.338Z',
+          },
+        ],
       }),
     );
     expect(messageRepository.save).toHaveBeenCalledTimes(1);
@@ -238,7 +246,7 @@ describe('OutreachMessagePersistService.readLinkedinTranscriptMessages', () => {
         candidateId: 'cand-1',
         channel: 'LINKEDIN',
         externalChatId: 'mock-chat-divyesh',
-        messageObjWithTimeStamp: [
+        messageObj: [
           {
             role: 'assistant',
             content: 'Hi Divyesh',
@@ -289,5 +297,258 @@ describe('OutreachMessagePersistService.readLinkedinTranscriptMessages', () => {
         },
       ],
     });
+  });
+});
+
+describe('OutreachMessagePersistService.persistInboundFlush', () => {
+  const applyCandidateEvent = jest.fn();
+  const resolveOrMint = jest.fn();
+  const candidateRepository = {
+    findOne: jest.fn(),
+    find: jest.fn(),
+  };
+  const messageRepository = {
+    find: jest.fn(),
+    save: jest.fn(),
+    update: jest.fn(),
+  };
+  const globalWorkspaceOrmManager = {
+    getRepository: jest.fn(async (_workspaceId: string, objectName: string) =>
+      objectName === 'chatMessage' ? messageRepository : candidateRepository,
+    ),
+    executeInWorkspaceContext: jest.fn(
+      async (callback: () => Promise<unknown>) => callback(),
+    ),
+  };
+
+  const service = new OutreachMessagePersistService(
+    globalWorkspaceOrmManager as never,
+    { applyCandidateEvent } as never,
+    { resolveOrMint } as never,
+  );
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    candidateRepository.findOne.mockResolvedValue({
+      id: 'cand-1',
+      peopleId: 'person-1',
+      projectId: 'project-1',
+    });
+    messageRepository.save.mockResolvedValue({});
+    globalWorkspaceOrmManager.getRepository.mockImplementation(
+      async (_workspaceId: string, objectName: string) =>
+        objectName === 'chatMessage' ? messageRepository : candidateRepository,
+    );
+    globalWorkspaceOrmManager.executeInWorkspaceContext.mockImplementation(
+      async (callback: () => Promise<unknown>) => callback(),
+    );
+  });
+
+  it('writes EMAIL inbound onto a new row instead of the LinkedIn transcript', async () => {
+    messageRepository.find.mockResolvedValue([
+      {
+        id: 'linkedin-row',
+        candidateId: 'cand-1',
+        channel: 'LINKEDIN',
+        typeOfMessage: 'linkedin',
+        messageObj: [{ role: 'assistant', content: 'Hi' }],
+      },
+    ]);
+
+    await service.persistInboundFlush({
+      workspaceId: 'ws-1',
+      candidateId: 'cand-1',
+      channel: 'EMAIL',
+      turns: [
+        {
+          role: 'user',
+          content: 'Please email me the deck',
+          id: 'email-1',
+        },
+      ],
+    });
+
+    expect(messageRepository.update).not.toHaveBeenCalled();
+    expect(messageRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channel: 'EMAIL',
+        typeOfMessage: 'email',
+        candidateId: 'cand-1',
+      }),
+    );
+  });
+
+  it('resolves a candidate whose stored phone omits the calling code', async () => {
+    messageRepository.find.mockResolvedValue([]);
+    candidateRepository.find.mockResolvedValueOnce([
+      { id: 'cand-1', phoneNumber: { primaryPhoneNumber: '9820976134' } },
+    ]);
+
+    await service.appendOutbound({
+      workspaceId: 'ws-1',
+      channel: 'WHATSAPP',
+      body: 'Hi there',
+      phone: '+919820976134',
+      materializeOutbound: false,
+    });
+
+    expect(candidateRepository.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { phoneNumberPrimaryPhoneNumber: expect.anything() },
+      }),
+    );
+    expect(messageRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({ candidateId: 'cand-1' }),
+    );
+  });
+
+  it('falls back to the person phones column when candidate.phoneNumber is empty', async () => {
+    messageRepository.find.mockResolvedValue([]);
+    candidateRepository.find
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { id: 'person-1', phones: { primaryPhoneNumber: '9820976134' } },
+      ])
+      .mockResolvedValueOnce([{ id: 'cand-1' }]);
+
+    await service.appendOutbound({
+      workspaceId: 'ws-1',
+      channel: 'WHATSAPP',
+      body: 'Hi there',
+      phone: '+919820976134',
+      materializeOutbound: false,
+    });
+
+    expect(candidateRepository.find).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: { phonesPrimaryPhoneNumber: expect.anything() },
+      }),
+    );
+    expect(messageRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({ candidateId: 'cand-1' }),
+    );
+  });
+
+  it('does not resolve a candidate when no phone matches', async () => {
+    messageRepository.find.mockResolvedValue([]);
+    candidateRepository.find.mockResolvedValue([]);
+
+    await service.appendOutbound({
+      workspaceId: 'ws-1',
+      channel: 'WHATSAPP',
+      body: 'Hi there',
+      phone: '+919820976134',
+      materializeOutbound: false,
+    });
+
+    expect(messageRepository.save).not.toHaveBeenCalled();
+  });
+});
+
+describe('OutreachMessagePersistService.findOutreachCandidateForInboundEmail', () => {
+  const applyCandidateEvent = jest.fn();
+  const resolveOrMint = jest.fn();
+  const candidateRepository = {
+    findOne: jest.fn(),
+    find: jest.fn(),
+  };
+  const projectRepository = {
+    findOne: jest.fn(),
+  };
+  const globalWorkspaceOrmManager = {
+    getRepository: jest.fn(async (_workspaceId: string, objectName: string) => {
+      if (objectName === 'project') {
+        return projectRepository;
+      }
+
+      return candidateRepository;
+    }),
+    executeInWorkspaceContext: jest.fn(
+      async (callback: () => Promise<unknown>) => callback(),
+    ),
+  };
+
+  const service = new OutreachMessagePersistService(
+    globalWorkspaceOrmManager as never,
+    { applyCandidateEvent } as never,
+    { resolveOrMint } as never,
+  );
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    candidateRepository.find.mockResolvedValue([]);
+    projectRepository.findOne.mockResolvedValue({
+      id: 'project-1',
+      engagementProcessingDelayMinutes: 3,
+    });
+    globalWorkspaceOrmManager.executeInWorkspaceContext.mockImplementation(
+      async (callback: () => Promise<unknown>) => callback(),
+    );
+  });
+
+  it('returns the outreach candidate matched by email', async () => {
+    candidateRepository.findOne
+      .mockResolvedValueOnce({
+        id: 'cand-1',
+        emailPrimaryEmail: 'alex@acme.com',
+      })
+      .mockResolvedValueOnce({
+        id: 'cand-1',
+        outreachSequenceStage: 'WAITING_REPLY',
+        projectId: 'project-1',
+      });
+
+    await expect(
+      service.findOutreachCandidateForInboundEmail({
+        workspaceId: 'ws-1',
+        fromEmail: 'alex@acme.com',
+      }),
+    ).resolves.toEqual({
+      candidateId: 'cand-1',
+      delayMinutes: 3,
+    });
+  });
+
+  it('falls back to the person emails column when candidate.email is empty', async () => {
+    candidateRepository.findOne
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: 'person-1' })
+      .mockResolvedValueOnce({
+        id: 'cand-1',
+        outreachSequenceStage: 'WAITING_REPLY',
+        projectId: 'project-1',
+      });
+    candidateRepository.find.mockResolvedValueOnce([{ id: 'cand-1' }]);
+
+    await expect(
+      service.findOutreachCandidateForInboundEmail({
+        workspaceId: 'ws-1',
+        fromEmail: 'alex@acme.com',
+      }),
+    ).resolves.toEqual({
+      candidateId: 'cand-1',
+      delayMinutes: 3,
+    });
+  });
+
+  it('skips STOPPED outreach candidates', async () => {
+    candidateRepository.findOne
+      .mockResolvedValueOnce({
+        id: 'cand-1',
+        emailPrimaryEmail: 'alex@acme.com',
+      })
+      .mockResolvedValueOnce({
+        id: 'cand-1',
+        outreachSequenceStage: 'STOPPED',
+        projectId: 'project-1',
+      });
+
+    await expect(
+      service.findOutreachCandidateForInboundEmail({
+        workspaceId: 'ws-1',
+        fromEmail: 'alex@acme.com',
+      }),
+    ).resolves.toBeNull();
   });
 });

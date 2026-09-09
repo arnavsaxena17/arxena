@@ -54,7 +54,7 @@ type ProjectRecord = ObjectLiteral & {
 
 type CandidateRecord = ObjectLiteral & {
   id: string;
-  projectsId?: string | null;
+  projectId?: string | null;
 };
 
 type WorkflowRunRecord = ObjectLiteral & {
@@ -417,7 +417,7 @@ export class OutreachProjectOutreachControlService {
         const candidates = await candidateRepository.find({
           where: {
             id: In(uniqueIds),
-            projectsId: projectId,
+            projectId: projectId,
           },
         });
 
@@ -593,7 +593,7 @@ export class OutreachProjectOutreachControlService {
           where: { id: run.candidateId },
         });
 
-        return candidate?.projectsId ?? null;
+        return candidate?.projectId ?? null;
       },
       authContext,
     );
@@ -613,7 +613,7 @@ export class OutreachProjectOutreachControlService {
         { shouldBypassPermissionChecks: true },
       );
     const candidates = await candidateRepository.find({
-      where: { projectsId: projectId },
+      where: { projectId: projectId },
       select: { id: true },
       take: 5000,
     });

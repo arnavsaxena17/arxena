@@ -435,7 +435,7 @@ export const graphqlQueryToCreateOneNewChatMessage = `mutation CreateOneChatMess
       message
       phoneFrom
       phoneTo
-      projectsId
+      projectId
       candidateId
       name
       messageObj
@@ -452,7 +452,7 @@ export const graphQltoUpdateOneCandidate = `mutation UpdateOneCandidate($idToUpd
       __typename
       candidateFlags
       whatsappProvider
-      projectsId
+      projectId
       updatedAt
       chatCount
       position
@@ -514,7 +514,7 @@ export const graphqlToAddNewCandidate = `mutation CreateOneCandidate($input: Can
     id
     name
     status
-    projectsId
+    projectId
     peopleId
   }
 }

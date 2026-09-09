@@ -2,12 +2,22 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 import { MessagingChannel, parseOutreachAnalytics } from 'twenty-shared/arx';
-import { isDefined, escapeForIlike } from 'twenty-shared/utils';
+import {
+  isDefined,
+  escapeForIlike,
+  normalizePhoneDigits,
+  phonesMatch,
+} from 'twenty-shared/utils';
 import { ILike, type ObjectLiteral } from 'typeorm';
 
 import { buildCreatedByFromSystem } from 'src/engine/core-modules/actor/utils/build-created-by-from-system.util';
 import { OutreachCommandMaterializeService } from 'src/engine/core-modules/outreach-command/services/outreach-command-materialize.service';
 import { OutreachWorkspaceAuthTokenService } from 'src/engine/core-modules/outreach-command/services/outreach-workspace-auth-token.service';
+import {
+  asChatTurns,
+  mergeChatTurns,
+  type ChatTurn,
+} from 'src/engine/core-modules/outreach-command/utils/chat-message-turns.util';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
 import { concatenatedUserBurst } from 'src/engine/core-modules/outreach-command/utils/inbound-reply-window.util';
 import { type OutreachCandidateEventKind } from 'src/engine/core-modules/outreach-command/utils/outreach-command-materialize.util';
@@ -19,21 +29,13 @@ import { type WorkflowWorkspaceEntity } from 'src/modules/workflow/common/standa
 
 export type OutreachTranscriptChannel = 'LINKEDIN' | 'WHATSAPP' | 'EMAIL';
 
-type ChatTurn = {
-  role: string;
-  content: string;
-  id?: string;
-  timestamp?: string;
-};
-
 type ChatMessageRecord = ObjectLiteral & {
   id: string;
   candidateId?: string | null;
   personId?: string | null;
-  projectsId?: string | null;
+  projectId?: string | null;
   message?: string | null;
   messageObj?: unknown;
-  messageObjWithTimeStamp?: unknown;
   typeOfMessage?: string | null;
   channel?: string | null;
   externalMessageId?: string | null;
@@ -45,12 +47,36 @@ type ChatMessageRecord = ObjectLiteral & {
 type CandidateRecord = ObjectLiteral & {
   id: string;
   peopleId?: string | null;
-  projectsId?: string | null;
+  projectId?: string | null;
   linkedinProfileId?: string | null;
   linkedinUrl?: { primaryLinkUrl?: string } | null;
   phoneNumber?: { primaryPhoneNumber?: string } | null;
+  email?: { primaryEmail?: string } | null;
+  outreachSequenceStage?: string | null;
   outreachAnalytics?: unknown;
   linkedinFollowUpCount?: number | null;
+};
+
+type PersonRecord = ObjectLiteral & {
+  id: string;
+  phones?: { primaryPhoneNumber?: string } | null;
+};
+
+const STOPPED_OUTREACH_STAGES = new Set(['STOPPED']);
+
+const channelTypeOfMessage = (
+  channel: OutreachTranscriptChannel,
+  inbound: boolean,
+): string => {
+  if (channel === 'LINKEDIN') {
+    return 'linkedin';
+  }
+
+  if (channel === 'EMAIL') {
+    return 'email';
+  }
+
+  return inbound ? 'whatsapp-unipile' : 'messageFromSelf';
 };
 
 @Injectable()
@@ -70,6 +96,7 @@ export class OutreachMessagePersistService {
     candidateId,
     linkedinProfileId,
     phone,
+    email,
     externalMessageId,
     chatId,
     materializeOutbound = true,
@@ -81,6 +108,7 @@ export class OutreachMessagePersistService {
     candidateId?: string | null;
     linkedinProfileId?: string | null;
     phone?: string | null;
+    email?: string | null;
     externalMessageId?: string | null;
     chatId?: string | null;
     materializeOutbound?: boolean;
@@ -108,6 +136,7 @@ export class OutreachMessagePersistService {
       candidateId,
       linkedinProfileId,
       phone,
+      email,
     });
 
     if (!isNonEmptyString(resolvedCandidateId)) {
@@ -132,7 +161,7 @@ export class OutreachMessagePersistService {
       ],
       chatId,
       latestExternalMessageId: externalMessageId,
-      typeOfMessage: channel === 'LINKEDIN' ? 'linkedin' : 'messageFromSelf',
+      typeOfMessage: channelTypeOfMessage(channel, false),
     });
 
     if (!materializeOutbound) {
@@ -273,9 +302,7 @@ export class OutreachMessagePersistService {
           resolvedCandidateId,
           'LINKEDIN',
         );
-        const turns = this.asTurns(
-          existing?.messageObjWithTimeStamp ?? existing?.messageObj,
-        );
+        const turns = asChatTurns(existing?.messageObj);
         const messages = turns.slice(-pageLimit).map((turn) => ({
           id: turn.id ?? '',
           text: turn.content,
@@ -368,11 +395,109 @@ export class OutreachMessagePersistService {
       turns,
       chatId,
       latestExternalMessageId: turns.at(-1)?.id,
-      typeOfMessage: channel === 'LINKEDIN' ? 'linkedin' : 'whatsapp-unipile',
+      typeOfMessage: channelTypeOfMessage(channel, true),
       messageFromUserBurst: true,
     });
 
     return true;
+  }
+
+  async findOutreachCandidateForInboundEmail({
+    workspaceId,
+    fromEmail,
+    personId,
+  }: {
+    workspaceId: string;
+    fromEmail?: string | null;
+    personId?: string | null;
+  }): Promise<{
+    candidateId: string;
+    delayMinutes: number | null;
+  } | null> {
+    const byPersonId = isNonEmptyString(personId)
+      ? await this.resolveCandidateId({
+          workspaceId,
+          peopleId: personId,
+        })
+      : null;
+    const byEmail = isNonEmptyString(fromEmail)
+      ? await this.resolveCandidateId({
+          workspaceId,
+          email: fromEmail,
+        })
+      : null;
+    const candidateIds = [byPersonId, byEmail].filter(isNonEmptyString);
+    const uniqueCandidateIds = [...new Set(candidateIds)];
+
+    for (const resolvedCandidateId of uniqueCandidateIds) {
+      const match = await this.loadOutreachInboundEmailCandidate({
+        workspaceId,
+        candidateId: resolvedCandidateId,
+      });
+
+      if (isDefined(match)) {
+        return match;
+      }
+    }
+
+    return null;
+  }
+
+  private async loadOutreachInboundEmailCandidate({
+    workspaceId,
+    candidateId,
+  }: {
+    workspaceId: string;
+    candidateId: string;
+  }): Promise<{
+    candidateId: string;
+    delayMinutes: number | null;
+  } | null> {
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const candidateRepository =
+          await this.globalWorkspaceOrmManager.getRepository<CandidateRecord>(
+            workspaceId,
+            'candidate',
+            { shouldBypassPermissionChecks: true },
+          );
+        const candidate = await candidateRepository.findOne({
+          where: { id: candidateId },
+        });
+        const stage = candidate?.outreachSequenceStage ?? '';
+
+        if (!isNonEmptyString(stage) || STOPPED_OUTREACH_STAGES.has(stage)) {
+          return null;
+        }
+
+        let delayMinutes: number | null = 2;
+
+        if (isNonEmptyString(candidate?.projectId)) {
+          const projectRepository =
+            await this.globalWorkspaceOrmManager.getRepository<
+              ObjectLiteral & {
+                id: string;
+                engagementProcessingDelayMinutes?: number | null;
+              }
+            >(workspaceId, 'project', {
+              shouldBypassPermissionChecks: true,
+            });
+          const project = await projectRepository.findOne({
+            where: { id: candidate.projectId },
+          });
+
+          delayMinutes = project?.engagementProcessingDelayMinutes ?? 2;
+        }
+
+        return {
+          candidateId,
+          delayMinutes,
+        };
+      },
+      authContext,
+    );
   }
 
   private async resolveCandidateId({
@@ -380,11 +505,15 @@ export class OutreachMessagePersistService {
     candidateId,
     linkedinProfileId,
     phone,
+    email,
+    peopleId,
   }: {
     workspaceId: string;
     candidateId?: string | null;
     linkedinProfileId?: string | null;
     phone?: string | null;
+    email?: string | null;
+    peopleId?: string | null;
   }): Promise<string | null> {
     if (isNonEmptyString(candidateId)) {
       return candidateId;
@@ -401,6 +530,25 @@ export class OutreachMessagePersistService {
             'candidate',
             { shouldBypassPermissionChecks: true },
           );
+
+        const getPersonRepository = () =>
+          this.globalWorkspaceOrmManager.getRepository<PersonRecord>(
+            workspaceId,
+            'person',
+            { shouldBypassPermissionChecks: true },
+          );
+
+        const findCandidateIdByPeopleId = async (
+          resolvedPeopleId: string,
+        ): Promise<string | null> => {
+          const rows = await candidateRepository.find({
+            where: { peopleId: resolvedPeopleId },
+            take: 1,
+            order: { updatedAt: 'DESC' },
+          });
+
+          return rows[0]?.id ?? null;
+        };
 
         if (isNonEmptyString(slug)) {
           const byProfileId = await candidateRepository.findOne({
@@ -428,18 +576,95 @@ export class OutreachMessagePersistService {
           }
         }
 
-        if (isNonEmptyString(phone)) {
-          const byPhone = await candidateRepository.find({
-            take: 50,
-            order: { updatedAt: 'DESC' },
-          });
-          const match = byPhone.find(
-            (row) =>
-              row.phoneNumber?.primaryPhoneNumber?.replace(/\D/g, '') ===
-              phone.replace(/\D/g, ''),
-          );
+        if (isNonEmptyString(peopleId)) {
+          const byPeopleId = await findCandidateIdByPeopleId(peopleId);
 
-          return match?.id ?? null;
+          if (isDefined(byPeopleId)) {
+            return byPeopleId;
+          }
+        }
+
+        if (isNonEmptyString(phone)) {
+          // Stored phones usually omit the calling code (9820976134) while
+          // providers send it (919820976134), so narrow on the last 10 digits
+          // in SQL and confirm the full match in memory.
+          const phoneDigits = normalizePhoneDigits(phone);
+          const phoneNeedle =
+            phoneDigits.length > 10 ? phoneDigits.slice(-10) : phoneDigits;
+
+          if (isNonEmptyString(phoneNeedle)) {
+            const phoneFilter = ILike(`%${escapeForIlike(phoneNeedle)}%`);
+
+            try {
+              const byPhoneColumn = await candidateRepository.find({
+                where: { phoneNumberPrimaryPhoneNumber: phoneFilter },
+                take: 10,
+                order: { updatedAt: 'DESC' },
+              });
+              const match = byPhoneColumn.find((row) => {
+                const stored = row.phoneNumber?.primaryPhoneNumber;
+
+                return isNonEmptyString(stored) && phonesMatch(stored, phone);
+              });
+
+              if (isDefined(match)) {
+                return match.id;
+              }
+            } catch {
+              // Composite phone column is missing on older workspaces.
+            }
+
+            // Enrichment writes discovered phones onto person.phones, so an
+            // enriched candidate can have an empty candidate.phoneNumber.
+            const personRepository = await getPersonRepository();
+            const people = await personRepository.find({
+              where: { phonesPrimaryPhoneNumber: phoneFilter },
+              take: 10,
+              order: { updatedAt: 'DESC' },
+            });
+            const personMatch = people.find((row) => {
+              const stored = row.phones?.primaryPhoneNumber;
+
+              return isNonEmptyString(stored) && phonesMatch(stored, phone);
+            });
+
+            if (isDefined(personMatch)) {
+              const byPersonPhone = await findCandidateIdByPeopleId(
+                personMatch.id,
+              );
+
+              if (isDefined(byPersonPhone)) {
+                return byPersonPhone;
+              }
+            }
+          }
+        }
+
+        if (isNonEmptyString(email)) {
+          const normalizedEmail = email.trim().toLowerCase();
+
+          try {
+            const byEmailColumn = await candidateRepository.findOne({
+              where: { emailPrimaryEmail: ILike(normalizedEmail) },
+            });
+
+            if (isDefined(byEmailColumn)) {
+              return byEmailColumn.id;
+            }
+          } catch {
+            // Composite email column is missing on older workspaces.
+          }
+
+          // Enrichment writes discovered emails onto person.emails, so an
+          // enriched candidate can have an empty candidate.email.
+          const personRepository = await getPersonRepository();
+          const person = await personRepository.findOne({
+            where: { emailsPrimaryEmail: ILike(normalizedEmail) },
+          });
+
+          if (isDefined(person)) {
+            return findCandidateIdByPeopleId(person.id);
+          }
         }
 
         return null;
@@ -513,26 +738,21 @@ export class OutreachMessagePersistService {
         candidateId,
         channel,
       );
-      const mergedObj = this.mergeChatTurns(
-        this.asTurns(existing?.messageObj),
+      const mergedTurns = mergeChatTurns(
+        asChatTurns(existing?.messageObj),
         turns,
       );
-      const mergedTs = this.mergeChatTurns(
-        this.asTurns(existing?.messageObjWithTimeStamp),
-        turns,
-      );
-      const lastContent = mergedObj.at(-1)?.content ?? '';
-      const burstContent = concatenatedUserBurst(mergedObj);
+      const lastContent = mergedTurns.at(-1)?.content ?? '';
+      const burstContent = concatenatedUserBurst(mergedTurns);
       const patch: Record<string, unknown> = {
         message:
           messageFromUserBurst && burstContent ? burstContent : lastContent,
-        messageObj: mergedObj,
-        messageObjWithTimeStamp: mergedTs,
+        messageObj: mergedTurns,
         typeOfMessage,
         channel,
         candidateId,
         personId: candidate?.peopleId ?? existing?.personId ?? null,
-        projectsId: candidate?.projectsId ?? existing?.projectsId ?? null,
+        projectId: candidate?.projectId ?? existing?.projectId ?? null,
       };
 
       if (isNonEmptyString(latestExternalMessageId)) {
@@ -605,70 +825,11 @@ export class OutreachMessagePersistService {
           (row) =>
             row.typeOfMessage === 'linkedin' ||
             `${row.phoneFrom ?? ''} ${row.phoneTo ?? ''}`.includes('linkedin'),
-        ) ??
-        rows[0] ??
-        null
+        ) ?? null
       );
     }
 
-    return rows[0] ?? null;
-  }
-
-  private asTurns(value: unknown): ChatTurn[] {
-    if (!Array.isArray(value)) {
-      return [];
-    }
-
-    return value.flatMap((item) => {
-      if (typeof item !== 'object' || item === null) {
-        return [];
-      }
-
-      const row = item as Record<string, unknown>;
-      const content =
-        typeof row.content === 'string'
-          ? row.content
-          : typeof row.message === 'string'
-            ? row.message
-            : '';
-
-      if (!isNonEmptyString(content)) {
-        return [];
-      }
-
-      return [
-        {
-          role: typeof row.role === 'string' ? row.role : 'user',
-          content,
-          id: typeof row.id === 'string' ? row.id : undefined,
-          timestamp:
-            typeof row.timestamp === 'string' ? row.timestamp : undefined,
-        },
-      ];
-    });
-  }
-
-  private mergeChatTurns(
-    existing: ChatTurn[],
-    incoming: ChatTurn[],
-  ): ChatTurn[] {
-    const merged = [...existing];
-    const seen = new Set(
-      existing.map((turn) => turn.id || `${turn.role}:${turn.content}`),
-    );
-
-    for (const turn of incoming) {
-      const key = turn.id || `${turn.role}:${turn.content}`;
-
-      if (seen.has(key)) {
-        continue;
-      }
-
-      seen.add(key);
-      merged.push(turn);
-    }
-
-    return merged;
+    return null;
   }
 
   // Workflow action side-effects only for Stage B / Stage C runs.
@@ -721,7 +882,7 @@ export class OutreachMessagePersistService {
             workflowRun.candidateId,
           );
 
-          if (isNonEmptyString(candidate?.projectsId)) {
+          if (isNonEmptyString(candidate?.projectId)) {
             const projectRepository =
               await this.globalWorkspaceOrmManager.getRepository<
                 ObjectLiteral & {
@@ -734,7 +895,7 @@ export class OutreachMessagePersistService {
                 shouldBypassPermissionChecks: true,
               });
             project = await projectRepository.findOne({
-              where: { id: candidate.projectsId },
+              where: { id: candidate.projectId },
             });
           }
         }

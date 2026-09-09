@@ -701,8 +701,8 @@ export class LinkedinUnipileMessagingService {
             existingFirstOutboundAt: (candidate as { firstOutboundAt?: string })
               ?.firstOutboundAt,
             companyId:
-              candidate.projects?.companyId ??
-              (candidate.projects as { company?: { id?: string } } | undefined)
+              candidate.project?.companyId ??
+              (candidate.project as { company?: { id?: string } } | undefined)
                 ?.company?.id,
           });
         }

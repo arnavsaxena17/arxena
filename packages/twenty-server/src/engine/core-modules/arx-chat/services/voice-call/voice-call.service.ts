@@ -14,7 +14,11 @@ import { CandidateEngagementArx } from '../candidate-engagement/candidate-engage
 import { FilterCandidates } from '../candidate-engagement/filter-candidates';
 import { ElevenLabsClient } from './elevenlabs.client';
 
-export type CallPurpose = 'screening' | 'interview_scheduling' | 'video_interview_followup' | 'generic';
+export type CallPurpose =
+  | 'screening'
+  | 'interview_scheduling'
+  | 'video_interview_followup'
+  | 'generic';
 
 export type HandleIncomingCallResult = {
   phoneCallId: string;
@@ -43,7 +47,8 @@ export class VoiceCallService {
   private agentPhoneNumberId: string | null = null;
   private elevenLabsWhatsAppPhoneNumberId: string | null = null;
   private elevenLabsWhatsAppCallPermissionTemplateName: string | null = null;
-  private elevenLabsWhatsAppCallPermissionTemplateLanguage: string | null = null;
+  private elevenLabsWhatsAppCallPermissionTemplateLanguage: string | null =
+    null;
 
   constructor(
     private readonly staticGraphQLService: StaticGraphQLService,
@@ -60,7 +65,8 @@ export class VoiceCallService {
       this.elevenLabsWhatsAppCallPermissionTemplateName =
         process.env.ELEVENLABS_WHATSAPP_CALL_PERMISSION_TEMPLATE_NAME ?? null;
       this.elevenLabsWhatsAppCallPermissionTemplateLanguage =
-        process.env.ELEVENLABS_WHATSAPP_CALL_PERMISSION_TEMPLATE_LANGUAGE ?? 'en';
+        process.env.ELEVENLABS_WHATSAPP_CALL_PERMISSION_TEMPLATE_LANGUAGE ??
+        'en';
     }
   }
 
@@ -81,16 +87,32 @@ export class VoiceCallService {
     if (!candidateNode) {
       return { phoneCallId: '', status: 'error', error: 'Candidate not found' };
     }
-    const job = candidateNode.projects ?? (Array.isArray((candidateNode as any).projects) ? (candidateNode as any).projects[0] : undefined);
+    const job = candidateNode.project;
     if (!job && projectId) {
-      return { phoneCallId: '', status: 'error', error: 'Project not found for candidate' };
+      return {
+        phoneCallId: '',
+        status: 'error',
+        error: 'Project not found for candidate',
+      };
     }
-    const candidateJob = (job || { id: projectId, name: '', jobLocation: '' }) as Project;
-    const personId = candidateNode.peopleId ?? (candidateNode as any).people?.id;
-    const rawPhone = candidateNode.phoneNumber?.primaryPhoneNumber ?? (candidateNode as any).people?.phones?.primaryPhoneNumber ?? '';
+    const candidateJob = (job || {
+      id: projectId,
+      name: '',
+      jobLocation: '',
+    }) as Project;
+    const personId =
+      candidateNode.peopleId ?? (candidateNode as any).people?.id;
+    const rawPhone =
+      candidateNode.phoneNumber?.primaryPhoneNumber ??
+      (candidateNode as any).people?.phones?.primaryPhoneNumber ??
+      '';
     const phoneNumber = normalizePhoneNumber(rawPhone);
     if (!phoneNumber) {
-      return { phoneCallId: '', status: 'error', error: 'No phone number for candidate' };
+      return {
+        phoneCallId: '',
+        status: 'error',
+        error: 'No phone number for candidate',
+      };
     }
 
     const chatControlType =
@@ -112,7 +134,8 @@ export class VoiceCallService {
       { chatControlType },
       apiToken,
     );
-    const firstMessage = 'Hi, this is a quick call from the recruitment team. Do you have 2 minutes to talk?';
+    const firstMessage =
+      'Hi, this is a quick call from the recruitment team. Do you have 2 minutes to talk?';
 
     const createRes = await this.staticGraphQLService.executeGraphQL(
       graphqlMutationToCreatePhoneCall,
@@ -129,7 +152,11 @@ export class VoiceCallService {
     );
     const phoneCallId = createRes?.data?.data?.createPhoneCall?.id;
     if (!phoneCallId) {
-      return { phoneCallId: '', status: 'error', error: 'Failed to create PhoneCall' };
+      return {
+        phoneCallId: '',
+        status: 'error',
+        error: 'Failed to create PhoneCall',
+      };
     }
 
     if (this.elevenLabs && this.agentId && this.agentPhoneNumberId) {
@@ -145,7 +172,11 @@ export class VoiceCallService {
         });
         return { phoneCallId, status: 'initiated' };
       } catch (err: any) {
-        return { phoneCallId, status: 'call_failed', error: err?.message || 'ElevenLabs outbound failed' };
+        return {
+          phoneCallId,
+          status: 'call_failed',
+          error: err?.message || 'ElevenLabs outbound failed',
+        };
       }
     }
     return { phoneCallId, status: 'created_no_telephony' };
@@ -169,10 +200,18 @@ export class VoiceCallService {
     if (!candidateNode) {
       return { phoneCallId: '', status: 'error', error: 'Candidate not found' };
     }
-    const job = candidateNode.projects ?? (Array.isArray((candidateNode as any).projects) ? (candidateNode as any).projects[0] : undefined);
-    const candidateJob = (job || { id: projectId, name: '', jobLocation: '' }) as Project;
-    const personId = candidateNode.peopleId ?? (candidateNode as any).people?.id;
-    const rawPhone = candidateNode.phoneNumber?.primaryPhoneNumber ?? (candidateNode as any).people?.phones?.primaryPhoneNumber ?? '';
+    const job = candidateNode.project;
+    const candidateJob = (job || {
+      id: projectId,
+      name: '',
+      jobLocation: '',
+    }) as Project;
+    const personId =
+      candidateNode.peopleId ?? (candidateNode as any).people?.id;
+    const rawPhone =
+      candidateNode.phoneNumber?.primaryPhoneNumber ??
+      (candidateNode as any).people?.phones?.primaryPhoneNumber ??
+      '';
     const phoneNumber = normalizePhoneNumber(rawPhone);
 
     const chatControlType =
@@ -194,7 +233,8 @@ export class VoiceCallService {
       { chatControlType },
       apiToken,
     );
-    const firstMessage = 'Hi, this is a quick call from the recruitment team. Do you have 2 minutes to talk?';
+    const firstMessage =
+      'Hi, this is a quick call from the recruitment team. Do you have 2 minutes to talk?';
 
     const createRes = await this.staticGraphQLService.executeGraphQL(
       graphqlMutationToCreatePhoneCall,
@@ -211,7 +251,11 @@ export class VoiceCallService {
     );
     const phoneCallId = createRes?.data?.data?.createPhoneCall?.id;
     if (!phoneCallId) {
-      return { phoneCallId: '', status: 'error', error: 'Failed to create PhoneCall' };
+      return {
+        phoneCallId: '',
+        status: 'error',
+        error: 'Failed to create PhoneCall',
+      };
     }
 
     const hasWhatsAppConfig =
@@ -234,7 +278,9 @@ export class VoiceCallService {
           conversation_initiation_client_data: {
             first_message: firstMessage,
             dynamic_variables: { phone_call_id: phoneCallId },
-            overrides: { agent: { prompt: { prompt: systemPrompt } } } as Record<string, unknown>,
+            overrides: {
+              agent: { prompt: { prompt: systemPrompt } },
+            } as Record<string, unknown>,
           },
         });
         return { phoneCallId, status: 'initiated' };
@@ -258,7 +304,10 @@ export class VoiceCallService {
       this.workspaceQueryService,
       this.staticGraphQLService,
     );
-    const person = await filterCandidates.getPersonDetailsByPhoneNumber(cleaned, apiToken);
+    const person = await filterCandidates.getPersonDetailsByPhoneNumber(
+      cleaned,
+      apiToken,
+    );
     const personId = person?.id;
     let systemPrompt = INBOUND_RECRUITER_PROMPT;
     let firstMessage = 'Thanks for calling. How can I help you today?';
@@ -277,7 +326,7 @@ export class VoiceCallService {
       );
       const edges = res?.data?.data?.candidates?.edges;
       const candidateNode = edges?.[0]?.node as CandidateNode | undefined;
-      const job = candidateNode?.projects as Project | undefined;
+      const job = candidateNode?.project as Project | undefined;
       if (candidateNode && job) {
         const chatControlType = 'startChat';
         const prompt = await candidateEngagement.getSystemPrompt(
@@ -287,7 +336,8 @@ export class VoiceCallService {
           apiToken,
         );
         if (prompt) systemPrompt = prompt;
-        firstMessage = 'Hi, you’ve reached the recruitment team. Do you have a couple of minutes?';
+        firstMessage =
+          'Hi, you’ve reached the recruitment team. Do you have a couple of minutes?';
       }
     }
 
@@ -309,12 +359,22 @@ export class VoiceCallService {
   }
 
   async onConversationEnd(
-    payload: { conversation_id?: string; phone_call_id?: string; transcript?: string; duration_seconds?: number; [k: string]: unknown },
+    payload: {
+      conversation_id?: string;
+      phone_call_id?: string;
+      transcript?: string;
+      duration_seconds?: number;
+      [k: string]: unknown;
+    },
     apiToken: string,
   ): Promise<void> {
     const phoneCallId = payload.phone_call_id ?? payload.phoneCallId;
-    const transcript = typeof payload.transcript === 'string' ? payload.transcript : (payload as any).transcript?.text ?? '';
-    const durationSeconds = payload.duration_seconds ?? (payload as any).duration ?? 0;
+    const transcript =
+      typeof payload.transcript === 'string'
+        ? payload.transcript
+        : ((payload as any).transcript?.text ?? '');
+    const durationSeconds =
+      payload.duration_seconds ?? (payload as any).duration ?? 0;
     if (!phoneCallId) return;
 
     await this.staticGraphQLService.executeGraphQL(
@@ -327,7 +387,10 @@ export class VoiceCallService {
     );
   }
 
-  async listCalls(apiToken: string, params: { personId?: string; limit?: number }): Promise<unknown> {
+  async listCalls(
+    apiToken: string,
+    params: { personId?: string; limit?: number },
+  ): Promise<unknown> {
     const filter: Record<string, unknown> = {};
     if (params.personId) filter.personId = { eq: params.personId };
     const res = await this.staticGraphQLService.executeGraphQL(
@@ -364,7 +427,10 @@ export class VoiceCallService {
       this.workspaceQueryService,
       this.staticGraphQLService,
     );
-    const person = await filterCandidates.getPersonDetailsByPhoneNumber(cleaned, apiToken);
+    const person = await filterCandidates.getPersonDetailsByPhoneNumber(
+      cleaned,
+      apiToken,
+    );
     const personId = person?.id;
 
     if (payload.status === 'ended' && payload.duration_seconds != null) {
@@ -381,7 +447,9 @@ export class VoiceCallService {
           phoneNumber: '+' + cleaned,
           callType: 'INCOMING',
           duration: payload.duration_seconds ?? 0,
-          timestamp: payload.timestamp ? new Date(Number(payload.timestamp) * 1000).toISOString() : new Date().toISOString(),
+          timestamp: payload.timestamp
+            ? new Date(Number(payload.timestamp) * 1000).toISOString()
+            : new Date().toISOString(),
         },
       },
       apiToken,

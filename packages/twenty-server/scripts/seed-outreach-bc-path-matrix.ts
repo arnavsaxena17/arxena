@@ -249,7 +249,7 @@ const createCandidate = async ({
           primaryLinkLabel: seed.linkedinSlug,
         },
         linkedinProfileId: seed.linkedinSlug,
-        projectsId: projectId,
+        projectId: projectId,
         campaign: projectId,
         outreachSequenceStage: 'QUEUED',
         source: 'bc-path-matrix-seed',

@@ -27,7 +27,7 @@ type CandidateRow = ObjectLiteral & {
   lastOutboundAt?: string | Date | null;
   updatedAt?: string | Date | null;
   outreachSpeedTimestamps?: unknown;
-  projectsId?: string | null;
+  projectId?: string | null;
   peopleId?: string | null;
 };
 
@@ -207,7 +207,7 @@ export class BackfillOutreachCommandRollupsCommand extends ProvisionedWorkspaceC
         );
         const personById = new Map(people.map((person) => [person.id, person]));
         const companyIdForCandidate = (candidate: CandidateRow): string | null =>
-          projectById.get(candidate.projectsId ?? '')?.companyId ??
+          projectById.get(candidate.projectId ?? '')?.companyId ??
           personById.get(candidate.peopleId ?? '')?.companyId ??
           null;
 

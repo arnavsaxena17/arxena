@@ -45,7 +45,7 @@ type CandidateRow = ObjectLiteral & {
   timeToFirstContactBucket?: string | null;
   timeToMeetingBucket?: string | null;
   messagingChannel?: string | null;
-  projectsId?: string | null;
+  projectId?: string | null;
   peopleId?: string | null;
 };
 

@@ -195,7 +195,7 @@ const findCandidates = async (projectId: string) => {
       }
     }`,
     {
-      filter: { projectsId: { eq: projectId } },
+      filter: { projectId: { eq: projectId } },
     },
   );
 
@@ -214,7 +214,7 @@ const updateCandidate = async (
     {
       id,
       data: {
-        projectsId: projectId,
+        projectId: projectId,
         campaign: projectId,
         ...data,
       },

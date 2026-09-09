@@ -2,7 +2,10 @@ import { type RecordFilter } from '@/object-record/record-filter/types/RecordFil
 import { type ChartFilters } from '@/side-panel/pages/page-layout/types/ChartFilters';
 import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/EnrichedObjectMetadataItem';
 import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
-import { RecordFilterGroupLogicalOperator, ViewFilterOperand } from 'twenty-shared/types';
+import {
+  RecordFilterGroupLogicalOperator,
+  ViewFilterOperand,
+} from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 
 type OutreachDashboardScopeFieldRule = {
@@ -11,13 +14,16 @@ type OutreachDashboardScopeFieldRule = {
   relationSubFieldName?: string;
 };
 
-const OUTREACH_DASHBOARD_SCOPE_RULES: Record<string, OutreachDashboardScopeFieldRule> = {
+const OUTREACH_DASHBOARD_SCOPE_RULES: Record<
+  string,
+  OutreachDashboardScopeFieldRule
+> = {
   company: {
     fieldNames: ['projectIds', 'projectId'],
     operand: ViewFilterOperand.CONTAINS,
   },
   candidate: {
-    fieldNames: ['projectsId', 'projects', 'projectId', 'project'],
+    fieldNames: ['projectId', 'project'],
     operand: ViewFilterOperand.IS,
   },
   opportunity: {
@@ -25,17 +31,13 @@ const OUTREACH_DASHBOARD_SCOPE_RULES: Record<string, OutreachDashboardScopeField
     operand: ViewFilterOperand.IS,
   },
   chatMessage: {
-    fieldNames: ['projectsId', 'projects', 'projectId', 'project'],
-    operand: ViewFilterOperand.IS,
-  },
-  whatsappMessage: {
-    fieldNames: ['projectsId', 'projects', 'projectId', 'project'],
+    fieldNames: ['projectId', 'project'],
     operand: ViewFilterOperand.IS,
   },
   workflowRun: {
     fieldNames: ['candidate'],
     operand: ViewFilterOperand.IS,
-    relationSubFieldName: 'projectsId',
+    relationSubFieldName: 'projectId',
   },
 };
 
@@ -114,7 +116,8 @@ export const mergeOutreachDashboardScopeIntoChartFilters = ({
   let nextGroups = chartFilters.recordFilterGroups ?? [];
 
   if (isDefined(projectId) && projectId.length > 0) {
-    const scopeRule = OUTREACH_DASHBOARD_SCOPE_RULES[objectMetadataItem.nameSingular];
+    const scopeRule =
+      OUTREACH_DASHBOARD_SCOPE_RULES[objectMetadataItem.nameSingular];
 
     if (isDefined(scopeRule)) {
       const scopeField = findScopeField(

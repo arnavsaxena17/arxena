@@ -55,8 +55,8 @@ export class EmailTemplates {
     interviewLink: string,
   ) {
     console.log('Goign to try and create template');
-    const jobName = candidate?.projects?.name;
-    const companyName = candidate?.projects?.company?.name;
+    const jobName = candidate?.project?.name;
+    const companyName = candidate?.project?.company?.name;
 
     const template = `
       <div>

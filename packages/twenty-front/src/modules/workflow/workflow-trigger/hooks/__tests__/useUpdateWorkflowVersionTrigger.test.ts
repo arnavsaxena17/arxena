@@ -1,3 +1,4 @@
+import { useGetUpdatableWorkflowVersionOrThrow } from '@/workflow/hooks/useGetUpdatableWorkflowVersionOrThrow';
 import { type WorkflowTrigger } from '@/workflow/types/Workflow';
 import { useUpdateWorkflowVersionTrigger } from '@/workflow/workflow-trigger/hooks/useUpdateWorkflowVersionTrigger';
 import { act, renderHook } from '@testing-library/react';
@@ -96,6 +97,22 @@ describe('useUpdateWorkflowVersionTrigger', () => {
       stepId: TRIGGER_STEP_ID,
       workflowVersionId: 'version-id',
     });
+  });
+
+  it('resolves the updatable version from the given workflow visualizer instance', async () => {
+    mockGetUpdatableWorkflowVersion.mockResolvedValue('version-id');
+
+    const { result } = renderHook(() =>
+      useUpdateWorkflowVersionTrigger('workflow-instance-id'),
+    );
+
+    await act(async () => {
+      await result.current.updateTrigger(trigger);
+    });
+
+    expect(useGetUpdatableWorkflowVersionOrThrow).toHaveBeenCalledWith(
+      'workflow-instance-id',
+    );
   });
 
   it('marks for recomputation for all trigger types', async () => {

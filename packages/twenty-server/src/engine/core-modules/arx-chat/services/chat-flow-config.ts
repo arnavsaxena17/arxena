@@ -87,73 +87,103 @@ export class ChatFlowConfigBuilder {
     chatControlTypeValue: chatControlType,
     chatFlowOrder: chatControlType[],
   ) => {
-    console.log("These are the base engagement checks for candidate::", candidate.name, "for chatControlType::", chatControlTypeValue, "for chatFlowOrder::", chatFlowOrder);
-    
+    console.log(
+      'These are the base engagement checks for candidate::',
+      candidate.name,
+      'for chatControlType::',
+      chatControlTypeValue,
+      'for chatFlowOrder::',
+      chatFlowOrder,
+    );
+
     if (!candidate) {
-      console.log("Candidate:: Unknown is not eligible for engagement because candidate is null");
+      console.log(
+        'Candidate:: Unknown is not eligible for engagement because candidate is null',
+      );
       return false;
     }
-    
-    console.log("Candidate properties for", candidate.name, ":", {
-      projects: candidate.projects,
-      isActive: candidate.projects?.isActive,
+
+    console.log('Candidate properties for', candidate.name, ':', {
+      project: candidate.project,
+      isActive: candidate.project?.isActive,
       startChat: isCandidateFlagTrue(candidate, 'startChat'),
       startChatCompleted: isCandidateFlagTrue(candidate, 'startChatCompleted'),
       chatCount: candidate.chatCount,
-      updatedAt: candidate.updatedAt
+      updatedAt: candidate.updatedAt,
     });
-    
-    const isActive = candidate.projects?.isActive;
+
+    const isActive = candidate.project?.isActive;
     if (!isActive) {
-      console.log("Candidate::", candidate.name, "is not eligible for engagement because jobs?.isActive is false");
+      console.log(
+        'Candidate::',
+        candidate.name,
+        'is not eligible for engagement because jobs?.isActive is false',
+      );
       return false;
     }
-    
+
     const order = this.getOrderNumber(chatControlTypeValue, chatFlowOrder);
-    const previousStages = this.getStagesByOrder(order, 'before', chatFlowOrder);
+    const previousStages = this.getStagesByOrder(
+      order,
+      'before',
+      chatFlowOrder,
+    );
     const nextStages = this.getStagesByOrder(order, 'after', chatFlowOrder);
 
     const hasCompletedPreviousStages =
       previousStages.length === 0 ||
-      previousStages.every((stage) =>
-        isChatControlCompleted(candidate, stage),
-      );
+      previousStages.every((stage) => isChatControlCompleted(candidate, stage));
     if (!hasCompletedPreviousStages) {
-      console.log("Candidate::", candidate.name, "is not eligible for engagement because hasCompletedPreviousStages is false");
+      console.log(
+        'Candidate::',
+        candidate.name,
+        'is not eligible for engagement because hasCompletedPreviousStages is false',
+      );
       return false;
     }
-    
+
     const hasStartedNextStages = nextStages.some((stage) =>
       getCandidateChatControlValue(candidate, stage),
     );
     if (hasStartedNextStages) {
-      console.log("Candidate::", candidate.name, "is not eligible for engagement because hasStartedNextStages is true");
+      console.log(
+        'Candidate::',
+        candidate.name,
+        'is not eligible for engagement because hasStartedNextStages is true',
+      );
       return false;
     }
-    
+
     const isCurrentStageStarted = getCandidateChatControlValue(
       candidate,
       chatControlTypeValue,
     );
     if (!isCurrentStageStarted) {
-      console.log("Candidate::", candidate.name, "is not eligible for engagement because isCurrentStageStarted is false");
+      console.log(
+        'Candidate::',
+        candidate.name,
+        'is not eligible for engagement because isCurrentStageStarted is false',
+      );
       return false;
     }
-    
+
     const isCurrentStageCompleted = isChatControlCompleted(
       candidate,
       chatControlTypeValue,
     );
     if (isCurrentStageCompleted) {
-      console.log("Candidate::", candidate.name, "is not eligible for engagement because isCurrentStageCompleted is true");
+      console.log(
+        'Candidate::',
+        candidate.name,
+        'is not eligible for engagement because isCurrentStageCompleted is true',
+      );
       return false;
     }
-    
-    const isFirstMessageAfterStartChat = 
-      chatControlTypeValue === 'startChat' && 
-      candidate.chatCount === 1;
-    console.log("isFirstMessageAfterStartChat::", isFirstMessageAfterStartChat);
-    
+
+    const isFirstMessageAfterStartChat =
+      chatControlTypeValue === 'startChat' && candidate.chatCount === 1;
+    console.log('isFirstMessageAfterStartChat::', isFirstMessageAfterStartChat);
+
     if (!isFirstMessageAfterStartChat) {
       const lastMessageTime = new Date(candidate.updatedAt).getTime();
       const currentTime = new Date().getTime();
@@ -163,25 +193,36 @@ export class ChatFlowConfigBuilder {
         60 *
         1000;
       const timeDifference = currentTime - lastMessageTime;
-      const hasEnoughTimePassedSinceLastMessage = timeDifference > timeDifferential;
-      
-      console.log("Time calculation details for", candidate.name, ":", {
+      const hasEnoughTimePassedSinceLastMessage =
+        timeDifference > timeDifferential;
+
+      console.log('Time calculation details for', candidate.name, ':', {
         lastMessageTime: new Date(lastMessageTime).toISOString(),
         currentTime: new Date(currentTime).toISOString(),
-        timeDifferentialMinutes: TimeManagement.timeDifferentials.timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage,
+        timeDifferentialMinutes:
+          TimeManagement.timeDifferentials
+            .timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage,
         timeDifferentialMs: timeDifferential,
         timeDifferenceMs: timeDifference,
         timeDifferenceMinutes: timeDifference / (60 * 1000),
-        hasEnoughTimePassedSinceLastMessage
+        hasEnoughTimePassedSinceLastMessage,
       });
-      
+
       if (!hasEnoughTimePassedSinceLastMessage) {
-        console.log("Candidate::", candidate.name, "is not eligible for engagement because hasEnoughTimePassedSinceLastMessage is false");
+        console.log(
+          'Candidate::',
+          candidate.name,
+          'is not eligible for engagement because hasEnoughTimePassedSinceLastMessage is false',
+        );
         return false;
       }
     }
-    
-    console.log("Candidate::", candidate.name, "is eligible for engagement - all checks passed");
+
+    console.log(
+      'Candidate::',
+      candidate.name,
+      'is eligible for engagement - all checks passed',
+    );
     return true;
   };
 
@@ -191,138 +232,275 @@ export class ChatFlowConfigBuilder {
     order: number,
     chatFlowOrder,
   ) => {
-    console.log("These are the eligibility checks for candidate::", candidate.name, "for chatControlType::", chatControlTypeValue, "for order::", order, "for chatFlowOrder::", chatFlowOrder);
-    
-    console.log("Candidate properties at start for", candidate.name, ":", {
+    console.log(
+      'These are the eligibility checks for candidate::',
+      candidate.name,
+      'for chatControlType::',
+      chatControlTypeValue,
+      'for order::',
+      order,
+      'for chatFlowOrder::',
+      chatFlowOrder,
+    );
+
+    console.log('Candidate properties at start for', candidate.name, ':', {
       engagementStatus: isCandidateFlagTrue(candidate, 'engagementStatus'),
       startChat: isCandidateFlagTrue(candidate, 'startChat'),
       startChatCompleted: isCandidateFlagTrue(candidate, 'startChatCompleted'),
       chatCount: candidate.chatCount,
       updatedAt: candidate.updatedAt,
-      projects: candidate.projects
+      project: candidate.project,
     });
-    
+
     if (!isCandidateFlagTrue(candidate, 'engagementStatus')) {
-      console.log("Candidate::", candidate.name, "is not eligible for engagement because engagementStatus is false");
+      console.log(
+        'Candidate::',
+        candidate.name,
+        'is not eligible for engagement because engagementStatus is false',
+      );
       return false;
     }
-    console.log("Candidate::", candidate.name, "is eligible for engagement because engagementStatus is true");
+    console.log(
+      'Candidate::',
+      candidate.name,
+      'is eligible for engagement because engagementStatus is true',
+    );
     const currentIndex = chatFlowOrder.indexOf(chatControlTypeValue);
 
     if (currentIndex === 0) {
-      console.log("This is the currentIndex for candidate::", candidate.name, "is::", currentIndex);
+      console.log(
+        'This is the currentIndex for candidate::',
+        candidate.name,
+        'is::',
+        currentIndex,
+      );
       const currentStageStarted = getCandidateChatControlValue(
         candidate,
         chatControlTypeValue,
       );
-      console.log("This is the currentStageStarted for candidate::", candidate.name, "is::", currentStageStarted);
+      console.log(
+        'This is the currentStageStarted for candidate::',
+        candidate.name,
+        'is::',
+        currentStageStarted,
+      );
       const currentStageCompleted = isChatControlCompleted(
         candidate,
         chatControlTypeValue,
       );
-      console.log("This is the currentStageCompleted for candidate::", candidate.name, "is::", currentStageCompleted);
+      console.log(
+        'This is the currentStageCompleted for candidate::',
+        candidate.name,
+        'is::',
+        currentStageCompleted,
+      );
       if (currentStageStarted && !currentStageCompleted) {
-        console.log("Candidate::", candidate.name, "is eligible for engagement because currentStageStarted is true and currentStageCompleted is false");
+        console.log(
+          'Candidate::',
+          candidate.name,
+          'is eligible for engagement because currentStageStarted is true and currentStageCompleted is false',
+        );
         const isEligibleForEngagement = this.baseEngagementChecks(
           candidate,
           chatControlTypeValue,
           chatFlowOrder,
-        )
-        console.log("isEligibleForEngagement for candidate::", candidate.name, "is::", isEligibleForEngagement);
+        );
+        console.log(
+          'isEligibleForEngagement for candidate::',
+          candidate.name,
+          'is::',
+          isEligibleForEngagement,
+        );
         return isEligibleForEngagement;
       }
       return false;
-    }
-    else{
-      console.log("This is the currentIndex and it is not 0 for candidate::", candidate.name, "is::", currentIndex);
-      console.log("This is the chatFlowOrder for candidate::", candidate.name, "is::", chatFlowOrder);
+    } else {
+      console.log(
+        'This is the currentIndex and it is not 0 for candidate::',
+        candidate.name,
+        'is::',
+        currentIndex,
+      );
+      console.log(
+        'This is the chatFlowOrder for candidate::',
+        candidate.name,
+        'is::',
+        chatFlowOrder,
+      );
     }
     if (currentIndex > 0) {
-      console.log("This is the currentIndex and it is greater than 0 for candidate::", candidate.name, "is::", currentIndex);
+      console.log(
+        'This is the currentIndex and it is greater than 0 for candidate::',
+        candidate.name,
+        'is::',
+        currentIndex,
+      );
       const previousStages = chatFlowOrder.slice(0, currentIndex);
-      console.log("This is the previousStages for candidate::", candidate.name, "is::", previousStages);
+      console.log(
+        'This is the previousStages for candidate::',
+        candidate.name,
+        'is::',
+        previousStages,
+      );
       const allPreviousStagesCompleted = previousStages?.every((stage) =>
         isChatControlCompleted(candidate, stage),
       );
-      console.log("allPreviousStagesCompleted for candidate::", candidate.name, "is::", allPreviousStagesCompleted);
+      console.log(
+        'allPreviousStagesCompleted for candidate::',
+        candidate.name,
+        'is::',
+        allPreviousStagesCompleted,
+      );
       const currentStageStarted = getCandidateChatControlValue(
         candidate,
         chatControlTypeValue,
       );
-      console.log("This is the currentStageStarted for candidate::", candidate.name, "is::", currentStageStarted);
+      console.log(
+        'This is the currentStageStarted for candidate::',
+        candidate.name,
+        'is::',
+        currentStageStarted,
+      );
       const currentStageCompleted = isChatControlCompleted(
         candidate,
         chatControlTypeValue,
       );
-      console.log("This is the currentStageCompleted for candidate::", candidate.name, "is::", currentStageCompleted);
+      console.log(
+        'This is the currentStageCompleted for candidate::',
+        candidate.name,
+        'is::',
+        currentStageCompleted,
+      );
       if (candidate.updatedAt) {
-        console.log("candidate.updatedAt for candidate::", candidate.name, "is::", candidate.updatedAt);
+        console.log(
+          'candidate.updatedAt for candidate::',
+          candidate.name,
+          'is::',
+          candidate.updatedAt,
+        );
         const istTime = new Date(
           new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }),
         );
-        console.log("istTime for candidate::", candidate.name, "is::", istTime);
+        console.log('istTime for candidate::', candidate.name, 'is::', istTime);
         if (istTime.getHours() >= 23 || istTime.getHours() < 7) {
           console.log(
             `Current time ${istTime.toLocaleString()} is between 11 PM and 7 AM IST, not messaging`,
           );
-          console.log("Candidate::", candidate.name, "is not eligible for engagement because current time is between 11 PM and 7 AM IST");
+          console.log(
+            'Candidate::',
+            candidate.name,
+            'is not eligible for engagement because current time is between 11 PM and 7 AM IST',
+          );
           return false;
         }
-        console.log("Candidate::", candidate.name, "is eligible for engagement because current time is not between 11 PM and 7 AM IST");
+        console.log(
+          'Candidate::',
+          candidate.name,
+          'is eligible for engagement because current time is not between 11 PM and 7 AM IST',
+        );
         const waitingPeriodInMinutes =
           TimeManagement.timeDifferentials
             .timeDifferentialinMinutesToCheckTimeDifferentialBetweenlastMessage;
-        console.log("waitingPeriodInMinutes for candidate::", candidate.name, "is::", waitingPeriodInMinutes);
+        console.log(
+          'waitingPeriodInMinutes for candidate::',
+          candidate.name,
+          'is::',
+          waitingPeriodInMinutes,
+        );
         const waitTime = waitingPeriodInMinutes * 60 * 1000;
-        console.log("waitTime for candidate::", candidate.name, "is::", waitTime);
+        console.log(
+          'waitTime for candidate::',
+          candidate.name,
+          'is::',
+          waitTime,
+        );
         const cutoffTime = new Date(Date.now() - waitTime).toISOString();
-        console.log("cutoffTime for candidate::", candidate.name, "is::", cutoffTime);
-        
-        const candidateUpdatedAtISO = new Date(candidate.updatedAt).toISOString();
+        console.log(
+          'cutoffTime for candidate::',
+          candidate.name,
+          'is::',
+          cutoffTime,
+        );
+
+        const candidateUpdatedAtISO = new Date(
+          candidate.updatedAt,
+        ).toISOString();
         const timeComparison = candidateUpdatedAtISO > cutoffTime;
         const hasMultipleMessages = candidate.chatMessages?.edges?.length !== 1;
-        
-        console.log("Time comparison details for", candidate.name, ":", {
+
+        console.log('Time comparison details for', candidate.name, ':', {
           candidateUpdatedAt: candidate.updatedAt,
           candidateUpdatedAtISO,
           cutoffTime,
           timeComparison,
           hasMultipleMessages,
-          chatMessagesCount: candidate.chatMessages?.edges?.length
+          chatMessagesCount: candidate.chatMessages?.edges?.length,
         });
-        
+
         if (timeComparison && hasMultipleMessages) {
           console.log(
             `Waiting period not elapsed for candidate ${candidate.name} for ${chatControlTypeValue}, and last chat control is ${getCandidateLastEngagementChatControl(candidate)} and waiting period is ${waitingPeriodInMinutes} minutes, last updated at ${candidate.updatedAt} and cutoff time is ${cutoffTime}`,
           );
-          console.log("Candidate::", candidate.name, "is not eligible for engagement because waiting period not elapsed");
+          console.log(
+            'Candidate::',
+            candidate.name,
+            'is not eligible for engagement because waiting period not elapsed',
+          );
           return false;
         } else {
           console.log(
             `Waiting period elapsed for candidate ${candidate.name} for ${chatControlTypeValue}`,
           );
-          console.log("Candidate::", candidate.name, "is eligible for engagement because waiting period elapsed");
+          console.log(
+            'Candidate::',
+            candidate.name,
+            'is eligible for engagement because waiting period elapsed',
+          );
         }
       } else {
         console.log(
           `Candidate ${candidate.name} does not have updatedAt field`,
         );
-        console.log("Candidate::", candidate.name, "is not eligible for engagement because candidate does not have updatedAt field");
+        console.log(
+          'Candidate::',
+          candidate.name,
+          'is not eligible for engagement because candidate does not have updatedAt field',
+        );
       }
       if (
         allPreviousStagesCompleted &&
         (!currentStageStarted ||
           (currentStageStarted && !currentStageCompleted))
       ) {
-        console.log("allPreviousStagesCompleted for candidate::", candidate.name, "is::", allPreviousStagesCompleted);
-        console.log("currentStageStarted for candidate::", candidate.name, "is::", currentStageStarted);
-        console.log("currentStageCompleted for candidate::", candidate.name, "is::", currentStageCompleted);
+        console.log(
+          'allPreviousStagesCompleted for candidate::',
+          candidate.name,
+          'is::',
+          allPreviousStagesCompleted,
+        );
+        console.log(
+          'currentStageStarted for candidate::',
+          candidate.name,
+          'is::',
+          currentStageStarted,
+        );
+        console.log(
+          'currentStageCompleted for candidate::',
+          candidate.name,
+          'is::',
+          currentStageCompleted,
+        );
         const isEligibleForEngagement = this.baseEngagementChecks(
           candidate,
           chatControlTypeValue,
           chatFlowOrder,
         );
-        console.log("isEligibleForEngagement for candidate::", candidate.name, "is::", isEligibleForEngagement);
+        console.log(
+          'isEligibleForEngagement for candidate::',
+          candidate.name,
+          'is::',
+          isEligibleForEngagement,
+        );
         return isEligibleForEngagement;
       }
     }
@@ -335,7 +513,6 @@ export class ChatFlowConfigBuilder {
     chatFlowOrder: chatControlType[],
   ) {
     return (candidate: CandidateNode) => {
-
       if (currentOrder === 1) {
         return (
           isCandidateFlagTrue(candidate, 'startChat') &&
@@ -402,10 +579,15 @@ export class ChatFlowConfigBuilder {
   ): ChatFlowConfig['statusUpdate'] => {
     const baseStatusUpdate = {
       isWithinAllowedTime: () => {
-        console.log("isWithinAllowedTime");
+        console.log('isWithinAllowedTime');
         const hours = new Date().getHours();
-        console.log("hours", hours);
-        console.log("isWithinAllowedTime:: hours >= 8 && hours < 21 hours::", hours," :: ", hours >= 8 && hours < 21);
+        console.log('hours', hours);
+        console.log(
+          'isWithinAllowedTime:: hours >= 8 && hours < 21 hours::',
+          hours,
+          ' :: ',
+          hours >= 8 && hours < 21,
+        );
         return hours >= 8 && hours < 21;
       },
       filter: {} as CandidateFlagFilterSpec,
@@ -503,19 +685,11 @@ export class ChatFlowConfigBuilder {
       startChat: (config) => ({ ...config }),
       startVideoInterviewChat: (config) => ({
         ...config,
-        preProcessing: async (
-          candidates, 
-          chatControl,
-          apiToken,
-        ) => {
+        preProcessing: async (candidates, chatControl, apiToken) => {
           await new VideoInterviewChatProcesses(
             this.workspaceQueryService,
             this.staticGraphQLService,
-          ).setupVideoInterviewLinks(
-            candidates,
-            chatControl,
-            apiToken,
-          );
+          ).setupVideoInterviewLinks(candidates, chatControl, apiToken);
         },
       }),
       startMeetingSchedulingChat: (config) => ({ ...config }),
@@ -526,9 +700,7 @@ export class ChatFlowConfigBuilder {
   }
 
   public getDefaultChatFlowOrder(): chatControlType[] {
-    return [
-      'startChat',
-    ] as const;
+    return ['startChat'] as const;
   }
 
   public buildChatFlowConfig(

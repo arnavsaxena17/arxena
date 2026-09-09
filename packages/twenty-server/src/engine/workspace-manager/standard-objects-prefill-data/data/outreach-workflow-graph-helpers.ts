@@ -5,8 +5,10 @@ export const OUTREACH_WF_ERROR_HANDLING = {
   continueOnFailure: { value: false },
 };
 
-export const OUTREACH_WF_MEMBER_STEP_ID = 'b8e1d001-4a11-4c11-8c11-000000000001';
-export const OUTREACH_WF_PROFILE_STEP_ID = 'b8e1d002-4a22-4c22-8c22-000000000002';
+export const OUTREACH_WF_MEMBER_STEP_ID =
+  'b8e1d001-4a11-4c11-8c11-000000000001';
+export const OUTREACH_WF_PROFILE_STEP_ID =
+  'b8e1d002-4a22-4c22-8c22-000000000002';
 /** Separate member/profile path for "no company name" so IF_ELSE skip does not kill the company path join. */
 export const OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID =
   'c7a10007-4a11-4c11-8c11-000000000001';
@@ -24,9 +26,10 @@ export const OUTREACH_WF_FIELD = {
   memberId: '__FIELD_workspaceMember.id__',
   profileMemberId: '__FIELD_workspaceMemberProfile.workspaceMemberId__',
   chatCandidateId: '__FIELD_chatMessage.candidateId__',
+  chatCreatedAt: '__FIELD_chatMessage.createdAt__',
   outreachSequenceStage: '__FIELD_candidate.outreachSequenceStage__',
   jobCompanyName: '__FIELD_candidate.jobCompanyName__',
-  projectsId: '__FIELD_candidate.projectsId__',
+  projectId: '__FIELD_candidate.projectId__',
   createdAt: '__FIELD_candidate.createdAt__',
 } as const;
 
@@ -71,17 +74,65 @@ export const OUTREACH_WF_AI_REPLY_OUTPUT = {
     label: 'message',
     value: '',
   },
-  intent: {
+  startsAt: {
     isLeaf: true,
     type: 'string',
-    label: 'intent',
+    label: 'startsAt',
     value: '',
   },
-  proposedSlots: {
+  endsAt: {
     isLeaf: true,
     type: 'string',
-    label: 'proposedSlots',
+    label: 'endsAt',
     value: '',
+  },
+  emailSubject: {
+    isLeaf: true,
+    type: 'string',
+    label: 'emailSubject',
+    value: '',
+  },
+  emailBody: {
+    isLeaf: true,
+    type: 'string',
+    label: 'emailBody',
+    value: '',
+  },
+  prospectEmail: {
+    isLeaf: true,
+    type: 'string',
+    label: 'prospectEmail',
+    value: '',
+  },
+  referralName: {
+    isLeaf: true,
+    type: 'string',
+    label: 'referralName',
+    value: '',
+  },
+  referralEmail: {
+    isLeaf: true,
+    type: 'string',
+    label: 'referralEmail',
+    value: '',
+  },
+  referralPhone: {
+    isLeaf: true,
+    type: 'string',
+    label: 'referralPhone',
+    value: '',
+  },
+  referralMessage: {
+    isLeaf: true,
+    type: 'string',
+    label: 'referralMessage',
+    value: '',
+  },
+  replyChannel: {
+    isLeaf: true,
+    type: 'string',
+    label: 'replyChannel',
+    value: 'LINKEDIN',
   },
 };
 
@@ -90,8 +141,9 @@ const v = (stepId: string, path: string) => `{{${stepId}.${path}}}`;
 export const gtmWfTriggerAfter = (field: string) =>
   `{{trigger.properties.after.${field}}}`;
 
-export const gtmWfMemberId = (memberStepId: string = OUTREACH_WF_MEMBER_STEP_ID) =>
-  v(memberStepId, 'first.id');
+export const gtmWfMemberId = (
+  memberStepId: string = OUTREACH_WF_MEMBER_STEP_ID,
+) => v(memberStepId, 'first.id');
 
 export const gtmWfProfilePhone = () =>
   v(OUTREACH_WF_PROFILE_STEP_ID, 'first.phoneNumber');
@@ -176,6 +228,7 @@ export const gtmWfFindRecordsStep = ({
   filters,
   nextStepIds,
   limit = 1,
+  orderBy,
 }: {
   id: string;
   name: string;
@@ -188,6 +241,10 @@ export const gtmWfFindRecordsStep = ({
   filters?: OutreachWfFindRecordFilter[];
   nextStepIds?: string[];
   limit?: number;
+  orderBy?: {
+    recordSorts?: Array<Record<string, unknown>>;
+    gqlOperationOrderBy?: Array<Record<string, unknown>>;
+  };
 }): StepBase => {
   const groupId = `${id.slice(0, 8)}-0000-4000-8000-00000000f001`;
   const resolvedFilters: OutreachWfFindRecordFilter[] =
@@ -208,9 +265,7 @@ export const gtmWfFindRecordsStep = ({
   const filter =
     resolvedFilters.length > 0
       ? {
-          recordFilterGroups: [
-            { id: groupId, logicalOperator: 'AND' },
-          ],
+          recordFilterGroups: [{ id: groupId, logicalOperator: 'AND' }],
           recordFilters: resolvedFilters.map((entry, index) => ({
             id: `${id.slice(0, 8)}-0000-4000-8000-00000000f${String(index + 2).padStart(3, '0')}`,
             type: entry.filterType ?? 'UUID',
@@ -235,6 +290,7 @@ export const gtmWfFindRecordsStep = ({
           limit,
           filter,
           objectName,
+          ...(orderBy ? { orderBy } : {}),
         },
         outputSchema: {},
         errorHandlingOptions: OUTREACH_WF_ERROR_HANDLING,
@@ -342,7 +398,11 @@ export const gtmWfIfElseStep = ({
           },
         ],
         branches: [
-          { id: ifBranchId, filterGroupId: groupId, nextStepIds: ifNextStepIds },
+          {
+            id: ifBranchId,
+            filterGroupId: groupId,
+            nextStepIds: ifNextStepIds,
+          },
           { id: elseBranchId, nextStepIds: elseNextStepIds },
         ],
       },
@@ -635,6 +695,76 @@ export const gtmWfSendLinkedInMessageStep = ({
     nextStepIds,
   );
 
+export const gtmWfSendEmailStep = ({
+  id,
+  name,
+  to,
+  subject,
+  body,
+  nextStepIds,
+}: {
+  id: string;
+  name: string;
+  to: string;
+  subject: string;
+  body: string;
+  nextStepIds?: string[];
+}): StepBase =>
+  withNext(
+    {
+      id,
+      name,
+      type: 'SEND_EMAIL',
+      valid: true,
+      settings: {
+        input: {
+          body,
+          subject,
+          recipients: { cc: '', to, bcc: '' },
+          connectedAccountId: '',
+        },
+        outputSchema: {},
+        errorHandlingOptions: OUTREACH_WF_ERROR_HANDLING,
+      },
+    },
+    nextStepIds,
+  );
+
+export const gtmWfSendWhatsappMessageStep = ({
+  id,
+  name,
+  phone,
+  body,
+  candidateId,
+  nextStepIds,
+}: {
+  id: string;
+  name: string;
+  phone: string;
+  body: string;
+  candidateId?: string;
+  nextStepIds?: string[];
+}): StepBase =>
+  withNext(
+    {
+      id,
+      name,
+      type: 'SEND_WHATSAPP_MESSAGE',
+      valid: true,
+      settings: {
+        input: {
+          phone,
+          body,
+          ...(candidateId ? { candidateId } : {}),
+          workspaceMemberId: gtmWfMemberId(),
+        },
+        outputSchema: {},
+        errorHandlingOptions: OUTREACH_WF_ERROR_HANDLING,
+      },
+    },
+    nextStepIds,
+  );
+
 export const gtmWfMemberAndProfileSteps = (
   nextStepIds: string[],
   {
@@ -672,11 +802,13 @@ export const gtmWfDatabaseEventTrigger = ({
   eventName,
   nextStepIds,
   fields,
+  filter,
 }: {
   name: string;
   eventName: string;
   nextStepIds: string[];
   fields?: string[];
+  filter?: Record<string, unknown>;
 }) => ({
   name,
   type: 'DATABASE_EVENT',
@@ -685,8 +817,44 @@ export const gtmWfDatabaseEventTrigger = ({
     eventName,
     outputSchema: {},
     ...(fields && fields.length > 0 ? { fields } : {}),
+    ...(filter ? { filter } : {}),
   },
   nextStepIds,
+});
+
+// Stages a candidate may enter the sequencer on. Disjoint from every stage the
+// sequencer itself writes (CONNECTION_SENT, DEFERRED, EMAIL_SENT, FAILED_ENRICH,
+// WAITING_REPLY, FAILED_NO_REPLY), so a create-or-update trigger cannot wake on
+// its own stamps.
+export const OUTREACH_WF_ENTRY_STAGES = [
+  'QUEUED',
+  'CONNECTION_ACCEPTED',
+  'REPLIED',
+] as const;
+
+const OUTREACH_WF_ENTRY_STAGE_FILTER_GROUP_ID =
+  '7d3a1b90-5c2e-4f18-9a64-2b8e0c1d3f45';
+const OUTREACH_WF_ENTRY_STAGE_FILTER_ID =
+  '8e4b2ca1-6d3f-4a29-8b75-3c9f1d2e4a56';
+
+// Evaluated against the event payload before a run is created, so noise stamps
+// never enqueue a throwaway run.
+export const gtmWfEntryStageTriggerFilter = () => ({
+  stepFilterGroups: [
+    { id: OUTREACH_WF_ENTRY_STAGE_FILTER_GROUP_ID, logicalOperator: 'AND' },
+  ],
+  stepFilters: [
+    {
+      id: OUTREACH_WF_ENTRY_STAGE_FILTER_ID,
+      type: 'SELECT',
+      value: JSON.stringify(OUTREACH_WF_ENTRY_STAGES),
+      operand: 'IS',
+      stepOutputKey: gtmWfTriggerAfter('outreachSequenceStage'),
+      stepFilterGroupId: OUTREACH_WF_ENTRY_STAGE_FILTER_GROUP_ID,
+      positionInStepFilterGroup: 0,
+      fieldMetadataId: OUTREACH_WF_FIELD.outreachSequenceStage,
+    },
+  ],
 });
 
 export const gtmWfManualTrigger = ({

@@ -57,7 +57,7 @@ WITH sends AS (
   FROM ${schema}."workflowRun" wr
   CROSS JOIN LATERAL jsonb_array_elements(wr.state->'flow'->'steps') step
   JOIN ${schema}."_candidate" c ON c.id = wr."candidateId"
-  WHERE c."projectsId" = '${PROJECT_ID}'
+  WHERE c."projectId" = '${PROJECT_ID}'
     AND c."deletedAt" IS NULL
     AND step->>'type' IN (
       'SEND_LINKEDIN_CONNECTION_REQUEST',
@@ -92,7 +92,7 @@ inbound_existing AS (
     COALESCE(cm."messageObj", '[]'::jsonb) AS existing_turns
   FROM ${schema}."_chatMessage" cm
   JOIN ${schema}."_candidate" c ON c.id = cm."candidateId"
-  WHERE c."projectsId" = '${PROJECT_ID}'
+  WHERE c."projectId" = '${PROJECT_ID}'
     AND cm."deletedAt" IS NULL
     AND (
       cm."typeOfMessage" = 'linkedin'
@@ -132,7 +132,6 @@ UPDATE ${schema}."_chatMessage" cm
 SET
   message = COALESCE(b.message_obj->-1->>'content', cm.message),
   "messageObj" = b.message_obj,
-  "messageObjWithTimeStamp" = b.message_obj,
   "typeOfMessage" = 'linkedin',
   channel = 'LINKEDIN',
   "updatedAt" = now()
@@ -142,8 +141,8 @@ WHERE cm.id = b.chat_message_id
   AND jsonb_array_length(b.message_obj) > 0;
 
 INSERT INTO ${schema}."_chatMessage" (
-  id, name, message, "messageObj", "messageObjWithTimeStamp",
-  "typeOfMessage", channel, "candidateId", "personId", "projectsId",
+  id, name, message, "messageObj",
+  "typeOfMessage", channel, "candidateId", "personId", "projectId",
   "createdAt", "updatedAt", position,
   "createdBySource", "createdByName",
   "updatedBySource", "updatedByName"
@@ -153,12 +152,11 @@ SELECT
   'LINKEDIN ' || left(b.candidate_id::text, 8),
   b.message_obj->-1->>'content',
   b.message_obj,
-  b.message_obj,
   'linkedin',
   'LINKEDIN',
   b.candidate_id,
   c."peopleId",
-  c."projectsId",
+  c."projectId",
   now(),
   now(),
   0,

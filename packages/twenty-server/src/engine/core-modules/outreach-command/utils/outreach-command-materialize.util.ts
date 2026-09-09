@@ -433,11 +433,11 @@ export const buildCandidateTouchUpdate = ({
 };
 
 export const resolveCompanyIdFromCandidate = (candidate: {
-  projects?: { companyId?: string; company?: { id?: string } } | null;
+  project?: { companyId?: string; company?: { id?: string } } | null;
   people?: { companyId?: string; company?: { id?: string } } | null;
 }): string | null =>
-  candidate.projects?.companyId ??
-  candidate.projects?.company?.id ??
+  candidate.project?.companyId ??
+  candidate.project?.company?.id ??
   candidate.people?.companyId ??
   candidate.people?.company?.id ??
   null;

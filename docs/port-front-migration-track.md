@@ -26,6 +26,13 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| Trigger rename blocked by workflow-version guard | Renaming a **trigger** step in the workflow side panel (e.g. `Outreach — Candidate Sequencer` → "Candidate is Created or Updated") sent `trigger` through the generic `updateOneWorkflowVersion` mutation, which `WorkflowVersionUpdateOnePreQueryHook` rejects with *This field cannot be updated directly on a workflow version*. Trigger renames now go through `updateWorkflowVersionTrigger`; `useUpdateWorkflowVersionTrigger` takes the visualizer `instanceId` so the side panel resolves the same updatable draft (and stops resolving it twice). Upstream bug — both files were identical to `upstream/core`. Seed trigger renamed to `Prospect is Created or Updated`; cmd `1785600000098` runs with `replaceExistingDrafts: false`, so already-seeded workspaces keep the old name until renamed in the UI. | `SidePanelWorkflowStepInfo.tsx`, `useUpdateWorkflowVersionTrigger.ts`, `workflow-version-validation.workspace-service.ts`, `outreach-workflow-graphs.ts` |
+| Nested Candidate GraphQL `projects` → `project` | After cmd `1785600000100` the Candidate relation field is `project` / `projectId`. Runtime GraphQL still selected `projects { … }` on `Candidate` (`Cannot query field "projects" on type "Candidate"` — `graphqlQueryToFindManyPeople` line 29). Swept nested selections in `twenty-shared/graphql/queries.ts`, inline queries, `CandidateNode` / interview types, and TS accessors. Top-level `projects(filter:)` collection queries stay plural. Rebuild `twenty-shared` and restart nest. | `queries.ts`, `ArxChatTypes.ts`, `candidate.ts`, arx-chat / video-interview / MCP candidate-tools / spreadsheet import |
+| Standardize candidate/chatMessage project FK | `candidate` and `chatMessage` were the only children of `project` with a plural FK (`projectsId`, a leftover of `jobsId → projectsId`); every other child used `projectId`. `relations-data.ts` now declares `toName: 'project'`, and 174 call sites across server/front/shared/mcp-server were swept to `projectId`. Because a field's deterministic identifier is hashed from its name and the manifest sync matches **by identifier only** (no name fallback), a bare manifest rename reads as delete + create and drops the column — so the rename is applied to the live row *before* the diff by `applyPendingFieldRenames`, and `ARXENA_FIELD_UNIVERSAL_IDENTIFIER_LEGACY_NAME` was retired in favour of `healFieldUniversalIdentifiers`, which re-derives stale identifiers from the live name (also repairs the identifier drift left by cmd `1785600000075`). Workspace cmd `1785600000100` drives the sync and patches `{{step.first.projectsId}}` paths in stored `workflowVersion` JSON. Upgrade commands predating the rename intentionally keep `projectsId`. | `relations-data.ts`, `arxena-standard-application.service.ts`, `build-arxena-standard-manifest.util.ts`, `2-25-*-1785600000100-*` |
+| Drop seeded outreach name aliases | Runtime matching uses current `SEEDED_OUTREACH_WORKFLOW` names only. Removed `SEEDED_OUTREACH_WORKFLOW_LEGACY_ALIASES` and helpers (`seededOutreachWorkflowNameAliases`, `resolveSeededOutreachWorkflowCanonicalName`, `getSeededOutreachWorkflowRenamePairs`). Front sequencer check no longer lists GTM/old display names. 0081 inventory sync no longer renames via alias pairs (0074/0080 already did the one-shot renames). | `seeded-outreach-workflow-names.const.ts`, `prefill-outreach-workflows.util.ts`, `resolve-outreach-pause-resume-workflow-ids.util.ts`, `is-outreach-sequencer-workflow-name.ts`, `2-25-*-1785600000081-*` |
+| Outreach merged candidate sequencer (DRAFT) | New 6th seeded graph `Outreach — Candidate Sequencer` merges Stage B (`candidate.created`) + Stage C (`candidate.updated`) behind one `candidate.upserted` trigger with an entry-stage allowlist (`QUEUED` / `CONNECTION_ACCEPTED` / `REPLIED`) as a pre-run trigger filter, a 3-branch MULTI-IF-ELSE router, and one hoisted member/profile load (drops the duplicate "no company" pair). Old two graphs untouched and still ACTIVE. Seeded DRAFT only via workspace cmd `1785600000098`. **Not publishable yet** — needs a QUEUED re-entry send guard + deactivation of B/C + pause/experiment/project rebinding. Also fixed `prefill-outreach-workflows` double-encoding `core."workflowVersion"` jsonb on the insert path (registered entity already serializes). | `outreach-workflow-graphs.ts` (`queuedBranchSteps` / `acceptedBranchSteps` / `repliedBranchSteps`), `outreach-workflow-graph-helpers.ts` (`gtmWfEntryStageTriggerFilter`, trigger `filter`), `seeded-outreach-workflow-names.const.ts` (`candidateSequencer`), `prefill-outreach-workflows.util.ts`, `2-25-*-1785600000098-*` |
+| GTM multi-channel inbound reply | After LinkedIn is established, inbound WhatsApp / LinkedIn / email all flush onto `chatMessage` with a per-channel row, stamp `REPLIED`, and the sales closer sends on `replyChannel` (last inbound). Workspace cmd `1785600000097`. | `outreach-inbound-email.listener.ts`, `outreach-message-persist.service.ts`, `outreach-workflow-graphs.ts`, `send-email.workflow-action.ts` |
+| GTM sales reply closer (no agent tools) | REPLIED branch uses full `{{findChats.text}}`, JSON `{ message, startsAt, endsAt }` prefilled on FORM, skip send on `#DONTRESPOND#`, then existing `CREATE_CALENDAR_EVENT`. Workspace cmd `1785600000096`. | `outreach-inbound-reply-next-step.prompt.ts`, `outreach-workflow-graphs.ts`, `outreach.md` |
 | PDL autocomplete click-only | PDL only with `x-arx-company-search` (no homepage Referer). `resolve-by-domain` no longer calls autocomplete stem. Search UI arms on focus/click. Hired-from ribbon passes `companyName`/`website`. | `org-chart-pdl-company-search-intent.util.ts`, `org-chart.service.ts`, `CompanySearchAutocomplete.tsx`, `OrgChartHiredFromRibbon.tsx` |
 | AI agent Test tab Candidate picker | Test hydrates previous FIND / native LinkedIn-calendar nodes for a picked Candidate (and prompt-referenced steps on other branches), then runs the agent. Fallback remains “fill chips from a recent run”. | `WorkflowAiAgentTestTab.tsx`, `workflow-ai-agent-test-context.service.ts`, `test-ai-agent.input.ts` |
 | Org-chart Ask AI people from S3 + gated web search | `get_org_chart_node_people` hydrates stored chart people (`orgchart.json` node rows + `candidates.json` headline/summary), not `people_all`. New `google_serp_search` REST/MCP tool. Ask AI Exa + SERP gated by `IS_SEARCH_EXA_ENABLED` / `IS_SEARCH_SERP_ENABLED` (default on). | `org-chart-node-people.util.ts`, `org-chart.service.ts` `getNodePeople`, `google-serp-search`, `search-tools-config.util.ts`, `org-structure-insights.md` |
@@ -557,7 +564,7 @@ CRM “Job” object became **Project**. Script: `node packages/twenty-utils/ren
 | --- | --- |
 | MCP `job-tools` | `project-tools` |
 | GraphQL `jobs` / `JobFilterInput` | `projects` / `ProjectFilterInput` |
-| Candidate relation field `candidate.jobs` | `candidate.projects` (runtime GraphQL + TS `CandidateNode`) |
+| Candidate relation field `candidate.jobs` | `candidate.project` (runtime GraphQL + TS `CandidateNode`) |
 | Redis search-results payload `jobId` | `projectId` (read accepts either; write uses `projectId`) |
 
 ### Candidate-sourcing HTTP paths (dual-mounted)
@@ -575,7 +582,7 @@ Front calls **project** paths; server keeps **job** aliases for site/CRX.
 | `POST …/get-all-projects` | `get-all-jobs` | Response `{ projects }` (+ `jobs` alias) |
 | `POST …/arx-chat/move-candidates-to-project` | `move-candidates-to-job` | Body `projectId` (+ legacy `jobId` accepted) |
 | `POST …/get-project-by-id` | `get-job-by-id` | Body `projectId` (or `jobId`); response `{ project }` (+ `job`) |
-| `POST …/get-candidates-by-project-id` | `get-candidates-by-job-id` | Body `projectId`; filter `projectsId` |
+| `POST …/get-candidates-by-project-id` | `get-candidates-by-job-id` | Body `projectId`; filter `projectId` (was `projectsId`) |
 | `POST …/get-candidate-fields-by-project` | `get-candidate-fields-by-job` | Body `projectId` |
 | `POST …/create-project-in-arxena-and-sheets` | `create-job-in-arxena-and-sheets` | |
 | `POST …/update-project-in-arxena-and-sheets` | `update-job-in-arxena-and-sheets` | |
@@ -596,12 +603,32 @@ rg "candidate-sourcing/get-all-" packages/twenty-front/src/modules
 
 **Do not rename** queue/Bull “job” IDs, LinkedIn Jobs search schemas, or enrichment job processors (script denylist).
 
+### Relation FK spelling (`projectsId` → `projectId`)
+
+The `jobsId → projectsId` step of the rename left `candidate` and `chatMessage` with a
+plural FK while every other child of `project` is singular. Standardized on `projectId`:
+`relations-data.ts` now declares `toName: 'project'`, and
+`ArxenaStandardApplicationService.applyPendingFieldRenames` moves the live row onto the
+new name + deterministic identifier before the manifest diff runs (a bare manifest
+rename would read as delete + create and drop the column).
+
+| Old | New |
+| --- | --- |
+| `candidate.projectsId` / relation field `projects` | `candidate.projectId` / `project` |
+| `chatMessage.projectsId` / relation field `projects` | `chatMessage.projectId` / `project` |
+
+Upgrade commands under `upgrade-version-command/**` that predate the rename intentionally
+still reference the pre-rename schema — do not sweep them.
+
 ### Grep for leftovers
 
 ```bash
+rg -n "\\bprojectsId\\b" packages --glob '!**/upgrade-version-command/**'
 rg -n "AppPath\\.Jobs\\b|MergeJobsModal|useJobRefetch|useOpenAddJobModal|sendCreateJobToArxena|OrgChartAddToJob|@/candidate-table/Jobs\\b" packages/twenty-front packages/twenty-shared
 rg -n "objectNameSingular[=:]\\s*['\"]job['\"]|useArxJDUpload\\(['\"]job['\"]\\)|nameSingular === ['\"]job['\"]|targetObjectNameSingular:\\s*['\"]job['\"]" packages/twenty-front/src/modules
 rg -n "candidate\\.jobs|candidate\\?\\.jobs|node\\?\\.jobs|ProfileData\\.jobs" packages/twenty-server/src/engine/core-modules
+rg -n "candidate\\.projects|node\\.projects|candidate\\?\\.projects" packages --glob '!**/upgrade-version-command/**'
+rg -n "projects \\{" packages/twenty-shared/src/graphql
 ```
 
 ---
@@ -831,6 +858,10 @@ Edit these carefully on rebase — product integration points.
 
 | File | Status | Why |
 | --- | --- | --- |
+| `packages/twenty-server/src/modules/workflow/workflow-runner/workflow-run/workflow-run.workspace-service.ts` | working · format | `candidate.projectsId` → `projectId` FK rename sweep |
+| `packages/twenty-server/src/modules/workflow/workflow-trigger/jobs/workflow-trigger.job.ts` | working · format | `candidate.projectsId` → `projectId` FK rename sweep |
+| `packages/twenty-server/src/modules/workflow/workflow-executor/workflow-actions/form/form.workflow-action.ts` | working · format | `candidate.projectsId` → `projectId` FK rename sweep |
+| `packages/twenty-server/src/modules/workflow/workflow-executor/workflow-actions/delay/jobs/resume-delayed-workflow.job.ts` | working · format | `candidate.projectsId` → `projectId` FK rename sweep |
 | `packages/twenty-server/src/engine/core-modules/onboarding/enums/onboarding-status.enum.ts` | working · intent | `EXTENSION_INSTALL` status |
 | `packages/twenty-server/src/engine/core-modules/onboarding/onboarding.service.ts` | working · intent | `ONBOARDING_EXTENSION_INSTALL_PENDING` before sync-email |
 | `packages/twenty-server/src/engine/core-modules/onboarding/onboarding.resolver.ts` | working · intent | `completeChromeExtensionOnboardingStep` |
@@ -872,6 +903,8 @@ Edit these carefully on rebase — product integration points.
 | `packages/twenty-front/src/modules/ui/layout/page/components/PagePanel.tsx` | working · intent | Restore `flex:1` / `min-height:0` on panel (workflows parity) for full-height project table |
 | `packages/twenty-front/src/modules/workflow/workflow-diagram/components/WorkflowDiagramCanvasBase.tsx` | working · intent | Center GTM/full workflow canvas on real container width (no double side-panel subtract); account for `flowBounds.x/y`; ResizeObserver on canvas resize |
 | `packages/twenty-front/src/modules/workflow/hooks/useWorkflowRun.ts` | working · intent | Do not throw ZodError when a run has null `workflowVersionId` (SET_NULL); outreach-home snackbar was crashing the page |
+| `packages/twenty-front/src/modules/side-panel/components/SidePanelWorkflowStepInfo.tsx` | working · intent | Rename a **trigger** via `updateWorkflowVersionTrigger` instead of the generic `updateOneRecord` (server pre-query hook forbids `trigger` on `workflowVersion.updateOne`) |
+| `packages/twenty-front/src/modules/workflow/workflow-trigger/hooks/useUpdateWorkflowVersionTrigger.ts` | working · intent | Accept the workflow visualizer `instanceId` so side-panel callers resolve the right updatable draft |
 | `packages/twenty-front/src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowEditActionAiAgent.tsx` | working · intent | Test tab Candidate picker; pass `candidateId` / version / step into `testAiAgent` |
 | `packages/twenty-front/src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/hooks/useTestAiAgent.ts` | working · intent | Optional candidate hydration fields on `testAiAgent` mutation |
 | `packages/twenty-server/src/engine/core-modules/workflow/dtos/test-ai-agent.input.ts` | working · intent | Optional `candidateId`, `workflowVersionId`, `stepId` |
@@ -882,7 +915,7 @@ Edit these carefully on rebase — product integration points.
 | `packages/twenty-server/src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-workflow-version-standard-flat-field-metadata.util.ts` | working · intent | `EXPERIMENT` option on `workflowVersion.status` SELECT (A/B publish) |
 | `packages/twenty-server/src/engine/core-modules/workflow/entities/workflow-version.entity.ts` | working · intent | Core `WorkflowVersionStatus.EXPERIMENT` |
 | `packages/twenty-server/src/database/commands/upgrade-version-command/instance-commands.constant.ts` | working · intent | Register `1785600000076` add-experiment-to-workflow-version-status |
-| `packages/twenty-server/src/database/commands/upgrade-version-command/2-25/2-25-upgrade-version-command.module.ts` | working · intent | Register workspace cmd `1785600000077` |
+| `packages/twenty-server/src/database/commands/upgrade-version-command/2-25/2-25-upgrade-version-command.module.ts` | working · intent | Register workspace cmds `1785600000077`, `…096`, `…097`, `…098` |
 | `packages/twenty-shared/src/workflow/schemas/workflow-run-schema.ts` | working · intent | `workflowVersionId` / `name` nullable to match DB |
 | `packages/twenty-shared/src/types/SidePanelPages.ts` | working · intent | Add `CandidateChat` side-panel page (candidate profile/chat drawer) |
 | `packages/twenty-front/src/modules/side-panel/constants/SidePanelPagesConfig.tsx` | working · intent | Mount `CandidateChatDrawer` (+ WhatsApp templates) for `CandidateChat` |

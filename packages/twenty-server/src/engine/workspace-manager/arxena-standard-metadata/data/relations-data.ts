@@ -145,8 +145,8 @@ const getAllRelationsData = (
         toObjectMetadataId: objectsNameIdMap.candidate,
         toDescription: '',
         toIcon: 'IconTie',
-        toLabel: 'Projects',
-        toName: 'projects',
+        toLabel: 'Project',
+        toName: 'project',
       },
     },
     {
@@ -267,8 +267,8 @@ const getAllRelationsData = (
         toObjectMetadataId: objectsNameIdMap.chatMessage,
         toDescription: '',
         toIcon: 'IconTie',
-        toLabel: 'Projects',
-        toName: 'projects',
+        toLabel: 'Project',
+        toName: 'project',
       },
     },
     {

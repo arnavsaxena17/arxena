@@ -44,11 +44,11 @@ function extractProjects(data: unknown): Array<{ id: string; name?: string }> {
 
 function extractCandidates(
   data: unknown,
-): Array<{ id: string; status?: string; projectsId?: string }> {
+): Array<{ id: string; status?: string; projectId?: string }> {
   const result = data as {
     candidates?: {
       edges?: Array<{
-        node: { id: string; status?: string; projectsId?: string };
+        node: { id: string; status?: string; projectId?: string };
       }>;
     };
   };
@@ -144,7 +144,7 @@ export const pendingActionsTools: McpTool[] = [
           config.apiToken,
           graphqlToFetchAllCandidateData,
           {
-            filter: { projectsId: { eq: project.id } },
+            filter: { projectId: { eq: project.id } },
             limit: maxCandidatesPerJob,
           },
         );

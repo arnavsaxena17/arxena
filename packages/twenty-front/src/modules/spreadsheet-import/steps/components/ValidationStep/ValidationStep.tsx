@@ -1,8 +1,5 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import {
-    projectIdAtom,
-    projectsState,
-} from '@/candidate-table/states/states';
+import { projectIdAtom, projectsState } from '@/candidate-table/states/states';
 import { SpreadsheetImportTable } from '@/spreadsheet-import/components/SpreadsheetImportTable';
 import { StepNavigationButton } from '@/spreadsheet-import/components/StepNavigationButton';
 import { useHideStepBar } from '@/spreadsheet-import/hooks/useHideStepBar';
@@ -10,16 +7,16 @@ import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpre
 import { type SpreadsheetImportStep } from '@/spreadsheet-import/steps/types/SpreadsheetImportStep';
 import { SpreadsheetImportStepType } from '@/spreadsheet-import/steps/types/SpreadsheetImportStepType';
 import {
-    type ImportedStructuredRow,
-    type SpreadsheetImportImportValidationResult,
+  type ImportedStructuredRow,
+  type SpreadsheetImportImportValidationResult,
 } from '@/spreadsheet-import/types';
 import { type SpreadsheetColumns } from '@/spreadsheet-import/types/SpreadsheetColumns';
 import { SpreadsheetColumnType } from '@/spreadsheet-import/types/SpreadsheetColumnType';
 import {
-    isCandidateSpreadsheetImportPath,
-    isLikelyValidPhoneNumber,
-    isPhoneNumberHeader,
-    isValidUuidString,
+  isCandidateSpreadsheetImportPath,
+  isLikelyValidPhoneNumber,
+  isPhoneNumberHeader,
+  isValidUuidString,
 } from '@/spreadsheet-import/utils/arx/candidateSpreadsheetImport';
 import { addErrorsAndRunHooks } from '@/spreadsheet-import/utils/dataMutations';
 import { useDialogManager } from '@/ui/feedback/dialog-manager/hooks/useDialogManager';
@@ -28,11 +25,11 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 import { styled } from '@linaria/react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import {
-    type Dispatch,
-    type SetStateAction,
-    useCallback,
-    useMemo,
-    useState,
+  type Dispatch,
+  type SetStateAction,
+  useCallback,
+  useMemo,
+  useState,
 } from 'react';
 import { type RowsChangeData } from 'react-data-grid';
 import { isDefined } from 'twenty-shared/utils';
@@ -129,21 +126,18 @@ const assignCurrentProjectToRows = <T extends ImportedStructuredRow>({
   projectName?: string;
 }): T[] => {
   return rows.map((row) => {
-    const existingProjectValue = (row as Record<string, unknown>).projects;
-    const existingJobsValue = (row as Record<string, unknown>).jobs;
+    const existingProjectValue = (row as Record<string, unknown>).projectId;
 
     if (
-      (typeof existingProjectValue === 'string' &&
-        isValidUuidString(existingProjectValue)) ||
-      (typeof existingJobsValue === 'string' &&
-        isValidUuidString(existingJobsValue))
+      typeof existingProjectValue === 'string' &&
+      isValidUuidString(existingProjectValue)
     ) {
       return row;
     }
 
     return {
       ...row,
-      projects: projectId,
+      projectId,
       __projectMatch: {
         matchedId: projectId,
         matchedName: projectName ?? '',
@@ -175,9 +169,7 @@ export const ValidationStep = ({
   const projects = useAtomStateValue(projectsState);
   const tokenPair = useAtomStateValue(tokenPairState);
 
-  const currentProject = projects.find(
-    (project) => project.id === projectId,
-  );
+  const currentProject = projects.find((project) => project.id === projectId);
 
   const processInitialData = useCallback(
     (rows: ImportedStructuredRow[]) => {
@@ -308,17 +300,12 @@ export const ValidationStep = ({
   const uploadCandidatesToArxena = async (
     candidates: Record<string, any>[],
   ) => {
-    const accessToken =
-      tokenPair?.accessOrWorkspaceAgnosticToken?.token ?? '';
+    const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token ?? '';
 
     let project: { id: string; name: string; arxenaSiteId: string } | null =
       null;
 
-    if (
-      isDefined(currentProject) &&
-      projectId &&
-      projectId !== 'project-id'
-    ) {
+    if (isDefined(currentProject) && projectId && projectId !== 'project-id') {
       project = {
         id: currentProject.id,
         name: currentProject.name,
@@ -422,7 +409,7 @@ export const ValidationStep = ({
           if (isDefined((row as any).__projectMatch)) {
             const projectMatch = (row as any).__projectMatch;
             if (isDefined(projectMatch.matchedId)) {
-              cleanRow.projects = projectMatch.matchedId;
+              cleanRow.projectId = projectMatch.matchedId;
               cleanRow['Job Applied For'] = projectMatch.matchedName;
             }
           }

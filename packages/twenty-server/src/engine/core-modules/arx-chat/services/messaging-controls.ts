@@ -152,7 +152,7 @@ export class MessagingControls {
       );
 
       // const candidateNode = personNode?.candidates?.edges?.find(
-      //   (edge) => edge.node.projects.id == candidateJob.id,
+      //   (edge) => edge.node.project.id == candidateJob.id,
       // )?.node;
 
       if (!candidate) {
@@ -465,7 +465,7 @@ export class MessagingControls {
       return { status: 'failed', message: 'Candidate not found' };
     }
 
-    const candidateJob = candidateNode?.projects as Project;
+    const candidateJob = candidateNode?.project as Project;
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob,
       apiToken,

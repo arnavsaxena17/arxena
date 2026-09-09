@@ -59,7 +59,7 @@ export class FilterCandidates {
     chatControl: ChatControlsObjType,
     apiToken: string,
   ): Promise<whatappUpdateMessageObjType> {
-    const candidateJob: Project = candidate?.projects as Project;
+    const candidateJob: Project = candidate?.project as Project;
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob,
       apiToken,
@@ -167,7 +167,7 @@ export class FilterCandidates {
     return Promise.all(
       candidateIds.map((candidateId) =>
         this.fetchCandidateByCandidateId(candidateId, apiToken).then(
-          (candidate) => candidate?.projects?.id,
+          (candidate) => candidate?.project?.id,
         ),
       ),
     );
@@ -858,7 +858,7 @@ export class FilterCandidates {
   ): CandidatesEdge | undefined {
     return candidateEdges
       .filter((edge: CandidatesEdge) => {
-        const isActive = edge?.node?.projects?.isActive;
+        const isActive = edge?.node?.project?.isActive;
         const hasStartChat = isCandidateFlagTrue(edge?.node, 'startChat');
         const isStopped = isCandidateFlagTrue(edge?.node, 'stopChat');
 
@@ -886,7 +886,7 @@ export class FilterCandidates {
     userMessage: chatMessageType,
   ): CandidateNode {
     const activeJobCandidate: CandidateNode = activeJobCandidateObj?.node;
-    const activeJob: Project = activeJobCandidate?.projects as Project;
+    const activeJob: Project = activeJobCandidate?.project as Project;
     const activeCompany = activeJob?.company;
     const candidatePhone =
       activeJobCandidate?.phoneNumber?.primaryPhoneNumber || '';
@@ -902,7 +902,7 @@ export class FilterCandidates {
       id: activeJobCandidate?.id,
       attachments: activeJobCandidate?.attachments,
       whatsappProvider: activeJobCandidate?.whatsappProvider,
-      projects: {
+      project: {
         name: activeJob?.name || '',
         id: activeJob?.id,
         recruiterId: activeJob?.recruiterId,

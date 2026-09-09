@@ -1465,7 +1465,7 @@ const seedCandidates = async ({
         primaryLinkUrl: person.linkedin,
         primaryLinkLabel: person.linkedin.replace(/^https?:\/\//, ''),
       },
-      projectsId: projectId,
+      projectId: projectId,
       ...(personId ? { peopleId: personId } : {}),
       outreachSequenceStage: person.outreachSequenceStage,
       enrichStatus: person.enrichStatus,
@@ -1504,7 +1504,7 @@ const seedCandidates = async ({
         filter: {
           and: [
             { name: { eq: candidateName } },
-            { projectsId: { eq: projectId } },
+            { projectId: { eq: projectId } },
           ],
         },
       },
@@ -1583,7 +1583,7 @@ const seedChatMessages = async ({
           phoneFrom: '+15550001111',
           phoneTo: `+1555000${1000 + index}`,
           candidateId,
-          projectsId: projectId,
+          projectId: projectId,
         },
       },
     );

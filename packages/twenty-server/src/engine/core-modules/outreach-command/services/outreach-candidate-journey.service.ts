@@ -66,7 +66,7 @@ import {
 
 type CandidateRecord = ObjectLiteral & {
   id: string;
-  projectsId?: string | null;
+  projectId?: string | null;
   outreachSequenceStage?: string | null;
   outreachConversationStage?: string | null;
   linkedinFollowUpCount?: number | null;
@@ -238,7 +238,7 @@ export class OutreachCandidateJourneyService {
           );
 
         const candidates = await candidateRepository.find({
-          where: { projectsId: projectId },
+          where: { projectId: projectId },
           select: {
             id: true,
             outreachSequenceStage: true,
@@ -1169,7 +1169,7 @@ export class OutreachCandidateJourneyService {
       );
 
     return candidateRepository.findOne({
-      where: { id: candidateId, projectsId: projectId },
+      where: { id: candidateId, projectId: projectId },
     });
   }
 

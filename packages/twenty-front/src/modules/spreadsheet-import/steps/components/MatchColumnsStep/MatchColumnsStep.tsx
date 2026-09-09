@@ -4,8 +4,8 @@ import { useCallback, useMemo, useState } from 'react';
 import { StepNavigationButton } from '@/spreadsheet-import/components/StepNavigationButton';
 import { useSpreadsheetImportInternal } from '@/spreadsheet-import/hooks/useSpreadsheetImportInternal';
 import {
-    type ImportedRow,
-    type ImportedStructuredRow,
+  type ImportedRow,
+  type ImportedStructuredRow,
 } from '@/spreadsheet-import/types';
 import { isValidUuidString } from '@/spreadsheet-import/utils/arx/candidateSpreadsheetImport';
 import { findUnmatchedRequiredFields } from '@/spreadsheet-import/utils/findUnmatchedRequiredFields';
@@ -17,10 +17,7 @@ import { useDialogManager } from '@/ui/feedback/dialog-manager/hooks/useDialogMa
 
 import { ModalContent } from 'twenty-ui/surfaces';
 
-import {
-    projectIdAtom,
-    projectsState,
-} from '@/candidate-table/states/states';
+import { projectIdAtom, projectsState } from '@/candidate-table/states/states';
 import { DO_NOT_IMPORT_OPTION_KEY } from '@/spreadsheet-import/constants/DoNotImportOptionKey';
 import { ColumnGrid } from '@/spreadsheet-import/steps/components/MatchColumnsStep/components/ColumnGrid';
 import { TemplateColumn } from '@/spreadsheet-import/steps/components/MatchColumnsStep/components/TemplateColumn';
@@ -82,10 +79,8 @@ export const MatchColumnsStep = ({
 }: MatchColumnsStepProps) => {
   const { enqueueDialog } = useDialogManager();
   const dataExample = data.slice(0, 2);
-  const {
-    spreadsheetImportFields: fields,
-    enableUploadProgressSseWhileOpen,
-  } = useSpreadsheetImportInternal();
+  const { spreadsheetImportFields: fields, enableUploadProgressSseWhileOpen } =
+    useSpreadsheetImportInternal();
   const [isLoading, setIsLoading] = useState(false);
   const [columns, setColumns] = useAtomFamilySelectorState(
     initialComputedColumnsSelector,
@@ -114,21 +109,18 @@ export const MatchColumnsStep = ({
       }
 
       return rows.map((row) => {
-        const existingProjectValue = (row as Record<string, unknown>).projects;
-        const existingJobsValue = (row as Record<string, unknown>).jobs;
+        const existingProjectValue = (row as Record<string, unknown>).projectId;
 
         if (
-          (typeof existingProjectValue === 'string' &&
-            isValidUuidString(existingProjectValue)) ||
-          (typeof existingJobsValue === 'string' &&
-            isValidUuidString(existingJobsValue))
+          typeof existingProjectValue === 'string' &&
+          isValidUuidString(existingProjectValue)
         ) {
           return row;
         }
 
         return {
           ...row,
-          projects: currentProject.id,
+          projectId: currentProject.id,
           jobTitle:
             typeof (row as Record<string, unknown>).jobTitle === 'string'
               ? ((row as Record<string, unknown>).jobTitle as string)

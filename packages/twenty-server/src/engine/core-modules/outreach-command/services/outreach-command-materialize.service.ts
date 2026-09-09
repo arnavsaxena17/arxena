@@ -154,7 +154,7 @@ export class OutreachCommandMaterializeService {
         );
 
         const projectId =
-          candidateSnapshot?.projectsId ??
+          candidateSnapshot?.projectId ??
           (await this.fetchCandidateProjectId(candidateId, apiToken));
 
         if (isDefined(projectId)) {
@@ -572,7 +572,7 @@ export class OutreachCommandMaterializeService {
   ): Promise<{
     createdAt?: string;
     outreachAnalytics?: unknown;
-    projectsId?: string | null;
+    projectId?: string | null;
   } | null> {
     try {
       const response = (await this.staticGraphQLService.executeGraphQL(
@@ -583,7 +583,7 @@ export class OutreachCommandMaterializeService {
                 id
                 createdAt
                 outreachAnalytics
-                projectsId
+                projectId
               }
             }
           }
@@ -599,7 +599,7 @@ export class OutreachCommandMaterializeService {
               node: {
                 createdAt?: string;
                 outreachAnalytics?: unknown;
-                projectsId?: string | null;
+                projectId?: string | null;
               };
             }>;
           }
@@ -621,7 +621,7 @@ export class OutreachCommandMaterializeService {
             edges {
               node {
                 id
-                projectsId
+                projectId
               }
             }
           }
@@ -633,9 +633,9 @@ export class OutreachCommandMaterializeService {
       return (
         (
           response?.data?.data?.candidates as {
-            edges?: Array<{ node: { projectsId?: string | null } }>;
+            edges?: Array<{ node: { projectId?: string | null } }>;
           }
-        )?.edges?.[0]?.node?.projectsId ?? null
+        )?.edges?.[0]?.node?.projectId ?? null
       );
     } catch {
       return null;
@@ -696,7 +696,7 @@ export class OutreachCommandMaterializeService {
             node {
               id
               messagingChannel
-              projects { companyId company { id } }
+              project { companyId company { id } }
               people { companyId company { id } }
             }
           }
@@ -787,7 +787,7 @@ export class OutreachCommandMaterializeService {
       {
         filter: {
           or: [
-            { projects: { companyId: { eq: companyId } } },
+            { project: { companyId: { eq: companyId } } },
             { people: { companyId: { eq: companyId } } },
           ],
         },

@@ -614,17 +614,6 @@ const getAllFieldsData = (
       objectName: 'chatMessage',
       field: {
         description: '',
-        icon: 'IconJson',
-        label: 'messageObjWithTimeStamp',
-        name: 'messageObjWithTimeStamp',
-        objectMetadataId: objectsNameIdMap.chatMessage,
-        type: 'RAW_JSON',
-      },
-    },
-    {
-      objectName: 'chatMessage',
-      field: {
-        description: '',
         icon: 'IconBrandWhatsapp',
         label: 'whatsappProvider',
         name: 'whatsappProvider',
@@ -2226,9 +2215,7 @@ const isShortlistPresentationField = (
     fieldName: fieldWithObject.field.name,
   });
 
-const isAssistantField = (
-  fieldWithObject: ArxenaFieldWithObject,
-): boolean =>
+const isAssistantField = (fieldWithObject: ArxenaFieldWithObject): boolean =>
   isAssistantObjectName(fieldWithObject.objectName) ||
   isAssistantHostExtensionField({
     objectName: fieldWithObject.objectName,
@@ -2239,8 +2226,8 @@ export const getVideoInterviewFieldsData = (
   objectsNameIdMap: Record<string, string>,
   isOrgChartEnabled?: boolean,
 ): ArxenaFieldWithObject[] =>
-  getAllFieldsData(objectsNameIdMap, isOrgChartEnabled).filter((fieldWithObject) =>
-    isVideoInterviewField(fieldWithObject),
+  getAllFieldsData(objectsNameIdMap, isOrgChartEnabled).filter(
+    (fieldWithObject) => isVideoInterviewField(fieldWithObject),
   );
 
 export const getShortlistPresentationFieldsData = (

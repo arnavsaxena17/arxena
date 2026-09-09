@@ -189,13 +189,13 @@ export class OutreachWorkflowRunRepairService {
     if (isNonEmptyString(candidateId)) {
       const candidateRepository =
         await this.globalWorkspaceOrmManager.getRepository<
-          ObjectLiteral & { id: string; projectsId?: string | null }
+          ObjectLiteral & { id: string; projectId?: string | null }
         >(workspaceId, 'candidate', { shouldBypassPermissionChecks: true });
       const candidate = await candidateRepository.findOne({
         where: { id: candidateId },
       });
 
-      if (isNonEmptyString(candidate?.projectsId)) {
+      if (isNonEmptyString(candidate?.projectId)) {
         const projectRepository =
           await this.globalWorkspaceOrmManager.getRepository<
             ObjectLiteral & {
@@ -206,7 +206,7 @@ export class OutreachWorkflowRunRepairService {
             }
           >(workspaceId, 'project', { shouldBypassPermissionChecks: true });
         project = await projectRepository.findOne({
-          where: { id: candidate.projectsId },
+          where: { id: candidate.projectId },
         });
       }
     }

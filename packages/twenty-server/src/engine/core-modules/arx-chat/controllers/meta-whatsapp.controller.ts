@@ -49,7 +49,7 @@ export class MetaWhatsappController {
       const candidateNode: CandidateNode | undefined =
         personObj?.candidates?.edges[0]?.node;
 
-      const candidateJob: Project | undefined = candidateNode?.projects;
+      const candidateJob: Project | undefined = candidateNode?.project;
       const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
         candidateJob as Project,
         apiToken,
@@ -70,20 +70,20 @@ export class MetaWhatsappController {
         recruiterJobTitle: recruiterProfile.jobTitle || '',
         recruiterCompanyName: recruiterProfile.companyName,
         recruiterCompanyDescription: recruiterProfile.companyDescription,
-        jobPositionName: personObj?.candidates?.edges[0]?.node?.projects?.name,
+        jobPositionName: personObj?.candidates?.edges[0]?.node?.project?.name,
         companyName: personObj?.candidates?.edges.filter(
-          (edge) => edge.node.projects.id === candidateJob?.id,
-        )[0]?.node?.projects?.company?.name,
+          (edge) => edge.node.project.id === candidateJob?.id,
+        )[0]?.node?.project?.company?.name,
         descriptionOneliner:
           personObj?.candidates?.edges.filter(
-            (edge) => edge.node.projects.id === candidateJob?.id,
-          )[0]?.node?.projects?.companyDetails || '',
+            (edge) => edge.node.project.id === candidateJob?.id,
+          )[0]?.node?.project?.companyDetails || '',
         jobCode: personObj?.candidates?.edges.filter(
-          (edge) => edge.node.projects.id === candidateJob?.id,
-        )[0]?.node?.projects?.jobCode,
+          (edge) => edge.node.project.id === candidateJob?.id,
+        )[0]?.node?.project?.jobCode,
         jobLocation: personObj?.candidates?.edges.filter(
-          (edge) => edge.node.projects.id === candidateJob?.id,
-        )[0]?.node?.projects?.jobLocation,
+          (edge) => edge.node.project.id === candidateJob?.id,
+        )[0]?.node?.project?.jobLocation,
         videoInterviewLink:
           (process.env.SERVER_BASE_URL || '') +
             personObj?.candidates?.edges[0]?.node?.videoInterview?.edges[0]

@@ -422,7 +422,7 @@ export class CandidateEngagementArx {
     const messagesByJob = new Map();
 
     for (const message of messages) {
-      const projectId = message.node.projectsId;
+      const projectId = message.node.projectId;
 
       if (!messagesByJob.has(projectId)) {
         messagesByJob.set(projectId, []);
@@ -580,7 +580,7 @@ export class CandidateEngagementArx {
 
           return acc;
         }
-        const projectId = edge.node.projects?.id;
+        const projectId = edge.node.project?.id;
         const candidateId = edge.node.id;
         if (projectId && candidateId) {
           acc[projectId] = acc[projectId] || [];
@@ -762,7 +762,7 @@ export class CandidateEngagementArx {
     const allCandidates: CandidateNode[] = [];
     try {
       const timestampedFilter = {
-        projectsId: { eq: projectId },
+        projectId: { eq: projectId },
       };
       let hasNextPage = true;
       let lastCursor: string | null = null;
@@ -907,7 +907,7 @@ export class CandidateEngagementArx {
             lastCursor,
             limit: 400,
             filter: {
-              projectsId: { in: activeJobsIds },
+              projectId: { in: activeJobsIds },
               updatedAt: { lte: timestamp },
             },
             orderBy: [{ updatedAt: 'DESC' }],
@@ -1079,8 +1079,8 @@ export class CandidateEngagementArx {
 
       const candidateJobs = new Map<string, Project>();
       candidates.forEach((candidate) => {
-        if (candidate?.projects?.id) {
-          candidateJobs.set(candidate.projects.id, candidate.projects);
+        if (candidate?.project?.id) {
+          candidateJobs.set(candidate.project.id, candidate.project);
         }
       });
 
@@ -1137,7 +1137,7 @@ export class CandidateEngagementArx {
           }
           console.log("Number of candidates fetched::", candidates?.length);
           const candidatesForJob = candidates.filter((candidate) => {
-            return candidate?.projects?.id === projectId;
+            return candidate?.project?.id === projectId;
           });
 
           console.log("Number of candidates for job::", candidatesForJob?.length)

@@ -73,10 +73,6 @@ export const graphqlQueryToFindShortlists = `query FindManyShortlists($filter: S
   }
 }`;
 
-
-
-
-
 export const graphqlQueryToFetchProjectPrompts = `
   query FindProjectPrompts($objectRecordId: UUID!) {
     project(filter: {id: {eq: $objectRecordId}}) {
@@ -135,7 +131,6 @@ export const graphqlQueryToFindVideoInterviewTemplatesByProjectId = `query FindM
     totalCount
   }
 }`;
-
 
 export const graphqlToFindManyCompanies = `query FindManyCompanies($filter: CompanyFilterInput, $orderBy: [CompanyOrderByInput], $lastCursor: String, $limit: Int) {
   companies(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
@@ -319,8 +314,12 @@ export function resolveIsOrgChartEnabledFromWorkspace(
   return String(workspaceValue).trim() === 'true';
 }
 
-export function getGraphqlToFindManyProjects(isOrgChartEnabled: boolean): string {
-  return isOrgChartEnabled ? graphqlToFindManyProjectsOrgChart : graphqlToFindManyProjectsFull;
+export function getGraphqlToFindManyProjects(
+  isOrgChartEnabled: boolean,
+): string {
+  return isOrgChartEnabled
+    ? graphqlToFindManyProjectsOrgChart
+    : graphqlToFindManyProjectsFull;
 }
 
 // Navigation / project list — only fields present on all ARX workspaces (no icpSpec,
@@ -1230,7 +1229,7 @@ export const graphQueryToFindManyvideoInterviews = `query FindManyVideoInterview
           status
           jobSpecificFields
           otherFields
-          projectsId
+          projectId
           createdAt
           source
           campaign
@@ -1257,7 +1256,7 @@ export const graphQueryToFindManyvideoInterviews = `query FindManyVideoInterview
             primaryLinkUrl
             __typename
           }
-          projects {
+          project {
             name
             id
             recruiterId
@@ -1579,7 +1578,7 @@ query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [W
 //                     whatsappProvider
 //                     lastEngagementChatControl
 //                     candConversationStatus
-//                     projects {
+//                     project {
 //                        name
 //                        id
 //                        isActive
@@ -1654,7 +1653,7 @@ query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [W
 //                           recruiterId
 //                           message
 //                           candidateId
-//                           projectsId
+//                           projectId
 //                           position
 //                           phoneTo
 //                           messageObj
@@ -1697,9 +1696,6 @@ query FindManyWorkspaceMembers($filter: WorkspaceMemberFilterInput, $orderBy: [W
 //   }
 // }`;
 
-
-
-
 export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: PersonFilterInput, $orderBy: [PersonOrderByInput], $lastCursor: String, $limit: Int) {
   people(filter: $filter, orderBy: $orderBy, first: $limit, after: $lastCursor) {
     pageInfo {
@@ -1728,7 +1724,8 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                     whatsappProvider
                     candidateFlags
                     candConversationStatus
-                    projects {
+                    projectId
+                    project {
                        name
                        id
                        isActive
@@ -1909,7 +1906,7 @@ export const graphQlToFetchChatMessages = `query FindManyChatMessages($filter: C
         recruiterId
         messageObj
         phoneTo
-        projectsId
+        projectId
         whatsappProvider
         candidate {
           name
@@ -2142,7 +2139,7 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
       campaign
       jobCompanyName
       jobSpecificFields
-      projectsId
+      projectId
       createdAt
       updatedAt
       candidateFlags
@@ -2166,7 +2163,7 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
         primaryLinkUrl
         __typename
       }
-      projects {
+      project {
         name
         id
         recruiterId
@@ -2452,14 +2449,14 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
 //                 recruiterId
 //                 message
 //                 candidateId
-//                 projectsId
+//                 projectId
 //                 position
 //                 phoneTo
 //                 phoneFrom
 //               }
 //             }
 //           }
-//           projects {
+//           project {
 //             id
 //             name
 //             jobLocation
@@ -2497,8 +2494,6 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
 //     }
 //   }`;
 
-
-
 export const graphqlToFetchAllCandidateData = `
   query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFilterInput) {
     candidates(after: $lastCursor, first: $limit, filter: $filter) {
@@ -2524,6 +2519,7 @@ export const graphqlToFetchAllCandidateData = `
           }
           candConversationStatus
           peopleId
+          projectId
           candidateFlags
           source
           campaign
@@ -2612,14 +2608,14 @@ export const graphqlToFetchAllCandidateData = `
                 candidateId
                 personId
                 typeOfMessage
-                projectsId
+                projectId
                 position
                 phoneTo
                 phoneFrom
               }
             }
           }
-          projects {
+          project {
             id
             name
             jobLocation
@@ -2672,7 +2668,7 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
           source
           campaign
           jobCompanyName
-          projectsId
+          projectId
           jobTitle
           remarks
           messagingChannel
@@ -2733,7 +2729,7 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
                 candidateId
                 personId
                 typeOfMessage
-                projectsId
+                projectId
                 position
                 phoneTo
                 phoneFrom
@@ -2749,9 +2745,7 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
     }
   }`;
 
-
-
-  export const graphqlToFetchAllCandidateDataForTable = `
+export const graphqlToFetchAllCandidateDataForTable = `
   query FindManyCandidates($lastCursor: String, $limit: Int, $filter: CandidateFilterInput) {
     candidates(after: $lastCursor, first: $limit, filter: $filter) {
       pageInfo {
@@ -2781,7 +2775,7 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
           candidateFlags
           source
           campaign
-          projectsId
+          projectId
           jobTitle
           remarks
           messagingChannel
@@ -3025,7 +3019,8 @@ export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query F
                     whatsappProvider
                     candidateFlags
                     candConversationStatus
-                    projects {
+                    projectId
+                    project {
                        name
                        id
                        isActive
@@ -3069,8 +3064,6 @@ export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query F
   }
 }`;
 
-
-
 export const getExistingRelationsQuery = `query GetExistingRelations($objectMetadataId: UUID!) {
   relations(filter: {
     or: [
@@ -3087,8 +3080,6 @@ export const getExistingRelationsQuery = `query GetExistingRelations($objectMeta
   }
 }
 `;
-
-
 
 export const findManyViewsQuery = `
 query FindManyViews($filter: ViewFilterInput, $orderBy: [ViewOrderByInput], $lastCursor: String, $limit: Int) {
@@ -3205,10 +3196,6 @@ export const findOneAssistantThread = `query FindOneAssistantThread($id: UUID!) 
     updatedAt
   }
 }`;
-
-
-
-
 
 // export const FindOneProject = `
 //   query FindOneProject($objectRecordId: UUID!) {

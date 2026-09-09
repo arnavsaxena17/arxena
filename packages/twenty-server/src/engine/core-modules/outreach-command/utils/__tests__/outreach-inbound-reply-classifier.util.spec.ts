@@ -45,6 +45,23 @@ describe('outreach-inbound-reply-classifier.util', () => {
     expect(result.conversationStage).toBe('FOLLOW_UP_MEETING');
   });
 
+  it('maps sales closer sample threads to REPLIED cadence', () => {
+    expect(
+      classifyInboundReplyFallback(
+        'Thanks for reaching out. Contact no is 9376828884 at 2:30 pm tomorrow',
+      ).conversationStage,
+    ).toBe('FOLLOW_UP_MEETING');
+    expect(
+      classifyInboundReplyFallback('Sure lets keep on Sat // Lets do Sat 11 am')
+        .conversationStage,
+    ).toBe('FOLLOW_UP_MEETING');
+    expect(
+      classifyInboundReplyFallback(
+        'This sounds interesting. Yes sure Friday next week is relatively free OK',
+      ).conversationStage,
+    ).toBe('INTENT');
+  });
+
   it('defaults questions to ACKNOWLEDGEMENT', () => {
     const result = classifyInboundReplyFallback('Who else uses this?');
 

@@ -47,7 +47,7 @@ export class TestArxChat {
       const allCandidates: Candidate[] = [];
       let lastCursor: string | null = null;
       let hasNextPage = true;
-      const timestampedFilter = { projectsId: { eq: firstJob.id } };
+      const timestampedFilter = { projectId: { eq: firstJob.id } };
       while (hasNextPage) {
         const response = await this.staticGraphQLService.executeGraphQL(
           graphqlToFetchAllCandidateDataWithFieldValues,

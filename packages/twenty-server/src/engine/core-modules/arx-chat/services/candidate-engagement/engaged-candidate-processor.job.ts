@@ -148,7 +148,7 @@ export class EngagedCandidateProcessor {
         return;
       }
 
-      const candidateJob = candidate?.projects;
+      const candidateJob = candidate?.project;
       if (!candidateJob?.id) {
         this.logger.warn(
           `Candidate ${candidateId} has no linked project, cannot process interim chat`,
@@ -354,7 +354,7 @@ export class EngagedCandidateProcessor {
           this.staticGraphQLService,
         ).fetchCandidateByCandidateId(candidateId, token.token);
 
-        if (!candidate || !candidate.projects) {
+        if (!candidate || !candidate.project) {
           this.logger.warn(`Candidate ${candidateId} not found or has no active project`);
           return;
         }
@@ -387,7 +387,7 @@ export class EngagedCandidateProcessor {
         );
 
         // Get the candidate's project and determine which chat controls to process
-        const job = candidate.projects;
+        const job = candidate.project;
 
         // If silent hours are enabled for outgoing messages, and this is not an
         // incoming message, delay processing until the next allowed time
@@ -423,14 +423,14 @@ export class EngagedCandidateProcessor {
                     this.staticGraphQLService,
                   ).fetchCandidateByCandidateId(candidateId, token.token);
 
-                  if (!refreshedCandidate || !refreshedCandidate.projects) {
+                  if (!refreshedCandidate || !refreshedCandidate.project) {
                     this.logger.warn(
                       `Candidate ${candidateId} not found or has no active project at silent-hours resume time`,
                     );
                     return;
                   }
 
-                  const refreshedJob = refreshedCandidate.projects;
+                  const refreshedJob = refreshedCandidate.project;
                   const chatFlowOrderNow =
                     refreshedJob.chatFlowOrder ||
                     this.chatFlowConfigBuilder.getDefaultChatFlowOrder();

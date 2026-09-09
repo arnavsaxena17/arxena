@@ -30,15 +30,6 @@ describe('shouldImmediatelyEnqueueWorkflowRun', () => {
     ).toBe(false);
   });
 
-  it('should soft-throttle Stage C legacy aliases', () => {
-    expect(
-      shouldImmediatelyEnqueueWorkflowRun({
-        triggerType: WorkflowTriggerType.DATABASE_EVENT,
-        workflowName: 'GTM Outreach — Candidate Updated - Connection Accepted',
-      }),
-    ).toBe(false);
-  });
-
   it('should enqueue webhook Test runs immediately', () => {
     expect(
       shouldImmediatelyEnqueueWorkflowRun({

@@ -164,7 +164,7 @@ export class EngagedCandidateQueueService {
                   phoneFrom?: string;
                   phoneTo?: string;
                   candidateId?: string;
-                  projectsId?: string;
+                  projectId?: string;
                 }>(workspaceId, 'chatMessage');
 
               // For messages with actual WhatsApp message IDs (not 'NA'), check by message ID
@@ -187,7 +187,7 @@ export class EngagedCandidateQueueService {
                     candidateProfileDataNodeObj.people?.phones
                       ?.primaryPhoneNumber || '',
                   candidateId: candidateProfileDataNodeObj.id,
-                  projectsId: candidateJob.id,
+                  projectId: candidateJob.id,
                 },
                 select: { id: true },
               });
@@ -277,7 +277,7 @@ export class EngagedCandidateQueueService {
       if (
         messagingChannelEquals(
           candidateProfileDataNodeObj.people?.candidates?.edges.filter(
-            (candidate) => candidate?.node?.projects?.id === candidateJob.id,
+            (candidate) => candidate?.node?.project?.id === candidateJob.id,
           )[0]?.node?.messagingChannel,
           MessagingChannel.LINKEDIN_CONNECT,
         )
@@ -290,7 +290,7 @@ export class EngagedCandidateQueueService {
       if (
         messagingChannelEquals(
           candidateProfileDataNodeObj.people?.candidates?.edges.filter(
-            (candidate) => candidate?.node?.projects?.id === candidateJob.id,
+            (candidate) => candidate?.node?.project?.id === candidateJob.id,
           )[0]?.node?.messagingChannel,
           MessagingChannel.LINKEDIN_CONNECT,
         )
@@ -376,7 +376,7 @@ export class EngagedCandidateQueueService {
         this.staticGraphQLService,
       ).getCandidateInformation(whatsappIncomingMessage, apiToken);
 
-      const candidateJob: Project = candidateProfileData.projects;
+      const candidateJob: Project = candidateProfileData.project;
 
       // Check for duplicate messages - but only for this specific candidate and job combination
       let isDuplicate = false;

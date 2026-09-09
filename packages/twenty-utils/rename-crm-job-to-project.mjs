@@ -160,7 +160,7 @@ const REPLACEMENTS = [
   ['RecruiterJobContext', 'RecruiterProjectContext'],
 
   // Relation FK
-  ['jobsId', 'projectsId'],
+  ['jobsId', 'projectId'],
 
   // Metadata seed
   ["nameSingular: 'job'", "nameSingular: 'project'"],

@@ -11,6 +11,7 @@ import { FeatureFlagModule } from 'src/engine/core-modules/feature-flag/feature-
 import { OutreachCommandController } from 'src/engine/core-modules/outreach-command/controllers/outreach-command.controller';
 import { OutreachMockController } from 'src/engine/core-modules/outreach-command/controllers/outreach-mock.controller';
 import { OutreachInboundReplyWindowService } from 'src/engine/core-modules/outreach-command/jobs/outreach-inbound-reply-window.job';
+import { OutreachInboundEmailListener } from 'src/engine/core-modules/outreach-command/listeners/outreach-inbound-email.listener';
 import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/outreach-command/services/linkedin-provider-id.store';
 import { OutreachWorkspaceProfileBootstrapJob } from 'src/engine/core-modules/outreach-command/jobs/outreach-workspace-profile-bootstrap.job';
 import { EnsureOutreachProjectService } from 'src/engine/core-modules/outreach-command/services/ensure-outreach-project.service';
@@ -174,6 +175,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     OutreachWorkflowRunFlowSyncService,
     OutreachWorkflowRunRepairService,
     OutreachInboundReplyWindowService,
+    OutreachInboundEmailListener,
   ],
   exports: [
     OutreachCommandMaterializeService,

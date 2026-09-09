@@ -176,7 +176,7 @@ export class GoogleControllers {
     }
 
     const candidateNode = person.candidates.edges[0].node;
-    const candidateJob: Project = candidateNode?.projects;
+    const candidateJob: Project = candidateNode?.project;
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob,
       apiToken,
@@ -221,7 +221,7 @@ export class GoogleControllers {
     }
 
     const candidateNode = person.candidates.edges[0].node;
-    const candidateJob: Project = candidateNode?.projects;
+    const candidateJob: Project = candidateNode?.project;
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob,
       apiToken,
@@ -428,7 +428,7 @@ export class GoogleControllers {
     }
 
     const candidateNode = person.candidates.edges[0].node;
-    const candidateJob: Project = candidateNode?.projects;
+    const candidateJob: Project = candidateNode?.project;
     const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
       candidateJob,
       apiToken,

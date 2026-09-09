@@ -111,7 +111,7 @@ const readNestedName = (
 const looksLikeCandidateRecord = (record: Record<string, unknown>): boolean =>
   record.linkedinUrl != null ||
   record.linkedinLink != null ||
-  record.projectsId != null ||
+  record.projectId != null ||
   record.peopleId != null ||
   record.jobTitle != null;
 
@@ -219,7 +219,7 @@ export const toUploadProfilesPerson = (
     : UUID_REGEX.test(recordId) && looksLikeCandidateRecord(person)
       ? recordId
       : '';
-  const projectId = readString(person, ['projectId', 'projectsId']);
+  const projectId = readString(person, ['projectId', 'projectId']);
   const currentPositions = Array.isArray(person.current_positions)
     ? person.current_positions
     : Array.isArray(person.currentPositions)

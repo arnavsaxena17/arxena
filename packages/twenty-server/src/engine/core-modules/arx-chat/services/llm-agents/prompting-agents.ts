@@ -55,11 +55,11 @@ export class PromptingAgents {
     // const location = "Surat";
     // const formattedQuestions = questions.map((question, index) =>  `${index + 1}. ${question.replace("{location}", location)}`).join("\n");
     // return formattedQuestions
-    const projectId = candidate?.projects?.id;
+    const projectId = candidate?.project?.id;
 
     console.log(
       'Project Name:',
-      candidate?.projects?.name,
+      candidate?.project?.name,
     );
     const { questionArray, questionIdArray } = await new FilterCandidates(
       this.workspaceQueryService,
@@ -101,7 +101,7 @@ export class PromptingAgents {
     candidateJob: Project,
     apiToken: string,
   ) {
-      const jobProfile = candidate?.projects;
+      const jobProfile = candidate?.project;
     const current_job_position = jobProfile.name;
     const candidate_conversation_summary =
       'The candidate has mentioned that he/ she is interested in the role. They are okay to relocate and their salary falls in the bracket that the client is hiring for';
@@ -235,7 +235,7 @@ export class PromptingAgents {
         {
           candidate: candidateWithProcessedName,
           recruiterProfile,
-          jobProfile: candidate?.projects,
+          jobProfile: candidate?.project,
           candidate_conversation_summary:
             this.buildOutreachConversationSummary(candidate),
         },
@@ -296,7 +296,7 @@ export class PromptingAgents {
     const dayText = this.getCallAvailabilityDayText();
     const variables = {
       candidate: candidateWithProcessedName,
-      jobProfile: candidate?.projects,
+      jobProfile: candidate?.project,
       recruiterProfile: recruiterProfile,
       receiveCV: receiveCV,
       formattedQuestions: formattedQuestions,

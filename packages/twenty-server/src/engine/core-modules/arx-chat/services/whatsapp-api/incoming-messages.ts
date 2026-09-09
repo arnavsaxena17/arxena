@@ -1452,7 +1452,7 @@ export class IncomingWhatsappMessages {
             this.workspaceQueryService,
             this.staticGraphQLService,
           ).getCandidateInformation(whatsappIncomingMessage, apiToken);
-          const candidateJob: Project = candidateProfileData.projects;
+          const candidateJob: Project = candidateProfileData.project;
 
           console.log( 'This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::', chatReply, );
           console.log( 'This is the candiate who has sent us candidateProfileData::', candidateProfileData, );
@@ -1509,7 +1509,7 @@ export class IncomingWhatsappMessages {
             this.workspaceQueryService,
             this.staticGraphQLService,
           ).getCandidateInformation(whatsappIncomingMessage, apiToken);
-          const candidateJob: Project = candidateProfileData.projects;
+          const candidateJob: Project = candidateProfileData.project;
 
           await new FacebookWhatsappChatApi(
             this.workspaceQueryService,
@@ -1579,7 +1579,7 @@ export class IncomingWhatsappMessages {
             externalMessageId:
               requestBody?.entry[0]?.changes[0]?.value?.messages[0].id,
           };
-          const candidateJob: Project = candidateProfileData.projects;
+          const candidateJob: Project = candidateProfileData.project;
 
           await this.createAndUpdateIncomingCandidateChatMessage(
             replyObject,
@@ -1715,7 +1715,7 @@ export class IncomingWhatsappMessages {
 
   private isOutreachCandidate(
     candidate: CandidateNode & {
-      projectsId?: string | null;
+      projectId?: string | null;
       outreachSequenceStage?: string | null;
     },
     project: Project & {
@@ -1753,7 +1753,7 @@ export class IncomingWhatsappMessages {
       /gtm/i.test(project?.name ?? '');
 
     return Boolean(
-      (Boolean(candidate?.projectsId) && projectIsOutreach) ||
+      (Boolean(candidate?.projectId) && projectIsOutreach) ||
         gtmStages.has(stage),
     );
   }

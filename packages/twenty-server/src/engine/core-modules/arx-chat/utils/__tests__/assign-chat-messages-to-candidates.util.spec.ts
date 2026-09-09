@@ -12,7 +12,7 @@ const buildMessage = (
     recruiterId: '',
     message: 'hello',
     candidateId: '',
-    projectsId: '',
+    projectId: '',
     position: 1,
     messageType: '',
     phoneTo: '',

@@ -297,14 +297,14 @@ export class OutreachMockLifecycleService {
   }): Promise<string> {
     const result = await this.staticGraphQLService.executeGraphQL<{
       candidates?: {
-        edges?: Array<{ node?: { projectsId?: string | null } }>;
+        edges?: Array<{ node?: { projectId?: string | null } }>;
       };
     }>(
       `query FindCandidateProject($filter: CandidateFilterInput!) {
         candidates(filter: $filter, first: 1) {
           edges {
             node {
-              projectsId
+              projectId
             }
           }
         }
@@ -313,11 +313,11 @@ export class OutreachMockLifecycleService {
       apiToken,
     );
 
-    const projectId = result?.candidates?.edges?.[0]?.node?.projectsId;
+    const projectId = result?.candidates?.edges?.[0]?.node?.projectId;
 
     if (!isNonEmptyString(projectId)) {
       throw new Error(
-        `Candidate ${candidateId} has no projectsId — pass projectId explicitly`,
+        `Candidate ${candidateId} has no projectId — pass projectId explicitly`,
       );
     }
 

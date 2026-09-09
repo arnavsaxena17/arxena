@@ -3,13 +3,13 @@ import * as fs from 'fs';
 import { toOpenAiJsonSchemaResponseFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
 import * as path from 'path';
 import {
-    findManyAttachmentsQuery,
-    getAttachmentDownloadUrl,
-    getAttachmentTargetFieldIdName,
-    getResolvedOtherFields,
-    graphQltoUpdateOneCandidate,
-    graphqlToFetchAllCandidateDataWithFieldValues,
-    questionTextToKey,
+  findManyAttachmentsQuery,
+  getAttachmentDownloadUrl,
+  getAttachmentTargetFieldIdName,
+  getResolvedOtherFields,
+  graphQltoUpdateOneCandidate,
+  graphqlToFetchAllCandidateDataWithFieldValues,
+  questionTextToKey,
 } from 'twenty-shared';
 import { z } from 'zod';
 
@@ -26,7 +26,7 @@ export interface CandidateData {
     email?: string;
     uniqueStringKey?: string;
   };
-  projects?: {
+  project?: {
     id: string;
     name: string;
     recruiterId?: string;
@@ -97,25 +97,95 @@ export interface ProcessedCandidate {
 // Zod schema for candidate data extraction
 const candidateExtractionSchema = z.object({
   name: z.string().describe('The full name of the candidate'),
-  dateOfBirth: z.string().describe('The date of birth of the candidate, or "Not available" if not found'),
-  age: z.number().describe('The estimated age of the candidate. Estimate from the date of birth or graduation year'),
-  email: z.string().describe('The email address of the candidate, or "Not available" if not found'),
-  phoneNumber: z.string().describe('The phone number of the candidate, or "Not available" if not found'),
-  aadhaarNumber: z.number().describe('The aadhaar number of the candidate, or 0 if not found'),
-  yearsOfExperience: z.number().describe('The estimated number of years of experience, estimate from the graduation year or current job title, or 0 if not found'),
-  graduationYear: z.number().describe('The graduation year of the candidate, or 0 if not found'),
-  educationalQualifications: z.string().describe('The graduation and post-graduation qualifications, or "Not available" if not found'),
-  universityCollege: z.string().describe('The university or college the candidate graduated from, or "Not available" if not found'),
-  currentJobTitle: z.string().describe('The current job title of the candidate, or "Not available" if not found'),
-  currentCompany: z.string().describe('The current company the candidate is working at, or "Not available" if not found'),
-  currentLocation: z.string().describe('The current location of the candidate, or "Not available" if not found'),
-  currentRoleDescription: z.string().describe('The role description with scale and scope, or "Not available" if not found'),
-  reportsTo: z.string().describe('Who the candidate reports to, or "Not available" if not found'),
-  functionsReportingTo: z.string().describe('Which functions report to the candidate, or "Not available" if not found'),
-  reasonForLeaving: z.string().describe('The reason for leaving the current job, or "Not available" if not found'),
-  currentSalary: z.string().describe('The current salary of the candidate, or "Not available" if not found'),
-  expectedSalary: z.string().describe('The expected salary of the candidate, or "Not available" if not found'),
-  noticePeriod: z.string().describe('The notice period of the candidate, or "Not available" if not found'),
+  dateOfBirth: z
+    .string()
+    .describe(
+      'The date of birth of the candidate, or "Not available" if not found',
+    ),
+  age: z
+    .number()
+    .describe(
+      'The estimated age of the candidate. Estimate from the date of birth or graduation year',
+    ),
+  email: z
+    .string()
+    .describe(
+      'The email address of the candidate, or "Not available" if not found',
+    ),
+  phoneNumber: z
+    .string()
+    .describe(
+      'The phone number of the candidate, or "Not available" if not found',
+    ),
+  aadhaarNumber: z
+    .number()
+    .describe('The aadhaar number of the candidate, or 0 if not found'),
+  yearsOfExperience: z
+    .number()
+    .describe(
+      'The estimated number of years of experience, estimate from the graduation year or current job title, or 0 if not found',
+    ),
+  graduationYear: z
+    .number()
+    .describe('The graduation year of the candidate, or 0 if not found'),
+  educationalQualifications: z
+    .string()
+    .describe(
+      'The graduation and post-graduation qualifications, or "Not available" if not found',
+    ),
+  universityCollege: z
+    .string()
+    .describe(
+      'The university or college the candidate graduated from, or "Not available" if not found',
+    ),
+  currentJobTitle: z
+    .string()
+    .describe(
+      'The current job title of the candidate, or "Not available" if not found',
+    ),
+  currentCompany: z
+    .string()
+    .describe(
+      'The current company the candidate is working at, or "Not available" if not found',
+    ),
+  currentLocation: z
+    .string()
+    .describe(
+      'The current location of the candidate, or "Not available" if not found',
+    ),
+  currentRoleDescription: z
+    .string()
+    .describe(
+      'The role description with scale and scope, or "Not available" if not found',
+    ),
+  reportsTo: z
+    .string()
+    .describe('Who the candidate reports to, or "Not available" if not found'),
+  functionsReportingTo: z
+    .string()
+    .describe(
+      'Which functions report to the candidate, or "Not available" if not found',
+    ),
+  reasonForLeaving: z
+    .string()
+    .describe(
+      'The reason for leaving the current job, or "Not available" if not found',
+    ),
+  currentSalary: z
+    .string()
+    .describe(
+      'The current salary of the candidate, or "Not available" if not found',
+    ),
+  expectedSalary: z
+    .string()
+    .describe(
+      'The expected salary of the candidate, or "Not available" if not found',
+    ),
+  noticePeriod: z
+    .string()
+    .describe(
+      'The notice period of the candidate, or "Not available" if not found',
+    ),
 });
 
 @Injectable()
@@ -133,9 +203,10 @@ export class CandidateDataProcessorService {
   ): Promise<ProcessedCandidate[]> {
     console.log(`Processing ${candidates.length} candidates with LLM`);
 
-    const { openAIclient: openaiClient } = await this.workspaceQueryService.initializeLLMClients(
-      await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken)
-    );
+    const { openAIclient: openaiClient } =
+      await this.workspaceQueryService.initializeLLMClients(
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken),
+      );
     const BATCH_SIZE = 5; // Process 5 candidates at a time to avoid rate limits
     const DELAY_BETWEEN_BATCHES = 1000; // 1 second delay between batches
 
@@ -144,7 +215,9 @@ export class CandidateDataProcessorService {
     // Process candidates in batches to avoid rate limiting
     for (let i = 0; i < candidates.length; i += BATCH_SIZE) {
       const batch = candidates.slice(i, i + BATCH_SIZE);
-      console.log(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(candidates.length / BATCH_SIZE)} (${batch.length} candidates)`);
+      console.log(
+        `Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(candidates.length / BATCH_SIZE)} (${batch.length} candidates)`,
+      );
 
       // Process current batch in parallel
       const batchPromises = batch.map(async (candidate) => {
@@ -155,7 +228,7 @@ export class CandidateDataProcessorService {
             apiToken,
           );
 
-          console.log("Processed data::%s", processedData);
+          console.log('Processed data::%s', processedData);
           if (!processedData) {
             console.log(`Failed to process candidate: ${candidate.name}`);
             return null;
@@ -167,7 +240,8 @@ export class CandidateDataProcessorService {
             messages: [
               {
                 role: 'system',
-                content: 'You are an AI assistant that extracts structured information from resumes and candidate data.',
+                content:
+                  'You are an AI assistant that extracts structured information from resumes and candidate data.',
               },
               { role: 'user', content: processedData.prompt },
             ],
@@ -184,7 +258,8 @@ export class CandidateDataProcessorService {
             return null;
           }
 
-          const candidateData: CandidateExtractionData = JSON.parse(candidateDataString);
+          const candidateData: CandidateExtractionData =
+            JSON.parse(candidateDataString);
 
           // Update candidate shortlist object in Twenty
           await this.updateCandidateShortlistObj(
@@ -193,7 +268,7 @@ export class CandidateDataProcessorService {
             apiToken,
           );
 
-          console.log("candidateData::%s", candidateData);
+          console.log('candidateData::%s', candidateData);
           console.log(`Successfully processed candidate: ${candidate.name}`);
 
           return {
@@ -210,17 +285,25 @@ export class CandidateDataProcessorService {
       const batchResults = await Promise.all(batchPromises);
 
       // Filter out null results and add to processed candidates
-      const validResults = batchResults.filter((result): result is ProcessedCandidate => result !== null);
+      const validResults = batchResults.filter(
+        (result): result is ProcessedCandidate => result !== null,
+      );
       processedCandidates.push(...validResults);
 
       // Add delay between batches (except for the last batch)
       if (i + BATCH_SIZE < candidates.length) {
-        console.log(`Waiting ${DELAY_BETWEEN_BATCHES}ms before processing next batch...`);
-        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
+        console.log(
+          `Waiting ${DELAY_BETWEEN_BATCHES}ms before processing next batch...`,
+        );
+        await new Promise((resolve) =>
+          setTimeout(resolve, DELAY_BETWEEN_BATCHES),
+        );
       }
     }
 
-    console.log(`Successfully processed ${processedCandidates.length} out of ${candidates.length} candidates`);
+    console.log(
+      `Successfully processed ${processedCandidates.length} out of ${candidates.length} candidates`,
+    );
     return processedCandidates;
   }
 
@@ -266,9 +349,10 @@ export class CandidateDataProcessorService {
       );
 
       // Create chat history
-      const chatHistory = messages.length > 0
-        ? messages.map(msg => `${msg.name}: ${msg.message}`).join('\n')
-        : 'No chat history found for candidate.';
+      const chatHistory =
+        messages.length > 0
+          ? messages.map((msg) => `${msg.name}: ${msg.message}`).join('\n')
+          : 'No chat history found for candidate.';
 
       // Extract resume content from attachments
       const resumeContent = await this.getResumeContentFromAttachments(
@@ -297,7 +381,10 @@ export class CandidateDataProcessorService {
         candidate_name: candidateName,
       };
     } catch (error) {
-      console.error(`Error processing candidate data for ${candidate.name}:`, error);
+      console.error(
+        `Error processing candidate data for ${candidate.name}:`,
+        error,
+      );
       return null;
     }
   }
@@ -319,15 +406,20 @@ export class CandidateDataProcessorService {
       );
 
       return (
-        response?.data?.data?.attachments?.edges?.map((edge: { node: Record<string, unknown> }) => ({
-          id: edge.node.id as string,
-          name: edge.node.name as string,
-          downloadUrl: getAttachmentDownloadUrl(edge.node),
-          fileCategory: (edge.node.fileCategory as string) || 'TEXT_DOCUMENT',
-        })) || []
+        response?.data?.data?.attachments?.edges?.map(
+          (edge: { node: Record<string, unknown> }) => ({
+            id: edge.node.id as string,
+            name: edge.node.name as string,
+            downloadUrl: getAttachmentDownloadUrl(edge.node),
+            fileCategory: (edge.node.fileCategory as string) || 'TEXT_DOCUMENT',
+          }),
+        ) || []
       );
     } catch (error) {
-      console.error(`Error fetching attachments for candidate ${candidateId}:`, error);
+      console.error(
+        `Error fetching attachments for candidate ${candidateId}:`,
+        error,
+      );
       return [];
     }
   }
@@ -351,13 +443,17 @@ export class CandidateDataProcessorService {
       });
 
       if (!response.ok) {
-        console.error(`Error fetching messages for candidate ${candidateId}: ${response.status}`);
+        console.error(
+          `Error fetching messages for candidate ${candidateId}: ${response.status}`,
+        );
         return [];
       }
 
       const messages = await response.json();
-      const sortedMessages = messages.sort((a: any, b: any) =>
-        new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime()
+      const sortedMessages = messages.sort(
+        (a: any, b: any) =>
+          new Date(a.createdAt || '').getTime() -
+          new Date(b.createdAt || '').getTime(),
       );
 
       return sortedMessages.map((msg: any) => ({
@@ -367,7 +463,10 @@ export class CandidateDataProcessorService {
         createdAt: msg.createdAt,
       }));
     } catch (error) {
-      console.error(`Error fetching candidate messages for ${candidateId}:`, error);
+      console.error(
+        `Error fetching candidate messages for ${candidateId}:`,
+        error,
+      );
       return [];
     }
   }
@@ -402,12 +501,11 @@ export class CandidateDataProcessorService {
       for (const candidate of candidates) {
         const candidateName = candidate.node.name;
         const resolvedOtherFields = getResolvedOtherFields(candidate.node);
-        const chatQuestions =
-          candidate.node?.projects?.chatQuestions ||
-          candidate.node?.projects?.edges?.[0]?.node?.chatQuestions ||
-          [];
+        const chatQuestions = candidate.node?.project?.chatQuestions || [];
 
-        for (const [fieldKey, fieldValue] of Object.entries(resolvedOtherFields)) {
+        for (const [fieldKey, fieldValue] of Object.entries(
+          resolvedOtherFields,
+        )) {
           if (
             fieldValue === null ||
             fieldValue === undefined ||
@@ -450,10 +548,15 @@ export class CandidateDataProcessorService {
 
       // This would need to be implemented to fetch meetings from Fireflies
       // For now, returning empty string as it requires external service integration
-      console.log(`Fetching meeting transcript for candidate: ${candidateName} with email: ${email}`);
+      console.log(
+        `Fetching meeting transcript for candidate: ${candidateName} with email: ${email}`,
+      );
       return '';
     } catch (error) {
-      console.error(`Error fetching meeting transcript for ${candidateName}:`, error);
+      console.error(
+        `Error fetching meeting transcript for ${candidateName}:`,
+        error,
+      );
       return '';
     }
   }
@@ -467,7 +570,11 @@ export class CandidateDataProcessorService {
       const attachments = await this.fetchAttachments(candidateId, apiToken);
       const audioFiles = attachments.filter((attachment) => {
         const downloadUrl = attachment.downloadUrl || '';
-        const extension = downloadUrl.split('?')[0].split('.').pop()?.toLowerCase();
+        const extension = downloadUrl
+          .split('?')[0]
+          .split('.')
+          .pop()
+          ?.toLowerCase();
         return ['mp3', 'wav', 'mp4', 'm4a'].includes(extension || '');
       });
 
@@ -478,10 +585,15 @@ export class CandidateDataProcessorService {
 
       // For now, returning empty array as audio transcription requires external service
       // This would need to be implemented with audio transcription service
-      console.log(`Found ${audioFiles.length} audio files for candidate: ${candidateId}`);
+      console.log(
+        `Found ${audioFiles.length} audio files for candidate: ${candidateId}`,
+      );
       return [];
     } catch (error) {
-      console.error(`Error fetching audio calls transcript for ${candidateId}:`, error);
+      console.error(
+        `Error fetching audio calls transcript for ${candidateId}:`,
+        error,
+      );
       return [];
     }
   }
@@ -496,7 +608,10 @@ export class CandidateDataProcessorService {
       console.log(`Fetching video interview QnA for candidate: ${candidateId}`);
       return [];
     } catch (error) {
-      console.error(`Error fetching video interview QnA for ${candidateId}:`, error);
+      console.error(
+        `Error fetching video interview QnA for ${candidateId}:`,
+        error,
+      );
       return [];
     }
   }
@@ -508,10 +623,15 @@ export class CandidateDataProcessorService {
     try {
       // This would need to be implemented with video interview analysis service
       // For now, returning empty array
-      console.log(`Fetching video interview questions and transcripts for candidate: ${candidateId}`);
+      console.log(
+        `Fetching video interview questions and transcripts for candidate: ${candidateId}`,
+      );
       return [];
     } catch (error) {
-      console.error(`Error fetching video interview questions and transcripts for ${candidateId}:`, error);
+      console.error(
+        `Error fetching video interview questions and transcripts for ${candidateId}:`,
+        error,
+      );
       return [];
     }
   }
@@ -521,7 +641,9 @@ export class CandidateDataProcessorService {
     apiToken: string,
   ): Promise<Record<string, any>[]> {
     try {
-      console.log(`Fetching all candidate data from databases for job: ${job.name}`);
+      console.log(
+        `Fetching all candidate data from databases for job: ${job.name}`,
+      );
 
       let dfAll: Record<string, any>[] = [];
 
@@ -539,8 +661,13 @@ export class CandidateDataProcessorService {
       // Try to get data from Google Sheets
       if (job.spreadsheet_id) {
         try {
-          console.log(`Fetching data from Google Sheets: ${job.spreadsheet_id}`);
-          dfAll = await this.getDataFromGoogleSheets(job.spreadsheet_id, apiToken);
+          console.log(
+            `Fetching data from Google Sheets: ${job.spreadsheet_id}`,
+          );
+          dfAll = await this.getDataFromGoogleSheets(
+            job.spreadsheet_id,
+            apiToken,
+          );
         } catch (error) {
           console.log(`Error reading Google Sheets data: ${error}`);
         }
@@ -578,7 +705,9 @@ export class CandidateDataProcessorService {
   ): Promise<string> {
     try {
       if (!dfAll || dfAll.length === 0) {
-        console.log(`No data found for candidate in databases: ${candidateName}`);
+        console.log(
+          `No data found for candidate in databases: ${candidateName}`,
+        );
         return '';
       }
 
@@ -658,13 +787,15 @@ export class CandidateDataProcessorService {
       if (this.hasColumns(availableColumns, resdexColumns.slice(0, 5))) {
         allColumnsToProcess = resdexColumns;
         console.log('Using Resdex columns');
-      } else if (this.hasColumns(availableColumns, googleSheetsColumns.slice(0, 5))) {
+      } else if (
+        this.hasColumns(availableColumns, googleSheetsColumns.slice(0, 5))
+      ) {
         allColumnsToProcess = googleSheetsColumns;
         console.log('Using Google Sheets columns');
       } else {
         allColumnsToProcess = [
           ...hiringColumns,
-          ...availableColumns.filter(col => col.includes('Ans(')),
+          ...availableColumns.filter((col) => col.includes('Ans(')),
         ];
         console.log('Using Hiring columns + custom columns');
       }
@@ -675,36 +806,47 @@ export class CandidateDataProcessorService {
       try {
         if (candidateEmail) {
           // Try to find by Email ID first
-          candidateRow = dfAll.find(row =>
-            row['Email ID'] && row['Email ID'].includes(candidateEmail)
-          ) || null;
+          candidateRow =
+            dfAll.find(
+              (row) =>
+                row['Email ID'] && row['Email ID'].includes(candidateEmail),
+            ) || null;
 
           if (!candidateRow) {
             // Try to find by Email
-            candidateRow = dfAll.find(row =>
-              row['Email'] && row['Email'].includes(candidateEmail)
-            ) || null;
+            candidateRow =
+              dfAll.find(
+                (row) => row['Email'] && row['Email'].includes(candidateEmail),
+              ) || null;
           }
 
           if (!candidateRow) {
-            console.log(`No row found for email: ${candidateEmail}, trying unique string key`);
-            candidateRow = dfAll.find(row =>
-              row['uniqueStringKey'] &&
-              row['uniqueStringKey'].includes(candidateUniqueStringKey)
-            ) || null;
+            console.log(
+              `No row found for email: ${candidateEmail}, trying unique string key`,
+            );
+            candidateRow =
+              dfAll.find(
+                (row) =>
+                  row['uniqueStringKey'] &&
+                  row['uniqueStringKey'].includes(candidateUniqueStringKey),
+              ) || null;
           }
         } else if (candidateUniqueStringKey) {
           // Try different unique key column names
           if (availableColumns.includes('uniqueStringKey')) {
-            candidateRow = dfAll.find(row =>
-              row['uniqueStringKey'] &&
-              row['uniqueStringKey'].includes(candidateUniqueStringKey)
-            ) || null;
+            candidateRow =
+              dfAll.find(
+                (row) =>
+                  row['uniqueStringKey'] &&
+                  row['uniqueStringKey'].includes(candidateUniqueStringKey),
+              ) || null;
           } else if (availableColumns.includes('uniqueStringKey')) {
-            candidateRow = dfAll.find(row =>
-              row['uniqueStringKey'] &&
-              row['uniqueStringKey'].includes(candidateUniqueStringKey)
-            ) || null;
+            candidateRow =
+              dfAll.find(
+                (row) =>
+                  row['uniqueStringKey'] &&
+                  row['uniqueStringKey'].includes(candidateUniqueStringKey),
+              ) || null;
           }
         }
 
@@ -714,27 +856,39 @@ export class CandidateDataProcessorService {
         }
 
         // Extract user input from the candidate's row
-        const userInput = this.extractUserInputFromRow(candidateRow, allColumnsToProcess);
+        const userInput = this.extractUserInputFromRow(
+          candidateRow,
+          allColumnsToProcess,
+        );
 
-        console.log(`Received user input for candidate: ${candidateName}, length: ${userInput.length}`);
+        console.log(
+          `Received user input for candidate: ${candidateName}, length: ${userInput.length}`,
+        );
         return userInput;
-
       } catch (error) {
         console.error(`Error finding candidate row: ${error}`);
         return '';
       }
-
     } catch (error) {
-      console.error(`Error getting user input for candidate ${candidateName}:`, error);
+      console.error(
+        `Error getting user input for candidate ${candidateName}:`,
+        error,
+      );
       return '';
     }
   }
 
-  private hasColumns(availableColumns: string[], requiredColumns: string[]): boolean {
-    return requiredColumns.every(col => availableColumns.includes(col));
+  private hasColumns(
+    availableColumns: string[],
+    requiredColumns: string[],
+  ): boolean {
+    return requiredColumns.every((col) => availableColumns.includes(col));
   }
 
-  private extractUserInputFromRow(row: Record<string, any>, columnsToProcess: string[]): string {
+  private extractUserInputFromRow(
+    row: Record<string, any>,
+    columnsToProcess: string[],
+  ): string {
     try {
       const userInputParts: string[] = [];
 
@@ -812,7 +966,10 @@ export class CandidateDataProcessorService {
 
       return resumeContent;
     } catch (error) {
-      console.error(`Error getting resume content for candidate ${candidateName}:`, error);
+      console.error(
+        `Error getting resume content for candidate ${candidateName}:`,
+        error,
+      );
       return '';
     }
   }
@@ -847,30 +1004,46 @@ export class CandidateDataProcessorService {
       const tempFilePath = path.join(tempDir, `${candidateId}_${fileName}`);
       fs.writeFileSync(tempFilePath, new Uint8Array(fileBuffer));
 
-      console.log(`Downloaded resume file: ${fileName} for candidate: ${candidateName}`);
+      console.log(
+        `Downloaded resume file: ${fileName} for candidate: ${candidateName}`,
+      );
 
       // Check if the file format is supported
-      if (!this.resumeReadParseUploadService.isSupportedResumeFormat(fileName)) {
-        console.log(`Unsupported resume format: ${fileName} for candidate: ${candidateName}`);
+      if (
+        !this.resumeReadParseUploadService.isSupportedResumeFormat(fileName)
+      ) {
+        console.log(
+          `Unsupported resume format: ${fileName} for candidate: ${candidateName}`,
+        );
         // Clean up temp file
         fs.unlinkSync(tempFilePath);
         return `[Unsupported resume format: ${fileName}]`;
       }
 
       // Use ResumeReaderService to extract text content
-      const resumeContent = await this.resumeReadParseUploadService.readResumeFile(tempFilePath);
+      const resumeContent =
+        await this.resumeReadParseUploadService.readResumeFile(tempFilePath);
 
       // Clean up temp file
       fs.unlinkSync(tempFilePath);
 
-      console.log(`Successfully processed resume: ${fileName} for candidate: ${candidateName}`);
+      console.log(
+        `Successfully processed resume: ${fileName} for candidate: ${candidateName}`,
+      );
       return resumeContent.text;
     } catch (error) {
-      console.error(`Error downloading and processing resume for ${candidateName}:`, error);
+      console.error(
+        `Error downloading and processing resume for ${candidateName}:`,
+        error,
+      );
 
       // Clean up temp file if it exists
       try {
-        const tempFilePath = path.join(process.cwd(), 'temp', `${candidateId}_${fileName}`);
+        const tempFilePath = path.join(
+          process.cwd(),
+          'temp',
+          `${candidateId}_${fileName}`,
+        );
         if (fs.existsSync(tempFilePath)) {
           fs.unlinkSync(tempFilePath);
         }
@@ -893,9 +1066,10 @@ export class CandidateDataProcessorService {
     analysisVideoInterview: Record<string, any>[],
     qnaVideosTranscript: Record<string, any>[],
   ): string {
-    const allTranscriptsText = allTranscripts.length > 0
-      ? allTranscripts.join('\n\n New Call Transcript: \n\n')
-      : '';
+    const allTranscriptsText =
+      allTranscripts.length > 0
+        ? allTranscripts.join('\n\n New Call Transcript: \n\n')
+        : '';
 
     return `
       Based on the following resume content for ${candidateName}, extract information to fill the Candidate model:
@@ -912,7 +1086,6 @@ export class CandidateDataProcessorService {
     `;
   }
 
-
   private async updateCandidateShortlistObj(
     candidateId: string,
     candidateData: CandidateExtractionData,
@@ -928,8 +1101,10 @@ export class CandidateDataProcessorService {
         apiToken,
       );
     } catch (error) {
-      console.error(`Error updating candidate shortlist obj for ${candidateId}:`, error);
+      console.error(
+        `Error updating candidate shortlist obj for ${candidateId}:`,
+        error,
+      );
     }
   }
-
 }

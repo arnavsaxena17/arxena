@@ -43,7 +43,7 @@ type WorkspaceMemberProfilePacingRecord = ObjectLiteral & {
 
 type CandidateLookupRecord = ObjectLiteral & {
   id: string;
-  projectsId?: string | null;
+  projectId?: string | null;
   linkedinProfileId?: string | null;
   linkedinUrl?: { primaryLinkUrl?: string } | null;
 };
@@ -233,11 +233,11 @@ export class OutreachUnipilePacingService {
             }
           }
 
-          const projectsId = match?.projectsId;
+          const projectId = match?.projectId;
 
-          if (isNonEmptyString(projectsId)) {
+          if (isNonEmptyString(projectId)) {
             project = await projectRepository.findOne({
-              where: { id: projectsId },
+              where: { id: projectId },
             });
           }
         }

@@ -84,10 +84,10 @@ export class VideoInterviewProcessController {
       console.log('This is the video interview link:', videoInterviewUrl);
       const companyName = person?.candidates?.edges
         .filter((edge) => edge.node.id === candidateId)
-        .map((edge) => edge.node.projects.company.name)[0];
+        .map((edge) => edge.node.project.company.name)[0];
 
       const candidateNode = person.candidates.edges[0].node;
-      const candidateJob: Project = candidateNode?.projects;
+      const candidateJob: Project = candidateNode?.project;
       const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
       if (!recruiterProfile) {
         throw new Error('Recruiter profile not found for job');
@@ -205,7 +205,7 @@ export class VideoInterviewProcessController {
         personObj?.candidates?.edges?.length > 0
           ? personObj?.candidates?.edges
               .filter((edge) => edge.node.id === candidateId)
-              .map((edge) => edge?.node?.projects?.company?.name)[0]
+              .map((edge) => edge?.node?.project?.company?.name)[0]
           : '';
 
 
@@ -213,7 +213,7 @@ export class VideoInterviewProcessController {
       (edge) => edge.node.id === candidateId,
     )[0]?.node;
   
-        const candidateJob: Project = candidateNode?.projects;
+        const candidateJob: Project = candidateNode?.project;
       const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
       if (!recruiterProfile) {
         throw new Error('Recruiter profile not found for job');

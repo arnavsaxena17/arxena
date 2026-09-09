@@ -5,7 +5,7 @@ export type CandidateEngagementNode = {
   name: string;
   company: string;
   jobTitle: string;
-  projects: {
+  project: {
     id: string;
     name: string;
     chatFlowOrder?: string[];

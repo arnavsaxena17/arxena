@@ -519,11 +519,11 @@ export const CandidateChatDrawer = React.memo(() => {
     return (
       outreachContext.projectId ??
       currentProjectId ??
-      (typeof candidateData?.projectsId === 'string'
-        ? candidateData.projectsId
+      (typeof candidateData?.projectId === 'string'
+        ? candidateData.projectId
         : null)
     );
-  }, [candidateData?.projectsId, currentProjectId, outreachContext.projectId]);
+  }, [candidateData?.projectId, currentProjectId, outreachContext.projectId]);
 
   const enrolledCandidateId = useMemo(() => {
     return chatLookupIds.candidateId && isUUID(chatLookupIds.candidateId)
@@ -1030,7 +1030,7 @@ export const CandidateChatDrawer = React.memo(() => {
         recruiterId: '',
         message: messageText,
         candidateId: selectedCandidateId || '',
-        projectsId: '',
+        projectId: '',
         position: messageHistory.length + 1,
         messageType: 'direct',
         phoneTo: phoneNumber || '',
@@ -1104,7 +1104,7 @@ export const CandidateChatDrawer = React.memo(() => {
         recruiterId: '',
         message: `Template: ${templateName}\n${getTemplatePreview(templateName)}`,
         candidateId: selectedCandidateId || '',
-        projectsId: '',
+        projectId: '',
         position: messageHistory.length + 1,
         messageType: 'template',
         phoneTo: phoneNumber || '',

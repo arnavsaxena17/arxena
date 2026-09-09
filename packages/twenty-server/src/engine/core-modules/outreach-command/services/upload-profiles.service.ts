@@ -50,7 +50,7 @@ type CandidateRecord = ObjectLiteral & {
   location?: string | null;
   peopleId?: string | null;
   personId?: string | null;
-  projectsId?: string | null;
+  projectId?: string | null;
   linkedinProfileId?: string | null;
   linkedinUrl?: { primaryLinkUrl?: string | null } | null;
 };
@@ -463,8 +463,8 @@ export class UploadProfilesService {
     return {
       people,
       projectId: candidates.find((candidate) =>
-        isNonEmptyString(candidate.projectsId),
-      )?.projectsId?.trim() ?? '',
+        isNonEmptyString(candidate.projectId),
+      )?.projectId?.trim() ?? '',
     };
   }
 

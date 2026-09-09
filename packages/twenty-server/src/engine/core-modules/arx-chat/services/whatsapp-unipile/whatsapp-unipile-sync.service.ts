@@ -102,7 +102,7 @@ export class WhatsappUnipileSyncService {
       throw new HttpException('Candidate not found', HttpStatus.NOT_FOUND);
     }
 
-    const candidateJob = candidate.projects as Project | undefined;
+    const candidateJob = candidate.project as Project | undefined;
     if (!candidateJob?.id) {
       throw new HttpException(
         'Candidate job not found for sync',

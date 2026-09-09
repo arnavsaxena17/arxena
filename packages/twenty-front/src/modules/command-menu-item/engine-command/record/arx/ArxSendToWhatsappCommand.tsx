@@ -69,7 +69,7 @@ export const ArxSendToWhatsappCommand = () => {
     }
 
     const transformedRecords = selectedRecords.map((record) => {
-      const project = record.projects as
+      const project = record.project as
         | {
             company?: { name?: string };
             pathPosition?: string;

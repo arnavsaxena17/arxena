@@ -148,14 +148,14 @@ export class BaileysWhatsappAPI {
         (sendTextMessageObj.phoneNumberTo.startsWith('+')
           ? sendTextMessageObj.phoneNumberTo.replace('+', '')
           : sendTextMessageObj.phoneNumberTo) + '@s.whatsapp.net',
-      recruiterId: candidate?.projects?.recruiterId,
+      recruiterId: candidate?.project?.recruiterId,
     };
     console.log("data", data);
     let response;
     try {
       console.log(
         'Sending message via send API as recruiter ID is ::',
-        candidate?.projects?.recruiterId,
+        candidate?.project?.recruiterId,
       );
       console.log(
         'Sending message via send API as personNode is ::',
@@ -163,15 +163,15 @@ export class BaileysWhatsappAPI {
       );
       console.log(
         'Sending message via send API as personNodeCandidate is ::',
-        candidate?.projects?.recruiterId,
+        candidate?.project?.recruiterId,
       );
       console.log(
         'Sending message via send API as nodeCandidate is ::',
-        candidate?.projects?.company?.name,
+        candidate?.project?.company?.name,
       );
-      console.log("candidate?.projects?.company?.name", candidate?.projects?.company?.name);
+      console.log("candidate?.project?.company?.name", candidate?.project?.company?.name);
       if (
-        !candidate?.projects?.company?.name
+        !candidate?.project?.company?.name
       ) {
         console.log('THERE IS NO COMPANIES NAME, SO IT WILL SHOW UNDEFINED');
       } else {
@@ -179,7 +179,7 @@ export class BaileysWhatsappAPI {
       }
 
       if (
-        !candidate?.projects?.recruiterId
+        !candidate?.project?.recruiterId
       ) {
         console.log('THERE IS NO RECRUITER ID, SO IT WILL SHOW UNDEFINED');
       } else {
@@ -321,7 +321,7 @@ export class BaileysWhatsappAPI {
     candidateJob: Project,
     apiToken: string,
   ) {
-    const jobProfile = candidate?.projects;
+    const jobProfile = candidate?.project;
 
       console.log("sendAttachmentMessageViaBaileys", sendTextMessageObj);
     const uploadFileUrl = `${baileysBaseUrl}/send-wa-message-file`;
@@ -340,7 +340,7 @@ export class BaileysWhatsappAPI {
     };
     console.log("data", data);
     const payloadToSendToWhiskeySockets = {
-      recruiterId: candidate?.projects?.recruiterId,
+      recruiterId: candidate?.project?.recruiterId,
       fileToSendData: data,
     };
 

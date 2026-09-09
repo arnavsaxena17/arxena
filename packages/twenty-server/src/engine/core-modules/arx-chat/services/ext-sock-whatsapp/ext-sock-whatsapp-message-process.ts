@@ -193,7 +193,7 @@ export class ExtSockWhatsappMessageProcessor {
     }
     // try{
     //   const recruiterProfile = await getRecruiterProfileByRecruiterId (
-    //     candidateNode?.projects?.recruiterId,
+    //     candidateNode?.project?.recruiterId,
     //     apiToken,
     //   );
     //   console.log("This is the recruiter profile in process outgoing message:", recruiterProfile)

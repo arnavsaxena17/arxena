@@ -204,7 +204,7 @@ export class ExtSockWhatsappWhitelistProcessingService implements OnModuleInit {
     let cursor: string | null = null;
 
     while (hasNextPage) {
-      const candidatesResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { projectsId: { in: projectIds } }, limit: 400, lastCursor: cursor }, apiToken);
+      const candidatesResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { projectId: { in: projectIds } }, limit: 400, lastCursor: cursor }, apiToken);
 
       const pageInfo = candidatesResponse?.data?.data?.candidates?.pageInfo;
       const edges = candidatesResponse?.data?.data?.candidates?.edges || [];
