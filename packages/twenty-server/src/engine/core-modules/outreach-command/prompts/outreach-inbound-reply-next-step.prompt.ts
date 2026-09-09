@@ -36,25 +36,81 @@ export const buildOutreachInboundReplyClassifierUserPrompt = ({
 
 export const OUTREACH_DONT_RESPOND_SENTINEL = '#DONTRESPOND#';
 
+export const OUTREACH_NO_CHANNEL_SWITCH = 'NONE';
+
+// Extraction only — no prose, no intent. Every field is checkable against the
+// transcript or the injected slots, which is what lets the validator step drop
+// anything the model invented before the graph acts on it.
+export const buildOutreachInboundSignalExtractionPrompt = ({
+  transcript,
+  slots,
+  lastChannel,
+}: {
+  transcript: string;
+  slots: string;
+  lastChannel?: string;
+}): string =>
+  [
+    "You extract structured signals from the recipient's inbound reply in a sales thread.",
+    'You do not write a message and you do not classify intent — both happen elsewhere.',
+    'Copy only what is literally in the transcript. Never infer a time or a contact detail.',
+    'The transcript may span several rounds. Read the full thread, not only the last line.',
+    'acceptedSlotIndex: 0-based index into Available slots of the one slot they accepted.',
+    '  Only when they confirmed that specific time. Vague windows ("tomorrow", "second half",',
+    '  "next week", "Friday-ish") are -1. Anything you are unsure about is -1.',
+    `requestedChannelSwitch: ${OUTREACH_NO_CHANNEL_SWITCH} unless they explicitly asked to move`,
+    '  channel ("email me", "WhatsApp me") — then LINKEDIN, WHATSAPP, or EMAIL.',
+    'prospectEmail: an address they asked us to send details to, character for character.',
+    'referralName / referralEmail / referralPhone: the other person they pointed us to,',
+    '  character for character. Naming someone without contact details is normal — leave the',
+    '  contact fields "" in that case rather than guessing.',
+    'shouldNotRespond: true only for opt-out — stop, unsubscribe, never contact me.',
+    'Use "" for any string you cannot copy from the transcript.',
+    `Available slots (index order): ${slots}`,
+    `Last inbound channel: ${lastChannel?.trim() || 'LINKEDIN'}`,
+    `Transcript: ${transcript}`,
+    'Return JSON only: {',
+    '  "acceptedSlotIndex": <integer, -1 when none>,',
+    `  "requestedChannelSwitch": "<${OUTREACH_NO_CHANNEL_SWITCH}|LINKEDIN|WHATSAPP|EMAIL>",`,
+    '  "prospectEmail": "<email they asked us to write to, or empty>",',
+    '  "referralName": "<referred person name or empty>",',
+    '  "referralEmail": "<referred person email or empty>",',
+    '  "referralPhone": "<referred person WhatsApp/phone or empty>",',
+    '  "shouldNotRespond": <true|false>',
+    '}',
+  ].join('\n');
+
+// Copy only. Times, channel and contacts arrive already validated, so this
+// prompt never decides a side effect — it writes prose around given facts.
 export const buildOutreachSalesChatDraftPrompt = ({
   name,
   title,
   transcript,
   slots,
   conversationStage,
-  lastChannel,
+  replyChannel,
+  confirmedStartsAt,
+  referralName,
+  prospectEmail,
+  shouldNotRespond,
 }: {
   name: string;
   title: string;
   transcript: string;
   slots: string;
   conversationStage: string;
-  lastChannel?: string;
+  replyChannel?: string;
+  confirmedStartsAt?: string;
+  referralName?: string;
+  prospectEmail?: string;
+  shouldNotRespond?: string;
 }): string =>
   [
     'You drive a sales outreach conversation on LinkedIn / WhatsApp / email.',
-    'Goal: qualify interest and book a 30 minute demo.',
-    'Draft the next outbound message only. Do not re-classify.',
+    'Goal: book a 20–30 minute intro, not recruit them.',
+    'Do not share a job description. Do not ask CTC, notice period, or any screening question.',
+    'Draft the next outbound message only. Do not re-classify and do not extract contacts.',
+    `If "Asked to stop" below is true, set message to "${OUTREACH_DONT_RESPOND_SENTINEL}" exactly and leave every other field empty.`,
     'Do not invent product claims they did not ask about.',
     'Be short, conversational, and to the point. Neutral tone. Plain text, no markdown.',
     'The transcript may span several rounds. Read the full thread, not only the last line.',
@@ -64,46 +120,37 @@ export const buildOutreachSalesChatDraftPrompt = ({
     'If they asked to pause / later / traveling, thank them, confirm you will pause, do not pitch.',
     'Wrong person: it is common that the recipient is not the buyer. Ask if they can refer',
     'the right person in the company. Do not stop just because they are the wrong fit.',
-    "If they name someone else but give no contact, ask for that person's email or WhatsApp.",
-    "If they have referred someone but haven't mentioned their contact details, ask them for the contact details",
-    'If they have agreed to a meeting and gave a vague time, provide a few time slots and ask if it works for them',
-    "If they share someone else's email or phone, thank them in message and fill referral*",
-    'fields. referralMessage is the intro we send that person (not the LinkedIn ack).',
-    'If they ask to email details ("email me at …"), fill prospectEmail, emailSubject, and',
-    'emailBody with the details. The ack on the inbound channel is short; details go over email.',
-    'If they shared an email or phone for themselves, acknowledge it. Do not dump a calendar.',
-    'Answer on the channel of the last inbound message. Set replyChannel to exactly one of',
-    'LINKEDIN, WHATSAPP, or EMAIL (uppercase). Default to the injected last inbound channel.',
-    'Only switch if they explicitly asked to move ("email me", "WhatsApp me").',
-    'If replyChannel is EMAIL, put the full reply in message and fill emailSubject.',
-    'Leave prospectEmail empty unless sending a second details email to a different address.',
+    'Write the reply for the injected reply channel. Keep it native to that channel.',
+    'The injected facts below are already verified against the thread. Treat them as given:',
+    '- A confirmed meeting time means the invite is already being created. Confirm it in prose',
+    '  and do not offer alternatives.',
+    '- No confirmed time means nothing is booked. Offer at most two of the Available slots in',
+    '  prose. Never invent times from "tomorrow", "second half", or "next week".',
+    '- A referral name with no contact details means you must ask them for that',
+    "  person's email or WhatsApp. Fill referralMessage only once we can reach them.",
+    '- referralMessage is the intro we send the referred person, not the ack to this recipient.',
+    '- A prospect email means they asked for details in writing: keep the ack short and put the',
+    '  detail in emailSubject and emailBody. Otherwise leave both empty.',
     'Stage playbooks:',
-    '- INTENT / ACKNOWLEDGEMENT: acknowledge, offer at most two injected slots, leave times empty.',
-    '- FOLLOW_UP_MEETING: confirm or counter using ONLY injected slots. Fill startsAt/endsAt',
-    '  only if their window matches a slot (ISO-8601). Otherwise leave times empty and ask.',
-    '- MEETING_BOOKED: confirm the agreed slot in prose and fill startsAt/endsAt from injected slots.',
-    '- SNOOZED: thank, confirm pause, empty times, no pitch.',
-    '- NOT_INTERESTED:',
-    `  message "${OUTREACH_DONT_RESPOND_SENTINEL}", empty times.`,
-    'Never invent times from "tomorrow", "second half", or "next week" unless that instant',
-    'matches an injected slot. Vague windows stay empty; confirm in prose instead.',
+    '- INTENT / ACKNOWLEDGEMENT: acknowledge, offer at most two Available slots.',
+    '- FOLLOW_UP_MEETING: confirm the injected time, or ask which Available slot works.',
+    '- MEETING_BOOKED: confirm the injected time in prose.',
+    '- SNOOZED: thank, confirm pause, no pitch.',
+    `- NOT_INTERESTED: message "${OUTREACH_DONT_RESPOND_SENTINEL}".`,
     `Available slots (only source of times): ${slots}`,
     `Conversation stage: ${conversationStage}`,
-    `Last inbound channel: ${lastChannel?.trim() || 'LINKEDIN'}`,
+    `Reply channel: ${replyChannel?.trim() || 'LINKEDIN'}`,
+    `Asked to stop: ${shouldNotRespond?.trim() || 'false'}`,
+    `Confirmed meeting time: ${confirmedStartsAt?.trim() || '(none)'}`,
+    `Referred person: ${referralName?.trim() || '(none)'}`,
+    `Prospect email for details: ${prospectEmail?.trim() || '(none)'}`,
     `Name: ${name}`,
     `Title: ${title}`,
     `Transcript: ${transcript}`,
     'Return JSON only: {',
-    '  "message": "<ack on replyChannel>",',
-    '  "startsAt": "<ISO or empty>",',
-    '  "endsAt": "<ISO or empty>",',
-    '  "replyChannel": "<LINKEDIN|WHATSAPP|EMAIL>",',
-    '  "emailSubject": "<subject or empty>",',
-    '  "emailBody": "<details email body or empty>",',
-    '  "prospectEmail": "<email they asked us to write, or empty>",',
-    '  "referralName": "<referred person name or empty>",',
-    '  "referralEmail": "<referred person email or empty>",',
-    '  "referralPhone": "<referred person WhatsApp/phone or empty>",',
+    '  "message": "<reply on the injected reply channel>",',
+    '  "emailSubject": "<subject when emailing details, else empty>",',
+    '  "emailBody": "<details email body, else empty>",',
     '  "referralMessage": "<intro to the referred person or empty>"',
     '}',
   ].join('\n');

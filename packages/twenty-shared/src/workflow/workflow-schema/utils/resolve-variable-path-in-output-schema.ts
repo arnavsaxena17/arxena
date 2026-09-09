@@ -28,7 +28,12 @@ const isRecordOutputSchema = (
 
 const isFindRecordsOutputSchema = (
   value: unknown,
-): value is { first: SchemaField; all?: unknown; totalCount: SchemaField } =>
+): value is {
+  first: SchemaField;
+  all?: unknown;
+  totalCount: SchemaField;
+  text?: SchemaField;
+} =>
   isPlainObject(value) &&
   !('_outputSchemaType' in value) &&
   isSchemaField(value['first']) &&
@@ -83,7 +88,11 @@ const resolveInFindRecords = (
     return resolveInSchema(schema.first.value, rest);
   }
 
-  if (searchResultKey === 'all' || searchResultKey === 'totalCount') {
+  if (
+    searchResultKey === 'all' ||
+    searchResultKey === 'totalCount' ||
+    searchResultKey === 'text'
+  ) {
     const field = (schema as Record<string, unknown>)[searchResultKey];
 
     if (rest.length === 0 && isSchemaField(field)) {
@@ -210,6 +219,10 @@ export const collectOutputSchemaVariablePaths = (schema: unknown): string[] => {
     }
 
     paths.push('totalCount');
+
+    if (isDefined(schema.text)) {
+      paths.push('text');
+    }
 
     return paths;
   }

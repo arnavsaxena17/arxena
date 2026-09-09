@@ -1,5 +1,9 @@
 import { FieldActorSource } from 'twenty-shared/types';
-import { AUTO_SELECT_SMART_MODEL_ID } from 'twenty-shared/constants';
+import { isDefined } from 'twenty-shared/utils';
+import {
+  AUTO_SELECT_FAST_MODEL_ID,
+  AUTO_SELECT_SMART_MODEL_ID,
+} from 'twenty-shared/constants';
 import { type EntityManager } from 'typeorm';
 import { v5 } from 'uuid';
 
@@ -8,6 +12,7 @@ import { OUTREACH_WORKFLOW_GRAPH_TEMPLATES } from 'src/engine/workspace-manager/
 import { SEEDED_OUTREACH_WORKFLOW } from 'src/engine/workspace-manager/standard-objects-prefill-data/constants/seeded-outreach-workflow-names.const';
 import {
   OUTREACH_WF_AGENT_EMAIL,
+  OUTREACH_WF_AGENT_EXTRACT,
   OUTREACH_WF_AGENT_LINKEDIN,
   OUTREACH_WF_AGENT_REPLY,
   OUTREACH_WF_FIELD,
@@ -56,6 +61,7 @@ const LF_TOKEN_TO_ID_KEY = {
   '__LF_get-calendar-availability__': 'getCalendarAvailabilityId',
   '__LF_fetch-linkedin-messages__': 'fetchLinkedinMessagesId',
   '__LF_fetch-linkedin-profile__': 'fetchLinkedinProfileId',
+  '__LF_validate-inbound-signals__': 'validateInboundSignalsId',
 } as const;
 
 const LINKEDIN_MESSAGE_SCHEMA = {
@@ -85,16 +91,6 @@ const REPLY_SCHEMA = {
       description:
         'Reply body. Use #DONTRESPOND# exactly when nothing should be sent.',
     },
-    startsAt: {
-      type: 'string' as const,
-      description:
-        'Agreed intro start as ISO-8601, or empty if no slot is confirmed',
-    },
-    endsAt: {
-      type: 'string' as const,
-      description:
-        'Agreed intro end as ISO-8601, or empty if no slot is confirmed',
-    },
     emailSubject: {
       type: 'string' as const,
       description: 'Subject when emailing details or a referral, else empty',
@@ -103,45 +99,62 @@ const REPLY_SCHEMA = {
       type: 'string' as const,
       description: 'Body for the details email to the prospect, else empty',
     },
+    referralMessage: {
+      type: 'string' as const,
+      description:
+        'Intro message to the referred person (email or WhatsApp), else empty',
+    },
+  },
+  required: ['message', 'emailSubject', 'emailBody', 'referralMessage'],
+  additionalProperties: false as const,
+};
+
+// Signals are represented so they can be checked: a slot index is either in
+// range or not, and a contact either appears in the transcript or does not.
+const EXTRACT_SIGNALS_SCHEMA = {
+  type: 'object' as const,
+  properties: {
+    acceptedSlotIndex: {
+      type: 'integer' as const,
+      description:
+        '0-based index into the injected slots of the one slot they accepted, -1 when none',
+    },
+    requestedChannelSwitch: {
+      type: 'string' as const,
+      enum: ['NONE', 'LINKEDIN', 'WHATSAPP', 'EMAIL'],
+      description:
+        'NONE unless they explicitly asked to move channel ("email me", "WhatsApp me")',
+    },
     prospectEmail: {
       type: 'string' as const,
       description: 'Address they asked us to email details to, else empty',
     },
     referralName: {
       type: 'string' as const,
-      description: 'Name of someone else to contact, else empty',
+      description: 'Name of someone else they pointed us to, else empty',
     },
     referralEmail: {
       type: 'string' as const,
-      description: 'Email of someone else to contact, else empty',
+      description: 'Email of that person as written in the thread, else empty',
     },
     referralPhone: {
       type: 'string' as const,
-      description: 'WhatsApp/phone of someone else to contact, else empty',
-    },
-    referralMessage: {
-      type: 'string' as const,
       description:
-        'Intro message to the referred person (email or WhatsApp), else empty',
+        'WhatsApp/phone of that person as written in the thread, else empty',
     },
-    replyChannel: {
-      type: 'string' as const,
-      description:
-        'LINKEDIN, WHATSAPP, or EMAIL — last inbound channel unless they asked to switch',
+    shouldNotRespond: {
+      type: 'boolean' as const,
+      description: 'True only for opt-out: stop, unsubscribe, never contact me',
     },
   },
   required: [
-    'message',
-    'startsAt',
-    'endsAt',
-    'emailSubject',
-    'emailBody',
+    'acceptedSlotIndex',
+    'requestedChannelSwitch',
     'prospectEmail',
     'referralName',
     'referralEmail',
     'referralPhone',
-    'referralMessage',
-    'replyChannel',
+    'shouldNotRespond',
   ],
   additionalProperties: false as const,
 };
@@ -202,6 +215,10 @@ export const getOutreachAgentIds = (workspaceId: string) => ({
   ),
   reply: v5(
     `gtmOutreachAgent:reply:${workspaceId}`,
+    OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
+  ),
+  extractSignals: v5(
+    `gtmOutreachAgent:extractSignals:${workspaceId}`,
     OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
   ),
 });
@@ -282,9 +299,11 @@ const upsertAgents = async ({
   const agentIds = getOutreachAgentIds(workspaceId);
   const agents = [
     {
+      key: 'linkedinMessage' as const,
       id: agentIds.linkedinMessage,
       name: 'gtm-outreach-linkedin-message',
       label: 'GTM LinkedIn message',
+      modelId: AUTO_SELECT_SMART_MODEL_ID,
       prompt:
         'You draft short LinkedIn messages for GTM outreach. Return JSON { "message": "<body>" } only.',
       responseFormat: { type: 'json', schema: LINKEDIN_MESSAGE_SCHEMA },
@@ -294,9 +313,11 @@ const upsertAgents = async ({
       ),
     },
     {
+      key: 'fallbackEmail' as const,
       id: agentIds.fallbackEmail,
       name: 'gtm-outreach-fallback-email',
       label: 'GTM fallback email',
+      modelId: AUTO_SELECT_SMART_MODEL_ID,
       prompt:
         'You draft short ICP-aligned emails when LinkedIn connect is ignored. Return JSON { "subject", "message" } only. Do not invent LinkedIn facts.',
       responseFormat: { type: 'json', schema: FALLBACK_EMAIL_SCHEMA },
@@ -306,14 +327,32 @@ const upsertAgents = async ({
       ),
     },
     {
+      key: 'reply' as const,
       id: agentIds.reply,
       name: 'gtm-outreach-reply',
       label: 'GTM inbound reply',
+      modelId: AUTO_SELECT_SMART_MODEL_ID,
       prompt:
-        'You draft short GTM sales replies after inbound classification. Return JSON { "message", "startsAt", "endsAt", "replyChannel", "emailSubject", "emailBody", "prospectEmail", "referralName", "referralEmail", "referralPhone", "referralMessage" }. replyChannel is LINKEDIN, WHATSAPP, or EMAIL matching the last inbound unless they asked to switch. Empty strings when unused. Never invent calendar times. If they are the wrong person, ask for a referral. If they ask for details by email, fill prospectEmail plus emailSubject/emailBody. If they share someone else\'s contact, fill referral* so workflow nodes can create that person and email or WhatsApp them. Do not ask recruiting screening questions or share a job description.',
+        'You draft short GTM sales replies after the inbound signals have been extracted and validated. Return JSON { "message", "emailSubject", "emailBody", "referralMessage" }. Empty strings when unused. Write copy only: the reply channel, the meeting time and every contact detail are injected as verified facts, so never restate a time that is not injected and never extract a contact yourself. If they are the wrong person, ask for a referral. Do not ask recruiting screening questions or share a job description.',
       responseFormat: { type: 'json', schema: REPLY_SCHEMA },
       universalIdentifier: v5(
         `gtmOutreachAgentUniversal:reply:${workspaceId}`,
+        OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
+      ),
+    },
+    {
+      key: 'extractSignals' as const,
+      id: agentIds.extractSignals,
+      name: 'gtm-outreach-extract-signals',
+      label: 'GTM inbound signal extraction',
+      // Extraction is a copy-from-transcript task and its output is validated
+      // downstream, so it does not need the smart model.
+      modelId: AUTO_SELECT_FAST_MODEL_ID,
+      prompt:
+        'You extract structured signals from an inbound sales reply. You never write prose and never classify intent. Return JSON { "acceptedSlotIndex", "requestedChannelSwitch", "prospectEmail", "referralName", "referralEmail", "referralPhone", "shouldNotRespond" }. acceptedSlotIndex is a 0-based index into the injected slots and is -1 unless they confirmed one specific slot. requestedChannelSwitch is NONE unless they explicitly asked to move channel. Copy contacts character for character from the transcript and leave a field empty rather than guessing — naming someone without contact details is normal. shouldNotRespond is true only for opt-out.',
+      responseFormat: { type: 'json', schema: EXTRACT_SIGNALS_SCHEMA },
+      universalIdentifier: v5(
+        `gtmOutreachAgentUniversal:extractSignals:${workspaceId}`,
         OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
       ),
     },
@@ -332,13 +371,7 @@ const upsertAgents = async ({
     )) as Array<{ id: string }>;
 
     if (existing[0]?.id) {
-      resolved[
-        agent.name === 'gtm-outreach-linkedin-message'
-          ? 'linkedinMessage'
-          : agent.name === 'gtm-outreach-fallback-email'
-            ? 'fallbackEmail'
-            : 'reply'
-      ] = existing[0].id;
+      resolved[agent.key] = existing[0].id;
 
       await entityManager.query(
         `
@@ -375,7 +408,7 @@ const upsertAgents = async ({
         'IconRobot',
         agent.label,
         agent.prompt,
-        AUTO_SELECT_SMART_MODEL_ID,
+        agent.modelId,
         JSON.stringify(agent.responseFormat),
         workspaceId,
         agent.universalIdentifier,
@@ -549,12 +582,15 @@ export const prefillOutreachWorkflows = async ({
   schemaName,
   applicationId,
   replaceExistingDrafts = false,
+  onlyGraphNames,
 }: {
   entityManager: EntityManager;
   workspaceId: string;
   schemaName: string;
   applicationId: string;
   replaceExistingDrafts?: boolean;
+  // Re-seeding one reshaped graph must not rewrite the other seeded templates.
+  onlyGraphNames?: readonly string[];
 }) => {
   const prefillIds = getOutreachWorkflowPrefillIds(workspaceId);
   const lfIds = getOutreachLogicFunctionIds(workspaceId);
@@ -624,6 +660,7 @@ export const prefillOutreachWorkflows = async ({
     [OUTREACH_WF_AGENT_LINKEDIN]: agentIds.linkedinMessage,
     [OUTREACH_WF_AGENT_EMAIL]: agentIds.fallbackEmail,
     [OUTREACH_WF_AGENT_REPLY]: agentIds.reply,
+    [OUTREACH_WF_AGENT_EXTRACT]: agentIds.extractSignals,
     [OUTREACH_WF_HARVEST_PROJECT_ID]: harvestProjectId,
     [OUTREACH_WF_FIELD.candidateId]: candidateIdFieldId,
     [OUTREACH_WF_FIELD.outreachSequenceStage]: outreachSequenceStageFieldId,
@@ -684,6 +721,10 @@ export const prefillOutreachWorkflows = async ({
 
     if (!slug) {
       throw new Error(`Unknown GTM outreach prefill workflow: ${graph.name}`);
+    }
+
+    if (isDefined(onlyGraphNames) && !onlyGraphNames.includes(graph.name)) {
+      return;
     }
 
     const existingVersions = existingByName.get(graph.name) ?? [];

@@ -14,6 +14,7 @@ import {
   OUTREACH_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
   OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
+  OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-names.const';
 import { withLlmFormattedText } from 'src/engine/core-modules/outreach-command/utils/with-llm-formatted-text.util';
 
@@ -75,46 +76,47 @@ export const OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT = {
   ],
 };
 
-export const OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT = withLlmFormattedText({
-  success: true,
-  linkedinProfileId: 'example',
-  firstName: 'Arapa',
-  lastName: 'Hara',
-  headline: 'Head of Sales',
-  about: 'B2B sales leader at Acme',
-  location: 'San Francisco',
-  linkedinUrl: 'https://www.linkedin.com/in/example',
-  profilePictureUrl: 'https://media.licdn.com/example.jpg',
-  experience: [
-    {
-      company: 'Acme',
-      position: 'Head of Sales',
-      location: 'San Francisco',
-      description: 'Owns enterprise revenue',
-      start: '2022-01',
-      end: '',
-    },
-  ],
-  skills: ['Sales', 'GTM'],
-  snapshot: '{}',
-  people: [
-    {
-      name: 'Arapa Hara',
-      firstName: 'Arapa',
-      lastName: 'Hara',
-      title: 'Head of Sales',
-      headline: 'Head of Sales',
-      company: 'Acme',
-      companyName: 'Acme',
-      location: 'San Francisco',
-      linkedinUrl: 'https://www.linkedin.com/in/example',
-      linkedinProfileId: 'example',
-      peopleId: 'example',
-      profilePictureUrl: 'https://media.licdn.com/example.jpg',
-    },
-  ],
-  error: '',
-});
+export const OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT =
+  withLlmFormattedText({
+    success: true,
+    linkedinProfileId: 'example',
+    firstName: 'Arapa',
+    lastName: 'Hara',
+    headline: 'Head of Sales',
+    about: 'B2B sales leader at Acme',
+    location: 'San Francisco',
+    linkedinUrl: 'https://www.linkedin.com/in/example',
+    profilePictureUrl: 'https://media.licdn.com/example.jpg',
+    experience: [
+      {
+        company: 'Acme',
+        position: 'Head of Sales',
+        location: 'San Francisco',
+        description: 'Owns enterprise revenue',
+        start: '2022-01',
+        end: '',
+      },
+    ],
+    skills: ['Sales', 'GTM'],
+    snapshot: '{}',
+    people: [
+      {
+        name: 'Arapa Hara',
+        firstName: 'Arapa',
+        lastName: 'Hara',
+        title: 'Head of Sales',
+        headline: 'Head of Sales',
+        company: 'Acme',
+        companyName: 'Acme',
+        location: 'San Francisco',
+        linkedinUrl: 'https://www.linkedin.com/in/example',
+        linkedinProfileId: 'example',
+        peopleId: 'example',
+        profilePictureUrl: 'https://media.licdn.com/example.jpg',
+      },
+    ],
+    error: '',
+  });
 
 export const OUTREACH_SEARCH_PEOPLE_SAMPLE_OUTPUT = {
   success: true,
@@ -247,22 +249,23 @@ export const OUTREACH_FETCH_USER_COMMENTS_SAMPLE_OUTPUT = withLlmFormattedText({
   ],
 });
 
-export const OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT = withLlmFormattedText({
-  success: true,
-  chatId: 'chat-1',
-  attendeeId: 'ACoAAExampleProviderId1234567890',
-  total: 1,
-  error: '',
-  messages: [
-    {
-      id: 'msg-1',
-      text: 'Hello',
-      timestamp: '2026-08-01T00:00:00.000Z',
-      senderId: 'ACoAAExampleProviderId1234567890',
-      isSender: false,
-    },
-  ],
-});
+export const OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT =
+  withLlmFormattedText({
+    success: true,
+    chatId: 'chat-1',
+    attendeeId: 'ACoAAExampleProviderId1234567890',
+    total: 1,
+    error: '',
+    messages: [
+      {
+        id: 'msg-1',
+        text: 'Hello',
+        timestamp: '2026-08-01T00:00:00.000Z',
+        senderId: 'ACoAAExampleProviderId1234567890',
+        isSender: false,
+      },
+    ],
+  });
 
 export const OUTREACH_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT = {
   success: true,
@@ -412,6 +415,19 @@ export const OUTREACH_FILTER_PROFILES_SAMPLE_OUTPUT = {
   ],
 };
 
+export const OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT = {
+  success: true,
+  startsAt: '2026-08-24T16:00:00.000Z',
+  endsAt: '2026-08-24T16:30:00.000Z',
+  replyChannel: 'LINKEDIN',
+  prospectEmail: '',
+  referralName: 'Priya Nair',
+  referralEmail: 'priya.nair@acme.com',
+  referralPhone: '',
+  hasReferral: true,
+  shouldNotRespond: false,
+};
+
 export const OUTREACH_LOGIC_FUNCTION_SAMPLE_OUTPUT_BY_NAME: Record<
   string,
   Record<string, unknown>
@@ -420,22 +436,32 @@ export const OUTREACH_LOGIC_FUNCTION_SAMPLE_OUTPUT_BY_NAME: Record<
     OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT,
   [OUTREACH_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME]:
     OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
-  [OUTREACH_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME]: OUTREACH_SEARCH_PEOPLE_SAMPLE_OUTPUT,
-  [OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME]: OUTREACH_SEARCH_COMPANIES_SAMPLE_OUTPUT,
-  [OUTREACH_SEARCH_JOBS_LOGIC_FUNCTION_NAME]: OUTREACH_SEARCH_JOBS_SAMPLE_OUTPUT,
-  [OUTREACH_SEARCH_POSTS_LOGIC_FUNCTION_NAME]: OUTREACH_SEARCH_POSTS_SAMPLE_OUTPUT,
+  [OUTREACH_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME]:
+    OUTREACH_SEARCH_PEOPLE_SAMPLE_OUTPUT,
+  [OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME]:
+    OUTREACH_SEARCH_COMPANIES_SAMPLE_OUTPUT,
+  [OUTREACH_SEARCH_JOBS_LOGIC_FUNCTION_NAME]:
+    OUTREACH_SEARCH_JOBS_SAMPLE_OUTPUT,
+  [OUTREACH_SEARCH_POSTS_LOGIC_FUNCTION_NAME]:
+    OUTREACH_SEARCH_POSTS_SAMPLE_OUTPUT,
   [OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME]:
     OUTREACH_FETCH_USER_COMMENTS_SAMPLE_OUTPUT,
   [OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME]:
     OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT,
   [OUTREACH_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME]:
     OUTREACH_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT,
-  [OUTREACH_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME]: OUTREACH_UPLOAD_PROFILES_SAMPLE_OUTPUT,
-  [OUTREACH_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME]: OUTREACH_UPSERT_COMPANIES_SAMPLE_OUTPUT,
-  [OUTREACH_ENRICH_CONTACT_LOGIC_FUNCTION_NAME]: OUTREACH_ENRICH_CONTACT_SAMPLE_OUTPUT,
+  [OUTREACH_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME]:
+    OUTREACH_UPLOAD_PROFILES_SAMPLE_OUTPUT,
+  [OUTREACH_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME]:
+    OUTREACH_UPSERT_COMPANIES_SAMPLE_OUTPUT,
+  [OUTREACH_ENRICH_CONTACT_LOGIC_FUNCTION_NAME]:
+    OUTREACH_ENRICH_CONTACT_SAMPLE_OUTPUT,
   [OUTREACH_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME]:
     OUTREACH_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
   [OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME]:
     OUTREACH_DETECT_FAKE_PROFILES_SAMPLE_OUTPUT,
-  [OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME]: OUTREACH_FILTER_PROFILES_SAMPLE_OUTPUT,
+  [OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME]:
+    OUTREACH_FILTER_PROFILES_SAMPLE_OUTPUT,
+  [OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME]:
+    OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT,
 };

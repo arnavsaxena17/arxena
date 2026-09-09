@@ -140,9 +140,7 @@ export class WorkflowFormDecisionPointerService {
     }
   }
 
-  async getPendingFormFields(
-    parts: WorkflowFormDecisionPointerParts,
-  ): Promise<{
+  async getPendingFormFields(parts: WorkflowFormDecisionPointerParts): Promise<{
     fields: FormFieldMetadata[];
     stepStatus: string | undefined;
     contextText: string;
@@ -195,5 +193,46 @@ export class WorkflowFormDecisionPointerService {
 
   isStepStillPending(stepStatus: string | undefined): boolean {
     return stepStatus === StepStatus.PENDING;
+  }
+
+  // Store resolved field values on the run so every approval surface (side
+  // panel, WhatsApp, hosted form) submits real text rather than {{step.field}}.
+  async persistResolvedFormFields({
+    workspaceId,
+    workflowRunId,
+    stepId,
+    fields,
+  }: {
+    workspaceId: string;
+    workflowRunId: string;
+    stepId: string;
+    fields: FormFieldMetadata[];
+  }): Promise<void> {
+    const workflowRun = await this.getWorkflowRunService().getWorkflowRunOrFail(
+      {
+        workspaceId,
+        workflowRunId,
+      },
+    );
+
+    const step = workflowRun.state?.flow?.steps?.find(
+      (workflowStep) => workflowStep.id === stepId,
+    );
+
+    if (!isDefined(step) || !isWorkflowFormAction(step)) {
+      return;
+    }
+
+    await this.getWorkflowRunService().updateWorkflowRunStep({
+      workflowRunId,
+      workspaceId,
+      step: {
+        ...step,
+        settings: {
+          ...step.settings,
+          input: fields,
+        },
+      },
+    });
   }
 }

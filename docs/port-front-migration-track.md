@@ -915,7 +915,7 @@ Edit these carefully on rebase — product integration points.
 | `packages/twenty-server/src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-workflow-version-standard-flat-field-metadata.util.ts` | working · intent | `EXPERIMENT` option on `workflowVersion.status` SELECT (A/B publish) |
 | `packages/twenty-server/src/engine/core-modules/workflow/entities/workflow-version.entity.ts` | working · intent | Core `WorkflowVersionStatus.EXPERIMENT` |
 | `packages/twenty-server/src/database/commands/upgrade-version-command/instance-commands.constant.ts` | working · intent | Register `1785600000076` add-experiment-to-workflow-version-status |
-| `packages/twenty-server/src/database/commands/upgrade-version-command/2-25/2-25-upgrade-version-command.module.ts` | working · intent | Register workspace cmds `1785600000077`, `…096`, `…097`, `…098` |
+| `packages/twenty-server/src/database/commands/upgrade-version-command/2-25/2-25-upgrade-version-command.module.ts` | working · intent | Register workspace cmds `1785600000077`, `…096`, `…097`, `…098`, `…101` |
 | `packages/twenty-shared/src/workflow/schemas/workflow-run-schema.ts` | working · intent | `workflowVersionId` / `name` nullable to match DB |
 | `packages/twenty-shared/src/types/SidePanelPages.ts` | working · intent | Add `CandidateChat` side-panel page (candidate profile/chat drawer) |
 | `packages/twenty-front/src/modules/side-panel/constants/SidePanelPagesConfig.tsx` | working · intent | Mount `CandidateChatDrawer` (+ WhatsApp templates) for `CandidateChat` |

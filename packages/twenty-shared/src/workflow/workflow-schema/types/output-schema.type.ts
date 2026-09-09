@@ -54,6 +54,9 @@ export type FindRecordsOutputSchema = {
   first: RecordNode;
   all: Leaf | undefined;
   totalCount: Leaf;
+  // Pretty-printed JSON of first/all/totalCount — used by AI_AGENT prompts
+  // via {{step.text}}. Optional so older persisted schemas still type-check.
+  text?: Leaf;
 };
 
 export type IteratorOutputSchema = {

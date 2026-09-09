@@ -11,6 +11,8 @@ import { type WorkflowFormAction } from 'src/modules/workflow/workflow-executor/
 
 const profileStepId = 'b8e1d002-4a22-4c22-8c22-000000000002';
 
+const draftStepId = '4582ca2b-2b80-4c4f-a802-7a923b296322';
+
 const buildFormStep = (): WorkflowFormAction => ({
   id: 'form-step',
   type: WorkflowActionType.FORM,
@@ -29,6 +31,13 @@ const buildFormStep = (): WorkflowFormAction => ({
         type: FieldMetadataType.BOOLEAN,
         label: 'Approve send',
       },
+      {
+        id: 'editedBody',
+        name: 'editedBody',
+        type: FieldMetadataType.TEXT,
+        label: 'Message',
+        value: `{{${draftStepId}.message}}`,
+      },
     ],
     notifyOnPending: {
       channels: ['WHATSAPP_OFFICIAL'],
@@ -45,11 +54,13 @@ const buildFormStep = (): WorkflowFormAction => ({
 describe('FormWorkflowAction', () => {
   let action: FormWorkflowAction;
   let mockNotify: jest.Mock;
+  let mockPersistResolvedFormFields: jest.Mock;
 
   beforeEach(async () => {
     mockNotify = jest.fn().mockResolvedValue({
       results: [{ channel: 'WHATSAPP_OFFICIAL', status: 'sent_flow' }],
     });
+    mockPersistResolvedFormFields = jest.fn().mockResolvedValue(undefined);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -60,7 +71,10 @@ describe('FormWorkflowAction', () => {
         },
         {
           provide: WorkflowFormDecisionPointerService,
-          useValue: { createPointer: jest.fn().mockReturnValue('pointer') },
+          useValue: {
+            createPointer: jest.fn().mockReturnValue('pointer'),
+            persistResolvedFormFields: mockPersistResolvedFormFields,
+          },
         },
         {
           provide: GlobalWorkspaceOrmManager,
@@ -97,6 +111,47 @@ describe('FormWorkflowAction', () => {
           WHATSAPP_OFFICIAL: '+919892197720',
         }),
         detailsText: 'Contact: ANISH SHAH',
+      }),
+    );
+  });
+
+  it('persists resolved field values on the run when the form parks', async () => {
+    await action.execute({
+      currentStepId: 'form-step',
+      steps: [buildFormStep()],
+      context: {
+        [draftStepId]: { message: 'Hi Anish — great to connect.' },
+      },
+      runInfo: { workspaceId: 'workspace-1', workflowRunId: 'run-1' },
+    });
+
+    expect(mockPersistResolvedFormFields).toHaveBeenCalledWith(
+      expect.objectContaining({
+        stepId: 'form-step',
+        workflowRunId: 'run-1',
+        fields: expect.arrayContaining([
+          expect.objectContaining({
+            name: 'editedBody',
+            value: 'Hi Anish — great to connect.',
+          }),
+        ]),
+      }),
+    );
+  });
+
+  it('collapses unresolvable field variables to empty instead of raw templates', async () => {
+    await action.execute({
+      currentStepId: 'form-step',
+      steps: [buildFormStep()],
+      context: {},
+      runInfo: { workspaceId: 'workspace-1', workflowRunId: 'run-1' },
+    });
+
+    expect(mockPersistResolvedFormFields).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fields: expect.arrayContaining([
+          expect.objectContaining({ name: 'editedBody', value: '' }),
+        ]),
       }),
     );
   });

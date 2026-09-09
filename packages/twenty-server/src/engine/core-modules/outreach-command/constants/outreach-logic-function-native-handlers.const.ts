@@ -14,6 +14,7 @@ import {
   OUTREACH_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
   OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
+  OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-names.const';
 
 const SEARCH_PEOPLE_FOR_COMPANY_HANDLER = `// Native GTM action: SearchPeopleForCompanyService.
@@ -219,6 +220,24 @@ export const main = async (params: {
 };
 `;
 
+const VALIDATE_INBOUND_SIGNALS_HANDLER = `// Native GTM action: validateOutreachInboundSignals.
+// Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
+export const main = async (params: {
+  transcript?: string;
+  slots?: Array<{ startsAt?: string; endsAt?: string }>;
+  lastInboundChannel?: string;
+  acceptedSlotIndex?: number;
+  requestedChannelSwitch?: string;
+  prospectEmail?: string;
+  referralName?: string;
+  referralEmail?: string;
+  referralPhone?: string;
+  shouldNotRespond?: boolean;
+}) => {
+  return params;
+};
+`;
+
 const NATIVE_HANDLERS: Record<string, string> = {
   [OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME]:
     SEARCH_PEOPLE_FOR_COMPANY_HANDLER,
@@ -228,7 +247,8 @@ const NATIVE_HANDLERS: Record<string, string> = {
   [OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME]: SEARCH_COMPANIES_HANDLER,
   [OUTREACH_SEARCH_JOBS_LOGIC_FUNCTION_NAME]: SEARCH_JOBS_HANDLER,
   [OUTREACH_SEARCH_POSTS_LOGIC_FUNCTION_NAME]: SEARCH_POSTS_HANDLER,
-  [OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME]: FETCH_USER_COMMENTS_HANDLER,
+  [OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME]:
+    FETCH_USER_COMMENTS_HANDLER,
   [OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME]:
     FETCH_LINKEDIN_MESSAGES_HANDLER,
   [OUTREACH_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME]:
@@ -238,8 +258,11 @@ const NATIVE_HANDLERS: Record<string, string> = {
   [OUTREACH_ENRICH_CONTACT_LOGIC_FUNCTION_NAME]: ENRICH_CONTACT_HANDLER,
   [OUTREACH_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME]:
     GET_CALENDAR_AVAILABILITY_HANDLER,
-  [OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME]: DETECT_FAKE_PROFILES_HANDLER,
+  [OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME]:
+    DETECT_FAKE_PROFILES_HANDLER,
   [OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME]: FILTER_PROFILES_HANDLER,
+  [OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME]:
+    VALIDATE_INBOUND_SIGNALS_HANDLER,
 };
 
 export const getOutreachNativeLogicFunctionHandler = (name: string): string => {

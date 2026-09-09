@@ -135,6 +135,12 @@ describe('resolveVariablePathInOutputSchema', () => {
         label: 'Total Count',
         value: 'Count of matching records',
       },
+      text: {
+        isLeaf: true,
+        type: 'string',
+        label: 'Formatted text (for AI agent)',
+        value: 'Pretty-printed JSON of first/all/totalCount',
+      },
     };
 
     it('should resolve a field under "first"', () => {
@@ -163,6 +169,16 @@ describe('resolveVariablePathInOutputSchema', () => {
           propertyPath: ['totalCount'],
         }).found,
       ).toBe(true);
+    });
+
+    it('should resolve text', () => {
+      const result = resolveVariablePathInOutputSchema({
+        schema: findRecordsSchema,
+        propertyPath: ['text'],
+      });
+
+      expect(result.found).toBe(true);
+      expect(result.label).toBe('Formatted text (for AI agent)');
     });
 
     it('should not resolve a missing field under "first"', () => {

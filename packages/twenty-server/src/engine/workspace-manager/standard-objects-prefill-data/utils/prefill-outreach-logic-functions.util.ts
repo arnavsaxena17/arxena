@@ -19,6 +19,7 @@ import {
   OUTREACH_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
   OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
+  OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-names.const';
 import {
   OUTREACH_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT,
@@ -36,6 +37,7 @@ import {
   OUTREACH_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
   OUTREACH_DETECT_FAKE_PROFILES_SAMPLE_OUTPUT,
   OUTREACH_FILTER_PROFILES_SAMPLE_OUTPUT,
+  OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT,
 } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-sample-output.const';
 import { type PrefilledWorkflowCodeStepLogicFunctionDefinition } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-code-step-logic-functions.util';
 
@@ -170,6 +172,10 @@ export const getOutreachLogicFunctionIds = (workspaceId: string) => ({
   ),
   filterProfilesId: uuidv5(
     `${workspaceId}:filter-profiles`,
+    OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  validateInboundSignalsId: uuidv5(
+    `${workspaceId}:validate-inbound-signals`,
     OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
   ),
 });
@@ -1110,6 +1116,79 @@ export const getOutreachLogicFunctionDefinitions = (
           },
         ],
         sampleOutput: OUTREACH_FILTER_PROFILES_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.validateInboundSignalsId,
+      name: OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME,
+      description:
+        'Ground the inbound signal extraction agent before the graph acts on it. Resolves acceptedSlotIndex against the injected calendar slots, blanks any referral or prospect contact that does not appear in the transcript, and normalises replyChannel to the last inbound channel unless a switch was requested. No LLM call.',
+      sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
+        OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Validate inbound signals',
+        icon: 'IconShieldCheck',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              transcript: { type: 'string', label: 'Transcript' },
+              slots: {
+                type: 'array',
+                label: 'Slots',
+                items: {
+                  type: 'object',
+                  properties: {
+                    startsAt: { type: 'string', label: 'Starts at' },
+                    endsAt: { type: 'string', label: 'Ends at' },
+                  },
+                },
+              },
+              lastInboundChannel: {
+                type: 'string',
+                label: 'Last inbound channel',
+              },
+              acceptedSlotIndex: {
+                type: 'number',
+                label: 'Accepted slot index',
+              },
+              requestedChannelSwitch: {
+                type: 'string',
+                label: 'Requested channel switch',
+              },
+              prospectEmail: { type: 'string', label: 'Prospect email' },
+              referralName: { type: 'string', label: 'Referral name' },
+              referralEmail: { type: 'string', label: 'Referral email' },
+              referralPhone: { type: 'string', label: 'Referral phone' },
+              shouldNotRespond: {
+                type: 'boolean',
+                label: 'Should not respond',
+              },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              startsAt: { type: 'string', label: 'Starts at' },
+              endsAt: { type: 'string', label: 'Ends at' },
+              replyChannel: { type: 'string', label: 'Reply channel' },
+              prospectEmail: { type: 'string', label: 'Prospect email' },
+              referralName: { type: 'string', label: 'Referral name' },
+              referralEmail: { type: 'string', label: 'Referral email' },
+              referralPhone: { type: 'string', label: 'Referral phone' },
+              hasReferral: { type: 'boolean', label: 'Has referral' },
+              shouldNotRespond: {
+                type: 'boolean',
+                label: 'Should not respond',
+              },
+            },
+          },
+        ],
+        sampleOutput: OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT,
       },
     },
   ];

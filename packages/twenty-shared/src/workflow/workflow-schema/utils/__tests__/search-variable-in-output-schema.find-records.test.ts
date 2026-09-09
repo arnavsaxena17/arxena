@@ -86,6 +86,44 @@ describe('searchVariableInOutputSchema - find records output schema', () => {
     });
   });
 
+  it('should handle text variable correctly', () => {
+    const result = searchVariableThroughFindRecordsOutputSchema({
+      stepName: 'Find Companies',
+      searchRecordOutputSchema: {
+        ...mockSearchRecordSchema,
+        text: {
+          isLeaf: true,
+          label: 'Formatted text (for AI agent)',
+          value: 'Pretty-printed JSON of first/all/totalCount',
+          type: 'string',
+        },
+      },
+      rawVariableName: '{{step1.text}}',
+      isFullRecord: false,
+    });
+
+    expect(result).toEqual({
+      variableLabel: 'Formatted text (for AI agent)',
+      variablePathLabel: 'Find Companies > Formatted text (for AI agent)',
+      variableType: FieldMetadataType.TEXT,
+    });
+  });
+
+  it('should fall back to a default label when text is missing from the schema', () => {
+    const result = searchVariableThroughFindRecordsOutputSchema({
+      stepName: 'Find Companies',
+      searchRecordOutputSchema: mockSearchRecordSchema,
+      rawVariableName: '{{step1.text}}',
+      isFullRecord: false,
+    });
+
+    expect(result).toEqual({
+      variableLabel: 'Formatted text (for AI agent)',
+      variablePathLabel: 'Find Companies > Formatted text (for AI agent)',
+      variableType: FieldMetadataType.TEXT,
+    });
+  });
+
   it('should handle first record field access correctly', () => {
     const result = searchVariableThroughFindRecordsOutputSchema({
       stepName: 'Find Companies',

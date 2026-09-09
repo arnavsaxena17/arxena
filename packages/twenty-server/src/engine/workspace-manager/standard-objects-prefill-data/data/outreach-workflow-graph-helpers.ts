@@ -18,6 +18,7 @@ export const OUTREACH_WF_PROFILE_NO_COMPANY_STEP_ID =
 export const OUTREACH_WF_AGENT_LINKEDIN = '__AGENT_linkedin_message__';
 export const OUTREACH_WF_AGENT_EMAIL = '__AGENT_fallback_email__';
 export const OUTREACH_WF_AGENT_REPLY = '__AGENT_reply__';
+export const OUTREACH_WF_AGENT_EXTRACT = '__AGENT_extract_signals__';
 
 export const OUTREACH_WF_HARVEST_PROJECT_ID = '__PROJECT_OUTREACH_HARVEST__';
 
@@ -67,23 +68,12 @@ export const OUTREACH_WF_AI_EMAIL_OUTPUT = {
   },
 };
 
+// Copy only. Times, channel and contacts come from the validated signals step.
 export const OUTREACH_WF_AI_REPLY_OUTPUT = {
   message: {
     isLeaf: true,
     type: 'string',
     label: 'message',
-    value: '',
-  },
-  startsAt: {
-    isLeaf: true,
-    type: 'string',
-    label: 'startsAt',
-    value: '',
-  },
-  endsAt: {
-    isLeaf: true,
-    type: 'string',
-    label: 'endsAt',
     value: '',
   },
   emailSubject: {
@@ -97,6 +87,27 @@ export const OUTREACH_WF_AI_REPLY_OUTPUT = {
     type: 'string',
     label: 'emailBody',
     value: '',
+  },
+  referralMessage: {
+    isLeaf: true,
+    type: 'string',
+    label: 'referralMessage',
+    value: '',
+  },
+};
+
+export const OUTREACH_WF_AI_EXTRACT_OUTPUT = {
+  acceptedSlotIndex: {
+    isLeaf: true,
+    type: 'number',
+    label: 'acceptedSlotIndex',
+    value: -1,
+  },
+  requestedChannelSwitch: {
+    isLeaf: true,
+    type: 'string',
+    label: 'requestedChannelSwitch',
+    value: 'NONE',
   },
   prospectEmail: {
     isLeaf: true,
@@ -122,17 +133,11 @@ export const OUTREACH_WF_AI_REPLY_OUTPUT = {
     label: 'referralPhone',
     value: '',
   },
-  referralMessage: {
+  shouldNotRespond: {
     isLeaf: true,
-    type: 'string',
-    label: 'referralMessage',
-    value: '',
-  },
-  replyChannel: {
-    isLeaf: true,
-    type: 'string',
-    label: 'replyChannel',
-    value: 'LINKEDIN',
+    type: 'boolean',
+    label: 'shouldNotRespond',
+    value: false,
   },
 };
 

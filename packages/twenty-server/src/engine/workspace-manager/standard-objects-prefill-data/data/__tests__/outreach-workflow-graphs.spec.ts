@@ -128,6 +128,8 @@ describe('GTM outreach workflow graphs', () => {
     const byName = (name: string) =>
       updatedSteps.find((step) => step.name === name);
 
+    expect(byName('Extract inbound signals')).toBeDefined();
+    expect(byName('Validate inbound signals')).toBeDefined();
     expect(byName('Draft sales reply')).toBeDefined();
     expect(byName('Skip send if #DONTRESPOND#')).toBeDefined();
     expect(byName('Mark WAITING_REPLY')).toBeDefined();
@@ -149,8 +151,43 @@ describe('GTM outreach workflow graphs', () => {
     expect(draftReply.settings?.input?.prompt).not.toContain(
       '.first.message}}',
     );
-    expect(draftReply.settings?.outputSchema?.startsAt).toBeDefined();
-    expect(draftReply.settings?.outputSchema?.endsAt).toBeDefined();
+
+    // The drafter writes copy only. Times, channel and contacts are decided by
+    // the extract step and grounded by the validate step.
+    expect(Object.keys(draftReply.settings?.outputSchema ?? {}).sort()).toEqual(
+      ['emailBody', 'emailSubject', 'message', 'referralMessage'],
+    );
+
+    const extractSignals = byName('Extract inbound signals') as {
+      type: string;
+      settings?: { outputSchema?: Record<string, unknown> };
+    };
+    const validateSignals = byName('Validate inbound signals') as {
+      type: string;
+      settings?: { outputSchema?: Record<string, unknown> };
+    };
+
+    expect(extractSignals.type).toBe('AI_AGENT');
+    expect(validateSignals.type).toBe('LOGIC_FUNCTION');
+
+    // A slot index is checkable; a free-text ISO date is not.
+    expect(
+      extractSignals.settings?.outputSchema?.acceptedSlotIndex,
+    ).toBeDefined();
+    expect(extractSignals.settings?.outputSchema?.startsAt).toBeUndefined();
+    expect(validateSignals.settings?.outputSchema?.startsAt).toBeDefined();
+    expect(validateSignals.settings?.outputSchema?.endsAt).toBeDefined();
+    expect(validateSignals.settings?.outputSchema?.replyChannel).toBeDefined();
+
+    expect(byName('Get calendar availability')?.nextStepIds).toEqual([
+      byName('Extract inbound signals')?.id,
+    ]);
+    expect(byName('Extract inbound signals')?.nextStepIds).toEqual([
+      byName('Validate inbound signals')?.id,
+    ]);
+    expect(byName('Validate inbound signals')?.nextStepIds).toEqual([
+      byName('Draft sales reply')?.id,
+    ]);
 
     const approveReply = updatedSteps.find(
       (step) => step.name === 'Approve / edit reply',
@@ -160,23 +197,30 @@ describe('GTM outreach workflow graphs', () => {
       };
     };
     const extraFields = approveReply.settings?.input ?? [];
+    const fieldValue = (name: string) =>
+      extraFields.find((field) => field.name === name)?.value;
 
-    expect(extraFields).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          name: 'startsAt',
-          value: expect.stringContaining('.startsAt}}'),
-        }),
-        expect.objectContaining({
-          name: 'endsAt',
-          value: expect.stringContaining('.endsAt}}'),
-        }),
-        expect.objectContaining({
-          name: 'replyChannel',
-          value: expect.stringContaining('.replyChannel}}'),
-        }),
-      ]),
-    );
+    // Everything a downstream branch gates on must come from the validated
+    // step, never straight from an agent.
+    for (const gatedField of [
+      'startsAt',
+      'endsAt',
+      'replyChannel',
+      'prospectEmail',
+      'referralName',
+      'referralEmail',
+      'referralPhone',
+    ]) {
+      expect(fieldValue(gatedField)).toBe(
+        `{{${byName('Validate inbound signals')?.id}.${gatedField}}}`,
+      );
+    }
+
+    for (const copyField of ['emailSubject', 'emailBody', 'referralMessage']) {
+      expect(fieldValue(copyField)).toBe(
+        `{{${byName('Draft sales reply')?.id}.${copyField}}}`,
+      );
+    }
 
     const skipSend = byName('Skip send if #DONTRESPOND#');
     const skipFilters = (
@@ -206,7 +250,6 @@ describe('GTM outreach workflow graphs', () => {
     expect(byName('Send reply on LinkedIn')).toBeDefined();
     expect(byName('Send reply by email')).toBeDefined();
     expect(byName('Send reply on WhatsApp')).toBeDefined();
-    expect(draftReply.settings?.outputSchema?.replyChannel).toBeDefined();
 
     const findChats = updatedSteps.find(
       (step) =>
@@ -425,7 +468,9 @@ describe('GTM outreach workflow graphs', () => {
 
     // Single hoisted member/profile pair — the duplicate "no company" pair is gone.
     expect(byName('Load workspace member (no company)')).toBeUndefined();
-    expect(byName('Load workspace member profile (no company)')).toBeUndefined();
+    expect(
+      byName('Load workspace member profile (no company)'),
+    ).toBeUndefined();
     expect(
       steps.filter((step) => step.name === 'Load workspace member'),
     ).toHaveLength(1);
@@ -465,6 +510,69 @@ describe('GTM outreach workflow graphs', () => {
     );
 
     expect(upsertedGraphs).toHaveLength(1);
+  });
+
+  it('only reads keys that the referenced agent or logic function declares', () => {
+    const collectTemplates = (value: unknown, found: string[]): string[] => {
+      if (typeof value === 'string') {
+        found.push(...(value.match(/\{\{[^{}]+\}\}/g) ?? []));
+      } else if (Array.isArray(value)) {
+        for (const item of value) {
+          collectTemplates(item, found);
+        }
+      } else if (typeof value === 'object' && value !== null) {
+        for (const item of Object.values(value)) {
+          collectTemplates(item, found);
+        }
+      }
+
+      return found;
+    };
+
+    for (const graph of OUTREACH_WORKFLOW_GRAPH_TEMPLATES) {
+      const steps = graph.steps as Array<
+        GraphStep & { settings?: { outputSchema?: Record<string, unknown> } }
+      >;
+      // Only steps whose output contract is declared in this file — record
+      // steps derive theirs from object metadata at runtime.
+      const declaredOutputs = new Map(
+        steps
+          .filter(
+            (step) =>
+              step.type === 'AI_AGENT' || step.type === 'LOGIC_FUNCTION',
+          )
+          .map((step) => [
+            step.id,
+            new Set(Object.keys(step.settings?.outputSchema ?? {})),
+          ]),
+      );
+
+      const checkedTemplates: string[] = [];
+      const unknownKeyTemplates: string[] = [];
+
+      for (const template of collectTemplates(steps, [])) {
+        const [stepId, firstKey] = template.slice(2, -2).split('.');
+        const outputKeys = declaredOutputs.get(stepId);
+
+        if (!outputKeys || outputKeys.size === 0) {
+          continue;
+        }
+
+        checkedTemplates.push(template);
+
+        if (!outputKeys.has(firstKey)) {
+          unknownKeyTemplates.push(`${graph.name}: ${template}`);
+        }
+      }
+
+      expect(unknownKeyTemplates).toEqual([]);
+
+      if (graph.name === 'Outreach — Candidate Sequencer') {
+        // Guards the guard: the sequencer reads agent output all over the
+        // REPLIED branch, so an empty check here means the walk broke.
+        expect(checkedTemplates.length).toBeGreaterThan(10);
+      }
+    }
   });
 
   it('includes fieldsToUpdate on every UPDATE_RECORD step', () => {

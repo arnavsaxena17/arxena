@@ -361,7 +361,7 @@ const searchThroughFindRecordsOutputSchema = ({
 
   const parts = parseVariablePath(stripBrackets(rawVariableName));
   const stepId = parts[0];
-  const searchResultKey = parts[1] as 'first' | 'all' | 'totalCount';
+  const searchResultKey = parts[1] as 'first' | 'all' | 'totalCount' | 'text';
   const remainingParts = parts.slice(2);
 
   if (!isDefined(stepId) || !isDefined(searchResultKey)) {
@@ -411,6 +411,23 @@ const searchThroughFindRecordsOutputSchema = ({
         ? `${basePath} (${stepNameLabel})`
         : basePath,
       variableType: FieldMetadataType.ARRAY,
+    };
+  }
+
+  // Runtime FIND_RECORDS result always includes `text`; the frontend schema
+  // generator does too. Without this branch every {{step.text}} chip renders
+  // as "Not Found" even though the path resolves at execution time.
+  if (searchResultKey === 'text') {
+    const textField = findRecordsOutputSchema.text;
+    const label = textField?.label ?? 'Formatted text (for AI agent)';
+    const basePath = `${stepName} > ${label}`;
+
+    return {
+      variableLabel: label,
+      variablePathLabel: stepNameLabel
+        ? `${basePath} (${stepNameLabel})`
+        : basePath,
+      variableType: FieldMetadataType.TEXT,
     };
   }
 

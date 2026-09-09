@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
-import { resolveInput } from 'twenty-shared/utils';
+import { isDefined, resolveInput } from 'twenty-shared/utils';
 import { type ObjectLiteral } from 'typeorm';
 
 import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/interfaces/workflow-action.interface';
@@ -21,6 +21,25 @@ import { type WorkflowActionOutput } from 'src/modules/workflow/workflow-executo
 import { findStepOrThrow } from 'src/modules/workflow/workflow-executor/utils/find-step-or-throw.util';
 import { isWorkflowFormAction } from 'src/modules/workflow/workflow-executor/workflow-actions/form/guards/is-workflow-form-action.guard';
 import { type WorkflowFormActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/form/types/workflow-form-action-settings.type';
+
+// An unresolvable variable must collapse to empty: the raw {{step.field}}
+// template would otherwise read as filled text to IF_ELSE and send steps.
+const resolveFormFieldValue = (
+  value: unknown,
+  context: Record<string, unknown>,
+): unknown => {
+  if (!isDefined(value)) {
+    return value;
+  }
+
+  const resolvedValue = resolveInput(value, context);
+
+  if (typeof value === 'string' && !isDefined(resolvedValue)) {
+    return '';
+  }
+
+  return resolvedValue;
+};
 
 @Injectable()
 export class FormWorkflowAction implements WorkflowAction {
@@ -66,10 +85,7 @@ export class FormWorkflowAction implements WorkflowAction {
 
     const formSnapshot = (settings.input ?? []).map((field) => ({
       ...field,
-      value:
-        field.value !== undefined && field.value !== null
-          ? resolveInput(field.value, context)
-          : field.value,
+      value: resolveFormFieldValue(field.value, context),
     }));
 
     const autoApproved = await this.shouldAutoApproveForm({
@@ -95,11 +111,25 @@ export class FormWorkflowAction implements WorkflowAction {
       return { result };
     }
 
+    try {
+      await this.workflowFormDecisionPointerService.persistResolvedFormFields({
+        workspaceId: runInfo.workspaceId,
+        workflowRunId: runInfo.workflowRunId,
+        stepId: currentStepId,
+        fields: formSnapshot,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Failed to persist resolved form fields for run ${runInfo.workflowRunId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+
     if (settings.notifyOnPending) {
       try {
         const contextResolved = String(
-          resolveInput(settings.notifyOnPending.contextTemplate, context) ??
-            '',
+          resolveInput(settings.notifyOnPending.contextTemplate, context) ?? '',
         );
         const detailsResolved = settings.notifyOnPending.detailsTemplate
           ? String(

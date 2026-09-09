@@ -17,7 +17,12 @@ import {
   OUTREACH_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
   OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
+  OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-names.const';
+import {
+  validateOutreachInboundSignals,
+  type OutreachInboundSignalsInput,
+} from 'src/engine/core-modules/outreach-command/utils/validate-outreach-inbound-signals.util';
 import { FetchCompanyDetailsService } from 'src/engine/core-modules/outreach-command/services/fetch-company-details.service';
 import { FetchLinkedinMessagesService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-messages.service';
 import { FetchLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-profile.service';
@@ -249,6 +254,12 @@ export class OutreachLogicFunctionNativeExecutor
           onlyOnePersonPerCompany?: boolean | string;
         },
       });
+    }
+
+    if (name === OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME) {
+      return validateOutreachInboundSignals(
+        payload as OutreachInboundSignalsInput,
+      );
     }
 
     return {};
