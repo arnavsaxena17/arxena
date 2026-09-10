@@ -14,8 +14,9 @@ import { workflowAiAgentActionAgentState } from '@/workflow/workflow-steps/workf
 import { WorkflowVariablePicker } from '@/workflow/workflow-variables/components/WorkflowVariablePicker';
 import { useMutation } from '@apollo/client/react';
 import { t } from '@lingui/core/macro';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { AgentResponseSchema, ModelConfiguration } from 'twenty-shared/ai';
+import { isDefined } from 'twenty-shared/utils';
 import { useDebouncedCallback } from 'use-debounce';
 import {
   UpdateOneAgentDocument,
@@ -29,6 +30,23 @@ type WorkflowAiAgentPromptTabProps = {
   onPromptChange: (value: string) => void;
   onActionUpdate?: (action: WorkflowAiAgentAction) => void;
   modelSelectDropdownId?: string;
+};
+
+const EMPTY_AGENT_RESPONSE_SCHEMA: AgentResponseSchema = {
+  type: 'object',
+  properties: {},
+  required: [],
+  additionalProperties: false,
+};
+
+const getOutputSchemaFieldsFromAgentSchema = (
+  schema: AgentResponseSchema | undefined,
+): OutputSchemaField[] => {
+  const existingFields = schemaToFields(schema ?? EMPTY_AGENT_RESPONSE_SCHEMA);
+
+  return existingFields.length > 0
+    ? existingFields
+    : [createDefaultOutputSchemaField()];
 };
 
 export const WorkflowAiAgentPromptTab = ({
@@ -48,20 +66,26 @@ export const WorkflowAiAgentPromptTab = ({
 
   const [outputSchemaFields, setOutputSchemaFields] = useState<
     OutputSchemaField[]
-  >(() => {
-    const schema: AgentResponseSchema = workflowAiAgentActionAgent
-      ?.responseFormat?.schema || {
-      type: 'object' as const,
-      properties: {},
-      required: [],
-      additionalProperties: false as const,
-    };
-    const existingFields = schemaToFields(schema);
+  >(() =>
+    getOutputSchemaFieldsFromAgentSchema(
+      workflowAiAgentActionAgent?.responseFormat?.schema,
+    ),
+  );
 
-    return existingFields.length > 0
-      ? existingFields
-      : [createDefaultOutputSchemaField()];
-  });
+  // Agent is fetched asynchronously; useState only runs on mount, so re-hydrate
+  // once the agent (and its responseFormat) lands — otherwise first open shows
+  // a blank "Untitled field" until the panel remounts.
+  useEffect(() => {
+    if (!isDefined(workflowAiAgentActionAgent)) {
+      return;
+    }
+
+    setOutputSchemaFields(
+      getOutputSchemaFieldsFromAgentSchema(
+        workflowAiAgentActionAgent.responseFormat?.schema,
+      ),
+    );
+  }, [workflowAiAgentActionAgent?.id]);
 
   const updateAgentField = async (
     input: Omit<UpdateOneAgentMutationVariables['input'], 'id'>,

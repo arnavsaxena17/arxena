@@ -11,13 +11,13 @@ import { workflowDiagramPanOnDragComponentState } from '@/workflow/workflow-diag
 import { workflowDiagramWaitingNodesDimensionsComponentState } from '@/workflow/workflow-diagram/states/workflowDiagramWaitingNodesDimensionsComponentState';
 import { workflowSelectedNodeComponentState } from '@/workflow/workflow-diagram/states/workflowSelectedNodeComponentState';
 import {
-    type StartNodeCreationParams,
-    type WorkflowConnection,
-    type WorkflowDiagram,
-    type WorkflowDiagramEdge,
-    type WorkflowDiagramEdgeType,
-    type WorkflowDiagramNode,
-    type WorkflowDiagramNodeType,
+  type StartNodeCreationParams,
+  type WorkflowConnection,
+  type WorkflowDiagram,
+  type WorkflowDiagramEdge,
+  type WorkflowDiagramEdgeType,
+  type WorkflowDiagramNode,
+  type WorkflowDiagramNodeType,
 } from '@/workflow/workflow-diagram/types/WorkflowDiagram';
 import { assertWorkflowConnectionOrThrow } from '@/workflow/workflow-diagram/utils/assertWorkflowConnectionOrThrow';
 import { WorkflowDiagramConnection } from '@/workflow/workflow-diagram/workflow-edges/components/WorkflowDiagramConnection';
@@ -31,31 +31,31 @@ import { WORKFLOW_DIAGRAM_NODE_DEFAULT_TARGET_HANDLE_ID } from '@/workflow/workf
 import { workflowInsertStepIdsComponentState } from '@/workflow/workflow-steps/states/workflowInsertStepIdsComponentState';
 import { styled } from '@linaria/react';
 import {
-    Background,
-    ReactFlow,
-    applyEdgeChanges,
-    applyNodeChanges,
-    useReactFlow,
-    type Connection,
-    type EdgeChange,
-    type FitViewOptions,
-    type NodeChange,
-    type NodeProps,
-    type OnBeforeDelete,
-    type OnConnectStartParams,
-    type OnDelete,
-    type OnNodeDrag,
-    type OnReconnect,
+  Background,
+  ReactFlow,
+  applyEdgeChanges,
+  applyNodeChanges,
+  useReactFlow,
+  type Connection,
+  type EdgeChange,
+  type FitViewOptions,
+  type NodeChange,
+  type NodeProps,
+  type OnBeforeDelete,
+  type OnConnectStartParams,
+  type OnDelete,
+  type OnNodeDrag,
+  type OnReconnect,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useStore } from 'jotai';
 import React, {
-    useCallback,
-    useContext,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
 } from 'react';
 import { isDefined } from 'twenty-shared/utils';
 import { Tag, type TagColor } from 'twenty-ui/data-display';
@@ -336,9 +336,7 @@ export const WorkflowDiagramCanvasBase = ({
       reactflow.setViewport(
         {
           x: centeredXPosition,
-          y: resetVerticalPosition
-            ? topAlignedYPosition
-            : currentViewport.y,
+          y: resetVerticalPosition ? topAlignedYPosition : currentViewport.y,
           zoom: defaultFitViewOptions.maxZoom,
         },
         { duration: animate ? 300 : 0 },
@@ -366,6 +364,14 @@ export const WorkflowDiagramCanvasBase = ({
     },
     [setFlowViewport, workflowDiagramCallbackState, store],
   );
+
+  const centerWorkflowDiagram = useCallback(() => {
+    handleSetFlowViewportOnChange({
+      workflowDiagramFlowInitialized: true,
+      animate: true,
+      resetVerticalPosition: true,
+    });
+  }, [handleSetFlowViewportOnChange]);
 
   useEffect(() => {
     handleSetFlowViewportOnChange({
@@ -675,6 +681,7 @@ export const WorkflowDiagramCanvasBase = ({
       {isDefined(handlePaneContextMenu) && (
         <WorkflowDiagramRightClickCommandMenu
           showAddNode={showAddNodeInContextMenu}
+          onCenter={centerWorkflowDiagram}
         />
       )}
 

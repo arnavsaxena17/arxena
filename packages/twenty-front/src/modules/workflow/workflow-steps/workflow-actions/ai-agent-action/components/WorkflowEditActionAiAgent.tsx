@@ -214,8 +214,12 @@ export const WorkflowEditActionAiAgent = ({
   const isCurrentAgentLoaded =
     isDefined(workflowAiAgentActionAgent) &&
     workflowAiAgentActionAgent.id === agentId;
+  // Keep showing the skeleton until the atom is synced. Query can finish before
+  // the useEffect that copies agentData into workflowAiAgentActionAgentState.
   const isWaitingForAgent =
-    hasResolvableAgentId && agentLoading && !isCurrentAgentLoaded;
+    hasResolvableAgentId &&
+    !isCurrentAgentLoaded &&
+    (agentLoading || isDefined(agentData?.findOneAgent));
 
   const handleViewRole = () => {
     if (isDefined(role?.id)) {

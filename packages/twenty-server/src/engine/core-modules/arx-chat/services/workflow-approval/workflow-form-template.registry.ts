@@ -1,13 +1,9 @@
 export const WORKFLOW_FORM_REGISTRY_NAMES = {
   BOOLEAN: 'wf_form_boolean',
   BOOLEAN_TEXT: 'wf_form_boolean_text',
-  TEXT: 'wf_form_text',
-  NUMBER: 'wf_form_number',
-  DATE: 'wf_form_date',
+  // Calendar meeting HITL: pick a slot or enter a time
   SELECT: 'wf_form_select',
-  MULTI_SELECT: 'wf_form_multi_select',
-  TEXT_NUMBER_DATE: 'wf_form_text_number_date',
-  GENERIC: 'wf_form_generic',
+  DATE: 'wf_form_date',
   HOSTED: 'wf_form_hosted',
 } as const;
 
@@ -52,38 +48,13 @@ export const WORKFLOW_FORM_TEMPLATE_REGISTRY: WorkflowFormRegistryEntry[] = [
     templateKind: 'flow_or_url',
   },
   {
-    name: WORKFLOW_FORM_REGISTRY_NAMES.TEXT,
-    signatureTypes: ['TEXT'],
-    templateKind: 'flow_or_url',
-  },
-  {
-    name: WORKFLOW_FORM_REGISTRY_NAMES.NUMBER,
-    signatureTypes: ['NUMBER'],
-    templateKind: 'flow_or_url',
-  },
-  {
-    name: WORKFLOW_FORM_REGISTRY_NAMES.DATE,
-    signatureTypes: ['DATE'],
-    templateKind: 'flow_or_url',
-  },
-  {
     name: WORKFLOW_FORM_REGISTRY_NAMES.SELECT,
     signatureTypes: ['SELECT'],
     templateKind: 'flow_or_url',
   },
   {
-    name: WORKFLOW_FORM_REGISTRY_NAMES.MULTI_SELECT,
-    signatureTypes: ['MULTI_SELECT'],
-    templateKind: 'flow_or_url',
-  },
-  {
-    name: WORKFLOW_FORM_REGISTRY_NAMES.TEXT_NUMBER_DATE,
-    signatureTypes: ['DATE', 'NUMBER', 'TEXT'],
-    templateKind: 'flow_or_url',
-  },
-  {
-    name: WORKFLOW_FORM_REGISTRY_NAMES.GENERIC,
-    signatureTypes: [],
+    name: WORKFLOW_FORM_REGISTRY_NAMES.DATE,
+    signatureTypes: ['DATE'],
     templateKind: 'flow_or_url',
   },
   {
@@ -133,9 +104,6 @@ export const resolveWorkflowFormRegistryEntry = (
   const hostedEntry = getRegistryEntryByName(
     WORKFLOW_FORM_REGISTRY_NAMES.HOSTED,
   )!;
-  const genericEntry = getRegistryEntryByName(
-    WORKFLOW_FORM_REGISTRY_NAMES.GENERIC,
-  )!;
 
   const normalizedTypes = fields
     .map((field) => field.type.trim().toUpperCase())
@@ -160,7 +128,8 @@ export const resolveWorkflowFormRegistryEntry = (
     return exactMatch;
   }
 
-  return genericEntry;
+  // Non-outreach / multi-field forms use hosted fill (no dedicated Flow templates)
+  return hostedEntry;
 };
 
 // Meta URL button dynamic suffix: token/fill → /workflow-approval/{token}/fill

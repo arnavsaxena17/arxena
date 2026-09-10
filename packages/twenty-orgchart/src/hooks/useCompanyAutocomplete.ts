@@ -4,7 +4,7 @@ import { useDebouncedCallback } from 'use-debounce';
 import {
   ORG_CHART_COMPANY_SEARCH_HEADER,
   ORG_CHART_COMPANY_SEARCH_HEADER_VALUE,
-} from 'twenty-shared';
+} from 'twenty-shared/constants';
 
 export type CompanyAutocompleteItem = {
   name: string;
@@ -42,7 +42,9 @@ const buildCompanySearchRequestHeaders = (
     : {}),
 });
 
-export const useCompanyAutocomplete = (options: UseCompanyAutocompleteOptions) => {
+export const useCompanyAutocomplete = (
+  options: UseCompanyAutocompleteOptions,
+) => {
   const {
     baseUrl,
     accessToken,
@@ -64,7 +66,9 @@ export const useCompanyAutocomplete = (options: UseCompanyAutocompleteOptions) =
       setError(null);
 
       try {
-        const path = autocompletePath.startsWith('/') ? autocompletePath : `/${autocompletePath}`;
+        const path = autocompletePath.startsWith('/')
+          ? autocompletePath
+          : `/${autocompletePath}`;
         const autocompleteUrl = `${baseUrl.replace(/\/$/, '')}${path}`;
         const response = await fetch(autocompleteUrl, {
           method: 'POST',
@@ -139,7 +143,9 @@ export type CompanyInfoFromPdl = {
   linkedinDisplayName?: string;
 };
 
-export const useCompanyInfoLookup = (options: UseCompanyAutocompleteOptions) => {
+export const useCompanyInfoLookup = (
+  options: UseCompanyAutocompleteOptions,
+) => {
   const {
     baseUrl,
     accessToken,
@@ -162,7 +168,9 @@ export const useCompanyInfoLookup = (options: UseCompanyAutocompleteOptions) => 
       setError(null);
 
       try {
-        const path = autocompletePath.startsWith('/') ? autocompletePath : `/${autocompletePath}`;
+        const path = autocompletePath.startsWith('/')
+          ? autocompletePath
+          : `/${autocompletePath}`;
         const autocompleteUrl = `${baseUrl.replace(/\/$/, '')}${path}`;
         const response = await fetch(autocompleteUrl, {
           method: 'POST',

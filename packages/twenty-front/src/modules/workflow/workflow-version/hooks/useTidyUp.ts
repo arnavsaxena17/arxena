@@ -1,5 +1,6 @@
-import { useGetUpdatableWorkflowVersionOrThrow } from '@/workflow/hooks/useGetUpdatableWorkflowVersionOrThrow';
 import { useAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useAtomComponentState';
+import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
+import { workflowVisualizerWorkflowVersionIdComponentState } from '@/workflow/states/workflowVisualizerWorkflowVersionIdComponentState';
 import { workflowDiagramComponentState } from '@/workflow/workflow-diagram/states/workflowDiagramComponentState';
 import { getOrganizedDiagram } from '@/workflow/workflow-diagram/utils/getOrganizedDiagram';
 import { useTidyUpWorkflowVersion } from '@/workflow/workflow-version/hooks/useTidyUpWorkflowVersion';
@@ -11,8 +12,9 @@ export const useTidyUp = () => {
   );
 
   const { tidyUpWorkflowVersion } = useTidyUpWorkflowVersion();
-  const { getUpdatableWorkflowVersion } =
-    useGetUpdatableWorkflowVersionOrThrow();
+  const workflowVersionId = useAtomComponentStateValue(
+    workflowVisualizerWorkflowVersionIdComponentState,
+  );
 
   const tidyUpLocally = () => {
     if (!isDefined(workflowDiagram)) {
@@ -23,12 +25,11 @@ export const useTidyUp = () => {
   };
 
   const tidyUp = async () => {
-    if (!isDefined(workflowDiagram)) {
+    if (!isDefined(workflowDiagram) || !isDefined(workflowVersionId)) {
       return;
     }
 
-    const workflowVersionId = await getUpdatableWorkflowVersion();
-
+    // Layout-only: update the current version in place (no draft fork)
     const tidiedUpDiagram = await tidyUpWorkflowVersion(
       workflowVersionId,
       workflowDiagram,

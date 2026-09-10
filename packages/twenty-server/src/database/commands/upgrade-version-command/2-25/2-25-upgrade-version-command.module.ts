@@ -92,6 +92,7 @@ import { SyncOutreachMultiChannelReplyCommand } from 'src/database/commands/upgr
 import { SeedOutreachCandidateSequencerCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000098-seed-outreach-candidate-sequencer.command';
 import { StandardizeCandidateProjectFkCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000100-standardize-candidate-project-fk.command';
 import { SplitOutreachReplyAgentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000101-split-outreach-reply-agent.command';
+import { ResyncOutreachHitlApproveEditFormCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000102-resync-outreach-hitl-approve-edit-form.command';
 import { DropChatMessageObjWithTimeStampCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000099-drop-chat-message-obj-with-time-stamp.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { MigrateOtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/migrate-other-fields.service';
@@ -218,6 +219,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     DropChatMessageObjWithTimeStampCommand,
     StandardizeCandidateProjectFkCommand,
     SplitOutreachReplyAgentCommand,
+    ResyncOutreachHitlApproveEditFormCommand,
     MigrateOtherFieldsService,
     DropCandidateFieldObjectsCommand,
   ],

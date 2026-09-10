@@ -511,9 +511,19 @@ export class AccountRateLimiterService implements OnModuleInit {
     method: LinkedinRateLimitMethod,
     limits: LinkedinAccountRateLimits,
   ): RateLimitWindow[] {
+    // Cumulative daily budget shared by every LinkedIn method on this account
+    const endpointDay = this.window(
+      accountId,
+      'linkedin',
+      'endpoint',
+      'day',
+      limits.endpointPerDay,
+      MS_PER_DAY,
+    );
+
     switch (method) {
       case 'endpoint':
-        return [];
+        return [endpointDay];
       case 'company_profile':
         return [
           this.window(
@@ -532,6 +542,7 @@ export class AccountRateLimiterService implements OnModuleInit {
             limits.companyProfilePerDay,
             MS_PER_DAY,
           ),
+          endpointDay,
         ];
       case 'profile':
         return [
@@ -551,6 +562,7 @@ export class AccountRateLimiterService implements OnModuleInit {
             limits.profilePerDay,
             MS_PER_DAY,
           ),
+          endpointDay,
         ];
       case 'connection_request':
         return [
@@ -570,6 +582,7 @@ export class AccountRateLimiterService implements OnModuleInit {
             limits.connectionRequestPerDay,
             MS_PER_DAY,
           ),
+          endpointDay,
         ];
       case 'comment':
         return [
@@ -589,6 +602,7 @@ export class AccountRateLimiterService implements OnModuleInit {
             limits.commentPerDay,
             MS_PER_DAY,
           ),
+          endpointDay,
         ];
       case 'message':
         return [
@@ -608,6 +622,7 @@ export class AccountRateLimiterService implements OnModuleInit {
             limits.messagePerDay,
             MS_PER_DAY,
           ),
+          endpointDay,
         ];
       case 'inmail':
         return [
@@ -627,6 +642,7 @@ export class AccountRateLimiterService implements OnModuleInit {
             limits.inmailPerDay,
             MS_PER_DAY,
           ),
+          endpointDay,
         ];
       case 'search':
         return [
@@ -646,6 +662,7 @@ export class AccountRateLimiterService implements OnModuleInit {
             limits.searchPerDay,
             MS_PER_DAY,
           ),
+          endpointDay,
         ];
       default:
         return [];

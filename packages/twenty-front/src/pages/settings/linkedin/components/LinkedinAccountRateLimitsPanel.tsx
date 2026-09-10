@@ -52,6 +52,13 @@ export const LinkedinAccountRateLimitsPanel = ({
       flushUsage={flushUsage}
       fields={[
         {
+          key: 'endpointPerDay',
+          label: 'All LinkedIn requests',
+          windowLabel: 'per 1 day',
+          ...LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS.endpointPerDay,
+          recommended: DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.endpointPerDay,
+        },
+        {
           key: 'companyProfilePer10Seconds',
           label: 'Get company profile',
           windowLabel: 'per 10 sec',

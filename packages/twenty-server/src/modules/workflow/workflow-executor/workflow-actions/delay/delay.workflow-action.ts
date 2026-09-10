@@ -15,8 +15,10 @@ import { type WorkflowActionInput } from 'src/modules/workflow/workflow-executor
 import { type WorkflowActionOutput } from 'src/modules/workflow/workflow-executor/types/workflow-action-output.type';
 import { findStepOrThrow } from 'src/modules/workflow/workflow-executor/utils/find-step-or-throw.util';
 import { isWorkflowDelayAction } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/guards/is-workflow-delay-action.guard';
+import { type WorkflowDelayActionInput } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/types/workflow-delay-action-input.type';
+import { convertWorkflowDelayDurationToMs } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/utils/convert-workflow-delay-duration-to-ms.util';
+import { pickRandomWorkflowDelayDurationMs } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/utils/pick-random-workflow-delay-duration-ms.util';
 import { scheduleResumeDelayedWorkflowJob } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/utils/resume-delayed-workflow-job-scheduler.util';
-import { WorkflowDelayActionInput } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/types/workflow-delay-action-input.type';
 
 @Injectable()
 export class DelayWorkflowAction implements WorkflowAction {
@@ -77,18 +79,33 @@ export class DelayWorkflowAction implements WorkflowAction {
         );
       }
 
-      const {
-        days = 0,
-        hours = 0,
-        minutes = 0,
-        seconds = 0,
-      } = workflowActionInput.duration;
+      delayInMs = convertWorkflowDelayDurationToMs(
+        workflowActionInput.duration,
+      );
+    } else if (workflowActionInput.delayType === 'RANDOM_DURATION') {
+      if (
+        !workflowActionInput.minDuration ||
+        !workflowActionInput.maxDuration
+      ) {
+        throw new WorkflowStepExecutorException(
+          'Minimum and maximum durations are required for random duration delay',
+          WorkflowStepExecutorExceptionCode.INVALID_STEP_INPUT,
+        );
+      }
 
-      delayInMs =
-        days * 24 * 60 * 60 * 1000 +
-        hours * 60 * 60 * 1000 +
-        minutes * 60 * 1000 +
-        seconds * 1000;
+      try {
+        delayInMs = pickRandomWorkflowDelayDurationMs({
+          minDuration: workflowActionInput.minDuration,
+          maxDuration: workflowActionInput.maxDuration,
+        });
+      } catch (error) {
+        throw new WorkflowStepExecutorException(
+          error instanceof Error
+            ? error.message
+            : 'Invalid random duration delay range',
+          WorkflowStepExecutorExceptionCode.INVALID_STEP_INPUT,
+        );
+      }
     } else {
       throw new WorkflowStepExecutorException(
         'Invalid delay type',

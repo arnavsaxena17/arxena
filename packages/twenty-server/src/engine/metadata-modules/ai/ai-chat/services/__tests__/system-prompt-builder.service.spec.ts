@@ -92,6 +92,9 @@ describe('SystemPromptBuilderService', () => {
         'Search types available: classic, sales_navigator',
       );
       expect(result).toContain('Recruiter: not available');
+      expect(result).toContain(
+        'linkedin_unipile_get_own_profile with accountId=acc-123',
+      );
     });
 
     it('instructs the model not to call Unipile search when disconnected', () => {
@@ -107,6 +110,7 @@ describe('SystemPromptBuilderService', () => {
 
       expect(result).toContain('LinkedIn (Unipile): not connected');
       expect(result).toContain('Do not call search_linkedin_*');
+      expect(result).toContain('linkedin_unipile_get_own_profile');
       expect(result).toContain('dataSource: "harvest"');
     });
   });

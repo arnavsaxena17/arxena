@@ -1,6 +1,6 @@
 import { HeadlessEngineCommandWrapperEffect } from '@/command-menu-item/engine-command/components/HeadlessEngineCommandWrapperEffect';
 import { useHeadlessCommandContextApi } from '@/command-menu-item/engine-command/hooks/useHeadlessCommandContextApi';
-import { useGetUpdatableWorkflowVersionOrThrow } from '@/workflow/hooks/useGetUpdatableWorkflowVersionOrThrow';
+import { workflowVisualizerWorkflowVersionIdComponentState } from '@/workflow/states/workflowVisualizerWorkflowVersionIdComponentState';
 import { getWorkflowVisualizerComponentInstanceId } from '@/workflow/utils/getWorkflowVisualizerComponentInstanceId';
 import { workflowDiagramComponentState } from '@/workflow/workflow-diagram/states/workflowDiagramComponentState';
 import { useTidyUpWorkflowVersion } from '@/workflow/workflow-version/hooks/useTidyUpWorkflowVersion';
@@ -16,8 +16,6 @@ export const TidyUpWorkflowSingleRecordCommand = () => {
   const instanceId = getWorkflowVisualizerComponentInstanceId({
     recordId: recordId ?? '',
   });
-  const { getUpdatableWorkflowVersion } =
-    useGetUpdatableWorkflowVersionOrThrow(instanceId);
 
   if (!isDefined(recordId)) {
     throw new Error('Record ID is required to tidy up workflow');
@@ -33,8 +31,17 @@ export const TidyUpWorkflowSingleRecordCommand = () => {
       return;
     }
 
-    const workflowVersionId = await getUpdatableWorkflowVersion();
+    const workflowVersionIdAtom =
+      workflowVisualizerWorkflowVersionIdComponentState.atomFamily({
+        instanceId,
+      });
+    const workflowVersionId = store.get(workflowVersionIdAtom);
 
+    if (!isDefined(workflowVersionId)) {
+      throw new Error('Workflow version ID is required to tidy up workflow');
+    }
+
+    // Layout-only: update the current version in place (no draft fork)
     await tidyUpWorkflowVersion(workflowVersionId, workflowDiagram);
   };
 

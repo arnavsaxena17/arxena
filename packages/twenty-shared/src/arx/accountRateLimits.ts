@@ -12,6 +12,8 @@ export const MS_PER_TEN_SECONDS = 10_000;
 export const MS_PER_THIRTY_SECONDS = 30_000;
 
 export type LinkedinAccountRateLimits = {
+  // Shared daily budget across every LinkedIn Unipile method on the account
+  endpointPerDay: number;
   companyProfilePer10Seconds: number;
   companyProfilePerDay: number;
   profilePer10Seconds: number;
@@ -46,6 +48,7 @@ export type WhatsappAccountRateLimitsMap = Record<
 >;
 
 export const DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS: LinkedinAccountRateLimits = {
+  endpointPerDay: 100,
   companyProfilePer10Seconds: 1,
   companyProfilePerDay: 100,
   profilePer10Seconds: 1,
@@ -73,6 +76,7 @@ export const LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS: Record<
   keyof LinkedinAccountRateLimits,
   { min: number; max: number }
 > = {
+  endpointPerDay: { min: 1, max: 500 },
   companyProfilePer10Seconds: { min: 1, max: 3 },
   companyProfilePerDay: { min: 1, max: 200 },
   profilePer10Seconds: { min: 1, max: 3 },
@@ -134,6 +138,7 @@ export const LINKEDIN_ACCOUNT_RATE_LIMIT_USAGE_WINDOWS: Record<
   keyof LinkedinAccountRateLimits,
   AccountRateLimitUsageWindow
 > = {
+  endpointPerDay: { method: 'endpoint', windowName: 'day' },
   companyProfilePer10Seconds: { method: 'company_profile', windowName: '10s' },
   companyProfilePerDay: { method: 'company_profile', windowName: 'day' },
   profilePer10Seconds: { method: 'profile', windowName: '10s' },
@@ -197,9 +202,16 @@ export const getWhatsappAccountRateLimitUsageWindow = (
   ];
 };
 
-const clampInt = (value: unknown, min: number, max: number, fallback: number) => {
+const clampInt = (
+  value: unknown,
+  min: number,
+  max: number,
+  fallback: number,
+) => {
   const parsed =
-    typeof value === 'number' ? value : Number.parseInt(String(value ?? ''), 10);
+    typeof value === 'number'
+      ? value
+      : Number.parseInt(String(value ?? ''), 10);
 
   if (!Number.isFinite(parsed)) {
     return fallback;
@@ -236,9 +248,11 @@ export const sanitizeLinkedinAccountRateLimits = (
 
   const result = { ...DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS };
 
-  (Object.keys(DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS) as Array<
-    keyof LinkedinAccountRateLimits
-  >).forEach((key) => {
+  (
+    Object.keys(DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS) as Array<
+      keyof LinkedinAccountRateLimits
+    >
+  ).forEach((key) => {
     const bounds = LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS[key];
     result[key] = clampInt(
       migrated[key],
@@ -256,9 +270,11 @@ export const sanitizeWhatsappAccountRateLimits = (
 ): WhatsappAccountRateLimits => {
   const result = { ...DEFAULT_WHATSAPP_ACCOUNT_RATE_LIMITS };
 
-  (Object.keys(DEFAULT_WHATSAPP_ACCOUNT_RATE_LIMITS) as Array<
-    keyof WhatsappAccountRateLimits
-  >).forEach((key) => {
+  (
+    Object.keys(DEFAULT_WHATSAPP_ACCOUNT_RATE_LIMITS) as Array<
+      keyof WhatsappAccountRateLimits
+    >
+  ).forEach((key) => {
     const bounds = WHATSAPP_ACCOUNT_RATE_LIMIT_BOUNDS[key];
     result[key] = clampInt(
       value?.[key],

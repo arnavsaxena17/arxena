@@ -8,9 +8,18 @@ import { WorkflowStepFooter } from '@/workflow/workflow-steps/components/Workflo
 import { WorkflowVariablePicker } from '@/workflow/workflow-variables/components/WorkflowVariablePicker';
 import { t } from '@lingui/core/macro';
 import { useEffect, useState } from 'react';
-import { IconCalendar, IconHourglassHigh } from 'twenty-ui/icon';
-import { HorizontalSeparator } from 'twenty-ui/layout';
+import { IconCalendar, IconClock, IconHourglassHigh } from 'twenty-ui/icon';
 import { type SelectOption } from 'twenty-ui/input';
+import { HorizontalSeparator } from 'twenty-ui/layout';
+
+type WorkflowDelayDurationFields = {
+  days?: number | string;
+  hours?: number | string;
+  minutes?: number | string;
+  seconds?: number | string;
+};
+
+type WorkflowDelayType = 'SCHEDULED_DATE' | 'DURATION' | 'RANDOM_DURATION';
 
 type WorkflowEditActionDelayProps = {
   action: WorkflowDelayAction;
@@ -28,35 +37,45 @@ export const WorkflowEditActionDelay = ({
   action,
   actionOptions,
 }: WorkflowEditActionDelayProps) => {
-  const [localDuration, setLocalDuration] = useState<{
-    days?: number | string;
-    hours?: number | string;
-    minutes?: number | string;
-    seconds?: number | string;
-  }>(() => ({
-    days: action.settings.input.duration?.days,
-    hours: action.settings.input.duration?.hours,
-    minutes: action.settings.input.duration?.minutes,
-    seconds: action.settings.input.duration?.seconds,
-  }));
+  const [localDuration, setLocalDuration] =
+    useState<WorkflowDelayDurationFields>(() => ({
+      days: action.settings.input.duration?.days,
+      hours: action.settings.input.duration?.hours,
+      minutes: action.settings.input.duration?.minutes,
+      seconds: action.settings.input.duration?.seconds,
+    }));
+  const [localMinDuration, setLocalMinDuration] =
+    useState<WorkflowDelayDurationFields>(() => ({
+      days: action.settings.input.minDuration?.days,
+      hours: action.settings.input.minDuration?.hours,
+      minutes: action.settings.input.minDuration?.minutes,
+      seconds: action.settings.input.minDuration?.seconds,
+    }));
+  const [localMaxDuration, setLocalMaxDuration] =
+    useState<WorkflowDelayDurationFields>(() => ({
+      days: action.settings.input.maxDuration?.days,
+      hours: action.settings.input.maxDuration?.hours,
+      minutes: action.settings.input.maxDuration?.minutes,
+      seconds: action.settings.input.maxDuration?.seconds,
+    }));
 
   useEffect(() => {
-    if (action.settings.input.delayType !== 'DURATION') {
+    if (action.settings.input.delayType === 'DURATION') {
       setLocalDuration({
-        days: undefined,
-        hours: undefined,
-        minutes: undefined,
-        seconds: undefined,
+        days: action.settings.input.duration?.days,
+        hours: action.settings.input.duration?.hours,
+        minutes: action.settings.input.duration?.minutes,
+        seconds: action.settings.input.duration?.seconds,
       });
 
       return;
     }
 
     setLocalDuration({
-      days: action.settings.input.duration?.days,
-      hours: action.settings.input.duration?.hours,
-      minutes: action.settings.input.duration?.minutes,
-      seconds: action.settings.input.duration?.seconds,
+      days: undefined,
+      hours: undefined,
+      minutes: undefined,
+      seconds: undefined,
     });
   }, [
     action.settings.input.delayType,
@@ -66,7 +85,49 @@ export const WorkflowEditActionDelay = ({
     action.settings.input.duration?.seconds,
   ]);
 
-  const delayOptions: Array<SelectOption<'SCHEDULED_DATE' | 'DURATION'>> = [
+  useEffect(() => {
+    if (action.settings.input.delayType === 'RANDOM_DURATION') {
+      setLocalMinDuration({
+        days: action.settings.input.minDuration?.days,
+        hours: action.settings.input.minDuration?.hours,
+        minutes: action.settings.input.minDuration?.minutes,
+        seconds: action.settings.input.minDuration?.seconds,
+      });
+      setLocalMaxDuration({
+        days: action.settings.input.maxDuration?.days,
+        hours: action.settings.input.maxDuration?.hours,
+        minutes: action.settings.input.maxDuration?.minutes,
+        seconds: action.settings.input.maxDuration?.seconds,
+      });
+
+      return;
+    }
+
+    setLocalMinDuration({
+      days: undefined,
+      hours: undefined,
+      minutes: undefined,
+      seconds: undefined,
+    });
+    setLocalMaxDuration({
+      days: undefined,
+      hours: undefined,
+      minutes: undefined,
+      seconds: undefined,
+    });
+  }, [
+    action.settings.input.delayType,
+    action.settings.input.minDuration?.days,
+    action.settings.input.minDuration?.hours,
+    action.settings.input.minDuration?.minutes,
+    action.settings.input.minDuration?.seconds,
+    action.settings.input.maxDuration?.days,
+    action.settings.input.maxDuration?.hours,
+    action.settings.input.maxDuration?.minutes,
+    action.settings.input.maxDuration?.seconds,
+  ]);
+
+  const delayOptions: Array<SelectOption<WorkflowDelayType>> = [
     {
       label: t`At a specific date or time`,
       value: 'SCHEDULED_DATE',
@@ -77,11 +138,14 @@ export const WorkflowEditActionDelay = ({
       value: 'DURATION',
       Icon: IconHourglassHigh,
     },
+    {
+      label: t`After a random amount of time`,
+      value: 'RANDOM_DURATION',
+      Icon: IconClock,
+    },
   ];
 
-  const handleDelayTypeChange = (
-    newDelayType: 'SCHEDULED_DATE' | 'DURATION',
-  ) => {
+  const handleDelayTypeChange = (newDelayType: WorkflowDelayType) => {
     if (
       actionOptions.readonly === true ||
       newDelayType === action.settings.input.delayType
@@ -99,7 +163,11 @@ export const WorkflowEditActionDelay = ({
           },
         },
       });
-    } else {
+
+      return;
+    }
+
+    if (newDelayType === 'DURATION') {
       actionOptions.onActionUpdate({
         ...action,
         settings: {
@@ -110,7 +178,21 @@ export const WorkflowEditActionDelay = ({
           },
         },
       });
+
+      return;
     }
+
+    actionOptions.onActionUpdate({
+      ...action,
+      settings: {
+        ...action.settings,
+        input: {
+          delayType: 'RANDOM_DURATION',
+          minDuration: undefined,
+          maxDuration: undefined,
+        },
+      },
+    });
   };
 
   const handleDateTimeChange = (value: string | null) => {
@@ -131,7 +213,7 @@ export const WorkflowEditActionDelay = ({
   };
 
   const handleDurationDraftChange = (
-    field: 'days' | 'hours' | 'minutes' | 'seconds',
+    field: keyof WorkflowDelayDurationFields,
     value: number | string | null,
   ) => {
     if (actionOptions.readonly === true) {
@@ -160,6 +242,52 @@ export const WorkflowEditActionDelay = ({
             hours: localDuration.hours,
             minutes: localDuration.minutes,
             seconds: localDuration.seconds,
+          },
+        },
+      },
+    });
+  };
+
+  const handleRandomDurationDraftChange = (
+    bound: 'min' | 'max',
+    field: keyof WorkflowDelayDurationFields,
+    value: number | string | null,
+  ) => {
+    if (actionOptions.readonly === true) {
+      return;
+    }
+
+    const setLocalBoundDuration =
+      bound === 'min' ? setLocalMinDuration : setLocalMaxDuration;
+
+    setLocalBoundDuration((previousDuration) => ({
+      ...previousDuration,
+      [field]: value ?? undefined,
+    }));
+  };
+
+  const handleRandomDurationCommit = () => {
+    if (actionOptions.readonly === true) {
+      return;
+    }
+
+    actionOptions.onActionUpdate({
+      ...action,
+      settings: {
+        ...action.settings,
+        input: {
+          delayType: 'RANDOM_DURATION',
+          minDuration: {
+            days: localMinDuration.days,
+            hours: localMinDuration.hours,
+            minutes: localMinDuration.minutes,
+            seconds: localMinDuration.seconds,
+          },
+          maxDuration: {
+            days: localMaxDuration.days,
+            hours: localMaxDuration.hours,
+            minutes: localMaxDuration.minutes,
+            seconds: localMaxDuration.seconds,
           },
         },
       },
@@ -224,6 +352,99 @@ export const WorkflowEditActionDelay = ({
               defaultValue={localDuration.seconds}
               onChange={(value) => handleDurationDraftChange('seconds', value)}
               onBlur={handleDurationCommit}
+              readonly={actionOptions.readonly}
+              VariablePicker={WorkflowVariablePicker}
+              placeholder={t`0`}
+            />
+          </>
+        )}
+        {action.settings.input.delayType === 'RANDOM_DURATION' && (
+          <>
+            <FormNumberFieldInput
+              label={t`Minimum days`}
+              defaultValue={localMinDuration.days}
+              onChange={(value) =>
+                handleRandomDurationDraftChange('min', 'days', value)
+              }
+              onBlur={handleRandomDurationCommit}
+              readonly={actionOptions.readonly}
+              VariablePicker={WorkflowVariablePicker}
+              placeholder={t`0`}
+            />
+            <FormNumberFieldInput
+              label={t`Minimum hours`}
+              defaultValue={localMinDuration.hours}
+              onChange={(value) =>
+                handleRandomDurationDraftChange('min', 'hours', value)
+              }
+              onBlur={handleRandomDurationCommit}
+              readonly={actionOptions.readonly}
+              VariablePicker={WorkflowVariablePicker}
+              placeholder={t`0`}
+            />
+            <FormNumberFieldInput
+              label={t`Minimum minutes`}
+              defaultValue={localMinDuration.minutes}
+              onChange={(value) =>
+                handleRandomDurationDraftChange('min', 'minutes', value)
+              }
+              onBlur={handleRandomDurationCommit}
+              readonly={actionOptions.readonly}
+              VariablePicker={WorkflowVariablePicker}
+              placeholder={t`0`}
+            />
+            <FormNumberFieldInput
+              label={t`Minimum seconds`}
+              defaultValue={localMinDuration.seconds}
+              onChange={(value) =>
+                handleRandomDurationDraftChange('min', 'seconds', value)
+              }
+              onBlur={handleRandomDurationCommit}
+              readonly={actionOptions.readonly}
+              VariablePicker={WorkflowVariablePicker}
+              placeholder={t`0`}
+            />
+            <HorizontalSeparator noMargin />
+            <FormNumberFieldInput
+              label={t`Maximum days`}
+              defaultValue={localMaxDuration.days}
+              onChange={(value) =>
+                handleRandomDurationDraftChange('max', 'days', value)
+              }
+              onBlur={handleRandomDurationCommit}
+              readonly={actionOptions.readonly}
+              VariablePicker={WorkflowVariablePicker}
+              placeholder={t`0`}
+            />
+            <FormNumberFieldInput
+              label={t`Maximum hours`}
+              defaultValue={localMaxDuration.hours}
+              onChange={(value) =>
+                handleRandomDurationDraftChange('max', 'hours', value)
+              }
+              onBlur={handleRandomDurationCommit}
+              readonly={actionOptions.readonly}
+              VariablePicker={WorkflowVariablePicker}
+              placeholder={t`0`}
+            />
+            <FormNumberFieldInput
+              label={t`Maximum minutes`}
+              defaultValue={localMaxDuration.minutes}
+              onChange={(value) =>
+                handleRandomDurationDraftChange('max', 'minutes', value)
+              }
+              onBlur={handleRandomDurationCommit}
+              readonly={actionOptions.readonly}
+              VariablePicker={WorkflowVariablePicker}
+              placeholder={t`0`}
+            />
+            <FormNumberFieldInput
+              label={t`Maximum seconds`}
+              defaultValue={localMaxDuration.seconds}
+              onChange={(value) =>
+                handleRandomDurationDraftChange('max', 'seconds', value)
+              }
+              onBlur={handleRandomDurationCommit}
               readonly={actionOptions.readonly}
               VariablePicker={WorkflowVariablePicker}
               placeholder={t`0`}

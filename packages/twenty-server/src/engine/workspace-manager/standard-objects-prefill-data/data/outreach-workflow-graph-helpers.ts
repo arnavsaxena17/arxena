@@ -161,7 +161,8 @@ export const gtmWfFindId = (findStepId: string) => v(findStepId, 'first.id');
 export const gtmWfFindField = (findStepId: string, field: string) =>
   v(findStepId, `first.${field}`);
 
-// Pipe-separated so WhatsApp body sanitizer keeps contact + draft in {{2}}
+// Pipe-separated at authoring time; send-time formatters turn this into
+// Meta-safe one-liners (template {{2}}) or real newlines (Flow / Unipile).
 export const gtmWfFormDetailsTemplate = ({
   findId,
   draftStepId,

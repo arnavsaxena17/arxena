@@ -34,7 +34,10 @@ import { WorkflowCommonWorkspaceService } from 'src/modules/workflow/common/work
 import { remapClonedWorkflowIds } from 'src/modules/workflow/workflow-builder/utils/remap-cloned-workflow-ids.util';
 import { WorkflowVersionStepOperationsWorkspaceService } from 'src/modules/workflow/workflow-builder/workflow-version-step/workflow-version-step-operations.workspace-service';
 import { WorkflowVersionStepWorkspaceService } from 'src/modules/workflow/workflow-builder/workflow-version-step/workflow-version-step.workspace-service';
-import { type WorkflowAction, type WorkflowIteratorAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
+import {
+  type WorkflowAction,
+  type WorkflowIteratorAction,
+} from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
 
 @Injectable()
 export class WorkflowVersionWorkspaceService {
@@ -394,8 +397,7 @@ export class WorkflowVersionWorkspaceService {
         },
       });
 
-      assertWorkflowVersionIsDraft(workflowVersion);
-
+      // Positions are layout-only; allow updates on ACTIVE versions without a draft
       const triggerPosition = positions.find(
         (position) => position.id === TRIGGER_STEP_ID,
       );
@@ -456,8 +458,6 @@ export class WorkflowVersionWorkspaceService {
         workspaceId,
         workflowVersionId,
       });
-
-    assertWorkflowVersionIsDraft(workflowVersion);
 
     const steps = workflowVersion.steps ?? [];
 

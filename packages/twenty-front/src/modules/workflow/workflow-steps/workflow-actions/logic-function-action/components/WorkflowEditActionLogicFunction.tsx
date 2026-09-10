@@ -33,7 +33,7 @@ import { useAvailableVariablesInWorkflowStep } from '@/workflow/workflow-variabl
 import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
 import { isObject } from '@sniptt/guards';
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import { getOutputSchemaFromValue } from 'twenty-shared/logic-function';
 import { isDefined } from 'twenty-shared/utils';
 import { getFunctionInputFromInputSchema } from 'twenty-shared/workflow';
@@ -170,7 +170,10 @@ export const WorkflowEditActionLogicFunction = ({
     const sampleFromSettings = logicFunction?.workflowActionTriggerSettings
       ?.sampleOutput as Record<string, unknown> | undefined;
 
-    if (isDefined(sampleFromSettings) && Object.keys(sampleFromSettings).length > 0) {
+    if (
+      isDefined(sampleFromSettings) &&
+      Object.keys(sampleFromSettings).length > 0
+    ) {
       return sampleFromSettings;
     }
 
@@ -178,42 +181,6 @@ export const WorkflowEditActionLogicFunction = ({
   }, [
     logicFunction?.name,
     logicFunction?.workflowActionTriggerSettings?.sampleOutput,
-  ]);
-
-  const hasAppliedDefaultSample = useRef(false);
-
-  useEffect(() => {
-    if (
-      actionOptions.readonly === true ||
-      hasAppliedDefaultSample.current ||
-      !isDefined(defaultSampleOutput)
-    ) {
-      return;
-    }
-
-    if (
-      !shouldDefaultLogicFunctionSampleOutput({
-        logicFunctionName: logicFunction?.name,
-        expectedOutputSchema: action.settings.expectedOutputSchema,
-      })
-    ) {
-      return;
-    }
-
-    hasAppliedDefaultSample.current = true;
-    actionOptions.onActionUpdate({
-      ...action,
-      settings: {
-        ...action.settings,
-        expectedOutputSchema: defaultSampleOutput,
-        outputSchema: getOutputSchemaFromValue(defaultSampleOutput),
-      },
-    });
-  }, [
-    action,
-    actionOptions,
-    defaultSampleOutput,
-    logicFunction?.name,
   ]);
 
   const updateOutputSchemaFromTestResult = (testResult: object) => {

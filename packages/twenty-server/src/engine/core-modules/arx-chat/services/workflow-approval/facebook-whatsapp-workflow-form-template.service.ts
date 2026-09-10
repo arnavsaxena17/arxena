@@ -3,8 +3,15 @@ import axios, { type AxiosRequestConfig } from 'axios';
 
 import { FacebookWhatsappWorkflowFormFlowService } from './facebook-whatsapp-workflow-form-flow.service';
 import {
+  formatWhatsappFlowDetailsBody,
+  formatWhatsappTemplateContextParam,
+  formatWhatsappTemplateDetailsParam,
+  splitWhatsappStructuredTemplateDetails,
+} from './format-workflow-form-whatsapp-text.util';
+import {
   getFlowNameForRegistry,
   getFlowTemplateNameForRegistry,
+  usesStructuredFlowTemplate,
 } from './workflow-form-flow-json.builder';
 import { buildWorkflowFormQuickReplyPayload } from './workflow-form-decision-pointer.util';
 import {
@@ -60,11 +67,24 @@ const HOSTED_URL_BODY_TEXT =
   'Arxena workflow form needs your input.\n\nBackdrop: {{1}}\n\nDetails: {{2}}\n\nOpen the form to fill the fields.';
 const FLOW_BODY_TEXT =
   'Arxena workflow form needs your input.\n\nBackdrop: {{1}}\n\nDetails: {{2}}\n\nTap Open form to answer in WhatsApp.';
+// Static newlines between variables — Meta allows this; newlines inside param values are forbidden.
+// Keep copy non-promotional (utility): pending workflow approval, not outreach/marketing.
+const FLOW_BODY_TEXT_V3 =
+  'Arxena needs your decision on a pending workflow step.\n\nRequest: {{1}}\n\nRecord: {{2}}\nWorkspace: {{3}}\n\nSummary to review: {{4}}\n\nTap Open form to approve or reject.';
 
 const BODY_EXAMPLE = [
   [
-    'Approve outreach to Acme Corp CEO',
-    'Company: Acme Corp | Contact: Jane Doe | Channel: LinkedIn',
+    'Pending approval for workflow step Confirm reply',
+    'Record 4821 | Workspace Acme Ops | Channel LinkedIn',
+  ],
+];
+
+const BODY_EXAMPLE_V3 = [
+  [
+    'Pending approval for workflow step Confirm reply',
+    'Candidate record 4821',
+    'Acme Ops workspace',
+    'Confirm the queued reply text before the workflow continues.',
   ],
 ];
 
@@ -93,8 +113,7 @@ export class FacebookWhatsappWorkflowFormTemplateService {
 
   getCredentials(): FacebookWhatsappCredentials {
     const apiToken = process.env.FACEBOOK_WHATSAPP_API_TOKEN?.trim();
-    const phoneNumberId =
-      process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID?.trim();
+    const phoneNumberId = process.env.FACEBOOK_WHATSAPP_PHONE_NUMBER_ID?.trim();
     const assetId = process.env.FACEBOOK_WHATSAPP_ASSET_ID?.trim();
     const appId = process.env.FACEBOOK_WHATSAPP_APP_ID?.trim();
     const serverBaseUrl = (
@@ -215,13 +234,38 @@ export class FacebookWhatsappWorkflowFormTemplateService {
     return [
       {
         type: 'text',
-        text: sanitizeWhatsappTemplateParam(input.contextText),
+        text: formatWhatsappTemplateContextParam(input.contextText),
       },
       {
         type: 'text',
-        text: sanitizeWhatsappTemplateParam(
+        text: formatWhatsappTemplateDetailsParam(
           input.detailsText ?? 'See form fields',
         ),
+      },
+    ];
+  }
+
+  private buildStructuredBodyParameters(input: SendWorkflowFormTemplateInput) {
+    const parts = splitWhatsappStructuredTemplateDetails(
+      input.detailsText ?? '',
+    );
+    const draftFromForm = this.stringifySampleValue(
+      this.findFirstFieldByType(input.formFields, 'TEXT')?.value,
+    );
+
+    return [
+      {
+        type: 'text',
+        text: formatWhatsappTemplateContextParam(input.contextText),
+      },
+      { type: 'text', text: parts.contact },
+      { type: 'text', text: parts.company },
+      {
+        type: 'text',
+        text:
+          parts.draft !== '-'
+            ? parts.draft
+            : formatWhatsappTemplateContextParam(draftFromForm || '-', 800),
       },
     ];
   }
@@ -289,6 +333,7 @@ export class FacebookWhatsappWorkflowFormTemplateService {
   private buildFlowButtonTemplateBody(
     templateName: string,
     flowIdentifier: { flowId?: string; flowName: string },
+    options?: { structured?: boolean },
   ): Record<string, unknown> {
     const flowButton: Record<string, unknown> = {
       type: 'FLOW',
@@ -303,16 +348,20 @@ export class FacebookWhatsappWorkflowFormTemplateService {
       flowButton.flow_name = flowIdentifier.flowName;
     }
 
+    const structured = options?.structured === true;
+
     return {
       name: templateName,
       language: 'en_US',
       category: 'UTILITY',
+      // Prefer rejection over silent Utility→Marketing reclassification
+      allow_category_change: false,
       components: [
         {
           type: 'BODY',
-          text: FLOW_BODY_TEXT,
+          text: structured ? FLOW_BODY_TEXT_V3 : FLOW_BODY_TEXT,
           example: {
-            body_text: BODY_EXAMPLE,
+            body_text: structured ? BODY_EXAMPLE_V3 : BODY_EXAMPLE,
           },
         },
         {
@@ -453,58 +502,73 @@ export class FacebookWhatsappWorkflowFormTemplateService {
         continue;
       }
 
-      const templateName = getFlowTemplateNameForRegistry(entry.name);
-      const flowName = getFlowNameForRegistry(entry.name);
-      const existing = existingByName.get(templateName);
+      const versions: Array<'v2' | 'v4'> = usesStructuredFlowTemplate(
+        entry.name,
+      )
+        ? ['v2', 'v4']
+        : ['v2'];
 
-      if (existing) {
-        results.push({
-          name: templateName,
-          templateKind: 'flow_button',
-          status: 'exists',
-          templateId: existing.id,
-          templateStatus: existing.status,
-        });
-        continue;
-      }
-
-      try {
-        const created = (await this.createMessageTemplate(
-          this.buildFlowButtonTemplateBody(templateName, {
-            flowId: flowIdByRegistryName.get(entry.name),
-            flowName,
-          }),
-        )) as { id?: string; status?: string };
-
-        this.logger.log(
-          `Created FLOW template ${templateName} → ${flowName} id=${created?.id ?? 'unknown'}`,
+      for (const version of versions) {
+        const templateName = getFlowTemplateNameForRegistry(
+          entry.name,
+          version,
         );
+        const flowName = getFlowNameForRegistry(entry.name);
+        const existing = existingByName.get(templateName);
 
-        results.push({
-          name: templateName,
-          templateKind: 'flow_button',
-          status: 'created',
-          templateId: created?.id,
-          templateStatus: created?.status,
-        });
-      } catch (error) {
-        const errorMessage =
-          axios.isAxiosError(error) && error.response?.data
-            ? JSON.stringify(error.response.data)
-            : error instanceof Error
-              ? error.message
-              : String(error);
+        if (existing) {
+          results.push({
+            name: templateName,
+            templateKind: 'flow_button',
+            status: 'exists',
+            templateId: existing.id,
+            templateStatus: existing.status,
+          });
+          continue;
+        }
 
-        this.logger.error(
-          `Failed to create FLOW template ${templateName}: ${errorMessage}`,
-        );
+        try {
+          const created = (await this.createMessageTemplate(
+            this.buildFlowButtonTemplateBody(
+              templateName,
+              {
+                flowId: flowIdByRegistryName.get(entry.name),
+                flowName,
+              },
+              { structured: version === 'v4' },
+            ),
+          )) as { id?: string; status?: string };
 
-        results.push({
-          name: templateName,
-          templateKind: 'flow_button',
-          status: 'error',
-          error: errorMessage,
-        });
+          this.logger.log(
+            `Created FLOW template ${templateName} → ${flowName} id=${created?.id ?? 'unknown'}`,
+          );
+
+          results.push({
+            name: templateName,
+            templateKind: 'flow_button',
+            status: 'created',
+            templateId: created?.id,
+            templateStatus: created?.status,
+          });
+        } catch (error) {
+          const errorMessage =
+            axios.isAxiosError(error) && error.response?.data
+              ? JSON.stringify(error.response.data)
+              : error instanceof Error
+                ? error.message
+                : String(error);
+
+          this.logger.error(
+            `Failed to create FLOW template ${templateName}: ${errorMessage}`,
+          );
+
+          results.push({
+            name: templateName,
+            templateKind: 'flow_button',
+            status: 'error',
+            error: errorMessage,
+          });
+        }
       }
     }
 
@@ -542,12 +606,8 @@ export class FacebookWhatsappWorkflowFormTemplateService {
             id?: string;
             title?: string;
           };
-          const id =
-            optionRecord.value ??
-            optionRecord.id ??
-            `option_${index}`;
-          const title =
-            optionRecord.label ?? optionRecord.title ?? String(id);
+          const id = optionRecord.value ?? optionRecord.id ?? `option_${index}`;
+          const title = optionRecord.label ?? optionRecord.title ?? String(id);
 
           return { id: String(id), title: String(title).slice(0, 30) };
         }
@@ -593,9 +653,12 @@ export class FacebookWhatsappWorkflowFormTemplateService {
       field.type.toUpperCase(),
     );
     const data: Record<string, unknown> = {
-      context_heading: sanitizeWhatsappTemplateParam(
-        `${input.contextText} | ${input.detailsText ?? ''}`.trim(),
+      context_heading: formatWhatsappTemplateContextParam(
+        input.contextText,
         80,
+      ),
+      details_body: formatWhatsappFlowDetailsBody(
+        input.detailsText ?? 'See form fields',
       ),
     };
 
@@ -604,16 +667,15 @@ export class FacebookWhatsappWorkflowFormTemplateService {
 
       data.text_init_value = this.stringifySampleValue(textField?.value);
       data.text_helper = sanitizeWhatsappTemplateParam(
-        textField?.placeholder || textField?.label || 'Enter text',
+        textField?.placeholder ||
+          textField?.label ||
+          'Edit the message that will go out',
         80,
       );
     }
 
     if (types.includes('NUMBER')) {
-      const numberField = this.findFirstFieldByType(
-        input.formFields,
-        'NUMBER',
-      );
+      const numberField = this.findFirstFieldByType(input.formFields, 'NUMBER');
 
       data.number_init_value = this.stringifySampleValue(numberField?.value);
       data.number_helper = sanitizeWhatsappTemplateParam(
@@ -629,10 +691,7 @@ export class FacebookWhatsappWorkflowFormTemplateService {
     }
 
     if (types.includes('SELECT')) {
-      const selectField = this.findFirstFieldByType(
-        input.formFields,
-        'SELECT',
-      );
+      const selectField = this.findFirstFieldByType(input.formFields, 'SELECT');
 
       data.select_options = this.extractSelectOptions(
         input.formFields,
@@ -707,6 +766,7 @@ export class FacebookWhatsappWorkflowFormTemplateService {
     credentials: FacebookWhatsappCredentials,
     input: SendWorkflowFormTemplateInput,
     templateName: string,
+    options?: { structured?: boolean },
   ): Promise<{ status: string; data: unknown }> {
     const payload = {
       messaging_product: 'whatsapp',
@@ -718,7 +778,10 @@ export class FacebookWhatsappWorkflowFormTemplateService {
         components: [
           {
             type: 'body',
-            parameters: this.buildBodyParameters(input),
+            parameters:
+              options?.structured === true
+                ? this.buildStructuredBodyParameters(input)
+                : this.buildBodyParameters(input),
           },
           {
             type: 'button',
@@ -819,26 +882,63 @@ export class FacebookWhatsappWorkflowFormTemplateService {
       return this.sendUrlButtonTemplate(credentials, input, entry.name);
     }
 
-    // Prefer in-WhatsApp Flow v2 (Backdrop {{1}} + Details {{2}}).
+    // Prefer structured v4 (static newlines, utility copy) for Yes/No/Modify forms, else v2.
     // Do not fall back to legacy `*_flow` templates — several only have {{1}}.
-    const flowTemplateName = getFlowTemplateNameForRegistry(entry.name);
+    const preferStructured = usesStructuredFlowTemplate(entry.name);
+    const preferredTemplateName = getFlowTemplateNameForRegistry(
+      entry.name,
+      preferStructured ? 'v4' : 'v2',
+    );
+    const fallbackTemplateName = getFlowTemplateNameForRegistry(
+      entry.name,
+      'v2',
+    );
 
     try {
       return await this.sendFlowButtonTemplate(
         credentials,
         input,
-        flowTemplateName,
+        preferredTemplateName,
+        { structured: preferStructured },
       );
-    } catch (flowError) {
-      const flowErrorMessage =
-        axios.isAxiosError(flowError) && flowError.response?.data
-          ? JSON.stringify(flowError.response.data)
-          : flowError instanceof Error
-            ? flowError.message
-            : String(flowError);
+    } catch (preferredError) {
+      const preferredErrorMessage =
+        axios.isAxiosError(preferredError) && preferredError.response?.data
+          ? JSON.stringify(preferredError.response.data)
+          : preferredError instanceof Error
+            ? preferredError.message
+            : String(preferredError);
+
+      if (preferStructured && preferredTemplateName !== fallbackTemplateName) {
+        this.logger.warn(
+          `FLOW send failed for ${preferredTemplateName}, trying v2: ${preferredErrorMessage}`,
+        );
+
+        try {
+          return await this.sendFlowButtonTemplate(
+            credentials,
+            input,
+            fallbackTemplateName,
+            { structured: false },
+          );
+        } catch (v2Error) {
+          const v2ErrorMessage =
+            axios.isAxiosError(v2Error) && v2Error.response?.data
+              ? JSON.stringify(v2Error.response.data)
+              : v2Error instanceof Error
+                ? v2Error.message
+                : String(v2Error);
+
+          this.logger.warn(
+            `FLOW send failed for ${fallbackTemplateName}, falling back to URL: ${v2ErrorMessage}`,
+          );
+
+          return this.sendUrlButtonTemplate(credentials, input, entry.name);
+        }
+      }
 
       this.logger.warn(
-        `FLOW send failed for ${flowTemplateName}, falling back to URL: ${flowErrorMessage}`,
+        `FLOW send failed for ${preferredTemplateName}, falling back to URL: ${preferredErrorMessage}`,
       );
 
       return this.sendUrlButtonTemplate(credentials, input, entry.name);
@@ -883,9 +983,7 @@ export class FacebookWhatsappWorkflowFormTemplateService {
       }
 
       const isFlowTemplate = name.endsWith('_flow');
-      const registryName = isFlowTemplate
-        ? name.replace(/_flow$/, '')
-        : name;
+      const registryName = isFlowTemplate ? name.replace(/_flow$/, '') : name;
       const entry = WORKFLOW_FORM_TEMPLATE_REGISTRY.find(
         (registryEntry) => registryEntry.name === registryName,
       );

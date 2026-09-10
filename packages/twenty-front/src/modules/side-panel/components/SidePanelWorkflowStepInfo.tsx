@@ -148,6 +148,13 @@ export const SidePanelWorkflowStepInfo = ({
       return;
     }
 
+    // Avoid forking a draft when the title was not actually changed
+    if (title === stepName) {
+      setEditedTitle(null);
+
+      return;
+    }
+
     updateSidePanelPageInfo({
       pageTitle: title,
       pageIcon: Icon,

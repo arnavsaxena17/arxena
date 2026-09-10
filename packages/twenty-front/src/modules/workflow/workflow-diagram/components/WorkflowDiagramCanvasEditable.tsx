@@ -7,6 +7,7 @@ import { useActivateWorkflowVersion } from '@/workflow/hooks/useActivateWorkflow
 import { usePublishExperimentVersion } from '@/workflow/hooks/usePublishExperimentVersion';
 import { useWorkflowWithCurrentVersion } from '@/workflow/hooks/useWorkflowWithCurrentVersion';
 import { workflowVisualizerWorkflowIdComponentState } from '@/workflow/states/workflowVisualizerWorkflowIdComponentState';
+import { workflowVisualizerWorkflowVersionIdComponentState } from '@/workflow/states/workflowVisualizerWorkflowVersionIdComponentState';
 import { WorkflowDiagramCanvasBase } from '@/workflow/workflow-diagram/components/WorkflowDiagramCanvasBase';
 import { WorkflowDiagramCanvasEditableEffect } from '@/workflow/workflow-diagram/components/WorkflowDiagramCanvasEditableEffect';
 import { useStartNodeCreation } from '@/workflow/workflow-diagram/hooks/useStartNodeCreation';
@@ -29,7 +30,7 @@ import { useCreateEdge } from '@/workflow/workflow-steps/hooks/useCreateEdge';
 import { useDeleteEdge } from '@/workflow/workflow-steps/hooks/useDeleteEdge';
 import { useUpdateStep } from '@/workflow/workflow-steps/hooks/useUpdateStep';
 import { prepareIfElseStepWithNewBranch } from '@/workflow/workflow-steps/workflow-actions/if-else-action/utils/prepareIfElseStepWithNewBranch';
-import { useUpdateWorkflowVersionTrigger } from '@/workflow/workflow-trigger/hooks/useUpdateWorkflowVersionTrigger';
+import { useTidyUpWorkflowVersion } from '@/workflow/workflow-version/hooks/useTidyUpWorkflowVersion';
 import { styled } from '@linaria/react';
 import {
   addEdge,
@@ -53,6 +54,10 @@ export const WorkflowDiagramCanvasEditable = () => {
     workflowVisualizerWorkflowIdComponentState,
   );
 
+  const workflowVersionId = useAtomComponentStateValue(
+    workflowVisualizerWorkflowVersionIdComponentState,
+  );
+
   const workflowWithCurrentVersion = useWorkflowWithCurrentVersion(
     workflowVisualizerWorkflowId,
   );
@@ -71,7 +76,7 @@ export const WorkflowDiagramCanvasEditable = () => {
 
   const { updateStep } = useUpdateStep();
 
-  const { updateTrigger } = useUpdateWorkflowVersionTrigger();
+  const { updateWorkflowVersionPosition } = useTidyUpWorkflowVersion();
 
   const { startNodeCreation } = useStartNodeCreation();
 
@@ -154,30 +159,17 @@ export const WorkflowDiagramCanvasEditable = () => {
   };
 
   const onNodeDragStop: OnNodeDrag<WorkflowDiagramNode> = async (_, node) => {
-    const stepToUpdate =
-      workflowWithCurrentVersion?.currentVersion?.steps?.find(
-        (step) => step.id === node.id,
-      );
-
-    if (isDefined(stepToUpdate)) {
-      await updateStep({
-        ...stepToUpdate,
-        position: node.position,
-      });
-
+    if (!isDefined(workflowVersionId)) {
       return;
     }
 
-    const triggerToUpdate = workflowWithCurrentVersion?.currentVersion?.trigger;
-
-    if (isDefined(triggerToUpdate)) {
-      await updateTrigger({
-        ...triggerToUpdate,
+    // Layout-only: update positions on the current version (no draft fork)
+    await updateWorkflowVersionPosition(workflowVersionId, [
+      {
+        id: node.id,
         position: node.position,
-      });
-
-      return;
-    }
+      },
+    ]);
   };
 
   if (!isDefined(workflowWithCurrentVersion)) {

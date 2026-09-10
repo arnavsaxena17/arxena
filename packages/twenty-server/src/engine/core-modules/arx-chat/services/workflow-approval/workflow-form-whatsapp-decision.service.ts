@@ -81,6 +81,7 @@ export class WorkflowFormWhatsappDecisionService {
     const { fields } =
       await this.workflowFormDecisionPointerService.getPendingFormFields(parts);
 
+    // Yes → approve + draft; No → reject; Modify → approve + edited text
     const formResponse = mapFlowResponseToFormFields(parsed, fields);
 
     const booleanField = fields.find(
@@ -91,6 +92,25 @@ export class WorkflowFormWhatsappDecisionService {
       : undefined;
     const decision =
       booleanValue === false || booleanValue === 'false' ? 'reject' : 'approve';
+
+    if (decision === 'approve') {
+      const textField = fields.find(
+        (field) => field.type.toUpperCase() === 'TEXT',
+      );
+      const textValue = textField
+        ? formResponse[textField.name]
+        : undefined;
+      const hasText =
+        typeof textValue === 'string'
+          ? textValue.trim().length > 0
+          : textValue !== undefined && textValue !== null;
+
+      if (textField && !hasText) {
+        throw new Error(
+          'Approved WhatsApp Flow response is missing message text',
+        );
+      }
+    }
 
     await this.applyDecision({
       pointer,

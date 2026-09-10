@@ -41,10 +41,11 @@ describe('account rate limit sanitization', () => {
     expect(migrated.companyProfilePer10Seconds).toBe(2);
     expect(DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.profilePer10Seconds).toBe(1);
     expect(DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.profilePerDay).toBe(100);
-    expect(DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.companyProfilePer10Seconds).toBe(
-      1,
-    );
+    expect(
+      DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.companyProfilePer10Seconds,
+    ).toBe(1);
     expect(DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.companyProfilePerDay).toBe(100);
+    expect(DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.endpointPerDay).toBe(100);
   });
 
   it('parses a per-account LinkedIn map', () => {
@@ -53,6 +54,9 @@ describe('account rate limit sanitization', () => {
     });
 
     expect(map.acc_1.connectionRequestPerDay).toBe(10);
+    expect(map.acc_1.endpointPerDay).toBe(
+      DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.endpointPerDay,
+    );
     expect(map.acc_1.searchPerDay).toBe(
       DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.searchPerDay,
     );
@@ -84,6 +88,10 @@ describe('account rate limit sanitization', () => {
     });
     expect(getLinkedinAccountRateLimitUsageWindow('searchPerDay')).toEqual({
       method: 'search',
+      windowName: 'day',
+    });
+    expect(getLinkedinAccountRateLimitUsageWindow('endpointPerDay')).toEqual({
+      method: 'endpoint',
       windowName: 'day',
     });
     expect(

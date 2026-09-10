@@ -8,7 +8,7 @@ import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
 import { useRef } from 'react';
 import { isDefined } from 'twenty-shared/utils';
-import { IconPlus, IconReorder } from 'twenty-ui/icon';
+import { IconFocusCentered, IconPlus, IconReorder } from 'twenty-ui/icon';
 import { MenuItem } from 'twenty-ui/navigation';
 import { WorkflowDiagramRightClickCommandMenuClickOutsideEffect } from './WorkflowDiagramRightClickCommandMenuClickOutsideEffect';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
@@ -30,8 +30,10 @@ const StyledContainer = styled.div<{ x: number; y: number }>`
 
 export const WorkflowDiagramRightClickCommandMenu = ({
   showAddNode = true,
+  onCenter,
 }: {
   showAddNode?: boolean;
+  onCenter: () => void;
 }) => {
   const { t } = useLingui();
   const rightClickCommandMenuRef = useRef<HTMLDivElement>(null);
@@ -55,6 +57,11 @@ export const WorkflowDiagramRightClickCommandMenu = ({
     } else {
       tidyUpLocally();
     }
+    closeRightClickMenu();
+  };
+
+  const handleCenterWorkflowDiagram = () => {
+    onCenter();
     closeRightClickMenu();
   };
 
@@ -87,6 +94,11 @@ export const WorkflowDiagramRightClickCommandMenu = ({
           text={t`Tidy up workflow`}
           LeftIcon={IconReorder}
           onClick={handleReorderWorkflowDiagram}
+        />
+        <MenuItem
+          text={t`Center`}
+          LeftIcon={IconFocusCentered}
+          onClick={handleCenterWorkflowDiagram}
         />
       </StyledContainer>
       <WorkflowDiagramRightClickCommandMenuClickOutsideEffect

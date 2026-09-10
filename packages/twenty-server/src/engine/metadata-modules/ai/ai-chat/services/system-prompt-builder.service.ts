@@ -378,6 +378,7 @@ export class SystemPromptBuilderService {
           `- Search types available: ${availableSearchTypes.join(', ')}`,
           `- Sales Navigator: ${connectedAccountsContext.salesNavigatorAvailable ? 'available' : 'not available'}`,
           `- Recruiter: ${connectedAccountsContext.recruiterAvailable ? 'available' : 'not available'}`,
+          `- To load the user's own LinkedIn profile, call linkedin_unipile_get_own_profile with accountId=${connectedAccountsContext.accountId}.`,
           `- Only use searchType values listed as available. If the user asks for Sales Nav or Recruiter and it is not available, explain that and fall back to classic or Harvest.`,
         ]
       : [
@@ -387,7 +388,7 @@ export class SystemPromptBuilderService {
               : ''
           }`,
           `- Search types available: none via Unipile`,
-          `- Do not call search_linkedin_* tools until the user connects LinkedIn. Prefer Harvest People API (dataSource: "harvest") when appropriate, or ask the user to connect LinkedIn.`,
+          `- Do not call search_linkedin_* or linkedin_unipile_get_own_profile until the user connects LinkedIn. Prefer Harvest People API (dataSource: "harvest") when appropriate, or ask the user to connect LinkedIn.`,
         ];
 
     return `

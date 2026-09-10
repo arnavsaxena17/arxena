@@ -321,6 +321,7 @@ describe('AccountRateLimiterService', () => {
     expect(keys).toEqual([
       'linkedin:acc-1:connection_request:5m',
       'linkedin:acc-1:connection_request:day',
+      'linkedin:acc-1:endpoint:day',
     ]);
     expect(windows).toEqual([
       expect.objectContaining({
@@ -333,6 +334,12 @@ describe('AccountRateLimiterService', () => {
         key: 'linkedin:acc-1:connection_request:day',
         windowMs: 86_400_000,
         limit: 20,
+        pace: false,
+      }),
+      expect.objectContaining({
+        key: 'linkedin:acc-1:endpoint:day',
+        windowMs: 86_400_000,
+        limit: 100,
         pace: false,
       }),
     ]);
@@ -355,6 +362,7 @@ describe('AccountRateLimiterService', () => {
     expect(keys).toEqual([
       'linkedin:acc-1:message:30s',
       'linkedin:acc-1:message:day',
+      'linkedin:acc-1:endpoint:day',
     ]);
   });
 
@@ -375,6 +383,7 @@ describe('AccountRateLimiterService', () => {
     expect(keys).toEqual([
       'linkedin:acc-1:inmail:30s',
       'linkedin:acc-1:inmail:day',
+      'linkedin:acc-1:endpoint:day',
     ]);
   });
 
@@ -395,10 +404,11 @@ describe('AccountRateLimiterService', () => {
     expect(keys).toEqual([
       'linkedin:acc-1:comment:30s',
       'linkedin:acc-1:comment:day',
+      'linkedin:acc-1:endpoint:day',
     ]);
   });
 
-  it('applies LinkedIn search minute and day windows without the shared endpoint cap', async () => {
+  it('applies LinkedIn search minute and day windows plus the shared cumulative day cap', async () => {
     const acquire = jest.fn().mockResolvedValue({ acquired: true, waitMs: 0 });
     const limiter = createLimiter(acquire);
 
@@ -415,6 +425,7 @@ describe('AccountRateLimiterService', () => {
     expect(keys).toEqual([
       'linkedin:acc-1:search:minute',
       'linkedin:acc-1:search:day',
+      'linkedin:acc-1:endpoint:day',
     ]);
     expect(acquire.mock.calls[0][0]).toEqual(
       expect.arrayContaining([
@@ -426,11 +437,15 @@ describe('AccountRateLimiterService', () => {
           key: 'linkedin:acc-1:search:day',
           pace: false,
         }),
+        expect.objectContaining({
+          key: 'linkedin:acc-1:endpoint:day',
+          pace: false,
+        }),
       ]),
     );
   });
 
-  it('uses profile pace plus dedicated profile day for profile lookups', async () => {
+  it('uses profile pace plus dedicated profile day and shared cumulative day', async () => {
     const acquire = jest.fn().mockResolvedValue({ acquired: true, waitMs: 0 });
     const limiter = createLimiter(acquire);
 
@@ -447,10 +462,11 @@ describe('AccountRateLimiterService', () => {
     expect(keys).toEqual([
       'linkedin:acc-1:profile:10s',
       'linkedin:acc-1:profile:day',
+      'linkedin:acc-1:endpoint:day',
     ]);
   });
 
-  it('uses company-profile pace plus dedicated company profile day', async () => {
+  it('uses company-profile pace plus dedicated company profile day and shared cumulative day', async () => {
     const acquire = jest.fn().mockResolvedValue({ acquired: true, waitMs: 0 });
     const limiter = createLimiter(acquire);
 
@@ -467,6 +483,55 @@ describe('AccountRateLimiterService', () => {
     expect(keys).toEqual([
       'linkedin:acc-1:company_profile:10s',
       'linkedin:acc-1:company_profile:day',
+      'linkedin:acc-1:endpoint:day',
+    ]);
+  });
+
+  it('applies only the shared cumulative day window for generic endpoint calls', async () => {
+    const acquire = jest.fn().mockResolvedValue({ acquired: true, waitMs: 0 });
+    const limiter = createLimiter(acquire);
+
+    await limiter.tryAcquire({
+      provider: 'linkedin',
+      accountId: 'acc-1',
+      method: 'endpoint',
+    });
+
+    const keys = acquire.mock.calls[0][0].map(
+      (window: { key: string }) => window.key,
+    );
+
+    expect(keys).toEqual(['linkedin:acc-1:endpoint:day']);
+  });
+
+  it('includes the shared cumulative day window on outreach and search', async () => {
+    const acquire = jest.fn().mockResolvedValue({ acquired: true, waitMs: 0 });
+    const limiter = createLimiter(acquire);
+
+    await limiter.tryAcquire({
+      provider: 'linkedin',
+      accountId: 'acc-1',
+      method: 'connection_request',
+    });
+    await limiter.tryAcquire({
+      provider: 'linkedin',
+      accountId: 'acc-1',
+      method: 'search',
+    });
+
+    expect(
+      acquire.mock.calls[0][0].map((window: { key: string }) => window.key),
+    ).toEqual([
+      'linkedin:acc-1:connection_request:5m',
+      'linkedin:acc-1:connection_request:day',
+      'linkedin:acc-1:endpoint:day',
+    ]);
+    expect(
+      acquire.mock.calls[1][0].map((window: { key: string }) => window.key),
+    ).toEqual([
+      'linkedin:acc-1:search:minute',
+      'linkedin:acc-1:search:day',
+      'linkedin:acc-1:endpoint:day',
     ]);
   });
 
@@ -650,6 +715,10 @@ describe('AccountRateLimiterService', () => {
           windowMs: 86_400_000,
         }),
         expect.objectContaining({
+          key: 'linkedin:acc-1:endpoint:day',
+          windowMs: 86_400_000,
+        }),
+        expect.objectContaining({
           key: 'linkedin:acc-1:search:day',
           windowMs: 86_400_000,
         }),
@@ -801,7 +870,11 @@ describe('AccountRateLimiterService', () => {
     );
 
     expect(removeMemberFromWindows).toHaveBeenCalledWith(
-      ['linkedin:acc-1:search:minute', 'linkedin:acc-1:search:day'],
+      [
+        'linkedin:acc-1:search:minute',
+        'linkedin:acc-1:search:day',
+        'linkedin:acc-1:endpoint:day',
+      ],
       `${workflowRunId}:step-2:0`,
     );
 
@@ -825,7 +898,11 @@ describe('AccountRateLimiterService', () => {
     await limiter.releaseGhostReservationsForWorkflowRun(workflowRunId);
 
     expect(removeMemberFromWindows).toHaveBeenCalledWith(
-      ['linkedin:acc-1:comment:30s', 'linkedin:acc-1:comment:day'],
+      [
+        'linkedin:acc-1:comment:30s',
+        'linkedin:acc-1:comment:day',
+        'linkedin:acc-1:endpoint:day',
+      ],
       `${workflowRunId}:step-3:0`,
     );
     expect(deleteKeys).toHaveBeenCalledWith(

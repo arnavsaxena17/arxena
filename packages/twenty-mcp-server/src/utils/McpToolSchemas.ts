@@ -2301,6 +2301,18 @@ export const UNIPILE_ACCOUNT_ID_INPUT_DESCRIPTOR: readonly McpInputFieldDescript
     },
   ] as const;
 
+// Own-profile path uses accountId; agents often pass account_id from Connected Accounts.
+export const LINKEDIN_UNIPILE_GET_OWN_PROFILE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
+  [
+    {
+      key: 'accountId',
+      type: 'string',
+      description:
+        'Unipile LinkedIn account ID (from Connected Accounts account_id). Also accepted as account_id.',
+      required: true,
+    },
+  ] as const;
+
 export const LINKEDIN_UNIPILE_CONNECT_CREDENTIALS_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
   [
     {

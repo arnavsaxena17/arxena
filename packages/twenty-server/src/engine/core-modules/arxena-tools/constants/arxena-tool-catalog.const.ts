@@ -332,6 +332,20 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
       'List recently added LinkedIn 1st-degree connections (last n relations) for the connected Unipile account.',
   },
   {
+    name: 'linkedin_unipile_get_own_profile',
+    pack: 'prospecting',
+    label: 'Get Own LinkedIn Profile',
+    description:
+      'Retrieve the connected LinkedIn account owner profile via Unipile (GET /users/me). Pass accountId from Connected Accounts. Use when the user asks about their own LinkedIn profile, premium/Sales Nav/Recruiter status, or identity.',
+  },
+  {
+    name: 'linkedin_unipile_get_profile',
+    pack: 'prospecting',
+    label: 'Get LinkedIn Profile',
+    description:
+      'Retrieve one LinkedIn profile by identifier (/in/slug) via Unipile. Pass account_id from Connected Accounts. For searching many profiles use search_linkedin_people instead.',
+  },
+  {
     name: 'search_linkedin_parameters',
     pack: 'prospecting',
     label: 'Search Linkedin Parameters',

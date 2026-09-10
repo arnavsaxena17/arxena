@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { FacebookWhatsappWorkflowFormTemplateService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/facebook-whatsapp-workflow-form-template.service';
+import { formatWhatsappUnipileDetailsText } from 'src/engine/core-modules/arx-chat/services/workflow-approval/format-workflow-form-whatsapp-text.util';
 import {
   buildWorkflowApprovalFillPath,
   resolveWorkflowFormRegistryEntry,
@@ -87,9 +88,7 @@ export class ApprovalNotifierService {
                 registryName: registryEntry.name,
                 contextText: input.contextText,
                 detailsText:
-                  input.detailsText ??
-                  input.fieldSummary ??
-                  'See form fields',
+                  input.detailsText ?? input.fieldSummary ?? 'See form fields',
                 token: input.token,
                 formFields: input.formFields.map((field, index) => ({
                   name: field.name ?? `field_${index}`,
@@ -108,12 +107,9 @@ export class ApprovalNotifierService {
             detail: registryEntry.name,
           });
         } catch (error) {
-          const detail =
-            error instanceof Error ? error.message : String(error);
+          const detail = error instanceof Error ? error.message : String(error);
 
-          this.logger.error(
-            `Official WhatsApp notify failed: ${detail}`,
-          );
+          this.logger.error(`Official WhatsApp notify failed: ${detail}`);
           results.push({
             channel: normalizedChannel,
             status: 'error',
@@ -173,12 +169,11 @@ export class ApprovalNotifierService {
     }
 
     const fillUrl = this.buildFillUrl(input.token);
-    const fieldLines =
+    const fieldLines = formatWhatsappUnipileDetailsText(
       input.detailsText ??
-      input.fieldSummary ??
-      input.formFields
-        .map((field) => `- ${field.type}`)
-        .join('\n');
+        input.fieldSummary ??
+        input.formFields.map((field) => `- ${field.type}`).join('\n'),
+    );
     const isSingleBoolean =
       input.formFields.length === 1 &&
       input.formFields[0]?.type.toUpperCase() === 'BOOLEAN';

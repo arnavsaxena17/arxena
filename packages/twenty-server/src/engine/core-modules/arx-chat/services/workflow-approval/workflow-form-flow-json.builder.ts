@@ -19,7 +19,111 @@ export const FLOW_FIELD_KEY_BY_TYPE = {
   MULTI_SELECT: 'multi_select_value',
 } as const;
 
+export const FLOW_BOOLEAN_DECISION = {
+  YES: 'yes',
+  NO: 'no',
+  MODIFY: 'modify',
+} as const;
+
 type FlowComponent = Record<string, unknown>;
+
+const APPROVE_FLOW_BOOLEAN_VALUES = new Set([
+  true,
+  'true',
+  FLOW_BOOLEAN_DECISION.YES,
+  FLOW_BOOLEAN_DECISION.MODIFY,
+  'Yes',
+  'Yes / Approve',
+  'Modify',
+]);
+
+const REJECT_FLOW_BOOLEAN_VALUES = new Set([
+  false,
+  'false',
+  FLOW_BOOLEAN_DECISION.NO,
+  'No',
+  'No / Reject',
+]);
+
+export const mapFlowBooleanValueToApprove = (raw: unknown): boolean => {
+  if (REJECT_FLOW_BOOLEAN_VALUES.has(raw as never)) {
+    return false;
+  }
+
+  if (APPROVE_FLOW_BOOLEAN_VALUES.has(raw as never)) {
+    return true;
+  }
+
+  return raw === true || raw === 'true';
+};
+
+export const isModifyFlowBooleanValue = (raw: unknown): boolean => {
+  return raw === FLOW_BOOLEAN_DECISION.MODIFY || raw === 'Modify';
+};
+
+const buildYesNoModifyRadio = (): FlowComponent => ({
+  type: 'RadioButtonsGroup',
+  name: FLOW_FIELD_KEY_BY_TYPE.BOOLEAN,
+  label: 'Decision',
+  required: true,
+  'data-source': [
+    { id: FLOW_BOOLEAN_DECISION.YES, title: 'Yes' },
+    { id: FLOW_BOOLEAN_DECISION.NO, title: 'No' },
+    { id: FLOW_BOOLEAN_DECISION.MODIFY, title: 'Modify' },
+  ],
+});
+
+// BOOLEAN + TEXT → Yes / No / Modify; text box only when Modify is selected
+const buildYesNoModifyFieldComponents = (): FlowComponent[] => [
+  {
+    type: 'Form',
+    name: 'flow_form',
+    'init-values': {
+      [FLOW_FIELD_KEY_BY_TYPE.TEXT]: '${data.text_init_value}',
+    },
+    children: [
+      {
+        type: 'TextBody',
+        text: '${data.details_body}',
+      },
+      buildYesNoModifyRadio(),
+      {
+        type: 'TextCaption',
+        text: 'Draft to send:',
+      },
+      {
+        type: 'TextBody',
+        text: '${data.text_init_value}',
+      },
+      {
+        type: 'Switch',
+        value: `\${form.${FLOW_FIELD_KEY_BY_TYPE.BOOLEAN}}`,
+        cases: {
+          [FLOW_BOOLEAN_DECISION.MODIFY]: [
+            {
+              type: 'TextArea',
+              name: FLOW_FIELD_KEY_BY_TYPE.TEXT,
+              label: 'Modified message',
+              required: true,
+              'helper-text': '${data.text_helper}',
+            },
+          ],
+        },
+      },
+      {
+        type: 'Footer',
+        label: 'Submit',
+        'on-click-action': {
+          name: 'complete',
+          payload: {
+            [FLOW_FIELD_KEY_BY_TYPE.BOOLEAN]: `\${form.${FLOW_FIELD_KEY_BY_TYPE.BOOLEAN}}`,
+            [FLOW_FIELD_KEY_BY_TYPE.TEXT]: `\${form.${FLOW_FIELD_KEY_BY_TYPE.TEXT}}`,
+          },
+        },
+      },
+    ],
+  },
+];
 
 const buildFieldComponent = (type: string): FlowComponent | null => {
   switch (type) {
@@ -30,8 +134,8 @@ const buildFieldComponent = (type: string): FlowComponent | null => {
         label: 'Decision',
         required: true,
         'data-source': [
-          { id: 'true', title: 'Yes / Approve' },
-          { id: 'false', title: 'No / Reject' },
+          { id: FLOW_BOOLEAN_DECISION.YES, title: 'Yes' },
+          { id: FLOW_BOOLEAN_DECISION.NO, title: 'No' },
         ],
       };
     case 'TEXT':
@@ -98,13 +202,16 @@ const buildCompletePayload = (types: string[]): Record<string, string> => {
   }, {});
 };
 
-const buildScreenDataSchema = (
-  types: string[],
-): Record<string, unknown> => {
+const buildScreenDataSchema = (types: string[]): Record<string, unknown> => {
   const data: Record<string, unknown> = {
     context_heading: {
       type: 'string',
       __example__: 'Please complete this workflow form.',
+    },
+    details_body: {
+      type: 'string',
+      __example__:
+        'Contact: Jane Doe\nCompany: Acme Corp\nDraft: Hi Jane — quick note.',
     },
   };
 
@@ -115,7 +222,7 @@ const buildScreenDataSchema = (
     };
     data.text_helper = {
       type: 'string',
-      __example__: 'Enter your notes',
+      __example__: 'Edit the message that will go out',
     };
   }
 
@@ -187,36 +294,70 @@ export const buildWorkflowFormFlowJson = (
   types: string[],
 ): Record<string, unknown> => {
   const normalizedTypes = [...new Set(types.map((type) => type.toUpperCase()))];
-  const fieldComponents = normalizedTypes
-    .map((type) => buildFieldComponent(type))
-    .filter((component): component is FlowComponent => component !== null);
+  const hasBoolean = normalizedTypes.includes('BOOLEAN');
+  const hasText = normalizedTypes.includes('TEXT');
+  const useYesNoModify = hasBoolean && hasText;
 
-  // Generic fallback: free-text + yes/no when no typed fields matched
-  if (fieldComponents.length === 0) {
-    fieldComponents.push(
-      {
-        type: 'RadioButtonsGroup',
-        name: FLOW_FIELD_KEY_BY_TYPE.BOOLEAN,
-        label: 'Decision',
-        required: true,
-        'data-source': [
-          { id: 'true', title: 'Yes / Approve' },
-          { id: 'false', title: 'No / Reject' },
-        ],
-      },
-      {
-        type: 'TextArea',
-        name: FLOW_FIELD_KEY_BY_TYPE.TEXT,
-        label: 'Notes',
-        required: false,
-        'init-value': '${data.text_init_value}',
-        'helper-text': '${data.text_helper}',
-      },
+  let fieldComponents: FlowComponent[];
+  let embedsYesNoModifyForm = useYesNoModify;
+
+  if (useYesNoModify) {
+    const otherTypes = normalizedTypes.filter(
+      (type) => type !== 'BOOLEAN' && type !== 'TEXT',
     );
+
+    fieldComponents = [
+      ...buildYesNoModifyFieldComponents(),
+      ...otherTypes
+        .map((type) => buildFieldComponent(type))
+        .filter((component): component is FlowComponent => component !== null),
+    ];
+  } else {
+    fieldComponents = normalizedTypes
+      .map((type) => buildFieldComponent(type))
+      .filter((component): component is FlowComponent => component !== null);
+  }
+
+  // Generic fallback: Yes / No / Modify + conditional text when no typed fields matched
+  if (fieldComponents.length === 0) {
+    fieldComponents.push(...buildYesNoModifyFieldComponents());
     normalizedTypes.push('BOOLEAN', 'TEXT');
+    embedsYesNoModifyForm = true;
   }
 
   // Static navigate Flow (no endpoint) — options/context arrive via flow_action_data
+  const screenChildren: FlowComponent[] = [
+    {
+      type: 'TextHeading',
+      text: 'Workflow form',
+    },
+    {
+      type: 'TextBody',
+      text: '${data.context_heading}',
+    },
+    ...(embedsYesNoModifyForm
+      ? []
+      : [
+          {
+            type: 'TextBody',
+            text: '${data.details_body}',
+          } as FlowComponent,
+        ]),
+    ...fieldComponents,
+  ];
+
+  // Yes/No/Modify Form already includes its Submit footer
+  if (!embedsYesNoModifyForm) {
+    screenChildren.push({
+      type: 'Footer',
+      label: 'Submit',
+      'on-click-action': {
+        name: 'complete',
+        payload: buildCompletePayload(normalizedTypes),
+      },
+    });
+  }
+
   return {
     version: '6.0',
     routing_model: {
@@ -231,25 +372,7 @@ export const buildWorkflowFormFlowJson = (
         data: buildScreenDataSchema(normalizedTypes),
         layout: {
           type: 'SingleColumnLayout',
-          children: [
-            {
-              type: 'TextHeading',
-              text: 'Workflow form',
-            },
-            {
-              type: 'TextBody',
-              text: '${data.context_heading}',
-            },
-            ...fieldComponents,
-            {
-              type: 'Footer',
-              label: 'Submit',
-              'on-click-action': {
-                name: 'complete',
-                payload: buildCompletePayload(normalizedTypes),
-              },
-            },
-          ],
+          children: screenChildren,
         },
       },
     ],
@@ -262,20 +385,10 @@ export const getFlowTypesForRegistryName = (
   switch (registryName) {
     case WORKFLOW_FORM_REGISTRY_NAMES.BOOLEAN_TEXT:
       return ['BOOLEAN', 'TEXT'];
-    case WORKFLOW_FORM_REGISTRY_NAMES.TEXT:
-      return ['TEXT'];
-    case WORKFLOW_FORM_REGISTRY_NAMES.NUMBER:
-      return ['NUMBER'];
     case WORKFLOW_FORM_REGISTRY_NAMES.DATE:
       return ['DATE'];
     case WORKFLOW_FORM_REGISTRY_NAMES.SELECT:
       return ['SELECT'];
-    case WORKFLOW_FORM_REGISTRY_NAMES.MULTI_SELECT:
-      return ['MULTI_SELECT'];
-    case WORKFLOW_FORM_REGISTRY_NAMES.TEXT_NUMBER_DATE:
-      return ['TEXT', 'NUMBER', 'DATE'];
-    case WORKFLOW_FORM_REGISTRY_NAMES.GENERIC:
-      return ['BOOLEAN', 'TEXT'];
     default:
       return [];
   }
@@ -289,19 +402,32 @@ export const getFlowNameForRegistry = (
 
 export const getFlowTemplateNameForRegistry = (
   registryName: WorkflowFormRegistryName,
+  version: 'v2' | 'v3' | 'v4' = 'v2',
 ): string => {
-  // v2 templates include Backdrop {{1}} + Details {{2}}.
-  // Do not use legacy `*_flow` names — several are single-variable.
-  return `${registryName}_flow_v2`;
+  // v2: Request {{1}} + Details {{2}} (one-line params; Meta forbids \n in values)
+  // v3: locked name after Utility→Marketing reclass — do not recreate
+  // v4: Request {{1}} + Record {{2}} + Workspace {{3}} + Summary {{4}} with static newlines
+  return `${registryName}_flow_${version}`;
 };
+
+export const usesStructuredFlowTemplate = (
+  registryName: WorkflowFormRegistryName,
+): boolean => {
+  return registryName === WORKFLOW_FORM_REGISTRY_NAMES.BOOLEAN_TEXT;
+};
+
+export const getPreferredStructuredFlowVersion = (): 'v4' => 'v4';
 
 // Map Flow response keys onto form field names using snapshot field types
 export const mapFlowResponseToFormFields = (
   flowResponse: Record<string, unknown>,
-  formSnapshot: Array<{ name: string; type: string }>,
+  formSnapshot: Array<{ name: string; type: string; value?: unknown }>,
 ): Record<string, unknown> => {
   const result: Record<string, unknown> = {};
   const usedFlowKeys = new Set<string>();
+  const booleanRaw = flowResponse[FLOW_FIELD_KEY_BY_TYPE.BOOLEAN];
+  const isApprove = mapFlowBooleanValueToApprove(booleanRaw);
+  const isModify = isModifyFlowBooleanValue(booleanRaw);
 
   for (const field of formSnapshot) {
     const type = field.type.toUpperCase();
@@ -313,6 +439,18 @@ export const mapFlowResponseToFormFields = (
     }
 
     if (!(flowKey in flowResponse)) {
+      // Yes (send as-is): Flow hides the text box, so keep the resolved draft
+      if (
+        type === 'TEXT' &&
+        isApprove &&
+        isModify === false &&
+        field.value !== undefined &&
+        field.value !== null &&
+        field.value !== ''
+      ) {
+        result[field.name] = field.value;
+      }
+
       continue;
     }
 
@@ -320,16 +458,26 @@ export const mapFlowResponseToFormFields = (
     const raw = flowResponse[flowKey];
 
     if (type === 'BOOLEAN') {
-      result[field.name] =
-        raw === true ||
-        raw === 'true' ||
-        raw === 'Yes / Approve' ||
-        raw === 'Yes';
+      result[field.name] = mapFlowBooleanValueToApprove(raw);
     } else if (type === 'NUMBER') {
-      result[field.name] =
-        typeof raw === 'number' ? raw : Number(String(raw));
+      result[field.name] = typeof raw === 'number' ? raw : Number(String(raw));
     } else if (type === 'MULTI_SELECT') {
       result[field.name] = Array.isArray(raw) ? raw : [raw];
+    } else if (type === 'TEXT') {
+      const textValue = typeof raw === 'string' ? raw.trim() : raw;
+
+      // Empty modify box should not wipe the draft — fall back to snapshot
+      if (
+        (textValue === undefined || textValue === null || textValue === '') &&
+        isApprove &&
+        field.value !== undefined &&
+        field.value !== null &&
+        field.value !== ''
+      ) {
+        result[field.name] = field.value;
+      } else {
+        result[field.name] = textValue;
+      }
     } else {
       result[field.name] = raw;
     }

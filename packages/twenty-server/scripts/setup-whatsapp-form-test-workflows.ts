@@ -55,111 +55,35 @@ const FORM_CASES: FormCase[] = [
     ],
   },
   {
-    name: 'WA Form Test — TEXT',
-    registryName: 'wf_form_text',
-    fields: [
-      {
-        id: randomUUID(),
-        name: 'notes',
-        label: 'Notes',
-        type: 'TEXT',
-        placeholder: 'Enter your notes',
-        value: 'Sample: please review outreach draft and reply with edits.',
-      },
-    ],
-  },
-  {
-    name: 'WA Form Test — NUMBER',
-    registryName: 'wf_form_number',
-    fields: [
-      {
-        id: randomUUID(),
-        name: 'amount',
-        label: 'Amount',
-        type: 'NUMBER',
-        placeholder: 'e.g. 1000',
-        value: 250,
-      },
-    ],
-  },
-  {
-    name: 'WA Form Test — DATE',
+    name: 'WA Form Test — DATE (meeting time)',
     registryName: 'wf_form_date',
     fields: [
       {
         id: randomUUID(),
-        name: 'dueDate',
-        label: 'Due date',
+        name: 'startsAt',
+        label: 'Meeting start',
         type: 'DATE',
         value: '2026-08-20',
       },
     ],
   },
   {
-    name: 'WA Form Test — SELECT',
+    name: 'WA Form Test — SELECT (meeting slot)',
     registryName: 'wf_form_select',
     fields: [
       {
         id: randomUUID(),
-        name: 'priority',
-        label: 'Priority',
+        name: 'acceptedSlotIndex',
+        label: 'Meeting slot',
         type: 'SELECT',
-        value: 'medium',
+        value: '0',
         settings: {
           options: [
-            { value: 'low', label: 'Low' },
-            { value: 'medium', label: 'Medium' },
-            { value: 'high', label: 'High' },
+            { value: '0', label: 'Tue 10:00–10:30' },
+            { value: '1', label: 'Tue 14:00–14:30' },
+            { value: '2', label: 'Wed 11:00–11:30' },
           ],
         },
-      },
-    ],
-  },
-  {
-    name: 'WA Form Test — MULTI_SELECT',
-    registryName: 'wf_form_multi_select',
-    fields: [
-      {
-        id: randomUUID(),
-        name: 'channels',
-        label: 'Channels',
-        type: 'MULTI_SELECT',
-        value: ['linkedin', 'email'],
-        settings: {
-          options: [
-            { value: 'linkedin', label: 'LinkedIn' },
-            { value: 'email', label: 'Email' },
-            { value: 'whatsapp', label: 'WhatsApp' },
-          ],
-        },
-      },
-    ],
-  },
-  {
-    name: 'WA Form Test — TEXT+NUMBER+DATE',
-    registryName: 'wf_form_text_number_date',
-    fields: [
-      {
-        id: randomUUID(),
-        name: 'summary',
-        label: 'Summary',
-        type: 'TEXT',
-        placeholder: 'Short summary',
-        value: 'Sample summary for Acme outreach.',
-      },
-      {
-        id: randomUUID(),
-        name: 'score',
-        label: 'Score',
-        type: 'NUMBER',
-        value: 8,
-      },
-      {
-        id: randomUUID(),
-        name: 'followUpAt',
-        label: 'Follow-up date',
-        type: 'DATE',
-        value: '2026-08-25',
       },
     ],
   },
@@ -175,11 +99,11 @@ const FORM_CASES: FormCase[] = [
       },
       {
         id: randomUUID(),
-        name: 'reason',
-        label: 'Reason',
+        name: 'editedBody',
+        label: 'Edited message',
         type: 'TEXT',
-        placeholder: 'Why approve or reject?',
-        value: 'Sample reason: fit looks strong; proceed to intro.',
+        placeholder: 'Message to send',
+        value: 'Sample reply body for WhatsApp HITL.',
       },
     ],
   },
@@ -221,9 +145,9 @@ const graphqlRequest = async <T>(
   return response.data.data;
 };
 
-const extractCreatedStep = (
-  changes: { stepsDiff?: Array<{ type: string; value?: unknown }> },
-): WorkflowStep => {
+const extractCreatedStep = (changes: {
+  stepsDiff?: Array<{ type: string; value?: unknown }>;
+}): WorkflowStep => {
   const stepsDiff = changes.stepsDiff ?? [];
 
   for (const diff of stepsDiff) {

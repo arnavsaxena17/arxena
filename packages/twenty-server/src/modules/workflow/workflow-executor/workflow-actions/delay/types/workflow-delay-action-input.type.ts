@@ -1,6 +1,14 @@
+export type WorkflowDelayDuration = {
+  days?: number | string;
+  hours?: number | string;
+  minutes?: number | string;
+  seconds?: number | string;
+};
+
 export type WorkflowDelayActionInput =
   | WorkflowScheduledDateActionInput
-  | WorkflowDurationDelayActionInput;
+  | WorkflowDurationDelayActionInput
+  | WorkflowRandomDurationDelayActionInput;
 
 export type WorkflowScheduledDateActionInput = {
   delayType: 'SCHEDULED_DATE';
@@ -9,10 +17,11 @@ export type WorkflowScheduledDateActionInput = {
 
 export type WorkflowDurationDelayActionInput = {
   delayType: 'DURATION';
-  duration: {
-    days?: number;
-    hours?: number;
-    minutes?: number;
-    seconds?: number;
-  };
+  duration: WorkflowDelayDuration;
+};
+
+export type WorkflowRandomDurationDelayActionInput = {
+  delayType: 'RANDOM_DURATION';
+  minDuration: WorkflowDelayDuration;
+  maxDuration: WorkflowDelayDuration;
 };

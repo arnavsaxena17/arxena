@@ -194,33 +194,81 @@ describe('GTM outreach workflow graphs', () => {
     ) as {
       settings?: {
         input?: Array<{ name?: string; value?: string }>;
+        notifyOnPending?: { detailsTemplate?: string };
       };
     };
-    const extraFields = approveReply.settings?.input ?? [];
-    const fieldValue = (name: string) =>
-      extraFields.find((field) => field.name === name)?.value;
+    const formFields = (approveReply.settings?.input ?? []).map(
+      (field) => field.name,
+    );
 
-    // Everything a downstream branch gates on must come from the validated
-    // step, never straight from an agent.
-    for (const gatedField of [
-      'startsAt',
-      'endsAt',
-      'replyChannel',
-      'prospectEmail',
-      'referralName',
-      'referralEmail',
-      'referralPhone',
-    ]) {
-      expect(fieldValue(gatedField)).toBe(
-        `{{${byName('Validate inbound signals')?.id}.${gatedField}}}`,
-      );
-    }
+    // WhatsApp Flow only approves send + message text; classification stays
+    // off the form and is read from validate / draft steps.
+    expect(formFields.sort()).toEqual(['approve', 'editedBody']);
+    expect(
+      approveReply.settings?.input?.find((field) => field.name === 'editedBody')
+        ?.value,
+    ).toBe(`{{${byName('Draft sales reply')?.id}.message}}`);
 
-    for (const copyField of ['emailSubject', 'emailBody', 'referralMessage']) {
-      expect(fieldValue(copyField)).toBe(
-        `{{${byName('Draft sales reply')?.id}.${copyField}}}`,
-      );
-    }
+    const validateId = byName('Validate inbound signals')?.id;
+    const draftId = byName('Draft sales reply')?.id;
+    const detailsTemplate =
+      approveReply.settings?.notifyOnPending?.detailsTemplate ?? '';
+
+    expect(detailsTemplate).toContain(`{{${validateId}.replyChannel}}`);
+    expect(detailsTemplate).toContain(`{{${validateId}.startsAt}}`);
+
+    const routeChannel = byName('Reply on last inbound channel');
+    const routeFilters = (
+      routeChannel?.settings as {
+        input?: {
+          stepFilters?: Array<{ stepOutputKey?: string }>;
+        };
+      }
+    )?.input?.stepFilters;
+
+    expect(routeFilters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          stepOutputKey: `{{${validateId}.replyChannel}}`,
+        }),
+      ]),
+    );
+
+    expect(
+      (
+        byName('Send details by email?')?.settings as {
+          input?: { stepFilters?: Array<{ stepOutputKey?: string }> };
+        }
+      )?.input?.stepFilters?.[0]?.stepOutputKey,
+    ).toBe(`{{${validateId}.prospectEmail}}`);
+
+    expect(
+      (
+        byName('Meeting time filled?')?.settings as {
+          input?: { stepFilters?: Array<{ stepOutputKey?: string }> };
+        }
+      )?.input?.stepFilters?.[0]?.stepOutputKey,
+    ).toBe(`{{${validateId}.startsAt}}`);
+
+    const sendProspectEmail = byName('Email details to prospect') as {
+      settings?: {
+        input?: {
+          recipients?: { to?: string };
+          subject?: string;
+          body?: string;
+        };
+      };
+    };
+
+    expect(sendProspectEmail.settings?.input?.recipients?.to).toBe(
+      `{{${validateId}.prospectEmail}}`,
+    );
+    expect(sendProspectEmail.settings?.input?.subject).toBe(
+      `{{${draftId}.emailSubject}}`,
+    );
+    expect(sendProspectEmail.settings?.input?.body).toBe(
+      `{{${draftId}.emailBody}}`,
+    );
 
     const skipSend = byName('Skip send if #DONTRESPOND#');
     const skipFilters = (

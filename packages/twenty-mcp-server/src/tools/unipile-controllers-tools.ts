@@ -6,6 +6,7 @@ import {
   LINKEDIN_UNIPILE_CONNECT_COOKIE_INPUT_DESCRIPTOR,
   LINKEDIN_UNIPILE_CONNECT_CREDENTIALS_INPUT_DESCRIPTOR,
   LINKEDIN_UNIPILE_EXTENSION_SYNC_COOKIES_INPUT_DESCRIPTOR,
+  LINKEDIN_UNIPILE_GET_OWN_PROFILE_INPUT_DESCRIPTOR,
   LINKEDIN_UNIPILE_GET_PROFILE_INPUT_DESCRIPTOR,
   LINKEDIN_UNIPILE_GET_PROFILE_OVERVIEW_INPUT_DESCRIPTOR,
   LINKEDIN_UNIPILE_GET_USER_POSTS_INPUT_DESCRIPTOR,
@@ -35,6 +36,12 @@ const stripKeys = (
     delete body[key];
   }
   return body;
+};
+
+const resolveUnipileAccountId = (args: Record<string, unknown>): string => {
+  const accountId = String(args.accountId ?? args.account_id ?? '').trim();
+
+  return accountId;
 };
 
 const postUnipileTool = (
@@ -220,14 +227,29 @@ export const unipileControllersTools: McpTool[] = [
     'accountId',
     UNIPILE_ACCOUNT_ID_INPUT_DESCRIPTOR,
   ),
-  postUnipileToolWithPathParam(
-    'linkedin_unipile_get_own_profile',
-    'Fetch the connected member own LinkedIn profile via Unipile.',
-    'linkedin-unipile',
-    (accountId) => `profile/me/${accountId}`,
-    'accountId',
-    UNIPILE_ACCOUNT_ID_INPUT_DESCRIPTOR,
-  ),
+  {
+    definition: {
+      name: 'linkedin_unipile_get_own_profile',
+      description:
+        'Retrieve the connected LinkedIn account owner profile via Unipile (GET /api/v1/users/me). Returns name, headline, public identifier/URL, premium, Sales Navigator and Recruiter capability. Pass accountId (or account_id) from Connected Accounts.',
+      inputSchema: descriptorToInputSchema(
+        LINKEDIN_UNIPILE_GET_OWN_PROFILE_INPUT_DESCRIPTOR,
+      ),
+    },
+    handler: async (args, config) => {
+      const accountId = resolveUnipileAccountId(args);
+      if (!accountId) {
+        throw new Error('accountId (or account_id) is required');
+      }
+      return callRestAPI(
+        config.baseUrl,
+        config.apiToken,
+        'linkedin-unipile',
+        `profile/me/${accountId}`,
+        stripKeys(args, ['accountId', 'account_id']),
+      );
+    },
+  },
   postUnipileTool(
     'linkedin_unipile_get_profile',
     'Retrieve one LinkedIn profile by identifier (/in/slug). For searching many profiles use search_linkedin_people or search_linkedin_from_url (linkedin-search / Unipile search API).',

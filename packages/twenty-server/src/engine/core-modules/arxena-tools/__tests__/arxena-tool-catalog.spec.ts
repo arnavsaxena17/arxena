@@ -19,6 +19,10 @@ describe('Arxena tool catalog', () => {
     expect(ARXENA_TOOL_NAMES.has('get_org_chart_node_people')).toBe(true);
     expect(ARXENA_TOOL_NAMES.has('google_serp_search')).toBe(true);
     expect(ARXENA_TOOL_NAMES.has('list_linkedin_relations')).toBe(true);
+    expect(ARXENA_TOOL_NAMES.has('linkedin_unipile_get_own_profile')).toBe(
+      true,
+    );
+    expect(ARXENA_TOOL_NAMES.has('linkedin_unipile_get_profile')).toBe(true);
     expect(ARXENA_TOOL_NAMES.has('classify_taxonomy_profile')).toBe(true);
     expect(ARXENA_TOOL_NAMES.has('list_taxonomy_slice')).toBe(true);
     expect(ARXENA_TOOL_NAMES.has('generate_linkedin_query_agent1')).toBe(false);
