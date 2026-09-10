@@ -91,4 +91,4 @@ backups/
 scripts/aws/.arm64-builder-ami-id
 build-meta.json
 Arxena.code-workspace
-tmp/fireflies-anil/
+tmp/
