@@ -162,6 +162,7 @@ export class OutreachLogicFunctionNativeExecutor
           linkedinProfileId?: string;
           candidateId?: string;
           limit?: number;
+          linkedinApi?: 'classic' | 'sales_navigator' | 'recruiter';
         },
       });
     }

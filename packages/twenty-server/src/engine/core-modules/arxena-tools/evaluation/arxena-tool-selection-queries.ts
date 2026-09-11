@@ -100,6 +100,13 @@ export const ARXENA_TOOL_SELECTION_QUERIES: ToolSelectionQuery[] = [
     expectedToolHints: ['list_linkedin_relations'],
   },
   {
+    id: 's9c',
+    persona: 'sales',
+    query:
+      'Fetch Sales Navigator chat history with this LinkedIn profile and read the messages',
+    expectedToolHints: ['fetch_linkedin_messages'],
+  },
+  {
     id: 's10',
     persona: 'sales',
     query: 'Expand similar job titles for Account Executive',

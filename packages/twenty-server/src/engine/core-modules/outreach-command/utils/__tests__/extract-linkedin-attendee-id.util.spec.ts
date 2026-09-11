@@ -1,11 +1,21 @@
 import {
+  isClassicLinkedInProviderId,
+  isSalesNavigatorLinkedInProviderId,
   isValidLinkedInProviderId,
   pickLinkedinAttendeeIdFromUnipileProfile,
 } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-attendee-id.util';
 
 describe('isValidLinkedInProviderId', () => {
-  it('accepts ACoAA provider ids', () => {
+  it('accepts classic ACoAA and Sales Navigator ACwAA provider ids', () => {
     expect(isValidLinkedInProviderId('ACoAAabcdefghij1234567890')).toBe(true);
+    expect(isValidLinkedInProviderId('ACwAAabcdefghij1234567890')).toBe(true);
+    expect(isClassicLinkedInProviderId('ACoAAabcdefghij1234567890')).toBe(true);
+    expect(
+      isSalesNavigatorLinkedInProviderId('ACwAAabcdefghij1234567890'),
+    ).toBe(true);
+    expect(isClassicLinkedInProviderId('ACwAAabcdefghij1234567890')).toBe(
+      false,
+    );
   });
 
   it('rejects public identifiers and URLs', () => {

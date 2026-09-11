@@ -11,8 +11,11 @@ import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/
 import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/outreach-command/services/linkedin-provider-id.store';
 import {
+  isClassicLinkedInProviderId,
+  isSalesNavigatorLinkedInProviderId,
   isValidLinkedInProviderId,
   pickLinkedinAttendeeIdFromUnipileProfile,
+  type LinkedinMessagingApi,
 } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-attendee-id.util';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
 import { OutreachMessagePersistService } from 'src/engine/core-modules/outreach-command/services/outreach-message-persist.service';
@@ -75,6 +78,8 @@ export type FetchLinkedinMessagesInput = {
   linkedinProfileId?: string;
   candidateId?: string;
   limit?: number;
+  /** Use sales_navigator to resolve ACwAA attendee ids for SN inbox chats. */
+  linkedinApi?: LinkedinMessagingApi;
 };
 
 export type FetchLinkedinMessageItem = {
@@ -238,18 +243,31 @@ export class FetchLinkedinMessagesService {
     }
 
     try {
+      const linkedinApi =
+        input.linkedinApi === 'sales_navigator' ||
+        input.linkedinApi === 'recruiter'
+          ? input.linkedinApi
+          : 'classic';
       const storedProviderId =
         await this.linkedinProviderIdStore.readStoredProviderId({
           workspaceId,
           candidateId: input.candidateId,
           identifier: resolved.identifier,
         });
-      const identifier = isValidLinkedInProviderId(storedProviderId)
-        ? storedProviderId
+      // Stored classic ACoAA ids must not short-circuit Sales Navigator resolution.
+      const canReuseStoredProviderId =
+        linkedinApi === 'sales_navigator'
+          ? isSalesNavigatorLinkedInProviderId(storedProviderId)
+          : linkedinApi === 'classic'
+            ? isValidLinkedInProviderId(storedProviderId)
+            : isValidLinkedInProviderId(storedProviderId);
+      const identifier = canReuseStoredProviderId
+        ? storedProviderId.trim()
         : resolved.identifier;
       const attendeeId = await this.resolveAttendeeId(
         resolved.accountId,
         identifier,
+        { linkedinApi },
       );
 
       if (!isNonEmptyString(attendeeId)) {
@@ -322,23 +340,81 @@ export class FetchLinkedinMessagesService {
   async resolveAttendeeId(
     accountId: string,
     identifier: string,
+    options?: { linkedinApi?: LinkedinMessagingApi },
   ): Promise<string> {
-    if (isValidLinkedInProviderId(identifier)) {
-      return identifier.trim();
+    const linkedinApi = options?.linkedinApi ?? 'classic';
+    const trimmedIdentifier = identifier.trim();
+
+    if (
+      linkedinApi === 'sales_navigator' &&
+      isSalesNavigatorLinkedInProviderId(trimmedIdentifier)
+    ) {
+      return trimmedIdentifier;
     }
 
-    const profile =
+    if (
+      linkedinApi === 'classic' &&
+      isValidLinkedInProviderId(trimmedIdentifier)
+    ) {
+      return trimmedIdentifier;
+    }
+
+    if (linkedinApi === 'classic') {
+      const profile =
+        await this.linkedinUnipileRequestService.fetchLinkedinUserProfile(
+          accountId,
+          trimmedIdentifier,
+          { linkedinSections: [], notify: false },
+        );
+      const fromProfile = pickLinkedinAttendeeIdFromUnipileProfile(profile);
+
+      if (isNonEmptyString(fromProfile)) {
+        return fromProfile;
+      }
+
+      return trimmedIdentifier;
+    }
+
+    // Sales Navigator / Recruiter: classic profile → product profile for ACwAA (etc).
+    let classicProviderId = isClassicLinkedInProviderId(trimmedIdentifier)
+      ? trimmedIdentifier
+      : '';
+
+    if (!isNonEmptyString(classicProviderId)) {
+      const classicProfile =
+        await this.linkedinUnipileRequestService.fetchLinkedinUserProfile(
+          accountId,
+          trimmedIdentifier,
+          { linkedinSections: [], notify: false },
+        );
+      classicProviderId =
+        pickLinkedinAttendeeIdFromUnipileProfile(classicProfile);
+    }
+
+    if (!isNonEmptyString(classicProviderId)) {
+      return '';
+    }
+
+    if (linkedinApi !== 'sales_navigator' && linkedinApi !== 'recruiter') {
+      return classicProviderId;
+    }
+
+    const productProfile =
       await this.linkedinUnipileRequestService.fetchLinkedinUserProfile(
         accountId,
-        identifier,
+        classicProviderId,
+        {
+          linkedinApi,
+          linkedinSections: [],
+          notify: false,
+        },
       );
-    const fromProfile = pickLinkedinAttendeeIdFromUnipileProfile(profile);
+    const productProviderId =
+      pickLinkedinAttendeeIdFromUnipileProfile(productProfile);
 
-    if (isNonEmptyString(fromProfile)) {
-      return fromProfile;
-    }
-
-    return identifier.trim();
+    return isNonEmptyString(productProviderId)
+      ? productProviderId
+      : classicProviderId;
   }
 
   private async makeInboxUnipileRequest(

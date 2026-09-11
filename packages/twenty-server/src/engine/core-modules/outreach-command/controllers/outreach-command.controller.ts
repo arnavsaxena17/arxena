@@ -271,11 +271,7 @@ export class OutreachCommandController {
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
 
-      await this.gtmPeopleCacheService.set(
-        workspaceId,
-        projectId,
-        body.people,
-      );
+      await this.gtmPeopleCacheService.set(workspaceId, projectId, body.people);
 
       return {
         ok: true,
@@ -363,6 +359,7 @@ export class OutreachCommandController {
       linkedinProfileId?: string;
       candidateId?: string;
       limit?: number;
+      linkedinApi?: 'classic' | 'sales_navigator' | 'recruiter';
     },
     @Req() request: { headers?: { authorization?: string } },
   ) {
@@ -575,11 +572,13 @@ export class OutreachCommandController {
     try {
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const result = await this.gtmProjectOutreachControlService.stopCandidates({
-        workspaceId,
-        projectId,
-        candidateIds,
-      });
+      const result = await this.gtmProjectOutreachControlService.stopCandidates(
+        {
+          workspaceId,
+          projectId,
+          candidateIds,
+        },
+      );
 
       return { ok: true, ...result };
     } catch (error) {
@@ -621,10 +620,12 @@ export class OutreachCommandController {
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
 
       if (action === 'pause') {
-        const result = await this.gtmProjectOutreachControlService.pauseProject({
-          workspaceId,
-          projectId,
-        });
+        const result = await this.gtmProjectOutreachControlService.pauseProject(
+          {
+            workspaceId,
+            projectId,
+          },
+        );
 
         return { ok: true, outreachStatus: 'PAUSED', ...result };
       }
@@ -669,19 +670,22 @@ export class OutreachCommandController {
     @Param('candidateId') candidateId: string,
     @Req() request: { headers?: { authorization?: string } },
   ) {
-    return this.withOutreachAuth({ projectId, request }, async (workspaceId) => {
-      const journey = await this.outreachCandidateJourneyService.getJourney({
-        workspaceId,
-        projectId,
-        candidateId,
-      });
+    return this.withOutreachAuth(
+      { projectId, request },
+      async (workspaceId) => {
+        const journey = await this.outreachCandidateJourneyService.getJourney({
+          workspaceId,
+          projectId,
+          candidateId,
+        });
 
-      if (!journey) {
-        throw new HttpException('Candidate not found', HttpStatus.NOT_FOUND);
-      }
+        if (!journey) {
+          throw new HttpException('Candidate not found', HttpStatus.NOT_FOUND);
+        }
 
-      return journey;
-    });
+        return journey;
+      },
+    );
   }
 
   @Post('projects/:projectId/candidates/:candidateId/pause')
@@ -865,7 +869,9 @@ export class OutreachCommandController {
 
       this.logger.error('Outreach journey request failed', error);
       throw new HttpException(
-        error instanceof Error ? error.message : 'Outreach journey request failed',
+        error instanceof Error
+          ? error.message
+          : 'Outreach journey request failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

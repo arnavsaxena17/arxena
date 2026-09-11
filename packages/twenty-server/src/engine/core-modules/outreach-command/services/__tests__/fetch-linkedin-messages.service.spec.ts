@@ -107,6 +107,120 @@ describe('FetchLinkedinMessagesService', () => {
     );
   });
 
+  it('resolves Sales Navigator attendee via classic then SN profile', async () => {
+    const snProviderId = 'ACwAAabcdefghij1234567890';
+    linkedinUnipileRequestService.fetchLinkedinUserProfile
+      .mockResolvedValueOnce({
+        provider_id: VALID_PROVIDER_ID,
+        public_identifier: 'jane-doe',
+      })
+      .mockResolvedValueOnce({
+        provider_id: snProviderId,
+        public_identifier: 'jane-doe',
+      });
+
+    await expect(
+      service.resolveAttendeeId('acc-1', 'jane-doe', {
+        linkedinApi: 'sales_navigator',
+      }),
+    ).resolves.toBe(snProviderId);
+    expect(
+      linkedinUnipileRequestService.fetchLinkedinUserProfile,
+    ).toHaveBeenNthCalledWith(1, 'acc-1', 'jane-doe', {
+      linkedinSections: [],
+      notify: false,
+    });
+    expect(
+      linkedinUnipileRequestService.fetchLinkedinUserProfile,
+    ).toHaveBeenNthCalledWith(2, 'acc-1', VALID_PROVIDER_ID, {
+      linkedinApi: 'sales_navigator',
+      linkedinSections: [],
+      notify: false,
+    });
+  });
+
+  it('uses ACwAA Sales Navigator ids without refetching', async () => {
+    const snProviderId = 'ACwAAabcdefghij1234567890';
+
+    await expect(
+      service.resolveAttendeeId('acc-1', snProviderId, {
+        linkedinApi: 'sales_navigator',
+      }),
+    ).resolves.toBe(snProviderId);
+    expect(
+      linkedinUnipileRequestService.fetchLinkedinUserProfile,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('fetches SN chats when linkedinApi is sales_navigator', async () => {
+    const snProviderId = 'ACwAAabcdefghij1234567890';
+    globalWorkspaceOrmManager.executeInWorkspaceContext.mockResolvedValue({
+      accountId: 'acc-1',
+      identifier: 'jane-doe',
+    });
+    linkedinUnipileRequestService.fetchLinkedinUserProfile
+      .mockResolvedValueOnce({
+        provider_id: VALID_PROVIDER_ID,
+        public_identifier: 'jane-doe',
+      })
+      .mockResolvedValueOnce({
+        provider_id: snProviderId,
+        public_identifier: 'jane-doe',
+      });
+    linkedinUnipileRequestService.makeUnipileRequest.mockImplementation(
+      async (endpoint: string) => {
+        if (endpoint.includes('/sync')) {
+          return { status: 'SYNC_DONE' };
+        }
+        if (endpoint.includes('/chats?')) {
+          return {
+            items: [
+              {
+                id: 'sn-chat-1',
+                attendee_provider_id: snProviderId,
+              },
+            ],
+          };
+        }
+        if (endpoint.includes('/chats/') && endpoint.includes('/messages?')) {
+          return {
+            items: [
+              {
+                id: 'msg-sn',
+                text: 'SN hello',
+                timestamp: '2026-08-01T00:00:00.000Z',
+                is_sender: 0,
+                sender_id: snProviderId,
+              },
+            ],
+            cursor: null,
+          };
+        }
+        return {};
+      },
+    );
+
+    await expect(
+      service.execute({
+        workspaceId: 'ws-1',
+        input: {
+          linkedinUrl: 'https://www.linkedin.com/in/jane-doe',
+          linkedinApi: 'sales_navigator',
+        },
+      }),
+    ).resolves.toMatchObject({
+      success: true,
+      chatId: 'sn-chat-1',
+      attendeeId: snProviderId,
+      total: 1,
+      messages: [{ id: 'msg-sn', text: 'SN hello' }],
+    });
+
+    const endpoints = requestedEndpoints();
+    expect(endpoints[0]).toContain(snProviderId);
+    expect(endpoints[0]).toContain('/sync?');
+  });
+
   it('syncs attendee history, lists chats, then loads messages from the chat', async () => {
     globalWorkspaceOrmManager.executeInWorkspaceContext.mockResolvedValue({
       accountId: 'acc-1',
@@ -173,7 +287,10 @@ describe('FetchLinkedinMessagesService', () => {
     });
     expect(
       linkedinUnipileRequestService.fetchLinkedinUserProfile,
-    ).toHaveBeenCalledWith('acc-1', 'jane-doe');
+    ).toHaveBeenCalledWith('acc-1', 'jane-doe', {
+      linkedinSections: [],
+      notify: false,
+    });
     expect(requestedEndpoints()[2]).toBe(
       '/api/v1/chats/chat-1/messages?limit=50',
     );

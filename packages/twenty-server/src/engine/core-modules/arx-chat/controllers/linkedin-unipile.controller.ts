@@ -116,7 +116,37 @@ interface LinkedinProfileDto {
   account_id: string;
   identifier: string;
   linkedin_sections?: string[];
+  /** Use sales_navigator or recruiter when fetching product-specific provider_id. */
+  linkedin_api?: 'sales_navigator' | 'recruiter';
   notify?: boolean;
+}
+
+interface LinkedinListChatsDto {
+  account_id: string;
+  limit?: number;
+  cursor?: string;
+  unread?: boolean;
+  before?: string;
+  after?: string;
+}
+
+interface LinkedinListAttendeeChatsDto {
+  account_id: string;
+  /** Unipile attendee id or LinkedIn provider_id (prefer Sales Navigator provider_id for SN chats). */
+  attendee_id: string;
+  limit?: number;
+  cursor?: string;
+  before?: string;
+  after?: string;
+}
+
+interface LinkedinListChatMessagesDto {
+  chat_id: string;
+  limit?: number;
+  cursor?: string;
+  before?: string;
+  after?: string;
+  sender_id?: string;
 }
 
 interface LinkedinUserPostsDto {
@@ -1968,6 +1998,10 @@ export class LinkedinUnipileController {
         queryParams.append('linkedin_sections', profileRequest.linkedin_sections.join(','));
       }
 
+      if (profileRequest.linkedin_api) {
+        queryParams.append('linkedin_api', profileRequest.linkedin_api);
+      }
+
       if (profileRequest.notify !== undefined) {
         queryParams.append('notify', profileRequest.notify.toString());
       }
@@ -1979,6 +2013,145 @@ export class LinkedinUnipileController {
       };
     } catch (error) {
       this.logger.error('Failed to get LinkedIn profile:', error);
+      throw error;
+    }
+  }
+
+  @Post('chats/list')
+  async listChats(
+    @Body() chatsRequest: LinkedinListChatsDto,
+    @AuthWorkspace() _workspace: WorkspaceEntity,
+  ) {
+    try {
+      const queryParams = new URLSearchParams({
+        account_id: chatsRequest.account_id,
+        account_type: 'LINKEDIN',
+      });
+
+      if (chatsRequest.limit !== undefined) {
+        queryParams.append('limit', String(chatsRequest.limit));
+      }
+
+      if (chatsRequest.cursor) {
+        queryParams.append('cursor', chatsRequest.cursor);
+      }
+
+      if (chatsRequest.unread !== undefined) {
+        queryParams.append('unread', String(chatsRequest.unread));
+      }
+
+      if (chatsRequest.before) {
+        queryParams.append('before', chatsRequest.before);
+      }
+
+      if (chatsRequest.after) {
+        queryParams.append('after', chatsRequest.after);
+      }
+
+      const response =
+        await this.linkedinUnipileRequestService.makeUnipileRequest(
+          `/api/v1/chats?${queryParams}`,
+        );
+
+      return {
+        success: true,
+        chats: response,
+      };
+    } catch (error) {
+      this.logger.error('Failed to list LinkedIn chats:', error);
+      throw error;
+    }
+  }
+
+  @Post('chats/by-attendee')
+  async listAttendeeChats(
+    @Body() chatsRequest: LinkedinListAttendeeChatsDto,
+    @AuthWorkspace() _workspace: WorkspaceEntity,
+  ) {
+    try {
+      const queryParams = new URLSearchParams({
+        account_id: chatsRequest.account_id,
+      });
+
+      if (chatsRequest.limit !== undefined) {
+        queryParams.append('limit', String(chatsRequest.limit));
+      }
+
+      if (chatsRequest.cursor) {
+        queryParams.append('cursor', chatsRequest.cursor);
+      }
+
+      if (chatsRequest.before) {
+        queryParams.append('before', chatsRequest.before);
+      }
+
+      if (chatsRequest.after) {
+        queryParams.append('after', chatsRequest.after);
+      }
+
+      const response =
+        await this.linkedinUnipileRequestService.makeUnipileRequest(
+          `/api/v1/chat_attendees/${encodeURIComponent(chatsRequest.attendee_id)}/chats?${queryParams}`,
+        );
+
+      return {
+        success: true,
+        chats: response,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to list LinkedIn chats for attendee ${chatsRequest.attendee_id}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  @Post('chats/messages')
+  async listChatMessages(
+    @Body() messagesRequest: LinkedinListChatMessagesDto,
+    @AuthWorkspace() _workspace: WorkspaceEntity,
+  ) {
+    try {
+      const queryParams = new URLSearchParams();
+
+      if (messagesRequest.limit !== undefined) {
+        queryParams.append('limit', String(messagesRequest.limit));
+      }
+
+      if (messagesRequest.cursor) {
+        queryParams.append('cursor', messagesRequest.cursor);
+      }
+
+      if (messagesRequest.before) {
+        queryParams.append('before', messagesRequest.before);
+      }
+
+      if (messagesRequest.after) {
+        queryParams.append('after', messagesRequest.after);
+      }
+
+      if (messagesRequest.sender_id) {
+        queryParams.append('sender_id', messagesRequest.sender_id);
+      }
+
+      const query = queryParams.toString();
+      const response =
+        await this.linkedinUnipileRequestService.makeUnipileRequest(
+          `/api/v1/chats/${encodeURIComponent(messagesRequest.chat_id)}/messages${
+            query ? `?${query}` : ''
+          }`,
+        );
+
+      return {
+        success: true,
+        messages: response,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to list LinkedIn messages for chat ${messagesRequest.chat_id}:`,
+        error,
+      );
       throw error;
     }
   }

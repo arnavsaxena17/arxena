@@ -445,6 +445,50 @@ export const GET_ALL_MESSAGES_BY_CANDIDATE_ID_INPUT_DESCRIPTOR: readonly McpInpu
     },
   ] as const;
 
+export const FETCH_LINKEDIN_MESSAGES_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
+  [
+    {
+      key: 'linkedinUrl',
+      type: 'string',
+      description:
+        'LinkedIn profile URL (e.g. https://www.linkedin.com/in/jane-doe). Prefer this or linkedinProfileId.',
+      required: false,
+    },
+    {
+      key: 'linkedinProfileId',
+      type: 'string',
+      description: 'LinkedIn /in/slug or provider_id when URL is unavailable',
+      required: false,
+    },
+    {
+      key: 'candidateId',
+      type: 'string',
+      description:
+        'Optional CRM candidate id — used to resolve LinkedIn URL and persist transcript',
+      required: false,
+    },
+    {
+      key: 'limit',
+      type: 'number',
+      description: 'Max messages to return (1-250, default 50)',
+      required: false,
+    },
+    {
+      key: 'linkedinApi',
+      type: 'string',
+      description:
+        'classic (default), sales_navigator, or recruiter. Use sales_navigator for Sales Navigator inbox chats (resolves ACwAA attendee id).',
+      required: false,
+    },
+    {
+      key: 'workspaceMemberId',
+      type: 'string',
+      description:
+        'Optional workspace member whose LinkedIn Unipile account to use (defaults to current user)',
+      required: false,
+    },
+  ] as const;
+
 /** Descriptor for upload_jd tool input. */
 export const UPLOAD_JD_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
   {
@@ -2594,7 +2638,8 @@ export const LINKEDIN_UNIPILE_GET_PROFILE_INPUT_DESCRIPTOR: readonly McpInputFie
     {
       key: 'identifier',
       type: 'string',
-      description: 'LinkedIn profile identifier or URL slug (/in/username)',
+      description:
+        'LinkedIn public slug (/in/username) or provider_id. For Sales Navigator chats, first fetch classic by slug, then refetch with classic provider_id and linkedin_api=sales_navigator to get the SN provider_id.',
       required: true,
     },
     {
@@ -2604,9 +2649,138 @@ export const LINKEDIN_UNIPILE_GET_PROFILE_INPUT_DESCRIPTOR: readonly McpInputFie
       required: false,
     },
     {
+      key: 'linkedin_api',
+      type: 'string',
+      description:
+        'Optional LinkedIn product API: sales_navigator or recruiter. Omit for classic. Required to resolve Sales Navigator provider_id used by attendee chat listing.',
+      required: false,
+    },
+    {
       key: 'notify',
       type: 'boolean',
       description: 'Whether to notify on profile view',
+      required: false,
+    },
+  ] as const;
+
+export const LINKEDIN_UNIPILE_LIST_CHATS_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
+  [
+    {
+      key: 'account_id',
+      type: 'string',
+      description: 'LinkedIn Unipile account ID',
+      required: true,
+    },
+    {
+      key: 'limit',
+      type: 'number',
+      description: 'Max chats to return (1-250, default Unipile limit)',
+      required: false,
+    },
+    {
+      key: 'cursor',
+      type: 'string',
+      description: 'Pagination cursor from a previous response',
+      required: false,
+    },
+    {
+      key: 'unread',
+      type: 'boolean',
+      description: 'Filter to unread-only or read-only chats',
+      required: false,
+    },
+    {
+      key: 'before',
+      type: 'string',
+      description: 'ISO 8601 UTC datetime exclusive upper bound',
+      required: false,
+    },
+    {
+      key: 'after',
+      type: 'string',
+      description: 'ISO 8601 UTC datetime exclusive lower bound',
+      required: false,
+    },
+  ] as const;
+
+export const LINKEDIN_UNIPILE_LIST_ATTENDEE_CHATS_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
+  [
+    {
+      key: 'account_id',
+      type: 'string',
+      description: 'LinkedIn Unipile account ID',
+      required: true,
+    },
+    {
+      key: 'attendee_id',
+      type: 'string',
+      description:
+        'Unipile attendee id or LinkedIn provider_id. For Sales Navigator inbox chats, pass the sales_navigator provider_id from linkedin_unipile_get_profile with linkedin_api=sales_navigator.',
+      required: true,
+    },
+    {
+      key: 'limit',
+      type: 'number',
+      description: 'Max chats to return (1-250)',
+      required: false,
+    },
+    {
+      key: 'cursor',
+      type: 'string',
+      description: 'Pagination cursor from a previous response',
+      required: false,
+    },
+    {
+      key: 'before',
+      type: 'string',
+      description: 'ISO 8601 UTC datetime exclusive upper bound',
+      required: false,
+    },
+    {
+      key: 'after',
+      type: 'string',
+      description: 'ISO 8601 UTC datetime exclusive lower bound',
+      required: false,
+    },
+  ] as const;
+
+export const LINKEDIN_UNIPILE_LIST_CHAT_MESSAGES_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
+  [
+    {
+      key: 'chat_id',
+      type: 'string',
+      description:
+        'Unipile chat id from linkedin_unipile_list_chats or linkedin_unipile_list_attendee_chats',
+      required: true,
+    },
+    {
+      key: 'limit',
+      type: 'number',
+      description: 'Max messages to return (1-250)',
+      required: false,
+    },
+    {
+      key: 'cursor',
+      type: 'string',
+      description: 'Pagination cursor from a previous response',
+      required: false,
+    },
+    {
+      key: 'before',
+      type: 'string',
+      description: 'ISO 8601 UTC datetime exclusive upper bound',
+      required: false,
+    },
+    {
+      key: 'after',
+      type: 'string',
+      description: 'ISO 8601 UTC datetime exclusive lower bound',
+      required: false,
+    },
+    {
+      key: 'sender_id',
+      type: 'string',
+      description: 'Optional filter by sender id',
       required: false,
     },
   ] as const;

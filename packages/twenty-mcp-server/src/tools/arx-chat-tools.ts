@@ -1,9 +1,10 @@
 import {
+  FETCH_LINKEDIN_MESSAGES_INPUT_DESCRIPTOR,
   GET_ALL_MESSAGES_BY_CANDIDATE_ID_INPUT_DESCRIPTOR,
   SEND_BULK_CHATS_BY_CANDIDATE_IDS_INPUT_DESCRIPTOR,
   SEND_CHAT_INPUT_DESCRIPTOR,
   SHARE_JD_TO_CANDIDATE_INPUT_DESCRIPTOR,
-  UPLOAD_JD_INPUT_DESCRIPTOR
+  UPLOAD_JD_INPUT_DESCRIPTOR,
 } from '../utils/McpToolSchemas';
 
 import { callRestAPI } from '../api/rest-client';
@@ -20,15 +21,24 @@ export const arxChatTools: McpTool[] = [
     },
     handler: async (args, config) => {
       const body = args as Record<string, unknown>;
-      return callRestAPI(config.baseUrl, config.apiToken, 'arx-chat', 'send-chat', body);
+      return callRestAPI(
+        config.baseUrl,
+        config.apiToken,
+        'arx-chat',
+        'send-chat',
+        body,
+      );
     },
   },
 
   {
     definition: {
       name: 'get_all_messages_by_candidate_id',
-      description: 'Retrieve full chat history for a candidate by their candidate ID.',
-      inputSchema: descriptorToInputSchema(GET_ALL_MESSAGES_BY_CANDIDATE_ID_INPUT_DESCRIPTOR),
+      description:
+        'Retrieve full chat history for a candidate by their candidate ID.',
+      inputSchema: descriptorToInputSchema(
+        GET_ALL_MESSAGES_BY_CANDIDATE_ID_INPUT_DESCRIPTOR,
+      ),
     },
     handler: async (args, config) => {
       const body = args as Record<string, unknown>;
@@ -44,35 +54,72 @@ export const arxChatTools: McpTool[] = [
 
   {
     definition: {
-      name: 'share_jd_to_candidate',
-      description: 'Share a job description (JD) with a candidate via chat.',
-      inputSchema: descriptorToInputSchema(SHARE_JD_TO_CANDIDATE_INPUT_DESCRIPTOR),
+      name: 'fetch_linkedin_messages',
+      description:
+        'Fetch LinkedIn chat messages for a person by linkedinUrl / linkedinProfileId / candidateId via Unipile. One call resolves profile → attendee chats → messages. Pass linkedinApi=sales_navigator for Sales Navigator inbox history.',
+      inputSchema: descriptorToInputSchema(
+        FETCH_LINKEDIN_MESSAGES_INPUT_DESCRIPTOR,
+      ),
     },
     handler: async (args, config) => {
       const body = args as Record<string, unknown>;
-      return callRestAPI(config.baseUrl, config.apiToken, 'arx-chat', 'share-jd-to-candidate', body);
+      return callRestAPI(
+        config.baseUrl,
+        config.apiToken,
+        'outreach-command',
+        'fetch-linkedin-messages',
+        body,
+      );
+    },
+  },
+
+  {
+    definition: {
+      name: 'share_jd_to_candidate',
+      description: 'Share a job description (JD) with a candidate via chat.',
+      inputSchema: descriptorToInputSchema(
+        SHARE_JD_TO_CANDIDATE_INPUT_DESCRIPTOR,
+      ),
+    },
+    handler: async (args, config) => {
+      const body = args as Record<string, unknown>;
+      return callRestAPI(
+        config.baseUrl,
+        config.apiToken,
+        'arx-chat',
+        'share-jd-to-candidate',
+        body,
+      );
     },
   },
 
   {
     definition: {
       name: 'upload_jd',
-      description: 'Upload a job description file for use in sharing or search.',
+      description:
+        'Upload a job description file for use in sharing or search.',
       inputSchema: descriptorToInputSchema(UPLOAD_JD_INPUT_DESCRIPTOR),
     },
     handler: async (args, config) => {
       const body = args as Record<string, unknown>;
-      return callRestAPI(config.baseUrl, config.apiToken, 'candidate-sourcing', 'upload-jd', body);
+      return callRestAPI(
+        config.baseUrl,
+        config.apiToken,
+        'candidate-sourcing',
+        'upload-jd',
+        body,
+      );
     },
   },
-
 
   {
     definition: {
       name: 'send_bulk_chats_by_candidate_ids',
       description: 'Send the same message to multiple candidates by their IDs.',
       inputSchema: (() => {
-        const baseSchema = descriptorToInputSchema(SEND_BULK_CHATS_BY_CANDIDATE_IDS_INPUT_DESCRIPTOR);
+        const baseSchema = descriptorToInputSchema(
+          SEND_BULK_CHATS_BY_CANDIDATE_IDS_INPUT_DESCRIPTOR,
+        );
         // Handle array type for candidateIds
         return {
           ...baseSchema,

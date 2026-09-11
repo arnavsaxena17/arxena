@@ -379,6 +379,7 @@ export class SystemPromptBuilderService {
           `- Sales Navigator: ${connectedAccountsContext.salesNavigatorAvailable ? 'available' : 'not available'}`,
           `- Recruiter: ${connectedAccountsContext.recruiterAvailable ? 'available' : 'not available'}`,
           `- To load the user's own LinkedIn profile, call linkedin_unipile_get_own_profile with accountId=${connectedAccountsContext.accountId}.`,
+          `- LinkedIn chat history for a person: call fetch_linkedin_messages with linkedinUrl (or linkedinProfileId / candidateId). Pass linkedinApi=sales_navigator for Sales Navigator inbox chats.`,
           `- Only use searchType values listed as available. If the user asks for Sales Nav or Recruiter and it is not available, explain that and fall back to classic or Harvest.`,
         ]
       : [

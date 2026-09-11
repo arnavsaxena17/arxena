@@ -95,6 +95,8 @@ describe('SystemPromptBuilderService', () => {
       expect(result).toContain(
         'linkedin_unipile_get_own_profile with accountId=acc-123',
       );
+      expect(result).toContain('fetch_linkedin_messages');
+      expect(result).toContain('linkedinApi=sales_navigator');
     });
 
     it('instructs the model not to call Unipile search when disconnected', () => {

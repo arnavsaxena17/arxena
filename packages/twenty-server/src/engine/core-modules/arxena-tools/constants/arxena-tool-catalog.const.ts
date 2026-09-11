@@ -343,7 +343,14 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
     pack: 'prospecting',
     label: 'Get LinkedIn Profile',
     description:
-      'Retrieve one LinkedIn profile by identifier (/in/slug) via Unipile. Pass account_id from Connected Accounts. For searching many profiles use search_linkedin_people instead.',
+      'Retrieve one LinkedIn profile by /in/slug or provider_id via Unipile. Pass account_id from Connected Accounts. Optional linkedin_api=sales_navigator|recruiter for product-specific provider_id. For searching many profiles use search_linkedin_people instead. For chat history prefer fetch_linkedin_messages.',
+  },
+  {
+    name: 'fetch_linkedin_messages',
+    pack: 'outreach',
+    label: 'Fetch LinkedIn Messages',
+    description:
+      'Fetch LinkedIn chat messages by linkedinUrl / linkedinProfileId / candidateId via Unipile (profile → chats → messages in one call). Pass linkedinApi=sales_navigator for Sales Navigator inbox history.',
   },
   {
     name: 'search_linkedin_parameters',

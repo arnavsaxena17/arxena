@@ -23,6 +23,14 @@ describe('Arxena tool catalog', () => {
       true,
     );
     expect(ARXENA_TOOL_NAMES.has('linkedin_unipile_get_profile')).toBe(true);
+    expect(ARXENA_TOOL_NAMES.has('fetch_linkedin_messages')).toBe(true);
+    expect(ARXENA_TOOL_NAMES.has('linkedin_unipile_list_chats')).toBe(false);
+    expect(ARXENA_TOOL_NAMES.has('linkedin_unipile_list_attendee_chats')).toBe(
+      false,
+    );
+    expect(ARXENA_TOOL_NAMES.has('linkedin_unipile_list_chat_messages')).toBe(
+      false,
+    );
     expect(ARXENA_TOOL_NAMES.has('classify_taxonomy_profile')).toBe(true);
     expect(ARXENA_TOOL_NAMES.has('list_taxonomy_slice')).toBe(true);
     expect(ARXENA_TOOL_NAMES.has('generate_linkedin_query_agent1')).toBe(false);

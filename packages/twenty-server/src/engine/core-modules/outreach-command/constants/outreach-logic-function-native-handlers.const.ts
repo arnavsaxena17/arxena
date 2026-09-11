@@ -129,6 +129,7 @@ export const main = async (params: {
   linkedinProfileId?: string;
   candidateId?: string;
   limit?: number;
+  linkedinApi?: 'classic' | 'sales_navigator' | 'recruiter';
 }) => {
   return params;
 };
