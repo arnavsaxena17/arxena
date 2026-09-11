@@ -6,6 +6,10 @@ import * as path from 'path';
 
 import { isDefined } from 'twenty-shared/utils';
 
+import {
+  ARXENA_INTERNAL_TOOL_NAMES,
+  ARXENA_TOOL_CATALOG,
+} from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-catalog.const';
 import { type ArxenaMcpToolDefinition } from 'src/engine/core-modules/arxena-tools/types/arxena-mcp-tool-definition.type';
 
 type CachedCatalog = {
@@ -14,6 +18,35 @@ type CachedCatalog = {
 };
 
 const CATALOG_TTL_MS = 5 * 60 * 1000;
+const LEARN_TOOLS_BATCH_SIZE = 40;
+
+const extractJsonFromMcpResult = (result: unknown): unknown => {
+  if (!isDefined(result) || typeof result !== 'object') {
+    return result;
+  }
+
+  const content = (
+    result as { content?: Array<{ type?: string; text?: string }> }
+  ).content;
+
+  if (Array.isArray(content)) {
+    const textParts = content
+      .filter((part) => part.type === 'text' && typeof part.text === 'string')
+      .map((part) => part.text as string);
+
+    if (textParts.length > 0) {
+      const joined = textParts.join('\n');
+
+      try {
+        return JSON.parse(joined) as unknown;
+      } catch {
+        return joined;
+      }
+    }
+  }
+
+  return result;
+};
 
 @Injectable()
 export class ArxenaMcpBridgeService {
@@ -35,13 +68,7 @@ export class ArxenaMcpBridgeService {
         'dist',
         'index.js',
       ),
-      path.join(
-        process.cwd(),
-        '..',
-        'twenty-mcp-server',
-        'dist',
-        'index.js',
-      ),
+      path.join(process.cwd(), '..', 'twenty-mcp-server', 'dist', 'index.js'),
       path.resolve(
         __dirname,
         '..',
@@ -113,6 +140,59 @@ export class ArxenaMcpBridgeService {
     }
   }
 
+  private getCatalogToolNames(): string[] {
+    return ARXENA_TOOL_CATALOG.map((entry) => entry.name).filter(
+      (name) => !ARXENA_INTERNAL_TOOL_NAMES.has(name),
+    );
+  }
+
+  private async learnToolDefinitions(
+    client: Client,
+    toolNames: string[],
+  ): Promise<ArxenaMcpToolDefinition[]> {
+    const learned: ArxenaMcpToolDefinition[] = [];
+
+    for (
+      let offset = 0;
+      offset < toolNames.length;
+      offset += LEARN_TOOLS_BATCH_SIZE
+    ) {
+      const batch = toolNames.slice(offset, offset + LEARN_TOOLS_BATCH_SIZE);
+      const result = await client.callTool({
+        name: 'learn_tools',
+        arguments: { toolNames: batch },
+      });
+      const parsed = extractJsonFromMcpResult(result) as {
+        tools?: Array<{
+          name?: string;
+          description?: string;
+          inputSchema?: object;
+        }>;
+      };
+
+      if (!Array.isArray(parsed?.tools)) {
+        continue;
+      }
+
+      for (const tool of parsed.tools) {
+        if (typeof tool.name !== 'string' || tool.name.length === 0) {
+          continue;
+        }
+
+        learned.push({
+          name: tool.name,
+          description: tool.description,
+          inputSchema:
+            typeof tool.inputSchema === 'object' && isDefined(tool.inputSchema)
+              ? tool.inputSchema
+              : { type: 'object', properties: {} },
+        });
+      }
+    }
+
+    return learned;
+  }
+
   async listTools(apiToken: string): Promise<ArxenaMcpToolDefinition[]> {
     const now = Date.now();
 
@@ -124,16 +204,9 @@ export class ArxenaMcpBridgeService {
     }
 
     const tools = await this.withClient(apiToken, undefined, async (client) => {
-      const result = await client.listTools();
+      const catalogNames = this.getCatalogToolNames();
 
-      return result.tools.map((tool) => ({
-        name: tool.name,
-        description: tool.description,
-        inputSchema:
-          typeof tool.inputSchema === 'object' && isDefined(tool.inputSchema)
-            ? (tool.inputSchema as object)
-            : { type: 'object', properties: {} },
-      }));
+      return this.learnToolDefinitions(client, catalogNames);
     });
 
     this.catalogCache = { tools, fetchedAt: now };
@@ -150,8 +223,11 @@ export class ArxenaMcpBridgeService {
   ): Promise<unknown> {
     return this.withClient(apiToken, workspaceMemberId, async (client) => {
       const result = await client.callTool({
-        name,
-        arguments: args,
+        name: 'execute_tool',
+        arguments: {
+          toolName: name,
+          arguments: args,
+        },
       });
 
       return result;

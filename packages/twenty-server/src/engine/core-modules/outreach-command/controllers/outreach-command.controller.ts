@@ -18,6 +18,7 @@ import { isDefined } from 'twenty-shared/utils';
 import { OutreachInboundReplyWindowService } from 'src/engine/core-modules/outreach-command/jobs/outreach-inbound-reply-window.job';
 import { FetchLinkedinMessagesService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-messages.service';
 import { FetchLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-profile.service';
+import { VisitLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/visit-linkedin-profile.service';
 import { OutreachFakeProfileDetectorService } from 'src/engine/core-modules/outreach-command/services/outreach-fake-profile-detector.service';
 import { OutreachFilterProfilesService } from 'src/engine/core-modules/outreach-command/services/outreach-filter-profiles.service';
 import { OutreachCommandMaterializeService } from 'src/engine/core-modules/outreach-command/services/outreach-command-materialize.service';
@@ -45,6 +46,7 @@ export class OutreachCommandController {
     private readonly gtmPeopleCacheService: OutreachPeopleCacheService,
     private readonly searchPeopleForCompanyService: SearchPeopleForCompanyService,
     private readonly fetchLinkedinProfileService: FetchLinkedinProfileService,
+    private readonly visitLinkedinProfileService: VisitLinkedinProfileService,
     private readonly fetchLinkedinMessagesService: FetchLinkedinMessagesService,
     private readonly gtmInboundReplyWindowService: OutreachInboundReplyWindowService,
     private readonly gtmCommandMaterializeService: OutreachCommandMaterializeService,
@@ -345,6 +347,32 @@ export class OutreachCommandController {
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
 
     return this.fetchLinkedinProfileService.execute({
+      workspaceId,
+      input: body,
+    });
+  }
+
+  @Post('visit-linkedin-profile')
+  async visitLinkedinProfile(
+    @Body()
+    body: {
+      workspaceMemberId?: string;
+      linkedinUrl?: string;
+      linkedinProfileId?: string;
+      candidateId?: string;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    const workspaceId =
+      await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+    return this.visitLinkedinProfileService.execute({
       workspaceId,
       input: body,
     });

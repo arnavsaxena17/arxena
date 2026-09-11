@@ -87,8 +87,20 @@ Quit Claude Desktop fully (Cmd+Q) after editing the config.
 - **Docs:** https://mcp.arxena.com/docs/mcp
 - **OAuth:** `MCP_OAUTH_ENABLED=true` with consent at `/oauth/consent`
 - **Claude callback:** `https://claude.ai/api/mcp/auth_callback`
-- **OpenAI:** implement `search` + `fetch` tools (included in `publicTools`)
+- **OpenAI:** top-level `search` + `fetch` (company knowledge)
 
 ## Tools
 
-~99 public tools (org charts, candidates, LinkedIn search, messaging) plus `search`/`fetch` for company knowledge. Tool `title` and `readOnlyHint`/`destructiveHint` annotations are applied automatically via `utils/tool-metadata.ts`.
+Meta-tool surface (default, `MCP_META_TOOLS_ONLY=true`):
+
+| Tool | Role |
+| --- | --- |
+| `get_tool_catalog` | Browse GTM tools by pack |
+| `learn_tools` | Fetch input schemas for named tools |
+| `execute_tool` | Run a GTM tool by name |
+| `list_skills` / `load_skills` | GTM playbooks (org chart, search, outreach, …) |
+| `search` / `fetch` | OpenAI company-knowledge (top-level) |
+
+Underlying org-chart, candidate, LinkedIn, and messaging handlers stay in-process but are **not** listed in `tools/list`. Flow: `load_skills` → `learn_tools` → `execute_tool`.
+
+Set `MCP_FLAT_TOOLS=true` only for local debugging (lists every handler). Tool `title` and `readOnlyHint`/`destructiveHint` annotations are applied via `utils/tool-metadata.ts`.

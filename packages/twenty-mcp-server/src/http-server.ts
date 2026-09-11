@@ -313,7 +313,7 @@ const renderConsentPage = (params: {
 </html>`;
 };
 
-const resolveTools = (config: HttpServerConfig): McpTool[] =>
+const resolveExecutableTools = (config: HttpServerConfig): McpTool[] =>
   config.mcpPublicToolsOnly ? publicTools : allTools;
 
 const getResourceMetadataUrl = (config: HttpServerConfig): string =>
@@ -328,7 +328,7 @@ export const createHttpApp = (
   });
 
   const oauthProvider = new ArxenaOAuthProvider(config);
-  const tools = resolveTools(config);
+  const executableTools = resolveExecutableTools(config);
   const resourceMetadataUrl = getResourceMetadataUrl(config);
 
   if (config.oauthEnabled) {
@@ -598,7 +598,9 @@ export const createHttpApp = (
         },
       });
 
-      const server = buildMcpServer(arxenaConfig, tools);
+      const server = buildMcpServer(arxenaConfig, executableTools, {
+        metaToolsOnly: config.mcpMetaToolsOnly,
+      });
       await server.connect(transport);
       session = { transport, config: arxenaConfig };
     }
@@ -644,6 +646,7 @@ export const startHttpMcpServer = async (
           path: config.mcpHttpPath,
           mcpPublicUrl: config.mcpPublicUrl,
           oauthEnabled: config.oauthEnabled,
+          metaToolsOnly: config.mcpMetaToolsOnly,
         }),
       );
       resolve();

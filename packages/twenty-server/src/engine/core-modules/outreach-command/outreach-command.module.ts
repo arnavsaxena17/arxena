@@ -18,6 +18,7 @@ import { EnsureOutreachProjectService } from 'src/engine/core-modules/outreach-c
 import { FetchCompanyDetailsService } from 'src/engine/core-modules/outreach-command/services/fetch-company-details.service';
 import { FetchLinkedinMessagesService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-messages.service';
 import { FetchLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-profile.service';
+import { VisitLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/visit-linkedin-profile.service';
 import { FetchUserCommentsService } from 'src/engine/core-modules/outreach-command/services/fetch-user-comments.service';
 import { OutreachLogicFunctionNativeExecutor } from 'src/engine/core-modules/outreach-command/services/outreach-logic-function-native.executor';
 import { OutreachUnipilePacingService } from 'src/engine/core-modules/outreach-command/services/outreach-unipile-pacing.service';
@@ -154,6 +155,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     SearchPostsService,
     LinkedinProviderIdStoreService,
     FetchLinkedinProfileService,
+    VisitLinkedinProfileService,
     FetchLinkedinMessagesService,
     FetchUserCommentsService,
     FetchCompanyDetailsService,
@@ -188,6 +190,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     SearchPeopleForCompanyService,
     LinkedinProviderIdStoreService,
     FetchLinkedinProfileService,
+    VisitLinkedinProfileService,
     FetchLinkedinMessagesService,
     FetchUserCommentsService,
     FetchCompanyDetailsService,

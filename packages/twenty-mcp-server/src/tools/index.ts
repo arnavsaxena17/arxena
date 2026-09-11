@@ -12,6 +12,7 @@ import { orgChartTools } from './org-chart-tools';
 import { peopleApiTools } from './people-api-tools';
 import { pendingActionsTools } from './pending-actions-tools';
 import { personTools } from './person-tools';
+import { resolveSurfaceTools } from './meta-tools';
 import { searchFetchTools } from './search-fetch-tools';
 import { shortlistCvsentTools } from './shortlist-cvsent-tools';
 import { unipileControllersTools } from './unipile-controllers-tools';
@@ -37,3 +38,8 @@ export const publicTools: McpTool[] = [
 ];
 
 export const allTools: McpTool[] = [...publicTools, ...internalTools];
+
+export const resolveListedTools = (
+  tools: McpTool[],
+  options: { metaToolsOnly: boolean },
+): McpTool[] => resolveSurfaceTools(tools, options);

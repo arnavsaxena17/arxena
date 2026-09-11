@@ -96,6 +96,7 @@ describe('SystemPromptBuilderService', () => {
         'linkedin_unipile_get_own_profile with accountId=acc-123',
       );
       expect(result).toContain('fetch_linkedin_messages');
+      expect(result).toContain('visit_linkedin_profile');
       expect(result).toContain('linkedinApi=sales_navigator');
     });
 

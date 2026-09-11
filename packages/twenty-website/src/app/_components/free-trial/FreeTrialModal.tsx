@@ -655,7 +655,7 @@ export const FreeTrialModal = ({
           ) : (
             <StyledFormBody>
               <StyledTitle id="free-trial-form-title">
-                Get free trial
+                Start free trial
               </StyledTitle>
               <form onSubmit={handleSubmit}>
                 <StyledField>
@@ -730,7 +730,7 @@ export const FreeTrialModal = ({
                   <StyledLegalLink href="/legal/terms" target="_blank">
                     Terms of Use
                   </StyledLegalLink>
-                  . You may unsubscribe at any time.
+                  . We don't send promotional emails.
                 </StyledLegal>
               </form>
             </StyledFormBody>

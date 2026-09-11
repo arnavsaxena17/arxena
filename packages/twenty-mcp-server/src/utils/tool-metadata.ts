@@ -90,31 +90,28 @@ const isOpenWorldTool = (name: string): boolean =>
 const READ_ONLY_OVERRIDES = new Set([
   'search',
   'fetch',
+  'get_tool_catalog',
+  'learn_tools',
+  'list_skills',
+  'load_skills',
   'get_org_chart',
   'search_org_charts_by_country',
   'search_org_charts_by_function',
-  // 'list_active_projects',
-  // 'get_project_by_id',
-  // 'find_project_by_name',
-  // 'list_candidates_for_project',
-  // 'find_candidate',
-  // 'get_candidate_details',
-  // 'list_companies',
-  // 'get_company_by_id',
-  // 'find_company_by_name',
-  // 'find_person',
-  // 'get_pending_recruiter_actions',
-  // 'read_agent_notes',
-  // 'list_due_reminders',
-  // 'list_shortlists',
-  // 'list_cv_sents',
-  // 'list_client_contacts',
-  // 'list_interview_schedules',
-  // 'list_client_interviews',
 ]);
 
 export const getToolMetadata = (name: string): McpToolMetadata => {
   const title = toTitleCase(name);
+
+  if (name === 'execute_tool') {
+    return {
+      title: 'Execute Tool',
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        openWorldHint: true,
+      },
+    };
+  }
 
   if (
     READ_ONLY_OVERRIDES.has(name) ||

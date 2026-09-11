@@ -353,6 +353,13 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
       'Fetch LinkedIn chat messages by linkedinUrl / linkedinProfileId / candidateId via Unipile (profile → chats → messages in one call). Pass linkedinApi=sales_navigator for Sales Navigator inbox history.',
   },
   {
+    name: 'visit_linkedin_profile',
+    pack: 'outreach',
+    label: 'Visit LinkedIn Profile',
+    description:
+      'Visit a LinkedIn profile via Unipile so the viewee is notified (marks a profile view). Pass linkedinUrl / linkedinProfileId / candidateId. Lightweight — not a full profile fetch; use linkedin_unipile_get_profile for enrichment (silent by default).',
+  },
+  {
     name: 'search_linkedin_parameters',
     pack: 'prospecting',
     label: 'Search Linkedin Parameters',

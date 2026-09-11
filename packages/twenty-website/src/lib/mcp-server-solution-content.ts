@@ -55,5 +55,5 @@ export const MCP_SERVER_SOLUTION_PAGE = {
   headline: 'Connect Arxena to Cursor, Claude, and ChatGPT',
   metaDescription:
     'Use the Arxena remote MCP server to query org charts, people, and outreach from your AI client—with your workspace API key.',
-  lead: 'Arxena exposes a remote Model Context Protocol (MCP) server so authorized AI clients can read and act on your workspace—org charts, people, projects, and messaging—using the same data you see in the app.',
+  lead: 'Arxena exposes a remote Model Context Protocol (MCP) server so authorized AI clients can work your workspace—org charts, people, projects, and messaging—via a small meta-tool set (learn → execute) plus OpenAI search/fetch, using the same data you see in the app.',
 };

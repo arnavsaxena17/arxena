@@ -143,7 +143,7 @@ describe('OutreachMessagePersistService.mergeFetchedLinkedinMessages', () => {
       messages: [
         {
           id: '2kuKnBpZWZCaaV8MpRN_Zg',
-          text: 'Happy to connect.',
+          text: '',
           timestamp: '2026-08-25T21:18:24.338Z',
           isSender: true,
         },
@@ -162,7 +162,7 @@ describe('OutreachMessagePersistService.mergeFetchedLinkedinMessages', () => {
         messageObj: [
           {
             role: 'assistant',
-            content: 'Happy to connect.',
+            content: '',
             id: '2kuKnBpZWZCaaV8MpRN_Zg',
             timestamp: '2026-08-25T21:18:24.338Z',
           },

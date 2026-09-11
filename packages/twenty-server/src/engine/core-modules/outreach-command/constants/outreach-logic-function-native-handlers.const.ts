@@ -2,6 +2,7 @@ import {
   OUTREACH_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
+  OUTREACH_VISIT_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
@@ -30,6 +31,18 @@ export const main = async (params: {
 `;
 
 const FETCH_LINKEDIN_PROFILE_HANDLER = `// Native GTM action: FetchLinkedinProfileService.
+// Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
+export const main = async (params: {
+  workspaceMemberId?: string;
+  linkedinUrl?: string;
+  linkedinProfileId?: string;
+  candidateId?: string;
+}) => {
+  return params;
+};
+`;
+
+const VISIT_LINKEDIN_PROFILE_HANDLER = `// Native GTM action: VisitLinkedinProfileService.
 // Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
 export const main = async (params: {
   workspaceMemberId?: string;
@@ -244,6 +257,8 @@ const NATIVE_HANDLERS: Record<string, string> = {
     SEARCH_PEOPLE_FOR_COMPANY_HANDLER,
   [OUTREACH_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME]:
     FETCH_LINKEDIN_PROFILE_HANDLER,
+  [OUTREACH_VISIT_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME]:
+    VISIT_LINKEDIN_PROFILE_HANDLER,
   [OUTREACH_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME]: SEARCH_PEOPLE_HANDLER,
   [OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME]: SEARCH_COMPANIES_HANDLER,
   [OUTREACH_SEARCH_JOBS_LOGIC_FUNCTION_NAME]: SEARCH_JOBS_HANDLER,

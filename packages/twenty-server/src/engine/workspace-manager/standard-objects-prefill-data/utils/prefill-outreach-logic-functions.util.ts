@@ -7,6 +7,7 @@ import {
   OUTREACH_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
+  OUTREACH_VISIT_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
@@ -25,6 +26,7 @@ import {
   OUTREACH_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT,
   OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT,
   OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
+  OUTREACH_VISIT_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
   OUTREACH_FETCH_USER_COMMENTS_SAMPLE_OUTPUT,
   OUTREACH_SEARCH_COMPANIES_SAMPLE_OUTPUT,
   OUTREACH_SEARCH_JOBS_SAMPLE_OUTPUT,
@@ -120,6 +122,10 @@ export const getOutreachLogicFunctionIds = (workspaceId: string) => ({
   ),
   fetchLinkedinProfileId: uuidv5(
     `${workspaceId}:fetch-linkedin-profile`,
+    OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  visitLinkedinProfileId: uuidv5(
+    `${workspaceId}:visit-linkedin-profile`,
     OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
   ),
   searchPeopleId: uuidv5(
@@ -365,6 +371,55 @@ export const getOutreachLogicFunctionDefinitions = (
           },
         ],
         sampleOutput: OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.visitLinkedinProfileId,
+      name: OUTREACH_VISIT_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
+      description:
+        'Visit a LinkedIn profile via Unipile so the viewee is notified (notify=true). Pass linkedinUrl or linkedinProfileId plus workspaceMemberId. Lightweight — does not return full profile sections; use fetch-linkedin-profile for enrichment.',
+      sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
+        OUTREACH_VISIT_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Visit LinkedIn profile',
+        icon: 'IconEye',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              workspaceMemberId: {
+                type: 'string',
+                label: 'Workspace member ID',
+              },
+              linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
+              linkedinProfileId: {
+                type: 'string',
+                label: 'LinkedIn profile ID',
+              },
+              candidateId: { type: 'string', label: 'Candidate ID' },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              visited: { type: 'boolean', label: 'Visited' },
+              linkedinProfileId: {
+                type: 'string',
+                label: 'LinkedIn profile ID',
+              },
+              firstName: { type: 'string', label: 'First name' },
+              lastName: { type: 'string', label: 'Last name' },
+              headline: { type: 'string', label: 'Headline' },
+              linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
+              error: { type: 'string', label: 'Error' },
+            },
+          },
+        ],
+        sampleOutput: OUTREACH_VISIT_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
       },
     },
     {

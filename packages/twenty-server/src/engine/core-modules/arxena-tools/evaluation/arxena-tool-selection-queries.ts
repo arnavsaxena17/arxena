@@ -107,6 +107,13 @@ export const ARXENA_TOOL_SELECTION_QUERIES: ToolSelectionQuery[] = [
     expectedToolHints: ['fetch_linkedin_messages'],
   },
   {
+    id: 's9d',
+    persona: 'sales',
+    query:
+      'Visit this LinkedIn profile so they see that I viewed their profile',
+    expectedToolHints: ['visit_linkedin_profile'],
+  },
+  {
     id: 's10',
     persona: 'sales',
     query: 'Expand similar job titles for Account Executive',

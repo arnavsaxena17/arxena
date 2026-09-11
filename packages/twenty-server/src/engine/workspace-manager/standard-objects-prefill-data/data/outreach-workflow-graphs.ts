@@ -916,7 +916,7 @@ const queuedBranchSteps = ({ hoistedMember }: { hoistedMember: boolean }) => [
     valid: true,
     settings: {
       input: {
-        message: 'Happy to connect',
+        message: '',
         linkedinUrl: gtmWfFindField(
           IDS.queuedFind,
           'linkedinUrl.primaryLinkUrl',
@@ -937,7 +937,7 @@ const queuedBranchSteps = ({ hoistedMember }: { hoistedMember: boolean }) => [
     valid: true,
     settings: {
       input: {
-        message: 'Happy to connect.',
+        message: '',
         linkedinUrl: gtmWfFindField(
           IDS.queuedFind,
           'linkedinUrl.primaryLinkUrl',

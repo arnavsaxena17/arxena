@@ -489,6 +489,37 @@ export const FETCH_LINKEDIN_MESSAGES_INPUT_DESCRIPTOR: readonly McpInputFieldDes
     },
   ] as const;
 
+export const VISIT_LINKEDIN_PROFILE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
+  [
+    {
+      key: 'linkedinUrl',
+      type: 'string',
+      description:
+        'LinkedIn profile URL (e.g. https://www.linkedin.com/in/jane-doe). Prefer this or linkedinProfileId.',
+      required: false,
+    },
+    {
+      key: 'linkedinProfileId',
+      type: 'string',
+      description: 'LinkedIn /in/slug or provider_id when URL is unavailable',
+      required: false,
+    },
+    {
+      key: 'candidateId',
+      type: 'string',
+      description:
+        'Optional CRM candidate id — used to resolve LinkedIn URL / profile id',
+      required: false,
+    },
+    {
+      key: 'workspaceMemberId',
+      type: 'string',
+      description:
+        'Optional workspace member whose LinkedIn Unipile account to use (defaults to any connected member)',
+      required: false,
+    },
+  ] as const;
+
 /** Descriptor for upload_jd tool input. */
 export const UPLOAD_JD_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] = [
   {

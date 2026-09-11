@@ -1,5 +1,6 @@
 import {
   FETCH_LINKEDIN_MESSAGES_INPUT_DESCRIPTOR,
+  VISIT_LINKEDIN_PROFILE_INPUT_DESCRIPTOR,
   GET_ALL_MESSAGES_BY_CANDIDATE_ID_INPUT_DESCRIPTOR,
   SEND_BULK_CHATS_BY_CANDIDATE_IDS_INPUT_DESCRIPTOR,
   SEND_CHAT_INPUT_DESCRIPTOR,
@@ -68,6 +69,27 @@ export const arxChatTools: McpTool[] = [
         config.apiToken,
         'outreach-command',
         'fetch-linkedin-messages',
+        body,
+      );
+    },
+  },
+
+  {
+    definition: {
+      name: 'visit_linkedin_profile',
+      description:
+        'Visit a LinkedIn profile via Unipile so the viewee is notified (profile view). Pass linkedinUrl / linkedinProfileId / candidateId. Lightweight — does not return full profile sections; use linkedin_unipile_get_profile for enrichment.',
+      inputSchema: descriptorToInputSchema(
+        VISIT_LINKEDIN_PROFILE_INPUT_DESCRIPTOR,
+      ),
+    },
+    handler: async (args, config) => {
+      const body = args as Record<string, unknown>;
+      return callRestAPI(
+        config.baseUrl,
+        config.apiToken,
+        'outreach-command',
+        'visit-linkedin-profile',
         body,
       );
     },

@@ -4,6 +4,7 @@ import {
   OUTREACH_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
+  OUTREACH_VISIT_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME,
   OUTREACH_NATIVE_LOGIC_FUNCTION_NAMES,
   OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
@@ -26,6 +27,7 @@ import {
 import { FetchCompanyDetailsService } from 'src/engine/core-modules/outreach-command/services/fetch-company-details.service';
 import { FetchLinkedinMessagesService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-messages.service';
 import { FetchLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-profile.service';
+import { VisitLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/visit-linkedin-profile.service';
 import { FetchUserCommentsService } from 'src/engine/core-modules/outreach-command/services/fetch-user-comments.service';
 import { SearchCompaniesService } from 'src/engine/core-modules/outreach-command/services/search-companies.service';
 import { SearchJobsService } from 'src/engine/core-modules/outreach-command/services/search-jobs.service';
@@ -48,6 +50,7 @@ export class OutreachLogicFunctionNativeExecutor
   constructor(
     private readonly searchPeopleForCompanyService: SearchPeopleForCompanyService,
     private readonly fetchLinkedinProfileService: FetchLinkedinProfileService,
+    private readonly visitLinkedinProfileService: VisitLinkedinProfileService,
     private readonly fetchLinkedinMessagesService: FetchLinkedinMessagesService,
     private readonly fetchUserCommentsService: FetchUserCommentsService,
     private readonly fetchCompanyDetailsService: FetchCompanyDetailsService,
@@ -99,6 +102,18 @@ export class OutreachLogicFunctionNativeExecutor
 
     if (name === OUTREACH_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME) {
       return this.fetchLinkedinProfileService.execute({
+        workspaceId,
+        input: payload as {
+          workspaceMemberId?: string;
+          linkedinUrl?: string;
+          linkedinProfileId?: string;
+          candidateId?: string;
+        },
+      });
+    }
+
+    if (name === OUTREACH_VISIT_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME) {
+      return this.visitLinkedinProfileService.execute({
         workspaceId,
         input: payload as {
           workspaceMemberId?: string;

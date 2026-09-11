@@ -24,6 +24,7 @@ describe('Arxena tool catalog', () => {
     );
     expect(ARXENA_TOOL_NAMES.has('linkedin_unipile_get_profile')).toBe(true);
     expect(ARXENA_TOOL_NAMES.has('fetch_linkedin_messages')).toBe(true);
+    expect(ARXENA_TOOL_NAMES.has('visit_linkedin_profile')).toBe(true);
     expect(ARXENA_TOOL_NAMES.has('linkedin_unipile_list_chats')).toBe(false);
     expect(ARXENA_TOOL_NAMES.has('linkedin_unipile_list_attendee_chats')).toBe(
       false,

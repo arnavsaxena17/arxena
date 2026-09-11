@@ -10,6 +10,8 @@ export type HttpServerConfig = {
   mcpHttpPort: number;
   mcpHttpPath: string;
   mcpPublicToolsOnly: boolean;
+  // Default true: list meta-tools + search/fetch only (hide GTM handlers).
+  mcpMetaToolsOnly: boolean;
   oauthEnabled: boolean;
   oauthIssuerUrl: string;
   privacyPolicyUrl: string;
@@ -31,6 +33,10 @@ export function loadConfig(): ArxenaConfig {
   return { apiToken, baseUrl, workspaceMemberId };
 }
 
+export const isMetaToolsOnlyEnabled = (): boolean =>
+  (process.env.MCP_META_TOOLS_ONLY ?? 'true') === 'true' &&
+  (process.env.MCP_FLAT_TOOLS ?? 'false') !== 'true';
+
 export function loadHttpServerConfig(): HttpServerConfig {
   const arxenaBaseUrl = (
     process.env.ARXENA_BASE_URL ?? 'http://localhost:3000'
@@ -48,6 +54,7 @@ export function loadHttpServerConfig(): HttpServerConfig {
     mcpHttpPort: Number(process.env.MCP_HTTP_PORT ?? '3005'),
     mcpHttpPath: process.env.MCP_HTTP_PATH ?? '/mcp',
     mcpPublicToolsOnly: (process.env.MCP_PUBLIC_TOOLS_ONLY ?? 'true') === 'true',
+    mcpMetaToolsOnly: isMetaToolsOnlyEnabled(),
     oauthEnabled: (process.env.MCP_OAUTH_ENABLED ?? 'true') === 'true',
     oauthIssuerUrl,
     privacyPolicyUrl:

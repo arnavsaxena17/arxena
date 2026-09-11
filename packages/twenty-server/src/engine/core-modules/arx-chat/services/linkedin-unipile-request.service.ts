@@ -15,6 +15,7 @@ import {
   workspaceMemberLinkedinProfileMatchesAccountId,
   type UnipileAccountOwnerProfile,
 } from 'twenty-shared';
+import { isDefined } from 'twenty-shared/utils';
 
 import { withAcquiredAccountRateLimit } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
@@ -959,8 +960,12 @@ export class LinkedinUnipileRequestService {
       return null;
     }
 
-    // Product-specific profiles (SN/Recruiter) must not reuse the classic cache.
-    if (!options?.linkedinApi) {
+    // notify=true must hit Unipile so LinkedIn records the visit; SN/Recruiter
+    // profiles also skip the classic cache.
+    const shouldBypassCache =
+      options?.notify === true || isDefined(options?.linkedinApi);
+
+    if (!shouldBypassCache) {
       const cachedProfile =
         await this.linkedinProfileCacheService?.getLinkedinUserProfile<
           Record<string, unknown>
@@ -1007,11 +1012,7 @@ export class LinkedinUnipileRequestService {
           ),
       )) as Record<string, unknown>;
 
-      if (
-        profile &&
-        this.linkedinProfileCacheService &&
-        !options?.linkedinApi
-      ) {
+      if (profile && this.linkedinProfileCacheService && !shouldBypassCache) {
         const cacheKeys = this.collectLinkedinUserProfileCacheKeys(
           trimmedIdentifier,
           profile,
