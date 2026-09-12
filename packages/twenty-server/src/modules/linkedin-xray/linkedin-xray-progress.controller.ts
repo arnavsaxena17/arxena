@@ -2,7 +2,7 @@ import { Controller, Get, Req, Res } from '@nestjs/common';
 
 import { Request, Response } from 'express';
 
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { LinkedinXrayProgressPubSubService } from 'src/modules/linkedin-xray/services/linkedin-xray-progress-pubsub.service';
 import { LinkedinXrayProgressData } from 'src/modules/linkedin-xray/types/linkedin-xray-search-job.types';
@@ -49,7 +49,7 @@ export class LinkedinXrayProgressController {
       '[LinkedinXrayProgressController] Calling getCurrentUser with origin:',
       origin,
     );
-    const currentUser = await new RecruiterProfileService(
+    const currentUser = await new WorkspaceMemberArxService(
       this.staticGraphQLService,
     ).getCurrentUser(apiToken, String(origin || ''));
     const recruiterId = currentUser?.workspaceMember?.id;

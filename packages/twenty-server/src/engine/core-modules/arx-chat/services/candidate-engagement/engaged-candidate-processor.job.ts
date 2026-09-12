@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { CandidateEngagementArx } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { ChatFlowConfigBuilder } from 'src/engine/core-modules/arx-chat/services/chat-flow-config';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import {
   MessagingChannel,
   messagingChannelEquals,
@@ -46,7 +46,7 @@ export class EngagedCandidateProcessor {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
-    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService: WorkspaceMemberUnipileService,
   ) {
     this.logger.log('EngagedCandidateProcessor initialized');
     this.chatFlowConfigBuilder = new ChatFlowConfigBuilder(
@@ -113,7 +113,7 @@ export class EngagedCandidateProcessor {
 
       // Import required services
       const { FilterCandidates } = await import('src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates');
-      const { RecruiterProfileService } = await import('src/engine/core-modules/arx-chat/services/recruiter-profile');
+      const { WorkspaceMemberArxService } = await import('src/engine/core-modules/arx-chat/services/workspace-member-arx.service');
       const { EngagedCandidateQueueService } = await import('src/engine/core-modules/arx-chat/services/candidate-engagement/engaged-candidate-queue.service');
       const { CandidateEngagementArx } = await import('src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement');
 
@@ -121,7 +121,7 @@ export class EngagedCandidateProcessor {
       const candidateEngagement = CandidateEngagementArx.create(
         this.workspaceQueryService,
         this.staticGraphQLService,
-        this.workspaceMemberProfileUnipileService,
+        this.workspaceMemberUnipileService,
       );
 
       const chatControl = {
@@ -156,12 +156,12 @@ export class EngagedCandidateProcessor {
         return;
       }
 
-      const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
+      const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(candidateJob, apiToken);
       const chatReply = interimChat;
 
       // Set the appropriate message identifier based on messaging channel
       let messageFrom = candidate?.phoneNumber?.primaryPhoneNumber || '';
-      let messageTo = recruiterProfile?.phoneNumber || '';
+      let messageTo = workspaceMember?.phoneNumber || '';
       let messageType = 'string';
 
       if (
@@ -172,7 +172,7 @@ export class EngagedCandidateProcessor {
         )
       ) {
         messageFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
-        messageTo = recruiterProfile?.linkedinUrl || '';
+        messageTo = workspaceMember?.linkedinUrl || '';
         messageType = 'linkedin';
       }
 
@@ -190,7 +190,7 @@ export class EngagedCandidateProcessor {
         undefined,
         undefined,
         undefined,
-        this.workspaceMemberProfileUnipileService,
+        this.workspaceMemberUnipileService,
       );
 
       // Use the candidate we already fetched by ID (not by phone number search)
@@ -383,7 +383,7 @@ export class EngagedCandidateProcessor {
         const candidateEngagement = CandidateEngagementArx.create(
           this.workspaceQueryService,
           this.staticGraphQLService,
-          this.workspaceMemberProfileUnipileService,
+          this.workspaceMemberUnipileService,
         );
 
         // Get the candidate's project and determine which chat controls to process

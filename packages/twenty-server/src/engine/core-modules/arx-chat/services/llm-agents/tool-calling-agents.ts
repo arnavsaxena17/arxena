@@ -8,14 +8,16 @@ import {
     ChatControlsObjType,
     Project,
     questionTextToKey,
+    workspaceMemberDisplayName,
+    workspaceMemberEmail,
 } from 'twenty-shared';
 import { z } from 'zod';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
 import { ScheduledJobService } from 'src/engine/core-modules/arx-chat/services/scheduled-job.service';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import { CalendarEmailService } from 'src/engine/core-modules/arx-chat/utils/calendar-email';
 import {
     EmailTemplates,
@@ -32,7 +34,7 @@ export class ToolCallingAgents {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
-    private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService?: WorkspaceMemberUnipileService,
     private readonly calendarEmailService?: CalendarEmailService,
   ) {}
   currentConversationStage = z.object({
@@ -116,16 +118,16 @@ export class ToolCallingAgents {
         candidateJob,
         videoInterviewUrl,
       );
-    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, twenty_token);
-    if (!recruiterProfile) {
-      throw new Error('Recruiter profile not found for job');
+    const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(candidateJob, twenty_token);
+    if (!workspaceMember) {
+      throw new Error('Workspace member not found for job');
     }
 
-    console.log('recruiterProfile?.email:', recruiterProfile?.email);
+    console.log('workspaceMemberEmail(workspaceMember):', workspaceMemberEmail(workspaceMember));
     const emailData: GmailMessageData = {
       sendEmailNameFrom:
-        recruiterProfile.firstName + ' ' + recruiterProfile.lastName,
-      sendEmailFrom: recruiterProfile.email,
+        workspaceMemberDisplayName(workspaceMember),
+      sendEmailFrom: workspaceMemberEmail(workspaceMember)!,
       sendEmailTo: candidate?.email?.primaryEmail,
       subject:
         'Video Interview - ' + candidate?.name + '<>' + companyName,
@@ -156,15 +158,15 @@ export class ToolCallingAgents {
     candidateJob: Project,
     apiToken: string,
   ) {
-    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
-    if (!recruiterProfile) {
-      throw new Error('Recruiter profile not found for job');
+    const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(candidateJob, apiToken);
+    if (!workspaceMember) {
+      throw new Error('Workspace member not found for job');
     }
 
     const emailData: GmailMessageData = {
       sendEmailNameFrom:
-        recruiterProfile.firstName + ' ' + recruiterProfile.lastName,
-      sendEmailFrom: recruiterProfile.email,
+        workspaceMemberDisplayName(workspaceMember),
+      sendEmailFrom: workspaceMemberEmail(workspaceMember)!,
       sendEmailTo: candidate?.email?.primaryEmail,
       subject: inputs?.subject || 'Email from the recruiter',
       message: inputs?.message || '',
@@ -191,7 +193,7 @@ export class ToolCallingAgents {
       await new ToolCallsProcessing(
         this.workspaceQueryService,
         this.staticGraphQLService,
-        this.workspaceMemberProfileUnipileService,
+        this.workspaceMemberUnipileService,
       ).shareJDtoCandidate(candidate, candidateJob, chatControl, apiToken);
       console.log(
         'Function Called:  candidateProfileDataNodeObj:any',
@@ -220,7 +222,7 @@ export class ToolCallingAgents {
       await new ToolCallsProcessing(
         this.workspaceQueryService,
         this.staticGraphQLService,
-        this.workspaceMemberProfileUnipileService,
+        this.workspaceMemberUnipileService,
       ).updateCandidateStatus(candidate, inputs.candidateStatus, apiToken);
 
       return 'Updated the candidate profile.';
@@ -263,7 +265,7 @@ export class ToolCallingAgents {
     await new ToolCallsProcessing(
       this.workspaceQueryService,
       this.staticGraphQLService,
-      this.workspaceMemberProfileUnipileService,
+      this.workspaceMemberUnipileService,
     ).updateAnswerInDatabase(
       candidate,
       AnswerMessageObj,

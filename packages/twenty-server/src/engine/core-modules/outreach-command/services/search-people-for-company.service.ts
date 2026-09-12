@@ -1,9 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 
 import { isNonEmptyString } from '@sniptt/guards';
 import { resolveOutreachConfigIcpSpecString } from 'twenty-shared/arx';
 import { isDefined } from 'twenty-shared/utils';
-import { type ObjectLiteral } from 'typeorm';
+import { type ObjectLiteral, Repository } from 'typeorm';
 
 import {
   LinkedInSearchTransformerService,
@@ -22,6 +23,7 @@ import { UnipileSearchAccountResolver } from 'src/engine/core-modules/linkedin-s
 import type { LinkedInSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { PeopleApiService } from 'src/engine/core-modules/people-api/people-api.service';
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
@@ -42,11 +44,6 @@ type ProjectRecord = ObjectLiteral & {
   outreachConfig?: unknown;
   icpSpec?: string | null;
   maxPersonasPerCompany?: number | null;
-};
-
-type WorkspaceProfileRecord = ObjectLiteral & {
-  id: string;
-  icpSpec?: string | null;
 };
 
 export type SearchPeopleForCompanyInput = {
@@ -142,6 +139,8 @@ export class SearchPeopleForCompanyService {
   private readonly logger = new Logger(SearchPeopleForCompanyService.name);
 
   constructor(
+    @InjectRepository(WorkspaceEntity)
+    private readonly workspaceRepository: Repository<WorkspaceEntity>,
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     private readonly peopleApiService: PeopleApiService,
     private readonly linkedInSearchTransformer: LinkedInSearchTransformerService,
@@ -194,6 +193,9 @@ export class SearchPeopleForCompanyService {
       };
     }
 
+    const workspace = await this.workspaceRepository.findOneBy({
+      id: workspaceId,
+    });
     const authContext = buildSystemAuthContext(workspaceId);
     const context = await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
       async () => {
@@ -209,12 +211,6 @@ export class SearchPeopleForCompanyService {
             'project',
             { shouldBypassPermissionChecks: true },
           );
-        const workspaceProfileRepository =
-          await this.globalWorkspaceOrmManager.getRepository<WorkspaceProfileRecord>(
-            workspaceId,
-            'workspaceProfile',
-            { shouldBypassPermissionChecks: true },
-          );
 
         const company = await companyRepository.findOne({
           where: { id: companyId },
@@ -222,14 +218,10 @@ export class SearchPeopleForCompanyService {
         const project = await projectRepository.findOne({
           where: { id: ensured.projectId },
         });
-        const workspaceProfile = await workspaceProfileRepository.find({
-          take: 1,
-        });
 
         return {
           company,
           project,
-          workspaceProfile: workspaceProfile[0],
         };
       },
       authContext,
@@ -250,7 +242,7 @@ export class SearchPeopleForCompanyService {
       resolveOutreachConfigIcpSpecString(
         context.project.outreachConfig,
         context.project.icpSpec,
-      ) || context.workspaceProfile?.icpSpec,
+      ) || workspace?.icpSpec,
     );
     const targetTitle = input.jobTitle?.trim() || icp.targetTitles[0];
     const locations = icp.locations;

@@ -432,6 +432,7 @@ export const OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT = {
   startsAt: '2026-08-24T16:00:00.000Z',
   endsAt: '2026-08-24T16:30:00.000Z',
   replyChannel: 'LINKEDIN',
+  preferredChannelToStamp: '',
   prospectEmail: '',
   referralName: 'Priya Nair',
   referralEmail: 'priya.nair@acme.com',

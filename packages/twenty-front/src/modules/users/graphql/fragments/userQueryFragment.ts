@@ -109,6 +109,15 @@ export const USER_QUERY_FRAGMENT = gql`
       eventLogRetentionDays
       editableProfileFields
       isInternalMessagesImportEnabled
+      companyName
+      companyDomain
+      linkedinUrl
+      industry
+      summary
+      employeeRange
+      hq
+      enrichmentJson
+      icpSpec
     }
     availableWorkspaces {
       ...AvailableWorkspacesFragment

@@ -95,6 +95,8 @@ export class StaticGraphQLService {
           id: workspaceId,
           subdomain: workspace?.subdomain ?? '',
           displayName: workspace?.displayName ?? '',
+          companyName: workspace?.companyName ?? null,
+          summary: workspace?.summary ?? null,
         },
         workspaces: userWorkspaces.map((userWorkspace) => ({
           workspace: userWorkspace.workspace,
@@ -117,6 +119,8 @@ export class StaticGraphQLService {
           id: workspaceId,
           subdomain: '',
           displayName: '',
+          companyName: null,
+          summary: null,
         },
         workspaces: [],
       };

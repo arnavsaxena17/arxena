@@ -7,8 +7,8 @@ import { SettingsPageContainer } from '@/settings/components/SettingsPageContain
 import { SettingsPageLayout } from '@/settings/components/layout/SettingsPageLayout';
 import { SettingsTableCard } from '@/settings/components/SettingsTableCard';
 import { DeleteAccount } from '@/settings/profile/components/DeleteAccount';
-import { EmailField } from '@/settings/profile/components/EmailField';
 import { NameFields } from '@/settings/profile/components/NameFields';
+import { SettingsMemberArxProfileFields } from '@/settings/profile/components/SettingsMemberArxProfileFields';
 import { SetOrChangePassword } from '@/settings/profile/components/SetOrChangePassword';
 import { useCanChangePassword } from '@/settings/profile/hooks/useCanChangePassword';
 import { useCurrentUserWorkspaceTwoFactorAuthentication } from '@/settings/two-factor-authentication/hooks/useCurrentUserWorkspaceTwoFactorAuthentication';
@@ -19,13 +19,7 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { SettingsPath } from 'twenty-shared/types';
 import { getSettingsPath, isDefined } from 'twenty-shared/utils';
 import { Status } from 'twenty-ui/data-display';
-import {
-  IconId,
-  IconMail,
-  IconShield,
-  IconUser,
-  IconWorld,
-} from 'twenty-ui/icon';
+import { IconId, IconShield, IconUser, IconWorld } from 'twenty-ui/icon';
 import { Section } from 'twenty-ui/layout';
 import { UndecoratedLink } from 'twenty-ui/navigation';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
@@ -63,7 +57,10 @@ export const SettingsProfile = () => {
   }
 
   const memberName =
-    [currentWorkspaceMember.name?.firstName, currentWorkspaceMember.name?.lastName]
+    [
+      currentWorkspaceMember.name?.firstName,
+      currentWorkspaceMember.name?.lastName,
+    ]
       .filter(Boolean)
       .join(' ') || '—';
 
@@ -75,11 +72,7 @@ export const SettingsProfile = () => {
     {
       Icon: IconId,
       label: t`Member ID`,
-      value: (
-        <StyledMonoValue>
-          {currentWorkspaceMember.id}
-        </StyledMonoValue>
-      ),
+      value: <StyledMonoValue>{currentWorkspaceMember.id}</StyledMonoValue>,
     },
     {
       Icon: IconUser,
@@ -89,14 +82,7 @@ export const SettingsProfile = () => {
     {
       Icon: IconId,
       label: t`User ID`,
-      value: (
-        <StyledMonoValue>{currentUser?.id ?? '—'}</StyledMonoValue>
-      ),
-    },
-    {
-      Icon: IconMail,
-      label: t`Email`,
-      value: currentUser?.email ?? '—',
+      value: <StyledMonoValue>{currentUser?.id ?? '—'}</StyledMonoValue>,
     },
   ];
 
@@ -104,9 +90,7 @@ export const SettingsProfile = () => {
     {
       Icon: IconId,
       label: t`Workspace ID`,
-      value: (
-        <StyledMonoValue>{currentWorkspace?.id ?? '—'}</StyledMonoValue>
-      ),
+      value: <StyledMonoValue>{currentWorkspace?.id ?? '—'}</StyledMonoValue>,
     },
     {
       Icon: IconId,
@@ -165,10 +149,10 @@ export const SettingsProfile = () => {
         </Section>
         <Section>
           <H2Title
-            title={t`Email`}
-            description={t`The email associated to your account`}
+            title={t`Seat profile`}
+            description={t`LinkedIn, Unipile, Chrome extension, and outreach seat fields on your workspace member. Company name and summary live under Workspace → General → Company profile.`}
           />
-          <EmailField />
+          <SettingsMemberArxProfileFields />
         </Section>
         <Section>
           <H2Title

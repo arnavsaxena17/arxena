@@ -26,7 +26,7 @@ import { UnipileClient } from 'unipile-node-sdk';
 import { UnipileWebhookService } from '../services/unipile-webhook.service';
 import { WhatsappUnipileRequestService } from '../services/whatsapp-unipile-request.service';
 import { WhatsappUnipileSyncService } from '../services/whatsapp-unipile/whatsapp-unipile-sync.service';
-import { WorkspaceMemberProfileUnipileService } from '../services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from '../services/workspace-member-unipile.service';
 import type { UnipileAccountStatusWebhook } from '../types/unipile-webhook.types';
 
 @Controller('whatsapp-unipile')
@@ -42,7 +42,7 @@ export class WhatsappUnipileController {
   constructor(
     private readonly webhookService: UnipileWebhookService,
     private readonly unipileRequestService: WhatsappUnipileRequestService,
-    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService: WorkspaceMemberUnipileService,
     private readonly whatsappUnipileSyncService: WhatsappUnipileSyncService,
     private readonly accountRateLimitConfigService: AccountRateLimitConfigService,
     private readonly accountRateLimiterService: AccountRateLimiterService,
@@ -87,7 +87,7 @@ export class WhatsappUnipileController {
     let previousWhatsappUnipileId: string | null = null;
     try {
       previousWhatsappUnipileId =
-        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+        await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
           workspaceMemberId,
           workspace.id,
           authToken,
@@ -101,7 +101,7 @@ export class WhatsappUnipileController {
       const account = await this.unipileRequestService.makeUnipileRequest(
         `/api/v1/accounts/${newId}`,
       );
-      await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+      await this.workspaceMemberUnipileService.applyUnipileAccountToWorkspaceMember(
         workspaceMemberId,
         authToken,
         'whatsapp',
@@ -146,7 +146,7 @@ export class WhatsappUnipileController {
 
       if (workspaceMemberId && authToken) {
         const profile =
-          await this.workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields(
+          await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileFields(
             workspaceMemberId,
             authToken,
           );
@@ -164,7 +164,7 @@ export class WhatsappUnipileController {
               await this.unipileRequestService.makeUnipileRequest(
                 `/api/v1/accounts/${blocking.id}`,
               );
-            await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+            await this.workspaceMemberUnipileService.applyUnipileAccountToWorkspaceMember(
               workspaceMemberId,
               authToken,
               'whatsapp',
@@ -235,7 +235,7 @@ export class WhatsappUnipileController {
 
         if (workspaceMemberId && authToken && response?.id) {
           const existingId =
-            await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+            await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
               workspaceMemberId,
               workspace.id,
               authToken,
@@ -244,7 +244,7 @@ export class WhatsappUnipileController {
 
           if (existingId !== response.id) {
             try {
-              await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+              await this.workspaceMemberUnipileService.applyUnipileAccountToWorkspaceMember(
                 workspaceMemberId,
                 authToken,
                 'whatsapp',
@@ -459,7 +459,7 @@ export class WhatsappUnipileController {
       }
 
       const resolvedAccountId =
-        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+        await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
           workspaceMemberId,
           workspace.id,
           authToken,

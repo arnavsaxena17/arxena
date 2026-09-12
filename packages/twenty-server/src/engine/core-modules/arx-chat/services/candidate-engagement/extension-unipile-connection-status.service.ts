@@ -5,7 +5,7 @@ import { type LinkedInSearchType } from 'twenty-shared';
 
 import { LinkedinUnipileRequestService } from '../linkedin-unipile-request.service';
 import { MemberLinkedinUnipileConnectionService } from '../member-linkedin-unipile-connection.service';
-import { WorkspaceMemberProfileUnipileService } from '../workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from '../workspace-member-unipile.service';
 
 @Injectable()
 export class ExtensionUnipileConnectionStatusService {
@@ -38,7 +38,7 @@ export class ExtensionUnipileConnectionStatusService {
   constructor(
     private readonly environmentService: EnvironmentService,
     private readonly memberLinkedinUnipileConnectionService: MemberLinkedinUnipileConnectionService,
-    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService: WorkspaceMemberUnipileService,
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
   ) {}
 
@@ -123,13 +123,13 @@ export class ExtensionUnipileConnectionStatusService {
   }> {
     let profile = null as Awaited<
       ReturnType<
-        typeof this.workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields
+        typeof this.workspaceMemberUnipileService.getWorkspaceMemberUnipileFields
       >
     >;
 
     try {
       profile =
-        await this.memberLinkedinUnipileConnectionService.getValidatedWorkspaceMemberProfileFields(
+        await this.memberLinkedinUnipileConnectionService.getValidatedWorkspaceMemberUnipileFields(
           workspaceMemberId,
           apiToken,
         );
@@ -154,7 +154,7 @@ export class ExtensionUnipileConnectionStatusService {
         workspace.id,
       );
       profile =
-        await this.memberLinkedinUnipileConnectionService.getValidatedWorkspaceMemberProfileFields(
+        await this.memberLinkedinUnipileConnectionService.getValidatedWorkspaceMemberUnipileFields(
           workspaceMemberId,
           apiToken,
         );
@@ -174,7 +174,7 @@ export class ExtensionUnipileConnectionStatusService {
         },
       );
     const storedCookies =
-      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
+      await this.workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens(
         apiToken,
         workspaceMemberId,
       );

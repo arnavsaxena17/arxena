@@ -1,14 +1,18 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 
+import {
+  workspaceMemberDisplayName,
+  workspaceMemberEmail,
+} from 'twenty-shared';
 import { MessagingChannel } from 'twenty-shared/arx';
 import { z } from 'zod';
 
 import { LinkedinUnipileEstimateAccountService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-estimate-account.service';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
 import { WhatsappOutboundRateLimiterService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.service';
 import { WhatsappUnipileMessagingService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-unipile-messaging.service';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import { SendEmailFunctionality } from 'src/engine/core-modules/arx-chat/utils/send-gmail';
 import { ContactEnrichmentWaterfallService } from 'src/engine/core-modules/contact-enrichment/services/contact-enrichment-waterfall.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -119,7 +123,7 @@ export class IcpOutreachMessageService {
     private readonly contactEnrichmentWaterfallService: ContactEnrichmentWaterfallService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
-    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService: WorkspaceMemberUnipileService,
     private readonly whatsappOutboundRateLimiter: WhatsappOutboundRateLimiterService,
     private readonly gtmCommandMaterializeService: OutreachCommandMaterializeService,
   ) {}
@@ -128,7 +132,7 @@ export class IcpOutreachMessageService {
     return new WhatsappUnipileMessagingService(
       this.workspaceQueryService,
       this.staticGraphQLService,
-      this.workspaceMemberProfileUnipileService,
+      this.workspaceMemberUnipileService,
       this.whatsappOutboundRateLimiter,
     );
   }
@@ -840,14 +844,14 @@ export class IcpOutreachMessageService {
     }
 
     try {
-      const senderProfile = await new RecruiterProfileService(
+      const workspaceMember = await new WorkspaceMemberArxService(
         this.staticGraphQLService,
-      ).getRecruiterProfileByRecruiterId(
+      ).getById(
         input.workspaceMemberId,
         input.apiToken,
       );
 
-      if (!senderProfile?.email) {
+      if (!workspaceMemberEmail(workspaceMember)) {
         return {
           attempted: false,
           success: false,
@@ -856,13 +860,12 @@ export class IcpOutreachMessageService {
       }
 
       const sendEmailNameFrom =
-        `${senderProfile.firstName ?? ''} ${senderProfile.lastName ?? ''}`.trim() ||
-        senderProfile.name ||
+        workspaceMemberDisplayName(workspaceMember) ||
         'Arxena';
 
       const sendResponse = await new SendEmailFunctionality().sendEmailFunction(
         {
-          sendEmailFrom: senderProfile.email,
+          sendEmailFrom: workspaceMemberEmail(workspaceMember)!,
           sendEmailNameFrom,
           sendEmailTo: input.toEmail,
           subject: input.subject,

@@ -139,15 +139,39 @@ describe('validateOutreachInboundSignals', () => {
       });
 
       expect(result.replyChannel).toBe('WHATSAPP');
+      expect(result.preferredChannelToStamp).toBe('');
     });
 
-    it('honours an explicit switch', () => {
+    it('honours an explicit switch and stamps sticky preference', () => {
       const result = validateOutreachInboundSignals({
         lastInboundChannel: 'LINKEDIN',
         requestedChannelSwitch: 'EMAIL',
       });
 
       expect(result.replyChannel).toBe('EMAIL');
+      expect(result.preferredChannelToStamp).toBe('EMAIL');
+    });
+
+    it('uses sticky preferred channel over last inbound', () => {
+      const result = validateOutreachInboundSignals({
+        lastInboundChannel: 'LINKEDIN',
+        preferredChannel: 'EMAIL',
+        requestedChannelSwitch: 'NONE',
+      });
+
+      expect(result.replyChannel).toBe('EMAIL');
+      expect(result.preferredChannelToStamp).toBe('');
+    });
+
+    it('stamps EMAIL when prospect asks for details by email', () => {
+      const result = validateOutreachInboundSignals({
+        transcript: 'Please email me at gaurav.z@flomattress.com',
+        lastInboundChannel: 'LINKEDIN',
+        prospectEmail: 'gaurav.z@flomattress.com',
+      });
+
+      expect(result.prospectEmail).toBe('gaurav.z@flomattress.com');
+      expect(result.preferredChannelToStamp).toBe('EMAIL');
     });
 
     it('falls back to LinkedIn for an unknown channel', () => {
@@ -175,6 +199,7 @@ describe('validateOutreachInboundSignals', () => {
     expect(Object.keys(validateOutreachInboundSignals({})).sort()).toEqual([
       'endsAt',
       'hasReferral',
+      'preferredChannelToStamp',
       'prospectEmail',
       'referralEmail',
       'referralName',

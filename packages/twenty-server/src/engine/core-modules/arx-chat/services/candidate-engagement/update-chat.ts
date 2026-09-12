@@ -20,7 +20,9 @@ import {
   mergeOtherFields,
   PageInfo,
   questionTextToKey,
-  whatappUpdateMessageObjType
+  whatappUpdateMessageObjType,
+  workspaceMemberDisplayName,
+  workspaceMemberEmail,
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -39,7 +41,7 @@ import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modific
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { materializeCandidateTouchWithGraphQL } from 'src/engine/core-modules/outreach-command/services/outreach-command-materialize.service';
-import { RecruiterProfileService } from '../../services/recruiter-profile';
+import { WorkspaceMemberArxService } from '../../services/workspace-member-arx.service';
 import { CandidateEngagementArx } from './candidate-engagement';
 import { FilterCandidates } from './filter-candidates';
 import type { UnipileSyncMessageItem } from '../whatsapp-unipile/whatsapp-unipile-sync.service';
@@ -343,8 +345,8 @@ export class UpdateChat {
     ).getCandidateDetailsById(candidateId, apiToken);
 
     const candidateJob: Project = candidate?.project as Project;
-    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
-    if (!recruiterProfile) {
+    const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(candidateJob, apiToken);
+    if (!workspaceMember) {
       console.warn(
         '[UpdateChat] Skipping interim chat: job has no recruiter (projectId: %s, candidateId: %s)',
         candidateJob?.id,
@@ -356,7 +358,7 @@ export class UpdateChat {
 
     // Set the appropriate message identifier based on messaging channel
     let messageFrom = candidate?.phoneNumber?.primaryPhoneNumber || '';
-    let messageTo = recruiterProfile.phoneNumber || '';
+    let messageTo = workspaceMember.phoneNumber || '';
     let messageType = 'string';
 
     if (
@@ -367,7 +369,7 @@ export class UpdateChat {
       )
     ) {
       messageFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
-      messageTo = recruiterProfile.linkedinUrl || '';
+      messageTo = workspaceMember.linkedinUrl || '';
       messageType = 'linkedin';
     }
 
@@ -557,7 +559,7 @@ export class UpdateChat {
   private async sendInsufficientCreditsEmail(apiToken: string, recruiterId: string) {
     try {
       const workspaceName = await this.workspaceQueryService.getWorkspaceNameFromToken(apiToken);
-      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByRecruiterId(recruiterId, apiToken);
+      const currentUser = await new WorkspaceMemberArxService(this.staticGraphQLService).getById(recruiterId, apiToken);
 
       // Send socket notification to the recruiter
       if (recruiterId) {
@@ -567,7 +569,7 @@ export class UpdateChat {
       }
 
       const emailTemplate = InsufficientCreditsEmail({
-        userName: currentUser?.name || '',
+        userName: workspaceMemberDisplayName(currentUser) || '',
         workspaceDisplayName: workspaceName || 'Arxena',
         locale: 'en',
       });
@@ -579,13 +581,13 @@ export class UpdateChat {
 
       await this.workspaceQueryService.emailService.send({
         from: `Arxena <${process.env.EMAIL_FROM_ADDRESS || 'no-reply@arxena.com'}>`,
-        to: currentUser?.email,
+        to: workspaceMemberEmail(currentUser) ?? undefined,
         subject: 'OpenAI Credits Depleted - Action Required ⚠️',
         html,
         text,
       });
 
-      console.log('Sent insufficient credits email to:', currentUser?.email);
+      console.log('Sent insufficient credits email to:', workspaceMemberEmail(currentUser));
     } catch (error) {
       console.error('Error sending insufficient credits email:', error);
     }

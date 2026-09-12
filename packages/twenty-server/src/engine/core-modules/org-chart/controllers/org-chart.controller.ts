@@ -24,7 +24,7 @@ import { ApifyEmployeeCountService } from 'src/engine/core-modules/apify/service
 import { ApifyService } from 'src/engine/core-modules/apify/services/apify.service';
 import { MemberLinkedinUnipileConnectionService } from 'src/engine/core-modules/arx-chat/services/member-linkedin-unipile-connection.service';
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import { ApiKeyService } from 'src/engine/core-modules/api-key/services/api-key.service';
 import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/services/bright-data-serp.service';
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
@@ -120,7 +120,7 @@ export class OrgChartController {
     private readonly apifyEmployeeCountService: ApifyEmployeeCountService,
     private readonly apifyService: ApifyService,
     private readonly unipileCompanyService: UnipileCompanyService,
-    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService: WorkspaceMemberUnipileService,
     private readonly memberLinkedinUnipileConnectionService: MemberLinkedinUnipileConnectionService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly orgChartClientIpService: OrgChartClientIpService,
@@ -1416,7 +1416,7 @@ export class OrgChartController {
           authToken,
         );
       const accountId =
-        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+        await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
           workspaceMemberId ?? null,
           workspaceId,
           authToken,
@@ -1488,7 +1488,7 @@ export class OrgChartController {
             this.environmentService.get('LINKEDIN_UNIPILE_ON_DEMAND')
           ) {
             const storedCookies =
-              await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
+              await this.workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens(
                 authToken,
                 workspaceMemberId,
               );
@@ -1512,7 +1512,7 @@ export class OrgChartController {
           );
         if (workspaceMemberId) {
           const storedCookies =
-            await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
+            await this.workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens(
               authToken,
               workspaceMemberId,
             );

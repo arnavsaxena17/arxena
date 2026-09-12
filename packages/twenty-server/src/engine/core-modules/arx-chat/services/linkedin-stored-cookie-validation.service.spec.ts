@@ -16,7 +16,7 @@ describe('LinkedinStoredCookieValidationService', () => {
       }),
     };
 
-    const workspaceMemberProfileUnipileService = {
+    const workspaceMemberUnipileService = {
       getWorkspaceMemberLinkedinCookieTokens: jest.fn(),
       getKeepLinkedinConnected: jest.fn(),
       updateWorkspaceMemberLinkedinCookieTokens: jest.fn(),
@@ -32,7 +32,7 @@ describe('LinkedinStoredCookieValidationService', () => {
 
     const service = new LinkedinStoredCookieValidationService(
       environmentService as never,
-      workspaceMemberProfileUnipileService as never,
+      workspaceMemberUnipileService as never,
       linkedinUnipileTeardownSchedulerService as never,
       linkedinUnipileMemberAccountResolverService as never,
     );
@@ -40,15 +40,15 @@ describe('LinkedinStoredCookieValidationService', () => {
     return {
       service,
       environmentService,
-      workspaceMemberProfileUnipileService,
+      workspaceMemberUnipileService,
       linkedinUnipileTeardownSchedulerService,
       linkedinUnipileMemberAccountResolverService,
     };
   };
 
   it('returns NO_STORED_LI_AT when profile has no stored cookie', async () => {
-    const { service, workspaceMemberProfileUnipileService } = createService();
-    workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens.mockResolvedValue(
+    const { service, workspaceMemberUnipileService } = createService();
+    workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens.mockResolvedValue(
       {
         linkedinLiAtToken: null,
         linkedinLiAToken: null,
@@ -77,12 +77,12 @@ describe('LinkedinStoredCookieValidationService', () => {
   it('schedules idle disconnect after successful validation when keepLinkedinConnected is false', async () => {
     const {
       service,
-      workspaceMemberProfileUnipileService,
+      workspaceMemberUnipileService,
       linkedinUnipileTeardownSchedulerService,
       linkedinUnipileMemberAccountResolverService,
     } = createService();
 
-    workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens
+    workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens
       .mockResolvedValueOnce({
         linkedinLiAtToken: 'li-at',
         linkedinLiAToken: 'li-a',
@@ -112,7 +112,7 @@ describe('LinkedinStoredCookieValidationService', () => {
         reconnectMessage: null,
       },
     );
-    workspaceMemberProfileUnipileService.getKeepLinkedinConnected.mockResolvedValue(
+    workspaceMemberUnipileService.getKeepLinkedinConnected.mockResolvedValue(
       false,
     );
 
@@ -167,12 +167,12 @@ describe('LinkedinStoredCookieValidationService', () => {
   it('admin probe schedules idle disconnect even when keepLinkedinConnected is true', async () => {
     const {
       service,
-      workspaceMemberProfileUnipileService,
+      workspaceMemberUnipileService,
       linkedinUnipileTeardownSchedulerService,
       linkedinUnipileMemberAccountResolverService,
     } = createService();
 
-    workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens
+    workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens
       .mockResolvedValueOnce({
         linkedinLiAtToken: 'li-at',
         linkedinLiAToken: null,
@@ -202,7 +202,7 @@ describe('LinkedinStoredCookieValidationService', () => {
         reconnectMessage: null,
       },
     );
-    workspaceMemberProfileUnipileService.getKeepLinkedinConnected.mockResolvedValue(
+    workspaceMemberUnipileService.getKeepLinkedinConnected.mockResolvedValue(
       true,
     );
 

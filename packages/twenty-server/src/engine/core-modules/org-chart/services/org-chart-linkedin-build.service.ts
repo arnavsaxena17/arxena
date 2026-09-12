@@ -8,7 +8,7 @@ import {
 
 import { ApifyService } from 'src/engine/core-modules/apify/services/apify.service';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import { CreditTransactionService } from 'src/engine/core-modules/billing/services/credit-transaction.service';
 import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { BrightDataLinkedinPeopleSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-linkedin-people-search.service';
@@ -187,7 +187,7 @@ export class OrgChartLinkedInBuildService {
     private readonly harvestLinkedinTransformer: HarvestLinkedinTransformerService,
     private readonly orgChartSuperImposeService: OrgChartSuperImposeService,
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
-    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService: WorkspaceMemberUnipileService,
     @InjectMessageQueue(MessageQueue.orgchartApifyQueue)
     private readonly orgchartApifyQueue: MessageQueueService,
   ) {}

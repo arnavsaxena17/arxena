@@ -925,7 +925,7 @@ export class ChatExecutionService {
     }
 
     if (browsingContext.type === 'outreachCommand') {
-      return this.buildOutreachCommandContext(browsingContext);
+      return this.buildOutreachCommandContext(workspace, browsingContext);
     }
 
     if (browsingContext.type === 'orgChart') {
@@ -958,6 +958,7 @@ export class ChatExecutionService {
   }
 
   private buildOutreachCommandContext(
+    workspace: WorkspaceEntity,
     browsingContext: Extract<BrowsingContextType, { type: 'outreachCommand' }>,
   ): string {
     const { search, outreach, workflowBuilding } = CHAT_INTENT_SKILLS;
@@ -973,6 +974,13 @@ export class ChatExecutionService {
       `selectedPersonId: ${browsingContext.selectedPersonId ?? 'none'}`,
       `icp: ${browsingContext.icpName ?? 'none'}`,
       `icpSpec: ${browsingContext.icpSpecSummary ?? 'none'}`,
+      `workspace companyName: ${workspace.companyName ?? 'none'}`,
+      `workspace companyDomain: ${workspace.companyDomain ?? 'none'}`,
+      `workspace industry: ${workspace.industry ?? 'none'}`,
+      `workspace summary: ${workspace.summary ?? 'none'}`,
+      `workspace employeeRange: ${workspace.employeeRange ?? 'none'}`,
+      `workspace hq: ${workspace.hq ?? 'none'}`,
+      `workspace icpSpec: ${workspace.icpSpec ?? 'none'}`,
       `channels: LinkedIn=${browsingContext.linkedinConnected} Gmail=${browsingContext.gmailConnected} WhatsApp=${browsingContext.whatsappConnected}`,
       ...buildSeededOutreachWorkflowInventoryLines(
         browsingContext.outreachWorkflowId,

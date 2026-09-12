@@ -14,7 +14,7 @@ import {
 
 import { LinkedinUnipileRequestService } from './linkedin-unipile-request.service';
 import { WhatsappUnipileRequestService } from './whatsapp-unipile-request.service';
-import { WorkspaceMemberProfileUnipileService } from './workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from './workspace-member-unipile.service';
 
 export type UnipileAccountType = 'LINKEDIN' | 'WHATSAPP';
 
@@ -52,7 +52,7 @@ export class UnipileAccountPoolService {
   constructor(
     @InjectDataSource()
     private readonly metadataDataSource: DataSource,
-    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService: WorkspaceMemberUnipileService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
     private readonly whatsappUnipileRequestService: WhatsappUnipileRequestService,
@@ -90,13 +90,13 @@ export class UnipileAccountPoolService {
 
     /** Hints for identity matching; connection state always comes from Unipile API responses below. */
     const profileFields =
-      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields(
+      await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileFields(
         workspaceMemberId,
         authToken,
       );
 
     const storedAccountId =
-      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+      await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
         workspaceMemberId,
         workspaceId,
         authToken,
@@ -143,7 +143,7 @@ export class UnipileAccountPoolService {
           profileFields,
         );
       if (blocking?.id) {
-        await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+        await this.workspaceMemberUnipileService.applyUnipileAccountToWorkspaceMember(
           workspaceMemberId,
           authToken,
           'linkedin',
@@ -162,7 +162,7 @@ export class UnipileAccountPoolService {
           profileFields,
         );
       if (blocking?.id) {
-        await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+        await this.workspaceMemberUnipileService.applyUnipileAccountToWorkspaceMember(
           workspaceMemberId,
           authToken,
           'whatsapp',
@@ -175,7 +175,7 @@ export class UnipileAccountPoolService {
     }
 
     const keepConnected =
-      await this.workspaceMemberProfileUnipileService.getKeepLinkedinConnected(
+      await this.workspaceMemberUnipileService.getKeepLinkedinConnected(
         workspaceMemberId,
         authToken,
       );
@@ -266,7 +266,7 @@ export class UnipileAccountPoolService {
         [workspaceMemberId, account_type],
       );
 
-      await this.clearWorkspaceMemberProfileUnipile(
+      await this.clearWorkspaceMemberUnipile(
         workspaceMemberId,
         workspace_id,
         account_type === 'LINKEDIN' ? 'linkedin' : 'whatsapp',
@@ -409,7 +409,7 @@ export class UnipileAccountPoolService {
     }
   }
 
-  private async clearWorkspaceMemberProfileUnipile(
+  private async clearWorkspaceMemberUnipile(
     workspaceMemberId: string,
     workspaceId: string,
     type: 'linkedin' | 'whatsapp',
@@ -424,10 +424,10 @@ export class UnipileAccountPoolService {
           const profileRepository =
             await this.workspaceQueryService.getObjectRepository<
               Record<string, unknown>
-            >(workspaceId, 'workspaceMemberProfile');
+            >(workspaceId, 'workspaceMember');
 
           await profileRepository.update(
-            { workspaceMemberId },
+            { id: workspaceMemberId },
             { [fieldName]: null },
           );
         },

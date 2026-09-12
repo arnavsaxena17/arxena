@@ -1,5 +1,5 @@
-import { RightDrawerPages } from "@/ui/layout/right-drawer/types/RightDrawerPages";
-import { IconMessage } from "twenty-ui/icon";
+import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPages';
+import { IconMessage } from 'twenty-ui/icon';
 import axios from 'axios';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 import { updateOutreachOperatorControls } from '@/outreach-home/utils/outreachJourneyApi';
@@ -13,14 +13,21 @@ import {
 import { mergeOtherFields, toSnakeCaseKey } from 'twenty-shared/utils';
 // import { Change } from './states/tableStateAtom';
 
-export const updateUnreadMessagesStatus = async (unreadMessageIds: string[], tokenPair: any) => {
+export const updateUnreadMessagesStatus = async (
+  unreadMessageIds: string[],
+  tokenPair: any,
+) => {
   if (!unreadMessageIds?.length) return;
 
   try {
     await axios.post(
       `${REACT_APP_SERVER_BASE_URL}/arx-chat/update-whatsapp-delivery-status`,
       { listOfMessagesIds: unreadMessageIds },
-      { headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` } },
+      {
+        headers: {
+          Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
+        },
+      },
     );
     console.log('Successfully marked messages as read');
   } catch (error) {
@@ -35,12 +42,15 @@ const areSelectedIdListsEqual = (left: string[], right: string[]): boolean =>
 
 export const isUUID = (id: string): boolean => {
   // UUID format: 8-4-4-4-12 hexadecimal characters
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(id);
 };
 
 // Helper function to normalize LinkedIn URLs for comparison
-const normalizeLinkedInUrl = (url: string | undefined | null | any): string | null => {
+const normalizeLinkedInUrl = (
+  url: string | undefined | null | any,
+): string | null => {
   if (!url) return null;
 
   // Ensure url is a string - handle objects that might have url properties
@@ -51,19 +61,31 @@ const normalizeLinkedInUrl = (url: string | undefined | null | any): string | nu
   } else if (url && typeof url === 'object') {
     // If it's an object, try to extract the URL from common properties
     // Check for primaryLinkUrl first, but only if it's a non-empty string
-    if (typeof url.primaryLinkUrl === 'string' && url.primaryLinkUrl.trim().length > 0) {
+    if (
+      typeof url.primaryLinkUrl === 'string' &&
+      url.primaryLinkUrl.trim().length > 0
+    ) {
       urlString = url.primaryLinkUrl.trim();
     } else if (typeof url.url === 'string' && url.url.trim().length > 0) {
       urlString = url.url.trim();
-    } else if (typeof url.linkedinUrl === 'string' && url.linkedinUrl.trim().length > 0) {
+    } else if (
+      typeof url.linkedinUrl === 'string' &&
+      url.linkedinUrl.trim().length > 0
+    ) {
       urlString = url.linkedinUrl.trim();
     }
     // If none of the above worked, don't try String(url) as it will give [object Object]
   }
 
   // Validate we have a non-empty string
-  if (!urlString || typeof urlString !== 'string' || urlString.length === 0 ||
-      urlString === 'undefined' || urlString === 'null' || urlString === '[object Object]') {
+  if (
+    !urlString ||
+    typeof urlString !== 'string' ||
+    urlString.length === 0 ||
+    urlString === 'undefined' ||
+    urlString === 'null' ||
+    urlString === '[object Object]'
+  ) {
     return null;
   }
 
@@ -152,7 +174,10 @@ export const resolveChatLookupIds = (
 
 // Helper function to get permanent ID for a candidate
 // Checks if a LinkedIn candidate (by tempId) has been saved to database and has a permanent UUID
-export const getPermanentId = (rowData: Record<string, unknown>, rawData: CandidateNode[] | Record<string, unknown>[]): string | undefined => {
+export const getPermanentId = (
+  rowData: Record<string, unknown>,
+  rawData: CandidateNode[] | Record<string, unknown>[],
+): string | undefined => {
   // If rowData has a UUID as an id, return it
   if (rowData?.id && isUUID(String(rowData.id))) {
     return String(rowData.id);
@@ -161,9 +186,11 @@ export const getPermanentId = (rowData: Record<string, unknown>, rawData: Candid
   if (!Array.isArray(rawData) || rawData.length === 0) {
     // Fallback: use id if available (even if it's a LinkedIn ID), otherwise tempId
     const fallbackId =
-      (typeof rowData?.id === 'string' && rowData?.id.length > 0)
+      typeof rowData?.id === 'string' && rowData?.id.length > 0
         ? rowData.id
-        : (typeof rowData?.tempId === 'string' ? rowData.tempId : undefined);
+        : typeof rowData?.tempId === 'string'
+          ? rowData.tempId
+          : undefined;
     return fallbackId;
   }
 
@@ -194,11 +221,14 @@ export const getPermanentId = (rowData: Record<string, unknown>, rawData: Candid
   const tempId: string | null =
     typeof rowData?.tempId === 'string'
       ? rowData.tempId
-      : (rowData?.id && !isUUID(String(rowData.id))) ? String(rowData.id) : null;
+      : rowData?.id && !isUUID(String(rowData.id))
+        ? String(rowData.id)
+        : null;
 
   if (tempId) {
     const rowLinkedInUrl =
-      (typeof (rowData?.linkedinUrl as any)?.primaryLinkUrl === 'string' && (rowData?.linkedinUrl as any)?.primaryLinkUrl !== '')
+      typeof (rowData?.linkedinUrl as any)?.primaryLinkUrl === 'string' &&
+      (rowData?.linkedinUrl as any)?.primaryLinkUrl !== ''
         ? (rowData?.linkedinUrl as any)?.primaryLinkUrl
         : typeof rowData?.linkedinUrl === 'string'
           ? rowData?.linkedinUrl
@@ -211,7 +241,8 @@ export const getPermanentId = (rowData: Record<string, unknown>, rawData: Candid
     const matchingCandidate = rawData.find((candidate: any) => {
       // LinkedIn URL field logic: prefer primaryLinkUrl if a non-empty string
       const candidateLinkedInUrl =
-        (typeof candidate?.linkedinUrl?.primaryLinkUrl === 'string' && candidate?.linkedinUrl?.primaryLinkUrl !== '')
+        typeof candidate?.linkedinUrl?.primaryLinkUrl === 'string' &&
+        candidate?.linkedinUrl?.primaryLinkUrl !== ''
           ? candidate.linkedinUrl.primaryLinkUrl
           : typeof candidate?.linkedinUrl === 'string'
             ? candidate.linkedinUrl
@@ -249,7 +280,8 @@ export const getPermanentId = (rowData: Record<string, unknown>, rawData: Candid
         typeof rowData?.uniqueStringKey === 'string' &&
         candidate.uniqueStringKey.length > 0 &&
         rowData.uniqueStringKey.length > 0 &&
-        candidate.uniqueStringKey.toLowerCase() === (rowData.uniqueStringKey as string).toLowerCase()
+        candidate.uniqueStringKey.toLowerCase() ===
+          (rowData.uniqueStringKey as string).toLowerCase()
       ) {
         return true;
       }
@@ -264,20 +296,31 @@ export const getPermanentId = (rowData: Record<string, unknown>, rawData: Candid
 
   // Fallback: use id if available (even if it's a LinkedIn ID), otherwise tempId
   const fallbackId =
-    (typeof rowData?.id === 'string' && rowData?.id.length > 0)
+    typeof rowData?.id === 'string' && rowData?.id.length > 0
       ? rowData.id
-      : (typeof rowData?.tempId === 'string' ? rowData.tempId : undefined);
+      : typeof rowData?.tempId === 'string'
+        ? rowData.tempId
+        : undefined;
 
   return fallbackId;
 };
 
-const getColumnDataKey = (hot: any, visualColumnIndex: number): string | undefined => {
-  const columns = hot.getSettings()?.columns as Array<{ data?: string }> | undefined;
+const getColumnDataKey = (
+  hot: any,
+  visualColumnIndex: number,
+): string | undefined => {
+  const columns = hot.getSettings()?.columns as
+    | Array<{ data?: string }>
+    | undefined;
   return columns?.[visualColumnIndex]?.data;
 };
 
 /** True when selection is a single cell on the candidate name column (opens chat drawer). */
-const isSingleCellNameColumn = (hot: any, column: number, column2: number): boolean => {
+const isSingleCellNameColumn = (
+  hot: any,
+  column: number,
+  column2: number,
+): boolean => {
   if (column !== column2) return false;
   return getColumnDataKey(hot, column) === 'name';
 };
@@ -298,8 +341,8 @@ export const afterSelectionEnd = (
   rawData?: any[],
   selectedRowIdsRef?: { current: string[] },
 ) => {
-  console.log("row in afterSelectionEnd", row);
-  console.log("row2 in afterSelectionEnd", row2);
+  console.log('row in afterSelectionEnd', row);
+  console.log('row2 in afterSelectionEnd', row2);
 
   // Header clicks (filter caret / sort) use row === -1. Updating React state
   // here re-renders HotTable, which calls updateSettings and destroys the
@@ -313,7 +356,7 @@ export const afterSelectionEnd = (
 
   try {
     const selectedIds = hot.getSelected();
-    console.log("selectedIds in afterSelectionEnd", selectedIds);
+    console.log('selectedIds in afterSelectionEnd', selectedIds);
 
     // Checkbox clicks are owned by afterChange/handleCheckboxChange. Updating
     // selectedRowIds here as well toggles on every HotTable updateSettings and
@@ -352,12 +395,17 @@ export const afterSelectionEnd = (
     // Name-column single cell: open chat only when the selected row set changed.
     // updateSettings re-fires afterSelectionEnd; opening the drawer then
     // (new side-panel pageId) retriggers HotTable → max update depth.
-    if (selectedIds.length === 1 && row === row2 && isSingleCellNameColumn(hot, column, column2)) {
+    if (
+      selectedIds.length === 1 &&
+      row === row2 &&
+      isSingleCellNameColumn(hot, column, column2)
+    ) {
       const physicalRow = hot.toPhysicalRow(row);
       const selectedRow = hot.getSourceDataAtRow(physicalRow);
 
       if (selectedRow?.id) {
-        const candidateId = getPermanentId(selectedRow, rawData || []) || selectedRow.id;
+        const candidateId =
+          getPermanentId(selectedRow, rawData || []) || selectedRow.id;
         setSelectedCandidateId(candidateId);
         // Defer so Handsontable updateSettings can finish. Opening the side
         // panel synchronously retriggers afterSelectionEnd and max update depth.
@@ -376,8 +424,8 @@ export const afterSelectionEnd = (
             Icon: IconMessage,
             meta: {
               candidateId: candidateId,
-              unreadMessageIds: []
-            }
+              unreadMessageIds: [],
+            },
           });
         }, 0);
       }
@@ -428,7 +476,11 @@ type PendingUpdate = {
   isDirectField: boolean;
 };
 
-const handleUndoStackUpdate = (changes: any[], hot: any, setTableState: any) => {
+const handleUndoStackUpdate = (
+  changes: any[],
+  hot: any,
+  setTableState: any,
+) => {
   const changesForUndo: Change[] = changes
     .map(([row, prop, oldValue, newValue]: [number, string, any, any]) => {
       const rowData = hot.getSourceDataAtRow(row);
@@ -437,32 +489,47 @@ const handleUndoStackUpdate = (changes: any[], hot: any, setTableState: any) => 
         prop,
         oldValue,
         newValue,
-        rowId: rowData?.id
+        rowId: rowData?.id,
       };
     })
     .filter((change: Change) => change.oldValue !== change.newValue);
 
   if (changesForUndo.length > 0) {
     setTableState((prev: any) => {
-      const currentUndoStack = Array.isArray(prev.undoStack) ? prev.undoStack : [];
+      const currentUndoStack = Array.isArray(prev.undoStack)
+        ? prev.undoStack
+        : [];
       return {
         ...prev,
         undoStack: [...currentUndoStack, ...changesForUndo],
-        redoStack: [] // Clear redo stack on new edit
+        redoStack: [], // Clear redo stack on new edit
       };
     });
   }
 };
 
-const handleCheckboxChange = (rowData: any, newValue: boolean, setTableState: any, setSelectedCandidateId: SetAtomState<string | null>, rawData?: any[]) => {
-  console.log("prop is checkbox and hence setting table states");
+const handleCheckboxChange = (
+  rowData: any,
+  newValue: boolean,
+  setTableState: any,
+  setSelectedCandidateId: SetAtomState<string | null>,
+  rawData?: any[],
+  setContextStoreNumberOfSelectedRecords?: (count: number) => void,
+  setContextStoreTargetedRecordsRule?: (rule: {
+    mode: 'selection';
+    selectedRecordIds: string[];
+  }) => void,
+) => {
+  console.log('prop is checkbox and hence setting table states');
   let nextSelectedIds: string[] = [];
   setTableState((prev: any) => {
-    const currentSelectedIds = Array.isArray(prev.selectedRowIds) ? prev.selectedRowIds : [];
-    console.log("currentSelectedIds::", currentSelectedIds);
+    const currentSelectedIds = Array.isArray(prev.selectedRowIds)
+      ? prev.selectedRowIds
+      : [];
+    console.log('currentSelectedIds::', currentSelectedIds);
 
     const candidateId = getPermanentId(rowData, rawData || []);
-    console.log("candidateId selected of rowData::", candidateId);
+    console.log('candidateId selected of rowData::', candidateId);
 
     if (candidateId === undefined) {
       nextSelectedIds = currentSelectedIds;
@@ -480,7 +547,9 @@ const handleCheckboxChange = (rowData: any, newValue: boolean, setTableState: an
     }
 
     if (newValue === false && isSelected) {
-      nextSelectedIds = currentSelectedIds.filter((id: string) => id !== candidateId);
+      nextSelectedIds = currentSelectedIds.filter(
+        (id: string) => id !== candidateId,
+      );
       return {
         ...prev,
         selectedRowIds: nextSelectedIds,
@@ -491,11 +560,17 @@ const handleCheckboxChange = (rowData: any, newValue: boolean, setTableState: an
     return prev;
   });
   setSelectedCandidateId(nextSelectedIds[0] ?? null);
+
+  // HotTableActionMenu reads the project context store, not tableState.
+  // afterSelectionEnd skips checkbox column, so we must update it here.
+  setContextStoreNumberOfSelectedRecords?.(nextSelectedIds.length);
+  setContextStoreTargetedRecordsRule?.({
+    mode: 'selection',
+    selectedRecordIds: nextSelectedIds,
+  });
 };
 
-const resolveOutreachConversationStageValue = (
-  value: unknown,
-): string => {
+const resolveOutreachConversationStageValue = (value: unknown): string => {
   if (typeof value !== 'string' || value.length === 0) {
     return 'NONE';
   }
@@ -538,7 +613,13 @@ const DIRECT_TABLE_FIELDS = new Set([
   'hasCv',
 ]);
 
-const updateTableState = (rowData: any, prop: string, newValue: any, setTableState: any, hot: any) => {
+const updateTableState = (
+  rowData: any,
+  prop: string,
+  newValue: any,
+  setTableState: any,
+  hot: any,
+) => {
   console.log(`Updating field: ${prop} for row ${rowData.id}`);
   console.log(`Column index for ${prop}:`, hot?.propToCol(prop));
 
@@ -546,7 +627,9 @@ const updateTableState = (rowData: any, prop: string, newValue: any, setTableSta
     const updatedRawData = [...prev.rawData];
     // Match by id (table row id from ProcessedData) or by peopleId (rawData) === personId (table row)
     const index = updatedRawData.findIndex(
-      (item: any) => item.id === rowData.id || (item.peopleId && item.peopleId === rowData.personId)
+      (item: any) =>
+        item.id === rowData.id ||
+        (item.peopleId && item.peopleId === rowData.personId),
     );
 
     if (index >= 0) {
@@ -554,39 +637,44 @@ const updateTableState = (rowData: any, prop: string, newValue: any, setTableSta
 
       // Special handling for phone: ProcessedData reads phoneNumber.primaryPhoneNumber
       if (prop === 'phone') {
-        const currentPhoneValue = currentRow.phoneNumber?.primaryPhoneNumber ?? currentRow.people?.phones?.primaryPhoneNumber;
+        const currentPhoneValue =
+          currentRow.phoneNumber?.primaryPhoneNumber ??
+          currentRow.people?.phones?.primaryPhoneNumber;
         if (currentPhoneValue === newValue) {
           return prev;
         }
         const updatedRow = { ...currentRow };
         updatedRow.phoneNumber = {
           ...(updatedRow.phoneNumber || {}),
-          primaryPhoneNumber: newValue
+          primaryPhoneNumber: newValue,
         };
         updatedRawData[index] = updatedRow;
         return {
           ...prev,
-          rawData: updatedRawData
+          rawData: updatedRawData,
         };
       }
 
       // Special handling for email: ProcessedData reads email.primaryEmail
       if (prop === 'email') {
-        const currentEmailValue = typeof currentRow.email === 'string'
-          ? currentRow.email
-          : currentRow.email?.primaryEmail;
+        const currentEmailValue =
+          typeof currentRow.email === 'string'
+            ? currentRow.email
+            : currentRow.email?.primaryEmail;
         if (currentEmailValue === newValue) {
           return prev;
         }
         const updatedRow = { ...currentRow };
         updatedRow.email = {
-          ...(typeof currentRow.email === 'object' && currentRow.email !== null ? currentRow.email : {}),
-          primaryEmail: newValue
+          ...(typeof currentRow.email === 'object' && currentRow.email !== null
+            ? currentRow.email
+            : {}),
+          primaryEmail: newValue,
         };
         updatedRawData[index] = updatedRow;
         return {
           ...prev,
-          rawData: updatedRawData
+          rawData: updatedRawData,
         };
       }
 
@@ -601,9 +689,12 @@ const updateTableState = (rowData: any, prop: string, newValue: any, setTableSta
         updatedRawData[index] = updatedRow;
       } else {
         const updatedRow = { ...currentRow };
-        updatedRow.otherFields = mergeOtherFields(updatedRow.otherFields || {}, {
-          [toSnakeCaseKey(prop)]: newValue,
-        });
+        updatedRow.otherFields = mergeOtherFields(
+          updatedRow.otherFields || {},
+          {
+            [toSnakeCaseKey(prop)]: newValue,
+          },
+        );
         updatedRawData[index] = updatedRow;
       }
     } else {
@@ -614,7 +705,7 @@ const updateTableState = (rowData: any, prop: string, newValue: any, setTableSta
     console.log('updatedRawData in updateTableState::', updatedRawData);
     return {
       ...prev,
-      rawData: updatedRawData
+      rawData: updatedRawData,
     };
   });
 
@@ -622,22 +713,34 @@ const updateTableState = (rowData: any, prop: string, newValue: any, setTableSta
   if (hot) {
     // Find the current visual row index for this data
     const allData = hot.getSourceData();
-    const physicalIndex = allData.findIndex((item: any) => item.id === rowData.id);
+    const physicalIndex = allData.findIndex(
+      (item: any) => item.id === rowData.id,
+    );
     if (physicalIndex >= 0) {
       const visualRow = hot.toVisualRow(physicalIndex);
       const colIndex = hot.propToCol(prop);
-      if (visualRow !== null && visualRow !== undefined && colIndex !== null && colIndex !== undefined) {
+      if (
+        visualRow !== null &&
+        visualRow !== undefined &&
+        colIndex !== null &&
+        colIndex !== undefined
+      ) {
         hot.setDataAtCell(visualRow, colIndex, newValue, 'external');
       }
     }
   }
 };
 
-
-const revertTableState = (rowData: any, prop: string, oldValue: any, hot: any, setTableState: any) => {
+const revertTableState = (
+  rowData: any,
+  prop: string,
+  oldValue: any,
+  hot: any,
+  setTableState: any,
+) => {
   setTableState((prev: any) => {
     const updatedRawData = [...prev.rawData];
-    const index = updatedRawData.findIndex(item => item.id === rowData.id);
+    const index = updatedRawData.findIndex((item) => item.id === rowData.id);
     if (index < 0) return prev;
     const currentRow = updatedRawData[index];
     let updatedRow: any;
@@ -646,16 +749,18 @@ const revertTableState = (rowData: any, prop: string, oldValue: any, hot: any, s
         ...currentRow,
         phoneNumber: {
           ...(currentRow.phoneNumber || {}),
-          primaryPhoneNumber: oldValue
-        }
+          primaryPhoneNumber: oldValue,
+        },
       };
     } else if (prop === 'email') {
       updatedRow = {
         ...currentRow,
         email: {
-          ...(typeof currentRow.email === 'object' && currentRow.email !== null ? currentRow.email : {}),
-          primaryEmail: oldValue
-        }
+          ...(typeof currentRow.email === 'object' && currentRow.email !== null
+            ? currentRow.email
+            : {}),
+          primaryEmail: oldValue,
+        },
       };
     } else {
       updatedRow = { ...currentRow, [prop]: oldValue };
@@ -668,7 +773,9 @@ const revertTableState = (rowData: any, prop: string, oldValue: any, hot: any, s
   if (hot) {
     // Find the current visual row index for this data
     const allData = hot.getSourceData();
-    const physicalIndex = allData.findIndex((item: any) => item.id === rowData.id);
+    const physicalIndex = allData.findIndex(
+      (item: any) => item.id === rowData.id,
+    );
     if (physicalIndex >= 0) {
       const visualRow = hot.toVisualRow(physicalIndex);
       if (visualRow !== null && visualRow !== undefined) {
@@ -683,20 +790,24 @@ const processBackendUpdate = async (
   getLatestToken: () => string | undefined,
   setTableState: any,
   tableRef: React.RefObject<any>,
-  rawData?: any[]
+  rawData?: any[],
 ) => {
   const { prop, oldValue, newValue, rowData, endpoint } = update;
-  console.log("rowData in processBackendUpdate::", rowData);
+  console.log('rowData in processBackendUpdate::', rowData);
   // Skip backend update if this is a fetched candidate (no personId)
   if (!rowData.personId) {
-    console.log(`Skipping backend update for fetched candidate ${rowData.id} - no personId`);
+    console.log(
+      `Skipping backend update for fetched candidate ${rowData.id} - no personId`,
+    );
     return;
   }
 
   // Get permanent ID (UUID) - ensure we only send UUIDs, not LinkedIn IDs or tempIds
   const candidateId = getPermanentId(rowData, rawData || []);
   if (!candidateId || !isUUID(candidateId)) {
-    console.log(`Skipping backend update for candidate ${rowData.id} - no valid UUID found (candidateId: ${candidateId})`);
+    console.log(
+      `Skipping backend update for candidate ${rowData.id} - no valid UUID found (candidateId: ${candidateId})`,
+    );
     return;
   }
 
@@ -719,7 +830,8 @@ const processBackendUpdate = async (
       await updateOutreachOperatorControls({
         projectId: rowData.outreachProjectId,
         candidateId: enrolledCandidateId,
-        outreachConversationStage: resolveOutreachConversationStageValue(newValue),
+        outreachConversationStage:
+          resolveOutreachConversationStageValue(newValue),
         accessToken: latestToken,
       });
       return;
@@ -727,17 +839,37 @@ const processBackendUpdate = async (
 
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${latestToken}` },
-      body: JSON.stringify({ candidateId, fieldName: prop, value: newValue, personId: rowData.personId })
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${latestToken}`,
+      },
+      body: JSON.stringify({
+        candidateId,
+        fieldName: prop,
+        value: newValue,
+        personId: rowData.personId,
+      }),
     });
 
     if (!response.ok) {
       console.error('Update failed:', await response.text());
-      revertTableState(rowData, prop, oldValue, tableRef.current?.hotInstance, setTableState);
+      revertTableState(
+        rowData,
+        prop,
+        oldValue,
+        tableRef.current?.hotInstance,
+        setTableState,
+      );
     }
   } catch (error) {
     console.error('Update failed:', error);
-    revertTableState(rowData, prop, oldValue, tableRef.current?.hotInstance, setTableState);
+    revertTableState(
+      rowData,
+      prop,
+      oldValue,
+      tableRef.current?.hotInstance,
+      setTableState,
+    );
   }
 };
 
@@ -750,7 +882,12 @@ export const afterChange = async (
   setTableState: any,
   setSelectedCandidateId: SetAtomState<string | null>,
   refreshData: any,
-  rawData?: any[]
+  rawData?: any[],
+  setContextStoreNumberOfSelectedRecords?: (count: number) => void,
+  setContextStoreTargetedRecordsRule?: (rule: {
+    mode: 'selection';
+    selectedRecordIds: string[];
+  }) => void,
 ) => {
   if (!changes) return;
 
@@ -763,36 +900,46 @@ export const afterChange = async (
   // 'external' is triggered when we call setDataAtCell(..., 'external') for optimistic update -
   // skipping it avoids double-processing and prevents the table from being overwritten before
   // React re-renders with updated state (rawData -> processedData -> mergedData -> table data)
-  if (source === 'undo' || source === 'redo' || source === 'updateData' || source === 'loadData' || source === 'external') {
+  if (
+    source === 'undo' ||
+    source === 'redo' ||
+    source === 'updateData' ||
+    source === 'loadData' ||
+    source === 'external'
+  ) {
     // Silently skip - these are internal Handsontable operations, not user edits
     return;
   }
 
   // Only log when we're actually processing user edits
-  console.log("source in afterChange", source);
+  console.log('source in afterChange', source);
 
   // Handle undo stack updates for direct edits
   if (source === 'edit') {
-    const changesForUndo: Change[] = changes.map(([row, prop, oldValue, newValue]: [number, string, any, any]) => {
-      // Convert visual row to physical row for storage
-      const physicalRow = hot.toPhysicalRow(row);
-      const rowData = hot.getSourceDataAtRow(physicalRow);
-      return {
-        row: physicalRow, // Store physical row index
-        prop,
-        oldValue,
-        newValue,
-        rowId: rowData?.id
-      };
-    }).filter((change: Change) => change.oldValue !== change.newValue);
+    const changesForUndo: Change[] = changes
+      .map(([row, prop, oldValue, newValue]: [number, string, any, any]) => {
+        // Convert visual row to physical row for storage
+        const physicalRow = hot.toPhysicalRow(row);
+        const rowData = hot.getSourceDataAtRow(physicalRow);
+        return {
+          row: physicalRow, // Store physical row index
+          prop,
+          oldValue,
+          newValue,
+          rowId: rowData?.id,
+        };
+      })
+      .filter((change: Change) => change.oldValue !== change.newValue);
 
     if (changesForUndo.length > 0) {
       setTableState((prev: any) => {
-        const currentUndoStack = Array.isArray(prev.undoStack) ? prev.undoStack : [];
+        const currentUndoStack = Array.isArray(prev.undoStack)
+          ? prev.undoStack
+          : [];
         return {
           ...prev,
           undoStack: [...currentUndoStack, ...changesForUndo],
-          redoStack: [] // Clear redo stack on new edit
+          redoStack: [], // Clear redo stack on new edit
         };
       });
     }
@@ -805,21 +952,29 @@ export const afterChange = async (
   for (const [visualRow, prop, oldValue, newValue] of changes) {
     if (oldValue === newValue) continue;
 
-    console.log("oldValue in afterChange::", oldValue);
-    console.log("newValue in afterChange::", newValue);
+    console.log('oldValue in afterChange::', oldValue);
+    console.log('newValue in afterChange::', newValue);
 
     // Convert visual row to physical row
     const physicalRow = hot.toPhysicalRow(visualRow);
     const rowData = hot.getSourceDataAtRow(physicalRow);
 
-    console.log("rowData in afterChange::", rowData);
+    console.log('rowData in afterChange::', rowData);
     if (!rowData || !rowData.id) continue;
 
     // Checkbox renderer/updateSettings writes are not user edits. Treating them
     // as such clears selectedRowIds and retriggers HotTable → max update depth.
     if (prop === 'checkbox') {
       if (source === 'edit') {
-        handleCheckboxChange(rowData, newValue, setTableState, setSelectedCandidateId, rawData);
+        handleCheckboxChange(
+          rowData,
+          newValue,
+          setTableState,
+          setSelectedCandidateId,
+          rawData,
+          setContextStoreNumberOfSelectedRecords,
+          setContextStoreTargetedRecordsRule,
+        );
       }
       continue;
     }
@@ -829,7 +984,9 @@ export const afterChange = async (
 
     // Check if this is a saved candidate (has personId) or fetched candidate (no personId)
     const isSavedCandidate = !!rowData.personId;
-    console.log(`Candidate ${rowData.id} is ${isSavedCandidate ? 'saved' : 'fetched'} (personId: ${rowData.personId})`);
+    console.log(
+      `Candidate ${rowData.id} is ${isSavedCandidate ? 'saved' : 'fetched'} (personId: ${rowData.personId})`,
+    );
 
     const nextValue =
       prop === 'outreachConversationStage'
@@ -853,28 +1010,45 @@ export const afterChange = async (
         newValue: nextValue,
         rowData,
         endpoint,
-        isDirectField
+        isDirectField,
       });
     } else {
-      console.log(`Skipping backend update for fetched candidate ${rowData.id} - changes are local only`);
+      console.log(
+        `Skipping backend update for fetched candidate ${rowData.id} - changes are local only`,
+      );
     }
 
     updatedRows.add(rowData.id);
   }
 
-  console.log("updatedRows in afterChange::", updatedRows);
+  console.log('updatedRows in afterChange::', updatedRows);
 
   // Process updates in the background
-  pendingUpdates.forEach(update => processBackendUpdate(update, getLatestToken, setTableState, tableRef, rawData));
+  pendingUpdates.forEach((update) =>
+    processBackendUpdate(
+      update,
+      getLatestToken,
+      setTableState,
+      tableRef,
+      rawData,
+    ),
+  );
 };
 
-export const performUndo = async (tableRef: React.RefObject<any>, setTableState: any) => {
+export const performUndo = async (
+  tableRef: React.RefObject<any>,
+  setTableState: any,
+) => {
   const hot = tableRef.current?.hotInstance;
   if (!hot) return;
 
   setTableState((prev: any) => {
-    const currentUndoStack = Array.isArray(prev.undoStack) ? prev.undoStack : [];
-    const currentRedoStack = Array.isArray(prev.redoStack) ? prev.redoStack : [];
+    const currentUndoStack = Array.isArray(prev.undoStack)
+      ? prev.undoStack
+      : [];
+    const currentRedoStack = Array.isArray(prev.redoStack)
+      ? prev.redoStack
+      : [];
 
     if (currentUndoStack.length === 0) return prev;
 
@@ -887,18 +1061,25 @@ export const performUndo = async (tableRef: React.RefObject<any>, setTableState:
     return {
       ...prev,
       undoStack: currentUndoStack.slice(0, -1),
-      redoStack: [...currentRedoStack, lastChange]
+      redoStack: [...currentRedoStack, lastChange],
     };
   });
 };
 
-export const performRedo = async (tableRef: React.RefObject<any>, setTableState: any) => {
+export const performRedo = async (
+  tableRef: React.RefObject<any>,
+  setTableState: any,
+) => {
   const hot = tableRef.current?.hotInstance;
   if (!hot) return;
 
   setTableState((prev: any) => {
-    const currentUndoStack = Array.isArray(prev.undoStack) ? prev.undoStack : [];
-    const currentRedoStack = Array.isArray(prev.redoStack) ? prev.redoStack : [];
+    const currentUndoStack = Array.isArray(prev.undoStack)
+      ? prev.undoStack
+      : [];
+    const currentRedoStack = Array.isArray(prev.redoStack)
+      ? prev.redoStack
+      : [];
 
     if (currentRedoStack.length === 0) return prev;
 
@@ -911,7 +1092,7 @@ export const performRedo = async (tableRef: React.RefObject<any>, setTableState:
     return {
       ...prev,
       redoStack: currentRedoStack.slice(0, -1),
-      undoStack: [...currentUndoStack, lastChange]
+      undoStack: [...currentUndoStack, lastChange],
     };
   });
 };

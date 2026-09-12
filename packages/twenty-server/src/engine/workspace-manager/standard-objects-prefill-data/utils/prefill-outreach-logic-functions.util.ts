@@ -1177,7 +1177,7 @@ export const getOutreachLogicFunctionDefinitions = (
       id: ids.validateInboundSignalsId,
       name: OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME,
       description:
-        'Ground the inbound signal extraction agent before the graph acts on it. Resolves acceptedSlotIndex against the injected calendar slots, blanks any referral or prospect contact that does not appear in the transcript, and normalises replyChannel to the last inbound channel unless a switch was requested. No LLM call.',
+        'Ground the inbound signal extraction agent before the graph acts on it. Resolves acceptedSlotIndex against the injected calendar slots, blanks any referral or prospect contact that does not appear in the transcript, and normalises replyChannel as explicit switch → sticky preferredChannel → last inbound → LINKEDIN. No LLM call.',
       sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
         OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME,
       ),
@@ -1203,6 +1203,10 @@ export const getOutreachLogicFunctionDefinitions = (
               lastInboundChannel: {
                 type: 'string',
                 label: 'Last inbound channel',
+              },
+              preferredChannel: {
+                type: 'string',
+                label: 'Sticky preferred channel',
               },
               acceptedSlotIndex: {
                 type: 'number',
@@ -1231,6 +1235,10 @@ export const getOutreachLogicFunctionDefinitions = (
               startsAt: { type: 'string', label: 'Starts at' },
               endsAt: { type: 'string', label: 'Ends at' },
               replyChannel: { type: 'string', label: 'Reply channel' },
+              preferredChannelToStamp: {
+                type: 'string',
+                label: 'Preferred channel to stamp',
+              },
               prospectEmail: { type: 'string', label: 'Prospect email' },
               referralName: { type: 'string', label: 'Referral name' },
               referralEmail: { type: 'string', label: 'Referral email' },

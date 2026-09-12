@@ -3,8 +3,8 @@ import type { WorkspaceMemberProfileUnipileFields } from 'twenty-shared/utils';
 
 export type { WorkspaceMemberProfileUnipileFields };
 
-export const workspaceMemberProfileUnipileFieldsState =
+export const workspaceMemberUnipileFieldsState =
   createAtomState<WorkspaceMemberProfileUnipileFields | null>({
-    key: 'workspaceMemberProfileUnipileFieldsState',
+    key: 'workspaceMemberUnipileFieldsState',
     defaultValue: null,
   });

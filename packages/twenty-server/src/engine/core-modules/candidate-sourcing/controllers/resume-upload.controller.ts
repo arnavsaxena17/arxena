@@ -13,7 +13,7 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { ProcessResumeUploadsService } from '../jobs/process-resume-uploads.service';
 import { ResumeReadParseUploadService } from '../services/resume-read-parse-upload.service';
@@ -126,7 +126,7 @@ export class ResumeUploadController {
       );
       try {
         this.logger.log(`Resume upload - Calling getCurrentUser with origin: ${origin}`);
-        const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+        const currentUser = await new WorkspaceMemberArxService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
         workspaceMemberId = currentUser?.workspaceMember?.id || userId;
         this.logger.log(`Resume upload - Workspace Member ID: ${workspaceMemberId}`);
       } catch (userError) {

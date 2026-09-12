@@ -51,7 +51,6 @@ import {
   type OutreachSendMode,
   type OutreachStatus,
   type OutreachWorkspaceCompany,
-  type WorkspaceProfileRecord,
 } from '@/outreach-home/types/outreach-home.types';
 import {
   fetchOutreachProjectCandidates,
@@ -78,6 +77,7 @@ import {
   resolveOutreachNextStepLabel,
 } from '@/outreach-home/utils/resolveOutreachJourneyLabels';
 import { useMyConnectedAccounts } from '@/settings/accounts/hooks/useMyConnectedAccounts';
+import { useLoadCurrentUser } from '@/users/hooks/useLoadCurrentUser';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useUnipile } from '@/unipile/contexts/UnipileContext';
@@ -184,6 +184,7 @@ export const useOutreachLiveWorkingSet = () => {
   const projectIdFromQuery = searchParams.get(OUTREACH_PROJECT_ID_QUERY_PARAM);
 
   const currentWorkspace = useAtomStateValue(currentWorkspaceState);
+  const { loadCurrentUser } = useLoadCurrentUser();
   const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
   const [tokenPair] = useAtomState(tokenPairState);
   const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
@@ -252,24 +253,26 @@ export const useOutreachLiveWorkingSet = () => {
     },
   });
 
-  const { records: workspaceMemberProfiles } = useFindManyRecords<{
-    id: string;
-    firstName?: string | null;
-  }>({
-    objectNameSingular: 'workspaceMemberProfile',
+  const { records: workspaceMembers } = useFindManyRecords({
+    objectNameSingular: 'workspaceMember',
     filter: currentWorkspaceMember?.id
-      ? { workspaceMemberId: { eq: currentWorkspaceMember.id } }
+      ? { id: { eq: currentWorkspaceMember.id } }
       : undefined,
     limit: 1,
     skip: !isDefined(currentWorkspaceMember?.id),
     recordGqlFields: {
       id: true,
-      firstName: true,
+      name: true,
     },
   });
 
+  const workspaceMemberName = workspaceMembers[0]?.name as
+    | { firstName?: string | null }
+    | null
+    | undefined;
+
   const outboundSenderFirstName =
-    workspaceMemberProfiles[0]?.firstName?.trim() ||
+    workspaceMemberName?.firstName?.trim() ||
     currentWorkspaceMember?.name?.firstName?.trim() ||
     null;
 
@@ -292,28 +295,10 @@ export const useOutreachLiveWorkingSet = () => {
     },
   });
 
-  const {
-    records: workspaceProfiles,
-    loading: workspaceProfilesLoading,
-    refetch: refetchWorkspaceProfiles,
-  } = useFindManyRecords<WorkspaceProfileRecord>({
-    objectNameSingular: 'workspaceProfile',
-    orderBy: [{ createdAt: 'AscNullsLast' }],
-    limit: 1,
-    recordGqlFields: {
-      id: true,
-      name: true,
-      companyName: true,
-      companyDomain: true,
-      industry: true,
-      summary: true,
-      employeeRange: true,
-      hq: true,
-      icpSpec: true,
-    },
-  });
+  const refetchWorkspaceCompany = useCallback(async () => {
+    await loadCurrentUser();
+  }, [loadCurrentUser]);
 
-  const workspaceProfile = workspaceProfiles[0] ?? null;
   const outreachProjects = useMemo(
     () => allProjects.filter(isOutreachProject),
     [allProjects],
@@ -842,7 +827,7 @@ export const useOutreachLiveWorkingSet = () => {
 
   const effectiveIcp = resolveEffectiveIcp({
     project,
-    workspaceProfile,
+    workspaceCompany: currentWorkspace,
   });
 
   const projectOptions: OutreachProjectOption[] = useMemo(
@@ -850,7 +835,7 @@ export const useOutreachLiveWorkingSet = () => {
       outreachProjects.map((outreachProject) => {
         const resolved = resolveEffectiveIcp({
           project: outreachProject,
-          workspaceProfile,
+          workspaceCompany: currentWorkspace,
         });
 
         return {
@@ -859,7 +844,7 @@ export const useOutreachLiveWorkingSet = () => {
           icpSegment: resolved.parsedIcp?.targetTitles[0] ?? null,
         };
       }),
-    [outreachProjects, workspaceProfile],
+    [currentWorkspace, outreachProjects],
   );
 
   // Stable identity — OutreachHomePage syncs this into outreachContextState;
@@ -913,18 +898,18 @@ export const useOutreachLiveWorkingSet = () => {
 
   const workspaceCompany: OutreachWorkspaceCompany = {
     name:
-      workspaceProfile?.companyName ??
+      currentWorkspace?.companyName ??
       currentWorkspace?.displayName ??
       'Workspace',
-    domain: workspaceProfile?.companyDomain ?? '',
-    industry: workspaceProfile?.industry ?? '',
+    domain: currentWorkspace?.companyDomain ?? '',
+    industry: currentWorkspace?.industry ?? '',
     summary:
-      workspaceProfile?.summary ??
+      currentWorkspace?.summary ??
       (parsedIcp && parsedIcp.targetTitles.length > 0
         ? `ICP target titles: ${parsedIcp.targetTitles.join(', ')}`
         : 'Use Setup to define workspace GTM buyer titles and locations.'),
-    employeeRange: workspaceProfile?.employeeRange ?? '',
-    hq: workspaceProfile?.hq ?? '',
+    employeeRange: currentWorkspace?.employeeRange ?? '',
+    hq: currentWorkspace?.hq ?? '',
   };
 
   const peopleLoading =
@@ -933,12 +918,12 @@ export const useOutreachLiveWorkingSet = () => {
   // Page shell loading only — do not include people/companies fetch flags.
   // Socket-driven cache refreshes are silent so they cannot remount People/Companies tabs.
   return {
-    loading: projectsLoading || workspaceProfilesLoading || isResolvingProject,
+    loading: projectsLoading || isResolvingProject,
     peopleLoading,
     companiesLoading,
     workspaceCompany,
-    workspaceProfile,
-    refetchWorkspaceProfiles,
+    hasWorkspaceCompany: isDefined(currentWorkspace?.id),
+    refetchWorkspaceCompany,
     companies,
     people,
     projectSettings,

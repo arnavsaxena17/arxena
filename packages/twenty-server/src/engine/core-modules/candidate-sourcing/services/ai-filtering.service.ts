@@ -5,7 +5,7 @@ import {
     mutationToCreateOneCandidateEnrichment,
 } from 'twenty-shared';
 
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { AiFilterConfig, AiFilteringProcessorService } from './ai-filtering-processor.service';
@@ -76,7 +76,7 @@ export class AiFilteringService {
       console.log('selectedRecordIds:', selectedRecordIds?.length);
 
       try {
-        const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+        const currentUser = await new WorkspaceMemberArxService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
         recruiterId = currentUser?.workspaceMember?.id;
       } catch (userError) {
         console.warn('Could not get current user for progress reporting:', userError.message);

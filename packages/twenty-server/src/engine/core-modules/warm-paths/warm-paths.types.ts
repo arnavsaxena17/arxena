@@ -49,7 +49,7 @@ export type WarmPathTargetSummary = {
 };
 
 export type WarmPathViewerSummary = {
-  workspaceMemberProfileId: string;
+  workspaceMemberId: string;
   fullName: string;
   linkedinUrl: string | null;
   linkedinUnipileAccountId: string;

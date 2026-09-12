@@ -21,7 +21,7 @@ import { LinkedinUnipileAccountCleanupContext } from '../types/linkedin-unipile-
 import { LinkedinUnipileRequestService } from './linkedin-unipile-request.service';
 import { LinkedinUnipileTeardownSchedulerService } from './linkedin-unipile-teardown-scheduler.service';
 import { WhatsappUnipileRequestService } from './whatsapp-unipile-request.service';
-import { WorkspaceMemberProfileUnipileService } from './workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from './workspace-member-unipile.service';
 
 @Injectable()
 export class MemberLinkedinUnipileConnectionService {
@@ -31,7 +31,7 @@ export class MemberLinkedinUnipileConnectionService {
   constructor(
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
     private readonly whatsappUnipileRequestService: WhatsappUnipileRequestService,
-    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService: WorkspaceMemberUnipileService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     @Optional()
     private readonly linkedinUnipileTeardownSchedulerService?: LinkedinUnipileTeardownSchedulerService,
@@ -133,7 +133,7 @@ export class MemberLinkedinUnipileConnectionService {
     }
 
     const storedId =
-      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+      await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
         workspaceMemberId,
         workspaceId,
         authToken,
@@ -161,7 +161,7 @@ export class MemberLinkedinUnipileConnectionService {
     this.logger.log(
       `Clearing stored LinkedIn Unipile account data workspaceMemberId=${workspaceMemberId} accountId=${accountId} context=${context}`,
     );
-    await this.workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinUnipileData(
+    await this.workspaceMemberUnipileService.clearWorkspaceMemberLinkedinUnipileData(
       workspaceMemberId,
       authToken,
     );
@@ -361,11 +361,11 @@ export class MemberLinkedinUnipileConnectionService {
     );
   }
 
-  async getValidatedWorkspaceMemberProfileFields(
+  async getValidatedWorkspaceMemberUnipileFields(
     workspaceMemberId: string,
     authToken: string,
   ): Promise<WorkspaceMemberProfileUnipileFields | null> {
-    const profile = await this.getWorkspaceMemberProfileFields(
+    const profile = await this.getWorkspaceMemberUnipileFields(
       workspaceMemberId,
       authToken,
     );
@@ -392,7 +392,7 @@ export class MemberLinkedinUnipileConnectionService {
     workspaceMemberId: string,
     authToken: string,
   ): Promise<UnipileLinkedinAccount | undefined> {
-    const profile = await this.getValidatedWorkspaceMemberProfileFields(
+    const profile = await this.getValidatedWorkspaceMemberUnipileFields(
       workspaceMemberId,
       authToken,
     );
@@ -413,7 +413,7 @@ export class MemberLinkedinUnipileConnectionService {
     workspaceMemberId: string,
     authToken: string,
   ): Promise<UnipileLinkedinAccount | undefined> {
-    const profile = await this.getValidatedWorkspaceMemberProfileFields(
+    const profile = await this.getValidatedWorkspaceMemberUnipileFields(
       workspaceMemberId,
       authToken,
     );
@@ -451,7 +451,7 @@ export class MemberLinkedinUnipileConnectionService {
       return preferredAccountId;
     }
 
-    const profile = await this.getWorkspaceMemberProfileFields(
+    const profile = await this.getWorkspaceMemberUnipileFields(
       workspaceMemberId,
       authToken,
     );
@@ -471,7 +471,7 @@ export class MemberLinkedinUnipileConnectionService {
           finalId,
         );
       if (accountPayload) {
-        await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+        await this.workspaceMemberUnipileService.applyUnipileAccountToWorkspaceMember(
           workspaceMemberId,
           authToken,
           'linkedin',
@@ -479,7 +479,7 @@ export class MemberLinkedinUnipileConnectionService {
           accountPayload,
         );
       } else {
-        await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberUnipileAccountId(
+        await this.workspaceMemberUnipileService.updateWorkspaceMemberUnipileAccountId(
           workspaceMemberId,
           authToken,
           'linkedin',
@@ -491,11 +491,11 @@ export class MemberLinkedinUnipileConnectionService {
     return finalId;
   }
 
-  async getWorkspaceMemberProfileFields(
+  async getWorkspaceMemberUnipileFields(
     workspaceMemberId: string,
     authToken: string,
   ): Promise<WorkspaceMemberProfileUnipileFields | null> {
-    return this.workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields(
+    return this.workspaceMemberUnipileService.getWorkspaceMemberUnipileFields(
       workspaceMemberId,
       authToken,
     );
@@ -516,7 +516,7 @@ export class MemberLinkedinUnipileConnectionService {
     const single =
       await this.linkedinUnipileRequestService.fetchAccountByIdIfExists(storedId);
     if (!single) {
-      // Stale id: caller should clear via getValidatedWorkspaceMemberProfileFields.
+      // Stale id: caller should clear via getValidatedWorkspaceMemberUnipileFields.
       return rows;
     }
 
@@ -529,7 +529,7 @@ export class MemberLinkedinUnipileConnectionService {
     workspaceMemberId: string,
     authToken: string,
   ): Promise<boolean> {
-    const profile = await this.getValidatedWorkspaceMemberProfileFields(
+    const profile = await this.getValidatedWorkspaceMemberUnipileFields(
       workspaceMemberId,
       authToken,
     );
@@ -711,7 +711,7 @@ export class MemberLinkedinUnipileConnectionService {
           matchedAccountId,
         );
       if (accountPayload) {
-        await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+        await this.workspaceMemberUnipileService.applyUnipileAccountToWorkspaceMember(
           backfill.workspaceMemberId,
           backfill.authToken,
           'whatsapp',
@@ -719,7 +719,7 @@ export class MemberLinkedinUnipileConnectionService {
           accountPayload,
         );
       } else {
-        await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberUnipileAccountId(
+        await this.workspaceMemberUnipileService.updateWorkspaceMemberUnipileAccountId(
           backfill.workspaceMemberId,
           backfill.authToken,
           'whatsapp',

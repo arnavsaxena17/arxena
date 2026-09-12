@@ -11,7 +11,7 @@ import React, {
 import type { UnipileWhatsappAccount } from 'twenty-shared/arx';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { tokenPairState } from '~/modules/auth/states/tokenPairState';
-import { workspaceMemberProfileUnipileFieldsState } from '~/modules/unipile/states/workspaceMemberProfileUnipileFieldsState';
+import { workspaceMemberUnipileFieldsState } from '~/modules/unipile/states/workspaceMemberUnipileFieldsState';
 import {
     filterWhatsappAccountsForWorkspaceMemberProfile,
     shouldRestrictWhatsappByProfile,
@@ -218,8 +218,8 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<
   const setWhatsappUnipileAccounts = useSetAtomState(
     whatsappUnipileAccountsState,
   );
-  const workspaceMemberProfileUnipileFields = useAtomStateValue(
-    workspaceMemberProfileUnipileFieldsState,
+  const workspaceMemberUnipileFields = useAtomStateValue(
+    workspaceMemberUnipileFieldsState,
   );
 
   const loadAccounts = useCallback(async () => {
@@ -257,13 +257,13 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<
           return false;
         }
         if (
-          !workspaceMemberProfileUnipileFields ||
-          !shouldRestrictWhatsappByProfile(workspaceMemberProfileUnipileFields)
+          !workspaceMemberUnipileFields ||
+          !shouldRestrictWhatsappByProfile(workspaceMemberUnipileFields)
         ) {
           return true;
         }
         return whatsappAccountMatchesWorkspaceMemberProfile(
-          workspaceMemberProfileUnipileFields,
+          workspaceMemberUnipileFields,
           acc,
         );
       });
@@ -296,7 +296,7 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<
 
       const showConnectQr = shouldShowWhatsappUnipileConnectQr(
         accountList,
-        workspaceMemberProfileUnipileFields,
+        workspaceMemberUnipileFields,
       );
       if (onAccountsLoaded) {
         onAccountsLoaded(showConnectQr);
@@ -345,7 +345,7 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<
     onAccountsLoaded,
     setWhatsappUnipileAccounts,
     getNormalizedStatus,
-    workspaceMemberProfileUnipileFields,
+    workspaceMemberUnipileFields,
   ]);
 
   useEffect(() => {
@@ -406,9 +406,9 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<
     () =>
       filterWhatsappAccountsForWorkspaceMemberProfile(
         accounts,
-        workspaceMemberProfileUnipileFields,
+        workspaceMemberUnipileFields,
       ),
-    [accounts, workspaceMemberProfileUnipileFields],
+    [accounts, workspaceMemberUnipileFields],
   );
 
   if (loading) {

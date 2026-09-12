@@ -1,7 +1,7 @@
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { MessagingControls } from 'src/engine/core-modules/arx-chat/services/messaging-controls';
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/utils/attachment-processes';
 import {
   MessagingChannel,
@@ -22,7 +22,7 @@ export class ToolCallsProcessing {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
-    private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService?: WorkspaceMemberUnipileService,
   ) {}
   async shareJDtoCandidate(
     candidate: CandidateNode,
@@ -69,7 +69,7 @@ export class ToolCallsProcessing {
     await new MessagingControls(
       this.workspaceQueryService,
       this.staticGraphQLService,
-      this.workspaceMemberProfileUnipileService,
+      this.workspaceMemberUnipileService,
     ).sendJDViaWhatsapp(
       candidate,
       candidateJob,
@@ -91,9 +91,9 @@ export class ToolCallsProcessing {
       candidateId,
     );
     const candidateJob: Project = candidate?.project;
-    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
-    if (!recruiterProfile) {
-      throw new Error('Recruiter profile not found for job');
+    const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(candidateJob, apiToken);
+    if (!workspaceMember) {
+      throw new Error('Workspace member not found for job');
     }
 
     let phoneNumberFrom: string = '';
@@ -112,7 +112,7 @@ export class ToolCallsProcessing {
       console.warn('No phone number found for candidate, using empty string');
     }
 
-    let phoneNumberTo:string = recruiterProfile.phoneNumber;
+    let phoneNumberTo:string = workspaceMember.phoneNumber;
 
     if (
       messagingChannelEquals(
@@ -120,10 +120,10 @@ export class ToolCallsProcessing {
         MessagingChannel.LINKEDIN_CONNECT,
       )
     ) {
-      phoneNumberTo = recruiterProfile.linkedinUrl || '';
+      phoneNumberTo = workspaceMember.linkedinUrl || '';
     }
     else{
-      phoneNumberTo = recruiterProfile.phoneNumber
+      phoneNumberTo = workspaceMember.phoneNumber
     }
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
     // executorResultObj: {},
@@ -177,9 +177,9 @@ export class ToolCallsProcessing {
       candidateId,
     );
 
-    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
-    if (!recruiterProfile) {
-      throw new Error('Recruiter profile not found for job');
+    const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(candidateJob, apiToken);
+    if (!workspaceMember) {
+      throw new Error('Workspace member not found for job');
     }
 
     const candidateProfileObj = candidate
@@ -202,7 +202,7 @@ export class ToolCallsProcessing {
       console.warn('No phone number found for candidate, using empty string');
     }
 
-    let phoneNumberTo:string = recruiterProfile.phoneNumber;
+    let phoneNumberTo:string = workspaceMember.phoneNumber;
 
     if (
       messagingChannelEquals(
@@ -210,10 +210,10 @@ export class ToolCallsProcessing {
         MessagingChannel.LINKEDIN_CONNECT,
       )
     ) {
-      phoneNumberTo = recruiterProfile.linkedinUrl || '';
+      phoneNumberTo = workspaceMember.linkedinUrl || '';
     }
     else{
-    phoneNumberTo = recruiterProfile.phoneNumber
+    phoneNumberTo = workspaceMember.phoneNumber
     }
 
 

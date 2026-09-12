@@ -17,6 +17,7 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { OutreachChipTagInput } from '@/outreach-home/components/OutreachChipTagInput';
 import { OutreachSendWindowDayPicker } from '@/outreach-home/components/OutreachSendWindowDayPicker';
 import { OutreachSetupSectionCard } from '@/outreach-home/components/OutreachSetupSectionCard';
+import { OutreachSetupSenderProfileSection } from '@/outreach-home/components/OutreachSetupSenderProfileSection';
 import {
   type OutreachSendMode,
   type OutreachWorkspaceCompany,
@@ -250,7 +251,7 @@ type OutreachSetupPanelProps = {
   workspaceCompany: OutreachWorkspaceCompany;
   icpSpec: string | null;
   isIcpProjectOverride: boolean;
-  hasWorkspaceProfile: boolean;
+  hasWorkspaceCompany: boolean;
   hasProject: boolean;
   isSavingIcp: boolean;
   onRegenerateIcp: () => void;
@@ -274,7 +275,7 @@ export const OutreachSetupPanel = ({
   workspaceCompany,
   icpSpec,
   isIcpProjectOverride,
-  hasWorkspaceProfile,
+  hasWorkspaceCompany,
   hasProject,
   isSavingIcp,
   onRegenerateIcp,
@@ -330,7 +331,7 @@ export const OutreachSetupPanel = ({
     setMaxPersonasDraft(String(maxPersonasPerCompany));
   }, [outreachSendMode, maxPersonasPerCompany]);
 
-  const canPersist = hasWorkspaceProfile || hasProject;
+  const canPersist = hasWorkspaceCompany || hasProject;
   const parsedIcp = parseIcpSpecObject(icpDraft);
   const canEditChips = parsedIcp !== null || icpDraft.trim().length === 0;
   const sellerChips = [
@@ -519,6 +520,8 @@ export const OutreachSetupPanel = ({
             </>
           )}
         </OutreachSetupSectionCard>
+
+        <OutreachSetupSenderProfileSection />
 
         <OutreachSetupSectionCard
           title="ICP"
@@ -726,11 +729,11 @@ export const OutreachSetupPanel = ({
             </StyledMuted>
           </StyledFooterHint>
         )}
-        {hasProject && !hasWorkspaceProfile && (
+        {hasProject && !hasWorkspaceCompany && (
           <StyledFooterHint>
             <StyledMuted>
-              Workspace GTM profile is still provisioning — Save writes to this
-              project until the profile exists.
+              Workspace company fields are still loading — Save writes to this
+              project until the workspace is ready.
             </StyledMuted>
           </StyledFooterHint>
         )}

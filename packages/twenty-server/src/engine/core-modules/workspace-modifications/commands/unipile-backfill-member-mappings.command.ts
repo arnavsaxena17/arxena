@@ -4,8 +4,8 @@ import { Command, CommandRunner } from 'nest-commander';
 
 import { WorkspaceQueryService } from '../workspace-modifications.service';
 
-type ProfileRow = {
-  workspaceMemberId: string;
+type MemberRow = {
+  id: string;
   whatsappUnipileAccountId?: string | null;
   linkedinUnipileAccountId?: string | null;
 };
@@ -13,7 +13,7 @@ type ProfileRow = {
 @Command({
   name: 'unipile:backfill-member-mappings',
   description:
-    'Upsert metadata.unipile_accounts from tenant workspaceMemberProfile WhatsApp/LinkedIn Unipile columns',
+    'Upsert metadata.unipile_accounts from tenant workspaceMember WhatsApp/LinkedIn Unipile columns',
 })
 export class UnipileBackfillMemberMappingsCommand extends CommandRunner {
   private readonly logger = new Logger(
@@ -30,28 +30,26 @@ export class UnipileBackfillMemberMappingsCommand extends CommandRunner {
 
     const workspaceIds = await this.workspaceQueryService.getWorkspaces();
 
-    // Iterate all workspaces; schema is derived from workspaceId. Do not require
-    // core.dataSource rows (often empty after ORM migrations).
     for (const workspaceId of workspaceIds) {
       const schema = this.workspaceQueryService.getDataSourceSchema(workspaceId);
-      const profileTable =
-        await this.workspaceQueryService.resolveWorkspaceMemberProfileTableName(
+      const memberTable =
+        await this.workspaceQueryService.resolveWorkspaceMemberTableName(
           schema,
         );
 
-      if (!profileTable) {
+      if (!memberTable) {
         continue;
       }
 
       const hasWa = await this.workspaceQueryService.checkIfColumnExists(
         schema,
-        profileTable,
+        memberTable,
         'whatsappUnipileAccountId',
         { silent: true },
       );
       const hasLi = await this.workspaceQueryService.checkIfColumnExists(
         schema,
-        profileTable,
+        memberTable,
         'linkedinUnipileAccountId',
         { silent: true },
       );
@@ -60,7 +58,7 @@ export class UnipileBackfillMemberMappingsCommand extends CommandRunner {
         continue;
       }
 
-      const selectParts = ['"workspaceMemberId"'];
+      const selectParts = ['"id"'];
       if (hasWa) {
         selectParts.push('"whatsappUnipileAccountId"');
       }
@@ -80,9 +78,9 @@ export class UnipileBackfillMemberMappingsCommand extends CommandRunner {
         );
       }
 
-      const query = `SELECT ${selectParts.join(', ')} FROM ${schema}."${profileTable}" WHERE ${whereParts.join(' OR ')}`;
+      const query = `SELECT ${selectParts.join(', ')} FROM ${schema}."${memberTable}" WHERE ${whereParts.join(' OR ')}`;
 
-      let rows: ProfileRow[];
+      let rows: MemberRow[];
 
       try {
         rows = await this.workspaceQueryService.executeWorkspaceRawQuery(
@@ -98,7 +96,7 @@ export class UnipileBackfillMemberMappingsCommand extends CommandRunner {
       }
 
       for (const row of rows ?? []) {
-        const memberId = row.workspaceMemberId;
+        const memberId = row.id;
         if (!memberId) {
           continue;
         }

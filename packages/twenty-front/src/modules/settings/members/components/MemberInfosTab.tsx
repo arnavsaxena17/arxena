@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { MemberEmailField } from '@/settings/members/components/MemberEmailField';
 import { MemberNameFields } from '@/settings/members/components/MemberNameFields';
+import { SettingsMemberArxProfileFields } from '@/settings/profile/components/SettingsMemberArxProfileFields';
 import { WorkspaceMemberPictureUploader } from '@/settings/workspace-member/components/WorkspaceMemberPictureUploader';
 import { type WorkspaceMember } from '@/workspace-member/types/WorkspaceMember';
 import { t } from '@lingui/core/macro';
@@ -81,6 +82,14 @@ export const MemberInfosTab = ({
           description={t`The email associated to this account`}
         />
         <MemberEmailField email={member.userEmail} />
+      </Section>
+
+      <Section>
+        <H2Title
+          title={t`Seat profile`}
+          description={t`LinkedIn, Unipile, and Chrome extension identifiers for this member`}
+        />
+        <SettingsMemberArxProfileFields workspaceMemberId={member.id} />
       </Section>
 
       <Section>

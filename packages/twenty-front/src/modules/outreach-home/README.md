@@ -11,13 +11,14 @@ Live working-set UI for the post-signup outreach loop. CRM-committed metrics liv
 | **Candidate** | Per-project outreach spine (`projectId` = Project.id); Workflow B/C trigger unit |
 | **Company (CRM)** | Shared account — created **only when** people are enrolled / added to CRM |
 | **Person** | Cross-project memory (DNC, degree, etc.) |
-| **Project** | Campaign scope: ICP, `outreachWorkflowId`, send mode, caps |
+| **Workspace** | Default company + `icpSpec` (core tenant fields) |
+| **Project** | Campaign scope: optional ICP override, `outreachWorkflowId`, send mode, caps |
 
 Same Company can appear in many GTM projects’ ephemeral lists. CRM gets one shared Company row (upsert by domain/name) when outreach starts.
 
 Workflow topology:
 
-1. **A — Bootstrap** (Ask AI skill `gtm-icp-onboarding`) — ICP / outreach preferences → Project
+1. **A — Bootstrap** (Ask AI skill `setup`) — ICP / outreach preferences → Workspace (Project override optional)
 2. **B — Per-Candidate outreach** — `candidate.created` when `QUEUED`
 3. **C — Reply → meeting** — `candidate.updated` when `REPLIED`
 
@@ -39,7 +40,7 @@ Optional: `?workflowId=` / `?workflowRunId=`
 npx nx run twenty-server:command -- workspace:sync-arxena-standard -w <workspaceId>
 
 # 2) Backfill / sync Ask AI skills (existing workspaces)
-npx nx run twenty-server:command -- upgrade:2-25:backfill-gtm-icp-onboarding-skill -w <workspaceId>
+npx nx run twenty-server:command -- upgrade:2-25:sync-outreach-workspace-profile-skill-content -w <workspaceId>
 npx nx run twenty-server:command -- upgrade:2-25:sync-gtm-company-skill-content -w <workspaceId>
 npx nx run twenty-server:command -- upgrade:2-25:sync-gtm-people-skill-content -w <workspaceId>
 npx nx run twenty-server:command -- upgrade:2-25:sync-gtm-outreach-workflow-skill-content -w <workspaceId>
@@ -88,7 +89,7 @@ Deferred auto wake-up: inbound classifier persists `outreachAnalytics.resumeAt` 
 
 | Control | Where |
 | --- | --- |
-| ICP approve | Ask AI `gtm-icp-onboarding` → Project `icpSpec` |
+| ICP approve | Ask AI `setup` → Workspace `icpSpec` (Project override optional) |
 | Send APPROVAL vs AUTO | Project `outreachSendMode`; FORM in Workflow B / Journey tab |
 | Per-candidate pause / snooze | Journey tab |
 | Stop / DNC | Person flags; Candidate `STOPPED` |

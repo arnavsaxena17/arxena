@@ -26,7 +26,7 @@ describe('outreach-effective-icp.util', () => {
     });
   });
 
-  it('resolves effective ICP from workspace profile when project is empty', () => {
+  it('resolves effective ICP from workspace company fields when project is empty', () => {
     const workspaceIcp = JSON.stringify({
       targetTitles: ['VP People'],
       geos: ['US'],
@@ -35,7 +35,7 @@ describe('outreach-effective-icp.util', () => {
 
     const effective = resolveEffectiveIcp({
       project: { icpSpec: null },
-      workspaceProfile: { icpSpec: workspaceIcp },
+      workspaceCompany: { icpSpec: workspaceIcp },
     });
 
     expect(effective.isIcpProjectOverride).toBe(false);
@@ -64,7 +64,7 @@ describe('outreach-effective-icp.util', () => {
           },
         },
       },
-      workspaceProfile: {
+      workspaceCompany: {
         icpSpec: JSON.stringify({
           targetTitles: ['VP People'],
           locations: ['US'],

@@ -238,7 +238,9 @@ export const SettingsWorkspaceMembersTeamTab = () => {
                   key={workspaceMember.id}
                   cursor="pointer"
                   onClick={() => {
+                    // Own seat: Profile has Seat profile (ARX) fields used by sender profile
                     if (currentWorkspaceMember?.id === workspaceMember.id) {
+                      navigateSettings(SettingsPath.ProfilePage);
                       return;
                     }
                     navigateSettings(SettingsPath.WorkspaceMemberPage, {
@@ -281,9 +283,7 @@ export const SettingsWorkspaceMembersTeamTab = () => {
                   </TableCell>
                   <TableCell align="right">
                     <StyledChevronWrapper>
-                      {currentWorkspaceMember?.id !== workspaceMember.id && (
-                        <IconChevronRight size={theme.icon.size.sm} />
-                      )}
+                      <IconChevronRight size={theme.icon.size.sm} />
                     </StyledChevronWrapper>
                   </TableCell>
                 </TableRow>

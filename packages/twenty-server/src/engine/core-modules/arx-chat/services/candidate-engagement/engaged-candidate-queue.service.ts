@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CandidateEngagementArx } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/candidate-engagement';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import {
   MessagingChannel,
   messagingChannelEquals,
@@ -20,7 +20,7 @@ import {
   whatappUpdateMessageObjType
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
-import { RecruiterProfileService } from '../recruiter-profile';
+import { WorkspaceMemberArxService } from '../workspace-member-arx.service';
 import { EngagedCandidateJobData } from './engaged-candidate-processor.job';
 import { FilterCandidates } from './filter-candidates';
 
@@ -32,7 +32,7 @@ export class EngagedCandidateQueueService {
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly engagedCandidateMessageQueueService?: MessageQueueService,
     @InjectMessageQueue(MessageQueue.googleContactsQueue) private readonly googleContactsMessageQueueService?: MessageQueueService,
     private readonly googleContactsService?: GoogleContactsService,
-    private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService?: WorkspaceMemberUnipileService,
   ) {}
   async queueCandidateForEngagement(
     candidateId: string,
@@ -139,7 +139,7 @@ export class EngagedCandidateQueueService {
 
     try {
       // Step 1: Get recruiter profile
-      const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
+      const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(
         candidateJob,
         apiToken,
       );
@@ -237,7 +237,7 @@ export class EngagedCandidateQueueService {
         const candidateEngagement = CandidateEngagementArx.create(
           this.workspaceQueryService,
           this.staticGraphQLService,
-          this.workspaceMemberProfileUnipileService,
+          this.workspaceMemberUnipileService,
         );
 
         const systemPrompt = await candidateEngagement.getSystemPrompt(
@@ -285,7 +285,7 @@ export class EngagedCandidateQueueService {
         phoneNumberFrom = candidateProfileDataNodeObj.people?.linkedinLink?.primaryLinkUrl || '';
       }
 
-      let phoneNumberTo: string = recruiterProfile?.phoneNumber || '';
+      let phoneNumberTo: string = workspaceMember?.phoneNumber || '';
 
       if (
         messagingChannelEquals(
@@ -295,7 +295,7 @@ export class EngagedCandidateQueueService {
           MessagingChannel.LINKEDIN_CONNECT,
         )
       ) {
-        phoneNumberTo = recruiterProfile?.linkedinUrl || '';
+        phoneNumberTo = workspaceMember?.linkedinUrl || '';
       }
 
       // Bot/self messages are stored with recruiter as phoneFrom and candidate as phoneTo

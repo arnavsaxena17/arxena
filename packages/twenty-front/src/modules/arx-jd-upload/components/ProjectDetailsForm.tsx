@@ -20,15 +20,17 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactPhoneNumberInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import {
-  findWorkspaceMemberProfiles,
-  graphQLToUpdateOneWorkspaceMemberProfile,
+  findWorkspaceMembersForArx,
+  graphQLToUpdateOneWorkspaceMemberArx,
   graphqlToFindManyProjectsWithCandidateValues,
 } from 'twenty-shared/graphql';
 import {
-  extractWorkspaceMemberProfileFromApolloData,
-  extractWorkspaceMemberProfileFromRelationField,
+  extractWorkspaceMemberFromApolloData,
+  extractWorkspaceMemberFromRelationField,
   isDefined,
-  workspaceMemberProfileFilterByMemberId,
+  workspaceMemberFilterById,
+  type WorkspaceMemberArxGraphqlNode,
+  type WorkspaceMembersApolloData,
 } from 'twenty-shared/utils';
 
 import { v4 } from 'uuid';
@@ -40,7 +42,7 @@ import {
   StyledLabel,
   StyledRemoveButton,
   StyledSection,
-  StyledSectionContent
+  StyledSectionContent,
 } from './ArxJDUploadModal.styled';
 
 const StyledLabelContainer = styled.div`
@@ -134,50 +136,45 @@ const StyledPhoneNumberInput = styled(ReactPhoneNumberInput)`
   }
 `;
 
-export type RecruiterProfileInfo = {
+export type WorkspaceMemberContactInfo = {
   name?: string;
   phoneNumber?: string;
-  companyDescription?: string;
   jobTitle?: string;
 };
 
-export interface RecruiterDetails {
-  missingRecruiterInfo: RecruiterProfileInfo;
-  recruiterProfileId?: string;
+export type RecruiterDetails = {
+  missingRecruiterInfo: WorkspaceMemberContactInfo;
   showRecruiterFields: boolean;
   workspaceMemberId?: string;
-}
+};
 
 type ProjectDetailsQueryData = {
   projects?: {
     edges?: Array<{
       node?: {
         recruiterId?: string;
-        recruiter?: {
-          id?: string;
-          workspaceMemberProfile?: unknown;
-        };
+        recruiter?: WorkspaceMemberArxGraphqlNode | null;
       };
     }>;
   };
 };
-
-// Create mutation for updating workspaceMemberProfile
 
 export const ProjectDetailsForm: React.FC<FormComponentProps> = ({
   parsedJD,
   setParsedJD,
   onRecruiterInfoChange,
 }) => {
-  console.log("parsed JD in job details form", parsedJD);
+  console.log('parsed JD in job details form', parsedJD);
 
   // Early return if parsedJD is null
   if (!parsedJD) {
     return null;
   }
-  const [missingRecruiterInfo, setMissingRecruiterInfo] = useState<RecruiterProfileInfo>({});
+  const [missingRecruiterInfo, setMissingRecruiterInfo] =
+    useState<WorkspaceMemberContactInfo>({});
   const [showRecruiterFields, setShowRecruiterFields] = useState(false);
-  const [recruiterProfile, setRecruiterProfile] = useState<any>(null);
+  const [recruiterWorkspaceMember, setRecruiterWorkspaceMember] =
+    useState<WorkspaceMemberArxGraphqlNode | null>(null);
   const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
@@ -209,30 +206,42 @@ export const ProjectDetailsForm: React.FC<FormComponentProps> = ({
     { client: apolloCoreClient, fetchPolicy: 'network-only' },
   );
 
-  const [executeProfileQuery] = useLazyQuery(
+  const [executeWorkspaceMemberQuery] = useLazyQuery(
     gql`
-      ${findWorkspaceMemberProfiles}
+      ${findWorkspaceMembersForArx}
     `,
     { client: apolloCoreClient, fetchPolicy: 'network-only' },
   );
 
-  const [updateWorkspaceMemberProfile] = useMutation(gql`
-    ${graphQLToUpdateOneWorkspaceMemberProfile}
-  `, { client: apolloCoreClient });
+  const [updateWorkspaceMemberArx] = useMutation(
+    gql`
+      ${graphQLToUpdateOneWorkspaceMemberArx}
+    `,
+    { client: apolloCoreClient },
+  );
 
   const { updateOneRecord } = useUpdateOneRecord();
 
-  console.log('recruiterProfile::', recruiterProfile);
+  console.log('recruiterWorkspaceMember::', recruiterWorkspaceMember);
 
   // Memoize workspaceMemberId to prevent unnecessary re-renders
   const workspaceMemberId = useMemo(() => {
     // For existing jobs, use the recruiterId from the job data
-    if (parsedJD.id && (data as ProjectDetailsQueryData | undefined)?.projects?.edges?.[0]?.node?.recruiterId) {
-      return (data as ProjectDetailsQueryData).projects?.edges?.[0]?.node?.recruiterId;
+    if (
+      parsedJD.id &&
+      (data as ProjectDetailsQueryData | undefined)?.projects?.edges?.[0]?.node
+        ?.recruiterId
+    ) {
+      return (data as ProjectDetailsQueryData).projects?.edges?.[0]?.node
+        ?.recruiterId;
     }
     // For new jobs, use the current workspace member ID
     return currentWorkspaceMember?.id;
-  }, [(data as ProjectDetailsQueryData | undefined)?.projects?.edges, parsedJD.id, currentWorkspaceMember?.id]);
+  }, [
+    (data as ProjectDetailsQueryData | undefined)?.projects?.edges,
+    parsedJD.id,
+    currentWorkspaceMember?.id,
+  ]);
 
   // Create a memoized recruiter details object to avoid unnecessary re-renders
   const recruiterDetails = useMemo(() => {
@@ -240,11 +249,15 @@ export const ProjectDetailsForm: React.FC<FormComponentProps> = ({
 
     return {
       missingRecruiterInfo,
-      recruiterProfileId: recruiterProfile?.id,
       showRecruiterFields,
       workspaceMemberId,
     };
-  }, [missingRecruiterInfo, recruiterProfile?.id, showRecruiterFields, workspaceMemberId, onRecruiterInfoChange]);
+  }, [
+    missingRecruiterInfo,
+    showRecruiterFields,
+    workspaceMemberId,
+    onRecruiterInfoChange,
+  ]);
 
   // Update parent component with recruiter details when they change
   useEffect(() => {
@@ -268,38 +281,33 @@ export const ProjectDetailsForm: React.FC<FormComponentProps> = ({
         const recruiterId =
           projectNode?.recruiterId ?? projectNode?.recruiter?.id;
 
-        let recruiterProfile =
-          extractWorkspaceMemberProfileFromRelationField(
-            projectNode?.recruiter?.workspaceMemberProfile,
-          );
+        let recruiterMember =
+          extractWorkspaceMemberFromRelationField(projectNode?.recruiter) ??
+          projectNode?.recruiter ??
+          null;
 
-        // Nested relation often returns empty edges; match server RecruiterProfileService
-        if (!recruiterProfile && isDefined(recruiterId)) {
-          const { data: profileData } = await executeProfileQuery({
-            variables: workspaceMemberProfileFilterByMemberId(recruiterId),
+        if (!recruiterMember && isDefined(recruiterId)) {
+          const { data: memberData } = await executeWorkspaceMemberQuery({
+            variables: workspaceMemberFilterById(recruiterId),
           });
-          recruiterProfile =
-            extractWorkspaceMemberProfileFromApolloData(profileData);
+          recruiterMember = extractWorkspaceMemberFromApolloData(
+            memberData as WorkspaceMembersApolloData,
+          );
         }
 
-        setRecruiterProfile(recruiterProfile);
+        setRecruiterWorkspaceMember(recruiterMember);
 
-        // Check for missing recruiter profile fields
-        const missingFields: RecruiterProfileInfo = {};
+        const missingFields: WorkspaceMemberContactInfo = {};
 
-        if (!recruiterProfile?.name) {
+        if (!recruiterMember?.name) {
           missingFields.name = '';
         }
 
-        if (!recruiterProfile?.phoneNumber) {
+        if (!recruiterMember?.phoneNumber) {
           missingFields.phoneNumber = '';
         }
 
-        if (!recruiterProfile?.companyDescription) {
-          missingFields.companyDescription = '';
-        }
-
-        if (!recruiterProfile?.jobTitle) {
+        if (!recruiterMember?.jobTitle) {
           missingFields.jobTitle = '';
         }
 
@@ -311,20 +319,18 @@ export const ProjectDetailsForm: React.FC<FormComponentProps> = ({
           setShowRecruiterFields(false);
         }
       } else if (isDefined(currentWorkspaceMember?.id)) {
-        const { data: profileData } = await executeProfileQuery({
-          variables: workspaceMemberProfileFilterByMemberId(
-            currentWorkspaceMember.id,
-          ),
+        const { data: memberData } = await executeWorkspaceMemberQuery({
+          variables: workspaceMemberFilterById(currentWorkspaceMember.id),
         });
-        const profile =
-          extractWorkspaceMemberProfileFromApolloData(profileData);
-        setRecruiterProfile(profile);
+        const member = extractWorkspaceMemberFromApolloData(
+          memberData as WorkspaceMembersApolloData,
+        );
+        setRecruiterWorkspaceMember(member);
 
-        const missingFields: RecruiterProfileInfo = {};
-        if (!profile?.name) missingFields.name = '';
-        if (!profile?.phoneNumber) missingFields.phoneNumber = '';
-        if (!profile?.companyDescription) missingFields.companyDescription = '';
-        if (!profile?.jobTitle) missingFields.jobTitle = '';
+        const missingFields: WorkspaceMemberContactInfo = {};
+        if (!member?.name) missingFields.name = '';
+        if (!member?.phoneNumber) missingFields.phoneNumber = '';
+        if (!member?.jobTitle) missingFields.jobTitle = '';
 
         if (Object.keys(missingFields).length > 0) {
           setMissingRecruiterInfo(missingFields);
@@ -336,18 +342,17 @@ export const ProjectDetailsForm: React.FC<FormComponentProps> = ({
         setMissingRecruiterInfo({
           name: '',
           phoneNumber: '',
-          companyDescription: '',
           jobTitle: '',
         });
         setShowRecruiterFields(true);
-        setRecruiterProfile(null);
+        setRecruiterWorkspaceMember(null);
       }
     } catch (error) {
       console.error('Error fetching job details:', error);
     }
   }, [
     executeQuery,
-    executeProfileQuery,
+    executeWorkspaceMemberQuery,
     parsedJD.id,
     currentWorkspaceMember?.id,
   ]);
@@ -374,22 +379,25 @@ export const ProjectDetailsForm: React.FC<FormComponentProps> = ({
     }
   };
 
-  const updateRecruiterInfoField = (field: keyof RecruiterProfileInfo, value: string) => {
-    console.log('updateRecruiterInfoField::', field, value);
+  const updateWorkspaceMemberContactField = (
+    field: keyof WorkspaceMemberContactInfo,
+    value: string,
+  ) => {
+    console.log('updateWorkspaceMemberContactField::', field, value);
     if (field === 'phoneNumber') {
       try {
         // For phone numbers, we store the E.164 format directly
-        setMissingRecruiterInfo(prev => ({
+        setMissingRecruiterInfo((prev) => ({
           ...prev,
-          [field]: value
+          [field]: value,
         }));
       } catch (error) {
         console.error('Error updating phone number:', error);
       }
     } else {
-      setMissingRecruiterInfo(prev => ({
+      setMissingRecruiterInfo((prev) => ({
         ...prev,
-        [field]: value
+        [field]: value,
       }));
     }
   };
@@ -426,11 +434,12 @@ export const ProjectDetailsForm: React.FC<FormComponentProps> = ({
     }
   };
 
-  const updateRecruiterProfile = async () => {
-    console.log('updateRecruiterProfile::', recruiterProfile);
-    if (!recruiterProfile?.id) {
+  const updateWorkspaceMemberContact = async () => {
+    console.log('updateWorkspaceMemberContact::', recruiterWorkspaceMember);
+    if (!recruiterWorkspaceMember?.id) {
       enqueueErrorSnackBar({
-        message: 'Unable to update recruiter profile: No profile ID found',
+        message:
+          'Unable to update workspace member: No workspace member ID found',
       });
       return false;
     }
@@ -454,35 +463,38 @@ export const ProjectDetailsForm: React.FC<FormComponentProps> = ({
     }
 
     try {
-      console.log('updateRecruiterProfile::', recruiterProfile);
+      console.log('updateWorkspaceMemberContact::', recruiterWorkspaceMember);
       console.log('missingRecruiterInfo::', missingRecruiterInfo);
       setIsUpdatingProfile(true);
 
-      // Update the workspace member profile
-      await updateWorkspaceMemberProfile({
+      await updateWorkspaceMemberArx({
         variables: {
-          idToUpdate: recruiterProfile.id,
+          idToUpdate: recruiterWorkspaceMember.id,
           input: {
-            ...(missingRecruiterInfo.name && { name: missingRecruiterInfo.name }),
-            ...(missingRecruiterInfo.phoneNumber && { phoneNumber: missingRecruiterInfo.phoneNumber }),
-            ...(missingRecruiterInfo.companyDescription && { companyDescription: missingRecruiterInfo.companyDescription }),
-            ...(missingRecruiterInfo.jobTitle && { jobTitle: missingRecruiterInfo.jobTitle }),
-            workspaceMemberId: workspaceMemberId,
+            ...(missingRecruiterInfo.name && {
+              name: missingRecruiterInfo.name,
+            }),
+            ...(missingRecruiterInfo.phoneNumber && {
+              phoneNumber: missingRecruiterInfo.phoneNumber,
+            }),
+            ...(missingRecruiterInfo.jobTitle && {
+              jobTitle: missingRecruiterInfo.jobTitle,
+            }),
           },
         },
       });
 
       enqueueSuccessSnackBar({
-        message: 'Recruiter profile updated successfully',
+        message: 'Workspace member updated successfully',
       });
 
       // Refresh job details to verify the updates
       await getJobDetails();
       return true;
     } catch (error) {
-      console.error('Error updating recruiter profile:', error);
+      console.error('Error updating workspace member:', error);
       enqueueErrorSnackBar({
-        message: `Failed to update recruiter profile: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Failed to update workspace member: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
       return false;
     } finally {
@@ -549,7 +561,14 @@ export const ProjectDetailsForm: React.FC<FormComponentProps> = ({
             </StyledIconContainer>
           </StyledLabelContainer>
           {parsedJD.companyId && parsedJD.companyName ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                width: '100%',
+              }}
+            >
               <div style={{ flex: 1 }}>{parsedJD.companyName}</div>
               <StyledRemoveButton onClick={() => handleCompanySelect()}>
                 Remove
@@ -605,7 +624,9 @@ export const ProjectDetailsForm: React.FC<FormComponentProps> = ({
           </StyledLabelContainer>
           <StyledInput
             value={parsedJD.jobLocation}
-            onChange={(e) => handleJobFieldUpdate('jobLocation', e.target.value)}
+            onChange={(e) =>
+              handleJobFieldUpdate('jobLocation', e.target.value)
+            }
             placeholder="Enter location"
             onKeyDown={handleKeyDown}
             onBlur={() => {
@@ -658,8 +679,8 @@ export const ProjectDetailsForm: React.FC<FormComponentProps> = ({
 
         {showRecruiterFields && (
           <>
-              {/* <StyledLabel>Recruiter Profile Details</StyledLabel> */}
-              {/* <div style={{ fontSize: '14px', marginBottom: '12px', color: '#666' }}>
+            {/* <StyledLabel>Recruiter Profile Details</StyledLabel> */}
+            {/* <div style={{ fontSize: '14px', marginBottom: '12px', color: '#666' }}>
                 To communicate with the candidates for the job.
               </div> */}
 
@@ -673,7 +694,9 @@ export const ProjectDetailsForm: React.FC<FormComponentProps> = ({
                 </StyledLabelContainer>
                 <StyledInput
                   value={missingRecruiterInfo.name}
-                  onChange={(e) => updateRecruiterInfoField('name', e.target.value)}
+                  onChange={(e) =>
+                    updateWorkspaceMemberContactField('name', e.target.value)
+                  }
                   placeholder="Enter your full name"
                   onKeyDown={handleKeyDown}
                 />
@@ -691,7 +714,12 @@ export const ProjectDetailsForm: React.FC<FormComponentProps> = ({
                 <StyledPhoneInputContainer>
                   <StyledPhoneNumberInput
                     value={missingRecruiterInfo.phoneNumber}
-                    onChange={(value) => updateRecruiterInfoField('phoneNumber', value || '')}
+                    onChange={(value) =>
+                      updateWorkspaceMemberContactField(
+                        'phoneNumber',
+                        value || '',
+                      )
+                    }
                     placeholder="Enter your phone number (Required)"
                     onKeyDown={handleKeyDown}
                     international={true}
@@ -713,30 +741,16 @@ export const ProjectDetailsForm: React.FC<FormComponentProps> = ({
                 </StyledLabelContainer>
                 <StyledInput
                   value={missingRecruiterInfo.jobTitle}
-                  onChange={(e) => updateRecruiterInfoField('jobTitle', e.target.value)}
+                  onChange={(e) =>
+                    updateWorkspaceMemberContactField(
+                      'jobTitle',
+                      e.target.value,
+                    )
+                  }
                   placeholder="Enter your job title (Required)"
                   onKeyDown={handleKeyDown}
                 />
               </StyledFieldGroup>
-            )}
-
-            {isDefined(missingRecruiterInfo.companyDescription) && (
-              <StyledFullWidthField>
-                <StyledLabelContainer>
-                  <StyledLabel>Company Description</StyledLabel>
-                  <StyledIconContainer data-tooltip="A brief overview of your company to help candidates understand the organization">
-                    <IconInfoCircle size={14} />
-                  </StyledIconContainer>
-                </StyledLabelContainer>
-                <StyledInput
-                  as="textarea"
-                  value={missingRecruiterInfo.companyDescription}
-                  onChange={(e) => updateRecruiterInfoField('companyDescription', e.target.value)}
-                  placeholder="Brief description of your company"
-                  style={{ minHeight: '50px', width: '100%', resize: 'vertical' }}
-                  onKeyDown={handleKeyDown}
-                />
-              </StyledFullWidthField>
             )}
           </>
         )}

@@ -4,7 +4,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { LinkedinUnipileEstimateAccountService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-estimate-account.service';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
 import { WhatsappOutboundRateLimiterService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.service';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import { ContactEnrichmentWaterfallService } from 'src/engine/core-modules/contact-enrichment/services/contact-enrichment-waterfall.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { OutreachCommandMaterializeService } from 'src/engine/core-modules/outreach-command/services/outreach-command-materialize.service';
@@ -129,7 +129,7 @@ describe('IcpOutreachMessageService', () => {
           useValue: {},
         },
         {
-          provide: WorkspaceMemberProfileUnipileService,
+          provide: WorkspaceMemberUnipileService,
           useValue: {},
         },
         {

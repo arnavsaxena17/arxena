@@ -53,7 +53,7 @@ describe('LinkedinUnipileSessionService', () => {
       getWorkspaceMemberIdFromToken: jest.fn().mockResolvedValue(workspaceMemberId),
     };
 
-    const workspaceMemberProfileUnipileService = {
+    const workspaceMemberUnipileService = {
       getKeepLinkedinConnected: jest.fn().mockResolvedValue(keepConnected),
       getWorkspaceMemberUnipileAccountId: jest
         .fn()
@@ -104,7 +104,7 @@ describe('LinkedinUnipileSessionService', () => {
     const service = new LinkedinUnipileSessionService(
       environmentService as never,
       workspaceQueryService as never,
-      workspaceMemberProfileUnipileService as never,
+      workspaceMemberUnipileService as never,
       linkedinUnipileRequestService as never,
       memberLinkedinUnipileConnectionService as never,
       linkedinUnipileTeardownSchedulerService as never,
@@ -113,7 +113,7 @@ describe('LinkedinUnipileSessionService', () => {
 
     return {
       service,
-      workspaceMemberProfileUnipileService,
+      workspaceMemberUnipileService,
       linkedinUnipileRequestService,
       linkedinUnipileMemberAccountResolverService,
       linkedinUnipileTeardownSchedulerService,

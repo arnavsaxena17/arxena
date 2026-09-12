@@ -12,7 +12,7 @@ import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-comma
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
-type WorkspaceMemberProfileRecord = ObjectLiteral & {
+type WorkspaceMemberArxRecord = ObjectLiteral & {
   id: string;
   workspaceMemberId: string;
   linkedinUnipileAccountId: string | null;
@@ -278,9 +278,9 @@ export class FetchUserCommentsService {
     }
 
     const profileRepository =
-      await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberProfileRecord>(
+      await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberArxRecord>(
         workspaceId,
-        'workspaceMemberProfile',
+        'workspaceMember',
         { shouldBypassPermissionChecks: true },
       );
 
@@ -288,7 +288,7 @@ export class FetchUserCommentsService {
 
     if (isNonEmptyString(workspaceMemberId)) {
       const profile = await profileRepository.findOne({
-        where: { workspaceMemberId },
+        where: { id: workspaceMemberId },
       });
       const accountId = profile?.linkedinUnipileAccountId?.trim() ?? '';
 

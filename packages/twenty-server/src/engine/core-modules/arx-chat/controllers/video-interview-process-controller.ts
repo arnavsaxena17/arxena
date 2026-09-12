@@ -2,11 +2,15 @@
 import { Controller, Post, Req, UseGuards } from '@nestjs/common';
 
 import { Request } from 'express';
-import { Project } from 'twenty-shared';
+import {
+  Project,
+  workspaceMemberDisplayName,
+  workspaceMemberEmail,
+} from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { VideoInterviewChatProcesses } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/start-video-interview-chat-processes';
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
 import {
     EmailTemplates,
     SendEmailFunctionality,
@@ -88,9 +92,9 @@ export class VideoInterviewProcessController {
 
       const candidateNode = person.candidates.edges[0].node;
       const candidateJob: Project = candidateNode?.project;
-      const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
-      if (!recruiterProfile) {
-        throw new Error('Recruiter profile not found for job');
+      const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(candidateJob, apiToken);
+      if (!workspaceMember) {
+        throw new Error('Workspace member not found for job');
       }
 
       if (videoInterviewUrl) {
@@ -102,11 +106,11 @@ export class VideoInterviewProcessController {
             videoInterviewUrl,
           );
 
-        console.log('recruiterProfile?.email:', recruiterProfile?.email);
+        console.log('workspaceMemberEmail(workspaceMember):', workspaceMemberEmail(workspaceMember));
         const emailData: GmailMessageData = {
           sendEmailNameFrom:
-            recruiterProfile.firstName + ' ' + recruiterProfile.lastName,
-          sendEmailFrom: recruiterProfile.email,
+            workspaceMemberDisplayName(workspaceMember),
+          sendEmailFrom: workspaceMemberEmail(workspaceMember)!,
           sendEmailTo: person?.emails.primaryEmail ?? '',
           subject:
             'Video Interview - ' + person?.name?.firstName + '<>' + companyName,
@@ -214,9 +218,9 @@ export class VideoInterviewProcessController {
     )[0]?.node;
   
         const candidateJob: Project = candidateNode?.project;
-      const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
-      if (!recruiterProfile) {
-        throw new Error('Recruiter profile not found for job');
+      const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(candidateJob, apiToken);
+      if (!workspaceMember) {
+        throw new Error('Workspace member not found for job');
       }
 
       if (videoInterviewUrl) {
@@ -227,11 +231,11 @@ export class VideoInterviewProcessController {
             videoInterviewUrl,
           );
 
-        console.log('recruiterProfile?.email:', recruiterProfile?.email);
+        console.log('workspaceMemberEmail(workspaceMember):', workspaceMemberEmail(workspaceMember));
         const emailData: GmailMessageData = {
           sendEmailNameFrom:
-            recruiterProfile.firstName + ' ' + recruiterProfile.lastName,
-          sendEmailFrom: recruiterProfile.email,
+            workspaceMemberDisplayName(workspaceMember),
+          sendEmailFrom: workspaceMemberEmail(workspaceMember)!,
           sendEmailTo: personObj?.emails.primaryEmail ?? '',
           subject:
             'Video Interview - ' +

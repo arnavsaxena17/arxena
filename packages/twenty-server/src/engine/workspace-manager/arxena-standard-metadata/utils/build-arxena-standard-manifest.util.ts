@@ -97,7 +97,6 @@ const ARXENA_OBJECT_UNIVERSAL_IDENTIFIER_LEGACY_NAME_SINGULAR: Record<
   string,
   string
 > = {
-  workspaceProfile: 'gtmWorkspaceProfile',
   chatMessage: 'whatsappMessage',
 };
 

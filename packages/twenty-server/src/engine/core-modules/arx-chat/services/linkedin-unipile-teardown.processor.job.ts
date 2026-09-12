@@ -7,7 +7,7 @@ import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queu
 import { LinkedinUnipileTeardownJobData } from '../types/linkedin-unipile-teardown.types';
 import { LINKEDIN_UNIPILE_TEARDOWN_PROCESSOR_NAME } from '../utils/linkedin-unipile-teardown-job.util';
 import { MemberLinkedinUnipileConnectionService } from './member-linkedin-unipile-connection.service';
-import { WorkspaceMemberProfileUnipileService } from './workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from './workspace-member-unipile.service';
 
 @Injectable()
 @Processor(MessageQueue.linkedinUnipileTeardownQueue)
@@ -15,7 +15,7 @@ export class LinkedinUnipileTeardownProcessor {
   private readonly logger = new Logger(LinkedinUnipileTeardownProcessor.name);
 
   constructor(
-    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService: WorkspaceMemberUnipileService,
     private readonly memberLinkedinUnipileConnectionService: MemberLinkedinUnipileConnectionService,
   ) {}
 
@@ -34,7 +34,7 @@ export class LinkedinUnipileTeardownProcessor {
     }
 
     const storedAccountId =
-      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+      await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
         workspaceMemberId,
         workspaceId,
         authToken,

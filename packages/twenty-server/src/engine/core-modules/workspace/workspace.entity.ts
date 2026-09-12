@@ -1,6 +1,7 @@
 import { Field, ObjectType, registerEnumType } from '@nestjs/graphql';
 
 import { type Application } from 'cloudflare/resources/zero-trust/access/applications/applications';
+import GraphQLJSON from 'graphql-type-json';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 import {
   Check,
@@ -321,6 +322,7 @@ export class WorkspaceEntity {
   })
   twilioAuthToken: string | null;
 
+  @Field(() => String, { nullable: true })
   @Column({
     type: 'varchar',
     length: 255,
@@ -450,6 +452,70 @@ export class WorkspaceEntity {
     name: 'website_tracking_enabled',
   })
   websiteTrackingEnabled: boolean;
+
+  @Field(() => String, { nullable: true })
+  @Column({
+    type: 'text',
+    nullable: true,
+    name: 'company_name',
+  })
+  companyName: string | null;
+
+  @Field(() => String, { nullable: true })
+  @Column({
+    type: 'text',
+    nullable: true,
+    name: 'company_domain',
+  })
+  companyDomain: string | null;
+
+  @Field(() => String, { nullable: true })
+  @Column({
+    type: 'text',
+    nullable: true,
+    name: 'industry',
+  })
+  industry: string | null;
+
+  @Field(() => String, { nullable: true })
+  @Column({
+    type: 'text',
+    nullable: true,
+    name: 'summary',
+  })
+  summary: string | null;
+
+  @Field(() => String, { nullable: true })
+  @Column({
+    type: 'text',
+    nullable: true,
+    name: 'employee_range',
+  })
+  employeeRange: string | null;
+
+  @Field(() => String, { nullable: true })
+  @Column({
+    type: 'text',
+    nullable: true,
+    name: 'hq',
+  })
+  hq: string | null;
+
+  @Field(() => GraphQLJSON, { nullable: true })
+  @Column({
+    type: 'jsonb',
+    nullable: true,
+    name: 'enrichment_json',
+  })
+  enrichmentJson: Record<string, unknown> | null;
+
+  @Field(() => String, { nullable: true })
+  @Column({
+    type: 'text',
+    nullable: true,
+    name: 'icp_spec',
+  })
+  icpSpec: string | null;
 
   @Field(() => [String], { nullable: true })
   @Column({

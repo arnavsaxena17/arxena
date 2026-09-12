@@ -18,6 +18,15 @@ export const UPDATE_WORKSPACE = gql`
       isPasswordAuthEnabled
       isTwoFactorAuthenticationEnforced
       isInternalMessagesImportEnabled
+      companyName
+      companyDomain
+      linkedinUrl
+      industry
+      summary
+      employeeRange
+      hq
+      enrichmentJson
+      icpSpec
       defaultRole {
         ...RoleFragment
       }

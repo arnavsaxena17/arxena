@@ -87,7 +87,7 @@ describe('GTM outreach workflow graphs', () => {
       }
     ).input.branches;
 
-    expect(branches).toHaveLength(3);
+    expect(branches).toHaveLength(4);
     expect(branches.filter((branch) => !branch.filterGroupId)).toHaveLength(1);
 
     const stepFilters = (
@@ -113,9 +113,13 @@ describe('GTM outreach workflow graphs', () => {
           type: 'SELECT',
           value: JSON.stringify(['REPLIED']),
         }),
+        expect.objectContaining({
+          type: 'SELECT',
+          value: JSON.stringify(['MEETING_BOOKED']),
+        }),
       ]),
     );
-    expect(stepFilters).toHaveLength(2);
+    expect(stepFilters).toHaveLength(3);
     expect(stepFilters).not.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -133,8 +137,13 @@ describe('GTM outreach workflow graphs', () => {
     expect(byName('Draft sales reply')).toBeDefined();
     expect(byName('Skip send if #DONTRESPOND#')).toBeDefined();
     expect(byName('Mark WAITING_REPLY')).toBeDefined();
-    expect(byName('Wait 3 days for inbound reply')).toBeDefined();
+    expect(byName('Wait 5 days after our reply')).toBeDefined();
+    expect(byName('Draft post-reply follow-up 1')).toBeDefined();
+    expect(byName('Draft post-reply follow-up 2')).toBeDefined();
+    expect(byName('Wait 7 days before post-reply FU2')).toBeDefined();
+    expect(byName('Wait 7 days before parking post-reply')).toBeDefined();
     expect(byName('Mark FAILED_NO_REPLY')).toBeDefined();
+    expect(byName('Mark FAILED_NO_REPLY (opt-out)')).toBeDefined();
     expect(byName('Draft negotiating reply')).toBeUndefined();
     expect(byName('Draft deferral ack')).toBeUndefined();
 
@@ -186,7 +195,15 @@ describe('GTM outreach workflow graphs', () => {
       byName('Validate inbound signals')?.id,
     ]);
     expect(byName('Validate inbound signals')?.nextStepIds).toEqual([
+      byName('Stamp preferred channel?')?.id,
+      byName('Persist prospect email?')?.id,
       byName('Draft sales reply')?.id,
+    ]);
+    expect(byName('Stamp preferred channel')).toBeDefined();
+    expect(byName('Mark MEETING_BOOKED')).toBeDefined();
+    expect(byName('Draft meeting reminder')).toBeDefined();
+    expect(byName('Create calendar invite')?.nextStepIds).toEqual([
+      byName('Mark MEETING_BOOKED')?.id,
     ]);
 
     const approveReply = updatedSteps.find(
@@ -289,7 +306,7 @@ describe('GTM outreach workflow graphs', () => {
     );
 
     expect(skipSend?.settings?.input?.branches?.[0]?.nextStepIds).toEqual([
-      byName('Mark WAITING_REPLY')?.id,
+      byName('Mark FAILED_NO_REPLY (opt-out)')?.id,
     ]);
     expect(skipSend?.settings?.input?.branches?.[1]?.nextStepIds).toEqual([
       byName('Reply on last inbound channel')?.id,
@@ -357,13 +374,15 @@ describe('GTM outreach workflow graphs', () => {
       [];
 
     expect(byName('Load Candidate')?.nextStepIds).toEqual([
-      byName('Has company name?')?.id,
+      byName('Load workspace member')?.id,
     ]);
     expect(byName('Has company name?')).toBeDefined();
     expect(byName('Find contacted company sibling')).toBeDefined();
     expect(byName('Company already contacted?')).toBeDefined();
     expect(byName('Find earlier QUEUED sibling')).toBeDefined();
     expect(byName('Earlier QUEUED sibling?')).toBeDefined();
+    expect(byName('Qualify prospect')).toBeDefined();
+    expect(byName('Draft connection note')).toBeDefined();
     expect(
       byName('Mark DEFERRED — company already contacted')?.settings?.input
         ?.fieldsToUpdate,
@@ -387,7 +406,7 @@ describe('GTM outreach workflow graphs', () => {
       byName('Mark DEFERRED — earlier QUEUED sibling')?.id,
     ]);
     expect(branchNext('Earlier QUEUED sibling?', 1)).toEqual([
-      byName('Load workspace member')?.id,
+      byName('Draft connection note')?.id,
     ]);
     expect(branchNext('Has company name?', 1)[0]).not.toEqual(
       branchNext('Earlier QUEUED sibling?', 1)[0],
@@ -478,7 +497,12 @@ describe('GTM outreach workflow graphs', () => {
       expect.objectContaining({
         type: 'SELECT',
         operand: 'IS',
-        value: JSON.stringify(['QUEUED', 'CONNECTION_ACCEPTED', 'REPLIED']),
+        value: JSON.stringify([
+          'QUEUED',
+          'CONNECTION_ACCEPTED',
+          'REPLIED',
+          'MEETING_BOOKED',
+        ]),
         stepOutputKey: '{{trigger.properties.after.outreachSequenceStage}}',
       }),
     ]);
@@ -497,10 +521,10 @@ describe('GTM outreach workflow graphs', () => {
 
     const branches = router?.settings?.input?.branches ?? [];
 
-    expect(branches).toHaveLength(4);
+    expect(branches).toHaveLength(5);
     expect(branches[0]?.nextStepIds).toEqual([byName('Load Candidate')?.id]);
-    expect(branches[3]?.filterGroupId).toBeUndefined();
-    expect(branches[3]?.nextStepIds).toEqual([]);
+    expect(branches[4]?.filterGroupId).toBeUndefined();
+    expect(branches[4]?.nextStepIds).toEqual([]);
 
     const stageFilters = (
       router?.settings as {
@@ -512,6 +536,7 @@ describe('GTM outreach workflow graphs', () => {
       JSON.stringify(['QUEUED']),
       JSON.stringify(['CONNECTION_ACCEPTED']),
       JSON.stringify(['REPLIED']),
+      JSON.stringify(['MEETING_BOOKED']),
     ]);
 
     // Single hoisted member/profile pair — the duplicate "no company" pair is gone.
@@ -528,16 +553,25 @@ describe('GTM outreach workflow graphs', () => {
       [];
 
     expect(branchNext('Has company name?', 1)).toEqual([
-      byName('Send LinkedIn connection (no company)')?.id,
+      byName('Draft connection note (no company)')?.id,
     ]);
     expect(branchNext('Earlier QUEUED sibling?', 1)).toEqual([
-      byName('Send LinkedIn connection')?.id,
+      byName('Draft connection note')?.id,
+    ]);
+    expect(branchNext('Qualify go?', 0)).toEqual([
+      byName('Stamp prospect enrichment')?.id,
     ]);
 
-    // All three bodies present, and no duplicate step ids across branches.
+    // All bodies present, and no duplicate step ids across branches.
     expect(byName('Send LinkedIn connection')).toBeDefined();
+    expect(byName('Qualify prospect')).toBeDefined();
+    expect(byName('Draft connection note')).toBeDefined();
     expect(byName('Draft first LinkedIn message')).toBeDefined();
+    expect(byName('Get calendar availability (opener)')).toBeDefined();
     expect(byName('Draft sales reply')).toBeDefined();
+    expect(byName('Stamp preferred channel')).toBeDefined();
+    expect(byName('Draft meeting reminder')).toBeDefined();
+    expect(byName('Mark MEETING_BOOKED')).toBeDefined();
 
     const stepIds = steps.map((step) => step.id);
 

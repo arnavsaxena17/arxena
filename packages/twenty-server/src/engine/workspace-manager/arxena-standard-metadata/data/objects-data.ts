@@ -62,16 +62,6 @@ const allObjects: ArxenaObjectDefinition[] = [
   {
     object: {
       description: '',
-      icon: 'IconMoodCheck',
-      labelPlural: 'Workspace Member Profiles',
-      labelSingular: 'Workspace Member Profile',
-      nameSingular: 'workspaceMemberProfile',
-      namePlural: 'workspaceMemberProfiles',
-    },
-  },
-  {
-    object: {
-      description: '',
       icon: 'IconFilterSearch',
       labelPlural: 'AI Filters',
       labelSingular: 'AI Filter',
@@ -242,17 +232,6 @@ const allObjects: ArxenaObjectDefinition[] = [
       namePlural: 'orgCharts',
     },
     databaseCrudToolAccess: OBJECT_DATABASE_CRUD_TOOL_ACCESS.orgChart,
-  },
-  {
-    object: {
-      description:
-        'Workspace-level seller company profile, default ICP, and GTM search blurbs shared across projects',
-      icon: 'IconTargetArrow',
-      labelPlural: 'Workspace Profiles',
-      labelSingular: 'Workspace Profile',
-      nameSingular: 'workspaceProfile',
-      namePlural: 'workspaceProfiles',
-    },
   },
   {
     object: {

@@ -3,7 +3,7 @@ import { linkedinUnipileAccountsState } from '@/linkedin-unipile/states/linkedin
 import { linkedinUnipileOwnerProfileCacheState } from '@/orgchart/states/linkedinUnipileOwnerProfileCacheState';
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
 import { orgChartLinkedInSearchTypeState } from '@/orgchart/states/orgChartLinkedInSearchTypeState';
-import { workspaceMemberProfileUnipileFieldsState } from '@/unipile/states/workspaceMemberProfileUnipileFieldsState';
+import { workspaceMemberUnipileFieldsState } from '@/unipile/states/workspaceMemberUnipileFieldsState';
 import { useEffect, useRef } from 'react';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
@@ -24,8 +24,8 @@ export const OrgChartLinkedinSearchTypeSyncEffect = () => {
   const orgChartLinkedinCandidateSource = useAtomStateValue(
     orgChartLinkedinCandidateSourceState,
   );
-  const workspaceMemberProfileUnipileFields = useAtomStateValue(
-    workspaceMemberProfileUnipileFieldsState,
+  const workspaceMemberUnipileFields = useAtomStateValue(
+    workspaceMemberUnipileFieldsState,
   );
   const linkedinUnipileAccounts = useAtomStateValue(linkedinUnipileAccountsState);
   const linkedinUnipileOwnerProfileCache = useAtomStateValue(linkedinUnipileOwnerProfileCacheState);
@@ -46,7 +46,7 @@ export const OrgChartLinkedinSearchTypeSyncEffect = () => {
     }
 
     const accountId = resolveLinkedinUnipileAccountIdForWorkspaceMember(
-      workspaceMemberProfileUnipileFields,
+      workspaceMemberUnipileFields,
       linkedinUnipileAccounts,
     );
     if (!accountId) {
@@ -115,7 +115,7 @@ export const OrgChartLinkedinSearchTypeSyncEffect = () => {
     linkedinUnipileOwnerProfileCache,
     setOrgChartLinkedInSearchType,
     setLinkedinUnipileOwnerProfileCache,
-    workspaceMemberProfileUnipileFields,
+    workspaceMemberUnipileFields,
   ]);
 
   return null;

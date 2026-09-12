@@ -21,7 +21,7 @@ import { UnipileLinkedinSnapshotCacheCronService } from './services/unipile-link
 import { LinkedinProfileCacheService } from './services/linkedin-profile-cache.service';
 import { LinkedinProfileS3Service } from './services/linkedin-profile-s3.service';
 import { WhatsappUnipileRequestService } from './services/whatsapp-unipile-request.service';
-import { WorkspaceMemberProfileUnipileService } from './services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from './services/workspace-member-unipile.service';
 
 @Module({
   imports: [
@@ -33,7 +33,7 @@ import { WorkspaceMemberProfileUnipileService } from './services/workspace-membe
     MessageQueueModule,
   ],
   providers: [
-    WorkspaceMemberProfileUnipileService,
+    WorkspaceMemberUnipileService,
     LinkedinUnipileEstimateAccountService,
     LinkedinUnipileMemberAccountResolverService,
     LinkedinUnipileRequestService,
@@ -51,7 +51,7 @@ import { WorkspaceMemberProfileUnipileService } from './services/workspace-membe
   ],
   exports: [
     UnipileAccountPoolService,
-    WorkspaceMemberProfileUnipileService,
+    WorkspaceMemberUnipileService,
     LinkedinUnipileEstimateAccountService,
     LinkedinUnipileMemberAccountResolverService,
     LinkedinUnipileRequestService,

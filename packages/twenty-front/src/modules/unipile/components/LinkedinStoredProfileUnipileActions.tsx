@@ -3,7 +3,10 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback, useState } from 'react';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
-import { hasMatchingConnectedLinkedinAccount } from 'twenty-shared/utils';
+import {
+  hasMatchingConnectedLinkedinAccount,
+  workspaceMemberFilterById,
+} from 'twenty-shared/utils';
 
 import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -12,8 +15,8 @@ import { tokenPairState } from '~/modules/auth/states/tokenPairState';
 import { linkedinUnipileAccountsState } from '~/modules/linkedin-unipile/states/linkedinUnipileAccountsState';
 import { getLinkedinService } from '~/pages/settings/linkedin/services/linkedin-backend.service';
 
-import { workspaceMemberProfileUnipileFieldsState } from '../states/workspaceMemberProfileUnipileFieldsState';
-import { FIND_WORKSPACE_MEMBER_PROFILES_FOR_UNIPILE } from './WorkspaceMemberProfileUnipileSyncEffect';
+import { workspaceMemberUnipileFieldsState } from '../states/workspaceMemberUnipileFieldsState';
+import { FIND_WORKSPACE_MEMBERS_FOR_UNIPILE } from './WorkspaceMemberUnipileSyncEffect';
 
 const StyledWrap = styled.div<{ isCompact: boolean }>`
   display: flex;
@@ -77,8 +80,8 @@ export const LinkedinStoredProfileUnipileActions = ({
   const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
   const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
   const workspaceMemberId = currentWorkspaceMember?.id;
-  const workspaceMemberProfileUnipileFields = useAtomStateValue(
-    workspaceMemberProfileUnipileFieldsState,
+  const workspaceMemberUnipileFields = useAtomStateValue(
+    workspaceMemberUnipileFieldsState,
   );
   const linkedinUnipileAccounts = useAtomStateValue(linkedinUnipileAccountsState);
 
@@ -87,22 +90,19 @@ export const LinkedinStoredProfileUnipileActions = ({
 
   const hasConnectedMatch = hasMatchingConnectedLinkedinAccount(
     linkedinUnipileAccounts,
-    workspaceMemberProfileUnipileFields,
+    workspaceMemberUnipileFields,
   );
 
   const profileLinkedinUnipileId =
-    workspaceMemberProfileUnipileFields?.linkedinUnipileAccountId?.trim() ?? '';
+    workspaceMemberUnipileFields?.linkedinUnipileAccountId?.trim() ?? '';
 
-  const refetchWorkspaceMemberProfile = useCallback(async () => {
+  const refetchWorkspaceMember = useCallback(async () => {
     if (!workspaceMemberId) {
       return;
     }
     await client.query({
-      query: FIND_WORKSPACE_MEMBER_PROFILES_FOR_UNIPILE,
-      variables: {
-        filter: { workspaceMemberId: { eq: workspaceMemberId } },
-        limit: 1,
-      },
+      query: FIND_WORKSPACE_MEMBERS_FOR_UNIPILE,
+      variables: workspaceMemberFilterById(workspaceMemberId),
       fetchPolicy: 'network-only',
     });
   }, [client, workspaceMemberId]);
@@ -125,7 +125,7 @@ export const LinkedinStoredProfileUnipileActions = ({
 
       if (connected === true) {
         enqueueSuccessSnackBar({ message: t`LinkedIn connected using saved session.` });
-        await refetchWorkspaceMemberProfile();
+        await refetchWorkspaceMember();
         onAfterChange?.();
         return;
       }
@@ -143,7 +143,7 @@ export const LinkedinStoredProfileUnipileActions = ({
           options: { duration: 8000 },
         });
       }
-      await refetchWorkspaceMemberProfile();
+      await refetchWorkspaceMember();
       onAfterChange?.();
     } catch (err) {
       const message =
@@ -160,7 +160,7 @@ export const LinkedinStoredProfileUnipileActions = ({
     enqueueErrorSnackBar,
     enqueueWarningSnackBar,
     onAfterChange,
-    refetchWorkspaceMemberProfile,
+    refetchWorkspaceMember,
     t,
   ]);
 
@@ -191,7 +191,7 @@ export const LinkedinStoredProfileUnipileActions = ({
       );
       if (result.success) {
         enqueueSuccessSnackBar({ message: t`LinkedIn disconnected.` });
-        await refetchWorkspaceMemberProfile();
+        await refetchWorkspaceMember();
         onAfterChange?.();
       } else {
         enqueueErrorSnackBar({ message: t`Failed to disconnect.` });
@@ -210,7 +210,7 @@ export const LinkedinStoredProfileUnipileActions = ({
     enqueueWarningSnackBar,
     onAfterChange,
     profileLinkedinUnipileId,
-    refetchWorkspaceMemberProfile,
+    refetchWorkspaceMember,
     t,
   ]);
 

@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { LinkedinUnipileEstimateAccountMode } from 'src/engine/core-modules/arx-chat/enums/linkedin-unipile-estimate-account-mode.enum';
 import { LinkedinUnipileEstimateAccountService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-estimate-account.service';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import type { LinkedinSenderFullProfileResult } from 'src/engine/core-modules/arx-chat/types/linkedin-sender-profile-cache.types';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { LLMChatModelService } from 'src/engine/core-modules/llm-chat-model/llm-chat-model.service';
@@ -78,7 +78,7 @@ export class LinkedinOutreachOpenerService {
   constructor(
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
     private readonly linkedinUnipileEstimateAccountService: LinkedinUnipileEstimateAccountService,
-    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService: WorkspaceMemberUnipileService,
     private readonly orgChartSuperImposeAutocompleteService: OrgChartSuperImposeAutocompleteService,
     private readonly llmChatModelService: LLMChatModelService,
     private readonly environmentService: EnvironmentService,
@@ -267,7 +267,7 @@ export class LinkedinOutreachOpenerService {
       }
 
       const stored =
-        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinProfile(
+        await this.workspaceMemberUnipileService.getWorkspaceMemberLinkedinProfile(
           args.workspaceMemberId,
           args.apiToken,
         );

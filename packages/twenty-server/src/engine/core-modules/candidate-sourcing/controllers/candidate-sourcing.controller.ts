@@ -20,8 +20,8 @@ import {
   CandidateEdge,
   CandidateEnrichmentEdge,
   CreateOneVideoInterviewTemplate,
-  findWorkspaceMemberProfiles,
   getGraphqlToFindManyProjects,
+  graphQLToUpdateOneWorkspaceMemberArx,
   graphqlMutationToDeleteManyAttachments,
   graphqlMutationToDeleteManyAssistantThreads,
   graphqlMutationToDeleteManyCandidates,
@@ -35,7 +35,6 @@ import {
   graphQlTofindManyCandidateEnrichments,
   graphqlToFindManyProjects,
   graphQltoUpdateOneCandidate,
-  graphQLToUpdateOneWorkspaceMemberProfile,
   mergeChatQuestionsPreservingOrder,
   mutations,
   PageInfo,
@@ -53,7 +52,7 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { v4 } from 'uuid';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
 import {
   JobDescriptionParseRequest,
   ParsedJobDescription,
@@ -559,7 +558,7 @@ export class CandidateSourcingController {
         .toString()
         .padStart(2, '0')}`;
       console.log('Going to get current user in updateTwentyJob');
-      const currentUser = await new RecruiterProfileService(
+      const currentUser = await new WorkspaceMemberArxService(
         this.staticGraphQLService,
       ).getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
@@ -904,7 +903,7 @@ export class CandidateSourcingController {
       let actualRecruiterId = recruiterId;
       if (!actualRecruiterId) {
         try {
-          const currentUser = await new RecruiterProfileService(
+          const currentUser = await new WorkspaceMemberArxService(
             this.staticGraphQLService,
           ).getCurrentUser(apiToken, origin);
           actualRecruiterId = currentUser?.workspaceMember?.id;
@@ -1024,7 +1023,7 @@ export class CandidateSourcingController {
 
       // Publish upload error notification
       try {
-        const currentUser = await new RecruiterProfileService(
+        const currentUser = await new WorkspaceMemberArxService(
           this.staticGraphQLService,
         ).getCurrentUser(apiToken, origin);
         const recruiterId = currentUser?.workspaceMember?.id;
@@ -1900,7 +1899,7 @@ export class CandidateSourcingController {
 
       console.log('Origin in sendNotificationToRecruiter:', origin);
 
-      const currentUser = await new RecruiterProfileService(
+      const currentUser = await new WorkspaceMemberArxService(
         this.staticGraphQLService,
       ).getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
@@ -2109,8 +2108,8 @@ export class CandidateSourcingController {
         `chromeExtensionId in getUserObj: ${chromeExtensionId}`,
         'CandidateSourcingController',
       );
-      // Get current user data using the same approach as RecruiterProfileService
-      const currentUser = await new RecruiterProfileService(
+      // Get current user data using the same approach as WorkspaceMemberArxService
+      const currentUser = await new WorkspaceMemberArxService(
         this.staticGraphQLService,
       ).getCurrentUser(apiToken, origin);
       // Get all jobs for the user using staticGraphQLService
@@ -2126,25 +2125,7 @@ export class CandidateSourcingController {
         );
       const jobs = responseFromGetAllJobs?.data?.data?.projects?.edges || [];
 
-      // Use the workspace member data from currentUser instead of separate query
       const workspaceMember = currentUser?.workspaceMember;
-
-      // Create a mock recruiter profile from the workspace member data
-      const recruiterProfile = workspaceMember
-        ? {
-            id: workspaceMember.id,
-            phoneNumber: '+1234567890', // Default phone number since it's not in workspaceMember
-            name: `${workspaceMember.name?.firstName || ''} ${workspaceMember.name?.lastName || ''}`.trim(),
-            email: workspaceMember.userEmail,
-            jobTitle: 'Recruiter', // Default job title
-            companyName: currentUser?.currentWorkspace?.displayName || 'Arxena',
-            companyDescription: 'Recruitment Company',
-            linkedinUrl: '',
-            firstName: workspaceMember.name?.firstName || '',
-            lastName: workspaceMember.name?.lastName || '',
-            typeWorkspaceMember: 'MEMBER',
-          }
-        : null;
 
       // Map jobs to the expected format
       const mappedJobs = jobs.map((jobEdge: any) => {
@@ -2174,11 +2155,14 @@ export class CandidateSourcingController {
       const userObj = {
         _id: currentUser?.id || 'dummy_user_id',
         full_name:
-          recruiterProfile?.name ||
+          [workspaceMember?.name?.firstName, workspaceMember?.name?.lastName]
+            .filter(Boolean)
+            .join(' ')
+            .trim() ||
           `${currentUser?.firstName || ''} ${currentUser?.lastName || ''}`.trim() ||
           'Dummy User',
         email: currentUser?.email || 'dummy@example.com',
-        phone: recruiterProfile?.phoneNumber || '+1234567890',
+        phone: workspaceMember?.phoneNumber || '+1234567890',
         token: 'some',
         origin: currentUser?.currentWorkspace?.subdomain || 'colorful-panther',
         currentWorkspaceMemberId:
@@ -2222,10 +2206,7 @@ export class CandidateSourcingController {
     }
   }
 
-  /**
-   * Persists the Chrome extension ID on the current user's workspaceMemberProfile
-   * (candidate engagement / extension flows). Body key: chromeextensionId (also accepts chromeExtensionId, extension_id).
-   */
+  // Persists the Chrome extension ID on the current user's workspaceMember.
   @Post('set-chrome-extension-id')
   @UseGuards(JwtAuthGuard)
   async setChromeExtensionId(@Req() request: any): Promise<object> {
@@ -2260,7 +2241,7 @@ export class CandidateSourcingController {
       const origin =
         request.headers['x-origin-domain'] || request.headers.origin || '';
 
-      const currentUser = await new RecruiterProfileService(
+      const currentUser = await new WorkspaceMemberArxService(
         this.staticGraphQLService,
       ).getCurrentUser(apiToken, origin);
       const workspaceMemberId = currentUser?.workspaceMember?.id;
@@ -2271,33 +2252,17 @@ export class CandidateSourcingController {
         };
       }
 
-      const profilesResponse = await this.staticGraphQLService.executeGraphQL(
-        findWorkspaceMemberProfiles,
-        { filter: { workspaceMemberId: { eq: workspaceMemberId } } },
-        apiToken,
-      );
-      const profileId =
-        profilesResponse?.data?.data?.workspaceMemberProfiles?.edges?.[0]?.node
-          ?.id;
-
-      if (!profileId) {
-        return {
-          status: 'Failed',
-          message: 'Workspace member profile not found for current user',
-        };
-      }
-
       const updateResponse = await this.staticGraphQLService.executeGraphQL(
-        graphQLToUpdateOneWorkspaceMemberProfile,
+        graphQLToUpdateOneWorkspaceMemberArx,
         {
-          idToUpdate: profileId,
+          idToUpdate: workspaceMemberId,
           input: { chromeExtensionId },
         },
         apiToken,
       );
 
       const updated =
-        updateResponse?.data?.data?.updateWorkspaceMemberProfile?.id;
+        updateResponse?.data?.data?.updateWorkspaceMember?.id;
       const gqlErrors = updateResponse?.data?.errors;
 
       if (!updated || gqlErrors?.length) {
@@ -2307,14 +2272,14 @@ export class CandidateSourcingController {
         );
         return {
           status: 'Failed',
-          message: 'Failed to update workspace member profile',
+          message: 'Failed to update workspace member',
           error: gqlErrors ?? updateResponse?.data,
         };
       }
 
       return {
         status: 'Success',
-        workspaceMemberProfileId: updated,
+        workspaceMemberId: updated,
         chromeExtensionId,
       };
     } catch (err) {
@@ -2885,11 +2850,11 @@ export class CandidateSourcingController {
       }
       if (!popupData.recruiterId) {
         try {
-          const recruiterProfile = await new RecruiterProfileService(
+          const workspaceMember = await new WorkspaceMemberArxService(
             this.staticGraphQLService,
-          ).getRecruiterProfileFromCurrentUser(apiToken, origin);
-          if (recruiterProfile?.workspaceMemberId) {
-            popupData.recruiterId = recruiterProfile.workspaceMemberId;
+          ).getFromCurrentUser(apiToken, origin);
+          if (workspaceMember?.id) {
+            popupData.recruiterId = workspaceMember.id;
           }
         } catch (error) {
           console.warn('Could not get recruiter ID for popup_data:', error);
@@ -2984,12 +2949,12 @@ export class CandidateSourcingController {
 
       // Update table data with error handling
       try {
-        const recruiterProfile = await new RecruiterProfileService(
+        const workspaceMember = await new WorkspaceMemberArxService(
           this.staticGraphQLService,
-        ).getRecruiterProfileFromCurrentUser(apiToken, origin);
+        ).getFromCurrentUser(apiToken, origin);
 
         await this.candidateService.updateTableData(
-          recruiterProfile?.workspaceMemberId || workspaceId,
+          workspaceMember?.id || workspaceId,
           apiToken,
         );
         console.log('[CV-Upload] Update table data completed');

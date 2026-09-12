@@ -22,7 +22,7 @@ import { OutreachMessagePersistService } from 'src/engine/core-modules/outreach-
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
-type WorkspaceMemberProfileRecord = ObjectLiteral & {
+type WorkspaceMemberArxRecord = ObjectLiteral & {
   id: string;
   workspaceMemberId: string;
   linkedinUnipileAccountId: string | null;
@@ -161,9 +161,9 @@ export class FetchLinkedinMessagesService {
       await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
         async () => {
           const profileRepository =
-            await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberProfileRecord>(
+            await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberArxRecord>(
               workspaceId,
-              'workspaceMemberProfile',
+              'workspaceMember',
               { shouldBypassPermissionChecks: true },
             );
 
@@ -172,7 +172,7 @@ export class FetchLinkedinMessagesService {
 
           if (isNonEmptyString(workspaceMemberId)) {
             const profile = await profileRepository.findOne({
-              where: { workspaceMemberId },
+              where: { id: workspaceMemberId },
             });
 
             accountId = profile?.linkedinUnipileAccountId?.trim() ?? '';
@@ -189,7 +189,7 @@ export class FetchLinkedinMessagesService {
 
             accountId = withAccount?.linkedinUnipileAccountId?.trim() ?? '';
             workspaceMemberId =
-              withAccount?.workspaceMemberId ?? workspaceMemberId;
+              withAccount?.id ?? workspaceMemberId;
           }
 
           let identifier =

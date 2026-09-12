@@ -17,7 +17,6 @@ import { FileUrlService } from 'src/engine/core-modules/file/file-url/file-url.s
 import { OnboardingService } from 'src/engine/core-modules/onboarding/onboarding.service';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { UserWorkspaceService } from 'src/engine/core-modules/user-workspace/user-workspace.service';
-import { WorkspaceMemberProfileProvisioningService } from 'src/engine/core-modules/user-workspace/workspace-member-profile-provisioning.service';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { WorkspaceInvitationService } from 'src/engine/core-modules/workspace-invitation/services/workspace-invitation.service';
 import { WorkspaceDiscoverability } from 'src/engine/core-modules/workspace/types/workspace-discoverability.type';
@@ -39,8 +38,6 @@ describe('UserWorkspaceService', () => {
   let globalWorkspaceOrmManager: GlobalWorkspaceOrmManager;
   let userRoleService: UserRoleService;
   let onboardingService: OnboardingService;
-  let workspaceMemberProfileProvisioningService: WorkspaceMemberProfileProvisioningService;
-
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -158,24 +155,10 @@ describe('UserWorkspaceService', () => {
             isFeatureEnabled: jest.fn(),
           },
         },
-        {
-          provide: WorkspaceMemberProfileProvisioningService,
-          useValue: {
-            ensureWorkspaceMemberProfileForNewMember: jest
-              .fn()
-              .mockResolvedValue(undefined),
-            syncWorkspaceMemberProfileFromWorkspaceMemberData: jest
-              .fn()
-              .mockResolvedValue(undefined),
-          },
-        },
       ],
     }).compile();
 
     service = module.get<UserWorkspaceService>(UserWorkspaceService);
-    workspaceMemberProfileProvisioningService = module.get(
-      WorkspaceMemberProfileProvisioningService,
-    );
     userWorkspaceRepository = module.get(
       getRepositoryToken(UserWorkspaceEntity),
     );
@@ -323,13 +306,6 @@ describe('UserWorkspaceService', () => {
         locale: 'en',
         avatarUrl: 'userWorkspace-avatar-url',
       });
-      expect(
-        workspaceMemberProfileProvisioningService.ensureWorkspaceMemberProfileForNewMember,
-      ).toHaveBeenCalledWith(
-        workspaceId,
-        'workspace-member-id',
-        workspaceMember[0],
-      );
     });
 
     it('should not create a workspace member when one already exists', async () => {
@@ -355,9 +331,6 @@ describe('UserWorkspaceService', () => {
       await service.createWorkspaceMember(workspaceId, user);
 
       expect(workspaceMemberRepository.insert).not.toHaveBeenCalled();
-      expect(
-        workspaceMemberProfileProvisioningService.ensureWorkspaceMemberProfileForNewMember,
-      ).not.toHaveBeenCalled();
     });
   });
 

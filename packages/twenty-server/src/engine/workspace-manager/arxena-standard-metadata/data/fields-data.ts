@@ -1,12 +1,8 @@
-import {
-  type ArxenaFieldDefinition,
-  type ArxenaFieldWithObject,
-} from 'src/engine/workspace-manager/arxena-standard-metadata/data/arxena-metadata-types';
+import { type ArxenaFieldWithObject } from 'src/engine/workspace-manager/arxena-standard-metadata/data/arxena-metadata-types';
 import {
   getOutreachCommandFieldsData,
   OUTREACH_MESSAGING_CHANNEL_OPTIONS,
 } from 'src/engine/workspace-manager/arxena-standard-metadata/data/outreach-command-fields.data';
-import { getWorkspaceProfileFieldsData } from 'src/engine/workspace-manager/arxena-standard-metadata/data/workspace-profile-fields.data';
 import { getWebsiteDomainFieldsData } from 'src/engine/workspace-manager/arxena-standard-metadata/data/website-domain-fields.data';
 import { getWebsiteVisitorFieldsData } from 'src/engine/workspace-manager/arxena-standard-metadata/data/website-visitor-fields.data';
 import { getObjectsToExclude } from 'src/engine/workspace-manager/arxena-standard-metadata/data/objects-data';
@@ -194,7 +190,7 @@ const getAllFieldsData = (
       },
     },
     {
-      objectName: 'workspaceMemberProfile',
+      objectName: 'workspaceMember',
       field: {
         description: '',
         icon: 'IconUserCircle',
@@ -220,7 +216,7 @@ const getAllFieldsData = (
             value: 'RECRUITER_TYPE',
           },
         ],
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        objectMetadataId: objectsNameIdMap.workspaceMember,
         type: 'SELECT',
       },
     },
@@ -273,252 +269,198 @@ const getAllFieldsData = (
       },
     },
     {
-      objectName: 'workspaceMemberProfile',
-      field: {
-        description: '',
-        icon: 'IconMail',
-        label: 'Email',
-        name: 'email',
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
-        type: 'TEXT',
-      },
-    },
-    {
-      objectName: 'workspaceMemberProfile',
+      objectName: 'workspaceMember',
       field: {
         description: '',
         icon: 'IconLinkedin',
         label: 'Linkedin URL',
         name: 'linkedinUrl',
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        objectMetadataId: objectsNameIdMap.workspaceMember,
         type: 'TEXT',
       },
     },
     {
-      objectName: 'workspaceMemberProfile',
+      objectName: 'workspaceMember',
       field: {
         description: '',
         icon: 'IconPhone',
         label: 'Phone Number',
         name: 'phoneNumber',
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        objectMetadataId: objectsNameIdMap.workspaceMember,
         type: 'TEXT',
       },
     },
     {
-      objectName: 'workspaceMemberProfile',
-      field: {
-        description: '',
-        icon: 'IconBuilding',
-        label: 'Company Name',
-        name: 'companyName',
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
-        type: 'TEXT',
-      },
-    },
-    {
-      objectName: 'workspaceMemberProfile',
-      field: {
-        description: '',
-        icon: 'IconFileDescription',
-        label: 'Company Description',
-        name: 'companyDescription',
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
-        type: 'TEXT',
-      },
-    },
-    {
-      objectName: 'workspaceMemberProfile',
-      field: {
-        description: '',
-        icon: 'IconUser',
-        label: 'First Name',
-        name: 'firstName',
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
-        type: 'TEXT',
-      },
-    },
-    {
-      objectName: 'workspaceMemberProfile',
-      field: {
-        description: '',
-        icon: 'IconBriefcase',
-        label: 'Job Title',
-        name: 'jobTitle',
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
-        type: 'TEXT',
-      },
-    },
-    {
-      objectName: 'workspaceMemberProfile',
-      field: {
-        description: '',
-        icon: 'IconUser',
-        label: 'Last Name',
-        name: 'lastName',
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
-        type: 'TEXT',
-      },
-    },
-    {
-      objectName: 'workspaceMemberProfile',
+      objectName: 'workspaceMember',
       field: {
         description: 'Unipile account ID for LinkedIn (org chart, search)',
         icon: 'IconLinkedin',
         label: 'LinkedIn Unipile Account ID',
         name: 'linkedinUnipileAccountId',
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        objectMetadataId: objectsNameIdMap.workspaceMember,
         type: 'TEXT',
       },
     },
     {
-      objectName: 'workspaceMemberProfile',
+      objectName: 'workspaceMember',
       field: {
         description: 'Latest LinkedIn li_at cookie captured from the extension',
         icon: 'IconCookie',
         label: 'LinkedIn li_at Token',
         name: 'linkedinLiAtToken',
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        objectMetadataId: objectsNameIdMap.workspaceMember,
         type: 'TEXT',
       },
     },
     {
-      objectName: 'workspaceMemberProfile',
+      objectName: 'workspaceMember',
       field: {
         description:
           'When LinkedIn cookies were last synced from the extension',
         icon: 'IconClock',
         label: 'LinkedIn Cookies Last Synced At',
         name: 'linkedinCookiesLastSyncedAt',
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        objectMetadataId: objectsNameIdMap.workspaceMember,
         type: 'DATE_TIME',
       },
     },
     {
-      objectName: 'workspaceMemberProfile',
+      objectName: 'workspaceMember',
       field: {
         description: 'Current Chrome Extension ID',
         icon: 'IconBrandChrome',
         label: 'Chrome Extension Id',
         name: 'chromeExtensionId',
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        objectMetadataId: objectsNameIdMap.workspaceMember,
         type: 'TEXT',
       },
     },
     {
-      objectName: 'workspaceMemberProfile',
+      objectName: 'workspaceMember',
       field: {
         description:
           'Latest LinkedIn Recruiter li_a cookie captured from the extension',
         icon: 'IconCookie',
         label: 'LinkedIn li_a Token',
         name: 'linkedinLiAToken',
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        objectMetadataId: objectsNameIdMap.workspaceMember,
         type: 'TEXT',
       },
     },
     {
-      objectName: 'workspaceMemberProfile',
+      objectName: 'workspaceMember',
       field: {
         description:
           'Browser user agent captured from the extension at LinkedIn cookie sync (used for Unipile connect)',
         icon: 'IconBrowser',
         label: 'LinkedIn User Agent',
         name: 'linkedinUserAgent',
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        objectMetadataId: objectsNameIdMap.workspaceMember,
         type: 'TEXT',
       },
     },
     {
-      objectName: 'workspaceMemberProfile',
+      objectName: 'workspaceMember',
       field: {
         description:
           'Client IP captured at LinkedIn cookie sync (used for Unipile connect)',
         icon: 'IconWorld',
         label: 'LinkedIn IP',
         name: 'linkedinIp',
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        objectMetadataId: objectsNameIdMap.workspaceMember,
         type: 'TEXT',
       },
     },
     {
-      objectName: 'workspaceMemberProfile',
+      objectName: 'workspaceMember',
       field: {
         description:
           'ISO 3166-1 alpha-2 country code resolved from LinkedIn IP at cookie sync',
         icon: 'IconMapPin',
         label: 'LinkedIn Country',
         name: 'linkedinCountry',
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        objectMetadataId: objectsNameIdMap.workspaceMember,
         type: 'TEXT',
       },
     },
     {
-      objectName: 'workspaceMemberProfile',
+      objectName: 'workspaceMember',
       field: {
         description:
           'When LinkedIn cookies were last validated against Unipile',
         icon: 'IconShieldCheck',
         label: 'LinkedIn Cookies Validated At',
         name: 'linkedinCookiesValidatedAt',
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        objectMetadataId: objectsNameIdMap.workspaceMember,
         type: 'DATE_TIME',
       },
     },
     {
-      objectName: 'workspaceMemberProfile',
+      objectName: 'workspaceMember',
       field: {
         description: 'Unipile account ID for WhatsApp',
         icon: 'IconPhone',
         label: 'WhatsApp Unipile Account ID',
         name: 'whatsappUnipileAccountId',
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        objectMetadataId: objectsNameIdMap.workspaceMember,
         type: 'TEXT',
       },
     },
     {
-      objectName: 'workspaceMemberProfile',
+      objectName: 'workspaceMember',
       field: {
         description:
           'If true, keep LinkedIn connected for engagement (never evict from pool)',
         icon: 'IconLink',
         label: 'Keep LinkedIn Connected',
         name: 'keepLinkedinConnected',
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        objectMetadataId: objectsNameIdMap.workspaceMember,
         type: 'BOOLEAN',
       },
     },
     {
-      objectName: 'workspaceMemberProfile',
+      objectName: 'workspaceMember',
       field: {
         description:
           'Cached LinkedIn profile from Unipile (/me and full sender profile for outreach)',
         icon: 'IconBrandLinkedin',
         label: 'LinkedIn Profile',
         name: 'linkedinProfile',
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        objectMetadataId: objectsNameIdMap.workspaceMember,
         type: 'RAW_JSON',
       },
     },
     {
-      objectName: 'workspaceMemberProfile',
+      objectName: 'workspaceMember',
+      field: {
+        description:
+          'Human-reviewed sender-agnostic outreach profile (identity, offer, ICP, voice, meeting) for Steps 1–7 prompts',
+        icon: 'IconUserCircle',
+        label: 'Outreach Sender Profile',
+        name: 'outreachSenderProfile',
+        objectMetadataId: objectsNameIdMap.workspaceMember,
+        type: 'RAW_JSON',
+      },
+    },
+    {
+      objectName: 'workspaceMember',
       field: {
         description: 'Last LinkedIn connection request sent from this seat',
         icon: 'IconClock',
         label: 'Last LinkedIn Connect At',
         name: 'lastLinkedinConnectAt',
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        objectMetadataId: objectsNameIdMap.workspaceMember,
         type: 'DATE_TIME',
       },
     },
     {
-      objectName: 'workspaceMemberProfile',
+      objectName: 'workspaceMember',
       field: {
         description: 'Last LinkedIn DM or InMail sent from this seat',
         icon: 'IconClock',
         label: 'Last LinkedIn Message At',
         name: 'lastLinkedinMessageAt',
-        objectMetadataId: objectsNameIdMap.workspaceMemberProfile,
+        objectMetadataId: objectsNameIdMap.workspaceMember,
         type: 'DATE_TIME',
       },
     },
@@ -2181,7 +2123,6 @@ const getAllFieldsData = (
     //   },
     // },
     ...getOutreachCommandFieldsData(objectsNameIdMap),
-    ...getWorkspaceProfileFieldsData(objectsNameIdMap),
     ...getWebsiteDomainFieldsData(objectsNameIdMap),
     ...getWebsiteVisitorFieldsData(objectsNameIdMap),
   ];

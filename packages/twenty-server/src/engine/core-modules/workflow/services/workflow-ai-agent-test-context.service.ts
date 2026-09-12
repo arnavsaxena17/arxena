@@ -26,7 +26,6 @@ import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/work
 
 const CANDIDATE_OBJECT_NAME = 'candidate';
 const WORKSPACE_MEMBER_OBJECT_NAME = 'workspaceMember';
-const WORKSPACE_MEMBER_PROFILE_OBJECT_NAME = 'workspaceMemberProfile';
 const CHAT_MESSAGE_OBJECT_NAME = 'chatMessage';
 
 type RecordWithId = ObjectLiteral & { id: string };
@@ -200,21 +199,6 @@ export class WorkflowAiAgentTestContextService {
       return isDefined(workspaceMember)
         ? buildFindRecordsStepResult([workspaceMember])
         : undefined;
-    }
-
-    if (objectName === WORKSPACE_MEMBER_PROFILE_OBJECT_NAME) {
-      if (!isNonEmptyString(workspaceMemberId)) {
-        return undefined;
-      }
-
-      const profiles = await this.findRecords({
-        workspaceId,
-        objectName,
-        where: { workspaceMemberId },
-        take: 1,
-      });
-
-      return buildFindRecordsStepResult(profiles);
     }
 
     if (objectName === CHAT_MESSAGE_OBJECT_NAME) {

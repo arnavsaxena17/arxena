@@ -1,4 +1,4 @@
-import { useQuery } from '@apollo/client/react';
+import { useMutation, useQuery } from '@apollo/client/react';
 import { styled } from '@linaria/react';
 import { isNonEmptyString } from '@sniptt/guards';
 import { useStore } from 'jotai';
@@ -48,6 +48,7 @@ import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
 import { PageHeader } from '@/ui/layout/page/components/PageHeader';
+import { UpdateWorkspaceDocument } from '~/generated-metadata/graphql';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { WorkflowRunRateLimitSnackBarEffect } from '@/workflow/components/WorkflowRunRateLimitSnackBarEffect';
@@ -98,11 +99,12 @@ const StyledEmpty = styled.div`
   padding: ${themeCssVariables.spacing[6]};
 `;
 
-type OutreachSetupPersistTarget = 'workspaceProfile' | 'project';
+type OutreachSetupPersistTarget = 'workspace' | 'project';
 
 export const OutreachHomePage = () => {
   const [searchParams] = useSearchParams();
-  const projectId = searchParams.get(OUTREACH_PROJECT_ID_QUERY_PARAM) ?? 'resolving';
+  const projectId =
+    searchParams.get(OUTREACH_PROJECT_ID_QUERY_PARAM) ?? 'resolving';
 
   return <OutreachHomePageContent key={projectId} />;
 };
@@ -113,8 +115,8 @@ const OutreachHomePageContent = () => {
     peopleLoading,
     companiesLoading,
     workspaceCompany,
-    workspaceProfile,
-    refetchWorkspaceProfiles,
+    hasWorkspaceCompany,
+    refetchWorkspaceCompany,
     companies,
     people,
     projectSettings,
@@ -145,7 +147,9 @@ const OutreachHomePageContent = () => {
   const outreachContextStore = useStore();
   const currentUser = useAtomStateValue(currentUserState);
   const currentWorkspace = useAtomStateValue(currentWorkspaceState);
+  const setCurrentWorkspace = useSetAtomState(currentWorkspaceState);
   const tokenPair = useAtomStateValue(tokenPairState);
+  const [updateWorkspace] = useMutation(UpdateWorkspaceDocument);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
   const [isSavingIcp, setIsSavingIcp] = useState(false);
@@ -245,8 +249,8 @@ const OutreachHomePageContent = () => {
       return 'project';
     }
 
-    if (isDefined(workspaceProfile?.id)) {
-      return 'workspaceProfile';
+    if (hasWorkspaceCompany) {
+      return 'workspace';
     }
 
     if (isDefined(activeProjectId)) {
@@ -267,15 +271,24 @@ const OutreachHomePageContent = () => {
   }) => {
     const persistTarget = resolvePersistTarget(isProjectOverride);
 
-    if (
-      persistTarget === 'workspaceProfile' &&
-      isDefined(workspaceProfile?.id)
-    ) {
-      await updateOneRecord({
-        objectNameSingular: 'workspaceProfile',
-        idToUpdate: workspaceProfile.id,
-        updateOneRecordInput,
+    if (persistTarget === 'workspace' && hasWorkspaceCompany) {
+      const result = await updateWorkspace({
+        variables: {
+          input: updateOneRecordInput,
+        },
       });
+
+      if (isDefined(result.data?.updateWorkspace)) {
+        setCurrentWorkspace((previousWorkspace) =>
+          previousWorkspace === null
+            ? previousWorkspace
+            : {
+                ...previousWorkspace,
+                ...updateOneRecordInput,
+              },
+        );
+      }
+
       enqueueSuccessSnackBar({ message: successMessage });
       return;
     }
@@ -292,7 +305,7 @@ const OutreachHomePageContent = () => {
       return;
     }
 
-    throw new Error('No workspace profile or GTM project to save to.');
+    throw new Error('No workspace or GTM project to save to.');
   };
 
   const handleCreateProject = async () => {
@@ -310,7 +323,7 @@ const OutreachHomePageContent = () => {
         userFirstName: currentUser?.firstName,
         userLastName: currentUser?.lastName,
       });
-      await refetchWorkspaceProfiles();
+      await refetchWorkspaceCompany();
       enqueueSuccessSnackBar({
         message: 'Your company and workspace ICP regenerated from enrichment.',
       });
@@ -349,17 +362,26 @@ const OutreachHomePageContent = () => {
         projectSettings.isIcpProjectOverride,
       );
 
-      if (
-        persistTarget === 'workspaceProfile' &&
-        isDefined(workspaceProfile?.id)
-      ) {
-        await updateOneRecord({
-          objectNameSingular: 'workspaceProfile',
-          idToUpdate: workspaceProfile.id,
-          updateOneRecordInput: {
-            icpSpec: normalizedIcpSpec,
+      if (persistTarget === 'workspace' && hasWorkspaceCompany) {
+        const result = await updateWorkspace({
+          variables: {
+            input: {
+              icpSpec: normalizedIcpSpec,
+            },
           },
         });
+
+        if (isDefined(result.data?.updateWorkspace)) {
+          setCurrentWorkspace((previousWorkspace) =>
+            previousWorkspace === null
+              ? previousWorkspace
+              : {
+                  ...previousWorkspace,
+                  icpSpec: normalizedIcpSpec,
+                },
+          );
+        }
+
         enqueueSuccessSnackBar({ message: 'ICP saved' });
         return;
       }
@@ -377,11 +399,10 @@ const OutreachHomePageContent = () => {
         return;
       }
 
-      throw new Error('No workspace profile or GTM project to save to.');
+      throw new Error('No workspace or GTM project to save to.');
     } catch (error) {
       enqueueErrorSnackBar({
-        message:
-          error instanceof Error ? error.message : 'Failed to save ICP.',
+        message: error instanceof Error ? error.message : 'Failed to save ICP.',
       });
     } finally {
       setIsSavingIcp(false);
@@ -520,8 +541,7 @@ const OutreachHomePageContent = () => {
 
         await refetchProjects();
         enqueueSuccessSnackBar({
-          message:
-            action === 'pause' ? 'Outreach paused' : 'Outreach resumed',
+          message: action === 'pause' ? 'Outreach paused' : 'Outreach resumed',
         });
       } catch (error) {
         enqueueErrorSnackBar({
@@ -665,7 +685,7 @@ const OutreachHomePageContent = () => {
                     workspaceCompany={workspaceCompany}
                     icpSpec={projectSettings.icpSpec}
                     isIcpProjectOverride={isIcpProjectOverride}
-                    hasWorkspaceProfile={isDefined(workspaceProfile?.id)}
+                    hasWorkspaceCompany={hasWorkspaceCompany}
                     hasProject={isDefined(activeProjectId)}
                     isSavingIcp={isSavingIcp}
                     onRegenerateIcp={() => {
@@ -680,7 +700,9 @@ const OutreachHomePageContent = () => {
                     isSavingSendSchedule={isSavingSendSchedule}
                     onSaveSendSchedule={handleSaveSendSchedule}
                     outreachSendMode={projectSettings.outreachSendMode}
-                    maxPersonasPerCompany={projectSettings.maxPersonasPerCompany}
+                    maxPersonasPerCompany={
+                      projectSettings.maxPersonasPerCompany
+                    }
                     isSavingOutreachPolicy={isSavingOutreachPolicy}
                     onSaveOutreachPolicy={handleSaveOutreachPolicy}
                     onFindCompanies={handleFindCompanies}

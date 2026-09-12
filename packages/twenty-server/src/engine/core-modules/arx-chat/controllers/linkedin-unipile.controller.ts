@@ -42,7 +42,7 @@ import { LinkedinUnipileMessagingService } from '../services/linkedin-unipile/li
 import { MemberLinkedinUnipileConnectionService } from '../services/member-linkedin-unipile-connection.service';
 import { UnipileAccountPoolService } from '../services/unipile-account-pool.service';
 import { UnipileWebhookService } from '../services/unipile-webhook.service';
-import { WorkspaceMemberProfileUnipileService } from '../services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from '../services/workspace-member-unipile.service';
 import type {
   CreateWebhookDto,
   UnipileAccountStatusWebhook,
@@ -240,7 +240,7 @@ export class LinkedinUnipileController {
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly environmentService: EnvironmentService,
     private readonly unipileAccountPoolService: UnipileAccountPoolService,
-    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService: WorkspaceMemberUnipileService,
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
     private readonly memberLinkedinUnipileConnectionService: MemberLinkedinUnipileConnectionService,
     private readonly linkedinUnipileMemberAccountResolverService: LinkedinUnipileMemberAccountResolverService,
@@ -272,7 +272,7 @@ export class LinkedinUnipileController {
       return { proceed: true };
     }
     const profile =
-      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields(
+      await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileFields(
         workspaceMemberId,
         authToken,
       );
@@ -296,7 +296,7 @@ export class LinkedinUnipileController {
         this.logger.log(`Type in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: linkedin`);
         this.logger.log(`Account id in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${match.id}`);
         this.logger.log(`Account payload in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${JSON.stringify(match, null, 2)}`);
-        await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+        await this.workspaceMemberUnipileService.applyUnipileAccountToWorkspaceMember(
           workspaceMemberId,
           authToken,
           'linkedin',
@@ -331,7 +331,7 @@ export class LinkedinUnipileController {
     preferredAccountId: string | null | undefined,
   ): Promise<string | null> {
     const profile =
-      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields(
+      await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileFields(
         workspaceMemberId,
         authToken,
       );
@@ -352,7 +352,7 @@ export class LinkedinUnipileController {
       const accountPayload =
         await this.linkedinUnipileRequestService.fetchAccountByIdIfExists(keepId);
       if (accountPayload) {
-        await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+        await this.workspaceMemberUnipileService.applyUnipileAccountToWorkspaceMember(
           workspaceMemberId,
           authToken,
           'linkedin',
@@ -360,7 +360,7 @@ export class LinkedinUnipileController {
           accountPayload,
         );
       } else {
-        await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberUnipileAccountId(
+        await this.workspaceMemberUnipileService.updateWorkspaceMemberUnipileAccountId(
           workspaceMemberId,
           authToken,
           'linkedin',
@@ -519,13 +519,13 @@ export class LinkedinUnipileController {
     cookiesChanged: boolean;
     storedCookies: Awaited<
       ReturnType<
-        typeof this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens
+        typeof this.workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens
       >
     >;
     profileLinkedinUrl: string | null;
   }> {
     const profile =
-      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields(
+      await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileFields(
         workspaceMemberId,
         authToken,
       );
@@ -581,7 +581,7 @@ export class LinkedinUnipileController {
         browserMemberUrlMatch === 'match')
     ) {
       this.logger.log("Updating workspace member LinkedIn URL in MEMBER SYNC");
-      await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberLinkedinUrlFromExtensionIfValid(
+      await this.workspaceMemberUnipileService.updateWorkspaceMemberLinkedinUrlFromExtensionIfValid(
         workspaceMemberId,
         authToken,
         params.linkedin_profile_url,
@@ -604,7 +604,7 @@ export class LinkedinUnipileController {
     const requestIp = normalizeLinkedinConnectionIp(params.clientIp);
     const requestCountry = normalizeLinkedinConnectionCountry(params.clientCountry);
     const storedCookiesBefore =
-      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
+      await this.workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens(
         authToken,
         workspaceMemberId,
       );
@@ -675,7 +675,7 @@ export class LinkedinUnipileController {
 
     if (Object.keys(profileUpdates).length > 0) {
       this.logger.log("Updating workspace member LinkedIn cookie tokens in MEMBER SYNC");
-      await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberLinkedinCookieTokens(
+      await this.workspaceMemberUnipileService.updateWorkspaceMemberLinkedinCookieTokens(
         authToken,
         workspaceMemberId,
         profileUpdates,
@@ -685,7 +685,7 @@ export class LinkedinUnipileController {
     this.logger.log(`Profile updates in MEMBER SYNC: ${JSON.stringify(profileUpdates, null, 2)}`);
 
     const storedCookies =
-      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
+      await this.workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens(
         authToken,
         workspaceMemberId,
       );
@@ -704,7 +704,7 @@ export class LinkedinUnipileController {
    * After a successful LinkedIn Unipile connection (non-checkpoint), persist account id,
    * linkedinUrl, and related fields on the current workspace member profile when JWT + member id are present.
    */
-  private async syncWorkspaceMemberProfileAfterLinkedinConnectionIfEligible(
+  private async syncWorkspaceMemberAfterLinkedinConnectionIfEligible(
     accountId: string | null | undefined,
     request: { workspaceMemberId?: string; headers?: { authorization?: string } },
     workspaceId: string,
@@ -725,7 +725,7 @@ export class LinkedinUnipileController {
     let previousId: string | null = null;
     try {
       previousId =
-        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+        await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
           workspaceMemberId,
           workspaceId,
           authToken,
@@ -739,7 +739,7 @@ export class LinkedinUnipileController {
       const accountPayload = await this.linkedinUnipileRequestService.fetchAccountByIdIfExists(trimmed);
 
       if (accountPayload) {
-        await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+        await this.workspaceMemberUnipileService.applyUnipileAccountToWorkspaceMember(
           workspaceMemberId,
           authToken,
           'linkedin',
@@ -747,7 +747,7 @@ export class LinkedinUnipileController {
           accountPayload,
         );
       } else {
-        await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberUnipileAccountId(
+        await this.workspaceMemberUnipileService.updateWorkspaceMemberUnipileAccountId(
           workspaceMemberId,
           authToken,
           'linkedin',
@@ -836,7 +836,7 @@ export class LinkedinUnipileController {
 
       const connectedAccountId = data.id || data.account_id;
 
-      await this.syncWorkspaceMemberProfileAfterLinkedinConnectionIfEligible(
+      await this.syncWorkspaceMemberAfterLinkedinConnectionIfEligible(
         connectedAccountId,
         request,
         workspace.id,
@@ -909,7 +909,7 @@ export class LinkedinUnipileController {
       let storedLinkedinUserAgent: string | null | undefined;
       if (workspaceMemberId && authTokenCookie) {
         const storedCookies =
-          await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
+          await this.workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens(
             authTokenCookie,
             workspaceMemberId,
           );
@@ -1003,7 +1003,7 @@ export class LinkedinUnipileController {
           ready.status === 'connected' ? 'connected' : 'pending';
       }
 
-      await this.syncWorkspaceMemberProfileAfterLinkedinConnectionIfEligible(
+      await this.syncWorkspaceMemberAfterLinkedinConnectionIfEligible(
         connectedAccountIdCookie,
         request,
         workspace.id,
@@ -1029,7 +1029,7 @@ export class LinkedinUnipileController {
         this.logger.log(
           `[connect/cookie] Clearing stored LinkedIn cookies for workspaceMemberId=${workspaceMemberId} after invalid credentials`,
         );
-        await this.workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinCookieTokens(
+        await this.workspaceMemberUnipileService.clearWorkspaceMemberLinkedinCookieTokens(
           authTokenCookie,
           workspaceMemberId,
         );
@@ -1095,7 +1095,7 @@ export class LinkedinUnipileController {
       : undefined;
     let cookiesChanged = false;
     let storedCookies =
-      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
+      await this.workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens(
         authToken,
         workspaceMemberId,
       );
@@ -1170,7 +1170,7 @@ export class LinkedinUnipileController {
         );
         const accountId = finalizedId ?? acc.id;
         const storedCookiesAfterPreflight =
-          await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
+          await this.workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens(
             authToken,
             workspaceMemberId,
           );
@@ -1587,7 +1587,7 @@ export class LinkedinUnipileController {
     let previousLinkedinUnipileId: string | null = null;
     try {
       previousLinkedinUnipileId =
-        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+        await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
           workspaceMemberId,
           workspace.id,
           authToken,
@@ -1601,7 +1601,7 @@ export class LinkedinUnipileController {
       const account = await this.linkedinUnipileRequestService.fetchAccountByIdIfExists(newId);
 
       if (account) {
-        await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+        await this.workspaceMemberUnipileService.applyUnipileAccountToWorkspaceMember(
           workspaceMemberId,
           authToken,
           'linkedin',
@@ -1609,7 +1609,7 @@ export class LinkedinUnipileController {
           account,
         );
       } else {
-        await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberUnipileAccountId(
+        await this.workspaceMemberUnipileService.updateWorkspaceMemberUnipileAccountId(
           workspaceMemberId,
           authToken,
           'linkedin',
@@ -1654,7 +1654,7 @@ export class LinkedinUnipileController {
 
     if (this.environmentService.get('LINKEDIN_UNIPILE_ON_DEMAND')) {
       const storedCookies =
-        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
+        await this.workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens(
           authToken,
           workspaceMemberId,
         );
@@ -1772,7 +1772,7 @@ export class LinkedinUnipileController {
 
       const solvedAccountId = data.account_id ?? data.id;
 
-      await this.syncWorkspaceMemberProfileAfterLinkedinConnectionIfEligible(
+      await this.syncWorkspaceMemberAfterLinkedinConnectionIfEligible(
         solvedAccountId,
         request,
         workspace.id,

@@ -94,12 +94,19 @@ import { StandardizeCandidateProjectFkCommand } from 'src/database/commands/upgr
 import { SplitOutreachReplyAgentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000101-split-outreach-reply-agent.command';
 import { ResyncOutreachHitlApproveEditFormCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000102-resync-outreach-hitl-approve-edit-form.command';
 import { EnsureOutreachVisitLinkedinProfileLogicFunctionCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000103-ensure-gtm-visit-linkedin-profile-logic-function.command';
+import { SyncOutreachSenderAgnosticSequencerCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000104-sync-outreach-sender-agnostic-sequencer.command';
+import { ResyncOutreachPostReplyFollowUpCadenceCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000105-resync-outreach-post-reply-follow-up-cadence.command';
+import { FoldWorkspaceMemberProfileIntoMemberCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000107-fold-workspace-member-profile-into-member.command';
+import { FoldWorkspaceProfileIntoCoreWorkspaceCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000109-fold-workspace-profile-into-core-workspace.command';
+import { FoldMemberCompanyIntoWorkspaceCompanyCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000110-fold-member-company-into-workspace-company.command';
+import { SetOutreachExtractSignalsDeepseekCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000106-set-outreach-extract-signals-deepseek.command';
 import { DropChatMessageObjWithTimeStampCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000099-drop-chat-message-obj-with-time-stamp.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { MigrateOtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/migrate-other-fields.service';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 import { FieldMetadataModule } from 'src/engine/metadata-modules/field-metadata/field-metadata.module';
 import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { GlobalWorkspaceDataSourceModule } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-datasource.module';
 import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache.module';
 import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
@@ -113,7 +120,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([FieldMetadataEntity]),
+    TypeOrmModule.forFeature([FieldMetadataEntity, WorkspaceEntity]),
     WorkspaceIteratorModule,
     GlobalWorkspaceDataSourceModule,
     ApplicationModule,
@@ -222,6 +229,12 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     SplitOutreachReplyAgentCommand,
     ResyncOutreachHitlApproveEditFormCommand,
     EnsureOutreachVisitLinkedinProfileLogicFunctionCommand,
+    SyncOutreachSenderAgnosticSequencerCommand,
+    ResyncOutreachPostReplyFollowUpCadenceCommand,
+    SetOutreachExtractSignalsDeepseekCommand,
+    FoldWorkspaceMemberProfileIntoMemberCommand,
+    FoldWorkspaceProfileIntoCoreWorkspaceCommand,
+    FoldMemberCompanyIntoWorkspaceCompanyCommand,
     MigrateOtherFieldsService,
     DropCandidateFieldObjectsCommand,
   ],

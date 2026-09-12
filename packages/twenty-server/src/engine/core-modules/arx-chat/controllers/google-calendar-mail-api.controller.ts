@@ -1,10 +1,16 @@
 import { Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 
 import moment from 'moment-timezone';
-import { Project, PersonNode } from 'twenty-shared';
+import {
+  PersonNode,
+  Project,
+  workspaceMemberDisplayName,
+  workspaceMemberEmail,
+  workspaceMemberFirstName,
+} from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
 import { CalendarEmailService } from 'src/engine/core-modules/arx-chat/utils/calendar-email';
 import { SendEmailFunctionality } from 'src/engine/core-modules/arx-chat/utils/send-gmail';
 import { CalendarEventType } from 'src/engine/core-modules/calendar-events/services/calendar-data-objects-types';
@@ -177,19 +183,19 @@ export class GoogleControllers {
 
     const candidateNode = person.candidates.edges[0].node;
     const candidateJob: Project = candidateNode?.project;
-    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
+    const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(
       candidateJob,
       apiToken,
     );
-    if (!recruiterProfile) {
-      throw new Error('Recruiter profile not found for job');
+    if (!workspaceMember) {
+      throw new Error('Workspace member not found for job');
     }
 
-    console.log('recruiterProfile?.email:', recruiterProfile?.email);
+    console.log('workspaceMemberEmail(workspaceMember):', workspaceMemberEmail(workspaceMember));
     const emailData: GmailMessageData = {
-      sendEmailFrom: recruiterProfile.email,
+      sendEmailFrom: workspaceMemberEmail(workspaceMember)!,
       sendEmailNameFrom:
-        recruiterProfile.firstName + ' ' + recruiterProfile.lastName,
+        workspaceMemberDisplayName(workspaceMember),
       sendEmailTo: person?.emails.primaryEmail ?? '',
       subject: request.body?.subject || 'Email from the recruiter',
       message: request.body?.message || 'This is a test email',
@@ -222,18 +228,18 @@ export class GoogleControllers {
 
     const candidateNode = person.candidates.edges[0].node;
     const candidateJob: Project = candidateNode?.project;
-    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
+    const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(
       candidateJob,
       apiToken,
     );
-    if (!recruiterProfile) {
-      throw new Error('Recruiter profile not found for job');
+    if (!workspaceMember) {
+      throw new Error('Workspace member not found for job');
     }
 
     const emailData: GmailMessageData = {
-      sendEmailFrom: recruiterProfile.email,
+      sendEmailFrom: workspaceMemberEmail(workspaceMember)!,
       sendEmailNameFrom:
-        recruiterProfile.firstName + ' ' + recruiterProfile.lastName,
+        workspaceMemberDisplayName(workspaceMember),
       sendEmailTo: person?.emails.primaryEmail ?? '',
       subject: request.body?.subject || 'Email from the recruiter',
       message: request.body?.message || 'This is a test email',
@@ -273,18 +279,18 @@ export class GoogleControllers {
     );
 
     console.log('This is the candidate job name:', candidateJob.name);
-    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
+    const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(
       candidateJob,
       apiToken,
     );
-    if (!recruiterProfile) {
-      throw new Error('Recruiter profile not found for job');
+    if (!workspaceMember) {
+      throw new Error('Workspace member not found for job');
     }
     const emailData: GmailMessageData = {
-      sendEmailFrom: recruiterProfile.email,
+      sendEmailFrom: workspaceMemberEmail(workspaceMember)!,
       sendEmailNameFrom:
-        recruiterProfile.firstName + ' ' + recruiterProfile.lastName,
-      sendEmailTo: recruiterProfile.email,
+        workspaceMemberDisplayName(workspaceMember),
+      sendEmailTo: workspaceMemberEmail(workspaceMember)!,
       subject: request.body?.subject || 'Email from the recruiter',
       message: request.body?.message || 'This is a test email',
       attachments: request.body.attachments || [],
@@ -300,7 +306,7 @@ export class GoogleControllers {
 
     // Send notification email
     const emailTemplate = DraftSavedEmail({
-      firstName: recruiterProfile.firstName,
+      firstName: workspaceMemberFirstName(workspaceMember),
       subject: emailData.subject,
       attachmentCount: (emailData.attachments || []).length,
       locale: 'en',
@@ -319,10 +325,10 @@ export class GoogleControllers {
     }));
 
     try {
-      console.log('Sending email to recruiter profile:', recruiterProfile.email);
+      console.log('Sending email to recruiter profile:', workspaceMemberEmail(workspaceMember));
       await this.emailService.send({
         from: `Arxena <${process.env.EMAIL_FROM_ADDRESS || 'no-reply@arxena.com'}>`,
-        to: recruiterProfile.email,
+        to: workspaceMemberEmail(workspaceMember)!,
         subject: 'Candidate Shortlist and Documentation',
         html: emailTemplate,
         text: emailTemplate.replace(/<[^>]*>/g, ''),
@@ -353,13 +359,13 @@ export class GoogleControllers {
     const apiToken = request.headers.authorization.split(' ')[1];
     const origin = request.headers.origin;
     console.log('origin', origin);
-    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileFromCurrentUser(apiToken, origin);
-    console.log('recruiterProfile', recruiterProfile);
+    const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getFromCurrentUser(apiToken, origin);
+    console.log('workspaceMember', workspaceMember);
     const emailData: GmailMessageData = {
-      sendEmailFrom: recruiterProfile?.email,
-      sendEmailTo: recruiterProfile?.email,
+      sendEmailFrom: workspaceMemberEmail(workspaceMember)!,
+      sendEmailTo: workspaceMemberEmail(workspaceMember)!,
       sendEmailNameFrom:
-        recruiterProfile?.firstName + ' ' + recruiterProfile?.lastName,
+        workspaceMemberDisplayName(workspaceMember),
       subject: request.body?.subject || 'Email from the recruiter',
       message: request.body?.message || 'This is a test email',
       attachments: request.body.attachments || [],
@@ -429,15 +435,15 @@ export class GoogleControllers {
 
     const candidateNode = person.candidates.edges[0].node;
     const candidateJob: Project = candidateNode?.project;
-    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
+    const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(
       candidateJob,
       apiToken,
     );
-    if (!recruiterProfile) {
-      throw new Error('Recruiter profile not found for job');
+    if (!workspaceMember) {
+      throw new Error('Workspace member not found for job');
     }
 
-    // const recruiterProfile = await getRecruiterProfileFromCurrentUser(apiToken)
+    // const workspaceMember = await getFromCurrentUser(apiToken)
 
     console.log('Function Called: scheduleMeeting');
     const calendarEventObj: CalendarEventType = {
@@ -446,9 +452,7 @@ export class GoogleControllers {
           ' ' +
           person.name.lastName +
           ' <> ' +
-          recruiterProfile.firstName +
-          ' ' +
-          recruiterProfile.lastName || gptInputs?.summary,
+          workspaceMemberDisplayName(workspaceMember) || gptInputs?.summary,
       typeOfMeeting: gptInputs?.typeOfMeeting || 'Virtual',
       location: gptInputs?.location || 'Google Meet',
       description:
@@ -469,7 +473,7 @@ export class GoogleControllers {
           responseStatus: 'needsAction',
         },
         {
-          email: recruiterProfile.email,
+          email: workspaceMemberEmail(workspaceMember)!,
           responseStatus: 'accepted',
         },
       ].filter((attendee) => Boolean(attendee.email?.trim())),

@@ -1,5 +1,5 @@
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
-import type { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import type { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import type { LinkedinSenderFullProfileCacheEntry } from 'src/engine/core-modules/arx-chat/types/linkedin-sender-profile-cache.types';
 
 describe('LinkedinUnipileRequestService sender profile persistence', () => {
@@ -17,14 +17,14 @@ describe('LinkedinUnipileRequestService sender profile persistence', () => {
     saveWorkspaceMemberLinkedinProfile?: jest.Mock;
     makeUnipileRequest?: jest.Mock;
   }) => {
-    const workspaceMemberProfileUnipileService = {
+    const workspaceMemberUnipileService = {
       getWorkspaceMemberLinkedinProfile:
         overrides?.getWorkspaceMemberLinkedinProfile ??
         jest.fn().mockResolvedValue(overrides?.storedProfile ?? null),
       saveWorkspaceMemberLinkedinProfile:
         overrides?.saveWorkspaceMemberLinkedinProfile ??
         jest.fn().mockResolvedValue(undefined),
-    } satisfies Partial<WorkspaceMemberProfileUnipileService>;
+    } satisfies Partial<WorkspaceMemberUnipileService>;
 
     const workspaceQueryService = {
       getWorkspaceKeys: jest.fn(),
@@ -33,7 +33,7 @@ describe('LinkedinUnipileRequestService sender profile persistence', () => {
     const service = new LinkedinUnipileRequestService(
       workspaceQueryService as never,
       undefined,
-      workspaceMemberProfileUnipileService as never,
+      workspaceMemberUnipileService as never,
     );
 
     if (overrides?.makeUnipileRequest) {
@@ -42,7 +42,7 @@ describe('LinkedinUnipileRequestService sender profile persistence', () => {
         .mockImplementation(overrides.makeUnipileRequest);
     }
 
-    return { service, workspaceMemberProfileUnipileService };
+    return { service, workspaceMemberUnipileService };
   };
 
   it('returns stored sender profile without Unipile profile fetch', async () => {

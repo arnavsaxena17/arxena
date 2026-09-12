@@ -7,12 +7,12 @@ import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/cand
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
 import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
 import { LinkedinUnipileMessagingService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile/linkedin-unipile-messaging.service';
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
 import { BaileysWhatsappAPI } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/baileys/callBaileys';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { WhatsappOutboundRateLimiterService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.service';
 import { WhatsappUnipileMessagingService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-unipile-messaging.service';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import {
   MessagingChannel,
   messagingChannelEquals,
@@ -37,7 +37,7 @@ export class MessagingControls {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
-    private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService?: WorkspaceMemberUnipileService,
     @Optional()
     private readonly whatsappOutboundRateLimiter?: WhatsappOutboundRateLimiterService,
   ) {}
@@ -46,7 +46,7 @@ export class MessagingControls {
     return new WhatsappUnipileMessagingService(
       this.workspaceQueryService,
       this.staticGraphQLService,
-      this.workspaceMemberProfileUnipileService,
+      this.workspaceMemberUnipileService,
       this.whatsappOutboundRateLimiter,
     );
   }
@@ -356,7 +356,7 @@ export class MessagingControls {
           this.staticGraphQLService,
           undefined,
           undefined,
-          this.workspaceMemberProfileUnipileService,
+          this.workspaceMemberUnipileService,
         ).sendLinkedinMessageVIAUnipileAPI(
           whatappUpdateMessageObj,
           candidate,
@@ -383,7 +383,7 @@ export class MessagingControls {
           this.staticGraphQLService,
           undefined,
           undefined,
-          this.workspaceMemberProfileUnipileService,
+          this.workspaceMemberUnipileService,
         ).sendLinkedinInMailVIAUnipileAPI(
           whatappUpdateMessageObj,
           candidate,
@@ -466,12 +466,12 @@ export class MessagingControls {
     }
 
     const candidateJob = candidateNode?.project as Project;
-    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
+    const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(
       candidateJob,
       apiToken,
     );
-    if (!recruiterProfile) {
-      throw new Error('Recruiter profile not found for job');
+    if (!workspaceMember) {
+      throw new Error('Workspace member not found for job');
     }
 
     const candidateChatHistory = candidateNode?.chatMessages?.edges[0]?.node?.messageObj || [];
@@ -496,7 +496,7 @@ export class MessagingControls {
       id: uuidv4(),
       candidateProfile: candidateNode,
       candidateFirstName: candidateNode?.name || '',
-      phoneNumberFrom: recruiterProfile.phoneNumber,
+      phoneNumberFrom: workspaceMember.phoneNumber,
       whatsappMessageType: candidateNode?.whatsappProvider || 'application03',
       phoneNumberTo: messageTo,
       messages: [{ content: messageToSend }],
@@ -577,7 +577,7 @@ export class MessagingControls {
         this.staticGraphQLService,
         undefined,
         undefined,
-        this.workspaceMemberProfileUnipileService,
+        this.workspaceMemberUnipileService,
       ).sendLinkedinAttachmentMessage(
         attachmentMessage,
         candidate,
@@ -590,7 +590,7 @@ export class MessagingControls {
         this.staticGraphQLService,
         undefined,
         undefined,
-        this.workspaceMemberProfileUnipileService,
+        this.workspaceMemberUnipileService,
       ).sendLinkedinInMailAttachmentMessage(
         attachmentMessage,
         candidate,
@@ -670,12 +670,12 @@ export class MessagingControls {
       return;
     }
 
-    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
+    const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(
       candidateJob,
       apiToken,
     );
-    if (!recruiterProfile) {
-      throw new Error('Recruiter profile not found for job');
+    if (!workspaceMember) {
+      throw new Error('Workspace member not found for job');
     }
 
     let phoneNumberTo: string;
@@ -688,16 +688,16 @@ export class MessagingControls {
       )
     ) {
       phoneNumberTo = candidate.linkedinUrl?.primaryLinkUrl || '';
-      phoneNumberFrom = recruiterProfile.linkedinUrl || '';
+      phoneNumberFrom = workspaceMember.linkedinUrl || '';
     } else if (candidate?.phoneNumber?.primaryPhoneNumber) {
       phoneNumberTo = candidate.phoneNumber.primaryPhoneNumber.length == 10
         ? '91' + candidate.phoneNumber.primaryPhoneNumber
         : candidate.phoneNumber.primaryPhoneNumber;
-      phoneNumberFrom = recruiterProfile.phoneNumber;
+      phoneNumberFrom = workspaceMember.phoneNumber;
     } else {
       console.warn('No phone number found for candidate, using empty string');
       phoneNumberTo = '';
-      phoneNumberFrom = recruiterProfile.phoneNumber || '';
+      phoneNumberFrom = workspaceMember.phoneNumber || '';
     }
 
     const attachmentMessageObj: AttachmentMessageObject = {

@@ -2,7 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { WhatsappOutboundRateLimiterService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.service';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import { CandidateWorkspaceGraphQLService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-workspace-graphql.service';
 import { GoogleContactsService } from 'src/engine/core-modules/google-contacts/google-contacts.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -31,13 +31,11 @@ jest.mock(
   }),
 );
 
-jest.mock('src/engine/core-modules/arx-chat/services/recruiter-profile', () => ({
-  RecruiterProfileService: jest.fn().mockImplementation(() => ({
-    getRecruiterProfileByJob: jest.fn().mockResolvedValue({
-      email: 'rec@example.com',
-      firstName: 'Rec',
-      lastName: 'Ruiter',
-      name: 'Rec Ruiter',
+jest.mock('src/engine/core-modules/arx-chat/services/workspace-member-arx.service', () => ({
+  WorkspaceMemberArxService: jest.fn().mockImplementation(() => ({
+    getByProject: jest.fn().mockResolvedValue({
+      userEmail: 'rec@example.com',
+      name: { firstName: 'Rec', lastName: 'Ruiter' },
     }),
   })),
 }));
@@ -80,7 +78,7 @@ describe('OrgChartOutreachService', () => {
           useValue: {},
         },
         {
-          provide: WorkspaceMemberProfileUnipileService,
+          provide: WorkspaceMemberUnipileService,
           useValue: {},
         },
         {

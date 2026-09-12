@@ -57,6 +57,13 @@ export const OUTREACH_CHANNEL_OPTIONS = [
   selectOption('OTHER', 'Other', 'gray', 5),
 ];
 
+// Sticky preferred outbound channel for Candidate Sequencer (reply routing).
+export const OUTREACH_PREFERRED_CHANNEL_OPTIONS = [
+  selectOption('LINKEDIN', 'LinkedIn', 'blue', 0),
+  selectOption('EMAIL', 'Email', 'purple', 1),
+  selectOption('WHATSAPP', 'WhatsApp', 'green', 2),
+];
+
 export const OUTREACH_TIME_BUCKET_OPTIONS = [
   selectOption('UNDER_1D', '<1d', 'green', 0),
   selectOption('D1_3', '1–3d', 'turquoise', 1),
@@ -362,6 +369,31 @@ export const getOutreachCommandFieldsData = (
       icon: 'IconChartDots',
       label: 'Outreach Analytics',
       name: 'outreachAnalytics',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'RAW_JSON',
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
+      description:
+        'Sticky preferred outbound channel until the prospect explicitly switches back',
+      icon: 'IconArrowsExchange',
+      label: 'Outreach Preferred Channel',
+      name: 'outreachPreferredChannel',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'SELECT',
+      options: OUTREACH_PREFERRED_CHANNEL_OPTIONS,
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
+      description:
+        'Step 1 qualify/enrich JSON (go, score, hooks, segment) for connection notes and openers',
+      icon: 'IconJson',
+      label: 'Outreach Prospect Enrichment',
+      name: 'outreachProspectEnrichment',
       objectMetadataId: objectsNameIdMap.candidate,
       type: 'RAW_JSON',
     },

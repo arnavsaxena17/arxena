@@ -9,7 +9,7 @@ import {
   getLinkedInUnipileSearchPageLimit,
 } from 'twenty-shared';
 import { LinkedinUnipileSessionService } from '../../arx-chat/services/linkedin-unipile-session.service';
-import { WorkspaceMemberProfileUnipileService } from '../../arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from '../../arx-chat/services/workspace-member-unipile.service';
 import { LinkedInRecruiterPeopleTransformerService } from '../../candidate-sourcing/services/data-sources/linkedin-recruiter-people-transformer.service';
 import { LinkedInSearchTransformerService, TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { ResumeReadParseUploadService } from '../../candidate-sourcing/services/resume-read-parse-upload.service';
@@ -91,7 +91,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
   constructor(
     linkedInSearchService: LinkedInSearchService,
     workspaceQueryService: WorkspaceQueryService,
-    workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    workspaceMemberUnipileService: WorkspaceMemberUnipileService,
     linkedinParameterResolver: LinkedinParameterResolver,
     parameterSanitizer: ParameterSanitizer,
     fileUtils: FileUtils,
@@ -108,7 +108,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     super(
       linkedInSearchService,
       workspaceQueryService,
-      workspaceMemberProfileUnipileService,
+      workspaceMemberUnipileService,
       linkedinParameterResolver,
       parameterSanitizer,
       fileUtils,

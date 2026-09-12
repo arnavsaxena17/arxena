@@ -4,23 +4,23 @@ import {
   apiKeysLoadingState,
   apiKeysState,
 } from '@/arx-jd-upload/states/apiKeysState';
+import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { gql } from '@apollo/client';
 import { useLazyQuery } from '@apollo/client/react';
+import { MessagingChannel, normalizeMessagingChannel } from 'twenty-shared/arx';
 import {
-  MessagingChannel,
-  normalizeMessagingChannel,
-} from 'twenty-shared/arx';
-import {
-  findWorkspaceMemberProfiles,
+  findWorkspaceMembersForArx,
   graphqlToFindManyProjectsWithCandidateValues,
 } from 'twenty-shared/graphql';
 import {
-  extractWorkspaceMemberProfileFromApolloData,
-  extractWorkspaceMemberProfileFromRelationField,
+  extractWorkspaceMemberFromApolloData,
+  extractWorkspaceMemberFromRelationField,
   isDefined,
-  workspaceMemberProfileFilterByMemberId,
+  workspaceMemberFilterById,
+  type WorkspaceMemberArxGraphqlNode,
+  type WorkspaceMembersApolloData,
 } from 'twenty-shared/utils';
 
 type UseCheckDataIntegrityOfProjectProps = {
@@ -35,10 +35,7 @@ export type CheckDataIntegrityOfProjectOptions = {
 
 type ProjectIntegrityNode = {
   recruiterId?: string | null;
-  recruiter?: {
-    id?: string | null;
-    workspaceMemberProfile?: unknown;
-  } | null;
+  recruiter?: WorkspaceMemberArxGraphqlNode | null;
   company?: {
     descriptionOneliner?: string | null;
   } | null;
@@ -79,7 +76,7 @@ export const useCheckDataIntegrityOfProject = ({
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
   const apiKeys = useAtomStateValue(apiKeysState);
   const apiKeysLoading = useAtomStateValue(apiKeysLoadingState);
-  // Workspace project records are on /graphql, not the default /metadata client
+  const currentWorkspace = useAtomStateValue(currentWorkspaceState);
   const apolloCoreClient = useApolloCoreClient();
   const [executeProjectQuery] = useLazyQuery(
     gql`
@@ -87,11 +84,9 @@ export const useCheckDataIntegrityOfProject = ({
     `,
     { client: apolloCoreClient, fetchPolicy: 'network-only' },
   );
-  // Nested recruiter.workspaceMemberProfile often returns empty edges; root
-  // filter by workspaceMemberId matches RecruiterProfileService / Unipile sync
-  const [executeProfileQuery] = useLazyQuery(
+  const [executeWorkspaceMemberQuery] = useLazyQuery(
     gql`
-      ${findWorkspaceMemberProfiles}
+      ${findWorkspaceMembersForArx}
     `,
     { client: apolloCoreClient, fetchPolicy: 'network-only' },
   );
@@ -138,22 +133,22 @@ export const useCheckDataIntegrityOfProject = ({
         const recruiterId =
           jobNode?.recruiterId ?? jobNode?.recruiter?.id ?? null;
 
-        let recruiterWorkspaceMemberProfile =
-          extractWorkspaceMemberProfileFromRelationField(
-            jobNode?.recruiter?.workspaceMemberProfile,
-          );
+        let recruiterWorkspaceMember =
+          extractWorkspaceMemberFromRelationField(jobNode?.recruiter) ??
+          jobNode?.recruiter ??
+          null;
 
-        if (!recruiterWorkspaceMemberProfile && isDefined(recruiterId)) {
-          const { data: profileData } = await executeProfileQuery({
-            variables: workspaceMemberProfileFilterByMemberId(recruiterId),
+        if (!recruiterWorkspaceMember && isDefined(recruiterId)) {
+          const { data: memberData } = await executeWorkspaceMemberQuery({
+            variables: workspaceMemberFilterById(recruiterId),
           });
-          recruiterWorkspaceMemberProfile =
-            extractWorkspaceMemberProfileFromApolloData(profileData);
+          recruiterWorkspaceMember = extractWorkspaceMemberFromApolloData(
+            memberData as WorkspaceMembersApolloData,
+          );
         }
 
         const recruiterWhatsappUnipileAccountId =
-          recruiterWorkspaceMemberProfile?.whatsappUnipileAccountId?.trim() ??
-          '';
+          recruiterWorkspaceMember?.whatsappUnipileAccountId?.trim() ?? '';
         const chatFlowOrder = jobNode?.chatFlowOrder;
         const hasVideoInterview = chatFlowOrder?.includes(
           'startVideoInterviewChat',
@@ -202,14 +197,13 @@ export const useCheckDataIntegrityOfProject = ({
             'WhatsApp API token is missing',
           needsWhatsappUnipileKey &&
             !recruiterWhatsappUnipileAccountId &&
-            'WhatsApp Unipile account ID is missing on the job recruiter workspace member profile',
+            'WhatsApp Unipile account ID is missing on the job recruiter workspace member',
 
           !jobNode && 'Job data is missing or malformed',
 
           !jobNode?.attachments?.edges &&
             'Attachments data structure is missing',
-          jobNode?.attachments?.edges?.length === 0 &&
-            'No JD attachment found',
+          jobNode?.attachments?.edges?.length === 0 && 'No JD attachment found',
           !jobNode?.jobLocation && 'Job location is missing',
           (!jobNode?.chatFlowOrder ||
             !Array.isArray(jobNode?.chatFlowOrder) ||
@@ -271,16 +265,17 @@ export const useCheckDataIntegrityOfProject = ({
                 ?.edges?.length === 0) &&
             'Video interview introduction video is missing',
 
-          !recruiterWorkspaceMemberProfile &&
-            'Recruiter workspace member profile is missing',
-          !recruiterWorkspaceMemberProfile?.name &&
-            'Recruiter name is missing in workspace member profiles',
-          !recruiterWorkspaceMemberProfile?.phoneNumber &&
-            'Recruiter phone number is missing in workspace member profiles',
-          !recruiterWorkspaceMemberProfile?.companyDescription &&
-            'Recruiter company description is missing in workspace member profiles',
-          !recruiterWorkspaceMemberProfile?.jobTitle &&
-            'Recruiter job title is missing in workspace member profiles',
+          !recruiterWorkspaceMember && 'Recruiter workspace member is missing',
+          !recruiterWorkspaceMember?.name &&
+            'Recruiter name is missing on workspace member',
+          !recruiterWorkspaceMember?.phoneNumber &&
+            'Recruiter phone number is missing on workspace member',
+          !recruiterWorkspaceMember?.jobTitle &&
+            'Recruiter job title is missing on workspace member',
+          !currentWorkspace?.companyName?.trim() &&
+            'Company name is missing on workspace company profile',
+          !currentWorkspace?.summary?.trim() &&
+            'Company summary is missing on workspace company profile',
         ]
           .filter(Boolean)
           .join('\n• ');
@@ -312,13 +307,14 @@ export const useCheckDataIntegrityOfProject = ({
     },
     [
       executeProjectQuery,
-      executeProfileQuery,
+      executeWorkspaceMemberQuery,
       enqueueSuccessSnackBar,
       enqueueErrorSnackBar,
       onSuccess,
       onError,
       apiKeys,
       apiKeysLoading,
+      currentWorkspace,
     ],
   );
 

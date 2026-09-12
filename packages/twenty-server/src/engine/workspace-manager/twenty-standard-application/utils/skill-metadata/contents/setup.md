@@ -1,6 +1,6 @@
 # Setup Skill
 
-You run **Workflow A (bootstrap)** for Outreach inside Ask AI: learn the user's campaign preferences conversationally, persist the **workspace default** ICP + search blurbs on **Workspace Profile**, optionally set Project overrides, then hand off to company/people discovery via Setup CTAs.
+You run **Workflow A (bootstrap)** for Outreach inside Ask AI: learn the user's campaign preferences conversationally, persist the **workspace default** company + ICP on **core Workspace** fields, optionally set Project overrides, then hand off to company/people discovery via Setup CTAs.
 
 This is preference collection + ICP approval — not outreach execution (`outreach`) and not LinkedIn search (load `search` only when searching).
 
@@ -10,7 +10,7 @@ Load `setup` when:
 
 - The user lands on Outreach Setup / onboarding and needs ICP / outreach preferences set
 - The kickoff message asks you to run ICP onboarding or Refine ICP
-- Setup → **Regenerate** for ICP, company search blurb, or people search blurb (each is a separate turn)
+- Setup → **Regenerate ICP** (re-runs company enrichment on the workspace)
 - The user wants to redefine ICP, personas, send mode, or caps
 - Phase is `bootstrapping` or `icp_review` and preferences are not yet approved
 
@@ -29,10 +29,6 @@ Do **not** load this skill for:
 ```
 learn_tools([
   "ask_questions",
-  "find_many_workspace_profiles",
-  "find_one_workspace_profile",
-  "create_one_workspace_profile",
-  "update_one_workspace_profile",
   "find_many_projects",
   "find_one_project",
   "update_one_project",
@@ -46,26 +42,24 @@ learn_tools([
 
 | Concern | Object | Notes |
 | --- | --- | --- |
-| Your company + **default** ICP + blurbs | **`workspaceProfile`** (singleton) | Shared across projects |
-| Project override ICP / blurbs (optional) | **Project** (`icpSpec`, `icpSegment`, `icpBlurb`, `companySearchBlurb`, `peopleSearchBlurb`) | Only when user asks for project-specific values |
+| Your company + **default** ICP | **core Workspace** (`companyName`, `companyDomain`, `industry`, `summary`, `employeeRange`, `hq`, `icpSpec`) | Shared across projects — not a CRM record |
+| Project override ICP (optional) | **Project** (`icpSpec` in `outreachConfig` or legacy column) | Only when user asks for project-specific values |
 | Send mode, caps, outreach workflow | **Project** | Stay on Project |
 | Per-campaign outreach progress | **Candidate** (enrollment record) | Later — enroll after people found |
 | Cross-project stops / degree | **Person** | Not set during ICP onboarding |
 | Account rollups | **Company** | After targets are chosen |
 
-Empty Project ICP/blurb fields mean **inherit workspace profile**. Do not clear Project fields to empty unless the user wants to drop a project override.
+Empty Project ICP fields mean **inherit Workspace `icpSpec`**. Do not clear Project fields to empty unless the user wants to drop a project override.
 
-## Setup Regenerate modes (one field group per turn)
+## Persisting Workspace company + default ICP
 
-Outreach Setup has **three separate Regenerate buttons**. Each SEND prompt is intentionally scoped — do **not** refresh sibling fields unless the user explicitly asks.
+Ask AI has **no** CRM `workspaceProfile` tools and **no** direct Workspace mutation tool. Persist defaults through:
 
-| Mode | Update only | Do not touch |
-| --- | --- | --- |
-| **Regenerate ICP** (Setup button) | Re-runs company enrichment and writes your-company fields + `icpSpec` / `icpBlurb` / `icpSegment` on `workspaceProfile` | Existing `companySearchBlurb` / `peopleSearchBlurb` |
-| Regenerate company search blurb | `companySearchBlurb` via Ask AI | `icpSpec`, `icpBlurb`, `peopleSearchBlurb` (unless ICP empty — then draft minimal ICP first) |
-| Regenerate people search blurb | `peopleSearchBlurb` via Ask AI | `icpSpec`, `icpBlurb`, `companySearchBlurb` (unless ICP empty — then draft minimal ICP first) |
+1. **Setup → Regenerate ICP** (preferred for enrichment + default ICP): `POST /outreach-command/workspace-profile/regenerate`
+2. **Setup UI Save** after you draft JSON — tell the user to click Save on the ICP panel when they approve your draft
+3. **Project override only:** `update_one_project` with scoped `icpSpec` when they explicitly want a project-only ICP
 
-For regenerate-only turns: skip the full preference interview when enough your-company + current ICP context is in the prompt; propose the draft, then persist on approval (or immediately if the user said to regenerate/save without asking).
+Never call removed tools: `find_many_workspace_profiles`, `update_one_workspace_profile`, `create_one_workspace_profile`.
 
 ## Steps
 
@@ -73,13 +67,13 @@ For regenerate-only turns: skip the full preference interview when enough your-c
 
 From the kickoff / browsing context, capture:
 
-- Workspace / signup company domain and industry (if present)
+- Workspace company fields (`companyName`, `companyDomain`, `industry`, `summary`, `employeeRange`, `hq`, `icpSpec`) when present in browsing context
 - `projectId` (canonical project scope — `/outreach-home?projectId=`)
-- Existing Project id (canonical `projectId`)
+- Effective ICP summary (`icpSpec` line — may include a project override)
 
-Load the singleton `workspaceProfile` (`find_many_workspace_profiles`, take first). If Project has non-empty `icpSpec`, treat that as a project override; otherwise use profile defaults.
+If Project has non-empty `icpSpec`, treat that as a project override; otherwise use Workspace defaults.
 
-Briefly greet the user: you will set workspace ICP defaults (and search blurbs), then they can use Setup → Find companies / Find people.
+Briefly greet the user: you will set workspace ICP defaults, then they can use Setup → Find companies / Find people.
 
 ### STEP 1 — Preference interview (`ask_questions`)
 
@@ -99,16 +93,12 @@ Ask whether this should be the **workspace default** (recommended) or a **projec
 
 Skip this step for scoped Regenerate turns that already include enough context.
 
-### STEP 2 — Propose ICP + blurbs
+### STEP 2 — Propose ICP
 
-Present (full onboarding) or only the fields in scope (Regenerate modes):
+Present (full onboarding) or only the fields in scope (Regenerate):
 
-- Name / segment label
-- **icpBlurb** — 2–4 sentence NL definition of who the ICP is and what matters to them
 - Industries, employee range, geos
-- Target titles (`targetTitles` in JSON), `stdFunctions` / `stdGrades`, pain signals
-- Draft **companySearchBlurb** (NL brief for target accounts) — full onboarding only, or company-blurb regenerate
-- Draft **peopleSearchBlurb** (NL brief for target roles at those accounts) — full onboarding only, or people-blurb regenerate
+- Target titles (`targetTitles` in JSON), pain signals
 - Outreach settings for this Project: send mode, max personas, InMail, timezone/window (full onboarding)
 
 Ask for Approve / Edit / Reject (unless the user already asked to regenerate and save).
@@ -118,38 +108,29 @@ Ask for Approve / Edit / Reject (unless the user already asked to regenerate and
 On approval:
 
 1. Ensure a Project exists for `projectId` (create if needed).
-2. **Default path:** `create_one_workspace_profile` if missing, else `update_one_workspace_profile` with your-company fields (if refined) and only the fields in scope for this turn.
-   - Full onboarding: `icpSegment`, `icpSpec` (JSON string), `icpBlurb`, `companySearchBlurb`, `peopleSearchBlurb`.
-   - ICP regenerate: `icpSegment`, `icpSpec`, `icpBlurb` only.
-   - Company blurb regenerate: `companySearchBlurb` only.
-   - People blurb regenerate: `peopleSearchBlurb` only.
-3. **Project override path** (only if user asked): also `update_one_project` with the same scoped fields.
+2. **Workspace default path:** draft `icpSpec` JSON and company-field updates; then either:
+   - Regenerate turn: confirm Setup → **Regenerate ICP** ran or will run (`POST /outreach-command/workspace-profile/regenerate`), or
+   - Full onboarding: ask the user to **Save** on Setup after your draft (you cannot write Workspace fields yourself).
+   - Full onboarding `icpSpec` shape: JSON string with `targetTitles` + `locations` only.
+3. **Project override path** (only if user asked): `update_one_project` with scoped `icpSpec`.
 4. Always `update_one_project` for outreach prefs that are project-scoped (`outreachSendMode`, caps, windows, etc.) during full onboarding.
 
-`icpSpec` JSON shape (stringify into the TEXT field) — structured filters only; the NL definition lives in **`icpBlurb`**, not inside this JSON:
+`icpSpec` JSON shape (stringify into the Workspace TEXT field):
 
 ```json
 {
-  "name": "Mid-market people leaders",
-  "industries": ["HR Tech", "SaaS"],
-  "employeeRange": "50-200",
-  "geos": ["US", "UK"],
   "targetTitles": ["Head of Talent", "VP People"],
-  "painSignals": ["slow pipelines", "thin team capacity"],
-  "stdFunctions": ["talent acquisition", "people"],
-  "stdGrades": ["director", "vp"]
+  "locations": ["US", "UK"]
 }
 ```
-
-`icpBlurb` example: "We reach mid-market HR Tech / SaaS companies (50–200) in the US and UK whose people leaders struggle with slow pipelines and thin team capacity."
 
 ### STEP 4 — Hand off
 
 Tell the user:
 
-1. Workspace fields saved on **Workspace Profile** (and Project override only if they asked).
+1. Workspace company / ICP fields saved on **Workspace** (via Regenerate or Setup Save) — Project override only if they asked.
 2. Next on Outreach Setup: **Find companies** then **Find people** (those buttons SEND Ask AI prompts that upsert Redis tabs).
-3. They can reopen Ask AI anytime to refine ICP, or use the per-section Regenerate buttons (ICP / company blurb / people blurb are independent).
+3. They can reopen Ask AI anytime to refine ICP, or use Setup → Regenerate ICP.
 
 Do **not** start cold outreach sends from this skill. Do **not** create enrollment records (`create_candidate`) until the user confirms Add to CRM / Enroll.
 
@@ -160,4 +141,4 @@ Do **not** start cold outreach sends from this skill. Do **not** create enrollme
 - Person `name` in CRM is structured (`firstName` / `lastName`).
 - Stop-on-reply / DNC live on Person.
 - If channels are disconnected, note it and continue ICP setup.
-- Never bundle ICP + company blurb + people blurb updates on a Regenerate turn unless the user explicitly asked for all three.
+- Company / ICP defaults live on **core Workspace** — there is no CRM `workspaceProfile` singleton.

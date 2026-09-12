@@ -56,11 +56,15 @@ export const buildOutreachInboundSignalExtractionPrompt = ({
     'Copy only what is literally in the transcript. Never infer a time or a contact detail.',
     'The transcript may span several rounds. Read the full thread, not only the last line.',
     'acceptedSlotIndex: 0-based index into Available slots of the one slot they accepted.',
-    '  Only when they confirmed that specific time. Vague windows ("tomorrow", "second half",',
-    '  "next week", "Friday-ish") are -1. Anything you are unsure about is -1.',
+    '  Only when they confirmed that specific injected slot (by index, or by matching the',
+    '  exact offered window). Relative times ("tomorrow", "2:30 pm tomorrow", "second half",',
+    '  "next week", "Friday-ish") are always -1 — never map them onto a slot yourself.',
+    '  Anything you are unsure about is -1.',
     `requestedChannelSwitch: ${OUTREACH_NO_CHANNEL_SWITCH} unless they explicitly asked to move`,
     '  channel ("email me", "WhatsApp me") — then LINKEDIN, WHATSAPP, or EMAIL.',
-    'prospectEmail: an address they asked us to send details to, character for character.',
+    'prospectEmail: an address THEY asked us to send details to (the recipient),',
+    '  character for character. Never put a referred third-party email here.',
+    '  If they share their own email while also asking for WhatsApp/call, still copy prospectEmail.',
     'referralName / referralEmail / referralPhone: the other person they pointed us to,',
     '  character for character. Naming someone without contact details is normal — leave the',
     '  contact fields "" in that case rather than guessing.',
@@ -93,6 +97,8 @@ export const buildOutreachSalesChatDraftPrompt = ({
   referralName,
   prospectEmail,
   shouldNotRespond,
+  senderJson,
+  prospectEnrichmentJson,
 }: {
   name: string;
   title: string;
@@ -104,12 +110,22 @@ export const buildOutreachSalesChatDraftPrompt = ({
   referralName?: string;
   prospectEmail?: string;
   shouldNotRespond?: string;
+  senderJson?: string;
+  prospectEnrichmentJson?: string;
 }): string =>
   [
     'You drive a sales outreach conversation on LinkedIn / WhatsApp / email.',
-    'Goal: book a 20–30 minute intro, not recruit them.',
-    'Do not share a job description. Do not ask CTC, notice period, or any screening question.',
+    'Goal: book a short intro using the sender meeting defaults.',
     'Draft the next outbound message only. Do not re-classify and do not extract contacts.',
+    senderJson?.trim()
+      ? `SENDER_JSON (voice, offer, FAQ, meeting): ${senderJson.trim()}`
+      : '',
+    prospectEnrichmentJson?.trim()
+      ? `PROSPECT_ENRICHMENT: ${prospectEnrichmentJson.trim()}`
+      : '',
+    'Answer offer questions using ONLY sender.offer.faq / works_with / implementation_time /',
+    'pilot_offer / pricing_line / data_security_line. If unsupported, say you will confirm and',
+    'come back — do not invent.',
     `If "Asked to stop" below is true, set message to "${OUTREACH_DONT_RESPOND_SENTINEL}" exactly and leave every other field empty.`,
     'Do not invent product claims they did not ask about.',
     'Be short, conversational, and to the point. Neutral tone. Plain text, no markdown.',
@@ -118,8 +134,7 @@ export const buildOutreachSalesChatDraftPrompt = ({
     'If they said they will discuss internally / revert / keep you posted, send a short ack or',
     `use "${OUTREACH_DONT_RESPOND_SENTINEL}" - do not pitch or offer new slots.`,
     'If they asked to pause / later / traveling, thank them, confirm you will pause, do not pitch.',
-    'Wrong person: it is common that the recipient is not the buyer. Ask if they can refer',
-    'the right person in the company. Do not stop just because they are the wrong fit.',
+    'Wrong person: ask once who looks after the function; do not rebut.',
     'Write the reply for the injected reply channel. Keep it native to that channel.',
     'The injected facts below are already verified against the thread. Treat them as given:',
     '- A confirmed meeting time means the invite is already being created. Confirm it in prose',
@@ -134,7 +149,7 @@ export const buildOutreachSalesChatDraftPrompt = ({
     'Stage playbooks:',
     '- INTENT / ACKNOWLEDGEMENT: acknowledge, offer at most two Available slots.',
     '- FOLLOW_UP_MEETING: confirm the injected time, or ask which Available slot works.',
-    '- MEETING_BOOKED: confirm the injected time in prose.',
+    '- MEETING_BOOKED: confirm the injected time in prose (≤40 words).',
     '- SNOOZED: thank, confirm pause, no pitch.',
     `- NOT_INTERESTED: message "${OUTREACH_DONT_RESPOND_SENTINEL}".`,
     `Available slots (only source of times): ${slots}`,
@@ -149,11 +164,14 @@ export const buildOutreachSalesChatDraftPrompt = ({
     `Transcript: ${transcript}`,
     'Return JSON only: {',
     '  "message": "<reply on the injected reply channel>",',
-    '  "emailSubject": "<subject when emailing details, else empty>",',
-    '  "emailBody": "<details email body, else empty>",',
-    '  "referralMessage": "<intro to the referred person or empty>"',
+    '  "emailSubject": "<subject when emailing details, else empty string>",',
+    '  "emailBody": "<details email body, else empty string>",',
+    '  "referralMessage": "<intro to the referred person or empty string>"',
     '}',
-  ].join('\n');
+    'Always include all four keys. Use "" when a field does not apply.',
+  ]
+    .filter((line) => line !== '')
+    .join('\n');
 
 export const buildOutreachRepliedDraftPrompt = ({
   name,

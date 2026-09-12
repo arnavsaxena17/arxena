@@ -10,7 +10,7 @@ import {
   Post,
   Query
 } from '@nestjs/common';
-import { WorkspaceMemberProfileUnipileService } from '../../arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from '../../arx-chat/services/workspace-member-unipile.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { LinkedInSearchService } from '../services/linkedin-search.service';
 import { LinkedInSearchParameterType } from '../types/linkedin-search-parameter.type';
@@ -43,7 +43,7 @@ export class LinkedInSearchController {
   constructor(
     private readonly linkedInSearchService: LinkedInSearchService,
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService: WorkspaceMemberUnipileService,
   ) {}
 
   /**
@@ -82,7 +82,7 @@ export class LinkedInSearchController {
       const workspaceMemberId =
         await this.workspaceQueryService.getWorkspaceMemberIdFromToken(apiToken);
       const linkedinAccountId =
-        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+        await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
           workspaceMemberId,
           workspaceId,
           apiToken,

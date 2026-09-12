@@ -1,11 +1,15 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Project } from 'twenty-shared';
+import {
+  Project,
+  workspaceMemberDisplayName,
+  workspaceMemberEmail,
+} from 'twenty-shared';
 
 import { LinkedinUnipileMessagingService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile/linkedin-unipile-messaging.service';
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
 import { WhatsappOutboundRateLimiterService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.service';
 import { WhatsappUnipileMessagingService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-unipile-messaging.service';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import { SendEmailFunctionality } from 'src/engine/core-modules/arx-chat/utils/send-gmail';
 import { CandidateWorkspaceGraphQLService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-workspace-graphql.service';
 import { GoogleContactsService } from 'src/engine/core-modules/google-contacts/google-contacts.service';
@@ -38,7 +42,7 @@ export class OrgChartOutreachService {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
-    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService: WorkspaceMemberUnipileService,
     private readonly googleContactsService: GoogleContactsService,
     private readonly candidateWorkspaceGraphQLService: CandidateWorkspaceGraphQLService,
     private readonly whatsappOutboundRateLimiter: WhatsappOutboundRateLimiterService,
@@ -50,7 +54,7 @@ export class OrgChartOutreachService {
       this.staticGraphQLService,
       undefined,
       undefined,
-      this.workspaceMemberProfileUnipileService,
+      this.workspaceMemberUnipileService,
     );
   }
 
@@ -58,7 +62,7 @@ export class OrgChartOutreachService {
     return new WhatsappUnipileMessagingService(
       this.workspaceQueryService,
       this.staticGraphQLService,
-      this.workspaceMemberProfileUnipileService,
+      this.workspaceMemberUnipileService,
       this.whatsappOutboundRateLimiter,
     );
   }
@@ -177,18 +181,17 @@ export class OrgChartOutreachService {
         if (!to) {
           throw new BadRequestException('email required');
         }
-        const recruiterProfile = await new RecruiterProfileService(
+        const workspaceMember = await new WorkspaceMemberArxService(
           this.staticGraphQLService,
-        ).getRecruiterProfileByJob(candidateJob, params.apiToken);
-        if (!recruiterProfile?.email) {
-          throw new BadRequestException('Recruiter email not found for job');
+        ).getByProject(candidateJob, params.apiToken);
+        if (!workspaceMemberEmail(workspaceMember)) {
+          throw new BadRequestException('Workspace member email not found for job');
         }
         const sendEmailNameFrom =
-          `${recruiterProfile.firstName ?? ''} ${recruiterProfile.lastName ?? ''}`.trim() ||
-          recruiterProfile.name ||
+          workspaceMemberDisplayName(workspaceMember) ||
           'Recruiter';
         const emailData = {
-          sendEmailFrom: recruiterProfile.email,
+          sendEmailFrom: workspaceMemberEmail(workspaceMember)!,
           sendEmailNameFrom,
           sendEmailTo: to,
           subject: params.subject?.trim() || 'Message from your recruiter',

@@ -7,7 +7,12 @@ import { ErrorBoundary } from './ErrorBoundary'; // Import the ErrorBoundary com
 import { StartInterviewPage } from './StartInterviewPage';
 import { InterviewPage } from './components/InterviewPage';
 
-import { emptyInterviewData, type GetInterviewDetailsResponse, type InterviewData, type VideoInterviewAttachment } from 'twenty-shared/arx';
+import {
+  emptyInterviewData,
+  type GetInterviewDetailsResponse,
+  type InterviewData,
+  type VideoInterviewAttachment,
+} from 'twenty-shared/arx';
 import { getAttachmentDownloadUrl } from 'twenty-shared/utils';
 import { StreamProvider, useStream } from '../StreamManager';
 
@@ -78,36 +83,46 @@ const InterviewLoader = () => (
   </LoaderOverlay>
 );
 
-const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) => {
+const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({
+  interviewId,
+}) => {
   const [stage, setStage] = useState<'start' | 'interview' | 'end'>('start');
   const [loading, setLoading] = useState(false);
-  const [interviewData, setInterviewData] = useState<InterviewData | null>(null);
-  const [introductionVideoData, setintroductionVideoData] = useState<VideoInterviewAttachment | null>(null);
-  const [questionsVideoData, setquestionsVideoData] = useState<VideoInterviewAttachment[]>([]);
+  const [interviewData, setInterviewData] = useState<InterviewData | null>(
+    null,
+  );
+  const [introductionVideoData, setintroductionVideoData] =
+    useState<VideoInterviewAttachment | null>(null);
+  const [questionsVideoData, setquestionsVideoData] = useState<
+    VideoInterviewAttachment[]
+  >([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [videoLoadingStatus, setVideoLoadingStatus] = useState<Record<string, boolean>>({});
+  const [videoLoadingStatus, setVideoLoadingStatus] = useState<
+    Record<string, boolean>
+  >({});
   const [finalSubmissionComplete, setFinalSubmissionComplete] = useState(false);
 
-
-  const { stream } = useStream();  // Add this line to get stream from context
+  const { stream } = useStream(); // Add this line to get stream from context
 
   const [globalVideoPlaybackState, setGlobalVideoPlaybackState] = useState({
     isPlaying: false,
-    isMuted: false
+    isMuted: false,
   });
 
-  const handleVideoStateChange = (newState: { isPlaying: boolean; isMuted: boolean }) => {
+  const handleVideoStateChange = (newState: {
+    isPlaying: boolean;
+    isMuted: boolean;
+  }) => {
     setGlobalVideoPlaybackState(newState);
   };
-
-
-
 
   useEffect(() => {
     fetchInterviewData();
   }, [interviewId]);
-  console.log("To do the interview vidoes the REACT_APP_SERVER_BASE_URL is ", REACT_APP_SERVER_BASE_URL);
-
+  console.log(
+    'To do the interview vidoes the REACT_APP_SERVER_BASE_URL is ',
+    REACT_APP_SERVER_BASE_URL,
+  );
 
   // Function to preload a video
   const preloadVideo = async (url: string) => {
@@ -117,9 +132,9 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
       video.src = url;
 
       video.oncanplaythrough = () => {
-        setVideoLoadingStatus(prev => ({
+        setVideoLoadingStatus((prev) => ({
           ...prev,
-          [url]: true
+          [url]: true,
         }));
         resolve(true);
       };
@@ -128,17 +143,14 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
     });
   };
 
-
-
   useEffect(() => {
     return () => {
       // Clean up streams when component unmounts
       if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [stream]);  // Add stream to dependency array
-
+  }, [stream]); // Add stream to dependency array
 
   // Preload all videos when interview data is fetched
   useEffect(() => {
@@ -175,50 +187,87 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
       });
     }
   }, [interviewData, introductionVideoData, questionsVideoData]);
-  console.log("This is the interview data::", interviewData);
+  console.log('This is the interview data::', interviewData);
   const fetchInterviewData = async () => {
     setLoading(true);
-    console.log("Going to fetch interview id:", interviewId);
+    console.log('Going to fetch interview id:', interviewId);
     try {
-      const response = await axios.post(`${REACT_APP_SERVER_BASE_URL}/video-interview-controller/get-interview-details`, { interviewId });
+      const response = await axios.post(
+        `${REACT_APP_SERVER_BASE_URL}/video-interview-controller/get-interview-details`,
+        { interviewId },
+      );
       console.log('This is the response to fetch interview data:', response);
       const responseObj: GetInterviewDetailsResponse = response.data;
       if (responseObj) {
-
-
-
-        const fetchedData: any = response?.data?.responseFromInterviewRequests?.data;
-        console.log('fetchedData to fetch interview data:', JSON.stringify(fetchedData));
+        const fetchedData: any =
+          response?.data?.responseFromInterviewRequests?.data;
+        console.log(
+          'fetchedData to fetch interview data:',
+          JSON.stringify(fetchedData),
+        );
         const formattedData: InterviewData = {
-          recruiterProfile: fetchedData.recruiterProfile,
+          workspaceMember: responseObj.workspaceMember ?? null,
           name: fetchedData?.videoInterviews?.edges[0]?.node?.name || '',
           id: fetchedData?.videoInterviews?.edges[0]?.node?.id || '',
           candidate: {
-            id: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.id || '',
+            id:
+              fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.id || '',
             project: {
-              id: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.project?.id || '',
-              name: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.project?.name || '',
-              recruiterId: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.project?.recruiterId || '',
-              companyName: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.project?.company?.name || '',
+              id:
+                fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.project
+                  ?.id || '',
+              name:
+                fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.project
+                  ?.name || '',
+              recruiterId:
+                fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.project
+                  ?.recruiterId || '',
+              companyName:
+                fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.project
+                  ?.company?.name || '',
             },
-            peopleId: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.peopleId || '',
-            name: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.name || '',
-            email: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.email?.primaryEmail || '',
-            phoneNumber: {primaryPhoneNumber: fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.phoneNumber?.primaryPhoneNumber || ''},
+            peopleId:
+              fetchedData?.videoInterviews?.edges[0]?.node?.candidate
+                ?.peopleId || '',
+            name:
+              fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.name ||
+              '',
+            email:
+              fetchedData?.videoInterviews?.edges[0]?.node?.candidate?.email
+                ?.primaryEmail || '',
+            phoneNumber: {
+              primaryPhoneNumber:
+                fetchedData?.videoInterviews?.edges[0]?.node?.candidate
+                  ?.phoneNumber?.primaryPhoneNumber || '',
+            },
           },
 
           videoInterview: {
-            id: fetchedData?.videoInterviews?.edges[0]?.node?.videoInterviewTemplate?.id || '',
-            name: fetchedData?.videoInterviews?.edges[0]?.node?.videoInterviewTemplate?.name || '',
-            introduction: fetchedData?.videoInterviews?.edges[0]?.node?.videoInterviewTemplate?.introduction || '',
-            instructions: fetchedData?.videoInterviews?.edges[0]?.node?.videoInterviewTemplate?.instructions || '',
-            videoInterviewQuestions: fetchedData?.videoInterviews?.edges[0]?.node?.videoInterviewTemplate?.videoInterviewQuestions || '',
+            id:
+              fetchedData?.videoInterviews?.edges[0]?.node
+                ?.videoInterviewTemplate?.id || '',
+            name:
+              fetchedData?.videoInterviews?.edges[0]?.node
+                ?.videoInterviewTemplate?.name || '',
+            introduction:
+              fetchedData?.videoInterviews?.edges[0]?.node
+                ?.videoInterviewTemplate?.introduction || '',
+            instructions:
+              fetchedData?.videoInterviews?.edges[0]?.node
+                ?.videoInterviewTemplate?.instructions || '',
+            videoInterviewQuestions:
+              fetchedData?.videoInterviews?.edges[0]?.node
+                ?.videoInterviewTemplate?.videoInterviewQuestions || '',
           },
         };
         console.log('setting formatted interview data:', formattedData);
         setInterviewData(formattedData);
         setintroductionVideoData(responseObj?.videoInterviewAttachmentResponse);
-        setquestionsVideoData(Array.isArray(responseObj?.questionsAttachments) ? responseObj.questionsAttachments : []);
+        setquestionsVideoData(
+          Array.isArray(responseObj?.questionsAttachments)
+            ? responseObj.questionsAttachments
+            : [],
+        );
       } else {
         console.error('No interview data found');
       }
@@ -229,40 +278,66 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
 
   const handleStart = () => setStage('interview');
   const handleNextQuestion = async (responseData: FormData) => {
-    console.log('Currnet question  index in handle Next Question:', currentQuestionIndex);
+    console.log(
+      'Currnet question  index in handle Next Question:',
+      currentQuestionIndex,
+    );
     try {
       console.log('Going to handle next question, let sed if this submists');
 
-      setCurrentQuestionIndex(prevIndex => {
+      setCurrentQuestionIndex((prevIndex) => {
         const nextIndex = prevIndex + 1;
-        if (nextIndex === (interviewData?.videoInterview?.videoInterviewQuestions?.edges?.length ?? 0)) {
+        if (
+          nextIndex ===
+          (interviewData?.videoInterview?.videoInterviewQuestions?.edges
+            ?.length ?? 0)
+        ) {
           setStage('end');
         }
         return nextIndex;
       });
-      console.log('This is REACT_APP_SERVER_BASE_URL:', REACT_APP_SERVER_BASE_URL);
-      const isLastQuestion = currentQuestionIndex === (interviewData?.videoInterview?.videoInterviewQuestions?.edges?.length ?? 0) - 1;
+      console.log(
+        'This is REACT_APP_SERVER_BASE_URL:',
+        REACT_APP_SERVER_BASE_URL,
+      );
+      const isLastQuestion =
+        currentQuestionIndex ===
+        (interviewData?.videoInterview?.videoInterviewQuestions?.edges
+          ?.length ?? 0) -
+          1;
 
-      responseData.append('responseData', JSON.stringify({
-        isLastQuestion,
-        timeLimitAdherence: responseData.get('timeLimitAdherence') // preserve any existing data
-      }));
-
+      responseData.append(
+        'responseData',
+        JSON.stringify({
+          isLastQuestion,
+          timeLimitAdherence: responseData.get('timeLimitAdherence'), // preserve any existing data
+        }),
+      );
 
       // console.log('This is the appending of the rinterview dat:', interviewData);
       responseData.append('interviewData', JSON.stringify(interviewData));
-      responseData.append('currentQuestionIndex', currentQuestionIndex.toString());
+      responseData.append(
+        'currentQuestionIndex',
+        currentQuestionIndex.toString(),
+      );
       responseData.forEach((value, key) => {
         console.log('key for response data:', key, '::', value);
       });
       // console.log("Final resposne data being setnt:", responseData)
-      const response = await axios.post(REACT_APP_SERVER_BASE_URL + '/video-interview-controller/submit-response', responseData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const response = await axios.post(
+        REACT_APP_SERVER_BASE_URL +
+          '/video-interview-controller/submit-response',
+        responseData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        },
+      );
       console.log('This isreht ersponse:', response);
-      console.log('The calue of interviewData!.videoInterview.videoInterview.edges.length is ::', interviewData!.videoInterview?.videoInterviewQuestions?.edges?.length);
+      console.log(
+        'The calue of interviewData!.videoInterview.videoInterview.edges.length is ::',
+        interviewData!.videoInterview?.videoInterviewQuestions?.edges?.length,
+      );
       return true; // Return success status
-
     } catch (error) {
       console.log('Error submitting response in VideoInterviewFlow:', error);
     }
@@ -270,7 +345,10 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
 
   const handleSubmitFeedback = async (feedback: string) => {
     try {
-      const response = await axios.post(`${REACT_APP_SERVER_BASE_URL}/video-interview-controller/update-feedback`, { interviewId, feedback });
+      const response = await axios.post(
+        `${REACT_APP_SERVER_BASE_URL}/video-interview-controller/update-feedback`,
+        { interviewId, feedback },
+      );
       console.log('Interview completed, feedback submitted:', response.status);
     } catch (error) {
       console.error('Error submitting feedback:', error);
@@ -281,34 +359,51 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
     setStage('end');
   };
 
-  console.log('This is the interview questions:', interviewData?.videoInterview?.videoInterviewQuestions?.edges);
+  console.log(
+    'This is the interview questions:',
+    interviewData?.videoInterview?.videoInterviewQuestions?.edges,
+  );
   const renderCurrentStage = () => {
     if (!interviewData) {
       return (
-      <StartInterviewPage
-        onStart={handleStart}
-        InterviewData={emptyInterviewData}
-        introductionVideoData={introductionVideoData!}
-        videoPlaybackState={globalVideoPlaybackState}
-        onVideoStateChange={handleVideoStateChange}
-    />
+        <StartInterviewPage
+          onStart={handleStart}
+          InterviewData={emptyInterviewData}
+          introductionVideoData={introductionVideoData!}
+          videoPlaybackState={globalVideoPlaybackState}
+          onVideoStateChange={handleVideoStateChange}
+        />
       );
     }
     switch (stage) {
       case 'start':
         return (
           <>
-            {introductionVideoData && <StartInterviewPage onStart={handleStart} InterviewData={interviewData} introductionVideoData={introductionVideoData} videoPlaybackState={globalVideoPlaybackState} onVideoStateChange={handleVideoStateChange} />}
+            {introductionVideoData && (
+              <StartInterviewPage
+                onStart={handleStart}
+                InterviewData={interviewData}
+                introductionVideoData={introductionVideoData}
+                videoPlaybackState={globalVideoPlaybackState}
+                onVideoStateChange={handleVideoStateChange}
+              />
+            )}
             {loading && <InterviewLoader />}
           </>
         );
       case 'interview':
         return (
           <ErrorBoundary>
-          {loading && <InterviewLoader />}
+            {loading && <InterviewLoader />}
             <InterviewPage
               InterviewData={interviewData}
-              questions={interviewData?.videoInterview?.videoInterviewQuestions?.edges?.map(edge => edge?.node).sort((a, b) => new Date(a?.createdAt).getTime() - new Date(b?.createdAt).getTime())}
+              questions={interviewData?.videoInterview?.videoInterviewQuestions?.edges
+                ?.map((edge) => edge?.node)
+                .sort(
+                  (a, b) =>
+                    new Date(a?.createdAt).getTime() -
+                    new Date(b?.createdAt).getTime(),
+                )}
               introductionVideoAttachment={introductionVideoData!}
               questionsVideoAttachment={questionsVideoData || []}
               currentQuestionIndex={currentQuestionIndex}
@@ -316,21 +411,21 @@ const VideoInterviewFlow: React.FC<{ interviewId: string }> = ({ interviewId }) 
               onFinish={handleFinish}
               videoPlaybackState={globalVideoPlaybackState}
               onVideoStateChange={handleVideoStateChange}
-
             />
           </ErrorBoundary>
         );
-        case 'end':
-          return <EndInterviewPage
+      case 'end':
+        return (
+          <EndInterviewPage
             interviewData={interviewData}
             onSubmit={handleSubmitFeedback}
             submissionComplete={finalSubmissionComplete}
-          />;
-            default:
+          />
+        );
+      default:
         return null;
     }
   };
-
 
   return (
     <StreamProvider>

@@ -14,7 +14,7 @@ import { Mixpanel } from '~/mixpanel';
 import { LinkedinAccountRateLimitsPanel } from './LinkedinAccountRateLimitsPanel';
 import { tokenPairState } from '~/modules/auth/states/tokenPairState';
 import { linkedinUnipileAccountsState } from '~/modules/linkedin-unipile/states/linkedinUnipileAccountsState';
-import { workspaceMemberProfileUnipileFieldsState } from '~/modules/unipile/states/workspaceMemberProfileUnipileFieldsState';
+import { workspaceMemberUnipileFieldsState } from '~/modules/unipile/states/workspaceMemberUnipileFieldsState';
 import {
     filterLinkedinAccountsForWorkspaceMemberProfile,
     hasMatchingConnectedLinkedinAccount,
@@ -214,8 +214,8 @@ export const ConnectedLinkedinAccounts: React.FC<
   const setLinkedinUnipileAccounts = useSetAtomState(
     linkedinUnipileAccountsState,
   );
-  const workspaceMemberProfileUnipileFields = useAtomStateValue(
-    workspaceMemberProfileUnipileFieldsState,
+  const workspaceMemberUnipileFields = useAtomStateValue(
+    workspaceMemberUnipileFieldsState,
   );
 
   const loadAccounts = useCallback(async () => {
@@ -252,13 +252,13 @@ export const ConnectedLinkedinAccounts: React.FC<
           return false;
         }
         if (
-          !workspaceMemberProfileUnipileFields ||
-          !shouldRestrictLinkedinByProfile(workspaceMemberProfileUnipileFields)
+          !workspaceMemberUnipileFields ||
+          !shouldRestrictLinkedinByProfile(workspaceMemberUnipileFields)
         ) {
           return true;
         }
         return linkedinAccountMatchesWorkspaceMemberProfile(
-          workspaceMemberProfileUnipileFields,
+          workspaceMemberUnipileFields,
           acc,
         );
       });
@@ -289,7 +289,7 @@ export const ConnectedLinkedinAccounts: React.FC<
 
       const hasConnected = hasMatchingConnectedLinkedinAccount(
         accountList,
-        workspaceMemberProfileUnipileFields,
+        workspaceMemberUnipileFields,
       );
       if (onAccountsLoaded) {
         onAccountsLoaded(hasConnected);
@@ -340,7 +340,7 @@ export const ConnectedLinkedinAccounts: React.FC<
     onAccountConnected,
     onAccountsLoaded,
     setLinkedinUnipileAccounts,
-    workspaceMemberProfileUnipileFields,
+    workspaceMemberUnipileFields,
   ]);
 
   useEffect(() => {
@@ -441,9 +441,9 @@ export const ConnectedLinkedinAccounts: React.FC<
     () =>
       filterLinkedinAccountsForWorkspaceMemberProfile(
         accounts,
-        workspaceMemberProfileUnipileFields,
+        workspaceMemberUnipileFields,
       ),
-    [accounts, workspaceMemberProfileUnipileFields],
+    [accounts, workspaceMemberUnipileFields],
   );
 
   if (loading) {

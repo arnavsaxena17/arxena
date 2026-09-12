@@ -2,7 +2,7 @@ import { createAtomSelector } from '@/ui/utilities/state/jotai/utils/createAtomS
 import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 import type { UnipileLinkedinAccount } from 'twenty-shared/arx';
 
-import { workspaceMemberProfileUnipileFieldsState } from '@/unipile/states/workspaceMemberProfileUnipileFieldsState';
+import { workspaceMemberUnipileFieldsState } from '@/unipile/states/workspaceMemberUnipileFieldsState';
 import { hasMatchingUsableLinkedinAccount } from '@/unipile/utils/matchUnipileToWorkspaceMemberProfile';
 
 export const linkedinUnipileAccountsState = createAtomState<
@@ -18,6 +18,6 @@ export const isLinkedinUnipileConnectedSelector = createAtomSelector<boolean>({
   get: ({ get }) =>
     hasMatchingUsableLinkedinAccount(
       get(linkedinUnipileAccountsState),
-      get(workspaceMemberProfileUnipileFieldsState),
+      get(workspaceMemberUnipileFieldsState),
     ),
 });

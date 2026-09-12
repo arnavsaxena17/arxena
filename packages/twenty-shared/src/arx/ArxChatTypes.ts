@@ -1,9 +1,9 @@
 import type { OtherFieldsRecord } from '../utils/otherFields';
+import type { WorkspaceMemberArxGraphqlNode } from '../utils/workspaceMemberArxGraphql';
 import type { CandidateFlags } from './candidateFlags';
 // Lightweight stubs so twenty-shared does not depend on openai/anthropic SDKs
 type OpenAI = unknown;
 type Anthropic = unknown;
-
 
 export interface ChatTableProps {
   individuals: PersonNode[];
@@ -49,7 +49,11 @@ export type ProjectProcessStage = {
   name: string;
   order: number;
   actions?: string[];
-  ProjectProcessStageName?: 'APPLICATION' | 'INTERVIEW' | 'OFFER' | 'ONBOARDING';
+  ProjectProcessStageName?:
+    | 'APPLICATION'
+    | 'INTERVIEW'
+    | 'OFFER'
+    | 'ONBOARDING';
   ProjectProcessStageStatus?: 'PENDING' | 'COMPLETED' | 'IN_PROGRESS';
 };
 
@@ -643,7 +647,7 @@ export type TransformedCandidateForTable = Omit<
   peopleId: string | null;
   updatedAt: string;
   createdAt: string;
-}
+};
 
 export interface UserProfile {
   // Basic profile information
@@ -672,7 +676,6 @@ export interface UserProfile {
   locationCountry: string | null;
   country: string | null;
   locations: Location[];
-
 
   // Social profiles
   linkedinUrl: string;
@@ -709,7 +712,10 @@ export interface UserProfile {
   noticePeriod: string;
   resumeHeadline?: string | null;
   preferredLocations?: string | null;
-  displayPicture?: string | { primaryLinkLabel: string; primaryLinkUrl: string } | null;
+  displayPicture?:
+    | string
+    | { primaryLinkLabel: string; primaryLinkUrl: string }
+    | null;
   profilePictureUrl?: string;
   avatarUrl?: string;
   hiringNaukriUrl?: { primaryLinkLabel: string; primaryLinkUrl: string } | null;
@@ -780,8 +786,6 @@ export interface UserProfile {
   additionalData?: Record<string, any> | null;
 }
 
-
-
 // Define the oneCandidateObject interface
 // interface Candidate {
 //   name: string;
@@ -793,7 +797,6 @@ export interface UserProfile {
 // }
 
 // Define the onePersonObject interface
-
 
 export interface ArxenaCandidateNode {
   name: string;
@@ -927,7 +930,6 @@ export interface ArxenaPersonNode {
   projectId?: string;
   candidateId?: string;
 }
-
 
 // // Interface for chat message with tool call
 // export interface ToolChatMessage {
@@ -1069,7 +1071,7 @@ export interface PersonNode {
   phones: { primaryPhoneNumber: string };
   emails: { primaryEmail: string };
 
-  linkedinLink?:{primaryLinkUrl:string,primaryLinkLabel:string}
+  linkedinLink?: { primaryLinkUrl: string; primaryLinkLabel: string };
   suitabilityDescription?: string;
   salary: string;
   city: string;
@@ -1153,7 +1155,7 @@ export const emptyCandidateProfileObj: CandidateNode = {
       id: '',
       name: '',
       companyId: '',
-      domainName: {"primaryLinkUrl":''},
+      domainName: { primaryLinkUrl: '' },
       descriptionOneliner: '',
     },
     jobLocation: '',
@@ -1631,7 +1633,6 @@ export interface AiFilter {
   includeResume?: boolean;
 }
 
-
 // Define the possible roles in the chat
 
 export const statusesArray = [
@@ -1735,7 +1736,6 @@ export interface ChatMessagesEdge {
   node: MessageNode;
 }
 
-
 export interface videoInterview {
   edges: videoInterviewEdge[];
 }
@@ -1756,7 +1756,6 @@ export interface InterviewLink {
   primaryLinkLabel: string;
   primaryLinkUrl: string;
 }
-
 
 // export interface Candidate {
 //   stopChat: any;
@@ -1794,8 +1793,8 @@ export interface CandidateNode {
   attachments: any;
   id: string;
   candidateFlags?: CandidateFlags | null;
-  phoneNumber: {primaryPhoneNumber:string};
-  email: {primaryEmail:string};
+  phoneNumber: { primaryPhoneNumber: string };
+  email: { primaryEmail: string };
   chatCount: number;
 
   createdAt: string | number | Date;
@@ -1811,9 +1810,9 @@ export interface CandidateNode {
   peopleId: string;
   otherFields?: OtherFieldsRecord | null;
   people: PersonNode;
-  hiringNaukriUrl?: {"primaryLinkUrl":string};
-  resdexNaukriUrl?: {"primaryLinkUrl":string};
-  linkedinUrl?: {"primaryLinkUrl":string};
+  hiringNaukriUrl?: { primaryLinkUrl: string };
+  resdexNaukriUrl?: { primaryLinkUrl: string };
+  linkedinUrl?: { primaryLinkUrl: string };
 }
 
 // export interface Candidate {
@@ -1877,32 +1876,17 @@ export interface EmailMessageNode {
   createdAt: string;
 }
 
-
-
-
-
-
-
-
 export interface company {
   name: string;
   companyId?: string;
   descriptionOneliner?: string;
   id: string;
-  domainName: {"primaryLinkUrl":string};
+  domainName: { primaryLinkUrl: string };
 }
-
-
-
-
 
 export interface ProjectEdge {
   node: Project;
 }
-
-
-
-
 
 /** Default delay (minutes) after last message before processing engagement. Used when job has no engagementProcessingDelayMinutes set. */
 export const DEFAULT_ENGAGEMENT_PROCESSING_DELAY_MINUTES = 2;
@@ -1944,8 +1928,6 @@ interface Entry {
   changes: any[];
 }
 
-
-
 export interface Question {
   attachments: any;
   id: string;
@@ -1957,17 +1939,7 @@ export interface Question {
 }
 
 export const emptyInterviewData: InterviewData = {
-  recruiterProfile: {
-    companyName: '',
-    companyDescription: '',
-    firstName: '',
-    lastName: '',
-    name: '',
-    email: '',
-    phoneNumber: '',
-    jobTitle: '',
-    id: ''
-  },
+  workspaceMember: null,
   id: '',
   name: '',
   candidate: {
@@ -1980,8 +1952,8 @@ export const emptyInterviewData: InterviewData = {
     },
     peopleId: '',
     name: '',
-    email: {primaryEmail:''},
-    phoneNumber: {primaryPhoneNumber:''},
+    email: { primaryEmail: '' },
+    phoneNumber: { primaryPhoneNumber: '' },
   },
   videoInterview: {
     id: '',
@@ -1993,32 +1965,6 @@ export const emptyInterviewData: InterviewData = {
     },
   },
 };
-
-  export interface RecruiterProfileType {
-    id: string;
-    jobTitle: string;
-    companyName: string;
-    companyDescription: string;
-    linkedinUrl?:string;
-    /** Workspace member profile: stored Unipile account id for LinkedIn (matches findWorkspaceMemberProfiles). */
-    linkedinUnipileAccountId?: string | null;
-    /** Workspace member profile: stored Unipile account id for WhatsApp (matches findWorkspaceMemberProfiles). */
-    whatsappUnipileAccountId?: string | null;
-    firstName: string;
-    lastName: string;
-    name: string;
-    email: string;
-    phoneNumber: string;
-    workspaceMember?: {
-      id: string;
-      userEmail: string;
-      name:{
-        firstName: string;
-        lastName: string;
-      }
-    };
-    workspaceMemberId?: string;
-  }
 
 export interface InterviewDataJobTemplate {
   job: Project;
@@ -2032,7 +1978,7 @@ export interface InterviewDataJobTemplate {
 }
 
 export interface InterviewData {
-  recruiterProfile: RecruiterProfileType;
+  workspaceMember: WorkspaceMemberArxGraphqlNode | null;
   id: string;
   name: string;
   candidate: {
@@ -2045,8 +1991,8 @@ export interface InterviewData {
     };
     peopleId: string;
     name: string;
-    email: {primaryEmail:string};
-    phoneNumber: {primaryPhoneNumber:string};
+    email: { primaryEmail: string };
+    phoneNumber: { primaryPhoneNumber: string };
   };
   videoInterview: {
     id: string;
@@ -2061,7 +2007,6 @@ export interface InterviewData {
   };
 }
 
-
 export interface VideoInterviewAttachment {
   data: any;
   id: string;
@@ -2070,6 +2015,7 @@ export interface VideoInterviewAttachment {
 }
 
 export interface GetInterviewDetailsResponse {
+  workspaceMember: WorkspaceMemberArxGraphqlNode | null;
   responseFromInterviewRequests: InterviewData;
   videoInterviewAttachmentResponse: VideoInterviewAttachment;
   questionsAttachments: VideoInterviewAttachment[];
@@ -2124,9 +2070,6 @@ export interface VideoInterviewResponseViewerProps {
   candidateId?: string;
   videoInterviewId?: string;
 }
-
-
-
 
 // types.ts
 
@@ -2212,7 +2155,12 @@ export interface UnipileWhatsappAccount {
   name?: string;
   phone_number?: string;
   type?: string;
-  status: 'connected' | 'disconnected' | 'pending' | 'checkpoint_required' | 'connecting';
+  status:
+    | 'connected'
+    | 'disconnected'
+    | 'pending'
+    | 'checkpoint_required'
+    | 'connecting';
   created_at?: string;
   updated_at?: string;
   connection_params?: any;
@@ -2228,4 +2176,3 @@ export interface WhatsappQrCodeResponse {
   code: string;
   account_id?: string;
 }
-

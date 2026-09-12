@@ -383,7 +383,7 @@ export abstract class UnipileMessagingWorkflowActionBase<
         const profileRepository =
           await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberProfileUnipileFields>(
             workspaceId,
-            'workspaceMemberProfile',
+            'workspaceMember',
             { shouldBypassPermissionChecks: true },
           );
         const profiles = await profileRepository.find({ take: 25 });
@@ -393,7 +393,7 @@ export abstract class UnipileMessagingWorkflowActionBase<
             : isNonEmptyString(profile.whatsappUnipileAccountId),
         );
 
-        return match?.workspaceMemberId ?? '';
+        return match?.id ?? '';
       },
       authContext,
     );
@@ -415,15 +415,14 @@ export abstract class UnipileMessagingWorkflowActionBase<
         const profileRepository =
           await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberProfileUnipileFields>(
             workspaceId,
-            'workspaceMemberProfile',
+            'workspaceMember',
             { shouldBypassPermissionChecks: true },
           );
 
         const profile = await profileRepository.findOne({
-          where: { workspaceMemberId },
+          where: { id: workspaceMemberId },
           select: {
             id: true,
-            workspaceMemberId: true,
             linkedinUnipileAccountId: true,
             whatsappUnipileAccountId: true,
           },
@@ -431,7 +430,7 @@ export abstract class UnipileMessagingWorkflowActionBase<
 
         if (!isDefined(profile)) {
           throw new WorkflowStepExecutorException(
-            `No workspace member profile found for member '${workspaceMemberId}'`,
+            `No workspace member found for member '${workspaceMemberId}'`,
             WorkflowStepExecutorExceptionCode.INVALID_STEP_INPUT,
           );
         }

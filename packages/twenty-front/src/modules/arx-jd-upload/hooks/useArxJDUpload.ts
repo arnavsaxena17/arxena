@@ -23,7 +23,7 @@ import type { AssistantThread } from '@/assistant/types/assistant.types';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
 import type { companyInfoType } from 'twenty-shared/arx';
-import { graphQLToUpdateOneWorkspaceMemberProfile } from 'twenty-shared/graphql';
+import { graphQLToUpdateOneWorkspaceMemberArx } from 'twenty-shared/graphql';
 import type {
   LinkedInSearchCategory,
   LinkedInSearchType,
@@ -125,9 +125,9 @@ export const useArxJDUpload = (
   const isAssistantAppInstalled = useIsAssistantAppInstalled();
 
   const apolloCoreClient = useApolloCoreClient();
-  const [updateWorkspaceMemberProfile] = useMutation(
+  const [updateWorkspaceMemberArx] = useMutation(
     gql`
-      ${graphQLToUpdateOneWorkspaceMemberProfile}
+      ${graphQLToUpdateOneWorkspaceMemberArx}
     `,
     { client: apolloCoreClient },
   );
@@ -167,7 +167,6 @@ export const useArxJDUpload = (
         !recruiterDetails ||
         JSON.stringify(recruiterDetails.missingRecruiterInfo) !==
           JSON.stringify(details.missingRecruiterInfo) ||
-        recruiterDetails.recruiterProfileId !== details.recruiterProfileId ||
         recruiterDetails.showRecruiterFields !== details.showRecruiterFields ||
         recruiterDetails.workspaceMemberId !== details.workspaceMemberId;
 
@@ -178,10 +177,10 @@ export const useArxJDUpload = (
     [recruiterDetails],
   );
 
-  const updateRecruiterProfile = useCallback(async () => {
+  const updateWorkspaceMemberContact = useCallback(async () => {
     if (
       !recruiterDetails ||
-      !recruiterDetails.recruiterProfileId ||
+      !recruiterDetails.workspaceMemberId ||
       !recruiterDetails.showRecruiterFields
     ) {
       return true; // No update needed, return success
@@ -193,35 +192,28 @@ export const useArxJDUpload = (
 
       if (!workspaceMemberId) {
         enqueueErrorSnackBar({
-          message: 'Unable to update recruiter profile: No recruiter ID found',
+          message:
+            'Unable to update workspace member: No workspace member ID found',
         });
         return false;
       }
 
-      const updateWorkspaceMemberProfileInput = {
+      const updateWorkspaceMemberArxInput = {
         ...(recruiterDetails.missingRecruiterInfo.name && {
           name: recruiterDetails.missingRecruiterInfo.name,
         }),
         ...(recruiterDetails.missingRecruiterInfo.phoneNumber && {
           phoneNumber: recruiterDetails.missingRecruiterInfo.phoneNumber,
         }),
-        ...(recruiterDetails.missingRecruiterInfo.companyDescription && {
-          companyDescription:
-            recruiterDetails.missingRecruiterInfo.companyDescription,
-        }),
         ...(recruiterDetails.missingRecruiterInfo.jobTitle && {
           jobTitle: recruiterDetails.missingRecruiterInfo.jobTitle,
         }),
-        workspaceMemberId,
       };
 
-      // Update the workspace member profile
-      await updateWorkspaceMemberProfile({
+      await updateWorkspaceMemberArx({
         variables: {
-          idToUpdate: recruiterDetails.recruiterProfileId,
-          input: {
-            ...updateWorkspaceMemberProfileInput,
-          },
+          idToUpdate: workspaceMemberId,
+          input: updateWorkspaceMemberArxInput,
         },
       });
 
@@ -261,7 +253,7 @@ export const useArxJDUpload = (
     recruiterDetails,
     enqueueSuccessSnackBar,
     enqueueErrorSnackBar,
-    updateWorkspaceMemberProfile,
+    updateWorkspaceMemberArx,
     updateSpecificApiKey,
   ]);
 
@@ -687,7 +679,7 @@ export const useArxJDUpload = (
       // First, update the recruiter profile if needed
       if (recruiterDetails?.showRecruiterFields) {
         try {
-          await updateRecruiterProfile();
+          await updateWorkspaceMemberContact();
         } catch (error) {
           console.error('Error updating recruiter profile:', error);
         }
@@ -908,7 +900,7 @@ export const useArxJDUpload = (
     enqueueSuccessSnackBar,
     enqueueErrorSnackBar,
     recruiterDetails,
-    updateRecruiterProfile,
+    updateWorkspaceMemberContact,
     findBestCompanyMatch,
     createOneRecord,
     updateOneRecord,

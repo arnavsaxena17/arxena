@@ -24,7 +24,7 @@ import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/
 import { LinkedinXrayModule } from 'src/modules/linkedin-xray/linkedin-xray.module';
 
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import { UnipilePoolModule } from 'src/engine/core-modules/arx-chat/unipile-pool.module';
 
 import { CandidateAvatarModule } from 'src/engine/core-modules/candidate-avatar/candidate-avatar.module';
@@ -93,7 +93,7 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
   controllers: [OrgChartController, ElasticsearchSearchController],
   providers: [
     UnipileCompanyService,
-    WorkspaceMemberProfileUnipileService,
+    WorkspaceMemberUnipileService,
     JwtAuthGuard,
     OrgChartService,
     OrgChartLinkedInBuildService,

@@ -3,43 +3,47 @@ import { useQuery } from '@apollo/client/react';
 import { useEffect } from 'react';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
-import { findWorkspaceMemberProfiles } from 'twenty-shared/graphql';
+import { findWorkspaceMembersForArx } from 'twenty-shared/graphql';
+import {
+  parseWorkspaceMemberUnipileFields,
+  workspaceMemberFilterById,
+  type WorkspaceMembersApolloData,
+} from 'twenty-shared/utils';
 
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
 
 import { orgChartLinkedinCandidateSourceState } from '@/orgchart/states/orgChartLinkedInCandidateSourceState';
 
-import { workspaceMemberProfileUnipileFieldsState } from '../states/workspaceMemberProfileUnipileFieldsState';
+import { workspaceMemberUnipileFieldsState } from '../states/workspaceMemberUnipileFieldsState';
 import { ARX_UNIPILE_ACCOUNTS_REFRESHED_EVENT } from '../utils/applyInferredOrgChartLinkedinSearchType';
 
-export const FIND_WORKSPACE_MEMBER_PROFILES_FOR_UNIPILE = gql`
-  ${findWorkspaceMemberProfiles}
+export const FIND_WORKSPACE_MEMBERS_FOR_UNIPILE = gql`
+  ${findWorkspaceMembersForArx}
 `;
 
-export const WorkspaceMemberProfileUnipileSyncEffect = () => {
+export const WorkspaceMemberUnipileSyncEffect = () => {
   const apolloCoreClient = useApolloCoreClient();
   const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
-  const setWorkspaceMemberProfileUnipileFields = useSetAtomState(
-    workspaceMemberProfileUnipileFieldsState,
+  const setWorkspaceMemberUnipileFields = useSetAtomState(
+    workspaceMemberUnipileFieldsState,
   );
   const setOrgChartLinkedinCandidateSource = useSetAtomState(
     orgChartLinkedinCandidateSourceState,
   );
   const workspaceMemberId = currentWorkspaceMember?.id;
 
-  // Workspace object records are on /graphql, not the default /metadata client
-  const { data, refetch } = useQuery(FIND_WORKSPACE_MEMBER_PROFILES_FOR_UNIPILE, {
+  const { data, refetch } = useQuery<WorkspaceMembersApolloData>(
+    FIND_WORKSPACE_MEMBERS_FOR_UNIPILE,
+    {
     client: apolloCoreClient,
-    variables: {
-      filter: workspaceMemberId
-        ? { workspaceMemberId: { eq: workspaceMemberId } }
-        : {},
-      limit: 1,
-    },
+    variables: workspaceMemberId
+      ? workspaceMemberFilterById(workspaceMemberId)
+      : { limit: 1 },
     skip: !workspaceMemberId,
     fetchPolicy: 'cache-and-network',
-  });
+    },
+  );
 
   useEffect(() => {
     const onAccountsRefreshed = () => {
@@ -63,31 +67,24 @@ export const WorkspaceMemberProfileUnipileSyncEffect = () => {
 
   useEffect(() => {
     if (!workspaceMemberId) {
-      setWorkspaceMemberProfileUnipileFields(null);
+      setWorkspaceMemberUnipileFields(null);
     }
-  }, [workspaceMemberId, setWorkspaceMemberProfileUnipileFields]);
+  }, [workspaceMemberId, setWorkspaceMemberUnipileFields]);
 
   useEffect(() => {
-    const node = data?.workspaceMemberProfiles?.edges?.[0]?.node;
-    if (!node) {
-      setWorkspaceMemberProfileUnipileFields(null);
-      return;
-    }
-    setWorkspaceMemberProfileUnipileFields({
-      phoneNumber: node.phoneNumber ?? null,
-      linkedinUrl: node.linkedinUrl ?? null,
-      whatsappUnipileAccountId: node.whatsappUnipileAccountId ?? null,
-      linkedinUnipileAccountId: node.linkedinUnipileAccountId ?? null,
-    });
-    const linkedinUnipileId = node.linkedinUnipileAccountId?.trim() ?? '';
-    console.log('Not setting org chart source to unipile')
+    const node = data?.workspaceMembers?.edges?.[0]?.node;
+    setWorkspaceMemberUnipileFields(
+      parseWorkspaceMemberUnipileFields(node ?? null),
+    );
+    const linkedinUnipileId = node?.linkedinUnipileAccountId?.trim() ?? '';
+    console.log('Not setting org chart source to unipile');
     // if (linkedinUnipileId !== '') {
     //   setOrgChartLinkedinCandidateSource('unipile');
     // }
   }, [
     data,
     setOrgChartLinkedinCandidateSource,
-    setWorkspaceMemberProfileUnipileFields,
+    setWorkspaceMemberUnipileFields,
   ]);
 
   return null;

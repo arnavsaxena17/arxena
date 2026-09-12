@@ -5,6 +5,12 @@ import {
   OUTREACH_DONT_RESPOND_SENTINEL,
 } from 'src/engine/core-modules/outreach-command/prompts/outreach-inbound-reply-next-step.prompt';
 import {
+  buildOutreachConnectionNotePrompt,
+  buildOutreachFirstMessagePrompt,
+  buildOutreachPostReplyFollowUpPrompt,
+  buildOutreachQualifyProspectPrompt,
+} from 'src/engine/core-modules/outreach-command/prompts/outreach-sender-agnostic.prompt';
+import {
   OUTREACH_ENRICH_CONTACT_SAMPLE_OUTPUT,
   OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT,
   OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
@@ -23,12 +29,14 @@ import {
   OUTREACH_WF_AI_EMAIL_OUTPUT,
   OUTREACH_WF_AI_EXTRACT_OUTPUT,
   OUTREACH_WF_AI_MESSAGE_OUTPUT,
+  OUTREACH_WF_AI_QUALIFY_OUTPUT,
   OUTREACH_WF_AI_REPLY_OUTPUT,
   OUTREACH_WF_FIELD,
   OUTREACH_WF_HARVEST_PROJECT_ID,
   OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID,
   OUTREACH_WF_MEMBER_STEP_ID,
   OUTREACH_WF_PROFILE_NO_COMPANY_STEP_ID,
+  OUTREACH_WF_PROFILE_STEP_ID,
   OUTREACH_WF_ERROR_HANDLING,
   type OutreachWfFindRecordFilter,
   gtmWfAiAgentStep,
@@ -127,6 +135,42 @@ const IDS = {
   reloadAfterInboundWait: '51a1000a-aaaa-4fcb-a7d8-17a7736ed045',
   stillWaitingFilter: '51a1000b-aaaa-4fcb-a7d8-17a7736ed045',
   stampFailedAfterWait: '51a1000c-aaaa-4fcb-a7d8-17a7736ed045',
+  stampFailedDontRespond: '51a10052-aaaa-4fcb-a7d8-17a7736ed045',
+  // Post-reply silence cadence (after our answer, they go quiet)
+  postReplyCalendar: '51a10030-aaaa-4fcb-a7d8-17a7736ed045',
+  draftPostReplyFu1: '51a10031-aaaa-4fcb-a7d8-17a7736ed045',
+  approvePostReplyFu1: '51a10032-aaaa-4fcb-a7d8-17a7736ed045',
+  routePostReplyFu1: '51a10033-aaaa-4fcb-a7d8-17a7736ed045',
+  postReplyFu1EmailBranch: '51a10034-aaaa-4fcb-a7d8-17a7736ed045',
+  postReplyFu1WhatsappBranch: '51a10035-aaaa-4fcb-a7d8-17a7736ed045',
+  postReplyFu1LinkedinBranch: '51a10036-aaaa-4fcb-a7d8-17a7736ed045',
+  postReplyFu1EmailGroup: '51a10037-aaaa-4fcb-a7d8-17a7736ed045',
+  postReplyFu1EmailFilter: '51a10038-aaaa-4fcb-a7d8-17a7736ed045',
+  postReplyFu1WhatsappGroup: '51a10039-aaaa-4fcb-a7d8-17a7736ed045',
+  postReplyFu1WhatsappFilter: '51a1003a-aaaa-4fcb-a7d8-17a7736ed045',
+  sendPostReplyFu1Email: '51a1003b-aaaa-4fcb-a7d8-17a7736ed045',
+  sendPostReplyFu1Whatsapp: '51a1003c-aaaa-4fcb-a7d8-17a7736ed045',
+  sendPostReplyFu1Linkedin: '51a1003d-aaaa-4fcb-a7d8-17a7736ed045',
+  waitPostReplyFu2: '51a1003e-aaaa-4fcb-a7d8-17a7736ed045',
+  reloadPostReplyFu2: '51a1003f-aaaa-4fcb-a7d8-17a7736ed045',
+  stillWaitingFu2Filter: '51a10040-aaaa-4fcb-a7d8-17a7736ed045',
+  postReplyCalendar2: '51a10041-aaaa-4fcb-a7d8-17a7736ed045',
+  draftPostReplyFu2: '51a10042-aaaa-4fcb-a7d8-17a7736ed045',
+  approvePostReplyFu2: '51a10043-aaaa-4fcb-a7d8-17a7736ed045',
+  routePostReplyFu2: '51a10044-aaaa-4fcb-a7d8-17a7736ed045',
+  postReplyFu2EmailBranch: '51a10045-aaaa-4fcb-a7d8-17a7736ed045',
+  postReplyFu2WhatsappBranch: '51a10046-aaaa-4fcb-a7d8-17a7736ed045',
+  postReplyFu2LinkedinBranch: '51a10047-aaaa-4fcb-a7d8-17a7736ed045',
+  postReplyFu2EmailGroup: '51a10048-aaaa-4fcb-a7d8-17a7736ed045',
+  postReplyFu2EmailFilter: '51a10049-aaaa-4fcb-a7d8-17a7736ed045',
+  postReplyFu2WhatsappGroup: '51a1004a-aaaa-4fcb-a7d8-17a7736ed045',
+  postReplyFu2WhatsappFilter: '51a1004b-aaaa-4fcb-a7d8-17a7736ed045',
+  sendPostReplyFu2Email: '51a1004c-aaaa-4fcb-a7d8-17a7736ed045',
+  sendPostReplyFu2Whatsapp: '51a1004d-aaaa-4fcb-a7d8-17a7736ed045',
+  sendPostReplyFu2Linkedin: '51a1004e-aaaa-4fcb-a7d8-17a7736ed045',
+  waitPostReplyPark: '51a1004f-aaaa-4fcb-a7d8-17a7736ed045',
+  reloadPostReplyPark: '51a10050-aaaa-4fcb-a7d8-17a7736ed045',
+  stillWaitingParkFilter: '51a10051-aaaa-4fcb-a7d8-17a7736ed045',
   hasMeetingTimeIf: '51a1000d-aaaa-4fcb-a7d8-17a7736ed045',
   skipDontRespondIf: '51a1000e-aaaa-4fcb-a7d8-17a7736ed045',
   hasProspectEmailIf: '51a1000f-aaaa-4fcb-a7d8-17a7736ed045',
@@ -166,7 +210,66 @@ const IDS = {
   stageBranchQueued: '60a10003-aaaa-4fcb-a7d8-17a7736ed045',
   stageGroupQueued: '60a10105-aaaa-4fcb-a7d8-17a7736ed045',
   stageFilterQueued: '60a10106-aaaa-4fcb-a7d8-17a7736ed045',
+  // QUEUED qualify + connection note
+  queuedFetchProfile: 'c7a1000b-aaaa-4fcb-a7d8-17a7736ed045',
+  qualifyDraft: 'c7a1000c-aaaa-4fcb-a7d8-17a7736ed045',
+  qualifyGoIf: 'c7a1000d-aaaa-4fcb-a7d8-17a7736ed045',
+  stampEnrich: 'c7a1000e-aaaa-4fcb-a7d8-17a7736ed045',
+  markSkippedQualify: 'c7a1000f-aaaa-4fcb-a7d8-17a7736ed045',
+  draftConnectNote: 'c7a10010-aaaa-4fcb-a7d8-17a7736ed045',
+  approveConnectNote: 'c7a10011-aaaa-4fcb-a7d8-17a7736ed045',
+  draftConnectNoteNoCompany: 'c7a10012-aaaa-4fcb-a7d8-17a7736ed045',
+  approveConnectNoteNoCompany: 'c7a10013-aaaa-4fcb-a7d8-17a7736ed045',
+  // CONNECTION_ACCEPTED calendar before opener
+  acceptCalendar: '51a1002a-aaaa-4fcb-a7d8-17a7736ed045',
+  // REPLIED sticky preferred channel + meeting stamp
+  stampPreferredChannelIf: '51a1002b-aaaa-4fcb-a7d8-17a7736ed045',
+  stampPreferredChannel: '51a1002c-aaaa-4fcb-a7d8-17a7736ed045',
+  stampProspectEmailIf: '51a1002e-aaaa-4fcb-a7d8-17a7736ed045',
+  stampProspectEmail: '51a1002f-aaaa-4fcb-a7d8-17a7736ed045',
+  stampMeetingBooked: '51a1002d-aaaa-4fcb-a7d8-17a7736ed045',
+  // MEETING_BOOKED Step 7
+  meetingBookedFind: 'c7a10020-aaaa-4fcb-a7d8-17a7736ed045',
+  reminderDelay: 'c7a10021-aaaa-4fcb-a7d8-17a7736ed045',
+  draftReminder: 'c7a10022-aaaa-4fcb-a7d8-17a7736ed045',
+  approveReminder: 'c7a10023-aaaa-4fcb-a7d8-17a7736ed045',
+  sendReminder: 'c7a10024-aaaa-4fcb-a7d8-17a7736ed045',
+  waitToMeeting: 'c7a10025-aaaa-4fcb-a7d8-17a7736ed045',
+  draftNoShow: 'c7a10026-aaaa-4fcb-a7d8-17a7736ed045',
+  approveNoShow: 'c7a10027-aaaa-4fcb-a7d8-17a7736ed045',
+  sendNoShow: 'c7a10028-aaaa-4fcb-a7d8-17a7736ed045',
+  waitNextDay: 'c7a10029-aaaa-4fcb-a7d8-17a7736ed045',
+  draftReschedule: 'c7a1002a-aaaa-4fcb-a7d8-17a7736ed045',
+  approveReschedule: 'c7a1002b-aaaa-4fcb-a7d8-17a7736ed045',
+  sendReschedule: 'c7a1002c-aaaa-4fcb-a7d8-17a7736ed045',
+  stampStalled: 'c7a1002d-aaaa-4fcb-a7d8-17a7736ed045',
+  stageBranchMeetingBooked: '60a10004-aaaa-4fcb-a7d8-17a7736ed045',
+  stageGroupMeetingBooked: '60a10107-aaaa-4fcb-a7d8-17a7736ed045',
+  stageFilterMeetingBooked: '60a10108-aaaa-4fcb-a7d8-17a7736ed045',
 };
+
+const senderJson = () =>
+  `{{${OUTREACH_WF_PROFILE_STEP_ID}.first.outreachSenderProfile}}`;
+const prospectEnrichment = (findId: string) =>
+  gtmWfFindField(findId, 'outreachProspectEnrichment');
+
+const qualifyEnrichmentJson = () =>
+  [
+    `{`,
+    `"go":"{{${IDS.qualifyDraft}.go}}",`,
+    `"score":"{{${IDS.qualifyDraft}.score}}",`,
+    `"segment":"{{${IDS.qualifyDraft}.segment}}",`,
+    `"reason":"{{${IDS.qualifyDraft}.reason}}",`,
+    `"first_name":"{{${IDS.qualifyDraft}.first_name}}",`,
+    `"honorific":"{{${IDS.qualifyDraft}.honorific}}",`,
+    `"company_short":"{{${IDS.qualifyDraft}.company_short}}",`,
+    `"industry_phrase":"{{${IDS.qualifyDraft}.industry_phrase}}",`,
+    `"hooks":"{{${IDS.qualifyDraft}.hooks}}",`,
+    `"likely_systems":"{{${IDS.qualifyDraft}.likely_systems}}",`,
+    `"matching_problem_statement":"{{${IDS.qualifyDraft}.matching_problem_statement}}",`,
+    `"referral_source":"{{${IDS.qualifyDraft}.referral_source}}"`,
+    `}`,
+  ].join('');
 
 const candidateFind = (id: string, name: string, nextStepIds: string[]) =>
   gtmWfFindRecordsStep({
@@ -227,26 +330,15 @@ const companySiblingFilters = (
 
 const linkedinDraftPrompt = (
   findId: string,
-  profileId: string,
   kind: 'opener' | 'fu1' | 'fu2' | 'fu3',
-) => {
-  const intro = {
-    opener:
-      'Draft a short first LinkedIn message after the connection was accepted.\nPrioritise rapport. Meeting is a light close, not a calendar dump.',
-    fu1: 'Draft LinkedIn follow-up 1 of 3. Escalate value, do not pressure.',
-    fu2: 'Draft LinkedIn follow-up 2 of 3. Escalate value, do not pressure.',
-    fu3: 'Draft LinkedIn follow-up 3 of 3. This is the breakup note if they are silent.',
-  }[kind];
-
-  return [
-    intro,
-    `Name: ${gtmWfFindField(findId, 'name')}`,
-    `Title: ${gtmWfFindField(findId, 'jobTitle')}`,
-    `About: {{${profileId}.about}}`,
-    `Skills: {{${profileId}.skills}}`,
-    'Return JSON only: { "message": "<body>" }',
-  ].join('\n');
-};
+) =>
+  buildOutreachFirstMessagePrompt({
+    senderJson: senderJson(),
+    prospectEnrichmentJson: prospectEnrichment(findId),
+    chatHistory: `{{${IDS.fetchMessages}.text}}`,
+    calendarSlots: `{{${IDS.acceptCalendar}.slots}}`,
+    kind,
+  });
 
 const followUpSteps = ({
   n,
@@ -282,11 +374,7 @@ const followUpSteps = ({
   gtmWfAiAgentStep({
     id: draftId,
     name: `Draft LinkedIn follow-up ${n}`,
-    prompt: linkedinDraftPrompt(
-      findId,
-      IDS.fetchProfile,
-      `fu${n}` as 'fu1' | 'fu2' | 'fu3',
-    ),
+    prompt: linkedinDraftPrompt(findId, `fu${n}` as 'fu1' | 'fu2' | 'fu3'),
     agentId: OUTREACH_WF_AGENT_LINKEDIN,
     outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
     nextStepIds: [approveId],
@@ -326,8 +414,8 @@ const followUpSteps = ({
     ? [
         gtmWfDelayStep({
           id: waitId,
-          name: `Wait before follow-up ${n + 1}`,
-          days: 3,
+          name: `Wait 7 days before follow-up ${n + 1}`,
+          days: 7,
           nextStepIds: [nextFindId],
         }),
       ]
@@ -362,12 +450,24 @@ const acceptedBranchSteps = () => [
       workspaceMemberId: gtmWfMemberId(),
     },
     sampleOutput: OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
+    nextStepIds: [IDS.acceptCalendar],
+  }),
+  gtmWfLogicFunctionStep({
+    id: IDS.acceptCalendar,
+    name: 'Get calendar availability (opener)',
+    logicFunctionId: '__LF_get-calendar-availability__',
+    logicFunctionInput: {
+      days: 5,
+      slotMinutes: 20,
+      workspaceMemberId: gtmWfMemberId(),
+    },
+    sampleOutput: OUTREACH_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
     nextStepIds: [IDS.draftFirst],
   }),
   gtmWfAiAgentStep({
     id: IDS.draftFirst,
     name: 'Draft first LinkedIn message',
-    prompt: linkedinDraftPrompt(IDS.acceptFind, IDS.fetchProfile, 'opener'),
+    prompt: linkedinDraftPrompt(IDS.acceptFind, 'opener'),
     agentId: OUTREACH_WF_AGENT_LINKEDIN,
     outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
     nextStepIds: [IDS.approveFirst],
@@ -393,8 +493,8 @@ const acceptedBranchSteps = () => [
   }),
   gtmWfDelayStep({
     id: IDS.waitFu1,
-    name: 'Wait 2–5 days before follow-up',
-    days: 3,
+    name: 'Wait 7 days before follow-up',
+    days: 7,
     nextStepIds: [IDS.reloadFu1],
   }),
   ...followUpSteps({
@@ -463,7 +563,7 @@ const repliedBranchSteps = () => [
     logicFunctionId: '__LF_get-calendar-availability__',
     logicFunctionInput: {
       days: 5,
-      slotMinutes: 30,
+      slotMinutes: 20,
       workspaceMemberId: gtmWfMemberId(),
     },
     sampleOutput: OUTREACH_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
@@ -491,6 +591,10 @@ const repliedBranchSteps = () => [
       transcript: `{{${IDS.findChats}.text}}`,
       slots: `{{${IDS.calendar}.slots}}`,
       lastInboundChannel: `{{${IDS.findChats}.first.channel}}`,
+      preferredChannel: gtmWfFindField(
+        IDS.repliedFind,
+        'outreachPreferredChannel',
+      ),
       acceptedSlotIndex: `{{${IDS.extractSignals}.acceptedSlotIndex}}`,
       requestedChannelSwitch: `{{${IDS.extractSignals}.requestedChannelSwitch}}`,
       prospectEmail: `{{${IDS.extractSignals}.prospectEmail}}`,
@@ -500,7 +604,50 @@ const repliedBranchSteps = () => [
       shouldNotRespond: `{{${IDS.extractSignals}.shouldNotRespond}}`,
     },
     sampleOutput: OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT,
-    nextStepIds: [IDS.draftReply],
+    // Stamp sticky channel / email in parallel with draft — join would be cascade-skipped.
+    nextStepIds: [
+      IDS.stampPreferredChannelIf,
+      IDS.stampProspectEmailIf,
+      IDS.draftReply,
+    ],
+  }),
+  gtmWfIfElseStep({
+    id: IDS.stampPreferredChannelIf,
+    name: 'Stamp preferred channel?',
+    stepOutputKey: `{{${IDS.validateSignals}.preferredChannelToStamp}}`,
+    value: '',
+    type: 'TEXT',
+    operand: 'IS_NOT_EMPTY',
+    ifNextStepIds: [IDS.stampPreferredChannel],
+    elseNextStepIds: [],
+  }),
+  gtmWfUpdateRecordStep({
+    id: IDS.stampPreferredChannel,
+    name: 'Stamp preferred channel',
+    objectRecordId: gtmWfFindId(IDS.repliedFind),
+    objectRecord: {
+      outreachPreferredChannel: `{{${IDS.validateSignals}.preferredChannelToStamp}}`,
+    },
+  }),
+  gtmWfIfElseStep({
+    id: IDS.stampProspectEmailIf,
+    name: 'Persist prospect email?',
+    stepOutputKey: `{{${IDS.validateSignals}.prospectEmail}}`,
+    value: '',
+    type: 'TEXT',
+    operand: 'IS_NOT_EMPTY',
+    ifNextStepIds: [IDS.stampProspectEmail],
+    elseNextStepIds: [],
+  }),
+  gtmWfUpdateRecordStep({
+    id: IDS.stampProspectEmail,
+    name: 'Persist prospect email',
+    objectRecordId: gtmWfFindId(IDS.repliedFind),
+    objectRecord: {
+      email: {
+        primaryEmail: `{{${IDS.validateSignals}.prospectEmail}}`,
+      },
+    },
   }),
   gtmWfAiAgentStep({
     id: IDS.draftReply,
@@ -519,6 +666,8 @@ const repliedBranchSteps = () => [
       referralName: `{{${IDS.validateSignals}.referralName}}`,
       prospectEmail: `{{${IDS.validateSignals}.prospectEmail}}`,
       shouldNotRespond: `{{${IDS.validateSignals}.shouldNotRespond}}`,
+      senderJson: senderJson(),
+      prospectEnrichmentJson: prospectEnrichment(IDS.repliedFind),
     }),
     agentId: OUTREACH_WF_AGENT_REPLY,
     outputSchema: OUTREACH_WF_AI_REPLY_OUTPUT,
@@ -553,7 +702,8 @@ const repliedBranchSteps = () => [
     value: OUTREACH_DONT_RESPOND_SENTINEL,
     type: 'TEXT',
     operand: 'CONTAINS',
-    ifNextStepIds: [IDS.stampWaiting],
+    // Opt-out: park immediately — do not enter post-reply follow-up cadence.
+    ifNextStepIds: [IDS.stampFailedDontRespond],
     elseNextStepIds: [IDS.routeReplyChannelIf],
   }),
   gtmWfMultiIfElseStep({
@@ -750,14 +900,14 @@ const repliedBranchSteps = () => [
     valid: true,
     settings: {
       input: {
-        title: 'Intro call',
+        title: `Walkthrough — ${gtmWfFindField(IDS.repliedFind, 'jobCompanyName')}`,
         endsAt: `{{${IDS.validateSignals}.endsAt}}`,
         location: '',
         startsAt: `{{${IDS.validateSignals}.startsAt}}`,
         timeZone: '',
         attendees: `${gtmWfFindField(IDS.repliedFind, 'email.primaryEmail')}, ${gtmWfProfileEmail()}`,
         isFullDay: false,
-        description: 'Outreach intro meeting',
+        description: `{{${OUTREACH_WF_PROFILE_STEP_ID}.first.outreachSenderProfile.meeting.agenda_template}}`,
         addConferencing: true,
         sendInvitations: true,
         connectedAccountId: '',
@@ -765,8 +915,14 @@ const repliedBranchSteps = () => [
       outputSchema: {},
       errorHandlingOptions: OUTREACH_WF_ERROR_HANDLING,
     },
-    nextStepIds: [IDS.stampWaiting],
+    nextStepIds: [IDS.stampMeetingBooked],
   },
+  gtmWfUpdateRecordStep({
+    id: IDS.stampMeetingBooked,
+    name: 'Mark MEETING_BOOKED',
+    objectRecordId: gtmWfFindId(IDS.repliedFind),
+    objectRecord: { outreachSequenceStage: 'MEETING_BOOKED' },
+  }),
   gtmWfUpdateRecordStep({
     id: IDS.stampWaiting,
     name: 'Mark WAITING_REPLY',
@@ -774,20 +930,267 @@ const repliedBranchSteps = () => [
     objectRecord: { outreachSequenceStage: 'WAITING_REPLY' },
     nextStepIds: [IDS.waitAfterInbound],
   }),
+  // Post-reply silence cadence: they replied once, we answered, then quiet.
+  // FU1 at +5d, FU2 at +7d more, then park. A new inbound restamps REPLIED and
+  // aborts these filters. Opt-out (#DONTRESPOND#) skips this path entirely.
   gtmWfDelayStep({
     id: IDS.waitAfterInbound,
-    name: 'Wait 3 days for inbound reply',
-    days: 3,
+    name: 'Wait 5 days after our reply',
+    days: 5,
     nextStepIds: [IDS.reloadAfterInboundWait],
   }),
-  candidateFind(IDS.reloadAfterInboundWait, 'Reload after inbound wait', [
+  candidateFind(IDS.reloadAfterInboundWait, 'Reload after post-reply wait', [
     IDS.stillWaitingFilter,
   ]),
   gtmWfFilterStep({
     id: IDS.stillWaitingFilter,
-    name: 'Still WAITING_REPLY',
+    name: 'Still WAITING_REPLY (before FU1)',
     stepOutputKey: gtmWfFindField(
       IDS.reloadAfterInboundWait,
+      'outreachSequenceStage',
+    ),
+    value: 'WAITING_REPLY',
+    nextStepIds: [IDS.postReplyCalendar],
+  }),
+  gtmWfLogicFunctionStep({
+    id: IDS.postReplyCalendar,
+    name: 'Get calendar for post-reply FU1',
+    logicFunctionId: '__LF_get-calendar-availability__',
+    logicFunctionInput: {
+      days: 5,
+      slotMinutes: 20,
+      workspaceMemberId: gtmWfMemberId(),
+    },
+    sampleOutput: OUTREACH_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
+    nextStepIds: [IDS.draftPostReplyFu1],
+  }),
+  gtmWfAiAgentStep({
+    id: IDS.draftPostReplyFu1,
+    name: 'Draft post-reply follow-up 1',
+    prompt: buildOutreachPostReplyFollowUpPrompt({
+      senderJson: senderJson(),
+      prospectEnrichmentJson: prospectEnrichment(IDS.reloadAfterInboundWait),
+      chatHistory: `{{${IDS.findChats}.text}}`,
+      calendarSlots: `{{${IDS.postReplyCalendar}.slots}}`,
+      kind: 'fu1',
+    }),
+    agentId: OUTREACH_WF_AGENT_LINKEDIN,
+    outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
+    nextStepIds: [IDS.approvePostReplyFu1],
+  }),
+  gtmWfFormStep({
+    id: IDS.approvePostReplyFu1,
+    name: 'Approve post-reply follow-up 1',
+    editedBodyValue: `{{${IDS.draftPostReplyFu1}.message}}`,
+    contextTemplate: 'Review post-reply follow-up 1',
+    detailsTemplate: gtmWfFormDetailsTemplate({
+      findId: IDS.reloadAfterInboundWait,
+      draftStepId: IDS.draftPostReplyFu1,
+    }),
+    nextStepIds: [IDS.routePostReplyFu1],
+  }),
+  gtmWfMultiIfElseStep({
+    id: IDS.routePostReplyFu1,
+    name: 'Send post-reply FU1 on preferred channel',
+    branches: [
+      {
+        id: IDS.postReplyFu1EmailBranch,
+        filterGroupId: IDS.postReplyFu1EmailGroup,
+        filterId: IDS.postReplyFu1EmailFilter,
+        stepOutputKey: gtmWfFindField(
+          IDS.reloadAfterInboundWait,
+          'outreachPreferredChannel',
+        ),
+        value: 'EMAIL',
+        type: 'TEXT',
+        operand: 'CONTAINS',
+        nextStepIds: [IDS.sendPostReplyFu1Email],
+      },
+      {
+        id: IDS.postReplyFu1WhatsappBranch,
+        filterGroupId: IDS.postReplyFu1WhatsappGroup,
+        filterId: IDS.postReplyFu1WhatsappFilter,
+        stepOutputKey: gtmWfFindField(
+          IDS.reloadAfterInboundWait,
+          'outreachPreferredChannel',
+        ),
+        value: 'WHATSAPP',
+        type: 'TEXT',
+        operand: 'CONTAINS',
+        nextStepIds: [IDS.sendPostReplyFu1Whatsapp],
+      },
+      {
+        id: IDS.postReplyFu1LinkedinBranch,
+        nextStepIds: [IDS.sendPostReplyFu1Linkedin],
+      },
+    ],
+  }),
+  gtmWfSendEmailStep({
+    id: IDS.sendPostReplyFu1Email,
+    name: 'Send post-reply FU1 by email',
+    to: gtmWfFindField(IDS.reloadAfterInboundWait, 'email.primaryEmail'),
+    subject: 'Quick follow-up',
+    body: `{{${IDS.approvePostReplyFu1}.editedBody}}`,
+    nextStepIds: [IDS.waitPostReplyFu2],
+  }),
+  gtmWfSendWhatsappMessageStep({
+    id: IDS.sendPostReplyFu1Whatsapp,
+    name: 'Send post-reply FU1 on WhatsApp',
+    phone: gtmWfFindField(
+      IDS.reloadAfterInboundWait,
+      'phoneNumber.primaryPhoneNumber',
+    ),
+    body: `{{${IDS.approvePostReplyFu1}.editedBody}}`,
+    candidateId: gtmWfFindId(IDS.reloadAfterInboundWait),
+    nextStepIds: [IDS.waitPostReplyFu2],
+  }),
+  gtmWfSendLinkedInMessageStep({
+    id: IDS.sendPostReplyFu1Linkedin,
+    name: 'Send post-reply FU1 on LinkedIn',
+    body: `{{${IDS.approvePostReplyFu1}.editedBody}}`,
+    candidateId: gtmWfFindId(IDS.reloadAfterInboundWait),
+    linkedinProfileId: gtmWfFindField(
+      IDS.reloadAfterInboundWait,
+      'linkedinProfileId',
+    ),
+    nextStepIds: [IDS.waitPostReplyFu2],
+  }),
+  gtmWfDelayStep({
+    id: IDS.waitPostReplyFu2,
+    name: 'Wait 7 days before post-reply FU2',
+    days: 7,
+    nextStepIds: [IDS.reloadPostReplyFu2],
+  }),
+  candidateFind(IDS.reloadPostReplyFu2, 'Reload before post-reply FU2', [
+    IDS.stillWaitingFu2Filter,
+  ]),
+  gtmWfFilterStep({
+    id: IDS.stillWaitingFu2Filter,
+    name: 'Still WAITING_REPLY (before FU2)',
+    stepOutputKey: gtmWfFindField(
+      IDS.reloadPostReplyFu2,
+      'outreachSequenceStage',
+    ),
+    value: 'WAITING_REPLY',
+    nextStepIds: [IDS.postReplyCalendar2],
+  }),
+  gtmWfLogicFunctionStep({
+    id: IDS.postReplyCalendar2,
+    name: 'Get calendar for post-reply FU2',
+    logicFunctionId: '__LF_get-calendar-availability__',
+    logicFunctionInput: {
+      days: 5,
+      slotMinutes: 20,
+      workspaceMemberId: gtmWfMemberId(),
+    },
+    sampleOutput: OUTREACH_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
+    nextStepIds: [IDS.draftPostReplyFu2],
+  }),
+  gtmWfAiAgentStep({
+    id: IDS.draftPostReplyFu2,
+    name: 'Draft post-reply follow-up 2',
+    prompt: buildOutreachPostReplyFollowUpPrompt({
+      senderJson: senderJson(),
+      prospectEnrichmentJson: prospectEnrichment(IDS.reloadPostReplyFu2),
+      chatHistory: `{{${IDS.findChats}.text}}`,
+      calendarSlots: `{{${IDS.postReplyCalendar2}.slots}}`,
+      kind: 'fu2',
+    }),
+    agentId: OUTREACH_WF_AGENT_LINKEDIN,
+    outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
+    nextStepIds: [IDS.approvePostReplyFu2],
+  }),
+  gtmWfFormStep({
+    id: IDS.approvePostReplyFu2,
+    name: 'Approve post-reply follow-up 2',
+    editedBodyValue: `{{${IDS.draftPostReplyFu2}.message}}`,
+    contextTemplate: 'Review post-reply follow-up 2 (last)',
+    detailsTemplate: gtmWfFormDetailsTemplate({
+      findId: IDS.reloadPostReplyFu2,
+      draftStepId: IDS.draftPostReplyFu2,
+    }),
+    nextStepIds: [IDS.routePostReplyFu2],
+  }),
+  gtmWfMultiIfElseStep({
+    id: IDS.routePostReplyFu2,
+    name: 'Send post-reply FU2 on preferred channel',
+    branches: [
+      {
+        id: IDS.postReplyFu2EmailBranch,
+        filterGroupId: IDS.postReplyFu2EmailGroup,
+        filterId: IDS.postReplyFu2EmailFilter,
+        stepOutputKey: gtmWfFindField(
+          IDS.reloadPostReplyFu2,
+          'outreachPreferredChannel',
+        ),
+        value: 'EMAIL',
+        type: 'TEXT',
+        operand: 'CONTAINS',
+        nextStepIds: [IDS.sendPostReplyFu2Email],
+      },
+      {
+        id: IDS.postReplyFu2WhatsappBranch,
+        filterGroupId: IDS.postReplyFu2WhatsappGroup,
+        filterId: IDS.postReplyFu2WhatsappFilter,
+        stepOutputKey: gtmWfFindField(
+          IDS.reloadPostReplyFu2,
+          'outreachPreferredChannel',
+        ),
+        value: 'WHATSAPP',
+        type: 'TEXT',
+        operand: 'CONTAINS',
+        nextStepIds: [IDS.sendPostReplyFu2Whatsapp],
+      },
+      {
+        id: IDS.postReplyFu2LinkedinBranch,
+        nextStepIds: [IDS.sendPostReplyFu2Linkedin],
+      },
+    ],
+  }),
+  gtmWfSendEmailStep({
+    id: IDS.sendPostReplyFu2Email,
+    name: 'Send post-reply FU2 by email',
+    to: gtmWfFindField(IDS.reloadPostReplyFu2, 'email.primaryEmail'),
+    subject: 'Quick follow-up',
+    body: `{{${IDS.approvePostReplyFu2}.editedBody}}`,
+    nextStepIds: [IDS.waitPostReplyPark],
+  }),
+  gtmWfSendWhatsappMessageStep({
+    id: IDS.sendPostReplyFu2Whatsapp,
+    name: 'Send post-reply FU2 on WhatsApp',
+    phone: gtmWfFindField(
+      IDS.reloadPostReplyFu2,
+      'phoneNumber.primaryPhoneNumber',
+    ),
+    body: `{{${IDS.approvePostReplyFu2}.editedBody}}`,
+    candidateId: gtmWfFindId(IDS.reloadPostReplyFu2),
+    nextStepIds: [IDS.waitPostReplyPark],
+  }),
+  gtmWfSendLinkedInMessageStep({
+    id: IDS.sendPostReplyFu2Linkedin,
+    name: 'Send post-reply FU2 on LinkedIn',
+    body: `{{${IDS.approvePostReplyFu2}.editedBody}}`,
+    candidateId: gtmWfFindId(IDS.reloadPostReplyFu2),
+    linkedinProfileId: gtmWfFindField(
+      IDS.reloadPostReplyFu2,
+      'linkedinProfileId',
+    ),
+    nextStepIds: [IDS.waitPostReplyPark],
+  }),
+  gtmWfDelayStep({
+    id: IDS.waitPostReplyPark,
+    name: 'Wait 7 days before parking post-reply',
+    days: 7,
+    nextStepIds: [IDS.reloadPostReplyPark],
+  }),
+  candidateFind(IDS.reloadPostReplyPark, 'Reload before park post-reply', [
+    IDS.stillWaitingParkFilter,
+  ]),
+  gtmWfFilterStep({
+    id: IDS.stillWaitingParkFilter,
+    name: 'Still WAITING_REPLY (park)',
+    stepOutputKey: gtmWfFindField(
+      IDS.reloadPostReplyPark,
       'outreachSequenceStage',
     ),
     value: 'WAITING_REPLY',
@@ -796,17 +1199,111 @@ const repliedBranchSteps = () => [
   gtmWfUpdateRecordStep({
     id: IDS.stampFailedAfterWait,
     name: 'Mark FAILED_NO_REPLY',
-    objectRecordId: gtmWfFindId(IDS.reloadAfterInboundWait),
+    objectRecordId: gtmWfFindId(IDS.reloadPostReplyPark),
+    objectRecord: { outreachSequenceStage: 'FAILED_NO_REPLY' },
+  }),
+  gtmWfUpdateRecordStep({
+    id: IDS.stampFailedDontRespond,
+    name: 'Mark FAILED_NO_REPLY (opt-out)',
+    objectRecordId: gtmWfFindId(IDS.repliedFind),
     objectRecord: { outreachSequenceStage: 'FAILED_NO_REPLY' },
   }),
 ];
 
-// QUEUED entry: company dedupe, LinkedIn connection, then email fallback.
+// QUEUED entry: qualify/enrich, company dedupe, connection note, LinkedIn
+// connection, then email fallback.
 // hoistedMember=true means member/profile are loaded once above the stage router,
 // so both send-connection variants read the shared load and the duplicate
 // "no company" member/profile pair disappears.
 const queuedBranchSteps = ({ hoistedMember }: { hoistedMember: boolean }) => [
-  candidateFind(IDS.queuedFind, 'Load Candidate', [IDS.hasCompanyIf]),
+  candidateFind(
+    IDS.queuedFind,
+    'Load Candidate',
+    hoistedMember ? [IDS.queuedFetchProfile] : [OUTREACH_WF_MEMBER_STEP_ID],
+  ),
+  ...(hoistedMember
+    ? []
+    : [
+        ...gtmWfMemberAndProfileSteps([IDS.queuedFetchProfile]),
+        ...gtmWfMemberAndProfileSteps([IDS.draftConnectNoteNoCompany], {
+          memberStepId: OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID,
+          profileStepId: OUTREACH_WF_PROFILE_NO_COMPANY_STEP_ID,
+          memberStepName: 'Load workspace member (no company)',
+          profileStepName: 'Load workspace member profile (no company)',
+        }),
+      ]),
+  gtmWfLogicFunctionStep({
+    id: IDS.queuedFetchProfile,
+    name: 'Fetch LinkedIn profile (qualify)',
+    logicFunctionId: '__LF_fetch-linkedin-profile__',
+    logicFunctionInput: {
+      candidateId: gtmWfFindId(IDS.queuedFind),
+      linkedinUrl: gtmWfFindField(IDS.queuedFind, 'linkedinUrl.primaryLinkUrl'),
+      linkedinProfileId: gtmWfFindField(IDS.queuedFind, 'linkedinProfileId'),
+      workspaceMemberId: gtmWfMemberId(),
+    },
+    sampleOutput: OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
+    nextStepIds: [IDS.qualifyDraft],
+  }),
+  gtmWfAiAgentStep({
+    id: IDS.qualifyDraft,
+    name: 'Qualify prospect',
+    prompt: buildOutreachQualifyProspectPrompt({
+      senderJson: senderJson(),
+      profile: [
+        `About: {{${IDS.queuedFetchProfile}.about}}`,
+        `Skills: {{${IDS.queuedFetchProfile}.skills}}`,
+      ].join('\n'),
+      posts: '',
+      crm: [
+        `Name: ${gtmWfFindField(IDS.queuedFind, 'name')}`,
+        `Title: ${gtmWfFindField(IDS.queuedFind, 'jobTitle')}`,
+      ].join('\n'),
+    }),
+    agentId: OUTREACH_WF_AGENT_EXTRACT,
+    outputSchema: OUTREACH_WF_AI_QUALIFY_OUTPUT,
+    nextStepIds: [IDS.qualifyGoIf],
+  }),
+  gtmWfIfElseStep({
+    id: IDS.qualifyGoIf,
+    name: 'Qualify go?',
+    stepOutputKey: `{{${IDS.qualifyDraft}.go}}`,
+    value: 'true',
+    type: 'TEXT',
+    operand: 'CONTAINS',
+    ifNextStepIds: [IDS.stampEnrich],
+    elseNextStepIds: [IDS.markSkippedQualify],
+  }),
+  gtmWfUpdateRecordStep({
+    id: IDS.stampEnrich,
+    name: 'Stamp prospect enrichment',
+    objectRecordId: gtmWfFindId(IDS.queuedFind),
+    objectRecord: {
+      outreachProspectEnrichment: {
+        go: `{{${IDS.qualifyDraft}.go}}`,
+        score: `{{${IDS.qualifyDraft}.score}}`,
+        segment: `{{${IDS.qualifyDraft}.segment}}`,
+        reason: `{{${IDS.qualifyDraft}.reason}}`,
+        first_name: `{{${IDS.qualifyDraft}.first_name}}`,
+        honorific: `{{${IDS.qualifyDraft}.honorific}}`,
+        company_short: `{{${IDS.qualifyDraft}.company_short}}`,
+        industry_phrase: `{{${IDS.qualifyDraft}.industry_phrase}}`,
+        hooks: `{{${IDS.qualifyDraft}.hooks}}`,
+        likely_systems: `{{${IDS.qualifyDraft}.likely_systems}}`,
+        matching_problem_statement: `{{${IDS.qualifyDraft}.matching_problem_statement}}`,
+        referral_source: `{{${IDS.qualifyDraft}.referral_source}}`,
+      },
+    },
+    nextStepIds: [IDS.hasCompanyIf],
+  }),
+  gtmWfUpdateRecordStep({
+    id: IDS.markSkippedQualify,
+    name: 'Mark DEFERRED — skipped qualify',
+    objectRecordId: gtmWfFindId(IDS.queuedFind),
+    objectRecord: {
+      outreachSequenceStage: 'DEFERRED',
+    },
+  }),
   gtmWfIfElseStep({
     id: IDS.hasCompanyIf,
     name: 'Has company name?',
@@ -815,10 +1312,10 @@ const queuedBranchSteps = ({ hoistedMember }: { hoistedMember: boolean }) => [
     type: 'TEXT',
     operand: 'IS_NOT_EMPTY',
     ifNextStepIds: [IDS.findContacted],
-    // Own member path — must not share OUTREACH_WF_MEMBER_STEP_ID with
-    // "Earlier QUEUED sibling?" else, or IF_ELSE skip kills outreach.
+    // Own draft path — must not share draftConnectNote with company path, or
+    // IF_ELSE skip kills the later join from earlierQueuedIf.
     elseNextStepIds: hoistedMember
-      ? [IDS.sendConnectNoCompany]
+      ? [IDS.draftConnectNoteNoCompany]
       : [OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID],
   }),
   gtmWfFindRecordsStep({
@@ -876,9 +1373,7 @@ const queuedBranchSteps = ({ hoistedMember }: { hoistedMember: boolean }) => [
     type: 'TEXT',
     operand: 'IS_NOT_EMPTY',
     ifNextStepIds: [IDS.markDeferredEarlierQueued],
-    elseNextStepIds: hoistedMember
-      ? [IDS.sendConnect]
-      : [OUTREACH_WF_MEMBER_STEP_ID],
+    elseNextStepIds: [IDS.draftConnectNote],
   }),
   // Unique DEFERRED terminals — shared id would be cascade-skipped when the
   // other IF_ELSE's unused branch is pruned.
@@ -898,17 +1393,50 @@ const queuedBranchSteps = ({ hoistedMember }: { hoistedMember: boolean }) => [
       outreachSequenceStage: 'DEFERRED',
     },
   }),
-  ...(hoistedMember
-    ? []
-    : [
-        ...gtmWfMemberAndProfileSteps([IDS.sendConnect]),
-        ...gtmWfMemberAndProfileSteps([IDS.sendConnectNoCompany], {
-          memberStepId: OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID,
-          profileStepId: OUTREACH_WF_PROFILE_NO_COMPANY_STEP_ID,
-          memberStepName: 'Load workspace member (no company)',
-          profileStepName: 'Load workspace member profile (no company)',
-        }),
-      ]),
+  gtmWfAiAgentStep({
+    id: IDS.draftConnectNote,
+    name: 'Draft connection note',
+    prompt: buildOutreachConnectionNotePrompt({
+      senderJson: senderJson(),
+      prospectEnrichmentJson: qualifyEnrichmentJson(),
+    }),
+    agentId: OUTREACH_WF_AGENT_LINKEDIN,
+    outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
+    nextStepIds: [IDS.approveConnectNote],
+  }),
+  gtmWfFormStep({
+    id: IDS.approveConnectNote,
+    name: 'Approve connection note',
+    editedBodyValue: `{{${IDS.draftConnectNote}.message}}`,
+    contextTemplate: 'Review LinkedIn connection note',
+    detailsTemplate: gtmWfFormDetailsTemplate({
+      findId: IDS.queuedFind,
+      draftStepId: IDS.draftConnectNote,
+    }),
+    nextStepIds: [IDS.sendConnect],
+  }),
+  gtmWfAiAgentStep({
+    id: IDS.draftConnectNoteNoCompany,
+    name: 'Draft connection note (no company)',
+    prompt: buildOutreachConnectionNotePrompt({
+      senderJson: senderJson(),
+      prospectEnrichmentJson: qualifyEnrichmentJson(),
+    }),
+    agentId: OUTREACH_WF_AGENT_LINKEDIN,
+    outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
+    nextStepIds: [IDS.approveConnectNoteNoCompany],
+  }),
+  gtmWfFormStep({
+    id: IDS.approveConnectNoteNoCompany,
+    name: 'Approve connection note (no company)',
+    editedBodyValue: `{{${IDS.draftConnectNoteNoCompany}.message}}`,
+    contextTemplate: 'Review LinkedIn connection note',
+    detailsTemplate: gtmWfFormDetailsTemplate({
+      findId: IDS.queuedFind,
+      draftStepId: IDS.draftConnectNoteNoCompany,
+    }),
+    nextStepIds: [IDS.sendConnectNoCompany],
+  }),
   {
     id: IDS.sendConnect,
     name: 'Send LinkedIn connection',
@@ -916,7 +1444,7 @@ const queuedBranchSteps = ({ hoistedMember }: { hoistedMember: boolean }) => [
     valid: true,
     settings: {
       input: {
-        message: '',
+        message: `{{${IDS.approveConnectNote}.editedBody}}`,
         linkedinUrl: gtmWfFindField(
           IDS.queuedFind,
           'linkedinUrl.primaryLinkUrl',
@@ -937,7 +1465,7 @@ const queuedBranchSteps = ({ hoistedMember }: { hoistedMember: boolean }) => [
     valid: true,
     settings: {
       input: {
-        message: '',
+        message: `{{${IDS.approveConnectNoteNoCompany}.editedBody}}`,
         linkedinUrl: gtmWfFindField(
           IDS.queuedFind,
           'linkedinUrl.primaryLinkUrl',
@@ -1079,6 +1607,145 @@ const queuedBranchSteps = ({ hoistedMember }: { hoistedMember: boolean }) => [
     name: 'Mark FAILED_ENRICH',
     objectRecordId: gtmWfFindId(IDS.reloadAfterWait),
     objectRecord: { outreachSequenceStage: 'FAILED_ENRICH' },
+  }),
+];
+
+// MEETING_BOOKED entry: day-before reminder, no-show ping, reschedule, then stall.
+const meetingBookedBranchSteps = () => [
+  candidateFind(IDS.meetingBookedFind, 'Load Candidate (meeting booked)', [
+    IDS.reminderDelay,
+  ]),
+  gtmWfDelayStep({
+    id: IDS.reminderDelay,
+    name: 'Wait 1 day before reminder',
+    days: 1,
+    nextStepIds: [IDS.draftReminder],
+  }),
+  gtmWfAiAgentStep({
+    id: IDS.draftReminder,
+    name: 'Draft meeting reminder',
+    prompt: [
+      `SENDER_JSON: ${senderJson()}`,
+      'Write a short LinkedIn meeting reminder (≤30 words).',
+      `Name: ${gtmWfFindField(IDS.meetingBookedFind, 'name')}`,
+      `Product: {{${OUTREACH_WF_PROFILE_STEP_ID}.first.outreachSenderProfile.offer.product_name}}`,
+      'Remind them of the walkthrough. One ask only. Return JSON: { "message": "<body>" }',
+    ].join('\n'),
+    agentId: OUTREACH_WF_AGENT_LINKEDIN,
+    outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
+    nextStepIds: [IDS.approveReminder],
+  }),
+  gtmWfFormStep({
+    id: IDS.approveReminder,
+    name: 'Approve meeting reminder',
+    editedBodyValue: `{{${IDS.draftReminder}.message}}`,
+    contextTemplate: 'Review meeting reminder',
+    detailsTemplate: gtmWfFormDetailsTemplate({
+      findId: IDS.meetingBookedFind,
+      draftStepId: IDS.draftReminder,
+    }),
+    nextStepIds: [IDS.sendReminder],
+  }),
+  gtmWfSendLinkedInMessageStep({
+    id: IDS.sendReminder,
+    name: 'Send meeting reminder',
+    body: `{{${IDS.approveReminder}.editedBody}}`,
+    candidateId: gtmWfFindId(IDS.meetingBookedFind),
+    linkedinProfileId: gtmWfFindField(
+      IDS.meetingBookedFind,
+      'linkedinProfileId',
+    ),
+    nextStepIds: [IDS.waitToMeeting],
+  }),
+  gtmWfDelayStep({
+    id: IDS.waitToMeeting,
+    name: 'Wait 1 day after meeting',
+    days: 1,
+    nextStepIds: [IDS.draftNoShow],
+  }),
+  gtmWfAiAgentStep({
+    id: IDS.draftNoShow,
+    name: 'Draft no-show ping',
+    prompt: [
+      `SENDER_JSON: ${senderJson()}`,
+      'Write a short LinkedIn no-show ping (≤40 words). Polite, one ask to reschedule.',
+      `Name: ${gtmWfFindField(IDS.meetingBookedFind, 'name')}`,
+      `Product: {{${OUTREACH_WF_PROFILE_STEP_ID}.first.outreachSenderProfile.offer.product_name}}`,
+      'Return JSON: { "message": "<body>" }',
+    ].join('\n'),
+    agentId: OUTREACH_WF_AGENT_LINKEDIN,
+    outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
+    nextStepIds: [IDS.approveNoShow],
+  }),
+  gtmWfFormStep({
+    id: IDS.approveNoShow,
+    name: 'Approve no-show ping',
+    editedBodyValue: `{{${IDS.draftNoShow}.message}}`,
+    contextTemplate: 'Review no-show ping',
+    detailsTemplate: gtmWfFormDetailsTemplate({
+      findId: IDS.meetingBookedFind,
+      draftStepId: IDS.draftNoShow,
+    }),
+    nextStepIds: [IDS.sendNoShow],
+  }),
+  gtmWfSendLinkedInMessageStep({
+    id: IDS.sendNoShow,
+    name: 'Send no-show ping',
+    body: `{{${IDS.approveNoShow}.editedBody}}`,
+    candidateId: gtmWfFindId(IDS.meetingBookedFind),
+    linkedinProfileId: gtmWfFindField(
+      IDS.meetingBookedFind,
+      'linkedinProfileId',
+    ),
+    nextStepIds: [IDS.waitNextDay],
+  }),
+  gtmWfDelayStep({
+    id: IDS.waitNextDay,
+    name: 'Wait 1 day before reschedule',
+    days: 1,
+    nextStepIds: [IDS.draftReschedule],
+  }),
+  gtmWfAiAgentStep({
+    id: IDS.draftReschedule,
+    name: 'Draft reschedule offer',
+    prompt: [
+      `SENDER_JSON: ${senderJson()}`,
+      'Write a short LinkedIn reschedule offer (≤40 words). Offer to pick a new time.',
+      `Name: ${gtmWfFindField(IDS.meetingBookedFind, 'name')}`,
+      `Product: {{${OUTREACH_WF_PROFILE_STEP_ID}.first.outreachSenderProfile.offer.product_name}}`,
+      'Return JSON: { "message": "<body>" }',
+    ].join('\n'),
+    agentId: OUTREACH_WF_AGENT_LINKEDIN,
+    outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
+    nextStepIds: [IDS.approveReschedule],
+  }),
+  gtmWfFormStep({
+    id: IDS.approveReschedule,
+    name: 'Approve reschedule offer',
+    editedBodyValue: `{{${IDS.draftReschedule}.message}}`,
+    contextTemplate: 'Review reschedule offer',
+    detailsTemplate: gtmWfFormDetailsTemplate({
+      findId: IDS.meetingBookedFind,
+      draftStepId: IDS.draftReschedule,
+    }),
+    nextStepIds: [IDS.sendReschedule],
+  }),
+  gtmWfSendLinkedInMessageStep({
+    id: IDS.sendReschedule,
+    name: 'Send reschedule offer',
+    body: `{{${IDS.approveReschedule}.editedBody}}`,
+    candidateId: gtmWfFindId(IDS.meetingBookedFind),
+    linkedinProfileId: gtmWfFindField(
+      IDS.meetingBookedFind,
+      'linkedinProfileId',
+    ),
+    nextStepIds: [IDS.stampStalled],
+  }),
+  gtmWfUpdateRecordStep({
+    id: IDS.stampStalled,
+    name: 'Mark FAILED_NO_REPLY after booking',
+    objectRecordId: gtmWfFindId(IDS.meetingBookedFind),
+    objectRecord: { outreachSequenceStage: 'FAILED_NO_REPLY' },
   }),
 ];
 
@@ -1224,6 +1891,14 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
             nextStepIds: [IDS.repliedFind],
           },
           {
+            id: IDS.stageBranchMeetingBooked,
+            filterGroupId: IDS.stageGroupMeetingBooked,
+            filterId: IDS.stageFilterMeetingBooked,
+            stepOutputKey: gtmWfTriggerAfter('outreachSequenceStage'),
+            value: 'MEETING_BOOKED',
+            nextStepIds: [IDS.meetingBookedFind],
+          },
+          {
             id: IDS.stageBranchElse,
             nextStepIds: [],
           },
@@ -1231,6 +1906,7 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
       }),
       ...acceptedBranchSteps(),
       ...repliedBranchSteps(),
+      ...meetingBookedBranchSteps(),
     ],
   },
   {
@@ -1257,12 +1933,12 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
   // experiments or Project.outreachWorkflowId yet.
   //
   // Safe because:
-  // - The trigger allowlists the three entry stages before a run is created, so the
+  // - The trigger allowlists the entry stages before a run is created, so the
   //   graph never wakes on its own CONNECTION_SENT / DEFERRED / EMAIL_SENT /
   //   FAILED_ENRICH / WAITING_REPLY / FAILED_NO_REPLY stamps.
   // - The router is IF_ELSE, not FILTER. A FILTER first would skip-cascade the whole
   //   run and kill the accepted / replied branches.
-  // - Member + profile load once above the router, so the three branches share no
+  // - Member + profile load once above the router, so the branches share no
   //   downstream step ids and no IF_ELSE join can be cascade-skipped.
   //
   // TODO: before publishing, add a QUEUED re-entry guard. Under candidate.upserted a
@@ -1310,6 +1986,14 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
             nextStepIds: [IDS.repliedFind],
           },
           {
+            id: IDS.stageBranchMeetingBooked,
+            filterGroupId: IDS.stageGroupMeetingBooked,
+            filterId: IDS.stageFilterMeetingBooked,
+            stepOutputKey: gtmWfTriggerAfter('outreachSequenceStage'),
+            value: 'MEETING_BOOKED',
+            nextStepIds: [IDS.meetingBookedFind],
+          },
+          {
             id: IDS.stageBranchElse,
             nextStepIds: [],
           },
@@ -1318,6 +2002,7 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
       ...queuedBranchSteps({ hoistedMember: true }),
       ...acceptedBranchSteps(),
       ...repliedBranchSteps(),
+      ...meetingBookedBranchSteps(),
     ],
   },
 ];

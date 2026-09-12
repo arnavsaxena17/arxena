@@ -1,10 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
+import { isNonEmptyString } from '@sniptt/guards';
 import { assertIsDefinedOrThrow } from 'twenty-shared/utils';
 import { DataSource, IsNull, type Repository } from 'typeorm';
 
-import { AdminPanelWorkspaceMemberRecruiterProfile } from 'src/engine/core-modules/admin-panel/dtos/admin-panel-workspace-member-recruiter-profile.output';
+import { AdminPanelWorkspaceMemberArx } from 'src/engine/core-modules/admin-panel/dtos/admin-panel-workspace-member-arx.output';
 import { AdminPanelWorkspaceMemberRow } from 'src/engine/core-modules/admin-panel/dtos/admin-panel-workspace-member-row.output';
 import { AdminConnectMemberLinkedinUnipileOutput } from 'src/engine/core-modules/admin-panel/dtos/admin-connect-member-linkedin-unipile.output';
 import { AdminValidateMemberLinkedinStoredCookiesOutput } from 'src/engine/core-modules/admin-panel/dtos/admin-validate-member-linkedin-stored-cookies.output';
@@ -61,11 +62,10 @@ const hasNonEmptyStringRowValue = (
   return Boolean(value?.trim());
 };
 
-const emptyRecruiterProfile = (
+const emptyWorkspaceMemberArx = (
   workspaceMemberId: string,
-): AdminPanelWorkspaceMemberRecruiterProfile => ({
+): AdminPanelWorkspaceMemberArx => ({
   workspaceMemberId,
-  profileId: null,
   phoneNumber: null,
   linkedinUrl: null,
   linkedinUnipileAccountId: null,
@@ -76,8 +76,6 @@ const emptyRecruiterProfile = (
   lastName: null,
   name: null,
   jobTitle: null,
-  companyName: null,
-  companyDescription: null,
   typeWorkspaceMember: null,
   chromeExtensionId: null,
   extensionInstalled: false,
@@ -124,8 +122,8 @@ export class AdminPanelArxService {
         ) ?? [];
 
       for (const userWorkspace of members) {
-        const recruiterProfile =
-          await this.getRecruiterProfileSnapshotForUserInWorkspace(
+        const workspaceMemberArx =
+          await this.getWorkspaceMemberArxSnapshotForUserInWorkspace(
             workspace.id,
             userWorkspace.userId,
             workspace.databaseSchema,
@@ -134,6 +132,7 @@ export class AdminPanelArxService {
         rows.push({
           workspaceId: workspace.id,
           workspaceName: workspace.displayName ?? '',
+          workspaceCompanyName: workspace.companyName ?? null,
           workspaceSubdomain: workspace.subdomain,
           workspaceCreatedAt: workspace.createdAt,
           userId: userWorkspace.user.id,
@@ -142,7 +141,7 @@ export class AdminPanelArxService {
           userLastName: userWorkspace.user.lastName,
           userCreatedAt: userWorkspace.user.createdAt,
           membershipCreatedAt: userWorkspace.createdAt,
-          recruiterProfile,
+          workspaceMemberArx,
         });
       }
     }
@@ -173,26 +172,18 @@ export class AdminPanelArxService {
     }
   }
 
-  private async resolveWorkspaceMemberProfileTableName(
-    schema: string,
-  ): Promise<'_workspaceMemberProfile' | 'workspaceMemberProfile' | null> {
-    if (await this.checkIfTableExists(schema, '_workspaceMemberProfile')) {
-      return '_workspaceMemberProfile';
-    }
-    if (await this.checkIfTableExists(schema, 'workspaceMemberProfile')) {
-      return 'workspaceMemberProfile';
-    }
-
-    return null;
-  }
-
-  private mapProfileRowToOutput(
+  private mapWorkspaceMemberRowToArxOutput(
     workspaceMemberId: string,
     row: Record<string, unknown>,
-  ): AdminPanelWorkspaceMemberRecruiterProfile {
+  ): AdminPanelWorkspaceMemberArx {
+    const firstName = pickStringFromRow(row, 'nameFirstName');
+    const lastName = pickStringFromRow(row, 'nameLastName');
+    const composedName = [firstName, lastName]
+      .filter((part) => isNonEmptyString(part))
+      .join(' ');
+
     return {
       workspaceMemberId,
-      profileId: pickStringFromRow(row, 'id'),
       phoneNumber: pickStringFromRow(row, 'phoneNumber'),
       linkedinUrl: pickStringFromRow(row, 'linkedinUrl'),
       linkedinUnipileAccountId: pickStringFromRow(
@@ -204,17 +195,18 @@ export class AdminPanelArxService {
         'whatsappUnipileAccountId',
       ),
       keepLinkedinConnected: pickBooleanFromRow(row, 'keepLinkedinConnected'),
-      email: pickStringFromRow(row, 'email'),
-      firstName: pickStringFromRow(row, 'firstName'),
-      lastName: pickStringFromRow(row, 'lastName'),
-      name: pickStringFromRow(row, 'name'),
+      email: pickStringFromRow(row, 'userEmail'),
+      firstName,
+      lastName,
+      name: composedName || null,
       jobTitle: pickStringFromRow(row, 'jobTitle'),
-      companyName: pickStringFromRow(row, 'companyName'),
-      companyDescription: pickStringFromRow(row, 'companyDescription'),
       typeWorkspaceMember: pickStringFromRow(row, 'typeWorkspaceMember'),
       chromeExtensionId: pickStringFromRow(row, 'chromeExtensionId'),
       extensionInstalled: hasNonEmptyStringRowValue(row, 'chromeExtensionId'),
-      linkedinCookiesStored: hasNonEmptyStringRowValue(row, 'linkedinLiAtToken'),
+      linkedinCookiesStored: hasNonEmptyStringRowValue(
+        row,
+        'linkedinLiAtToken',
+      ),
       linkedinLiAStored: hasNonEmptyStringRowValue(row, 'linkedinLiAToken'),
       linkedinCookiesLastSyncedAt: pickStringFromRow(
         row,
@@ -244,11 +236,11 @@ export class AdminPanelArxService {
     return getWorkspaceSchemaName(workspaceId);
   }
 
-  private async getRecruiterProfileSnapshotForUserInWorkspace(
+  private async getWorkspaceMemberArxSnapshotForUserInWorkspace(
     workspaceId: string,
     userId: string,
     databaseSchema?: string | null,
-  ): Promise<AdminPanelWorkspaceMemberRecruiterProfile | null> {
+  ): Promise<AdminPanelWorkspaceMemberArx | null> {
     const schema = this.resolveSchemaName(workspaceId, databaseSchema);
 
     try {
@@ -261,32 +253,25 @@ export class AdminPanelArxService {
         return null;
       }
 
-      const workspaceMemberId = String(
-        (workspaceMemberRows[0] as { id: string }).id,
-      );
-      const profileTable =
-        await this.resolveWorkspaceMemberProfileTableName(schema);
+      const memberRow = workspaceMemberRows[0] as { id: string };
+      const workspaceMemberId = String(memberRow.id);
 
-      if (!profileTable) {
-        return emptyRecruiterProfile(workspaceMemberId);
-      }
-
-      const profileRows = await this.coreDataSource.query(
-        `SELECT * FROM ${schema}."${profileTable}" WHERE "workspaceMemberId" = $1 LIMIT 1`,
+      const memberRows = await this.coreDataSource.query(
+        `SELECT * FROM ${schema}."workspaceMember" WHERE id = $1 LIMIT 1`,
         [workspaceMemberId],
       );
 
-      if (!profileRows?.length) {
-        return emptyRecruiterProfile(workspaceMemberId);
+      if (!memberRows?.length) {
+        return emptyWorkspaceMemberArx(workspaceMemberId);
       }
 
-      return this.mapProfileRowToOutput(
+      return this.mapWorkspaceMemberRowToArxOutput(
         workspaceMemberId,
-        profileRows[0] as Record<string, unknown>,
+        memberRows[0] as Record<string, unknown>,
       );
     } catch (error) {
       this.logger.error(
-        'getRecruiterProfileSnapshotForUserInWorkspace failed',
+        'getWorkspaceMemberArxSnapshotForUserInWorkspace failed',
         { workspaceId, userId, error },
       );
 

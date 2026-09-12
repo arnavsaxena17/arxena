@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Req, Sse } from '@nestjs/common';
 import { Observable } from 'rxjs';
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { UploadProgressPubSubService } from '../services/upload-progress-pubsub.service';
 
@@ -50,7 +50,7 @@ export class UploadProgressController {
       console.log('🔗 [UploadProgressController] Calling getCurrentUser with origin:', origin);
       
       // Get current user to get recruiter ID
-      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+      const currentUser = await new WorkspaceMemberArxService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
 
       console.log('🔗 [UploadProgressController] Recruiter ID for SSE:', recruiterId);
@@ -122,7 +122,7 @@ export class UploadProgressController {
 
     try {
       // Get current user to get recruiter ID
-      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+      const currentUser = await new WorkspaceMemberArxService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
 
       if (!recruiterId) {
@@ -165,7 +165,7 @@ export class UploadProgressController {
       }
 
       // Get current user to get recruiter ID
-      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+      const currentUser = await new WorkspaceMemberArxService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
 
       if (!recruiterId) {
@@ -206,7 +206,7 @@ export class UploadProgressController {
       console.log('🔍 [DebugToken] Origin:', origin);
 
       // Get current user to get recruiter ID
-      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+      const currentUser = await new WorkspaceMemberArxService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       const recruiterId = currentUser?.workspaceMember?.id;
 
       console.log('🔍 [DebugToken] Current user:', currentUser);

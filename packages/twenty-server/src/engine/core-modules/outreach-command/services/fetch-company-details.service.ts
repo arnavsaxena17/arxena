@@ -15,7 +15,7 @@ import {
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
-type WorkspaceMemberProfileRecord = ObjectLiteral & {
+type WorkspaceMemberArxRecord = ObjectLiteral & {
   id: string;
   workspaceMemberId: string;
   linkedinUnipileAccountId: string | null;
@@ -248,9 +248,9 @@ export class FetchCompanyDetailsService {
     return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
       async () => {
         const profileRepository =
-          await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberProfileRecord>(
+          await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberArxRecord>(
             workspaceId,
-            'workspaceMemberProfile',
+            'workspaceMember',
             { shouldBypassPermissionChecks: true },
           );
 
@@ -258,7 +258,7 @@ export class FetchCompanyDetailsService {
 
         if (isNonEmptyString(workspaceMemberId)) {
           const profile = await profileRepository.findOne({
-            where: { workspaceMemberId },
+            where: { id: workspaceMemberId },
           });
           const fromMember = profile?.linkedinUnipileAccountId?.trim() ?? '';
 

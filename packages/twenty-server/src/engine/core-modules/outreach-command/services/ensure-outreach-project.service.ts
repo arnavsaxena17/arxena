@@ -20,7 +20,6 @@ type ProjectRecord = ObjectLiteral & {
   id: string;
   name?: string | null;
   icpSpec?: string | null;
-  peopleSearchBlurb?: string | null;
   maxPersonasPerCompany?: number | null;
 };
 

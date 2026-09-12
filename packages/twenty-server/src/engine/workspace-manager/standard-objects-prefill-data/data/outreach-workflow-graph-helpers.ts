@@ -25,7 +25,7 @@ export const OUTREACH_WF_HARVEST_PROJECT_ID = '__PROJECT_OUTREACH_HARVEST__';
 export const OUTREACH_WF_FIELD = {
   candidateId: '__FIELD_candidate.id__',
   memberId: '__FIELD_workspaceMember.id__',
-  profileMemberId: '__FIELD_workspaceMemberProfile.workspaceMemberId__',
+  profileMemberId: '__FIELD_workspaceMember.id__',
   chatCandidateId: '__FIELD_chatMessage.candidateId__',
   chatCreatedAt: '__FIELD_chatMessage.createdAt__',
   outreachSequenceStage: '__FIELD_candidate.outreachSequenceStage__',
@@ -141,6 +141,81 @@ export const OUTREACH_WF_AI_EXTRACT_OUTPUT = {
   },
 };
 
+export const OUTREACH_WF_AI_QUALIFY_OUTPUT = {
+  go: {
+    isLeaf: true,
+    type: 'boolean',
+    label: 'go',
+    value: false,
+  },
+  score: {
+    isLeaf: true,
+    type: 'number',
+    label: 'score',
+    value: 0,
+  },
+  segment: {
+    isLeaf: true,
+    type: 'string',
+    label: 'segment',
+    value: '',
+  },
+  reason: {
+    isLeaf: true,
+    type: 'string',
+    label: 'reason',
+    value: '',
+  },
+  first_name: {
+    isLeaf: true,
+    type: 'string',
+    label: 'first_name',
+    value: '',
+  },
+  honorific: {
+    isLeaf: true,
+    type: 'string',
+    label: 'honorific',
+    value: '',
+  },
+  company_short: {
+    isLeaf: true,
+    type: 'string',
+    label: 'company_short',
+    value: '',
+  },
+  industry_phrase: {
+    isLeaf: true,
+    type: 'string',
+    label: 'industry_phrase',
+    value: '',
+  },
+  hooks: {
+    isLeaf: true,
+    type: 'string',
+    label: 'hooks',
+    value: '',
+  },
+  likely_systems: {
+    isLeaf: true,
+    type: 'string',
+    label: 'likely_systems',
+    value: '',
+  },
+  matching_problem_statement: {
+    isLeaf: true,
+    type: 'string',
+    label: 'matching_problem_statement',
+    value: '',
+  },
+  referral_source: {
+    isLeaf: true,
+    type: 'string',
+    label: 'referral_source',
+    value: '',
+  },
+};
+
 const v = (stepId: string, path: string) => `{{${stepId}.${path}}}`;
 
 export const gtmWfTriggerAfter = (field: string) =>
@@ -154,7 +229,7 @@ export const gtmWfProfilePhone = () =>
   v(OUTREACH_WF_PROFILE_STEP_ID, 'first.phoneNumber');
 
 export const gtmWfProfileEmail = () =>
-  v(OUTREACH_WF_PROFILE_STEP_ID, 'first.email');
+  v(OUTREACH_WF_PROFILE_STEP_ID, 'first.userEmail');
 
 export const gtmWfFindId = (findStepId: string) => v(findStepId, 'first.id');
 
@@ -794,7 +869,7 @@ export const gtmWfMemberAndProfileSteps = (
   gtmWfFindRecordsStep({
     id: profileStepId,
     name: profileStepName,
-    objectName: 'workspaceMemberProfile',
+    objectName: 'workspaceMember',
     fieldMetadataId: OUTREACH_WF_FIELD.profileMemberId,
     filterValue: gtmWfMemberId(memberStepId),
     filterLabel: 'Workspace Member',
@@ -836,6 +911,7 @@ export const OUTREACH_WF_ENTRY_STAGES = [
   'QUEUED',
   'CONNECTION_ACCEPTED',
   'REPLIED',
+  'MEETING_BOOKED',
 ] as const;
 
 const OUTREACH_WF_ENTRY_STAGE_FILTER_GROUP_ID =

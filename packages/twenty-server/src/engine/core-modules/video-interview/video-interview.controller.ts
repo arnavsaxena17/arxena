@@ -1,16 +1,39 @@
-import { BadRequestException, Body, Controller, HttpException, InternalServerErrorException, Post, Req, UnauthorizedException, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  HttpException,
+  InternalServerErrorException,
+  Post,
+  Req,
+  UnauthorizedException,
+  UploadedFiles,
+  UseInterceptors,
+} from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
 import * as multer from 'multer';
 import * as path from 'path';
-import { buildCandidateFlagsPatchUpdate, createResponseMutation, findManyAttachmentsQuery, findWorkspaceMemberProfiles, getAttachmentDownloadUrl, graphQueryToFindManyvideoInterviews, graphqQlToFindManyVideoInterviewQuestionsQuery, graphQltoUpdateOneCandidate, updateOneVideoInterviewMutation } from 'twenty-shared';
+import {
+  buildCandidateFlagsPatchUpdate,
+  createResponseMutation,
+  extractWorkspaceMemberNode,
+  findManyAttachmentsQuery,
+  findWorkspaceMembersForArx,
+  getAttachmentDownloadUrl,
+  graphQueryToFindManyvideoInterviews,
+  graphqQlToFindManyVideoInterviewQuestionsQuery,
+  graphQltoUpdateOneCandidate,
+  updateOneVideoInterviewMutation,
+  workspaceMemberFilterById,
+} from 'twenty-shared';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
 import { WorkspaceQueryService } from '../workspace-modifications/workspace-modifications.service';
 import { TranscriptionService } from './transcription.service';
 
 interface GetInterviewDetailsResponse {
-  recruiterProfile:any;
+  workspaceMember: unknown;
   responseFromInterviewRequests: any;
   videoInterviewAttachmentResponse: any;
   questionsAttachments: {
@@ -27,11 +50,12 @@ export class VideoInterviewController {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly transcriptionService: TranscriptionService,
     private readonly staticGraphQLService: StaticGraphQLService,
-
   ) {
-    console.log('GraphQL URL configured as in viceo interview controller:', process.env.GRAPHQL_URL);
+    console.log(
+      'GraphQL URL configured as in viceo interview controller:',
+      process.env.GRAPHQL_URL,
+    );
     console.log('JWT Secret present:', !!process.env.TWENTY_JWT_SECRET);
-
   }
 
   @Post('submit-response')
@@ -46,7 +70,9 @@ export class VideoInterviewController {
           destination: './uploads',
           filename: (req, file, callback) => {
             try {
-              console.log(`Received file in the uploads multer disk storage: ${file.originalname}`);
+              console.log(
+                `Received file in the uploads multer disk storage: ${file.originalname}`,
+              );
               // Ensure uploads directory exists
               if (!fs.existsSync('./uploads')) {
                 fs.mkdirSync('./uploads', { recursive: true });
@@ -54,22 +80,40 @@ export class VideoInterviewController {
               callback(null, file.originalname);
             } catch (error) {
               console.error('Error in multer filename callback:', error);
-              callback(error, "");
+              callback(error, '');
             }
           },
         }),
         limits: { fileSize: 100 * 1024 * 1024 },
         fileFilter: (req, file, callback) => {
           try {
-            console.log(`Received file: ${file.fieldname}, mimetype: ${file.mimetype}`);
+            console.log(
+              `Received file: ${file.fieldname}, mimetype: ${file.mimetype}`,
+            );
             if (!file.mimetype) {
-              return callback(new BadRequestException('Missing mimetype'), false);
+              return callback(
+                new BadRequestException('Missing mimetype'),
+                false,
+              );
             }
-            if (file.fieldname === 'video' && !['video/webm', 'video/mp4'].includes(file.mimetype)) {
-              return callback(new BadRequestException(`Invalid video format: ${file.mimetype}. Only webm or mp4 files are allowed.`), false);
+            if (
+              file.fieldname === 'video' &&
+              !['video/webm', 'video/mp4'].includes(file.mimetype)
+            ) {
+              return callback(
+                new BadRequestException(
+                  `Invalid video format: ${file.mimetype}. Only webm or mp4 files are allowed.`,
+                ),
+                false,
+              );
             }
             if (file.fieldname === 'audio' && file.mimetype !== 'audio/wav') {
-              return callback(new BadRequestException(`Invalid audio format: ${file.mimetype}. Only WAV files are allowed.`), false);
+              return callback(
+                new BadRequestException(
+                  `Invalid audio format: ${file.mimetype}. Only WAV files are allowed.`,
+                ),
+                false,
+              );
             }
             callback(null, true);
           } catch (error) {
@@ -80,45 +124,52 @@ export class VideoInterviewController {
       },
     ),
   )
-
-  async submitResponse(@Req() req, @UploadedFiles() files: { video?: Express.Multer.File[]; audio?: Express.Multer.File[] }) {
-
-    console.log("Received request data:: will start download")
+  async submitResponse(
+    @Req() req,
+    @UploadedFiles()
+    files: { video?: Express.Multer.File[]; audio?: Express.Multer.File[] },
+  ) {
+    console.log('Received request data:: will start download');
     try {
-      console.log("Step 1: Starting submission process");
-      console.log("Response data:", req.body.responseData);
+      console.log('Step 1: Starting submission process');
+      console.log('Response data:', req.body.responseData);
       // const { workspace } = await this.tokenService.validateToken(req);
       // console.log("REceived response data::", workspace)
-      console.log("REceived response data::", req.body.responseData)
+      console.log('REceived response data::', req.body.responseData);
       // console.log('Received files:', JSON.stringify(files, null, 2));
       // console.log('Received response data:', JSON.stringify(responseData, null, 2));
       const interviewData = JSON.parse(req?.body?.interviewData);
-      const workspaceToken = await this.getWorkspaceTokenForInterview(interviewData.id);
+      const workspaceToken = await this.getWorkspaceTokenForInterview(
+        interviewData.id,
+      );
       if (!workspaceToken) {
         throw new UnauthorizedException('Could not find valid workspace token');
       }
       const apiToken = workspaceToken;
 
       const currentQuestionIndex = JSON.parse(req?.body?.currentQuestionIndex);
-      console.log("REceived interviewData:", interviewData)
-      console.log("REceived currentQuestionIndex:", currentQuestionIndex)
-      const questionId = interviewData.videoInterview.videoInterviewQuestions.edges[currentQuestionIndex].node.id;
+      console.log('REceived interviewData:', interviewData);
+      console.log('REceived currentQuestionIndex:', currentQuestionIndex);
+      const questionId =
+        interviewData.videoInterview.videoInterviewQuestions.edges[
+          currentQuestionIndex
+        ].node.id;
       if (!files.video) {
         throw new BadRequestException('Video file is required');
       }
 
       const videoFile = files.video[0];
-      console.log("Video file received:", videoFile);
+      console.log('Video file received:', videoFile);
 
       let audioFile;
       let audioFilePath;
-        if (files.audio && files.audio.length > 0) {
+      if (files.audio && files.audio.length > 0) {
         // Audio file was provided
         audioFile = files.audio[0];
         audioFilePath = `uploads/${audioFile.originalname}`;
-        console.log("Audio file received:", audioFile);
+        console.log('Audio file received:', audioFile);
       } else {
-        console.log("No audio file received, will extract from video");
+        console.log('No audio file received, will extract from video');
 
         // Ensure uploads directory exists
         if (!fs.existsSync('./uploads')) {
@@ -134,12 +185,16 @@ export class VideoInterviewController {
           // Execute ffmpeg command to extract audio
           await new Promise((resolve, reject) => {
             const ffmpeg = spawn('ffmpeg', [
-              '-i', videoFilePath,
-              '-vn',                 // Disable video
-              '-acodec', 'pcm_s16le', // Use PCM 16-bit encoder
-              '-ar', '16000',       // Set sample rate to 16kHz
-              '-ac', '1',           // Set to mono
-              audioFilePath
+              '-i',
+              videoFilePath,
+              '-vn', // Disable video
+              '-acodec',
+              'pcm_s16le', // Use PCM 16-bit encoder
+              '-ar',
+              '16000', // Set sample rate to 16kHz
+              '-ac',
+              '1', // Set to mono
+              audioFilePath,
             ]);
 
             ffmpeg.on('close', (code) => {
@@ -157,8 +212,6 @@ export class VideoInterviewController {
             });
           });
 
-
-
           // Create a synthetic file object for the extracted audio
           audioFile = {
             fieldname: 'audio',
@@ -168,22 +221,18 @@ export class VideoInterviewController {
             destination: './uploads',
             filename: extractedAudioFilename,
             path: audioFilePath,
-            size: fs.statSync(audioFilePath).size
+            size: fs.statSync(audioFilePath).size,
           };
-
         } catch (error) {
-          console.error("Error extracting audio from video:", error);
+          console.error('Error extracting audio from video:', error);
           // Continue without audio if extraction fails
         }
       }
 
-
-
-
       // const audioFile = files.audio[0];
 
-      console.log("audio file received:", audioFile)
-      console.log("video file received:", videoFile)
+      console.log('audio file received:', audioFile);
+      console.log('video file received:', videoFile);
       // Upload video file to Twenty
       let videoFilePath = `uploads/${videoFile.originalname}`;
 
@@ -191,10 +240,14 @@ export class VideoInterviewController {
         videoFilePath = await this.convertToWebM(videoFilePath);
       }
 
-      const videoAttachmentObj = await new AttachmentProcessingService(this.staticGraphQLService).uploadAttachmentFile(videoFilePath,apiToken);
+      const videoAttachmentObj = await new AttachmentProcessingService(
+        this.staticGraphQLService,
+      ).uploadAttachmentFile(videoFilePath, apiToken);
       // Upload audio file to Twenty
 
-      const audioAttachmentObj = await new AttachmentProcessingService(this.staticGraphQLService).uploadAttachmentFile(audioFilePath,apiToken);
+      const audioAttachmentObj = await new AttachmentProcessingService(
+        this.staticGraphQLService,
+      ).uploadAttachmentFile(audioFilePath, apiToken);
       console.log('Audio attachment upload response:', audioAttachmentObj);
       console.log('interviewData::', interviewData);
       const videoFileName = videoFilePath.replace(`${process.cwd()}/`, '');
@@ -209,9 +262,17 @@ export class VideoInterviewController {
           targetCandidateId: interviewData.candidate.id,
         },
       };
-      console.log('This is the video. Data to Uplaod in Attachment Table::', videoDataToUploadInAttachmentTable);
-      const videoAttachment = await new AttachmentProcessingService(this.staticGraphQLService).createAttachmentFromUploadedFile(videoDataToUploadInAttachmentTable,apiToken);
-      console.log("videoAttachment:"  , videoAttachment)
+      console.log(
+        'This is the video. Data to Uplaod in Attachment Table::',
+        videoDataToUploadInAttachmentTable,
+      );
+      const videoAttachment = await new AttachmentProcessingService(
+        this.staticGraphQLService,
+      ).createAttachmentFromUploadedFile(
+        videoDataToUploadInAttachmentTable,
+        apiToken,
+      );
+      console.log('videoAttachment:', videoAttachment);
 
       const audioDataToUploadInAttachmentTable = {
         input: {
@@ -223,47 +284,79 @@ export class VideoInterviewController {
           targetCandidateId: interviewData.candidate.id,
         },
       };
-      console.log('This is the audio. Data to Uplaod in Attachment Table::', audioDataToUploadInAttachmentTable);
-      const audioAttachment = await new AttachmentProcessingService(this.staticGraphQLService).createAttachmentFromUploadedFile(audioDataToUploadInAttachmentTable,apiToken);
-      console.log("audioAttachment:"  , audioAttachment)
+      console.log(
+        'This is the audio. Data to Uplaod in Attachment Table::',
+        audioDataToUploadInAttachmentTable,
+      );
+      const audioAttachment = await new AttachmentProcessingService(
+        this.staticGraphQLService,
+      ).createAttachmentFromUploadedFile(
+        audioDataToUploadInAttachmentTable,
+        apiToken,
+      );
+      console.log('audioAttachment:', audioAttachment);
       // console.log('Audio file:', JSON.stringify(audioFile, null, 2));
       // console.log('Video file:', JSON.stringify(videoFile, null, 2));
 
       console.log('Starting audio transcription');
-      const transcript = await this.transcriptionService.transcribeAudio(audioFile.path);
+      const transcript = await this.transcriptionService.transcribeAudio(
+        audioFile.path,
+      );
       console.log('Transcription completed::', transcript);
       const token = req.user?.accessToken;
       console.log('User token:', token ? 'Present' : 'Missing');
       // Create response mutation
       console.log('Preparing GraphQL mutation for response creation');
-      console.log("req.body?.responseDatareq.body?.responseData:", req.body?.responseData)
-      console.log("req.body?.responseDatareq.body?.req.body?.responseData:", req.body)
-      console.log("This is the responseData:", interviewData?.name)
-      console.log("This is the responseData in questionsId:", req.body?.responseData?.videoInterviewQuestionId)
-      console.log("This is the timeLimitAdherence:", req.body?.responseData?.timeLimitAdherence)
+      console.log(
+        'req.body?.responseDatareq.body?.responseData:',
+        req.body?.responseData,
+      );
+      console.log(
+        'req.body?.responseDatareq.body?.req.body?.responseData:',
+        req.body,
+      );
+      console.log('This is the responseData:', interviewData?.name);
+      console.log(
+        'This is the responseData in questionsId:',
+        req.body?.responseData?.videoInterviewQuestionId,
+      );
+      console.log(
+        'This is the timeLimitAdherence:',
+        req.body?.responseData?.timeLimitAdherence,
+      );
 
       const createResponseVariables = {
         input: {
           name: `Response for ${interviewData?.name}`,
-          videoInterviewId: interviewData.id.replace("/video-interview/", ""),
+          videoInterviewId: interviewData.id.replace('/video-interview/', ''),
           videoInterviewQuestionId: questionId,
           transcript: transcript,
           completedResponse: true,
-          candidateId:interviewData.candidate.id,
+          candidateId: interviewData.candidate.id,
           projectId: interviewData.candidate.project.id,
           peopleId: interviewData.candidate.peopleId,
           timeLimitAdherence: req.body.responseData?.timeLimitAdherence || true,
         },
       };
-      const graphqlQueryObjForCreationOfResponse = await this.staticGraphQLService.executeGraphQL(createResponseMutation, createResponseVariables, apiToken);
+      const graphqlQueryObjForCreationOfResponse =
+        await this.staticGraphQLService.executeGraphQL(
+          createResponseMutation,
+          createResponseVariables,
+          apiToken,
+        );
 
-      console.log('Sending GraphQL mutation for response creation::', graphqlQueryObjForCreationOfResponse);
+      console.log(
+        'Sending GraphQL mutation for response creation::',
+        graphqlQueryObjForCreationOfResponse,
+      );
       // const responseResult = await this.staticGraphQLService.executeGraphQL(graphqlQueryObjForCreationOfResponse, apiToken);
       // console.log('Response creation result:', JSON.stringify(responseResult, null, 2));
       // console.log("ResponseResult data:", responseResult.data);/
       // console.log("ResponseResult ID:", responseResult?.data?.createVideoInterviewResponse.id);
 
-      const responseId = graphqlQueryObjForCreationOfResponse.data.createVideoInterviewResponse.id;
+      const responseId =
+        graphqlQueryObjForCreationOfResponse.data.createVideoInterviewResponse
+          .id;
       const videoDataToUploadInAttachmentResponseTable = {
         input: {
           name: videoFileName,
@@ -274,9 +367,21 @@ export class VideoInterviewController {
           videoInterviewResponseId: responseId,
         },
       };
-      console.log('This is the video. Data to Uplaod in Attachment Table::', videoDataToUploadInAttachmentResponseTable);
-      const videoAttachmentResponseUpload = await new AttachmentProcessingService(this.staticGraphQLService).createAttachmentFromUploadedFile(videoDataToUploadInAttachmentResponseTable,apiToken);
-      console.log("videoAttachmentResponseUpload:"  , videoAttachmentResponseUpload);
+      console.log(
+        'This is the video. Data to Uplaod in Attachment Table::',
+        videoDataToUploadInAttachmentResponseTable,
+      );
+      const videoAttachmentResponseUpload =
+        await new AttachmentProcessingService(
+          this.staticGraphQLService,
+        ).createAttachmentFromUploadedFile(
+          videoDataToUploadInAttachmentResponseTable,
+          apiToken,
+        );
+      console.log(
+        'videoAttachmentResponseUpload:',
+        videoAttachmentResponseUpload,
+      );
       const audioDataToUploadInAttachmentResponseTable = {
         input: {
           name: audioFileName,
@@ -287,12 +392,21 @@ export class VideoInterviewController {
           videoInterviewResponseId: responseId,
         },
       };
-      console.log('This is the audio. Data to Uplaod in Attachment Table::', audioDataToUploadInAttachmentTable);
-      const audioAttachmentResponseUpload = await new AttachmentProcessingService(this.staticGraphQLService).createAttachmentFromUploadedFile(audioDataToUploadInAttachmentResponseTable,apiToken);
-      console.log("audioAttachmentResponseUpload:"  , audioAttachmentResponseUpload);
-
-
-
+      console.log(
+        'This is the audio. Data to Uplaod in Attachment Table::',
+        audioDataToUploadInAttachmentTable,
+      );
+      const audioAttachmentResponseUpload =
+        await new AttachmentProcessingService(
+          this.staticGraphQLService,
+        ).createAttachmentFromUploadedFile(
+          audioDataToUploadInAttachmentResponseTable,
+          apiToken,
+        );
+      console.log(
+        'audioAttachmentResponseUpload:',
+        audioAttachmentResponseUpload,
+      );
 
       // Update Video Interview Status mutation
       console.log('Preparing GraphQL mutation for status update');
@@ -309,16 +423,19 @@ export class VideoInterviewController {
         variables: updateCandidateVariables,
       });
 
-      try{
-
-        const statusCandidateUpdateResult = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, updateCandidateVariables, apiToken);
-      }
-      catch(e){
-        console.log("Error in candidate status update::", e)
+      try {
+        const statusCandidateUpdateResult =
+          await this.staticGraphQLService.executeGraphQL(
+            graphQltoUpdateOneCandidate,
+            updateCandidateVariables,
+            apiToken,
+          );
+      } catch (e) {
+        console.log('Error in candidate status update::', e);
       }
 
       const updateStatusVariables = {
-        idToUpdate: interviewData.id.replace("/video-interview/", ""),
+        idToUpdate: interviewData.id.replace('/video-interview/', ''),
         input: {
           interviewStarted: true,
           interviewCompleted: req.body.responseData.isLastQuestion,
@@ -328,22 +445,29 @@ export class VideoInterviewController {
         query: updateOneVideoInterviewMutation,
         variables: updateStatusVariables,
       });
-      console.log('graphqlQueryObjForUpdationForStatus::', graphqlQueryObjForUpdationForStatus);
+      console.log(
+        'graphqlQueryObjForUpdationForStatus::',
+        graphqlQueryObjForUpdationForStatus,
+      );
       // console.log('Sending GraphQL mutation for status update');
       let statusResult;
-      try{
-
-        statusResult = await this.staticGraphQLService.executeGraphQL(updateOneVideoInterviewMutation, updateStatusVariables, apiToken);
-      }
-      catch(e){
-        console.log("Error in UpdateOneVideoInterview status update::", e)
+      try {
+        statusResult = await this.staticGraphQLService.executeGraphQL(
+          updateOneVideoInterviewMutation,
+          updateStatusVariables,
+          apiToken,
+        );
+      } catch (e) {
+        console.log('Error in UpdateOneVideoInterview status update::', e);
       }
 
       // console.log('Status update result:', JSON.stringify(statusResult, null, 2));
 
       console.log('Preparing response');
       const response = {
-        response: graphqlQueryObjForCreationOfResponse?.data?.createVideoInterviewResponse,
+        response:
+          graphqlQueryObjForCreationOfResponse?.data
+            ?.createVideoInterviewResponse,
         status: statusResult?.updateVideoInterview,
         videoFile: videoFile?.filename,
         audioFile: audioFile?.filename,
@@ -360,47 +484,51 @@ export class VideoInterviewController {
     }
   }
 
-
   private async getWorkspaceTokenForInterview(interviewId: string) {
-    const results = await this.workspaceQueryService.executeQueryAcrossWorkspaces(
-      async (workspaceId, dataSourceSchema, transactionManager) => {
-        // Query to find the interview status
-        const videoInterview =
-          await this.workspaceQueryService.executeWorkspaceRawQuery(
-            `SELECT * FROM ${dataSourceSchema}."_videoInterview"
+    const results =
+      await this.workspaceQueryService.executeQueryAcrossWorkspaces(
+        async (workspaceId, dataSourceSchema, transactionManager) => {
+          // Query to find the interview status
+          const videoInterview =
+            await this.workspaceQueryService.executeWorkspaceRawQuery(
+              `SELECT * FROM ${dataSourceSchema}."_videoInterview"
            WHERE "_videoInterview"."id"::text ILIKE $1`,
-            [`%${interviewId.replace("/video-interview/","")}%`],
-            workspaceId,
-          );
-
-        console.log("Workspace token for video interview:", videoInterview)
-        if (videoInterview.length > 0) {
-          console.log("Workspace token for video interview where videointerview length is more than 0:", videoInterview)
-          // Get API keys for the workspace
-          console.log("workspaceId::", workspaceId)
-          const apiKeys = await this.workspaceQueryService.getApiKeys(
-            workspaceId,
-            dataSourceSchema,
-          );
-          console.log("API Keys foud::", apiKeys)
-
-          if (apiKeys && apiKeys.length > 0) {
-            const apiKeyToken = await this.workspaceQueryService.apiKeyService.generateApiKeyToken(
+              [`%${interviewId.replace('/video-interview/', '')}%`],
               workspaceId,
-              apiKeys[0].id,
             );
 
-            console.log("API Key Token::", apiKeyToken)
-            if (apiKeyToken) {
-              return apiKeyToken.token;
+          console.log('Workspace token for video interview:', videoInterview);
+          if (videoInterview.length > 0) {
+            console.log(
+              'Workspace token for video interview where videointerview length is more than 0:',
+              videoInterview,
+            );
+            // Get API keys for the workspace
+            console.log('workspaceId::', workspaceId);
+            const apiKeys = await this.workspaceQueryService.getApiKeys(
+              workspaceId,
+              dataSourceSchema,
+            );
+            console.log('API Keys foud::', apiKeys);
+
+            if (apiKeys && apiKeys.length > 0) {
+              const apiKeyToken =
+                await this.workspaceQueryService.apiKeyService.generateApiKeyToken(
+                  workspaceId,
+                  apiKeys[0].id,
+                );
+
+              console.log('API Key Token::', apiKeyToken);
+              if (apiKeyToken) {
+                return apiKeyToken.token;
+              }
             }
           }
-        }
-        return null;
-      }
-    );
-    const result = results.find(result => result !== null)
-    console.log("Result found::", result)
+          return null;
+        },
+      );
+    const result = results.find((result) => result !== null);
+    console.log('Result found::', result);
     // Return first non-null result
     return result;
   }
@@ -416,7 +544,7 @@ export class VideoInterviewController {
         .outputOptions('-c:a libopus')
         .save(outputPath)
         .on('end', () => {
-          fs.unlinkSync(inputPath);  // Remove the original file
+          fs.unlinkSync(inputPath); // Remove the original file
           resolve(outputPath);
         })
         .on('error', (err) => {
@@ -425,13 +553,20 @@ export class VideoInterviewController {
     });
   }
 
-// leaqve unauthenticated due to public candidate access to this endpoint
+  // leaqve unauthenticated due to public candidate access to this endpoint
   @Post('get-questions')
-  async getQuestions(@Req() req, @Body() interviewData: { videoInterviewTemplateId: string }) {
+  async getQuestions(
+    @Req() req,
+    @Body() interviewData: { videoInterviewTemplateId: string },
+  ) {
     const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
 
     const questionsVariables = {
-      filter: { videoInterviewTemplateId: { eq: interviewData.videoInterviewTemplateId } },
+      filter: {
+        videoInterviewTemplateId: {
+          eq: interviewData.videoInterviewTemplateId,
+        },
+      },
       limit: 30,
       orderBy: { position: 'AscNullsFirst' },
     };
@@ -441,19 +576,22 @@ export class VideoInterviewController {
       variables: questionsVariables,
     });
 
-    const result = await this.staticGraphQLService.executeGraphQL(graphqQlToFindManyVideoInterviewQuestionsQuery, questionsVariables, apiToken);
-    console.log("Result of video interview questions:", result)
-    return result.videoInterviewQuestions.edges.map(edge => edge.node);
+    const result = await this.staticGraphQLService.executeGraphQL(
+      graphqQlToFindManyVideoInterviewQuestionsQuery,
+      questionsVariables,
+      apiToken,
+    );
+    console.log('Result of video interview questions:', result);
+    return result.videoInterviewQuestions.edges.map((edge) => edge.node);
   }
 
   @Post('update-feedback')
   async updateFeedback(@Req() req, @Body() feedbackData) {
     const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
 
-
     console.log('This is the feedback obj', feedbackData);
     const updateStatusVariables = {
-      idToUpdate: feedbackData.interviewId.replace("/video-interview/", ""),
+      idToUpdate: feedbackData.interviewId.replace('/video-interview/', ''),
       input: {
         feedback: feedbackData.feedback,
       },
@@ -465,45 +603,55 @@ export class VideoInterviewController {
     });
 
     try {
-      const response = await this.staticGraphQLService.executeGraphQL(updateOneVideoInterviewMutation, updateStatusVariables, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(
+        updateOneVideoInterviewMutation,
+        updateStatusVariables,
+        apiToken,
+      );
       console.log('Feedback updated successfully:', response.data);
       // Just send a simple response object instead of the full response
       return {
         statusCode: 200,
-        message: 'Feedback updated successfully'
+        message: 'Feedback updated successfully',
       };
-
     } catch (error) {
       // Handle the error without trying to serialize the full error object
-      throw new HttpException({
-        statusCode: 500,
-        message: 'Failed to update feedback'
-      }, 500);
+      throw new HttpException(
+        {
+          statusCode: 500,
+          message: 'Failed to update feedback',
+        },
+        500,
+      );
     }
   }
 
-
-// leaqve unauthenticated due to public candidate access to this endpoint
+  // leaqve unauthenticated due to public candidate access to this endpoint
   @Post('get-interview-details')
-  async getInterViewDetails(@Req() req: any): Promise<GetInterviewDetailsResponse> {
-    console.log("Got a request in get interview details")
+  async getInterViewDetails(
+    @Req() req: any,
+  ): Promise<GetInterviewDetailsResponse> {
+    console.log('Got a request in get interview details');
 
-
-    console.log("This is the request body in get interview details:", req?.body)
+    console.log(
+      'This is the request body in get interview details:',
+      req?.body,
+    );
     // const apiToken = req.headers.authorization.split(' ')[1]; // Assuming Bearer token
     const { interviewId } = req.body;
-    console.log("Get interview details hit", interviewId)
-    const workspaceToken = await this.getWorkspaceTokenForInterview(interviewId);
+    console.log('Get interview details hit', interviewId);
+    const workspaceToken =
+      await this.getWorkspaceTokenForInterview(interviewId);
     if (!workspaceToken) {
-      console.log("NO WORKSPACE TOKEN FOUND")
+      console.log('NO WORKSPACE TOKEN FOUND');
       // throw new UnauthorizedException('Could not find valid workspace token');
     }
-    const apiToken = workspaceToken || "";
+    const apiToken = workspaceToken || '';
 
-    console.log("Api Token:", apiToken)
-    console.log("Got video interview hit")
+    console.log('Api Token:', apiToken);
+    console.log('Got video interview hit');
     if (req.method === 'POST') {
-      console.log("Received interviewId:", interviewId);
+      console.log('Received interviewId:', interviewId);
 
       const InterviewStatusesVariables = {
         filter: {
@@ -515,7 +663,6 @@ export class VideoInterviewController {
         },
       };
 
-
       const graphqlQueryObjForvideoInterviewQuestions = JSON.stringify({
         query: graphQueryToFindManyvideoInterviews,
         variables: InterviewStatusesVariables,
@@ -523,32 +670,45 @@ export class VideoInterviewController {
 
       let responseFromInterviewRequests;
       let videoInterviewId;
-      let recruiterProfile;
+      let workspaceMember;
       let responseForVideoInterviewIntroductionAttachment;
       let responseForVideoInterviewQuestionAttachments: any[] = [];
-      let questionsAttachmentsResponse :any[] = [];
+      let questionsAttachmentsResponse: any[] = [];
 
       try {
-        const response = await this.staticGraphQLService.executeGraphQL(graphQueryToFindManyvideoInterviews, InterviewStatusesVariables, apiToken);
-        console.log("REhis response:", response?.data);
-        console.log("REhis response:", response?.data?.data);
+        const response = await this.staticGraphQLService.executeGraphQL(
+          graphQueryToFindManyvideoInterviews,
+          InterviewStatusesVariables,
+          apiToken,
+        );
+        console.log('REhis response:', response?.data);
+        console.log('REhis response:', response?.data?.data);
         responseFromInterviewRequests = response?.data;
-        videoInterviewId = responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node?.videoInterviewTemplate?.id;
+        videoInterviewId =
+          responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node
+            ?.videoInterviewTemplate?.id;
 
-        console.log("responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node", responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node);
-        const recruiterId = responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node?.candidate?.project?.recruiterId;
+        console.log(
+          'responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node',
+          responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node,
+        );
+        const recruiterId =
+          responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node
+            ?.candidate?.project?.recruiterId;
 
-        const workspaceMemberProfilesResponse = await this.staticGraphQLService.executeGraphQL(findWorkspaceMemberProfiles, { filter: { workspaceMemberId: { eq: recruiterId } } }, apiToken);
-        recruiterProfile = workspaceMemberProfilesResponse?.data?.data?.workspaceMemberProfiles?.edges[0]?.node;
-        console.log("recruiterProrile:", recruiterProfile);
+        const workspaceMembersResponse =
+          await this.staticGraphQLService.executeGraphQL(
+            findWorkspaceMembersForArx,
+            workspaceMemberFilterById(recruiterId),
+            apiToken,
+          );
+        workspaceMember = extractWorkspaceMemberNode(workspaceMembersResponse);
+        console.log('workspaceMember:', workspaceMember);
 
-
-
-
-        console.log("Received videoInterviewId:", videoInterviewId);
+        console.log('Received videoInterviewId:', videoInterviewId);
       } catch (error) {
-        console.log("There was an error:", error);
-        recruiterProfile =null;
+        console.log('There was an error:', error);
+        workspaceMember = null;
         console.error('Error fetching interview data:', error);
         responseFromInterviewRequests = null;
       }
@@ -556,68 +716,112 @@ export class VideoInterviewController {
       if (videoInterviewId) {
         const videoInterviewIntroductionAttachmentDataQuery = JSON.stringify({
           query: findManyAttachmentsQuery,
-          variables: { filter: { videoInterviewTemplateId: { eq: videoInterviewId } }, orderBy: { createdAt: 'DescNullsFirst' } }
+          variables: {
+            filter: { videoInterviewTemplateId: { eq: videoInterviewId } },
+            orderBy: { createdAt: 'DescNullsFirst' },
+          },
         });
 
-        const allQuestionIds = responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node?.videoInterviewTemplate?.videoInterviewQuestions?.edges
-          .map((edge: { node: { id: string; createdAt: string } }) => edge.node)
-          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-          .map(node => node.id);
-        console.log("Received allQuestionIds:", allQuestionIds);
+        const allQuestionIds =
+          responseFromInterviewRequests?.data?.videoInterviews?.edges[0]?.node?.videoInterviewTemplate?.videoInterviewQuestions?.edges
+            .map(
+              (edge: { node: { id: string; createdAt: string } }) => edge.node,
+            )
+            .sort(
+              (a, b) =>
+                new Date(a.createdAt).getTime() -
+                new Date(b.createdAt).getTime(),
+            )
+            .map((node) => node.id);
+        console.log('Received allQuestionIds:', allQuestionIds);
 
         if (!allQuestionIds || allQuestionIds.length === 0) {
-          console.log("No question IDs found, cannot proceed");
-          throw new Error("No question IDs found");
+          console.log('No question IDs found, cannot proceed');
+          throw new Error('No question IDs found');
         }
 
-        const questionsAttachmentDataQueries = allQuestionIds.map(id => JSON.stringify({
-          query: findManyAttachmentsQuery,
-          variables: { filter: { videoInterviewQuestionId: { eq: id } }, orderBy: { createdAt: 'DescNullsFirst' } }
-        }));
+        const questionsAttachmentDataQueries = allQuestionIds.map((id) =>
+          JSON.stringify({
+            query: findManyAttachmentsQuery,
+            variables: {
+              filter: { videoInterviewQuestionId: { eq: id } },
+              orderBy: { createdAt: 'DescNullsFirst' },
+            },
+          }),
+        );
 
         try {
-          console.log("Going to get video interview introduction attachment data");
-          responseForVideoInterviewIntroductionAttachment = await this.staticGraphQLService.executeGraphQL(findManyAttachmentsQuery, { filter: { videoInterviewTemplateId: { eq: videoInterviewId } }, orderBy: { createdAt: 'DescNullsFirst' } }, apiToken);
-
+          console.log(
+            'Going to get video interview introduction attachment data',
+          );
+          responseForVideoInterviewIntroductionAttachment =
+            await this.staticGraphQLService.executeGraphQL(
+              findManyAttachmentsQuery,
+              {
+                filter: { videoInterviewTemplateId: { eq: videoInterviewId } },
+                orderBy: { createdAt: 'DescNullsFirst' },
+              },
+              apiToken,
+            );
         } catch (error) {
-          console.log("Error fetching video interview introduction attachment data:", error);
+          console.log(
+            'Error fetching video interview introduction attachment data:',
+            error,
+          );
           responseForVideoInterviewIntroductionAttachment = null;
         }
 
         try {
           responseForVideoInterviewQuestionAttachments = await Promise.all(
-        questionsAttachmentDataQueries.map(query => this.staticGraphQLService.executeGraphQL(findManyAttachmentsQuery, { filter: { videoInterviewQuestionId: { eq: id } }, orderBy: { createdAt: 'DescNullsFirst' } }, apiToken))
+            questionsAttachmentDataQueries.map((query) =>
+              this.staticGraphQLService.executeGraphQL(
+                findManyAttachmentsQuery,
+                {
+                  filter: { videoInterviewQuestionId: { eq: id } },
+                  orderBy: { createdAt: 'DescNullsFirst' },
+                },
+                apiToken,
+              ),
+            ),
           );
         } catch (error) {
-          console.log("Error fetching video interview question attachments:", error);
+          console.log(
+            'Error fetching video interview question attachments:',
+            error,
+          );
           responseForVideoInterviewQuestionAttachments = [];
         }
 
-        questionsAttachmentsResponse = responseForVideoInterviewQuestionAttachments.flatMap(response =>
-          response.data?.data?.attachments?.edges?.map((edge: { node: Record<string, unknown> }) => ({
-            id: edge.node.id as string,
-            name: edge.node.name as string,
-            downloadUrl: getAttachmentDownloadUrl(edge.node),
-            fullPath: edge.node.fullPath as string | null | undefined,
-          })) || []
-        );
+        questionsAttachmentsResponse =
+          responseForVideoInterviewQuestionAttachments.flatMap(
+            (response) =>
+              response.data?.data?.attachments?.edges?.map(
+                (edge: { node: Record<string, unknown> }) => ({
+                  id: edge.node.id as string,
+                  name: edge.node.name as string,
+                  downloadUrl: getAttachmentDownloadUrl(edge.node),
+                  fullPath: edge.node.fullPath as string | null | undefined,
+                }),
+              ) || [],
+          );
       }
 
       const result: GetInterviewDetailsResponse = {
-        recruiterProfile,
+        workspaceMember,
         responseFromInterviewRequests,
-        videoInterviewAttachmentResponse: responseForVideoInterviewIntroductionAttachment?.data || null,
-        questionsAttachments: questionsAttachmentsResponse
+        videoInterviewAttachmentResponse:
+          responseForVideoInterviewIntroductionAttachment?.data || null,
+        questionsAttachments: questionsAttachmentsResponse,
       };
 
       return result;
     } else {
       console.log('Invalid request method');
       return {
-        recruiterProfile:null,
+        workspaceMember: null,
         responseFromInterviewRequests: null,
         videoInterviewAttachmentResponse: null,
-        questionsAttachments: []
+        questionsAttachments: [],
       };
     }
   }

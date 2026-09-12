@@ -5,16 +5,18 @@ import {
     ChatControlsObjType,
     ChatHistoryItem,
     ChatRequestBody,
-    Project,
     PersonNode,
+    Project,
+    SendWhatsappUtilityMessageObjectType,
     sendWhatsappTemplateMessageObjectType,
-    SendWhatsappUtilityMessageObjectType
+    workspaceMemberDisplayName,
+    workspaceMemberFirstName,
 } from 'twenty-shared';
 import { getCandidateLastEngagementChatControl } from 'twenty-shared/arx';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { WhatsappTemplateMessages } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/whatsapp-template-messages';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -50,13 +52,19 @@ export class MetaWhatsappController {
         personObj?.candidates?.edges[0]?.node;
 
       const candidateJob: Project | undefined = candidateNode?.project;
-      const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
+      const workspaceMemberArxService = new WorkspaceMemberArxService(
+        this.staticGraphQLService,
+      );
+      const workspaceMember = await workspaceMemberArxService.getByProject(
         candidateJob as Project,
         apiToken,
       );
-      if (!recruiterProfile) {
-        throw new Error('Recruiter profile not found for job');
+      if (!workspaceMember) {
+        throw new Error('Workspace member not found for job');
       }
+
+      const workspaceCompany =
+        await workspaceMemberArxService.getWorkspaceCompanyProfile(apiToken);
 
       const sendTemplateMessageObj = {
         recipient:
@@ -65,11 +73,11 @@ export class MetaWhatsappController {
             : personObj?.phones?.primaryPhoneNumber,
         template_name: requestBody.templateName,
         candidateFirstName: personObj?.name?.firstName,
-        recruiterName: recruiterProfile.name,
-        recruiterFirstName: recruiterProfile.name.split(' ')[0],
-        recruiterJobTitle: recruiterProfile.jobTitle || '',
-        recruiterCompanyName: recruiterProfile.companyName,
-        recruiterCompanyDescription: recruiterProfile.companyDescription,
+        recruiterName: workspaceMemberDisplayName(workspaceMember),
+        recruiterFirstName: workspaceMemberFirstName(workspaceMember),
+        recruiterJobTitle: workspaceMember.jobTitle || '',
+        recruiterCompanyName: workspaceCompany.companyName || '',
+        recruiterCompanyDescription: workspaceCompany.summary || '',
         jobPositionName: personObj?.candidates?.edges[0]?.node?.project?.name,
         companyName: personObj?.candidates?.edges.filter(
           (edge) => edge.node.project.id === candidateJob?.id,

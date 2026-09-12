@@ -182,7 +182,7 @@ export const ARXENA_STANDARD_COMMAND_MENU_ITEMS = {
     universalIdentifier: 'de48d3cb-36af-57de-b1a1-f237b532342d',
     label: 'Reminder (remind) Messaging for Candidates',
     icon: 'IconRefresh',
-    isPinned: true,
+    isPinned: false,
     position: 218,
     shortLabel: 'Reminder (remind) Messaging for Candidates',
     availabilityType: CommandMenuItemAvailabilityType.RECORD_SELECTION,

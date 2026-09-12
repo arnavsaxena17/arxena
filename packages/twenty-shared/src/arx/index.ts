@@ -150,7 +150,6 @@ export type {
   ProjectEdge,
   Project,
   Question,
-  RecruiterProfileType,
   InterviewDataJobTemplate,
   InterviewData,
   VideoInterviewAttachment,

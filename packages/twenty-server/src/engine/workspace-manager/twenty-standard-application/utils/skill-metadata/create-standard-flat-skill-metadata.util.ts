@@ -137,7 +137,7 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     name: 'setup',
     label: 'Setup',
     description:
-      'Campaign setup: ICP and outreach preferences on workspaceProfile defaults; hand off to Find companies/people',
+      'Campaign setup: ICP and outreach preferences on core Workspace company fields; hand off to Find companies/people',
     icon: 'IconTargetArrow',
   }),
   outreach: createStandardSkillBuilder({

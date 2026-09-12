@@ -42,7 +42,7 @@ export type WarmPathResolveResponse = {
     connectionsCount: number | null;
   };
   viewer: {
-    workspaceMemberProfileId: string;
+    workspaceMemberId: string;
     fullName: string;
     linkedinUrl: string | null;
     linkedinUnipileAccountId: string;

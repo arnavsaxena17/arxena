@@ -32,6 +32,9 @@ import {
 } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
 import { SearchPeopleForCompanyService } from 'src/engine/core-modules/outreach-command/services/search-people-for-company.service';
 import { OutreachWorkspaceProfileProvisioningService } from 'src/engine/core-modules/outreach-command/services/outreach-workspace-profile-provisioning.service';
+import { OutreachSenderProfileService } from 'src/engine/core-modules/outreach-command/services/outreach-sender-profile.service';
+import { type OutreachSenderProfile } from 'src/engine/core-modules/outreach-command/types/outreach-sender-profile.type';
+import { extractOutreachSenderCollateralText } from 'src/engine/core-modules/outreach-command/utils/extract-outreach-sender-collateral-text.util';
 import { OutreachProjectOutreachControlService } from 'src/engine/core-modules/outreach-command/services/outreach-project-outreach-control.service';
 import { OutreachCandidateJourneyService } from 'src/engine/core-modules/outreach-command/services/outreach-candidate-journey.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -51,6 +54,7 @@ export class OutreachCommandController {
     private readonly gtmInboundReplyWindowService: OutreachInboundReplyWindowService,
     private readonly gtmCommandMaterializeService: OutreachCommandMaterializeService,
     private readonly gtmWorkspaceProfileProvisioningService: OutreachWorkspaceProfileProvisioningService,
+    private readonly outreachSenderProfileService: OutreachSenderProfileService,
     private readonly gtmFakeProfileDetectorService: OutreachFakeProfileDetectorService,
     private readonly gtmFilterProfilesService: OutreachFilterProfilesService,
     private readonly gtmProjectOutreachControlService: OutreachProjectOutreachControlService,
@@ -546,6 +550,223 @@ export class OutreachCommandController {
     }
   }
 
+  @Post('sender-profile/prompt')
+  async getSenderProfileBuildPrompt(
+    @Body()
+    body: {
+      workspaceMemberId?: string;
+      linkedinProfileText?: string;
+      collateralText?: string;
+      senderNotes?: string;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const { workspaceId, workspaceMemberId } =
+      await this.resolveSenderProfileAuthContext(body, request);
+
+    const existing =
+      await this.outreachSenderProfileService.getExistingSenderProfile({
+        workspaceId,
+        workspaceMemberId,
+      });
+
+    const linkedinProfileText =
+      body.linkedinProfileText?.trim() || existing.linkedinProfileText;
+
+    return {
+      ...this.outreachSenderProfileService.getBuildPrompt({
+        linkedinProfileText,
+        collateralText: body.collateralText,
+        senderNotes: body.senderNotes,
+        existingObject: existing.outreachSenderProfile,
+      }),
+      existingSenderProfile: existing.outreachSenderProfile,
+      linkedinUrl: existing.linkedinUrl,
+      linkedinUnipileAccountId: existing.linkedinUnipileAccountId,
+      linkedinProfileText,
+    };
+  }
+
+  @Post('sender-profile/fetch-linkedin')
+  async fetchSenderLinkedinProfile(
+    @Body()
+    body: {
+      workspaceMemberId?: string;
+      linkedinUrl?: string;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const { workspaceId, workspaceMemberId } =
+      await this.resolveSenderProfileAuthContext(body, request);
+
+    try {
+      return await this.outreachSenderProfileService.fetchAndSaveSenderLinkedinProfile(
+        {
+          workspaceId,
+          workspaceMemberId,
+          linkedinUrl: body.linkedinUrl,
+        },
+      );
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      this.logger.error('Failed to fetch sender LinkedIn profile', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to fetch sender LinkedIn profile',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('sender-profile/linkedin-url')
+  async updateSenderLinkedinUrl(
+    @Body()
+    body: {
+      workspaceMemberId?: string;
+      linkedinUrl?: string;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const { workspaceId, workspaceMemberId } =
+      await this.resolveSenderProfileAuthContext(body, request);
+
+    try {
+      return await this.outreachSenderProfileService.updateSenderLinkedinUrl({
+        workspaceId,
+        workspaceMemberId,
+        linkedinUrl: body.linkedinUrl ?? '',
+      });
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      this.logger.error('Failed to update sender LinkedIn URL', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to update sender LinkedIn URL',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('sender-profile/draft')
+  async draftSenderProfile(
+    @Body()
+    body: {
+      workspaceMemberId?: string;
+      linkedinProfileText?: string;
+      collateralText?: string;
+      senderNotes?: string;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const { workspaceId, workspaceMemberId } =
+      await this.resolveSenderProfileAuthContext(body, request);
+
+    try {
+      return await this.outreachSenderProfileService.draftSenderProfile({
+        workspaceId,
+        workspaceMemberId,
+        linkedinProfileText: body.linkedinProfileText,
+        collateralText: body.collateralText,
+        senderNotes: body.senderNotes,
+      });
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      this.logger.error('Failed to draft outreach sender profile', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to draft outreach sender profile',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('sender-profile/extract-collateral')
+  async extractSenderProfileCollateral(
+    @Body()
+    body: {
+      fileName?: string;
+      fileBase64?: string;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    // Auth check — token must resolve to a workspace.
+    await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+    if (!body?.fileName?.trim() || !body?.fileBase64?.trim()) {
+      throw new HttpException(
+        'fileName and fileBase64 are required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      const fileBuffer = Buffer.from(body.fileBase64, 'base64');
+      const collateralText = await extractOutreachSenderCollateralText({
+        fileName: body.fileName,
+        fileBuffer,
+      });
+
+      return { collateralText, fileName: body.fileName };
+    } catch (error) {
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to extract collateral text',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @Post('sender-profile')
+  async saveSenderProfile(
+    @Body()
+    body: {
+      workspaceMemberId?: string;
+      linkedinProfileText?: string;
+      collateralText?: string;
+      senderNotes?: string;
+      senderProfile?: OutreachSenderProfile;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    if (!body?.senderProfile) {
+      throw new HttpException(
+        'senderProfile is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const { workspaceId, workspaceMemberId } =
+      await this.resolveSenderProfileAuthContext(body, request);
+
+    return this.outreachSenderProfileService.buildAndSaveSenderProfile({
+      workspaceId,
+      workspaceMemberId,
+      linkedinProfileText: body.linkedinProfileText ?? '',
+      collateralText: body.collateralText,
+      senderNotes: body.senderNotes,
+      senderProfile: body.senderProfile,
+    });
+  }
+
   @Post('projects/:projectId/pause')
   async pauseProjectOutreach(
     @Param('projectId') projectId: string,
@@ -903,5 +1124,33 @@ export class OutreachCommandController {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  private async resolveSenderProfileAuthContext(
+    body: { workspaceMemberId?: string },
+    request: { headers?: { authorization?: string } },
+  ): Promise<{ workspaceId: string; workspaceMemberId: string }> {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    const workspaceId =
+      await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    const workspaceMemberId =
+      body.workspaceMemberId ??
+      (await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
+        apiToken,
+      ));
+
+    if (!workspaceMemberId) {
+      throw new HttpException(
+        'workspaceMemberId is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return { workspaceId, workspaceMemberId };
   }
 }

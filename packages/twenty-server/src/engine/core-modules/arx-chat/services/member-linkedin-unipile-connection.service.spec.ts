@@ -31,8 +31,8 @@ describe('MemberLinkedinUnipileConnectionService', () => {
       deleteUnipileMemberAccountMapping: jest.fn(),
     };
 
-    const workspaceMemberProfileUnipileService = {
-      getWorkspaceMemberProfileUnipileFields: jest.fn().mockResolvedValue({
+    const workspaceMemberUnipileService = {
+      getWorkspaceMemberUnipileFields: jest.fn().mockResolvedValue({
         linkedinUrl: 'https://www.linkedin.com/in/test',
         linkedinUnipileAccountId: staleAccountId,
         whatsappUnipileAccountId: null,
@@ -46,20 +46,20 @@ describe('MemberLinkedinUnipileConnectionService', () => {
     const service = new MemberLinkedinUnipileConnectionService(
       linkedinUnipileRequestService as never,
       {} as never,
-      workspaceMemberProfileUnipileService as never,
+      workspaceMemberUnipileService as never,
       workspaceQueryService as never,
     );
 
     return {
       service,
       linkedinUnipileRequestService,
-      workspaceMemberProfileUnipileService,
+      workspaceMemberUnipileService,
       workspaceQueryService,
     };
   };
 
   it('clearStaleStoredLinkedinAccountIdIfNeeded clears profile when Unipile returns 404', async () => {
-    const { service, linkedinUnipileRequestService, workspaceMemberProfileUnipileService } =
+    const { service, linkedinUnipileRequestService, workspaceMemberUnipileService } =
       createService();
 
     const cleared = await service.clearStaleStoredLinkedinAccountIdIfNeeded(
@@ -76,7 +76,7 @@ describe('MemberLinkedinUnipileConnectionService', () => {
       linkedinUnipileRequestService.clearLinkedinUnipileAccountFromCaches,
     ).toHaveBeenCalledWith(staleAccountId);
     expect(
-      workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinUnipileData,
+      workspaceMemberUnipileService.clearWorkspaceMemberLinkedinUnipileData,
     ).toHaveBeenCalledWith(workspaceMemberId, authToken);
   });
 
@@ -84,7 +84,7 @@ describe('MemberLinkedinUnipileConnectionService', () => {
     const {
       service,
       linkedinUnipileRequestService,
-      workspaceMemberProfileUnipileService,
+      workspaceMemberUnipileService,
     } = createService();
 
     await service.cleanupStoredLinkedinAccountAfterNotFoundApiError({
@@ -101,7 +101,7 @@ describe('MemberLinkedinUnipileConnectionService', () => {
       linkedinUnipileRequestService.clearLinkedinUnipileAccountFromCaches,
     ).toHaveBeenCalledWith(staleAccountId);
     expect(
-      workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinUnipileData,
+      workspaceMemberUnipileService.clearWorkspaceMemberLinkedinUnipileData,
     ).toHaveBeenCalledWith(workspaceMemberId, authToken);
   });
 
@@ -109,7 +109,7 @@ describe('MemberLinkedinUnipileConnectionService', () => {
     const {
       service,
       linkedinUnipileRequestService,
-      workspaceMemberProfileUnipileService,
+      workspaceMemberUnipileService,
       workspaceQueryService,
     } = createService({
       fetchAccountResult: { id: staleAccountId, status: 'disconnected' },
@@ -132,12 +132,12 @@ describe('MemberLinkedinUnipileConnectionService', () => {
       workspaceQueryService.deleteUnipileMemberAccountMapping,
     ).toHaveBeenCalledWith(workspaceMemberId, 'LINKEDIN');
     expect(
-      workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinUnipileData,
+      workspaceMemberUnipileService.clearWorkspaceMemberLinkedinUnipileData,
     ).toHaveBeenCalledWith(workspaceMemberId, authToken);
   });
 
   it('clearStaleStoredLinkedinAccountIdIfNeeded is a no-op when account is connected', async () => {
-    const { service, workspaceMemberProfileUnipileService } = createService({
+    const { service, workspaceMemberUnipileService } = createService({
       fetchAccountResult: { id: staleAccountId },
       mappedStatus: 'connected',
     });
@@ -150,7 +150,7 @@ describe('MemberLinkedinUnipileConnectionService', () => {
 
     expect(cleared).toBe(false);
     expect(
-      workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinUnipileData,
+      workspaceMemberUnipileService.clearWorkspaceMemberLinkedinUnipileData,
     ).not.toHaveBeenCalled();
   });
 
@@ -158,7 +158,7 @@ describe('MemberLinkedinUnipileConnectionService', () => {
     const {
       service,
       linkedinUnipileRequestService,
-      workspaceMemberProfileUnipileService,
+      workspaceMemberUnipileService,
     } = createService({
       fetchAccountResult: {
         id: staleAccountId,
@@ -180,12 +180,12 @@ describe('MemberLinkedinUnipileConnectionService', () => {
       linkedinUnipileRequestService.disconnectAccountBestEffort,
     ).not.toHaveBeenCalled();
     expect(
-      workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinUnipileData,
+      workspaceMemberUnipileService.clearWorkspaceMemberLinkedinUnipileData,
     ).not.toHaveBeenCalled();
   });
 
   it('clearStaleStoredLinkedinAccountIdIfNeeded keeps the profile when Unipile lookup is unavailable', async () => {
-    const { service, linkedinUnipileRequestService, workspaceMemberProfileUnipileService } =
+    const { service, linkedinUnipileRequestService, workspaceMemberUnipileService } =
       createService();
     linkedinUnipileRequestService.lookupAccountById.mockResolvedValue({
       status: 'unavailable',
@@ -200,14 +200,14 @@ describe('MemberLinkedinUnipileConnectionService', () => {
 
     expect(cleared).toBe(false);
     expect(
-      workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinUnipileData,
+      workspaceMemberUnipileService.clearWorkspaceMemberLinkedinUnipileData,
     ).not.toHaveBeenCalled();
   });
 
-  it('getValidatedWorkspaceMemberProfileFields returns profile without stale account id', async () => {
+  it('getValidatedWorkspaceMemberUnipileFields returns profile without stale account id', async () => {
     const { service } = createService();
 
-    const profile = await service.getValidatedWorkspaceMemberProfileFields(
+    const profile = await service.getValidatedWorkspaceMemberUnipileFields(
       workspaceMemberId,
       authToken,
     );
@@ -219,7 +219,7 @@ describe('MemberLinkedinUnipileConnectionService', () => {
     const {
       service,
       linkedinUnipileRequestService,
-      workspaceMemberProfileUnipileService,
+      workspaceMemberUnipileService,
       workspaceQueryService,
     } = createService();
 
@@ -238,7 +238,7 @@ describe('MemberLinkedinUnipileConnectionService', () => {
       workspaceQueryService.deleteUnipileMemberAccountMapping,
     ).toHaveBeenCalledWith(workspaceMemberId, 'LINKEDIN');
     expect(
-      workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinUnipileData,
+      workspaceMemberUnipileService.clearWorkspaceMemberLinkedinUnipileData,
     ).toHaveBeenCalledWith(workspaceMemberId, authToken);
   });
 
@@ -246,7 +246,7 @@ describe('MemberLinkedinUnipileConnectionService', () => {
     const {
       service,
       linkedinUnipileRequestService,
-      workspaceMemberProfileUnipileService,
+      workspaceMemberUnipileService,
       workspaceQueryService,
     } = createService();
 
@@ -274,7 +274,7 @@ describe('MemberLinkedinUnipileConnectionService', () => {
       workspaceQueryService.deleteUnipileMemberAccountMapping,
     ).toHaveBeenCalledWith(workspaceMemberId, 'LINKEDIN');
     expect(
-      workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinUnipileData,
+      workspaceMemberUnipileService.clearWorkspaceMemberLinkedinUnipileData,
     ).toHaveBeenCalledWith(workspaceMemberId, authToken);
   });
 
@@ -322,29 +322,29 @@ describe('MemberLinkedinUnipileConnectionService', () => {
         mapAccountStatus: jest.fn().mockReturnValue('connected'),
       };
 
-      const workspaceMemberProfileUnipileService = {
-        applyUnipileAccountToWorkspaceMemberProfile: jest.fn(),
+      const workspaceMemberUnipileService = {
+        applyUnipileAccountToWorkspaceMember: jest.fn(),
         updateWorkspaceMemberUnipileAccountId: jest.fn(),
       };
 
       const service = new MemberLinkedinUnipileConnectionService(
         {} as never,
         whatsappUnipileRequestService as never,
-        workspaceMemberProfileUnipileService as never,
+        workspaceMemberUnipileService as never,
         {} as never,
       );
 
       return {
         service,
         whatsappUnipileRequestService,
-        workspaceMemberProfileUnipileService,
+        workspaceMemberUnipileService,
       };
     };
 
     it('persists whatsappUnipileAccountId when phone matches a connected account and stored id is missing', async () => {
       const {
         service,
-        workspaceMemberProfileUnipileService,
+        workspaceMemberUnipileService,
         whatsappUnipileRequestService,
       } = createWhatsappService();
 
@@ -363,7 +363,7 @@ describe('MemberLinkedinUnipileConnectionService', () => {
 
       expect(connected).toBe(true);
       expect(
-        workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile,
+        workspaceMemberUnipileService.applyUnipileAccountToWorkspaceMember,
       ).toHaveBeenCalledWith(
         workspaceMemberId,
         authToken,
@@ -378,7 +378,7 @@ describe('MemberLinkedinUnipileConnectionService', () => {
     it('does not persist when Unipile status is not connected', async () => {
       const {
         service,
-        workspaceMemberProfileUnipileService,
+        workspaceMemberUnipileService,
         whatsappUnipileRequestService,
       } = createWhatsappService();
       whatsappUnipileRequestService.mapAccountStatus.mockReturnValue(
@@ -400,14 +400,14 @@ describe('MemberLinkedinUnipileConnectionService', () => {
 
       expect(connected).toBe(false);
       expect(
-        workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile,
+        workspaceMemberUnipileService.applyUnipileAccountToWorkspaceMember,
       ).not.toHaveBeenCalled();
     });
 
     it('does not persist when already stored correctly', async () => {
       const {
         service,
-        workspaceMemberProfileUnipileService,
+        workspaceMemberUnipileService,
         whatsappUnipileRequestService,
       } = createWhatsappService();
 
@@ -426,7 +426,7 @@ describe('MemberLinkedinUnipileConnectionService', () => {
 
       expect(connected).toBe(true);
       expect(
-        workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile,
+        workspaceMemberUnipileService.applyUnipileAccountToWorkspaceMember,
       ).not.toHaveBeenCalled();
       expect(
         whatsappUnipileRequestService.getAllAccounts,

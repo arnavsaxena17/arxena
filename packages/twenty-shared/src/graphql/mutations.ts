@@ -163,26 +163,16 @@ export const graphqlToCreateOnePrompt = `mutation CreateOnePrompt($input: Prompt
             }
           }`;
 
-export const graphQLToCreateOneWorkspaceMemberProfile = `mutation CreateOneWorkspaceMemberProfile($input: WorkspaceMemberProfileCreateInput!) {
-    createWorkspaceMemberProfile(data: $input) {
+export const graphQLToUpdateOneWorkspaceMemberArx = `mutation UpdateOneWorkspaceMemberArx($idToUpdate: UUID!, $input: WorkspaceMemberUpdateInput!) {
+    updateWorkspaceMember(id: $idToUpdate, data: $input) {
       id
-      workspaceMember {
-        id
-      }
-    }
-  }`;
-
-
-  export const graphQLToUpdateOneWorkspaceMemberProfile = `mutation UpdateOneWorkspaceMemberProfile($idToUpdate: UUID!, $input: WorkspaceMemberProfileUpdateInput!) {
-    updateWorkspaceMemberProfile(id: $idToUpdate, data: $input) {
-      id
-      workspaceMemberId
       phoneNumber
       linkedinUrl
       whatsappUnipileAccountId
       linkedinUnipileAccountId
       keepLinkedinConnected
       linkedinProfile
+      outreachSenderProfile
       linkedinLiAtToken
       linkedinLiAToken
       linkedinUserAgent
@@ -190,11 +180,15 @@ export const graphQLToCreateOneWorkspaceMemberProfile = `mutation CreateOneWorks
       linkedinCountry
       linkedinCookiesLastSyncedAt
       linkedinCookiesValidatedAt
+      lastLinkedinConnectAt
+      lastLinkedinMessageAt
+      chromeExtensionId
+      typeWorkspaceMember
     }
   }`;
 
-export const graphQLToUpdateWorkspaceMemberLinkedinCookieTokens = `mutation UpdateWorkspaceMemberLinkedinCookieTokens($idToUpdate: UUID!, $input: WorkspaceMemberProfileUpdateInput!) {
-  updateWorkspaceMemberProfile(id: $idToUpdate, data: $input) {
+export const graphQLToUpdateWorkspaceMemberLinkedinCookieTokens = `mutation UpdateWorkspaceMemberLinkedinCookieTokens($idToUpdate: UUID!, $input: WorkspaceMemberUpdateInput!) {
+  updateWorkspaceMember(id: $idToUpdate, data: $input) {
     id
     linkedinLiAtToken
     linkedinLiAToken

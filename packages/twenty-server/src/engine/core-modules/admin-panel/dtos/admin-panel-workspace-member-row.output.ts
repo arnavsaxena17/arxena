@@ -1,6 +1,6 @@
 import { Field, GraphQLISODateTime, ObjectType } from '@nestjs/graphql';
 
-import { AdminPanelWorkspaceMemberRecruiterProfile } from 'src/engine/core-modules/admin-panel/dtos/admin-panel-workspace-member-recruiter-profile.output';
+import { AdminPanelWorkspaceMemberArx } from 'src/engine/core-modules/admin-panel/dtos/admin-panel-workspace-member-arx.output';
 
 @ObjectType()
 export class AdminPanelWorkspaceMemberRow {
@@ -9,6 +9,9 @@ export class AdminPanelWorkspaceMemberRow {
 
   @Field()
   workspaceName: string;
+
+  @Field(() => String, { nullable: true })
+  workspaceCompanyName?: string | null;
 
   @Field()
   workspaceSubdomain: string;
@@ -34,6 +37,6 @@ export class AdminPanelWorkspaceMemberRow {
   @Field(() => GraphQLISODateTime)
   membershipCreatedAt: Date;
 
-  @Field(() => AdminPanelWorkspaceMemberRecruiterProfile, { nullable: true })
-  recruiterProfile?: AdminPanelWorkspaceMemberRecruiterProfile | null;
+  @Field(() => AdminPanelWorkspaceMemberArx, { nullable: true })
+  workspaceMemberArx?: AdminPanelWorkspaceMemberArx | null;
 }

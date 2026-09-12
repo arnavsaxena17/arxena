@@ -138,6 +138,7 @@ import { AddWorkspaceApiCreditsFastInstanceCommand } from './2-25/2-25-instance-
 import { CreateUnipileAccountsTableFastInstanceCommand } from './2-25/2-25-instance-command-fast-1785600000011-create-unipile-accounts-table';
 import { AddWebsiteTrackingColumnsFastInstanceCommand } from './2-25/2-25-instance-command-fast-1785600000020-add-website-tracking-columns';
 import { AddExperimentToWorkflowVersionStatusFastInstanceCommand } from './2-25/2-25-instance-command-fast-1785600000076-add-experiment-to-workflow-version-status';
+import { AddWorkspaceCompanyIcpColumnsFastInstanceCommand } from './2-25/2-25-instance-command-fast-1785600000108-add-workspace-company-icp-columns';
 
 export const INSTANCE_COMMANDS = [
   AddViewFieldGroupIdIndexOnViewFieldFastInstanceCommand,
@@ -278,4 +279,5 @@ export const INSTANCE_COMMANDS = [
   CreateUnipileAccountsTableFastInstanceCommand,
   AddWebsiteTrackingColumnsFastInstanceCommand,
   AddExperimentToWorkflowVersionStatusFastInstanceCommand,
+  AddWorkspaceCompanyIcpColumnsFastInstanceCommand,
 ];

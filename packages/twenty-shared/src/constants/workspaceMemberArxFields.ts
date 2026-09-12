@@ -1,16 +1,10 @@
 /**
- * Workspace member profile field names (mirror arxena-standard-metadata fields-data).
+ * Arxena fields on workspaceMember (formerly workspaceMemberProfile).
  */
-export const WORKSPACE_MEMBER_PROFILE_FIELD_NAMES = {
+export const WORKSPACE_MEMBER_ARX_FIELD_NAMES = {
   typeWorkspaceMember: 'typeWorkspaceMember',
-  email: 'email',
   linkedinUrl: 'linkedinUrl',
   phoneNumber: 'phoneNumber',
-  companyName: 'companyName',
-  companyDescription: 'companyDescription',
-  firstName: 'firstName',
-  jobTitle: 'jobTitle',
-  lastName: 'lastName',
   linkedinUnipileAccountId: 'linkedinUnipileAccountId',
   linkedinLiAtToken: 'linkedinLiAtToken',
   linkedinCookiesLastSyncedAt: 'linkedinCookiesLastSyncedAt',
@@ -23,7 +17,10 @@ export const WORKSPACE_MEMBER_PROFILE_FIELD_NAMES = {
   whatsappUnipileAccountId: 'whatsappUnipileAccountId',
   keepLinkedinConnected: 'keepLinkedinConnected',
   linkedinProfile: 'linkedinProfile',
+  outreachSenderProfile: 'outreachSenderProfile',
+  lastLinkedinConnectAt: 'lastLinkedinConnectAt',
+  lastLinkedinMessageAt: 'lastLinkedinMessageAt',
 } as const;
 
-export type WorkspaceMemberProfileFieldName =
-  (typeof WORKSPACE_MEMBER_PROFILE_FIELD_NAMES)[keyof typeof WORKSPACE_MEMBER_PROFILE_FIELD_NAMES];
+export type WorkspaceMemberArxFieldName =
+  (typeof WORKSPACE_MEMBER_ARX_FIELD_NAMES)[keyof typeof WORKSPACE_MEMBER_ARX_FIELD_NAMES];

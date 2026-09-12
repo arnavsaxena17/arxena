@@ -6033,13 +6033,21 @@ export type UpdateWebhookInputUpdates = {
 export type UpdateWorkspaceInput = {
   aiAdditionalInstructions?: InputMaybe<Scalars['String']['input']>;
   allowImpersonation?: InputMaybe<Scalars['Boolean']['input']>;
+  companyName?: InputMaybe<Scalars['String']['input']>;
+  companyDomain?: InputMaybe<Scalars['String']['input']>;
+  linkedinUrl?: InputMaybe<Scalars['String']['input']>;
   customDomain?: InputMaybe<Scalars['String']['input']>;
   defaultRoleId?: InputMaybe<Scalars['UUID']['input']>;
   displayName?: InputMaybe<Scalars['String']['input']>;
   editableProfileFields?: InputMaybe<Array<Scalars['String']['input']>>;
+  employeeRange?: InputMaybe<Scalars['String']['input']>;
   enabledAiModelIds?: InputMaybe<Array<Scalars['String']['input']>>;
+  enrichmentJson?: InputMaybe<Scalars['JSON']['input']>;
   eventLogRetentionDays?: InputMaybe<Scalars['Float']['input']>;
   fastModel?: InputMaybe<Scalars['String']['input']>;
+  hq?: InputMaybe<Scalars['String']['input']>;
+  icpSpec?: InputMaybe<Scalars['String']['input']>;
+  industry?: InputMaybe<Scalars['String']['input']>;
   inviteHash?: InputMaybe<Scalars['String']['input']>;
   isGoogleAuthBypassEnabled?: InputMaybe<Scalars['Boolean']['input']>;
   isGoogleAuthEnabled?: InputMaybe<Scalars['Boolean']['input']>;
@@ -6053,6 +6061,7 @@ export type UpdateWorkspaceInput = {
   logo?: InputMaybe<Scalars['String']['input']>;
   smartModel?: InputMaybe<Scalars['String']['input']>;
   subdomain?: InputMaybe<Scalars['String']['input']>;
+  summary?: InputMaybe<Scalars['String']['input']>;
   trashRetentionDays?: InputMaybe<Scalars['Float']['input']>;
   useRecommendedModels?: InputMaybe<Scalars['Boolean']['input']>;
   workspaceDiscoverability?: InputMaybe<WorkspaceDiscoverability>;
@@ -6641,6 +6650,15 @@ export type Workspace = {
   workspaceDiscoverability: WorkspaceDiscoverability;
   workspaceMembersCount?: Maybe<Scalars['Float']['output']>;
   workspaceUrls: WorkspaceUrls;
+  companyName?: Maybe<Scalars['String']['output']>;
+  companyDomain?: Maybe<Scalars['String']['output']>;
+  linkedinUrl?: Maybe<Scalars['String']['output']>;
+  industry?: Maybe<Scalars['String']['output']>;
+  summary?: Maybe<Scalars['String']['output']>;
+  employeeRange?: Maybe<Scalars['String']['output']>;
+  hq?: Maybe<Scalars['String']['output']>;
+  enrichmentJson?: Maybe<Scalars['JSON']['output']>;
+  icpSpec?: Maybe<Scalars['String']['output']>;
 };
 
 export enum WorkspaceActivationStatus {

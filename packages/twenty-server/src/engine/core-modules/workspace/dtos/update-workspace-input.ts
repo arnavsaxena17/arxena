@@ -1,5 +1,6 @@
 import { Field, InputType } from '@nestjs/graphql';
 
+import GraphQLJSON from 'graphql-type-json';
 import {
   IsArray,
   IsBoolean,
@@ -150,4 +151,48 @@ export class UpdateWorkspaceInput {
   @IsBoolean()
   @IsOptional()
   isInternalMessagesImportEnabled?: boolean;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  companyName?: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  companyDomain?: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  linkedinUrl?: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  industry?: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  summary?: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  employeeRange?: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  hq?: string;
+
+  @Field(() => GraphQLJSON, { nullable: true })
+  @IsOptional()
+  enrichmentJson?: Record<string, unknown> | null;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  icpSpec?: string;
 }

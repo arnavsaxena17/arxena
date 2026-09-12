@@ -12,7 +12,7 @@ import {
 } from '../utils/build-unipile-linkedin-cookie-connect-body.util';
 import { LinkedinUnipileMemberAccountResolverService } from './linkedin-unipile-member-account-resolver.service';
 import { LinkedinUnipileTeardownSchedulerService } from './linkedin-unipile-teardown-scheduler.service';
-import { WorkspaceMemberProfileUnipileService } from './workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from './workspace-member-unipile.service';
 
 export type ValidateStoredLinkedinCookiesResult = {
   attempted: boolean;
@@ -53,7 +53,7 @@ export class LinkedinStoredCookieValidationService {
 
   constructor(
     private readonly environmentService: EnvironmentService,
-    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService: WorkspaceMemberUnipileService,
     private readonly linkedinUnipileTeardownSchedulerService: LinkedinUnipileTeardownSchedulerService,
     private readonly linkedinUnipileMemberAccountResolverService: LinkedinUnipileMemberAccountResolverService,
   ) {}
@@ -95,7 +95,7 @@ export class LinkedinStoredCookieValidationService {
 
     const logContext = params.logContext ?? 'stored LinkedIn cookie validation';
     const storedCookies =
-      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
+      await this.workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens(
         params.authToken,
         params.workspaceMemberId,
       );
@@ -175,7 +175,7 @@ export class LinkedinStoredCookieValidationService {
       accountStatus === 'pending';
 
       const keepConnected =
-      await this.workspaceMemberProfileUnipileService.getKeepLinkedinConnected(
+      await this.workspaceMemberUnipileService.getKeepLinkedinConnected(
         params.workspaceMemberId,
         params.authToken,
       );
@@ -212,7 +212,7 @@ export class LinkedinStoredCookieValidationService {
     this.logger.log(`Audience in VALIDATE STORED COOKIES FOR MEMBER: ${audience}`);
     this.logger.log(`Force disconnect after validation in VALIDATE STORED COOKIES FOR MEMBER: ${params.forceDisconnectAfterValidation}`);
     if (connected) {
-      await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberLinkedinCookieTokens(
+      await this.workspaceMemberUnipileService.updateWorkspaceMemberLinkedinCookieTokens(
         params.authToken,
         params.workspaceMemberId,
         {},
@@ -228,7 +228,7 @@ export class LinkedinStoredCookieValidationService {
     this.logger.log(`Audience in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${audience}`);
     this.logger.log(`Force disconnect after validation in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${params.forceDisconnectAfterValidation}`);
     const storedCookiesAfter =
-      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
+      await this.workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens(
         params.authToken,
         params.workspaceMemberId,
       );
@@ -277,7 +277,7 @@ export class LinkedinStoredCookieValidationService {
     const logContext =
       params.logContext ?? 'stored LinkedIn cookie Unipile connect';
     const storedCookies =
-      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
+      await this.workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens(
         params.authToken,
         params.workspaceMemberId,
       );
@@ -350,7 +350,7 @@ export class LinkedinStoredCookieValidationService {
       accountStatus === 'pending';
 
     const keepConnected =
-      await this.workspaceMemberProfileUnipileService.getKeepLinkedinConnected(
+      await this.workspaceMemberUnipileService.getKeepLinkedinConnected(
         params.workspaceMemberId,
         params.authToken,
       );
@@ -359,7 +359,7 @@ export class LinkedinStoredCookieValidationService {
       await this.linkedinUnipileTeardownSchedulerService.cancelPendingDisconnect(
         params.workspaceMemberId,
       );
-      await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberLinkedinCookieTokens(
+      await this.workspaceMemberUnipileService.updateWorkspaceMemberLinkedinCookieTokens(
         params.authToken,
         params.workspaceMemberId,
         {},
@@ -368,7 +368,7 @@ export class LinkedinStoredCookieValidationService {
     }
 
     const storedCookiesAfter =
-      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
+      await this.workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens(
         params.authToken,
         params.workspaceMemberId,
       );

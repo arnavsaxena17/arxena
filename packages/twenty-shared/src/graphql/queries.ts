@@ -567,18 +567,18 @@ const graphqlToFindManyProjectsWithCandidateValuesFull = `query FindManyProjects
         }
         recruiter {
             id
-            workspaceMemberProfile{
-                edges{
-                    node{
-                        id
-                        name
-                        phoneNumber
-                        companyDescription
-                        jobTitle
-                        whatsappUnipileAccountId
-                    }
-                }
+            userEmail
+            jobTitle
+            name {
+              firstName
+              lastName
             }
+            phoneNumber
+            linkedinUrl
+            whatsappUnipileAccountId
+            linkedinUnipileAccountId
+            keepLinkedinConnected
+            typeWorkspaceMember
         }
         jobCode
         jobLocation
@@ -665,18 +665,18 @@ const graphqlToFindManyProjectsWithCandidateValuesOrgChart = `query FindManyProj
         }
         recruiter {
             id
-            workspaceMemberProfile{
-                edges{
-                    node{
-                        id
-                        name
-                        phoneNumber
-                        companyDescription
-                        jobTitle
-                        whatsappUnipileAccountId
-                    }
-                }
+            userEmail
+            jobTitle
+            name {
+              firstName
+              lastName
             }
+            phoneNumber
+            linkedinUrl
+            whatsappUnipileAccountId
+            linkedinUnipileAccountId
+            keepLinkedinConnected
+            typeWorkspaceMember
         }
         jobCode
         jobLocation
@@ -770,22 +770,20 @@ const graphqlToFindManyProjectsWithCandidatesFull = `query FindManyProjects($fil
             }
           }
         }
-        recruiter{
+        recruiter {
             id
-            workspaceMemberProfile{
-                edges{
-                    node{
-                        id
-                        name
-                        phoneNumber
-                        companyDescription
-                        jobTitle
-                        whatsappUnipileAccountId
-                        linkedinUnipileAccountId
-                        keepLinkedinConnected
-                    }
-                }
+            userEmail
+            jobTitle
+            name {
+              firstName
+              lastName
             }
+            phoneNumber
+            linkedinUrl
+            whatsappUnipileAccountId
+            linkedinUnipileAccountId
+            keepLinkedinConnected
+            typeWorkspaceMember
         }
         jobCode
         jobLocation
@@ -868,19 +866,20 @@ const graphqlToFindManyProjectsWithCandidatesOrgChart = `query FindManyProjects(
             }
           }
         }
-        recruiter{
+        recruiter {
             id
-            workspaceMemberProfile{
-                edges{
-                    node{
-                        id
-                        name
-                        phoneNumber
-                        companyDescription
-                        jobTitle
-                    }
-                }
+            userEmail
+            jobTitle
+            name {
+              firstName
+              lastName
             }
+            phoneNumber
+            linkedinUrl
+            whatsappUnipileAccountId
+            linkedinUnipileAccountId
+            keepLinkedinConnected
+            typeWorkspaceMember
         }
         jobCode
         jobLocation
@@ -1057,8 +1056,8 @@ fragment ParticipantFragment on TimelineThreadParticipant {
   __typename
 }`;
 
-export const findWorkspaceMemberProfiles = `query FindManyWorkspaceMemberProfiles($filter: WorkspaceMemberProfileFilterInput, $orderBy: [WorkspaceMemberProfileOrderByInput], $lastCursor: String, $limit: Int) {
-  workspaceMemberProfiles(
+export const findWorkspaceMembersForArx = `query FindManyWorkspaceMembersForArx($filter: WorkspaceMemberFilterInput, $orderBy: [WorkspaceMemberOrderByInput], $lastCursor: String, $limit: Int) {
+  workspaceMembers(
     filter: $filter
     orderBy: $orderBy
     first: $limit
@@ -1068,23 +1067,20 @@ export const findWorkspaceMemberProfiles = `query FindManyWorkspaceMemberProfile
       node {
         __typename
         id
-        workspaceMemberId
-        phoneNumber
-        companyName
-        companyDescription
-        lastName
-        createdAt
-        name
-        linkedinUrl
+        userEmail
         jobTitle
-        updatedAt
-        firstName
+        name {
+          firstName
+          lastName
+        }
+        phoneNumber
+        linkedinUrl
         typeWorkspaceMember
-        email
         linkedinUnipileAccountId
         whatsappUnipileAccountId
         keepLinkedinConnected
         linkedinProfile
+        outreachSenderProfile
         linkedinLiAtToken
         linkedinLiAToken
         linkedinUserAgent
@@ -1092,6 +1088,11 @@ export const findWorkspaceMemberProfiles = `query FindManyWorkspaceMemberProfile
         linkedinCountry
         linkedinCookiesLastSyncedAt
         linkedinCookiesValidatedAt
+        lastLinkedinConnectAt
+        lastLinkedinMessageAt
+        chromeExtensionId
+        createdAt
+        updatedAt
       }
       cursor
       __typename
@@ -1107,15 +1108,14 @@ export const findWorkspaceMemberProfiles = `query FindManyWorkspaceMemberProfile
   }
 }`;
 
-export const findWorkspaceMemberProfileLinkedinCookies = `query FindWorkspaceMemberProfileLinkedinCookies($filter: WorkspaceMemberProfileFilterInput, $limit: Int) {
-  workspaceMemberProfiles(
+export const findWorkspaceMemberLinkedinCookies = `query FindWorkspaceMemberLinkedinCookies($filter: WorkspaceMemberFilterInput, $limit: Int) {
+  workspaceMembers(
     filter: $filter
     first: $limit
   ) {
     edges {
       node {
         id
-        workspaceMemberId
         linkedinLiAtToken
         linkedinLiAToken
         linkedinUserAgent
@@ -1128,16 +1128,17 @@ export const findWorkspaceMemberProfileLinkedinCookies = `query FindWorkspaceMem
   }
 }`;
 
-export const findWorkspaceMemberLinkedinProfile = `query FindWorkspaceMemberLinkedinProfile($filter: WorkspaceMemberProfileFilterInput, $limit: Int) {
-  workspaceMemberProfiles(
+export const findWorkspaceMemberLinkedinProfile = `query FindWorkspaceMemberLinkedinProfile($filter: WorkspaceMemberFilterInput, $limit: Int) {
+  workspaceMembers(
     filter: $filter
     first: $limit
   ) {
     edges {
       node {
         id
-        workspaceMemberId
         linkedinProfile
+        linkedinUnipileAccountId
+        linkedinUrl
       }
     }
   }
@@ -2015,6 +2016,13 @@ fragment UserQueryFragment on User {
       __typename
     }
     workspaceMembersCount
+    companyName
+    companyDomain
+    industry
+    summary
+    employeeRange
+    hq
+    icpSpec
     __typename
   }
   workspaces {

@@ -62,14 +62,6 @@ export class OrgChartRecordWorkspaceService {
         return undefined;
       }
 
-      const workspaceId =
-        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const createdByProfileId =
-        (await this.workspaceQueryService.getWorkspaceMemberProfileIdForMember(
-          workspaceId,
-          workspaceMemberId,
-        )) ?? undefined;
-
       const chartKind =
         params.chartKindOverride ?? this.mapModeToChartKind(params.mode);
       const searchTypeGql = this.mapSearchType(params.searchType);
@@ -116,10 +108,6 @@ export class OrgChartRecordWorkspaceService {
 
       if (keywordsHash) {
         input.keywordsHash = keywordsHash;
-      }
-
-      if (createdByProfileId) {
-        input.createdByProfileId = createdByProfileId;
       }
 
       const response = await this.staticGraphQLService.executeGraphQL(

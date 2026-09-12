@@ -15,7 +15,7 @@ import { buildUnipileLinkedinCookieConnectBody } from '../utils/build-unipile-li
 import { isUnipileInvalidLinkedinCookieCredentialsError } from '../utils/is-unipile-invalid-linkedin-cookie-credentials-error.util';
 import { LinkedinUnipileRequestService } from './linkedin-unipile-request.service';
 import { MemberLinkedinUnipileConnectionService } from './member-linkedin-unipile-connection.service';
-import { WorkspaceMemberProfileUnipileService } from './workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from './workspace-member-unipile.service';
 
 type UnipileConnectHttpResult = {
   status?: number;
@@ -33,7 +33,7 @@ export class LinkedinUnipileMemberAccountResolverService {
   );
 
   constructor(
-    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService: WorkspaceMemberUnipileService,
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
     private readonly memberLinkedinUnipileConnectionService: MemberLinkedinUnipileConnectionService,
   ) {}
@@ -55,7 +55,7 @@ export class LinkedinUnipileMemberAccountResolverService {
     this.logger.log(`Ip in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${args.ip?.trim() ?? undefined}`);
     let staleProfileAccountCleared = false;
     let accountId =
-      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+      await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
         args.workspaceMemberId,
         args.workspaceId,
         args.authToken,
@@ -219,7 +219,7 @@ export class LinkedinUnipileMemberAccountResolverService {
         this.logger.log(
           `[resolveMemberLinkedinUnipileAccount] Clearing stored LinkedIn cookies for workspaceMemberId=${args.workspaceMemberId} after invalid credentials`,
         );
-        await this.workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinCookieTokens(
+        await this.workspaceMemberUnipileService.clearWorkspaceMemberLinkedinCookieTokens(
           args.authToken,
           args.workspaceMemberId,
         );
@@ -352,7 +352,7 @@ export class LinkedinUnipileMemberAccountResolverService {
   > {
     try {
       const profile =
-        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields(
+        await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileFields(
           args.workspaceMemberId,
           args.authToken,
         );
@@ -368,7 +368,7 @@ export class LinkedinUnipileMemberAccountResolverService {
       }
 
       if (isUnipileConnectedStatus(match.status)) {
-        await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+        await this.workspaceMemberUnipileService.applyUnipileAccountToWorkspaceMember(
           args.workspaceMemberId,
           args.authToken,
           'linkedin',
@@ -655,7 +655,7 @@ export class LinkedinUnipileMemberAccountResolverService {
       this.logger.log(`Type in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: linkedin`);
       this.logger.log(`Account id in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${accountId}`);
       this.logger.log(`Account payload in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${JSON.stringify(accountPayload, null, 2)}`);
-      await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+      await this.workspaceMemberUnipileService.applyUnipileAccountToWorkspaceMember(
         workspaceMemberId,
         authToken,
         'linkedin',
@@ -671,7 +671,7 @@ export class LinkedinUnipileMemberAccountResolverService {
     this.logger.log(`Type in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: linkedin`);
     this.logger.log(`Account id in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${accountId}`);
 
-    await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberUnipileAccountId(
+    await this.workspaceMemberUnipileService.updateWorkspaceMemberUnipileAccountId(
       workspaceMemberId,
       authToken,
       'linkedin',

@@ -501,6 +501,27 @@ export {
 } from './verified-search-bot';
 export { getViewLayoutFromViewType } from './views/getViewLayoutFromViewType';
 export { isWidgetViewType } from './views/isWidgetViewType';
+export type {
+  WorkspaceMemberLinkedinCookieTokens,
+  WorkspaceMemberArxGraphqlNode,
+  WorkspaceMembersConnection,
+  WorkspaceMembersGraphqlResponse,
+  WorkspaceMembersApolloData,
+} from './workspaceMemberArxGraphql';
+export {
+  workspaceMemberFilterById,
+  extractWorkspaceMemberFromConnection,
+  extractWorkspaceMemberNode,
+  extractWorkspaceMemberFromApolloData,
+  extractWorkspaceMemberFromRelationField,
+  workspaceMemberEmail,
+  workspaceMemberFirstName,
+  workspaceMemberLastName,
+  workspaceMemberDisplayName,
+  parseWorkspaceMemberUnipileFields,
+  parseWorkspaceMemberLinkedinCookieTokensFromGraphql,
+  workspaceMemberUnipileAccountFieldName,
+} from './workspaceMemberArxGraphql';
 export type { WorkspaceMemberLinkedinProfileStorage } from './workspaceMemberLinkedinProfile';
 export {
   parseWorkspaceMemberLinkedinProfile,
@@ -509,20 +530,3 @@ export {
   mergeWorkspaceMemberLinkedinProfile,
   workspaceMemberLinkedinProfileMatchesAccountId,
 } from './workspaceMemberLinkedinProfile';
-export type {
-  WorkspaceMemberLinkedinCookieTokens,
-  WorkspaceMemberProfileGraphqlNode,
-  WorkspaceMemberProfilesConnection,
-  WorkspaceMemberProfilesGraphqlResponse,
-  WorkspaceMemberProfilesApolloData,
-} from './workspaceMemberProfileGraphql';
-export {
-  workspaceMemberProfileFilterByMemberId,
-  extractWorkspaceMemberProfileFromConnection,
-  extractWorkspaceMemberProfileNode,
-  extractWorkspaceMemberProfileFromApolloData,
-  extractWorkspaceMemberProfileFromRelationField,
-  parseWorkspaceMemberProfileUnipileFields,
-  parseWorkspaceMemberLinkedinCookieTokensFromGraphql,
-  workspaceMemberProfileUnipileAccountFieldName,
-} from './workspaceMemberProfileGraphql';

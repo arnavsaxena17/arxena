@@ -58,7 +58,7 @@ import {
 } from '../utils/unipile-linkedin-snapshot.cache';
 import type { MemberLinkedinUnipileConnectionService } from './member-linkedin-unipile-connection.service';
 import type { LinkedinProfileCacheService } from './linkedin-profile-cache.service';
-import type { WorkspaceMemberProfileUnipileService } from './workspace-member-profile-unipile.service';
+import type { WorkspaceMemberUnipileService } from './workspace-member-unipile.service';
 
 const getMemberLinkedinUnipileConnectionService = () =>
   require('./member-linkedin-unipile-connection.service')
@@ -68,9 +68,9 @@ const getLinkedinProfileCacheService = () =>
   require('./linkedin-profile-cache.service')
     .LinkedinProfileCacheService as typeof import('./linkedin-profile-cache.service').LinkedinProfileCacheService;
 
-const getWorkspaceMemberProfileUnipileService = () =>
-  require('./workspace-member-profile-unipile.service')
-    .WorkspaceMemberProfileUnipileService as typeof import('./workspace-member-profile-unipile.service').WorkspaceMemberProfileUnipileService;
+const getWorkspaceMemberUnipileService = () =>
+  require('./workspace-member-unipile.service')
+    .WorkspaceMemberUnipileService as typeof import('./workspace-member-unipile.service').WorkspaceMemberUnipileService;
 
 type LinkedinUnipileAccountItem = Record<string, unknown> & {
   id?: string;
@@ -105,8 +105,8 @@ export class LinkedinUnipileRequestService {
     @Inject(forwardRef(getMemberLinkedinUnipileConnectionService))
     private readonly memberLinkedinUnipileConnectionService?: MemberLinkedinUnipileConnectionService,
     @Optional()
-    @Inject(forwardRef(getWorkspaceMemberProfileUnipileService))
-    private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
+    @Inject(forwardRef(getWorkspaceMemberUnipileService))
+    private readonly workspaceMemberUnipileService?: WorkspaceMemberUnipileService,
     @Optional()
     @Inject(forwardRef(getLinkedinProfileCacheService))
     private readonly linkedinProfileCacheService?: LinkedinProfileCacheService,
@@ -721,11 +721,11 @@ export class LinkedinUnipileRequestService {
     if (
       workspaceMemberId &&
       authToken &&
-      this.workspaceMemberProfileUnipileService &&
+      this.workspaceMemberUnipileService &&
       options?.refresh !== true
     ) {
       const stored =
-        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinProfile(
+        await this.workspaceMemberUnipileService.getWorkspaceMemberLinkedinProfile(
           workspaceMemberId,
           authToken,
         );
@@ -769,14 +769,14 @@ export class LinkedinUnipileRequestService {
         response &&
         workspaceMemberId &&
         authToken &&
-        this.workspaceMemberProfileUnipileService
+        this.workspaceMemberUnipileService
       ) {
         const publicIdentifier =
           typeof response.public_identifier === 'string'
             ? response.public_identifier.trim()
             : undefined;
 
-        await this.workspaceMemberProfileUnipileService.saveWorkspaceMemberLinkedinProfile(
+        await this.workspaceMemberUnipileService.saveWorkspaceMemberLinkedinProfile(
           workspaceMemberId,
           authToken,
           {
@@ -805,7 +805,7 @@ export class LinkedinUnipileRequestService {
     stored: NonNullable<
       Awaited<
         ReturnType<
-          WorkspaceMemberProfileUnipileService['getWorkspaceMemberLinkedinProfile']
+          WorkspaceMemberUnipileService['getWorkspaceMemberLinkedinProfile']
         >
       >
     >,
@@ -848,10 +848,10 @@ export class LinkedinUnipileRequestService {
       !options?.refresh &&
       workspaceMemberId &&
       authToken &&
-      this.workspaceMemberProfileUnipileService
+      this.workspaceMemberUnipileService
     ) {
       const stored =
-        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinProfile(
+        await this.workspaceMemberUnipileService.getWorkspaceMemberLinkedinProfile(
           workspaceMemberId,
           authToken,
         );
@@ -919,9 +919,9 @@ export class LinkedinUnipileRequestService {
       if (
         workspaceMemberId &&
         authToken &&
-        this.workspaceMemberProfileUnipileService
+        this.workspaceMemberUnipileService
       ) {
-        await this.workspaceMemberProfileUnipileService.saveWorkspaceMemberLinkedinProfile(
+        await this.workspaceMemberUnipileService.saveWorkspaceMemberLinkedinProfile(
           workspaceMemberId,
           authToken,
           entry,

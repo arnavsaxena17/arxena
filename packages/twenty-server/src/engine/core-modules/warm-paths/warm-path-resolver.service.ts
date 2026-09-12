@@ -7,7 +7,7 @@ import {
 
 import { extractTargetProviderId } from 'src/engine/core-modules/org-chart-outreach/utils/linkedin-profile-context.util';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import type { LinkedInNetworkDistanceType } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-parameter.type';
 import type { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
@@ -41,7 +41,7 @@ export class WarmPathResolverService {
   constructor(
     private readonly linkedInSearchService: LinkedInSearchService,
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
-    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService: WorkspaceMemberUnipileService,
     private readonly gtmCommandMaterializeService: OutreachCommandMaterializeService,
   ) {}
 
@@ -227,7 +227,7 @@ export class WarmPathResolverService {
             : null,
       },
       viewer: {
-        workspaceMemberProfileId: params.workspaceMemberId,
+        workspaceMemberId: params.workspaceMemberId,
         fullName: viewerName,
         linkedinUrl: viewerLinkedinUrl,
         linkedinUnipileAccountId: accountId,
@@ -260,7 +260,7 @@ export class WarmPathResolverService {
     }
 
     const accountId =
-      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+      await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
         params.workspaceMemberId,
         params.workspaceId,
         params.apiToken,

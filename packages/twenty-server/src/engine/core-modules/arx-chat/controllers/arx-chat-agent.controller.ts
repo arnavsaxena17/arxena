@@ -36,8 +36,8 @@ import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-
 import { HumanLikeLLM } from 'src/engine/core-modules/arx-chat/services/llm-agents/human-or-bot-classification';
 import { ToolCallsProcessing } from 'src/engine/core-modules/arx-chat/services/llm-agents/tool-calls-processing';
 import { MessagingControls } from 'src/engine/core-modules/arx-chat/services/messaging-controls';
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import {
   formatChat
 } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
@@ -68,7 +68,7 @@ export class ArxChatEndpoint {
     private readonly engagedCandidateQueueService: EngagedCandidateQueueService,
     private readonly updateChat: UpdateChat,
     private readonly messagingControls: MessagingControls,
-    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService: WorkspaceMemberUnipileService,
     private readonly googleContactsService: GoogleContactsService,
   ) {}
 
@@ -586,15 +586,15 @@ export class ArxChatEndpoint {
 
     console.log('This is the chat reply:', messageToSend);
     const candidateJob: Project | undefined = personObj?.candidates?.edges[0]?.node?.project;
-    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
+    const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(
       candidateJob as Project,
       apiToken,
     );
-    if (!recruiterProfile) {
-      throw new Error('Recruiter profile not found for job');
+    if (!workspaceMember) {
+      throw new Error('Workspace member not found for job');
     }
 
-    console.log('Recruiter profile', recruiterProfile);
+    console.log('Workspace member profile', workspaceMember);
     const chatMessages =
       personObj?.candidates?.edges.filter(
         (candidate) => candidate.node.project.id == candidateJob?.id,
@@ -636,7 +636,7 @@ export class ArxChatEndpoint {
         (candidate) => candidate.node.project.id == candidateJob?.id,
       )[0]?.node as CandidateNode,
       candidateFirstName: personObj?.name?.firstName || '',
-      phoneNumberFrom: recruiterProfile.phoneNumber,
+      phoneNumberFrom: workspaceMember.phoneNumber,
       whatsappMessageType:
         personObj?.candidates?.edges.filter(
           (candidate) => candidate.node.project.id == candidateJob?.id,
@@ -674,7 +674,7 @@ export class ArxChatEndpoint {
       id: uuidv4(),
       candidateProfile: candidateNode,
       candidateFirstName: personObj?.name?.firstName || '',
-      phoneNumberFrom: recruiterProfile.phoneNumber,
+      phoneNumberFrom: workspaceMember.phoneNumber,
       whatsappMessageType: candidateNode?.whatsappProvider || 'application03',
       phoneNumberTo: messageTo,
       messages: [{ content: messageToSend }],
@@ -979,7 +979,7 @@ export class ArxChatEndpoint {
       await new ToolCallsProcessing(
         this.workspaceQueryService,
         this.staticGraphQLService,
-        this.workspaceMemberProfileUnipileService,
+        this.workspaceMemberUnipileService,
       ).shareJDtoCandidate(
         candidateNode,
         candidateNode.project,
@@ -1013,18 +1013,18 @@ export class ArxChatEndpoint {
       );
 
       // Get recruiter profile to get the actual phone number
-      const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileFromCurrentUser(apiToken, origin);
-      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
-      console.log('recruiterProfile', recruiterProfile);
+      const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getFromCurrentUser(apiToken, origin);
+      const currentUser = await new WorkspaceMemberArxService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+      console.log('workspaceMember', workspaceMember);
 
-      if (!recruiterProfile?.phoneNumber) {
+      if (!workspaceMember?.phoneNumber) {
         throw new HttpException('Recruiter phone number not found', HttpStatus.BAD_REQUEST);
       }
 
       // Create a simple message object for sending text message
       const sendTextMessageObj = {
-        phoneNumberFrom: recruiterProfile.phoneNumber,
-        phoneNumberTo: recruiterProfile.phoneNumber,
+        phoneNumberFrom: workspaceMember.phoneNumber,
+        phoneNumberTo: workspaceMember.phoneNumber,
         messages: 'This is a sample test message from Arxena API'
       };
 

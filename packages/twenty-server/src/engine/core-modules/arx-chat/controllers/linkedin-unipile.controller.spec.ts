@@ -4,8 +4,8 @@ import { LinkedinUnipileController } from './linkedin-unipile.controller';
 
 describe('LinkedinUnipileController', () => {
   const createController = () => {
-    const workspaceMemberProfileUnipileService = {
-      getWorkspaceMemberProfileUnipileFields: jest.fn(),
+    const workspaceMemberUnipileService = {
+      getWorkspaceMemberUnipileFields: jest.fn(),
       updateWorkspaceMemberLinkedinUrlFromExtensionIfValid: jest.fn(),
       getWorkspaceMemberLinkedinCookieTokens: jest.fn(),
       updateWorkspaceMemberLinkedinCookieTokens: jest.fn(),
@@ -50,7 +50,7 @@ describe('LinkedinUnipileController', () => {
       {} as never,
       environmentService as never,
       {} as never,
-      workspaceMemberProfileUnipileService as never,
+      workspaceMemberUnipileService as never,
       linkedinUnipileRequestService as never,
       memberLinkedinUnipileConnectionService as never,
       linkedinUnipileMemberAccountResolverService as never,
@@ -62,7 +62,7 @@ describe('LinkedinUnipileController', () => {
     return {
       controller,
       environmentService,
-      workspaceMemberProfileUnipileService,
+      workspaceMemberUnipileService,
       linkedinUnipileRequestService,
       memberLinkedinUnipileConnectionService,
       linkedinStoredCookieValidationService,
@@ -126,8 +126,8 @@ describe('LinkedinUnipileController', () => {
   });
 
   it('rejects persist-cookies when browser LinkedIn slug mismatches member profile', async () => {
-    const { controller, workspaceMemberProfileUnipileService } = createController();
-    workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields.mockResolvedValue(
+    const { controller, workspaceMemberUnipileService } = createController();
+    workspaceMemberUnipileService.getWorkspaceMemberUnipileFields.mockResolvedValue(
       {
         linkedinUrl: 'https://www.linkedin.com/in/member-a',
       },
@@ -151,13 +151,13 @@ describe('LinkedinUnipileController', () => {
   });
 
   it('persists cookies and reports cookiesChanged when persist-cookies succeeds', async () => {
-    const { controller, workspaceMemberProfileUnipileService } = createController();
-    workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields.mockResolvedValue(
+    const { controller, workspaceMemberUnipileService } = createController();
+    workspaceMemberUnipileService.getWorkspaceMemberUnipileFields.mockResolvedValue(
       {
         linkedinUrl: null,
       },
     );
-    workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens
+    workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens
       .mockResolvedValueOnce({
         linkedinLiAtToken: null,
         linkedinLiAToken: null,
@@ -191,7 +191,7 @@ describe('LinkedinUnipileController', () => {
     );
 
     expect(
-      workspaceMemberProfileUnipileService.updateWorkspaceMemberLinkedinCookieTokens,
+      workspaceMemberUnipileService.updateWorkspaceMemberLinkedinCookieTokens,
     ).toHaveBeenCalled();
     expect(result).toMatchObject({
       success: true,
@@ -204,13 +204,13 @@ describe('LinkedinUnipileController', () => {
   });
 
   it('persists li_at and clears li_a when extension sends empty li_a (no recruiter cookie)', async () => {
-    const { controller, workspaceMemberProfileUnipileService } = createController();
-    workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields.mockResolvedValue(
+    const { controller, workspaceMemberUnipileService } = createController();
+    workspaceMemberUnipileService.getWorkspaceMemberUnipileFields.mockResolvedValue(
       {
         linkedinUrl: null,
       },
     );
-    workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens
+    workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens
       .mockResolvedValueOnce({
         linkedinLiAtToken: null,
         linkedinLiAToken: null,
@@ -244,7 +244,7 @@ describe('LinkedinUnipileController', () => {
     );
 
     expect(
-      workspaceMemberProfileUnipileService.updateWorkspaceMemberLinkedinCookieTokens,
+      workspaceMemberUnipileService.updateWorkspaceMemberLinkedinCookieTokens,
     ).toHaveBeenCalledWith(
       'auth-token',
       'member-id',
@@ -262,13 +262,13 @@ describe('LinkedinUnipileController', () => {
   });
 
   it('clears stale li_a when extension sends empty li_a alongside li_at', async () => {
-    const { controller, workspaceMemberProfileUnipileService } = createController();
-    workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields.mockResolvedValue(
+    const { controller, workspaceMemberUnipileService } = createController();
+    workspaceMemberUnipileService.getWorkspaceMemberUnipileFields.mockResolvedValue(
       {
         linkedinUrl: null,
       },
     );
-    workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens
+    workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens
       .mockResolvedValueOnce({
         linkedinLiAtToken: 'old-li-at',
         linkedinLiAToken: 'stale-li-a',
@@ -302,7 +302,7 @@ describe('LinkedinUnipileController', () => {
     );
 
     expect(
-      workspaceMemberProfileUnipileService.updateWorkspaceMemberLinkedinCookieTokens,
+      workspaceMemberUnipileService.updateWorkspaceMemberLinkedinCookieTokens,
     ).toHaveBeenCalledWith(
       'auth-token',
       'member-id',
@@ -325,16 +325,16 @@ describe('LinkedinUnipileController', () => {
   it('disconnects stored LinkedIn Unipile account when li_a is first acquired and li_at is unchanged', async () => {
     const {
       controller,
-      workspaceMemberProfileUnipileService,
+      workspaceMemberUnipileService,
       memberLinkedinUnipileConnectionService,
     } = createController();
-    workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields.mockResolvedValue(
+    workspaceMemberUnipileService.getWorkspaceMemberUnipileFields.mockResolvedValue(
       {
         linkedinUrl: null,
         linkedinUnipileAccountId: 'stored-unipile-account',
       },
     );
-    workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens
+    workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens
       .mockResolvedValueOnce({
         linkedinLiAtToken: 'same-li-at',
         linkedinLiAToken: null,
@@ -380,16 +380,16 @@ describe('LinkedinUnipileController', () => {
   it('does not disconnect when stored li_a already exists', async () => {
     const {
       controller,
-      workspaceMemberProfileUnipileService,
+      workspaceMemberUnipileService,
       memberLinkedinUnipileConnectionService,
     } = createController();
-    workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields.mockResolvedValue(
+    workspaceMemberUnipileService.getWorkspaceMemberUnipileFields.mockResolvedValue(
       {
         linkedinUrl: null,
         linkedinUnipileAccountId: 'stored-unipile-account',
       },
     );
-    workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens
+    workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens
       .mockResolvedValueOnce({
         linkedinLiAtToken: 'same-li-at',
         linkedinLiAToken: 'old-li-a',
@@ -430,16 +430,16 @@ describe('LinkedinUnipileController', () => {
   it('does not disconnect when li_a changes alongside li_at', async () => {
     const {
       controller,
-      workspaceMemberProfileUnipileService,
+      workspaceMemberUnipileService,
       memberLinkedinUnipileConnectionService,
     } = createController();
-    workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields.mockResolvedValue(
+    workspaceMemberUnipileService.getWorkspaceMemberUnipileFields.mockResolvedValue(
       {
         linkedinUrl: null,
         linkedinUnipileAccountId: 'stored-unipile-account',
       },
     );
-    workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens
+    workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens
       .mockResolvedValueOnce({
         linkedinLiAtToken: 'old-li-at',
         linkedinLiAToken: 'old-li-a',
@@ -478,13 +478,13 @@ describe('LinkedinUnipileController', () => {
   });
 
   it('persists extension client_ip and client_country when server sees localhost', async () => {
-    const { controller, workspaceMemberProfileUnipileService } = createController();
-    workspaceMemberProfileUnipileService.getWorkspaceMemberProfileUnipileFields.mockResolvedValue(
+    const { controller, workspaceMemberUnipileService } = createController();
+    workspaceMemberUnipileService.getWorkspaceMemberUnipileFields.mockResolvedValue(
       {
         linkedinUrl: null,
       },
     );
-    workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens
+    workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens
       .mockResolvedValueOnce({
         linkedinLiAtToken: null,
         linkedinLiAToken: null,
@@ -520,7 +520,7 @@ describe('LinkedinUnipileController', () => {
     );
 
     expect(
-      workspaceMemberProfileUnipileService.updateWorkspaceMemberLinkedinCookieTokens,
+      workspaceMemberUnipileService.updateWorkspaceMemberLinkedinCookieTokens,
     ).toHaveBeenCalledWith(
       'auth-token',
       'member-id',

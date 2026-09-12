@@ -33,9 +33,8 @@ type ProjectPacingRecord = ObjectLiteral & {
   outreachStatus?: string | null;
 };
 
-type WorkspaceMemberProfilePacingRecord = ObjectLiteral & {
+type WorkspaceMemberPacingRecord = ObjectLiteral & {
   id: string;
-  workspaceMemberId: string;
   linkedinUnipileAccountId?: string | null;
   lastLinkedinConnectAt?: string | Date | null;
   lastLinkedinMessageAt?: string | Date | null;
@@ -143,13 +142,13 @@ export class OutreachUnipilePacingService {
 
     await this.globalWorkspaceOrmManager.executeInWorkspaceContext(async () => {
       const profileRepository =
-        await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberProfilePacingRecord>(
+        await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberPacingRecord>(
           workspaceId,
-          'workspaceMemberProfile',
+          'workspaceMember',
           { shouldBypassPermissionChecks: true },
         );
       const profile = await profileRepository.findOne({
-        where: { workspaceMemberId },
+        where: { id: workspaceMemberId },
       });
 
       if (isDefined(profile)) {
@@ -176,16 +175,16 @@ export class OutreachUnipilePacingService {
   }): Promise<{
     counters: OutreachThrottleCounters;
     project: ProjectPacingRecord | null;
-    profile: WorkspaceMemberProfilePacingRecord | null;
+    profile: WorkspaceMemberPacingRecord | null;
   }> {
     const authContext = buildSystemAuthContext(workspaceId);
 
     return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
       async () => {
         const profileRepository =
-          await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberProfilePacingRecord>(
+          await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberPacingRecord>(
             workspaceId,
-            'workspaceMemberProfile',
+            'workspaceMember',
             { shouldBypassPermissionChecks: true },
           );
         const projectRepository =
@@ -196,7 +195,7 @@ export class OutreachUnipilePacingService {
           );
 
         const profile = await profileRepository.findOne({
-          where: { workspaceMemberId },
+          where: { id: workspaceMemberId },
         });
 
         let project: ProjectPacingRecord | null = null;

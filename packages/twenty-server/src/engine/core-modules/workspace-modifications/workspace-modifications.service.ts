@@ -154,38 +154,6 @@ export class WorkspaceQueryService {
     }
   }
 
-  async getWorkspaceMemberProfileIdForMember(
-    workspaceId: string,
-    workspaceMemberId: string,
-  ): Promise<string | null> {
-    if (!workspaceId || !workspaceMemberId) {
-      return null;
-    }
-    try {
-      return await this.executeInWorkspaceContext(workspaceId, async () => {
-        const profileRepository = await this.getObjectRepository<{
-          id: string;
-          workspaceMemberId: string;
-        }>(workspaceId, 'workspaceMemberProfile');
-        const profile = await profileRepository.findOne({
-          where: { workspaceMemberId },
-          select: { id: true },
-        });
-
-        return profile?.id ?? null;
-      });
-    } catch (error) {
-      console.error(
-        'getWorkspaceMemberProfileIdForMember: query failed',
-        workspaceId,
-        workspaceMemberId,
-        error,
-      );
-
-      return null;
-    }
-  }
-
   async getWorkspaceMemberLinkedinUnipileAccountId(
     workspaceId: string,
     workspaceMemberId: string,
@@ -196,15 +164,15 @@ export class WorkspaceQueryService {
 
     try {
       return await this.executeInWorkspaceContext(workspaceId, async () => {
-        const profileRepository = await this.getObjectRepository<{
+        const memberRepository = await this.getObjectRepository<{
+          id: string;
           linkedinUnipileAccountId: string | null;
-          workspaceMemberId: string;
-        }>(workspaceId, 'workspaceMemberProfile');
-        const profile = await profileRepository.findOne({
-          where: { workspaceMemberId },
+        }>(workspaceId, 'workspaceMember');
+        const member = await memberRepository.findOne({
+          where: { id: workspaceMemberId },
           select: { linkedinUnipileAccountId: true },
         });
-        const accountId = profile?.linkedinUnipileAccountId?.trim();
+        const accountId = member?.linkedinUnipileAccountId?.trim();
 
         return accountId ? accountId : null;
       });
@@ -235,30 +203,28 @@ export class WorkspaceQueryService {
 
     try {
       return await this.executeInWorkspaceContext(workspaceId, async () => {
-        const profileRepository = await this.getObjectRepository<{
+        const memberRepository = await this.getObjectRepository<{
           id: string;
-          workspaceMemberId: string | null;
           linkedinUnipileAccountId: string | null;
           linkedinProfile: unknown;
-        }>(workspaceId, 'workspaceMemberProfile');
-        const profiles = await profileRepository.find();
+        }>(workspaceId, 'workspaceMember');
+        const members = await memberRepository.find();
 
-        return profiles.flatMap((profile) => {
+        return members.flatMap((member) => {
           const linkedinUnipileAccountId = readTrimmedId(
-            profile.linkedinUnipileAccountId,
+            member.linkedinUnipileAccountId,
           );
           if (!linkedinUnipileAccountId) {
             return [];
           }
 
-          const workspaceMemberId =
-            readTrimmedId(profile.workspaceMemberId) ?? profile.id ?? '';
+          const memberId = readTrimmedId(member.id) ?? '';
 
           return [
             {
-              workspaceMemberId,
+              workspaceMemberId: memberId,
               linkedinUnipileAccountId,
-              linkedinProfile: profile.linkedinProfile,
+              linkedinProfile: member.linkedinProfile,
             },
           ];
         });
@@ -370,18 +336,12 @@ export class WorkspaceQueryService {
     });
   }
 
-  /**
-   * Physical table for workspaceMemberProfile: Twenty uses `_workspaceMemberProfile` in tenant schemas;
-   * some paths historically used `workspaceMemberProfile` without the prefix.
-   */
-  async resolveWorkspaceMemberProfileTableName(
+  // Physical table for workspaceMember in tenant schemas.
+  async resolveWorkspaceMemberTableName(
     schema: string,
-  ): Promise<'_workspaceMemberProfile' | 'workspaceMemberProfile' | null> {
-    if (await this.checkIfTableExists(schema, '_workspaceMemberProfile')) {
-      return '_workspaceMemberProfile';
-    }
-    if (await this.checkIfTableExists(schema, 'workspaceMemberProfile')) {
-      return 'workspaceMemberProfile';
+  ): Promise<'workspaceMember' | null> {
+    if (await this.checkIfTableExists(schema, 'workspaceMember')) {
+      return 'workspaceMember';
     }
 
     return null;
@@ -415,10 +375,8 @@ export class WorkspaceQueryService {
     }
   }
 
-  /**
-   * Fallback: scan each tenant schema's workspaceMemberProfile for the Unipile account column.
-   */
-  private async findWorkspaceIdFromTenantMemberProfilesByUnipileColumn(
+  // Fallback: scan each tenant schema workspaceMember for Unipile account columns.
+  private async findWorkspaceIdFromTenantMembersByUnipileColumn(
     accountId: string,
     columnName: 'whatsappUnipileAccountId' | 'linkedinUnipileAccountId',
   ): Promise<string | null> {
@@ -432,17 +390,15 @@ export class WorkspaceQueryService {
     // while tenant schemas still exist.
     for (const workspaceId of workspaceIds) {
       const schema = this.getDataSourceSchema(workspaceId);
-      const profileTable = await this.resolveWorkspaceMemberProfileTableName(
-        schema,
-      );
+      const memberTable = await this.resolveWorkspaceMemberTableName(schema);
 
-      if (!profileTable) {
+      if (!memberTable) {
         continue;
       }
 
       const columnExists = await this.checkIfColumnExists(
         schema,
-        profileTable,
+        memberTable,
         columnName,
         { silent: true },
       );
@@ -455,7 +411,7 @@ export class WorkspaceQueryService {
         const rows = await this.executeWorkspaceRawQuery<
           Array<Record<string, unknown>>
         >(
-          `SELECT 1 FROM ${schema}."${profileTable}" WHERE "${columnName}" = $1 LIMIT 1`,
+          `SELECT 1 FROM ${schema}."${memberTable}" WHERE "${columnName}" = $1 LIMIT 1`,
           [accountId],
           workspaceId,
         );
@@ -465,7 +421,7 @@ export class WorkspaceQueryService {
         }
       } catch (error) {
         console.error(
-          `findWorkspaceIdFromTenantMemberProfilesByUnipileColumn: workspace ${workspaceId}`,
+          `findWorkspaceIdFromTenantMembersByUnipileColumn: workspace ${workspaceId}`,
           error,
         );
       }
@@ -524,7 +480,7 @@ export class WorkspaceQueryService {
         return fromMapping;
       }
 
-      return await this.findWorkspaceIdFromTenantMemberProfilesByUnipileColumn(
+      return await this.findWorkspaceIdFromTenantMembersByUnipileColumn(
         accountId,
         'whatsappUnipileAccountId',
       );
@@ -561,7 +517,7 @@ export class WorkspaceQueryService {
         return fromMapping;
       }
 
-      return await this.findWorkspaceIdFromTenantMemberProfilesByUnipileColumn(
+      return await this.findWorkspaceIdFromTenantMembersByUnipileColumn(
         accountId,
         'linkedinUnipileAccountId',
       );

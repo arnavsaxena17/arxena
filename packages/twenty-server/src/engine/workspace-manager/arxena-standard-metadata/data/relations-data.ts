@@ -168,58 +168,6 @@ const getAllRelationsData = (
     },
 
     {
-      fromObjectName: 'workspaceMember',
-      toObjectName: 'workspaceMemberProfile',
-      relationMetadata: {
-        fromDescription: null,
-        fromIcon: 'IconUserScan',
-        fromLabel: 'Member Type',
-        fromName: 'workspaceMemberProfile',
-        fromObjectMetadataId: objectsNameIdMap.workspaceMember,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.workspaceMemberProfile,
-        toDescription: '',
-        toIcon: 'IconUser',
-        toLabel: 'Member Name',
-        toName: 'workspaceMember',
-      },
-    },
-    {
-      fromObjectName: 'workspaceMemberProfile',
-      toObjectName: 'orgChart',
-      relationMetadata: {
-        fromDescription: null,
-        fromIcon: 'IconHierarchy2',
-        fromLabel: 'Org charts from profile',
-        fromName: 'profileOrgCharts',
-        fromObjectMetadataId: objectsNameIdMap.workspaceMemberProfile,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.orgChart,
-        toDescription: '',
-        toIcon: 'IconMoodCheck',
-        toLabel: 'Created by profile',
-        toName: 'createdByProfile',
-      },
-    },
-    {
-      fromObjectName: 'person',
-      toObjectName: 'workspaceMemberProfile',
-      relationMetadata: {
-        fromDescription: null,
-        fromIcon: 'IconUserScan',
-        fromLabel: 'Member Type',
-        fromName: 'workspaceMemberProfile',
-        fromObjectMetadataId: objectsNameIdMap.person,
-        relationType: 'ONE_TO_MANY',
-        toObjectMetadataId: objectsNameIdMap.workspaceMemberProfile,
-        toDescription: '',
-        toIcon: 'IconUser',
-        toLabel: 'Person',
-        toName: 'person',
-      },
-    },
-
-    {
       fromObjectName: 'person',
       toObjectName: 'chatMessage',
       relationMetadata: {

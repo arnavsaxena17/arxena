@@ -4,13 +4,15 @@ import {
     ChatRequestBody,
     Project,
     SendWhatsappUtilityMessageObjectType,
-    whatappUpdateMessageObjType
+    whatappUpdateMessageObjType,
+    workspaceMemberDisplayName,
+    workspaceMemberFirstName,
 } from 'twenty-shared';
 
 import { ToolCallingAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/tool-calling-agents';
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import { CalendarEmailService } from 'src/engine/core-modules/arx-chat/utils/calendar-email';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -19,7 +21,7 @@ export class ChatControls {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
-    private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService?: WorkspaceMemberUnipileService,
     private readonly calendarEmailService?: CalendarEmailService,
   ) {}
 
@@ -28,21 +30,21 @@ export class ChatControls {
       return new ToolCallingAgents(
         this.workspaceQueryService,
         this.staticGraphQLService,
-        this.workspaceMemberProfileUnipileService,
+        this.workspaceMemberUnipileService,
         this.calendarEmailService,
       ).getStartChatTools(candidateJob);
     } else if (chatControl.chatControlType === 'startVideoInterviewChat') {
       return new ToolCallingAgents(
         this.workspaceQueryService,
         this.staticGraphQLService,
-        this.workspaceMemberProfileUnipileService,
+        this.workspaceMemberUnipileService,
         this.calendarEmailService,
         ).getVideoInterviewTools(candidateJob);
     } else if (chatControl.chatControlType === 'startMeetingSchedulingChat') {
       return new ToolCallingAgents(
         this.workspaceQueryService,
         this.staticGraphQLService,
-        this.workspaceMemberProfileUnipileService,
+        this.workspaceMemberUnipileService,
         this.calendarEmailService,
         ).getStartMeetingSchedulingTools(candidateJob);
     }
@@ -58,12 +60,21 @@ export class ChatControls {
     let response;
 
     try {
-      const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(candidateJob, apiToken);
-      if (!recruiterProfile) {
-        throw new Error('Recruiter profile not found for job');
+      const workspaceMemberArxService = new WorkspaceMemberArxService(
+        this.staticGraphQLService,
+      );
+      const workspaceMember = await workspaceMemberArxService.getByProject(
+        candidateJob,
+        apiToken,
+      );
+      if (!workspaceMember) {
+        throw new Error('Workspace member not found for job');
       }
 
-      console.log('This is the recruiterProfile::', recruiterProfile);
+      const workspaceCompany =
+        await workspaceMemberArxService.getWorkspaceCompanyProfile(apiToken);
+
+      console.log('This is the workspaceMember::', workspaceMember);
       if (
         whatappUpdateMessageObj?.messages[0]?.content
           ?.toLowerCase()
@@ -134,12 +145,12 @@ export class ChatControls {
         const sendTemplateMessageObj: SendWhatsappUtilityMessageObjectType = {
           recipient: whatappUpdateMessageObj.phoneNumberTo.replace('+', ''),
           template_name: messageTemplate,
-          recruiterFirstName: recruiterProfile.name,
+          recruiterFirstName: workspaceMemberFirstName(workspaceMember),
           candidateFirstName: whatappUpdateMessageObj.candidateFirstName,
-          recruiterName: recruiterProfile.name,
-          recruiterJobTitle: recruiterProfile.jobTitle || '',
-          recruiterCompanyName: recruiterProfile.companyName,
-          recruiterCompanyDescription: recruiterProfile.companyDescription,
+          recruiterName: workspaceMemberDisplayName(workspaceMember),
+          recruiterJobTitle: workspaceMember.jobTitle || '',
+          recruiterCompanyName: workspaceCompany.companyName || '',
+          recruiterCompanyDescription: workspaceCompany.summary || '',
           jobPositionName:
             whatappUpdateMessageObj?.candidateProfile?.project?.name,
           companyName:
@@ -167,14 +178,14 @@ export class ChatControls {
       } else {
         console.log(
           'This is the standard message to send from',
-          recruiterProfile.phoneNumber,
+          workspaceMember.phoneNumber,
         );
         console.log(
           'This is the standard message to send to phone:',
           whatappUpdateMessageObj.phoneNumberTo,
         );
         const sendTextMessageObj: ChatRequestBody = {
-          phoneNumberFrom: recruiterProfile.phoneNumber,
+          phoneNumberFrom: workspaceMember.phoneNumber,
           phoneNumberTo: whatappUpdateMessageObj.phoneNumberTo,
           messages: whatappUpdateMessageObj.messages[0].content,
         };

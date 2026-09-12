@@ -1,9 +1,6 @@
 import { FieldActorSource } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
-import {
-  AUTO_SELECT_FAST_MODEL_ID,
-  AUTO_SELECT_SMART_MODEL_ID,
-} from 'twenty-shared/constants';
+import { AUTO_SELECT_SMART_MODEL_ID } from 'twenty-shared/constants';
 import { type EntityManager } from 'typeorm';
 import { v5 } from 'uuid';
 
@@ -21,6 +18,14 @@ import {
 
 const OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE =
   'c8e4d2b1-7a90-4f33-9e16-5b0c8a1d4e72';
+
+// Structured extraction is copy-from-transcript + validated downstream; DeepSeek
+// is cheaper/faster than the smart models and more reliable than Gemini Flash.
+export const OUTREACH_EXTRACT_SIGNALS_MODEL_ID =
+  'openrouter/deepseek/deepseek-v4-flash-0731';
+
+export const OUTREACH_EXTRACT_SIGNALS_AGENT_NAME =
+  'gtm-outreach-extract-signals';
 
 const GRAPH_SLUGS: Record<string, string> = Object.fromEntries(
   Object.values(SEEDED_OUTREACH_WORKFLOW).map((entry) => [
@@ -343,11 +348,9 @@ const upsertAgents = async ({
     {
       key: 'extractSignals' as const,
       id: agentIds.extractSignals,
-      name: 'gtm-outreach-extract-signals',
+      name: OUTREACH_EXTRACT_SIGNALS_AGENT_NAME,
       label: 'GTM inbound signal extraction',
-      // Extraction is a copy-from-transcript task and its output is validated
-      // downstream, so it does not need the smart model.
-      modelId: AUTO_SELECT_FAST_MODEL_ID,
+      modelId: OUTREACH_EXTRACT_SIGNALS_MODEL_ID,
       prompt:
         'You extract structured signals from an inbound sales reply. You never write prose and never classify intent. Return JSON { "acceptedSlotIndex", "requestedChannelSwitch", "prospectEmail", "referralName", "referralEmail", "referralPhone", "shouldNotRespond" }. acceptedSlotIndex is a 0-based index into the injected slots and is -1 unless they confirmed one specific slot. requestedChannelSwitch is NONE unless they explicitly asked to move channel. Copy contacts character for character from the transcript and leave a field empty rather than guessing — naming someone without contact details is normal. shouldNotRespond is true only for opt-out.',
       responseFormat: { type: 'json', schema: EXTRACT_SIGNALS_SCHEMA },
@@ -378,7 +381,8 @@ const upsertAgents = async ({
           UPDATE core.agent
           SET prompt = $2,
               "responseFormat" = $3::jsonb,
-              label = $4
+              label = $4,
+              "modelId" = $5
           WHERE id = $1
         `,
         [
@@ -386,6 +390,7 @@ const upsertAgents = async ({
           agent.prompt,
           JSON.stringify(agent.responseFormat),
           agent.label,
+          agent.modelId,
         ],
       );
 
@@ -633,8 +638,8 @@ export const prefillOutreachWorkflows = async ({
   const profileMemberFieldId = await loadFieldMetadataId({
     entityManager,
     workspaceId,
-    objectName: 'workspaceMemberProfile',
-    fieldNames: ['workspaceMemberId', 'workspaceMember'],
+    objectName: 'workspaceMember',
+    fieldNames: ['id'],
   });
   const chatCandidateFieldId = await loadFieldMetadataId({
     entityManager,

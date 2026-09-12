@@ -36,15 +36,13 @@ export type OutreachWorkspaceCompany = {
   hq: string;
 };
 
-/** Structured ICP stored in `icpSpec` JSON (workspaceProfile / Project). */
+/** Structured ICP stored in `icpSpec` JSON (core Workspace / Project). */
 export type IcpSpec = {
   targetTitles: string[];
   locations: string[];
 };
 
-export type WorkspaceProfileRecord = {
-  id: string;
-  name?: string | null;
+export type WorkspaceCompanyFields = {
   companyName?: string | null;
   companyDomain?: string | null;
   industry?: string | null;
@@ -232,7 +230,7 @@ export const buildIcpOnboardingKickoffPrompt = (
     `Hey — help me set up ICP and outreach preferences for ${projectLabel}.`,
     companyBlurb +
       '. Walk me through who we should reach (target titles and locations), send mode (approval vs auto), and caps — ask questions as we go.',
-    'When we agree, save the default ICP as icpSpec JSON on workspaceProfile (targetTitles + locations only). Only write Project.icpSpec if I ask for a project-specific override.',
+    'When we agree, save the default ICP as icpSpec JSON on the Workspace (Setup Save or Regenerate ICP: targetTitles + locations only). Only write Project.icpSpec if I ask for a project-specific override.',
     ...draftLines,
   ].join('\n');
 };
@@ -293,7 +291,7 @@ export const buildRegenerateIcpSendPrompt = (
     }.`,
     company.industry ? `Industry: ${company.industry}.` : null,
     company.summary ? `Company summary: ${company.summary}` : null,
-    'load_skills(["setup"]), then save icpSpec on workspaceProfile with targetTitles and locations only.',
+    'load_skills(["setup"]), then persist icpSpec on the Workspace via Setup Regenerate ICP or Setup Save (targetTitles and locations only).',
     'Do not write Project.icpSpec unless I ask for a project-specific override.',
   ]
     .filter(Boolean)

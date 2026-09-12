@@ -7,7 +7,7 @@ import { LinkedinUnipileMemberAccountResolverService } from './linkedin-unipile-
 import { LinkedinUnipileRequestService } from './linkedin-unipile-request.service';
 import { LinkedinUnipileTeardownSchedulerService } from './linkedin-unipile-teardown-scheduler.service';
 import { MemberLinkedinUnipileConnectionService } from './member-linkedin-unipile-connection.service';
-import { WorkspaceMemberProfileUnipileService } from './workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from './workspace-member-unipile.service';
 
 export type LinkedinUnipileAccountIdSource =
   | 'explicit_request'
@@ -39,7 +39,7 @@ export class LinkedinUnipileSessionService {
   constructor(
     private readonly environmentService: EnvironmentService,
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService: WorkspaceMemberUnipileService,
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
     private readonly memberLinkedinUnipileConnectionService: MemberLinkedinUnipileConnectionService,
     private readonly linkedinUnipileTeardownSchedulerService: LinkedinUnipileTeardownSchedulerService,
@@ -76,7 +76,7 @@ export class LinkedinUnipileSessionService {
       const workspaceMemberId =
         await this.workspaceQueryService.getWorkspaceMemberIdFromToken(apiToken);
       const linkedinAccountId =
-        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+        await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
           workspaceMemberId,
           workspaceId,
           apiToken,
@@ -158,7 +158,7 @@ export class LinkedinUnipileSessionService {
       }
 
       const storedAccountId =
-        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+        await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
           workspaceMemberId,
           workspaceId,
           apiToken,
@@ -170,7 +170,7 @@ export class LinkedinUnipileSessionService {
       }
 
       const keepConnected =
-        await this.workspaceMemberProfileUnipileService.getKeepLinkedinConnected(
+        await this.workspaceMemberUnipileService.getKeepLinkedinConnected(
           workspaceMemberId,
           apiToken,
         );
@@ -245,12 +245,12 @@ export class LinkedinUnipileSessionService {
       );
     }
     const keepConnected =
-      await this.workspaceMemberProfileUnipileService.getKeepLinkedinConnected(
+      await this.workspaceMemberUnipileService.getKeepLinkedinConnected(
         workspaceMemberId,
         apiToken,
       );
     const storedCookies =
-      await this.workspaceMemberProfileUnipileService.getWorkspaceMemberLinkedinCookieTokens(
+      await this.workspaceMemberUnipileService.getWorkspaceMemberLinkedinCookieTokens(
         apiToken,
         workspaceMemberId,
       );

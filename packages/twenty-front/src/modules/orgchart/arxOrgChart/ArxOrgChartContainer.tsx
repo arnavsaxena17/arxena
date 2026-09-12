@@ -15,7 +15,7 @@ import { AppPath } from 'twenty-shared/types';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useOrgChartSnackBar } from '@/orgchart/hooks/useOrgChartSnackBar';
 import { useUnipile } from '@/unipile/contexts/UnipileContext';
-import { workspaceMemberProfileUnipileFieldsState } from '@/unipile/states/workspaceMemberProfileUnipileFieldsState';
+import { workspaceMemberUnipileFieldsState } from '@/unipile/states/workspaceMemberUnipileFieldsState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
@@ -211,8 +211,8 @@ export const ArxOrgChartContainer = ({
   );
 
   const { isLinkedinConnected } = useUnipile();
-  const workspaceMemberProfileUnipileFields = useAtomStateValue(
-    workspaceMemberProfileUnipileFieldsState,
+  const workspaceMemberUnipileFields = useAtomStateValue(
+    workspaceMemberUnipileFieldsState,
   );
   const linkedinUnipileAccounts = useAtomStateValue(linkedinUnipileAccountsState);
   const setOrgChartSelectedCompanyInfo = useSetAtomState(
@@ -282,11 +282,11 @@ export const ArxOrgChartContainer = ({
     }
     return (
       resolveLinkedinUnipileAccountIdForWorkspaceMember(
-        workspaceMemberProfileUnipileFields,
+        workspaceMemberUnipileFields,
         linkedinUnipileAccounts,
       ) ?? undefined
     );
-  }, [workspaceMemberProfileUnipileFields, linkedinUnipileAccounts]);
+  }, [workspaceMemberUnipileFields, linkedinUnipileAccounts]);
 
   const asOfMonth = searchParams.get('asOf')?.trim() || '';
 

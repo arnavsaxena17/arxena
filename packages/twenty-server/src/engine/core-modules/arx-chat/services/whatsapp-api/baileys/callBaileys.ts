@@ -11,7 +11,7 @@ import {
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -33,12 +33,12 @@ export class BaileysWhatsappAPI {
   ): Promise<{ status: 'success' | 'failed'; message?: string }> {
     console.log('Sending message to whatsapp via baileys api');
 
-    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
+    const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(
       candidateJob,
       apiToken,
     );
-    if (!recruiterProfile) {
-      throw new Error('Recruiter profile not found for job');
+    if (!workspaceMember) {
+      throw new Error('Workspace member not found for job');
     }
 
     console.log(
@@ -48,7 +48,7 @@ export class BaileysWhatsappAPI {
     if (whatappUpdateMessageObj.messageType === 'botMessage') {
       console.log(
         'This is the standard message to send fromL',
-        recruiterProfile.phoneNumber,
+        workspaceMember.phoneNumber,
         'for name:',
         whatappUpdateMessageObj.candidateProfile.name,
       );
@@ -59,7 +59,7 @@ export class BaileysWhatsappAPI {
         whatappUpdateMessageObj.candidateProfile.name,
       );
       const sendTextMessageObj: ChatRequestBody = {
-        phoneNumberFrom: recruiterProfile.phoneNumber,
+        phoneNumberFrom: workspaceMember.phoneNumber,
         phoneNumberTo: whatappUpdateMessageObj.phoneNumberTo,
         messages: whatappUpdateMessageObj.messages[0].content,
       };

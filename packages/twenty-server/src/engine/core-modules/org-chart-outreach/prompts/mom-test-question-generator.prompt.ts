@@ -37,14 +37,15 @@ export const ARXENA_MOM_TEST_DEFAULTS: MomTestProductHypotheses = {
     'Founder / Co-founder (early-stage) → T, M, V',
     'RevOps / Sales Ops → T, V',
   ].join('\n'),
-  geoDefaults: 'India → ₹ lakh; US/UK → $/£; match currency and idiom to geography from the resume',
+  geoDefaults:
+    'India → ₹ lakh; US/UK → $/£; match currency and idiom to geography from the resume',
 };
 
 export const buildMomTestSystemPrompt = (
   hypotheses: MomTestProductHypotheses = ARXENA_MOM_TEST_DEFAULTS,
 ): string =>
   [
-    'You are a customer discovery research assistant for a B2B startup founder. Your job: given a candidate\'s resume, generate personalized discovery interview questions that follow The Mom Test (Rob Fitzpatrick) and evidence the founder\'s problem hypotheses — without ever revealing what the founder is building.',
+    "You are a customer discovery research assistant for a B2B startup founder. Your job: given a candidate's resume, generate personalized discovery interview questions that follow The Mom Test (Rob Fitzpatrick) and evidence the founder's problem hypotheses — without ever revealing what the founder is building.",
     '',
     '### CONTEXT (for your reasoning only — must NEVER appear in the questions)',
     '',
@@ -67,7 +68,7 @@ export const buildMomTestSystemPrompt = (
     '4. **One story, then dig.** Prefer questions that open a specific story, designed so the follow-ups ("what are the implications of that?", "how are you dealing with it now?", "what else have you tried?", "where does the money come from?") do the evidencing.',
     '5. **Money = past money only.** Money probes must ask about spend already made or losses already incurred (tool budgets, lost deal sizes, churned ARR, hours × loaded cost, out-of-pocket personal spend). Never "how much would you pay?"',
     '6. **Seniority-aware money probes.** ICs (SDR/BDR/AE): comp math, quota, time, personal spend, tools they begged for. Managers/Heads: team tool budgets, loaded team hours, deals/renewals lost. VPs: forecast impact, per-rep tech spend, budget mechanics (whose budget, approval thresholds, who signed last time).',
-    '7. **Respect confidentiality.** Questions must be answerable without breaching the person\'s current/former employer confidentiality — ask for rough sizes, ranges, and process descriptions, not client names or exact contract terms.',
+    "7. **Respect confidentiality.** Questions must be answerable without breaching the person's current/former employer confidentiality — ask for rough sizes, ranges, and process descriptions, not client names or exact contract terms.",
     `8. **Language and units.** Match currency and idiom to the person's geography from the resume (${hypotheses.geoDefaults}).`,
     '',
     '### YOUR PROCESS',
@@ -133,16 +134,30 @@ export const formatLinkedinProfileAsResumeText = (
     lines.push(name);
   }
 
-  if (typeof personProfile.headline === 'string' && personProfile.headline.trim()) {
+  if (
+    typeof personProfile.headline === 'string' &&
+    personProfile.headline.trim()
+  ) {
     lines.push(personProfile.headline.trim());
   }
 
-  if (typeof personProfile.location === 'string' && personProfile.location.trim()) {
+  if (
+    typeof personProfile.location === 'string' &&
+    personProfile.location.trim()
+  ) {
     lines.push(`Location: ${personProfile.location.trim()}`);
   }
 
-  if (typeof personProfile.summary === 'string' && personProfile.summary.trim()) {
+  if (
+    typeof personProfile.summary === 'string' &&
+    personProfile.summary.trim()
+  ) {
     lines.push('', 'Summary:', personProfile.summary.trim());
+  } else if (
+    typeof personProfile.about === 'string' &&
+    personProfile.about.trim()
+  ) {
+    lines.push('', 'Summary:', personProfile.about.trim());
   }
 
   const workExperience = Array.isArray(personProfile.work_experience)

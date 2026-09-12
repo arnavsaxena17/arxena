@@ -7,7 +7,7 @@ jest.mock('openai', () => ({
 
 import { Test } from '@nestjs/testing';
 import { LinkedinUnipileSessionService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-session.service';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import { CandidateSearchBaseService } from 'src/engine/core-modules/candidate-search/services/candidate-search-base.service';
 import { JobDescriptionService } from 'src/engine/core-modules/candidate-search/services/job-description.service';
 import {
@@ -27,7 +27,7 @@ describe('CandidateSearchBaseService.getLinkedInAccountId', () => {
     getWorkspaceIdFromToken: jest.Mock;
     getWorkspaceMemberIdFromToken: jest.Mock;
   };
-  let workspaceMemberProfileUnipileService: Record<string, unknown>;
+  let workspaceMemberUnipileService: Record<string, unknown>;
   let linkedinUnipileSessionService: {
     ensureLinkedinAccountId: jest.Mock;
   };
@@ -39,7 +39,7 @@ describe('CandidateSearchBaseService.getLinkedInAccountId', () => {
         .fn()
         .mockResolvedValue('workspace-member-id'),
     };
-    workspaceMemberProfileUnipileService = {};
+    workspaceMemberUnipileService = {};
     linkedinUnipileSessionService = {
       ensureLinkedinAccountId: jest.fn().mockResolvedValue('session-account'),
     };
@@ -50,8 +50,8 @@ describe('CandidateSearchBaseService.getLinkedInAccountId', () => {
         { provide: LinkedInSearchService, useValue: {} },
         { provide: WorkspaceQueryService, useValue: workspaceQueryService },
         {
-          provide: WorkspaceMemberProfileUnipileService,
-          useValue: workspaceMemberProfileUnipileService,
+          provide: WorkspaceMemberUnipileService,
+          useValue: workspaceMemberUnipileService,
         },
         {
           provide: LinkedinUnipileSessionService,

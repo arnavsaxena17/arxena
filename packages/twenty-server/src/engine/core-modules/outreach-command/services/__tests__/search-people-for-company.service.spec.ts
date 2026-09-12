@@ -25,8 +25,8 @@ describe('SearchPeopleForCompanyService', () => {
   const projectRepository = {
     findOne: jest.fn(),
   };
-  const workspaceProfileRepository = {
-    find: jest.fn(),
+  const workspaceRepository = {
+    findOneBy: jest.fn(),
   };
   const globalWorkspaceOrmManager = {
     getRepository: jest.fn(async (_workspaceId: string, objectName: string) => {
@@ -36,7 +36,8 @@ describe('SearchPeopleForCompanyService', () => {
       if (objectName === 'project') {
         return projectRepository;
       }
-      return workspaceProfileRepository;
+
+      throw new Error(`Unexpected repository: ${objectName}`);
     }),
     executeInWorkspaceContext: jest.fn(
       async (callback: () => Promise<unknown>) => callback(),
@@ -44,6 +45,7 @@ describe('SearchPeopleForCompanyService', () => {
   };
 
   const service = new SearchPeopleForCompanyService(
+    workspaceRepository as never,
     globalWorkspaceOrmManager as never,
     peopleApiService as never,
     linkedInSearchTransformer as never,
@@ -75,7 +77,10 @@ describe('SearchPeopleForCompanyService', () => {
       }),
       maxPersonasPerCompany: 2,
     });
-    workspaceProfileRepository.find.mockResolvedValue([]);
+    workspaceRepository.findOneBy.mockResolvedValue({
+      id: 'ws-1',
+      icpSpec: null,
+    });
     gtmWorkspaceAuthTokenService.resolveApiKeyToken.mockResolvedValue('tok');
     unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(
       { accountId: 'acct-1', product: 'classic' },
@@ -145,6 +150,36 @@ describe('SearchPeopleForCompanyService', () => {
     expect(peopleApiService.searchPeople).toHaveBeenCalledWith(
       expect.objectContaining({
         jobTitle: 'Head of Talent',
+      }),
+      'tok',
+      { workspaceId: 'ws-1' },
+    );
+  });
+
+  it('falls back to workspace icpSpec when project icpSpec is empty', async () => {
+    projectRepository.findOne.mockResolvedValue({
+      id: projectId,
+      name: 'GTM Harvest',
+      icpSpec: null,
+      outreachConfig: null,
+    });
+    workspaceRepository.findOneBy.mockResolvedValue({
+      id: 'ws-1',
+      icpSpec: JSON.stringify({
+        targetTitles: ['Chief People Officer'],
+        locations: ['Germany'],
+      }),
+    });
+
+    await service.execute({
+      workspaceId: 'ws-1',
+      input: { companyId },
+    });
+
+    expect(peopleApiService.searchPeople).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jobTitle: 'Chief People Officer',
+        locations: ['Germany'],
       }),
       'tok',
       { workspaceId: 'ws-1' },

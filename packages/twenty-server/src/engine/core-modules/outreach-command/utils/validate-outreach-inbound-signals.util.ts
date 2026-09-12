@@ -17,6 +17,7 @@ export type OutreachInboundSignalsInput = {
   transcript?: unknown;
   slots?: unknown;
   lastInboundChannel?: unknown;
+  preferredChannel?: unknown;
   acceptedSlotIndex?: unknown;
   requestedChannelSwitch?: unknown;
   prospectEmail?: unknown;
@@ -31,6 +32,7 @@ export type OutreachValidatedInboundSignals = {
   startsAt: string;
   endsAt: string;
   replyChannel: OutreachReplyChannel;
+  preferredChannelToStamp: OutreachReplyChannel | '';
   prospectEmail: string;
   referralName: string;
   referralEmail: string;
@@ -194,18 +196,25 @@ export const validateOutreachInboundSignals = (
     transcript,
   });
 
+  const explicitSwitch = asChannel(input.requestedChannelSwitch);
+  const stickyPreferred = asChannel(input.preferredChannel);
+  const lastInbound = asChannel(input.lastInboundChannel);
+  const prospectEmail = groundEmail({
+    email: asTrimmedString(input.prospectEmail),
+    transcript,
+  });
+  const replyChannel = explicitSwitch ?? stickyPreferred ?? lastInbound ?? 'LINKEDIN';
+  // Asking for details by email also sticks future outbounds on EMAIL.
+  const preferredChannelToStamp =
+    explicitSwitch ?? (prospectEmail !== '' ? 'EMAIL' : '');
+
   return {
     success: true,
     startsAt,
     endsAt,
-    replyChannel:
-      asChannel(input.requestedChannelSwitch) ??
-      asChannel(input.lastInboundChannel) ??
-      'LINKEDIN',
-    prospectEmail: groundEmail({
-      email: asTrimmedString(input.prospectEmail),
-      transcript,
-    }),
+    replyChannel,
+    preferredChannelToStamp,
+    prospectEmail,
     referralName,
     referralEmail,
     referralPhone,

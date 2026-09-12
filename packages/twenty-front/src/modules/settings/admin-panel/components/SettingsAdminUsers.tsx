@@ -18,9 +18,8 @@ import { Section } from 'twenty-ui/layout';
 import { ThemeContext, themeCssVariables } from 'twenty-ui/theme-constants';
 import { H2Title } from 'twenty-ui/typography';
 
-type RecruiterProfileRow = {
+type WorkspaceMemberArxRow = {
   workspaceMemberId?: string | null;
-  profileId?: string | null;
   phoneNumber?: string | null;
   linkedinUrl?: string | null;
   linkedinUnipileAccountId?: string | null;
@@ -31,8 +30,6 @@ type RecruiterProfileRow = {
   lastName?: string | null;
   name?: string | null;
   jobTitle?: string | null;
-  companyName?: string | null;
-  companyDescription?: string | null;
   typeWorkspaceMember?: string | null;
   chromeExtensionId?: string | null;
   extensionInstalled?: boolean | null;
@@ -48,6 +45,7 @@ type RecruiterProfileRow = {
 export type AdminPanelWorkspaceMemberTableRow = {
   workspaceId: string;
   workspaceName: string;
+  workspaceCompanyName?: string | null;
   workspaceSubdomain: string;
   workspaceCreatedAt: string;
   userId: string;
@@ -56,7 +54,7 @@ export type AdminPanelWorkspaceMemberTableRow = {
   userLastName?: string | null;
   userCreatedAt: string;
   membershipCreatedAt: string;
-  recruiterProfile?: RecruiterProfileRow | null;
+  workspaceMemberArx?: WorkspaceMemberArxRow | null;
 };
 
 type AdminPanelAllWorkspaceMembersData = {
@@ -173,7 +171,9 @@ const StyledCopyTextButton = styled.button<{ $muted?: boolean }>`
   background: none;
   border: none;
   color: ${({ $muted }) =>
-    $muted ? themeCssVariables.font.color.tertiary : themeCssVariables.font.color.primary};
+    $muted
+      ? themeCssVariables.font.color.tertiary
+      : themeCssVariables.font.color.primary};
   cursor: pointer;
   flex: 1 1 auto;
   font-family: inherit;
@@ -375,31 +375,30 @@ const rowMatchesFilter = (
   row: AdminPanelWorkspaceMemberTableRow,
   normalizedFilter: string,
 ) => {
-  const rp = row.recruiterProfile;
+  const workspaceMemberArx = row.workspaceMemberArx;
   const haystack = [
     row.workspaceId,
     row.workspaceName,
+    row.workspaceCompanyName,
     row.workspaceSubdomain,
     row.userId,
     row.userEmail,
     row.userFirstName,
     row.userLastName,
-    rp?.workspaceMemberId,
-    rp?.profileId,
-    rp?.phoneNumber,
-    rp?.linkedinUrl,
-    rp?.linkedinUnipileAccountId,
-    rp?.whatsappUnipileAccountId,
-    rp?.email,
-    rp?.firstName,
-    rp?.lastName,
-    rp?.name,
-    rp?.jobTitle,
-    rp?.companyName,
-    rp?.typeWorkspaceMember,
-    rp?.chromeExtensionId,
-    rp?.linkedinIp,
-    rp?.linkedinCountry,
+    workspaceMemberArx?.workspaceMemberId,
+    workspaceMemberArx?.phoneNumber,
+    workspaceMemberArx?.linkedinUrl,
+    workspaceMemberArx?.linkedinUnipileAccountId,
+    workspaceMemberArx?.whatsappUnipileAccountId,
+    workspaceMemberArx?.email,
+    workspaceMemberArx?.firstName,
+    workspaceMemberArx?.lastName,
+    workspaceMemberArx?.name,
+    workspaceMemberArx?.jobTitle,
+    workspaceMemberArx?.typeWorkspaceMember,
+    workspaceMemberArx?.chromeExtensionId,
+    workspaceMemberArx?.linkedinIp,
+    workspaceMemberArx?.linkedinCountry,
   ]
     .filter(Boolean)
     .join(' ')
@@ -673,7 +672,7 @@ export const SettingsAdminUsers = () => {
                 </StyledTableRow>
 
                 {filteredRows.map((row) => {
-                  const rp = row.recruiterProfile;
+                  const workspaceMemberArx = row.workspaceMemberArx;
                   const displayName = [row.userFirstName, row.userLastName]
                     .filter(Boolean)
                     .join(' ')
@@ -681,39 +680,43 @@ export const SettingsAdminUsers = () => {
 
                   let keepLinkedinLabel: string | null = null;
 
-                  if (rp?.keepLinkedinConnected === true) {
+                  if (workspaceMemberArx?.keepLinkedinConnected === true) {
                     keepLinkedinLabel = 'keepLI: true';
                   }
-                  if (rp?.keepLinkedinConnected === false) {
+                  if (workspaceMemberArx?.keepLinkedinConnected === false) {
                     keepLinkedinLabel = 'keepLI: false';
                   }
 
-                  const cookieSummary = rp
+                  const cookieSummary = workspaceMemberArx
                     ? [
-                        rp.linkedinCookiesStored ? 'li_at' : null,
-                        rp.linkedinLiAStored ? 'li_a' : null,
+                        workspaceMemberArx.linkedinCookiesStored
+                          ? 'li_at'
+                          : null,
+                        workspaceMemberArx.linkedinLiAStored ? 'li_a' : null,
                       ]
                         .filter(Boolean)
                         .join(', ') || null
                     : null;
 
                   const validateKey =
-                    rp?.workspaceMemberId != null
-                      ? `${row.workspaceId}-${rp.workspaceMemberId}`
+                    workspaceMemberArx?.workspaceMemberId != null
+                      ? `${row.workspaceId}-${workspaceMemberArx.workspaceMemberId}`
                       : null;
                   const canValidate = Boolean(
-                    rp?.workspaceMemberId && rp.linkedinCookiesStored,
+                    workspaceMemberArx?.workspaceMemberId &&
+                    workspaceMemberArx.linkedinCookiesStored,
                   );
                   const isValidating =
                     validateKey != null && validatingKey === validateKey;
                   const canConnect = Boolean(
-                    rp?.workspaceMemberId && rp.linkedinCookiesStored,
+                    workspaceMemberArx?.workspaceMemberId &&
+                    workspaceMemberArx.linkedinCookiesStored,
                   );
                   const isConnecting =
                     validateKey != null && connectingKey === validateKey;
 
-                  const recruiterProfileJson = rp
-                    ? JSON.stringify(rp, null, 2)
+                  const workspaceMemberArxJson = workspaceMemberArx
+                    ? JSON.stringify(workspaceMemberArx, null, 2)
                     : null;
 
                   return (
@@ -789,22 +792,13 @@ export const SettingsAdminUsers = () => {
                       <StyledTableCell>
                         <StyledCellStack>
                           <CopyableLine
-                            value={rp?.workspaceMemberId}
+                            value={workspaceMemberArx?.workspaceMemberId}
                             label={t`Workspace member ID`}
                             display={
-                              rp?.workspaceMemberId
-                                ? shortId(rp.workspaceMemberId)
+                              workspaceMemberArx?.workspaceMemberId
+                                ? shortId(workspaceMemberArx.workspaceMemberId)
                                 : '—'
                             }
-                            onCopy={handleCopy}
-                          />
-                          <CopyableLine
-                            value={rp?.profileId}
-                            label={t`Profile ID`}
-                            display={
-                              rp?.profileId ? shortId(rp.profileId) : '—'
-                            }
-                            muted
                             onCopy={handleCopy}
                           />
                           {keepLinkedinLabel ? (
@@ -812,11 +806,11 @@ export const SettingsAdminUsers = () => {
                               {keepLinkedinLabel}
                             </StyledCellSecondary>
                           ) : null}
-                          {recruiterProfileJson ? (
+                          {workspaceMemberArxJson ? (
                             <CopyableLine
-                              value={recruiterProfileJson}
-                              label={t`Recruiter profile JSON`}
-                              display={t`Copy profile JSON`}
+                              value={workspaceMemberArxJson}
+                              label={t`Workspace member Arx JSON`}
+                              display={t`Copy member JSON`}
                               muted
                               onCopy={handleCopy}
                             />
@@ -825,14 +819,14 @@ export const SettingsAdminUsers = () => {
                       </StyledTableCell>
                       <StyledTableCell>
                         <CopyableLine
-                          value={rp?.phoneNumber}
+                          value={workspaceMemberArx?.phoneNumber}
                           label={t`Phone`}
                           onCopy={handleCopy}
                         />
                       </StyledTableCell>
                       <StyledTableCell>
                         <CopyableLine
-                          value={rp?.linkedinUrl}
+                          value={workspaceMemberArx?.linkedinUrl}
                           label={t`LinkedIn URL`}
                           onCopy={handleCopy}
                         />
@@ -840,12 +834,12 @@ export const SettingsAdminUsers = () => {
                       <StyledTableCell>
                         <StyledCellStack>
                           <CopyableLine
-                            value={rp?.jobTitle}
+                            value={workspaceMemberArx?.jobTitle}
                             label={t`Job title`}
                             onCopy={handleCopy}
                           />
                           <CopyableLine
-                            value={rp?.companyName}
+                            value={row.workspaceCompanyName}
                             label={t`Company`}
                             muted
                             onCopy={handleCopy}
@@ -855,22 +849,28 @@ export const SettingsAdminUsers = () => {
                       <StyledTableCell>
                         <StyledCellStack>
                           <PlainLine
-                            primary={dash(rp?.typeWorkspaceMember)}
+                            primary={dash(
+                              workspaceMemberArx?.typeWorkspaceMember,
+                            )}
                           />
-                          {rp?.linkedinUnipileAccountId ? (
+                          {workspaceMemberArx?.linkedinUnipileAccountId ? (
                             <CopyableLine
-                              value={rp.linkedinUnipileAccountId}
+                              value={
+                                workspaceMemberArx.linkedinUnipileAccountId
+                              }
                               label={t`LinkedIn Unipile ID`}
-                              display={`LI: ${shortId(rp.linkedinUnipileAccountId)}`}
+                              display={`LI: ${shortId(workspaceMemberArx.linkedinUnipileAccountId)}`}
                               muted
                               onCopy={handleCopy}
                             />
                           ) : null}
-                          {rp?.whatsappUnipileAccountId ? (
+                          {workspaceMemberArx?.whatsappUnipileAccountId ? (
                             <CopyableLine
-                              value={rp.whatsappUnipileAccountId}
+                              value={
+                                workspaceMemberArx.whatsappUnipileAccountId
+                              }
                               label={t`WhatsApp Unipile ID`}
-                              display={`WA: ${shortId(rp.whatsappUnipileAccountId)}`}
+                              display={`WA: ${shortId(workspaceMemberArx.whatsappUnipileAccountId)}`}
                               muted
                               onCopy={handleCopy}
                             />
@@ -880,13 +880,17 @@ export const SettingsAdminUsers = () => {
                       <StyledTableCell>
                         <StyledCellStack>
                           <PlainLine
-                            primary={yesNo(rp?.extensionInstalled)}
+                            primary={yesNo(
+                              workspaceMemberArx?.extensionInstalled,
+                            )}
                           />
-                          {rp?.chromeExtensionId ? (
+                          {workspaceMemberArx?.chromeExtensionId ? (
                             <CopyableLine
-                              value={rp.chromeExtensionId}
+                              value={workspaceMemberArx.chromeExtensionId}
                               label={t`Extension ID`}
-                              display={shortId(rp.chromeExtensionId)}
+                              display={shortId(
+                                workspaceMemberArx.chromeExtensionId,
+                              )}
                               muted
                               onCopy={handleCopy}
                             />
@@ -895,7 +899,9 @@ export const SettingsAdminUsers = () => {
                       </StyledTableCell>
                       <StyledTableCell>
                         <PlainLine
-                          primary={yesNo(rp?.linkedinCookiesStored)}
+                          primary={yesNo(
+                            workspaceMemberArx?.linkedinCookiesStored,
+                          )}
                           secondary={cookieSummary}
                           title={cookieSummary ?? undefined}
                         />
@@ -903,17 +909,21 @@ export const SettingsAdminUsers = () => {
                       <StyledTableCell>
                         <PlainLine
                           primary={formatDate(
-                            rp?.linkedinCookiesLastSyncedAt,
+                            workspaceMemberArx?.linkedinCookiesLastSyncedAt,
                           )}
-                          title={formatDt(rp?.linkedinCookiesLastSyncedAt)}
+                          title={formatDt(
+                            workspaceMemberArx?.linkedinCookiesLastSyncedAt,
+                          )}
                         />
                       </StyledTableCell>
                       <StyledTableCell>
                         <PlainLine
                           primary={formatDate(
-                            rp?.linkedinCookiesValidatedAt,
+                            workspaceMemberArx?.linkedinCookiesValidatedAt,
                           )}
-                          title={formatDt(rp?.linkedinCookiesValidatedAt)}
+                          title={formatDt(
+                            workspaceMemberArx?.linkedinCookiesValidatedAt,
+                          )}
                         />
                       </StyledTableCell>
                       <StyledActionCell>
@@ -926,12 +936,12 @@ export const SettingsAdminUsers = () => {
                             !canValidate || isValidating || isConnecting
                           }
                           onClick={() => {
-                            if (!rp?.workspaceMemberId) {
+                            if (!workspaceMemberArx?.workspaceMemberId) {
                               return;
                             }
                             void handleValidateCookies(
                               row.workspaceId,
-                              rp.workspaceMemberId,
+                              workspaceMemberArx.workspaceMemberId,
                             );
                           }}
                         />
@@ -942,32 +952,30 @@ export const SettingsAdminUsers = () => {
                           size="small"
                           title={isConnecting ? t`Connecting…` : t`Connect`}
                           ariaLabel={t`Connect to LinkedIn Unipile using stored cookies, IP, and user agent.`}
-                          disabled={
-                            !canConnect || isConnecting || isValidating
-                          }
+                          disabled={!canConnect || isConnecting || isValidating}
                           onClick={() => {
-                            if (!rp?.workspaceMemberId) {
+                            if (!workspaceMemberArx?.workspaceMemberId) {
                               return;
                             }
                             void handleConnectUnipile(
                               row.workspaceId,
-                              rp.workspaceMemberId,
+                              workspaceMemberArx.workspaceMemberId,
                             );
                           }}
                         />
                         <StyledCellStack>
-                          {rp?.linkedinIp ? (
+                          {workspaceMemberArx?.linkedinIp ? (
                             <CopyableLine
-                              value={rp.linkedinIp}
+                              value={workspaceMemberArx.linkedinIp}
                               label={t`LinkedIn IP`}
-                              display={`IP: ${rp.linkedinIp}`}
+                              display={`IP: ${workspaceMemberArx.linkedinIp}`}
                               muted
                               onCopy={handleCopy}
                             />
                           ) : null}
-                          {rp?.linkedinCountry ? (
+                          {workspaceMemberArx?.linkedinCountry ? (
                             <CopyableLine
-                              value={rp.linkedinCountry}
+                              value={workspaceMemberArx.linkedinCountry}
                               label={t`LinkedIn country`}
                               muted
                               onCopy={handleCopy}

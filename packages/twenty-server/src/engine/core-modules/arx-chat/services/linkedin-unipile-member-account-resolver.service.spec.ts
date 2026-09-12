@@ -18,15 +18,15 @@ describe('LinkedinUnipileMemberAccountResolverService', () => {
     const storedAccountId = options?.storedAccountId ?? null;
     const identityMatch = options?.identityMatch ?? null;
 
-    const workspaceMemberProfileUnipileService = {
+    const workspaceMemberUnipileService = {
       getWorkspaceMemberUnipileAccountId: jest
         .fn()
         .mockResolvedValue(storedAccountId),
-      getWorkspaceMemberProfileUnipileFields: jest.fn().mockResolvedValue({
+      getWorkspaceMemberUnipileFields: jest.fn().mockResolvedValue({
         linkedinUrl: 'https://www.linkedin.com/in/test-user',
         linkedinUnipileAccountId: storedAccountId,
       }),
-      applyUnipileAccountToWorkspaceMemberProfile: jest.fn(),
+      applyUnipileAccountToWorkspaceMember: jest.fn(),
       updateWorkspaceMemberUnipileAccountId: jest.fn(),
       clearWorkspaceMemberLinkedinCookieTokens: jest.fn(),
     };
@@ -86,7 +86,7 @@ describe('LinkedinUnipileMemberAccountResolverService', () => {
     };
 
     const service = new LinkedinUnipileMemberAccountResolverService(
-      workspaceMemberProfileUnipileService as never,
+      workspaceMemberUnipileService as never,
       linkedinUnipileRequestService as never,
       memberLinkedinUnipileConnectionService as never,
     );
@@ -95,7 +95,7 @@ describe('LinkedinUnipileMemberAccountResolverService', () => {
       service,
       linkedinUnipileRequestService,
       memberLinkedinUnipileConnectionService,
-      workspaceMemberProfileUnipileService,
+      workspaceMemberUnipileService,
     };
   };
 
@@ -207,7 +207,7 @@ describe('LinkedinUnipileMemberAccountResolverService', () => {
     const {
       service,
       linkedinUnipileRequestService,
-      workspaceMemberProfileUnipileService,
+      workspaceMemberUnipileService,
     } = createService();
 
     linkedinUnipileRequestService.makeUnipileRequest.mockRejectedValue(
@@ -226,7 +226,7 @@ describe('LinkedinUnipileMemberAccountResolverService', () => {
     });
 
     expect(
-      workspaceMemberProfileUnipileService.clearWorkspaceMemberLinkedinCookieTokens,
+      workspaceMemberUnipileService.clearWorkspaceMemberLinkedinCookieTokens,
     ).toHaveBeenCalledWith(authToken, workspaceMemberId);
     expect(result).toMatchObject({
       accountId: null,

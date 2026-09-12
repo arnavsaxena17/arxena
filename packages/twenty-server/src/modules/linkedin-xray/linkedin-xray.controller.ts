@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post, Req } from '@nestjs/common';
 
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { BuildLinkedinXrayDto } from 'src/modules/linkedin-xray/dtos/build-linkedin-xray.dto';
 import { FetchLinkedinXrayPeopleResultsDto } from 'src/modules/linkedin-xray/dtos/fetch-linkedin-xray-people-results.dto';
@@ -72,7 +72,7 @@ export class LinkedinXrayController {
     }
 
     console.log('[LinkedinXrayController] Calling getCurrentUser with origin:', origin);
-    const currentUser = await new RecruiterProfileService(
+    const currentUser = await new WorkspaceMemberArxService(
       this.staticGraphQLService,
     ).getCurrentUser(apiToken, origin);
     const recruiterId = currentUser?.workspaceMember?.id;

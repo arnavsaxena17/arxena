@@ -3,9 +3,9 @@ import { Project } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
 import { WhatsappUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile-request.service';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -69,7 +69,7 @@ export class WhatsappUnipileSyncService {
     private readonly unipileRequestService: WhatsappUnipileRequestService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
-    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService: WorkspaceMemberUnipileService,
   ) {}
 
   normalizePhoneDigits(phone: string): string {
@@ -122,11 +122,11 @@ export class WhatsappUnipileSyncService {
       );
     }
 
-    const recruiterProfile = await new RecruiterProfileService(
+    const workspaceMember = await new WorkspaceMemberArxService(
       this.staticGraphQLService,
-    ).getRecruiterProfileByJob(candidateJob, apiToken);
+    ).getByProject(candidateJob, apiToken);
 
-    let recruiterPhone = recruiterProfile?.phoneNumber?.trim() || '';
+    let recruiterPhone = workspaceMember?.phoneNumber?.trim() || '';
     if (!recruiterPhone) {
       const account = (await this.unipileRequestService.makeUnipileRequest(
         `/api/v1/accounts/${encodeURIComponent(whatsappAccountId)}`,
@@ -199,7 +199,7 @@ export class WhatsappUnipileSyncService {
       await this.workspaceQueryService.getWorkspaceMemberIdFromToken(apiToken);
     const workspaceMemberId = recruiterId ?? workspaceMemberIdFromToken;
 
-    return this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+    return this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
       workspaceMemberId,
       workspaceId,
       apiToken,

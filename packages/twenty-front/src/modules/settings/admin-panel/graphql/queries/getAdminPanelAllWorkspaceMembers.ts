@@ -5,6 +5,7 @@ export const GET_ADMIN_PANEL_ALL_WORKSPACE_MEMBERS = gql`
     adminPanelAllWorkspaceMembers {
       workspaceId
       workspaceName
+      workspaceCompanyName
       workspaceSubdomain
       workspaceCreatedAt
       userId
@@ -13,9 +14,8 @@ export const GET_ADMIN_PANEL_ALL_WORKSPACE_MEMBERS = gql`
       userLastName
       userCreatedAt
       membershipCreatedAt
-      recruiterProfile {
+      workspaceMemberArx {
         workspaceMemberId
-        profileId
         phoneNumber
         linkedinUrl
         linkedinUnipileAccountId
@@ -26,8 +26,6 @@ export const GET_ADMIN_PANEL_ALL_WORKSPACE_MEMBERS = gql`
         lastName
         name
         jobTitle
-        companyName
-        companyDescription
         typeWorkspaceMember
         chromeExtensionId
         extensionInstalled

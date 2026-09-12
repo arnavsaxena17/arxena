@@ -7,7 +7,7 @@ import {
     graphqlToFetchAllCandidateData,
 } from 'twenty-shared';
 
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { EmailDraftService } from './email-draft.service';
@@ -98,7 +98,7 @@ export class GmailDraftShortlistService {
       }
 
       // Step 5: Create email draft
-      const currentUser = await new RecruiterProfileService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+      const currentUser = await new WorkspaceMemberArxService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
       const emailResult = await this.emailDraftService.createDraftEmailWithShortlist(
         currentUser,
         job,

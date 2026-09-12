@@ -827,6 +827,8 @@ export const DataTable = forwardRef<
         setSelectedCandidateId,
         refreshData,
         tableState.rawData,
+        setContextStoreNumberOfSelectedRecords,
+        setContextStoreTargetedRecordsRule,
       );
     },
     [
@@ -836,6 +838,8 @@ export const DataTable = forwardRef<
       setSelectedCandidateId,
       refreshData,
       tableState.rawData,
+      setContextStoreNumberOfSelectedRecords,
+      setContextStoreTargetedRecordsRule,
     ],
   );
 

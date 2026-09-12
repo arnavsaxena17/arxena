@@ -5,11 +5,13 @@ import {
     CandidateNode,
     graphqlQueryToFetchProjectPrompts,
     Project,
-    statusesArray
+    statusesArray,
+    workspaceMemberFirstName,
+    type WorkspaceMemberArxGraphqlNode,
 } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { NameProcessor } from 'src/engine/core-modules/workspace-modifications/object-apis/data/nameProcessor';
 import { resolveProjectPrompt } from 'src/engine/core-modules/workspace-modifications/object-apis/data/prompts';
@@ -208,13 +210,20 @@ export class PromptingAgents {
       isNonEmptyString(candidate.outreachSequenceStage) ||
       isNonEmptyString(candidateJob.outreachWorkflowId);
 
-    const recruiterProfile = await new RecruiterProfileService(
+    const workspaceMemberArxService = new WorkspaceMemberArxService(
       this.staticGraphQLService,
-    ).getRecruiterProfileByJob(candidateJob, apiToken);
+    );
+    const workspaceMember = await workspaceMemberArxService.getByProject(
+      candidateJob,
+      apiToken,
+    );
 
-    if (!recruiterProfile) {
-      throw new Error('Recruiter profile not found for job');
+    if (!workspaceMember) {
+      throw new Error('Workspace member not found for job');
     }
+
+    const workspaceCompany =
+      await workspaceMemberArxService.getWorkspaceCompanyProfile(apiToken);
 
     const nameProcessor = new NameProcessor();
     nameProcessor.processName(candidate.name);
@@ -234,7 +243,8 @@ export class PromptingAgents {
         SYSTEM_PROMPT_STRINGIFIED,
         {
           candidate: candidateWithProcessedName,
-          recruiterProfile,
+          workspaceMember,
+          workspaceCompany,
           jobProfile: candidate?.project,
           candidate_conversation_summary:
             this.buildOutreachConversationSummary(candidate),
@@ -297,7 +307,8 @@ export class PromptingAgents {
     const variables = {
       candidate: candidateWithProcessedName,
       jobProfile: candidate?.project,
-      recruiterProfile: recruiterProfile,
+      workspaceMember: workspaceMember,
+      workspaceCompany,
       receiveCV: receiveCV,
       formattedQuestions: formattedQuestions,
       mannerOfAskingQuestions: mannerOfAskingQuestions,
@@ -358,12 +369,8 @@ ${firstChatMessage}`;
 
   private buildStartChatFirstMessage(variables: {
     candidate: { firstName?: string };
-    recruiterProfile: {
-      firstName?: string;
-      jobTitle?: string;
-      companyName?: string;
-      companyDescription?: string;
-    };
+    workspaceMember: WorkspaceMemberArxGraphqlNode;
+    workspaceCompany: { companyName?: string | null; summary?: string | null };
     jobProfile: {
       name?: string;
       companyDetails?: string;
@@ -371,9 +378,10 @@ ${firstChatMessage}`;
     };
     dayText?: 'today' | 'tomorrow';
   }): string {
-    const { candidate, recruiterProfile, jobProfile } = variables;
+    const { candidate, workspaceMember, workspaceCompany, jobProfile } =
+      variables;
     const dayText = variables.dayText ?? this.getCallAvailabilityDayText();
-    const companyDescription = recruiterProfile?.companyDescription?.trim();
+    const companyDescription = workspaceCompany?.summary?.trim();
     const companySuffix = companyDescription ? `, ${companyDescription}` : '';
     const companyDetails = jobProfile?.companyDetails?.trim() ?? '';
     const companyDetailsSegment = companyDetails ? ` for ${companyDetails}` : '';
@@ -381,7 +389,7 @@ ${firstChatMessage}`;
     return [
       `Hey ${candidate.firstName ?? 'there'},`,
       '',
-      `I'm ${recruiterProfile.firstName ?? ''}, ${recruiterProfile.jobTitle ?? ''} at ${recruiterProfile.companyName ?? ''}${companySuffix}.`,
+      `I'm ${workspaceMemberFirstName(workspaceMember)}, ${workspaceMember.jobTitle ?? ''} at ${workspaceCompany.companyName ?? ''}${companySuffix}.`,
       '',
       `I'm hiring for a ${jobProfile?.name ?? ''} role${companyDetailsSegment} based out of ${jobProfile?.jobLocation ?? ''} and got your application on my job posting. I believe this might be a good fit.`,
       '',

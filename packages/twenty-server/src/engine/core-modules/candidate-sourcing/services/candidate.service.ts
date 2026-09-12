@@ -65,7 +65,7 @@ import { v4 } from 'uuid';
 
 import axios from 'axios';
 
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
+import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
 import { AttachmentProcessingService } from 'src/engine/core-modules/arx-chat/utils/attachment-processes';
 import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -3084,7 +3084,7 @@ export class CandidateService {
       let actualRecruiterId = recruiterId;
       if (!actualRecruiterId) {
         try {
-          const currentUser = await new RecruiterProfileService(
+          const currentUser = await new WorkspaceMemberArxService(
             this.staticGraphQLService,
           ).getCurrentUser(
             apiToken,

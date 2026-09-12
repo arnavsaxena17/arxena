@@ -1,16 +1,10 @@
 import { Field, ObjectType } from '@nestjs/graphql';
 
-/**
- * Snapshot of workspaceMemberProfile for the looked-up user in a workspace
- * (same source as RecruiterProfileService / findWorkspaceMemberProfiles).
- */
+// Snapshot of workspaceMember Arx fields for the looked-up user in a workspace.
 @ObjectType()
-export class AdminPanelWorkspaceMemberRecruiterProfile {
+export class AdminPanelWorkspaceMemberArx {
   @Field(() => String, { nullable: true })
   workspaceMemberId?: string | null;
-
-  @Field(() => String, { nullable: true })
-  profileId?: string | null;
 
   @Field(() => String, { nullable: true })
   phoneNumber?: string | null;
@@ -41,12 +35,6 @@ export class AdminPanelWorkspaceMemberRecruiterProfile {
 
   @Field(() => String, { nullable: true })
   jobTitle?: string | null;
-
-  @Field(() => String, { nullable: true })
-  companyName?: string | null;
-
-  @Field(() => String, { nullable: true })
-  companyDescription?: string | null;
 
   @Field(() => String, { nullable: true })
   typeWorkspaceMember?: string | null;

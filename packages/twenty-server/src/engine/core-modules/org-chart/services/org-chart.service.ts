@@ -14,7 +14,7 @@ import {
 
 import { toOrgChartCacheTtlMs } from '../utils/org-chart-cache-ttl.util';
 
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import { CreditTransactionService } from 'src/engine/core-modules/billing/services/credit-transaction.service';
 import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
@@ -88,7 +88,7 @@ export class OrgChartService {
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly linkedInSearchService: LinkedInSearchService,
     private readonly workspaceQueryService: WorkspaceQueryService,
-    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService: WorkspaceMemberUnipileService,
     private readonly workspaceCreditsService: WorkspaceCreditsService,
     private readonly creditTransactionService: CreditTransactionService,
     private readonly orgChartS3Service: OrgChartS3Service,
@@ -1445,7 +1445,7 @@ export class OrgChartService {
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(authToken);
       const accountId =
-        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+        await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
           workspaceMemberId ?? null,
           workspaceId,
           authToken,

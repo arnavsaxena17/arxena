@@ -38,7 +38,7 @@ import { UserThemeProviderEffect } from '@/ui/theme/components/UserThemeProvider
 import { PageFavicon } from '@/ui/utilities/page-favicon/components/PageFavicon';
 import { PageTitle } from '@/ui/utilities/page-title/components/PageTitle';
 import { UnipileProvider } from '@/unipile/contexts/UnipileContext';
-import { WorkspaceMemberProfileUnipileSyncEffect } from '@/unipile/components/WorkspaceMemberProfileUnipileSyncEffect';
+import { WorkspaceMemberUnipileSyncEffect } from '@/unipile/components/WorkspaceMemberUnipileSyncEffect';
 import { UserContextProvider } from '@/users/components/UserContextProvider';
 import { WebSocketProvider } from '@/websocket-context/WebSocketContextProvider';
 import { WorkspaceProviderEffect } from '@/workspace/components/WorkspaceProviderEffect';
@@ -69,7 +69,7 @@ export const WorkspaceAppProviders = () => {
                           <UnipileProvider>
                             <BaileysProvider>
                               <ChromeExtensionAuthBridgeEffect />
-                              <WorkspaceMemberProfileUnipileSyncEffect />
+                              <WorkspaceMemberUnipileSyncEffect />
                               <AgentChatProvider>
                                 <DialogComponentInstanceContext.Provider
                                   value={{ instanceId: 'dialog-manager' }}

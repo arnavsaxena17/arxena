@@ -1,4 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AccountRateLimitModule } from 'src/engine/core-modules/account-rate-limit/account-rate-limit.module';
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
@@ -35,6 +36,7 @@ import { GetCalendarAvailabilityService } from 'src/engine/core-modules/outreach
 import { OutreachFakeProfileDetectorService } from 'src/engine/core-modules/outreach-command/services/outreach-fake-profile-detector.service';
 import { OutreachFilterProfilesService } from 'src/engine/core-modules/outreach-command/services/outreach-filter-profiles.service';
 import { OutreachMessagePersistService } from 'src/engine/core-modules/outreach-command/services/outreach-message-persist.service';
+import { OutreachSenderProfileService } from 'src/engine/core-modules/outreach-command/services/outreach-sender-profile.service';
 import { PeopleApiModule } from 'src/engine/core-modules/people-api/people-api.module';
 import { CompanyApiModule } from 'src/engine/core-modules/company-api/company-api.module';
 import { JobsApiModule } from 'src/engine/core-modules/jobs-api/jobs-api.module';
@@ -70,6 +72,7 @@ import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/li
 import { LogicFunctionExecutorModule } from 'src/engine/core-modules/logic-function/logic-function-executor/logic-function-executor.module';
 import { CompaniesEsService } from 'src/engine/core-modules/org-chart/services/companies-es.service';
 import { WikidataModule } from 'src/engine/core-modules/wikidata/wikidata.module';
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 import { ContactEnrichmentModule } from 'src/engine/core-modules/contact-enrichment/contact-enrichment.module';
 import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
@@ -82,6 +85,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
 
 @Module({
   imports: [
+    TypeOrmModule.forFeature([WorkspaceEntity]),
     AiBillingModule,
     GraphQLExecutionModule,
     AccountRateLimitModule,
@@ -178,6 +182,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     OutreachWorkflowRunRepairService,
     OutreachInboundReplyWindowService,
     OutreachInboundEmailListener,
+    OutreachSenderProfileService,
   ],
   exports: [
     OutreachCommandMaterializeService,
@@ -210,6 +215,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     OutreachWorkflowRunFlowSyncService,
     OutreachWorkflowRunRepairService,
     OutreachInboundReplyWindowService,
+    OutreachSenderProfileService,
   ],
 })
 export class OutreachCommandModule {}

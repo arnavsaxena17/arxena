@@ -29,7 +29,7 @@ describe('LinkedinOutreachOpenerService', () => {
       ),
     };
 
-    const workspaceMemberProfileUnipileService = {
+    const workspaceMemberUnipileService = {
       getWorkspaceMemberLinkedinProfile: jest.fn().mockResolvedValue({
         me: { public_identifier: 'saikrshna' },
         fullProfile: {
@@ -122,7 +122,7 @@ describe('LinkedinOutreachOpenerService', () => {
     const service = new LinkedinOutreachOpenerService(
       linkedinUnipileRequestService as never,
       linkedinUnipileEstimateAccountService as never,
-      workspaceMemberProfileUnipileService as never,
+      workspaceMemberUnipileService as never,
       orgChartSuperImposeAutocompleteService as never,
       llmChatModelService as never,
       environmentService as never,
@@ -132,7 +132,7 @@ describe('LinkedinOutreachOpenerService', () => {
       service,
       linkedinUnipileRequestService,
       linkedinUnipileEstimateAccountService,
-      workspaceMemberProfileUnipileService,
+      workspaceMemberUnipileService,
       orgChartSuperImposeAutocompleteService,
       llmInvoke,
     };

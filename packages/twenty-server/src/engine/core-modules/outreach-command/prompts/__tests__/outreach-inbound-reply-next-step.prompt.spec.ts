@@ -3,21 +3,9 @@ import {
   buildOutreachInboundSignalExtractionPrompt,
   buildOutreachSalesChatDraftPrompt,
 } from 'src/engine/core-modules/outreach-command/prompts/outreach-inbound-reply-next-step.prompt';
+import { OUTREACH_AI_LEGACY_SAMPLE_TRANSCRIPT } from 'src/engine/core-modules/outreach-command/prompts/fixtures/transcripts/outreach-ai-naresh-transcripts';
 
-const SAMPLE_THREADS = [
-  'Thanks for reaching out. Contact no is 9376828884 at 2:30 pm tomorrow',
-  'Can we do a demo tomorrow? Second half? Can we do 3:30?',
-  'Let us plan a VC next week. 25th Nov around 3 pm. anil@slntech.com',
-  'Please email me at gaurav.zatakia@flomattress.com // Sure',
-  'Demo on Thursday around noon. My number is 995 817 7936.',
-  'Sure please connect on Yogesh.shinde@kshinternational.com',
-  'Sure lets keep on Sat // Lets do Sat 11 am',
-  'Interested, can you call on 8826545599',
-  'We can have a call on Monday 25/11/24 at 11.30am. We will discuss internally and revert.',
-  'This sounds useful // Friday next week is relatively free OK',
-];
-
-const TRANSCRIPT = SAMPLE_THREADS.join('\n---\n');
+const TRANSCRIPT = OUTREACH_AI_LEGACY_SAMPLE_TRANSCRIPT;
 
 describe('buildOutreachSalesChatDraftPrompt', () => {
   const prompt = buildOutreachSalesChatDraftPrompt({
@@ -32,14 +20,15 @@ describe('buildOutreachSalesChatDraftPrompt', () => {
     prospectEmail: 'gaurav.zatakia@flomattress.com',
   });
 
-  it('should fold sales closer rules without recruiting tools', () => {
-    expect(prompt).toContain('book a 20–30 minute intro, not recruit');
-    expect(prompt).toContain('Do not share a job description');
-    expect(prompt).toContain('Do not ask CTC, notice period');
-    expect(prompt).not.toContain('share_jd');
-    expect(prompt).not.toContain('update_answer');
-    expect(prompt).not.toContain('share_interview_link');
-    expect(prompt).not.toContain('schedule_meeting');
+  it('should fold sales closer rules', () => {
+    expect(prompt).toContain(
+      'book a short intro using the sender meeting defaults',
+    );
+    expect(prompt).toContain('sales outreach conversation');
+    expect(prompt).not.toContain('recruit');
+    expect(prompt).not.toContain('job description');
+    expect(prompt).not.toContain('CTC');
+    expect(prompt).not.toContain('notice period');
   });
 
   it('should ask for copy only and never for times, channel, or contacts', () => {

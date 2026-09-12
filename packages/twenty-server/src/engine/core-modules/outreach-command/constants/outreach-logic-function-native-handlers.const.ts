@@ -240,6 +240,7 @@ export const main = async (params: {
   transcript?: string;
   slots?: Array<{ startsAt?: string; endsAt?: string }>;
   lastInboundChannel?: string;
+  preferredChannel?: string;
   acceptedSlotIndex?: number;
   requestedChannelSwitch?: string;
   prospectEmail?: string;

@@ -43,6 +43,15 @@ export type CurrentWorkspace = Pick<
   | 'enabledAiModelIds'
   | 'useRecommendedModels'
   | 'isInternalMessagesImportEnabled'
+  | 'companyName'
+  | 'companyDomain'
+  | 'linkedinUrl'
+  | 'industry'
+  | 'summary'
+  | 'employeeRange'
+  | 'hq'
+  | 'enrichmentJson'
+  | 'icpSpec'
 > & {
   defaultRole?: Omit<Role, 'workspaceMembers' | 'agents' | 'apiKeys'> | null;
   workspaceCustomApplication: Pick<Application, 'id'> | null;

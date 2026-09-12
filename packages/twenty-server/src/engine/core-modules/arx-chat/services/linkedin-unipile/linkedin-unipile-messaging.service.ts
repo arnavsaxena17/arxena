@@ -6,13 +6,14 @@ import {
   ChatHistoryItem,
   MessagingChannel,
   Project,
-  whatappUpdateMessageObjType
+  whatappUpdateMessageObjType,
+  workspaceMemberDisplayName,
 } from 'twenty-shared';
 
 import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/filter-candidates';
 import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-engagement/update-chat';
-import { RecruiterProfileService } from 'src/engine/core-modules/arx-chat/services/recruiter-profile';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { materializeCandidateEventWithGraphQL } from 'src/engine/core-modules/outreach-command/services/outreach-command-materialize.service';
 import { withAcquiredAccountRateLimit } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
@@ -35,13 +36,13 @@ export class LinkedinUnipileMessagingService {
     private readonly staticGraphQLService: StaticGraphQLService,
     baseUrl?: string,
     accessToken?: string,
-    private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService?: WorkspaceMemberUnipileService,
   ) {
     this.baseUrl = baseUrl || process.env.UNIPILE_API_URL || '';
     this.accessToken = accessToken || process.env.UNIPILE_ACCESS_TOKEN || '';
   }
 
-  /** Project.recruiterId is the workspace member id of the job's recruiter (see RecruiterProfileService). */
+  /** Project.recruiterId is the workspace member id of the job's recruiter (see WorkspaceMemberArxService). */
   private jobRecruiterAsWorkspaceMemberId(
     candidateJob: Project | undefined | null,
   ): string | null {
@@ -60,9 +61,9 @@ export class LinkedinUnipileMessagingService {
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
     const jobRecruiterId = this.jobRecruiterAsWorkspaceMemberId(candidateJob);
-    if (this.workspaceMemberProfileUnipileService && jobRecruiterId) {
+    if (this.workspaceMemberUnipileService && jobRecruiterId) {
       const fromProfile =
-        await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+        await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
           jobRecruiterId,
           workspaceId,
           apiToken,
@@ -88,16 +89,24 @@ export class LinkedinUnipileMessagingService {
     }
 
 
-    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
+    const workspaceMemberArxService = new WorkspaceMemberArxService(
+      this.staticGraphQLService,
+    );
+    const workspaceMember = await workspaceMemberArxService.getByProject(
       candidateJob,
       apiToken,
     );
-    if (!recruiterProfile) {
+    if (!workspaceMember) {
       return message.slice(0, maxLength);
     }
+
+    const workspaceCompany =
+      await workspaceMemberArxService.getWorkspaceCompanyProfile(apiToken);
+    const companyName = workspaceCompany.companyName ?? '';
+
     // Check if it contains "Global Recruitment" pattern - create a standardized short message
     if (message.includes('Global Recruitment') || message.includes('recruitment firm')) {
-      return `Hi, I'm ${recruiterProfile.name} from ${recruiterProfile.companyName}. We have a role that might interest you. Can we connect?`;
+      return `Hi, I'm ${workspaceMemberDisplayName(workspaceMember)} from ${companyName}. We have a role that might interest you. Can we connect?`;
     }
 
 
@@ -107,11 +116,11 @@ export class LinkedinUnipileMessagingService {
     const candidateName = nameMatch ? nameMatch[1] : 'there';
 
     // Create a simplified message
-    const simplifiedMessage = `Hi ${candidateName}, I'm ${recruiterProfile.name} from ${recruiterProfile.companyName}. We have a role that might interest you. Can we connect?`;
+    const simplifiedMessage = `Hi ${candidateName}, I'm ${workspaceMemberDisplayName(workspaceMember)} from ${companyName}. We have a role that might interest you. Can we connect?`;
 
     // If still too long, use the most basic version
     if (simplifiedMessage.length > maxLength) {
-      return `Hi, I'm ${recruiterProfile.name} from ${recruiterProfile.companyName}. We have a role that might interest you. Can we connect?`;
+      return `Hi, I'm ${workspaceMemberDisplayName(workspaceMember)} from ${companyName}. We have a role that might interest you. Can we connect?`;
     }
 
     return simplifiedMessage;
@@ -435,14 +444,14 @@ export class LinkedinUnipileMessagingService {
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       let accountId: string | null = null;
-      if (this.workspaceMemberProfileUnipileService) {
+      if (this.workspaceMemberUnipileService) {
         const memberId =
           await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
             apiToken,
           );
         if (memberId?.trim()) {
           accountId =
-            await this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+            await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
               memberId.trim(),
               workspaceId,
               apiToken,

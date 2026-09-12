@@ -45,7 +45,7 @@ import { UnipileWebhookService } from 'src/engine/core-modules/arx-chat/services
 import { VoiceCallService } from 'src/engine/core-modules/arx-chat/services/voice-call/voice-call.service';
 import { WorkflowApprovalModule } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-approval.module';
 import { WhatsappOutboundRateLimiterService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.service';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import { ApiKeyModule } from 'src/engine/core-modules/api-key/api-key.module';
 import { CandidateAvatarModule } from 'src/engine/core-modules/candidate-avatar/candidate-avatar.module';
 import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
@@ -230,7 +230,7 @@ const conditionalImports = isWorker
     GmailDraftShortlistQueueProcessor,
     UnipileWebhookService,
     UnipileWebhookProcessor,
-    WorkspaceMemberProfileUnipileService,
+    WorkspaceMemberUnipileService,
     WhatsappOutboundRateLimiterService,
     MemberLinkedinUnipileConnectionService,
     ExtensionUnipileConnectionStatusService,

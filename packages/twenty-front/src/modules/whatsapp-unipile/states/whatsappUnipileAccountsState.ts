@@ -2,7 +2,7 @@ import { createAtomSelector } from '@/ui/utilities/state/jotai/utils/createAtomS
 import { createAtomState } from '@/ui/utilities/state/jotai/utils/createAtomState';
 import type { UnipileWhatsappAccount } from 'twenty-shared/arx';
 
-import { workspaceMemberProfileUnipileFieldsState } from '@/unipile/states/workspaceMemberProfileUnipileFieldsState';
+import { workspaceMemberUnipileFieldsState } from '@/unipile/states/workspaceMemberUnipileFieldsState';
 import { hasMatchingConnectedWhatsappAccount } from '@/unipile/utils/matchUnipileToWorkspaceMemberProfile';
 
 export const whatsappUnipileAccountsState = createAtomState<
@@ -26,6 +26,6 @@ export const isWhatsappUnipileConnectedSelector = createAtomSelector<boolean>({
   get: ({ get }) =>
     hasMatchingConnectedWhatsappAccount(
       get(whatsappUnipileAccountsState),
-      get(workspaceMemberProfileUnipileFieldsState),
+      get(workspaceMemberUnipileFieldsState),
     ),
 });

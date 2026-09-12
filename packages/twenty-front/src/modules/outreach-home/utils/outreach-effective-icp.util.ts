@@ -80,10 +80,10 @@ export const resolveInheritedTextField = (
 
 export const resolveEffectiveIcp = ({
   project,
-  workspaceProfile,
+  workspaceCompany,
 }: {
   project: IcpProfileSource | null | undefined;
-  workspaceProfile: IcpProfileSource | null | undefined;
+  workspaceCompany: IcpProfileSource | null | undefined;
 }): {
   icpSpec: string | null;
   parsedIcp: IcpSpec | null;
@@ -95,7 +95,7 @@ export const resolveEffectiveIcp = ({
   );
   const icpSpecResolution = resolveInheritedTextField(
     projectIcpSpec,
-    workspaceProfile?.icpSpec,
+    workspaceCompany?.icpSpec,
   );
   const parsedIcp = parseIcpSpec(icpSpecResolution.value);
   const normalizedIcpSpec = parsedIcp

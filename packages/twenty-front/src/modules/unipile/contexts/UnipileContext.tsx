@@ -27,7 +27,7 @@ import { REACT_APP_SERVER_BASE_URL } from '~/config';
 import { getLinkedinService } from '../../../pages/settings/linkedin/services/linkedin-backend.service';
 import { getWhatsappUnipileService } from '../../../pages/settings/whatsapp/services/whatsapp-unipile-backend.service';
 import { LinkedinUnipileVisibilityRecoveryEffect } from '../components/LinkedinUnipileVisibilityRecoveryEffect';
-import { workspaceMemberProfileUnipileFieldsState } from '../states/workspaceMemberProfileUnipileFieldsState';
+import { workspaceMemberUnipileFieldsState } from '../states/workspaceMemberUnipileFieldsState';
 import {
     applyInferredOrgChartLinkedinSearchType,
     dispatchUnipileAccountsRefreshedEvent,
@@ -110,8 +110,8 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const tokenPair = useAtomStateValue(tokenPairState);
   const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
-  const workspaceMemberProfileUnipileFields = useAtomStateValue(
-    workspaceMemberProfileUnipileFieldsState,
+  const workspaceMemberUnipileFields = useAtomStateValue(
+    workspaceMemberUnipileFieldsState,
   );
   const setLinkedinUnipileAccounts = useSetAtomState(
     linkedinUnipileAccountsState,
@@ -142,7 +142,7 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({
   const memberConnectionStatusRef = useRef<UnipileConnectionStatusResponse | null>(
     null,
   );
-  const workspaceMemberProfileRef = useRef(workspaceMemberProfileUnipileFields);
+  const workspaceMemberUnipileFieldsRef = useRef(workspaceMemberUnipileFields);
   const isRefreshingRef = useRef(false);
   const refreshInFlightRef =
     useRef<Promise<UnipileConnectionStatusResponse | null> | null>(null);
@@ -159,7 +159,7 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({
   const [serverMemberWhatsappConnected, setServerMemberWhatsappConnected] =
     useState(false);
 
-  workspaceMemberProfileRef.current = workspaceMemberProfileUnipileFields;
+  workspaceMemberUnipileFieldsRef.current = workspaceMemberUnipileFields;
 
   const refreshAccounts = useCallback(
     async (
@@ -215,7 +215,7 @@ export const UnipileProvider: React.FC<{ children: React.ReactNode }> = ({
         const linkedinService = getLinkedinService();
         const whatsappService = getWhatsappUnipileService();
         const memberLinkedinAccountId =
-          workspaceMemberProfileRef.current?.linkedinUnipileAccountId?.trim() ??
+          workspaceMemberUnipileFieldsRef.current?.linkedinUnipileAccountId?.trim() ??
           '';
         const skipWorkspaceLinkedinAccountsList =
           memberLinkedinAccountId.length > 0;

@@ -14,7 +14,7 @@ import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-
 import { resolveWhatsappOutboundMessagesPerMinute, toWhatsappOutboundRateLimitJob } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limit.util';
 import { getRegisteredWhatsappOutboundRateLimiter } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.registry';
 import { WhatsappOutboundRateLimiterService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.service';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import { normalizeWhatsAppOutboundMessage } from 'src/engine/core-modules/arx-chat/utils/whatsapp-message-format.util';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -34,7 +34,7 @@ export class WhatsappUnipileMessagingService {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
-    private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService?: WorkspaceMemberUnipileService,
     private readonly whatsappOutboundRateLimiter?: WhatsappOutboundRateLimiterService,
     baseUrl?: string,
     accessToken?: string,
@@ -107,7 +107,7 @@ export class WhatsappUnipileMessagingService {
   }
 
   /**
-   * Project.recruiterId is the workspace member id of the assigned recruiter (see RecruiterProfileService).
+   * Project.recruiterId is the workspace member id of the assigned recruiter (see WorkspaceMemberArxService).
    */
   private jobRecruiterAsWorkspaceMemberId(
     candidateJob: Project | undefined | null,
@@ -126,7 +126,7 @@ export class WhatsappUnipileMessagingService {
     apiToken: string,
     candidateJob: Project | undefined | null,
   ): Promise<string | null> {
-    if (!this.workspaceMemberProfileUnipileService) {
+    if (!this.workspaceMemberUnipileService) {
       return null;
     }
     const workspaceId =
@@ -136,7 +136,7 @@ export class WhatsappUnipileMessagingService {
       await this.workspaceQueryService.getWorkspaceMemberIdFromToken(apiToken);
     const workspaceMemberId =
       jobRecruiterId ?? workspaceMemberIdFromToken;
-    return this.workspaceMemberProfileUnipileService.getWorkspaceMemberUnipileAccountId(
+    return this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
       workspaceMemberId,
       workspaceId,
       apiToken,

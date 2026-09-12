@@ -34,7 +34,7 @@ import { UnipileAccountPoolService } from './unipile-account-pool.service';
 import { OutreachCommandMaterializeService } from 'src/engine/core-modules/outreach-command/services/outreach-command-materialize.service';
 import { OutreachInboundReplyWindowService } from 'src/engine/core-modules/outreach-command/jobs/outreach-inbound-reply-window.job';
 import { IncomingWhatsappMessages } from './whatsapp-api/incoming-messages';
-import { WorkspaceMemberProfileUnipileService } from './workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from './workspace-member-unipile.service';
 
 @Injectable()
 export class UnipileWebhookService {
@@ -45,7 +45,7 @@ export class UnipileWebhookService {
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
     private readonly unipileAccountPoolService: UnipileAccountPoolService,
-    private readonly workspaceMemberProfileUnipileService: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService: WorkspaceMemberUnipileService,
     private readonly unipileAttachmentStorageService: UnipileAttachmentStorageService,
     private readonly gtmCommandMaterializeService: OutreachCommandMaterializeService,
     private readonly gtmInboundReplyWindowService: OutreachInboundReplyWindowService,
@@ -521,7 +521,7 @@ export class UnipileWebhookService {
       if (authToken) {
         const accountPayload = await this.fetchUnipileAccountById(accountId);
         if (accountPayload) {
-          await this.workspaceMemberProfileUnipileService.applyUnipileAccountToWorkspaceMemberProfile(
+          await this.workspaceMemberUnipileService.applyUnipileAccountToWorkspaceMember(
             parsed.workspaceMemberId,
             authToken,
             type,
@@ -529,7 +529,7 @@ export class UnipileWebhookService {
             accountPayload,
           );
         } else {
-          await this.workspaceMemberProfileUnipileService.updateWorkspaceMemberUnipileAccountId(
+          await this.workspaceMemberUnipileService.updateWorkspaceMemberUnipileAccountId(
             parsed.workspaceMemberId,
             authToken,
             type,

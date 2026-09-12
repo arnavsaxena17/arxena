@@ -38,7 +38,7 @@ import {
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
-import { RecruiterProfileService } from '../recruiter-profile';
+import { WorkspaceMemberArxService } from '../workspace-member-arx.service';
 
 export class FilterCandidates {
   private static readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache TTL
@@ -60,12 +60,12 @@ export class FilterCandidates {
     apiToken: string,
   ): Promise<whatappUpdateMessageObjType> {
     const candidateJob: Project = candidate?.project as Project;
-    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
+    const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(
       candidateJob,
       apiToken,
     );
-    if (!recruiterProfile) {
-      throw new Error('Recruiter profile not found for job');
+    if (!workspaceMember) {
+      throw new Error('Workspace member not found for job');
     }
 
     let phoneNumberTo: string = '';
@@ -85,17 +85,17 @@ export class FilterCandidates {
       console.warn('No phone number found for candidate, using empty string');
     }
 
-    let phoneNumberFrom:string = recruiterProfile.phoneNumber;
+    let phoneNumberFrom:string = workspaceMember.phoneNumber;
     if (
       messagingChannelEquals(
         candidate?.messagingChannel,
         MessagingChannel.LINKEDIN_CONNECT,
       )
     ) {
-      phoneNumberFrom = recruiterProfile.linkedinUrl || '';
+      phoneNumberFrom = workspaceMember.linkedinUrl || '';
     }
     else{
-      phoneNumberFrom = recruiterProfile.phoneNumber
+      phoneNumberFrom = workspaceMember.phoneNumber
     }
 
 

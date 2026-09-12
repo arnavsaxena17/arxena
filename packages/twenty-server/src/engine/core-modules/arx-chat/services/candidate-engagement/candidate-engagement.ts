@@ -21,7 +21,7 @@ import {
   ProjectEdge,
   MessageNode,
   PageInfo,
-  RecruiterProfileType,
+  WorkspaceMemberArxGraphqlNode,
   resolveIsOrgChartEnabledFromWorkspace,
   whatappUpdateMessageObjType
 } from 'twenty-shared';
@@ -33,7 +33,7 @@ import {
 import { OpenAIArxMultiStepClient } from 'src/engine/core-modules/arx-chat/services/llm-agents/arx-multi-step-client';
 import { PromptingAgents } from 'src/engine/core-modules/arx-chat/services/llm-agents/prompting-agents';
 import { TimeManagement } from 'src/engine/core-modules/arx-chat/services/time-management';
-import { WorkspaceMemberProfileUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-profile-unipile.service';
+import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -48,7 +48,7 @@ import {
 } from 'src/engine/core-modules/arx-chat/utils/messaging-channel.util';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { v4 as uuidv4 } from 'uuid';
-import { RecruiterProfileService } from '../recruiter-profile';
+import { WorkspaceMemberArxService } from '../workspace-member-arx.service';
 import { FilterCandidates } from './filter-candidates';
 
 @Injectable()
@@ -59,7 +59,7 @@ export class CandidateEngagementArx {
     private readonly staticGraphQLService: StaticGraphQLService,
     @Optional() private readonly updateChat?: any, // UpdateChat type to avoid circular dependency
     @Optional()
-    private readonly workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
+    private readonly workspaceMemberUnipileService?: WorkspaceMemberUnipileService,
     @Optional()
     private readonly calendarEmailService?: CalendarEmailService,
   ) {
@@ -73,14 +73,14 @@ export class CandidateEngagementArx {
   static create(
     workspaceQueryService: WorkspaceQueryService,
     staticGraphQLService: StaticGraphQLService,
-    workspaceMemberProfileUnipileService?: WorkspaceMemberProfileUnipileService,
+    workspaceMemberUnipileService?: WorkspaceMemberUnipileService,
   ): CandidateEngagementArx {
     // Create instance without UpdateChat dependency to avoid circular import
     const instance = new CandidateEngagementArx(
       workspaceQueryService,
       staticGraphQLService,
       undefined,
-      workspaceMemberProfileUnipileService,
+      workspaceMemberUnipileService,
     );
     return instance;
   }
@@ -124,7 +124,7 @@ export class CandidateEngagementArx {
     candidate: CandidateNode,
     apiToken: string,
     chatReply: chatControlType,
-    recruiterProfile: RecruiterProfileType,
+    workspaceMember: WorkspaceMemberArxGraphqlNode,
     chatFlowConfigObj: Record<string, ChatFlowConfig>,
   ) {
     const config = chatFlowConfigObj[chatReply].templateConfig;
@@ -166,8 +166,8 @@ export class CandidateEngagementArx {
       messageFrom = '';
     }
 
-    let messageTo:string = recruiterProfile.phoneNumber;
-    console.log("This is recruiter profile:", recruiterProfile)
+    let messageTo: string = workspaceMember.phoneNumber ?? '';
+    console.log('This is workspace member:', workspaceMember);
 
     if (
       messagingChannelEquals(
@@ -176,10 +176,9 @@ export class CandidateEngagementArx {
         MessagingChannel.LINKEDIN_SOCK,
       )
     ) {
-      messageTo = recruiterProfile.linkedinUrl || '';
-    }
-    else{
-      messageTo = recruiterProfile.phoneNumber
+      messageTo = workspaceMember.linkedinUrl || '';
+    } else {
+      messageTo = workspaceMember.phoneNumber ?? '';
     }
 
 
@@ -230,12 +229,12 @@ export class CandidateEngagementArx {
       return;
     }
 
-    const recruiterProfile = await new RecruiterProfileService(this.staticGraphQLService).getRecruiterProfileByJob(
+    const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(
       candidateJob as Project,
       apiToken,
     );
-    if (!recruiterProfile) {
-      console.warn('Recruiter profile not found for job, skipping chat');
+    if (!workspaceMember) {
+      console.warn('Workspace member not found for job, skipping chat');
       return;
     }
 
@@ -264,7 +263,7 @@ export class CandidateEngagementArx {
       candidate,
       apiToken,
       chatReply,
-      recruiterProfile,
+      workspaceMember,
       chatFlowConfigObj,
     );
 
@@ -304,7 +303,7 @@ export class CandidateEngagementArx {
           candidate,
           this.workspaceQueryService,
           this.staticGraphQLService,
-          this.workspaceMemberProfileUnipileService,
+          this.workspaceMemberUnipileService,
           this.calendarEmailService,
         ).createCompletion(
           mostRecentMessageArr,

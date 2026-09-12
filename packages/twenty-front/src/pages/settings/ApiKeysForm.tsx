@@ -69,15 +69,6 @@ const MESSAGING_FIELDS: ApiKeyFieldConfig[] = [
   },
 ];
 
-const LINKEDIN_FIELDS: ApiKeyFieldConfig[] = [
-  { field: 'linkedin_url', label: 'LinkedIn Profile URL' },
-  { field: 'linkedin_profile_id', label: 'LinkedIn Profile ID' },
-  {
-    field: 'linkedin_unipile_account_id',
-    label: 'LinkedIn Unipile Account ID',
-  },
-];
-
 const TWILIO_FIELDS: ApiKeyFieldConfig[] = [
   { field: 'twilio_account_sid', label: 'Twilio Account SID' },
   { field: 'twilio_auth_token', label: 'Twilio Auth Token' },
@@ -88,7 +79,6 @@ const WORKSPACE_FIELDS: ApiKeyFieldConfig[] = [
     field: 'is_chrome_extension_installed',
     label: 'Is Chrome Extension Installed (true/false)',
   },
-  { field: 'chrome_extension_id', label: 'Chrome Extension ID' },
   {
     field: 'is_org_chart_enabled',
     label: 'Is Org Chart Enabled (true/false)',
@@ -183,18 +173,13 @@ export const ApiKeysForm = () => {
         MESSAGING_FIELDS,
       )}
       {renderGroup(
-        t`LinkedIn`,
-        t`LinkedIn profile and Unipile account identifiers.`,
-        LINKEDIN_FIELDS,
-      )}
-      {renderGroup(
         t`Twilio`,
         t`Twilio credentials for SMS and voice integrations.`,
         TWILIO_FIELDS,
       )}
       {renderGroup(
         t`Workspace & extension`,
-        t`Chrome extension and org chart workspace flags.`,
+        t`Org chart and Chrome extension install flags for this workspace.`,
         WORKSPACE_FIELDS,
       )}
       <StyledButtonContainer>
