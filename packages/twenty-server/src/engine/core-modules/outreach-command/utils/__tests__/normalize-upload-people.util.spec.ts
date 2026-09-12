@@ -44,6 +44,10 @@ describe('normalizeUploadPeople', () => {
           },
         ],
         skills: ['Talent Management'],
+        connectionsCount: 885,
+        followersCount: 1269,
+        sharedConnectionsCount: 1,
+        networkDistance: 'SECOND_DEGREE',
         snapshot: '{}',
         error: '',
       }),
@@ -61,13 +65,19 @@ describe('normalizeUploadPeople', () => {
         linkedinProfileId: 'ACoAAAIRqlkBVrZQVLDnz6_oel2hQOLSyF77bKk',
         peopleId: 'ACoAAAIRqlkBVrZQVLDnz6_oel2hQOLSyF77bKk',
         profilePictureUrl: 'https://media.licdn.com/example.jpg',
+        connectionsCount: 885,
+        followersCount: 1269,
+        sharedConnectionsCount: 1,
+        networkDistance: 'SECOND_DEGREE',
       },
     ]);
   });
 
   it('accepts a LinkedIn URL string', () => {
     expect(
-      normalizeUploadPeople('https://www.linkedin.com/in/prenisha-harry-075760b'),
+      normalizeUploadPeople(
+        'https://www.linkedin.com/in/prenisha-harry-075760b',
+      ),
     ).toEqual([
       {
         linkedinUrl: 'https://www.linkedin.com/in/prenisha-harry-075760b',

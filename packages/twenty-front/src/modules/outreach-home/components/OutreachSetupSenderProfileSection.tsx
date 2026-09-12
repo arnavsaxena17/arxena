@@ -1,11 +1,12 @@
-import { isNonEmptyString } from '@sniptt/guards';
 import { styled } from '@linaria/react';
+import { isNonEmptyString } from '@sniptt/guards';
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { useDebouncedCallback } from 'use-debounce';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { Button } from 'twenty-ui/input';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { useDebouncedCallback } from 'use-debounce';
 
 import { tokenPairState } from '@/auth/states/tokenPairState';
+import { OutreachSenderProfileDraftEditor } from '@/outreach-home/components/OutreachSenderProfileDraftEditor';
 import { OutreachSetupSectionCard } from '@/outreach-home/components/OutreachSetupSectionCard';
 import {
   draftOutreachSenderProfile,
@@ -58,6 +59,20 @@ const StyledHiddenFileInput = styled.input`
   display: none;
 `;
 
+const StyledJsonToggle = styled.button`
+  align-self: flex-start;
+  appearance: none;
+  background: none;
+  border: none;
+  color: ${themeCssVariables.font.color.secondary};
+  cursor: pointer;
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.medium};
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+`;
+
 const fileToBase64 = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -95,7 +110,7 @@ export const OutreachSetupSenderProfileSection = () => {
   const [linkedinProfileText, setLinkedinProfileText] = useState('');
   const [savedSummary, setSavedSummary] = useState<string | null>(null);
   const [draftJson, setDraftJson] = useState('');
-  const [reviewFlags, setReviewFlags] = useState<string[]>([]);
+  const [isJsonOpen, setIsJsonOpen] = useState(false);
 
   const persistLinkedinUrl = useDebouncedCallback(async (nextUrl: string) => {
     if (!accessToken) {
@@ -139,12 +154,6 @@ export const OutreachSetupSenderProfileSection = () => {
         );
         if (seed.existingSenderProfile) {
           setDraftJson(JSON.stringify(seed.existingSenderProfile, null, 2));
-          const flags = seed.existingSenderProfile.review_flags;
-          setReviewFlags(
-            Array.isArray(flags)
-              ? flags.filter((flag): flag is string => typeof flag === 'string')
-              : [],
-          );
         }
       } catch (error) {
         if (!cancelled) {
@@ -223,12 +232,7 @@ export const OutreachSetupSenderProfileSection = () => {
       });
       setDraftJson(JSON.stringify(result.draft, null, 2));
       setLinkedinProfileText(result.linkedinProfileText);
-      const flags = result.draft.review_flags;
-      setReviewFlags(
-        Array.isArray(flags)
-          ? flags.filter((flag): flag is string => typeof flag === 'string')
-          : [],
-      );
+      setIsJsonOpen(false);
       enqueueSuccessSnackBar({
         message: 'Sender profile draft ready — review before saving.',
       });
@@ -461,21 +465,33 @@ export const OutreachSetupSenderProfileSection = () => {
               }
             />
           </StyledActions>
-          {/*
-          {reviewFlags.length > 0 && (
-            <StyledMuted>Review flags: {reviewFlags.join(', ')}</StyledMuted>
-          )} */}
-
           {isNonEmptyString(draftJson) && (
             <StyledFieldStack>
-              <StyledFieldLabel>Draft JSON (edit before save)</StyledFieldLabel>
-              <TextArea
-                textAreaId="outreach-setup-sender-draft"
-                minRows={10}
-                maxRows={24}
-                value={draftJson}
+              <StyledFieldLabel>Review draft before save</StyledFieldLabel>
+              <StyledMuted>
+                Edit fields below. Use Edit as JSON only if you need a raw
+                override.
+              </StyledMuted>
+              <OutreachSenderProfileDraftEditor
+                draftJson={draftJson}
                 onChange={setDraftJson}
+                disabled={isSaving || isDrafting}
               />
+              <StyledJsonToggle
+                type="button"
+                onClick={() => setIsJsonOpen((open) => !open)}
+              >
+                {isJsonOpen ? 'Hide JSON' : 'Edit as JSON'}
+              </StyledJsonToggle>
+              {isJsonOpen && (
+                <TextArea
+                  textAreaId="outreach-setup-sender-draft"
+                  minRows={10}
+                  maxRows={24}
+                  value={draftJson}
+                  onChange={setDraftJson}
+                />
+              )}
             </StyledFieldStack>
           )}
         </>

@@ -25,6 +25,10 @@ const fetchedProfile = {
     },
   ],
   skills: ['Talent Management'],
+  connectionsCount: 885,
+  followersCount: 1269,
+  sharedConnectionsCount: 1,
+  networkDistance: 'SECOND_DEGREE',
   error: '',
 };
 
@@ -87,6 +91,14 @@ describe('hydrate-linkedin-premium-from-fetch', () => {
         location_name: 'London, England, United Kingdom',
         linkedin_url: 'https://www.linkedin.com/in/prenisha-harry-075760b/',
         company_name: 'E.L.F. BEAUTY',
+        connectionsCount: 885,
+        connections_count: 885,
+        connectionCount: 885,
+        followersCount: 1269,
+        followers_count: 1269,
+        followerCount: 1269,
+        sharedConnectionsCount: 1,
+        networkDistance: 'SECOND_DEGREE',
         fetched_from_url: true,
       }),
     );

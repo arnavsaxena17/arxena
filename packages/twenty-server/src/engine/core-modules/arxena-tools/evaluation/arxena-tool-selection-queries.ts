@@ -109,6 +109,15 @@ export const ARXENA_TOOL_SELECTION_QUERIES: ToolSelectionQuery[] = [
   {
     id: 's9d',
     persona: 'sales',
+    query: "Fetch this candidate's recent LinkedIn posts",
+    expectedToolHints: [
+      'linkedin_unipile_get_user_posts',
+      'linkedin_unipile_get_profile_overview',
+    ],
+  },
+  {
+    id: 's9d',
+    persona: 'sales',
     query:
       'Visit this LinkedIn profile so they see that I viewed their profile',
     expectedToolHints: ['visit_linkedin_profile'],

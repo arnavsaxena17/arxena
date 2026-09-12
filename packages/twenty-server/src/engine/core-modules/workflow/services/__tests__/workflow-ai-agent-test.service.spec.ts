@@ -33,6 +33,7 @@ describe('WorkflowAiAgentTestService', () => {
     id: agentId,
     workspaceId,
     name: 'test-agent',
+    prompt: 'You write outreach messages.',
   } as AgentEntity;
 
   const userAuthContext = {
@@ -63,6 +64,15 @@ describe('WorkflowAiAgentTestService', () => {
   });
 
   it('runs the agent and returns the result', async () => {
+    const loggerLogSpy = jest.spyOn(
+      (
+        service as unknown as {
+          logger: { log: (...args: unknown[]) => void };
+        }
+      ).logger,
+      'log',
+    );
+
     agentRepository.findOne.mockResolvedValue(agent);
     agentAsyncExecutorService.executeAgent.mockResolvedValue({
       result: { summary: 'ok' },
@@ -94,6 +104,24 @@ describe('WorkflowAiAgentTestService', () => {
       }),
     );
     expect(response.durationMs).toEqual(expect.any(Number));
+    expect(loggerLogSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[AI_AGENT_TEST] systemPrompt'),
+    );
+    expect(loggerLogSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[AI_AGENT_TEST] prompt'),
+    );
+    expect(loggerLogSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[AI_AGENT_TEST] response'),
+    );
+    expect(loggerLogSpy).toHaveBeenCalledWith(
+      expect.stringContaining('You write outreach messages.'),
+    );
+    expect(loggerLogSpy).toHaveBeenCalledWith(expect.stringContaining(prompt));
+    expect(loggerLogSpy).toHaveBeenCalledWith(
+      expect.stringContaining('"summary": "ok"'),
+    );
+
+    loggerLogSpy.mockRestore();
   });
 
   it('returns an error when the agent is missing', async () => {
@@ -116,9 +144,7 @@ describe('WorkflowAiAgentTestService', () => {
     const response = await service.test({ workspaceId, agentId, prompt });
 
     expect(response.success).toBe(false);
-    expect(response.error).toBe(
-      'AI agent stopped: no more available credits.',
-    );
+    expect(response.error).toBe('AI agent stopped: no more available credits.');
   });
 
   it('returns an error when execution throws', async () => {

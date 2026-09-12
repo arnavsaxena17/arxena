@@ -1,6 +1,7 @@
 import {
   buildFindRecordsStepResult,
   resolveWorkflowPromptFromContext,
+  setValueAtWorkflowVariablePath,
 } from 'src/engine/core-modules/workflow/utils/resolve-workflow-prompt-from-context.util';
 
 describe('resolveWorkflowPromptFromContext', () => {
@@ -35,6 +36,24 @@ describe('resolveWorkflowPromptFromContext', () => {
 
     expect(missingVariablePaths).toEqual([`${profileStepId}.about`]);
     expect(resolvedPrompt).toBe(prompt);
+  });
+});
+
+describe('setValueAtWorkflowVariablePath', () => {
+  it('should set a nested path used by prompt chips', () => {
+    const context: Record<string, unknown> = {
+      step: { first: { name: 'Jane' } },
+    };
+
+    setValueAtWorkflowVariablePath({
+      context,
+      path: 'step.first.outreachProspectEnrichment',
+      value: {},
+    });
+
+    expect(context).toEqual({
+      step: { first: { name: 'Jane', outreachProspectEnrichment: {} } },
+    });
   });
 });
 

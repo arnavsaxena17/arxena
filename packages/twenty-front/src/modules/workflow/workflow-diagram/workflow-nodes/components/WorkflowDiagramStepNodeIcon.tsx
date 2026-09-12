@@ -40,6 +40,8 @@ export const WorkflowDiagramStepNodeIcon = ({
         case 'SEND_LINKEDIN_CONNECTION_REQUEST':
         case 'SEND_LINKEDIN_INMAIL':
         case 'SEND_LINKEDIN_MESSAGE':
+        case 'FETCH_LINKEDIN_ACTIVITY':
+        case 'COMMENT_ON_LINKEDIN_POST':
         case 'SEND_WHATSAPP_MESSAGE': {
           return (
             <Icon

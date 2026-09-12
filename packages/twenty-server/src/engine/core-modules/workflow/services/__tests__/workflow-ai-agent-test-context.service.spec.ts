@@ -326,4 +326,78 @@ describe('WorkflowAiAgentTestContextService', () => {
       }),
     ).rejects.toThrow(`Candidate ${candidateId} was not found`);
   });
+
+  it('should default missing outreachProspectEnrichment to {} for Test', async () => {
+    workflowCommonWorkspaceService.getWorkflowVersionOrFail.mockResolvedValue({
+      id: workflowVersionId,
+      steps: [
+        {
+          id: loadCandidateStepId,
+          name: 'Load Candidate',
+          type: WorkflowActionType.FIND_RECORDS,
+          valid: true,
+          nextStepIds: [draftStepId],
+          settings: { input: { objectName: 'candidate' }, outputSchema: {} },
+        },
+        {
+          id: draftStepId,
+          name: 'Draft first LinkedIn message',
+          type: WorkflowActionType.AI_AGENT,
+          valid: true,
+          settings: { input: { prompt: '' }, outputSchema: {} },
+        },
+      ],
+    });
+    globalWorkspaceOrmManager.getRepository.mockResolvedValue({
+      find: jest.fn().mockResolvedValue([candidate]),
+    });
+
+    const resolvedPrompt = await service.resolvePromptForCandidate({
+      workspaceId,
+      workflowVersionId,
+      stepId: draftStepId,
+      candidateId,
+      prompt: `prospect: {{${loadCandidateStepId}.first.outreachProspectEnrichment}}`,
+    });
+
+    expect(resolvedPrompt).toBe('prospect: {}');
+  });
+
+  it('should still throw for missing chips without a test default', async () => {
+    workflowCommonWorkspaceService.getWorkflowVersionOrFail.mockResolvedValue({
+      id: workflowVersionId,
+      steps: [
+        {
+          id: loadCandidateStepId,
+          name: 'Load Candidate',
+          type: WorkflowActionType.FIND_RECORDS,
+          valid: true,
+          nextStepIds: [draftStepId],
+          settings: { input: { objectName: 'candidate' }, outputSchema: {} },
+        },
+        {
+          id: draftStepId,
+          name: 'Draft first LinkedIn message',
+          type: WorkflowActionType.AI_AGENT,
+          valid: true,
+          settings: { input: { prompt: '' }, outputSchema: {} },
+        },
+      ],
+    });
+    globalWorkspaceOrmManager.getRepository.mockResolvedValue({
+      find: jest.fn().mockResolvedValue([candidate]),
+    });
+
+    await expect(
+      service.resolvePromptForCandidate({
+        workspaceId,
+        workflowVersionId,
+        stepId: draftStepId,
+        candidateId,
+        prompt: `About: {{${fetchProfileStepId}.about}}`,
+      }),
+    ).rejects.toThrow(
+      `Could not fill prompt chips from this candidate: ${fetchProfileStepId}.about`,
+    );
+  });
 });

@@ -36,6 +36,11 @@ export type FetchedLinkedinProfile = {
     end?: string;
   }>;
   skills?: string[];
+  connectionsCount?: number;
+  followersCount?: number;
+  sharedConnectionsCount?: number;
+  networkDistance?: string;
+  recruitingActivity?: unknown[];
   error?: string;
 };
 
@@ -130,8 +135,7 @@ export const mapFetchedLinkedinProfileToPremiumUpload = (
   const firstName = fetched.firstName?.trim() ?? '';
   const lastName = fetched.lastName?.trim() ?? '';
   const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
-  const linkedinUrl =
-    fetched.linkedinUrl?.trim() || fallbackUrl.trim() || '';
+  const linkedinUrl = fetched.linkedinUrl?.trim() || fallbackUrl.trim() || '';
 
   if (!fullName && !linkedinUrl) {
     return null;
@@ -178,6 +182,38 @@ export const mapFetchedLinkedinProfileToPremiumUpload = (
     experience,
     experiences: experience,
     skills: fetched.skills ?? [],
+    ...(fetched.connectionsCount !== undefined
+      ? {
+          connectionsCount: fetched.connectionsCount,
+          connections_count: fetched.connectionsCount,
+          connectionCount: fetched.connectionsCount,
+        }
+      : {}),
+    ...(fetched.followersCount !== undefined
+      ? {
+          followersCount: fetched.followersCount,
+          followers_count: fetched.followersCount,
+          followerCount: fetched.followersCount,
+        }
+      : {}),
+    ...(fetched.sharedConnectionsCount !== undefined
+      ? {
+          sharedConnectionsCount: fetched.sharedConnectionsCount,
+          shared_connections_count: fetched.sharedConnectionsCount,
+        }
+      : {}),
+    ...(fetched.networkDistance
+      ? {
+          networkDistance: fetched.networkDistance,
+          network_distance: fetched.networkDistance,
+        }
+      : {}),
+    ...(fetched.recruitingActivity !== undefined
+      ? {
+          recruitingActivity: fetched.recruitingActivity,
+          recruiting_activity: fetched.recruitingActivity,
+        }
+      : {}),
     fetched_from_url: true,
   };
 };

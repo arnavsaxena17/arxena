@@ -290,6 +290,7 @@ export const computeStepOutputSchema = ({
     case 'SEND_LINKEDIN_CONNECTION_REQUEST':
     case 'SEND_LINKEDIN_INMAIL':
     case 'SEND_LINKEDIN_MESSAGE':
+    case 'COMMENT_ON_LINKEDIN_POST':
     case 'SEND_WHATSAPP_MESSAGE': {
       return {
         success: {
@@ -303,6 +304,65 @@ export const computeStepOutputSchema = ({
           type: FieldMetadataType.TEXT,
           label: 'Message',
           value: '',
+        },
+      };
+    }
+
+    case 'FETCH_LINKEDIN_ACTIVITY': {
+      return {
+        success: {
+          isLeaf: true,
+          type: FieldMetadataType.BOOLEAN,
+          label: 'Success',
+          value: true,
+        },
+        message: {
+          isLeaf: true,
+          type: FieldMetadataType.TEXT,
+          label: 'Message',
+          value: '',
+        },
+        result: {
+          isLeaf: false,
+          label: 'Result',
+          value: {
+            mostRecentPost: {
+              isLeaf: false,
+              label: 'Most Recent Post',
+              value: {
+                socialId: {
+                  isLeaf: true,
+                  type: FieldMetadataType.TEXT,
+                  label: 'Social ID',
+                  value: '',
+                },
+                text: {
+                  isLeaf: true,
+                  type: FieldMetadataType.TEXT,
+                  label: 'Text',
+                  value: '',
+                },
+                id: {
+                  isLeaf: true,
+                  type: FieldMetadataType.TEXT,
+                  label: 'ID',
+                  value: '',
+                },
+              },
+            },
+            postsCount: {
+              isLeaf: true,
+              type: FieldMetadataType.NUMBER,
+              label: 'Posts Count',
+              value: 0,
+            },
+            userCommentsCount: {
+              isLeaf: true,
+              type: FieldMetadataType.NUMBER,
+              label: 'User Comments Count',
+              value: 0,
+            },
+          },
         },
       };
     }

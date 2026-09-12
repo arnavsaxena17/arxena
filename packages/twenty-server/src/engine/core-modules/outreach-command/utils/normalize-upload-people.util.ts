@@ -24,6 +24,11 @@ export type UploadProfilesPerson = {
   stdFunction?: string;
   stdFunctionRoot?: string;
   stdGrade?: string;
+  connectionsCount?: number;
+  followersCount?: number;
+  sharedConnectionsCount?: number;
+  networkDistance?: string;
+  recruitingActivity?: unknown[];
 };
 
 const UUID_REGEX =
@@ -86,6 +91,29 @@ const readStringOrLink = (
   }
 
   return '';
+};
+
+const readNumber = (
+  record: Record<string, unknown>,
+  keys: string[],
+): number | undefined => {
+  for (const key of keys) {
+    const value = record[key];
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (typeof value === 'string' && value.trim()) {
+      const parsed = Number(value);
+
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+  }
+
+  return undefined;
 };
 
 const readNestedName = (
@@ -184,7 +212,9 @@ export const toUploadProfilesPerson = (
   const headline = readString(person, ['headline', 'title', 'jobTitle']);
   const title =
     readString(person, ['title', 'jobTitle']) ||
-    (experience ? readString(experience, ['position', 'title', 'jobTitle']) : '') ||
+    (experience
+      ? readString(experience, ['position', 'title', 'jobTitle'])
+      : '') ||
     headline;
   const company =
     readString(person, ['company', 'companyName', 'jobCompanyName']) ||
@@ -228,6 +258,28 @@ export const toUploadProfilesPerson = (
   const stdFunction = readString(person, ['stdFunction']);
   const stdFunctionRoot = readString(person, ['stdFunctionRoot']);
   const stdGrade = readString(person, ['stdGrade']);
+  const connectionsCount = readNumber(person, [
+    'connectionsCount',
+    'connections_count',
+  ]);
+  const followersCount = readNumber(person, [
+    'followersCount',
+    'followers_count',
+    'follower_count',
+  ]);
+  const sharedConnectionsCount = readNumber(person, [
+    'sharedConnectionsCount',
+    'shared_connections_count',
+  ]);
+  const networkDistance = readString(person, [
+    'networkDistance',
+    'network_distance',
+  ]);
+  const recruitingActivity = Array.isArray(person.recruitingActivity)
+    ? person.recruitingActivity
+    : Array.isArray(person.recruiting_activity)
+      ? person.recruiting_activity
+      : undefined;
 
   if (
     !isNonEmptyString(linkedinUrl) &&
@@ -253,10 +305,17 @@ export const toUploadProfilesPerson = (
     ...(isNonEmptyString(profilePictureUrl) ? { profilePictureUrl } : {}),
     ...(isNonEmptyString(candidateId) ? { candidateId } : {}),
     ...(isNonEmptyString(projectId) ? { projectId } : {}),
-    ...(currentPositions.length > 0 ? { current_positions: currentPositions } : {}),
+    ...(currentPositions.length > 0
+      ? { current_positions: currentPositions }
+      : {}),
     ...(isNonEmptyString(stdFunction) ? { stdFunction } : {}),
     ...(isNonEmptyString(stdFunctionRoot) ? { stdFunctionRoot } : {}),
     ...(isNonEmptyString(stdGrade) ? { stdGrade } : {}),
+    ...(connectionsCount !== undefined ? { connectionsCount } : {}),
+    ...(followersCount !== undefined ? { followersCount } : {}),
+    ...(sharedConnectionsCount !== undefined ? { sharedConnectionsCount } : {}),
+    ...(isNonEmptyString(networkDistance) ? { networkDistance } : {}),
+    ...(recruitingActivity !== undefined ? { recruitingActivity } : {}),
   };
 };
 

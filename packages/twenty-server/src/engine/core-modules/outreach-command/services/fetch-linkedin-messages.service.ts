@@ -80,6 +80,8 @@ export type FetchLinkedinMessagesInput = {
   limit?: number;
   /** Use sales_navigator to resolve ACwAA attendee ids for SN inbox chats. */
   linkedinApi?: LinkedinMessagingApi;
+  /** Skip local chatMessage transcript and always hit Unipile. */
+  forceRefresh?: boolean;
 };
 
 export type FetchLinkedinMessageItem = {
@@ -156,6 +158,7 @@ export class FetchLinkedinMessagesService {
 
     const authContext = buildSystemAuthContext(workspaceId);
     const limit = Math.min(Math.max(1, input.limit ?? 50), 250);
+    const forceRefresh = input.forceRefresh === true;
 
     const resolved =
       await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
@@ -188,8 +191,7 @@ export class FetchLinkedinMessagesService {
             );
 
             accountId = withAccount?.linkedinUnipileAccountId?.trim() ?? '';
-            workspaceMemberId =
-              withAccount?.id ?? workspaceMemberId;
+            workspaceMemberId = withAccount?.id ?? workspaceMemberId;
           }
 
           let identifier =
@@ -227,6 +229,56 @@ export class FetchLinkedinMessagesService {
       total: 0,
       messages: [] as FetchLinkedinMessageItem[],
     };
+
+    if (
+      !isNonEmptyString(resolved.identifier) &&
+      !isNonEmptyString(input.candidateId)
+    ) {
+      return {
+        ...empty,
+        error: 'linkedinUrl or linkedinProfileId is required',
+      };
+    }
+
+    // Prefer previously persisted LINKEDIN chatMessage transcript over Unipile.
+    if (!forceRefresh) {
+      const transcript =
+        await this.gtmOutreachMessagePersistService.readLinkedinTranscriptMessages(
+          {
+            workspaceId,
+            candidateId: input.candidateId,
+            linkedinProfileId: resolved.identifier,
+            limit,
+          },
+        );
+
+      if (transcript.messages.length > 0) {
+        const storedProviderId =
+          await this.linkedinProviderIdStore.readStoredProviderId({
+            workspaceId,
+            candidateId: input.candidateId,
+            identifier: resolved.identifier,
+          });
+        const attendeeId = isValidLinkedInProviderId(storedProviderId)
+          ? storedProviderId.trim()
+          : resolved.identifier;
+
+        this.logger.log(
+          `fetch-linkedin-messages cache HIT for ${
+            resolved.identifier || input.candidateId
+          } (${transcript.messages.length} from chatMessage)`,
+        );
+
+        return {
+          success: true,
+          chatId: transcript.chatId,
+          attendeeId,
+          total: transcript.messages.length,
+          messages: transcript.messages,
+          error: '',
+        };
+      }
+    }
 
     if (!isNonEmptyString(resolved.accountId)) {
       return {

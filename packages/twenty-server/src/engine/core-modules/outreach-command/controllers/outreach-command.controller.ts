@@ -392,6 +392,7 @@ export class OutreachCommandController {
       candidateId?: string;
       limit?: number;
       linkedinApi?: 'classic' | 'sales_navigator' | 'recruiter';
+      forceRefresh?: boolean;
     },
     @Req() request: { headers?: { authorization?: string } },
   ) {

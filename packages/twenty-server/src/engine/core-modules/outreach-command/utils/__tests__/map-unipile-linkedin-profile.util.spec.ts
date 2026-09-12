@@ -60,4 +60,27 @@ describe('mapUnipileLinkedinProfile', () => {
       linkedinUrl: 'https://www.linkedin.com/in/jane-doe',
     });
   });
+
+  it('maps connections, followers, shared connections, and network distance', () => {
+    expect(
+      mapUnipileLinkedinProfile(
+        {
+          provider_id: VALID_PROVIDER_ID,
+          public_identifier: 'divyesh-shah-b1b97698',
+          first_name: 'Divyesh',
+          last_name: 'Shah',
+          follower_count: 1269,
+          connections_count: 885,
+          shared_connections_count: 1,
+          network_distance: 'SECOND_DEGREE',
+        },
+        'divyesh-shah-b1b97698',
+      ),
+    ).toMatchObject({
+      connectionsCount: 885,
+      followersCount: 1269,
+      sharedConnectionsCount: 1,
+      networkDistance: 'SECOND_DEGREE',
+    });
+  });
 });

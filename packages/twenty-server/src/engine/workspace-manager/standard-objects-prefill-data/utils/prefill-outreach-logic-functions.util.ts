@@ -338,6 +338,27 @@ export const getOutreachLogicFunctionDefinitions = (
                 label: 'Skills',
                 items: { type: 'string', label: 'Skill' },
               },
+              connectionsCount: {
+                type: 'number',
+                label: 'Connections count',
+              },
+              followersCount: {
+                type: 'number',
+                label: 'Followers count',
+              },
+              sharedConnectionsCount: {
+                type: 'number',
+                label: 'Shared connections count',
+              },
+              networkDistance: {
+                type: 'string',
+                label: 'Network distance',
+              },
+              recruitingActivity: {
+                type: 'array',
+                label: 'Recruiting activity',
+                items: { type: 'object', label: 'Activity event' },
+              },
               snapshot: { type: 'string', label: 'Snapshot' },
               people: {
                 type: 'array',
@@ -362,6 +383,22 @@ export const getOutreachLogicFunctionDefinitions = (
                       label: 'Profile picture URL',
                     },
                     location: { type: 'string', label: 'Location' },
+                    connectionsCount: {
+                      type: 'number',
+                      label: 'Connections count',
+                    },
+                    followersCount: {
+                      type: 'number',
+                      label: 'Followers count',
+                    },
+                    sharedConnectionsCount: {
+                      type: 'number',
+                      label: 'Shared connections count',
+                    },
+                    networkDistance: {
+                      type: 'string',
+                      label: 'Network distance',
+                    },
                   },
                 },
               },
@@ -767,7 +804,7 @@ export const getOutreachLogicFunctionDefinitions = (
       id: ids.fetchLinkedinMessagesId,
       name: OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
       description:
-        'Fetch LinkedIn chat messages for a person via Unipile ChatAttendees. Pass linkedinUrl or linkedinProfileId plus optional workspaceMemberId/candidateId/limit.',
+        'Fetch LinkedIn chat messages for a person. Uses local chatMessage transcript when present; otherwise Unipile ChatAttendees. Pass linkedinUrl or linkedinProfileId plus optional workspaceMemberId/candidateId/limit. Set forceRefresh to bypass the local cache.',
       sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
         OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
       ),
@@ -786,6 +823,10 @@ export const getOutreachLogicFunctionDefinitions = (
               },
               candidateId: OUTREACH_CANDIDATE_RECORD_INPUT,
               limit: { type: 'number', label: 'Limit' },
+              forceRefresh: {
+                type: 'boolean',
+                label: 'Force refresh (skip local cache)',
+              },
             },
           },
         ],

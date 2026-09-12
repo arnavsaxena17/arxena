@@ -2,6 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
+import { UnipilePoolModule } from 'src/engine/core-modules/arx-chat/unipile-pool.module';
 import { FeatureFlagModule } from 'src/engine/core-modules/feature-flag/feature-flag.module';
 import { FileEntity } from 'src/engine/core-modules/file/entities/file.entity';
 import { FileModule } from 'src/engine/core-modules/file/file.module';
@@ -21,6 +22,8 @@ import { HighlightOrgChartTool } from 'src/engine/core-modules/tool/tools/highli
 import { ExtractJsonPathsTool } from 'src/engine/core-modules/tool/tools/output-navigation-tool/extract-json-paths-tool';
 import { SearchOutputTool } from 'src/engine/core-modules/tool/tools/output-navigation-tool/search-output-tool';
 import { SearchHelpCenterTool } from 'src/engine/core-modules/tool/tools/search-help-center-tool/search-help-center-tool';
+import { CommentOnLinkedinPostTool } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/comment-on-linkedin-post-tool';
+import { FetchLinkedinActivityTool } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/fetch-linkedin-activity-tool';
 import { SendLinkedinConnectionRequestTool } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/send-linkedin-connection-request-tool';
 import { SendLinkedinInmailTool } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/send-linkedin-inmail-tool';
 import { SendLinkedinMessageTool } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/send-linkedin-message-tool';
@@ -50,6 +53,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     ViewModule,
     NavigationMenuItemModule,
     WorkspaceManyOrAllFlatEntityMapsCacheModule,
+    UnipilePoolModule,
     // WorkflowRunner → executor actions → ToolModule → OutreachCommand (cycle)
     forwardRef(() => OutreachCommandModule),
   ],
@@ -61,6 +65,8 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     SendLinkedinConnectionRequestTool,
     SendLinkedinInmailTool,
     SendLinkedinMessageTool,
+    FetchLinkedinActivityTool,
+    CommentOnLinkedinPostTool,
     SendWhatsappMessageTool,
     EmailComposerService,
     SearchHelpCenterTool,
@@ -82,6 +88,8 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     SendLinkedinConnectionRequestTool,
     SendLinkedinInmailTool,
     SendLinkedinMessageTool,
+    FetchLinkedinActivityTool,
+    CommentOnLinkedinPostTool,
     SendWhatsappMessageTool,
     EmailComposerService,
     SearchHelpCenterTool,

@@ -73,6 +73,11 @@ export class FetchLinkedinProfileService {
       end: string;
     }>;
     skills: string[];
+    connectionsCount?: number;
+    followersCount?: number;
+    sharedConnectionsCount?: number;
+    networkDistance?: string;
+    recruitingActivity?: unknown[];
     snapshot: string;
     people: Array<Record<string, unknown>>;
     error: string;
@@ -177,8 +182,7 @@ export class FetchLinkedinProfileService {
             );
 
             accountId = withAccount?.linkedinUnipileAccountId?.trim() ?? '';
-            workspaceMemberId =
-              withAccount?.id ?? workspaceMemberId;
+            workspaceMemberId = withAccount?.id ?? workspaceMemberId;
           }
 
           let identifier =

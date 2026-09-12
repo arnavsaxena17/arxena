@@ -98,6 +98,31 @@ export const mapUploadProfileToLinkedinSearchRow = (
       : typeof person.isPremium === 'boolean'
         ? person.isPremium
         : undefined;
+  const connectionsCount =
+    typeof person.connectionsCount === 'number'
+      ? person.connectionsCount
+      : typeof person.connections_count === 'number'
+        ? person.connections_count
+        : undefined;
+  const followersCount =
+    typeof person.followersCount === 'number'
+      ? person.followersCount
+      : typeof person.followers_count === 'number'
+        ? person.followers_count
+        : typeof person.follower_count === 'number'
+          ? person.follower_count
+          : undefined;
+  const sharedConnectionsCount =
+    typeof person.sharedConnectionsCount === 'number'
+      ? person.sharedConnectionsCount
+      : typeof person.shared_connections_count === 'number'
+        ? person.shared_connections_count
+        : undefined;
+  const recruitingActivity = Array.isArray(person.recruitingActivity)
+    ? person.recruitingActivity
+    : Array.isArray(person.recruiting_activity)
+      ? person.recruiting_activity
+      : undefined;
 
   return {
     ...person,
@@ -126,6 +151,32 @@ export const mapUploadProfileToLinkedinSearchRow = (
     ...(summary ? { summary, linkedinSummary: summary } : {}),
     ...(networkDistance ? { network_distance: networkDistance } : {}),
     ...(premium !== undefined ? { premium } : {}),
+    ...(connectionsCount !== undefined
+      ? {
+          connectionsCount,
+          connections_count: connectionsCount,
+          connectionCount: connectionsCount,
+        }
+      : {}),
+    ...(followersCount !== undefined
+      ? {
+          followersCount,
+          followers_count: followersCount,
+          followerCount: followersCount,
+        }
+      : {}),
+    ...(sharedConnectionsCount !== undefined
+      ? {
+          sharedConnectionsCount,
+          shared_connections_count: sharedConnectionsCount,
+        }
+      : {}),
+    ...(recruitingActivity !== undefined
+      ? {
+          recruitingActivity,
+          recruiting_activity: recruitingActivity,
+        }
+      : {}),
     ...(resolvedCompanyId ? { companyId: resolvedCompanyId } : {}),
     ...(jobCompanyId
       ? { jobCompanyId }

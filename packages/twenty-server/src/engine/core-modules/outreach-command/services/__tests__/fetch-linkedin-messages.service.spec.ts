@@ -378,6 +378,94 @@ describe('FetchLinkedinMessagesService', () => {
     ).not.toHaveBeenCalled();
   });
 
+  it('returns local chatMessage transcript without calling Unipile', async () => {
+    globalWorkspaceOrmManager.executeInWorkspaceContext.mockResolvedValue({
+      accountId: 'acc-1',
+      identifier: VALID_PROVIDER_ID,
+    });
+    gtmOutreachMessagePersistService.readLinkedinTranscriptMessages.mockResolvedValue(
+      {
+        candidateId: 'cand-1',
+        chatId: 'cached-chat-1',
+        messages: [
+          {
+            id: 'msg-cached-1',
+            text: 'Cached hello',
+            timestamp: '2026-09-01T00:00:00.000Z',
+            senderId: '',
+            isSender: false,
+          },
+        ],
+      },
+    );
+    linkedinProviderIdStore.readStoredProviderId.mockResolvedValue(
+      VALID_PROVIDER_ID,
+    );
+
+    await expect(
+      service.execute({
+        workspaceId: 'ws-1',
+        input: { linkedinProfileId: VALID_PROVIDER_ID },
+      }),
+    ).resolves.toMatchObject({
+      success: true,
+      chatId: 'cached-chat-1',
+      attendeeId: VALID_PROVIDER_ID,
+      total: 1,
+      messages: [{ id: 'msg-cached-1', text: 'Cached hello' }],
+    });
+    expect(
+      linkedinUnipileRequestService.makeUnipileRequest,
+    ).not.toHaveBeenCalled();
+    expect(
+      gtmOutreachMessagePersistService.mergeFetchedLinkedinMessages,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('bypasses local transcript when forceRefresh is true', async () => {
+    globalWorkspaceOrmManager.executeInWorkspaceContext.mockResolvedValue({
+      accountId: 'acc-1',
+      identifier: VALID_PROVIDER_ID,
+    });
+    gtmOutreachMessagePersistService.readLinkedinTranscriptMessages.mockResolvedValue(
+      {
+        candidateId: 'cand-1',
+        chatId: 'cached-chat-1',
+        messages: [
+          {
+            id: 'msg-cached-1',
+            text: 'Cached hello',
+            timestamp: '2026-09-01T00:00:00.000Z',
+            senderId: '',
+            isSender: false,
+          },
+        ],
+      },
+    );
+
+    await expect(
+      service.execute({
+        workspaceId: 'ws-1',
+        input: {
+          linkedinProfileId: VALID_PROVIDER_ID,
+          forceRefresh: true,
+        },
+      }),
+    ).resolves.toMatchObject({
+      success: true,
+      chatId: 'chat-1',
+      attendeeId: VALID_PROVIDER_ID,
+      total: 1,
+      messages: [{ id: 'msg-1', text: 'Hello' }],
+    });
+    expect(
+      gtmOutreachMessagePersistService.readLinkedinTranscriptMessages,
+    ).not.toHaveBeenCalled();
+    expect(requestedEndpoints()[2]).toBe(
+      '/api/v1/chats/chat-1/messages?limit=50',
+    );
+  });
+
   it('rethrows LinkedIn account rate limit errors', async () => {
     const { AccountRateLimitDeferredError } =
       await import('src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error');

@@ -601,6 +601,46 @@ export class WorkflowVersionStepOperationsWorkspaceService {
           },
         };
       }
+      case WorkflowActionType.FETCH_LINKEDIN_ACTIVITY: {
+        return {
+          builtStep: {
+            ...baseStep,
+            name: 'Fetch LinkedIn Posts & Activity',
+            type: WorkflowActionType.FETCH_LINKEDIN_ACTIVITY,
+            settings: {
+              ...BASE_STEP_DEFINITION,
+              input: {
+                workspaceMemberId: '',
+                linkedinProfileId: '',
+                linkedinUrl: '',
+                candidateId: '',
+                postsLimit: 10,
+                includeUserComments: true,
+                userCommentsLimit: 10,
+              },
+            },
+          },
+        };
+      }
+      case WorkflowActionType.COMMENT_ON_LINKEDIN_POST: {
+        return {
+          builtStep: {
+            ...baseStep,
+            name: 'Comment on LinkedIn Post',
+            type: WorkflowActionType.COMMENT_ON_LINKEDIN_POST,
+            settings: {
+              ...BASE_STEP_DEFINITION,
+              input: {
+                workspaceMemberId: '',
+                postId: '',
+                text: '',
+                candidateId: '',
+                commentId: '',
+              },
+            },
+          },
+        };
+      }
       case WorkflowActionType.SEND_WHATSAPP_MESSAGE: {
         return {
           builtStep: {

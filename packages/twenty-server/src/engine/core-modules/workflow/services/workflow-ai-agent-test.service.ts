@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 import { FieldActorSource } from 'twenty-shared/types';
@@ -11,12 +11,15 @@ import { UsageOperationType } from 'src/engine/core-modules/usage/enums/usage-op
 import { TestAiAgentDTO } from 'src/engine/core-modules/workflow/dtos/test-ai-agent.dto';
 import { WorkflowAiAgentTestContextService } from 'src/engine/core-modules/workflow/services/workflow-ai-agent-test-context.service';
 import { AgentAsyncExecutorService } from 'src/engine/metadata-modules/ai/ai-agent-execution/services/agent-async-executor.service';
+import { WORKFLOW_SYSTEM_PROMPTS } from 'src/engine/metadata-modules/ai/ai-agent/constants/agent-system-prompts.const';
 import { AgentEntity } from 'src/engine/metadata-modules/ai/ai-agent/entities/agent.entity';
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
 import { WorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/workspace-scoped-repository';
 
 @Injectable()
 export class WorkflowAiAgentTestService {
+  private readonly logger = new Logger(WorkflowAiAgentTestService.name);
+
   constructor(
     private readonly agentAsyncExecutorService: AgentAsyncExecutorService,
     @InjectWorkspaceScopedRepository(AgentEntity)
@@ -61,6 +64,16 @@ export class WorkflowAiAgentTestService {
         stepId,
       });
 
+      // Same composition as AgentAsyncExecutorService.generateText `system`
+      const systemPrompt = `${WORKFLOW_SYSTEM_PROMPTS.BASE}\n\n${agent.prompt}`;
+
+      this.logger.log(
+        `[AI_AGENT_TEST] systemPrompt agentId=${agentId} stepId=${stepId ?? 'n/a'}\n${systemPrompt}`,
+      );
+      this.logger.log(
+        `[AI_AGENT_TEST] prompt agentId=${agentId} stepId=${stepId ?? 'n/a'}\n${userPrompt}`,
+      );
+
       const authContext = getWorkspaceAuthContext();
       const userWorkspaceId = isUserAuthContext(authContext)
         ? authContext.userWorkspaceId
@@ -87,6 +100,12 @@ export class WorkflowAiAgentTestService {
 
       const durationMs = Date.now() - startedAtMs;
 
+      this.logger.log(
+        `[AI_AGENT_TEST] response agentId=${agentId} stepId=${stepId ?? 'n/a'} ` +
+          `durationMs=${durationMs} hasNoMoreAvailableCredits=${executionResult.hasNoMoreAvailableCredits}\n` +
+          `${JSON.stringify(executionResult.result, null, 2)}`,
+      );
+
       if (executionResult.hasNoMoreAvailableCredits) {
         return {
           success: false,
@@ -105,9 +124,15 @@ export class WorkflowAiAgentTestService {
         durationMs,
       };
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'AI agent test failed';
+
+      this.logger.warn(
+        `[AI_AGENT_TEST] failed agentId=${agentId} stepId=${stepId ?? 'n/a'}: ${message}`,
+      );
+
       return this.buildFailure({
-        message:
-          error instanceof Error ? error.message : 'AI agent test failed',
+        message,
         startedAtMs,
       });
     }

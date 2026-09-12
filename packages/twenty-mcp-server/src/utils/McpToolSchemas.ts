@@ -481,6 +481,13 @@ export const FETCH_LINKEDIN_MESSAGES_INPUT_DESCRIPTOR: readonly McpInputFieldDes
       required: false,
     },
     {
+      key: 'forceRefresh',
+      type: 'boolean',
+      description:
+        'When true, skip the local chatMessage transcript cache and always fetch from Unipile',
+      required: false,
+    },
+    {
       key: 'workspaceMemberId',
       type: 'string',
       description:

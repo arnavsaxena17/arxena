@@ -7,6 +7,8 @@ import { SEND_EMAIL_ACTION } from '@/workflow/workflow-steps/workflow-actions/co
 import { SEND_LINKEDIN_CONNECTION_REQUEST_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/SendLinkedinConnectionRequestAction';
 import { SEND_LINKEDIN_INMAIL_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/SendLinkedinInmailAction';
 import { SEND_LINKEDIN_MESSAGE_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/SendLinkedinMessageAction';
+import { FETCH_LINKEDIN_ACTIVITY_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/FetchLinkedinActivityAction';
+import { COMMENT_ON_LINKEDIN_POST_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/CommentOnLinkedinPostAction';
 import { SEND_WHATSAPP_MESSAGE_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/SendWhatsappMessageAction';
 
 export const CORE_ACTIONS: Array<{
@@ -21,6 +23,8 @@ export const CORE_ACTIONS: Array<{
     | 'SEND_LINKEDIN_CONNECTION_REQUEST'
     | 'SEND_LINKEDIN_INMAIL'
     | 'SEND_LINKEDIN_MESSAGE'
+    | 'FETCH_LINKEDIN_ACTIVITY'
+    | 'COMMENT_ON_LINKEDIN_POST'
     | 'SEND_WHATSAPP_MESSAGE'
   >;
   icon: string;
@@ -33,5 +37,7 @@ export const CORE_ACTIONS: Array<{
   SEND_LINKEDIN_CONNECTION_REQUEST_ACTION,
   SEND_LINKEDIN_INMAIL_ACTION,
   SEND_LINKEDIN_MESSAGE_ACTION,
+  FETCH_LINKEDIN_ACTIVITY_ACTION,
+  COMMENT_ON_LINKEDIN_POST_ACTION,
   SEND_WHATSAPP_MESSAGE_ACTION,
 ];

@@ -116,6 +116,8 @@ const unipileMessagingStepLogDetailsSchema = z.object({
     'LINKEDIN_CONNECTION_REQUEST',
     'LINKEDIN_INMAIL',
     'LINKEDIN_MESSAGE',
+    'LINKEDIN_ACTIVITY',
+    'LINKEDIN_POST_COMMENT',
     'WHATSAPP_MESSAGE',
   ]),
   status: z.enum(['SUCCESS', 'ERROR']),

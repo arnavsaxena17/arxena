@@ -99,6 +99,10 @@ export const OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT =
       },
     ],
     skills: ['Sales', 'GTM'],
+    connectionsCount: 885,
+    followersCount: 1269,
+    sharedConnectionsCount: 1,
+    networkDistance: 'SECOND_DEGREE',
     snapshot: '{}',
     people: [
       {
@@ -114,6 +118,10 @@ export const OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT =
         linkedinProfileId: 'example',
         peopleId: 'example',
         profilePictureUrl: 'https://media.licdn.com/example.jpg',
+        connectionsCount: 885,
+        followersCount: 1269,
+        sharedConnectionsCount: 1,
+        networkDistance: 'SECOND_DEGREE',
       },
     ],
     error: '',

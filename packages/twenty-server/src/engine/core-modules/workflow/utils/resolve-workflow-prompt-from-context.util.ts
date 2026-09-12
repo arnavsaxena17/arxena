@@ -19,6 +19,36 @@ export const getValueAtWorkflowVariablePath = (
   return current;
 };
 
+export const setValueAtWorkflowVariablePath = ({
+  context,
+  path,
+  value,
+}: {
+  context: Record<string, unknown>;
+  path: string;
+  value: unknown;
+}): void => {
+  const parts = path.split('.').filter((part) => part.length > 0);
+
+  if (parts.length === 0) {
+    return;
+  }
+
+  let current: Record<string, unknown> = context;
+
+  for (const part of parts.slice(0, -1)) {
+    const nextValue = current[part];
+
+    if (!isDefined(nextValue) || typeof nextValue !== 'object') {
+      current[part] = {};
+    }
+
+    current = current[part] as Record<string, unknown>;
+  }
+
+  current[parts[parts.length - 1]] = value;
+};
+
 export const resolveWorkflowPromptFromContext = ({
   prompt,
   context,

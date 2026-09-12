@@ -7,6 +7,7 @@ import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/inte
 import { UsageOperationType } from 'src/engine/core-modules/usage/enums/usage-operation-type.enum';
 import { AgentAsyncExecutorService } from 'src/engine/metadata-modules/ai/ai-agent-execution/services/agent-async-executor.service';
 import { type AgentExecutionResult } from 'src/engine/metadata-modules/ai/ai-agent-execution/types/agent-execution-result.type';
+import { WORKFLOW_SYSTEM_PROMPTS } from 'src/engine/metadata-modules/ai/ai-agent/constants/agent-system-prompts.const';
 import { AgentEntity } from 'src/engine/metadata-modules/ai/ai-agent/entities/agent.entity';
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
 import { WorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/workspace-scoped-repository';
@@ -80,6 +81,17 @@ export class AiAgentWorkflowAction implements WorkflowAction {
         ? executionContext.authContext.userWorkspaceId
         : null;
 
+    // Same composition as AgentAsyncExecutorService.generateText `system`
+    const systemPrompt = `${WORKFLOW_SYSTEM_PROMPTS.BASE}\n\n${agent ? agent.prompt : ''}`;
+    const logContext =
+      `workflowRunId=${runInfo.workflowRunId} stepId=${currentStepId} ` +
+      `agentId=${agentId ?? 'n/a'}`;
+
+    this.logger.log(
+      `[AI_AGENT_RUN] systemPrompt ${logContext}\n${systemPrompt}`,
+    );
+    this.logger.log(`[AI_AGENT_RUN] prompt ${logContext}\n${userPrompt}`);
+
     const startedAtMs = Date.now();
 
     const executionResult = await this.aiAgentExecutionService.executeAgent({
@@ -95,6 +107,12 @@ export class AiAgentWorkflowAction implements WorkflowAction {
     });
 
     const durationMs = Date.now() - startedAtMs;
+
+    this.logger.log(
+      `[AI_AGENT_RUN] response ${logContext} durationMs=${durationMs} ` +
+        `hasNoMoreAvailableCredits=${executionResult.hasNoMoreAvailableCredits}\n` +
+        `${JSON.stringify(executionResult.result, null, 2)}`,
+    );
 
     await this.persistStepLog({
       workflowRunId: runInfo.workflowRunId,

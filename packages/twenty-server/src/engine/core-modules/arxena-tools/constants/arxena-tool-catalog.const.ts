@@ -350,7 +350,7 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
     pack: 'outreach',
     label: 'Fetch LinkedIn Messages',
     description:
-      'Fetch LinkedIn chat messages by linkedinUrl / linkedinProfileId / candidateId via Unipile (profile → chats → messages in one call). Pass linkedinApi=sales_navigator for Sales Navigator inbox history.',
+      'Fetch LinkedIn chat messages by linkedinUrl / linkedinProfileId / candidateId. Returns local chatMessage transcript when present; otherwise Unipile (profile → chats → messages). Pass forceRefresh to bypass cache; linkedinApi=sales_navigator for Sales Navigator inbox history.',
   },
   {
     name: 'visit_linkedin_profile',
@@ -358,6 +358,27 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
     label: 'Visit LinkedIn Profile',
     description:
       'Visit a LinkedIn profile via Unipile so the viewee is notified (marks a profile view). Pass linkedinUrl / linkedinProfileId / candidateId. Lightweight — not a full profile fetch; use linkedin_unipile_get_profile for enrichment (silent by default).',
+  },
+  {
+    name: 'linkedin_unipile_get_user_posts',
+    pack: 'outreach',
+    label: 'Get LinkedIn User Posts',
+    description:
+      'Fetch recent posts authored by a LinkedIn user/company via Unipile (GET /users/{identifier}/posts). Returns social_id on each post — use that social_id to comment (workflow step COMMENT_ON_LINKEDIN_POST), not the URL post id. Different from keyword search_linkedin_posts / LF search-posts.',
+  },
+  {
+    name: 'linkedin_unipile_get_user_comments',
+    pack: 'outreach',
+    label: 'Get LinkedIn User Comments',
+    description:
+      'Fetch comments written by a LinkedIn user via Unipile (GET /users/{identifier}/comments). This is comments-by-user activity, not posting a comment. To comment on a post, use workflow step COMMENT_ON_LINKEDIN_POST with the post social_id.',
+  },
+  {
+    name: 'linkedin_unipile_get_profile_overview',
+    pack: 'outreach',
+    label: 'Get LinkedIn Profile Overview',
+    description:
+      'Fetch a LinkedIn person profile plus recent posts (and optional recruiting_activity) in one Unipile call. Prefer this when you need profile + posts together; use linkedin_unipile_get_user_posts alone when you only need posts. Posts include social_id for commenting.',
   },
   {
     name: 'search_linkedin_parameters',

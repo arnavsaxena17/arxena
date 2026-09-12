@@ -13,16 +13,21 @@ describe('FetchLinkedinProfileService', () => {
   const linkedinProviderIdStore = {
     saveProviderId: jest.fn().mockResolvedValue(undefined),
   };
+  const featureFlagService = {
+    isFeatureEnabled: jest.fn().mockResolvedValue(false),
+  };
 
   const service = new FetchLinkedinProfileService(
     globalWorkspaceOrmManager as never,
     linkedinUnipileRequestService as never,
     linkedinProviderIdStore as never,
+    featureFlagService as never,
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
     linkedinProviderIdStore.saveProviderId.mockResolvedValue(undefined);
+    featureFlagService.isFeatureEnabled.mockResolvedValue(false);
     globalWorkspaceOrmManager.executeInWorkspaceContext.mockResolvedValue({
       accountId: 'acc-1',
       identifier: 'jane-doe',
@@ -37,6 +42,10 @@ describe('FetchLinkedinProfileService', () => {
       first_name: 'Jane',
       last_name: 'Doe',
       profile_url: 'https://www.linkedin.com/in/jane-doe',
+      connections_count: 885,
+      follower_count: 1269,
+      shared_connections_count: 1,
+      network_distance: 'SECOND_DEGREE',
     });
 
     await expect(
@@ -48,12 +57,20 @@ describe('FetchLinkedinProfileService', () => {
       success: true,
       linkedinProfileId: VALID_PROVIDER_ID,
       linkedinUrl: 'https://www.linkedin.com/in/jane-doe',
+      connectionsCount: 885,
+      followersCount: 1269,
+      sharedConnectionsCount: 1,
+      networkDistance: 'SECOND_DEGREE',
       people: [
         expect.objectContaining({
           firstName: 'Jane',
           lastName: 'Doe',
           linkedinUrl: 'https://www.linkedin.com/in/jane-doe',
           linkedinProfileId: VALID_PROVIDER_ID,
+          connectionsCount: 885,
+          followersCount: 1269,
+          sharedConnectionsCount: 1,
+          networkDistance: 'SECOND_DEGREE',
         }),
       ],
     });

@@ -28,6 +28,8 @@ import { UpsertRecordWorkflowAction } from 'src/modules/workflow/workflow-execut
 import { SendLinkedinConnectionRequestWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/send-linkedin-connection-request.workflow-action';
 import { SendLinkedinInmailWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/send-linkedin-inmail.workflow-action';
 import { SendLinkedinMessageWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/send-linkedin-message.workflow-action';
+import { FetchLinkedinActivityWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/fetch-linkedin-activity.workflow-action';
+import { CommentOnLinkedinPostWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/comment-on-linkedin-post.workflow-action';
 import { SendWhatsappMessageWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/send-whatsapp-message.workflow-action';
 import { WorkflowActionType } from 'twenty-shared/workflow';
 
@@ -53,6 +55,8 @@ export class WorkflowActionFactory {
     private readonly sendLinkedinConnectionRequestWorkflowAction: SendLinkedinConnectionRequestWorkflowAction,
     private readonly sendLinkedinInmailWorkflowAction: SendLinkedinInmailWorkflowAction,
     private readonly sendLinkedinMessageWorkflowAction: SendLinkedinMessageWorkflowAction,
+    private readonly fetchLinkedinActivityWorkflowAction: FetchLinkedinActivityWorkflowAction,
+    private readonly commentOnLinkedinPostWorkflowAction: CommentOnLinkedinPostWorkflowAction,
     private readonly sendWhatsappMessageWorkflowAction: SendWhatsappMessageWorkflowAction,
     private readonly aiAgentWorkflowAction: AiAgentWorkflowAction,
     private readonly emptyWorkflowAction: EmptyWorkflowAction,
@@ -99,6 +103,10 @@ export class WorkflowActionFactory {
         return this.sendLinkedinInmailWorkflowAction;
       case WorkflowActionType.SEND_LINKEDIN_MESSAGE:
         return this.sendLinkedinMessageWorkflowAction;
+      case WorkflowActionType.FETCH_LINKEDIN_ACTIVITY:
+        return this.fetchLinkedinActivityWorkflowAction;
+      case WorkflowActionType.COMMENT_ON_LINKEDIN_POST:
+        return this.commentOnLinkedinPostWorkflowAction;
       case WorkflowActionType.SEND_WHATSAPP_MESSAGE:
         return this.sendWhatsappMessageWorkflowAction;
       case WorkflowActionType.AI_AGENT:

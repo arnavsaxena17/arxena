@@ -143,6 +143,7 @@ export const main = async (params: {
   candidateId?: string;
   limit?: number;
   linkedinApi?: 'classic' | 'sales_navigator' | 'recruiter';
+  forceRefresh?: boolean;
 }) => {
   return params;
 };

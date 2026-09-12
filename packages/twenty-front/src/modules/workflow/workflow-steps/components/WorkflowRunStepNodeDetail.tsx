@@ -25,6 +25,8 @@ import { WorkflowEditActionLogicFunction } from '@/workflow/workflow-steps/workf
 import { WorkflowEditActionSendLinkedinConnectionRequest } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionSendLinkedinConnectionRequest';
 import { WorkflowEditActionSendLinkedinInmail } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionSendLinkedinInmail';
 import { WorkflowEditActionSendLinkedinMessage } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionSendLinkedinMessage';
+import { WorkflowEditActionFetchLinkedinActivity } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionFetchLinkedinActivity';
+import { WorkflowEditActionCommentOnLinkedinPost } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionCommentOnLinkedinPost';
 import { WorkflowEditActionSendWhatsappMessage } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionSendWhatsappMessage';
 import { WorkflowEditTriggerCronForm } from '@/workflow/workflow-trigger/components/WorkflowEditTriggerCronForm';
 import { WorkflowEditTriggerDatabaseEventForm } from '@/workflow/workflow-trigger/components/WorkflowEditTriggerDatabaseEventForm';
@@ -278,6 +280,28 @@ export const WorkflowRunStepNodeDetail = ({
         case 'SEND_LINKEDIN_MESSAGE': {
           return (
             <WorkflowEditActionSendLinkedinMessage
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={{
+                readonly: true,
+              }}
+            />
+          );
+        }
+        case 'FETCH_LINKEDIN_ACTIVITY': {
+          return (
+            <WorkflowEditActionFetchLinkedinActivity
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={{
+                readonly: true,
+              }}
+            />
+          );
+        }
+        case 'COMMENT_ON_LINKEDIN_POST': {
+          return (
+            <WorkflowEditActionCommentOnLinkedinPost
               key={stepId}
               action={stepDefinition.definition}
               actionOptions={{

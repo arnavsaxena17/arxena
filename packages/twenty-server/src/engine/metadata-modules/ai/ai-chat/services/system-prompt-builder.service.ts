@@ -381,6 +381,8 @@ export class SystemPromptBuilderService {
           `- To load the user's own LinkedIn profile, call linkedin_unipile_get_own_profile with accountId=${connectedAccountsContext.accountId}.`,
           `- LinkedIn chat history for a person: call fetch_linkedin_messages with linkedinUrl (or linkedinProfileId / candidateId). Pass linkedinApi=sales_navigator for Sales Navigator inbox chats.`,
           `- To visit someone's LinkedIn profile so they are notified of the view: call visit_linkedin_profile with linkedinUrl (or linkedinProfileId / candidateId). Use linkedin_unipile_get_profile only when you need profile data without notifying.`,
+          `- To fetch someone's LinkedIn posts/activity: call linkedin_unipile_get_user_posts or linkedin_unipile_get_profile_overview (posts include social_id). Comments written by the user: linkedin_unipile_get_user_comments. Keyword post search is search_linkedin_posts — different from per-user posts.`,
+          `- To comment on a post then send a connection request in a sequence: build/edit a workflow with FETCH_LINKEDIN_ACTIVITY → COMMENT_ON_LINKEDIN_POST (postId = mostRecentPost.socialId) → DELAY → SEND_LINKEDIN_CONNECTION_REQUEST. Load outreach + workflow-building skills. Do not invent a chat MCP for commenting.`,
           `- Only use searchType values listed as available. If the user asks for Sales Nav or Recruiter and it is not available, explain that and fall back to classic or Harvest.`,
         ]
       : [

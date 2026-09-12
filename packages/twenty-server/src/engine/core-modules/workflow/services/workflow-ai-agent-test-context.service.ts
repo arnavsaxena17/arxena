@@ -16,7 +16,14 @@ import {
 import {
   buildFindRecordsStepResult,
   resolveWorkflowPromptFromContext,
+  setValueAtWorkflowVariablePath,
 } from 'src/engine/core-modules/workflow/utils/resolve-workflow-prompt-from-context.util';
+
+// Test-only: live runs stamp this after Qualify. Empty object matches prompt
+// builders' `|| '{}'` so drafts can still be exercised without inventing facts.
+const TEST_DEFAULT_BY_CHIP_FIELD: Record<string, unknown> = {
+  outreachProspectEnrichment: {},
+};
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { findFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
@@ -64,13 +71,49 @@ export class WorkflowAiAgentTestContextService {
     const { resolvedPrompt, missingVariablePaths } =
       resolveWorkflowPromptFromContext({ prompt, context });
 
-    if (missingVariablePaths.length > 0) {
+    if (missingVariablePaths.length === 0) {
+      return resolvedPrompt;
+    }
+
+    const remainingMissingPaths = this.applyTestChipDefaults({
+      context,
+      missingVariablePaths,
+    });
+
+    if (remainingMissingPaths.length > 0) {
       throw new Error(
-        `Could not fill prompt chips from this candidate: ${missingVariablePaths.join(', ')}`,
+        `Could not fill prompt chips from this candidate: ${remainingMissingPaths.join(', ')}`,
       );
     }
 
-    return resolvedPrompt;
+    return resolveWorkflowPromptFromContext({ prompt, context }).resolvedPrompt;
+  }
+
+  private applyTestChipDefaults({
+    context,
+    missingVariablePaths,
+  }: {
+    context: Record<string, unknown>;
+    missingVariablePaths: string[];
+  }): string[] {
+    return missingVariablePaths.filter((path) => {
+      const fieldName = path.split('.').at(-1);
+
+      if (
+        !isNonEmptyString(fieldName) ||
+        !(fieldName in TEST_DEFAULT_BY_CHIP_FIELD)
+      ) {
+        return true;
+      }
+
+      setValueAtWorkflowVariablePath({
+        context,
+        path,
+        value: TEST_DEFAULT_BY_CHIP_FIELD[fieldName],
+      });
+
+      return false;
+    });
   }
 
   // Shared by AI agent Test and send-action Test: hydrate trigger + FIND /

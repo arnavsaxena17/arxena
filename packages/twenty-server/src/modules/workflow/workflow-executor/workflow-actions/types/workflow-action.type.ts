@@ -23,6 +23,8 @@ import { type WorkflowActionSettings } from 'src/modules/workflow/workflow-execu
 import { type WorkflowSendLinkedinConnectionRequestActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-linkedin-connection-request-action-settings.type';
 import { type WorkflowSendLinkedinInmailActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-linkedin-inmail-action-settings.type';
 import { type WorkflowSendLinkedinMessageActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-linkedin-message-action-settings.type';
+import { type WorkflowFetchLinkedinActivityActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-fetch-linkedin-activity-action-settings.type';
+import { type WorkflowCommentOnLinkedinPostActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-comment-on-linkedin-post-action-settings.type';
 import { type WorkflowSendWhatsappMessageActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-whatsapp-message-action-settings.type';
 
 type BaseWorkflowAction = {
@@ -128,6 +130,16 @@ export type WorkflowSendLinkedinMessageAction = BaseWorkflowAction & {
   settings: WorkflowSendLinkedinMessageActionSettings;
 };
 
+export type WorkflowFetchLinkedinActivityAction = BaseWorkflowAction & {
+  type: WorkflowActionType.FETCH_LINKEDIN_ACTIVITY;
+  settings: WorkflowFetchLinkedinActivityActionSettings;
+};
+
+export type WorkflowCommentOnLinkedinPostAction = BaseWorkflowAction & {
+  type: WorkflowActionType.COMMENT_ON_LINKEDIN_POST;
+  settings: WorkflowCommentOnLinkedinPostActionSettings;
+};
+
 export type WorkflowSendWhatsappMessageAction = BaseWorkflowAction & {
   type: WorkflowActionType.SEND_WHATSAPP_MESSAGE;
   settings: WorkflowSendWhatsappMessageActionSettings;
@@ -171,6 +183,8 @@ export type WorkflowAction =
   | WorkflowSendLinkedinConnectionRequestAction
   | WorkflowSendLinkedinInmailAction
   | WorkflowSendLinkedinMessageAction
+  | WorkflowFetchLinkedinActivityAction
+  | WorkflowCommentOnLinkedinPostAction
   | WorkflowSendWhatsappMessageAction
   | WorkflowAiAgentAction
   | WorkflowIteratorAction

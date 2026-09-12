@@ -49,6 +49,19 @@ Search LFs return hits only. People persist with `upload-profiles`. Company pers
 
 FILTER `QUEUED` on Per Candidate (`candidate.created`). Stage changes on update use **one** `candidate.updated` workflow with `settings.fields: ['outreachSequenceStage']` and IF_ELSE branches — do not register five parallel updated listeners. FIND `workspaceMember` (load seat / Arx fields once) and pin `workspaceMemberId` = `{{member.first.id}}` on every SEND_* / Unipile fetch. HITL WhatsApp recipient = `{{member.first.phoneNumber}}`. HITL = FORM on the **send** graph (`workflow-building`); never a fourth “HITL only” workflow.
 
+### LinkedIn posts / comment-before-connect
+
+First-class workflow steps (not LFs):
+
+| Step | Role |
+| --- | --- |
+| `FETCH_LINKEDIN_ACTIVITY` | Fetch posts (+ optional comments-by-user). Output `mostRecentPost.socialId` / `text` for chaining. |
+| `COMMENT_ON_LINKEDIN_POST` | Comment using Unipile **`social_id`** (`postId` = `{{fetchStep.result.mostRecentPost.socialId}}`), not the URL post id. |
+
+Recipe (warm before connect): `FETCH_LINKEDIN_ACTIVITY` → optional IF posts exist → `COMMENT_ON_LINKEDIN_POST` → `DELAY` (e.g. 5 days) → `SEND_LINKEDIN_CONNECTION_REQUEST`.
+
+vs LFs / Ask AI MCP: keyword post search is LF `search-posts` / MCP `search_linkedin_posts`; comments **by** a user is LF `fetch-user-comments` / MCP `linkedin_unipile_get_user_comments`. Per-user posts in chat: MCP `linkedin_unipile_get_user_posts` / `linkedin_unipile_get_profile_overview`. Posting a comment is the workflow step only (no chat MCP write).
+
 Do **not** add a workflow whose only job is “mark connection accepted” — Unipile `new_relation` already materializes `CONNECTION_ACCEPTED`.
 
 | Workflow | Trigger | Role |

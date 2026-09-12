@@ -14,6 +14,30 @@ const readProfileString = (
   return '';
 };
 
+// Unipile LinkedIn uses follower_count (singular); Instagram/Twitter use followers_count.
+const readProfileNumber = (
+  profile: Record<string, unknown>,
+  keys: string[],
+): number | undefined => {
+  for (const key of keys) {
+    const value = profile[key];
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (typeof value === 'string' && value.trim()) {
+      const parsed = Number(value);
+
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+  }
+
+  return undefined;
+};
+
 const mapExperience = (
   profile: Record<string, unknown>,
 ): Array<{
@@ -30,7 +54,10 @@ const mapExperience = (
   }
 
   return raw
-    .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
+    .filter(
+      (item): item is Record<string, unknown> =>
+        !!item && typeof item === 'object',
+    )
     .map((item) => {
       const nestedCompany =
         item.company && typeof item.company === 'object'
@@ -109,6 +136,27 @@ export const mapUnipileLinkedinProfile = (
       : publicIdentifier || fallbackIdentifier;
   const firstName = readProfileString(profile, ['first_name', 'firstName']);
   const lastName = readProfileString(profile, ['last_name', 'lastName']);
+  const connectionsCount = readProfileNumber(profile, [
+    'connections_count',
+    'connectionsCount',
+  ]);
+  const followersCount = readProfileNumber(profile, [
+    'follower_count',
+    'followers_count',
+    'followersCount',
+  ]);
+  const sharedConnectionsCount = readProfileNumber(profile, [
+    'shared_connections_count',
+    'sharedConnectionsCount',
+  ]);
+  const networkDistance = readProfileString(profile, [
+    'network_distance',
+    'networkDistance',
+  ]);
+  // Recruiter-only section when linkedin_sections includes recruiting_activity.
+  const recruitingActivity = Array.isArray(profile.recruiting_activity)
+    ? profile.recruiting_activity
+    : undefined;
 
   return {
     success: true as const,
@@ -130,6 +178,11 @@ export const mapUnipileLinkedinProfile = (
     ]),
     experience: mapExperience(profile),
     skills: mapSkills(profile),
+    ...(connectionsCount !== undefined ? { connectionsCount } : {}),
+    ...(followersCount !== undefined ? { followersCount } : {}),
+    ...(sharedConnectionsCount !== undefined ? { sharedConnectionsCount } : {}),
+    ...(networkDistance ? { networkDistance } : {}),
+    ...(recruitingActivity !== undefined ? { recruitingActivity } : {}),
     snapshot: JSON.stringify(profile),
     error: '',
   };

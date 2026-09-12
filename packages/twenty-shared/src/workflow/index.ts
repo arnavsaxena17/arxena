@@ -38,6 +38,8 @@ export {
 } from './schemas/base-workflow-action-settings-schema';
 export { workflowCodeActionSchema } from './schemas/code-action-schema';
 export { workflowCodeActionSettingsSchema } from './schemas/code-action-settings-schema';
+export { workflowCommentOnLinkedinPostActionSchema } from './schemas/comment-on-linkedin-post-action-schema';
+export { workflowCommentOnLinkedinPostActionSettingsSchema } from './schemas/comment-on-linkedin-post-action-settings-schema';
 export { workflowCreateCalendarEventActionSchema } from './schemas/create-calendar-event-action-schema';
 export { workflowCreateCalendarEventActionSettingsSchema } from './schemas/create-calendar-event-action-settings-schema';
 export { workflowCreateRecordActionSchema } from './schemas/create-record-action-schema';
@@ -50,6 +52,8 @@ export { workflowDraftEmailActionSchema } from './schemas/draft-email-action-sch
 export { workflowEmptyActionSchema } from './schemas/empty-action-schema';
 export { workflowEmptyActionSettingsSchema } from './schemas/empty-action-settings-schema';
 export { expectedOutputSchemaShape } from './schemas/expected-output-schema-shape';
+export { workflowFetchLinkedinActivityActionSchema } from './schemas/fetch-linkedin-activity-action-schema';
+export { workflowFetchLinkedinActivityActionSettingsSchema } from './schemas/fetch-linkedin-activity-action-settings-schema';
 export { workflowFilterActionSchema } from './schemas/filter-action-schema';
 export { workflowFilterActionSettingsSchema } from './schemas/filter-action-settings-schema';
 export { workflowFindRecordsActionSchema } from './schemas/find-records-action-schema';

@@ -584,8 +584,14 @@ describe('GTM outreach workflow graphs', () => {
     expect(branchNext('Earlier QUEUED sibling?', 1)).toEqual([
       byName('Draft connection note')?.id,
     ]);
-    expect(branchNext('Qualify go?', 0)).toEqual([
+    expect(byName('Qualify prospect')?.nextStepIds).toEqual([
       byName('Stamp prospect enrichment')?.id,
+    ]);
+    expect(byName('Stamp prospect enrichment')?.nextStepIds).toEqual([
+      byName('Qualify go?')?.id,
+    ]);
+    expect(branchNext('Qualify go?', 0)).toEqual([
+      byName('Has company name?')?.id,
     ]);
 
     // All bodies present, and no duplicate step ids across branches.
