@@ -1,14 +1,26 @@
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { Command } from 'nest-commander';
-import { type Repository } from 'typeorm';
+import { DataSource, type Repository } from 'typeorm';
 
 import { ProvisionedWorkspaceCommandRunner } from 'src/database/commands/command-runners/provisioned-workspace.command-runner';
 import { WorkspaceIteratorService } from 'src/database/commands/command-runners/workspace-iterator.service';
 import { type RunOnWorkspaceArgs } from 'src/database/commands/command-runners/workspace.command-runner';
+import { ApplicationService } from 'src/engine/core-modules/application/application.service';
 import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-workspace-command.decorator';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
+import { getWorkspaceSchemaName } from 'src/engine/workspace-datasource/utils/get-workspace-schema-name.util';
 import { ArxenaStandardApplicationService } from 'src/engine/workspace-manager/arxena-standard-metadata/services/arxena-standard-application.service';
+import { SEEDED_OUTREACH_WORKFLOW } from 'src/engine/workspace-manager/standard-objects-prefill-data/constants/seeded-outreach-workflow-names.const';
+import { prefillOutreachWorkflows } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-workflows.util';
+
+// Graphs that FIND_RECORDS the former workspaceMemberProfile object for sender JSON.
+const GRAPHS_WITH_MEMBER_PROFILE_LOAD = [
+  SEEDED_OUTREACH_WORKFLOW.perCandidate.name,
+  SEEDED_OUTREACH_WORKFLOW.candidateUpdated.name,
+  SEEDED_OUTREACH_WORKFLOW.candidateSequencer.name,
+] as const;
 
 type ProfileRow = {
   id: string;
@@ -64,15 +76,19 @@ const ARX_COPY_COLUMNS = [
 @Command({
   name: 'upgrade:2-25:fold-workspace-member-profile-into-member',
   description:
-    'Copy workspaceMemberProfile rows onto workspaceMember, rempoint orgChart.createdByProfile to recruiter, then drop the profile object',
+    'Copy workspaceMemberProfile rows onto workspaceMember, rempoint orgChart.createdByProfile to recruiter, drop the profile object, and resync sequencer graphs that loaded it',
 })
 export class FoldWorkspaceMemberProfileIntoMemberCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(
     protected readonly workspaceIteratorService: WorkspaceIteratorService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly arxenaStandardApplicationService: ArxenaStandardApplicationService,
+    private readonly applicationService: ApplicationService,
+    private readonly workspaceCacheService: WorkspaceCacheService,
     @InjectRepository(WorkspaceEntity)
     private readonly workspaceRepository: Repository<WorkspaceEntity>,
+    @InjectDataSource()
+    private readonly coreDataSource: DataSource,
   ) {
     super(workspaceIteratorService);
   }
@@ -134,8 +150,57 @@ export class FoldWorkspaceMemberProfileIntoMemberCommand extends ProvisionedWork
       orgChartRempoints,
     );
 
+    await this.resyncSequencerGraphsAfterProfileFold(workspaceId);
+
     this.logger.log(
       `Workspace ${workspaceId}: copied ${copiedCount} profile(s), rempointed ${rempointed} orgChart(s)`,
+    );
+  }
+
+  // Seeded FIND_RECORDS still pointed at workspaceMemberProfile; rewrite to member.
+  private async resyncSequencerGraphsAfterProfileFold(
+    workspaceId: string,
+  ): Promise<void> {
+    const schemaName = getWorkspaceSchemaName(workspaceId);
+    const { workspaceCustomFlatApplication } =
+      await this.applicationService.findWorkspaceTwentyStandardAndCustomApplicationOrThrow(
+        { workspaceId },
+      );
+
+    const queryRunner = this.coreDataSource.createQueryRunner();
+
+    await queryRunner.connect();
+
+    try {
+      await queryRunner.startTransaction();
+
+      await prefillOutreachWorkflows({
+        entityManager: queryRunner.manager,
+        workspaceId,
+        schemaName,
+        applicationId: workspaceCustomFlatApplication.id,
+        replaceExistingDrafts: true,
+        onlyGraphNames: GRAPHS_WITH_MEMBER_PROFILE_LOAD,
+      });
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction();
+      }
+
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+
+    await this.workspaceCacheService.invalidateAndRecompute(workspaceId, [
+      'flatAgentMaps',
+      'workflowAutomatedTriggerMaps',
+    ]);
+
+    this.logger.log(
+      `Resynced sequencer graphs onto workspaceMember after profile fold for workspace ${workspaceId}`,
     );
   }
 

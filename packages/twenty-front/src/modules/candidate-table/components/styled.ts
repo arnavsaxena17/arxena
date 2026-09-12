@@ -6,8 +6,10 @@ export const TableContainer = styled.div`
   display: flex;
   flex: 1;
   flex-direction: column;
+  /* Keep Handsontable scroll inside the panel instead of growing the page */
   min-height: 0;
-  overflow: auto;
+  min-width: 0;
+  overflow: hidden;
   position: relative;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -36,7 +38,7 @@ export const PanelContainer = styled.div<{ isOpen: boolean }>`
   flex-direction: column;
   overflow-y: auto;
   position: fixed;
-  right: ${props => (props.isOpen ? '0' : '-40%')};
+  right: ${(props) => (props.isOpen ? '0' : '-40%')};
   top: 80px;
   transition: right 0.3s ease-in-out;
   width: 40%;

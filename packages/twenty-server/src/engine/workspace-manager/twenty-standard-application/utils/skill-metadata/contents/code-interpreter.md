@@ -18,18 +18,16 @@ pandas, numpy, matplotlib, seaborn, scikit-learn, openpyxl, python-pptx
 - User-uploaded files are available at `/home/user/{filename}`
 - Always check the file exists before processing
 
-### Mounting spilled tool outputs / AgentChat files
+### Mounting spilled tool outputs / Agent Chat files
 
-When a prior tool returned `fileId` / `outputRef.fileId` (large LinkedIn search, spilled JSON, etc.), pass it into `code_interpreter` via the `files` argument — do **not** paste the JSON into `code`:
+Pass `files: [{ fileId, filename }]`. Read `/home/user/{filename}`. Never paste JSON into `code`. Never open `/var/folders/...`.
 
-```json
-{
-  "code": "import json\nwith open('/home/user/search.json') as f:\n    payload = json.load(f)\nitems = payload['result']['items']\nprint(len(items))",
-  "files": [{ "fileId": "<spill-or-agent-chat-file-id>", "filename": "search.json" }]
-}
-```
-
-The mounted file appears at `/home/user/{filename}`. Use the same parsed rows to write CSV under `/home/user/output/` and to call `arxena.bulk_upsert` — never invent sample rows when the real `fileId` exists.
+| Tool | Parse |
+| --- | --- |
+| `search_linkedin_*` | `payload['result']['items']` / `['cursor']` |
+| `get_workflow_current_version` | `payload['workflowVersion']` (`.steps`, `.trigger`) — **no** `result` |
+| `get_workflow_run` | `payload['workflowRun']` — **no** `result` |
+| Unknown | `print(list(payload.keys()))` first |
 
 ## Output Files
 - Charts: Save to `/home/user/output/` directory - these are automatically returned as downloadable URLs
@@ -41,6 +39,8 @@ The mounted file appears at `/home/user/{filename}`. Use the same parsed rows to
 - Embedding multi-KB JSON literals inside the `code` string (causes parse errors and wastes tokens).
 - Hand-writing "demo" or "sample" CSV rows when a spilled `fileId` with real results is available.
 - Calling web search to figure out how to export LinkedIn/tool results — mount the spill file and parse it.
+- Opening `/var/folders/...` instead of mounting `outputRef.fileId`.
+- `payload['result']` on workflow spills — use `workflowVersion` / `workflowRun`.
 
 ## Example: Create a Bar Chart
 ```python

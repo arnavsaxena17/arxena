@@ -203,7 +203,7 @@ export const FormFieldInput = ({
   ) : isFieldRawJson(field) ? (
     <FormRawJsonFieldInput
       label={field.label}
-      defaultValue={defaultValue as string | undefined}
+      defaultValue={defaultValue}
       onChange={onChange}
       VariablePicker={VariablePicker}
       readonly={readonly}

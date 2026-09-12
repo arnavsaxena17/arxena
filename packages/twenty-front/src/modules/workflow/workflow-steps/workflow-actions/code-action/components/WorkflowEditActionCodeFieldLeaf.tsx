@@ -27,6 +27,8 @@ import { type InputSchemaProperty } from 'twenty-shared/workflow';
 const RECORD_PICKER_OBJECT_NAME_BY_ID_LABEL: Record<string, string> = {
   'Project ID': 'project',
   'Company ID': 'company',
+  'Candidate ID': 'candidate',
+  'Workspace member ID': 'workspaceMember',
 };
 
 type WorkflowEditActionCodeFieldLeafProps = {
@@ -185,7 +187,10 @@ export const WorkflowEditActionCodeFieldLeaf = ({
     );
   }
 
-  if (leafKind === 'linkedin-parameter' && isDefined(schemaProperty?.linkedinParameterType)) {
+  if (
+    leafKind === 'linkedin-parameter' &&
+    isDefined(schemaProperty?.linkedinParameterType)
+  ) {
     return (
       <FormLinkedInParameterAutocomplete
         label={label}

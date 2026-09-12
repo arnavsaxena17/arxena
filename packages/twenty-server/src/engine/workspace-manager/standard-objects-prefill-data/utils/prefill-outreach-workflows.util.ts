@@ -11,6 +11,7 @@ import {
   OUTREACH_WF_AGENT_EMAIL,
   OUTREACH_WF_AGENT_EXTRACT,
   OUTREACH_WF_AGENT_LINKEDIN,
+  OUTREACH_WF_AGENT_QUALIFY,
   OUTREACH_WF_AGENT_REPLY,
   OUTREACH_WF_FIELD,
   OUTREACH_WF_HARVEST_PROJECT_ID,
@@ -164,6 +165,76 @@ const EXTRACT_SIGNALS_SCHEMA = {
   additionalProperties: false as const,
 };
 
+const QUALIFY_PROSPECT_SCHEMA = {
+  type: 'object' as const,
+  properties: {
+    go: {
+      type: 'boolean' as const,
+      description: 'Whether to contact this prospect for the sender offer',
+    },
+    score: {
+      type: 'number' as const,
+      description: 'ICP fit score 0–5',
+    },
+    segment: {
+      type: 'string' as const,
+      description: 'Short segment label for the prospect',
+    },
+    reason: {
+      type: 'string' as const,
+      description: 'Why go/score was chosen',
+    },
+    first_name: {
+      type: 'string' as const,
+      description: 'Given name for addressing the prospect',
+    },
+    honorific: {
+      type: 'string' as const,
+      description: 'Honorific if known, else empty',
+    },
+    company_short: {
+      type: 'string' as const,
+      description: 'Short company name for copy',
+    },
+    industry_phrase: {
+      type: 'string' as const,
+      description: 'Industry phrase in business language',
+    },
+    hooks: {
+      type: 'string' as const,
+      description:
+        'JSON array (at most 3) of { "text", "source" } personalization hooks',
+    },
+    likely_systems: {
+      type: 'string' as const,
+      description: 'Likely systems or stack cues, else empty',
+    },
+    matching_problem_statement: {
+      type: 'string' as const,
+      description: 'Problem statement matched to the sender offer',
+    },
+    referral_source: {
+      type: 'string' as const,
+      description: 'Referral source when known, else empty',
+    },
+  },
+  required: [
+    'go',
+    'score',
+    'segment',
+    'reason',
+    'first_name',
+    'honorific',
+    'company_short',
+    'industry_phrase',
+    'hooks',
+    'likely_systems',
+    'matching_problem_statement',
+    'referral_source',
+  ],
+  additionalProperties: false as const,
+};
+
 export const getOutreachWorkflowPrefillIds = (workspaceId: string) => {
   const ids: Record<
     string,
@@ -224,6 +295,10 @@ export const getOutreachAgentIds = (workspaceId: string) => ({
   ),
   extractSignals: v5(
     `gtmOutreachAgent:extractSignals:${workspaceId}`,
+    OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
+  ),
+  qualifyProspect: v5(
+    `gtmOutreachAgent:qualifyProspect:${workspaceId}`,
     OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
   ),
 });
@@ -356,6 +431,20 @@ const upsertAgents = async ({
       responseFormat: { type: 'json', schema: EXTRACT_SIGNALS_SCHEMA },
       universalIdentifier: v5(
         `gtmOutreachAgentUniversal:extractSignals:${workspaceId}`,
+        OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
+      ),
+    },
+    {
+      key: 'qualifyProspect' as const,
+      id: agentIds.qualifyProspect,
+      name: 'gtm-outreach-qualify-prospect',
+      label: 'GTM qualify prospect',
+      modelId: AUTO_SELECT_SMART_MODEL_ID,
+      prompt:
+        'You decide whether to contact a prospect for the sender offer and extract personalization hooks. Return JSON only: { "go", "score", "segment", "reason", "first_name", "honorific", "company_short", "industry_phrase", "hooks", "likely_systems", "matching_problem_statement", "referral_source" }. hooks is a JSON string of at most 3 { "text", "source" } objects. Never invent facts.',
+      responseFormat: { type: 'json', schema: QUALIFY_PROSPECT_SCHEMA },
+      universalIdentifier: v5(
+        `gtmOutreachAgentUniversal:qualifyProspect:${workspaceId}`,
         OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
       ),
     },
@@ -635,12 +724,6 @@ export const prefillOutreachWorkflows = async ({
     objectName: 'candidate',
     fieldNames: ['createdAt'],
   });
-  const profileMemberFieldId = await loadFieldMetadataId({
-    entityManager,
-    workspaceId,
-    objectName: 'workspaceMember',
-    fieldNames: ['id'],
-  });
   const chatCandidateFieldId = await loadFieldMetadataId({
     entityManager,
     workspaceId,
@@ -666,13 +749,13 @@ export const prefillOutreachWorkflows = async ({
     [OUTREACH_WF_AGENT_EMAIL]: agentIds.fallbackEmail,
     [OUTREACH_WF_AGENT_REPLY]: agentIds.reply,
     [OUTREACH_WF_AGENT_EXTRACT]: agentIds.extractSignals,
+    [OUTREACH_WF_AGENT_QUALIFY]: agentIds.qualifyProspect,
     [OUTREACH_WF_HARVEST_PROJECT_ID]: harvestProjectId,
     [OUTREACH_WF_FIELD.candidateId]: candidateIdFieldId,
     [OUTREACH_WF_FIELD.outreachSequenceStage]: outreachSequenceStageFieldId,
     [OUTREACH_WF_FIELD.jobCompanyName]: jobCompanyNameFieldId,
     [OUTREACH_WF_FIELD.projectId]: projectIdFieldId,
     [OUTREACH_WF_FIELD.createdAt]: createdAtFieldId,
-    [OUTREACH_WF_FIELD.profileMemberId]: profileMemberFieldId,
     [OUTREACH_WF_FIELD.chatCandidateId]: chatCandidateFieldId,
     [OUTREACH_WF_FIELD.chatCreatedAt]: chatCreatedAtFieldId,
   };

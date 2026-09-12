@@ -1,4 +1,7 @@
-import { resolveWorkflowPromptFromContext } from 'src/engine/core-modules/workflow/utils/resolve-workflow-prompt-from-context.util';
+import {
+  buildFindRecordsStepResult,
+  resolveWorkflowPromptFromContext,
+} from 'src/engine/core-modules/workflow/utils/resolve-workflow-prompt-from-context.util';
 
 describe('resolveWorkflowPromptFromContext', () => {
   const candidateStepId = '0191a76e-bf48-417c-b2e2-7ce97e49edf3';
@@ -32,5 +35,23 @@ describe('resolveWorkflowPromptFromContext', () => {
 
     expect(missingVariablePaths).toEqual([`${profileStepId}.about`]);
     expect(resolvedPrompt).toBe(prompt);
+  });
+});
+
+describe('buildFindRecordsStepResult', () => {
+  it('should include {{step.text}} like FindRecordsWorkflowAction', () => {
+    const records = [{ id: '1', name: 'Jane' }];
+    const result = buildFindRecordsStepResult(records);
+
+    expect(result.first).toEqual(records[0]);
+    expect(result.all).toEqual(records);
+    expect(result.totalCount).toBe(1);
+    expect(result.text).toBe(
+      JSON.stringify(
+        { first: records[0], all: records, totalCount: 1 },
+        null,
+        2,
+      ),
+    );
   });
 });

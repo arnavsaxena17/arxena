@@ -154,6 +154,90 @@ describe('WorkflowAiAgentTestContextService', () => {
     expect(resolvedPrompt).toBe('Name: Jane Doe\nAbout: B2B sales leader');
   });
 
+  it('should expose {{step.text}} for fetch-linkedin-messages like a live run', async () => {
+    const fetchMessagesStepId = '77777777-7777-4777-8777-777777777770';
+
+    workflowCommonWorkspaceService.getWorkflowVersionOrFail.mockResolvedValue({
+      id: workflowVersionId,
+      steps: [
+        {
+          id: loadCandidateStepId,
+          name: 'Load Candidate',
+          type: WorkflowActionType.FIND_RECORDS,
+          valid: true,
+          nextStepIds: [fetchMessagesStepId],
+          settings: { input: { objectName: 'candidate' }, outputSchema: {} },
+        },
+        {
+          id: fetchMessagesStepId,
+          name: 'Fetch LinkedIn messages',
+          type: WorkflowActionType.LOGIC_FUNCTION,
+          valid: true,
+          nextStepIds: [draftStepId],
+          settings: {
+            input: {
+              logicFunctionId,
+              logicFunctionInput: {
+                candidateId: `{{${loadCandidateStepId}.first.id}}`,
+              },
+            },
+            outputSchema: {},
+          },
+        },
+        {
+          id: draftStepId,
+          name: 'Draft first LinkedIn message',
+          type: WorkflowActionType.AI_AGENT,
+          valid: true,
+          settings: { input: { prompt: '' }, outputSchema: {} },
+        },
+      ],
+    });
+    globalWorkspaceOrmManager.getRepository.mockResolvedValue({
+      find: jest.fn().mockResolvedValue([candidate]),
+    });
+    flatEntityMapsCacheService.getOrRecomputeManyOrAllFlatEntityMaps.mockResolvedValue(
+      {
+        flatLogicFunctionMaps: {
+          universalIdentifierById: {
+            [logicFunctionId]: logicFunctionId,
+          },
+          byUniversalIdentifier: {
+            [logicFunctionId]: {
+              id: logicFunctionId,
+              name: 'fetch-linkedin-messages',
+            },
+          },
+        },
+      },
+    );
+    nativeHandler.execute.mockResolvedValue({
+      success: true,
+      messages: [{ text: 'Thanks for connecting' }],
+      total: 1,
+    });
+
+    const resolvedPrompt = await service.resolvePromptForCandidate({
+      workspaceId,
+      workflowVersionId,
+      stepId: draftStepId,
+      candidateId,
+      prompt: `History:\n{{${fetchMessagesStepId}.text}}`,
+    });
+
+    expect(resolvedPrompt).toBe(
+      `History:\n${JSON.stringify(
+        {
+          success: true,
+          messages: [{ text: 'Thanks for connecting' }],
+          total: 1,
+        },
+        null,
+        2,
+      )}`,
+    );
+  });
+
   it('should load prior chat messages for a reply prompt', async () => {
     const chatStepId = '77777777-7777-4777-8777-777777777777';
     const replyStepId = '88888888-8888-4888-8888-888888888888';

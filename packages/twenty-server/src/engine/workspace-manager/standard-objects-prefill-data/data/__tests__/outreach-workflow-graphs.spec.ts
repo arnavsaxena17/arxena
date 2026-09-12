@@ -392,6 +392,33 @@ describe('GTM outreach workflow graphs', () => {
         ?.fieldsToUpdate,
     ).toEqual(['outreachSequenceStage']);
 
+    const qualifyProspect = byName('Qualify prospect') as {
+      settings?: {
+        input?: { agentId?: string };
+        outputSchema?: Record<string, unknown>;
+      };
+    };
+
+    expect(qualifyProspect.settings?.input?.agentId).toBe(
+      '__AGENT_qualify_prospect__',
+    );
+    expect(
+      Object.keys(qualifyProspect.settings?.outputSchema ?? {}).sort(),
+    ).toEqual([
+      'company_short',
+      'first_name',
+      'go',
+      'honorific',
+      'hooks',
+      'industry_phrase',
+      'likely_systems',
+      'matching_problem_statement',
+      'reason',
+      'referral_source',
+      'score',
+      'segment',
+    ]);
+
     // IF_ELSE branches must not share join step ids (skip cascade bug).
     expect(branchNext('Has company name?', 0)).toEqual([
       byName('Find contacted company sibling')?.id,
@@ -515,9 +542,8 @@ describe('GTM outreach workflow graphs', () => {
 
     expect(router?.type).toBe('IF_ELSE');
     expect(trigger.nextStepIds).toEqual([byName('Load workspace member')?.id]);
-    expect(byName('Load workspace member profile')?.nextStepIds).toEqual([
-      router?.id,
-    ]);
+    expect(byName('Load workspace member')?.nextStepIds).toEqual([router?.id]);
+    expect(byName('Load workspace member profile')).toBeUndefined();
 
     const branches = router?.settings?.input?.branches ?? [];
 
@@ -539,7 +565,7 @@ describe('GTM outreach workflow graphs', () => {
       JSON.stringify(['MEETING_BOOKED']),
     ]);
 
-    // Single hoisted member/profile pair — the duplicate "no company" pair is gone.
+    // Single hoisted member step — the duplicate "no company" load is gone.
     expect(byName('Load workspace member (no company)')).toBeUndefined();
     expect(
       byName('Load workspace member profile (no company)'),
@@ -572,6 +598,39 @@ describe('GTM outreach workflow graphs', () => {
     expect(byName('Stamp preferred channel')).toBeDefined();
     expect(byName('Draft meeting reminder')).toBeDefined();
     expect(byName('Mark MEETING_BOOKED')).toBeDefined();
+
+    const qualifyProspect = byName('Qualify prospect') as {
+      settings?: {
+        input?: { agentId?: string };
+        outputSchema?: Record<string, unknown>;
+      };
+    };
+
+    expect(qualifyProspect.settings?.input?.agentId).toBe(
+      '__AGENT_qualify_prospect__',
+    );
+    expect(
+      Object.keys(qualifyProspect.settings?.outputSchema ?? {}).sort(),
+    ).toEqual([
+      'company_short',
+      'first_name',
+      'go',
+      'honorific',
+      'hooks',
+      'industry_phrase',
+      'likely_systems',
+      'matching_problem_statement',
+      'reason',
+      'referral_source',
+      'score',
+      'segment',
+    ]);
+    expect(
+      qualifyProspect.settings?.outputSchema?.referralName,
+    ).toBeUndefined();
+    expect(
+      qualifyProspect.settings?.outputSchema?.prospectEmail,
+    ).toBeUndefined();
 
     const stepIds = steps.map((step) => step.id);
 

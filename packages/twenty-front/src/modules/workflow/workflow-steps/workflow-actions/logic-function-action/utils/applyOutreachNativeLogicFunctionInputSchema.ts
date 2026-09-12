@@ -1,11 +1,16 @@
 import {
   OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME,
   OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
   OUTREACH_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
+  OUTREACH_VISIT_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
 } from '@/workflow/workflow-steps/workflow-actions/logic-function-action/constants/outreachNativeLogicFunctionSampleOutput';
 import { isDefined, isPlainObject } from 'twenty-shared/utils';
 import {
@@ -13,6 +18,18 @@ import {
   type InputSchema,
   type InputSchemaProperty,
 } from 'twenty-shared/workflow';
+
+const CANDIDATE_RECORD_INPUT: InputSchemaProperty = {
+  type: 'record',
+  label: 'Candidate',
+  objectNameSingular: 'candidate',
+};
+
+const WORKSPACE_MEMBER_RECORD_INPUT: InputSchemaProperty = {
+  type: 'record',
+  label: 'Workspace member',
+  objectNameSingular: 'workspaceMember',
+};
 
 const UPLOAD_PROFILES_INPUT_PROPERTIES: Record<string, InputSchemaProperty> = {
   projectId: {
@@ -26,13 +43,24 @@ const UPLOAD_PROFILES_INPUT_PROPERTIES: Record<string, InputSchemaProperty> = {
     objectNameSingular: 'company',
   },
   people: { type: 'array', label: 'People' },
-  candidateId: {
-    type: 'record',
-    label: 'Candidate',
-    objectNameSingular: 'candidate',
-  },
+  candidateId: CANDIDATE_RECORD_INPUT,
   limit: { type: 'number', label: 'Limit (optional — default all)' },
 };
+
+// Prefer candidate picker; LinkedIn URL / profile id resolve from the candidate when set.
+const PERSON_LINKEDIN_FETCH_LOGIC_FUNCTION_NAMES = new Set([
+  OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
+  OUTREACH_VISIT_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME,
+  'enrich-contact',
+]);
+
+const WORKSPACE_MEMBER_PICKER_LOGIC_FUNCTION_NAMES = new Set([
+  ...PERSON_LINKEDIN_FETCH_LOGIC_FUNCTION_NAMES,
+  OUTREACH_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME,
+  'get-calendar-availability',
+]);
 
 const SEARCH_PEOPLE_FOR_COMPANY_COMPANY_ID: InputSchemaProperty = {
   type: 'record',
@@ -98,9 +126,7 @@ const omitInputSchemaProperties = (
       ...root,
       type: 'object',
       properties: Object.fromEntries(
-        Object.entries(root.properties).filter(
-          ([key]) => !hiddenKeys.has(key),
-        ),
+        Object.entries(root.properties).filter(([key]) => !hiddenKeys.has(key)),
       ),
     },
   ];
@@ -159,7 +185,9 @@ export const applyOutreachNativeLogicFunctionInputSchema = (
 
   const root = inputSchema[0];
 
-  if (logicFunctionName === OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME) {
+  if (
+    logicFunctionName === OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME
+  ) {
     return [
       {
         ...root,
@@ -198,6 +226,59 @@ export const applyOutreachNativeLogicFunctionInputSchema = (
         type: 'object',
         properties: {
           ...FILTER_PROFILES_INPUT_PROPERTIES,
+        },
+      },
+    ];
+  }
+
+  if (PERSON_LINKEDIN_FETCH_LOGIC_FUNCTION_NAMES.has(logicFunctionName ?? '')) {
+    const personProperties = root.properties ?? {};
+
+    return [
+      {
+        ...root,
+        type: 'object',
+        properties: {
+          ...(isDefined(personProperties.candidateId)
+            ? {
+                candidateId: overlayRecordPicker(
+                  personProperties.candidateId,
+                  CANDIDATE_RECORD_INPUT,
+                ),
+              }
+            : {}),
+          ...(isDefined(personProperties.workspaceMemberId)
+            ? {
+                workspaceMemberId: overlayRecordPicker(
+                  personProperties.workspaceMemberId,
+                  WORKSPACE_MEMBER_RECORD_INPUT,
+                ),
+              }
+            : {}),
+          ...Object.fromEntries(
+            Object.entries(personProperties).filter(
+              ([key]) => key !== 'candidateId' && key !== 'workspaceMemberId',
+            ),
+          ),
+        },
+      },
+    ];
+  }
+
+  if (
+    WORKSPACE_MEMBER_PICKER_LOGIC_FUNCTION_NAMES.has(logicFunctionName ?? '') &&
+    isDefined(root.properties?.workspaceMemberId)
+  ) {
+    return [
+      {
+        ...root,
+        type: 'object',
+        properties: {
+          ...root.properties,
+          workspaceMemberId: overlayRecordPicker(
+            root.properties.workspaceMemberId,
+            WORKSPACE_MEMBER_RECORD_INPUT,
+          ),
         },
       },
     ];

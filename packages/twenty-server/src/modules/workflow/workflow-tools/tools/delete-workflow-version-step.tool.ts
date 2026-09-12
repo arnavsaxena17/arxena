@@ -23,7 +23,7 @@ export const createDeleteWorkflowVersionStepTool = (
 ) => ({
   name: 'delete_workflow_version_step' as const,
   description:
-    'Delete a step from a workflow version. This removes the step and updates the workflow structure.',
+    'Delete a single step from a draft workflow version and rewire parents. Prefer updating nextStepIds / IF_ELSE branch targets to skip a gate over deleting many steps. Deleting a step that is the only child of an IF_ELSE branch inserts an EMPTY "Add an Action" placeholder — you must rewire that branch to a real step afterward. Never delete SEND_EMAIL / SEND_WHATSAPP_MESSAGE / SEND_LINKEDIN_* / FORM leaves, or unrelated sibling paths (company vs no-company, replied-channel routers), unless the user explicitly listed those step ids. Confirm the step id+name list before calling. After deletes, re-fetch the draft and verify protected SEND_* steps still exist and remain reachable. Do not use this on ACTIVE versions — draft first.',
   inputSchema: deleteWorkflowVersionStepSchema,
   execute: async (parameters: DeleteWorkflowVersionStepInput) => {
     try {

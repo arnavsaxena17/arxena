@@ -99,6 +99,9 @@ import { ResyncOutreachPostReplyFollowUpCadenceCommand } from 'src/database/comm
 import { FoldWorkspaceMemberProfileIntoMemberCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000107-fold-workspace-member-profile-into-member.command';
 import { FoldWorkspaceProfileIntoCoreWorkspaceCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000109-fold-workspace-profile-into-core-workspace.command';
 import { FoldMemberCompanyIntoWorkspaceCompanyCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000110-fold-member-company-into-workspace-company.command';
+import { ResyncOutreachMemberOnlyLoadCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000111-resync-outreach-member-only-load.command';
+import { ResyncOutreachQualifyProspectAgentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000112-resync-outreach-qualify-prospect-agent.command';
+import { SyncWorkflowSpillParseSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000113-sync-workflow-spill-parse-skill-content.command';
 import { SetOutreachExtractSignalsDeepseekCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000106-set-outreach-extract-signals-deepseek.command';
 import { DropChatMessageObjWithTimeStampCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000099-drop-chat-message-obj-with-time-stamp.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
@@ -235,6 +238,9 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     FoldWorkspaceMemberProfileIntoMemberCommand,
     FoldWorkspaceProfileIntoCoreWorkspaceCommand,
     FoldMemberCompanyIntoWorkspaceCompanyCommand,
+    ResyncOutreachMemberOnlyLoadCommand,
+    ResyncOutreachQualifyProspectAgentCommand,
+    SyncWorkflowSpillParseSkillContentCommand,
     MigrateOtherFieldsService,
     DropCandidateFieldObjectsCommand,
   ],

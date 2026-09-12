@@ -1,15 +1,28 @@
-import { ActionMenuComponentInstanceContext } from "@/action-menu/states/contexts/ActionMenuComponentInstanceContext";
+import { ActionMenuComponentInstanceContext } from '@/action-menu/states/contexts/ActionMenuComponentInstanceContext';
 import { ArxEnrichmentModal } from '@/arx-ai-filtering/arxEnrichmentModal';
 import { useFetchOtherFieldKeys } from '@/arx-ai-filtering/hooks/useFetchOtherFieldKeys';
 import { useInitializeEnrichments } from '@/arx-ai-filtering/hooks/useInitializeEnrichments';
-import { useSelectedRecordForEnrichment } from "@/arx-ai-filtering/hooks/useSelectedRecordForEnrichment";
-import { currentProjectIdState, isArxEnrichModalOpenState } from "@/arx-ai-filtering/states/arxEnrichModalOpenState";
+import { useSelectedRecordForEnrichment } from '@/arx-ai-filtering/hooks/useSelectedRecordForEnrichment';
+import {
+  currentProjectIdState,
+  isArxEnrichModalOpenState,
+} from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
-import { persistSearchResultsToStorage, searchMetadataState, searchResultsState } from '@/candidate-search/states/searchResultsState';
-import { TableContainer } from "@/candidate-table/components/styled";
-import { chatSearchQueryState } from "@/candidate-table/states/chatSearchQueryState";
-import { filteredCandidatesCountState, processedDataSelector, selectedCandidateIdState, selectedConversationStatusState, tableStateAtom } from "@/candidate-table/states/states";
+import {
+  persistSearchResultsToStorage,
+  searchMetadataState,
+  searchResultsState,
+} from '@/candidate-search/states/searchResultsState';
+import { TableContainer } from '@/candidate-table/components/styled';
+import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
+import {
+  filteredCandidatesCountState,
+  processedDataSelector,
+  selectedCandidateIdState,
+  selectedConversationStatusState,
+  tableStateAtom,
+} from '@/candidate-table/states/states';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
@@ -17,29 +30,40 @@ import axios from 'axios';
 import { IconCheckbox } from 'twenty-ui/icon';
 
 import { useOpenAddProjectModal } from '@/arx-jd-upload/hooks/useOpenAddProjectModal';
-import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from "@/arx-jd-upload/states/arxUploadJDModalOpenState";
+import {
+  arxUploadJDModalModeState,
+  isArxUploadJDModalOpenState,
+} from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { isOrgChartEnabledState } from '@/arx-jd-upload/states/isOrgChartEnabledState';
-import { ChatOptionsDropdownButton } from "@/candidate-table/ChatOptionsDropdownButton";
-import { ArxDownloadModal } from "@/candidate-table/components/ArxDownloadModal";
+import { ChatOptionsDropdownButton } from '@/candidate-table/ChatOptionsDropdownButton';
+import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal';
 import { CandidateTablePageHeader } from '@/candidate-table/components/CandidateTablePageHeader';
 import { ProjectTopBar } from '@/candidate-table/components/ProjectTopBar';
-import { HotTableActionMenu } from "@/candidate-table/HotTableActionMenu";
+import { HotTableActionMenu } from '@/candidate-table/HotTableActionMenu';
 import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTableRefreshFunctionState';
-import { projectIdAtom, projectsState } from "@/candidate-table/states/states";
-import { ContextStoreComponentInstanceContext } from "@/context-store/states/contexts/ContextStoreComponentInstanceContext";
-import { useObjectMetadataItems } from "@/object-metadata/hooks/useObjectMetadataItems";
+import { projectIdAtom, projectsState } from '@/candidate-table/states/states';
+import { ContextStoreComponentInstanceContext } from '@/context-store/states/contexts/ContextStoreComponentInstanceContext';
+import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { useCheckDataIntegrityOfProject } from '@/object-record/hooks/useCheckDataIntegrityOfProject';
-import { RecordIndexContextProvider } from "@/object-record/record-index/contexts/RecordIndexContext";
-import { useOpenObjectRecordsSpreadsheetImportDialog } from "@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog";
-import { SpreadsheetImportProvider } from "@/spreadsheet-import/provider/components/SpreadsheetImportProvider";
-import { useSnackBar } from "@/ui/feedback/snack-bar-manager/hooks/useSnackBar";
+import { RecordIndexContextProvider } from '@/object-record/record-index/contexts/RecordIndexContext';
+import { useOpenObjectRecordsSpreadsheetImportDialog } from '@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog';
+import { SpreadsheetImportProvider } from '@/spreadsheet-import/provider/components/SpreadsheetImportProvider';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
-import { ViewComponentInstanceContext } from "@/views/states/contexts/ViewComponentInstanceContext";
+import { ViewComponentInstanceContext } from '@/views/states/contexts/ViewComponentInstanceContext';
 import { useQuery } from '@apollo/client/react';
 import { styled } from '@linaria/react';
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { themeCssVariables, useTheme } from 'twenty-ui/theme-constants';
 
 import { BulkMessageModal } from '@/ui/layout/modal/components/BulkMessageModal';
@@ -61,12 +85,15 @@ import { useProjectStatusToggle } from './hooks/useProjectStatusToggle';
 
 // Debug logging utility
 const DEBUG_LOGS = false;
-const debugLog = (...args: any[]) => { if (DEBUG_LOGS) console.log(...args); };
+const debugLog = (...args: any[]) => {
+  if (DEBUG_LOGS) console.log(...args);
+};
 
 const StyledPageContainer = styled(PageContainer)`
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-width: 0;
   overflow: hidden;
   width: 100%;
 `;
@@ -75,6 +102,7 @@ const StyledPageBody = styled(PageBody)`
   display: flex;
   flex: 1;
   flex-direction: column;
+  min-width: 0;
   overflow: hidden;
   position: relative;
   /* Above page header (20), below right drawer (30) */
@@ -106,8 +134,12 @@ export const ProjectPage: React.FC = () => {
   const [, setCurrentProjectId] = useAtomState(currentProjectIdState);
   const [projects, setProjects] = useAtomState(projectsState);
   const [tokenPair] = useAtomState(tokenPairState);
-  const filteredCandidatesCount = useAtomStateValue(filteredCandidatesCountState);
-  const selectedConversationStatus = useAtomStateValue(selectedConversationStatusState);
+  const filteredCandidatesCount = useAtomStateValue(
+    filteredCandidatesCountState,
+  );
+  const selectedConversationStatus = useAtomStateValue(
+    selectedConversationStatusState,
+  );
   const tableState = useAtomStateValue(tableStateAtom);
   const setTableStateAtom = useSetAtomState(tableStateAtom);
   const setSelectedCandidateId = useSetAtomState(selectedCandidateIdState);
@@ -119,17 +151,21 @@ export const ProjectPage: React.FC = () => {
   const { data: creditsData } = useQuery(WORKSPACE_CREDITS, {
     skip: !isOrgChartEnabled,
   });
-  const credits = (creditsData as {
-    workspaceCredits?: {
-      orgChartCredits: number;
-      revealCredits: number;
-      apiCredits: number;
-      revealCreditsAsEmailEquivalent?: number;
-      revealCreditsAsPhoneEquivalent?: number;
-      emailRevealCost?: number;
-      phoneRevealCost?: number;
-    };
-  } | undefined)?.workspaceCredits;
+  const credits = (
+    creditsData as
+      | {
+          workspaceCredits?: {
+            orgChartCredits: number;
+            revealCredits: number;
+            apiCredits: number;
+            revealCreditsAsEmailEquivalent?: number;
+            revealCreditsAsPhoneEquivalent?: number;
+            emailRevealCost?: number;
+            phoneRevealCost?: number;
+          };
+        }
+      | undefined
+  )?.workspaceCredits;
   const orgChartCredits = credits?.orgChartCredits ?? undefined;
   const revealCredits = credits?.revealCredits ?? undefined;
   const apiCredits = credits?.apiCredits ?? undefined;
@@ -147,17 +183,31 @@ export const ProjectPage: React.FC = () => {
   const theme = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const dataTableRef = useRef<{ refreshData: () => Promise<void>; removeFilter: (columnIndex: number) => void; clearAllFilters: () => void; clearAllFiltersAndSorts: () => void; toggleSortingControls?: () => void; loadMoreCandidates?: (pages?: number) => Promise<void>; hasMoreCandidates?: boolean; isLoadingMore?: boolean }>(null);
-  const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useAtomState(isArxEnrichModalOpenState);
-  const { hasSelectedRecord, selectedRecordId } = useSelectedRecordForEnrichment();
+  const dataTableRef = useRef<{
+    refreshData: () => Promise<void>;
+    removeFilter: (columnIndex: number) => void;
+    clearAllFilters: () => void;
+    clearAllFiltersAndSorts: () => void;
+    toggleSortingControls?: () => void;
+    loadMoreCandidates?: (pages?: number) => Promise<void>;
+    hasMoreCandidates?: boolean;
+    isLoadingMore?: boolean;
+  }>(null);
+  const [isArxEnrichModalOpen, setIsArxEnrichModalOpen] = useAtomState(
+    isArxEnrichModalOpenState,
+  );
+  const { hasSelectedRecord, selectedRecordId } =
+    useSelectedRecordForEnrichment();
   const {
     enqueueSuccessSnackBar,
     enqueueErrorSnackBar,
     enqueueInfoSnackBar,
     enqueueWarningSnackBar,
   } = useSnackBar();
-  const { beginUploadProgressSseSession, endUploadProgressSseSessionAfterDelay } =
-    useUploadProgressSseSession();
+  const {
+    beginUploadProgressSseSession,
+    endUploadProgressSseSessionAfterDelay,
+  } = useUploadProgressSseSession();
   const { isBaileysLoggedIn } = useBaileysConnection();
   const { isLinkedinConnected, isWhatsappUnipileConnected } = useUnipile();
   const isWhatsappLoggedIn = isBaileysLoggedIn || isWhatsappUnipileConnected;
@@ -167,19 +217,25 @@ export const ProjectPage: React.FC = () => {
   const { initializeEnrichments } = useInitializeEnrichments();
 
   const isArxUploadJDModalOpen = useAtomStateValue(isArxUploadJDModalOpenState);
-  const [, setIsArxUploadJDModalOpen] = useAtomState(isArxUploadJDModalOpenState);
+  const [, setIsArxUploadJDModalOpen] = useAtomState(
+    isArxUploadJDModalOpenState,
+  );
   const [, setArxUploadJDModalMode] = useAtomState(arxUploadJDModalModeState);
   const { openAddJobModal } = useOpenAddProjectModal();
 
   // Check if candidate object exists before initializing the spreadsheet import hook
   const { objectMetadataItems } = useObjectMetadataItems();
-  const candidateObjectExists = useMemo(() =>
-    objectMetadataItems.some(item => item.nameSingular === 'candidate' && item.isActive),
-    [objectMetadataItems]
+  const candidateObjectExists = useMemo(
+    () =>
+      objectMetadataItems.some(
+        (item) => item.nameSingular === 'candidate' && item.isActive,
+      ),
+    [objectMetadataItems],
   );
 
   // Initialize the spreadsheet import hook for candidates only if the object exists
-  const { openObjectRecordsSpreadsheetImportDialog } = useOpenObjectRecordsSpreadsheetImportDialog('candidate');
+  const { openObjectRecordsSpreadsheetImportDialog } =
+    useOpenObjectRecordsSpreadsheetImportDialog('candidate');
 
   // Find the current job based on projectId
   const currentJob = useMemo(() => {
@@ -190,13 +246,20 @@ export const ProjectPage: React.FC = () => {
   useEffect(() => {
     const loadCurrentJob = async () => {
       if (projectId && projectId !== 'project-id' && !currentJob) {
-        debugLog('Current job not found in projectsState, loading specific job:', projectId);
+        debugLog(
+          'Current job not found in projectsState, loading specific job:',
+          projectId,
+        );
         try {
           // Use the dedicated get-project-by-id endpoint for efficiency
           const response = await axios.post(
             `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/get-project-by-id`,
             { projectId },
-            { headers: { Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}` } }
+            {
+              headers: {
+                Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
+              },
+            },
           );
 
           if (
@@ -204,9 +267,9 @@ export const ProjectPage: React.FC = () => {
             (response?.data?.project || response?.data?.job)
           ) {
             const jobData = response.data.project ?? response.data.job;
-            setProjects(prevJobs => {
+            setProjects((prevJobs) => {
               // Check if job already exists to avoid duplicates
-              const existingJob = prevJobs.find(job => job.id === projectId);
+              const existingJob = prevJobs.find((job) => job.id === projectId);
               if (existingJob) {
                 return prevJobs;
               }
@@ -214,12 +277,17 @@ export const ProjectPage: React.FC = () => {
             });
             debugLog('Loaded current job into projectsState:', jobData);
           } else {
-            console.warn('Project not found via get-project-by-id, falling back to refetchJobs');
+            console.warn(
+              'Project not found via get-project-by-id, falling back to refetchJobs',
+            );
             // Fallback to refetching all projects if specific job not found
             await refetchJobsRef.current();
           }
         } catch (error) {
-          console.error('Error loading specific job, falling back to refetchJobs:', error);
+          console.error(
+            'Error loading specific job, falling back to refetchJobs:',
+            error,
+          );
           // Fallback to refetching all projects if specific job loading fails
           try {
             await refetchJobsRef.current();
@@ -231,7 +299,12 @@ export const ProjectPage: React.FC = () => {
     };
 
     loadCurrentJob();
-  }, [projectId, currentJob, setProjects, tokenPair?.accessOrWorkspaceAgnosticToken?.token]);
+  }, [
+    projectId,
+    currentJob,
+    setProjects,
+    tokenPair?.accessOrWorkspaceAgnosticToken?.token,
+  ]);
 
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
@@ -239,11 +312,13 @@ export const ProjectPage: React.FC = () => {
   const dataTableRefreshFunction = useAtomStateValue(
     dataTableRefreshFunctionState,
   );
-  const [isBulkMessageModalOpen, setIsBulkMessageModalOpen] = useAtomState(isBulkMessageModalOpenState);
+  const [isBulkMessageModalOpen, setIsBulkMessageModalOpen] = useAtomState(
+    isBulkMessageModalOpenState,
+  );
   // Use the job status toggle hook
   const { isJobActive, toggleJobStatus } = useProjectStatusToggle({
     projectId,
-    currentJobActive: currentJob?.isActive
+    currentJobActive: currentJob?.isActive,
   });
 
   // Use the job pagination hook
@@ -264,7 +339,12 @@ export const ProjectPage: React.FC = () => {
     }
     setCurrentProjectId(projectId);
     setIsArxEnrichModalOpen(true);
-  }, [selectedRecordId, projectId, setCurrentProjectId, setIsArxEnrichModalOpen]);
+  }, [
+    selectedRecordId,
+    projectId,
+    setCurrentProjectId,
+    setIsArxEnrichModalOpen,
+  ]);
 
   const handleEngagement = useCallback(() => {
     debugLog('Modifying job from ProjectPage handleEngagement');
@@ -308,119 +388,150 @@ export const ProjectPage: React.FC = () => {
   }, []);
 
   const handleDownloadClick = useCallback(() => {
-    debugLog("Downloading app");
+    debugLog('Downloading app');
     setIsDownloadModalOpen(true);
   }, [setIsDownloadModalOpen]);
 
-  const handleSaveSelected = useCallback(async (candidates: any[]) => {
-    if (candidates.length === 0) {
-      enqueueWarningSnackBar({ message: 'No candidates selected' });
-      return;
-    }
+  const handleSaveSelected = useCallback(
+    async (candidates: any[]) => {
+      if (candidates.length === 0) {
+        enqueueWarningSnackBar({ message: 'No candidates selected' });
+        return;
+      }
 
-    if (!projectId) {
-      enqueueErrorSnackBar({ message: 'No job selected' });
-      return;
-    }
+      if (!projectId) {
+        enqueueErrorSnackBar({ message: 'No job selected' });
+        return;
+      }
 
-    beginUploadProgressSseSession();
-    try {
-      console.log('Saving selected candidates:', candidates.length);
+      beginUploadProgressSseSession();
+      try {
+        console.log('Saving selected candidates:', candidates.length);
 
-      // Prepare the request body for upload-profiles endpoint
-      const uploadRequestBody = {
-        linkedin_search_results: candidates,
-        data_source: 'linkedin_search',
-        projectId,
-        twenty_job_id: projectId,
-        job_id: projectId,
-        job_name: currentJob?.name || 'LinkedIn Search Results',
-        recruiterId: currentWorkspaceMember?.id,
-        job: {
-          id: projectId,
-          name: currentJob?.name || 'LinkedIn Search Results',
-          company: '', // Company name not available in current job type
-          location: currentJob?.jobLocation || '',
+        // Prepare the request body for upload-profiles endpoint
+        const uploadRequestBody = {
+          linkedin_search_results: candidates,
+          data_source: 'linkedin_search',
+          projectId,
+          twenty_job_id: projectId,
+          job_id: projectId,
+          job_name: currentJob?.name || 'LinkedIn Search Results',
           recruiterId: currentWorkspaceMember?.id,
-        },
-      };
+          job: {
+            id: projectId,
+            name: currentJob?.name || 'LinkedIn Search Results',
+            company: '', // Company name not available in current job type
+            location: currentJob?.jobLocation || '',
+            recruiterId: currentWorkspaceMember?.id,
+          },
+        };
 
-      const response = await fetch(`${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/upload-profiles`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
-        },
-        body: JSON.stringify(uploadRequestBody),
-      });
+        const response = await fetch(
+          `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/upload-profiles`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${tokenPair?.accessOrWorkspaceAgnosticToken?.token}`,
+            },
+            body: JSON.stringify(uploadRequestBody),
+          },
+        );
 
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
+        if (!response.ok) {
+          throw new Error(`Upload failed: ${response.statusText}`);
+        }
+
+        const uploadResult = await response.json();
+
+        if (uploadResult.status === 'ok' || uploadResult.status === 'success') {
+          console.log(`Successfully saved ${candidates.length} candidates`);
+
+          // Remove saved candidates from search results
+          const savedIds = candidates.map((c) => (c as any).tempId || c.id);
+          setSearchResults((prev: any[]) =>
+            prev.filter(
+              (candidate) =>
+                !savedIds.includes((candidate as any).tempId || candidate.id),
+            ),
+          );
+
+          enqueueSuccessSnackBar({
+            message: `Successfully saved ${candidates.length} candidates`,
+          });
+
+          // Refresh the table to show the newly saved candidates
+          setTimeout(() => {
+            dataTableRef.current?.refreshData();
+          }, 1000);
+        } else {
+          throw new Error(uploadResult.message || 'Upload failed');
+        }
+      } catch (error) {
+        console.error('Error saving candidates:', error);
+        enqueueErrorSnackBar({
+          message: 'Failed to save candidates. Please try again.',
+        });
+      } finally {
+        endUploadProgressSseSessionAfterDelay();
       }
-
-      const uploadResult = await response.json();
-
-      if (uploadResult.status === 'ok' || uploadResult.status === 'success') {
-        console.log(`Successfully saved ${candidates.length} candidates`);
-
-        // Remove saved candidates from search results
-        const savedIds = candidates.map(c => (c as any).tempId || c.id);
-        setSearchResults((prev: any[]) => prev.filter(candidate =>
-          !savedIds.includes((candidate as any).tempId || candidate.id)
-        ));
-
-        enqueueSuccessSnackBar({ message: `Successfully saved ${candidates.length} candidates` });
-
-        // Refresh the table to show the newly saved candidates
-        setTimeout(() => {
-          dataTableRef.current?.refreshData();
-        }, 1000);
-      } else {
-        throw new Error(uploadResult.message || 'Upload failed');
-      }
-    } catch (error) {
-      console.error('Error saving candidates:', error);
-      enqueueErrorSnackBar({ message: 'Failed to save candidates. Please try again.' });
-    } finally {
-      endUploadProgressSseSessionAfterDelay();
-    }
-  }, [
-    projectId,
-    currentJob,
-    currentWorkspaceMember,
-    tokenPair,
-    setSearchResults,
-    enqueueSuccessSnackBar, enqueueErrorSnackBar, enqueueInfoSnackBar, enqueueWarningSnackBar,
-    beginUploadProgressSseSession,
-    endUploadProgressSseSessionAfterDelay,
-  ]);
+    },
+    [
+      projectId,
+      currentJob,
+      currentWorkspaceMember,
+      tokenPair,
+      setSearchResults,
+      enqueueSuccessSnackBar,
+      enqueueErrorSnackBar,
+      enqueueInfoSnackBar,
+      enqueueWarningSnackBar,
+      beginUploadProgressSseSession,
+      endUploadProgressSseSessionAfterDelay,
+    ],
+  );
 
   const handleDiscardSelected = useCallback(() => {
     // Find selected candidates from search results (these are the fetched candidates that can be discarded)
     // For search results, we need to match against the original id since tempId is only set in mergedData
-    const selectedCandidates = searchResults.filter(candidate =>
-      tableState.selectedRowIds.includes(candidate?.id || '')
+    const selectedCandidates = searchResults.filter((candidate) =>
+      tableState.selectedRowIds.includes(candidate?.id || ''),
     );
 
     if (selectedCandidates.length === 0) {
-      enqueueWarningSnackBar({ message: 'No fetched candidates selected to discard' });
+      enqueueWarningSnackBar({
+        message: 'No fetched candidates selected to discard',
+      });
       return;
     }
 
-    if (window.confirm(`Are you sure you want to discard ${selectedCandidates.length} selected fetched candidates? This action cannot be undone.`)) {
+    if (
+      window.confirm(
+        `Are you sure you want to discard ${selectedCandidates.length} selected fetched candidates? This action cannot be undone.`,
+      )
+    ) {
       // Remove only the selected candidates from search results
-      const selectedIds = selectedCandidates.map(c => c.id);
+      const selectedIds = selectedCandidates.map((c) => c.id);
       setSearchResults((prev: any[]) => {
-        const updatedResults = prev.filter(candidate => !selectedIds.includes(candidate.id));
+        const updatedResults = prev.filter(
+          (candidate) => !selectedIds.includes(candidate.id),
+        );
 
         // Persist updated results to backend cache so discarded candidates
         // don't reappear after a reload (including when the list becomes empty)
-        if (projectId && projectId !== 'project-id' && tokenPair?.accessOrWorkspaceAgnosticToken?.token) {
+        if (
+          projectId &&
+          projectId !== 'project-id' &&
+          tokenPair?.accessOrWorkspaceAgnosticToken?.token
+        ) {
           persistSearchResultsToStorage(updatedResults, projectId, {
             accessToken: tokenPair.accessOrWorkspaceAgnosticToken.token,
             metadata: searchMetadata,
-          }).catch(error => {
-            console.error('Failed to persist search results after discard (non-blocking):', error);
+          }).catch((error) => {
+            console.error(
+              'Failed to persist search results after discard (non-blocking):',
+              error,
+            );
           });
         }
 
@@ -429,18 +540,32 @@ export const ProjectPage: React.FC = () => {
 
       // Clear selection for discarded candidates
       let nextSelectedIds: string[] = [];
-      setTableStateAtom(prev => {
-        nextSelectedIds = prev.selectedRowIds.filter(id => !selectedIds.includes(id));
+      setTableStateAtom((prev) => {
+        nextSelectedIds = prev.selectedRowIds.filter(
+          (id) => !selectedIds.includes(id),
+        );
         return {
           ...prev,
-          selectedRowIds: nextSelectedIds
+          selectedRowIds: nextSelectedIds,
         };
       });
       setSelectedCandidateId(nextSelectedIds[0] ?? null);
 
-      enqueueSuccessSnackBar({ message: `Discarded ${selectedCandidates.length} selected candidates` });
+      enqueueSuccessSnackBar({
+        message: `Discarded ${selectedCandidates.length} selected candidates`,
+      });
     }
-  }, [searchResults, searchMetadata, tableState.selectedRowIds, projectId, tokenPair, setSearchResults, setTableStateAtom, setSelectedCandidateId, enqueueSuccessSnackBar]);
+  }, [
+    searchResults,
+    searchMetadata,
+    tableState.selectedRowIds,
+    projectId,
+    tokenPair,
+    setSearchResults,
+    setTableStateAtom,
+    setSelectedCandidateId,
+    enqueueSuccessSnackBar,
+  ]);
 
   const handleBulkMessage = useCallback(() => {
     if (tableState.selectedRowIds.length === 0) {
@@ -470,12 +595,17 @@ export const ProjectPage: React.FC = () => {
 
   // Filter management functions
   const handleRemoveFilter = useCallback((columnIndex: number) => {
-    console.log('ProjectPage: handleRemoveFilter called with columnIndex:', columnIndex);
+    console.log(
+      'ProjectPage: handleRemoveFilter called with columnIndex:',
+      columnIndex,
+    );
     if (dataTableRef.current?.removeFilter) {
       console.log('ProjectPage: Calling dataTableRef.current.removeFilter');
       dataTableRef.current.removeFilter(columnIndex);
     } else {
-      console.log('ProjectPage: dataTableRef.current.removeFilter is not available');
+      console.log(
+        'ProjectPage: dataTableRef.current.removeFilter is not available',
+      );
     }
   }, []);
 
@@ -485,7 +615,9 @@ export const ProjectPage: React.FC = () => {
       console.log('ProjectPage: Calling dataTableRef.current.clearAllFilters');
       dataTableRef.current.clearAllFilters();
     } else {
-      console.log('ProjectPage: dataTableRef.current.clearAllFilters is not available');
+      console.log(
+        'ProjectPage: dataTableRef.current.clearAllFilters is not available',
+      );
     }
   }, []);
 
@@ -500,7 +632,13 @@ export const ProjectPage: React.FC = () => {
 
       // Only reset states if the projectId actually changed
       if (extractedProjectId !== projectId) {
-        debugLog('ProjectId changed from', projectId, 'to', extractedProjectId, '- resetting states');
+        debugLog(
+          'ProjectId changed from',
+          projectId,
+          'to',
+          extractedProjectId,
+          '- resetting states',
+        );
         // CRITICAL: Reset all related states FIRST (including search results)
         // This must happen before setting the new projectId to prevent race conditions
         // where DataTable's useEffect might load persisted results before search results are cleared
@@ -638,16 +776,19 @@ export const ProjectPage: React.FC = () => {
     recordIndexId: projectId || '',
   };
 
-  debugLog("ProjectPage rendering with projectId:", projectId);
-  debugLog("ProjectPage rendering with recordIndexContextValue:", recordIndexContextValue);
-  debugLog("Current job found:", currentJob);
-  debugLog("Filtered count:", filteredCandidatesCount);
-  debugLog("Selected status:", selectedConversationStatus);
-  debugLog("Search query:", chatSearchQuery);
+  debugLog('ProjectPage rendering with projectId:', projectId);
+  debugLog(
+    'ProjectPage rendering with recordIndexContextValue:',
+    recordIndexContextValue,
+  );
+  debugLog('Current job found:', currentJob);
+  debugLog('Filtered count:', filteredCandidatesCount);
+  debugLog('Selected status:', selectedConversationStatus);
+  debugLog('Search query:', chatSearchQuery);
 
   // Memoize processedData to prevent unnecessary recalculations
   const processedData = useAtomStateValue(processedDataSelector);
-  debugLog("Processed data length:", processedData);
+  debugLog('Processed data length:', processedData);
 
   // Memoize counts calculation to prevent recalculation on every render
   // Use array references as dependencies since length alone doesn't detect reference changes
@@ -664,145 +805,148 @@ export const ProjectPage: React.FC = () => {
     <SpreadsheetImportProvider>
       <StyledPageContainer>
         <CandidateTablePageHeader
-            title={
-              tableState.isLoading
-                ? `${currentJob?.name || 'Project'} (Loading...)`
-                : `${currentJob?.name || 'Project'} - ${
-                    tableState.selectedRowIds.length > 0
-                      ? `${tableState.selectedRowIds.length} selected • `
-                      : ''
-                  }${
-                    filteredCandidatesCount !== totalCount ? `Filtered: ${filteredCandidatesCount} • ` : ''
-                  }Fetched: ${fetchedCount} • Saved: ${savedCount} • Total: ${totalCount}`
-            }
-            Icon={IconCheckbox}
-            hasPaginationButtons={true}
-            hasPreviousRecord={hasPreviousJob}
-            hasNextRecord={hasNextJob}
-            navigateToPreviousRecord={navigateToPreviousJob}
-            navigateToNextRecord={navigateToNextJob}
-            hasClosePageButton={true}
-            onClosePage={navigateToJobsList}
-            onAddJob={openAddJobModal}
-            isExtensionInstalled={isExtensionInstalled}
-            isExtensionChecking={isExtensionChecking}
-            onDownloadClick={handleDownloadClick}
-            isLinkedinConnected={isLinkedinConnected}
-            isWhatsappLoggedIn={isWhatsappLoggedIn}
-            orgChartCredits={orgChartCredits}
-            revealCredits={revealCredits}
-            apiCredits={apiCredits}
-            revealCreditsAsEmailEquivalent={revealCreditsAsEmailEquivalent}
-            revealCreditsAsPhoneEquivalent={revealCreditsAsPhoneEquivalent}
-            emailRevealCost={emailRevealCost}
-            phoneRevealCost={phoneRevealCost}
-          />
-          <StyledPageBody>
-            <RecordIndexContextProvider value={recordIndexContextValue}>
-              <ViewComponentInstanceContext.Provider value={{ instanceId: projectId }}>
-                <ProjectTopBar
-                  leftComponent={leftComponent}
-                  rightComponent={rightComponent}
-                  showRefetch={true}
-                  onRefresh={() => {
-                    void handleRefresh();
-                  }}
-                  isRefreshing={isRefreshing}
-                  showSearch={true}
-                  showSorting={true}
-                  handleSorting={handleSorting}
-                  showEnrichment={true}
-                  handleEnrichment={handleEnrichment}
-                  showAddJob={true}
-                  handleEngagement={handleEngagement}
-                  showImportCandidates={true}
-                  handleImportCandidates={handleImportCandidates}
-                  showStatistics={true}
-                  handleStatistics={handleStatistics}
-                  handleBulkMessage={handleBulkMessage}
-                  showValidateJobData={true}
-                  handleValidateJobData={handleValidateJobData}
-                  isJobActive={isJobActive}
-                  onJobStatusToggle={toggleJobStatus}
-                  showJobStatusToggle={true}
-                  handleRedirectToObject={handleRedirectToObject}
-                  showRedirectToObject={true}
-                  onRemoveFilter={handleRemoveFilter}
-                  onClearAllFilters={handleClearAllFilters}
-                  showFilterChips={true}
-                  onClearAll={handleClearAll}
-                  showClearAll={true}
-                  selectedCandidates={selectedFetchedCandidates}
-                  onSelectAll={() => {
-                    console.log('Select all clicked');
-                  }}
-                  onSelectTop={(count) => {
-                    console.log(`Select top ${count} clicked`);
-                  }}
-                  onSaveSelected={handleSaveSelected}
-                  onDiscardAll={handleDiscardSelected}
-                  onLoadMore={dataTableRef.current?.loadMoreCandidates}
-                  showBatchActions={true}
-                />
-              </ViewComponentInstanceContext.Provider>
-            </RecordIndexContextProvider>
-            <ContextStoreComponentInstanceContext.Provider value={{ instanceId: projectId }} >
-              <ActionMenuComponentInstanceContext.Provider
-                value={{
-                  instanceId: projectId,
+          title={
+            tableState.isLoading
+              ? `${currentJob?.name || 'Project'} (Loading...)`
+              : `${currentJob?.name || 'Project'} - ${
+                  tableState.selectedRowIds.length > 0
+                    ? `${tableState.selectedRowIds.length} selected • `
+                    : ''
+                }${
+                  filteredCandidatesCount !== totalCount
+                    ? `Filtered: ${filteredCandidatesCount} • `
+                    : ''
+                }Fetched: ${fetchedCount} • Saved: ${savedCount} • Total: ${totalCount}`
+          }
+          Icon={IconCheckbox}
+          hasPaginationButtons={true}
+          hasPreviousRecord={hasPreviousJob}
+          hasNextRecord={hasNextJob}
+          navigateToPreviousRecord={navigateToPreviousJob}
+          navigateToNextRecord={navigateToNextJob}
+          hasClosePageButton={true}
+          onClosePage={navigateToJobsList}
+          onAddJob={openAddJobModal}
+          isExtensionInstalled={isExtensionInstalled}
+          isExtensionChecking={isExtensionChecking}
+          onDownloadClick={handleDownloadClick}
+          isLinkedinConnected={isLinkedinConnected}
+          isWhatsappLoggedIn={isWhatsappLoggedIn}
+          orgChartCredits={orgChartCredits}
+          revealCredits={revealCredits}
+          apiCredits={apiCredits}
+          revealCreditsAsEmailEquivalent={revealCreditsAsEmailEquivalent}
+          revealCreditsAsPhoneEquivalent={revealCreditsAsPhoneEquivalent}
+          emailRevealCost={emailRevealCost}
+          phoneRevealCost={phoneRevealCost}
+        />
+        <StyledPageBody>
+          <RecordIndexContextProvider value={recordIndexContextValue}>
+            <ViewComponentInstanceContext.Provider
+              value={{ instanceId: projectId }}
+            >
+              <ProjectTopBar
+                leftComponent={leftComponent}
+                rightComponent={rightComponent}
+                showRefetch={true}
+                onRefresh={() => {
+                  void handleRefresh();
                 }}
-              >
-                <TableContainer>
-                  <Suspense fallback={null}>
-                    <DataTable
-                      ref={dataTableRef}
-                      projectId={projectId}
-                      onImportCandidatesClick={handleImportCandidates}
-                    />
-                  </Suspense>
-                </TableContainer>
+                isRefreshing={isRefreshing}
+                showSearch={true}
+                showSorting={true}
+                handleSorting={handleSorting}
+                showEnrichment={true}
+                handleEnrichment={handleEnrichment}
+                showAddJob={true}
+                handleEngagement={handleEngagement}
+                showImportCandidates={true}
+                handleImportCandidates={handleImportCandidates}
+                showStatistics={true}
+                handleStatistics={handleStatistics}
+                handleBulkMessage={handleBulkMessage}
+                showValidateJobData={true}
+                handleValidateJobData={handleValidateJobData}
+                isJobActive={isJobActive}
+                onJobStatusToggle={toggleJobStatus}
+                showJobStatusToggle={true}
+                handleRedirectToObject={handleRedirectToObject}
+                showRedirectToObject={true}
+                onRemoveFilter={handleRemoveFilter}
+                onClearAllFilters={handleClearAllFilters}
+                showFilterChips={true}
+                onClearAll={handleClearAll}
+                showClearAll={true}
+                selectedCandidates={selectedFetchedCandidates}
+                onSelectAll={() => {
+                  console.log('Select all clicked');
+                }}
+                onSelectTop={(count) => {
+                  console.log(`Select top ${count} clicked`);
+                }}
+                onSaveSelected={handleSaveSelected}
+                onDiscardAll={handleDiscardSelected}
+                onLoadMore={dataTableRef.current?.loadMoreCandidates}
+                showBatchActions={true}
+              />
+            </ViewComponentInstanceContext.Provider>
+          </RecordIndexContextProvider>
+          <ContextStoreComponentInstanceContext.Provider
+            value={{ instanceId: projectId }}
+          >
+            <ActionMenuComponentInstanceContext.Provider
+              value={{
+                instanceId: projectId,
+              }}
+            >
+              <TableContainer>
+                <Suspense fallback={null}>
+                  <DataTable
+                    ref={dataTableRef}
+                    projectId={projectId}
+                    onImportCandidatesClick={handleImportCandidates}
+                  />
+                </Suspense>
+              </TableContainer>
 
-                <div style={{
+              <div
+                style={{
                   position: 'fixed',
                   bottom: 0,
                   left: 0,
                   width: '100%',
                   zIndex: 1000,
-                  backgroundColor: themeCssVariables.background.primary
-                }}>
-                  <HotTableActionMenu tableId={projectId} />
-                </div>
+                  backgroundColor: themeCssVariables.background.primary,
+                }}
+              >
+                <HotTableActionMenu tableId={projectId} />
+              </div>
+            </ActionMenuComponentInstanceContext.Provider>
+          </ContextStoreComponentInstanceContext.Provider>
 
-              </ActionMenuComponentInstanceContext.Provider>
-            </ContextStoreComponentInstanceContext.Provider>
-
-            {isArxEnrichModalOpen ? (
-              <ArxEnrichmentModal
-                objectNameSingular="project"
-                objectRecordId={selectedRecordId || '0'}
-                onRefresh={handleRefresh}
-              />
-            ) : (
-              <></>
-            )}
-
-
-               <ArxDownloadModal
-                isOpen={isDownloadModalOpen}
-                onClose={() => setIsDownloadModalOpen(false)}
-              />
-
-            <ProjectStatisticsModal
-              isOpen={isStatsModalOpen}
-              onClose={() => setIsStatsModalOpen(false)}
-              processedData={processedData}
+          {isArxEnrichModalOpen ? (
+            <ArxEnrichmentModal
+              objectNameSingular="project"
+              objectRecordId={selectedRecordId || '0'}
+              onRefresh={handleRefresh}
             />
+          ) : (
+            <></>
+          )}
 
-            {isBulkMessageModalOpen && (
-              <BulkMessageModal />
-            )}
+          <ArxDownloadModal
+            isOpen={isDownloadModalOpen}
+            onClose={() => setIsDownloadModalOpen(false)}
+          />
 
-          </StyledPageBody>
+          <ProjectStatisticsModal
+            isOpen={isStatsModalOpen}
+            onClose={() => setIsStatsModalOpen(false)}
+            processedData={processedData}
+          />
+
+          {isBulkMessageModalOpen && <BulkMessageModal />}
+        </StyledPageBody>
       </StyledPageContainer>
     </SpreadsheetImportProvider>
   );

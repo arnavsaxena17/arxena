@@ -52,8 +52,17 @@ export const buildFindRecordsStepResult = (
   first: unknown;
   all: unknown[];
   totalCount: number;
-} => ({
-  first: records[0],
-  all: records,
-  totalCount: records.length,
-});
+  text: string;
+} => {
+  const structuredResult = {
+    first: records[0],
+    all: records,
+    totalCount: records.length,
+  };
+
+  return {
+    ...structuredResult,
+    // Match FindRecordsWorkflowAction: {{step.text}} for AI prompts
+    text: JSON.stringify(structuredResult, null, 2),
+  };
+};

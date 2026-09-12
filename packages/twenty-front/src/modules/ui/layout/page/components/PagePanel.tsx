@@ -10,8 +10,8 @@ const StyledPanel = styled.div`
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
+  min-width: 0;
+  overflow: hidden;
   width: 100%;
 `;
 

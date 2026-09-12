@@ -47,7 +47,7 @@ Search LFs return hits only. People persist with `upload-profiles`. Company pers
 
 ## GTM workflows (do not conflate)
 
-FILTER `QUEUED` on Per Candidate (`candidate.created`). Stage changes on update use **one** `candidate.updated` workflow with `settings.fields: ['outreachSequenceStage']` and IF_ELSE branches — do not register five parallel updated listeners. FIND `workspaceMember` (load seat / Arx fields once) and pin `workspaceMemberId` = `{{member.first.id}}` on every SEND_* / Unipile fetch. HITL WhatsApp recipient = `{{member.first.phoneNumber}}` (or the profile step that re-loads the same `workspaceMember` by id). HITL = FORM on the **send** graph (`workflow-building`); never a fourth “HITL only” workflow.
+FILTER `QUEUED` on Per Candidate (`candidate.created`). Stage changes on update use **one** `candidate.updated` workflow with `settings.fields: ['outreachSequenceStage']` and IF_ELSE branches — do not register five parallel updated listeners. FIND `workspaceMember` (load seat / Arx fields once) and pin `workspaceMemberId` = `{{member.first.id}}` on every SEND_* / Unipile fetch. HITL WhatsApp recipient = `{{member.first.phoneNumber}}`. HITL = FORM on the **send** graph (`workflow-building`); never a fourth “HITL only” workflow.
 
 Do **not** add a workflow whose only job is “mark connection accepted” — Unipile `new_relation` already materializes `CONNECTION_ACCEPTED`.
 

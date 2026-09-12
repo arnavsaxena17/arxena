@@ -18,8 +18,11 @@ import { TestHttpRequestInput } from 'src/engine/core-modules/workflow/dtos/test
 import { TestHttpRequestDTO } from 'src/engine/core-modules/workflow/dtos/test-http-request.dto';
 import { TestWorkflowFormNotifyInput } from 'src/engine/core-modules/workflow/dtos/test-workflow-form-notify.input';
 import { TestWorkflowFormNotifyDTO } from 'src/engine/core-modules/workflow/dtos/test-workflow-form-notify.dto';
+import { TestWorkflowSendActionDTO } from 'src/engine/core-modules/workflow/dtos/test-workflow-send-action.dto';
+import { TestWorkflowSendActionInput } from 'src/engine/core-modules/workflow/dtos/test-workflow-send-action.input';
 import { WorkflowFormNotifyTestService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-notify-test.service';
 import { WorkflowAiAgentTestService } from 'src/engine/core-modules/workflow/services/workflow-ai-agent-test.service';
+import { WorkflowSendActionTestService } from 'src/engine/core-modules/workflow/services/workflow-send-action-test.service';
 import { UpdateWorkflowRunStepInput } from 'src/engine/core-modules/workflow/dtos/update-workflow-run-step.input';
 import { UpdateWorkflowVersionStepInput } from 'src/engine/core-modules/workflow/dtos/update-workflow-version-step.input';
 import { UpdateWorkflowVersionTriggerInput } from 'src/engine/core-modules/workflow/dtos/update-workflow-version-trigger.input';
@@ -60,6 +63,7 @@ export class WorkflowVersionStepResolver {
     private readonly connectedAccountMetadataService: ConnectedAccountMetadataService,
     private readonly workflowFormNotifyTestService: WorkflowFormNotifyTestService,
     private readonly workflowAiAgentTestService: WorkflowAiAgentTestService,
+    private readonly workflowSendActionTestService: WorkflowSendActionTestService,
   ) {}
 
   // Related to https://github.com/twentyhq/private-issues/issues/478
@@ -226,6 +230,17 @@ export class WorkflowVersionStepResolver {
       fields: input.fields,
       notifyOnPending: input.notifyOnPending,
       variableValues: input.variableValues ?? {},
+    });
+  }
+
+  @Mutation(() => TestWorkflowSendActionDTO)
+  async testWorkflowSendAction(
+    @AuthWorkspace() workspace: WorkspaceEntity,
+    @Args('input') input: TestWorkflowSendActionInput,
+  ): Promise<TestWorkflowSendActionDTO> {
+    return this.workflowSendActionTestService.test({
+      workspaceId: workspace.id,
+      input,
     });
   }
 

@@ -669,6 +669,12 @@ export class OutreachCommandController {
     const { workspaceId, workspaceMemberId } =
       await this.resolveSenderProfileAuthContext(body, request);
 
+    console.log('body', body);
+    console.log('workspaceId', workspaceId);
+    console.log('workspaceMemberId', workspaceMemberId);
+    console.log('linkedinProfileText', body.linkedinProfileText);
+    console.log('collateralText', body.collateralText);
+    console.log('senderNotes', body.senderNotes);
     try {
       return await this.outreachSenderProfileService.draftSenderProfile({
         workspaceId,

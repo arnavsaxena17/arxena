@@ -96,6 +96,7 @@ const StyledTableWrapper = styled.div`
   flex-direction: column;
   height: 100%;
   min-height: 0;
+  min-width: 0;
   position: relative;
   width: 100%;
 `;
@@ -104,7 +105,9 @@ const StyledTableContainer = styled.div`
   flex: 1;
   height: 100%;
   min-height: 0;
-  overflow: auto;
+  min-width: 0;
+  /* Handsontable .wtHolder owns scroll; avoid nested page-level expansion */
+  overflow: hidden;
   position: relative;
   width: 100%;
   .handsontable {
@@ -2214,6 +2217,7 @@ export const DataTable = forwardRef<
           colHeaders={colHeaders}
           afterGetColHeader={afterGetColHeader}
           rowHeaders={true}
+          width="100%"
           height="100%"
           themeName={
             colorScheme === 'dark' ? 'ht-theme-main-dark' : 'ht-theme-main'

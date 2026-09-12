@@ -7,25 +7,20 @@ export const OUTREACH_WF_ERROR_HANDLING = {
 
 export const OUTREACH_WF_MEMBER_STEP_ID =
   'b8e1d001-4a11-4c11-8c11-000000000001';
-export const OUTREACH_WF_PROFILE_STEP_ID =
-  'b8e1d002-4a22-4c22-8c22-000000000002';
-/** Separate member/profile path for "no company name" so IF_ELSE skip does not kill the company path join. */
+/** Separate member path for "no company name" so IF_ELSE skip does not kill the company path join. */
 export const OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID =
   'c7a10007-4a11-4c11-8c11-000000000001';
-export const OUTREACH_WF_PROFILE_NO_COMPANY_STEP_ID =
-  'c7a10008-4a22-4c22-8c22-000000000002';
 
 export const OUTREACH_WF_AGENT_LINKEDIN = '__AGENT_linkedin_message__';
 export const OUTREACH_WF_AGENT_EMAIL = '__AGENT_fallback_email__';
 export const OUTREACH_WF_AGENT_REPLY = '__AGENT_reply__';
 export const OUTREACH_WF_AGENT_EXTRACT = '__AGENT_extract_signals__';
+export const OUTREACH_WF_AGENT_QUALIFY = '__AGENT_qualify_prospect__';
 
 export const OUTREACH_WF_HARVEST_PROJECT_ID = '__PROJECT_OUTREACH_HARVEST__';
 
 export const OUTREACH_WF_FIELD = {
   candidateId: '__FIELD_candidate.id__',
-  memberId: '__FIELD_workspaceMember.id__',
-  profileMemberId: '__FIELD_workspaceMember.id__',
   chatCandidateId: '__FIELD_chatMessage.candidateId__',
   chatCreatedAt: '__FIELD_chatMessage.createdAt__',
   outreachSequenceStage: '__FIELD_candidate.outreachSequenceStage__',
@@ -225,11 +220,17 @@ export const gtmWfMemberId = (
   memberStepId: string = OUTREACH_WF_MEMBER_STEP_ID,
 ) => v(memberStepId, 'first.id');
 
-export const gtmWfProfilePhone = () =>
-  v(OUTREACH_WF_PROFILE_STEP_ID, 'first.phoneNumber');
+export const gtmWfMemberPhone = (
+  memberStepId: string = OUTREACH_WF_MEMBER_STEP_ID,
+) => v(memberStepId, 'first.phoneNumber');
 
-export const gtmWfProfileEmail = () =>
-  v(OUTREACH_WF_PROFILE_STEP_ID, 'first.userEmail');
+export const gtmWfMemberEmail = (
+  memberStepId: string = OUTREACH_WF_MEMBER_STEP_ID,
+) => v(memberStepId, 'first.userEmail');
+
+export const gtmWfMemberSenderProfile = (
+  memberStepId: string = OUTREACH_WF_MEMBER_STEP_ID,
+) => v(memberStepId, 'first.outreachSenderProfile');
 
 export const gtmWfFindId = (findStepId: string) => v(findStepId, 'first.id');
 
@@ -667,8 +668,8 @@ export const gtmWfFormStep = ({
           detailsTemplate,
           whatsappOfficialRegistryName: 'wf_form_boolean_text',
           recipients: {
-            WHATSAPP_OFFICIAL: gtmWfProfilePhone(),
-            WHATSAPP_UNIPILE: gtmWfProfilePhone(),
+            WHATSAPP_OFFICIAL: gtmWfMemberPhone(),
+            WHATSAPP_UNIPILE: gtmWfMemberPhone(),
           },
         },
         errorHandlingOptions: OUTREACH_WF_ERROR_HANDLING,
@@ -846,37 +847,24 @@ export const gtmWfSendWhatsappMessageStep = ({
     nextStepIds,
   );
 
-export const gtmWfMemberAndProfileSteps = (
+// Arx sender fields (phone, outreachSenderProfile, Unipile ids) live on
+// workspaceMember after the profile fold — one FIND is enough.
+export const gtmWfMemberStep = (
   nextStepIds: string[],
   {
     memberStepId = OUTREACH_WF_MEMBER_STEP_ID,
-    profileStepId = OUTREACH_WF_PROFILE_STEP_ID,
     memberStepName = 'Load workspace member',
-    profileStepName = 'Load workspace member profile',
   }: {
     memberStepId?: string;
-    profileStepId?: string;
     memberStepName?: string;
-    profileStepName?: string;
   } = {},
-): StepBase[] => [
+): StepBase =>
   gtmWfFindRecordsStep({
     id: memberStepId,
     name: memberStepName,
     objectName: 'workspaceMember',
-    nextStepIds: [profileStepId],
-  }),
-  gtmWfFindRecordsStep({
-    id: profileStepId,
-    name: profileStepName,
-    objectName: 'workspaceMember',
-    fieldMetadataId: OUTREACH_WF_FIELD.profileMemberId,
-    filterValue: gtmWfMemberId(memberStepId),
-    filterLabel: 'Workspace Member',
-    filterType: 'UUID',
     nextStepIds,
-  }),
-];
+  });
 
 export const gtmWfDatabaseEventTrigger = ({
   name,

@@ -64,6 +64,12 @@ const OUTREACH_CANDIDATE_RECORD_INPUT = {
   objectNameSingular: 'candidate',
 };
 
+const OUTREACH_WORKSPACE_MEMBER_RECORD_INPUT = {
+  type: 'record' as const,
+  label: 'Workspace member',
+  objectNameSingular: 'workspaceMember',
+};
+
 const OUTREACH_PERSON_EXPERIENCE_OUTPUT = {
   type: 'array' as const,
   label: 'Employment history',
@@ -283,16 +289,13 @@ export const getOutreachLogicFunctionDefinitions = (
           {
             type: 'object',
             properties: {
-              workspaceMemberId: {
-                type: 'string',
-                label: 'Workspace member ID',
-              },
+              workspaceMemberId: OUTREACH_WORKSPACE_MEMBER_RECORD_INPUT,
               linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
               linkedinProfileId: {
                 type: 'string',
                 label: 'LinkedIn profile ID',
               },
-              candidateId: { type: 'string', label: 'Candidate ID' },
+              candidateId: OUTREACH_CANDIDATE_RECORD_INPUT,
             },
           },
         ],
@@ -388,16 +391,13 @@ export const getOutreachLogicFunctionDefinitions = (
           {
             type: 'object',
             properties: {
-              workspaceMemberId: {
-                type: 'string',
-                label: 'Workspace member ID',
-              },
+              workspaceMemberId: OUTREACH_WORKSPACE_MEMBER_RECORD_INPUT,
               linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
               linkedinProfileId: {
                 type: 'string',
                 label: 'LinkedIn profile ID',
               },
-              candidateId: { type: 'string', label: 'Candidate ID' },
+              candidateId: OUTREACH_CANDIDATE_RECORD_INPUT,
             },
           },
         ],
@@ -426,7 +426,7 @@ export const getOutreachLogicFunctionDefinitions = (
       id: ids.searchPeopleId,
       name: OUTREACH_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
       description:
-        'Search people via People API (search only, does not enroll). Pass naturalLanguage, a pasted LinkedIn search URL (searchUrl), and optional company/location/limit. Uses Unipile when the workspace member profile has a LinkedIn Unipile account, otherwise Harvest.',
+        'Search people via People API (search only, does not enroll). Pass naturalLanguage, a pasted LinkedIn search URL (searchUrl), and optional company/location/limit. Uses Unipile when the workspace member has a LinkedIn Unipile account, otherwise Harvest.',
       sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
         OUTREACH_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
       ),
@@ -709,10 +709,7 @@ export const getOutreachLogicFunctionDefinitions = (
           {
             type: 'object',
             properties: {
-              workspaceMemberId: {
-                type: 'string',
-                label: 'Workspace member ID',
-              },
+              workspaceMemberId: OUTREACH_WORKSPACE_MEMBER_RECORD_INPUT,
               linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
               linkedinProfileId: {
                 type: 'string',
@@ -781,16 +778,13 @@ export const getOutreachLogicFunctionDefinitions = (
           {
             type: 'object',
             properties: {
-              workspaceMemberId: {
-                type: 'string',
-                label: 'Workspace member ID',
-              },
+              workspaceMemberId: OUTREACH_WORKSPACE_MEMBER_RECORD_INPUT,
               linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
               linkedinProfileId: {
                 type: 'string',
                 label: 'LinkedIn profile ID',
               },
-              candidateId: { type: 'string', label: 'Candidate ID' },
+              candidateId: OUTREACH_CANDIDATE_RECORD_INPUT,
               limit: { type: 'number', label: 'Limit' },
             },
           },
@@ -846,10 +840,7 @@ export const getOutreachLogicFunctionDefinitions = (
               companyName: { type: 'string', label: 'Company name' },
               website: { type: 'string', label: 'Website / domain' },
               linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
-              workspaceMemberId: {
-                type: 'string',
-                label: 'Workspace member ID',
-              },
+              workspaceMemberId: OUTREACH_WORKSPACE_MEMBER_RECORD_INPUT,
               accountId: { type: 'string', label: 'Account ID' },
             },
           },
@@ -1018,7 +1009,7 @@ export const getOutreachLogicFunctionDefinitions = (
           {
             type: 'object',
             properties: {
-              candidateId: { type: 'string', label: 'Candidate ID' },
+              candidateId: OUTREACH_CANDIDATE_RECORD_INPUT,
               linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
               wantEmail: { type: 'boolean', label: 'Want email' },
               wantPhone: { type: 'boolean', label: 'Want phone' },
@@ -1057,10 +1048,7 @@ export const getOutreachLogicFunctionDefinitions = (
           {
             type: 'object',
             properties: {
-              workspaceMemberId: {
-                type: 'string',
-                label: 'Workspace member ID',
-              },
+              workspaceMemberId: OUTREACH_WORKSPACE_MEMBER_RECORD_INPUT,
               days: { type: 'number', label: 'Days ahead' },
               slotMinutes: { type: 'number', label: 'Slot minutes' },
             },

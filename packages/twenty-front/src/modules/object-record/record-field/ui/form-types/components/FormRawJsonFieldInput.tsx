@@ -7,14 +7,17 @@ import { useTextVariableEditor } from '@/object-record/record-field/ui/form-type
 import { type VariablePickerComponent } from '@/object-record/record-field/ui/form-types/types/VariablePickerComponent';
 import { InputHint } from '@/ui/input/components/InputHint';
 import { InputLabel } from '@/ui/input/components/InputLabel';
+import { isString } from '@sniptt/guards';
 import { useId } from 'react';
-import { isDefined } from 'twenty-shared/utils';
+import { isDefined, isPlainObject } from 'twenty-shared/utils';
+import { type JsonValue } from 'type-fest';
 import { turnIntoEmptyStringIfWhitespacesOnly } from '~/utils/string/turnIntoEmptyStringIfWhitespacesOnly';
 
 type FormRawJsonFieldInputProps = {
   label?: string;
   error?: string;
-  defaultValue: string | null | undefined;
+  // UPDATE_RECORD / CREATE_RECORD can persist RAW_JSON as an object
+  defaultValue: JsonValue | undefined;
   onChange: (value: string | null) => void;
   onBlur?: () => void;
   readonly?: boolean;
@@ -36,11 +39,20 @@ export const FormRawJsonFieldInput = ({
 }: FormRawJsonFieldInputProps) => {
   const instanceId = useId();
 
+  // Editor expects a string; workflow steps often store RAW_JSON as objects
+  const stringDefaultValue = isString(defaultValue)
+    ? defaultValue
+    : Array.isArray(defaultValue) || isPlainObject(defaultValue)
+      ? JSON.stringify(defaultValue, null, 2)
+      : isDefined(defaultValue)
+        ? `${defaultValue}`
+        : undefined;
+
   const editor = useTextVariableEditor({
     placeholder: placeholder ?? t`Enter a JSON object`,
     multiline: true,
     readonly,
-    defaultValue: defaultValue ?? undefined,
+    defaultValue: stringDefaultValue,
     onUpdate: (editor) => {
       const text = turnIntoEmptyStringIfWhitespacesOnly(editor.getText());
 

@@ -9,6 +9,7 @@ import {
   buildOutreachFirstMessagePrompt,
   buildOutreachPostReplyFollowUpPrompt,
   buildOutreachQualifyProspectPrompt,
+  buildOutreachSharedSenderContextPrompt,
 } from 'src/engine/core-modules/outreach-command/prompts/outreach-sender-agnostic.prompt';
 import {
   OUTREACH_ENRICH_CONTACT_SAMPLE_OUTPUT,
@@ -25,6 +26,7 @@ import {
   OUTREACH_WF_AGENT_EMAIL,
   OUTREACH_WF_AGENT_EXTRACT,
   OUTREACH_WF_AGENT_LINKEDIN,
+  OUTREACH_WF_AGENT_QUALIFY,
   OUTREACH_WF_AGENT_REPLY,
   OUTREACH_WF_AI_EMAIL_OUTPUT,
   OUTREACH_WF_AI_EXTRACT_OUTPUT,
@@ -35,8 +37,6 @@ import {
   OUTREACH_WF_HARVEST_PROJECT_ID,
   OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID,
   OUTREACH_WF_MEMBER_STEP_ID,
-  OUTREACH_WF_PROFILE_NO_COMPANY_STEP_ID,
-  OUTREACH_WF_PROFILE_STEP_ID,
   OUTREACH_WF_ERROR_HANDLING,
   type OutreachWfFindRecordFilter,
   gtmWfAiAgentStep,
@@ -53,9 +53,10 @@ import {
   gtmWfMultiIfElseStep,
   gtmWfLogicFunctionStep,
   gtmWfManualTrigger,
-  gtmWfMemberAndProfileSteps,
+  gtmWfMemberEmail,
+  gtmWfMemberSenderProfile,
+  gtmWfMemberStep,
   gtmWfMemberId,
-  gtmWfProfileEmail,
   gtmWfSelectIsValue,
   gtmWfSendLinkedInMessageStep,
   gtmWfSendEmailStep,
@@ -248,8 +249,7 @@ const IDS = {
   stageFilterMeetingBooked: '60a10108-aaaa-4fcb-a7d8-17a7736ed045',
 };
 
-const senderJson = () =>
-  `{{${OUTREACH_WF_PROFILE_STEP_ID}.first.outreachSenderProfile}}`;
+const senderJson = () => gtmWfMemberSenderProfile();
 const prospectEnrichment = (findId: string) =>
   gtmWfFindField(findId, 'outreachProspectEnrichment');
 
@@ -905,9 +905,9 @@ const repliedBranchSteps = () => [
         location: '',
         startsAt: `{{${IDS.validateSignals}.startsAt}}`,
         timeZone: '',
-        attendees: `${gtmWfFindField(IDS.repliedFind, 'email.primaryEmail')}, ${gtmWfProfileEmail()}`,
+        attendees: `${gtmWfFindField(IDS.repliedFind, 'email.primaryEmail')}, ${gtmWfMemberEmail()}`,
         isFullDay: false,
-        description: `{{${OUTREACH_WF_PROFILE_STEP_ID}.first.outreachSenderProfile.meeting.agenda_template}}`,
+        description: `{{${OUTREACH_WF_MEMBER_STEP_ID}.first.outreachSenderProfile.meeting.agenda_template}}`,
         addConferencing: true,
         sendInvitations: true,
         connectedAccountId: '',
@@ -1212,9 +1212,9 @@ const repliedBranchSteps = () => [
 
 // QUEUED entry: qualify/enrich, company dedupe, connection note, LinkedIn
 // connection, then email fallback.
-// hoistedMember=true means member/profile are loaded once above the stage router,
+// hoistedMember=true means workspace member is loaded once above the stage router,
 // so both send-connection variants read the shared load and the duplicate
-// "no company" member/profile pair disappears.
+// "no company" member step disappears.
 const queuedBranchSteps = ({ hoistedMember }: { hoistedMember: boolean }) => [
   candidateFind(
     IDS.queuedFind,
@@ -1224,12 +1224,10 @@ const queuedBranchSteps = ({ hoistedMember }: { hoistedMember: boolean }) => [
   ...(hoistedMember
     ? []
     : [
-        ...gtmWfMemberAndProfileSteps([IDS.queuedFetchProfile]),
-        ...gtmWfMemberAndProfileSteps([IDS.draftConnectNoteNoCompany], {
+        gtmWfMemberStep([IDS.queuedFetchProfile]),
+        gtmWfMemberStep([IDS.draftConnectNoteNoCompany], {
           memberStepId: OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID,
-          profileStepId: OUTREACH_WF_PROFILE_NO_COMPANY_STEP_ID,
           memberStepName: 'Load workspace member (no company)',
-          profileStepName: 'Load workspace member profile (no company)',
         }),
       ]),
   gtmWfLogicFunctionStep({
@@ -1260,7 +1258,7 @@ const queuedBranchSteps = ({ hoistedMember }: { hoistedMember: boolean }) => [
         `Title: ${gtmWfFindField(IDS.queuedFind, 'jobTitle')}`,
       ].join('\n'),
     }),
-    agentId: OUTREACH_WF_AGENT_EXTRACT,
+    agentId: OUTREACH_WF_AGENT_QUALIFY,
     outputSchema: OUTREACH_WF_AI_QUALIFY_OUTPUT,
     nextStepIds: [IDS.qualifyGoIf],
   }),
@@ -1625,10 +1623,10 @@ const meetingBookedBranchSteps = () => [
     id: IDS.draftReminder,
     name: 'Draft meeting reminder',
     prompt: [
-      `SENDER_JSON: ${senderJson()}`,
+      buildOutreachSharedSenderContextPrompt(senderJson()),
+      '',
       'Write a short LinkedIn meeting reminder (≤30 words).',
       `Name: ${gtmWfFindField(IDS.meetingBookedFind, 'name')}`,
-      `Product: {{${OUTREACH_WF_PROFILE_STEP_ID}.first.outreachSenderProfile.offer.product_name}}`,
       'Remind them of the walkthrough. One ask only. Return JSON: { "message": "<body>" }',
     ].join('\n'),
     agentId: OUTREACH_WF_AGENT_LINKEDIN,
@@ -1667,10 +1665,10 @@ const meetingBookedBranchSteps = () => [
     id: IDS.draftNoShow,
     name: 'Draft no-show ping',
     prompt: [
-      `SENDER_JSON: ${senderJson()}`,
+      buildOutreachSharedSenderContextPrompt(senderJson()),
+      '',
       'Write a short LinkedIn no-show ping (≤40 words). Polite, one ask to reschedule.',
       `Name: ${gtmWfFindField(IDS.meetingBookedFind, 'name')}`,
-      `Product: {{${OUTREACH_WF_PROFILE_STEP_ID}.first.outreachSenderProfile.offer.product_name}}`,
       'Return JSON: { "message": "<body>" }',
     ].join('\n'),
     agentId: OUTREACH_WF_AGENT_LINKEDIN,
@@ -1709,10 +1707,10 @@ const meetingBookedBranchSteps = () => [
     id: IDS.draftReschedule,
     name: 'Draft reschedule offer',
     prompt: [
-      `SENDER_JSON: ${senderJson()}`,
+      buildOutreachSharedSenderContextPrompt(senderJson()),
+      '',
       'Write a short LinkedIn reschedule offer (≤40 words). Offer to pick a new time.',
       `Name: ${gtmWfFindField(IDS.meetingBookedFind, 'name')}`,
-      `Product: {{${OUTREACH_WF_PROFILE_STEP_ID}.first.outreachSenderProfile.offer.product_name}}`,
       'Return JSON: { "message": "<body>" }',
     ].join('\n'),
     agentId: OUTREACH_WF_AGENT_LINKEDIN,
@@ -1869,7 +1867,7 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
       nextStepIds: [OUTREACH_WF_MEMBER_STEP_ID],
     }),
     steps: [
-      ...gtmWfMemberAndProfileSteps([IDS.stageRouter]),
+      gtmWfMemberStep([IDS.stageRouter]),
       gtmWfMultiIfElseStep({
         id: IDS.stageRouter,
         name: 'Route by outreach stage',
@@ -1938,7 +1936,7 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
   //   FAILED_ENRICH / WAITING_REPLY / FAILED_NO_REPLY stamps.
   // - The router is IF_ELSE, not FILTER. A FILTER first would skip-cascade the whole
   //   run and kill the accepted / replied branches.
-  // - Member + profile load once above the router, so the branches share no
+  // - Workspace member loads once above the router, so the branches share no
   //   downstream step ids and no IF_ELSE join can be cascade-skipped.
   //
   // TODO: before publishing, add a QUEUED re-entry guard. Under candidate.upserted a
@@ -1956,7 +1954,7 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
       nextStepIds: [OUTREACH_WF_MEMBER_STEP_ID],
     }),
     steps: [
-      ...gtmWfMemberAndProfileSteps([IDS.stageRouter]),
+      gtmWfMemberStep([IDS.stageRouter]),
       gtmWfMultiIfElseStep({
         id: IDS.stageRouter,
         name: 'Route by outreach stage',

@@ -87,10 +87,54 @@ describe('applyOutreachNativeLogicFunctionInputSchema', () => {
     });
   });
 
+  it('promotes candidate and workspace member pickers for fetch-linkedin-messages', () => {
+    const leftoverFetchMessagesSchema: InputSchema = [
+      {
+        type: 'object',
+        properties: {
+          workspaceMemberId: {
+            type: 'string',
+            label: 'Workspace member ID',
+          },
+          linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
+          linkedinProfileId: {
+            type: 'string',
+            label: 'LinkedIn profile ID',
+          },
+          candidateId: { type: 'string', label: 'Candidate ID' },
+          limit: { type: 'number', label: 'Limit' },
+        },
+      },
+    ];
+
+    const result = applyOutreachNativeLogicFunctionInputSchema(
+      'fetch-linkedin-messages',
+      leftoverFetchMessagesSchema,
+    );
+
+    expect(Object.keys(result?.[0].properties ?? {})).toEqual([
+      'candidateId',
+      'workspaceMemberId',
+      'linkedinUrl',
+      'linkedinProfileId',
+      'limit',
+    ]);
+    expect(result?.[0].properties?.candidateId).toEqual({
+      type: 'record',
+      label: 'Candidate',
+      objectNameSingular: 'candidate',
+    });
+    expect(result?.[0].properties?.workspaceMemberId).toEqual({
+      type: 'record',
+      label: 'Workspace member',
+      objectNameSingular: 'workspaceMember',
+    });
+  });
+
   it('leaves unrelated logic functions unchanged', () => {
     expect(
       applyOutreachNativeLogicFunctionInputSchema(
-        'fetch-linkedin-profile',
+        'some-custom-logic-function',
         leftoverUploadProfilesSchema,
       ),
     ).toBe(leftoverUploadProfilesSchema);

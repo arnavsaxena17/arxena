@@ -8,6 +8,7 @@ import { type ObjectLiteral } from 'typeorm';
 import { isUserAuthContext } from 'src/engine/core-modules/auth/guards/is-user-auth-context.guard';
 import { getWorkspaceAuthContext } from 'src/engine/core-modules/auth/storage/workspace-auth-context.storage';
 import { NativeLogicFunctionRegistry } from 'src/engine/core-modules/logic-function/logic-function-executor/native-logic-function.registry';
+import { maybeWithLlmFormattedText } from 'src/engine/core-modules/outreach-command/utils/with-llm-formatted-text.util';
 import {
   findWorkflowStepOrThrow,
   getWorkflowStepsToHydrateForPrompt,
@@ -52,6 +53,41 @@ export class WorkflowAiAgentTestContextService {
     candidateId: string;
     prompt: string;
   }): Promise<string> {
+    const context = await this.buildContextForCandidate({
+      workspaceId,
+      workflowVersionId,
+      stepId,
+      candidateId,
+      inputSource: prompt,
+    });
+
+    const { resolvedPrompt, missingVariablePaths } =
+      resolveWorkflowPromptFromContext({ prompt, context });
+
+    if (missingVariablePaths.length > 0) {
+      throw new Error(
+        `Could not fill prompt chips from this candidate: ${missingVariablePaths.join(', ')}`,
+      );
+    }
+
+    return resolvedPrompt;
+  }
+
+  // Shared by AI agent Test and send-action Test: hydrate trigger + FIND /
+  // native logic predecessors so step input chips can resolve.
+  async buildContextForCandidate({
+    workspaceId,
+    workflowVersionId,
+    stepId,
+    candidateId,
+    inputSource,
+  }: {
+    workspaceId: string;
+    workflowVersionId: string;
+    stepId: string;
+    candidateId: string;
+    inputSource: unknown;
+  }): Promise<Record<string, unknown>> {
     if (!isValidUuid(candidateId)) {
       throw new Error('Candidate id must be a valid UUID');
     }
@@ -97,7 +133,10 @@ export class WorkflowAiAgentTestContextService {
         const previousSteps = getWorkflowStepsToHydrateForPrompt({
           steps,
           currentStep,
-          prompt,
+          prompt:
+            typeof inputSource === 'string'
+              ? inputSource
+              : JSON.stringify(inputSource ?? {}),
         });
 
         for (const previousStep of previousSteps) {
@@ -114,16 +153,7 @@ export class WorkflowAiAgentTestContextService {
           }
         }
 
-        const { resolvedPrompt, missingVariablePaths } =
-          resolveWorkflowPromptFromContext({ prompt, context });
-
-        if (missingVariablePaths.length > 0) {
-          throw new Error(
-            `Could not fill prompt chips from this candidate: ${missingVariablePaths.join(', ')}`,
-          );
-        }
-
-        return resolvedPrompt;
+        return context;
       },
       authContext,
     );
@@ -268,7 +298,11 @@ export class WorkflowAiAgentTestContextService {
       throw new Error(`${logicFunction.name} failed: ${nativeErrorMessage}`);
     }
 
-    return nativeResult;
+    if (!isDefined(nativeResult) || typeof nativeResult !== 'object') {
+      return nativeResult;
+    }
+
+    return maybeWithLlmFormattedText(logicFunction.name, nativeResult);
   }
 
   private readNativeLogicFunctionError(

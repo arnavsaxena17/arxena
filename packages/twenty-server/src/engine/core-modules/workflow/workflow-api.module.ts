@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { WorkflowApprovalModule } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-approval.module';
 import { LogicFunctionExecutorModule } from 'src/engine/core-modules/logic-function/logic-function-executor/logic-function-executor.module';
 import { ToolModule } from 'src/engine/core-modules/tool/tool.module';
+import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { WorkflowTriggerController } from 'src/engine/core-modules/workflow/controllers/workflow-trigger.controller';
 import { WorkflowBuilderResolver } from 'src/engine/core-modules/workflow/resolvers/workflow-builder.resolver';
 import { WorkflowTriggerResolver } from 'src/engine/core-modules/workflow/resolvers/workflow-trigger.resolver';
@@ -12,10 +13,12 @@ import { WorkflowVersionStepResolver } from 'src/engine/core-modules/workflow/re
 import { WorkflowVersionResolver } from 'src/engine/core-modules/workflow/resolvers/workflow-version.resolver';
 import { WorkflowAiAgentTestContextService } from 'src/engine/core-modules/workflow/services/workflow-ai-agent-test-context.service';
 import { WorkflowAiAgentTestService } from 'src/engine/core-modules/workflow/services/workflow-ai-agent-test.service';
+import { WorkflowSendActionTestService } from 'src/engine/core-modules/workflow/services/workflow-send-action-test.service';
 import { WorkflowVersionCoreModule } from 'src/engine/core-modules/workflow/workflow-version-core.module';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AiAgentExecutionModule } from 'src/engine/metadata-modules/ai/ai-agent-execution/ai-agent-execution.module';
 import { AgentEntity } from 'src/engine/metadata-modules/ai/ai-agent/entities/agent.entity';
+import { ConnectedAccountEntity } from 'src/engine/metadata-modules/connected-account/entities/connected-account.entity';
 import { ConnectedAccountMetadataModule } from 'src/engine/metadata-modules/connected-account/connected-account-metadata.module';
 import { WorkspaceManyOrAllFlatEntityMapsCacheModule } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.module';
 import { LogicFunctionModule } from 'src/engine/metadata-modules/logic-function/logic-function.module';
@@ -31,7 +34,12 @@ import { WorkflowTriggerModule } from 'src/modules/workflow/workflow-trigger/wor
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([WorkspaceEntity, AgentEntity]),
+    TypeOrmModule.forFeature([
+      WorkspaceEntity,
+      AgentEntity,
+      ConnectedAccountEntity,
+      UserWorkspaceEntity,
+    ]),
     AiAgentExecutionModule,
     WorkflowTriggerModule,
     WorkflowBuilderModule,
@@ -58,6 +66,7 @@ import { WorkflowTriggerModule } from 'src/modules/workflow/workflow-trigger/wor
     WorkflowVersionResolver,
     WorkflowAiAgentTestService,
     WorkflowAiAgentTestContextService,
+    WorkflowSendActionTestService,
     provideWorkspaceScopedRepository(AgentEntity),
   ],
 })

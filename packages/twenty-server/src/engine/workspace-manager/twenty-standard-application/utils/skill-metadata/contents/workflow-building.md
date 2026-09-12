@@ -151,6 +151,30 @@ For GTM harvest / enroll / LinkedIn sequencer graphs, also load `outreach` (do n
 
 To discover existing workflows in the workspace, use `list_workflows`. Use this before modifying a workflow when the user refers to it by name rather than id — resolve the `id` here first, then call `get_workflow_current_version` with it.
 
+### Spill / parse shapes (no `result` key)
+
+| Tool | Keys |
+| --- | --- |
+| `get_workflow_current_version` | `{ success, workflowVersion }` — use `workflowVersion.steps` / `.trigger` / `.nextStepIds` |
+| `get_workflow_run` | `{ success, workflowRun }` |
+
+Spill: mount `files: [{ fileId: outputRef.fileId, filename: "w.json" }]`, then `json.load` → `/home/user/w.json`. Never open `/var/folders/...`. Never `payload['result']` (LinkedIn search only).
+
+## Surgical edits (avoid collateral damage)
+
+When the user asks to remove or bypass a **small gate** inside a large workflow (e.g. one-prospect-per-company before connection request):
+
+1. **Rewire, then delete only the gated steps.** Prefer `update_workflow_version_step` on the **upstream** step so its `nextStepIds` / IF_ELSE `branches[].nextStepIds` skip straight to the keep path. Only then `delete_workflow_version_step` on the now-unreachable gate steps.
+2. **Never delete `SEND_*` / `SEND_EMAIL` / FORM / AI_AGENT leaves** unless the user explicitly named those step ids. Channel routers (`Reply on last inbound channel`, `Send post-reply FU* on preferred channel`) and their email / WhatsApp / LinkedIn children are protected by default.
+3. **Empty else arms are intentional.** IF_ELSE branches with `nextStepIds: []` (or an `EMPTY` "Add an Action" placeholder) mean "do nothing on that branch" — e.g. `Send details by email?` else, `Referral has email?` else, stage-router default. Do **not** treat canvas "Add an Action" placeholders as missing sends and do **not** delete sibling SEND_* to "clean them up".
+4. **Delete cascades insert EMPTY.** `delete_workflow_version_step` on the only child of an IF/ELSE branch replaces it with EMPTY "Add an Action". If you meant to skip the branch, rewire the parent first; if you see new EMPTY nodes outside your target list, stop and restore.
+5. **One draft, verify before activate.** After edits, re-fetch the draft and assert:
+   - every protected SEND_* id from the pre-edit inventory still exists;
+   - each still has a parent edge (branch `nextStepIds` or `nextStepIds`);
+   - the upstream step you rewired points at the intended keep path (not `[]`, not EMPTY);
+   - step count drop matches only the listed gate steps (plus any EMPTY replacements you expected).
+6. **Scope the edit.** Do not touch the REPLIED / post-reply / meeting trees when the request is about the QUEUED connection path (and vice versa).
+
 ## Deleting Workflows
 
 To delete a workflow entirely, use `delete_workflow` with its `workflowId`. This also removes the workflow's versions, runs and automated triggers, and deactivates any active version — it is a destructive, irreversible operation.
