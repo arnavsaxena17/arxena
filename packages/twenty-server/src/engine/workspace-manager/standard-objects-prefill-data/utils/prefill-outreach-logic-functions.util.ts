@@ -17,6 +17,8 @@ import {
   OUTREACH_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME,
   OUTREACH_ENRICH_CONTACT_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_EMAIL_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_PHONE_LOGIC_FUNCTION_NAME,
   OUTREACH_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
   OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
@@ -36,6 +38,8 @@ import {
   OUTREACH_UPLOAD_PROFILES_SAMPLE_OUTPUT,
   OUTREACH_UPSERT_COMPANIES_SAMPLE_OUTPUT,
   OUTREACH_ENRICH_CONTACT_SAMPLE_OUTPUT,
+  OUTREACH_FETCH_EMAIL_SAMPLE_OUTPUT,
+  OUTREACH_FETCH_PHONE_SAMPLE_OUTPUT,
   OUTREACH_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
   OUTREACH_DETECT_FAKE_PROFILES_SAMPLE_OUTPUT,
   OUTREACH_FILTER_PROFILES_SAMPLE_OUTPUT,
@@ -172,6 +176,14 @@ export const getOutreachLogicFunctionIds = (workspaceId: string) => ({
   ),
   enrichContactId: uuidv5(
     `${workspaceId}:enrich-contact`,
+    OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  fetchEmailId: uuidv5(
+    `${workspaceId}:fetch-email`,
+    OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  fetchPhoneId: uuidv5(
+    `${workspaceId}:fetch-phone`,
     OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
   ),
   getCalendarAvailabilityId: uuidv5(
@@ -1039,13 +1051,13 @@ export const getOutreachLogicFunctionDefinitions = (
       id: ids.enrichContactId,
       name: OUTREACH_ENRICH_CONTACT_LOGIC_FUNCTION_NAME,
       description:
-        'Find email/phone for a candidate via contact enrichment waterfall. Pass candidateId and/or linkedinUrl. Stamps enrichStatus and EMAIL_ENRICHING / FAILED_ENRICH.',
+        'Fetch email and phone for a candidate via contact enrichment waterfall. Pass candidateId and/or linkedinUrl. Optional wantEmail/wantPhone (both default on). Stamps enrichStatus.',
       sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
         OUTREACH_ENRICH_CONTACT_LOGIC_FUNCTION_NAME,
       ),
       workflowActionTriggerSettings: {
-        label: 'Enrich contact',
-        icon: 'IconMail',
+        label: 'Fetch contacts',
+        icon: 'IconAddressBook',
         inputSchema: [
           {
             type: 'object',
@@ -1072,6 +1084,80 @@ export const getOutreachLogicFunctionDefinitions = (
           },
         ],
         sampleOutput: OUTREACH_ENRICH_CONTACT_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.fetchEmailId,
+      name: OUTREACH_FETCH_EMAIL_LOGIC_FUNCTION_NAME,
+      description:
+        'Fetch email only for a candidate via contact enrichment waterfall. Pass candidateId and/or linkedinUrl.',
+      sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
+        OUTREACH_FETCH_EMAIL_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Fetch email',
+        icon: 'IconMail',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              candidateId: OUTREACH_CANDIDATE_RECORD_INPUT,
+              linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              email: { type: 'string', label: 'Email' },
+              emails: { type: 'array', label: 'Emails' },
+              phones: { type: 'array', label: 'Phones' },
+              source: { type: 'string', label: 'Source' },
+              enrichStatus: { type: 'string', label: 'Enrich status' },
+              error: { type: 'string', label: 'Error' },
+            },
+          },
+        ],
+        sampleOutput: OUTREACH_FETCH_EMAIL_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.fetchPhoneId,
+      name: OUTREACH_FETCH_PHONE_LOGIC_FUNCTION_NAME,
+      description:
+        'Fetch phone only for a candidate via contact enrichment waterfall. Pass candidateId and/or linkedinUrl.',
+      sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
+        OUTREACH_FETCH_PHONE_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Fetch phone',
+        icon: 'IconPhone',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              candidateId: OUTREACH_CANDIDATE_RECORD_INPUT,
+              linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              email: { type: 'string', label: 'Email' },
+              emails: { type: 'array', label: 'Emails' },
+              phones: { type: 'array', label: 'Phones' },
+              source: { type: 'string', label: 'Source' },
+              enrichStatus: { type: 'string', label: 'Enrich status' },
+              error: { type: 'string', label: 'Error' },
+            },
+          },
+        ],
+        sampleOutput: OUTREACH_FETCH_PHONE_SAMPLE_OUTPUT,
       },
     },
     {

@@ -14,8 +14,14 @@ import {
   ArxDownloadCandidateCVsCommand,
   ArxDownloadShortlistCommand,
   ArxFetchContactDetailsCommand,
+  ArxFetchEmailCommand,
+  ArxFetchPhoneCommand,
+  ArxFetchLinkedinMessagesCommand,
+  ArxFetchLinkedinPostsCommand,
+  ArxFetchLinkedinProfileCommand,
   ArxMoveCandidatesToAnotherProjectCommand,
   ArxPopulateShortlistCommand,
+  ArxQualifyProspectCommand,
   ArxRefreshChatCountsCommand,
   ArxRefreshChatStatusesCommand,
   ArxResetMessagesFromWhatsappCommand,
@@ -335,10 +341,22 @@ export const ENGINE_COMPONENT_KEY_COMPONENT_MAP: Record<
   [EngineComponentKey.ARX_FETCH_CONTACT_DETAILS]: (
     <ArxFetchContactDetailsCommand />
   ),
+  [EngineComponentKey.ARX_FETCH_EMAIL]: <ArxFetchEmailCommand />,
+  [EngineComponentKey.ARX_FETCH_PHONE]: <ArxFetchPhoneCommand />,
   [EngineComponentKey.ARX_CHECK_DATA_INTEGRITY_OF_PROJECT]: (
     <ArxCheckDataIntegrityOfProjectCommand />
   ),
   [EngineComponentKey.ARX_TRANSCRIBE_CALL]: <ArxTranscribeCallCommand />,
+  [EngineComponentKey.ARX_QUALIFY_PROSPECT]: <ArxQualifyProspectCommand />,
+  [EngineComponentKey.ARX_FETCH_LINKEDIN_MESSAGES]: (
+    <ArxFetchLinkedinMessagesCommand />
+  ),
+  [EngineComponentKey.ARX_FETCH_LINKEDIN_POSTS]: (
+    <ArxFetchLinkedinPostsCommand />
+  ),
+  [EngineComponentKey.ARX_FETCH_LINKEDIN_PROFILE]: (
+    <ArxFetchLinkedinProfileCommand />
+  ),
 
   // Deprecated keys kept for backward compatibility until migration runs
   [EngineComponentKey.DELETE_SINGLE_RECORD]: <DeleteRecordsCommand />,

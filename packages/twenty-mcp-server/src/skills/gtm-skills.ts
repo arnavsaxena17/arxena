@@ -58,6 +58,8 @@ learn_tools({
     "search_people_index",
     "check_contact_availability",
     "fetch_contacts",
+    "fetch_email",
+    "fetch_phone",
     "create_candidate"
   ]
 })
@@ -72,7 +74,7 @@ learn_tools({
 | People API | \`search_people_api\` / \`search_people_by_job_title\` | Taxonomy-backed |
 | Internal index | \`search_people_index\` | Workspace ES index |
 
-Dedup by name + email/linkedin before \`create_candidate\`. Enrich with \`check_contact_availability\` then \`fetch_contacts\`.
+Dedup by name + email/linkedin before \`create_candidate\`. Enrich with \`check_contact_availability\` then \`fetch_email\` / \`fetch_phone\` / \`fetch_contacts\`.
 `,
   },
   {

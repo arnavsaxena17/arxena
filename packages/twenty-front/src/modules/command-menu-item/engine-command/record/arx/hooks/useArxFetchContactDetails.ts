@@ -46,7 +46,13 @@ const getResponseErrorMessage = async (response: Response) => {
   return `Request failed (${response.status})`;
 };
 
-export const useArxFetchContactDetails = () => {
+export const useArxFetchContactDetails = ({
+  wantEmail = true,
+  wantPhone = true,
+}: {
+  wantEmail?: boolean;
+  wantPhone?: boolean;
+} = {}) => {
   const location = useLocation();
   const onProjectRoute = isProjectRoute(location.pathname);
   const tableState = useAtomStateValue(tableStateAtom);
@@ -94,6 +100,13 @@ export const useArxFetchContactDetails = () => {
     },
     [tokenPair?.accessOrWorkspaceAgnosticToken?.token],
   );
+
+  const fetchLabel =
+    wantEmail && wantPhone
+      ? 'contacts'
+      : wantEmail
+        ? 'emails'
+        : 'phones';
 
   const fetchContactDetails = useCallback(
     async (
@@ -164,8 +177,8 @@ export const useArxFetchContactDetails = () => {
         },
         body: JSON.stringify({
           linkedinUrls,
-          wantEmail: true,
-          wantPhone: true,
+          wantEmail,
+          wantPhone,
         }),
       });
 
@@ -185,7 +198,7 @@ export const useArxFetchContactDetails = () => {
 
       if (fetchData.jobId) {
         onComplete(
-          `Fetching contacts for ${linkedinUrls.length} candidates...`,
+          `Fetching ${fetchLabel} for ${linkedinUrls.length} candidates...`,
           false,
         );
 
@@ -239,7 +252,7 @@ export const useArxFetchContactDetails = () => {
               }
 
               onComplete(
-                `Successfully fetched and updated contacts for ${updatedCount}/${Object.keys(results).length} candidates`,
+                `Successfully fetched and updated ${fetchLabel} for ${updatedCount}/${Object.keys(results).length} candidates`,
                 false,
               );
             } else if (progress.status === 'failed') {
@@ -282,18 +295,21 @@ export const useArxFetchContactDetails = () => {
       }
 
       onComplete(
-        `Successfully fetched and updated contacts for ${updatedCount}/${linkedinUrls.length} candidates`,
+        `Successfully fetched and updated ${fetchLabel} for ${updatedCount}/${linkedinUrls.length} candidates`,
         false,
       );
       return true;
     },
     [
       clearPolling,
+      fetchLabel,
       location.pathname,
       onProjectRoute,
       tableState?.selectedRowIds,
       tokenPair?.accessOrWorkspaceAgnosticToken?.token,
       updateCandidateFromEnrichment,
+      wantEmail,
+      wantPhone,
     ],
   );
 

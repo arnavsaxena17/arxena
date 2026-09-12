@@ -37,6 +37,8 @@ import { type OutreachSenderProfile } from 'src/engine/core-modules/outreach-com
 import { extractOutreachSenderCollateralText } from 'src/engine/core-modules/outreach-command/utils/extract-outreach-sender-collateral-text.util';
 import { OutreachProjectOutreachControlService } from 'src/engine/core-modules/outreach-command/services/outreach-project-outreach-control.service';
 import { OutreachCandidateJourneyService } from 'src/engine/core-modules/outreach-command/services/outreach-candidate-journey.service';
+import { QualifyProspectService } from 'src/engine/core-modules/outreach-command/services/qualify-prospect.service';
+import { LinkedinSelectionFetchService } from 'src/engine/core-modules/outreach-command/services/linkedin-selection-fetch.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 @Controller('outreach-command')
@@ -59,6 +61,8 @@ export class OutreachCommandController {
     private readonly gtmFilterProfilesService: OutreachFilterProfilesService,
     private readonly gtmProjectOutreachControlService: OutreachProjectOutreachControlService,
     private readonly outreachCandidateJourneyService: OutreachCandidateJourneyService,
+    private readonly qualifyProspectService: QualifyProspectService,
+    private readonly linkedinSelectionFetchService: LinkedinSelectionFetchService,
   ) {}
 
   @Get('cache/companies')
@@ -354,6 +358,156 @@ export class OutreachCommandController {
       workspaceId,
       input: body,
     });
+  }
+
+  @Post('qualify-prospect')
+  async qualifyProspect(
+    @Body()
+    body: {
+      workspaceMemberId?: string;
+      candidateIds?: string[];
+      personIds?: string[];
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    try {
+      const { workspaceId, workspaceMemberId } =
+        await this.resolveSenderProfileAuthContext(body, request);
+
+      return await this.qualifyProspectService.execute({
+        workspaceId,
+        input: {
+          workspaceMemberId,
+          candidateIds: body.candidateIds,
+          personIds: body.personIds,
+        },
+      });
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      this.logger.error('Qualify prospect request failed', error);
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Qualify prospect failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('fetch-linkedin-messages-for-selection')
+  async fetchLinkedinMessagesForSelection(
+    @Body()
+    body: {
+      workspaceMemberId?: string;
+      candidateIds?: string[];
+      personIds?: string[];
+      forceRefresh?: boolean;
+      limit?: number;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    try {
+      const { workspaceId, workspaceMemberId } =
+        await this.resolveSenderProfileAuthContext(body, request);
+
+      return await this.linkedinSelectionFetchService.fetchMessages({
+        workspaceId,
+        input: {
+          workspaceMemberId,
+          candidateIds: body.candidateIds,
+          personIds: body.personIds,
+          forceRefresh: body.forceRefresh,
+          limit: body.limit,
+        },
+      });
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      this.logger.error('Fetch LinkedIn messages for selection failed', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Fetch LinkedIn messages failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('fetch-linkedin-posts-for-selection')
+  async fetchLinkedinPostsForSelection(
+    @Body()
+    body: {
+      workspaceMemberId?: string;
+      candidateIds?: string[];
+      personIds?: string[];
+      postsLimit?: number;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    try {
+      const { workspaceId, workspaceMemberId } =
+        await this.resolveSenderProfileAuthContext(body, request);
+
+      return await this.linkedinSelectionFetchService.fetchPosts({
+        workspaceId,
+        input: {
+          workspaceMemberId,
+          candidateIds: body.candidateIds,
+          personIds: body.personIds,
+          postsLimit: body.postsLimit,
+        },
+      });
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      this.logger.error('Fetch LinkedIn posts for selection failed', error);
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Fetch LinkedIn posts failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('fetch-linkedin-profiles-for-selection')
+  async fetchLinkedinProfilesForSelection(
+    @Body()
+    body: {
+      workspaceMemberId?: string;
+      candidateIds?: string[];
+      personIds?: string[];
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    try {
+      const { workspaceId, workspaceMemberId } =
+        await this.resolveSenderProfileAuthContext(body, request);
+
+      return await this.linkedinSelectionFetchService.fetchProfiles({
+        workspaceId,
+        input: {
+          workspaceMemberId,
+          candidateIds: body.candidateIds,
+          personIds: body.personIds,
+        },
+      });
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      this.logger.error('Fetch LinkedIn profiles for selection failed', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Fetch LinkedIn profiles failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Post('visit-linkedin-profile')

@@ -576,7 +576,9 @@ export class SystemPromptBuilderService {
       - \`list_org_chart_positions\`
       - \`get_org_chart_node_people\`
       - \`check_contact_availability\`
-      - \`fetch_contacts\``;
+      - \`fetch_contacts\`
+      - \`fetch_email\`
+      - \`fetch_phone\``;
   }
 
   buildToolCatalogSection(

@@ -1975,6 +1975,23 @@ export const FETCH_CONTACTS_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[]
     },
   ] as const;
 
+/** Descriptor for fetch_email / fetch_phone (flags fixed in the handler). */
+export const FETCH_EMAIL_OR_PHONE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
+  [
+    {
+      key: 'linkedinUrl',
+      type: 'string',
+      description: 'Single LinkedIn profile URL',
+      required: false,
+    },
+    {
+      key: 'linkedinUrls',
+      type: 'object',
+      description: 'Array of LinkedIn profile URLs',
+      required: false,
+    },
+  ] as const;
+
 /** Descriptor for fetch_contacts_from_arxena tool input. */
 export const FETCH_CONTACTS_FROM_ARXENA_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
   [

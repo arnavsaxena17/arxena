@@ -15,6 +15,8 @@ import {
   OUTREACH_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME,
   OUTREACH_ENRICH_CONTACT_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_EMAIL_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_PHONE_LOGIC_FUNCTION_NAME,
   OUTREACH_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
   OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
@@ -232,6 +234,38 @@ export class OutreachLogicFunctionNativeExecutor
           linkedinUrl?: string;
           wantEmail?: boolean;
           wantPhone?: boolean;
+        },
+      });
+    }
+
+    if (name === OUTREACH_FETCH_EMAIL_LOGIC_FUNCTION_NAME) {
+      const input = payload as {
+        candidateId?: string;
+        linkedinUrl?: string;
+      };
+
+      return this.enrichContactService.execute({
+        workspaceId,
+        input: {
+          ...input,
+          wantEmail: true,
+          wantPhone: false,
+        },
+      });
+    }
+
+    if (name === OUTREACH_FETCH_PHONE_LOGIC_FUNCTION_NAME) {
+      const input = payload as {
+        candidateId?: string;
+        linkedinUrl?: string;
+      };
+
+      return this.enrichContactService.execute({
+        workspaceId,
+        input: {
+          ...input,
+          wantEmail: false,
+          wantPhone: true,
         },
       });
     }

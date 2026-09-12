@@ -455,7 +455,21 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
     pack: 'enrichment',
     label: 'Fetch Contacts',
     description:
-      'Waterfall fetch email/phone across providers. Prefer over single-provider fetch tools unless the user names a provider.',
+      'Waterfall fetch email and phone across providers. Prefer over single-provider fetch tools unless the user names a provider. Use fetch_email / fetch_phone when only one is needed.',
+  },
+  {
+    name: 'fetch_email',
+    pack: 'enrichment',
+    label: 'Fetch Email',
+    description:
+      'Waterfall fetch email only (wantEmail=true, wantPhone=false). Prefer over fetch_contacts when the user only needs email.',
+  },
+  {
+    name: 'fetch_phone',
+    pack: 'enrichment',
+    label: 'Fetch Phone',
+    description:
+      'Waterfall fetch phone only (wantEmail=false, wantPhone=true). Prefer over fetch_contacts when the user only needs phone.',
   },
   {
     name: 'fetch_contacts_from_arxena',

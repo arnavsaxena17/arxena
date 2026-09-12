@@ -60,7 +60,10 @@ export const isExecutableGtmToolName = (
   toolName: string,
   executableByName: Map<string, McpTool>,
 ): boolean => {
-  if (META_TOOL_NAMES.has(toolName) || OPENAI_TOP_LEVEL_TOOL_NAMES.has(toolName)) {
+  if (
+    META_TOOL_NAMES.has(toolName) ||
+    OPENAI_TOP_LEVEL_TOOL_NAMES.has(toolName)
+  ) {
     return false;
   }
 
@@ -392,7 +395,7 @@ export const buildMetaServerInstructions = (): string => {
     'Skills:',
     skillLines,
     '',
-    'Preferred starters: list_org_chart_positions, get_org_chart_node_people, check_contact_availability, fetch_contacts.',
+    'Preferred starters: list_org_chart_positions, get_org_chart_node_people, check_contact_availability, fetch_email, fetch_phone, fetch_contacts.',
     'Browse packs with get_tool_catalog when needed. Never learn the entire catalog at once.',
   ].join('\n');
 };

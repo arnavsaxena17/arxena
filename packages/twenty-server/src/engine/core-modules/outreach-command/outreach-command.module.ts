@@ -37,6 +37,8 @@ import { OutreachFakeProfileDetectorService } from 'src/engine/core-modules/outr
 import { OutreachFilterProfilesService } from 'src/engine/core-modules/outreach-command/services/outreach-filter-profiles.service';
 import { OutreachMessagePersistService } from 'src/engine/core-modules/outreach-command/services/outreach-message-persist.service';
 import { OutreachSenderProfileService } from 'src/engine/core-modules/outreach-command/services/outreach-sender-profile.service';
+import { QualifyProspectService } from 'src/engine/core-modules/outreach-command/services/qualify-prospect.service';
+import { LinkedinSelectionFetchService } from 'src/engine/core-modules/outreach-command/services/linkedin-selection-fetch.service';
 import { PeopleApiModule } from 'src/engine/core-modules/people-api/people-api.module';
 import { CompanyApiModule } from 'src/engine/core-modules/company-api/company-api.module';
 import { JobsApiModule } from 'src/engine/core-modules/jobs-api/jobs-api.module';
@@ -183,6 +185,8 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     OutreachInboundReplyWindowService,
     OutreachInboundEmailListener,
     OutreachSenderProfileService,
+    QualifyProspectService,
+    LinkedinSelectionFetchService,
   ],
   exports: [
     OutreachCommandMaterializeService,
@@ -216,6 +220,8 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     OutreachWorkflowRunRepairService,
     OutreachInboundReplyWindowService,
     OutreachSenderProfileService,
+    QualifyProspectService,
+    LinkedinSelectionFetchService,
   ],
 })
 export class OutreachCommandModule {}

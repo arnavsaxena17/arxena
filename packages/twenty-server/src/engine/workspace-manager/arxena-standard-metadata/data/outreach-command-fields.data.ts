@@ -399,6 +399,30 @@ export const getOutreachCommandFieldsData = (
     },
   },
   {
+    objectName: 'candidate',
+    field: {
+      description:
+        'Cached LinkedIn profile JSON from Unipile for this prospect (mirrors workspaceMember.linkedinProfile)',
+      icon: 'IconBrandLinkedin',
+      label: 'LinkedIn Profile',
+      name: 'linkedinProfile',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'RAW_JSON',
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
+      description:
+        'Cached LinkedIn posts fetched for this prospect (normalized posts + mostRecentPost)',
+      icon: 'IconNews',
+      label: 'LinkedIn Posts',
+      name: 'linkedinPosts',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'RAW_JSON',
+    },
+  },
+  {
     objectName: 'person',
     field: {
       description: 'Unipile LinkedIn provider id (ACoAA…). Distinct from linkedinLink.',

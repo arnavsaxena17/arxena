@@ -185,15 +185,21 @@ export class EnrichContactService {
             await this.contactEnrichmentWaterfallService.fetchContacts(
               linkedinUrl,
               {
+                // Match REST / CMI defaults: both on unless explicitly false.
                 wantEmail: input.wantEmail !== false,
-                wantPhone: input.wantPhone === true,
+                wantPhone: input.wantPhone !== false,
               },
             );
 
+          const wantEmail = input.wantEmail !== false;
+          const wantPhone = input.wantPhone !== false;
           const emails = result.emails.filter(isNonEmptyString);
           const phones = result.phones.filter(isNonEmptyString);
           const email = emails[0] ?? '';
-          const found = emails.length > 0;
+          const foundEmail = emails.length > 0;
+          const foundPhone = phones.length > 0;
+          const found =
+            (wantEmail && foundEmail) || (wantPhone && foundPhone);
           const enrichStatus = found ? 'FOUND' : 'FAILED';
 
           await this.stampCandidate(
@@ -203,7 +209,7 @@ export class EnrichContactService {
             found ? undefined : 'FAILED_ENRICH',
           );
 
-          if (found && isNonEmptyString(personId)) {
+          if (foundEmail && isNonEmptyString(personId)) {
             const personRepository =
               await this.globalWorkspaceOrmManager.getRepository<PersonRecord>(
                 workspaceId,
@@ -226,7 +232,13 @@ export class EnrichContactService {
             phones,
             source: result.source,
             enrichStatus,
-            error: found ? '' : 'No email found',
+            error: found
+              ? ''
+              : wantEmail && !wantPhone
+                ? 'No email found'
+                : wantPhone && !wantEmail
+                  ? 'No phone found'
+                  : 'No email or phone found',
           };
         } catch (error) {
           this.logger.error('enrich-contact failed', error);

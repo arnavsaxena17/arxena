@@ -8,9 +8,15 @@ export { ArxDeleteCandidatesAndPeopleCommand } from './ArxDeleteCandidatesAndPeo
 export { ArxDownloadAsExcelCommand } from './ArxDownloadAsExcelCommand';
 export { ArxDownloadCandidateCVsCommand } from './ArxDownloadCandidateCVsCommand';
 export { ArxDownloadShortlistCommand } from './ArxDownloadShortlistCommand';
-export { ArxFetchContactDetailsCommand } from './ArxFetchContactDetailsCommand';
+export { ArxFetchContactDetailsCommand, ArxFetchEmailCommand, ArxFetchPhoneCommand } from './ArxFetchContactDetailsCommand';
+export {
+  ArxFetchLinkedinMessagesCommand,
+  ArxFetchLinkedinPostsCommand,
+  ArxFetchLinkedinProfileCommand,
+} from './ArxFetchLinkedinSelectionCommands';
 export { ArxMoveCandidatesToAnotherProjectCommand } from './ArxMoveCandidatesToAnotherProjectCommand';
 export { ArxPopulateShortlistCommand } from './ArxPopulateShortlistCommand';
+export { ArxQualifyProspectCommand } from './ArxQualifyProspectCommand';
 export { ArxRefreshChatCountsCommand } from './ArxRefreshChatCountsCommand';
 export { ArxRefreshChatStatusesCommand } from './ArxRefreshChatStatusesCommand';
 export { ArxResetMessagesFromWhatsappCommand } from './ArxResetMessagesFromWhatsappCommand';

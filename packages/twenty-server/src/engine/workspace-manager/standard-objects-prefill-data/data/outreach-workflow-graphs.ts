@@ -1514,6 +1514,8 @@ const queuedBranchSteps = ({ hoistedMember }: { hoistedMember: boolean }) => [
         IDS.reloadAfterWait,
         'linkedinUrl.primaryLinkUrl',
       ),
+      wantEmail: true,
+      wantPhone: false,
     },
     sampleOutput: OUTREACH_ENRICH_CONTACT_SAMPLE_OUTPUT,
     nextStepIds: [IDS.enrichIf],

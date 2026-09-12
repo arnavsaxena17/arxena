@@ -62,7 +62,7 @@ Exact persist tool names live inside the loaded skill — do not invent them.
 Prefer pack intent over inventing tool names. Exact names come from the compact index and from loaded skills:
 
 - prospecting — people/company search (pack id; describe as people/company search to users)
-- enrichment — emails/phones (prefer waterfall \`check_contact_availability\`, \`fetch_contacts\` unless the user names a provider)
+- enrichment — emails/phones (prefer waterfall \`check_contact_availability\`, then \`fetch_email\` / \`fetch_phone\` / \`fetch_contacts\` unless the user names a provider)
 - orgchart — account maps (\`list_org_chart_positions\` then \`get_org_chart_node_people\`; \`highlight_org_chart\` to paint the open canvas)
 - outreach — messaging
 - accounts — companies/contacts/projects

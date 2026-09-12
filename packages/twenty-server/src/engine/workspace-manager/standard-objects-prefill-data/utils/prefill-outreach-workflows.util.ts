@@ -4,6 +4,7 @@ import { AUTO_SELECT_SMART_MODEL_ID } from 'twenty-shared/constants';
 import { type EntityManager } from 'typeorm';
 import { v5 } from 'uuid';
 
+import { OUTREACH_QUALIFY_PROSPECT_SYSTEM_PROMPT } from 'src/engine/core-modules/outreach-command/schemas/outreach-qualify-prospect-llm.schema';
 import { getOutreachLogicFunctionIds } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-logic-functions.util';
 import { OUTREACH_WORKFLOW_GRAPH_TEMPLATES } from 'src/engine/workspace-manager/standard-objects-prefill-data/data/outreach-workflow-graphs';
 import { SEEDED_OUTREACH_WORKFLOW } from 'src/engine/workspace-manager/standard-objects-prefill-data/constants/seeded-outreach-workflow-names.const';
@@ -440,8 +441,7 @@ const upsertAgents = async ({
       name: 'gtm-outreach-qualify-prospect',
       label: 'GTM qualify prospect',
       modelId: AUTO_SELECT_SMART_MODEL_ID,
-      prompt:
-        'You decide whether to contact a prospect for the sender offer and extract personalization hooks. Return JSON only: { "go", "score", "segment", "reason", "first_name", "honorific", "company_short", "industry_phrase", "hooks", "likely_systems", "matching_problem_statement", "referral_source" }. hooks is a JSON string of at most 3 { "text", "source" } objects. Never invent facts.',
+      prompt: OUTREACH_QUALIFY_PROSPECT_SYSTEM_PROMPT,
       responseFormat: { type: 'json', schema: QUALIFY_PROSPECT_SCHEMA },
       universalIdentifier: v5(
         `gtmOutreachAgentUniversal:qualifyProspect:${workspaceId}`,

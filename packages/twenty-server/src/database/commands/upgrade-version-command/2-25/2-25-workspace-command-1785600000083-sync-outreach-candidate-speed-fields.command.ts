@@ -1,7 +1,10 @@
 import { Command } from 'nest-commander';
 
 import { isNonEmptyString } from '@sniptt/guards';
-import { backfillOutreachActionTimestampsFromCandidate } from 'twenty-shared/arx';
+import {
+  mergeLegacyCandidateFieldsIntoAnalytics,
+  parseOutreachAnalytics,
+} from 'twenty-shared/arx';
 import { type ObjectLiteral } from 'typeorm';
 
 import { ProvisionedWorkspaceCommandRunner } from 'src/database/commands/command-runners/provisioned-workspace.command-runner';
@@ -21,9 +24,7 @@ type CandidateRow = ObjectLiteral & {
   lastOutboundAt?: string | Date | null;
   lastInboundAt?: string | Date | null;
   outreachSequenceStage?: string | null;
-  outreachSpeedTimestamps?: unknown;
-  daysToFirstContact?: number | null;
-  daysToMeetingBooked?: number | null;
+  outreachAnalytics?: unknown;
 };
 
 const toIso = (value: string | Date | null | undefined): string | null => {
@@ -74,55 +75,51 @@ export class SyncOutreachCandidateSpeedFieldsCommand extends ProvisionedWorkspac
     const authContext = buildSystemAuthContext(workspaceId);
     let stampedCandidates = 0;
 
-    await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
-      async () => {
-        const candidateRepository =
-          await this.globalWorkspaceOrmManager.getRepository<CandidateRow>(
-            workspaceId,
-            'candidate',
-            { shouldBypassPermissionChecks: true },
-          );
-        const candidates = await candidateRepository.find({ take: 20_000 });
+    await this.globalWorkspaceOrmManager.executeInWorkspaceContext(async () => {
+      const candidateRepository =
+        await this.globalWorkspaceOrmManager.getRepository<CandidateRow>(
+          workspaceId,
+          'candidate',
+          { shouldBypassPermissionChecks: true },
+        );
+      const candidates = await candidateRepository.find({ take: 20_000 });
 
-        for (const candidate of candidates) {
-          if (
-            !candidateStageImpliesOutbound(candidate.outreachSequenceStage) &&
-            !isNonEmptyString(toIso(candidate.firstOutboundAt)) &&
-            candidate.outreachSequenceStage !== 'MEETING_BOOKED'
-          ) {
-            continue;
-          }
-
-          const speedUpdate = backfillOutreachActionTimestampsFromCandidate({
-            createdAt: toIso(candidate.createdAt),
-            firstOutboundAt: toIso(candidate.firstOutboundAt),
-            lastOutboundAt: toIso(candidate.lastOutboundAt),
-            lastInboundAt: toIso(candidate.lastInboundAt),
-            updatedAt: toIso(candidate.updatedAt),
-            outreachSequenceStage: candidate.outreachSequenceStage,
-            existingTimestamps: candidate.outreachSpeedTimestamps,
-          });
-
-          const hasSpeedMetrics =
-            candidate.daysToFirstContact !== null &&
-            candidate.daysToFirstContact !== undefined &&
-            candidate.outreachSpeedTimestamps !== null &&
-            candidate.outreachSpeedTimestamps !== undefined;
-
-          if (
-            hasSpeedMetrics &&
-            candidate.daysToFirstContact === speedUpdate.daysToFirstContact &&
-            candidate.daysToMeetingBooked === speedUpdate.daysToMeetingBooked
-          ) {
-            continue;
-          }
-
-          await candidateRepository.update(candidate.id, speedUpdate);
-          stampedCandidates += 1;
+      for (const candidate of candidates) {
+        if (
+          !candidateStageImpliesOutbound(candidate.outreachSequenceStage) &&
+          !isNonEmptyString(toIso(candidate.firstOutboundAt)) &&
+          candidate.outreachSequenceStage !== 'MEETING_BOOKED'
+        ) {
+          continue;
         }
-      },
-      authContext,
-    );
+
+        // Standard field is outreachAnalytics (RAW_JSON); do not write the
+        // removed outreachSpeedTimestamps dual-key from the shared helper.
+        const outreachAnalytics = mergeLegacyCandidateFieldsIntoAnalytics({
+          createdAt: toIso(candidate.createdAt),
+          firstOutboundAt: toIso(candidate.firstOutboundAt),
+          lastOutboundAt: toIso(candidate.lastOutboundAt),
+          lastInboundAt: toIso(candidate.lastInboundAt),
+          outreachSequenceStage: candidate.outreachSequenceStage,
+          existingAnalytics: candidate.outreachAnalytics,
+        });
+
+        const existing = parseOutreachAnalytics(candidate.outreachAnalytics);
+
+        if (
+          candidate.outreachAnalytics !== null &&
+          candidate.outreachAnalytics !== undefined &&
+          JSON.stringify(existing) === JSON.stringify(outreachAnalytics)
+        ) {
+          continue;
+        }
+
+        await candidateRepository.update(candidate.id, {
+          outreachAnalytics,
+        });
+        stampedCandidates += 1;
+      }
+    }, authContext);
 
     this.logger.log(
       `Backfilled outreach speed metrics on ${stampedCandidates} candidates for workspace ${workspaceId}`,
