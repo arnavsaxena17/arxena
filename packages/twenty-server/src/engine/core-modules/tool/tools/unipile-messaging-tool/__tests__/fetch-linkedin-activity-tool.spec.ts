@@ -117,7 +117,8 @@ describe('FetchLinkedinActivityTool', () => {
     );
   });
 
-  it('returns mock payload when mock Unipile is enabled', async () => {
+  // temporary: mock gate bypassed for fetch posts/activity — restore when re-enabling
+  it.skip('returns mock payload when mock Unipile is enabled', async () => {
     isFeatureEnabled.mockImplementation(
       async (key: FeatureFlagKey) =>
         key === FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,

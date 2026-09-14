@@ -69,11 +69,12 @@ export class FetchLinkedinActivityTool implements Tool {
     }
 
     try {
+      // temporary: `&& false` forces real Unipile; send/connect stay mock-gated
       const isMockUnipileEnabled =
-        await this.featureFlagService.isFeatureEnabled(
+        (await this.featureFlagService.isFeatureEnabled(
           FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
           context.workspaceId,
-        );
+        )) && false;
 
       if (isMockUnipileEnabled) {
         const mockPost = {

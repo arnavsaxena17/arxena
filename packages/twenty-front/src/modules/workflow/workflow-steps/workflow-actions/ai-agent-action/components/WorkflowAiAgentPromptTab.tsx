@@ -59,8 +59,11 @@ export const WorkflowAiAgentPromptTab = ({
 }: WorkflowAiAgentPromptTabProps) => {
   const [workflowAiAgentActionAgent, setWorkflowAiAgentActionAgent] =
     useAtomState(workflowAiAgentActionAgentState);
+  // DeepSeek is the seeded extract-signals model; keep it selectable even if
+  // the workspace has not enabled it in Settings → AI models.
   const { options: aiModelOptions, pinnedOption } = useAiModelOptions({
     variant: 'pinned-default',
+    extraModelIds: ['openrouter/deepseek/deepseek-v4-flash-0731'],
   });
   const [updateAgent] = useMutation(UpdateOneAgentDocument);
 

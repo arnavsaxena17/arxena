@@ -121,11 +121,12 @@ export class LinkedinSelectionFetchService {
       };
     }
 
+    // temporary: `&& false` forces real Unipile; send/connect stay mock-gated
     const isMockUnipileEnabled =
-      await this.featureFlagService.isFeatureEnabled(
+      (await this.featureFlagService.isFeatureEnabled(
         FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
         workspaceId,
-      );
+      )) && false;
 
     const postsLimit = input.postsLimit ?? 20;
 
@@ -326,24 +327,27 @@ export class LinkedinSelectionFetchService {
 
     const authContext = buildSystemAuthContext(workspaceId);
 
-    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(async () => {
-      const candidateRepository =
-        await this.globalWorkspaceOrmManager.getRepository<CandidateRecord>(
-          workspaceId,
-          'candidate',
-          { shouldBypassPermissionChecks: true },
-        );
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const candidateRepository =
+          await this.globalWorkspaceOrmManager.getRepository<CandidateRecord>(
+            workspaceId,
+            'candidate',
+            { shouldBypassPermissionChecks: true },
+          );
 
-      if (candidateIds.length > 0) {
+        if (candidateIds.length > 0) {
+          return candidateRepository.find({
+            where: { id: In(candidateIds) },
+          });
+        }
+
         return candidateRepository.find({
-          where: { id: In(candidateIds) },
+          where: { peopleId: In(personIds) },
         });
-      }
-
-      return candidateRepository.find({
-        where: { peopleId: In(personIds) },
-      });
-    }, authContext);
+      },
+      authContext,
+    );
   }
 
   private async resolveUnipileAccountId({
@@ -355,32 +359,35 @@ export class LinkedinSelectionFetchService {
   }): Promise<string> {
     const authContext = buildSystemAuthContext(workspaceId);
 
-    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(async () => {
-      const memberRepository =
-        await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberArxRecord>(
-          workspaceId,
-          'workspaceMember',
-          { shouldBypassPermissionChecks: true },
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const memberRepository =
+          await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberArxRecord>(
+            workspaceId,
+            'workspaceMember',
+            { shouldBypassPermissionChecks: true },
+          );
+
+        if (isNonEmptyString(workspaceMemberId)) {
+          const member = await memberRepository.findOne({
+            where: { id: workspaceMemberId },
+          });
+          const accountId = member?.linkedinUnipileAccountId?.trim() ?? '';
+
+          if (isNonEmptyString(accountId)) {
+            return accountId;
+          }
+        }
+
+        const members = await memberRepository.find({ where: {}, take: 20 });
+        const withAccount = members.find((member) =>
+          isNonEmptyString(member.linkedinUnipileAccountId),
         );
 
-      if (isNonEmptyString(workspaceMemberId)) {
-        const member = await memberRepository.findOne({
-          where: { id: workspaceMemberId },
-        });
-        const accountId = member?.linkedinUnipileAccountId?.trim() ?? '';
-
-        if (isNonEmptyString(accountId)) {
-          return accountId;
-        }
-      }
-
-      const members = await memberRepository.find({ where: {}, take: 20 });
-      const withAccount = members.find((member) =>
-        isNonEmptyString(member.linkedinUnipileAccountId),
-      );
-
-      return withAccount?.linkedinUnipileAccountId?.trim() ?? '';
-    }, authContext);
+        return withAccount?.linkedinUnipileAccountId?.trim() ?? '';
+      },
+      authContext,
+    );
   }
 
   // Prefer dedicated RAW_JSON columns; also mirror into otherFields when present

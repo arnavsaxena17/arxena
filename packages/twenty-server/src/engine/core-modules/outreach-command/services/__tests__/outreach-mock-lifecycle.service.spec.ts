@@ -9,6 +9,7 @@ import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-gra
 import { OutreachInboundReplyWindowService } from 'src/engine/core-modules/outreach-command/jobs/outreach-inbound-reply-window.job';
 import { OutreachCandidateJourneyService } from 'src/engine/core-modules/outreach-command/services/outreach-candidate-journey.service';
 import { OutreachCommandMaterializeService } from 'src/engine/core-modules/outreach-command/services/outreach-command-materialize.service';
+import { OutreachMessagePersistService } from 'src/engine/core-modules/outreach-command/services/outreach-message-persist.service';
 import { OutreachMockLifecycleService } from 'src/engine/core-modules/outreach-command/services/outreach-mock-lifecycle.service';
 import { UploadProfilesService } from 'src/engine/core-modules/outreach-command/services/upload-profiles.service';
 
@@ -20,6 +21,7 @@ describe('OutreachMockLifecycleService', () => {
   let executeGraphQL: jest.Mock;
   let decidePendingHitlForm: jest.Mock;
   let uploadProfilesExecute: jest.Mock;
+  let appendOutbound: jest.Mock;
 
   beforeEach(async () => {
     applyCandidateEvent = jest.fn().mockResolvedValue(undefined);
@@ -43,6 +45,7 @@ describe('OutreachMockLifecycleService', () => {
       projectId: '11111111-1111-4111-8111-111111111111',
       uploadSessionId: 'session-1',
     });
+    appendOutbound = jest.fn().mockResolvedValue(undefined);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -67,6 +70,10 @@ describe('OutreachMockLifecycleService', () => {
           provide: UploadProfilesService,
           useValue: { execute: uploadProfilesExecute },
         },
+        {
+          provide: OutreachMessagePersistService,
+          useValue: { appendOutbound },
+        },
       ],
     }).compile();
 
@@ -85,6 +92,39 @@ describe('OutreachMockLifecycleService', () => {
       apiToken: 'token',
       messagingChannel: 'LINKEDIN_CONNECT',
     });
+  });
+
+  it('injectGeneratedReply persists an outbound assistant turn', async () => {
+    const result = await service.injectGeneratedReply({
+      workspaceId: 'ws-1',
+      candidateId: 'cand-1',
+      text: '  Thanks for connecting — quick question?  ',
+      channel: 'LINKEDIN',
+    });
+
+    expect(appendOutbound).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        candidateId: 'cand-1',
+        channel: 'LINKEDIN',
+        body: 'Thanks for connecting — quick question?',
+        materializeOutbound: false,
+        externalMessageId: expect.stringMatching(/^mock-outbound-cand-1-/),
+      }),
+    );
+    expect(result).toEqual({
+      ok: true,
+      candidateId: 'cand-1',
+      channel: 'LINKEDIN',
+    });
+  });
+
+  it('resolveTranscriptChannel maps channel aliases', () => {
+    expect(service.resolveTranscriptChannel(undefined)).toBe('LINKEDIN');
+    expect(service.resolveTranscriptChannel('whatsapp')).toBe('WHATSAPP');
+    expect(() => service.resolveTranscriptChannel('sms')).toThrow(
+      /Invalid transcript channel/,
+    );
   });
 
   it('injectReply schedules a LINKEDIN inbound turn', async () => {

@@ -38,6 +38,41 @@ export class OutreachMockController {
     });
   }
 
+  @Post('candidates/:candidateId/generated-reply')
+  async injectGeneratedReply(
+    @Param('candidateId') candidateId: string,
+    @Body()
+    body: { text?: string; channel?: string },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const { workspaceId } = await this.requireAuthWithWorkspace(request);
+    this.requireCandidateId(candidateId);
+
+    if (!isNonEmptyString(body?.text?.trim())) {
+      throw new HttpException('text is required', HttpStatus.BAD_REQUEST);
+    }
+
+    let channel: 'LINKEDIN' | 'WHATSAPP' | 'EMAIL';
+
+    try {
+      channel = this.outreachMockLifecycleService.resolveTranscriptChannel(
+        body?.channel,
+      );
+    } catch (error) {
+      throw new HttpException(
+        error instanceof Error ? error.message : String(error),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return this.outreachMockLifecycleService.injectGeneratedReply({
+      workspaceId,
+      candidateId,
+      text: body.text.trim(),
+      channel,
+    });
+  }
+
   @Post('candidates/:candidateId/reply')
   async injectReply(
     @Param('candidateId') candidateId: string,
@@ -45,9 +80,8 @@ export class OutreachMockController {
     body: { text?: string; delayMinutes?: number },
     @Req() request: { headers?: { authorization?: string } },
   ) {
-    const { apiToken, workspaceId } = await this.requireAuthWithWorkspace(
-      request,
-    );
+    const { apiToken, workspaceId } =
+      await this.requireAuthWithWorkspace(request);
     this.requireCandidateId(candidateId);
 
     if (!isNonEmptyString(body?.text?.trim())) {
@@ -78,9 +112,8 @@ export class OutreachMockController {
     },
     @Req() request: { headers?: { authorization?: string } },
   ) {
-    const { apiToken, workspaceId } = await this.requireAuthWithWorkspace(
-      request,
-    );
+    const { apiToken, workspaceId } =
+      await this.requireAuthWithWorkspace(request);
     this.requireCandidateId(candidateId);
 
     let decision: 'approve' | 'reject' | 'edit';
@@ -126,9 +159,8 @@ export class OutreachMockController {
     @Query('to') to: string | undefined,
     @Req() request: { headers?: { authorization?: string } },
   ) {
-    const { apiToken, workspaceId } = await this.requireAuthWithWorkspace(
-      request,
-    );
+    const { apiToken, workspaceId } =
+      await this.requireAuthWithWorkspace(request);
     this.requireCandidateId(candidateId);
 
     let resetTarget: 'CONNECTION_SENT' | 'QUEUED';
@@ -182,9 +214,9 @@ export class OutreachMockController {
     }
   }
 
-  private requireAuth(request: {
-    headers?: { authorization?: string };
-  }): { apiToken: string } {
+  private requireAuth(request: { headers?: { authorization?: string } }): {
+    apiToken: string;
+  } {
     const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
 
     if (!isNonEmptyString(apiToken)) {

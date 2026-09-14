@@ -1,13 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
-import { graphQltoUpdateOneCandidate, graphqlQueryToRemoveMessages } from 'twenty-shared';
+import {
+  graphQltoUpdateOneCandidate,
+  graphqlQueryToRemoveMessages,
+} from 'twenty-shared';
 import { isDefined, isValidUuid } from 'twenty-shared/utils';
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { OutreachInboundReplyWindowService } from 'src/engine/core-modules/outreach-command/jobs/outreach-inbound-reply-window.job';
 import { OutreachCandidateJourneyService } from 'src/engine/core-modules/outreach-command/services/outreach-candidate-journey.service';
 import { OutreachCommandMaterializeService } from 'src/engine/core-modules/outreach-command/services/outreach-command-materialize.service';
+import {
+  OutreachMessagePersistService,
+  type OutreachTranscriptChannel,
+} from 'src/engine/core-modules/outreach-command/services/outreach-message-persist.service';
 import { UploadProfilesService } from 'src/engine/core-modules/outreach-command/services/upload-profiles.service';
 import {
   buildOutreachMockUploadPeople,
@@ -28,6 +35,7 @@ export class OutreachMockLifecycleService {
     private readonly inboundReplyWindowService: OutreachInboundReplyWindowService,
     private readonly outreachCandidateJourneyService: OutreachCandidateJourneyService,
     private readonly uploadProfilesService: UploadProfilesService,
+    private readonly gtmOutreachMessagePersistService: OutreachMessagePersistService,
   ) {}
 
   async acceptConnection({
@@ -98,6 +106,63 @@ export class OutreachMockLifecycleService {
       candidateId,
       delayMinutes: resolvedDelayMinutes,
     };
+  }
+
+  // Persist an LLM-generated outbound turn into chatMessage for multi-turn
+  // AI agent tests (does not materialize candidate stage / analytics).
+  async injectGeneratedReply({
+    workspaceId,
+    candidateId,
+    text,
+    channel = 'LINKEDIN',
+  }: {
+    workspaceId: string;
+    candidateId: string;
+    text: string;
+    channel?: OutreachTranscriptChannel;
+  }): Promise<{
+    ok: true;
+    candidateId: string;
+    channel: OutreachTranscriptChannel;
+  }> {
+    const content = text.trim();
+
+    await this.gtmOutreachMessagePersistService.appendOutbound({
+      workspaceId,
+      channel,
+      body: content,
+      candidateId,
+      externalMessageId: `mock-outbound-${candidateId}-${Date.now()}`,
+      materializeOutbound: false,
+    });
+
+    this.logger.log(
+      `OUTREACH_MOCK: persisted generated reply for candidate ${candidateId} channel=${channel}`,
+    );
+
+    return {
+      ok: true,
+      candidateId,
+      channel,
+    };
+  }
+
+  resolveTranscriptChannel(
+    channel: string | undefined,
+  ): OutreachTranscriptChannel {
+    const normalized = (channel ?? 'LINKEDIN').trim().toUpperCase();
+
+    if (
+      normalized === 'LINKEDIN' ||
+      normalized === 'WHATSAPP' ||
+      normalized === 'EMAIL'
+    ) {
+      return normalized;
+    }
+
+    throw new Error(
+      `Invalid transcript channel "${channel}". Use LINKEDIN, WHATSAPP, or EMAIL.`,
+    );
   }
 
   async decideHitlForm({
@@ -188,9 +253,7 @@ export class OutreachMockLifecycleService {
       apiToken,
     );
 
-    this.logger.log(
-      `OUTREACH_MOCK: reset candidate ${candidateId} to ${to}`,
-    );
+    this.logger.log(`OUTREACH_MOCK: reset candidate ${candidateId} to ${to}`);
 
     return {
       ok: true,

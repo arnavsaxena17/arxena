@@ -18,8 +18,7 @@ const FRONT_HOST = process.env.FRONT_HOST || 'arxena-4.localhost';
 const GRAPHQL_URL = `${SERVER_URL}/graphql`;
 const API_TOKEN = process.env.API_TOKEN;
 const OUTREACH_WORKFLOW_B_ID =
-  process.env.OUTREACH_WORKFLOW_B_ID ||
-  '6cea6e99-7b72-4d00-963f-6427008ca0ab';
+  process.env.OUTREACH_WORKFLOW_B_ID || '6cea6e99-7b72-4d00-963f-6427008ca0ab';
 
 const PROJECT_NAME = `B/C path matrix · ${new Date()
   .toISOString()
@@ -238,9 +237,7 @@ const createCandidate = async ({
       data: {
         name: seed.name,
         jobTitle: seed.jobTitle,
-        ...(seed.jobCompanyName
-          ? { jobCompanyName: seed.jobCompanyName }
-          : {}),
+        ...(seed.jobCompanyName ? { jobCompanyName: seed.jobCompanyName } : {}),
         email: {
           primaryEmail: `${seed.linkedinSlug}@bc-matrix.test`,
         },
@@ -402,6 +399,8 @@ Drive checklist (mocks):
   Upload:  POST /outreach-mock/projects/:projectId/upload-profiles  { "count": 5 }
   Accept:  POST /outreach-mock/candidates/:id/accept
   Reply:   POST /outreach-mock/candidates/:id/reply  { "text": "…" }
+  Generated reply (persist LLM outbound for next AI test turn):
+           POST /outreach-mock/candidates/:id/generated-reply  { "text": "…", "channel"?: "LINKEDIN"|"WHATSAPP"|"EMAIL" }
   HITL:    POST /outreach-mock/candidates/:id/hitl   { "decision": "approve"|"reject"|"edit", "editedBody"?: "…" }
            aliases: yes | no | change
 

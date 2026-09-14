@@ -50,9 +50,13 @@ export const SettingsAiAgentForm = ({
 }: SettingsAiAgentFormProps) => {
   const { t } = useLingui();
 
-  const { options: modelOptions } = useAiModelOptions();
+  const { options: modelOptions, pinnedOption } = useAiModelOptions({
+    variant: 'pinned-default',
+    extraModelIds: ['openrouter/deepseek/deepseek-v4-flash-0731'],
+  });
 
-  const noModelsAvailable = modelOptions.length === 0;
+  const noModelsAvailable =
+    modelOptions.length === 0 && !isDefined(pinnedOption);
 
   const fillNameFromLabel = (label: string) => {
     isDefined(label) &&
@@ -110,6 +114,7 @@ export const SettingsAiAgentForm = ({
             value={formValues.modelId}
             onChange={(value) => onFieldChange('modelId', value)}
             options={modelOptions}
+            pinnedOption={pinnedOption}
             disabled={noModelsAvailable || disabled}
           />
         )}

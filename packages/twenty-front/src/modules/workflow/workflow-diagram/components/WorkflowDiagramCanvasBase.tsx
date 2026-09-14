@@ -102,9 +102,12 @@ const StyledTagRow = styled.div`
 `;
 
 const defaultFitViewOptions = {
-  minZoom: 1,
-  maxZoom: 1,
+  minZoom: 0.25,
+  maxZoom: 2,
 } satisfies FitViewOptions;
+
+// Current 1x canvas scale remains the starting / default zoom
+const DEFAULT_WORKFLOW_DIAGRAM_ZOOM = 1;
 
 // Top padding so the Draft tag and first nodes clear the canvas chrome
 const WORKFLOW_DIAGRAM_VIEWPORT_TOP_PADDING = 150;
@@ -337,7 +340,8 @@ export const WorkflowDiagramCanvasBase = ({
         {
           x: centeredXPosition,
           y: resetVerticalPosition ? topAlignedYPosition : currentViewport.y,
-          zoom: defaultFitViewOptions.maxZoom,
+          // Keep pinch zoom when recentering (Center / resize / init)
+          zoom: currentViewport.zoom || DEFAULT_WORKFLOW_DIAGRAM_ZOOM,
         },
         { duration: animate ? 300 : 0 },
       );
@@ -626,7 +630,12 @@ export const WorkflowDiagramCanvasBase = ({
         onInit={handleInit}
         minZoom={defaultFitViewOptions.minZoom}
         maxZoom={defaultFitViewOptions.maxZoom}
-        defaultViewport={{ x: 0, y: 150, zoom: defaultFitViewOptions.maxZoom }}
+        defaultViewport={{
+          x: 0,
+          y: 150,
+          zoom: DEFAULT_WORKFLOW_DIAGRAM_ZOOM,
+        }}
+        zoomOnPinch={true}
         nodeTypes={nodeTypes}
         // @ts-expect-error We override Reactflow types for sourceHandle and targetHandle to be required
         edgeTypes={edgeTypes}

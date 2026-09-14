@@ -69,7 +69,10 @@ export const SettingsAgentSettingsTab = ({
   const { openModal } = useModal();
 
   const aiModels = useAtomStateValue(aiModelsState);
-  const { options: activeModelOptions } = useAiModelOptions();
+  const { options: activeModelOptions, pinnedOption } = useAiModelOptions({
+    variant: 'pinned-default',
+    extraModelIds: ['openrouter/deepseek/deepseek-v4-flash-0731'],
+  });
   const currentModelLabel = useAiModelLabel(formValues.modelId);
 
   const currentModel = aiModels.find((m) => m.modelId === formValues.modelId);
@@ -85,7 +88,8 @@ export const SettingsAgentSettingsTab = ({
       ]
     : activeModelOptions;
 
-  const noModelsAvailable = modelOptions.length === 0;
+  const noModelsAvailable =
+    modelOptions.length === 0 && !isDefined(pinnedOption);
 
   const fillNameFromLabel = (label: string) => {
     if (isDefined(label)) {
@@ -142,6 +146,7 @@ export const SettingsAgentSettingsTab = ({
             value={formValues.modelId}
             onChange={(value) => onFieldChange('modelId', value)}
             options={modelOptions}
+            pinnedOption={pinnedOption}
             disabled={noModelsAvailable || disabled}
           />
         )}

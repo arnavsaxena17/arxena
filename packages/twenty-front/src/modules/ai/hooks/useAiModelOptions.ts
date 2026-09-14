@@ -1,4 +1,5 @@
 import { t } from '@lingui/core/macro';
+import { AUTO_SELECT_SMART_MODEL_ID } from 'twenty-shared/constants';
 import { isAutoSelectModelId } from 'twenty-shared/utils';
 import { type SelectOption } from 'twenty-ui/input';
 
@@ -32,14 +33,17 @@ export const useAiModelOptions = ({
     extraModelIds,
   );
 
-  const workspaceSmartModel = aiModels.find(
-    (model) => model.modelId === currentWorkspace?.smartModel,
-  );
+  // Label from workspace.smartModel (concrete or auto-select entry); pin value
+  // is always AUTO_SELECT_SMART_MODEL_ID so seeded agents match the Select.
+  const workspaceSmartModel =
+    aiModels.find((model) => model.modelId === currentWorkspace?.smartModel) ??
+    aiModels.find((model) => model.modelId === AUTO_SELECT_SMART_MODEL_ID);
 
-  const resolvedDefaultModelId = selectableModels.find(
+  const concreteSmartModelIdToHide = selectableModels.find(
     (model) =>
       model.label === workspaceSmartModel?.label &&
-      model.providerName === workspaceSmartModel?.providerName,
+      model.providerName === workspaceSmartModel?.providerName &&
+      !isAutoSelectModelId(model.modelId),
   )?.modelId;
 
   const allOptions = selectableModels
@@ -50,9 +54,11 @@ export const useAiModelOptions = ({
     }))
     .sort((a, b) => a.label.localeCompare(b.label));
 
+  // Pin value must be AUTO_SELECT_SMART_MODEL_ID so seeded agents
+  // (modelId = default-smart-model) show as the workspace default.
   const pinnedOption = workspaceSmartModel
     ? {
-        value: resolvedDefaultModelId ?? workspaceSmartModel.modelId,
+        value: AUTO_SELECT_SMART_MODEL_ID,
         label: workspaceSmartModel.label,
         Icon: getModelIcon(
           workspaceSmartModel.modelFamily,
@@ -63,8 +69,8 @@ export const useAiModelOptions = ({
     : undefined;
 
   const options =
-    variant === 'pinned-default' && resolvedDefaultModelId
-      ? allOptions.filter((model) => model.value !== resolvedDefaultModelId)
+    variant === 'pinned-default' && concreteSmartModelIdToHide
+      ? allOptions.filter((model) => model.value !== concreteSmartModelIdToHide)
       : allOptions;
 
   return {

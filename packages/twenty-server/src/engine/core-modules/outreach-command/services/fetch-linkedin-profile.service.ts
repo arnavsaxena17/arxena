@@ -82,11 +82,12 @@ export class FetchLinkedinProfileService {
     people: Array<Record<string, unknown>>;
     error: string;
   }> {
+    // temporary: `&& false` forces real Unipile; send/connect stay mock-gated
     const isOutreachMockEnabled =
-      await this.featureFlagService.isFeatureEnabled(
+      (await this.featureFlagService.isFeatureEnabled(
         FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
         workspaceId,
-      );
+      )) && false;
 
     if (isOutreachMockEnabled) {
       const identifier =
