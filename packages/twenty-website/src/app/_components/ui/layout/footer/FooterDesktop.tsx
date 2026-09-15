@@ -4,8 +4,8 @@ import styled from '@emotion/styled';
 
 import { COMPANY_INFO } from '@/lib/company-info';
 
-import { openSupportChat } from '../../../support/openSupportChat';
 import { useCookieConsent } from '../../../cookie-consent/CookieConsentProvider';
+import { openSupportChat } from '../../../support/openSupportChat';
 
 import {
   DiscordIcon,
@@ -120,7 +120,7 @@ export const FooterDesktop = ({
           <RightSideFooterLink href="/products">Products</RightSideFooterLink>
           <RightSideFooterLink href="/solutions">Solutions</RightSideFooterLink>
           <RightSideFooterLink href="/pricing">Pricing</RightSideFooterLink>
-          <RightSideFooterLink href="/engage">Engage</RightSideFooterLink>
+          <RightSideFooterLink href="/engage">Outreach</RightSideFooterLink>
           <RightSideFooterLink href="/chrome-extension">
             Chrome extension
           </RightSideFooterLink>

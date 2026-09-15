@@ -7,7 +7,7 @@ import {
 } from 'src/engine/core-modules/outreach-command/prompts/fixtures/outreach-ai-shared.fixtures';
 import { type OutreachAiScenario } from 'src/engine/core-modules/outreach-command/prompts/fixtures/outreach-ai-scenario.types';
 import { OUTREACH_AI_TRANSCRIPTS } from 'src/engine/core-modules/outreach-command/prompts/fixtures/transcripts/outreach-ai-naresh-transcripts';
-import { OUTREACH_DONT_RESPOND_SENTINEL } from 'src/engine/core-modules/outreach-command/prompts/outreach-inbound-reply-next-step.prompt';
+import { OUTREACH_DONT_RESPOND_SENTINEL } from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
 
 const slots = [...OUTREACH_AI_EVAL_SLOTS];
 const slotsJson = OUTREACH_AI_EVAL_SLOTS_JSON;
@@ -70,7 +70,8 @@ export const OUTREACH_AI_SCENARIO_CATALOG: OutreachAiScenario[] = [
     nodeKind: 'extract_inbound_signals',
     priority: 'must',
     description: 'Pulkit vague "tomorrow / second half" → acceptedSlotIndex -1',
-    sourcePublicIdentifier: OUTREACH_AI_TRANSCRIPTS.pulkitVagueTime.sourcePublicIdentifier,
+    sourcePublicIdentifier:
+      OUTREACH_AI_TRANSCRIPTS.pulkitVagueTime.sourcePublicIdentifier,
     tags: ['extract', 'vague-time', 'real'],
     inputs: {
       transcript: OUTREACH_AI_TRANSCRIPTS.pulkitVagueTime.transcript,
@@ -87,7 +88,8 @@ export const OUTREACH_AI_SCENARIO_CATALOG: OutreachAiScenario[] = [
     nodeKind: 'extract_inbound_signals',
     priority: 'must',
     description: 'Gaurav asks to email a literal address',
-    sourcePublicIdentifier: OUTREACH_AI_TRANSCRIPTS.gauravEmail.sourcePublicIdentifier,
+    sourcePublicIdentifier:
+      OUTREACH_AI_TRANSCRIPTS.gauravEmail.sourcePublicIdentifier,
     tags: ['extract', 'email', 'real'],
     inputs: {
       transcript: OUTREACH_AI_TRANSCRIPTS.gauravEmail.transcript,
@@ -111,7 +113,8 @@ export const OUTREACH_AI_SCENARIO_CATALOG: OutreachAiScenario[] = [
     nodeKind: 'extract_inbound_signals',
     priority: 'must',
     description: 'Kamallath asks for WhatsApp + shares email/phone',
-    sourcePublicIdentifier: OUTREACH_AI_TRANSCRIPTS.kamallathWhatsapp.sourcePublicIdentifier,
+    sourcePublicIdentifier:
+      OUTREACH_AI_TRANSCRIPTS.kamallathWhatsapp.sourcePublicIdentifier,
     tags: ['extract', 'whatsapp', 'real'],
     inputs: {
       transcript: OUTREACH_AI_TRANSCRIPTS.kamallathWhatsapp.transcript,
@@ -186,7 +189,8 @@ export const OUTREACH_AI_SCENARIO_CATALOG: OutreachAiScenario[] = [
     nodeKind: 'extract_inbound_signals',
     priority: 'must',
     description: 'Kunal snoozes to June — not opt-out',
-    sourcePublicIdentifier: OUTREACH_AI_TRANSCRIPTS.kunalSnoozeJune.sourcePublicIdentifier,
+    sourcePublicIdentifier:
+      OUTREACH_AI_TRANSCRIPTS.kunalSnoozeJune.sourcePublicIdentifier,
     tags: ['extract', 'snooze', 'real'],
     inputs: {
       transcript: OUTREACH_AI_TRANSCRIPTS.kunalSnoozeJune.transcript,
@@ -220,8 +224,10 @@ export const OUTREACH_AI_SCENARIO_CATALOG: OutreachAiScenario[] = [
     id: 'draft-reply-intent-kunal-clarify',
     nodeKind: 'draft_sales_reply',
     priority: 'must',
-    description: 'INTENT: clarify SaaS vs consulting without inventing times',
-    sourcePublicIdentifier: OUTREACH_AI_TRANSCRIPTS.kunalIntentClarify.sourcePublicIdentifier,
+    description:
+      'INTENT: clarify SaaS vs consulting; soft ask, no invented times',
+    sourcePublicIdentifier:
+      OUTREACH_AI_TRANSCRIPTS.kunalIntentClarify.sourcePublicIdentifier,
     tags: ['draft', 'intent', 'real'],
     inputs: {
       name: 'Kunal',
@@ -244,8 +250,10 @@ export const OUTREACH_AI_SCENARIO_CATALOG: OutreachAiScenario[] = [
     id: 'draft-reply-follow-up-meeting-pulkit',
     nodeKind: 'draft_sales_reply',
     priority: 'must',
-    description: 'FOLLOW_UP_MEETING with no confirmed slot — offer injected slots only',
-    sourcePublicIdentifier: OUTREACH_AI_TRANSCRIPTS.pulkitVagueTime.sourcePublicIdentifier,
+    description:
+      'FOLLOW_UP_MEETING with vague window — ask which times work; no early slot dump',
+    sourcePublicIdentifier:
+      OUTREACH_AI_TRANSCRIPTS.pulkitVagueTime.sourcePublicIdentifier,
     tags: ['draft', 'follow-up-meeting', 'real'],
     inputs: {
       name: 'Pulkit',
@@ -269,7 +277,8 @@ export const OUTREACH_AI_SCENARIO_CATALOG: OutreachAiScenario[] = [
     nodeKind: 'draft_sales_reply',
     priority: 'must',
     description: 'MEETING_BOOKED with confirmed startsAt',
-    sourcePublicIdentifier: OUTREACH_AI_TRANSCRIPTS.sunilBookSlot.sourcePublicIdentifier,
+    sourcePublicIdentifier:
+      OUTREACH_AI_TRANSCRIPTS.sunilBookSlot.sourcePublicIdentifier,
     tags: ['draft', 'meeting-booked', 'real'],
     inputs: {
       name: 'Sunil',
@@ -294,7 +303,8 @@ export const OUTREACH_AI_SCENARIO_CATALOG: OutreachAiScenario[] = [
     nodeKind: 'draft_sales_reply',
     priority: 'must',
     description: 'Prospect email injected → non-empty emailSubject/emailBody',
-    sourcePublicIdentifier: OUTREACH_AI_TRANSCRIPTS.gauravEmail.sourcePublicIdentifier,
+    sourcePublicIdentifier:
+      OUTREACH_AI_TRANSCRIPTS.gauravEmail.sourcePublicIdentifier,
     tags: ['draft', 'email', 'real'],
     inputs: {
       name: 'Gaurav',
@@ -345,7 +355,8 @@ export const OUTREACH_AI_SCENARIO_CATALOG: OutreachAiScenario[] = [
     nodeKind: 'draft_sales_reply',
     priority: 'must',
     description: 'SNOOZED — thank/pause, no pitch',
-    sourcePublicIdentifier: OUTREACH_AI_TRANSCRIPTS.kunalSnoozeJune.sourcePublicIdentifier,
+    sourcePublicIdentifier:
+      OUTREACH_AI_TRANSCRIPTS.kunalSnoozeJune.sourcePublicIdentifier,
     tags: ['draft', 'snooze', 'real'],
     inputs: {
       name: 'Kunal',
@@ -412,7 +423,8 @@ export const OUTREACH_AI_SCENARIO_CATALOG: OutreachAiScenario[] = [
     id: 'first-message-with-slots',
     nodeKind: 'first_message_opener',
     priority: 'must',
-    description: 'Opener with calendar windows injected',
+    description:
+      'Opener soft-asks this week/next; calendar injected but unused',
     tags: ['first-message', 'synthetic'],
     inputs: {
       senderJson,
@@ -497,7 +509,8 @@ export const OUTREACH_AI_SCENARIO_CATALOG: OutreachAiScenario[] = [
     nodeKind: 'post_reply_follow_up_1',
     priority: 'pass',
     description: 'Post-reply FU1 after Pulkit silence',
-    sourcePublicIdentifier: OUTREACH_AI_TRANSCRIPTS.pulkitSilentAfterReply.sourcePublicIdentifier,
+    sourcePublicIdentifier:
+      OUTREACH_AI_TRANSCRIPTS.pulkitSilentAfterReply.sourcePublicIdentifier,
     tags: ['post-reply-fu', 'real'],
     inputs: {
       senderJson,
@@ -518,7 +531,8 @@ export const OUTREACH_AI_SCENARIO_CATALOG: OutreachAiScenario[] = [
     nodeKind: 'post_reply_follow_up_2',
     priority: 'pass',
     description: 'Post-reply FU2 final nudge',
-    sourcePublicIdentifier: OUTREACH_AI_TRANSCRIPTS.pulkitSilentAfterReply.sourcePublicIdentifier,
+    sourcePublicIdentifier:
+      OUTREACH_AI_TRANSCRIPTS.pulkitSilentAfterReply.sourcePublicIdentifier,
     tags: ['post-reply-fu'],
     inputs: {
       senderJson,
@@ -610,7 +624,8 @@ export const OUTREACH_AI_SCENARIO_CATALOG: OutreachAiScenario[] = [
     nodeKind: 'meeting_reminder',
     priority: 'low',
     description: 'Day-before meeting reminder',
-    sourcePublicIdentifier: OUTREACH_AI_TRANSCRIPTS.sunilPostMeetingChase.sourcePublicIdentifier,
+    sourcePublicIdentifier:
+      OUTREACH_AI_TRANSCRIPTS.sunilPostMeetingChase.sourcePublicIdentifier,
     tags: ['meeting'],
     inputs: {
       senderJson,
@@ -654,8 +669,12 @@ export const OUTREACH_AI_SCENARIO_CATALOG: OutreachAiScenario[] = [
   },
 ];
 
-export const outreachAiScenariosByPriority = (priority: OutreachAiScenario['priority']) =>
-  OUTREACH_AI_SCENARIO_CATALOG.filter((scenario) => scenario.priority === priority);
+export const outreachAiScenariosByPriority = (
+  priority: OutreachAiScenario['priority'],
+) =>
+  OUTREACH_AI_SCENARIO_CATALOG.filter(
+    (scenario) => scenario.priority === priority,
+  );
 
 export const outreachAiScenarioById = (id: string) =>
   OUTREACH_AI_SCENARIO_CATALOG.find((scenario) => scenario.id === id);

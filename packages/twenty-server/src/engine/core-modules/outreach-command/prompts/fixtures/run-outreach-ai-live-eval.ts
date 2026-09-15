@@ -20,13 +20,11 @@ import {
 import {
   buildOutreachConnectionNotePrompt,
   buildOutreachFirstMessagePrompt,
+  buildOutreachInboundSignalExtractionPrompt,
   buildOutreachPostReplyFollowUpPrompt,
   buildOutreachQualifyProspectPrompt,
-} from 'src/engine/core-modules/outreach-command/prompts/outreach-sender-agnostic.prompt';
-import {
-  buildOutreachInboundSignalExtractionPrompt,
   buildOutreachSalesChatDraftPrompt,
-} from 'src/engine/core-modules/outreach-command/prompts/outreach-inbound-reply-next-step.prompt';
+} from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
 import { validateOutreachInboundSignals } from 'src/engine/core-modules/outreach-command/utils/validate-outreach-inbound-signals.util';
 
 export const OUTREACH_AI_DEEPSEEK_MODEL_ID =

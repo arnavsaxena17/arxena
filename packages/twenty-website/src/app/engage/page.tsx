@@ -8,7 +8,7 @@ import { Header } from '@/app/_components/ui/layout/header';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: `Engage | ${BRAND.category} — ${BRAND.name}`,
+  title: `Outreach | ${BRAND.category} — ${BRAND.name}`,
   description: ENGAGE_PAGE.subheadline,
   alternates: {
     canonical: '/engage',

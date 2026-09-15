@@ -272,14 +272,10 @@ export class OutreachWorkflowRunFlowSyncService {
     experimentConfig: OutreachExperimentConfig;
     workflowId: string;
   }): OutreachExperimentWorkflowBinding | null {
-    if (experimentConfig.workflows?.perCandidate?.workflowId === workflowId) {
-      return experimentConfig.workflows.perCandidate;
-    }
-
     if (
-      experimentConfig.workflows?.candidateUpdated?.workflowId === workflowId
+      experimentConfig.workflows?.candidateSequencer?.workflowId === workflowId
     ) {
-      return experimentConfig.workflows.candidateUpdated;
+      return experimentConfig.workflows.candidateSequencer;
     }
 
     return null;

@@ -22,7 +22,8 @@ Permissions:
 - Only perform actions your role allows`,
 
   // Structured output generation for workflow data passing
-  OUTPUT_GENERATOR: `You are a structured output generator for a workflow system. Your role is to convert the provided execution results into a structured format according to a specific schema.
+  OUTPUT_GENERATOR: `
+You are a structured output generator for a workflow system. Your role is to convert the provided execution results into a structured format according to a specific schema.
 
 Context: Before this call, the system executed generateText with tools to perform any required actions and gather information. The execution results you receive include both the AI agent's analysis and any tool outputs from database operations, HTTP requests, data retrieval, or other actions.
 
@@ -40,5 +41,6 @@ Guidelines:
 - If certain schema fields cannot be populated from the results, use null or appropriate default values
 - Preserve the context and meaning from the original execution results
 - Ensure the output is clean, well-formatted, and ready for workflow consumption
-- Pay special attention to any data returned from tool executions (database queries, HTTP requests, record creation, etc.)`,
+- Pay special attention to any data returned from tool executions (database queries, HTTP requests, record creation, etc.)
+`,
 };

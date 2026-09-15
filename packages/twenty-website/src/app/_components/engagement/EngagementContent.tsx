@@ -2,6 +2,7 @@
 
 import styled from '@emotion/styled';
 import { IconCheck } from '@tabler/icons-react';
+import Link from 'next/link';
 
 import { ENGAGE_PAGE } from '@/lib/brand-content';
 
@@ -30,11 +31,11 @@ const StyledHeadlineSub = styled.p`
   line-height: 1.5;
 `;
 
-const StyledWorkflowSection = styled.div`
+const StyledBlock = styled.div`
   margin-bottom: 48px;
 `;
 
-const StyledWorkflowTitle = styled.h3`
+const StyledBlockTitle = styled.h2`
   font-size: 18px;
   font-weight: 600;
   margin: 0 0 16px 0;
@@ -42,34 +43,58 @@ const StyledWorkflowTitle = styled.h3`
   text-align: center;
 `;
 
-const StyledWorkflowList = styled.ul`
+const StyledList = styled.ul`
   list-style: none;
   padding: 0;
   margin: 0;
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 12px 24px;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
 `;
 
-const StyledWorkflowItem = styled.li`
+const StyledListItem = styled.li`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   font-size: 15px;
   color: #474747;
+  line-height: 1.45;
 `;
 
 const StyledCheckIcon = styled(IconCheck)`
   flex-shrink: 0;
   color: #141414;
+  margin-top: 2px;
 `;
 
 const StyledDataSources = styled.p`
   font-size: 15px;
   color: #818181;
   text-align: center;
-  margin: 0 0 48px 0;
+  margin: 0 0 32px 0;
+  line-height: 1.5;
+`;
+
+const StyledLinks = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px 24px;
+  margin-bottom: 48px;
+`;
+
+const StyledTextLink = styled(Link)`
+  font-size: 15px;
+  color: #141414;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+
+  &:hover {
+    color: #474747;
+  }
 `;
 
 const StyledCtaButton = styled.a`
@@ -92,21 +117,29 @@ const StyledCtaButton = styled.a`
 
 const StyledCtaSection = styled.div`
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
 `;
 
-const WORKFLOW_ITEMS = [
-  'Personalized messages in your voice',
-  'Context from the target org chart',
-  'WhatsApp, LinkedIn, and email',
-  'You only step in when someone replies',
-  'Campaign management',
-];
+const StyledSecondaryLink = styled(Link)`
+  font-size: 14px;
+  color: #818181;
+  text-decoration: none;
+
+  &:hover {
+    color: #141414;
+  }
+`;
 
 type EngagementContentProps = {
   signUpUrl: string;
 };
 
 export const EngagementContent = ({ signUpUrl }: EngagementContentProps) => {
+  const { sections } = ENGAGE_PAGE;
+
   return (
     <StyledSection>
       <StyledHeadline>{ENGAGE_PAGE.headline}</StyledHeadline>
@@ -114,25 +147,52 @@ export const EngagementContent = ({ signUpUrl }: EngagementContentProps) => {
 
       <EngagementChatDemo />
 
-      <StyledWorkflowSection>
-        <StyledWorkflowTitle>How it works</StyledWorkflowTitle>
-        <StyledWorkflowList>
-          {WORKFLOW_ITEMS.map((item) => (
-            <StyledWorkflowItem key={item}>
+      <StyledBlock>
+        <StyledBlockTitle>{sections.whatYouCanDoTitle}</StyledBlockTitle>
+        <StyledList>
+          {sections.whatYouCanDo.map((item) => (
+            <StyledListItem key={item}>
               <StyledCheckIcon size={18} strokeWidth={2.5} />
               {item}
-            </StyledWorkflowItem>
+            </StyledListItem>
           ))}
-        </StyledWorkflowList>
-      </StyledWorkflowSection>
+        </StyledList>
+      </StyledBlock>
+
+      <StyledBlock>
+        <StyledBlockTitle>{sections.howItTiesTitle}</StyledBlockTitle>
+        <StyledList>
+          {sections.howItTies.map((item) => (
+            <StyledListItem key={item}>
+              <StyledCheckIcon size={18} strokeWidth={2.5} />
+              {item}
+            </StyledListItem>
+          ))}
+        </StyledList>
+      </StyledBlock>
 
       <StyledDataSources>
         Built on the live org graph from LinkedIn and other sources—so every
         message references structure and context, not just a title in a list.
       </StyledDataSources>
 
+      <StyledLinks>
+        <StyledTextLink href={sections.productsLinkHref}>
+          {sections.productsLinkLabel}
+        </StyledTextLink>
+        <StyledTextLink href={sections.salesLinkHref}>
+          {sections.salesLinkLabel}
+        </StyledTextLink>
+        <StyledTextLink href={sections.recruitingLinkHref}>
+          {sections.recruitingLinkLabel}
+        </StyledTextLink>
+      </StyledLinks>
+
       <StyledCtaSection>
         <StyledCtaButton href={signUpUrl}>Setup a free trial</StyledCtaButton>
+        <StyledSecondaryLink href="/pricing">
+          See Sales and Recruiting plans →
+        </StyledSecondaryLink>
       </StyledCtaSection>
     </StyledSection>
   );

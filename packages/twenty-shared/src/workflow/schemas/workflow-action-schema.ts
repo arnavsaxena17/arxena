@@ -17,12 +17,16 @@ import { workflowPickRecordActionSchema } from './pick-record-action-schema';
 import { workflowSendEmailActionSchema } from './send-email-action-schema';
 import { workflowCommentOnLinkedinPostActionSchema } from './comment-on-linkedin-post-action-schema';
 import { workflowFetchLinkedinActivityActionSchema } from './fetch-linkedin-activity-action-schema';
+import { workflowFollowLinkedinProfileActionSchema } from './follow-linkedin-profile-action-schema';
+import { workflowLikeLinkedinPostActionSchema } from './like-linkedin-post-action-schema';
 import { workflowSendLinkedinConnectionRequestActionSchema } from './send-linkedin-connection-request-action-schema';
 import { workflowSendLinkedinInmailActionSchema } from './send-linkedin-inmail-action-schema';
 import { workflowSendLinkedinMessageActionSchema } from './send-linkedin-message-action-schema';
+import { workflowSendLinkedinVoiceNoteActionSchema } from './send-linkedin-voice-note-action-schema';
 import { workflowSendWhatsappMessageActionSchema } from './send-whatsapp-message-action-schema';
 import { workflowUpdateRecordActionSchema } from './update-record-action-schema';
 import { workflowUpsertRecordActionSchema } from './upsert-record-action-schema';
+import { workflowViewLinkedinProfileActionSchema } from './view-linkedin-profile-action-schema';
 import { workflowDelayActionSchema } from './workflow-delay-action-schema';
 
 export const workflowActionSchema = z.discriminatedUnion('type', [
@@ -44,6 +48,10 @@ export const workflowActionSchema = z.discriminatedUnion('type', [
   workflowSendLinkedinMessageActionSchema,
   workflowFetchLinkedinActivityActionSchema,
   workflowCommentOnLinkedinPostActionSchema,
+  workflowSendLinkedinVoiceNoteActionSchema,
+  workflowViewLinkedinProfileActionSchema,
+  workflowFollowLinkedinProfileActionSchema,
+  workflowLikeLinkedinPostActionSchema,
   workflowSendWhatsappMessageActionSchema,
   workflowAiAgentActionSchema,
   workflowFilterActionSchema,

@@ -468,10 +468,8 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
       <TrustBadgesSection />
 
       <StyledEngageCrossSell>
-        Map → plan → reach → measure —{' '}
-        <StyledEngageLink href="/engage">
-          How AI outreach and tracking works →
-        </StyledEngageLink>
+        Map → plan → LinkedIn & email outreach → measure —{' '}
+        <StyledEngageLink href="/engage">How Outreach works →</StyledEngageLink>
       </StyledEngageCrossSell>
 
       <StyledSectionAnchor id="contact">

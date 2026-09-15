@@ -10,8 +10,6 @@ export const isOutreachProjectName = (
 /** Query param for active Project on /outreach-home */
 export const OUTREACH_PROJECT_ID_QUERY_PARAM = 'projectId';
 
-/** Canonical Stage B sequencer workflow name. */
-export const OUTREACH_WORKFLOW_B_NAME = 'Outreach — Per Enrolled Candidate';
-
-/** Canonical Stage C sequencer workflow name. */
-export const OUTREACH_WORKFLOW_C_NAME = 'Outreach — Enrolled Person Updated';
+/** Canonical Candidate Sequencer workflow name (merged Stage B + C). */
+export const OUTREACH_WORKFLOW_SEQUENCER_NAME =
+  'Outreach — Candidate Sequencer';

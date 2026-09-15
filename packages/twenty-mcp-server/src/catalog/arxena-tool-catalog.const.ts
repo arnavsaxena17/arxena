@@ -321,14 +321,35 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
     pack: 'outreach',
     label: 'Visit LinkedIn Profile',
     description:
-      'Visit a LinkedIn profile via Unipile so the viewee is notified (marks a profile view). Pass linkedinUrl / linkedinProfileId / candidateId. Lightweight — not a full profile fetch; use linkedin_unipile_get_profile for enrichment (silent by default).',
+      'Visit a LinkedIn profile via Unipile so the viewee is notified (marks a profile view). Pass linkedinUrl / linkedinProfileId / candidateId. Same as workflow step VIEW_LINKEDIN_PROFILE. Lightweight — not a full profile fetch; use linkedin_unipile_get_profile for enrichment (silent by default).',
+  },
+  {
+    name: 'linkedin_unipile_like_post',
+    pack: 'outreach',
+    label: 'Like LinkedIn Post',
+    description:
+      'React to a LinkedIn post via Unipile (POST /posts/reaction). Pass post social_id from FETCH_LINKEDIN_ACTIVITY / linkedin_unipile_get_user_posts. Same as workflow step LIKE_LINKEDIN_POST.',
+  },
+  {
+    name: 'linkedin_unipile_follow_profile',
+    pack: 'outreach',
+    label: 'Follow LinkedIn Profile',
+    description:
+      'Follow a LinkedIn profile via Unipile magic route. Resolves private provider_id (ACo…) when needed. Same as workflow step FOLLOW_LINKEDIN_PROFILE.',
+  },
+  {
+    name: 'linkedin_unipile_send_voice_note',
+    pack: 'outreach',
+    label: 'Send LinkedIn Voice Note',
+    description:
+      'Send a LinkedIn voice note via Unipile (voice_message on POST /chats). Prefer .m4a. Same as workflow step SEND_LINKEDIN_VOICE_NOTE — outbound voice is workflow-step oriented.',
   },
   {
     name: 'linkedin_unipile_get_user_posts',
     pack: 'outreach',
     label: 'Get LinkedIn User Posts',
     description:
-      'Fetch recent posts authored by a LinkedIn user/company via Unipile (GET /users/{identifier}/posts). Returns social_id on each post — use that social_id to comment (workflow step COMMENT_ON_LINKEDIN_POST), not the URL post id. Different from keyword search_linkedin_posts / LF search-posts.',
+      'Fetch recent posts authored by a LinkedIn user/company via Unipile (GET /users/{identifier}/posts). Returns social_id on each post — use that social_id to comment (workflow step COMMENT_ON_LINKEDIN_POST) or like (LIKE_LINKEDIN_POST), not the URL post id. Different from keyword search_linkedin_posts / LF search-posts.',
   },
   {
     name: 'linkedin_unipile_get_user_comments',

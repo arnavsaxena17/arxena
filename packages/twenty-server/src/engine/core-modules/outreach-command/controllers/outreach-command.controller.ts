@@ -57,9 +57,9 @@ export class OutreachCommandController {
     private readonly gtmCommandMaterializeService: OutreachCommandMaterializeService,
     private readonly gtmWorkspaceProfileProvisioningService: OutreachWorkspaceProfileProvisioningService,
     private readonly outreachSenderProfileService: OutreachSenderProfileService,
-    private readonly gtmFakeProfileDetectorService: OutreachFakeProfileDetectorService,
-    private readonly gtmFilterProfilesService: OutreachFilterProfilesService,
-    private readonly gtmProjectOutreachControlService: OutreachProjectOutreachControlService,
+    private readonly outreachFakeProfileDetectorService: OutreachFakeProfileDetectorService,
+    private readonly outreachFilterProfilesService: OutreachFilterProfilesService,
+    private readonly outreachProjectOutreachControlService: OutreachProjectOutreachControlService,
     private readonly outreachCandidateJourneyService: OutreachCandidateJourneyService,
     private readonly qualifyProspectService: QualifyProspectService,
     private readonly linkedinSelectionFetchService: LinkedinSelectionFetchService,
@@ -395,121 +395,6 @@ export class OutreachCommandController {
     }
   }
 
-  @Post('fetch-linkedin-messages-for-selection')
-  async fetchLinkedinMessagesForSelection(
-    @Body()
-    body: {
-      workspaceMemberId?: string;
-      candidateIds?: string[];
-      personIds?: string[];
-      forceRefresh?: boolean;
-      limit?: number;
-    },
-    @Req() request: { headers?: { authorization?: string } },
-  ) {
-    try {
-      const { workspaceId, workspaceMemberId } =
-        await this.resolveSenderProfileAuthContext(body, request);
-
-      return await this.linkedinSelectionFetchService.fetchMessages({
-        workspaceId,
-        input: {
-          workspaceMemberId,
-          candidateIds: body.candidateIds,
-          personIds: body.personIds,
-          forceRefresh: body.forceRefresh,
-          limit: body.limit,
-        },
-      });
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      this.logger.error('Fetch LinkedIn messages for selection failed', error);
-      throw new HttpException(
-        error instanceof Error
-          ? error.message
-          : 'Fetch LinkedIn messages failed',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @Post('fetch-linkedin-posts-for-selection')
-  async fetchLinkedinPostsForSelection(
-    @Body()
-    body: {
-      workspaceMemberId?: string;
-      candidateIds?: string[];
-      personIds?: string[];
-      postsLimit?: number;
-    },
-    @Req() request: { headers?: { authorization?: string } },
-  ) {
-    try {
-      const { workspaceId, workspaceMemberId } =
-        await this.resolveSenderProfileAuthContext(body, request);
-
-      return await this.linkedinSelectionFetchService.fetchPosts({
-        workspaceId,
-        input: {
-          workspaceMemberId,
-          candidateIds: body.candidateIds,
-          personIds: body.personIds,
-          postsLimit: body.postsLimit,
-        },
-      });
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      this.logger.error('Fetch LinkedIn posts for selection failed', error);
-      throw new HttpException(
-        error instanceof Error ? error.message : 'Fetch LinkedIn posts failed',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @Post('fetch-linkedin-profiles-for-selection')
-  async fetchLinkedinProfilesForSelection(
-    @Body()
-    body: {
-      workspaceMemberId?: string;
-      candidateIds?: string[];
-      personIds?: string[];
-    },
-    @Req() request: { headers?: { authorization?: string } },
-  ) {
-    try {
-      const { workspaceId, workspaceMemberId } =
-        await this.resolveSenderProfileAuthContext(body, request);
-
-      return await this.linkedinSelectionFetchService.fetchProfiles({
-        workspaceId,
-        input: {
-          workspaceMemberId,
-          candidateIds: body.candidateIds,
-          personIds: body.personIds,
-        },
-      });
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      this.logger.error('Fetch LinkedIn profiles for selection failed', error);
-      throw new HttpException(
-        error instanceof Error
-          ? error.message
-          : 'Fetch LinkedIn profiles failed',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
   @Post('visit-linkedin-profile')
   async visitLinkedinProfile(
     @Body()
@@ -623,7 +508,7 @@ export class OutreachCommandController {
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
 
-    return this.gtmFakeProfileDetectorService.execute({
+    return this.outreachFakeProfileDetectorService.execute({
       workspaceId,
       input: body,
     });
@@ -651,7 +536,7 @@ export class OutreachCommandController {
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
 
-    return this.gtmFilterProfilesService.execute({
+    return this.outreachFilterProfilesService.execute({
       workspaceId,
       input: body,
     });
@@ -982,13 +867,12 @@ export class OutreachCommandController {
     try {
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const result = await this.gtmProjectOutreachControlService.stopCandidates(
-        {
+      const result =
+        await this.outreachProjectOutreachControlService.stopCandidates({
           workspaceId,
           projectId,
           candidateIds,
-        },
-      );
+        });
 
       return { ok: true, ...result };
     } catch (error) {
@@ -1030,20 +914,20 @@ export class OutreachCommandController {
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
 
       if (action === 'pause') {
-        const result = await this.gtmProjectOutreachControlService.pauseProject(
-          {
+        const result =
+          await this.outreachProjectOutreachControlService.pauseProject({
             workspaceId,
             projectId,
-          },
-        );
+          });
 
         return { ok: true, outreachStatus: 'PAUSED', ...result };
       }
 
-      const result = await this.gtmProjectOutreachControlService.resumeProject({
-        workspaceId,
-        projectId,
-      });
+      const result =
+        await this.outreachProjectOutreachControlService.resumeProject({
+          workspaceId,
+          projectId,
+        });
 
       return { ok: true, outreachStatus: 'LIVE', ...result };
     } catch (error) {

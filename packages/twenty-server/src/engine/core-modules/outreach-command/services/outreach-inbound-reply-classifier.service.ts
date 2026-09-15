@@ -4,7 +4,7 @@ import { z } from 'zod';
 import {
   buildOutreachInboundReplyClassifierUserPrompt,
   OUTREACH_INBOUND_REPLY_CLASSIFIER_SYSTEM_PROMPT,
-} from 'src/engine/core-modules/outreach-command/prompts/outreach-inbound-reply-next-step.prompt';
+} from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
 import {
   classificationFromIntent,
   classifyInboundReplyFallback,

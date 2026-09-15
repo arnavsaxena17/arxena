@@ -18,7 +18,10 @@ export type PricingPlanId =
   | 'corporate'
   | 'investment';
 
-export type MapType = 'Function Specific' | 'Full Company' | 'Full Company Timelines';
+export type MapType =
+  | 'Function Specific'
+  | 'Full Company'
+  | 'Full Company Timelines';
 
 export type BillingSkuKind = 'subscription' | 'one_time';
 
@@ -161,8 +164,7 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
     tagline: 'Map the buying committee from the live org graph',
     icon: '📡',
     mapType: 'Function Specific',
-    mapTypeLabel:
-      'Any Function · All Levels',
+    mapTypeLabel: 'Any Function · All Levels',
     minMaps: 10,
     inheritedFromPlanId: null,
     ownFeatures: [
@@ -444,16 +446,16 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
 };
 
 export const PRICING_MARKETING_HERO_HEADLINE =
-  'Access the org graph—plans for every team that runs on org intelligence';
+  'Access the org graph—plans for Sales and Recruiting';
 export const PRICING_MARKETING_HERO_SUBHEADLINE =
-  'Executive search, investors, sales, and corporate strategy—choose your tier.\nMap volume, depth, and refresh cadence scale with how you query structure.';
+  'Sales and Recruiting—choose your tier.\nMap volume, depth, and refresh cadence scale with how you query structure. LinkedIn and email outreach included where your plan unlocks it.';
 export const PRICING_BILLING_HERO_HEADLINE =
   'Choose your org intelligence plan';
 export const PRICING_MARKETING_ROI_HEADLINE =
-  'Queryable structure before your first message, brief, or management call.';
+  'Queryable structure before your first LinkedIn message, email, or search brief.';
 export const PRICING_HELP_ENGAGEMENT_LEAD =
-  'Ready to act on the org graph? Engage with precision from the same platform.';
-export const PRICING_HELP_ENGAGEMENT_LINK_LABEL = 'Learn about Engagement →';
+  'Ready to act on the org graph? Manage LinkedIn and email outreach from the same platform.';
+export const PRICING_HELP_ENGAGEMENT_LINK_LABEL = 'Learn about Outreach →';
 export const PRICING_HELP_TITLE = 'Need more information?';
 export const PRICING_HELP_SUBTITLE =
   "Let's find the perfect solution for your organization.";
@@ -480,17 +482,20 @@ export const PRICING_PLAN_CONTENT_BY_ID: Record<
   sales: {
     tabLabel: PRICING_PLANS.sales.label,
     onboardingTitle: PRICING_PLANS.sales.label,
-    onboardingBody: 'Functional talent maps for targeted outreach, decision-maker IDs, credits to start.',
+    onboardingBody:
+      'Functional talent maps for targeted outreach, decision-maker IDs, credits to start.',
     onboardingHint: 'Self-serve · extension · ~2 hr delivery',
     persona: 'Founder/ Sales',
     segmentTone: 'orange',
     heroHeadline: 'Pipeline-grade org intelligence for Sales/ ABM',
-    heroSubheadline: 'Map buying committees, champions, and blockers across target accounts — then reveal/export only what matters.',
+    heroSubheadline:
+      'Map buying committees, champions, and blockers across target accounts — then reveal/export only what matters.',
   },
   recruitment: {
     tabLabel: PRICING_PLANS.recruitment.label,
     onboardingTitle: PRICING_PLANS.recruitment.label,
-    onboardingBody: 'Full company maps, mandate-specific candidates, contact enrichment.',
+    onboardingBody:
+      'Full company maps, mandate-specific candidates, contact enrichment.',
     onboardingHint: 'Self-serve or 20-min live walkthrough',
     persona: 'Recruiter',
     segmentTone: 'indigo',

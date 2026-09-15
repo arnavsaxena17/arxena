@@ -347,7 +347,7 @@ export const StoryContent = ({ signUpUrl }: StoryContentProps) => {
 
       <p style={{ margin: '16px 0 0 0' }}>
         <StyledEngageLink href="/engage">
-          Build lists and engage — Learn about Engagement →
+          Manage LinkedIn and email outreach →
         </StyledEngageLink>
       </p>
 

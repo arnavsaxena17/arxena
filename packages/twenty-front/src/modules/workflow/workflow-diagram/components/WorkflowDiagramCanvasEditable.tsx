@@ -181,8 +181,8 @@ export const WorkflowDiagramCanvasEditable = () => {
     workflowVersionStatus: currentVersionStatus,
   });
 
-  // A/B publish-as-experiment is Stage B / Stage C outreach only
-  // (seeded names, or the Project-pinned Stage B clone).
+  // A/B publish-as-experiment: Candidate Sequencer (seeded name) or the
+  // Project-pinned sequencer clone.
   const supportsOutreachExperiment =
     isOutreachSequencerWorkflowName(workflowWithCurrentVersion.name) ||
     (isDefined(outreachContext.outreachWorkflowId) &&

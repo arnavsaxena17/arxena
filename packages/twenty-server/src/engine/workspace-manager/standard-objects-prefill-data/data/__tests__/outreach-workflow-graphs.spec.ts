@@ -493,6 +493,34 @@ describe('GTM outreach workflow graphs', () => {
     expect(byName('Load Candidate')?.nextStepIds).not.toContain(
       byName('Send LinkedIn connection')?.id,
     );
+
+    expect(byName('Approve connection note')?.nextStepIds).toEqual([
+      byName('Connection not yet sent?')?.id,
+    ]);
+    expect(byName('Connection not yet sent?')?.type).toBe('IF_ELSE');
+    expect(
+      (
+        byName('Connection not yet sent?')?.settings as {
+          input: {
+            stepFilters: Array<{ operand: string; stepOutputKey: string }>;
+          };
+        }
+      ).input.stepFilters[0],
+    ).toEqual(
+      expect.objectContaining({
+        operand: 'IS_EMPTY',
+        stepOutputKey: expect.stringContaining(
+          'outreachAnalytics.connectionSentAt',
+        ),
+      }),
+    );
+    expect(
+      (
+        byName('Connection not yet sent?')?.settings as {
+          input: { branches: Array<{ nextStepIds: string[] }> };
+        }
+      ).input.branches[0]?.nextStepIds,
+    ).toEqual([byName('Send LinkedIn connection')?.id]);
   });
 
   it('merges QUEUED, CONNECTION_ACCEPTED and REPLIED into one candidate.upserted sequencer', () => {

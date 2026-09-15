@@ -1,0 +1,106 @@
+import { Injectable } from '@nestjs/common';
+
+import { type WorkflowRunStepLog } from 'twenty-shared/workflow';
+
+import { SendLinkedinVoiceNoteTool } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/send-linkedin-voice-note-tool';
+import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
+import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
+import { OutreachUnipilePacingService } from 'src/engine/core-modules/outreach-command/services/outreach-unipile-pacing.service';
+import { OutreachMessagePersistService } from 'src/engine/core-modules/outreach-command/services/outreach-message-persist.service';
+import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
+import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
+import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
+import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
+import {
+  WorkflowStepExecutorException,
+  WorkflowStepExecutorExceptionCode,
+} from 'src/modules/workflow/workflow-executor/exceptions/workflow-step-executor.exception';
+import { resolveEmailFiles } from 'src/modules/workflow/workflow-executor/workflow-actions/mail-sender/utils/resolve-email-files.util';
+import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
+import { isWorkflowSendLinkedinVoiceNoteAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/guards/is-workflow-send-linkedin-voice-note-action.guard';
+import { type UnipileMessagingAccountType } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/unipile-messaging-account-type.type';
+import { type WorkflowSendLinkedinVoiceNoteActionInput } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-linkedin-voice-note-action-input.type';
+import { UnipileMessagingWorkflowActionBase } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/unipile-messaging-workflow-action.base';
+import { buildUnipileMessagingStepLog } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/utils/build-unipile-messaging-step-log.util';
+import { WorkflowRunStepLogWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run-step-log.workspace-service';
+
+@Injectable()
+export class SendLinkedinVoiceNoteWorkflowAction extends UnipileMessagingWorkflowActionBase<WorkflowSendLinkedinVoiceNoteActionInput> {
+  constructor(
+    private readonly sendLinkedinVoiceNoteTool: SendLinkedinVoiceNoteTool,
+    workflowRunStepLogService: WorkflowRunStepLogWorkspaceService,
+    globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
+    gtmUnipilePacingService: OutreachUnipilePacingService,
+    @InjectMessageQueue(MessageQueue.delayedJobsQueue)
+    delayedQueue: MessageQueueService,
+    gtmOutreachMessagePersistService: OutreachMessagePersistService,
+  ) {
+    super(
+      SendLinkedinVoiceNoteWorkflowAction.name,
+      workflowRunStepLogService,
+      globalWorkspaceOrmManager,
+      gtmUnipilePacingService,
+      delayedQueue,
+      gtmOutreachMessagePersistService,
+    );
+  }
+
+  protected override getPacingChannel() {
+    return 'message' as const;
+  }
+
+  protected override getTranscriptChannel() {
+    return 'LINKEDIN' as const;
+  }
+
+  protected override getMaterializeEvent() {
+    return 'outbound_message' as const;
+  }
+
+  protected override async preprocessInput(
+    rawInput: WorkflowSendLinkedinVoiceNoteActionInput,
+    context: Record<string, unknown>,
+  ): Promise<WorkflowSendLinkedinVoiceNoteActionInput> {
+    return {
+      ...rawInput,
+      files: resolveEmailFiles(rawInput.files, context),
+    };
+  }
+
+  protected getTool(): Tool {
+    return this.sendLinkedinVoiceNoteTool;
+  }
+
+  protected getAccountType(): UnipileMessagingAccountType {
+    return 'linkedin';
+  }
+
+  protected assertStep(step: WorkflowAction): void {
+    if (!isWorkflowSendLinkedinVoiceNoteAction(step)) {
+      throw new WorkflowStepExecutorException(
+        'Step is not a send-linkedin-voice-note action',
+        WorkflowStepExecutorExceptionCode.INVALID_STEP_TYPE,
+      );
+    }
+  }
+
+  protected buildStepLog({
+    input,
+    output,
+    durationMs,
+  }: {
+    input: WorkflowSendLinkedinVoiceNoteActionInput;
+    output: ToolOutput;
+    durationMs: number;
+  }): WorkflowRunStepLog {
+    return buildUnipileMessagingStepLog({
+      channel: 'LINKEDIN_VOICE_NOTE',
+      workspaceMemberId: input.workspaceMemberId,
+      unipileAccountId: input.unipileAccountId,
+      recipient: input.linkedinProfileId,
+      body: input.body,
+      output,
+      durationMs,
+    });
+  }
+}

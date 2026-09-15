@@ -14,7 +14,7 @@ export type ChatMessage =
 const SAMPLE_CHAT: ChatMessage[] = [
   {
     sender: 'bot',
-    text: "Hey Manu, I'm Arnav, Director at Arxena Inc, A Global Recruitment Firm. I'm hiring for a Head of Corporate Strategy and Planning role for Global leader in electrical insulators, based out of Mumbai, Maharashtra and got your application on my job posting. I believe this might be a good fit. Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?",
+    text: "Hey Manu, I'm Arnav, Director at Arxena Inc, A Global Recruitment Firm. I'm hiring for a VP of Enterprise Sales role for a global industrial manufacturer, based out of Mumbai, Maharashtra and got your application on my job posting. I believe this might be a good fit. Wanted to speak to you in regards your interests in our new role. Would you be available for a short call sometime today?",
     time: '20:19',
   },
   {
@@ -26,7 +26,7 @@ const SAMPLE_CHAT: ChatMessage[] = [
     sender: 'bot',
     attachment: {
       type: 'document',
-      filename: 'JD_Head_of_Corporate_Strategy.pdf',
+      filename: 'JD_VP_Enterprise_Sales.pdf',
       size: '312 KB',
     },
     time: '20:20',

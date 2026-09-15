@@ -166,13 +166,10 @@ export const HeaderDesktop = ({
         </StyledNavLinkHiddenOnTablet> */}
         {/* <StyledNavLink href="/team">Team</StyledNavLink> */}
         {/* <StyledNavLink href="/contact">Contact</StyledNavLink> */}
+        <StyledNavLink href="/engage" aria-label="Outreach — LinkedIn & email">
+          Outreach
+        </StyledNavLink>
         <StyledNavLink href="/pricing">Pricing</StyledNavLink>
-        {/* <StyledNavLinkHiddenOnTablet
-          href="/engage"
-          aria-label="Engage — WhatsApp & LinkedIn"
-        >
-          Engage
-        </StyledNavLinkHiddenOnTablet> */}
         <StyledNavLinkHiddenOnTablet href="/chrome-extension">
           Chrome extension
         </StyledNavLinkHiddenOnTablet>

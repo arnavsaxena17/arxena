@@ -58,6 +58,8 @@ export { workflowFilterActionSchema } from './schemas/filter-action-schema';
 export { workflowFilterActionSettingsSchema } from './schemas/filter-action-settings-schema';
 export { workflowFindRecordsActionSchema } from './schemas/find-records-action-schema';
 export { workflowFindRecordsActionSettingsSchema } from './schemas/find-records-action-settings-schema';
+export { workflowFollowLinkedinProfileActionSchema } from './schemas/follow-linkedin-profile-action-schema';
+export { workflowFollowLinkedinProfileActionSettingsSchema } from './schemas/follow-linkedin-profile-action-settings-schema';
 export { workflowFormActionSchema } from './schemas/form-action-schema';
 export {
   workflowFormNotifyOnPendingSchema,
@@ -72,6 +74,11 @@ export {
 } from './schemas/if-else-action-settings-schema';
 export { workflowIteratorActionSchema } from './schemas/iterator-action-schema';
 export { workflowIteratorActionSettingsSchema } from './schemas/iterator-action-settings-schema';
+export { workflowLikeLinkedinPostActionSchema } from './schemas/like-linkedin-post-action-schema';
+export {
+  linkedinPostReactionTypeSchema,
+  workflowLikeLinkedinPostActionSettingsSchema,
+} from './schemas/like-linkedin-post-action-settings-schema';
 export { workflowLogicFunctionActionSchema } from './schemas/logic-function-action-schema';
 export { workflowLogicFunctionActionSettingsSchema } from './schemas/logic-function-action-settings-schema';
 export { workflowManualTriggerSchema } from './schemas/manual-trigger-schema';
@@ -93,6 +100,8 @@ export { workflowSendLinkedinInmailActionSchema } from './schemas/send-linkedin-
 export { workflowSendLinkedinInmailActionSettingsSchema } from './schemas/send-linkedin-inmail-action-settings-schema';
 export { workflowSendLinkedinMessageActionSchema } from './schemas/send-linkedin-message-action-schema';
 export { workflowSendLinkedinMessageActionSettingsSchema } from './schemas/send-linkedin-message-action-settings-schema';
+export { workflowSendLinkedinVoiceNoteActionSchema } from './schemas/send-linkedin-voice-note-action-schema';
+export { workflowSendLinkedinVoiceNoteActionSettingsSchema } from './schemas/send-linkedin-voice-note-action-settings-schema';
 export { workflowSendWhatsappMessageActionSchema } from './schemas/send-whatsapp-message-action-schema';
 export { workflowSendWhatsappMessageActionSettingsSchema } from './schemas/send-whatsapp-message-action-settings-schema';
 export { stepFilterGroupSchema } from './schemas/step-filter-group-schema';
@@ -101,6 +110,10 @@ export { workflowUpdateRecordActionSchema } from './schemas/update-record-action
 export { workflowUpdateRecordActionSettingsSchema } from './schemas/update-record-action-settings-schema';
 export { workflowUpsertRecordActionSchema } from './schemas/upsert-record-action-schema';
 export { workflowUpsertRecordActionSettingsSchema } from './schemas/upsert-record-action-settings-schema';
+export { workflowViewLinkedinProfileActionSchema } from './schemas/view-linkedin-profile-action-schema';
+export { workflowViewLinkedinProfileActionSettingsSchema } from './schemas/view-linkedin-profile-action-settings-schema';
+export { workflowViewLinkedinProfileActionSchema } from './schemas/view-linkedin-profile-action-schema';
+export { workflowViewLinkedinProfileActionSettingsSchema } from './schemas/view-linkedin-profile-action-settings-schema';
 export { workflowWebhookTriggerSchema } from './schemas/webhook-trigger-schema';
 export { workflowActionSchema } from './schemas/workflow-action-schema';
 export { workflowDelayActionSchema } from './schemas/workflow-delay-action-schema';

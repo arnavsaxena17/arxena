@@ -73,4 +73,15 @@ describe('buildFindRecordsStepResult', () => {
       ),
     );
   });
+
+  it('should fold chatMessage rows into a plain transcript for {{step.text}}', () => {
+    const result = buildFindRecordsStepResult([
+      {
+        channel: 'LINKEDIN',
+        messageObj: [{ role: 'user', content: 'Thanks, I am interested.' }],
+      },
+    ]);
+
+    expect(result.text).toBe('them: Thanks, I am interested.');
+  });
 });

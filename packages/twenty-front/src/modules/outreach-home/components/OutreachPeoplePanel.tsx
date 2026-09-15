@@ -621,7 +621,10 @@ export const OutreachPeoplePanel = ({
       >
         {formatChipLabel('All stages', getQueueCount('all'))}
       </StyledStageChip>
-      {PEOPLE_QUEUE_CHIPS.map((chip) => (
+      {/* showing only the chips with count > 0 */}
+      {PEOPLE_QUEUE_CHIPS.filter(
+        (chip) => (getQueueCount(chip.id) ?? 0) > 0,
+      ).map((chip) => (
         <StyledStageChip
           key={chip.id}
           type="button"
@@ -631,7 +634,7 @@ export const OutreachPeoplePanel = ({
           {formatChipLabel(chip.label, getQueueCount(chip.id))}
         </StyledStageChip>
       ))}
-      <OutreachSafeDashboardPath>
+      {/* <OutreachSafeDashboardPath>
         {(dashboardPath) =>
           isDefined(dashboardPath) ? (
             <StyledDashboardLink to={dashboardPath}>
@@ -639,7 +642,7 @@ export const OutreachPeoplePanel = ({
             </StyledDashboardLink>
           ) : null
         }
-      </OutreachSafeDashboardPath>
+      </OutreachSafeDashboardPath> */}
     </StyledStageFilters>
   );
 

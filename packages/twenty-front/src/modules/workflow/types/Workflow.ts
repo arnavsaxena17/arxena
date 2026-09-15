@@ -1,4 +1,4 @@
-import type { BulkRecordsAvailability, GlobalAvailability, SingleRecordAvailability, workflowAiAgentActionSchema, workflowCodeActionSchema, workflowCommentOnLinkedinPostActionSchema, workflowCreateCalendarEventActionSchema, workflowCreateRecordActionSchema, workflowCronTriggerSchema, workflowDatabaseEventTriggerSchema, workflowDelayActionSchema, workflowDeleteRecordActionSchema, workflowDraftEmailActionSchema, workflowEmptyActionSchema, workflowFetchLinkedinActivityActionSchema, workflowFilterActionSchema, workflowFindRecordsActionSchema, workflowFormActionSchema, workflowHttpRequestActionSchema, workflowIfElseActionSchema, workflowIteratorActionSchema, workflowLogicFunctionActionSchema, workflowManualTriggerSchema, workflowPickRecordActionSchema, workflowRunSchema, workflowRunStateSchema, workflowRunStatusSchema, workflowRunStepStatusSchema, workflowSendEmailActionSchema, workflowSendLinkedinConnectionRequestActionSchema, workflowSendLinkedinInmailActionSchema, workflowSendLinkedinMessageActionSchema, workflowSendWhatsappMessageActionSchema, workflowTriggerSchema, workflowUpdateRecordActionSchema, workflowUpsertRecordActionSchema, workflowWebhookTriggerSchema } from 'twenty-shared/workflow';
+import type { BulkRecordsAvailability, GlobalAvailability, SingleRecordAvailability, workflowAiAgentActionSchema, workflowCodeActionSchema, workflowCommentOnLinkedinPostActionSchema, workflowCreateCalendarEventActionSchema, workflowCreateRecordActionSchema, workflowCronTriggerSchema, workflowDatabaseEventTriggerSchema, workflowDelayActionSchema, workflowDeleteRecordActionSchema, workflowDraftEmailActionSchema, workflowEmptyActionSchema, workflowFetchLinkedinActivityActionSchema, workflowFilterActionSchema, workflowFindRecordsActionSchema, workflowFollowLinkedinProfileActionSchema, workflowFormActionSchema, workflowHttpRequestActionSchema, workflowIfElseActionSchema, workflowIteratorActionSchema, workflowLikeLinkedinPostActionSchema, workflowLogicFunctionActionSchema, workflowManualTriggerSchema, workflowPickRecordActionSchema, workflowRunSchema, workflowRunStateSchema, workflowRunStatusSchema, workflowRunStepStatusSchema, workflowSendEmailActionSchema, workflowSendLinkedinConnectionRequestActionSchema, workflowSendLinkedinInmailActionSchema, workflowSendLinkedinMessageActionSchema, workflowSendLinkedinVoiceNoteActionSchema, workflowSendWhatsappMessageActionSchema, workflowTriggerSchema, workflowUpdateRecordActionSchema, workflowUpsertRecordActionSchema, workflowViewLinkedinProfileActionSchema, workflowWebhookTriggerSchema } from 'twenty-shared/workflow';
 import { type z } from 'zod';
 
 export type WorkflowCodeAction = z.infer<typeof workflowCodeActionSchema>;
@@ -54,6 +54,18 @@ export type WorkflowFetchLinkedinActivityAction = z.infer<
 export type WorkflowCommentOnLinkedinPostAction = z.infer<
   typeof workflowCommentOnLinkedinPostActionSchema
 >;
+export type WorkflowSendLinkedinVoiceNoteAction = z.infer<
+  typeof workflowSendLinkedinVoiceNoteActionSchema
+>;
+export type WorkflowViewLinkedinProfileAction = z.infer<
+  typeof workflowViewLinkedinProfileActionSchema
+>;
+export type WorkflowFollowLinkedinProfileAction = z.infer<
+  typeof workflowFollowLinkedinProfileActionSchema
+>;
+export type WorkflowLikeLinkedinPostAction = z.infer<
+  typeof workflowLikeLinkedinPostActionSchema
+>;
 export type WorkflowSendWhatsappMessageAction = z.infer<
   typeof workflowSendWhatsappMessageActionSchema
 >;
@@ -84,6 +96,10 @@ export type WorkflowAction =
   | WorkflowSendLinkedinMessageAction
   | WorkflowFetchLinkedinActivityAction
   | WorkflowCommentOnLinkedinPostAction
+  | WorkflowSendLinkedinVoiceNoteAction
+  | WorkflowViewLinkedinProfileAction
+  | WorkflowFollowLinkedinProfileAction
+  | WorkflowLikeLinkedinPostAction
   | WorkflowSendWhatsappMessageAction
   | WorkflowAiAgentAction
   | WorkflowIteratorAction

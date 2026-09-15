@@ -1,4 +1,4 @@
-import { OUTREACH_BUILD_SENDER_PROFILE_SYSTEM_PROMPT } from 'src/engine/core-modules/outreach-command/prompts/outreach-sender-agnostic.prompt';
+import { OUTREACH_BUILD_SENDER_PROFILE_SYSTEM_PROMPT } from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
 import { outreachSenderProfileLlmSchema } from 'src/engine/core-modules/outreach-command/schemas/outreach-sender-profile-llm.schema';
 import { OutreachSenderProfileService } from 'src/engine/core-modules/outreach-command/services/outreach-sender-profile.service';
 

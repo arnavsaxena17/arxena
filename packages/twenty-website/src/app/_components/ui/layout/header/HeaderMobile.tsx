@@ -252,13 +252,13 @@ export const HeaderMobile = ({
             Resources
           </StyledNavLinkHiddenOnTablet>
           <StyledNavLink href="/contact">Contact</StyledNavLink>
-          <StyledNavLink href="/pricing">Pricing</StyledNavLink>
-          <StyledNavLinkHiddenOnTablet
+          <StyledNavLink
             href="/engage"
-            aria-label="Engage — WhatsApp & LinkedIn"
+            aria-label="Outreach — LinkedIn & email"
           >
-            Engage
-          </StyledNavLinkHiddenOnTablet>
+            Outreach
+          </StyledNavLink>
+          <StyledNavLink href="/pricing">Pricing</StyledNavLink>
           {showCurrencySelector && (
             <StyledCurrencySelect
               aria-label="Select currency"

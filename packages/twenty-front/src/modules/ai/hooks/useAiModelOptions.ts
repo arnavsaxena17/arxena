@@ -39,14 +39,11 @@ export const useAiModelOptions = ({
     aiModels.find((model) => model.modelId === currentWorkspace?.smartModel) ??
     aiModels.find((model) => model.modelId === AUTO_SELECT_SMART_MODEL_ID);
 
-  const concreteSmartModelIdToHide = selectableModels.find(
-    (model) =>
-      model.label === workspaceSmartModel?.label &&
-      model.providerName === workspaceSmartModel?.providerName &&
-      !isAutoSelectModelId(model.modelId),
-  )?.modelId;
-
-  const allOptions = selectableModels
+  // Keep concrete models in `options` even when they match the pin label.
+  // Agents like extract-signals store a concrete DeepSeek id; filtering it out
+  // made Select fall back to options[0] (e.g. Claude Opus) and lie in the UI.
+  const options = selectableModels
+    .filter((model) => !isAutoSelectModelId(model.modelId))
     .map((model) => ({
       value: model.modelId,
       label: model.label,
@@ -54,8 +51,6 @@ export const useAiModelOptions = ({
     }))
     .sort((a, b) => a.label.localeCompare(b.label));
 
-  // Pin value must be AUTO_SELECT_SMART_MODEL_ID so seeded agents
-  // (modelId = default-smart-model) show as the workspace default.
   const pinnedOption = workspaceSmartModel
     ? {
         value: AUTO_SELECT_SMART_MODEL_ID,
@@ -67,11 +62,6 @@ export const useAiModelOptions = ({
         contextualText: t`default`,
       }
     : undefined;
-
-  const options =
-    variant === 'pinned-default' && concreteSmartModelIdToHide
-      ? allOptions.filter((model) => model.value !== concreteSmartModelIdToHide)
-      : allOptions;
 
   return {
     options,

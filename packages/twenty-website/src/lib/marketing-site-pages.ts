@@ -23,24 +23,23 @@ export const PRODUCT_PAGES: MarketingDetailPage[] = [
       'Export or share views so your team runs one workflow from the same live map.',
       'Pair with Function Maps and Org Timeline for how the org is shaped and how it has changed.',
     ],
-    segmentsNote:
-      'The starting point for executive search, enterprise sales, in-house TA, corporate strategy, and PE/VC workflows.',
+    segmentsNote: 'The starting point for Sales and Recruiting workflows.',
   },
   {
     slug: 'function-maps',
     title: 'Function Maps',
     headline: 'See who runs what—and who reports to whom',
     metaDescription:
-      'Function-level org views: span of control, budget ownership, and authority—before outreach, sourcing, or diligence.',
-    lead: 'See who runs each function—so outreach targets, candidate pools, and diligence questions are built on real ownership, not job titles in isolation.',
+      'Function-level org views: span of control, budget ownership, and authority—before outreach or sourcing.',
+    lead: 'See who runs each function—so outreach targets and candidate pools are built on real ownership, not job titles in isolation.',
     bullets: [
       'Compare span of control and depth across functions without building manual spreadsheets.',
-      'Spot structural gaps—no CFO, thin bench, interim role—before a pitch, brief, or diligence meeting.',
+      'Spot structural gaps—no CFO, thin bench, interim role—before a pitch or search brief.',
       'Align outreach to the right economic buyer vs. influencer inside each function.',
       'Benchmark structure against peer companies when combined with timeline and industry data.',
     ],
     segmentsNote:
-      'Core input for account planning, pre-call preparation, workforce planning, and deal benchmarking.',
+      'Core input for Sales account planning and Recruiting pipeline design.',
   },
   {
     slug: 'org-timeline',
@@ -51,12 +50,12 @@ export const PRODUCT_PAGES: MarketingDetailPage[] = [
     lead: 'Who joined, left, or was promoted—month by month. The signal layer that turns org data into timing and context.',
     bullets: [
       'See leadership and function changes month by month instead of relying on storytelling.',
-      'Surface succession risk, interim roles, and hiring velocity as buying signals, search triggers, or diligence inputs.',
+      'Surface succession risk, interim roles, and hiring velocity as buying signals or search triggers.',
       'Back up BD and recruiting narratives with structural history, not guesswork.',
       'Set alerts when key roles change at companies you are tracking.',
     ],
     segmentsNote:
-      'Core for executive search BD, account-based sales, corporate strategy, and investor pre-call preparation.',
+      'Core for Sales timing and Recruiting BD—when structure shifts, opportunity opens.',
   },
   {
     slug: 'connection-intelligence',
@@ -69,27 +68,27 @@ export const PRODUCT_PAGES: MarketingDetailPage[] = [
       'Identify introducers and mutual touchpoints before sending a generic opening message.',
       'Multi-thread accounts with a plan instead of betting everything on one champion.',
       'Prioritize accounts where a path already exists—and reduce cold volume everywhere else.',
-      'Works alongside the Engagement Layer to turn warm-path insight into actual conversation.',
+      'Works alongside Outreach to turn warm-path insight into actual conversation.',
     ],
     segmentsNote:
-      'Used by revenue teams and senior recruiters who live and win in networked markets.',
+      'Used by Sales and Recruiting teams who win in networked markets.',
   },
   {
     slug: 'engagement-layer',
-    title: 'Engagement Layer',
-    headline: 'Act on org intelligence—with context and measurement',
+    title: 'Outreach',
+    headline: 'Manage LinkedIn and email outreach from the org graph',
     metaDescription:
-      'Reach stakeholders on LinkedIn, WhatsApp, and email with context from the org graph—and measure what converts.',
-    lead: 'The org is mapped, the plan is set. Now engage with precision—and track every touch so you know what converted and why.',
+      'Run LinkedIn and email sequences tied to the live org map—approve sends, handle replies, and measure what converts.',
+    lead: 'The org is mapped, the plan is set. Reach the right people on LinkedIn and email—with WhatsApp when it fits—and track every touch so you know what booked the meeting.',
     bullets: [
-      'Orchestrate multi-channel outreach from a single workflow tied to the live org map.',
+      'Orchestrate LinkedIn and email outreach from a single workflow tied to the live org map.',
       'Draft in your voice while you approve—and step in only when replies arrive.',
-      'Track every touch across LinkedIn, WhatsApp, and email so nothing falls through the cracks.',
+      'Track every touch across LinkedIn, email, and WhatsApp so nothing falls through the cracks.',
       'Measure effectiveness by persona, function, and sequence—refine the playbook with every cycle.',
-      'Keep champions and economic buyers in sync across long sales or search cycles.',
+      'Keep champions, hiring managers, and candidates in sync across long sales or search cycles.',
     ],
     segmentsNote:
-      'See also the dedicated Engage product area for positioning and pricing.',
+      'See also /engage for the full Outreach product story. Built for Sales and Recruiting.',
   },
   {
     slug: 'api',
@@ -105,83 +104,38 @@ export const PRODUCT_PAGES: MarketingDetailPage[] = [
       'Custom contracts for volume, security review, and solution design—talk to us.',
     ],
     segmentsNote:
-      'Built for data engineering, RevOps, and enterprise teams with compliance and integration requirements.',
+      'Built for Sales and Recruiting teams with RevOps or data-engineering requirements.',
   },
 ];
 
 export const SOLUTION_PAGES: MarketingDetailPage[] = [
   {
-    slug: 'executive-search',
-    title: 'Executive search',
-    headline: 'Org intelligence before the mandate forms',
-    metaDescription:
-      'Map the target function and surface candidates while the mandate is still forming—structure before competing firms are briefed.',
-    lead: 'Walk into the mandate conversation with names and structural gaps already mapped. When the brief was shaped without a stakeholder map—or the role reports to a different power centre than the org chart suggested—six weeks of shortlisting becomes expensive guesswork. Map the function before the brief lands.',
-    bullets: [
-      'Pre-brief longlist: Surface strong fits 1–2 levels below the role before competing firms are briefed—enter with names, not questions.',
-      'Stakeholder map: Know who actually has a say in the hire before you present a shortlist.',
-      'Retained positioning: Reference structural gaps—thin bench, interim role, succession risk—with org data behind the story.',
-      'Placement protection: Alerts when roles change around a placed candidate so you know before the client calls.',
-    ],
-    bulletsTitle: 'In practice',
-  },
-  {
-    slug: 'pe-vc',
-    title: 'PE & VC',
-    headline: 'Queryable structure before the first management call',
-    metaDescription:
-      'Org intelligence before management meetings—IC memos, CIMs, and LP updates grounded in real structure.',
-    lead: 'The first management call is where credibility is made or lost—not the data room. Three CFO changes in two years should shape your thesis before you are committed; management decks are curated. Arxena is what you query before the deck—so you know the room and ask questions that show you did the work.',
-    bullets: [
-      'Pre-call intelligence: Assess CFO, CTO, COO tenure and structure before the meeting.',
-      'Key person risk: Surface thin bench, interim roles, and rapid leadership turnover before they become post-close problems.',
-      'Diligence materials: IC memos, CIMs, and LP updates grounded in org timelines and peer benchmarks.',
-      'Portfolio monitoring: Track function-level org evolution at holdings over time.',
-    ],
-    bulletsTitle: 'In practice',
-  },
-  {
-    slug: 'sales-abm',
-    title: 'Sales & ABM',
+    slug: 'sales',
+    title: 'Sales',
     headline: 'Map the buying committee from the org graph',
     metaDescription:
-      'Multi-threaded outreach planned on live structure—budget owners, champions, and blockers before the first message.',
-    lead: 'Plan the committee on the org graph before outreach—not one contact at a time under deal-clock pressure. Sequential discovery burns quarters when rapport was built with someone who cannot sign.',
+      'Multi-threaded Sales outreach on live structure—budget owners, champions, and blockers before the first LinkedIn or email message.',
+    lead: 'Plan the committee on the org graph before outreach—not one contact at a time under deal-clock pressure. Sequential discovery burns quarters when rapport was built with someone who cannot sign. Then run LinkedIn and email sequences from the same map.',
     bullets: [
       'Multithreading from day one: Map budget owner, champion, influencer, and blocker before you commit to a single thread.',
       'Find the economic buyer first: Separate budget from influence so you do not spend a quarter on the wrong champion.',
-      'Expansion: See adjacent teams and buyers once you are inside an account.',
-      'Displacement: Find the function your competitor does not yet control and who leads it.',
+      'Outreach that lands: Reach the right people on LinkedIn and email with context from the live org chart—see Outreach.',
+      'Expansion and displacement: See adjacent teams and who leads the function your competitor does not yet control.',
     ],
     bulletsTitle: 'In practice',
   },
   {
-    slug: 'corporate-hr',
-    title: 'Corporate HR',
-    headline: 'Peer org structure as a live benchmark',
+    slug: 'recruiting',
+    title: 'Recruiting',
+    headline: 'Structure before the shortlist—candidates before the scramble',
     metaDescription:
-      'Benchmark how peers structure functions and invest headcount—before reorgs, big bets, or M&A.',
-    lead: 'Analyst reports lag. See how peers actually invest headcount and structure functions—before you decide how you will organize or compete.',
+      'Org intelligence for Recruiting: map the target function, build pipelines from live structure, and reach candidates on LinkedIn and email.',
+    lead: 'Whether you are running retained search or in-house talent acquisition, start with how the org is actually built. Map the function, surface fits, calibrate the brief against peer structure—then outreach on LinkedIn and email from the same graph.',
     bullets: [
-      'Pre-reorg benchmarking: Function depth and span of control vs. a live peer set.',
-      'Digital and AI build-out: Track competitor investment in technology functions over time.',
-      'Headcount ratios: Sales vs. engineering, GTM vs. product—against companies you actually compete with.',
-      'M&A integration: Enter with a before-and-after org view for both sides.',
-    ],
-    bulletsTitle: 'In practice',
-  },
-  {
-    slug: 'talent-acquisition',
-    title: 'Talent acquisition',
-    headline: 'Pipeline built on how competitors are structured',
-    metaDescription:
-      'Competitor function maps, passive pipelines, and JD calibration from live org structure—not guesswork.',
-    lead: 'Every search starting from scratch creates agency dependency. Map competitor functions passively so you enter each role with names already in hand.',
-    bullets: [
-      'Passive pipeline: Build by function, level, and geography before headcount is approved.',
-      'JD calibration: Benchmark against real peer org structures—not internal guesswork.',
-      'Competitive intel: Know how a competitor restructured before it hits the press.',
-      'Time-to-fill: Enter director+ searches with a shortlist, not a blank page.',
+      'Pre-brief longlist: Surface strong fits 1–2 levels below the role while the mandate is still forming—enter with names, not questions.',
+      'Stakeholder map: Know who actually has a say in the hire before you present a shortlist.',
+      'Passive pipeline: Build by function, level, and geography from competitor org maps before headcount is approved.',
+      'Candidate outreach: Reach on LinkedIn and email with org context—approve sends, track replies, and keep the search moving.',
     ],
     bulletsTitle: 'In practice',
   },

@@ -23,15 +23,27 @@ export const asChatTurns = (value: unknown): ChatTurn[] => {
         ? row.content
         : typeof row.message === 'string'
           ? row.message
-          : '';
+          : typeof row.text === 'string'
+            ? row.text
+            : '';
 
     if (!isNonEmptyString(content)) {
       return [];
     }
 
+    const roleFromIsSender =
+      typeof row.isSender === 'boolean'
+        ? row.isSender
+          ? 'assistant'
+          : 'user'
+        : undefined;
+
     return [
       {
-        role: typeof row.role === 'string' ? row.role : 'user',
+        role:
+          typeof row.role === 'string'
+            ? row.role
+            : (roleFromIsSender ?? 'user'),
         content,
         ...(typeof row.id === 'string' ? { id: row.id } : {}),
         ...(typeof row.timestamp === 'string'

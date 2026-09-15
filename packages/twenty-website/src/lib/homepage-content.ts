@@ -45,28 +45,16 @@ export const USE_CASES_SECTION_SUBTITLE = SECTION_SUBTITLES.useCases;
 
 export const USE_CASES = [
   {
-    title: 'Executive Search',
+    title: 'Sales',
     description:
-      'Map the target function and surface candidates while the mandate is still forming—structure before the brief, stakeholders before the shortlist.',
-    href: '/solutions/executive-search',
+      'Map the buying committee from the live org graph—budget owners, champions, and influencers—then reach them on LinkedIn and email.',
+    href: '/solutions/sales',
   },
   {
-    title: 'Investors & PE/VC',
+    title: 'Recruiting',
     description:
-      'Queryable org structure before the management call—leadership tenure, bench depth, and function evolution as diligence inputs.',
-    href: '/solutions/pe-vc',
-  },
-  {
-    title: 'Sales & ABM',
-    description:
-      'Map the buying committee from the live org graph—budget owners, champions, and influencers before the first message.',
-    href: '/solutions/sales-abm',
-  },
-  {
-    title: 'Corporate Strategy',
-    description:
-      'Peer org structure as live intelligence—how competitors invest headcount and structure functions before reorgs or big bets.',
-    href: '/solutions/corporate-strategy',
+      'Map the target function, surface candidates from live structure, and run LinkedIn and email outreach from the same graph.',
+    href: '/solutions/recruiting',
   },
 ] as const;
 
@@ -87,15 +75,15 @@ export const HOW_IT_WORKS_STEPS = [
   },
   {
     step: 3,
-    title: 'Engage with precision',
+    title: 'LinkedIn and email outreach',
     description:
-      'Reach with context from the org graph—enriched contacts and outreach in your voice, not generic sequences.',
+      'Reach with context from the org graph—enriched contacts and sequences in your voice on LinkedIn and email, not generic spray-and-pray.',
   },
   {
     step: 4,
     title: 'Measure what works',
     description:
-      'Every touch tracked across LinkedIn, WhatsApp, and email. See what converts by persona and sequence—each cycle sharper than the last.',
+      'Every touch tracked across LinkedIn, email, and WhatsApp. See what converts by persona and sequence—each cycle sharper than the last.',
     href: '/engage',
   },
 ] as const;
@@ -115,13 +103,13 @@ export const DIFFERENTIATORS = [
   {
     title: 'Structure—not just contacts',
     description:
-      'Outreach, shortlists, and diligence land on the right person for the right reason—because you see who runs what and who answers to whom.',
+      'Outreach and shortlists land on the right person for the right reason—because you see who runs what and who answers to whom.',
     href: '/products/function-maps',
   },
   {
     title: 'Act on intelligence in one place',
     description:
-      'Map, plan, reach, and measure from the same org graph—LinkedIn, WhatsApp, and email tied to live structure.',
+      'Map, plan, reach, and measure from the same org graph—LinkedIn and email outreach tied to live structure.',
     href: '/engage',
   },
 ] as const;

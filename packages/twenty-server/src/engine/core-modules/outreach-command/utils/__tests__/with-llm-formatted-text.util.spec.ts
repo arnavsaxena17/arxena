@@ -20,28 +20,46 @@ describe('withLlmFormattedText', () => {
 });
 
 describe('maybeWithLlmFormattedText', () => {
-  it('wraps fetch-linkedin-messages so {{step.text}} resolves', () => {
+  it('wraps fetch-linkedin-messages so {{step.text}} is a us/them transcript', () => {
     const result = maybeWithLlmFormattedText('fetch-linkedin-messages', {
       success: true,
-      messages: [{ text: 'Hi' }],
+      messages: [
+        {
+          text: 'Thanks, I am interested. Can we talk next week?',
+          isSender: false,
+        },
+      ],
     });
 
-    expect(result).toEqual(
-      withLlmFormattedText({
-        success: true,
-        messages: [{ text: 'Hi' }],
-      }),
-    );
+    expect(result).toEqual({
+      success: true,
+      messages: [
+        {
+          text: 'Thanks, I am interested. Can we talk next week?',
+          isSender: false,
+        },
+      ],
+      text: 'them: Thanks, I am interested. Can we talk next week?',
+    });
   });
 
-  it('leaves calendar availability unchanged', () => {
-    const slots = [{ startsAt: '2026-01-01T00:00:00.000Z' }];
+  it('adds formatted slots text for calendar availability', () => {
+    const slots = [
+      {
+        startsAt: '2026-01-01T00:00:00.000Z',
+        endsAt: '2026-01-01T00:30:00.000Z',
+      },
+    ];
 
     expect(
       maybeWithLlmFormattedText('get-calendar-availability', {
         success: true,
         slots,
       }),
-    ).toEqual({ success: true, slots });
+    ).toEqual({
+      success: true,
+      slots,
+      text: '(0) 2026-01-01T00:00:00.000Z → 2026-01-01T00:30:00.000Z',
+    });
   });
 });

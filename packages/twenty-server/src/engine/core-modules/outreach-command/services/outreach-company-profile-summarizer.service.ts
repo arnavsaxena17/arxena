@@ -7,7 +7,7 @@ import { OUTREACH_COMPANY_ENRICHMENT_LLM_MODEL_ID } from 'src/engine/core-module
 import {
   buildOutreachCompanyProfileSummarizerUserPrompt,
   OUTREACH_COMPANY_PROFILE_SUMMARIZER_SYSTEM_PROMPT,
-} from 'src/engine/core-modules/outreach-command/prompts/outreach-company-profile-summarizer.prompt';
+} from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
 import {
   gtmCompanyProfileLlmResultSchema,
   type OutreachCompanyProfileLlmResult,

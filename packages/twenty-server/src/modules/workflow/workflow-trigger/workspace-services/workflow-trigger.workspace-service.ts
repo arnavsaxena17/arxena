@@ -46,7 +46,7 @@ import { AutomatedTriggerWorkspaceService } from 'src/modules/workflow/workflow-
 import { type DatabaseEventTriggerSettings } from 'src/modules/workflow/workflow-trigger/automated-trigger/constants/automated-trigger-settings';
 import { WORKFLOW_CRON_TRIGGER_CACHE_KEY } from 'src/modules/workflow/workflow-trigger/automated-trigger/crons/constants/workflow-cron-trigger-cache-key.constant';
 import { type CachedCronTrigger } from 'src/modules/workflow/workflow-trigger/automated-trigger/crons/types/cached-cron-trigger.type';
-import { In, IsNull, Not, type ObjectLiteral } from 'typeorm';
+import { In, type ObjectLiteral } from 'typeorm';
 import {
   WorkflowTriggerException,
   WorkflowTriggerExceptionCode,
@@ -320,10 +320,10 @@ export class WorkflowTriggerWorkspaceService {
 
         if (!isDefined(sequencerStage)) {
           throw new WorkflowTriggerException(
-            'Publish as experiment is only available for Outreach Stage B and Stage C workflows',
+            'Publish as experiment is only available for the Outreach Candidate Sequencer (or a project-pinned sequencer clone)',
             WorkflowTriggerExceptionCode.FORBIDDEN,
             {
-              userFriendlyMessage: msg`Publish as experiment is only available for Outreach Per Enrolled Candidate and Enrolled Person Updated workflows`,
+              userFriendlyMessage: msg`Publish as experiment is only available for Outreach — Candidate Sequencer or a project-pinned sequencer workflow`,
             },
           );
         }
@@ -416,7 +416,7 @@ export class WorkflowTriggerWorkspaceService {
     });
 
     if (isDefined(pinnedProject)) {
-      return 'perCandidate';
+      return 'candidateSequencer';
     }
 
     return null;
@@ -446,16 +446,10 @@ export class WorkflowTriggerWorkspaceService {
           }
         >(workspaceId, 'project', { shouldBypassPermissionChecks: true });
 
-      const projects =
-        stage === 'perCandidate'
-          ? await projectRepository.find({
-              where: { outreachWorkflowId: workflowId },
-              take: 100,
-            })
-          : await projectRepository.find({
-              where: { outreachWorkflowId: Not(IsNull()) },
-              take: 100,
-            });
+      const projects = await projectRepository.find({
+        where: { outreachWorkflowId: workflowId },
+        take: 100,
+      });
 
       for (const project of projects) {
         const existing = readProjectExperimentConfig(project);
@@ -470,9 +464,9 @@ export class WorkflowTriggerWorkspaceService {
           name: existing?.name,
           workflows: {
             ...existing?.workflows,
-            ...(stage === 'perCandidate'
-              ? { perCandidate: binding }
-              : { candidateUpdated: binding }),
+            ...(stage === 'candidateSequencer'
+              ? { candidateSequencer: binding }
+              : {}),
           },
         };
 

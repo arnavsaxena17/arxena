@@ -70,13 +70,7 @@ const NODE_H = 82;
 const FONT = 'var(--font-gabarito), system-ui, sans-serif';
 const ICON_STROKE = 1.5;
 
-const NARRATIVE_STEPS = [
-  'Map',
-  'Warm',
-  'Reach',
-  'Moment',
-  'Meet',
-] as const;
+const NARRATIVE_STEPS = ['Map', 'Warm', 'Reach', 'Moment', 'Meet'] as const;
 
 // Loops a boolean on/off while the graphic stays in view (pauses off-screen)
 function useInViewBooleanLoop({
@@ -207,9 +201,7 @@ function OrgChartNode({
         fill={C.card}
         stroke={stroke}
         strokeWidth={strokeWidth}
-        filter={
-          highlighted ? `drop-shadow(0 0 10px ${C.glow})` : undefined
-        }
+        filter={highlighted ? `drop-shadow(0 0 10px ${C.glow})` : undefined}
       />
       <rect
         x={x + NODE_W / 2 - 28}
@@ -296,9 +288,7 @@ function PersonChip({
         fill={C.card}
         stroke={stroke}
         strokeWidth={highlighted ? 2.25 : 1.25}
-        filter={
-          highlighted ? `drop-shadow(0 0 8px ${C.glow})` : undefined
-        }
+        filter={highlighted ? `drop-shadow(0 0 8px ${C.glow})` : undefined}
       />
       <circle
         cx={x + 18}
@@ -496,9 +486,7 @@ function WorkflowNodeCard({
   return (
     <motion.g
       initial={false}
-      animate={
-        visible ? { opacity: 1, y: 0 } : { opacity: 0.12, y: 6 }
-      }
+      animate={visible ? { opacity: 1, y: 0 } : { opacity: 0.12, y: 6 }}
       transition={{
         delay: visible ? delay : 0,
         duration: 0.35,
@@ -592,12 +580,7 @@ function WorkflowBranchPath({
 
   return (
     <g>
-      <path
-        d={path}
-        stroke={C.cardBorder}
-        strokeWidth={1.5}
-        fill="none"
-      />
+      <path d={path} stroke={C.cardBorder} strokeWidth={1.5} fill="none" />
       <polygon
         points={`${toX},${toY} ${toX - 4},${toY - 6} ${toX + 4},${toY - 6}`}
         fill={C.cardBorder}
@@ -667,8 +650,7 @@ function TargetingTransformGraphic() {
   const midXs = [0, 1, 2, 3].map(
     (index) => chartStartX + index * (NODE_W + gapX),
   );
-  const rootX =
-    midXs[0] + (midXs[3] + NODE_W - midXs[0]) / 2 - NODE_W / 2;
+  const rootX = midXs[0] + (midXs[3] + NODE_W - midXs[0]) / 2 - NODE_W / 2;
   const rootY = 28;
   const midY = rootY + NODE_H + gapY;
   const leafY = midY + NODE_H + gapY;
@@ -909,9 +891,7 @@ function TargetingTransformGraphic() {
               fontFamily={FONT}
               fontWeight={700}
             >
-              {row.name.length > 15
-                ? `${row.name.slice(0, 14)}…`
-                : row.name}
+              {row.name.length > 15 ? `${row.name.slice(0, 14)}…` : row.name}
             </text>
             <SvgTablerIcon
               x={chipWidth - 16}
@@ -926,7 +906,6 @@ function TargetingTransformGraphic() {
     </svg>
   );
 }
-
 
 function WarmPathsGraphic() {
   const { ref, active } = useInViewBooleanLoop({
@@ -1510,9 +1489,7 @@ function MomentGraphic() {
           key={channel.label}
           initial={false}
           animate={
-            active
-              ? { opacity: 1, scale: 1 }
-              : { opacity: 0.35, scale: 0.95 }
+            active ? { opacity: 1, scale: 1 } : { opacity: 0.35, scale: 0.95 }
           }
           transition={{
             delay: active ? 0.05 + index * 0.05 : 0,
@@ -1699,9 +1676,7 @@ function MeetingCalendarGraphic() {
       <motion.g
         initial={false}
         animate={
-          active
-            ? { opacity: 1, scale: 1 }
-            : { opacity: 0.2, scale: 0.92 }
+          active ? { opacity: 1, scale: 1 } : { opacity: 0.2, scale: 0.92 }
         }
         transition={{ type: 'spring', stiffness: 200, damping: 18 }}
         style={{
@@ -1801,11 +1776,7 @@ function MeetingCalendarGraphic() {
 
       <motion.g
         initial={false}
-        animate={
-          active
-            ? { opacity: 1, y: 0 }
-            : { opacity: 0, y: 8 }
-        }
+        animate={active ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
         transition={{ delay: active ? 0.35 : 0, duration: 0.3 }}
       >
         <rect
@@ -2030,7 +2001,7 @@ export const OrgChartNarrative = () => {
             <>
               Outreach runs as a workflow
               <br />
-              on the person.
+              over a 30 day follow up sequence.
             </>
           }
           body="Every touch timed and tracked on Albert — in your voice, with org-graph context."
@@ -2044,7 +2015,7 @@ export const OrgChartNarrative = () => {
         <ActCopy
           label="Act 4 — The Moment"
           stepIndex={3}
-          headline="Then there's a moment."
+          headline="Captures replies across linkedin, email, whatsapp."
           body="They reply — wherever they live."
         />
         <GraphicPanel {...fadeUp} transition={{ delay: 0.06 }}>

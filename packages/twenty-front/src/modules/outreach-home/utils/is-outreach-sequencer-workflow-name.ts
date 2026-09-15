@@ -1,11 +1,7 @@
-import {
-  OUTREACH_WORKFLOW_B_NAME,
-  OUTREACH_WORKFLOW_C_NAME,
-} from '@/outreach-home/constants/outreach-command.constants';
+import { OUTREACH_WORKFLOW_SEQUENCER_NAME } from '@/outreach-home/constants/outreach-command.constants';
 
 export const OUTREACH_SEQUENCER_WORKFLOW_NAMES = [
-  OUTREACH_WORKFLOW_B_NAME,
-  OUTREACH_WORKFLOW_C_NAME,
+  OUTREACH_WORKFLOW_SEQUENCER_NAME,
 ] as const;
 
 export const isOutreachSequencerWorkflowName = (

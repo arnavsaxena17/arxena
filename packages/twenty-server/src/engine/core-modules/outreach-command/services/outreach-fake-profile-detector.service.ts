@@ -7,7 +7,7 @@ import { OUTREACH_COMPANY_ENRICHMENT_LLM_MODEL_ID } from 'src/engine/core-module
 import {
   buildOutreachFakeProfileDetectorUserPrompt,
   OUTREACH_FAKE_PROFILE_DETECTOR_SYSTEM_PROMPT,
-} from 'src/engine/core-modules/outreach-command/prompts/outreach-fake-profile-detector.prompt';
+} from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
 import {
   gtmFakeProfileLlmResultSchema,
   isLikelyFakeVerdict,

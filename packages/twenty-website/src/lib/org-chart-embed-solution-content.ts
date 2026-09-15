@@ -1,4 +1,5 @@
-export const ORG_CHART_EMBED_LOADER_URL = 'https://arxena.com/embed/orgchart.js';
+export const ORG_CHART_EMBED_LOADER_URL =
+  'https://arxena.com/embed/orgchart.js';
 export const ORG_CHART_EMBED_DOCS_PATH = '/solutions/org-chart-embed';
 export const ARXENA_APP_DEVELOPERS_PATH = '/settings/developers';
 
@@ -26,6 +27,6 @@ export const ORG_CHART_EMBED_SOLUTION_PAGE = {
   title: 'Org chart embed',
   headline: 'Drop live org charts on any website',
   metaDescription:
-    'Embed Arxena org charts on your careers page, investor site, or sales portal with a JavaScript snippet and origin-secured embed key.',
+    'Embed Arxena org charts on your careers page or sales portal with a JavaScript snippet and origin-secured embed key.',
   lead: 'Give visitors an interactive view of company structure without leaving your site. Create an embed key in Developers settings, allow your domain, and paste one snippet.',
 };

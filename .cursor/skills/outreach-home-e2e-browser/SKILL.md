@@ -3,7 +3,7 @@ name: outreach-home-e2e-browser
 description: >-
   Drives Outreach (/outreach-home) in the Cursor IDE browser on arxena-4:
   discovery happy-path, start campaign (Enroll + Live), pause/resume outreach,
-  and A/B Publish as experiment on Per Enrolled Candidate workflow. Use when
+  and A/B Publish as experiment on Candidate Sequencer workflow. Use when
   testing Outreach home controls, pause/resume, or A/B experiments.
 ---
 
@@ -25,8 +25,8 @@ The product surface formerly called **GTM Command** at `/gtm-home` is now
 | `gtm-home/*` module | `outreach-home/*` |
 | `upsert_gtm_target_companies` | `upsert_outreach_target_companies` |
 | `upsert_gtm_target_people` | `upsert_outreach_target_people` |
-| `GTM Outreach — Per Candidate` | `Outreach — Per Enrolled Candidate` |
-| `GTM_OUTREACH_WORKFLOW_B_NAME` | `OUTREACH_WORKFLOW_B_NAME` |
+| `GTM Outreach — Per Candidate` | `Outreach — Candidate Sequencer` (was Per Enrolled Candidate) |
+| `GTM_OUTREACH_WORKFLOW_B_NAME` | `OUTREACH_WORKFLOW_SEQUENCER_NAME` |
 | `gtm_project_paused` | `outreach_project_paused` |
 | `gtm_send_window` | `outreach_send_window` |
 | Dashboard title **GTM Command** | Dashboard title **Outreach** |
@@ -44,7 +44,7 @@ Outreach naming.
 | Server | `http://arxena-4.localhost:3000` → 200 |
 | Auth | User ACCESS JWT (Bearer). Workspace from JWT `workspaceId` claim |
 | Skills synced | `upgrade:2-25:sync-outreach-company-skill-content` + `sync-gtm-people-skill-content` for that workspace |
-| Per Enrolled Candidate workflow | Bound on Project or open Workflow tab; for A/B authoring use the project's `outreachWorkflowId` (example local ws: `6b606456-4e40-556f-aae0-1efddac1b0b7`) |
+| Candidate Sequencer workflow | Bound on Project or open Workflow tab; for A/B authoring use the project's `outreachWorkflowId` |
 
 Default local workspace used in prior runs: `635976bf-1483-4259-8a3b-eed5cd4e87f1`.
 
@@ -93,7 +93,7 @@ Outreach E2E:
 - [ ] 3 LinkedIn connection outreach workflow
 - [ ] 4 Start campaign (Enroll + Live chip)
 - [ ] 5 Pause / resume campaign
-- [ ] 6 A/B experiment on Per Enrolled Candidate workflow
+- [ ] 6 A/B experiment on Candidate Sequencer workflow
 ```
 
 Show the browser: `browser_navigate` / `browser_tabs` with `position: "active"`.
@@ -162,7 +162,7 @@ Same chat. Send:
 
 Expected:
 
-- Prefer / create **`Outreach — Per Enrolled Candidate`** (`OUTREACH_WORKFLOW_B_NAME`)
+- Prefer / create **`Outreach — Candidate Sequencer`** (`OUTREACH_WORKFLOW_SEQUENCER_NAME`)
 - Bind `Project.outreachWorkflowId` if missing
 - Enroll / queue people → workflow runs send LinkedIn connection (Unipile)
 
@@ -177,7 +177,7 @@ Maps to Enroll + Live (not a separate “Start” control).
 
 1. Open `/outreach-home`, note `projectId`. Chip **Live** (or Resume first if leftover **Paused**).
 2. People tab: select ≥1 row → **Enroll in outreach**.
-3. Workflow tab: Per Enrolled Candidate bound; at least one run `RUNNING` / pending send.
+3. Workflow tab: Candidate Sequencer bound; at least one run `RUNNING` / pending send.
 
 **PASS:** candidate `QUEUED` or `CONNECTION_SENT`; header Live; a workflow run exists for that candidate. Outside send window is still PASS if the run is pending `outreach_send_window`.
 
@@ -194,7 +194,7 @@ Depends on start (or an already-live project).
 
 ### Step 6 — A/B test (`outreach-ab-test`)
 
-Author on the **project-bound** Per Enrolled Candidate workflow record, then
+Author on the **project-bound** Candidate Sequencer workflow record, then
 operate from Outreach Home.
 
 1. Open the workflow at `/object/workflow/<outreachWorkflowId>` (or the

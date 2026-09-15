@@ -11,14 +11,16 @@ import {
   getPricingCurrencySymbol,
 } from '@/lib/pricing-currency-helpers';
 import {
+  PRICING_HELP_ENGAGEMENT_LEAD,
+  PRICING_HELP_ENGAGEMENT_LINK_LABEL,
   PRICING_MARKETING_HERO_HEADLINE,
   PRICING_MARKETING_HERO_SUBHEADLINE,
   PRICING_PLANS,
-  creditPackPricingFootnote,
-  getInheritedFeatures,
   PricingPlan,
   PricingPlanId,
   PricingPlanTier,
+  creditPackPricingFootnote,
+  getInheritedFeatures,
 } from 'twenty-shared/constants';
 
 const StyledSection = styled.section`
@@ -309,12 +311,11 @@ type PricingContentProps = {
   currency: SupportedPricingCurrency;
 };
 
-const PLAN_ORDER: PricingPlanId[] = [
-  'sales',
-  'recruitment',
-  'corporate',
-  'investment',
-];
+const PLAN_ORDER: PricingPlanId[] = ['sales', 'recruitment'];
+
+const PLAN_DISPLAY_LABEL: Partial<Record<PricingPlanId, string>> = {
+  recruitment: 'Recruiting',
+};
 
 const REVEAL_COST_EMAIL = 1;
 const REVEAL_COST_PHONE = 5;
@@ -399,7 +400,7 @@ export const PricingContent = ({
               <StyledCardHeader>
                 <StyledCardLabel>
                   <StyledCardEmoji>{plan.icon}</StyledCardEmoji>
-                  {plan.label}
+                  {PLAN_DISPLAY_LABEL[planId] ?? plan.label}
                 </StyledCardLabel>
                 <StyledCardTitle>{plan.tagline}</StyledCardTitle>
                 <StyledCardTagline>{plan.mapTypeLabel}</StyledCardTagline>
@@ -493,10 +494,9 @@ export const PricingContent = ({
 
       <StyledHelpSection>
         <p style={{ margin: '0 0 16px 0', fontSize: 15, color: '#474747' }}>
-          Already have your org charts? Let our AI reach out to the right
-          people.{' '}
+          {PRICING_HELP_ENGAGEMENT_LEAD}{' '}
           <StyledEngageLink href="/engage">
-            Learn about Engagement →
+            {PRICING_HELP_ENGAGEMENT_LINK_LABEL}
           </StyledEngageLink>
         </p>
         <StyledHelpTitle>Need more information?</StyledHelpTitle>

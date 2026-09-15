@@ -29,7 +29,7 @@ export const HOMEPAGE_HERO = {
 } as const;
 
 export const SECTION_SUBTITLES = {
-  useCases: 'Built for teams who get paid on meetings, not activity',
+  useCases: 'Built for Sales and Recruiting teams who get paid on meetings',
   howItWorks: 'From org graph to a calendar full of the right meetings',
   differentiators: 'Why the org graph layer',
   builtFor: 'Built for',
@@ -41,7 +41,7 @@ export const STORY_PAGE = {
   paragraph1:
     'Every team has a quota of effort — calls, messages, sequences — per week. Most of that effort is spent finding out who to talk to, then talking to the wrong person anyway. Arxena flips the ratio: spend the effort on the conversation, not the org chart.',
   paragraph2:
-    'We fetch live org data from LinkedIn and other sources so structure, seniority, and ownership are visible before you write the first message. Map any target company, identify the actual decision-maker, enrich their contact details, and engage on LinkedIn, WhatsApp, and email — all from one workflow.',
+    'We fetch live org data from LinkedIn and other sources so structure, seniority, and ownership are visible before you write the first message. Map any target company, identify the actual decision-maker, enrich their contact details, and engage on LinkedIn, email, and WhatsApp — all from one workflow.',
   scenarioExample:
     'Two people send 50 messages each. One sent them to whoever had the right job title. The other sent them to the person who actually owns the decision, mapped from the live org chart. Same volume, same week — very different number of meetings booked.',
 } as const;
@@ -53,24 +53,47 @@ export const TEAM_PAGE = {
 } as const;
 
 export const ENGAGE_PAGE = {
-  headline: 'Turn the org chart into meetings on your calendar',
+  headline: 'LinkedIn and email outreach from the live org graph',
   subheadline:
-    'The right person is identified. Now reach them with context — in your voice, on LinkedIn, WhatsApp, and email — and track every touch so you know which sequences turn into meetings.',
+    'Manage multi-step LinkedIn and email sequences tied to real org structure—approve sends, handle replies, track every touch, and book more of the right meetings.',
+  sections: {
+    whatYouCanDoTitle: 'What you can do',
+    whatYouCanDo: [
+      'Run multi-step sequences on LinkedIn and email (WhatsApp when it fits)',
+      'Draft in your voice and approve before anything sends',
+      'Step in when someone replies—keep the rest on rails',
+      'Track campaigns and every touch against the org map',
+      'Measure what converts by persona, function, and sequence',
+    ],
+    howItTiesTitle: 'From org chart to outreach',
+    howItTies: [
+      'Map the company and pick the right people from live structure',
+      'Enroll them into Outreach sequences from the same graph',
+      'Reach on LinkedIn and email with context—not a cold list',
+      'See replies and outcomes in one place',
+    ],
+    productsLinkLabel: 'Product details: Outreach →',
+    productsLinkHref: '/products/engagement-layer',
+    salesLinkLabel: 'Sales solution →',
+    salesLinkHref: '/solutions/sales',
+    recruitingLinkLabel: 'Recruiting solution →',
+    recruitingLinkHref: '/solutions/recruiting',
+  },
 } as const;
 
 export const PRODUCTS_INDEX = {
   title: 'Products',
-  sub: 'Everything you need to turn a target account into a booked meeting with the right person: explorer, function maps, timeline, connection intelligence, engagement, and API.',
+  sub: 'Everything Sales and Recruiting need to turn a target account into a booked meeting: explorer, function maps, timeline, connection intelligence, Outreach, and API.',
 } as const;
 
 export const SOLUTIONS_INDEX = {
   title: 'Solutions',
-  sub: 'Start with the org graph. Know exactly who to talk to before you spend a single message on them.',
+  sub: 'Start with the org graph. Built for Sales and Recruiting—know exactly who to talk to before you spend a single message.',
 } as const;
 
 export const RESOURCES_INDEX = {
   headline: 'Resources',
-  sub: 'Guides, research, and tools for turning org intelligence into more meetings — editorial, gated reports, and segment ROI models.',
+  sub: 'Guides, research, and tools for turning org intelligence into more meetings — editorial, gated reports, and ROI models for Sales and Recruiting.',
   cards: {
     blog: 'Editorial on org intelligence, targeting, and how teams turn structure into meetings.',
     reports:
@@ -79,7 +102,7 @@ export const RESOURCES_INDEX = {
       'Calculate how many extra meetings the org graph adds at your current outreach volume.',
   },
   blogParagraphs: [
-    'Long-form stories and practical guides on org intelligence — from outreach and mapping to corporate strategy and diligence.',
+    'Long-form stories and practical guides on org intelligence — from outreach and mapping to Sales and Recruiting workflows.',
     'New articles ship on a regular cadence. Subscribe to updates or talk to us about topics you want covered.',
   ],
   reportsParagraphs: [
@@ -87,13 +110,13 @@ export const RESOURCES_INDEX = {
     'Request access to upcoming releases or ask us about custom cuts for your sector or geography.',
   ],
   calculatorsParagraphs: [
-    'Interactive calculators showing how many additional qualified meetings the org graph adds per 100 outreach attempts — by segment and workflow.',
+    'Interactive calculators showing how many additional qualified meetings the org graph adds per 100 outreach attempts — for Sales and Recruiting workflows.',
     'We are rolling out calculators progressively. Book a conversation to walk through assumptions with your team or get early access.',
   ],
 } as const;
 
 export const PRICING_PAGE_DESCRIPTION =
-  'Access the org graph — credits to map any target company and reach the right person first. Plans for outreach, mapping, investors, and corporate strategy.';
+  'Access the org graph — credits to map any target company and reach the right person first. Plans for Sales and Recruiting, including LinkedIn and email outreach.';
 
 export const CONTACT_PAGE_SUB =
   'Talk to us about getting more of the right meetings for your team — email, WhatsApp, live chat, and office locations.';
@@ -106,11 +129,11 @@ export const CHROME_EXTENSION_PAGE = {
 
 export const STRUCTURED_DATA = {
   siteDescription:
-    'Org intelligence platform: queryable organizational structure for any company. 10M+ companies, 800M+ professionals. Helps teams book more meetings with the right people for the same effort.',
+    'Org intelligence platform: queryable organizational structure for any company. 10M+ companies, 800M+ professionals. Helps Sales and Recruiting teams book more meetings with the right people for the same effort.',
   nav: {
     pricing: 'Access the org graph — credits for mapping any target company',
     story: 'Why more targeted meetings beat more volume',
-    engage: 'Turn org intelligence into booked meetings',
+    engage: 'Manage LinkedIn and email outreach from the org graph',
     app: 'Sign in to Arxena',
   },
 } as const;

@@ -1313,6 +1313,129 @@ export class LinkedinUnipileRequestService {
     )) as Record<string, unknown>;
   }
 
+  // Unipile POST /posts/reaction — defaults to LinkedIn "like"
+  async reactToLinkedinPost(
+    accountId: string,
+    postId: string,
+    options?: {
+      reactionType?:
+        | 'like'
+        | 'celebrate'
+        | 'support'
+        | 'love'
+        | 'insightful'
+        | 'funny';
+      commentId?: string;
+      asOrganization?: string;
+      cleanupContext?: LinkedinUnipileAccountCleanupContext;
+    },
+  ): Promise<Record<string, unknown>> {
+    const trimmedAccountId = accountId.trim();
+    const trimmedPostId = postId.trim();
+    if (!trimmedAccountId || !trimmedPostId) {
+      throw new HttpException(
+        'accountId and postId are required to react to a post',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const body: Record<string, unknown> = {
+      account_id: trimmedAccountId,
+      post_id: trimmedPostId,
+      reaction_type: options?.reactionType ?? 'like',
+    };
+    if (options?.commentId) {
+      body.comment_id = options.commentId.trim();
+    }
+    if (options?.asOrganization) {
+      body.as_organization = options.asOrganization;
+    }
+
+    this.logger.log(
+      `Reacting (${String(body.reaction_type)}) to LinkedIn post ${trimmedPostId} via account ${trimmedAccountId}`,
+    );
+
+    return (await withAcquiredAccountRateLimit(
+      {
+        provider: 'linkedin',
+        accountId: trimmedAccountId,
+        method: 'comment',
+      },
+      () =>
+        this.makeUnipileRequest('/api/v1/posts/reaction', 'POST', body, {
+          linkedinAccountCleanup: options?.cleanupContext
+            ? { ...options.cleanupContext, accountId: trimmedAccountId }
+            : undefined,
+        }),
+    )) as Record<string, unknown>;
+  }
+
+  // Unipile magic route: LinkedIn followingStates patch (no first-class follow API on v1)
+  async followLinkedinProfile(
+    accountId: string,
+    providerId: string,
+    options?: {
+      cleanupContext?: LinkedinUnipileAccountCleanupContext;
+    },
+  ): Promise<Record<string, unknown>> {
+    const trimmedAccountId = accountId.trim();
+    const trimmedProviderId = providerId.trim();
+    if (!trimmedAccountId || !trimmedProviderId) {
+      throw new HttpException(
+        'accountId and providerId are required to follow a profile',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const requestUrl =
+      `https://www.linkedin.com/voyager/api/feed/dash/followingStates/` +
+      `urn:li:fsd_followingState:urn:li:fsd_profile:${trimmedProviderId}`;
+
+    this.logger.log(
+      `Following LinkedIn profile ${trimmedProviderId} via account ${trimmedAccountId}`,
+    );
+
+    return (await withAcquiredAccountRateLimit(
+      {
+        provider: 'linkedin',
+        accountId: trimmedAccountId,
+        method: 'endpoint',
+      },
+      () =>
+        this.makeUnipileRequest(
+          '/api/v1/linkedin',
+          'POST',
+          {
+            account_id: trimmedAccountId,
+            method: 'POST',
+            request_url: requestUrl,
+            body: { patch: { $set: { following: true } } },
+            encoding: false,
+          },
+          {
+            linkedinAccountCleanup: options?.cleanupContext
+              ? { ...options.cleanupContext, accountId: trimmedAccountId }
+              : undefined,
+          },
+        ),
+    )) as Record<string, unknown>;
+  }
+
+  // notify=true so LinkedIn records a profile view; empty sections keep the call light
+  async visitLinkedinProfileNotify(
+    accountId: string,
+    identifier: string,
+    options?: {
+      cleanupContext?: LinkedinUnipileAccountCleanupContext;
+    },
+  ): Promise<Record<string, unknown> | null> {
+    return this.fetchLinkedinUserProfile(accountId, identifier, {
+      notify: true,
+      linkedinSections: [],
+      cleanupContext: options?.cleanupContext,
+    });
+  }
+
   /**
    * Sends a LinkedIn connection invitation (Unipile POST /users/invite).
    * Throws on failure so callers can surface the error.

@@ -25,7 +25,11 @@ import { type WorkflowSendLinkedinInmailActionSettings } from 'src/modules/workf
 import { type WorkflowSendLinkedinMessageActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-linkedin-message-action-settings.type';
 import { type WorkflowFetchLinkedinActivityActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-fetch-linkedin-activity-action-settings.type';
 import { type WorkflowCommentOnLinkedinPostActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-comment-on-linkedin-post-action-settings.type';
+import { type WorkflowFollowLinkedinProfileActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-follow-linkedin-profile-action-settings.type';
+import { type WorkflowLikeLinkedinPostActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-like-linkedin-post-action-settings.type';
+import { type WorkflowSendLinkedinVoiceNoteActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-linkedin-voice-note-action-settings.type';
 import { type WorkflowSendWhatsappMessageActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-whatsapp-message-action-settings.type';
+import { type WorkflowViewLinkedinProfileActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-view-linkedin-profile-action-settings.type';
 
 type BaseWorkflowAction = {
   id: string;
@@ -140,6 +144,26 @@ export type WorkflowCommentOnLinkedinPostAction = BaseWorkflowAction & {
   settings: WorkflowCommentOnLinkedinPostActionSettings;
 };
 
+export type WorkflowSendLinkedinVoiceNoteAction = BaseWorkflowAction & {
+  type: WorkflowActionType.SEND_LINKEDIN_VOICE_NOTE;
+  settings: WorkflowSendLinkedinVoiceNoteActionSettings;
+};
+
+export type WorkflowViewLinkedinProfileAction = BaseWorkflowAction & {
+  type: WorkflowActionType.VIEW_LINKEDIN_PROFILE;
+  settings: WorkflowViewLinkedinProfileActionSettings;
+};
+
+export type WorkflowFollowLinkedinProfileAction = BaseWorkflowAction & {
+  type: WorkflowActionType.FOLLOW_LINKEDIN_PROFILE;
+  settings: WorkflowFollowLinkedinProfileActionSettings;
+};
+
+export type WorkflowLikeLinkedinPostAction = BaseWorkflowAction & {
+  type: WorkflowActionType.LIKE_LINKEDIN_POST;
+  settings: WorkflowLikeLinkedinPostActionSettings;
+};
+
 export type WorkflowSendWhatsappMessageAction = BaseWorkflowAction & {
   type: WorkflowActionType.SEND_WHATSAPP_MESSAGE;
   settings: WorkflowSendWhatsappMessageActionSettings;
@@ -185,6 +209,10 @@ export type WorkflowAction =
   | WorkflowSendLinkedinMessageAction
   | WorkflowFetchLinkedinActivityAction
   | WorkflowCommentOnLinkedinPostAction
+  | WorkflowSendLinkedinVoiceNoteAction
+  | WorkflowViewLinkedinProfileAction
+  | WorkflowFollowLinkedinProfileAction
+  | WorkflowLikeLinkedinPostAction
   | WorkflowSendWhatsappMessageAction
   | WorkflowAiAgentAction
   | WorkflowIteratorAction

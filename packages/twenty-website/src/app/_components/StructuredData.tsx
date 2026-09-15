@@ -20,7 +20,7 @@ const SITE_NAVIGATION: {
     description: STRUCTURED_DATA.nav.story,
   },
   {
-    name: 'Engage',
+    name: 'Outreach',
     url: '/engage',
     description: STRUCTURED_DATA.nav.engage,
   },

@@ -45,6 +45,23 @@ describe('outreach-inbound-reply-classifier.util', () => {
     expect(result.conversationStage).toBe('FOLLOW_UP_MEETING');
   });
 
+  it('maps a vague day/week window without a clock time to FOLLOW_UP_MEETING', () => {
+    expect(
+      classifyInboundReplyFallback('Lets speak next week').conversationStage,
+    ).toBe('FOLLOW_UP_MEETING');
+    expect(
+      classifyInboundReplyFallback('Monday second half works for me')
+        .conversationStage,
+    ).toBe('FOLLOW_UP_MEETING');
+  });
+
+  it('does not treat bare interest with "am" as a time window', () => {
+    expect(
+      classifyInboundReplyFallback('I am interested, tell me more')
+        .conversationStage,
+    ).toBe('INTENT');
+  });
+
   it('maps sales closer sample threads to REPLIED cadence', () => {
     expect(
       classifyInboundReplyFallback(
@@ -59,7 +76,7 @@ describe('outreach-inbound-reply-classifier.util', () => {
       classifyInboundReplyFallback(
         'This sounds interesting. Yes sure Friday next week is relatively free OK',
       ).conversationStage,
-    ).toBe('INTENT');
+    ).toBe('FOLLOW_UP_MEETING');
   });
 
   it('defaults questions to ACKNOWLEDGEMENT', () => {

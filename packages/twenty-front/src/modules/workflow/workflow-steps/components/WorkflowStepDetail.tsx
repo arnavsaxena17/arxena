@@ -26,6 +26,10 @@ import { WorkflowEditActionSendLinkedinInmail } from '@/workflow/workflow-steps/
 import { WorkflowEditActionSendLinkedinMessage } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionSendLinkedinMessage';
 import { WorkflowEditActionFetchLinkedinActivity } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionFetchLinkedinActivity';
 import { WorkflowEditActionCommentOnLinkedinPost } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionCommentOnLinkedinPost';
+import { WorkflowEditActionFollowLinkedinProfile } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionFollowLinkedinProfile';
+import { WorkflowEditActionLikeLinkedinPost } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionLikeLinkedinPost';
+import { WorkflowEditActionSendLinkedinVoiceNote } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionSendLinkedinVoiceNote';
+import { WorkflowEditActionViewLinkedinProfile } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionViewLinkedinProfile';
 import { WorkflowEditActionSendWhatsappMessage } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionSendWhatsappMessage';
 import { WorkflowEditTriggerCronForm } from '@/workflow/workflow-trigger/components/WorkflowEditTriggerCronForm';
 import { WorkflowEditTriggerDatabaseEventForm } from '@/workflow/workflow-trigger/components/WorkflowEditTriggerDatabaseEventForm';
@@ -271,6 +275,42 @@ export const WorkflowStepDetail = ({
         case 'COMMENT_ON_LINKEDIN_POST': {
           return (
             <WorkflowEditActionCommentOnLinkedinPost
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={props}
+            />
+          );
+        }
+        case 'SEND_LINKEDIN_VOICE_NOTE': {
+          return (
+            <WorkflowEditActionSendLinkedinVoiceNote
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={props}
+            />
+          );
+        }
+        case 'VIEW_LINKEDIN_PROFILE': {
+          return (
+            <WorkflowEditActionViewLinkedinProfile
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={props}
+            />
+          );
+        }
+        case 'FOLLOW_LINKEDIN_PROFILE': {
+          return (
+            <WorkflowEditActionFollowLinkedinProfile
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={props}
+            />
+          );
+        }
+        case 'LIKE_LINKEDIN_POST': {
+          return (
+            <WorkflowEditActionLikeLinkedinPost
               key={stepId}
               action={stepDefinition.definition}
               actionOptions={props}

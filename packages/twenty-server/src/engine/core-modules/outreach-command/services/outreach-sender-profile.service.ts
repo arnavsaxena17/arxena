@@ -10,7 +10,7 @@ import { OUTREACH_SENDER_PROFILE_LLM_MODEL_ID } from 'src/engine/core-modules/ou
 import {
   OUTREACH_BUILD_SENDER_PROFILE_SYSTEM_PROMPT,
   buildOutreachSenderProfileUserPrompt,
-} from 'src/engine/core-modules/outreach-command/prompts/outreach-sender-agnostic.prompt';
+} from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
 import {
   outreachSenderProfileLlmSchema,
   type OutreachSenderProfileLlmResult,

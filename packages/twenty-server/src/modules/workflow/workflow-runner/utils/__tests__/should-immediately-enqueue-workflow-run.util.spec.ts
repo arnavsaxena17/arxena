@@ -7,27 +7,27 @@ describe('shouldImmediatelyEnqueueWorkflowRun', () => {
     expect(
       shouldImmediatelyEnqueueWorkflowRun({
         triggerType: WorkflowTriggerType.MANUAL,
-        workflowName: SEEDED_OUTREACH_WORKFLOW.perCandidate.name,
+        workflowName: SEEDED_OUTREACH_WORKFLOW.candidateSequencer.name,
       }),
     ).toBe(true);
   });
 
-  it('should soft-throttle Stage B sequencer workflows', () => {
+  it('should soft-throttle Candidate Sequencer workflows', () => {
+    expect(
+      shouldImmediatelyEnqueueWorkflowRun({
+        triggerType: WorkflowTriggerType.DATABASE_EVENT,
+        workflowName: SEEDED_OUTREACH_WORKFLOW.candidateSequencer.name,
+      }),
+    ).toBe(false);
+  });
+
+  it('should not soft-throttle deactivated Stage B/C names', () => {
     expect(
       shouldImmediatelyEnqueueWorkflowRun({
         triggerType: WorkflowTriggerType.DATABASE_EVENT,
         workflowName: SEEDED_OUTREACH_WORKFLOW.perCandidate.name,
       }),
-    ).toBe(false);
-  });
-
-  it('should soft-throttle Stage C sequencer workflows', () => {
-    expect(
-      shouldImmediatelyEnqueueWorkflowRun({
-        triggerType: WorkflowTriggerType.DATABASE_EVENT,
-        workflowName: SEEDED_OUTREACH_WORKFLOW.candidateUpdated.name,
-      }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('should enqueue webhook Test runs immediately', () => {

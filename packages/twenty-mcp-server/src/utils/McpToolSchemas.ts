@@ -3004,6 +3004,114 @@ export const LINKEDIN_UNIPILE_SEND_INVITATION_INPUT_DESCRIPTOR: readonly McpInpu
     },
   ] as const;
 
+export const LINKEDIN_UNIPILE_VISIT_PROFILE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
+  [
+    {
+      key: 'account_id',
+      type: 'string',
+      description: 'LinkedIn Unipile account ID',
+      required: true,
+    },
+    {
+      key: 'identifier',
+      type: 'string',
+      description: 'LinkedIn public slug or provider_id to visit',
+      required: true,
+    },
+    {
+      key: 'notify',
+      type: 'boolean',
+      description: 'Notify the viewee (default true)',
+      required: false,
+    },
+  ] as const;
+
+export const LINKEDIN_UNIPILE_FOLLOW_PROFILE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
+  [
+    {
+      key: 'account_id',
+      type: 'string',
+      description: 'LinkedIn Unipile account ID',
+      required: true,
+    },
+    {
+      key: 'provider_id',
+      type: 'string',
+      description: 'LinkedIn private provider_id (ACo…). Prefer when known.',
+      required: false,
+    },
+    {
+      key: 'identifier',
+      type: 'string',
+      description:
+        'Public slug or URL — resolved to provider_id when provider_id is omitted',
+      required: false,
+    },
+  ] as const;
+
+export const LINKEDIN_UNIPILE_POST_REACTION_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
+  [
+    {
+      key: 'account_id',
+      type: 'string',
+      description: 'LinkedIn Unipile account ID',
+      required: true,
+    },
+    {
+      key: 'post_id',
+      type: 'string',
+      description: 'Post social_id from FETCH_LINKEDIN_ACTIVITY / get_user_posts',
+      required: true,
+    },
+    {
+      key: 'reaction_type',
+      type: 'string',
+      description:
+        'like | celebrate | support | love | insightful | funny (default like)',
+      required: false,
+    },
+    {
+      key: 'comment_id',
+      type: 'string',
+      description: 'Optional comment id to react to instead of the post',
+      required: false,
+    },
+    {
+      key: 'as_organization',
+      type: 'string',
+      description: 'Optional LinkedIn organization id to react as a company page',
+      required: false,
+    },
+  ] as const;
+
+export const LINKEDIN_UNIPILE_SEND_VOICE_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
+  [
+    {
+      key: 'account_id',
+      type: 'string',
+      description: 'LinkedIn Unipile account ID',
+      required: true,
+    },
+    {
+      key: 'attendees_ids',
+      type: 'object',
+      description: 'Recipient provider IDs',
+      required: true,
+    },
+    {
+      key: 'text',
+      type: 'string',
+      description: 'Optional caption (may be empty)',
+      required: false,
+    },
+    {
+      key: 'voice_message',
+      type: 'object',
+      description: 'Audio payload for voice_message (.m4a preferred)',
+      required: true,
+    },
+  ] as const;
+
 export const WHATSAPP_UNIPILE_UPDATE_MEMBER_ACCOUNT_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
   [
     {

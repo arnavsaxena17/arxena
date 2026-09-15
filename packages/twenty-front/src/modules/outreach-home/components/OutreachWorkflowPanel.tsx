@@ -64,7 +64,7 @@ export const OutreachWorkflowPanel = ({
   if (!hasWorkflow || !workflowId) {
     return (
       <StyledEmpty>
-        <Loader /> Preparing default Stage B outreach workflow…
+        <Loader /> Preparing default Candidate Sequencer workflow…
       </StyledEmpty>
     );
   }

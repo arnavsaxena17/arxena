@@ -1,6 +1,11 @@
 import { isDefined, resolveInput } from 'twenty-shared/utils';
 import { extractVariablesFromInput } from 'twenty-shared/workflow';
 
+import {
+  buildFindRecordsLlmText,
+  rewriteOutreachResolvedPromptSections,
+} from 'src/engine/core-modules/outreach-command/utils/format-outreach-llm-context.util';
+
 export const getValueAtWorkflowVariablePath = (
   context: Record<string, unknown>,
   path: string,
@@ -71,7 +76,9 @@ export const resolveWorkflowPromptFromContext = ({
   }
 
   return {
-    resolvedPrompt: resolveInput(prompt, context) as string,
+    resolvedPrompt: rewriteOutreachResolvedPromptSections(
+      resolveInput(prompt, context) as string,
+    ),
     missingVariablePaths: [],
   };
 };
@@ -93,6 +100,6 @@ export const buildFindRecordsStepResult = (
   return {
     ...structuredResult,
     // Match FindRecordsWorkflowAction: {{step.text}} for AI prompts
-    text: JSON.stringify(structuredResult, null, 2),
+    text: buildFindRecordsLlmText(records),
   };
 };

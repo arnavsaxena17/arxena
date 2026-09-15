@@ -19,7 +19,10 @@ import { materializeCandidateEventWithGraphQL } from 'src/engine/core-modules/ou
 import { withAcquiredAccountRateLimit } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { type UnipileChatAttachment } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile/types/unipile-chat-attachment.type';
-import { appendUnipileChatAttachments } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile/utils/append-unipile-chat-attachments.util';
+import {
+  appendUnipileChatAttachments,
+  appendUnipileVoiceMessage,
+} from 'src/engine/core-modules/arx-chat/services/linkedin-unipile/utils/append-unipile-chat-attachments.util';
 import { isValidLinkedInProviderId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-attendee-id.util';
 
 /**
@@ -206,10 +209,7 @@ export class LinkedinUnipileMessagingService {
     formData.append('text', message);
 
     appendUnipileChatAttachments(formData, attachments);
-
-    if (voiceMessage) {
-      formData.append('voice_message', voiceMessage);
-    }
+    appendUnipileVoiceMessage(formData, voiceMessage);
 
     if (videoMessage) {
       formData.append('video_message', videoMessage);
@@ -536,10 +536,7 @@ export class LinkedinUnipileMessagingService {
       formData.append('text', message);
 
       appendUnipileChatAttachments(formData, attachments);
-
-      if (voiceMessage) {
-        formData.append('voice_message', voiceMessage);
-      }
+      appendUnipileVoiceMessage(formData, voiceMessage);
 
       if (videoMessage) {
         formData.append('video_message', videoMessage);

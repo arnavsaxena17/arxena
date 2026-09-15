@@ -5,8 +5,8 @@ import Link from 'next/link';
 
 import {
   ORG_CHART_EMBED_DOCS_PATH,
-  ORG_CHART_EMBED_SOLUTION_PAGE,
   ORG_CHART_EMBED_SNIPPET_EXAMPLE,
+  ORG_CHART_EMBED_SOLUTION_PAGE,
 } from '@/lib/org-chart-embed-solution-content';
 
 const StyledSection = styled.section`
@@ -164,14 +164,14 @@ export const OrgChartEmbedSolutionContent = ({
 
       <StyledBlockTitle>3. Verify on your site</StyledBlockTitle>
       <StyledParagraph>
-        The chart loads in an iframe from arxena.com by default. Your origin must
-        match the allowlist on the embed key.
+        The chart loads in an iframe from arxena.com by default. Your origin
+        must match the allowlist on the embed key.
       </StyledParagraph>
 
       <StyledBlockTitle>Use cases</StyledBlockTitle>
       <StyledBulletList>
         <li>Careers page leadership structure</li>
-        <li>Investor relations and annual report embeds</li>
+        <li>Careers pages and customer portal embeds</li>
         <li>Sales enablement on customer account pages</li>
         <li>Partner portals with company structure context</li>
       </StyledBulletList>

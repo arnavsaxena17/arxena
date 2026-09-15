@@ -32,9 +32,8 @@ export const SEEDED_OUTREACH_WORKFLOW = {
     role: 'Stage updates' as const,
     trigger: 'candidate.updated',
   },
-  // Seeded as DRAFT only. Merges perCandidate + candidateUpdated behind one
-  // create-or-update trigger. Publishing it requires deactivating those two,
-  // plus a QUEUED re-entry send guard (see outreach-workflow-graphs.ts).
+  // Live sequencer (Stage B + C merge). Publishing requires deactivating
+  // perCandidate + candidateUpdated (see OUTREACH_WORKFLOW_NAMES_TO_DEACTIVATE).
   candidateSequencer: {
     name: 'Outreach — Candidate Sequencer',
     slug: 'candidateSequencer',
@@ -55,6 +54,9 @@ export const OUTREACH_WORKFLOW_NAMES_TO_DEACTIVATE = [
   'Outreach — Negotiating',
   'Outreach — Deferred',
   'Outreach — Meeting Booked',
+  // Replaced by Candidate Sequencer
+  'Outreach — Per Enrolled Candidate',
+  'Outreach — Enrolled Person Updated',
 ] as const;
 
 export type SeededOutreachWorkflowKey = keyof typeof SEEDED_OUTREACH_WORKFLOW;

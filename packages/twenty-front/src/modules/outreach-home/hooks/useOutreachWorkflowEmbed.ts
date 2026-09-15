@@ -4,7 +4,7 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { CoreObjectNameSingular } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 
-import { OUTREACH_WORKFLOW_B_NAME } from '@/outreach-home/constants/outreach-command.constants';
+import { OUTREACH_WORKFLOW_SEQUENCER_NAME } from '@/outreach-home/constants/outreach-command.constants';
 import { outreachContextState } from '@/outreach-home/states/outreachContextState';
 import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
@@ -94,7 +94,7 @@ export const useOutreachWorkflowEmbed = (options?: { enabled?: boolean }) => {
       objectNameSingular: CoreObjectNameSingular.Workflow,
       filter: {
         name: {
-          eq: OUTREACH_WORKFLOW_B_NAME,
+          eq: OUTREACH_WORKFLOW_SEQUENCER_NAME,
         },
       },
       limit: 1,
@@ -121,7 +121,7 @@ export const useOutreachWorkflowEmbed = (options?: { enabled?: boolean }) => {
 
   const defaultOutreachWorkflowId =
     defaultOutreachWorkflows[0]?.id ??
-    workflows.find((workflow) => workflow.name === OUTREACH_WORKFLOW_B_NAME)
+    workflows.find((workflow) => workflow.name === OUTREACH_WORKFLOW_SEQUENCER_NAME)
       ?.id ??
     ensuredWorkflowId;
 
@@ -165,7 +165,7 @@ export const useOutreachWorkflowEmbed = (options?: { enabled?: boolean }) => {
         label: workflow.name ?? workflow.id,
       }));
 
-    // Keep the current pin visible even if it is not ACTIVE (e.g. Stage B draft).
+    // Keep the current pin visible even if it is not ACTIVE (e.g. Sequencer draft).
     if (
       isDefined(resolvedWorkflowId) &&
       !options.some((option) => option.id === resolvedWorkflowId)
@@ -261,7 +261,7 @@ export const useOutreachWorkflowEmbed = (options?: { enabled?: boolean }) => {
     setSelectedWorkflowIdOverride(null);
   }, [projectId]);
 
-  // Create the Stage B default when missing, and bind it only if Project has none.
+  // Create the Sequencer default when missing, and bind it only if Project has none.
   useEffect(() => {
     if (!isEnabled || !isDefined(projectId)) {
       return;
@@ -280,7 +280,7 @@ export const useOutreachWorkflowEmbed = (options?: { enabled?: boolean }) => {
       return;
     }
 
-    // Keep an explicit Project pin — do not overwrite with the Stage B default.
+    // Keep an explicit Project pin — do not overwrite with the Sequencer default.
     if (isNonEmptyString(projectOutreachWorkflowId)) {
       return;
     }
@@ -297,7 +297,7 @@ export const useOutreachWorkflowEmbed = (options?: { enabled?: boolean }) => {
     void (async () => {
       try {
         const created = await createWorkflow({
-          name: OUTREACH_WORKFLOW_B_NAME,
+          name: OUTREACH_WORKFLOW_SEQUENCER_NAME,
         });
 
         if (!isDefined(created?.id)) {

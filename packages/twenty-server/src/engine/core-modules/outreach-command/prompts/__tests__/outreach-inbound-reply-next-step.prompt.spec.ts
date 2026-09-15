@@ -1,8 +1,9 @@
 import {
   OUTREACH_DONT_RESPOND_SENTINEL,
+  buildOutreachFirstMessagePrompt,
   buildOutreachInboundSignalExtractionPrompt,
   buildOutreachSalesChatDraftPrompt,
-} from 'src/engine/core-modules/outreach-command/prompts/outreach-inbound-reply-next-step.prompt';
+} from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
 import { OUTREACH_AI_LEGACY_SAMPLE_TRANSCRIPT } from 'src/engine/core-modules/outreach-command/prompts/fixtures/transcripts/outreach-ai-naresh-transcripts';
 
 const TRANSCRIPT = OUTREACH_AI_LEGACY_SAMPLE_TRANSCRIPT;
@@ -86,6 +87,32 @@ describe('buildOutreachSalesChatDraftPrompt', () => {
     );
   });
 
+  it('should soft-ask until a window, and only close with Available slots later', () => {
+    expect(prompt).toContain('Soft ask until they name a time window');
+    expect(prompt).toContain('ask which few times inside');
+    expect(prompt).toContain('Close slots only when');
+    expect(prompt).toContain('INTENT / ACKNOWLEDGEMENT: acknowledge');
+    expect(prompt).toContain('No Available slots.');
+    expect(prompt).toContain(
+      'FOLLOW_UP_MEETING with no confirmed time: they named a window',
+    );
+  });
+
+  it('should soft-ask on openers and never instruct concrete calendar windows', () => {
+    const opener = buildOutreachFirstMessagePrompt({
+      senderJson: '{}',
+      prospectEnrichmentJson: '{}',
+      kind: 'opener',
+      calendarSlots:
+        '[{"startsAt":"2024-11-25T15:00:00.000Z","endsAt":"2024-11-25T15:30:00.000Z"}]',
+    });
+
+    expect(opener).toContain('soft ask only');
+    expect(opener).toContain('sometime this week or next');
+    expect(opener).toContain('Never paste clock times');
+    expect(opener).not.toContain('two concrete windows from calendar');
+  });
+
   it('should inject the full multi-round transcript and conversation stage', () => {
     expect(prompt).toContain('Read the full thread, not only the last line');
     expect(prompt).toContain('Conversation stage: FOLLOW_UP_MEETING');
@@ -134,7 +161,9 @@ describe('buildOutreachInboundSignalExtractionPrompt', () => {
 
   it('should inject the thread, the slots, and the last inbound channel', () => {
     expect(prompt).toContain('Last inbound channel: WHATSAPP');
-    expect(prompt).toContain('2024-11-25T15:00:00.000Z');
+    expect(prompt).toContain(
+      '(0) 2024-11-25T15:00:00.000Z → 2024-11-25T15:30:00.000Z',
+    );
     expect(prompt).toContain('Interested, can you call on 8826545599');
   });
 

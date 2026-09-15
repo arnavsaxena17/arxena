@@ -10,6 +10,7 @@ import {
 import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/interfaces/workflow-action.interface';
 
 import { FindRecordsService } from 'src/engine/core-modules/record-crud/services/find-records.service';
+import { buildFindRecordsLlmText } from 'src/engine/core-modules/outreach-command/utils/format-outreach-llm-context.util';
 import { WorkflowCommonWorkspaceService } from 'src/modules/workflow/common/workspace-services/workflow-common.workspace-service';
 import {
   WorkflowStepExecutorException,
@@ -116,8 +117,8 @@ export class FindRecordsWorkflowAction implements WorkflowAction {
     return {
       result: {
         ...structuredResult,
-        // Pretty-printed JSON for AI_AGENT prompts ({{step.text}})
-        text: JSON.stringify(structuredResult, null, 2),
+        // Chat messages → plain transcript; other objects stay pretty JSON.
+        text: buildFindRecordsLlmText(records),
       },
     };
   }

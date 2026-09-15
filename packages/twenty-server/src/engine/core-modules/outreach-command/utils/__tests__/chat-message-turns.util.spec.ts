@@ -32,6 +32,31 @@ describe('chat-message-turns.util', () => {
     ]);
   });
 
+  it('maps Unipile text/isSender messages into assistant/user turns', () => {
+    expect(
+      asChatTurns([
+        {
+          id: 'inbound-1',
+          text: 'Thanks, I am interested.',
+          isSender: false,
+          timestamp: '2026-09-09T14:25:29.886Z',
+        },
+        { text: 'Glad to hear it.', isSender: true },
+      ]),
+    ).toEqual([
+      {
+        role: 'user',
+        content: 'Thanks, I am interested.',
+        id: 'inbound-1',
+        timestamp: '2026-09-09T14:25:29.886Z',
+      },
+      {
+        role: 'assistant',
+        content: 'Glad to hear it.',
+      },
+    ]);
+  });
+
   it('appends incoming turns that are not already present', () => {
     expect(
       mergeChatTurns(

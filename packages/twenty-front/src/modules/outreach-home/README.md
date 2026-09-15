@@ -29,7 +29,7 @@ Workflow topology:
 | Working set | `/outreach-home?projectId=` | Companies (ephemeral) / People / Workflow + Ask AI |
 | CRM dashboard | `/object/dashboard/:id` (**Outreach**) | Funnel / coverage / stage / channel / speed / outcomes / **workflow control**. Prefilled on workspace create; existing workspaces: `upgrade:2-25:prefill-gtm-command-dashboard` and `upgrade:2-25:sync-outreach-workflow-control-dashboard`. |
 
-Ask AI stays closed on `/outreach-home` until the user opens it from the nav chat icon or **+ New chat**. Chrome is two rows: **PageHeader** (`Outreach` + project picker / pause-resume / Menu) and **main tabs** (Companies / People / Setup). Switch projects via the header Project picker; create projects via Menu → Add New Project. Stage B workflow still auto-binds **`Outreach — Per Enrolled Candidate`** via `useOutreachWorkflowEmbed` when the Project has no `outreachWorkflowId`.
+Ask AI stays closed on `/outreach-home` until the user opens it from the nav chat icon or **+ New chat**. Chrome is two rows: **PageHeader** (`Outreach` + project picker / pause-resume / Menu) and **main tabs** (Companies / People / Setup). Switch projects via the header Project picker; create projects via Menu → Add New Project. Candidate Sequencer still auto-binds **`Outreach — Candidate Sequencer`** via `useOutreachWorkflowEmbed` when the Project has no `outreachWorkflowId`.
 
 Optional: `?workflowId=` / `?workflowRunId=`
 
@@ -50,7 +50,7 @@ npx nx run twenty-server:command -- upgrade:2-25:sync-gtm-outreach-workflow-skil
 SERVER_URL=http://127.0.0.1:3000 SERVER_HOST=arxena.localhost API_TOKEN='…' \
   npx tsx packages/twenty-server/scripts/setup-outreach-command-dashboard.ts
 
-# 4) Optional: seed full Workflow B + C graphs (UI also auto-creates blank Stage B)
+# 4) Optional: seed Candidate Sequencer graph (UI also auto-creates blank Sequencer)
 SERVER_URL=http://127.0.0.1:3000 SERVER_HOST=arxena.localhost API_TOKEN='…' \
   OUTREACH_DELAY_MS=1000 \
   npx tsx packages/twenty-server/scripts/setup-gtm-outreach-workflow.ts
@@ -72,7 +72,7 @@ OUTREACH_DELAY_MS=1000 OUTREACH_SIMULATE_MODE=full OUTREACH_PROJECT_ID=<uuid> AP
 
 ## Journey tab (CandidateChatDrawer)
 
-Opened from Outreach People (name click sets Journey as default tab). Aggregates Stage B + Stage C runs for one enrolled candidate:
+Opened from Outreach People (name click sets Journey as default tab). Aggregates Candidate Sequencer runs for one enrolled candidate:
 
 | Control | API |
 | --- | --- |

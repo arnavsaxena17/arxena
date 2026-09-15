@@ -7,7 +7,7 @@ import { OUTREACH_COMPANY_ENRICHMENT_LLM_MODEL_ID } from 'src/engine/core-module
 import {
   buildOutreachFilterProfilesUserPrompt,
   OUTREACH_FILTER_PROFILES_SYSTEM_PROMPT,
-} from 'src/engine/core-modules/outreach-command/prompts/outreach-filter-profiles.prompt';
+} from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
 import {
   gtmFilterProfilesLlmResultSchema,
   type OutreachFilterProfilesLlmResult,

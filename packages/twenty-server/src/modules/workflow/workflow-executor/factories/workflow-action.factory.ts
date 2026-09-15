@@ -30,7 +30,11 @@ import { SendLinkedinInmailWorkflowAction } from 'src/modules/workflow/workflow-
 import { SendLinkedinMessageWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/send-linkedin-message.workflow-action';
 import { FetchLinkedinActivityWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/fetch-linkedin-activity.workflow-action';
 import { CommentOnLinkedinPostWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/comment-on-linkedin-post.workflow-action';
+import { FollowLinkedinProfileWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/follow-linkedin-profile.workflow-action';
+import { LikeLinkedinPostWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/like-linkedin-post.workflow-action';
 import { SendWhatsappMessageWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/send-whatsapp-message.workflow-action';
+import { SendLinkedinVoiceNoteWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/send-linkedin-voice-note.workflow-action';
+import { ViewLinkedinProfileWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/view-linkedin-profile.workflow-action';
 import { WorkflowActionType } from 'twenty-shared/workflow';
 
 @Injectable()
@@ -57,6 +61,10 @@ export class WorkflowActionFactory {
     private readonly sendLinkedinMessageWorkflowAction: SendLinkedinMessageWorkflowAction,
     private readonly fetchLinkedinActivityWorkflowAction: FetchLinkedinActivityWorkflowAction,
     private readonly commentOnLinkedinPostWorkflowAction: CommentOnLinkedinPostWorkflowAction,
+    private readonly sendLinkedinVoiceNoteWorkflowAction: SendLinkedinVoiceNoteWorkflowAction,
+    private readonly viewLinkedinProfileWorkflowAction: ViewLinkedinProfileWorkflowAction,
+    private readonly followLinkedinProfileWorkflowAction: FollowLinkedinProfileWorkflowAction,
+    private readonly likeLinkedinPostWorkflowAction: LikeLinkedinPostWorkflowAction,
     private readonly sendWhatsappMessageWorkflowAction: SendWhatsappMessageWorkflowAction,
     private readonly aiAgentWorkflowAction: AiAgentWorkflowAction,
     private readonly emptyWorkflowAction: EmptyWorkflowAction,
@@ -107,6 +115,14 @@ export class WorkflowActionFactory {
         return this.fetchLinkedinActivityWorkflowAction;
       case WorkflowActionType.COMMENT_ON_LINKEDIN_POST:
         return this.commentOnLinkedinPostWorkflowAction;
+      case WorkflowActionType.SEND_LINKEDIN_VOICE_NOTE:
+        return this.sendLinkedinVoiceNoteWorkflowAction;
+      case WorkflowActionType.VIEW_LINKEDIN_PROFILE:
+        return this.viewLinkedinProfileWorkflowAction;
+      case WorkflowActionType.FOLLOW_LINKEDIN_PROFILE:
+        return this.followLinkedinProfileWorkflowAction;
+      case WorkflowActionType.LIKE_LINKEDIN_POST:
+        return this.likeLinkedinPostWorkflowAction;
       case WorkflowActionType.SEND_WHATSAPP_MESSAGE:
         return this.sendWhatsappMessageWorkflowAction;
       case WorkflowActionType.AI_AGENT:

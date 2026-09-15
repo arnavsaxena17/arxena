@@ -10,7 +10,7 @@ import { OUTREACH_COMPANY_ENRICHMENT_LLM_MODEL_ID } from 'src/engine/core-module
 import {
   buildOutreachWebSearchCompanyUserPrompt,
   OUTREACH_WEB_SEARCH_COMPANY_SYSTEM_PROMPT,
-} from 'src/engine/core-modules/outreach-command/prompts/outreach-web-search-company.prompt';
+} from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
 import {
   gtmWebSearchCompanyLlmResultSchema,
   type OutreachWebSearchCompanyLlmResult,

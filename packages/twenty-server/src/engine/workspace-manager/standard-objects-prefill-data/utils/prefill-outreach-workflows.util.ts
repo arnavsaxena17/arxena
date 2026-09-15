@@ -4,10 +4,13 @@ import { AUTO_SELECT_SMART_MODEL_ID } from 'twenty-shared/constants';
 import { type EntityManager } from 'typeorm';
 import { v5 } from 'uuid';
 
-import { OUTREACH_QUALIFY_PROSPECT_SYSTEM_PROMPT } from 'src/engine/core-modules/outreach-command/schemas/outreach-qualify-prospect-llm.schema';
+import { OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS } from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
 import { getOutreachLogicFunctionIds } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-logic-functions.util';
 import { OUTREACH_WORKFLOW_GRAPH_TEMPLATES } from 'src/engine/workspace-manager/standard-objects-prefill-data/data/outreach-workflow-graphs';
-import { SEEDED_OUTREACH_WORKFLOW } from 'src/engine/workspace-manager/standard-objects-prefill-data/constants/seeded-outreach-workflow-names.const';
+import {
+  OUTREACH_WORKFLOW_NAMES_TO_DEACTIVATE,
+  SEEDED_OUTREACH_WORKFLOW,
+} from 'src/engine/workspace-manager/standard-objects-prefill-data/constants/seeded-outreach-workflow-names.const';
 import {
   OUTREACH_WF_AGENT_EMAIL,
   OUTREACH_WF_AGENT_EXTRACT,
@@ -385,8 +388,7 @@ const upsertAgents = async ({
       name: 'gtm-outreach-linkedin-message',
       label: 'GTM LinkedIn message',
       modelId: AUTO_SELECT_SMART_MODEL_ID,
-      prompt:
-        'You draft short LinkedIn messages for GTM outreach. Return JSON { "message": "<body>" } only.',
+      prompt: OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS.linkedinMessage,
       responseFormat: { type: 'json', schema: LINKEDIN_MESSAGE_SCHEMA },
       universalIdentifier: v5(
         `gtmOutreachAgentUniversal:linkedinMessage:${workspaceId}`,
@@ -399,8 +401,7 @@ const upsertAgents = async ({
       name: 'gtm-outreach-fallback-email',
       label: 'GTM fallback email',
       modelId: AUTO_SELECT_SMART_MODEL_ID,
-      prompt:
-        'You draft short ICP-aligned emails when LinkedIn connect is ignored. Return JSON { "subject", "message" } only. Do not invent LinkedIn facts.',
+      prompt: OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS.fallbackEmail,
       responseFormat: { type: 'json', schema: FALLBACK_EMAIL_SCHEMA },
       universalIdentifier: v5(
         `gtmOutreachAgentUniversal:fallbackEmail:${workspaceId}`,
@@ -413,8 +414,7 @@ const upsertAgents = async ({
       name: 'gtm-outreach-reply',
       label: 'GTM inbound reply',
       modelId: AUTO_SELECT_SMART_MODEL_ID,
-      prompt:
-        'You draft short GTM sales replies after the inbound signals have been extracted and validated. Return JSON { "message", "emailSubject", "emailBody", "referralMessage" }. Empty strings when unused. Write copy only: the reply channel, the meeting time and every contact detail are injected as verified facts, so never restate a time that is not injected and never extract a contact yourself. If they are the wrong person, ask for a referral. Do not ask recruiting screening questions or share a job description.',
+      prompt: OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS.reply,
       responseFormat: { type: 'json', schema: REPLY_SCHEMA },
       universalIdentifier: v5(
         `gtmOutreachAgentUniversal:reply:${workspaceId}`,
@@ -427,8 +427,7 @@ const upsertAgents = async ({
       name: OUTREACH_EXTRACT_SIGNALS_AGENT_NAME,
       label: 'GTM inbound signal extraction',
       modelId: OUTREACH_EXTRACT_SIGNALS_MODEL_ID,
-      prompt:
-        'You extract structured signals from an inbound sales reply. You never write prose and never classify intent. Return JSON { "acceptedSlotIndex", "requestedChannelSwitch", "prospectEmail", "referralName", "referralEmail", "referralPhone", "shouldNotRespond" }. acceptedSlotIndex is a 0-based index into the injected slots and is -1 unless they confirmed one specific slot. requestedChannelSwitch is NONE unless they explicitly asked to move channel. Copy contacts character for character from the transcript and leave a field empty rather than guessing — naming someone without contact details is normal. shouldNotRespond is true only for opt-out.',
+      prompt: OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS.extractSignals,
       responseFormat: { type: 'json', schema: EXTRACT_SIGNALS_SCHEMA },
       universalIdentifier: v5(
         `gtmOutreachAgentUniversal:extractSignals:${workspaceId}`,
@@ -441,7 +440,7 @@ const upsertAgents = async ({
       name: 'gtm-outreach-qualify-prospect',
       label: 'GTM qualify prospect',
       modelId: AUTO_SELECT_SMART_MODEL_ID,
-      prompt: OUTREACH_QUALIFY_PROSPECT_SYSTEM_PROMPT,
+      prompt: OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS.qualifyProspect,
       responseFormat: { type: 'json', schema: QUALIFY_PROSPECT_SCHEMA },
       universalIdentifier: v5(
         `gtmOutreachAgentUniversal:qualifyProspect:${workspaceId}`,
@@ -741,7 +740,7 @@ export const prefillOutreachWorkflows = async ({
     entityManager,
     schemaName,
     workspaceId,
-    outreachWorkflowId: prefillIds.perCandidate.workflowId,
+    outreachWorkflowId: prefillIds.candidateSequencer.workflowId,
   });
 
   const replacements: Record<string, string> = {
@@ -764,9 +763,11 @@ export const prefillOutreachWorkflows = async ({
     replacements[token] = lfIds[idKey as keyof typeof lfIds];
   }
 
-  const seededNames = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.map(
-    (graph) => graph.name,
+  const deactivatedNames = new Set<string>(OUTREACH_WORKFLOW_NAMES_TO_DEACTIVATE);
+  const activeGraphTemplates = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.filter(
+    (graph) => !deactivatedNames.has(graph.name),
   );
+  const seededNames = activeGraphTemplates.map((graph) => graph.name);
 
   const existingRows = (await entityManager.query(
     `
@@ -804,7 +805,7 @@ export const prefillOutreachWorkflows = async ({
   const versionRows: Array<Record<string, unknown>> = [];
   const coreVersionRows: Array<Record<string, unknown>> = [];
 
-  OUTREACH_WORKFLOW_GRAPH_TEMPLATES.forEach((graph, index) => {
+  activeGraphTemplates.forEach((graph, index) => {
     const slug = GRAPH_SLUGS[graph.name];
 
     if (!slug) {

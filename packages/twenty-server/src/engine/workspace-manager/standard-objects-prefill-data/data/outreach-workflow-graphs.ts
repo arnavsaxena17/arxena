@@ -1,16 +1,17 @@
 import {
+  buildOutreachConnectionNotePrompt,
+  buildOutreachFallbackEmailPrompt,
+  buildOutreachFirstMessagePrompt,
   buildOutreachInboundSignalExtractionPrompt,
   buildOutreachMeetingBookedDetailsTemplate,
-  buildOutreachSalesChatDraftPrompt,
-  OUTREACH_DONT_RESPOND_SENTINEL,
-} from 'src/engine/core-modules/outreach-command/prompts/outreach-inbound-reply-next-step.prompt';
-import {
-  buildOutreachConnectionNotePrompt,
-  buildOutreachFirstMessagePrompt,
+  buildOutreachMeetingReminderPrompt,
+  buildOutreachNoShowPingPrompt,
   buildOutreachPostReplyFollowUpPrompt,
   buildOutreachQualifyProspectPrompt,
-  buildOutreachSharedSenderContextPrompt,
-} from 'src/engine/core-modules/outreach-command/prompts/outreach-sender-agnostic.prompt';
+  buildOutreachRescheduleOfferPrompt,
+  buildOutreachSalesChatDraftPrompt,
+  OUTREACH_DONT_RESPOND_SENTINEL,
+} from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
 import {
   OUTREACH_ENRICH_CONTACT_SAMPLE_OUTPUT,
   OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT,
@@ -221,6 +222,9 @@ const IDS = {
   approveConnectNote: 'c7a10011-aaaa-4fcb-a7d8-17a7736ed045',
   draftConnectNoteNoCompany: 'c7a10012-aaaa-4fcb-a7d8-17a7736ed045',
   approveConnectNoteNoCompany: 'c7a10013-aaaa-4fcb-a7d8-17a7736ed045',
+  // QUEUED re-entry: skip Send LinkedIn connection if already stamped
+  connectionNotSentIf: 'c7a10014-aaaa-4fcb-a7d8-17a7736ed045',
+  connectionNotSentNoCompanyIf: 'c7a10015-aaaa-4fcb-a7d8-17a7736ed045',
   // CONNECTION_ACCEPTED calendar before opener
   acceptCalendar: '51a1002a-aaaa-4fcb-a7d8-17a7736ed045',
   // REPLIED sticky preferred channel + meeting stamp
@@ -575,7 +579,7 @@ const repliedBranchSteps = () => [
     prompt: buildOutreachInboundSignalExtractionPrompt({
       transcript: `{{${IDS.findChats}.text}}`,
       lastChannel: `{{${IDS.findChats}.first.channel}}`,
-      slots: `{{${IDS.calendar}.slots}}`,
+      slots: `{{${IDS.calendar}.text}}`,
     }),
     agentId: OUTREACH_WF_AGENT_EXTRACT,
     outputSchema: OUTREACH_WF_AI_EXTRACT_OUTPUT,
@@ -656,7 +660,7 @@ const repliedBranchSteps = () => [
       name: gtmWfFindField(IDS.repliedFind, 'name'),
       title: gtmWfFindField(IDS.repliedFind, 'jobTitle'),
       transcript: `{{${IDS.findChats}.text}}`,
-      slots: `{{${IDS.calendar}.slots}}`,
+      slots: `{{${IDS.calendar}.text}}`,
       conversationStage: gtmWfFindField(
         IDS.repliedFind,
         'outreachConversationStage',
@@ -1411,7 +1415,7 @@ const queuedBranchSteps = ({ hoistedMember }: { hoistedMember: boolean }) => [
       findId: IDS.queuedFind,
       draftStepId: IDS.draftConnectNote,
     }),
-    nextStepIds: [IDS.sendConnect],
+    nextStepIds: [IDS.connectionNotSentIf],
   }),
   gtmWfAiAgentStep({
     id: IDS.draftConnectNoteNoCompany,
@@ -1433,7 +1437,35 @@ const queuedBranchSteps = ({ hoistedMember }: { hoistedMember: boolean }) => [
       findId: IDS.queuedFind,
       draftStepId: IDS.draftConnectNoteNoCompany,
     }),
-    nextStepIds: [IDS.sendConnectNoCompany],
+    nextStepIds: [IDS.connectionNotSentNoCompanyIf],
+  }),
+  // Under candidate.upserted, a later QUEUED restamp (deferred resume / re-enroll)
+  // would otherwise send a second connection. Gate on outreachAnalytics.connectionSentAt.
+  gtmWfIfElseStep({
+    id: IDS.connectionNotSentIf,
+    name: 'Connection not yet sent?',
+    stepOutputKey: gtmWfFindField(
+      IDS.queuedFind,
+      'outreachAnalytics.connectionSentAt',
+    ),
+    value: '',
+    type: 'TEXT',
+    operand: 'IS_EMPTY',
+    ifNextStepIds: [IDS.sendConnect],
+    elseNextStepIds: [],
+  }),
+  gtmWfIfElseStep({
+    id: IDS.connectionNotSentNoCompanyIf,
+    name: 'Connection not yet sent? (no company)',
+    stepOutputKey: gtmWfFindField(
+      IDS.queuedFind,
+      'outreachAnalytics.connectionSentAt',
+    ),
+    value: '',
+    type: 'TEXT',
+    operand: 'IS_EMPTY',
+    ifNextStepIds: [IDS.sendConnectNoCompany],
+    elseNextStepIds: [],
   }),
   {
     id: IDS.sendConnect,
@@ -1533,12 +1565,10 @@ const queuedBranchSteps = ({ hoistedMember }: { hoistedMember: boolean }) => [
   gtmWfAiAgentStep({
     id: IDS.draftEmail,
     name: 'Draft fallback email',
-    prompt: [
-      'Draft a short ICP-aligned email because the LinkedIn connection was not accepted.',
-      `Name: ${gtmWfFindField(IDS.reloadAfterWait, 'name')}`,
-      `Title: ${gtmWfFindField(IDS.reloadAfterWait, 'jobTitle')}`,
-      'Do not invent LinkedIn facts. Return JSON only: { "subject": "<subject>", "message": "<body>" }',
-    ].join('\n'),
+    prompt: buildOutreachFallbackEmailPrompt({
+      name: gtmWfFindField(IDS.reloadAfterWait, 'name'),
+      title: gtmWfFindField(IDS.reloadAfterWait, 'jobTitle'),
+    }),
     agentId: OUTREACH_WF_AGENT_EMAIL,
     outputSchema: OUTREACH_WF_AI_EMAIL_OUTPUT,
     nextStepIds: [IDS.approveEmail],
@@ -1624,13 +1654,10 @@ const meetingBookedBranchSteps = () => [
   gtmWfAiAgentStep({
     id: IDS.draftReminder,
     name: 'Draft meeting reminder',
-    prompt: [
-      buildOutreachSharedSenderContextPrompt(senderJson()),
-      '',
-      'Write a short LinkedIn meeting reminder (≤30 words).',
-      `Name: ${gtmWfFindField(IDS.meetingBookedFind, 'name')}`,
-      'Remind them of the walkthrough. One ask only. Return JSON: { "message": "<body>" }',
-    ].join('\n'),
+    prompt: buildOutreachMeetingReminderPrompt({
+      senderJson: senderJson(),
+      name: gtmWfFindField(IDS.meetingBookedFind, 'name'),
+    }),
     agentId: OUTREACH_WF_AGENT_LINKEDIN,
     outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
     nextStepIds: [IDS.approveReminder],
@@ -1666,13 +1693,10 @@ const meetingBookedBranchSteps = () => [
   gtmWfAiAgentStep({
     id: IDS.draftNoShow,
     name: 'Draft no-show ping',
-    prompt: [
-      buildOutreachSharedSenderContextPrompt(senderJson()),
-      '',
-      'Write a short LinkedIn no-show ping (≤40 words). Polite, one ask to reschedule.',
-      `Name: ${gtmWfFindField(IDS.meetingBookedFind, 'name')}`,
-      'Return JSON: { "message": "<body>" }',
-    ].join('\n'),
+    prompt: buildOutreachNoShowPingPrompt({
+      senderJson: senderJson(),
+      name: gtmWfFindField(IDS.meetingBookedFind, 'name'),
+    }),
     agentId: OUTREACH_WF_AGENT_LINKEDIN,
     outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
     nextStepIds: [IDS.approveNoShow],
@@ -1708,13 +1732,10 @@ const meetingBookedBranchSteps = () => [
   gtmWfAiAgentStep({
     id: IDS.draftReschedule,
     name: 'Draft reschedule offer',
-    prompt: [
-      buildOutreachSharedSenderContextPrompt(senderJson()),
-      '',
-      'Write a short LinkedIn reschedule offer (≤40 words). Offer to pick a new time.',
-      `Name: ${gtmWfFindField(IDS.meetingBookedFind, 'name')}`,
-      'Return JSON: { "message": "<body>" }',
-    ].join('\n'),
+    prompt: buildOutreachRescheduleOfferPrompt({
+      senderJson: senderJson(),
+      name: gtmWfFindField(IDS.meetingBookedFind, 'name'),
+    }),
     agentId: OUTREACH_WF_AGENT_LINKEDIN,
     outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
     nextStepIds: [IDS.approveReschedule],
@@ -1929,8 +1950,7 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
   },
   // Merge of "Per Enrolled Candidate" (create) and "Enrolled Person Updated"
   // (stage update) behind one create-or-update trigger, so a new user manages one
-  // canvas instead of two. Seeded as DRAFT and NOT wired into pause/resume,
-  // experiments or Project.outreachWorkflowId yet.
+  // canvas instead of two.
   //
   // Safe because:
   // - The trigger allowlists the entry stages before a run is created, so the
@@ -1940,12 +1960,8 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
   //   run and kill the accepted / replied branches.
   // - Workspace member loads once above the router, so the branches share no
   //   downstream step ids and no IF_ELSE join can be cascade-skipped.
-  //
-  // TODO: before publishing, add a QUEUED re-entry guard. Under candidate.upserted a
-  // later restamp to QUEUED (deferred resume, re-enroll, upload-profiles touching an
-  // existing person) sends a second connection request. Needs a non-watched marker
-  // field (e.g. connectionRequestSentAt) with an IS_EMPTY gate before Send LinkedIn
-  // connection, and deactivation of the two graphs above.
+  // - QUEUED re-entry: connectionNotSentIf gates Send LinkedIn connection on
+  //   empty outreachAnalytics.connectionSentAt (see queuedBranchSteps).
   {
     name: 'Outreach — Candidate Sequencer',
     trigger: gtmWfDatabaseEventTrigger({

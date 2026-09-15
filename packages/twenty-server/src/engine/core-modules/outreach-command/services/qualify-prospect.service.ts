@@ -6,11 +6,11 @@ import { AUTO_SELECT_SMART_MODEL_ID } from 'twenty-shared/constants';
 import { isDefined } from 'twenty-shared/utils';
 import { In, type ObjectLiteral } from 'typeorm';
 
-import { buildOutreachQualifyProspectPrompt } from 'src/engine/core-modules/outreach-command/prompts/outreach-sender-agnostic.prompt';
 import {
+  buildOutreachQualifyProspectPrompt,
   OUTREACH_QUALIFY_PROSPECT_SYSTEM_PROMPT,
-  outreachQualifyProspectLlmSchema,
-} from 'src/engine/core-modules/outreach-command/schemas/outreach-qualify-prospect-llm.schema';
+} from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
+import { outreachQualifyProspectLlmSchema } from 'src/engine/core-modules/outreach-command/schemas/outreach-qualify-prospect-llm.schema';
 import { FetchLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-profile.service';
 import { OutreachSenderProfileService } from 'src/engine/core-modules/outreach-command/services/outreach-sender-profile.service';
 import { buildOutreachProspectEnrichment } from 'src/engine/core-modules/outreach-command/utils/build-outreach-prospect-enrichment.util';

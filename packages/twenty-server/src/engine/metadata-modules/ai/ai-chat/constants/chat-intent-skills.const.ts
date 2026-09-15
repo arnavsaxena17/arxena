@@ -37,14 +37,9 @@ export const SEEDED_OUTREACH_WORKFLOW_INVENTORY = [
     role: SEEDED_OUTREACH_WORKFLOW.fetchAndSaveProfiles.role,
   },
   {
-    name: SEEDED_OUTREACH_WORKFLOW.perCandidate.name,
-    trigger: SEEDED_OUTREACH_WORKFLOW.perCandidate.trigger,
-    role: SEEDED_OUTREACH_WORKFLOW.perCandidate.role,
-  },
-  {
-    name: SEEDED_OUTREACH_WORKFLOW.candidateUpdated.name,
-    trigger: SEEDED_OUTREACH_WORKFLOW.candidateUpdated.trigger,
-    role: SEEDED_OUTREACH_WORKFLOW.candidateUpdated.role,
+    name: SEEDED_OUTREACH_WORKFLOW.candidateSequencer.name,
+    trigger: SEEDED_OUTREACH_WORKFLOW.candidateSequencer.trigger,
+    role: SEEDED_OUTREACH_WORKFLOW.candidateSequencer.role,
   },
 ] as const;
 

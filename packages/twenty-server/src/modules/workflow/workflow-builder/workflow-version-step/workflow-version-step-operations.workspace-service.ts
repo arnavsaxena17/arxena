@@ -641,6 +641,80 @@ export class WorkflowVersionStepOperationsWorkspaceService {
           },
         };
       }
+      case WorkflowActionType.SEND_LINKEDIN_VOICE_NOTE: {
+        return {
+          builtStep: {
+            ...baseStep,
+            name: 'Send LinkedIn Voice Note',
+            type: WorkflowActionType.SEND_LINKEDIN_VOICE_NOTE,
+            settings: {
+              ...BASE_STEP_DEFINITION,
+              input: {
+                workspaceMemberId: '',
+                linkedinProfileId: '',
+                linkedinUrl: '',
+                body: '',
+                files: [],
+              },
+            },
+          },
+        };
+      }
+      case WorkflowActionType.VIEW_LINKEDIN_PROFILE: {
+        return {
+          builtStep: {
+            ...baseStep,
+            name: 'View LinkedIn Profile',
+            type: WorkflowActionType.VIEW_LINKEDIN_PROFILE,
+            settings: {
+              ...BASE_STEP_DEFINITION,
+              input: {
+                workspaceMemberId: '',
+                linkedinProfileId: '',
+                linkedinUrl: '',
+                candidateId: '',
+              },
+            },
+          },
+        };
+      }
+      case WorkflowActionType.FOLLOW_LINKEDIN_PROFILE: {
+        return {
+          builtStep: {
+            ...baseStep,
+            name: 'Follow LinkedIn Profile',
+            type: WorkflowActionType.FOLLOW_LINKEDIN_PROFILE,
+            settings: {
+              ...BASE_STEP_DEFINITION,
+              input: {
+                workspaceMemberId: '',
+                linkedinProfileId: '',
+                linkedinUrl: '',
+                candidateId: '',
+              },
+            },
+          },
+        };
+      }
+      case WorkflowActionType.LIKE_LINKEDIN_POST: {
+        return {
+          builtStep: {
+            ...baseStep,
+            name: 'Like LinkedIn Post',
+            type: WorkflowActionType.LIKE_LINKEDIN_POST,
+            settings: {
+              ...BASE_STEP_DEFINITION,
+              input: {
+                workspaceMemberId: '',
+                postId: '',
+                reactionType: 'like',
+                candidateId: '',
+                commentId: '',
+              },
+            },
+          },
+        };
+      }
       case WorkflowActionType.SEND_WHATSAPP_MESSAGE: {
         return {
           builtStep: {

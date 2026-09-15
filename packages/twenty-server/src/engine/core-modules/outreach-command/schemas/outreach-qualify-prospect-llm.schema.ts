@@ -19,6 +19,3 @@ export const outreachQualifyProspectLlmSchema = z.object({
 export type OutreachQualifyProspectLlmResult = z.infer<
   typeof outreachQualifyProspectLlmSchema
 >;
-
-export const OUTREACH_QUALIFY_PROSPECT_SYSTEM_PROMPT =
-  'You decide whether to contact a prospect for the sender offer and extract personalization hooks. Return JSON only: { "go", "score", "segment", "reason", "first_name", "honorific", "company_short", "industry_phrase", "hooks", "likely_systems", "matching_problem_statement", "referral_source" }. hooks is a JSON string of at most 3 { "text", "source" } objects. Never invent facts.';

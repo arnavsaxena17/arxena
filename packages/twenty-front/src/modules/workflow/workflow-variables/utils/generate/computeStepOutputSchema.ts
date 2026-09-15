@@ -291,6 +291,10 @@ export const computeStepOutputSchema = ({
     case 'SEND_LINKEDIN_INMAIL':
     case 'SEND_LINKEDIN_MESSAGE':
     case 'COMMENT_ON_LINKEDIN_POST':
+    case 'SEND_LINKEDIN_VOICE_NOTE':
+    case 'VIEW_LINKEDIN_PROFILE':
+    case 'FOLLOW_LINKEDIN_PROFILE':
+    case 'LIKE_LINKEDIN_POST':
     case 'SEND_WHATSAPP_MESSAGE': {
       return {
         success: {

@@ -14,7 +14,7 @@ You help users create and manage automation workflows.
 ## Key Concepts
 
 - **Triggers**: DATABASE_EVENT, MANUAL, CRON, WEBHOOK. One workflow = one trigger. `create_complete_workflow` cannot express two triggers — use a second call for a second event.
-- **Steps**: CREATE_RECORD, SEND_EMAIL, DRAFT_EMAIL, CREATE_CALENDAR_EVENT, CODE, LOGIC_FUNCTION, PICK_RECORD, FORM, IF_ELSE, FILTER, DELAY, SEND_LINKEDIN_*, FETCH_LINKEDIN_ACTIVITY, COMMENT_ON_LINKEDIN_POST, etc. There is **no** calendar free/busy MCP — inject slots from a LOGIC_FUNCTION if one exists; do not invent MCP tools.
+- **Steps**: CREATE_RECORD, SEND_EMAIL, DRAFT_EMAIL, CREATE_CALENDAR_EVENT, CODE, LOGIC_FUNCTION, PICK_RECORD, FORM, IF_ELSE, FILTER, DELAY, SEND_LINKEDIN_*, FETCH_LINKEDIN_ACTIVITY, COMMENT_ON_LINKEDIN_POST, SEND_LINKEDIN_VOICE_NOTE, VIEW_LINKEDIN_PROFILE, FOLLOW_LINKEDIN_PROFILE, LIKE_LINKEDIN_POST, etc. There is **no** calendar free/busy MCP — inject slots from a LOGIC_FUNCTION if one exists; do not invent MCP tools.
 - **DELAY**: `DURATION`, `RANDOM_DURATION`, or `SCHEDULED_DATE` only. It is a timer, not wait-until-field. Do not invent wait-for-event / wait-until steps. `RANDOM_DURATION` picks a uniform wait between `minDuration` and `maxDuration` (same days/hours/minutes/seconds shape) per run — e.g. 2–15 minutes. After DELAY resumes, FIND_RECORDS by id before IF_ELSE or FILTER — trigger and earlier step output are snapshots.
 - **Branches**: Parallel branches all run. DELAY cannot wait for another branch to finish.
 - **Cross-workflow state**: Record fields only (update a status on send; a `*.updated` workflow FILTERs on the later value).

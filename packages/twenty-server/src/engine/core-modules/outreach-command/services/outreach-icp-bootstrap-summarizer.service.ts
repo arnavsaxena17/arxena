@@ -7,7 +7,7 @@ import { OUTREACH_COMPANY_ENRICHMENT_LLM_MODEL_ID } from 'src/engine/core-module
 import {
   buildIcpBootstrapSummarizerUserPrompt,
   ICP_BOOTSTRAP_SUMMARIZER_SYSTEM_PROMPT,
-} from 'src/engine/core-modules/outreach-command/prompts/outreach-icp-bootstrap-summarizer.prompt';
+} from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
 import {
   gtmIcpBootstrapLlmResultSchema,
   type IcpBootstrapLlmResult,

@@ -15,21 +15,21 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   experimental: {
-      serverActions: {
-        // Allow Server Actions from our domains when requests are forwarded (e.g. behind proxy/CDN).
-        // Bots/crawlers often omit Origin; middleware sets it from Host when missing.
-        allowedOrigins: [
-          'arxena.com',
-          'www.arxena.com',
-          'app.arxena.com',
-          'localhost:3000',
-          'localhost:3001',
-        ],
-        // Multi-process / rolling deploys: set NEXT_SERVER_ACTIONS_ENCRYPTION_KEY (base64 AES
-        // 16/24/32 bytes) at build time so all instances share action IDs — see
-        // https://nextjs.org/docs/messages/failed-to-find-server-action
-      },
+    serverActions: {
+      // Allow Server Actions from our domains when requests are forwarded (e.g. behind proxy/CDN).
+      // Bots/crawlers often omit Origin; middleware sets it from Host when missing.
+      allowedOrigins: [
+        'arxena.com',
+        'www.arxena.com',
+        'app.arxena.com',
+        'localhost:3000',
+        'localhost:3001',
+      ],
+      // Multi-process / rolling deploys: set NEXT_SERVER_ACTIONS_ENCRYPTION_KEY (base64 AES
+      // 16/24/32 bytes) at build time so all instances share action IDs — see
+      // https://nextjs.org/docs/messages/failed-to-find-server-action
     },
+  },
   async redirects() {
     const arxenaSiteUrl =
       process.env.NODE_ENV === 'production'
@@ -71,6 +71,36 @@ const nextConfig = {
         destination: '/org-chart/:companyId',
         permanent: true,
       },
+      {
+        source: '/solutions/sales-abm',
+        destination: '/solutions/sales',
+        permanent: true,
+      },
+      {
+        source: '/solutions/executive-search',
+        destination: '/solutions/recruiting',
+        permanent: true,
+      },
+      {
+        source: '/solutions/talent-acquisition',
+        destination: '/solutions/recruiting',
+        permanent: true,
+      },
+      {
+        source: '/solutions/corporate-hr',
+        destination: '/solutions',
+        permanent: true,
+      },
+      {
+        source: '/solutions/pe-vc',
+        destination: '/solutions',
+        permanent: true,
+      },
+      {
+        source: '/solutions/corporate-strategy',
+        destination: '/solutions',
+        permanent: true,
+      },
     ];
   },
   images: {
@@ -85,15 +115,21 @@ const nextConfig = {
     config.resolve.alias = {
       ...config.resolve.alias,
       'twenty-orgchart': orgchartDist,
-      'twenty-orgchart/company-search': path.join(orgchartDist, 'company-search.js'),
-      'twenty-orgchart/style.css': path.join(orgchartDist, 'twenty-orgchart.css'),
+      'twenty-orgchart/company-search': path.join(
+        orgchartDist,
+        'company-search.js',
+      ),
+      'twenty-orgchart/style.css': path.join(
+        orgchartDist,
+        'twenty-orgchart.css',
+      ),
     };
 
     if (!isServer) {
       config.plugins.push(
         new webpack.ProvidePlugin({
           process: 'process/browser',
-        })
+        }),
       );
     }
     return config;

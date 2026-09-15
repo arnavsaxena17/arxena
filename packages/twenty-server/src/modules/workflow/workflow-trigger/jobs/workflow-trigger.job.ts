@@ -216,12 +216,10 @@ export class WorkflowTriggerJob {
       }
 
       const binding =
-        experimentConfig.workflows?.perCandidate?.workflowId === workflowId
-          ? experimentConfig.workflows.perCandidate
-          : experimentConfig.workflows?.candidateUpdated?.workflowId ===
-              workflowId
-            ? experimentConfig.workflows.candidateUpdated
-            : null;
+        experimentConfig.workflows?.candidateSequencer?.workflowId ===
+        workflowId
+          ? experimentConfig.workflows.candidateSequencer
+          : null;
 
       if (isNonEmptyString(binding?.versionB)) {
         return binding.versionB;

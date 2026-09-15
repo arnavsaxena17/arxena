@@ -58,20 +58,24 @@ const BOOK_PHRASES = [
   'put it on my calendar',
 ];
 
-const TIME_PHRASES = [
+// Day / week windows — enough to enter FOLLOW_UP_MEETING without a clock time.
+const TIME_WINDOW_PHRASES = [
   'tuesday',
   'wednesday',
   'thursday',
   'monday',
   'friday',
+  'saturday',
+  'sunday',
   'tomorrow',
   'next week',
-  'am',
-  'pm',
-  'o\'clock',
-  'available',
+  'this week',
+  'second half',
+  'first half',
   'how about',
 ];
+
+const CLOCK_HINT_PHRASES = [' am', ' pm', "o'clock", 'a.m', 'p.m'];
 
 const INTEREST_PHRASES = [
   'interested',
@@ -87,6 +91,15 @@ const INTEREST_PHRASES = [
 
 const includesAny = (haystack: string, needles: string[]): boolean =>
   needles.some((needle) => haystack.includes(needle));
+
+const hasProposedTimeWindow = (text: string): boolean => {
+  if (includesAny(text, TIME_WINDOW_PHRASES)) {
+    return true;
+  }
+
+  // Clock-ish only when a digit is present — avoids matching "I am interested".
+  return /\d/.test(text) && includesAny(text, CLOCK_HINT_PHRASES);
+};
 
 const classificationFromResolvedIntent = ({
   intent,
@@ -148,7 +161,7 @@ export const classifyInboundReplyFallback = (
     });
   }
 
-  if (includesAny(text, TIME_PHRASES) && /\d/.test(text)) {
+  if (hasProposedTimeWindow(text)) {
     return classificationFromResolvedIntent({
       intent: 'times_proposed',
       confidence: 0.65,

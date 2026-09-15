@@ -41,7 +41,7 @@ Not marked done until Ask AI can discover/execute Arxena GTM tools and workspace
 - [x] `/outreach-home` does not auto-open Ask AI; drawer opens from nav chat / New chat only
 - [x] "Publish as experiment" — `EXPERIMENT` added to `workflowVersion.status` SELECT + core enum (`1785600000076` instance + `1785600000077` workspace). Existing DBs: `database:migrate` then `upgrade:2-25:add-workflow-version-experiment-status`
 - [x] AI_AGENT Test tab Candidate picker hydrates previous FIND / LinkedIn fetch / calendar nodes for that person (no recent-run `stepInfos` required)
-- [ ] Merged `Outreach — Candidate Sequencer` (Stage B + C behind one `candidate.upserted` trigger, 3-branch stage router, hoisted member load). Seeded **DRAFT only** by workspace cmd `1785600000098`; deliberately left out of the LLM-facing workflow inventory so Ask AI does not activate it. Blocked on: QUEUED re-entry send guard, deactivating `Outreach — Per Enrolled Candidate` / `Outreach — Enrolled Person Updated`, and rebinding pause/resume + experiments + `Project.outreachWorkflowId`
+- [x] Merged `Outreach — Candidate Sequencer` (Stage B + C behind one `candidate.upserted` trigger, stage router, hoisted member load). Cut over via workspace cmd `1785600000117`: QUEUED `connectionSentAt` re-entry guard, deactivate B/C, rebind pause/resume + experiments + `Project.outreachWorkflowId`, activate Sequencer, LLM inventory lists Sequencer.
 
 ## Bucket B — Nest `core-modules`
 

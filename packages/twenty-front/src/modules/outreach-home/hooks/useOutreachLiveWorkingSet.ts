@@ -36,7 +36,7 @@ import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import {
   OUTREACH_PROJECT_ID_QUERY_PARAM,
-  OUTREACH_WORKFLOW_B_NAME,
+  OUTREACH_WORKFLOW_SEQUENCER_NAME,
 } from '@/outreach-home/constants/outreach-command.constants';
 import { mapCrmStageToOutreachStage } from '@/outreach-home/constants/outreach-stages';
 import { useOutreachCacheSocket } from '@/outreach-home/hooks/useOutreachCacheSocket';
@@ -243,7 +243,7 @@ export const useOutreachLiveWorkingSet = () => {
     objectNameSingular: 'workflow',
     filter: {
       name: {
-        eq: OUTREACH_WORKFLOW_B_NAME,
+        eq: OUTREACH_WORKFLOW_SEQUENCER_NAME,
       },
     },
     limit: 1,
@@ -605,7 +605,7 @@ export const useOutreachLiveWorkingSet = () => {
 
     if (!isDefined(outreachWorkflowId)) {
       const createdWorkflow = await createWorkflow({
-        name: OUTREACH_WORKFLOW_B_NAME,
+        name: OUTREACH_WORKFLOW_SEQUENCER_NAME,
       });
 
       outreachWorkflowId = createdWorkflow?.id ?? null;

@@ -8,21 +8,20 @@ This is **not** ICP preference collection (`setup`) and **not** Ask AI target-li
 
 ## Ignite (prefer reuse — do not invent webhooks)
 
-Seeded graphs ship as **DRAFT**. Triggers are CRON / `company.created` / `candidate.created` / `candidate.updated` — **not** WEBHOOK. Do **not** call `http_request` against `/webhooks/workflows/...` for these seeds.
+Seeded graphs ship as **DRAFT**. Triggers are CRON / `company.created` / `candidate.upserted` — **not** WEBHOOK. Do **not** call `http_request` against `/webhooks/workflows/...` for these seeds.
 
 | Seeded name | Trigger | Role |
 | --- | --- | --- |
 | `Harvest — LinkedIn Companies` | CRON | Harvest |
 | `Company Created → ICP People Search` | `company.created` | Enroll-on-company (search + upload-profiles) |
 | `Outreach — Fetch & Save People Profiles` | MANUAL | Manual enroll via upload-profiles |
-| `Outreach — Per Enrolled Candidate` | `candidate.created` (+ `QUEUED`) | Sequencer B |
-| `Outreach — Enrolled Person Updated` | `candidate.updated` | Stage updates |
+| `Outreach — Candidate Sequencer` | `candidate.upserted` (+ entry stages) | Sequencer (QUEUED / accepted / replied / meeting) |
 
 **Ignite path:**
 
-1. `list_workflows` by the names above (or use browsing-context `outreachWorkflowId` for Stage B).
-2. Prefer reuse: activate DRAFT with `activate_workflow_version`. Clone via `create_draft_from_workflow_version` before editing — do not rebuild Stage B from scratch.
-3. Enroll: native `upload-profiles` / Candidates with `outreachSequenceStage=QUEUED` → fires Per Candidate.
+1. `list_workflows` by the names above (or use browsing-context `outreachWorkflowId` for the Sequencer).
+2. Prefer reuse: activate DRAFT with `activate_workflow_version`. Clone via `create_draft_from_workflow_version` before editing — do not rebuild the Sequencer from scratch.
+3. Enroll: native `upload-profiles` / Candidates with `outreachSequenceStage=QUEUED` → fires Candidate Sequencer.
 4. Harvest and company-created run once ACTIVE — no manual fire.
 5. Finish with `list_workflow_runs`.
 
@@ -47,7 +46,7 @@ Search LFs return hits only. People persist with `upload-profiles`. Company pers
 
 ## GTM workflows (do not conflate)
 
-FILTER `QUEUED` on Per Candidate (`candidate.created`). Stage changes on update use **one** `candidate.updated` workflow with `settings.fields: ['outreachSequenceStage']` and IF_ELSE branches — do not register five parallel updated listeners. FIND `workspaceMember` (load seat / Arx fields once) and pin `workspaceMemberId` = `{{member.first.id}}` on every SEND_* / Unipile fetch. HITL WhatsApp recipient = `{{member.first.phoneNumber}}`. HITL = FORM on the **send** graph (`workflow-building`); never a fourth “HITL only” workflow.
+FILTER entry stages on Candidate Sequencer (`candidate.upserted` with pre-run allowlist). Stage changes use **one** upserted workflow with `settings.fields: ['outreachSequenceStage']` and IF_ELSE branches — do not register five parallel updated listeners. FIND `workspaceMember` (load seat / Arx fields once) and pin `workspaceMemberId` = `{{member.first.id}}` on every SEND_* / Unipile fetch. HITL WhatsApp recipient = `{{member.first.phoneNumber}}`. HITL = FORM on the **send** graph (`workflow-building`); never a fourth “HITL only” workflow.
 
 ### LinkedIn posts / comment-before-connect
 
@@ -56,9 +55,13 @@ First-class workflow steps (not LFs):
 | Step | Role |
 | --- | --- |
 | `FETCH_LINKEDIN_ACTIVITY` | Fetch posts (+ optional comments-by-user). Output `mostRecentPost.socialId` / `text` for chaining. |
+| `VIEW_LINKEDIN_PROFILE` | Notify the viewee of a profile view (`notify=true`, empty sections). MCP: `visit_linkedin_profile`. |
+| `LIKE_LINKEDIN_POST` | React to a post (`postId` = `social_id`). Optional `reactionType` (default `like`). |
 | `COMMENT_ON_LINKEDIN_POST` | Comment using Unipile **`social_id`** (`postId` = `{{fetchStep.result.mostRecentPost.socialId}}`), not the URL post id. |
+| `FOLLOW_LINKEDIN_PROFILE` | Follow via Unipile magic route (resolves ACo… provider_id). |
+| `SEND_LINKEDIN_VOICE_NOTE` | Outbound voice note (exactly one audio file, prefer `.m4a`). Workflow step only for sequenced voice. |
 
-Recipe (warm before connect): `FETCH_LINKEDIN_ACTIVITY` → optional IF posts exist → `COMMENT_ON_LINKEDIN_POST` → `DELAY` (e.g. 5 days) → `SEND_LINKEDIN_CONNECTION_REQUEST`.
+Recipe (warm before connect): `VIEW_LINKEDIN_PROFILE` → `FETCH_LINKEDIN_ACTIVITY` → optional IF posts exist → `LIKE_LINKEDIN_POST` → `COMMENT_ON_LINKEDIN_POST` → `DELAY` (e.g. 5 days) → `SEND_LINKEDIN_CONNECTION_REQUEST`.
 
 vs LFs / Ask AI MCP: keyword post search is LF `search-posts` / MCP `search_linkedin_posts`; comments **by** a user is LF `fetch-user-comments` / MCP `linkedin_unipile_get_user_comments`. Per-user posts in chat: MCP `linkedin_unipile_get_user_posts` / `linkedin_unipile_get_profile_overview`. Posting a comment is the workflow step only (no chat MCP write).
 
@@ -70,9 +73,8 @@ Do **not** add a workflow whose only job is “mark connection accepted” — U
 | **Workflow 1** (company people search) | `company.created` | LOGIC_FUNCTION `search-people-for-company` → LOGIC_FUNCTION `upload-profiles`. Optional FORM between only if the user wants to approve enroll. |
 | **Fetch & Save** (`Outreach — Fetch & Save People Profiles`) | MANUAL | Native `upload-profiles` for ad-hoc enroll from the workflow launcher (org-chart / People tab paths may still use HTTP `upload-profiles` directly). |
 | **Workflow U** (manual HTTP) | HTTP Ask AI / org-chart / GTM Home `upload-profiles` | Same enroll path; GTM projects get `QUEUED` + `linkedinProfileId` — not a seeded workflow. |
-| **Stage B** (`Outreach — Per Enrolled Candidate`) | `candidate.created` + filter `QUEUED` | `SEND_LINKEDIN_CONNECTION_REQUEST` (`workspaceMemberId` + `linkedinProfileId`). Do **not** DELAY-poll accept. Same graph: DELAY 3d → FIND → IF still `CONNECTION_SENT` → `EMAIL_ENRICHING` → `enrich-contact` → AI email → FORM → `DRAFT_EMAIL` / `SEND_EMAIL` → `EMAIL_SENT`; miss → `FAILED_ENRICH`. Accept is a **second** graph (`workflow-building` timer vs event). |
-| **Enrolled Person Updated** (`Outreach — Enrolled Person Updated`) | `candidate.updated` watching `outreachSequenceStage` | IF_ELSE on `{{trigger.properties.after.outreachSequenceStage}}`. **CONNECTION_ACCEPTED**: `fetch-linkedin-messages` → `fetch-linkedin-profile` → AI opener → FORM → SEND, then DELAY follow-ups. **REPLIED**: FIND `chatMessage` (full `{{findChats.text}}` transcript, newest first, LinkedIn / WhatsApp / email) → `get-calendar-availability` → AI sales closer JSON `{ message, startsAt, endsAt, replyChannel, … }` → FORM (body + channel + times) → IF `editedBody` contains `#DONTRESPOND#` skip send else IF `replyChannel` CONTAINS `EMAIL` / `WHATSAPP` else `SEND_LINKEDIN_MESSAGE` → optional details `SEND_EMAIL`, referral create + email/WhatsApp, IF FORM `startsAt` not empty `CREATE_CALENDAR_EVENT`. Each later inbound burst restamps `REPLIED` (from `WAITING_REPLY`) and runs this branch again; leave times empty until a slot is agreed. Else: end with no work. Do not add NEGOTIATING / DEFERRED / MEETING_BOOKED as separate sequence branches. Do not use FILTER-first twins of this trigger. |
-| **Stage C inbound classify** | silence-window flush (not a workflow) | LinkedIn + WhatsApp Unipile webhooks and inbound CRM email (`messageChannelMessageAssociation` INCOMING) all buffer into the same silence window. Flush writes `chatMessage` with `channel` `LINKEDIN` / `WHATSAPP` / `EMAIL` (do not merge email/WhatsApp into the LinkedIn row). LLM classifies the **recipient burst** → stamps cadence + conversation stage. Cadence: `unsubscribe`→`STOPPED` (no send); every other intent→`REPLIED` (fires Enrolled Person Updated). Conversation: `unsubscribe`→`NOT_INTERESTED`, `not_now`→`SNOOZED`, `interested`→`INTENT`, `times_proposed`→`FOLLOW_UP_MEETING`, `book`→`MEETING_BOOKED`, `question`→`ACKNOWLEDGEMENT`. Keyword fallback if the model fails. Do **not** trigger on `chatMessage.created` / `updated`. |
+| **Candidate Sequencer** (`Outreach — Candidate Sequencer`) | `candidate.upserted` + entry-stage allowlist | Routes QUEUED / CONNECTION_ACCEPTED / REPLIED / MEETING_BOOKED. QUEUED: qualify → connection note → gate on empty `outreachAnalytics.connectionSentAt` → `SEND_LINKEDIN_CONNECTION_REQUEST`. Accepted / replied / meeting branches match the former Stage C recipes. Do **not** DELAY-poll accept. Do not add NEGOTIATING / DEFERRED as separate sequence branches. |
+| **Stage C inbound classify** | silence-window flush (not a workflow) | LinkedIn + WhatsApp Unipile webhooks and inbound CRM email (`messageChannelMessageAssociation` INCOMING) all buffer into the same silence window. Flush writes `chatMessage` with `channel` `LINKEDIN` / `WHATSAPP` / `EMAIL` (do not merge email/WhatsApp into the LinkedIn row). LLM classifies the **recipient burst** → stamps cadence + conversation stage. Cadence: `unsubscribe`→`STOPPED` (no send); every other intent→`REPLIED` (fires Candidate Sequencer replied branch). Conversation: `unsubscribe`→`NOT_INTERESTED`, `not_now`→`SNOOZED`, `interested`→`INTENT`, `times_proposed`→`FOLLOW_UP_MEETING`, `book`→`MEETING_BOOKED`, `question`→`ACKNOWLEDGEMENT`. Keyword fallback if the model fails. Do **not** trigger on `chatMessage.created` / `updated`. |
 
 AI drafts (before FORM): opener = short hook + one question, meeting as a light close; follow-ups escalate value (3rd is a breakup); email fallback matches ICP, no invented LinkedIn facts; inbound sales replies return `{ message, startsAt, endsAt, replyChannel }` (`replyChannel` = last inbound `LINKEDIN` / `WHATSAPP` / `EMAIL`) and never invent calendar times (empty strings until a slot matches injected availability). Inbound classification stamps cadence `STOPPED` / `REPLIED` and conversation stage separately (`NOT_INTERESTED` / `SNOOZED` / `INTENT` / `FOLLOW_UP_MEETING` / `MEETING_BOOKED` / `ACKNOWLEDGEMENT`). AI_AGENT JSON output is `{{aiStep.message}}` (plus `{{aiStep.startsAt}}` / `{{aiStep.endsAt}}` / `{{aiStep.replyChannel}}` on the sales reply step). Missed enrich → `FAILED_ENRICH`. Outbound `SEND_EMAIL` also appends the EMAIL `chatMessage` transcript so later rounds see the full thread.
 

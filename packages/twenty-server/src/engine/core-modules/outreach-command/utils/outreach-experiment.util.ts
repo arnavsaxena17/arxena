@@ -19,8 +19,7 @@ export type OutreachExperimentConfig = {
   name?: string;
   workflows?: {
     companySearch?: OutreachExperimentWorkflowBinding;
-    perCandidate?: OutreachExperimentWorkflowBinding;
-    candidateUpdated?: OutreachExperimentWorkflowBinding;
+    candidateSequencer?: OutreachExperimentWorkflowBinding;
   };
 };
 

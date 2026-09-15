@@ -7,13 +7,12 @@ import {
 } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
 import { SEEDED_OUTREACH_WORKFLOW } from 'src/engine/workspace-manager/standard-objects-prefill-data/constants/seeded-outreach-workflow-names.const';
 
-// Stage B (Per Enrolled Candidate) + Stage C (Enrolled Person Updated) only.
+// Candidate Sequencer only — Stage B/C were deactivated at cutover.
 export const OUTREACH_SEQUENCER_SEEDED_WORKFLOW_NAMES = [
-  SEEDED_OUTREACH_WORKFLOW.perCandidate.name,
-  SEEDED_OUTREACH_WORKFLOW.candidateUpdated.name,
+  SEEDED_OUTREACH_WORKFLOW.candidateSequencer.name,
 ] as const;
 
-export type OutreachSequencerStage = 'perCandidate' | 'candidateUpdated';
+export type OutreachSequencerStage = 'candidateSequencer';
 
 export const resolveOutreachSequencerStageFromName = (
   workflowName?: string | null,
@@ -26,17 +25,10 @@ export const resolveOutreachSequencerStageFromName = (
   const normalizedName = workflowName.replace(/\s*\([^)]*\)\s*$/, '').trim();
 
   if (
-    workflowName === SEEDED_OUTREACH_WORKFLOW.perCandidate.name ||
-    normalizedName === SEEDED_OUTREACH_WORKFLOW.perCandidate.name
+    workflowName === SEEDED_OUTREACH_WORKFLOW.candidateSequencer.name ||
+    normalizedName === SEEDED_OUTREACH_WORKFLOW.candidateSequencer.name
   ) {
-    return 'perCandidate';
-  }
-
-  if (
-    workflowName === SEEDED_OUTREACH_WORKFLOW.candidateUpdated.name ||
-    normalizedName === SEEDED_OUTREACH_WORKFLOW.candidateUpdated.name
-  ) {
-    return 'candidateUpdated';
+    return 'candidateSequencer';
   }
 
   return null;
@@ -67,17 +59,11 @@ export const collectOutreachSequencerWorkflowIdsFromProject = ({
       experimentConfig,
     });
 
-  const perCandidateWorkflowId =
-    parsedExperiment?.workflows?.perCandidate?.workflowId;
-  const candidateUpdatedWorkflowId =
-    parsedExperiment?.workflows?.candidateUpdated?.workflowId;
+  const candidateSequencerWorkflowId =
+    parsedExperiment?.workflows?.candidateSequencer?.workflowId;
 
-  if (isNonEmptyString(perCandidateWorkflowId)) {
-    workflowIds.add(perCandidateWorkflowId);
-  }
-
-  if (isNonEmptyString(candidateUpdatedWorkflowId)) {
-    workflowIds.add(candidateUpdatedWorkflowId);
+  if (isNonEmptyString(candidateSequencerWorkflowId)) {
+    workflowIds.add(candidateSequencerWorkflowId);
   }
 
   return [...workflowIds];
@@ -151,6 +137,11 @@ export const mergeOutreachSequencerWorkflowIds = ({
   workflowsMatchedByName: Array<{ id?: string | null }>;
 }): Set<string> => {
   const workflowIds = new Set(projectWorkflowIds);
+
+  // Name match is bootstrap fallback only when the project has no pin yet.
+  if (workflowIds.size > 0) {
+    return workflowIds;
+  }
 
   for (const workflow of workflowsMatchedByName) {
     if (isDefined(workflow.id) && isNonEmptyString(workflow.id)) {
