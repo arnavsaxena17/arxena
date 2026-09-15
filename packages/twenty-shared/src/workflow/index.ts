@@ -112,8 +112,6 @@ export { workflowUpsertRecordActionSchema } from './schemas/upsert-record-action
 export { workflowUpsertRecordActionSettingsSchema } from './schemas/upsert-record-action-settings-schema';
 export { workflowViewLinkedinProfileActionSchema } from './schemas/view-linkedin-profile-action-schema';
 export { workflowViewLinkedinProfileActionSettingsSchema } from './schemas/view-linkedin-profile-action-settings-schema';
-export { workflowViewLinkedinProfileActionSchema } from './schemas/view-linkedin-profile-action-schema';
-export { workflowViewLinkedinProfileActionSettingsSchema } from './schemas/view-linkedin-profile-action-settings-schema';
 export { workflowWebhookTriggerSchema } from './schemas/webhook-trigger-schema';
 export { workflowActionSchema } from './schemas/workflow-action-schema';
 export { workflowDelayActionSchema } from './schemas/workflow-delay-action-schema';

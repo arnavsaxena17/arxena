@@ -18,6 +18,8 @@ export type PricingPlanId =
   | 'corporate'
   | 'investment';
 
+export type FreemiumPlanId = 'free' | 'starter' | 'growth' | 'enterprise';
+
 export type MapType =
   | 'Function Specific'
   | 'Full Company'
@@ -30,9 +32,16 @@ export const AI_CREDIT_MICRO_FACTOR = 1_000_000;
 
 export const FREE_SIGNUP_AI_CREDITS = 10;
 
-export const FREE_SIGNUP_ORG_CHART_CREDITS = 10;
+/**
+ * Org-chart credits are not a priced or capped entitlement.
+ * Grant a large pool so signup / free workspaces are not map-gated.
+ */
+export const FREE_SIGNUP_ORG_CHART_CREDITS = 100_000;
 
 export const FREE_SIGNUP_REVEAL_CREDITS = 10;
+
+/** Maps are unlimited on freemium plans; fulfillment still needs a finite grant. */
+export const FREEMIUM_UNLIMITED_MAPS_PER_SEAT = 100_000;
 
 export const aiCreditsToMicro = (aiCredits: number): number =>
   Math.max(0, Math.round(aiCredits)) * AI_CREDIT_MICRO_FACTOR;
@@ -105,6 +114,36 @@ export type CreditPack = {
   aiCredits: number;
   /** People API search credits (1 credit per search by default). */
   apiCredits: number;
+  /** Freemium tier when this SKU is a seat-based subscription. */
+  freemiumPlanId?: FreemiumPlanId;
+  /**
+   * Base seat count for the SKU (usually 1). Checkout multiplies
+   * per-seat price and entitlements by the selected seat quantity.
+   */
+  seats?: number;
+};
+
+export type FreemiumPlan = {
+  id: FreemiumPlanId;
+  label: string;
+  tagline: string;
+  icon: string;
+  segmentTone: PricingSegmentTone;
+  isFree: boolean;
+  /** Monthly price per seat in currency subunits. */
+  pricesSubunitsPerSeat: Record<SupportedPricingCurrency, number>;
+  defaultSeats: number;
+  ownFeatures: string[];
+  /**
+   * Maps are not limited or priced; fulfillment still grants this
+   * large pool per seat (Free ignores seats beyond 1).
+   */
+  mapsPerSeat: number;
+  /** Monthly reveal credits granted per seat. */
+  revealsPerSeat: number;
+  aiCreditsPerSeat: number;
+  apiCreditsPerSeat: number;
+  subscriptionPackKey: string | null;
 };
 
 const PRICING_CURRENCY_RATES_FROM_GBP: Record<
@@ -446,28 +485,32 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
 };
 
 export const PRICING_MARKETING_HERO_HEADLINE =
-  'Access the org graph—plans for Sales and Recruiting';
+  'Org intelligence + multi-week, multi-channel, multi-touch follow up sequences—Free to Enterprise';
 export const PRICING_MARKETING_HERO_SUBHEADLINE =
-  'Sales and Recruiting—choose your tier.\nMap volume, depth, and refresh cadence scale with how you query structure. LinkedIn and email outreach included where your plan unlocks it.';
-export const PRICING_BILLING_HERO_HEADLINE =
-  'Choose your org intelligence plan';
+  'One set of plans for Sales and Recruiting.\nPick seats for your team. Every paid plan includes multi-touch sequences across LinkedIn, email, and WhatsApp—approve before send, from the same org graph.';
+export const PRICING_BILLING_HERO_HEADLINE = 'Choose your Arxena plan';
 export const PRICING_MARKETING_ROI_HEADLINE =
-  'Queryable structure before your first LinkedIn message, email, or search brief.';
+  'Map the org graph. Build lists. Run multi-week, multichannel, multi touch follow up sequences. Book the right meetings.';
 export const PRICING_HELP_ENGAGEMENT_LEAD =
-  'Ready to act on the org graph? Manage LinkedIn and email outreach from the same platform.';
+  'Ready to run multi-week sequences from the org graph? Manage LinkedIn, email, and WhatsApp outreach from the same platform.';
 export const PRICING_HELP_ENGAGEMENT_LINK_LABEL = 'Learn about Outreach →';
 export const PRICING_HELP_TITLE = 'Need more information?';
 export const PRICING_HELP_SUBTITLE =
   "Let's find the perfect solution for your organization.";
-export const PRICING_CTA_START_FOR_FREE = 'Setup a free trial';
+export const PRICING_CTA_START_FOR_FREE = 'Start for free';
 export const PRICING_CTA_TALK_TO_SALES = 'Talk to sales';
 export const PRICING_CTA_BOOK_DEMO = 'Book a demo';
 export const PRICING_MAP_TYPE_LABEL = 'Map type';
 export const PRICING_VOLUME_LABEL = 'Volume';
+export const PRICING_SEATS_LABEL = 'Seats';
+export const PRICING_SEAT_UNIT = 'seat';
+export const PRICING_SEATS_UNIT = 'seats';
+export const PRICING_PER_SEAT_MONTH_UNIT = '/ seat / mo';
 export const PRICING_TALENT_MAP_UNIT = 'map';
 export const PRICING_TALENT_MAPS_UNIT = 'talent maps';
 export const PRICING_RECOMMENDED_PLAN_LABEL = 'Recommended';
 export const PRICING_RECOMMENDED_PLAN_ID: PricingPlanId = 'recruitment';
+export const PRICING_RECOMMENDED_FREEMIUM_PLAN_ID: FreemiumPlanId = 'growth';
 export const PRICING_COMPARABLE_MAPS_VOLUME = 10;
 export const REVEAL_CREDIT_COST_EMAIL = 1;
 export const REVEAL_CREDIT_COST_PHONE = 5;
@@ -535,6 +578,184 @@ export const PRICING_PLAN_ORDER: PricingPlanId[] = [
   'corporate',
   'investment',
 ];
+
+export const FREEMIUM_SEAT_OPTIONS = [1, 3, 5, 10, 25] as const;
+
+export const FREEMIUM_PLAN_ORDER: FreemiumPlanId[] = [
+  'free',
+  'starter',
+  'growth',
+  'enterprise',
+];
+
+const FREE_PRICES: Record<SupportedPricingCurrency, number> = {
+  INR: 0,
+  USD: 0,
+  GBP: 0,
+  EUR: 0,
+  AUD: 0,
+  AED: 0,
+};
+
+const STARTER_SEAT_PRICES: Record<SupportedPricingCurrency, number> = {
+  INR: 10_000 * 100,
+  USD: 99 * 100,
+  GBP: 79 * 100,
+  EUR: 89 * 100,
+  AUD: 149 * 100,
+  AED: 369 * 100,
+};
+
+const GROWTH_SEAT_PRICES: Record<SupportedPricingCurrency, number> = {
+  INR: 15_000 * 100,
+  USD: 149 * 100,
+  GBP: 119 * 100,
+  EUR: 134 * 100,
+  AUD: 224 * 100,
+  AED: 555 * 100,
+};
+
+const ENTERPRISE_SEAT_PRICES: Record<SupportedPricingCurrency, number> = {
+  INR: 25_000 * 100,
+  USD: 249 * 100,
+  GBP: 199 * 100,
+  EUR: 229 * 100,
+  AUD: 379 * 100,
+  AED: 919 * 100,
+};
+
+export const FREEMIUM_PLANS: Record<FreemiumPlanId, FreemiumPlan> = {
+  free: {
+    id: 'free',
+    label: 'Free',
+    tagline: 'Try org intelligence and outreach on one seat',
+    icon: '✨',
+    segmentTone: 'teal',
+    isFree: true,
+    pricesSubunitsPerSeat: FREE_PRICES,
+    defaultSeats: 1,
+    ownFeatures: [
+      '1 seat',
+      'Org intelligence access',
+      '10 email reveals / month',
+      'Multi-week LinkedIn, email, and WhatsApp sequences (capped)',
+      'Approve-before-send drafts',
+    ],
+    mapsPerSeat: FREEMIUM_UNLIMITED_MAPS_PER_SEAT,
+    revealsPerSeat: 10,
+    aiCreditsPerSeat: 5,
+    apiCreditsPerSeat: 10,
+    subscriptionPackKey: null,
+  },
+  starter: {
+    id: 'starter',
+    label: 'Starter',
+    tagline: 'Org graph + multi-week sequences for small teams',
+    icon: '🚀',
+    segmentTone: 'orange',
+    isFree: false,
+    pricesSubunitsPerSeat: STARTER_SEAT_PRICES,
+    defaultSeats: 1,
+    ownFeatures: [
+      'Org intelligence and contact enrichment',
+      'Multi-week sequences across LinkedIn, email, and WhatsApp',
+      'Approve-before-send on every touch',
+      '50 reveals · 100 API · 5 AI per seat / month',
+    ],
+    mapsPerSeat: FREEMIUM_UNLIMITED_MAPS_PER_SEAT,
+    revealsPerSeat: 50,
+    aiCreditsPerSeat: 5,
+    apiCreditsPerSeat: 100,
+    subscriptionPackKey: 'starter_monthly',
+  },
+  growth: {
+    id: 'growth',
+    label: 'Growth',
+    tagline: 'Scale mapping and outreach across your team',
+    icon: '📈',
+    segmentTone: 'indigo',
+    isFree: false,
+    pricesSubunitsPerSeat: GROWTH_SEAT_PRICES,
+    defaultSeats: 3,
+    ownFeatures: [
+      'Everything in Starter',
+      'Higher monthly reveal and AI allowances',
+      '200 reveals · 500 API · 20 AI per seat / month',
+    ],
+    mapsPerSeat: FREEMIUM_UNLIMITED_MAPS_PER_SEAT,
+    revealsPerSeat: 200,
+    aiCreditsPerSeat: 20,
+    apiCreditsPerSeat: 500,
+    subscriptionPackKey: 'growth_monthly',
+  },
+  enterprise: {
+    id: 'enterprise',
+    label: 'Enterprise',
+    tagline: 'Highest self-serve capacity—or talk to us for custom',
+    icon: '🏢',
+    segmentTone: 'forest',
+    isFree: false,
+    pricesSubunitsPerSeat: ENTERPRISE_SEAT_PRICES,
+    defaultSeats: 5,
+    ownFeatures: [
+      'Everything in Growth',
+      'Highest self-serve outreach volume',
+      'Priority support and success onboarding',
+      'SSO / custom volume available via sales',
+      '400 reveals · 1,000 API · 40 AI per seat / month',
+    ],
+    mapsPerSeat: FREEMIUM_UNLIMITED_MAPS_PER_SEAT,
+    revealsPerSeat: 400,
+    aiCreditsPerSeat: 40,
+    apiCreditsPerSeat: 1000,
+    subscriptionPackKey: 'enterprise_monthly',
+  },
+};
+
+export const buildInitialFreemiumSeatsState = (): Record<
+  FreemiumPlanId,
+  number
+> =>
+  FREEMIUM_PLAN_ORDER.reduce(
+    (accumulator, planId) => {
+      accumulator[planId] = FREEMIUM_PLANS[planId].defaultSeats;
+      return accumulator;
+    },
+    {} as Record<FreemiumPlanId, number>,
+  );
+
+export const getFreemiumMonthlyTotalSubunits = (
+  planId: FreemiumPlanId,
+  seats: number,
+  currency: SupportedPricingCurrency,
+): number => {
+  const plan = FREEMIUM_PLANS[planId];
+  const seatCount = plan.isFree ? 1 : Math.max(1, seats);
+
+  return plan.pricesSubunitsPerSeat[currency] * seatCount;
+};
+
+export const getFreemiumEntitlementsForSeats = (
+  planId: FreemiumPlanId,
+  seats: number,
+): {
+  seats: number;
+  maps: number;
+  reveals: number;
+  aiCredits: number;
+  apiCredits: number;
+} => {
+  const plan = FREEMIUM_PLANS[planId];
+  const seatCount = plan.isFree ? 1 : Math.max(1, seats);
+
+  return {
+    seats: seatCount,
+    maps: plan.mapsPerSeat * seatCount,
+    reveals: plan.revealsPerSeat * seatCount,
+    aiCredits: plan.aiCreditsPerSeat * seatCount,
+    apiCredits: plan.apiCreditsPerSeat * seatCount,
+  };
+};
 
 export const getPricingMarketingSubheadlineLines = (): string[] =>
   PRICING_MARKETING_HERO_SUBHEADLINE.split('\n');
@@ -693,24 +914,6 @@ export const SMALL_PAYMENT_TEST_CREDIT_PACKS: CreditPack[] =
     };
   });
 
-const STARTER_SUBSCRIPTION_PRICES: Record<SupportedPricingCurrency, number> = {
-  INR: 9999 * 100,
-  USD: 99 * 100,
-  GBP: 79 * 100,
-  EUR: 89 * 100,
-  AUD: 149 * 100,
-  AED: 369 * 100,
-};
-
-const GROWTH_SUBSCRIPTION_PRICES: Record<SupportedPricingCurrency, number> = {
-  INR: 24999 * 100,
-  USD: 249 * 100,
-  GBP: 199 * 100,
-  EUR: 229 * 100,
-  AUD: 379 * 100,
-  AED: 919 * 100,
-};
-
 const TOPUP_MAPS_REVEALS_PRICES: Record<SupportedPricingCurrency, number> = {
   INR: 4999 * 100,
   USD: 49 * 100,
@@ -738,81 +941,64 @@ const TOPUP_API_PRICES: Record<SupportedPricingCurrency, number> = {
   AED: 109 * 100,
 };
 
-/** Explicit subscription + standalone top-up SKUs (PR-tunable allocations). */
-export const BILLING_ENTITLEMENT_SKUS: CreditPack[] = [
-  {
-    key: 'starter_monthly',
-    name: 'Starter monthly',
-    credits: 50,
-    amountSubunits: STARTER_SUBSCRIPTION_PRICES.GBP,
+const buildFreemiumSubscriptionSku = (
+  plan: FreemiumPlan,
+): CreditPack | null => {
+  if (plan.isFree || !plan.subscriptionPackKey) {
+    return null;
+  }
+
+  const pricesSubunits = plan.pricesSubunitsPerSeat;
+
+  return {
+    key: plan.subscriptionPackKey,
+    name: `${plan.label} monthly`,
+    credits: plan.revealsPerSeat,
+    amountSubunits: pricesSubunits.GBP,
     currency: 'GBP',
-    creditsDisplay: '10 maps · 50 reveals · 100 API · 5 AI / month',
-    useCase: 'Monthly allowance for maps, reveals, API, and AI usage',
-    features: [
-      '10 map credits each billing cycle',
-      '50 reveal credits each billing cycle',
-      '100 API search credits each billing cycle',
-      '5 AI credits each billing cycle',
-    ],
-    includedEmailCredits: 50,
-    includedPhoneCredits: 10,
+    creditsDisplay: `${plan.revealsPerSeat} reveals · ${plan.apiCreditsPerSeat} API · ${plan.aiCreditsPerSeat} AI per seat / month`,
+    useCase: plan.tagline,
+    features: plan.ownFeatures,
+    includedEmailCredits: plan.revealsPerSeat,
+    includedPhoneCredits: Math.floor(plan.revealsPerSeat / 5),
     planId: 'sales',
     intent: 'SALES',
-    mapsCount: 10,
-    mapType: 'Function Specific',
-    mapTypeLabel: 'Any Function · All Levels',
-    tagline: 'Starter monthly entitlement',
-    inheritedFromPlanId: null,
-    pricesSubunits: STARTER_SUBSCRIPTION_PRICES,
-    kind: 'subscription',
-    aiCredits: 5,
-    apiCredits: 100,
-  },
-  {
-    key: 'growth_monthly',
-    name: 'Growth monthly',
-    credits: 200,
-    amountSubunits: GROWTH_SUBSCRIPTION_PRICES.GBP,
-    currency: 'GBP',
-    creditsDisplay: '30 maps · 200 reveals · 500 API · 20 AI / month',
-    useCase: 'Higher monthly allowance for teams',
-    features: [
-      '30 map credits each billing cycle',
-      '200 reveal credits each billing cycle',
-      '500 API search credits each billing cycle',
-      '20 AI credits each billing cycle',
-    ],
-    includedEmailCredits: 200,
-    includedPhoneCredits: 40,
-    planId: 'recruitment',
-    intent: 'RECRUITING',
-    mapsCount: 30,
+    mapsCount: plan.mapsPerSeat,
     mapType: 'Full Company',
-    mapTypeLabel: 'Full company · All Levels & Functions',
-    tagline: 'Growth monthly entitlement',
-    inheritedFromPlanId: 'sales',
-    pricesSubunits: GROWTH_SUBSCRIPTION_PRICES,
+    mapTypeLabel: 'Org intelligence + outreach',
+    tagline: plan.tagline,
+    inheritedFromPlanId: null,
+    pricesSubunits,
     kind: 'subscription',
-    aiCredits: 20,
-    apiCredits: 500,
-  },
+    aiCredits: plan.aiCreditsPerSeat,
+    apiCredits: plan.apiCreditsPerSeat,
+    freemiumPlanId: plan.id,
+    seats: 1,
+  };
+};
+
+/** Explicit subscription + standalone top-up SKUs (PR-tunable allocations). */
+export const BILLING_ENTITLEMENT_SKUS: CreditPack[] = [
+  ...FREEMIUM_PLAN_ORDER.map((planId) =>
+    buildFreemiumSubscriptionSku(FREEMIUM_PLANS[planId]),
+  ).filter((pack): pack is CreditPack => pack !== null),
   {
     key: 'topup_maps_reveals',
-    name: 'Maps & reveals top-up',
+    name: 'Reveals top-up',
     credits: 25,
     amountSubunits: TOPUP_MAPS_REVEALS_PRICES.GBP,
     currency: 'GBP',
-    creditsDisplay: '5 maps · 25 reveals · 0 API · 0 AI',
-    useCase: 'One-time maps and reveal top-up',
-    features: ['Adds 5 map credits', 'Adds 25 reveal credits'],
+    creditsDisplay: '25 reveals · 0 API · 0 AI',
+    useCase: 'One-time reveal credit top-up',
+    features: ['Adds 25 reveal credits'],
     includedEmailCredits: 25,
     includedPhoneCredits: 5,
     planId: 'sales',
     intent: 'SALES',
-    mapsCount: 5,
+    mapsCount: 0,
     mapType: 'Function Specific',
     mapTypeLabel: 'Any Function · All Levels',
-    tagline: 'Prepaid maps and reveals',
+    tagline: 'Prepaid reveal credits',
     inheritedFromPlanId: null,
     pricesSubunits: TOPUP_MAPS_REVEALS_PRICES,
     kind: 'one_time',
@@ -825,7 +1011,7 @@ export const BILLING_ENTITLEMENT_SKUS: CreditPack[] = [
     credits: 0,
     amountSubunits: TOPUP_AI_PRICES.GBP,
     currency: 'GBP',
-    creditsDisplay: '0 maps · 0 reveals · 0 API · 10 AI',
+    creditsDisplay: '0 reveals · 0 API · 10 AI',
     useCase: 'One-time AI usage top-up',
     features: ['Adds 10 AI credits to your usage balance'],
     includedEmailCredits: 0,
@@ -848,7 +1034,7 @@ export const BILLING_ENTITLEMENT_SKUS: CreditPack[] = [
     credits: 0,
     amountSubunits: TOPUP_API_PRICES.GBP,
     currency: 'GBP',
-    creditsDisplay: '0 maps · 0 reveals · 200 API · 0 AI',
+    creditsDisplay: '0 reveals · 200 API · 0 AI',
     useCase: 'One-time People API search top-up',
     features: ['Adds 200 API search credits'],
     includedEmailCredits: 0,
@@ -1092,8 +1278,8 @@ export const resolvePricingCurrencyFromCountryCode = (
 };
 
 export const creditPackPricingFootnote = [
-  'Prices shown per Talent Map at the selected volume.',
-  'Credits are bundled per map purchase (1 credit = 1 verified email; 5 credits = 1 phone number).',
+  'Prices shown per seat per month at the selected seat count.',
+  'Paid plans include monthly map, reveal, API, and AI allowances that scale with seats.',
   'Unused credits roll over within your plan cycle.',
   'Custom enterprise pricing is available — get in touch.',
   'Credit card payments: +3% surcharge. Pay by invoice: no surcharge.',

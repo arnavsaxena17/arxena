@@ -1,3 +1,8 @@
+export type MarketingDetailSection = {
+  title: string;
+  bullets: string[];
+};
+
 export type MarketingDetailPage = {
   slug: string;
   title: string;
@@ -6,6 +11,8 @@ export type MarketingDetailPage = {
   lead: string;
   bullets: string[];
   bulletsTitle?: string;
+  // When set, rendered as titled blocks instead of a single bullets list
+  sections?: MarketingDetailSection[];
   segmentsNote?: string;
 };
 
@@ -76,19 +83,19 @@ export const PRODUCT_PAGES: MarketingDetailPage[] = [
   {
     slug: 'engagement-layer',
     title: 'Outreach',
-    headline: 'Manage LinkedIn and email outreach from the org graph',
+    headline: 'Multi-week sequences across LinkedIn, email, and WhatsApp',
     metaDescription:
-      'Run LinkedIn and email sequences tied to the live org map—approve sends, handle replies, and measure what converts.',
-    lead: 'The org is mapped, the plan is set. Reach the right people on LinkedIn and email—with WhatsApp when it fits—and track every touch so you know what booked the meeting.',
+      'Run multi-touch outreach sequences—LinkedIn posts, comments, connects, messages, InMail, email, and WhatsApp—tied to the live org map.',
+    lead: 'The org is mapped, the plan is set. Orchestrate timed touch points over weeks—profile views, posts, comments, connection requests, DMs, InMail, email, and WhatsApp—and track every touch so you know what booked the meeting.',
     bullets: [
-      'Orchestrate LinkedIn and email outreach from a single workflow tied to the live org map.',
+      'Multi-week cadences with many touch points—not a one-shot cold message.',
+      'Mix LinkedIn posts, comments, connects, messages, and InMail with email and WhatsApp in one workflow.',
       'Draft in your voice while you approve—and step in only when replies arrive.',
-      'Track every touch across LinkedIn, email, and WhatsApp so nothing falls through the cracks.',
+      'Track every touch against the live org map so multithreaded accounts stay in sync.',
       'Measure effectiveness by persona, function, and sequence—refine the playbook with every cycle.',
-      'Keep champions, hiring managers, and candidates in sync across long sales or search cycles.',
     ],
     segmentsNote:
-      'See also /engage for the full Outreach product story. Built for Sales and Recruiting.',
+      'See also the Outreach product page for positioning and pricing. Built for Sales and Recruiting.',
   },
   {
     slug: 'api',
@@ -112,32 +119,66 @@ export const SOLUTION_PAGES: MarketingDetailPage[] = [
   {
     slug: 'sales',
     title: 'Sales',
-    headline: 'Map the buying committee from the org graph',
+    headline:
+      'Map the buying committee—then run multi-week, multichannel, multi touch follow up sequences',
     metaDescription:
-      'Multi-threaded Sales outreach on live structure—budget owners, champions, and blockers before the first LinkedIn or email message.',
-    lead: 'Plan the committee on the org graph before outreach—not one contact at a time under deal-clock pressure. Sequential discovery burns quarters when rapport was built with someone who cannot sign. Then run LinkedIn and email sequences from the same map.',
-    bullets: [
-      'Multithreading from day one: Map budget owner, champion, influencer, and blocker before you commit to a single thread.',
-      'Find the economic buyer first: Separate budget from influence so you do not spend a quarter on the wrong champion.',
-      'Outreach that lands: Reach the right people on LinkedIn and email with context from the live org chart—see Outreach.',
-      'Expansion and displacement: See adjacent teams and who leads the function your competitor does not yet control.',
+      'Sales on Arxena: map budget owners, champions, and blockers from the live org graph, then run multi-touch sequences across LinkedIn, email, and WhatsApp.',
+    lead: 'Sequential discovery burns quarters when rapport was built with someone who cannot sign. Arxena connects two steps into one workflow: map the real buying committee from live org structure, then engage those people over weeks—LinkedIn posts, comments, connects, messages, InMail, email, and WhatsApp—with approve-before-send and reply tracking.',
+    bullets: [],
+    sections: [
+      {
+        title: '1. Map',
+        bullets: [
+          'Multithreading from day one: Map budget owner, champion, influencer, and blocker before you commit to a single thread.',
+          'Find the economic buyer first: Separate budget from influence so you do not spend a quarter on the wrong champion.',
+          'See the full committee: Function maps and reporting lines show who actually owns the decision—not just who has the right title.',
+          'Expansion and displacement: Spot adjacent teams and who leads the function your competitor does not yet control.',
+        ],
+      },
+      {
+        title: '2. Engage',
+        bullets: [
+          'Multi-week sequences with many touch points—not a single cold open.',
+          'LinkedIn posts, comments, connection requests, messages, and InMail, plus email and WhatsApp, timed in one cadence.',
+          'Draft in your voice, approve before send, and step in when someone replies.',
+          'Track every touch so multithreaded accounts stay in sync—and measure what converts by persona and playbook.',
+        ],
+      },
     ],
-    bulletsTitle: 'In practice',
+    segmentsNote:
+      'Map with Org Chart Explorer and Function Maps. Engage with Outreach—multi-touch sequences from the same graph.',
   },
   {
     slug: 'recruiting',
     title: 'Recruiting',
-    headline: 'Structure before the shortlist—candidates before the scramble',
+    headline:
+      'Map the function—then nurture candidates over multi-week sequences',
     metaDescription:
-      'Org intelligence for Recruiting: map the target function, build pipelines from live structure, and reach candidates on LinkedIn and email.',
-    lead: 'Whether you are running retained search or in-house talent acquisition, start with how the org is actually built. Map the function, surface fits, calibrate the brief against peer structure—then outreach on LinkedIn and email from the same graph.',
-    bullets: [
-      'Pre-brief longlist: Surface strong fits 1–2 levels below the role while the mandate is still forming—enter with names, not questions.',
-      'Stakeholder map: Know who actually has a say in the hire before you present a shortlist.',
-      'Passive pipeline: Build by function, level, and geography from competitor org maps before headcount is approved.',
-      'Candidate outreach: Reach on LinkedIn and email with org context—approve sends, track replies, and keep the search moving.',
+      'Recruiting on Arxena: map the target function from live org structure, then nurture candidates with multi-touch LinkedIn, email, and WhatsApp sequences.',
+    lead: 'Whether you run retained search or in-house recruiting, start with how the org is actually built. Arxena connects mapping and engagement: surface the right people from live structure, then warm them over weeks across LinkedIn posts, comments, connects, messages, InMail, email, and WhatsApp.',
+    bullets: [],
+    sections: [
+      {
+        title: '1. Map',
+        bullets: [
+          'Pre-brief longlist: Surface strong fits 1–2 levels below the role while the mandate is still forming—enter with names, not questions.',
+          'Stakeholder map: Know who actually has a say in the hire before you present a shortlist.',
+          'Passive pipeline: Build by function, level, and geography from competitor org maps before headcount is approved.',
+          'Calibrate the brief: Benchmark against real peer structures—not internal guesswork.',
+        ],
+      },
+      {
+        title: '2. Engage',
+        bullets: [
+          'Multi-week candidate cadences—many touch points, not one cold InMail.',
+          'Mix LinkedIn engagement (posts, comments, connects, messages, InMail) with email and WhatsApp.',
+          'Draft in your voice, approve before send, and step in when someone replies.',
+          'Track every touch so long searches stay coordinated across the team.',
+        ],
+      },
     ],
-    bulletsTitle: 'In practice',
+    segmentsNote:
+      'Map with Org Chart Explorer and Function Maps. Engage with Outreach—multi-touch sequences from the same graph.',
   },
   {
     slug: 'mcp-server',

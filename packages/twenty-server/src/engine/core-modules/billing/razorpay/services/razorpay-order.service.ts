@@ -18,6 +18,7 @@ type OrderNotes = {
   creditPackKey?: string;
   selectedCurrency?: string;
   requestedCurrency?: string;
+  seats?: string;
 };
 
 const CREDIT_CARD_SURCHARGE_RATE = 0.03;
@@ -57,6 +58,7 @@ export class RazorpayOrderService {
     workspaceId: string,
     creditPackKey: CreditPackKey,
     selectedCurrency?: SupportedPricingCurrency,
+    seats?: number,
   ): Promise<CreateOrderForCreditsResult> {
     const pack = RAZORPAY_CREDIT_PACKS.find((p) => p.key === creditPackKey);
 
@@ -83,10 +85,15 @@ export class RazorpayOrderService {
       pack,
       chargeCurrency,
     );
-    const mapsCount = Math.max(1, pack.mapsCount ?? 1);
-    const totalAmountSubunits = convertedAmountSubunits * mapsCount;
+    const isSeatPriced =
+      pack.kind === 'subscription' || pack.freemiumPlanId !== undefined;
+    const quantity = isSeatPriced
+      ? Math.max(1, seats ?? pack.seats ?? 1)
+      : Math.max(1, pack.mapsCount ?? 1);
+    const totalAmountSubunits = convertedAmountSubunits * quantity;
 
-    const amountWithSurcharge = this.computeAmountWithSurcharge(totalAmountSubunits);
+    const amountWithSurcharge =
+      this.computeAmountWithSurcharge(totalAmountSubunits);
     const createOrder = async (
       currency: SupportedPricingCurrency,
       amount: number,
@@ -105,6 +112,7 @@ export class RazorpayOrderService {
             creditPackKey: pack.key,
             selectedCurrency: currency,
             requestedCurrency: chargeCurrency,
+            ...(isSeatPriced ? { seats: String(quantity) } : {}),
           },
         }),
       });
@@ -115,7 +123,7 @@ export class RazorpayOrderService {
 
     if (!res.ok && res.status === 400 && chargeCurrency !== 'INR') {
       const inrAmountWithSurcharge = this.computeAmountWithSurcharge(
-        getCreditPackTierPrice(pack, 'INR') * mapsCount,
+        getCreditPackTierPrice(pack, 'INR') * quantity,
       );
 
       this.logger.warn(
@@ -189,6 +197,7 @@ export class RazorpayOrderService {
       return {
         workspaceId: notes.workspaceId,
         creditPackKey: notes.creditPackKey,
+        seats: notes.seats,
       };
     } catch (err) {
       this.logger.warn(`Razorpay getOrderNotes error: ${err}`);
@@ -200,7 +209,14 @@ export class RazorpayOrderService {
   private toSupportedCurrency(
     currency: string | undefined,
   ): SupportedPricingCurrency | null {
-    if ( currency === 'INR' || currency === 'USD' || currency === 'GBP' || currency === 'EUR' || currency === 'AUD' || currency === 'AED' ) {
+    if (
+      currency === 'INR' ||
+      currency === 'USD' ||
+      currency === 'GBP' ||
+      currency === 'EUR' ||
+      currency === 'AUD' ||
+      currency === 'AED'
+    ) {
       return currency;
     }
     return null;

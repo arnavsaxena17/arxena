@@ -37,6 +37,7 @@ type FulfillOneTimeInput = {
   workspaceId: string;
   sku: CreditPack;
   paymentId: string;
+  seats?: number;
 };
 
 type FulfillSubscriptionCycleInput = {
@@ -44,6 +45,7 @@ type FulfillSubscriptionCycleInput = {
   sku: CreditPack;
   periodStart: Date;
   razorpayEventId: string;
+  seats?: number;
 };
 
 @Injectable()
@@ -71,6 +73,7 @@ export class EntitlementFulfillmentService {
 
   async fulfillOneTimePack(input: FulfillOneTimeInput): Promise<boolean> {
     const { workspaceId, sku, paymentId } = input;
+    const seatMultiplier = Math.max(1, input.seats ?? sku.seats ?? 1);
     const idempotencyKey = `payment:${paymentId}`;
 
     if (
@@ -89,9 +92,9 @@ export class EntitlementFulfillmentService {
     // One-time packs always ADD, regardless of workspace fulfillment mode
     await this.applyArxenaPools({
       workspaceId,
-      maps: sku.mapsCount,
-      reveals: sku.credits,
-      apiCredits: sku.apiCredits,
+      maps: sku.mapsCount * seatMultiplier,
+      reveals: sku.credits * seatMultiplier,
+      apiCredits: sku.apiCredits * seatMultiplier,
       mode: 'add',
       idempotencyKey,
       skuKey: sku.key,
@@ -101,7 +104,7 @@ export class EntitlementFulfillmentService {
     if (sku.aiCredits > 0) {
       await this.grantAiBalance({
         workspaceId,
-        aiCredits: sku.aiCredits,
+        aiCredits: sku.aiCredits * seatMultiplier,
         idempotencyKey,
         skuKey: sku.key,
         source: 'one_time_pack',
@@ -115,6 +118,7 @@ export class EntitlementFulfillmentService {
     input: FulfillSubscriptionCycleInput,
   ): Promise<boolean> {
     const { workspaceId, sku, periodStart, razorpayEventId } = input;
+    const seatMultiplier = Math.max(1, input.seats ?? sku.seats ?? 1);
     const idempotencyKey = `subscription:${razorpayEventId}:${periodStart.toISOString()}`;
 
     if (
@@ -140,9 +144,9 @@ export class EntitlementFulfillmentService {
 
     await this.applyArxenaPools({
       workspaceId,
-      maps: sku.mapsCount,
-      reveals: sku.credits,
-      apiCredits: sku.apiCredits,
+      maps: sku.mapsCount * seatMultiplier,
+      reveals: sku.credits * seatMultiplier,
+      apiCredits: sku.apiCredits * seatMultiplier,
       mode: mapsRevealsMode,
       idempotencyKey,
       skuKey: sku.key,
@@ -154,7 +158,7 @@ export class EntitlementFulfillmentService {
       if (sku.aiCredits > 0) {
         await this.grantAiBalance({
           workspaceId,
-          aiCredits: sku.aiCredits,
+          aiCredits: sku.aiCredits * seatMultiplier,
           idempotencyKey,
           skuKey: sku.key,
           source: 'subscription_cycle',
@@ -163,19 +167,19 @@ export class EntitlementFulfillmentService {
     } else {
       await this.ensureResourceCreditCap({
         workspaceId,
-        aiCredits: sku.aiCredits,
+        aiCredits: sku.aiCredits * seatMultiplier,
       });
       await this.creditTransactionService.recordTransaction({
         workspaceId,
         type: 'credit',
         creditType: 'ai_top_up',
-        amount: sku.aiCredits,
+        amount: sku.aiCredits * seatMultiplier,
         metadata: {
           idempotencyKey,
           skuKey: sku.key,
           source: 'subscription_cycle',
           grantPath: 'resource_credit',
-          creditAmountMicro: aiCreditsToMicro(sku.aiCredits),
+          creditAmountMicro: aiCreditsToMicro(sku.aiCredits * seatMultiplier),
         },
       });
     }

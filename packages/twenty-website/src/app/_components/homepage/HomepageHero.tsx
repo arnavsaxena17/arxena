@@ -468,7 +468,8 @@ export const HomepageHero = ({ signInUrl, signUpUrl }: HomepageHeroProps) => {
       <TrustBadgesSection />
 
       <StyledEngageCrossSell>
-        Map → plan → LinkedIn & email outreach → measure —{' '}
+        Map → plan → multi-week sequences (LinkedIn posts, comments, connects,
+        messages, InMail, email, WhatsApp) → measure —{' '}
         <StyledEngageLink href="/engage">How Outreach works →</StyledEngageLink>
       </StyledEngageCrossSell>
 

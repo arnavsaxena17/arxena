@@ -7,20 +7,28 @@ import React from 'react';
 
 import {
   SupportedPricingCurrency,
-  convertPricingAmountSubunits,
   getPricingCurrencySymbol,
 } from '@/lib/pricing-currency-helpers';
 import {
+  FREEMIUM_PLAN_ORDER,
+  FREEMIUM_PLANS,
+  FREEMIUM_SEAT_OPTIONS,
+  PRICING_CTA_START_FOR_FREE,
+  PRICING_CTA_TALK_TO_SALES,
   PRICING_HELP_ENGAGEMENT_LEAD,
   PRICING_HELP_ENGAGEMENT_LINK_LABEL,
   PRICING_MARKETING_HERO_HEADLINE,
   PRICING_MARKETING_HERO_SUBHEADLINE,
-  PRICING_PLANS,
-  PricingPlan,
-  PricingPlanId,
-  PricingPlanTier,
+  PRICING_MARKETING_ROI_HEADLINE,
+  PRICING_PER_SEAT_MONTH_UNIT,
+  PRICING_RECOMMENDED_FREEMIUM_PLAN_ID,
+  PRICING_RECOMMENDED_PLAN_LABEL,
+  PRICING_SEATS_LABEL,
+  buildInitialFreemiumSeatsState,
   creditPackPricingFootnote,
-  getInheritedFeatures,
+  getFreemiumEntitlementsForSeats,
+  getFreemiumMonthlyTotalSubunits,
+  type FreemiumPlanId,
 } from 'twenty-shared/constants';
 
 const StyledSection = styled.section`
@@ -49,7 +57,8 @@ const StyledCardsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 24px;
-  margin-bottom: 48px;
+  margin: 0 auto 48px;
+  max-width: 1120px;
 
   @media (max-width: 1100px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -60,15 +69,32 @@ const StyledCardsGrid = styled.div`
   }
 `;
 
-const StyledCard = styled.div`
+const StyledCard = styled.div<{ $isRecommended: boolean }>`
   background: #fafafa;
-  border: 1px solid rgba(20, 20, 20, 0.08);
+  border: 1px solid
+    ${({ $isRecommended }) =>
+      $isRecommended ? 'rgba(20, 20, 20, 0.35)' : 'rgba(20, 20, 20, 0.08)'};
   border-radius: 12px;
   padding: 28px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   min-width: 0;
+  position: relative;
+`;
+
+const StyledRecommendedBadge = styled.div`
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #141414;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 999px;
 `;
 
 const StyledCardHeader = styled.div`
@@ -107,16 +133,6 @@ const StyledCardTagline = styled.p`
   line-height: 1.45;
 `;
 
-const StyledMapTypePill = styled.div`
-  align-self: flex-start;
-  background: #fff;
-  border: 1px solid rgba(20, 20, 20, 0.1);
-  border-radius: 999px;
-  color: #474747;
-  font-size: 12px;
-  padding: 4px 10px;
-`;
-
 const StyledTierSelectWrap = styled.div`
   display: flex;
   flex-direction: column;
@@ -140,12 +156,19 @@ const StyledTierSelect = styled.select`
   font-size: 14px;
   padding: 10px 12px;
   width: 100%;
+
+  &:disabled {
+    color: #141414;
+    cursor: default;
+    opacity: 1;
+  }
 `;
 
 const StyledPriceBlock = styled.div`
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-height: 4.25rem;
 `;
 
 const StyledPrice = styled.div`
@@ -164,6 +187,7 @@ const StyledPriceUnit = styled.span`
 const StyledPriceFinePrint = styled.div`
   font-size: 13px;
   color: #818181;
+  min-height: 1.25rem;
 `;
 
 const StyledCreditsBlock = styled.div`
@@ -199,12 +223,6 @@ const StyledFeatureItem = styled.li`
   font-size: 14px;
   color: #474747;
   line-height: 1.5;
-`;
-
-const StyledInheritedLine = styled.div`
-  font-size: 13px;
-  font-weight: 500;
-  color: #141414;
 `;
 
 const StyledCheckIcon = styled(IconCheck)`
@@ -250,40 +268,36 @@ const StyledCtaSecondary = styled.a`
   font-weight: 500;
   text-decoration: none;
   font-size: 14px;
-  transition: background-color 0.15s ease;
 
   &:hover {
-    background: #f1f1f1;
+    background: rgba(20, 20, 20, 0.04);
   }
 `;
 
 const StyledRoiSection = styled.div`
   text-align: center;
-  padding: 32px 24px;
-  background: #fafafa;
-  border-radius: 12px;
-  margin-bottom: 48px;
-  border: 1px solid rgba(20, 20, 20, 0.08);
+  margin: 0 auto 48px;
+  max-width: 720px;
 `;
 
 const StyledRoiTitle = styled.h3`
-  font-size: 18px;
+  font-size: 1.35rem;
   font-weight: 600;
-  margin: 0 0 12px 0;
+  margin: 0;
   color: #141414;
 `;
 
 const StyledHelpSection = styled.div`
   text-align: center;
-  padding-top: 32px;
-  border-top: 1px solid rgba(20, 20, 20, 0.08);
+  max-width: 640px;
+  margin: 0 auto;
 `;
 
-const StyledHelpTitle = styled.p`
-  font-size: 18px;
-  font-weight: 500;
+const StyledHelpTitle = styled.h3`
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 0 0 8px 0;
   color: #141414;
-  margin: 0 0 16px 0;
 `;
 
 const StyledHelpLink = styled.a`
@@ -311,55 +325,18 @@ type PricingContentProps = {
   currency: SupportedPricingCurrency;
 };
 
-const PLAN_ORDER: PricingPlanId[] = ['sales', 'recruitment'];
-
-const PLAN_DISPLAY_LABEL: Partial<Record<PricingPlanId, string>> = {
-  recruitment: 'Recruiting',
-};
-
-const REVEAL_COST_EMAIL = 1;
-const REVEAL_COST_PHONE = 5;
-
 const formatMoneyMajor = (subunits: number): string =>
   Math.round(subunits / 100).toLocaleString();
 
-type PlanCardState = Record<PricingPlanId, number>;
-
-const buildInitialTierState = (): PlanCardState => {
-  return PLAN_ORDER.reduce((acc, planId) => {
-    acc[planId] = PRICING_PLANS[planId].minMaps;
-    return acc;
-  }, {} as PlanCardState);
-};
-
-const findTier = (plan: PricingPlan, maps: number): PricingPlanTier => {
-  const exact = plan.tiers.find((t) => t.maps === maps);
-  return exact ?? plan.tiers[0];
-};
+type SeatsState = Record<FreemiumPlanId, number>;
 
 export const PricingContent = ({
   signUpUrl,
   currency,
 }: PricingContentProps) => {
-  const [selectedTiers, setSelectedTiers] = React.useState<PlanCardState>(() =>
-    buildInitialTierState(),
+  const [selectedSeats, setSelectedSeats] = React.useState<SeatsState>(() =>
+    buildInitialFreemiumSeatsState(),
   );
-
-  React.useEffect(() => {
-    setSelectedTiers((previous) => {
-      let changed = false;
-      const next = { ...previous };
-      for (const planId of PLAN_ORDER) {
-        const plan = PRICING_PLANS[planId];
-        const raw = next[planId];
-        if (raw !== undefined && !plan.tiers.some((t) => t.maps === raw)) {
-          next[planId] = plan.minMaps;
-          changed = true;
-        }
-      }
-      return changed ? next : previous;
-    });
-  }, []);
 
   return (
     <StyledSection>
@@ -376,86 +353,104 @@ export const PricingContent = ({
       </StyledHeadlineSub>
 
       <StyledCardsGrid>
-        {PLAN_ORDER.map((planId) => {
-          const plan = PRICING_PLANS[planId];
-          const selectedMaps = selectedTiers[planId];
-          const tier = findTier(plan, selectedMaps);
-          const explicit = tier.pricesSubunits[currency];
-          const priceSubunits =
-            typeof explicit === 'number' && explicit > 0
-              ? explicit
-              : convertPricingAmountSubunits(
-                  tier.pricesSubunits.GBP,
-                  'GBP',
-                  currency,
-                );
-          const totalCredits = tier.credits;
-          const emailEquivalent = Math.floor(totalCredits / REVEAL_COST_EMAIL);
-          const phoneEquivalent = Math.floor(totalCredits / REVEAL_COST_PHONE);
-          const inherited = getInheritedFeatures(planId);
-          const totalSubunits = priceSubunits * tier.maps;
+        {FREEMIUM_PLAN_ORDER.map((planId) => {
+          const plan = FREEMIUM_PLANS[planId];
+          const seats = plan.isFree ? 1 : selectedSeats[planId];
+          const perSeatSubunits = plan.pricesSubunitsPerSeat[currency];
+          const totalSubunits = getFreemiumMonthlyTotalSubunits(
+            planId,
+            seats,
+            currency,
+          );
+          const entitlements = getFreemiumEntitlementsForSeats(planId, seats);
+          const isRecommended = planId === PRICING_RECOMMENDED_FREEMIUM_PLAN_ID;
+          const currencySymbol = getPricingCurrencySymbol(currency);
 
           return (
-            <StyledCard key={planId}>
+            <StyledCard key={planId} $isRecommended={isRecommended}>
+              {isRecommended ? (
+                <StyledRecommendedBadge>
+                  {PRICING_RECOMMENDED_PLAN_LABEL}
+                </StyledRecommendedBadge>
+              ) : null}
               <StyledCardHeader>
                 <StyledCardLabel>
                   <StyledCardEmoji>{plan.icon}</StyledCardEmoji>
-                  {PLAN_DISPLAY_LABEL[planId] ?? plan.label}
+                  {plan.label}
                 </StyledCardLabel>
                 <StyledCardTitle>{plan.tagline}</StyledCardTitle>
-                <StyledCardTagline>{plan.mapTypeLabel}</StyledCardTagline>
+                <StyledCardTagline>
+                  Org intelligence + multi-week, multi-channel, multi-touch
+                  follow up sequences
+                </StyledCardTagline>
               </StyledCardHeader>
 
-              <StyledMapTypePill>Map type · {plan.mapType}</StyledMapTypePill>
-
               <StyledTierSelectWrap>
-                <StyledTierSelectLabel htmlFor={`tier-${planId}`}>
-                  Volume
+                <StyledTierSelectLabel htmlFor={`seats-${planId}`}>
+                  {PRICING_SEATS_LABEL}
                 </StyledTierSelectLabel>
-                <StyledTierSelect
-                  id={`tier-${planId}`}
-                  value={selectedMaps}
-                  onChange={(event) => {
-                    const v = parseInt(event.target.value, 10);
-                    setSelectedTiers((prev) => ({
-                      ...prev,
-                      [planId]: Number.isNaN(v) ? plan.minMaps : v,
-                    }));
-                  }}
-                >
-                  {plan.tiers.map((t) => (
-                    <option key={t.maps} value={t.maps}>
-                      {t.maps} Live Org Charts
-                    </option>
-                  ))}
-                </StyledTierSelect>
+                {plan.isFree ? (
+                  <StyledTierSelect
+                    id={`seats-${planId}`}
+                    value={1}
+                    disabled
+                    aria-label="1 seat included"
+                  >
+                    <option value={1}>1 seat</option>
+                  </StyledTierSelect>
+                ) : (
+                  <StyledTierSelect
+                    id={`seats-${planId}`}
+                    value={seats}
+                    onChange={(event) => {
+                      const nextSeats = parseInt(event.target.value, 10);
+                      setSelectedSeats((previous) => ({
+                        ...previous,
+                        [planId]: Number.isNaN(nextSeats)
+                          ? plan.defaultSeats
+                          : nextSeats,
+                      }));
+                    }}
+                  >
+                    {FREEMIUM_SEAT_OPTIONS.map((seatOption) => (
+                      <option key={seatOption} value={seatOption}>
+                        {seatOption} {seatOption === 1 ? 'seat' : 'seats'}
+                      </option>
+                    ))}
+                  </StyledTierSelect>
+                )}
               </StyledTierSelectWrap>
 
               <StyledPriceBlock>
                 <StyledPrice>
-                  {getPricingCurrencySymbol(currency)}
-                  {formatMoneyMajor(priceSubunits)}
-                  <StyledPriceUnit> / map</StyledPriceUnit>
+                  {plan.isFree ? (
+                    <>
+                      {currencySymbol}0<StyledPriceUnit> / mo</StyledPriceUnit>
+                    </>
+                  ) : (
+                    <>
+                      {currencySymbol}
+                      {formatMoneyMajor(perSeatSubunits)}
+                      <StyledPriceUnit>
+                        {' '}
+                        {PRICING_PER_SEAT_MONTH_UNIT}
+                      </StyledPriceUnit>
+                    </>
+                  )}
                 </StyledPrice>
                 <StyledPriceFinePrint>
-                  Total: {getPricingCurrencySymbol(currency)}
-                  {formatMoneyMajor(totalSubunits)} for {tier.maps} maps
+                  Total: {currencySymbol}
+                  {formatMoneyMajor(totalSubunits)} / mo for {seats}{' '}
+                  {seats === 1 ? 'seat' : 'seats'}
                 </StyledPriceFinePrint>
               </StyledPriceBlock>
 
               <StyledCreditsBlock>
                 <StyledCreditsEquivalents>
-                  Includes {emailEquivalent.toLocaleString()} email credits +{' '}
-                  {phoneEquivalent.toLocaleString()} phone reveals + 1000 AI
-                  Conversations Credits
+                  Includes {entitlements.reveals.toLocaleString()} email credits
+                  + {entitlements.aiCredits.toLocaleString()} AI credits / month
                 </StyledCreditsEquivalents>
               </StyledCreditsBlock>
-
-              {inherited.inheritedFromLabel && (
-                <StyledInheritedLine>
-                  Everything in {inherited.inheritedFromLabel}, plus:
-                </StyledInheritedLine>
-              )}
 
               <StyledFeatureList>
                 {plan.ownFeatures.map((feature) => (
@@ -468,15 +463,27 @@ export const PricingContent = ({
 
               <StyledCtaStack>
                 <StyledCtaPrimary href={signUpUrl}>
-                  Setup a free trial
+                  {plan.isFree
+                    ? PRICING_CTA_START_FOR_FREE
+                    : 'Setup a free trial'}
                 </StyledCtaPrimary>
-                <StyledCtaSecondary
-                  href="https://calendly.com/arxena/30min"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Talk to sales
-                </StyledCtaSecondary>
+                {planId === 'enterprise' ? (
+                  <StyledCtaSecondary
+                    href="https://calendly.com/arxena/30min"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {PRICING_CTA_TALK_TO_SALES}
+                  </StyledCtaSecondary>
+                ) : (
+                  <StyledCtaSecondary
+                    href="https://calendly.com/arxena/30min"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {PRICING_CTA_TALK_TO_SALES}
+                  </StyledCtaSecondary>
+                )}
               </StyledCtaStack>
             </StyledCard>
           );
@@ -484,9 +491,7 @@ export const PricingContent = ({
       </StyledCardsGrid>
 
       <StyledRoiSection>
-        <StyledRoiTitle>
-          Understand the lay of the org before your first message.
-        </StyledRoiTitle>
+        <StyledRoiTitle>{PRICING_MARKETING_ROI_HEADLINE}</StyledRoiTitle>
         <p style={{ margin: '16px 0 0 0', fontSize: 14, color: '#818181' }}>
           {creditPackPricingFootnote}
         </p>

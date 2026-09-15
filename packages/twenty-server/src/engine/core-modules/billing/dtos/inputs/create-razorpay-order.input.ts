@@ -1,6 +1,6 @@
 /* @license Enterprise */
 
-import { Field, InputType } from '@nestjs/graphql';
+import { Field, InputType, Int } from '@nestjs/graphql';
 import { type SupportedPricingCurrency } from 'twenty-shared';
 
 @InputType()
@@ -10,4 +10,7 @@ export class CreateRazorpayOrderInput {
 
   @Field(() => String, { nullable: true })
   currency?: SupportedPricingCurrency;
+
+  @Field(() => Int, { nullable: true })
+  seats?: number;
 }

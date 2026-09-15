@@ -3,16 +3,13 @@ import { useLingui } from '@lingui/react/macro';
 import { styled } from '@linaria/react';
 import { useCallback, useEffect, useState } from 'react';
 import {
+  BILLING_ENTITLEMENT_SKUS,
   buildClientGeoHeaders,
-  buildComparableMapsByPlan,
-  convertPricingAmountSubunits,
-  CREDIT_PACKS_BY_INTENT,
+  buildInitialFreemiumSeatsState,
+  FREEMIUM_PLANS,
   getOrFetchClientGeoSession,
-  PRICING_PLAN_ORDER,
-  PRICING_PLANS,
-  SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE,
   SUPPORTED_PRICING_CURRENCIES,
-  type CreditPack as SharedCreditPack,
+  type FreemiumPlanId,
   type SupportedPricingCurrency,
 } from 'twenty-shared';
 import { SettingsPath } from 'twenty-shared/types';
@@ -131,7 +128,8 @@ const loadRazorpayCheckoutScript = (): Promise<void> =>
 
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load Razorpay Checkout'));
+    script.onerror = () =>
+      reject(new Error('Failed to load Razorpay Checkout'));
     document.body.appendChild(script);
   });
 
@@ -143,8 +141,8 @@ export const SettingsBillingRazorpayCatalog = () => {
 
   const [displayCurrency, setDisplayCurrency] =
     useState<SupportedPricingCurrency>('USD');
-  const [selectedMapsByPlan, setSelectedMapsByPlan] = useState(
-    buildComparableMapsByPlan,
+  const [selectedSeatsByPlan, setSelectedSeatsByPlan] = useState(
+    buildInitialFreemiumSeatsState,
   );
   const [planQuantities, setPlanQuantities] = useState<Record<string, number>>(
     {},
@@ -195,34 +193,7 @@ export const SettingsBillingRazorpayCatalog = () => {
   }, [pricingGeoHeaders, refetchPricingCurrency]);
 
   useEffect(() => {
-    setSelectedMapsByPlan((previous) => {
-      let changed = false;
-      const next = { ...previous };
-
-      for (const planId of PRICING_PLAN_ORDER) {
-        const plan = PRICING_PLANS[planId];
-        const raw = next[planId];
-
-        if (
-          raw === undefined ||
-          raw === SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE
-        ) {
-          continue;
-        }
-
-        if (!plan.tiers.some((tier) => tier.maps === raw)) {
-          next[planId] = plan.minMaps;
-          changed = true;
-        }
-      }
-
-      return changed ? next : previous;
-    });
-  }, []);
-
-  useEffect(() => {
-    const resolvedCurrency =
-      requestPricingCurrencyData?.requestPricingCurrency;
+    const resolvedCurrency = requestPricingCurrencyData?.requestPricingCurrency;
 
     if (
       isDefined(resolvedCurrency) &&
@@ -233,62 +204,6 @@ export const SettingsBillingRazorpayCatalog = () => {
       setDisplayCurrency(resolvedCurrency as SupportedPricingCurrency);
     }
   }, [requestPricingCurrencyData]);
-
-  const sharedPackMetaByKey = (() => {
-    const allPacks: SharedCreditPack[] = Object.values(
-      CREDIT_PACKS_BY_INTENT,
-    ).flat();
-
-    return new Map(allPacks.map((pack) => [pack.key, pack]));
-  })();
-
-  const resolvePackPriceSubunits = (
-    pack: CreditPack,
-    targetCurrency: SupportedPricingCurrency,
-  ): { subunits: number; isExplicit: boolean } => {
-    const packPricesJson = pack.pricesSubunitsJson;
-
-    if (typeof packPricesJson === 'string' && packPricesJson.length > 0) {
-      try {
-        const parsed = JSON.parse(packPricesJson) as Partial<
-          Record<SupportedPricingCurrency, number>
-        >;
-        const explicit = parsed[targetCurrency];
-
-        if (typeof explicit === 'number' && explicit > 0) {
-          return { subunits: explicit, isExplicit: true };
-        }
-      } catch {
-        // fall through to conversion
-      }
-    }
-
-    const meta = sharedPackMetaByKey.get(pack.key);
-    const explicit = meta?.pricesSubunits?.[targetCurrency];
-
-    if (typeof explicit === 'number' && explicit > 0) {
-      return { subunits: explicit, isExplicit: true };
-    }
-
-    const sourceCurrency: SupportedPricingCurrency =
-      pack.currency === 'INR' ||
-      pack.currency === 'USD' ||
-      pack.currency === 'GBP' ||
-      pack.currency === 'EUR' ||
-      pack.currency === 'AUD' ||
-      pack.currency === 'AED'
-        ? (pack.currency as SupportedPricingCurrency)
-        : 'GBP';
-
-    return {
-      subunits: convertPricingAmountSubunits(
-        pack.amountSubunits,
-        sourceCurrency,
-        targetCurrency,
-      ),
-      isExplicit: false,
-    };
-  };
 
   const loadRazorpayAndOpenSubscription = useCallback(
     async (keyId: string, subscriptionId: string, callbackUrl: string) => {
@@ -363,8 +278,7 @@ export const SettingsBillingRazorpayCatalog = () => {
         }
       } catch (error) {
         enqueueErrorSnackBar({
-          message:
-            error instanceof Error ? error.message : t`Checkout failed`,
+          message: error instanceof Error ? error.message : t`Checkout failed`,
         });
       } finally {
         setSubscribingPlanId(null);
@@ -379,17 +293,40 @@ export const SettingsBillingRazorpayCatalog = () => {
     ],
   );
 
+  const handleSubscribeFreemium = useCallback(
+    async (freemiumPlanId: FreemiumPlanId, seats: number) => {
+      const plan = FREEMIUM_PLANS[freemiumPlanId];
+      const skuKey = plan.subscriptionPackKey;
+
+      if (!skuKey) {
+        return;
+      }
+
+      await handleSubscribePlan(
+        engagementPlans[0]?.id,
+        Math.max(1, seats),
+        skuKey,
+      );
+    },
+    [engagementPlans, handleSubscribePlan],
+  );
+
   const handleBuyCredits = useCallback(
     async (
       creditPackKey: string,
       selectedCurrency: SupportedPricingCurrency,
+      seats?: number,
     ) => {
       setBuyingPackKey(creditPackKey);
 
       try {
         const { data } = await createRazorpayOrderMutation({
           variables: {
-            input: { creditPackKey, currency: selectedCurrency },
+            input: {
+              creditPackKey,
+              currency: selectedCurrency,
+              ...(typeof seats === 'number' ? { seats } : {}),
+            },
           },
         });
         const order = (
@@ -431,9 +368,7 @@ export const SettingsBillingRazorpayCatalog = () => {
       } catch (error) {
         enqueueErrorSnackBar({
           message:
-            error instanceof Error
-              ? error.message
-              : t`Failed to create order`,
+            error instanceof Error ? error.message : t`Failed to create order`,
         });
       } finally {
         setBuyingPackKey(null);
@@ -482,62 +417,38 @@ export const SettingsBillingRazorpayCatalog = () => {
     [enqueueErrorSnackBar, enqueueSuccessSnackBar, requestInvoiceMutation, t],
   );
 
-  const subscriptionSkus = creditPacks.filter(
+  const subscriptionSkus = BILLING_ENTITLEMENT_SKUS.filter(
     (pack) => pack.kind === 'subscription',
   );
-  const oneTimePacks = creditPacks.filter(
-    (pack) => pack.kind !== 'subscription',
+  const topUpPacks = creditPacks.filter(
+    (pack) =>
+      pack.kind === 'one_time' ||
+      (!pack.kind && !subscriptionSkus.some((sku) => sku.key === pack.key)),
   );
 
-  if (
-    engagementPlans.length === 0 &&
-    creditPacks.length === 0 &&
-    subscriptionSkus.length === 0
-  ) {
-    return null;
-  }
+  // Hide legacy Razorpay plan grid + one-time top-ups until freemium catalog replaces them
+  const showLegacyCatalogSections = false;
 
   return (
     <>
-      {subscriptionSkus.length > 0 && (
-        <Section>
-          <H2Title
-            title={t`Subscribe (monthly)`}
-            description={t`Monthly map, reveal, API, and AI allowances. You can still buy one-time top-ups.`}
-          />
-          <StyledPlansGrid>
-            {subscriptionSkus.map((sku) => (
-              <StyledPlanCard key={sku.key}>
-                <StyledPlanName>{sku.name}</StyledPlanName>
-                <StyledPlanMeta>{sku.creditsDisplay}</StyledPlanMeta>
-                <StyledPlanMeta>
-                  {sku.mapsCount ?? 0} maps · {sku.credits} reveals ·{' '}
-                  {sku.apiCredits ?? 0} API · {sku.aiCredits ?? 0} AI
-                </StyledPlanMeta>
-                <Button
-                  title={t`Subscribe`}
-                  variant="secondary"
-                  fullWidth
-                  onClick={() =>
-                    void handleSubscribePlan(
-                      engagementPlans[0]?.id,
-                      1,
-                      sku.key,
-                    )
-                  }
-                  disabled={subscribingPlanId !== null}
-                />
-              </StyledPlanCard>
-            ))}
-          </StyledPlansGrid>
-        </Section>
-      )}
+      <SettingsBillingPricing
+        displayCurrency={displayCurrency}
+        selectedSeatsByPlan={selectedSeatsByPlan}
+        setSelectedSeatsByPlan={setSelectedSeatsByPlan}
+        buyingPackKey={buyingPackKey}
+        subscribingPlanId={subscribingPlanId}
+        handleSubscribeFreemium={(planId, seats) => {
+          void handleSubscribeFreemium(planId, seats);
+        }}
+        handleBuyCredits={handleBuyCredits}
+        setInvoicePackKey={setInvoicePackKey}
+      />
 
-      {engagementPlans.length > 0 && (
+      {showLegacyCatalogSections && engagementPlans.length > 0 && (
         <Section>
           <H2Title
-            title={t`Subscription plans`}
-            description={t`Choose or upgrade your plan`}
+            title={t`Synced Razorpay plans`}
+            description={t`Legacy synced plans (quantity = seats)`}
           />
           <StyledPlansGrid>
             {engagementPlans.map((plan) => {
@@ -552,7 +463,7 @@ export const SettingsBillingRazorpayCatalog = () => {
                   </StyledPlanMeta>
                   <StyledLicenceRow>
                     <StyledLicenceLabel htmlFor={`licences-${plan.id}`}>
-                      {t`Licences`}
+                      {t`Seats`}
                     </StyledLicenceLabel>
                     <TextInput
                       id={`licences-${plan.id}`}
@@ -596,23 +507,43 @@ export const SettingsBillingRazorpayCatalog = () => {
         </Section>
       )}
 
-      {oneTimePacks.length > 0 && (
-        <SettingsBillingPricing
-          creditPacks={oneTimePacks}
-          displayCurrency={displayCurrency}
-          selectedMapsByPlan={selectedMapsByPlan}
-          setSelectedMapsByPlan={setSelectedMapsByPlan}
-          sharedPackMetaByKey={sharedPackMetaByKey}
-          resolvePackPriceSubunits={resolvePackPriceSubunits}
-          buyingPackKey={buyingPackKey}
-          handleBuyCredits={handleBuyCredits}
-          setInvoicePackKey={setInvoicePackKey}
-        />
+      {showLegacyCatalogSections && topUpPacks.length > 0 && (
+        <Section>
+          <H2Title
+            title={t`One-time top-ups`}
+            description={t`Optional prepaid reveals, API, and AI credits`}
+          />
+          <StyledPlansGrid>
+            {topUpPacks.slice(0, 6).map((pack) => (
+              <StyledPlanCard key={pack.key}>
+                <StyledPlanName>{pack.name}</StyledPlanName>
+                <StyledPlanMeta>
+                  {pack.creditsDisplay ?? `${pack.credits} credits`}
+                </StyledPlanMeta>
+                <Button
+                  title={t`Buy`}
+                  variant="secondary"
+                  fullWidth
+                  onClick={() =>
+                    void handleBuyCredits(pack.key, displayCurrency)
+                  }
+                  disabled={buyingPackKey !== null}
+                />
+              </StyledPlanCard>
+            ))}
+          </StyledPlansGrid>
+        </Section>
       )}
 
       <InvoiceRequestModal
         isOpen={invoicePackKey !== null}
-        pack={creditPacks.find((pack) => pack.key === invoicePackKey) ?? null}
+        pack={
+          creditPacks.find((pack) => pack.key === invoicePackKey) ??
+          BILLING_ENTITLEMENT_SKUS.find(
+            (pack) => pack.key === invoicePackKey,
+          ) ??
+          null
+        }
         initialCompanyName={currentWorkspace?.displayName ?? ''}
         initialBillingEmail={currentUser?.email ?? ''}
         onClose={() => setInvoicePackKey(null)}

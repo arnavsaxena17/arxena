@@ -29,20 +29,20 @@ const StyledTitle = styled.h2`
 const StyledSubtitle = styled.p`
   font-size: 15px;
   color: #818181;
-  margin: 0 auto 24px;
+  margin: 0 auto 32px;
   text-align: center;
   line-height: 1.5;
-  max-width: 520px;
+  max-width: 640px;
+  width: 100%;
 `;
 
 const StyledGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
-
-  @media (max-width: 809px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  max-width: 720px;
+  margin: 0 auto;
+  justify-content: center;
 
   @media (max-width: 480px) {
     grid-template-columns: 1fr;

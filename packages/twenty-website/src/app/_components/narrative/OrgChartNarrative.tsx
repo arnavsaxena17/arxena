@@ -3,10 +3,13 @@
 import styled from '@emotion/styled';
 import {
   IconBrandLinkedin,
-  IconBrandOffice,
   IconBrandWhatsapp,
   IconCode,
   IconMail,
+  IconMailbox,
+  IconMessage,
+  IconMessageCircle,
+  IconNews,
   IconPlayerPause,
   IconPlaylistAdd,
   IconSearch,
@@ -42,16 +45,14 @@ const C = {
   surface: '#fafafa',
   iconBg: 'rgba(20,20,20,0.06)',
   border: 'rgba(20,20,20,0.08)',
-  // Twenty workflow icon colors (theme.color.*)
   twRed: '#e5484d',
   twBlue: '#3e63dd',
   twGreen: '#193b2d',
   twTertiary: '#999999',
-  // Channel brand colors (Moment graphic)
+  // Channel brand colors
   linkedin: '#0A66C2',
   whatsapp: '#25D366',
   gmail: '#EA4335',
-  outlook: '#0078D4',
   levelColors: [
     '#AC193D',
     '#2672EC',
@@ -70,7 +71,7 @@ const NODE_H = 82;
 const FONT = 'var(--font-gabarito), system-ui, sans-serif';
 const ICON_STROKE = 1.5;
 
-const NARRATIVE_STEPS = ['Map', 'Warm', 'Reach', 'Moment', 'Meet'] as const;
+const NARRATIVE_STEPS = ['Map', 'Reach', 'Meet'] as const;
 
 // Loops a boolean on/off while the graphic stays in view (pauses off-screen)
 function useInViewBooleanLoop({
@@ -250,137 +251,6 @@ function OrgChartNode({
   );
 }
 
-function PersonChip({
-  x,
-  y,
-  name,
-  role,
-  side,
-  highlighted = false,
-  dimmed = false,
-  showLinkedIn = false,
-}: {
-  x: number;
-  y: number;
-  name: string;
-  role: string;
-  side: 'you' | 'target';
-  highlighted?: boolean;
-  dimmed?: boolean;
-  showLinkedIn?: boolean;
-}) {
-  const width = 132;
-  const height = 44;
-  const stroke = highlighted
-    ? C.accent
-    : side === 'you'
-      ? C.accent
-      : C.levelColors[1];
-
-  return (
-    <g style={{ opacity: dimmed ? 0.32 : 1 }}>
-      <rect
-        x={x}
-        y={y}
-        width={width}
-        height={height}
-        rx={8}
-        fill={C.card}
-        stroke={stroke}
-        strokeWidth={highlighted ? 2.25 : 1.25}
-        filter={highlighted ? `drop-shadow(0 0 8px ${C.glow})` : undefined}
-      />
-      <circle
-        cx={x + 18}
-        cy={y + 22}
-        r={10}
-        fill={side === 'you' ? C.accent : C.levelColors[1]}
-        opacity={0.9}
-      />
-      <text
-        x={x + 18}
-        y={y + 26}
-        textAnchor="middle"
-        fontSize={9}
-        fill="#fff"
-        fontFamily={FONT}
-        fontWeight={700}
-      >
-        {name
-          .split(' ')
-          .map((part) => part[0])
-          .join('')
-          .slice(0, 2)}
-      </text>
-      <text
-        x={x + 34}
-        y={y + 18}
-        fontSize={11}
-        fill={C.text}
-        fontFamily={FONT}
-        fontWeight={700}
-      >
-        {name.length > 14 ? `${name.slice(0, 13)}…` : name}
-      </text>
-      <text
-        x={x + 34}
-        y={y + 34}
-        fontSize={9}
-        fill={C.textTertiary}
-        fontFamily={FONT}
-      >
-        {role.length > 16 ? `${role.slice(0, 15)}…` : role}
-      </text>
-      {showLinkedIn && (
-        <SvgTablerIcon
-          x={x + width - 18}
-          y={y + 4}
-          size={14}
-          Icon={IconBrandLinkedin}
-          color={C.linkedin}
-        />
-      )}
-    </g>
-  );
-}
-
-function WarmEdge({
-  x1,
-  y1,
-  x2,
-  y2,
-  strong = false,
-  delay = 0,
-  drawn = true,
-}: {
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-  strong?: boolean;
-  delay?: number;
-  drawn?: boolean;
-}) {
-  const midX = (x1 + x2) / 2;
-
-  return (
-    <motion.path
-      d={`M ${x1},${y1} C ${midX},${y1} ${midX},${y2} ${x2},${y2}`}
-      stroke={C.accent}
-      strokeWidth={strong ? 3 : 1.15}
-      fill="none"
-      strokeLinecap="round"
-      opacity={strong ? 0.95 : 0.18}
-      initial={false}
-      animate={{ pathLength: drawn ? 1 : 0 }}
-      transition={{
-        duration: drawn ? (strong ? 0.7 : 0.45) : 0.3,
-        delay: drawn ? delay : 0,
-      }}
-    />
-  );
-}
-
 function SvgTablerIcon({
   x,
   y,
@@ -415,188 +285,6 @@ function SvgTablerIcon({
         <Icon size={iconSize} stroke={ICON_STROKE} color={color} />
       </div>
     </foreignObject>
-  );
-}
-
-type WorkflowIconKind =
-  | 'trigger'
-  | 'linkedin'
-  | 'linkedinConnect'
-  | 'whatsapp'
-  | 'email'
-  | 'wait'
-  | 'code'
-  | 'search';
-
-const WORKFLOW_ICON_BY_KIND: Record<
-  WorkflowIconKind,
-  { Icon: TablerIconComponent; color: string }
-> = {
-  // Record / manual triggers — blue (DATABASE_EVENT)
-  trigger: { Icon: IconPlaylistAdd, color: C.twBlue },
-  // Communication + code actions use theme.color.red
-  linkedin: { Icon: IconBrandLinkedin, color: C.twRed },
-  linkedinConnect: { Icon: IconUserPlus, color: C.twRed },
-  whatsapp: { Icon: IconBrandWhatsapp, color: C.twRed },
-  email: { Icon: IconSend, color: C.twRed },
-  code: { Icon: IconCode, color: C.twRed },
-  // Flow control uses theme.color.green12
-  wait: { Icon: IconPlayerPause, color: C.twGreen },
-  // Record search uses tertiary
-  search: { Icon: IconSearch, color: C.twTertiary },
-};
-
-function WorkflowIcon({ kind }: { kind: WorkflowIconKind }) {
-  const { Icon, color } = WORKFLOW_ICON_BY_KIND[kind];
-
-  return (
-    <SvgTablerIcon
-      x={0}
-      y={0}
-      size={28}
-      Icon={Icon}
-      color={color}
-      withBackground
-    />
-  );
-}
-
-function WorkflowNodeCard({
-  x,
-  y,
-  kind,
-  typeLabel,
-  title,
-  delay = 0,
-  width = 220,
-  visible = true,
-}: {
-  x: number;
-  y: number;
-  kind: WorkflowIconKind;
-  typeLabel: 'Trigger' | 'Action';
-  title: string;
-  delay?: number;
-  width?: number;
-  visible?: boolean;
-}) {
-  const height = 56;
-  const isTrigger = typeLabel === 'Trigger';
-
-  return (
-    <motion.g
-      initial={false}
-      animate={visible ? { opacity: 1, y: 0 } : { opacity: 0.12, y: 6 }}
-      transition={{
-        delay: visible ? delay : 0,
-        duration: 0.35,
-      }}
-    >
-      <rect
-        x={x}
-        y={y}
-        width={width}
-        height={height}
-        rx={8}
-        fill={C.card}
-        stroke={C.border}
-        strokeWidth={1}
-      />
-      <g transform={`translate(${x + 10}, ${y + 14})`}>
-        <WorkflowIcon kind={kind} />
-      </g>
-      <text
-        x={x + 46}
-        y={y + 22}
-        fontSize={10}
-        fill={isTrigger ? C.twBlue : C.textSecondary}
-        fontFamily={FONT}
-        fontWeight={500}
-      >
-        {typeLabel}
-      </text>
-      <text
-        x={x + 46}
-        y={y + 40}
-        fontSize={13}
-        fill={C.text}
-        fontFamily={FONT}
-        fontWeight={500}
-      >
-        {title.length > 24 ? `${title.slice(0, 23)}…` : title}
-      </text>
-    </motion.g>
-  );
-}
-
-function WorkflowConnector({
-  x,
-  y1,
-  y2,
-}: {
-  x: number;
-  y1: number;
-  y2: number;
-}) {
-  return (
-    <g>
-      <line
-        x1={x}
-        y1={y1}
-        x2={x}
-        y2={y2 - 5}
-        stroke={C.cardBorder}
-        strokeWidth={1.5}
-      />
-      <polygon
-        points={`${x},${y2} ${x - 4},${y2 - 6} ${x + 4},${y2 - 6}`}
-        fill={C.cardBorder}
-      />
-    </g>
-  );
-}
-
-function WorkflowBranchPath({
-  fromX,
-  fromY,
-  toX,
-  toY,
-  label,
-  labelSide,
-}: {
-  fromX: number;
-  fromY: number;
-  toX: number;
-  toY: number;
-  label: 'if' | 'else';
-  labelSide: 'left' | 'right';
-}) {
-  const midY = fromY + (toY - fromY) * 0.45;
-  const path = `M ${fromX},${fromY} C ${fromX},${midY} ${toX},${midY} ${toX},${toY - 5}`;
-  const labelX =
-    labelSide === 'left'
-      ? fromX + (toX - fromX) * 0.35 - 10
-      : fromX + (toX - fromX) * 0.35 + 10;
-
-  return (
-    <g>
-      <path d={path} stroke={C.cardBorder} strokeWidth={1.5} fill="none" />
-      <polygon
-        points={`${toX},${toY} ${toX - 4},${toY - 6} ${toX + 4},${toY - 6}`}
-        fill={C.cardBorder}
-      />
-      <text
-        x={labelX}
-        y={fromY + 18}
-        textAnchor="middle"
-        fontSize={11}
-        fill={C.textSecondary}
-        fontFamily={FONT}
-        fontWeight={600}
-      >
-        {label}
-      </text>
-    </g>
   );
 }
 
@@ -907,267 +595,182 @@ function TargetingTransformGraphic() {
   );
 }
 
-function WarmPathsGraphic() {
-  const { ref, active } = useInViewBooleanLoop({
-    onMs: 3200,
-    offMs: 1000,
-    leadInMs: 300,
-  });
+
+type WorkflowIconKind =
+  | 'trigger'
+  | 'linkedin'
+  | 'linkedinConnect'
+  | 'whatsapp'
+  | 'email'
+  | 'wait'
+  | 'code'
+  | 'search';
+
+const WORKFLOW_ICON_BY_KIND: Record<
+  WorkflowIconKind,
+  { Icon: TablerIconComponent; color: string }
+> = {
+  trigger: { Icon: IconPlaylistAdd, color: C.twBlue },
+  linkedin: { Icon: IconBrandLinkedin, color: C.twRed },
+  linkedinConnect: { Icon: IconUserPlus, color: C.twRed },
+  whatsapp: { Icon: IconBrandWhatsapp, color: C.twRed },
+  email: { Icon: IconSend, color: C.twRed },
+  code: { Icon: IconCode, color: C.twRed },
+  wait: { Icon: IconPlayerPause, color: C.twGreen },
+  search: { Icon: IconSearch, color: C.twTertiary },
+};
+
+function WorkflowIcon({ kind }: { kind: WorkflowIconKind }) {
+  const { Icon, color } = WORKFLOW_ICON_BY_KIND[kind];
 
   return (
-    <svg
-      ref={ref}
-      viewBox="0 0 720 440"
-      role="img"
-      aria-label="Sales teammates reach LinkedIn targets on your behalf"
+    <SvgTablerIcon
+      x={0}
+      y={0}
+      size={28}
+      Icon={Icon}
+      color={color}
+      withBackground
+    />
+  );
+}
+
+function WorkflowNodeCard({
+  x,
+  y,
+  kind,
+  typeLabel,
+  title,
+  delay = 0,
+  width = 220,
+  visible = true,
+}: {
+  x: number;
+  y: number;
+  kind: WorkflowIconKind;
+  typeLabel: 'Trigger' | 'Action';
+  title: string;
+  delay?: number;
+  width?: number;
+  visible?: boolean;
+}) {
+  const height = 56;
+  const isTrigger = typeLabel === 'Trigger';
+
+  return (
+    <motion.g
+      initial={false}
+      animate={visible ? { opacity: 1, y: 0 } : { opacity: 0.12, y: 6 }}
+      transition={{
+        delay: visible ? delay : 0,
+        duration: 0.35,
+      }}
     >
+      <rect
+        x={x}
+        y={y}
+        width={width}
+        height={height}
+        rx={8}
+        fill={C.card}
+        stroke={C.border}
+        strokeWidth={1}
+      />
+      <g transform={`translate(${x + 10}, ${y + 14})`}>
+        <WorkflowIcon kind={kind} />
+      </g>
       <text
-        x={86}
-        y={22}
+        x={x + 46}
+        y={y + 22}
+        fontSize={10}
+        fill={isTrigger ? C.twBlue : C.textSecondary}
+        fontFamily={FONT}
+        fontWeight={500}
+      >
+        {typeLabel}
+      </text>
+      <text
+        x={x + 46}
+        y={y + 40}
+        fontSize={13}
+        fill={C.text}
+        fontFamily={FONT}
+        fontWeight={500}
+      >
+        {title.length > 24 ? `${title.slice(0, 23)}…` : title}
+      </text>
+    </motion.g>
+  );
+}
+
+function WorkflowConnector({
+  x,
+  y1,
+  y2,
+}: {
+  x: number;
+  y1: number;
+  y2: number;
+}) {
+  return (
+    <g>
+      <line
+        x1={x}
+        y1={y1}
+        x2={x}
+        y2={y2 - 5}
+        stroke={C.cardBorder}
+        strokeWidth={1.5}
+      />
+      <polygon
+        points={`${x},${y2} ${x - 4},${y2 - 6} ${x + 4},${y2 - 6}`}
+        fill={C.cardBorder}
+      />
+    </g>
+  );
+}
+
+function WorkflowBranchPath({
+  fromX,
+  fromY,
+  toX,
+  toY,
+  label,
+  labelSide,
+}: {
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+  label: 'if' | 'else';
+  labelSide: 'left' | 'right';
+}) {
+  const midY = fromY + (toY - fromY) * 0.45;
+  const path = `M ${fromX},${fromY} C ${fromX},${midY} ${toX},${midY} ${toX},${toY - 5}`;
+  const labelX =
+    labelSide === 'left'
+      ? fromX + (toX - fromX) * 0.35 - 10
+      : fromX + (toX - fromX) * 0.35 + 10;
+
+  return (
+    <g>
+      <path d={path} stroke={C.cardBorder} strokeWidth={1.5} fill="none" />
+      <polygon
+        points={`${toX},${toY} ${toX - 4},${toY - 6} ${toX + 4},${toY - 6}`}
+        fill={C.cardBorder}
+      />
+      <text
+        x={labelX}
+        y={fromY + 18}
         textAnchor="middle"
         fontSize={11}
         fill={C.textSecondary}
         fontFamily={FONT}
-        fontWeight={700}
+        fontWeight={600}
       >
-        Your team
+        {label}
       </text>
-      <text
-        x={360}
-        y={22}
-        textAnchor="middle"
-        fontSize={11}
-        fill={C.accent}
-        fontFamily={FONT}
-        fontWeight={700}
-      >
-        LinkedIn · on your behalf
-      </text>
-      <text
-        x={634}
-        y={22}
-        textAnchor="middle"
-        fontSize={11}
-        fill={C.textSecondary}
-        fontFamily={FONT}
-        fontWeight={700}
-      >
-        Target list
-      </text>
-
-      <rect
-        x={16}
-        y={36}
-        width={140}
-        height={380}
-        rx={12}
-        fill="rgba(0,164,164,0.04)"
-        stroke="rgba(0,164,164,0.18)"
-        strokeWidth={1}
-      />
-      <rect
-        x={564}
-        y={34}
-        width={140}
-        height={380}
-        rx={12}
-        fill="rgba(38,114,236,0.04)"
-        stroke="rgba(38,114,236,0.18)"
-        strokeWidth={1}
-      />
-
-      <WarmEdge
-        x1={156}
-        y1={88}
-        x2={564}
-        y2={56}
-        strong
-        delay={0.1}
-        drawn={active}
-      />
-      <WarmEdge
-        x1={156}
-        y1={88}
-        x2={564}
-        y2={108}
-        strong
-        delay={0.14}
-        drawn={active}
-      />
-      <WarmEdge
-        x1={156}
-        y1={88}
-        x2={564}
-        y2={160}
-        delay={0.18}
-        drawn={active}
-      />
-      <WarmEdge
-        x1={156}
-        y1={200}
-        x2={564}
-        y2={108}
-        delay={0.22}
-        drawn={active}
-      />
-      <WarmEdge
-        x1={156}
-        y1={200}
-        x2={564}
-        y2={212}
-        strong
-        delay={0.26}
-        drawn={active}
-      />
-      <WarmEdge
-        x1={156}
-        y1={200}
-        x2={564}
-        y2={264}
-        strong
-        delay={0.3}
-        drawn={active}
-      />
-      <WarmEdge
-        x1={156}
-        y1={312}
-        x2={564}
-        y2={160}
-        delay={0.34}
-        drawn={active}
-      />
-      <WarmEdge
-        x1={156}
-        y1={312}
-        x2={564}
-        y2={316}
-        strong
-        delay={0.38}
-        drawn={active}
-      />
-      <WarmEdge
-        x1={156}
-        y1={312}
-        x2={564}
-        y2={368}
-        delay={0.42}
-        drawn={active}
-      />
-
-      {/* LinkedIn marks along strong paths */}
-      <motion.g
-        initial={false}
-        animate={{ opacity: active ? 1 : 0.15 }}
-        transition={{ delay: active ? 0.5 : 0, duration: 0.35 }}
-      >
-        <SvgTablerIcon
-          x={340}
-          y={70}
-          size={14}
-          Icon={IconBrandLinkedin}
-          color={C.linkedin}
-        />
-        <SvgTablerIcon
-          x={340}
-          y={200}
-          size={14}
-          Icon={IconBrandLinkedin}
-          color={C.linkedin}
-        />
-        <SvgTablerIcon
-          x={340}
-          y={300}
-          size={14}
-          Icon={IconBrandLinkedin}
-          color={C.linkedin}
-        />
-      </motion.g>
-
-      <PersonChip
-        x={20}
-        y={66}
-        name="You"
-        role="Account Exec"
-        side="you"
-        highlighted
-        showLinkedIn
-      />
-      <PersonChip
-        x={20}
-        y={178}
-        name="Priya S."
-        role="CS Lead · Sales"
-        side="you"
-        highlighted
-        showLinkedIn
-      />
-      <PersonChip
-        x={20}
-        y={290}
-        name="Dev R."
-        role="AE · Sales"
-        side="you"
-        highlighted
-        showLinkedIn
-      />
-
-      <PersonChip
-        x={568}
-        y={34}
-        name="Albert Jou"
-        role="VP Engineering"
-        side="target"
-        highlighted
-      />
-      <PersonChip
-        x={568}
-        y={86}
-        name="Maya Chen"
-        role="Head of IT"
-        side="target"
-        highlighted
-      />
-      <PersonChip
-        x={568}
-        y={138}
-        name="Rahul K."
-        role="Product Lead"
-        side="target"
-        dimmed
-      />
-      <PersonChip
-        x={568}
-        y={190}
-        name="Sofia Berg"
-        role="VP Sales"
-        side="target"
-        highlighted
-      />
-      <PersonChip
-        x={568}
-        y={242}
-        name="Ken Park"
-        role="CFO"
-        side="target"
-        dimmed
-      />
-      <PersonChip
-        x={568}
-        y={294}
-        name="Lisa Wong"
-        role="Head of Ops"
-        side="target"
-        highlighted
-      />
-      <PersonChip
-        x={568}
-        y={346}
-        name="Rob Liu"
-        role="CEO"
-        side="target"
-        dimmed
-      />
-    </svg>
+    </g>
   );
 }
 
@@ -1187,7 +790,6 @@ function ReachWorkflowGraphic() {
   const leftCenter = leftX + nodeWidth / 2;
   const rightCenter = rightX + nodeWidth / 2;
 
-  // Vertical rhythm — tighter than product zoom-out, still readable
   const yTrigger = 16;
   const yFind = 84;
   const yCondition = 152;
@@ -1215,7 +817,6 @@ function ReachWorkflowGraphic() {
       <rect width={800} height={440} rx={12} fill={C.surface} />
       <rect width={800} height={440} rx={12} fill="url(#reachDotGrid)" />
 
-      {/* Subject chip — Albert is the person this workflow runs on */}
       <motion.g
         initial={false}
         animate={{ opacity: active ? 1 : 0.35 }}
@@ -1260,7 +861,6 @@ function ReachWorkflowGraphic() {
         animate={{ opacity: active ? 1 : 0.2 }}
         transition={{ duration: 0.35, delay: active ? 0.12 : 0 }}
       >
-        {/* Trunk */}
         <WorkflowNodeCard
           x={trunkX}
           y={yTrigger}
@@ -1302,7 +902,6 @@ function ReachWorkflowGraphic() {
           visible={active}
         />
 
-        {/* if / else branching */}
         <WorkflowBranchPath
           fromX={trunkCenter}
           fromY={yCondition + nodeHeight}
@@ -1320,7 +919,6 @@ function ReachWorkflowGraphic() {
           labelSide="right"
         />
 
-        {/* if branch — already 1st degree */}
         <WorkflowNodeCard
           x={leftX}
           y={yBranch1}
@@ -1362,7 +960,6 @@ function ReachWorkflowGraphic() {
           visible={active}
         />
 
-        {/* else branch — need connect first */}
         <WorkflowNodeCard
           x={rightX}
           y={yBranch1}
@@ -1408,203 +1005,29 @@ function ReachWorkflowGraphic() {
   );
 }
 
-function MomentGraphic() {
+function OutreachOutcomeGraphic() {
   const { ref, active } = useInViewBooleanLoop({
-    onMs: 3400,
-    offMs: 1000,
+    onMs: 3600,
+    offMs: 1100,
     leadInMs: 300,
   });
 
   const channels = [
+    { label: 'Email', Icon: IconMail, color: C.gmail },
+    { label: 'WhatsApp', Icon: IconBrandWhatsapp, color: C.whatsapp },
+    { label: 'LinkedIn posts', Icon: IconNews, color: C.linkedin },
+    { label: 'LinkedIn comments', Icon: IconMessageCircle, color: C.linkedin },
     {
-      label: 'WhatsApp',
-      color: C.whatsapp,
-      Icon: IconBrandWhatsapp,
-      x: 70,
-      y: 88,
-    },
-    {
-      label: 'LinkedIn',
+      label: 'LinkedIn connects',
+      Icon: IconUserPlus,
       color: C.linkedin,
-      Icon: IconBrandLinkedin,
-      x: 542,
-      y: 88,
     },
-    {
-      label: 'Gmail',
-      color: C.gmail,
-      Icon: IconMail,
-      x: 70,
-      y: 210,
-    },
-    {
-      label: 'Outlook',
-      color: C.outlook,
-      Icon: IconBrandOffice,
-      x: 542,
-      y: 210,
-    },
+    { label: 'LinkedIn InMail', Icon: IconMailbox, color: C.linkedin },
+    { label: 'LinkedIn messages', Icon: IconMessage, color: C.linkedin },
   ] as const;
 
-  return (
-    <svg
-      ref={ref}
-      viewBox="0 0 700 300"
-      role="img"
-      aria-label="Reply captured from WhatsApp, LinkedIn, Gmail, and Outlook"
-    >
-      {[0, 1].map((index) => (
-        <motion.circle
-          key={index}
-          cx={350}
-          cy={180}
-          r={NODE_W / 2}
-          fill="none"
-          stroke={C.whatsapp}
-          strokeWidth={2}
-          initial={false}
-          animate={
-            active
-              ? {
-                  r: [NODE_W / 2, NODE_W / 2 + 50],
-                  opacity: [0.35, 0],
-                }
-              : { r: NODE_W / 2, opacity: 0 }
-          }
-          transition={
-            active
-              ? {
-                  duration: 2.2,
-                  repeat: Infinity,
-                  delay: index * 0.9,
-                  ease: 'easeOut',
-                }
-              : { duration: 0.25 }
-          }
-        />
-      ))}
-
-      {channels.map((channel, index) => (
-        <motion.g
-          key={channel.label}
-          initial={false}
-          animate={
-            active ? { opacity: 1, scale: 1 } : { opacity: 0.35, scale: 0.95 }
-          }
-          transition={{
-            delay: active ? 0.05 + index * 0.05 : 0,
-            type: 'spring',
-            stiffness: 220,
-          }}
-          style={{
-            transformOrigin: `${channel.x + 44}px ${channel.y + 18}px`,
-          }}
-        >
-          <rect
-            x={channel.x}
-            y={channel.y}
-            width={88}
-            height={36}
-            rx={8}
-            fill={C.card}
-            stroke={C.border}
-            strokeWidth={1}
-          />
-          <SvgTablerIcon
-            x={channel.x + 8}
-            y={channel.y + 7}
-            size={22}
-            Icon={channel.Icon}
-            color={channel.color}
-          />
-          <text
-            x={channel.x + 38}
-            y={channel.y + 23}
-            fontSize={11}
-            fill={C.text}
-            fontFamily={FONT}
-            fontWeight={500}
-          >
-            {channel.label}
-          </text>
-        </motion.g>
-      ))}
-
-      {/* Bubble sits above the node, clear of sticky nav */}
-      <motion.g
-        initial={false}
-        animate={
-          active
-            ? { opacity: 1, y: 0, scale: 1 }
-            : { opacity: 0, y: 8, scale: 0.96 }
-        }
-        transition={{
-          delay: active ? 0.65 : 0,
-          duration: 0.35,
-        }}
-        style={{ transformOrigin: '350px 100px' }}
-      >
-        <rect
-          x={230}
-          y={72}
-          width={240}
-          height={54}
-          rx={12}
-          fill={C.whatsapp}
-        />
-        <polygon points="340,126 350,138 360,126" fill={C.whatsapp} />
-        <SvgTablerIcon
-          x={244}
-          y={88}
-          size={22}
-          Icon={IconBrandWhatsapp}
-          color="#ffffff"
-        />
-        <text
-          x={370}
-          y={96}
-          textAnchor="middle"
-          fontSize={14}
-          fill="#fff"
-          fontFamily={FONT}
-          fontWeight={600}
-        >
-          Albert replied
-        </text>
-        <text
-          x={370}
-          y={114}
-          textAnchor="middle"
-          fontSize={11}
-          fill="rgba(255,255,255,0.92)"
-          fontFamily={FONT}
-        >
-          “Happy to chat next week”
-        </text>
-      </motion.g>
-
-      <OrgChartNode
-        x={275}
-        y={148}
-        label="VP Engineering"
-        people={['Albert Jou']}
-        levelColor={C.levelColors[1]}
-        highlighted
-        pulsing={active}
-      />
-    </svg>
-  );
-}
-
-function MeetingCalendarGraphic() {
-  const { ref, active } = useInViewBooleanLoop({
-    onMs: 3200,
-    offMs: 1000,
-    leadInMs: 300,
-  });
-
-  const calendarX = 230;
-  const calendarY = 36;
+  const calendarX = 310;
+  const calendarY = 48;
   const calendarW = 240;
   const calendarH = 210;
   const cell = 30;
@@ -1651,32 +1074,82 @@ function MeetingCalendarGraphic() {
   return (
     <svg
       ref={ref}
-      viewBox="0 0 700 300"
+      viewBox="0 0 920 340"
       role="img"
-      aria-label="Calendar meeting booked with Albert Jou"
+      aria-label="Multi-channel outreach sequences lead to a booked meeting with Albert Jou"
     >
-      <OrgChartNode
+      <defs>
+        <pattern
+          id="outreachDotGrid"
+          width="16"
+          height="16"
+          patternUnits="userSpaceOnUse"
+        >
+          <circle cx="1" cy="1" r="1" fill={C.cardBorderLight} />
+        </pattern>
+      </defs>
+      <rect width={920} height={340} rx={12} fill={C.surface} />
+      <rect width={920} height={340} rx={12} fill="url(#outreachDotGrid)" />
+
+      <text
         x={24}
-        y={100}
-        label="You"
-        people={['Account Exec']}
-        levelColor={C.accent}
-        highlighted
-        badge="You"
-      />
-      <OrgChartNode
-        x={526}
-        y={100}
-        label="Albert Jou"
-        people={['VP Engineering']}
-        levelColor={C.levelColors[1]}
-        highlighted
-      />
+        y={28}
+        fontSize={11}
+        fill={C.textSecondary}
+        fontFamily={FONT}
+        fontWeight={700}
+      >
+        Multi-touch sequence
+      </text>
+
+      {channels.map((channel, index) => {
+        const y = 42 + index * 40;
+
+        return (
+          <motion.g
+            key={channel.label}
+            initial={false}
+            animate={active ? { opacity: 1, x: 0 } : { opacity: 0.4, x: -4 }}
+            transition={{
+              delay: active ? 0.04 + index * 0.04 : 0,
+              duration: 0.3,
+            }}
+          >
+            <rect
+              x={20}
+              y={y}
+              width={180}
+              height={34}
+              rx={8}
+              fill={C.card}
+              stroke={C.border}
+              strokeWidth={1}
+            />
+            <SvgTablerIcon
+              x={28}
+              y={y + 6}
+              size={22}
+              Icon={channel.Icon}
+              color={channel.color}
+            />
+            <text
+              x={58}
+              y={y + 22}
+              fontSize={11}
+              fill={C.text}
+              fontFamily={FONT}
+              fontWeight={500}
+            >
+              {channel.label}
+            </text>
+          </motion.g>
+        );
+      })}
 
       <motion.g
         initial={false}
         animate={
-          active ? { opacity: 1, scale: 1 } : { opacity: 0.2, scale: 0.92 }
+          active ? { opacity: 1, scale: 1 } : { opacity: 0.25, scale: 0.94 }
         }
         transition={{ type: 'spring', stiffness: 200, damping: 18 }}
         style={{
@@ -1780,8 +1253,8 @@ function MeetingCalendarGraphic() {
         transition={{ delay: active ? 0.35 : 0, duration: 0.3 }}
       >
         <rect
-          x={250}
-          y={262}
+          x={330}
+          y={274}
           width={200}
           height={28}
           rx={8}
@@ -1790,8 +1263,8 @@ function MeetingCalendarGraphic() {
           strokeWidth={1.5}
         />
         <text
-          x={350}
-          y={280}
+          x={430}
+          y={292}
           textAnchor="middle"
           fontSize={12}
           fill={C.text}
@@ -1799,6 +1272,96 @@ function MeetingCalendarGraphic() {
           fontWeight={700}
         >
           Meet Albert · Thu 3:00 PM
+        </text>
+      </motion.g>
+
+      <motion.g
+        initial={false}
+        animate={
+          active
+            ? { opacity: 1, y: 0, scale: 1 }
+            : { opacity: 0, y: 8, scale: 0.96 }
+        }
+        transition={{
+          delay: active ? 0.55 : 0,
+          duration: 0.35,
+        }}
+        style={{ transformOrigin: '760px 80px' }}
+      >
+        <rect
+          x={600}
+          y={42}
+          width={280}
+          height={58}
+          rx={12}
+          fill={C.whatsapp}
+        />
+        <polygon points="720,100 740,112 760,100" fill={C.whatsapp} />
+        <SvgTablerIcon
+          x={614}
+          y={58}
+          size={22}
+          Icon={IconBrandWhatsapp}
+          color="#ffffff"
+        />
+        <text
+          x={760}
+          y={66}
+          textAnchor="middle"
+          fontSize={14}
+          fill="#fff"
+          fontFamily={FONT}
+          fontWeight={600}
+        >
+          Albert replied
+        </text>
+        <text
+          x={760}
+          y={86}
+          textAnchor="middle"
+          fontSize={12}
+          fill="rgba(255,255,255,0.92)"
+          fontFamily={FONT}
+        >
+          “Happy to chat next week”
+        </text>
+      </motion.g>
+
+      <OrgChartNode
+        x={665}
+        y={140}
+        label="VP Engineering"
+        people={['Albert Jou']}
+        levelColor={C.levelColors[1]}
+        highlighted
+        pulsing={active}
+      />
+
+      <motion.g
+        initial={false}
+        animate={active ? { opacity: 1 } : { opacity: 0.35 }}
+        transition={{ delay: active ? 0.7 : 0, duration: 0.3 }}
+      >
+        <rect
+          x={665}
+          y={236}
+          width={150}
+          height={28}
+          rx={8}
+          fill="#fff"
+          stroke={C.accent}
+          strokeWidth={1.5}
+        />
+        <text
+          x={740}
+          y={254}
+          textAnchor="middle"
+          fontSize={11}
+          fill={C.accent}
+          fontFamily={FONT}
+          fontWeight={700}
+        >
+          Meeting set up
         </text>
       </motion.g>
     </svg>
@@ -1977,34 +1540,16 @@ export const OrgChartNarrative = () => {
 
       <ActSection>
         <ActCopy
-          label="Act 2 — The Warm Path"
+          label="Act 2 — The Reach"
           stepIndex={1}
-          headline={
-            <>
-              Warm paths
-              <br />
-              mapped by your team.
-            </>
-          }
-          body="Priya and other sales reps map warm LinkedIn paths into the buying committee — so intros land through the right first degree."
-        />
-        <GraphicPanel {...fadeUp} transition={{ delay: 0.06 }}>
-          <WarmPathsGraphic />
-        </GraphicPanel>
-      </ActSection>
-
-      <ActSection>
-        <ActCopy
-          label="Act 3 — The Reach"
-          stepIndex={2}
           headline={
             <>
               Outreach runs as a workflow
               <br />
-              over a 30 day follow up sequence.
+              over a multi-week follow-up sequence.
             </>
           }
-          body="Every touch timed and tracked on Albert — in your voice, with org-graph context."
+          body="Every touch timed and tracked on Albert — LinkedIn connects and messages, email, WhatsApp, and more — in your voice, with org-graph context."
         />
         <GraphicPanel {...fadeUp} transition={{ delay: 0.06 }}>
           <ReachWorkflowGraphic />
@@ -2013,31 +1558,19 @@ export const OrgChartNarrative = () => {
 
       <ActSection>
         <ActCopy
-          label="Act 4 — The Moment"
-          stepIndex={3}
-          headline="Captures replies across linkedin, email, whatsapp."
-          body="They reply — wherever they live."
-        />
-        <GraphicPanel {...fadeUp} transition={{ delay: 0.06 }}>
-          <MomentGraphic />
-        </GraphicPanel>
-      </ActSection>
-
-      <ActSection>
-        <ActCopy
-          label="Act 5 — The Meeting"
-          stepIndex={4}
+          label="Act 3 — The Meeting"
+          stepIndex={2}
           headline={
             <>
-              The meeting gets booked.
+              Replies land across channels.
               <br />
-              The deal moves.
+              The meeting gets booked.
             </>
           }
-          body="Same effort. More of the right meetings."
+          body="Capture replies from email, WhatsApp, and LinkedIn — posts, comments, connects, InMail, and messages — then the calendar fills."
         />
         <GraphicPanel {...fadeUp} transition={{ delay: 0.06 }}>
-          <MeetingCalendarGraphic />
+          <OutreachOutcomeGraphic />
         </GraphicPanel>
       </ActSection>
     </NarrativeContainer>

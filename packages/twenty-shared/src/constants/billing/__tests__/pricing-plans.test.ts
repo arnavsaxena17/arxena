@@ -1,22 +1,29 @@
 import {
-    ALL_CREDIT_PACKS,
-    buildComparableMapsByPlan,
-    findPricingPlanTier,
-    getComparableMapsForPlan,
-    getCreditPackByKey,
-    getCreditPackForPlanVolume,
-    getPricingMarketingSubheadlineLines,
-    getPricingPlanOwnFeatures,
-    getSmallPaymentTestCreditPackKey,
-    ONBOARDING_INTENT_PATH_TO_PRICING_PLAN_ID,
-    PRICING_COMPARABLE_MAPS_VOLUME,
-    PRICING_PLAN_CONTENT_BY_ID,
-    PRICING_PLAN_ORDER,
-    PRICING_PLANS,
-    PRICING_RECOMMENDED_PLAN_ID,
-    SMALL_PAYMENT_TEST_CREDIT_PACKS,
-    SUPPORTED_PRICING_CURRENCIES,
-    type PricingPlanId,
+  ALL_CREDIT_PACKS,
+  BILLING_ENTITLEMENT_SKUS,
+  buildComparableMapsByPlan,
+  findPricingPlanTier,
+  FREEMIUM_PLAN_ORDER,
+  FREEMIUM_PLANS,
+  FREEMIUM_SEAT_OPTIONS,
+  FREEMIUM_UNLIMITED_MAPS_PER_SEAT,
+  getComparableMapsForPlan,
+  getCreditPackByKey,
+  getCreditPackForPlanVolume,
+  getFreemiumMonthlyTotalSubunits,
+  getPricingMarketingSubheadlineLines,
+  getPricingPlanOwnFeatures,
+  getSmallPaymentTestCreditPackKey,
+  ONBOARDING_INTENT_PATH_TO_PRICING_PLAN_ID,
+  PRICING_COMPARABLE_MAPS_VOLUME,
+  PRICING_PLAN_CONTENT_BY_ID,
+  PRICING_PLAN_ORDER,
+  PRICING_PLANS,
+  PRICING_RECOMMENDED_FREEMIUM_PLAN_ID,
+  PRICING_RECOMMENDED_PLAN_ID,
+  SMALL_PAYMENT_TEST_CREDIT_PACKS,
+  SUPPORTED_PRICING_CURRENCIES,
+  type PricingPlanId,
 } from '../credit-packs.constant';
 
 describe('SMALL_PAYMENT_TEST_CREDIT_PACKS', () => {
@@ -65,8 +72,8 @@ describe('pricing marketing content', () => {
 
   it('splits the marketing subheadline into orienting lines', () => {
     expect(getPricingMarketingSubheadlineLines()).toEqual([
-      'Executive search, investors, sales, and corporate strategy—choose your tier.',
-      'Map volume, depth, and refresh cadence scale with how you query structure.',
+      'One set of plans for Sales and Recruiting.',
+      'Pick seats for your team. Every paid plan includes multi-touch sequences across LinkedIn, email, and WhatsApp—approve before send, from the same org graph.',
     ]);
   });
 
@@ -87,7 +94,9 @@ describe('pricing marketing content', () => {
       DEAL_DILIGENCE: 'investment',
     });
 
-    for (const planId of Object.values(ONBOARDING_INTENT_PATH_TO_PRICING_PLAN_ID)) {
+    for (const planId of Object.values(
+      ONBOARDING_INTENT_PATH_TO_PRICING_PLAN_ID,
+    )) {
       expect(getPricingPlanOwnFeatures(planId)).toEqual(
         PRICING_PLANS[planId].ownFeatures,
       );
@@ -102,7 +111,9 @@ describe('pricing marketing content', () => {
   });
 
   it('uses comparable map volume when a plan supports it', () => {
-    expect(getComparableMapsForPlan('sales')).toBe(PRICING_COMPARABLE_MAPS_VOLUME);
+    expect(getComparableMapsForPlan('sales')).toBe(
+      PRICING_COMPARABLE_MAPS_VOLUME,
+    );
     expect(getComparableMapsForPlan('recruitment')).toBe(
       PRICING_COMPARABLE_MAPS_VOLUME,
     );
@@ -210,12 +221,71 @@ describe('PRICING_PLANS', () => {
         for (let i = 1; i < plan.tiers.length; i += 1) {
           const previous = plan.tiers[i - 1];
           const current = plan.tiers[i];
-          const previousTotal = previous.pricesSubunits[currency] * previous.maps;
+          const previousTotal =
+            previous.pricesSubunits[currency] * previous.maps;
           const currentTotal = current.pricesSubunits[currency] * current.maps;
 
           expect(currentTotal).toBeGreaterThan(previousTotal);
         }
       }
+    }
+  });
+});
+
+describe('freemium seat plans', () => {
+  it('orders Free through Enterprise and recommends Growth', () => {
+    expect(FREEMIUM_PLAN_ORDER).toEqual([
+      'free',
+      'starter',
+      'growth',
+      'enterprise',
+    ]);
+    expect(PRICING_RECOMMENDED_FREEMIUM_PLAN_ID).toBe('growth');
+    expect([...FREEMIUM_SEAT_OPTIONS]).toEqual([1, 3, 5, 10, 25]);
+  });
+
+  it('prices paid tiers per seat for INR and USD', () => {
+    expect(FREEMIUM_PLANS.starter.pricesSubunitsPerSeat.INR).toBe(10_000 * 100);
+    expect(FREEMIUM_PLANS.growth.pricesSubunitsPerSeat.INR).toBe(15_000 * 100);
+    expect(FREEMIUM_PLANS.enterprise.pricesSubunitsPerSeat.INR).toBe(
+      25_000 * 100,
+    );
+    expect(FREEMIUM_PLANS.starter.pricesSubunitsPerSeat.USD).toBe(99 * 100);
+    expect(FREEMIUM_PLANS.growth.pricesSubunitsPerSeat.USD).toBe(149 * 100);
+    expect(FREEMIUM_PLANS.enterprise.pricesSubunitsPerSeat.USD).toBe(249 * 100);
+    expect(getFreemiumMonthlyTotalSubunits('growth', 3, 'USD')).toBe(
+      149 * 100 * 3,
+    );
+  });
+
+  it('exposes subscription SKUs for paid freemium tiers', () => {
+    const subscriptionKeys = BILLING_ENTITLEMENT_SKUS.filter(
+      (pack) => pack.kind === 'subscription',
+    ).map((pack) => pack.key);
+
+    expect(subscriptionKeys).toEqual([
+      'starter_monthly',
+      'growth_monthly',
+      'enterprise_monthly',
+    ]);
+  });
+
+  it('does not price or cap freemium plans by map count', () => {
+    for (const planId of FREEMIUM_PLAN_ORDER) {
+      const plan = FREEMIUM_PLANS[planId];
+
+      expect(plan.mapsPerSeat).toBe(FREEMIUM_UNLIMITED_MAPS_PER_SEAT);
+
+      for (const feature of plan.ownFeatures) {
+        expect(feature.toLowerCase()).not.toMatch(/\d+\s*maps?\b/);
+      }
+    }
+
+    for (const pack of BILLING_ENTITLEMENT_SKUS.filter(
+      (sku) => sku.kind === 'subscription',
+    )) {
+      expect(pack.creditsDisplay.toLowerCase()).not.toMatch(/\d+\s*maps?\b/);
+      expect(pack.mapsCount).toBe(FREEMIUM_UNLIMITED_MAPS_PER_SEAT);
     }
   });
 });

@@ -49,6 +49,7 @@ export class RazorpayCheckoutService {
       notes: {
         workspaceId: params.workspaceId,
         ...(params.skuKey ? { skuKey: params.skuKey } : {}),
+        seats: String(params.quantity ?? 1),
       },
       ...(params.expireBy && { expire_by: params.expireBy }),
     };
@@ -80,9 +81,7 @@ export class RazorpayCheckoutService {
     }
     const data = (await res.json()) as RazorpaySubscriptionResponse;
     if (!data.id || !data.short_url) {
-      throw new Error(
-        'Razorpay subscription response missing id or short_url',
-      );
+      throw new Error('Razorpay subscription response missing id or short_url');
     }
     return { subscriptionId: data.id, shortUrl: data.short_url };
   }

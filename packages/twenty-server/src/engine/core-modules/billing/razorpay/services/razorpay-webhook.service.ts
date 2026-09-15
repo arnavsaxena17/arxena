@@ -155,6 +155,7 @@ export class RazorpayWebhookService {
     let workspaceId: string | undefined = payment.notes?.workspaceId;
     let creditPackKey: string | undefined =
       payment.notes?.creditPackKey ?? payment.notes?.skuKey;
+    let seatsNote: string | undefined = payment.notes?.seats;
     if ((!workspaceId || !creditPackKey) && payment.order_id) {
       const orderNotes = await this.razorpayOrderService.getOrderNotes(
         payment.order_id,
@@ -164,6 +165,7 @@ export class RazorpayWebhookService {
         creditPackKey ??
         orderNotes?.creditPackKey ??
         (orderNotes as { skuKey?: string } | null)?.skuKey;
+      seatsNote = seatsNote ?? orderNotes?.seats;
     }
     if (!workspaceId || !creditPackKey) {
       this.logger.log(
@@ -178,9 +180,19 @@ export class RazorpayWebhookService {
       return { received: true, event: 'payment.captured' };
     }
 
+    const seats = Math.max(1, parseInt(seatsNote ?? '1', 10) || 1);
+
+    // Seat-priced freemium subscriptions paid via order grant the first cycle now.
     if (pack.kind === 'subscription') {
+      await this.entitlementFulfillmentService.fulfillSubscriptionCycle({
+        workspaceId,
+        sku: pack,
+        periodStart: new Date(),
+        razorpayEventId: `payment.captured:${payment.id}`,
+        seats,
+      });
       this.logger.log(
-        `payment.captured for subscription SKU ${pack.key}; subscription webhooks own cycle grants`,
+        `payment.captured: fulfilled subscription pack ${pack.key} × ${seats} seats for workspace ${workspaceId}`,
       );
       return { received: true, event: 'payment.captured' };
     }
@@ -189,6 +201,7 @@ export class RazorpayWebhookService {
       workspaceId,
       sku: pack,
       paymentId: payment.id,
+      seats: pack.freemiumPlanId ? seats : undefined,
     });
 
     this.logger.log(
@@ -248,30 +261,28 @@ export class RazorpayWebhookService {
     ];
     const isNewStatusActive = activeStatuses.includes(status);
 
-    await this.billingSubscriptionRepository.manager.transaction(
-      async (tx) => {
-        const repo = tx.getRepository(BillingSubscriptionEntity);
-        if (isNewStatusActive) {
-          await repo.update(
-            {
-              workspaceId,
-              status: In(activeStatuses),
-            } as FindOptionsWhere<BillingSubscriptionEntity>,
-            { status: SubscriptionStatus.Canceled },
-          );
-        }
-        if (existing) {
-          await repo.update({ id: existing.id }, subscriptionData);
-        } else {
-          await repo.insert({
+    await this.billingSubscriptionRepository.manager.transaction(async (tx) => {
+      const repo = tx.getRepository(BillingSubscriptionEntity);
+      if (isNewStatusActive) {
+        await repo.update(
+          {
             workspaceId,
-            ...subscriptionData,
-            stripeCustomerId: null,
-            stripeSubscriptionId: null,
-          });
-        }
-      },
-    );
+            status: In(activeStatuses),
+          } as FindOptionsWhere<BillingSubscriptionEntity>,
+          { status: SubscriptionStatus.Canceled },
+        );
+      }
+      if (existing) {
+        await repo.update({ id: existing.id }, subscriptionData);
+      } else {
+        await repo.insert({
+          workspaceId,
+          ...subscriptionData,
+          stripeCustomerId: null,
+          stripeSubscriptionId: null,
+        });
+      }
+    });
 
     const workspace = await this.workspaceRepository.findOne({
       where: { id: workspaceId },
@@ -318,6 +329,10 @@ export class RazorpayWebhookService {
       isNewStatusActive
     ) {
       const skuKey = sub.notes?.skuKey ?? sub.notes?.creditPackKey;
+      const seats = Math.max(
+        1,
+        parseInt(String(sub.notes?.seats ?? sub.quantity ?? '1'), 10) || 1,
+      );
       const pack = skuKey ? getCreditPackByKey(skuKey) : undefined;
       if (pack && pack.kind === 'subscription') {
         await this.entitlementFulfillmentService.fulfillSubscriptionCycle({
@@ -325,6 +340,7 @@ export class RazorpayWebhookService {
           sku: pack,
           periodStart: currentPeriodStart,
           razorpayEventId: `${body.event}:${sub.id}`,
+          seats,
         });
       } else {
         this.logger.log(

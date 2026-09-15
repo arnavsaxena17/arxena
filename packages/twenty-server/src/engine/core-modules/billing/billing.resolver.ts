@@ -591,6 +591,7 @@ export class BillingResolver {
       workspace.id,
       input.creditPackKey,
       input.currency,
+      input.seats,
     );
 
     return {

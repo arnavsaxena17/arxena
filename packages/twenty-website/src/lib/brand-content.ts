@@ -30,7 +30,8 @@ export const HOMEPAGE_HERO = {
 
 export const SECTION_SUBTITLES = {
   useCases: 'Built for Sales and Recruiting teams who get paid on meetings',
-  howItWorks: 'From org graph to a calendar full of the right meetings',
+  howItWorks:
+    'From org graph to multi-week sequences that book the right meetings',
   differentiators: 'Why the org graph layer',
   builtFor: 'Built for',
 } as const;
@@ -41,7 +42,7 @@ export const STORY_PAGE = {
   paragraph1:
     'Every team has a quota of effort — calls, messages, sequences — per week. Most of that effort is spent finding out who to talk to, then talking to the wrong person anyway. Arxena flips the ratio: spend the effort on the conversation, not the org chart.',
   paragraph2:
-    'We fetch live org data from LinkedIn and other sources so structure, seniority, and ownership are visible before you write the first message. Map any target company, identify the actual decision-maker, enrich their contact details, and engage on LinkedIn, email, and WhatsApp — all from one workflow.',
+    'We fetch live org data from LinkedIn and other sources so structure, seniority, and ownership are visible before you write the first message. Map any target company, identify the actual decision-maker, enrich their contact details, then run multi-week sequences across LinkedIn posts, comments, connection requests, messages, InMail, email, and WhatsApp — all from one workflow.',
   scenarioExample:
     'Two people send 50 messages each. One sent them to whoever had the right job title. The other sent them to the person who actually owns the decision, mapped from the live org chart. Same volume, same week — very different number of meetings booked.',
 } as const;
@@ -53,24 +54,25 @@ export const TEAM_PAGE = {
 } as const;
 
 export const ENGAGE_PAGE = {
-  headline: 'LinkedIn and email outreach from the live org graph',
+  headline:
+    'Multi-week, multichannel, multi touch follow up sequences from the live org graph',
   subheadline:
-    'Manage multi-step LinkedIn and email sequences tied to real org structure—approve sends, handle replies, track every touch, and book more of the right meetings.',
+    'For Sales and Recruiting: timed multi-touch cadences across LinkedIn posts, comments, connection requests, messages, InMail, email, and WhatsApp—approve every send, handle replies, and book the meeting.',
   sections: {
     whatYouCanDoTitle: 'What you can do',
     whatYouCanDo: [
-      'Run multi-step sequences on LinkedIn and email (WhatsApp when it fits)',
-      'Draft in your voice and approve before anything sends',
-      'Step in when someone replies—keep the rest on rails',
-      'Track campaigns and every touch against the org map',
-      'Measure what converts by persona, function, and sequence',
+      'Sales: multi-thread buying committees with multi-week sequences from the org map',
+      'Recruiting: nurture candidates with the same multi-touch playbook',
+      'Draft in your voice; approve, edit, or reject on WhatsApp before anything sends',
+      'Mix LinkedIn posts, comments, connects, DMs, and InMail with email and WhatsApp',
+      'Step in when someone replies—keep the rest of the cadence on rails',
     ],
     howItTiesTitle: 'From org chart to outreach',
     howItTies: [
       'Map the company and pick the right people from live structure',
-      'Enroll them into Outreach sequences from the same graph',
-      'Reach on LinkedIn and email with context—not a cold list',
-      'See replies and outcomes in one place',
+      'Enroll them into multi-touch sequences from the same graph',
+      'Approve drafts via WhatsApp (Yes / No / Modify) before send',
+      'See replies and outcomes across LinkedIn, email, and WhatsApp in one place',
     ],
     productsLinkLabel: 'Product details: Outreach →',
     productsLinkHref: '/products/engagement-layer',
@@ -116,7 +118,7 @@ export const RESOURCES_INDEX = {
 } as const;
 
 export const PRICING_PAGE_DESCRIPTION =
-  'Access the org graph — credits to map any target company and reach the right person first. Plans for Sales and Recruiting, including LinkedIn and email outreach.';
+  'Free to Enterprise plans for org intelligence and multi-week, multichannel, multi touch follow up sequences. Priced per seat for Sales and Recruiting teams.';
 
 export const CONTACT_PAGE_SUB =
   'Talk to us about getting more of the right meetings for your team — email, WhatsApp, live chat, and office locations.';
@@ -131,7 +133,8 @@ export const STRUCTURED_DATA = {
   siteDescription:
     'Org intelligence platform: queryable organizational structure for any company. 10M+ companies, 800M+ professionals. Helps Sales and Recruiting teams book more meetings with the right people for the same effort.',
   nav: {
-    pricing: 'Access the org graph — credits for mapping any target company',
+    pricing:
+      'Free to Enterprise — org intelligence and multi-week, multichannel, multi touch follow up sequences, priced per seat',
     story: 'Why more targeted meetings beat more volume',
     engage: 'Manage LinkedIn and email outreach from the org graph',
     app: 'Sign in to Arxena',

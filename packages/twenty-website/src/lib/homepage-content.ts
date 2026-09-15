@@ -47,13 +47,13 @@ export const USE_CASES = [
   {
     title: 'Sales',
     description:
-      'Map the buying committee from the live org graph—budget owners, champions, and influencers—then reach them on LinkedIn and email.',
+      'Map the buying committee, then run multi-week sequences across LinkedIn posts, comments, connects, messages, InMail, email, and WhatsApp—from the same org graph.',
     href: '/solutions/sales',
   },
   {
     title: 'Recruiting',
     description:
-      'Map the target function, surface candidates from live structure, and run LinkedIn and email outreach from the same graph.',
+      'Map the target function, then nurture candidates over weeks with the same multi-touch playbook—LinkedIn engagement, InMail, email, and WhatsApp.',
     href: '/solutions/recruiting',
   },
 ] as const;
@@ -75,15 +75,15 @@ export const HOW_IT_WORKS_STEPS = [
   },
   {
     step: 3,
-    title: 'LinkedIn and email outreach',
+    title: 'Multi-week, multi-touch sequences',
     description:
-      'Reach with context from the org graph—enriched contacts and sequences in your voice on LinkedIn and email, not generic spray-and-pray.',
+      'Orchestrate timed touch points over weeks—not a one-shot message. LinkedIn profile views, posts, comments, connection requests, DMs, and InMail, plus email and WhatsApp, sequenced in your voice with approve-before-send.',
   },
   {
     step: 4,
-    title: 'Measure what works',
+    title: 'Measure every touch',
     description:
-      'Every touch tracked across LinkedIn, email, and WhatsApp. See what converts by persona and sequence—each cycle sharper than the last.',
+      'Track replies and outcomes across every channel in the sequence. See what converts by persona and playbook—each cycle sharper than the last.',
     href: '/engage',
   },
 ] as const;
@@ -107,9 +107,9 @@ export const DIFFERENTIATORS = [
     href: '/products/function-maps',
   },
   {
-    title: 'Act on intelligence in one place',
+    title: 'Sequences that span real channels',
     description:
-      'Map, plan, reach, and measure from the same org graph—LinkedIn and email outreach tied to live structure.',
+      'Multi-week cadences across LinkedIn posts, comments, connects, messages, InMail, email, and WhatsApp—mapped to live org structure, not a spray-and-pray list.',
     href: '/engage',
   },
 ] as const;

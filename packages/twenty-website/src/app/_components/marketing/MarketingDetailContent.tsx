@@ -37,7 +37,11 @@ const StyledLead = styled.p`
   font-size: 18px;
   line-height: 1.65;
   color: #474747;
-  margin: 0 0 28px 0;
+  margin: 0 0 36px 0;
+`;
+
+const StyledContentBlock = styled.div`
+  margin-bottom: 32px;
 `;
 
 const StyledBulletsTitle = styled.h2`
@@ -122,24 +126,45 @@ export const MarketingDetailContent = ({
   backLabel,
   signUpUrl,
 }: MarketingDetailContentProps) => {
+  const hasSections = Array.isArray(page.sections) && page.sections.length > 0;
+  const showOutreachCta = page.slug === 'sales' || page.slug === 'recruiting';
+
   return (
     <StyledSection>
       <StyledBack href={backHref}>{backLabel}</StyledBack>
       <StyledHeadline>{page.headline}</StyledHeadline>
       <StyledLead>{page.lead}</StyledLead>
-      <StyledBulletsTitle>
-        {page.bulletsTitle ?? 'What you can do'}
-      </StyledBulletsTitle>
-      <StyledList>
-        {page.bullets.map((item) => (
-          <StyledLi key={item}>{item}</StyledLi>
-        ))}
-      </StyledList>
+      {hasSections ? (
+        page.sections!.map((section) => (
+          <StyledContentBlock key={section.title}>
+            <StyledBulletsTitle>{section.title}</StyledBulletsTitle>
+            <StyledList>
+              {section.bullets.map((item) => (
+                <StyledLi key={item}>{item}</StyledLi>
+              ))}
+            </StyledList>
+          </StyledContentBlock>
+        ))
+      ) : (
+        <>
+          <StyledBulletsTitle>
+            {page.bulletsTitle ?? 'What you can do'}
+          </StyledBulletsTitle>
+          <StyledList>
+            {page.bullets.map((item) => (
+              <StyledLi key={item}>{item}</StyledLi>
+            ))}
+          </StyledList>
+        </>
+      )}
       {page.segmentsNote && (
         <StyledSegments>{page.segmentsNote}</StyledSegments>
       )}
       <StyledCtas>
         <StyledCtaPrimary href={signUpUrl}>Get started</StyledCtaPrimary>
+        {showOutreachCta ? (
+          <StyledCtaSecondary href="/engage">See Outreach</StyledCtaSecondary>
+        ) : null}
         <StyledCtaSecondary href="/contact#schedule">
           Book a call
         </StyledCtaSecondary>

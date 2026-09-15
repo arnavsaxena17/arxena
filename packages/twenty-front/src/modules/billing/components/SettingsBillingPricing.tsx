@@ -8,75 +8,42 @@ import { IconCheck, IconCreditCard, IconFileText } from 'twenty-ui/icon';
 import { useLingui } from '@lingui/react/macro';
 import { useState } from 'react';
 import {
-  convertPricingAmountSubunits,
-  findPricingPlanTier,
-  getCreditPackForPlanVolume,
-  getInheritedFeatures,
+  FREEMIUM_PLAN_ORDER,
+  FREEMIUM_PLANS,
+  FREEMIUM_SEAT_OPTIONS,
+  PRICING_CTA_START_FOR_FREE,
+  PRICING_MARKETING_HERO_HEADLINE,
+  PRICING_PER_SEAT_MONTH_UNIT,
+  PRICING_RECOMMENDED_FREEMIUM_PLAN_ID,
+  PRICING_RECOMMENDED_PLAN_LABEL,
+  PRICING_SEATS_LABEL,
+  getFreemiumEntitlementsForSeats,
+  getFreemiumMonthlyTotalSubunits,
   getPricingCurrencySymbol,
   getPricingMarketingSubheadlineLines,
-  getSmallPaymentTestCreditPackKey,
-  PRICING_COMPARABLE_MAPS_VOLUME,
-  PRICING_MAP_TYPE_LABEL,
-  PRICING_MARKETING_HERO_HEADLINE,
-  PRICING_PLAN_CONTENT_BY_ID,
-  PRICING_PLAN_ORDER,
-  PRICING_PLANS,
-  PRICING_RECOMMENDED_PLAN_ID,
-  PRICING_TALENT_MAP_UNIT,
-  PRICING_TALENT_MAPS_UNIT,
-  PRICING_VOLUME_LABEL,
-  type PricingPlanId,
+  type FreemiumPlanId,
   type PricingSegmentTone,
-  REVEAL_CREDIT_COST_EMAIL,
-  REVEAL_CREDIT_COST_PHONE,
-  type CreditPack as SharedCreditPack,
-  SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE,
   type SupportedPricingCurrency,
 } from 'twenty-shared';
 
-type CreditPack = {
-  key: string;
-  name: string;
-  credits: number;
-  amountSubunits: number;
-  currency: string;
-  planId?: string;
-  intent?: string;
-  mapsCount?: number;
-  mapType?: string;
-  mapTypeLabel?: string;
-  tagline?: string;
-  inheritedFromPlanId?: string | null;
-  ownFeatures?: string[];
-  includedEmailCredits?: number;
-  includedPhoneCredits?: number;
-  creditsDisplay?: string;
-  pricesSubunitsJson?: string;
-};
-
-type ResolvePackPriceSubunitsResult = {
-  subunits: number;
-  isExplicit: boolean;
-};
-
 type SettingsBillingPricingProps = {
-  creditPacks: CreditPack[];
   displayCurrency: SupportedPricingCurrency;
-  selectedMapsByPlan: Record<PricingPlanId, number>;
-  setSelectedMapsByPlan: (
+  selectedSeatsByPlan: Record<FreemiumPlanId, number>;
+  setSelectedSeatsByPlan: (
     fn: (
-      previous: Record<PricingPlanId, number>,
-    ) => Record<PricingPlanId, number>,
+      previous: Record<FreemiumPlanId, number>,
+    ) => Record<FreemiumPlanId, number>,
   ) => void;
-  sharedPackMetaByKey: Map<string, SharedCreditPack>;
-  resolvePackPriceSubunits: (
-    pack: CreditPack,
-    targetCurrency: SupportedPricingCurrency,
-  ) => ResolvePackPriceSubunitsResult;
   buyingPackKey: string | null;
+  subscribingPlanId: string | null;
+  handleSubscribeFreemium: (
+    freemiumPlanId: FreemiumPlanId,
+    seats: number,
+  ) => void;
   handleBuyCredits: (
     creditPackKey: string,
     selectedCurrency: SupportedPricingCurrency,
+    seats?: number,
   ) => void;
   setInvoicePackKey: (packKey: string) => void;
 };
@@ -84,39 +51,40 @@ type SettingsBillingPricingProps = {
 const getSegmentAccentColor = (tone: PricingSegmentTone) => {
   switch (tone) {
     case 'orange':
-      return themeCssVariables.color.orange60;
+      return themeCssVariables.color.orange9;
     case 'indigo':
-      return themeCssVariables.color.blue60;
+      return themeCssVariables.color.blue9;
     case 'teal':
-      return themeCssVariables.color.turquoise60;
+      return themeCssVariables.color.turquoise9;
     case 'forest':
-      return themeCssVariables.color.green70;
+      return themeCssVariables.color.green9;
   }
 };
 
+// *3 tokens are light tints (readable with primary text); *10 are solid fills
 const getSegmentAccentBackground = (tone: PricingSegmentTone) => {
   switch (tone) {
     case 'orange':
-      return themeCssVariables.color.orange10;
+      return themeCssVariables.color.orange3;
     case 'indigo':
-      return themeCssVariables.color.blue10;
+      return themeCssVariables.color.blue3;
     case 'teal':
-      return themeCssVariables.color.turquoise10;
+      return themeCssVariables.color.turquoise3;
     case 'forest':
-      return themeCssVariables.color.green10;
+      return themeCssVariables.color.green3;
   }
 };
 
 const getSegmentAccentBorder = (tone: PricingSegmentTone) => {
   switch (tone) {
     case 'orange':
-      return themeCssVariables.color.orange30;
+      return themeCssVariables.color.orange6;
     case 'indigo':
-      return themeCssVariables.color.blue30;
+      return themeCssVariables.color.blue6;
     case 'teal':
-      return themeCssVariables.color.turquoise30;
+      return themeCssVariables.color.turquoise6;
     case 'forest':
-      return themeCssVariables.color.gray50;
+      return themeCssVariables.color.green6;
   }
 };
 
@@ -184,14 +152,13 @@ const StyledPricingOrientDetail = styled.p`
 const StyledCreditCardsGrid = styled.div`
   display: grid;
   gap: ${themeCssVariables.spacing[4]};
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  // Settings content is ~760px — auto-fit so cards wrap instead of crushing into 4 cols
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  margin-left: auto;
+  margin-right: auto;
   margin-top: ${themeCssVariables.spacing[4]};
   min-width: 0;
   width: 100%;
-
-  @media (max-width: 1100px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 
   @media (max-width: ${MOBILE_VIEWPORT}px) {
     gap: ${themeCssVariables.spacing[3]};
@@ -203,33 +170,35 @@ const StyledBillingCard = styled(Card)<{
   $isSelected: boolean;
   $tone: PricingSegmentTone;
 }>`
-  background: ${({ $tone }) => getSegmentAccentBackground($tone)};
-  border: 2px solid
-    ${({ $isSelected, $tone }) => $isSelected
+  background-color: ${({ $isSelected, $tone }) =>
+    $isSelected
+      ? getSegmentAccentBackground($tone)
+      : themeCssVariables.background.primary};
+  border: 1px solid
+    ${({ $isSelected, $tone }) =>
+      $isSelected
         ? getSegmentAccentColor($tone)
-        : getSegmentAccentBorder($tone)};
+        : themeCssVariables.border.color.medium};
   border-radius: ${themeCssVariables.border.radius.md};
-  border-top: 4px solid
-    ${({ $tone }) => getSegmentAccentColor($tone)};
-  box-shadow: ${({ $isSelected }) => $isSelected ? themeCssVariables.boxShadow.strong : themeCssVariables.boxShadow.light};
+  border-top: 3px solid ${({ $tone }) => getSegmentAccentColor($tone)};
+  box-shadow: ${({ $isSelected }) =>
+    $isSelected ? themeCssVariables.boxShadow.light : 'none'};
   cursor: pointer;
   display: flex;
   flex-direction: column;
   height: 100%;
   min-width: 0;
-  opacity: ${({ $isSelected }) => ($isSelected ? 1 : 0.9)};
   transition:
+    background-color ${themeCssVariables.animation.duration.normal}ms ease,
     border-color ${themeCssVariables.animation.duration.normal}ms ease,
     box-shadow ${themeCssVariables.animation.duration.normal}ms ease,
-    opacity ${themeCssVariables.animation.duration.normal}ms ease,
     transform ${themeCssVariables.animation.duration.normal}ms ease;
 
   &:hover {
-    box-shadow: ${themeCssVariables.boxShadow.strong};
-    transform: translateY(-2px);
+    box-shadow: ${themeCssVariables.boxShadow.light};
+    transform: translateY(-1px);
   }
 `;
-
 const StyledCreditPackCardContent = styled(CardContent)`
   display: flex;
   flex: 1;
@@ -268,42 +237,23 @@ const StyledCardEmoji = styled.span`
 const StyledTitleRow = styled.div`
   align-items: flex-start;
   display: flex;
-  flex-direction: column;
-  gap: ${themeCssVariables.spacing[1.5]};
+  gap: ${themeCssVariables.spacing[2]};
+  justify-content: space-between;
 `;
 
-const StyledCreditCardTitle = styled.div`
+const StyledCreditCardTitle = styled.h3`
   color: ${themeCssVariables.font.color.primary};
-  font-size: ${themeCssVariables.font.size.lg};
+  font-size: ${themeCssVariables.font.size.md};
   font-weight: ${themeCssVariables.font.weight.semiBold};
-  line-height: 1.25;
-  overflow-wrap: anywhere;
+  line-height: 1.3;
+  margin: 0;
 `;
 
 const StyledPersonaPill = styled(Pill)<{ $tone: PricingSegmentTone }>`
   background: ${({ $tone }) => getSegmentAccentBackground($tone)};
-  border: 1px solid ${({ $tone }) => getSegmentAccentColor($tone)};
+  border: 1px solid ${({ $tone }) => getSegmentAccentBorder($tone)};
   color: ${({ $tone }) => getSegmentAccentColor($tone)};
-  height: auto;
-  padding: ${`${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[2]}`};
-`;
-
-const StyledCardTagline = styled.p`
-  color: ${themeCssVariables.font.color.tertiary};
-  font-size: ${themeCssVariables.font.size.sm};
-  line-height: ${themeCssVariables.text.lineHeight.lg};
-  margin: 0;
-  overflow-wrap: anywhere;
-`;
-
-const StyledMapTypePill = styled.div`
-  align-self: flex-start;
-  background: ${themeCssVariables.background.primary};
-  border: 1px solid ${themeCssVariables.border.color.light};
-  border-radius: ${themeCssVariables.border.radius.pill};
-  color: ${themeCssVariables.font.color.secondary};
-  font-size: ${themeCssVariables.font.size.xs};
-  padding: ${`${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[2]}`};
+  flex-shrink: 0;
 `;
 
 const StyledTierSelectWrap = styled.div`
@@ -313,7 +263,7 @@ const StyledTierSelectWrap = styled.div`
 `;
 
 const StyledTierSelectLabel = styled.label`
-  color: ${themeCssVariables.font.color.light};
+  color: ${themeCssVariables.font.color.tertiary};
   font-size: ${themeCssVariables.font.size.xs};
   font-weight: ${themeCssVariables.font.weight.semiBold};
   letter-spacing: 0.04em;
@@ -321,21 +271,27 @@ const StyledTierSelectLabel = styled.label`
 `;
 
 const StyledTierSelect = styled.select`
+  appearance: none;
   background: ${themeCssVariables.background.primary};
-  border: 1px solid ${themeCssVariables.border.color.light};
+  border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: ${themeCssVariables.border.radius.sm};
   color: ${themeCssVariables.font.color.primary};
   font-size: ${themeCssVariables.font.size.sm};
-  padding: ${`${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[2]}`};
+  padding: ${themeCssVariables.spacing[2]};
   width: 100%;
+
+  &:disabled {
+    color: ${themeCssVariables.font.color.primary};
+    cursor: default;
+    opacity: 1;
+  }
 `;
 
 const StyledCreditCardPrice = styled.div`
   color: ${themeCssVariables.font.color.primary};
-  font-size: ${themeCssVariables.font.size.xl};
+  font-size: ${themeCssVariables.font.size.xxl};
   font-weight: ${themeCssVariables.font.weight.semiBold};
   line-height: 1.1;
-  overflow-wrap: anywhere;
 `;
 
 const StyledPriceUnit = styled.span`
@@ -347,6 +303,14 @@ const StyledPriceUnit = styled.span`
 const StyledCreditCardTotal = styled.div`
   color: ${themeCssVariables.font.color.secondary};
   font-size: ${themeCssVariables.font.size.sm};
+  min-height: ${themeCssVariables.font.size.md};
+`;
+
+const StyledPriceBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[1]};
+  min-height: 3.75rem;
 `;
 
 const StyledIncludedCreditsBlock = styled.div`
@@ -358,40 +322,20 @@ const StyledIncludedCreditsBlock = styled.div`
   flex-direction: column;
   font-size: ${themeCssVariables.font.size.sm};
   gap: ${themeCssVariables.spacing[1]};
-  line-height: ${themeCssVariables.text.lineHeight.lg};
-  padding: 10px;
-`;
-
-const StyledIncludedRevealCredits = styled.div`
-  color: ${themeCssVariables.font.color.tertiary};
-  font-size: ${themeCssVariables.font.size.xs};
-`;
-
-const StyledChoiceHint = styled.div<{ $tone: PricingSegmentTone }>`
-  background: ${themeCssVariables.background.primary};
-  border-radius: ${themeCssVariables.border.radius.md};
-  color: ${({ $tone }) => getSegmentAccentColor($tone)};
-  font-size: ${themeCssVariables.font.size.sm};
-  font-weight: ${themeCssVariables.font.weight.medium};
-  line-height: 1.45;
-  margin-top: auto;
-  padding: ${themeCssVariables.spacing[2]};
-`;
-
-const StyledInheritedLine = styled.div`
-  color: ${themeCssVariables.font.color.primary};
-  font-size: ${themeCssVariables.font.size.sm};
-  font-weight: ${themeCssVariables.font.weight.medium};
+  padding: ${themeCssVariables.spacing[3]};
 `;
 
 const StyledPanelDivider = styled.div`
-  border-top: 1px solid ${themeCssVariables.border.color.light};
-  margin: ${themeCssVariables.spacing[1]} 0;
+  background: ${themeCssVariables.border.color.light};
+  height: 1px;
   width: 100%;
 `;
 
 const StyledFeatureList = styled.ul`
+  display: flex;
   flex: 1;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[1.5]};
   list-style: none;
   margin: 0;
   padding: 0;
@@ -403,63 +347,44 @@ const StyledFeatureItem = styled.li`
   display: flex;
   font-size: ${themeCssVariables.font.size.sm};
   gap: ${themeCssVariables.spacing[2]};
-  line-height: ${themeCssVariables.text.lineHeight.lg};
-  margin-bottom: ${themeCssVariables.spacing[2]};
-
-  &:last-of-type {
-    margin-bottom: 0;
-  }
+  line-height: 1.45;
 `;
 
 const StyledCheckIcon = styled(IconCheck)<{ $tone: PricingSegmentTone }>`
   color: ${({ $tone }) => getSegmentAccentColor($tone)};
   flex-shrink: 0;
-  margin-top: ${themeCssVariables.spacing[0.5]};
+  margin-top: 2px;
 `;
 
 const StyledCreditActions = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[2]};
-  margin-top: ${themeCssVariables.spacing[1]};
+  margin-top: auto;
 `;
 
 const StyledActionsDivider = styled.div`
-  border-top: 1px solid ${themeCssVariables.border.color.light};
-  margin: ${themeCssVariables.spacing[1]} 0;
+  background: ${themeCssVariables.border.color.light};
+  height: 1px;
   width: 100%;
-`;
-
-const StyledPaymentLimitHint = styled.div`
-  color: ${themeCssVariables.font.color.tertiary};
-  font-size: ${themeCssVariables.font.size.xs};
-  margin-top: ${themeCssVariables.spacing[1]};
-`;
-
-const StyledCardPaymentDisabledState = styled.div`
-  background: ${themeCssVariables.background.tertiary};
-  border: 1px solid ${themeCssVariables.border.color.medium};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  padding: ${themeCssVariables.spacing[2]};
 `;
 
 const formatMoneyMajor = (subunits: number): string =>
   Math.round(subunits / 100).toLocaleString();
 
 export const SettingsBillingPricing = ({
-  creditPacks,
   displayCurrency,
-  selectedMapsByPlan,
-  setSelectedMapsByPlan,
-  sharedPackMetaByKey,
-  resolvePackPriceSubunits,
+  selectedSeatsByPlan,
+  setSelectedSeatsByPlan,
   buyingPackKey,
+  subscribingPlanId,
+  handleSubscribeFreemium,
   handleBuyCredits,
   setInvoicePackKey,
 }: SettingsBillingPricingProps) => {
   const { t } = useLingui();
-  const [selectedPlanId, setSelectedPlanId] = useState<PricingPlanId>(
-    PRICING_RECOMMENDED_PLAN_ID,
+  const [selectedPlanId, setSelectedPlanId] = useState<FreemiumPlanId>(
+    PRICING_RECOMMENDED_FREEMIUM_PLAN_ID,
   );
 
   return (
@@ -469,114 +394,39 @@ export const SettingsBillingPricing = ({
           {PRICING_MARKETING_HERO_HEADLINE}
         </StyledPricingHeadline>
         <StyledPricingOrientLead>{heroOrientLead}</StyledPricingOrientLead>
-        <StyledPricingOrientDetail>{heroOrientDetail}</StyledPricingOrientDetail>
+        <StyledPricingOrientDetail>
+          {heroOrientDetail}
+        </StyledPricingOrientDetail>
       </StyledPricingHero>
       <StyledCreditCardsGrid>
-        {PRICING_PLAN_ORDER.map((planId) => {
-          const plan = PRICING_PLANS[planId];
-          const planContent = PRICING_PLAN_CONTENT_BY_ID[planId];
-          const tone = planContent.segmentTone;
-          const smallPackKey = getSmallPaymentTestCreditPackKey(planId);
-          const hasSmallPaymentPack = creditPacks.some(
-            (pack) => pack.key === smallPackKey,
-          );
-          const rawVolume =
-            selectedMapsByPlan[planId] ?? PRICING_COMPARABLE_MAPS_VOLUME;
-          let selectedVolume = rawVolume;
-          if (
-            !hasSmallPaymentPack &&
-            rawVolume === SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE
-          ) {
-            selectedVolume = plan.minMaps;
-          }
-          const isSmallPaymentSelection =
-            hasSmallPaymentPack &&
-            selectedVolume === SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE;
-          const tierMaps = isSmallPaymentSelection
-            ? plan.minMaps
-            : selectedVolume;
-          const tier = findPricingPlanTier(plan, tierMaps);
-          const regularPackKey = `${planId}_maps_${tier.maps}`;
-          const packKey = isSmallPaymentSelection
-            ? smallPackKey
-            : regularPackKey;
-          const apiPack = creditPacks.find((pack) => pack.key === packKey);
-          const fallbackPack =
-            getCreditPackForPlanVolume(planId, tierMaps) ??
-            sharedPackMetaByKey.get(packKey);
-          const pack =
-            apiPack ??
-            (fallbackPack
-              ? ({
-                  key: fallbackPack.key,
-                  name: fallbackPack.name,
-                  credits: fallbackPack.credits,
-                  amountSubunits: fallbackPack.amountSubunits,
-                  currency: fallbackPack.currency,
-                  planId: fallbackPack.planId,
-                  intent: fallbackPack.intent,
-                  mapsCount: fallbackPack.mapsCount,
-                  mapType: fallbackPack.mapType,
-                  mapTypeLabel: fallbackPack.mapTypeLabel,
-                  tagline: fallbackPack.tagline,
-                  inheritedFromPlanId: fallbackPack.inheritedFromPlanId,
-                  ownFeatures: fallbackPack.features,
-                  includedEmailCredits: fallbackPack.includedEmailCredits,
-                  includedPhoneCredits: fallbackPack.includedPhoneCredits,
-                  creditsDisplay: fallbackPack.creditsDisplay,
-                  pricesSubunitsJson: JSON.stringify(
-                    fallbackPack.pricesSubunits,
-                  ),
-                } as CreditPack)
-              : null);
-
-          if (!pack) {
-            return null;
-          }
-
-          const meta = sharedPackMetaByKey.get(pack.key);
-          const tierCredits = tier.credits;
-          const mapsCount = tier.maps;
-          const { subunits: convertedAmountSubunits } =
-            resolvePackPriceSubunits(pack, displayCurrency);
-          const baseAmount = convertedAmountSubunits / 100;
-          const defaultCreditsLabel = `${tierCredits.toLocaleString()} ${t`credits`}`;
-          const creditsLabel =
-            pack.creditsDisplay ?? meta?.creditsDisplay ?? defaultCreditsLabel;
-          const features = pack.ownFeatures ?? meta?.features ?? [pack.name];
-          const includedEmail = tierCredits;
-          const includedPhone = Math.floor(
-            tierCredits / REVEAL_CREDIT_COST_PHONE,
-          );
-          const totalSubunits = convertedAmountSubunits * mapsCount;
-          const totalUsdSubunits = convertPricingAmountSubunits(
-            totalSubunits,
+        {FREEMIUM_PLAN_ORDER.map((planId) => {
+          const plan = FREEMIUM_PLANS[planId];
+          const tone = plan.segmentTone;
+          const seats = plan.isFree ? 1 : selectedSeatsByPlan[planId];
+          const perSeatSubunits = plan.pricesSubunitsPerSeat[displayCurrency];
+          const totalSubunits = getFreemiumMonthlyTotalSubunits(
+            planId,
+            seats,
             displayCurrency,
-            'USD',
           );
-          const shouldHideCardPayment = totalUsdSubunits > 5000 * 100;
-          const inherited = getInheritedFeatures(planId);
-          const selectValue =
-            selectedVolume === SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE &&
-            hasSmallPaymentPack
-              ? SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE
-              : tier.maps;
-          const emailEquivalent = Math.floor(
-            tierCredits / REVEAL_CREDIT_COST_EMAIL,
-          );
-          const phoneEquivalent = Math.floor(
-            tierCredits / REVEAL_CREDIT_COST_PHONE,
-          );
+          const entitlements = getFreemiumEntitlementsForSeats(planId, seats);
           const isSelected = selectedPlanId === planId;
+          const packKey = plan.subscriptionPackKey;
+          const isBusy = buyingPackKey !== null || subscribingPlanId !== null;
 
           return (
             <StyledBillingCard
-              key={`${planId}-${pack.key}`}
+              key={planId}
               data-plan-id={planId}
               fullWidth
               rounded
               $isSelected={isSelected}
               $tone={tone}
+              backgroundColor={
+                isSelected
+                  ? getSegmentAccentBackground(tone)
+                  : themeCssVariables.background.primary
+              }
               onClick={() => setSelectedPlanId(planId)}
             >
               <StyledCreditPackCardContent>
@@ -586,86 +436,92 @@ export const SettingsBillingPricing = ({
                     {plan.label}
                   </StyledCardLabel>
                   <StyledTitleRow>
-                    <StyledCreditCardTitle>{plan.tagline}</StyledCreditCardTitle>
-                    <StyledPersonaPill
-                      label={planContent.persona}
-                      $tone={tone}
-                    />
+                    <StyledCreditCardTitle>
+                      {plan.tagline}
+                    </StyledCreditCardTitle>
+                    {planId === PRICING_RECOMMENDED_FREEMIUM_PLAN_ID ? (
+                      <StyledPersonaPill
+                        label={PRICING_RECOMMENDED_PLAN_LABEL}
+                        $tone={tone}
+                      />
+                    ) : null}
                   </StyledTitleRow>
-                  <StyledCardTagline>{plan.mapTypeLabel}</StyledCardTagline>
                 </StyledCardHeader>
-                <StyledMapTypePill>
-                  {PRICING_MAP_TYPE_LABEL} · {plan.mapType}
-                </StyledMapTypePill>
+
                 <StyledTierSelectWrap
                   onClick={(event) => event.stopPropagation()}
                 >
-                  <StyledTierSelectLabel htmlFor={`tier-${planId}`}>
-                    {PRICING_VOLUME_LABEL}
+                  <StyledTierSelectLabel htmlFor={`seats-${planId}`}>
+                    {PRICING_SEATS_LABEL}
                   </StyledTierSelectLabel>
-                  <StyledTierSelect
-                    id={`tier-${planId}`}
-                    value={selectValue}
-                    onChange={(event) => {
-                      const value = parseInt(event.target.value, 10);
-                      let nextMaps = plan.minMaps;
-                      if (value === SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE) {
-                        nextMaps = SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE;
-                      }
-                      if (
-                        value !== SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE &&
-                        !Number.isNaN(value)
-                      ) {
-                        nextMaps = value;
-                      }
-                      setSelectedMapsByPlan((previous) => ({
-                        ...previous,
-                        [planId]: nextMaps,
-                      }));
-                    }}
-                  >
-                    {plan.tiers.map((planTier) => (
-                      <option key={planTier.maps} value={planTier.maps}>
-                        {planTier.maps} {PRICING_TALENT_MAPS_UNIT}
-                      </option>
-                    ))}
-                    {hasSmallPaymentPack && (
-                      <option value={SMALL_PAYMENT_TEST_VOLUME_SELECTOR_VALUE}>
-                        {t`$1 payment test`} ({t`1 map`}, {t`1 credit`})
-                      </option>
-                    )}
-                  </StyledTierSelect>
+                  {plan.isFree ? (
+                    <StyledTierSelect
+                      id={`seats-${planId}`}
+                      value={1}
+                      disabled
+                      aria-label={t`1 seat included`}
+                    >
+                      <option value={1}>{t`1 seat`}</option>
+                    </StyledTierSelect>
+                  ) : (
+                    <StyledTierSelect
+                      id={`seats-${planId}`}
+                      value={seats}
+                      onChange={(event) => {
+                        const nextSeats = parseInt(event.target.value, 10);
+                        setSelectedSeatsByPlan((previous) => ({
+                          ...previous,
+                          [planId]: Number.isNaN(nextSeats)
+                            ? plan.defaultSeats
+                            : nextSeats,
+                        }));
+                      }}
+                    >
+                      {FREEMIUM_SEAT_OPTIONS.map((seatOption) => (
+                        <option key={seatOption} value={seatOption}>
+                          {seatOption} {seatOption === 1 ? t`seat` : t`seats`}
+                        </option>
+                      ))}
+                    </StyledTierSelect>
+                  )}
                 </StyledTierSelectWrap>
-                <StyledCreditCardPrice>
-                  {getPricingCurrencySymbol(displayCurrency)}
-                  {formatMoneyMajor(convertedAmountSubunits)}
-                  <StyledPriceUnit>
-                    {' '}
-                    / {PRICING_TALENT_MAP_UNIT}
-                  </StyledPriceUnit>
-                </StyledCreditCardPrice>
-                <StyledCreditCardTotal>
-                  {t`Total`}: {getPricingCurrencySymbol(displayCurrency)}
-                  {formatMoneyMajor(totalSubunits)} {t`for`} {mapsCount}{' '}
-                  {t`maps`}
-                </StyledCreditCardTotal>
+
+                <StyledPriceBlock>
+                  <StyledCreditCardPrice>
+                    {plan.isFree ? (
+                      <>
+                        {getPricingCurrencySymbol(displayCurrency)}0
+                        <StyledPriceUnit> / mo</StyledPriceUnit>
+                      </>
+                    ) : (
+                      <>
+                        {getPricingCurrencySymbol(displayCurrency)}
+                        {formatMoneyMajor(perSeatSubunits)}
+                        <StyledPriceUnit>
+                          {' '}
+                          {PRICING_PER_SEAT_MONTH_UNIT}
+                        </StyledPriceUnit>
+                      </>
+                    )}
+                  </StyledCreditCardPrice>
+                  <StyledCreditCardTotal>
+                    {t`Total`}: {getPricingCurrencySymbol(displayCurrency)}
+                    {formatMoneyMajor(totalSubunits)} {t`/ mo for`} {seats}{' '}
+                    {seats === 1 ? t`seat` : t`seats`}
+                  </StyledCreditCardTotal>
+                </StyledPriceBlock>
+
                 <StyledIncludedCreditsBlock>
-                  <div>{creditsLabel}</div>
-                  <StyledIncludedRevealCredits>
-                    {t`Includes`} {emailEquivalent.toLocaleString()}{' '}
-                    {t`email credits`} + {phoneEquivalent.toLocaleString()}{' '}
-                    {t`phone reveals`} + 1000
-                    {t`AI Conversations Credits`}
-                  </StyledIncludedRevealCredits>
+                  <div>
+                    {entitlements.reveals.toLocaleString()} {t`reveals`} ·{' '}
+                    {entitlements.apiCredits.toLocaleString()} API ·{' '}
+                    {entitlements.aiCredits.toLocaleString()} AI / {t`month`}
+                  </div>
                 </StyledIncludedCreditsBlock>
-                {inherited.inheritedFromLabel && (
-                  <StyledInheritedLine>
-                    {t`Everything in ${inherited.inheritedFromLabel}, plus:`}
-                  </StyledInheritedLine>
-                )}
+
                 <StyledPanelDivider />
                 <StyledFeatureList>
-                  {features.map((feature) => (
+                  {plan.ownFeatures.map((feature) => (
                     <StyledFeatureItem key={feature}>
                       <StyledCheckIcon
                         $tone={tone}
@@ -676,50 +532,58 @@ export const SettingsBillingPricing = ({
                     </StyledFeatureItem>
                   ))}
                 </StyledFeatureList>
-                <StyledChoiceHint $tone={tone}>
-                  {planContent.onboardingHint}
-                </StyledChoiceHint>
+
                 {isSelected && (
                   <StyledCreditActions
                     onClick={(event) => event.stopPropagation()}
                   >
-                    {shouldHideCardPayment ? (
-                      <StyledCardPaymentDisabledState>
+                    {plan.isFree ? (
+                      <Button
+                        title={PRICING_CTA_START_FOR_FREE}
+                        variant="secondary"
+                        fullWidth
+                        disabled
+                      />
+                    ) : (
+                      <>
                         <Button
                           Icon={IconCreditCard}
-                          title={t`Pay by credit card`}
-                          variant="secondary"
+                          title={t`Subscribe`}
+                          variant="primary"
+                          accent="blue"
                           fullWidth
-                          onClick={() =>
-                            handleBuyCredits(pack.key, displayCurrency)
-                          }
-                          disabled
+                          onClick={() => handleSubscribeFreemium(planId, seats)}
+                          disabled={isBusy}
                         />
-                        <StyledPaymentLimitHint>
-                          {t`Credit card payments are available only below $5,000 total.`}
-                        </StyledPaymentLimitHint>
-                      </StyledCardPaymentDisabledState>
-                    ) : (
-                      <Button
-                        Icon={IconCreditCard}
-                        title={t`Pay by credit card`}
-                        variant="primary"
-                        accent="blue"
-                        fullWidth
-                        onClick={() =>
-                          handleBuyCredits(pack.key, displayCurrency)
-                        }
-                        disabled={buyingPackKey !== null}
-                      />
+                        {packKey ? (
+                          <>
+                            <StyledActionsDivider />
+                            <Button
+                              Icon={IconCreditCard}
+                              title={t`Pay first month by card`}
+                              variant="secondary"
+                              fullWidth
+                              onClick={() =>
+                                handleBuyCredits(
+                                  packKey,
+                                  displayCurrency,
+                                  seats,
+                                )
+                              }
+                              disabled={isBusy}
+                            />
+                            <Button
+                              Icon={IconFileText}
+                              title={t`Create custom quote`}
+                              variant="secondary"
+                              fullWidth
+                              onClick={() => setInvoicePackKey(packKey)}
+                              disabled={isBusy}
+                            />
+                          </>
+                        ) : null}
+                      </>
                     )}
-                    <StyledActionsDivider />
-                    <Button
-                      Icon={IconFileText}
-                      title={t`Create custom quote`}
-                      variant="secondary"
-                      fullWidth
-                      onClick={() => setInvoicePackKey(pack.key)}
-                    />
                   </StyledCreditActions>
                 )}
               </StyledCreditPackCardContent>
