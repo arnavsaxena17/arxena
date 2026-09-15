@@ -676,7 +676,7 @@ export const FREEMIUM_PLANS: Record<FreemiumPlanId, FreemiumPlan> = {
     segmentTone: 'indigo',
     isFree: false,
     pricesSubunitsPerSeat: GROWTH_SEAT_PRICES,
-    defaultSeats: 3,
+    defaultSeats: 1,
     ownFeatures: [
       'Everything in Starter',
       'Higher monthly reveal and AI allowances',
@@ -696,7 +696,7 @@ export const FREEMIUM_PLANS: Record<FreemiumPlanId, FreemiumPlan> = {
     segmentTone: 'forest',
     isFree: false,
     pricesSubunitsPerSeat: ENTERPRISE_SEAT_PRICES,
-    defaultSeats: 5,
+    defaultSeats: 1,
     ownFeatures: [
       'Everything in Growth',
       'Highest self-serve outreach volume',

@@ -1,3 +1,4 @@
+import { OUTREACH_DEMO_KUNAL_SALES_THREAD } from 'twenty-shared/arx';
 import {
   foldUnipileChatMessagesToTranscript,
   truncateTranscriptAfterLastInbound,
@@ -5,42 +6,17 @@ import {
   type UnipileChatMessageLike,
 } from 'src/engine/core-modules/outreach-command/prompts/fixtures/fold-unipile-chat-messages.util';
 
-const foldThrough = (messages: UnipileChatMessageLike[], throughIndex: number) =>
-  foldUnipileChatMessagesToTranscript(messages.slice(0, throughIndex + 1));
+const foldThrough = (
+  messages: UnipileChatMessageLike[],
+  throughIndex: number,
+) => foldUnipileChatMessagesToTranscript(messages.slice(0, throughIndex + 1));
 
-// Curated from naresh-positive-sn-chats.json — contact literals kept for grounding tests.
-const KUNAL_MESSAGES: UnipileChatMessageLike[] = [
-  {
-    is_sender: 1,
-    timestamp: '2024-09-25T05:33:00.000Z',
-    text: 'Hi Kunal, I’d like to show you a quick demo of our management reporting platform over a 30 min call if possible.',
-  },
-  {
-    is_sender: 0,
-    timestamp: '2024-09-25T23:57:00.000Z',
-    text: 'Hi Naresh\nCan I know what this would be about ? Are you consulting or offering  software ?',
-  },
-  {
-    is_sender: 1,
-    timestamp: '2024-09-26T12:06:00.000Z',
-    text: "Hi Kunal, thanks for getting back. It's a SaaS software platform.",
-  },
-  {
-    is_sender: 0,
-    timestamp: '2024-09-26T12:16:00.000Z',
-    text: 'Pl send me mail on kunal@matrixlifescience.com',
-  },
-  {
-    is_sender: 1,
-    timestamp: '2025-01-31T05:42:00.000Z',
-    text: 'I was wondering if you’d be open to a quick chat sometime to discuss this?',
-  },
-  {
-    is_sender: 0,
-    timestamp: '2025-01-31T07:59:00.000Z',
-    text: 'Hi\nWe are currently caught up with lot of projects. Lets re visit sometime in June.',
-  },
-];
+const KUNAL_MESSAGES: UnipileChatMessageLike[] =
+  OUTREACH_DEMO_KUNAL_SALES_THREAD.map((message) => ({
+    is_sender: message.role === 'us' ? 1 : 0,
+    timestamp: message.timestamp ?? '',
+    text: message.text,
+  }));
 
 const ASHLYN_MESSAGES: UnipileChatMessageLike[] = [
   {
@@ -233,11 +209,15 @@ export const OUTREACH_AI_LEGACY_SAMPLE_TRANSCRIPT =
 export const OUTREACH_AI_TRANSCRIPTS = {
   kunalIntentClarify: {
     sourcePublicIdentifier: 'kunal-sikchi-5632b215',
-    transcript: truncateTranscriptAfterLastInbound(foldThrough(KUNAL_MESSAGES, 1)),
+    transcript: truncateTranscriptAfterLastInbound(
+      foldThrough(KUNAL_MESSAGES, 1),
+    ),
   },
   kunalEmailAsk: {
     sourcePublicIdentifier: 'kunal-sikchi-5632b215',
-    transcript: truncateTranscriptAfterLastInbound(foldThrough(KUNAL_MESSAGES, 3)),
+    transcript: truncateTranscriptAfterLastInbound(
+      foldThrough(KUNAL_MESSAGES, 3),
+    ),
   },
   kunalSnoozeJune: {
     sourcePublicIdentifier: 'kunal-sikchi-5632b215',
@@ -248,15 +228,21 @@ export const OUTREACH_AI_TRANSCRIPTS = {
   },
   ashlynReferralWithContact: {
     sourcePublicIdentifier: 'ashlyn-antony-245166b',
-    transcript: truncateTranscriptAfterLastInbound(foldThrough(ASHLYN_MESSAGES, 3)),
+    transcript: truncateTranscriptAfterLastInbound(
+      foldThrough(ASHLYN_MESSAGES, 3),
+    ),
   },
   rajeshReferralNoContact: {
     sourcePublicIdentifier: 'rajesh-gupta-recyclekaro',
-    transcript: truncateTranscriptAfterLastInbound(foldThrough(RAJESH_MESSAGES, 1)),
+    transcript: truncateTranscriptAfterLastInbound(
+      foldThrough(RAJESH_MESSAGES, 1),
+    ),
   },
   sunilBookSlot: {
     sourcePublicIdentifier: 'sunil-mundra-25672219',
-    transcript: truncateTranscriptAfterLastInbound(foldThrough(SUNIL_MESSAGES, 1)),
+    transcript: truncateTranscriptAfterLastInbound(
+      foldThrough(SUNIL_MESSAGES, 1),
+    ),
   },
   sunilPostMeetingChase: {
     sourcePublicIdentifier: 'sunil-mundra-25672219',
@@ -279,7 +265,9 @@ export const OUTREACH_AI_TRANSCRIPTS = {
   },
   pulkitVagueTime: {
     sourcePublicIdentifier: 'pulkitlive',
-    transcript: truncateTranscriptAfterLastInbound(foldThrough(PULKIT_MESSAGES, 1)),
+    transcript: truncateTranscriptAfterLastInbound(
+      foldThrough(PULKIT_MESSAGES, 1),
+    ),
   },
   pulkitSilentAfterReply: {
     sourcePublicIdentifier: 'pulkitlive',

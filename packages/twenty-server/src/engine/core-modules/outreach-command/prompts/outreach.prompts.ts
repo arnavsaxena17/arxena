@@ -19,22 +19,79 @@ export const OUTREACH_DONT_RESPOND_SENTINEL = '#DONTRESPOND#';
 
 export const OUTREACH_NO_CHANNEL_SWITCH = 'NONE';
 
+// Shared cadence rule fragments (first-message + post-reply builders).
+export const OUTREACH_CADENCE_NO_SLOTS_RULE =
+  'Never paste clock times, dates, or calendar slots.';
+
+export const OUTREACH_CADENCE_NO_AVAILABLE_SLOTS_AT_STAGE =
+  'Never paste clock times, dates, or Available slots at this stage.';
+
+export const OUTREACH_CADENCE_SOFT_ASK_THIS_WEEK_OR_NEXT =
+  'open to a short chat sometime this week or next?';
+
+export const OUTREACH_CADENCE_SOFT_ASK_WALKTHROUGH_THIS_WEEK_OR_NEXT =
+  'open to a short walkthrough sometime this week or next';
+
+export const OUTREACH_CADENCE_FU2_CLOSE =
+  'Close with "Either way, happy to stay in touch here."';
+
+export const OUTREACH_QUALIFY_HOOKS_CONTRACT =
+  'hooks is an array of at most 3 { "text", "source" } objects';
+
+export const OUTREACH_QUALIFY_JSON_KEYS =
+  '{ "go", "score", "segment", "reason", "first_name", "honorific", "company_short", "industry_phrase", "hooks", "likely_systems", "matching_problem_statement", "referral_source" }';
+
+export const OUTREACH_FALLBACK_EMAIL_CORE =
+  'Draft short ICP-aligned emails when LinkedIn connect is ignored. Do not invent LinkedIn facts.';
+
+export const OUTREACH_EXTRACT_SIGNAL_FIELD_SUMMARY = [
+  'Return JSON { "acceptedSlotIndex", "requestedChannelSwitch", "prospectEmail", "referralName", "referralEmail", "referralPhone", "shouldNotRespond" }.',
+  'acceptedSlotIndex is 0-based into injected slots, -1 unless they confirmed one.',
+  `requestedChannelSwitch is ${OUTREACH_NO_CHANNEL_SWITCH} unless they asked to move channel.`,
+  'Copy contacts from the transcript; leave empty rather than guessing.',
+  'shouldNotRespond is true only for opt-out.',
+].join(' ');
+
+export const OUTREACH_REPLY_SCHEDULING_LADDER_SUMMARY = [
+  `Soft-ask (${OUTREACH_CADENCE_SOFT_ASK_THIS_WEEK_OR_NEXT}) until they name a time window; then ask which times; paste Available slots only when closing.`,
+  OUTREACH_CADENCE_NO_AVAILABLE_SLOTS_AT_STAGE,
+].join(' ');
+
 // --- core.agent system prompts (upserted by prefillOutreachWorkflows) ---
 
 export const OUTREACH_SEEDED_AGENT_LINKEDIN_MESSAGE_SYSTEM_PROMPT =
   'You draft short LinkedIn messages for GTM outreach. Return JSON { "message": "<body>" } only.';
 
-export const OUTREACH_SEEDED_AGENT_FALLBACK_EMAIL_SYSTEM_PROMPT =
-  'You draft short ICP-aligned emails when LinkedIn connect is ignored. Return JSON { "subject", "message" } only. Do not invent LinkedIn facts.';
+export const OUTREACH_SEEDED_AGENT_FALLBACK_EMAIL_SYSTEM_PROMPT = [
+  OUTREACH_FALLBACK_EMAIL_CORE,
+  'Return JSON { "subject", "message" } only.',
+].join(' ');
 
-export const OUTREACH_SEEDED_AGENT_REPLY_SYSTEM_PROMPT =
-  'You draft short GTM sales replies after the inbound signals have been extracted and validated. Return JSON { "message", "emailSubject", "emailBody", "referralMessage" }. Empty strings when unused. Write copy only: the reply channel, the meeting time and every contact detail are injected as verified facts, so never restate a time that is not injected and never extract a contact yourself. Soft-ask for a chat this week or next until they name a time window; only then ask which times work; paste Available slots only when closing. If they are the wrong person, ask for a referral. Do not ask recruiting screening questions or share a job description.';
+export const OUTREACH_SEEDED_AGENT_REPLY_SYSTEM_PROMPT = [
+  'You draft short GTM sales replies after the inbound signals have been extracted and validated.',
+  'Return JSON { "message", "emailSubject", "emailBody", "referralMessage" }.',
+  'Empty strings when unused.',
+  'Write copy only: reply channel, meeting time and contacts are injected as verified facts — never restate a time that is not injected and never extract a contact yourself.',
+  OUTREACH_REPLY_SCHEDULING_LADDER_SUMMARY,
+  'If they are the wrong person, ask for a referral.',
+  'Do not ask recruiting screening questions or share a job description.',
+].join(' ');
 
-export const OUTREACH_SEEDED_AGENT_EXTRACT_SIGNALS_SYSTEM_PROMPT =
-  'You extract structured signals from an inbound sales reply. You never write prose and never classify intent. Return JSON { "acceptedSlotIndex", "requestedChannelSwitch", "prospectEmail", "referralName", "referralEmail", "referralPhone", "shouldNotRespond" }. acceptedSlotIndex is a 0-based index into the injected slots and is -1 unless they confirmed one specific slot. requestedChannelSwitch is NONE unless they explicitly asked to move channel. Copy contacts character for character from the transcript and leave a field empty rather than guessing — naming someone without contact details is normal. shouldNotRespond is true only for opt-out.';
+export const OUTREACH_SEEDED_AGENT_EXTRACT_SIGNALS_SYSTEM_PROMPT = [
+  'You extract structured signals from an inbound sales reply.',
+  'You never write prose and never classify intent.',
+  OUTREACH_EXTRACT_SIGNAL_FIELD_SUMMARY,
+].join(' ');
 
-export const OUTREACH_QUALIFY_PROSPECT_SYSTEM_PROMPT =
-  'You decide whether to contact a prospect for the sender offer and extract personalization hooks. Return JSON only: { "go", "score", "segment", "reason", "first_name", "honorific", "company_short", "industry_phrase", "hooks", "likely_systems", "matching_problem_statement", "referral_source" }. hooks is a JSON string of at most 3 { "text", "source" } objects. Never invent facts.';
+export const OUTREACH_QUALIFY_PROSPECT_SYSTEM_PROMPT = [
+  'You decide whether to contact a prospect for the sender offer and extract personalization hooks.',
+  'Return JSON only:',
+  OUTREACH_QUALIFY_JSON_KEYS,
+  '.',
+  OUTREACH_QUALIFY_HOOKS_CONTRACT,
+  '.',
+  'Never invent facts.',
+].join(' ');
 
 export const OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS = {
   linkedinMessage: OUTREACH_SEEDED_AGENT_LINKEDIN_MESSAGE_SYSTEM_PROMPT,
@@ -79,10 +136,8 @@ export const buildOutreachQualifyProspectPrompt = ({
     'SCORING 0–5 per sender.icp. Role match + company match → 4–5. Exclude hits → 0–2 go=false.',
     'Retired/ex-/advisor/independent director/consultant → go=false.',
     'HOOKS at most 3: business fact, pain-related post, shared background.',
-    'Return JSON only: { "go", "score", "segment", "reason", "first_name", "honorific",',
-    '"company_short", "industry_phrase", "hooks", "likely_systems",',
-    '"matching_problem_statement", "referral_source" }',
-    'hooks is an array of objects { "text", "source" }. honorific and referral_source may be null.',
+    `Return JSON only: ${OUTREACH_QUALIFY_JSON_KEYS}`,
+    `${OUTREACH_QUALIFY_HOOKS_CONTRACT}. honorific and referral_source may be null.`,
   ].join('\n');
 
 export const buildOutreachConnectionNotePrompt = ({
@@ -121,25 +176,25 @@ export const buildOutreachFirstMessagePrompt = ({
       'Write the first message (T1). 70–100 words, four short paragraphs, one ask.',
       'P1 thanks for connecting. P2 problem in their business terms from matching_problem_statement + hooks.',
       'P3 offer.one_sentence + operator_line half-sentence max.',
-      'P4 soft ask only: open to a short chat sometime this week or next?',
-      'Never paste clock times, dates, or calendar slots in T1–T3.',
+      `P4 soft ask only: ${OUTREACH_CADENCE_SOFT_ASK_THIS_WEEK_OR_NEXT}`,
+      `${OUTREACH_CADENCE_NO_SLOTS_RULE} in T1–T3.`,
     ].join(' '),
     fu1: [
       'Second message (T2). 40–60 words. New angle, not a repeat of T1.',
       'Use hooks[1] if available. Add ONE proof_point closest to their industry.',
       'End with a low-friction soft ask (Worth N minutes this week or next? or send a short note first).',
-      'Never paste clock times, dates, or calendar slots.',
+      OUTREACH_CADENCE_NO_SLOTS_RULE,
     ].join(' '),
     fu2: [
       'Third message (T3). ≤40 words, unhurried.',
       'Ask ONE non-yes/no qualifying question about who owns the process.',
-      'Close with "Either way, happy to stay in touch here."',
-      'Never paste clock times, dates, or calendar slots.',
+      OUTREACH_CADENCE_FU2_CLOSE,
+      OUTREACH_CADENCE_NO_SLOTS_RULE,
     ].join(' '),
     fu3: [
       'Final short cadence message. ≤40 words.',
       'One qualifying question; no pressure. Happy to stay in touch.',
-      'Never paste clock times, dates, or calendar slots.',
+      OUTREACH_CADENCE_NO_SLOTS_RULE,
     ].join(' '),
   }[kind];
 
@@ -173,16 +228,16 @@ export const buildOutreachPostReplyFollowUpPrompt = ({
       ? [
           'They replied once; we answered; they went silent.',
           'Write a short follow-up (40–60 words). New angle, not a repeat of our last message.',
-          'One soft ask: open to a short walkthrough sometime this week or next,',
+          `One soft ask: ${OUTREACH_CADENCE_SOFT_ASK_WALKTHROUGH_THIS_WEEK_OR_NEXT},`,
           'or ask if a 2-page note would help first (only if collateral exists).',
-          'Never paste clock times, dates, or calendar slots.',
+          OUTREACH_CADENCE_NO_SLOTS_RULE,
           'No pressure, no "circling back" / "just following up".',
         ].join(' ')
       : [
           'Final follow-up after they went silent post-reply. ≤40 words, unhurried.',
           'Ask ONE non-yes/no qualifying question about who owns the process at their company.',
-          'Close with "Either way, happy to stay in touch here."',
-          'Never paste clock times, dates, or calendar slots.',
+          OUTREACH_CADENCE_FU2_CLOSE,
+          OUTREACH_CADENCE_NO_SLOTS_RULE,
         ].join(' ');
 
   return [
@@ -291,8 +346,8 @@ export const buildOutreachSalesChatDraftPrompt = ({
     'Write the reply for the injected reply channel. Keep it native to that channel.',
     'Scheduling ladder (HITL will approve before send — draft as if that gate exists):',
     '- Soft ask until they name a time window or duration ("this week", "next week",',
-    '  "Monday second half"). Soft ask shape: open to a short chat sometime this week or next?',
-    '  Never paste clock times, dates, or Available slots at this stage.',
+    `  "Monday second half"). Soft ask shape: ${OUTREACH_CADENCE_SOFT_ASK_THIS_WEEK_OR_NEXT}`,
+    `  ${OUTREACH_CADENCE_NO_AVAILABLE_SLOTS_AT_STAGE}`,
     '- After they name a window/duration but not a clock time: ask which few times inside',
     '  that window work for them. Still do not paste Available slots.',
     '- Close slots only when they gave specific clock times, asked us to propose options,',
@@ -346,10 +401,10 @@ export const buildOutreachFallbackEmailPrompt = ({
   title: string;
 }): string =>
   [
-    'Draft a short ICP-aligned email because the LinkedIn connection was not accepted.',
+    `${OUTREACH_FALLBACK_EMAIL_CORE} The LinkedIn connection was not accepted.`,
     `Name: ${name}`,
     `Title: ${title}`,
-    'Do not invent LinkedIn facts. Return JSON only: { "subject": "<subject>", "message": "<body>" }',
+    'Return JSON only: { "subject": "<subject>", "message": "<body>" }',
   ].join('\n');
 
 export const buildOutreachMeetingReminderPrompt = ({

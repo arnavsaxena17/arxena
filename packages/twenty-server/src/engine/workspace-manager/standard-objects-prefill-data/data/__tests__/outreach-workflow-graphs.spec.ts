@@ -33,8 +33,8 @@ const getTrigger = (
 ) => graph.trigger as DatabaseEventTrigger;
 
 describe('GTM outreach workflow graphs', () => {
-  it('seeds six outreach workflow templates', () => {
-    expect(OUTREACH_WORKFLOW_GRAPH_TEMPLATES).toHaveLength(6);
+  it('seeds four outreach workflow templates', () => {
+    expect(OUTREACH_WORKFLOW_GRAPH_TEMPLATES).toHaveLength(4);
   });
 
   it('keeps upload-profiles on Company Created → ICP People Search', () => {
@@ -61,275 +61,14 @@ describe('GTM outreach workflow graphs', () => {
     expect(steps[0]?.type).toBe('LOGIC_FUNCTION');
   });
 
-  it('uses a single candidate.updated workflow with field-scoped IF_ELSE routing', () => {
+  it('does not seed a candidate.updated workflow', () => {
     const updatedGraphs = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.filter(
       (graph) =>
         getTrigger(graph).type === 'DATABASE_EVENT' &&
         getTrigger(graph).settings.eventName === 'candidate.updated',
     );
 
-    expect(updatedGraphs).toHaveLength(1);
-    expect(updatedGraphs[0].name).toBe('Outreach — Enrolled Person Updated');
-    expect(getTrigger(updatedGraphs[0]).settings.fields).toEqual([
-      'outreachSequenceStage',
-    ]);
-
-    const router = (updatedGraphs[0].steps as GraphStep[]).find(
-      (step) =>
-        step.type === 'IF_ELSE' && step.name === 'Route by outreach stage',
-    );
-
-    expect(router).toBeDefined();
-
-    const branches = (
-      router?.settings as {
-        input: { branches: Array<{ filterGroupId?: string }> };
-      }
-    ).input.branches;
-
-    expect(branches).toHaveLength(4);
-    expect(branches.filter((branch) => !branch.filterGroupId)).toHaveLength(1);
-
-    const stepFilters = (
-      router?.settings as {
-        input: {
-          stepFilters: Array<{
-            type: string;
-            value: string;
-            fieldMetadataId?: string;
-          }>;
-        };
-      }
-    ).input.stepFilters;
-
-    expect(stepFilters).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          type: 'SELECT',
-          value: JSON.stringify(['CONNECTION_ACCEPTED']),
-          fieldMetadataId: expect.stringContaining('outreachSequenceStage'),
-        }),
-        expect.objectContaining({
-          type: 'SELECT',
-          value: JSON.stringify(['REPLIED']),
-        }),
-        expect.objectContaining({
-          type: 'SELECT',
-          value: JSON.stringify(['MEETING_BOOKED']),
-        }),
-      ]),
-    );
-    expect(stepFilters).toHaveLength(3);
-    expect(stepFilters).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          value: JSON.stringify(['NEGOTIATING']),
-        }),
-      ]),
-    );
-
-    const updatedSteps = updatedGraphs[0].steps as GraphStep[];
-    const byName = (name: string) =>
-      updatedSteps.find((step) => step.name === name);
-
-    expect(byName('Extract inbound signals')).toBeDefined();
-    expect(byName('Validate inbound signals')).toBeDefined();
-    expect(byName('Draft sales reply')).toBeDefined();
-    expect(byName('Skip send if #DONTRESPOND#')).toBeDefined();
-    expect(byName('Mark WAITING_REPLY')).toBeDefined();
-    expect(byName('Wait 5 days after our reply')).toBeDefined();
-    expect(byName('Draft post-reply follow-up 1')).toBeDefined();
-    expect(byName('Draft post-reply follow-up 2')).toBeDefined();
-    expect(byName('Wait 7 days before post-reply FU2')).toBeDefined();
-    expect(byName('Wait 7 days before parking post-reply')).toBeDefined();
-    expect(byName('Mark FAILED_NO_REPLY')).toBeDefined();
-    expect(byName('Mark FAILED_NO_REPLY (opt-out)')).toBeDefined();
-    expect(byName('Draft negotiating reply')).toBeUndefined();
-    expect(byName('Draft deferral ack')).toBeUndefined();
-
-    const draftReply = updatedSteps.find(
-      (step) => step.name === 'Draft sales reply',
-    ) as {
-      settings?: {
-        input?: { prompt?: string };
-        outputSchema?: Record<string, { label?: string }>;
-      };
-    };
-
-    expect(draftReply.settings?.input?.prompt).toContain('.text}}');
-    expect(draftReply.settings?.input?.prompt).not.toContain(
-      '.first.message}}',
-    );
-
-    // The drafter writes copy only. Times, channel and contacts are decided by
-    // the extract step and grounded by the validate step.
-    expect(Object.keys(draftReply.settings?.outputSchema ?? {}).sort()).toEqual(
-      ['emailBody', 'emailSubject', 'message', 'referralMessage'],
-    );
-
-    const extractSignals = byName('Extract inbound signals') as {
-      type: string;
-      settings?: { outputSchema?: Record<string, unknown> };
-    };
-    const validateSignals = byName('Validate inbound signals') as {
-      type: string;
-      settings?: { outputSchema?: Record<string, unknown> };
-    };
-
-    expect(extractSignals.type).toBe('AI_AGENT');
-    expect(validateSignals.type).toBe('LOGIC_FUNCTION');
-
-    // A slot index is checkable; a free-text ISO date is not.
-    expect(
-      extractSignals.settings?.outputSchema?.acceptedSlotIndex,
-    ).toBeDefined();
-    expect(extractSignals.settings?.outputSchema?.startsAt).toBeUndefined();
-    expect(validateSignals.settings?.outputSchema?.startsAt).toBeDefined();
-    expect(validateSignals.settings?.outputSchema?.endsAt).toBeDefined();
-    expect(validateSignals.settings?.outputSchema?.replyChannel).toBeDefined();
-
-    expect(byName('Get calendar availability')?.nextStepIds).toEqual([
-      byName('Extract inbound signals')?.id,
-    ]);
-    expect(byName('Extract inbound signals')?.nextStepIds).toEqual([
-      byName('Validate inbound signals')?.id,
-    ]);
-    expect(byName('Validate inbound signals')?.nextStepIds).toEqual([
-      byName('Stamp preferred channel?')?.id,
-      byName('Persist prospect email?')?.id,
-      byName('Draft sales reply')?.id,
-    ]);
-    expect(byName('Stamp preferred channel')).toBeDefined();
-    expect(byName('Mark MEETING_BOOKED')).toBeDefined();
-    expect(byName('Draft meeting reminder')).toBeDefined();
-    expect(byName('Create calendar invite')?.nextStepIds).toEqual([
-      byName('Mark MEETING_BOOKED')?.id,
-    ]);
-
-    const approveReply = updatedSteps.find(
-      (step) => step.name === 'Approve / edit reply',
-    ) as {
-      settings?: {
-        input?: Array<{ name?: string; value?: string }>;
-        notifyOnPending?: { detailsTemplate?: string };
-      };
-    };
-    const formFields = (approveReply.settings?.input ?? []).map(
-      (field) => field.name,
-    );
-
-    // WhatsApp Flow only approves send + message text; classification stays
-    // off the form and is read from validate / draft steps.
-    expect(formFields.sort()).toEqual(['approve', 'editedBody']);
-    expect(
-      approveReply.settings?.input?.find((field) => field.name === 'editedBody')
-        ?.value,
-    ).toBe(`{{${byName('Draft sales reply')?.id}.message}}`);
-
-    const validateId = byName('Validate inbound signals')?.id;
-    const draftId = byName('Draft sales reply')?.id;
-    const detailsTemplate =
-      approveReply.settings?.notifyOnPending?.detailsTemplate ?? '';
-
-    expect(detailsTemplate).toContain(`{{${validateId}.replyChannel}}`);
-    expect(detailsTemplate).toContain(`{{${validateId}.startsAt}}`);
-
-    const routeChannel = byName('Reply on last inbound channel');
-    const routeFilters = (
-      routeChannel?.settings as {
-        input?: {
-          stepFilters?: Array<{ stepOutputKey?: string }>;
-        };
-      }
-    )?.input?.stepFilters;
-
-    expect(routeFilters).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          stepOutputKey: `{{${validateId}.replyChannel}}`,
-        }),
-      ]),
-    );
-
-    expect(
-      (
-        byName('Send details by email?')?.settings as {
-          input?: { stepFilters?: Array<{ stepOutputKey?: string }> };
-        }
-      )?.input?.stepFilters?.[0]?.stepOutputKey,
-    ).toBe(`{{${validateId}.prospectEmail}}`);
-
-    expect(
-      (
-        byName('Meeting time filled?')?.settings as {
-          input?: { stepFilters?: Array<{ stepOutputKey?: string }> };
-        }
-      )?.input?.stepFilters?.[0]?.stepOutputKey,
-    ).toBe(`{{${validateId}.startsAt}}`);
-
-    const sendProspectEmail = byName('Email details to prospect') as {
-      settings?: {
-        input?: {
-          recipients?: { to?: string };
-          subject?: string;
-          body?: string;
-        };
-      };
-    };
-
-    expect(sendProspectEmail.settings?.input?.recipients?.to).toBe(
-      `{{${validateId}.prospectEmail}}`,
-    );
-    expect(sendProspectEmail.settings?.input?.subject).toBe(
-      `{{${draftId}.emailSubject}}`,
-    );
-    expect(sendProspectEmail.settings?.input?.body).toBe(
-      `{{${draftId}.emailBody}}`,
-    );
-
-    const skipSend = byName('Skip send if #DONTRESPOND#');
-    const skipFilters = (
-      skipSend?.settings as {
-        input?: {
-          stepFilters?: Array<{ operand?: string; value?: string }>;
-        };
-      }
-    )?.input?.stepFilters;
-
-    expect(skipFilters).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          operand: 'CONTAINS',
-          value: '#DONTRESPOND#',
-        }),
-      ]),
-    );
-
-    expect(skipSend?.settings?.input?.branches?.[0]?.nextStepIds).toEqual([
-      byName('Mark FAILED_NO_REPLY (opt-out)')?.id,
-    ]);
-    expect(skipSend?.settings?.input?.branches?.[1]?.nextStepIds).toEqual([
-      byName('Reply on last inbound channel')?.id,
-    ]);
-
-    expect(byName('Send reply on LinkedIn')).toBeDefined();
-    expect(byName('Send reply by email')).toBeDefined();
-    expect(byName('Send reply on WhatsApp')).toBeDefined();
-
-    const findChats = updatedSteps.find(
-      (step) =>
-        step.name === 'Load inbound WhatsApp / LinkedIn / email messages',
-    ) as {
-      settings?: {
-        input?: {
-          orderBy?: { gqlOperationOrderBy?: Array<Record<string, string>> };
-        };
-      };
-    };
-
-    expect(findChats.settings?.input?.orderBy?.gqlOperationOrderBy).toEqual([
-      { createdAt: 'DescNullsLast' },
-    ]);
+    expect(updatedGraphs).toHaveLength(0);
   });
 
   it('keeps harvest Search LinkedIn companies query and keywords blank', () => {
@@ -352,29 +91,28 @@ describe('GTM outreach workflow graphs', () => {
     expect(search?.settings?.input?.logicFunctionInput?.keywords).toBe('');
   });
 
-  it('keeps Per Candidate on candidate.created', () => {
+  it('does not seed a candidate.created workflow', () => {
     const createdGraphs = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.filter(
       (graph) =>
         getTrigger(graph).type === 'DATABASE_EVENT' &&
         getTrigger(graph).settings.eventName === 'candidate.created',
     );
 
-    expect(createdGraphs).toHaveLength(1);
-    expect(createdGraphs[0].name).toBe('Outreach — Per Enrolled Candidate');
+    expect(createdGraphs).toHaveLength(0);
   });
 
-  it('skips Per Candidate connection send when another person at the company is already in outreach', () => {
-    const perCandidate = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.find(
-      (graph) => graph.name === 'Outreach — Per Enrolled Candidate',
+  it('skips Candidate Sequencer connection send when another person at the company is already in outreach', () => {
+    const candidateSequencer = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.find(
+      (graph) => graph.name === 'Outreach — Candidate Sequencer',
     );
-    const steps = (perCandidate?.steps ?? []) as GraphStep[];
+    const steps = (candidateSequencer?.steps ?? []) as GraphStep[];
     const byName = (name: string) => steps.find((step) => step.name === name);
     const branchNext = (stepName: string, branchIndex: number) =>
       byName(stepName)?.settings?.input?.branches?.[branchIndex]?.nextStepIds ??
       [];
 
     expect(byName('Load Candidate')?.nextStepIds).toEqual([
-      byName('Load workspace member')?.id,
+      byName('Fetch LinkedIn profile (qualify)')?.id,
     ]);
     expect(byName('Has company name?')).toBeDefined();
     expect(byName('Find contacted company sibling')).toBeDefined();
@@ -424,7 +162,7 @@ describe('GTM outreach workflow graphs', () => {
       byName('Find contacted company sibling')?.id,
     ]);
     expect(branchNext('Has company name?', 1)).toEqual([
-      byName('Load workspace member (no company)')?.id,
+      byName('Draft connection note (no company)')?.id,
     ]);
     expect(branchNext('Company already contacted?', 0)).toEqual([
       byName('Mark DEFERRED — company already contacted')?.id,
@@ -674,17 +412,18 @@ describe('GTM outreach workflow graphs', () => {
     expect(byName('Only QUEUED candidates')).toBeUndefined();
   });
 
-  it('leaves the two original sequencer graphs on their own triggers', () => {
+  it('only seeds Candidate Sequencer on candidate.upserted', () => {
     const names = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.map((graph) => graph.name);
 
-    expect(names).toContain('Outreach — Per Enrolled Candidate');
-    expect(names).toContain('Outreach — Enrolled Person Updated');
+    expect(names).not.toContain('Outreach — Per Enrolled Candidate');
+    expect(names).not.toContain('Outreach — Enrolled Person Updated');
 
     const upsertedGraphs = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.filter(
       (graph) => getTrigger(graph).settings?.eventName === 'candidate.upserted',
     );
 
     expect(upsertedGraphs).toHaveLength(1);
+    expect(upsertedGraphs[0].name).toBe('Outreach — Candidate Sequencer');
   });
 
   it('only reads keys that the referenced agent or logic function declares', () => {

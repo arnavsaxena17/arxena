@@ -1,50 +1,14 @@
 import type {
-    IcpChannelMessageType,
-    IcpRankedCandidateInput,
-    LinkedinPostSummary,
-    OutreachTone,
+  IcpChannelMessageType,
+  IcpRankedCandidateInput,
+  LinkedinPostSummary,
+  OutreachTone,
 } from 'src/engine/core-modules/org-chart-outreach/org-chart-outreach.types';
 import type { IcpProfile } from 'src/engine/core-modules/org-chart-outreach/schemas/icp-extraction.schema';
-
-const messageTypeInstructions = (
-  messageType: IcpChannelMessageType,
-): string => {
-  switch (messageType) {
-    case 'connection_request':
-      return [
-        'Write a LinkedIn connection request note.',
-        'Hard limit: message MUST be 300 characters or fewer (including spaces).',
-        'Return JSON: {"message":"..."}',
-      ].join('\n');
-    case 'inmail':
-      return [
-        'Write a LinkedIn InMail.',
-        'Subject limit: 200 characters. Body: concise, roughly 500-800 characters.',
-        'Return JSON: {"subject":"...","message":"..."}',
-      ].join('\n');
-    case 'message':
-      return [
-        'Write a LinkedIn direct message.',
-        'Keep the message under 1000 characters.',
-        'Return JSON: {"message":"..."}',
-      ].join('\n');
-    case 'email':
-      return [
-        'Write a cold outreach email.',
-        'Subject: specific and under 80 characters, no clickbait.',
-        'Body: plain text, roughly 500-900 characters, 2-3 short paragraphs,',
-        'ending with a low-friction ask (e.g. "worth a look?"). No signature block.',
-        'Return JSON: {"subject":"...","message":"..."}',
-      ].join('\n');
-    case 'whatsapp':
-      return [
-        'Write a short WhatsApp message.',
-        'Hard limit: 600 characters. Conversational but professional; no',
-        'greeting fluff, no signature, no markdown formatting.',
-        'Return JSON: {"message":"..."}',
-      ].join('\n');
-  }
-};
+import {
+  buildOrgChartMessageTypeInstructions,
+  buildOrgChartToneGuide,
+} from 'src/engine/core-modules/org-chart-outreach/prompts/org-chart-message-type-instructions';
 
 const formatRankedCandidatesForPrompt = (
   candidates: IcpRankedCandidateInput[],
@@ -86,31 +50,24 @@ export const buildIcpOutreachMessagePrompt = (input: {
   tone: OutreachTone;
   customInstructions?: string;
 }): string => {
-  const toneGuide =
-    input.tone === 'warm'
-      ? 'Use a warm, personable tone.'
-      : input.tone === 'direct'
-        ? 'Use a direct, concise tone.'
-        : 'Use a professional, respectful tone.';
-
   return [
     'You are the final step of a cold-outreach pipeline. Earlier steps',
-    'extracted the ICP of the recipient\'s company (who THEY sell to) and',
+    "extracted the ICP of the recipient's company (who THEY sell to) and",
     'ranked real companies matching that ICP. The lure: we map full-depth',
     'org charts, so we can hand the recipient the org chart of the exact',
     'function they sell into, inside companies that look like their buyers.',
     '',
-    messageTypeInstructions(input.messageType),
+    buildOrgChartMessageTypeInstructions(input.messageType),
     '',
-    toneGuide,
+    buildOrgChartToneGuide(input.tone),
     '',
     'Ground the message in exactly two things:',
-    '1. What they do — from their company\'s ICP below (what they sell,',
+    "1. What they do — from their company's ICP below (what they sell,",
     '   who they sell to). Show you understood their motion in one clause,',
     '   not a recitation.',
     '2. Their recent post (last month) if one is provided — open with a',
     '   specific, non-generic hook from it. If none is provided, hook on',
-    '   their company\'s selling motion instead.',
+    "   their company's selling motion instead.",
     '',
     'Rules:',
     '- Mention at most 1-2 of the ranked target companies by name and the',

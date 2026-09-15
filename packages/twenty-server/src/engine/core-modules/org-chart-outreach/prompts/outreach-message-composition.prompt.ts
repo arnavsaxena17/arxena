@@ -1,39 +1,21 @@
 import type {
-    OutreachMessageType,
-    OutreachProfileContext,
-    OutreachTone,
-    SuggestedOutreachCompany,
+  OutreachMessageType,
+  OutreachProfileContext,
+  OutreachTone,
+  SuggestedOutreachCompany,
 } from 'src/engine/core-modules/org-chart-outreach/org-chart-outreach.types';
 import {
-    formatCommentsForPrompt,
-    formatPostsForPrompt,
-    formatProfileSummaryForPrompt,
+  buildOrgChartMessageTypeInstructions,
+  buildOrgChartToneGuide,
+  ORG_CHART_CONNECTION_REQUEST_MAX_LENGTH,
+  ORG_CHART_DIRECT_MESSAGE_MAX_LENGTH,
+  ORG_CHART_INMAIL_SUBJECT_MAX_LENGTH,
+} from 'src/engine/core-modules/org-chart-outreach/prompts/org-chart-message-type-instructions';
+import {
+  formatCommentsForPrompt,
+  formatPostsForPrompt,
+  formatProfileSummaryForPrompt,
 } from 'src/engine/core-modules/org-chart-outreach/utils/linkedin-profile-context.util';
-
-const messageTypeInstructions = (
-  messageType: OutreachMessageType,
-): string => {
-  switch (messageType) {
-    case 'connection_request':
-      return [
-        'Write a LinkedIn connection request note.',
-        'Hard limit: message MUST be 300 characters or fewer (including spaces).',
-        'Return JSON: {"message":"..."}',
-      ].join('\n');
-    case 'inmail':
-      return [
-        'Write a LinkedIn InMail.',
-        'Subject limit: 200 characters. Body: concise, roughly 500-800 characters.',
-        'Return JSON: {"subject":"...","message":"..."}',
-      ].join('\n');
-    case 'message':
-      return [
-        'Write a LinkedIn direct message to an existing connection.',
-        'Keep the message under 1000 characters.',
-        'Return JSON: {"message":"..."}',
-      ].join('\n');
-  }
-};
 
 const formatCompaniesForPrompt = (
   companies: SuggestedOutreachCompany[],
@@ -68,18 +50,11 @@ export const buildOutreachMessageCompositionPrompt = (input: {
   tone: OutreachTone;
   customInstructions?: string;
 }): string => {
-  const toneGuide =
-    input.tone === 'warm'
-      ? 'Use a warm, personable tone.'
-      : input.tone === 'direct'
-        ? 'Use a direct, concise tone.'
-        : 'Use a professional, respectful tone.';
-
   return [
     'You are drafting a personalized LinkedIn outreach opener to introduce org chart offerings.',
-    messageTypeInstructions(input.messageType),
+    buildOrgChartMessageTypeInstructions(input.messageType),
     '',
-    toneGuide,
+    buildOrgChartToneGuide(input.tone),
     '',
     'Rules:',
     '- Open with a personalized hook from the target recent activity, role, or post.',
@@ -112,6 +87,7 @@ export const buildOutreachMessageCompositionPrompt = (input: {
     .join('\n');
 };
 
-export const CONNECTION_REQUEST_MAX_LENGTH = 300;
-export const INMAIL_SUBJECT_MAX_LENGTH = 200;
-export const DIRECT_MESSAGE_MAX_LENGTH = 1000;
+export const CONNECTION_REQUEST_MAX_LENGTH =
+  ORG_CHART_CONNECTION_REQUEST_MAX_LENGTH;
+export const INMAIL_SUBJECT_MAX_LENGTH = ORG_CHART_INMAIL_SUBJECT_MAX_LENGTH;
+export const DIRECT_MESSAGE_MAX_LENGTH = ORG_CHART_DIRECT_MESSAGE_MAX_LENGTH;

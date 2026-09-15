@@ -295,6 +295,15 @@ export {
   OUTREACH_INBOUND_INTENT_TO_SEQUENCE_STAGE,
   isOutreachConversationStage,
 } from './outreachConversationStage';
+export type {
+  OutreachDemoMessageRole,
+  OutreachDemoMessage,
+} from './outreachDemoThreads';
+export {
+  OUTREACH_DEMO_KUNAL_SALES_THREAD,
+  OUTREACH_DEMO_MANU_RECRUITING_THREAD,
+} from './outreachDemoThreads';
+export { OUTREACH_HITL_CONTEXT_TEMPLATES } from './outreachHitl';
 export type { SendWindowWeekday } from './sendWindowDays';
 export {
   DEFAULT_SEND_WINDOW_DAYS,

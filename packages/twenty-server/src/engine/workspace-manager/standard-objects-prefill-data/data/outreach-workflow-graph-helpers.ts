@@ -579,6 +579,59 @@ export const gtmWfMultiIfElseStep = ({
   };
 };
 
+export const OUTREACH_POST_REPLY_EMAIL_SUBJECT = 'Quick follow-up';
+
+// EMAIL → WhatsApp → LinkedIn default for preferred / last-inbound channel.
+export const gtmWfPreferredChannelRouterStep = ({
+  id,
+  name,
+  channelStepOutputKey,
+  emailBranch,
+  whatsappBranch,
+  linkedinBranch,
+}: {
+  id: string;
+  name: string;
+  channelStepOutputKey: string;
+  emailBranch: {
+    id: string;
+    filterGroupId: string;
+    filterId: string;
+    nextStepIds: string[];
+  };
+  whatsappBranch: {
+    id: string;
+    filterGroupId: string;
+    filterId: string;
+    nextStepIds: string[];
+  };
+  linkedinBranch: {
+    id: string;
+    nextStepIds: string[];
+  };
+}): StepBase =>
+  gtmWfMultiIfElseStep({
+    id,
+    name,
+    branches: [
+      {
+        ...emailBranch,
+        stepOutputKey: channelStepOutputKey,
+        value: 'EMAIL',
+        type: 'TEXT',
+        operand: 'CONTAINS',
+      },
+      {
+        ...whatsappBranch,
+        stepOutputKey: channelStepOutputKey,
+        value: 'WHATSAPP',
+        type: 'TEXT',
+        operand: 'CONTAINS',
+      },
+      linkedinBranch,
+    ],
+  });
+
 export const gtmWfAiAgentStep = ({
   id,
   name,

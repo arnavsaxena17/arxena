@@ -244,6 +244,12 @@ describe('freemium seat plans', () => {
     expect([...FREEMIUM_SEAT_OPTIONS]).toEqual([1, 3, 5, 10, 25]);
   });
 
+  it('defaults every freemium tier to 1 seat', () => {
+    for (const planId of FREEMIUM_PLAN_ORDER) {
+      expect(FREEMIUM_PLANS[planId].defaultSeats).toBe(1);
+    }
+  });
+
   it('prices paid tiers per seat for INR and USD', () => {
     expect(FREEMIUM_PLANS.starter.pricesSubunitsPerSeat.INR).toBe(10_000 * 100);
     expect(FREEMIUM_PLANS.growth.pricesSubunitsPerSeat.INR).toBe(15_000 * 100);

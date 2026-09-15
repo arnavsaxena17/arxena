@@ -1,7 +1,8 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 
-import { WorkflowActionType } from 'twenty-shared/workflow';
+import { OUTREACH_HITL_CONTEXT_TEMPLATES } from 'twenty-shared/arx';
 import { FieldMetadataType } from 'twenty-shared/types';
+import { WorkflowActionType } from 'twenty-shared/workflow';
 
 import { ApprovalNotifierService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/approval-notifier.service';
 import { WorkflowFormDecisionPointerService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-decision-pointer.service';
@@ -41,7 +42,7 @@ const buildFormStep = (): WorkflowFormAction => ({
     ],
     notifyOnPending: {
       channels: ['WHATSAPP_OFFICIAL'],
-      contextTemplate: 'Review first LinkedIn message',
+      contextTemplate: OUTREACH_HITL_CONTEXT_TEMPLATES.firstLinkedInMessage,
       detailsTemplate: 'Contact: {{person.first.name}}',
       whatsappOfficialRegistryName: 'wf_form_boolean_text',
       recipients: {

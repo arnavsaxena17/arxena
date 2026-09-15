@@ -19,10 +19,14 @@ import {
 } from 'src/engine/core-modules/outreach-command/prompts/fixtures/outreach-ai-scenario.types';
 import {
   buildOutreachConnectionNotePrompt,
+  buildOutreachFallbackEmailPrompt,
   buildOutreachFirstMessagePrompt,
   buildOutreachInboundSignalExtractionPrompt,
+  buildOutreachMeetingReminderPrompt,
+  buildOutreachNoShowPingPrompt,
   buildOutreachPostReplyFollowUpPrompt,
   buildOutreachQualifyProspectPrompt,
+  buildOutreachRescheduleOfferPrompt,
   buildOutreachSalesChatDraftPrompt,
 } from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
 import { validateOutreachInboundSignals } from 'src/engine/core-modules/outreach-command/utils/validate-outreach-inbound-signals.util';
@@ -173,38 +177,25 @@ export const buildOutreachAiScenarioPrompt = (
         kind: nodeKind === 'post_reply_follow_up_1' ? 'fu1' : 'fu2',
       });
     case 'fallback_email':
-      return [
-        'Write a short ICP-aligned cold email after a LinkedIn connection was ignored.',
-        `SENDER_JSON: ${inputs.senderJson ?? '{}'}`,
-        `PROSPECT: ${inputs.prospectEnrichmentJson ?? '{}'}`,
-        `CHAT: ${inputs.chatHistory ?? '(none)'}`,
-        'Return JSON only: { "subject": "...", "message": "..." }',
-      ].join('\n');
+      return buildOutreachFallbackEmailPrompt({
+        name: inputs.name ?? 'Prospect',
+        title: inputs.title ?? '',
+      });
     case 'meeting_reminder':
-      return [
-        'Write a day-before walkthrough reminder. ≤30 words. Plain text.',
-        `SENDER_JSON: ${inputs.senderJson ?? '{}'}`,
-        `Name: ${inputs.name ?? 'Prospect'}`,
-        `CHAT: ${inputs.chatHistory ?? '(none)'}`,
-        'Return JSON only: { "message": "..." }',
-      ].join('\n');
+      return buildOutreachMeetingReminderPrompt({
+        senderJson: inputs.senderJson ?? '{}',
+        name: inputs.name ?? 'Prospect',
+      });
     case 'no_show_ping':
-      return [
-        'Write a polite no-show ping with one ask to reschedule. ≤40 words.',
-        `SENDER_JSON: ${inputs.senderJson ?? '{}'}`,
-        `Name: ${inputs.name ?? 'Prospect'}`,
-        `CHAT: ${inputs.chatHistory ?? '(none)'}`,
-        'Return JSON only: { "message": "..." }',
-      ].join('\n');
+      return buildOutreachNoShowPingPrompt({
+        senderJson: inputs.senderJson ?? '{}',
+        name: inputs.name ?? 'Prospect',
+      });
     case 'reschedule_offer':
-      return [
-        'Offer to pick a new time for the walkthrough. ≤40 words.',
-        `SENDER_JSON: ${inputs.senderJson ?? '{}'}`,
-        `Name: ${inputs.name ?? 'Prospect'}`,
-        `calendar: ${inputs.calendarSlots ?? '(none)'}`,
-        `CHAT: ${inputs.chatHistory ?? '(none)'}`,
-        'Return JSON only: { "message": "..." }',
-      ].join('\n');
+      return buildOutreachRescheduleOfferPrompt({
+        senderJson: inputs.senderJson ?? '{}',
+        name: inputs.name ?? 'Prospect',
+      });
     default: {
       const exhaustive: never = nodeKind;
 

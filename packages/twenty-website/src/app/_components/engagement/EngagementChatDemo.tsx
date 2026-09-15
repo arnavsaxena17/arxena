@@ -2,6 +2,12 @@
 
 import styled from '@emotion/styled';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  OUTREACH_DEMO_KUNAL_SALES_THREAD,
+  OUTREACH_DEMO_MANU_RECRUITING_THREAD,
+  OUTREACH_HITL_CONTEXT_TEMPLATES,
+  type OutreachDemoMessage,
+} from 'twenty-shared/arx';
 
 export type ChatMessage = {
   sender: 'bot' | 'user';
@@ -9,73 +15,30 @@ export type ChatMessage = {
   time: string;
 };
 
-// Sales outreach from Candidate Sequencer–style seeded cadence (IMAGE-I / Naresh demos)
-const LINKEDIN_SALES_CHAT: ChatMessage[] = [
-  {
-    sender: 'bot',
-    text: 'Hi Kunal, I’d like to show you a quick demo of our management reporting platform over a 30 min call if possible.',
-    time: '11:03',
-  },
-  {
-    sender: 'user',
-    text: 'Hi — can I know what this would be about? Are you consulting or offering software?',
-    time: '05:27',
-  },
-  {
-    sender: 'bot',
-    text: "Hi Kunal, thanks for getting back. It's a SaaS software platform.",
-    time: '17:36',
-  },
-  {
-    sender: 'user',
-    text: 'Pl send me mail on kunal@matrixlifescience.com',
-    time: '17:46',
-  },
-  {
-    sender: 'bot',
-    text: 'I was wondering if you’d be open to a quick chat sometime this week to discuss?',
-    time: '11:12',
-  },
-  {
-    sender: 'user',
-    text: 'We are currently caught up with a lot of projects. Let’s revisit sometime in June.',
-    time: '13:29',
-  },
-];
+const formatDemoClock = (timestamp: string | undefined): string => {
+  if (!timestamp) {
+    return '';
+  }
 
-// Recruiting outreach — candidate sequencer style conversation
-const LINKEDIN_RECRUITING_CHAT: ChatMessage[] = [
-  {
-    sender: 'bot',
-    text: "Hey Manu, I'm Arnav at Arxena. I'm hiring for a VP of Enterprise Sales role for a global industrial manufacturer in Mumbai — your profile looked like a strong fit. Open to a short call today?",
-    time: '20:19',
-  },
-  {
-    sender: 'user',
-    text: 'Hi Arnav, just saw this. Can we connect tomorrow with a fresh start?',
-    time: '21:11',
-  },
-  {
-    sender: 'bot',
-    text: 'Absolutely. I can share the JD — let me know if the role interests you.',
-    time: '21:20',
-  },
-  {
-    sender: 'user',
-    text: "Good morning — 11:00 am works. If my phone doesn't connect, WhatsApp is fine too.",
-    time: '09:52',
-  },
-  {
-    sender: 'bot',
-    text: 'Confirmed for 11:00. Could you also share current / expected CTC and notice period?',
-    time: '10:16',
-  },
-  {
-    sender: 'user',
-    text: 'I report to JMD; sales and service report to me. Notice is one month. Current ~62L — expectations flexible around budget.',
-    time: '10:43',
-  },
-];
+  return new Date(timestamp).toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'UTC',
+  });
+};
+
+const toLinkedInChat = (thread: OutreachDemoMessage[]): ChatMessage[] =>
+  thread.map((message) => ({
+    sender: message.role === 'us' ? 'bot' : 'user',
+    text: message.text,
+    time: formatDemoClock(message.timestamp),
+  }));
+
+const LINKEDIN_SALES_CHAT = toLinkedInChat(OUTREACH_DEMO_KUNAL_SALES_THREAD);
+const LINKEDIN_RECRUITING_CHAT = toLinkedInChat(
+  OUTREACH_DEMO_MANU_RECRUITING_THREAD,
+);
 
 type DemoSegment = 'sales' | 'recruiting';
 
@@ -98,9 +61,8 @@ const DEMO_BY_SEGMENT: Record<
     linkedInCaption: 'LinkedIn: sales sequencer opener → reply → follow-up',
     whatsappCaption: 'WhatsApp HITL: Yes / No / Modify before any send',
     linkedInChat: LINKEDIN_SALES_CHAT,
-    approvalDraft:
-      'Hi Kunal, I’d like to show you a quick demo of our management reporting platform over a 30 min call if possible.',
-    approvalRequest: 'Review first LinkedIn message',
+    approvalDraft: LINKEDIN_SALES_CHAT[0]?.text ?? '',
+    approvalRequest: OUTREACH_HITL_CONTEXT_TEMPLATES.firstLinkedInMessage,
     approvalRecord: 'Kunal · VP · Matrix Life Science',
   },
   recruiting: {
@@ -109,9 +71,8 @@ const DEMO_BY_SEGMENT: Record<
     linkedInCaption: 'LinkedIn: recruiting sequencer opener → reply → screen',
     whatsappCaption: 'WhatsApp HITL: Yes / No / Modify before any send',
     linkedInChat: LINKEDIN_RECRUITING_CHAT,
-    approvalDraft:
-      "Hey Manu, I'm Arnav at Arxena. I'm hiring for a VP of Enterprise Sales role for a global industrial manufacturer in Mumbai — your profile looked like a strong fit. Open to a short call today?",
-    approvalRequest: 'Review first LinkedIn message',
+    approvalDraft: LINKEDIN_RECRUITING_CHAT[0]?.text ?? '',
+    approvalRequest: OUTREACH_HITL_CONTEXT_TEMPLATES.firstLinkedInMessage,
     approvalRecord: 'Manu · VP Sales · Industrial manufacturer',
   },
 };

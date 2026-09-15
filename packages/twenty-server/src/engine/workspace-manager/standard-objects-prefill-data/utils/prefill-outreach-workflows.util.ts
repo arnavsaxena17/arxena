@@ -5,6 +5,13 @@ import { type EntityManager } from 'typeorm';
 import { v5 } from 'uuid';
 
 import { OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS } from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
+import {
+  OUTREACH_SEEDED_EXTRACT_SIGNALS_SCHEMA,
+  OUTREACH_SEEDED_FALLBACK_EMAIL_SCHEMA,
+  OUTREACH_SEEDED_LINKEDIN_MESSAGE_SCHEMA,
+  OUTREACH_SEEDED_QUALIFY_PROSPECT_SCHEMA,
+  OUTREACH_SEEDED_REPLY_SCHEMA,
+} from 'src/engine/core-modules/outreach-command/prompts/outreach-seeded-agent-schemas';
 import { getOutreachLogicFunctionIds } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-logic-functions.util';
 import { OUTREACH_WORKFLOW_GRAPH_TEMPLATES } from 'src/engine/workspace-manager/standard-objects-prefill-data/data/outreach-workflow-graphs';
 import {
@@ -73,171 +80,6 @@ const LF_TOKEN_TO_ID_KEY = {
   '__LF_fetch-linkedin-profile__': 'fetchLinkedinProfileId',
   '__LF_validate-inbound-signals__': 'validateInboundSignalsId',
 } as const;
-
-const LINKEDIN_MESSAGE_SCHEMA = {
-  type: 'object' as const,
-  properties: {
-    message: { type: 'string' as const, description: 'LinkedIn message body' },
-  },
-  required: ['message'],
-  additionalProperties: false as const,
-};
-
-const FALLBACK_EMAIL_SCHEMA = {
-  type: 'object' as const,
-  properties: {
-    subject: { type: 'string' as const, description: 'Email subject' },
-    message: { type: 'string' as const, description: 'Email body' },
-  },
-  required: ['subject', 'message'],
-  additionalProperties: false as const,
-};
-
-const REPLY_SCHEMA = {
-  type: 'object' as const,
-  properties: {
-    message: {
-      type: 'string' as const,
-      description:
-        'Reply body. Use #DONTRESPOND# exactly when nothing should be sent.',
-    },
-    emailSubject: {
-      type: 'string' as const,
-      description: 'Subject when emailing details or a referral, else empty',
-    },
-    emailBody: {
-      type: 'string' as const,
-      description: 'Body for the details email to the prospect, else empty',
-    },
-    referralMessage: {
-      type: 'string' as const,
-      description:
-        'Intro message to the referred person (email or WhatsApp), else empty',
-    },
-  },
-  required: ['message', 'emailSubject', 'emailBody', 'referralMessage'],
-  additionalProperties: false as const,
-};
-
-// Signals are represented so they can be checked: a slot index is either in
-// range or not, and a contact either appears in the transcript or does not.
-const EXTRACT_SIGNALS_SCHEMA = {
-  type: 'object' as const,
-  properties: {
-    acceptedSlotIndex: {
-      type: 'integer' as const,
-      description:
-        '0-based index into the injected slots of the one slot they accepted, -1 when none',
-    },
-    requestedChannelSwitch: {
-      type: 'string' as const,
-      enum: ['NONE', 'LINKEDIN', 'WHATSAPP', 'EMAIL'],
-      description:
-        'NONE unless they explicitly asked to move channel ("email me", "WhatsApp me")',
-    },
-    prospectEmail: {
-      type: 'string' as const,
-      description: 'Address they asked us to email details to, else empty',
-    },
-    referralName: {
-      type: 'string' as const,
-      description: 'Name of someone else they pointed us to, else empty',
-    },
-    referralEmail: {
-      type: 'string' as const,
-      description: 'Email of that person as written in the thread, else empty',
-    },
-    referralPhone: {
-      type: 'string' as const,
-      description:
-        'WhatsApp/phone of that person as written in the thread, else empty',
-    },
-    shouldNotRespond: {
-      type: 'boolean' as const,
-      description: 'True only for opt-out: stop, unsubscribe, never contact me',
-    },
-  },
-  required: [
-    'acceptedSlotIndex',
-    'requestedChannelSwitch',
-    'prospectEmail',
-    'referralName',
-    'referralEmail',
-    'referralPhone',
-    'shouldNotRespond',
-  ],
-  additionalProperties: false as const,
-};
-
-const QUALIFY_PROSPECT_SCHEMA = {
-  type: 'object' as const,
-  properties: {
-    go: {
-      type: 'boolean' as const,
-      description: 'Whether to contact this prospect for the sender offer',
-    },
-    score: {
-      type: 'number' as const,
-      description: 'ICP fit score 0–5',
-    },
-    segment: {
-      type: 'string' as const,
-      description: 'Short segment label for the prospect',
-    },
-    reason: {
-      type: 'string' as const,
-      description: 'Why go/score was chosen',
-    },
-    first_name: {
-      type: 'string' as const,
-      description: 'Given name for addressing the prospect',
-    },
-    honorific: {
-      type: 'string' as const,
-      description: 'Honorific if known, else empty',
-    },
-    company_short: {
-      type: 'string' as const,
-      description: 'Short company name for copy',
-    },
-    industry_phrase: {
-      type: 'string' as const,
-      description: 'Industry phrase in business language',
-    },
-    hooks: {
-      type: 'string' as const,
-      description:
-        'JSON array (at most 3) of { "text", "source" } personalization hooks',
-    },
-    likely_systems: {
-      type: 'string' as const,
-      description: 'Likely systems or stack cues, else empty',
-    },
-    matching_problem_statement: {
-      type: 'string' as const,
-      description: 'Problem statement matched to the sender offer',
-    },
-    referral_source: {
-      type: 'string' as const,
-      description: 'Referral source when known, else empty',
-    },
-  },
-  required: [
-    'go',
-    'score',
-    'segment',
-    'reason',
-    'first_name',
-    'honorific',
-    'company_short',
-    'industry_phrase',
-    'hooks',
-    'likely_systems',
-    'matching_problem_statement',
-    'referral_source',
-  ],
-  additionalProperties: false as const,
-};
 
 export const getOutreachWorkflowPrefillIds = (workspaceId: string) => {
   const ids: Record<
@@ -389,7 +231,7 @@ const upsertAgents = async ({
       label: 'GTM LinkedIn message',
       modelId: AUTO_SELECT_SMART_MODEL_ID,
       prompt: OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS.linkedinMessage,
-      responseFormat: { type: 'json', schema: LINKEDIN_MESSAGE_SCHEMA },
+      responseFormat: { type: 'json', schema: OUTREACH_SEEDED_LINKEDIN_MESSAGE_SCHEMA },
       universalIdentifier: v5(
         `gtmOutreachAgentUniversal:linkedinMessage:${workspaceId}`,
         OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
@@ -402,7 +244,7 @@ const upsertAgents = async ({
       label: 'GTM fallback email',
       modelId: AUTO_SELECT_SMART_MODEL_ID,
       prompt: OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS.fallbackEmail,
-      responseFormat: { type: 'json', schema: FALLBACK_EMAIL_SCHEMA },
+      responseFormat: { type: 'json', schema: OUTREACH_SEEDED_FALLBACK_EMAIL_SCHEMA },
       universalIdentifier: v5(
         `gtmOutreachAgentUniversal:fallbackEmail:${workspaceId}`,
         OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
@@ -415,7 +257,7 @@ const upsertAgents = async ({
       label: 'GTM inbound reply',
       modelId: AUTO_SELECT_SMART_MODEL_ID,
       prompt: OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS.reply,
-      responseFormat: { type: 'json', schema: REPLY_SCHEMA },
+      responseFormat: { type: 'json', schema: OUTREACH_SEEDED_REPLY_SCHEMA },
       universalIdentifier: v5(
         `gtmOutreachAgentUniversal:reply:${workspaceId}`,
         OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
@@ -428,7 +270,7 @@ const upsertAgents = async ({
       label: 'GTM inbound signal extraction',
       modelId: OUTREACH_EXTRACT_SIGNALS_MODEL_ID,
       prompt: OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS.extractSignals,
-      responseFormat: { type: 'json', schema: EXTRACT_SIGNALS_SCHEMA },
+      responseFormat: { type: 'json', schema: OUTREACH_SEEDED_EXTRACT_SIGNALS_SCHEMA },
       universalIdentifier: v5(
         `gtmOutreachAgentUniversal:extractSignals:${workspaceId}`,
         OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
@@ -441,7 +283,7 @@ const upsertAgents = async ({
       label: 'GTM qualify prospect',
       modelId: AUTO_SELECT_SMART_MODEL_ID,
       prompt: OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS.qualifyProspect,
-      responseFormat: { type: 'json', schema: QUALIFY_PROSPECT_SCHEMA },
+      responseFormat: { type: 'json', schema: OUTREACH_SEEDED_QUALIFY_PROSPECT_SCHEMA },
       universalIdentifier: v5(
         `gtmOutreachAgentUniversal:qualifyProspect:${workspaceId}`,
         OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,

@@ -1,3 +1,5 @@
+import { OUTREACH_HITL_CONTEXT_TEMPLATES } from 'twenty-shared/arx';
+
 import {
   buildOutreachConnectionNotePrompt,
   buildOutreachFallbackEmailPrompt,
@@ -52,6 +54,8 @@ import {
   gtmWfFormDetailsTemplate,
   gtmWfIfElseStep,
   gtmWfMultiIfElseStep,
+  gtmWfPreferredChannelRouterStep,
+  OUTREACH_POST_REPLY_EMAIL_SUBJECT,
   gtmWfLogicFunctionStep,
   gtmWfManualTrigger,
   gtmWfMemberEmail,
@@ -387,7 +391,7 @@ const followUpSteps = ({
     id: approveId,
     name: `Approve follow-up ${n}`,
     editedBodyValue: `{{${draftId}.message}}`,
-    contextTemplate: `Review LinkedIn follow-up ${n}`,
+    contextTemplate: OUTREACH_HITL_CONTEXT_TEMPLATES.linkedInFollowUp(n),
     detailsTemplate: gtmWfFormDetailsTemplate({
       findId,
       draftStepId: draftId,
@@ -480,7 +484,7 @@ const acceptedBranchSteps = () => [
     id: IDS.approveFirst,
     name: 'Approve / edit first message',
     editedBodyValue: `{{${IDS.draftFirst}.message}}`,
-    contextTemplate: 'Review first LinkedIn message',
+    contextTemplate: OUTREACH_HITL_CONTEXT_TEMPLATES.firstLinkedInMessage,
     detailsTemplate: gtmWfFormDetailsTemplate({
       findId: IDS.acceptFind,
       draftStepId: IDS.draftFirst,
@@ -683,7 +687,7 @@ const repliedBranchSteps = () => [
     id: IDS.approveReply,
     name: 'Approve / edit reply',
     editedBodyValue: `{{${IDS.draftReply}.message}}`,
-    contextTemplate: 'Review inbound sales reply',
+    contextTemplate: OUTREACH_HITL_CONTEXT_TEMPLATES.inboundSalesReply,
     detailsTemplate: gtmWfFormDetailsTemplate({
       findId: IDS.repliedFind,
       draftStepId: IDS.draftReply,
@@ -710,35 +714,26 @@ const repliedBranchSteps = () => [
     ifNextStepIds: [IDS.stampFailedDontRespond],
     elseNextStepIds: [IDS.routeReplyChannelIf],
   }),
-  gtmWfMultiIfElseStep({
+  gtmWfPreferredChannelRouterStep({
     id: IDS.routeReplyChannelIf,
     name: 'Reply on last inbound channel',
-    branches: [
-      {
-        id: IDS.replyEmailBranch,
-        filterGroupId: IDS.replyEmailGroup,
-        filterId: IDS.replyEmailFilter,
-        stepOutputKey: `{{${IDS.validateSignals}.replyChannel}}`,
-        value: 'EMAIL',
-        type: 'TEXT',
-        operand: 'CONTAINS',
-        nextStepIds: [IDS.sendReplyEmail],
-      },
-      {
-        id: IDS.replyWhatsappBranch,
-        filterGroupId: IDS.replyWhatsappGroup,
-        filterId: IDS.replyWhatsappFilter,
-        stepOutputKey: `{{${IDS.validateSignals}.replyChannel}}`,
-        value: 'WHATSAPP',
-        type: 'TEXT',
-        operand: 'CONTAINS',
-        nextStepIds: [IDS.sendReplyWhatsapp],
-      },
-      {
-        id: IDS.replyLinkedinBranch,
-        nextStepIds: [IDS.sendReply],
-      },
-    ],
+    channelStepOutputKey: `{{${IDS.validateSignals}.replyChannel}}`,
+    emailBranch: {
+      id: IDS.replyEmailBranch,
+      filterGroupId: IDS.replyEmailGroup,
+      filterId: IDS.replyEmailFilter,
+      nextStepIds: [IDS.sendReplyEmail],
+    },
+    whatsappBranch: {
+      id: IDS.replyWhatsappBranch,
+      filterGroupId: IDS.replyWhatsappGroup,
+      filterId: IDS.replyWhatsappFilter,
+      nextStepIds: [IDS.sendReplyWhatsapp],
+    },
+    linkedinBranch: {
+      id: IDS.replyLinkedinBranch,
+      nextStepIds: [IDS.sendReply],
+    },
   }),
   gtmWfSendEmailStep({
     id: IDS.sendReplyEmail,
@@ -986,54 +981,42 @@ const repliedBranchSteps = () => [
     id: IDS.approvePostReplyFu1,
     name: 'Approve post-reply follow-up 1',
     editedBodyValue: `{{${IDS.draftPostReplyFu1}.message}}`,
-    contextTemplate: 'Review post-reply follow-up 1',
+    contextTemplate: OUTREACH_HITL_CONTEXT_TEMPLATES.postReplyFollowUp1,
     detailsTemplate: gtmWfFormDetailsTemplate({
       findId: IDS.reloadAfterInboundWait,
       draftStepId: IDS.draftPostReplyFu1,
     }),
     nextStepIds: [IDS.routePostReplyFu1],
   }),
-  gtmWfMultiIfElseStep({
+  gtmWfPreferredChannelRouterStep({
     id: IDS.routePostReplyFu1,
     name: 'Send post-reply FU1 on preferred channel',
-    branches: [
-      {
-        id: IDS.postReplyFu1EmailBranch,
-        filterGroupId: IDS.postReplyFu1EmailGroup,
-        filterId: IDS.postReplyFu1EmailFilter,
-        stepOutputKey: gtmWfFindField(
-          IDS.reloadAfterInboundWait,
-          'outreachPreferredChannel',
-        ),
-        value: 'EMAIL',
-        type: 'TEXT',
-        operand: 'CONTAINS',
-        nextStepIds: [IDS.sendPostReplyFu1Email],
-      },
-      {
-        id: IDS.postReplyFu1WhatsappBranch,
-        filterGroupId: IDS.postReplyFu1WhatsappGroup,
-        filterId: IDS.postReplyFu1WhatsappFilter,
-        stepOutputKey: gtmWfFindField(
-          IDS.reloadAfterInboundWait,
-          'outreachPreferredChannel',
-        ),
-        value: 'WHATSAPP',
-        type: 'TEXT',
-        operand: 'CONTAINS',
-        nextStepIds: [IDS.sendPostReplyFu1Whatsapp],
-      },
-      {
-        id: IDS.postReplyFu1LinkedinBranch,
-        nextStepIds: [IDS.sendPostReplyFu1Linkedin],
-      },
-    ],
+    channelStepOutputKey: gtmWfFindField(
+      IDS.reloadAfterInboundWait,
+      'outreachPreferredChannel',
+    ),
+    emailBranch: {
+      id: IDS.postReplyFu1EmailBranch,
+      filterGroupId: IDS.postReplyFu1EmailGroup,
+      filterId: IDS.postReplyFu1EmailFilter,
+      nextStepIds: [IDS.sendPostReplyFu1Email],
+    },
+    whatsappBranch: {
+      id: IDS.postReplyFu1WhatsappBranch,
+      filterGroupId: IDS.postReplyFu1WhatsappGroup,
+      filterId: IDS.postReplyFu1WhatsappFilter,
+      nextStepIds: [IDS.sendPostReplyFu1Whatsapp],
+    },
+    linkedinBranch: {
+      id: IDS.postReplyFu1LinkedinBranch,
+      nextStepIds: [IDS.sendPostReplyFu1Linkedin],
+    },
   }),
   gtmWfSendEmailStep({
     id: IDS.sendPostReplyFu1Email,
     name: 'Send post-reply FU1 by email',
     to: gtmWfFindField(IDS.reloadAfterInboundWait, 'email.primaryEmail'),
-    subject: 'Quick follow-up',
+    subject: OUTREACH_POST_REPLY_EMAIL_SUBJECT,
     body: `{{${IDS.approvePostReplyFu1}.editedBody}}`,
     nextStepIds: [IDS.waitPostReplyFu2],
   }),
@@ -1108,54 +1091,42 @@ const repliedBranchSteps = () => [
     id: IDS.approvePostReplyFu2,
     name: 'Approve post-reply follow-up 2',
     editedBodyValue: `{{${IDS.draftPostReplyFu2}.message}}`,
-    contextTemplate: 'Review post-reply follow-up 2 (last)',
+    contextTemplate: OUTREACH_HITL_CONTEXT_TEMPLATES.postReplyFollowUp2Last,
     detailsTemplate: gtmWfFormDetailsTemplate({
       findId: IDS.reloadPostReplyFu2,
       draftStepId: IDS.draftPostReplyFu2,
     }),
     nextStepIds: [IDS.routePostReplyFu2],
   }),
-  gtmWfMultiIfElseStep({
+  gtmWfPreferredChannelRouterStep({
     id: IDS.routePostReplyFu2,
     name: 'Send post-reply FU2 on preferred channel',
-    branches: [
-      {
-        id: IDS.postReplyFu2EmailBranch,
-        filterGroupId: IDS.postReplyFu2EmailGroup,
-        filterId: IDS.postReplyFu2EmailFilter,
-        stepOutputKey: gtmWfFindField(
-          IDS.reloadPostReplyFu2,
-          'outreachPreferredChannel',
-        ),
-        value: 'EMAIL',
-        type: 'TEXT',
-        operand: 'CONTAINS',
-        nextStepIds: [IDS.sendPostReplyFu2Email],
-      },
-      {
-        id: IDS.postReplyFu2WhatsappBranch,
-        filterGroupId: IDS.postReplyFu2WhatsappGroup,
-        filterId: IDS.postReplyFu2WhatsappFilter,
-        stepOutputKey: gtmWfFindField(
-          IDS.reloadPostReplyFu2,
-          'outreachPreferredChannel',
-        ),
-        value: 'WHATSAPP',
-        type: 'TEXT',
-        operand: 'CONTAINS',
-        nextStepIds: [IDS.sendPostReplyFu2Whatsapp],
-      },
-      {
-        id: IDS.postReplyFu2LinkedinBranch,
-        nextStepIds: [IDS.sendPostReplyFu2Linkedin],
-      },
-    ],
+    channelStepOutputKey: gtmWfFindField(
+      IDS.reloadPostReplyFu2,
+      'outreachPreferredChannel',
+    ),
+    emailBranch: {
+      id: IDS.postReplyFu2EmailBranch,
+      filterGroupId: IDS.postReplyFu2EmailGroup,
+      filterId: IDS.postReplyFu2EmailFilter,
+      nextStepIds: [IDS.sendPostReplyFu2Email],
+    },
+    whatsappBranch: {
+      id: IDS.postReplyFu2WhatsappBranch,
+      filterGroupId: IDS.postReplyFu2WhatsappGroup,
+      filterId: IDS.postReplyFu2WhatsappFilter,
+      nextStepIds: [IDS.sendPostReplyFu2Whatsapp],
+    },
+    linkedinBranch: {
+      id: IDS.postReplyFu2LinkedinBranch,
+      nextStepIds: [IDS.sendPostReplyFu2Linkedin],
+    },
   }),
   gtmWfSendEmailStep({
     id: IDS.sendPostReplyFu2Email,
     name: 'Send post-reply FU2 by email',
     to: gtmWfFindField(IDS.reloadPostReplyFu2, 'email.primaryEmail'),
-    subject: 'Quick follow-up',
+    subject: OUTREACH_POST_REPLY_EMAIL_SUBJECT,
     body: `{{${IDS.approvePostReplyFu2}.editedBody}}`,
     nextStepIds: [IDS.waitPostReplyPark],
   }),
@@ -1410,7 +1381,7 @@ const queuedBranchSteps = ({ hoistedMember }: { hoistedMember: boolean }) => [
     id: IDS.approveConnectNote,
     name: 'Approve connection note',
     editedBodyValue: `{{${IDS.draftConnectNote}.message}}`,
-    contextTemplate: 'Review LinkedIn connection note',
+    contextTemplate: OUTREACH_HITL_CONTEXT_TEMPLATES.linkedInConnectionNote,
     detailsTemplate: gtmWfFormDetailsTemplate({
       findId: IDS.queuedFind,
       draftStepId: IDS.draftConnectNote,
@@ -1432,7 +1403,7 @@ const queuedBranchSteps = ({ hoistedMember }: { hoistedMember: boolean }) => [
     id: IDS.approveConnectNoteNoCompany,
     name: 'Approve connection note (no company)',
     editedBodyValue: `{{${IDS.draftConnectNoteNoCompany}.message}}`,
-    contextTemplate: 'Review LinkedIn connection note',
+    contextTemplate: OUTREACH_HITL_CONTEXT_TEMPLATES.linkedInConnectionNote,
     detailsTemplate: gtmWfFormDetailsTemplate({
       findId: IDS.queuedFind,
       draftStepId: IDS.draftConnectNoteNoCompany,
@@ -1577,7 +1548,7 @@ const queuedBranchSteps = ({ hoistedMember }: { hoistedMember: boolean }) => [
     id: IDS.approveEmail,
     name: 'Approve / edit email',
     editedBodyValue: `{{${IDS.draftEmail}.message}}`,
-    contextTemplate: 'Review fallback email',
+    contextTemplate: OUTREACH_HITL_CONTEXT_TEMPLATES.fallbackEmail,
     detailsTemplate: gtmWfFormDetailsTemplate({
       findId: IDS.reloadAfterWait,
       draftStepId: IDS.draftEmail,
@@ -1666,7 +1637,7 @@ const meetingBookedBranchSteps = () => [
     id: IDS.approveReminder,
     name: 'Approve meeting reminder',
     editedBodyValue: `{{${IDS.draftReminder}.message}}`,
-    contextTemplate: 'Review meeting reminder',
+    contextTemplate: OUTREACH_HITL_CONTEXT_TEMPLATES.meetingReminder,
     detailsTemplate: gtmWfFormDetailsTemplate({
       findId: IDS.meetingBookedFind,
       draftStepId: IDS.draftReminder,
@@ -1705,7 +1676,7 @@ const meetingBookedBranchSteps = () => [
     id: IDS.approveNoShow,
     name: 'Approve no-show ping',
     editedBodyValue: `{{${IDS.draftNoShow}.message}}`,
-    contextTemplate: 'Review no-show ping',
+    contextTemplate: OUTREACH_HITL_CONTEXT_TEMPLATES.noShowPing,
     detailsTemplate: gtmWfFormDetailsTemplate({
       findId: IDS.meetingBookedFind,
       draftStepId: IDS.draftNoShow,
@@ -1744,7 +1715,7 @@ const meetingBookedBranchSteps = () => [
     id: IDS.approveReschedule,
     name: 'Approve reschedule offer',
     editedBodyValue: `{{${IDS.draftReschedule}.message}}`,
-    contextTemplate: 'Review reschedule offer',
+    contextTemplate: OUTREACH_HITL_CONTEXT_TEMPLATES.rescheduleOffer,
     detailsTemplate: gtmWfFormDetailsTemplate({
       findId: IDS.meetingBookedFind,
       draftStepId: IDS.draftReschedule,
@@ -1881,76 +1852,8 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
       }),
     ],
   },
-  {
-    name: 'Outreach — Enrolled Person Updated',
-    trigger: gtmWfDatabaseEventTrigger({
-      name: 'Candidate is Updated',
-      eventName: 'candidate.updated',
-      fields: ['outreachSequenceStage'],
-      nextStepIds: [OUTREACH_WF_MEMBER_STEP_ID],
-    }),
-    steps: [
-      gtmWfMemberStep([IDS.stageRouter]),
-      gtmWfMultiIfElseStep({
-        id: IDS.stageRouter,
-        name: 'Route by outreach stage',
-        branches: [
-          {
-            id: IDS.stageBranchAccepted,
-            filterGroupId: IDS.stageGroupAccepted,
-            filterId: IDS.stageFilterAccepted,
-            stepOutputKey: gtmWfTriggerAfter('outreachSequenceStage'),
-            value: 'CONNECTION_ACCEPTED',
-            nextStepIds: [IDS.acceptFind],
-          },
-          {
-            id: IDS.stageBranchReplied,
-            filterGroupId: IDS.stageGroupReplied,
-            filterId: IDS.stageFilterReplied,
-            stepOutputKey: gtmWfTriggerAfter('outreachSequenceStage'),
-            value: 'REPLIED',
-            nextStepIds: [IDS.repliedFind],
-          },
-          {
-            id: IDS.stageBranchMeetingBooked,
-            filterGroupId: IDS.stageGroupMeetingBooked,
-            filterId: IDS.stageFilterMeetingBooked,
-            stepOutputKey: gtmWfTriggerAfter('outreachSequenceStage'),
-            value: 'MEETING_BOOKED',
-            nextStepIds: [IDS.meetingBookedFind],
-          },
-          {
-            id: IDS.stageBranchElse,
-            nextStepIds: [],
-          },
-        ],
-      }),
-      ...acceptedBranchSteps(),
-      ...repliedBranchSteps(),
-      ...meetingBookedBranchSteps(),
-    ],
-  },
-  {
-    name: 'Outreach — Per Enrolled Candidate',
-    trigger: gtmWfDatabaseEventTrigger({
-      name: 'Candidate is Created',
-      eventName: 'candidate.created',
-      nextStepIds: [IDS.queuedFilter],
-    }),
-    steps: [
-      gtmWfFilterStep({
-        id: IDS.queuedFilter,
-        name: 'Only QUEUED candidates',
-        stepOutputKey: gtmWfTriggerAfter('outreachSequenceStage'),
-        value: 'QUEUED',
-        nextStepIds: [IDS.queuedFind],
-      }),
-      ...queuedBranchSteps({ hoistedMember: false }),
-    ],
-  },
-  // Merge of "Per Enrolled Candidate" (create) and "Enrolled Person Updated"
-  // (stage update) behind one create-or-update trigger, so a new user manages one
-  // canvas instead of two.
+  // Merge of former Stage B (create/QUEUED) and Stage C (stage update) behind one
+  // create-or-update trigger, so a new user manages one canvas instead of two.
   //
   // Safe because:
   // - The trigger allowlists the entry stages before a run is created, so the
@@ -1962,6 +1865,9 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
   //   downstream step ids and no IF_ELSE join can be cascade-skipped.
   // - QUEUED re-entry: connectionNotSentIf gates Send LinkedIn connection on
   //   empty outreachAnalytics.connectionSentAt (see queuedBranchSteps).
+  //
+  // Legacy Stage B/C display names stay in OUTREACH_WORKFLOW_NAMES_TO_DEACTIVATE
+  // so existing workspaces deactivate those graphs; they are not seeded here.
   {
     name: 'Outreach — Candidate Sequencer',
     trigger: gtmWfDatabaseEventTrigger({

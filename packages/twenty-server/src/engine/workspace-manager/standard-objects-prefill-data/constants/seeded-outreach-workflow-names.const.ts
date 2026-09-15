@@ -32,8 +32,9 @@ export const SEEDED_OUTREACH_WORKFLOW = {
     role: 'Stage updates' as const,
     trigger: 'candidate.updated',
   },
-  // Live sequencer (Stage B + C merge). Publishing requires deactivating
-  // perCandidate + candidateUpdated (see OUTREACH_WORKFLOW_NAMES_TO_DEACTIVATE).
+  // Live sequencer (Stage B + C merge). Prefill seeds only this graph;
+  // perCandidate + candidateUpdated remain named for upgrade/cleanup and
+  // OUTREACH_WORKFLOW_NAMES_TO_DEACTIVATE.
   candidateSequencer: {
     name: 'Outreach — Candidate Sequencer',
     slug: 'candidateSequencer',
