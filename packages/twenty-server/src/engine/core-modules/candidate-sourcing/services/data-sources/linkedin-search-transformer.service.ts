@@ -1,11 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { MessagingChannel, UserProfile } from 'twenty-shared';
-import { LinkedInPeopleSearchResult, LinkedInSearchResult } from '../../../linkedin-search/types/linkedin-search-response.type';
+import {
+  LinkedInPeopleSearchResult,
+  LinkedInSearchResult,
+} from '../../../linkedin-search/types/linkedin-search-response.type';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { pickEmploymentPositionMatchingCompany } from '../../utils/linkedin-orgchart-company-match.util';
 import { pickCurrentPositionForSearchIntent } from 'src/engine/core-modules/people-api/utils/pick-current-position-for-search-intent.util';
 import { isValidUuid } from 'twenty-shared/utils';
-import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
+import {
+  BaseDataSourceTransformerService,
+  TransformationContext,
+} from './base-data-source-transformer.service';
 
 /**
  * Extended UserProfile type for DataTable display with UI-specific fields
@@ -92,7 +98,7 @@ export type TransformedCandidateForTable = Omit<
   m7kqHasEmail?: boolean;
   m7kqHasDirectPhone?: boolean;
   m7kqHasOrgPhone?: boolean;
-}
+};
 
 type LinkedInSearchOrMappedHit = LinkedInPeopleSearchResult & {
   firstName?: string;
@@ -107,6 +113,30 @@ type LinkedInSearchOrMappedHit = LinkedInPeopleSearchResult & {
   company?: string;
   jobCompanyName?: string;
   summary?: string | null;
+  salesNavigatorProfileUrl?: string;
+  sharedConnectionsCount?: number;
+  recentlyHired?: boolean;
+};
+
+const readSalesNavigatorProfileUrl = (
+  candidateData: LinkedInSearchOrMappedHit,
+): string => {
+  const candidates = [
+    candidateData.salesNavigatorProfileUrl,
+    candidateData.profile_url,
+    candidateData.profileUrl,
+  ];
+
+  for (const value of candidates) {
+    if (
+      typeof value === 'string' &&
+      /linkedin\.com\/sales\//i.test(value.trim())
+    ) {
+      return value.trim();
+    }
+  }
+
+  return '';
 };
 
 @Injectable()
@@ -121,7 +151,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
 
   transformToUserProfile(
     candidateData: LinkedInSearchResult,
-    context: TransformationContext
+    context: TransformationContext,
   ): UserProfile {
     // Cast to LinkedInPeopleSearchResult since this transformer handles people search results
     const peopleData = candidateData as LinkedInPeopleSearchResult;
@@ -139,7 +169,10 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     return userProfile;
   }
 
-  private processLinkedInProfileData(candidateData: LinkedInSearchOrMappedHit, userProfile: UserProfile): void {
+  private processLinkedInProfileData(
+    candidateData: LinkedInSearchOrMappedHit,
+    userProfile: UserProfile,
+  ): void {
     if (candidateData.name) {
       const nameParts = candidateData.name.split(' ');
       userProfile.firstName = nameParts[0] || '';
@@ -147,7 +180,8 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     }
 
     if (candidateData.first_name || candidateData.firstName) {
-      userProfile.firstName = candidateData.first_name || candidateData.firstName;
+      userProfile.firstName =
+        candidateData.first_name || candidateData.firstName;
     }
 
     if (candidateData.last_name || candidateData.lastName) {
@@ -238,6 +272,9 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     }
 
     // Persist Unipile / Sales Nav identity + picture variants for org-chart / otherFields
+    const salesNavigatorProfileUrl =
+      readSalesNavigatorProfileUrl(candidateData);
+
     userProfile.linkedinSpecificData = {
       ...userProfile.linkedinSpecificData,
       ...(candidateData.id
@@ -252,6 +289,26 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
       ...(candidateData.network_distance
         ? { networkDistance: candidateData.network_distance }
         : {}),
+      ...(candidateData.pending_invitation !== undefined
+        ? { pendingInvitation: candidateData.pending_invitation }
+        : {}),
+      ...(candidateData.last_outreach_activity
+        ? { lastOutreachActivity: candidateData.last_outreach_activity }
+        : {}),
+      ...(typeof candidateData.recent_posts_count === 'number'
+        ? { recentPostsCount: candidateData.recent_posts_count }
+        : {}),
+      ...(typeof candidateData.shared_connections_count === 'number'
+        ? { sharedConnectionsCount: candidateData.shared_connections_count }
+        : typeof candidateData.sharedConnectionsCount === 'number'
+          ? { sharedConnectionsCount: candidateData.sharedConnectionsCount }
+          : {}),
+      ...(candidateData.recently_hired !== undefined
+        ? { recentlyHired: candidateData.recently_hired }
+        : candidateData.recentlyHired !== undefined
+          ? { recentlyHired: candidateData.recentlyHired }
+          : {}),
+      ...(salesNavigatorProfileUrl ? { salesNavigatorProfileUrl } : {}),
       ...(candidateData.premium !== undefined
         ? { isPremium: candidateData.premium }
         : {}),
@@ -259,10 +316,53 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         ? { isOpenProfile: candidateData.open_profile }
         : {}),
       ...(profilePictureUrl ? { profilePictureUrl } : {}),
-      ...(profilePictureUrlLarge
-        ? { profilePictureUrlLarge }
-        : {}),
+      ...(profilePictureUrlLarge ? { profilePictureUrlLarge } : {}),
     };
+
+    // Top-level so enrollment stage + otherFields keys survive create
+    if (candidateData.pending_invitation !== undefined) {
+      (
+        userProfile as UserProfile & { pendingInvitation?: boolean }
+      ).pendingInvitation = candidateData.pending_invitation;
+    }
+    if (candidateData.network_distance) {
+      (
+        userProfile as UserProfile & { networkDistance?: string }
+      ).networkDistance = candidateData.network_distance;
+    }
+    if (candidateData.last_outreach_activity) {
+      (
+        userProfile as UserProfile & {
+          lastOutreachActivity?: LinkedInPeopleSearchResult['last_outreach_activity'];
+        }
+      ).lastOutreachActivity = candidateData.last_outreach_activity;
+    }
+    if (typeof candidateData.recent_posts_count === 'number') {
+      (
+        userProfile as UserProfile & { recentPostsCount?: number }
+      ).recentPostsCount = candidateData.recent_posts_count;
+    }
+    if (typeof candidateData.shared_connections_count === 'number') {
+      (
+        userProfile as UserProfile & { sharedConnectionsCount?: number }
+      ).sharedConnectionsCount = candidateData.shared_connections_count;
+    } else if (typeof candidateData.sharedConnectionsCount === 'number') {
+      (
+        userProfile as UserProfile & { sharedConnectionsCount?: number }
+      ).sharedConnectionsCount = candidateData.sharedConnectionsCount;
+    }
+    if (candidateData.recently_hired !== undefined) {
+      (userProfile as UserProfile & { recentlyHired?: boolean }).recentlyHired =
+        candidateData.recently_hired;
+    } else if (candidateData.recentlyHired !== undefined) {
+      (userProfile as UserProfile & { recentlyHired?: boolean }).recentlyHired =
+        candidateData.recentlyHired;
+    }
+    if (salesNavigatorProfileUrl) {
+      (
+        userProfile as UserProfile & { salesNavigatorProfileUrl?: string }
+      ).salesNavigatorProfileUrl = salesNavigatorProfileUrl;
+    }
 
     // Add job process event
     this.addProjectProcessEvent(userProfile, 'linkedin_profile_processed', {
@@ -272,7 +372,10 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     });
   }
 
-  private processLinkedInContactData(candidateData: LinkedInPeopleSearchResult, userProfile: UserProfile): void {
+  private processLinkedInContactData(
+    candidateData: LinkedInPeopleSearchResult,
+    userProfile: UserProfile,
+  ): void {
     // LinkedIn doesn't provide direct contact info in search results
     // This would typically be enriched later through other means
     if (candidateData.can_send_inmail || candidateData.recruiter_candidate_id) {
@@ -329,7 +432,10 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     userProfile: UserProfile,
     context: TransformationContext,
   ): void {
-    if (candidateData.current_positions && candidateData.current_positions.length > 0) {
+    if (
+      candidateData.current_positions &&
+      candidateData.current_positions.length > 0
+    ) {
       const currentPosition = this.pickCurrentPosition(candidateData, {
         companyName: context.targetCompanyName,
         companyId:
@@ -347,7 +453,8 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
       if (currentPosition) {
         userProfile.jobCompanyName = currentPosition.company;
         userProfile.jobTitle = currentPosition.role;
-        userProfile.locationName = currentPosition.location || userProfile.locationName;
+        userProfile.locationName =
+          currentPosition.location || userProfile.locationName;
         if (currentPosition.company_id) {
           userProfile.jobCompanyId = String(currentPosition.company_id);
         }
@@ -373,12 +480,18 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         });
       }
     } else {
-      if (typeof candidateData.jobTitle === 'string' && candidateData.jobTitle.trim()) {
+      if (
+        typeof candidateData.jobTitle === 'string' &&
+        candidateData.jobTitle.trim()
+      ) {
         userProfile.jobTitle = candidateData.jobTitle.trim();
         userProfile.profileTitle = candidateData.jobTitle.trim();
       }
 
-      if (typeof candidateData.company === 'string' && candidateData.company.trim()) {
+      if (
+        typeof candidateData.company === 'string' &&
+        candidateData.company.trim()
+      ) {
         userProfile.jobCompanyName = candidateData.company.trim();
       } else if (
         typeof candidateData.jobCompanyName === 'string' &&
@@ -388,9 +501,15 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
       }
 
       // If no current positions, try to extract job title and company from headline
-      if (typeof candidateData.headline === 'string' && candidateData.headline.trim()) {
+      if (
+        typeof candidateData.headline === 'string' &&
+        candidateData.headline.trim()
+      ) {
         // Extract company from headline if it contains ' at ' (lowercase) or ' AT ' (uppercase, used in all-caps headlines)
-        if (candidateData.headline.includes(' at ') || candidateData.headline.includes(' AT ')) {
+        if (
+          candidateData.headline.includes(' at ') ||
+          candidateData.headline.includes(' AT ')
+        ) {
           let jobTitleFromHeadline: string | undefined;
           let companyFromHeadline: string | undefined;
 
@@ -431,13 +550,20 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
       description?: string | null;
       location?: string | null;
       company_id?: string | null;
+      company_url?: string | null;
       industry?: string[] | string | null;
       tenure_at_role?: { years?: number; months?: number } | null;
       tenure_at_company?: { years?: number; months?: number } | null;
+      skills?: Array<
+        { name?: string; endorsement_count?: number } | string
+      > | null;
     }> = [];
 
     // Current positions (if any) are marked as isCurrent: true
-    if (candidateData.current_positions && candidateData.current_positions.length > 0) {
+    if (
+      candidateData.current_positions &&
+      candidateData.current_positions.length > 0
+    ) {
       for (const currentPosition of candidateData.current_positions) {
         const startDate = currentPosition.start
           ? `${currentPosition.start.year}-${String(currentPosition.start.month ?? 1).padStart(2, '0')}-01`
@@ -458,15 +584,20 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
           company_id: currentPosition.company_id
             ? String(currentPosition.company_id)
             : null,
+          company_url: currentPosition.company_url ?? null,
           industry: currentPosition.industry ?? null,
           tenure_at_role: currentPosition.tenure_at_role ?? null,
           tenure_at_company: currentPosition.tenure_at_company ?? null,
+          skills: currentPosition.skills ?? null,
         });
       }
     }
 
     // Past work_experience (e.g. "Past:" roles) are marked as isCurrent: false
-    if (candidateData.work_experience && candidateData.work_experience.length > 0) {
+    if (
+      candidateData.work_experience &&
+      candidateData.work_experience.length > 0
+    ) {
       for (const exp of candidateData.work_experience) {
         const startDate = exp.start
           ? `${exp.start.year}-${String(exp.start.month ?? 1).padStart(2, '0')}-01`
@@ -484,23 +615,33 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
           isCurrent: false,
           company_id: exp.company_id ? String(exp.company_id) : null,
           industry: exp.industry ?? null,
+          skills: exp.skills ?? null,
         });
       }
     }
 
     if (experienceForBase.length > 0) {
       // Reuse the base transformer logic to populate userProfile.experience and experienceStats
-      this.processExperienceData({ experience: experienceForBase }, userProfile);
+      this.processExperienceData(
+        { experience: experienceForBase },
+        userProfile,
+      );
     }
   }
 
-  private processLinkedInEducationData(candidateData: LinkedInPeopleSearchResult, userProfile: UserProfile): void {
+  private processLinkedInEducationData(
+    candidateData: LinkedInPeopleSearchResult,
+    userProfile: UserProfile,
+  ): void {
     const education = candidateData.education;
     if (!Array.isArray(education) || education.length === 0) {
       return;
     }
 
-    const formatYearMonth = (date?: { year: number; month?: number }): string => {
+    const formatYearMonth = (date?: {
+      year: number;
+      month?: number;
+    }): string => {
       if (!date?.year) {
         return '';
       }
@@ -524,7 +665,10 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     );
   }
 
-  private processLinkedInSkillsData(candidateData: LinkedInPeopleSearchResult, userProfile: UserProfile): void {
+  private processLinkedInSkillsData(
+    candidateData: LinkedInPeopleSearchResult,
+    userProfile: UserProfile,
+  ): void {
     // LinkedIn search results typically don't include detailed skills
     // This would be enriched through profile scraping or other means
     // For now, we'll add a placeholder
@@ -533,23 +677,31 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     });
   }
 
-  private ensureUniqueStringKey(userProfile: UserProfile, candidateData: LinkedInPeopleSearchResult): void {
+  private ensureUniqueStringKey(
+    userProfile: UserProfile,
+    candidateData: LinkedInPeopleSearchResult,
+  ): void {
     // If uniqueStringKey is empty or invalid, regenerate it with the processed data
     if (!userProfile.uniqueStringKey || userProfile.uniqueStringKey === '') {
       const fullName = userProfile.fullName || candidateData.name || '';
       const companyName = userProfile.jobCompanyName || '';
 
-      console.log(`Regenerating uniqueStringKey for LinkedIn search result: fullName="${fullName}", companyName="${companyName}"`);
-
-      userProfile.uniqueStringKey = this.dataProcessingUtils.generateUniqueStringKey(
-        {
-          name: fullName,
-          companyName: companyName,
-        },
-        'linkedin_search'
+      console.log(
+        `Regenerating uniqueStringKey for LinkedIn search result: fullName="${fullName}", companyName="${companyName}"`,
       );
 
-      console.log(`Generated new uniqueStringKey: "${userProfile.uniqueStringKey}"`);
+      userProfile.uniqueStringKey =
+        this.dataProcessingUtils.generateUniqueStringKey(
+          {
+            name: fullName,
+            companyName: companyName,
+          },
+          'linkedin_search',
+        );
+
+      console.log(
+        `Generated new uniqueStringKey: "${userProfile.uniqueStringKey}"`,
+      );
     }
   }
 
@@ -630,7 +782,8 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
           peopleResult.profile_url ||
           userProfile.linkedinUrl ||
           '',
-        hiringNaukriUrl: userProfile.linkedinSpecificData?.hiringNaukriUrl || '',
+        hiringNaukriUrl:
+          userProfile.linkedinSpecificData?.hiringNaukriUrl || '',
         resdexNaukriUrl: '',
         displayPicture:
           peopleResult.profile_picture_url ||
@@ -681,11 +834,21 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         followersCount: peopleResult.followers_count,
         connectionsCount: peopleResult.connections_count,
         keywordsMatch: peopleResult.keywords_match || '',
+        ...(typeof peopleResult.recent_posts_count === 'number'
+          ? { recentPostsCount: peopleResult.recent_posts_count }
+          : {}),
+        ...(peopleResult.pending_invitation !== undefined
+          ? { pendingInvitation: peopleResult.pending_invitation }
+          : {}),
+        ...(peopleResult.last_outreach_activity
+          ? { lastOutreachActivity: peopleResult.last_outreach_activity }
+          : {}),
 
         // Naming aliases for DataTable compatibility
         jobTitle: resolvedJobTitle,
         company: resolvedCompany,
-        location: peopleResult.location || userProfile.locationName || 'Not specified',
+        location:
+          peopleResult.location || userProfile.locationName || 'Not specified',
         peopleId: stableSourcePersonId.length > 0 ? stableSourcePersonId : null,
         updatedAt: timestamp,
         createdAt: timestamp,
@@ -710,12 +873,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
   private extractJobTitleFromHeadline(headline?: string): string | null {
     if (!headline) return null;
 
-    const patterns = [
-      /^([^|]+)/,
-      /^([^-]+)/,
-      /^([^at]+)/,
-      /^([^@]+)/,
-    ];
+    const patterns = [/^([^|]+)/, /^([^-]+)/, /^([^at]+)/, /^([^@]+)/];
 
     for (const pattern of patterns) {
       const match = headline.match(pattern);
@@ -727,7 +885,9 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
       }
     }
 
-    return headline.length > 100 ? headline.substring(0, 100) + '...' : headline;
+    return headline.length > 100
+      ? headline.substring(0, 100) + '...'
+      : headline;
   }
 
   /**
@@ -766,9 +926,9 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
       searchCategory: string;
       timestamp: string;
       processingTime: number;
-    }
+    },
   ): TransformedCandidateForTable[] {
-    return candidates.map(candidate => ({
+    return candidates.map((candidate) => ({
       ...candidate,
       campaign: `linkedin_${searchMetadata.searchType}_${searchMetadata.searchCategory}`,
       source: `linkedin_${searchMetadata.searchType}`,
@@ -785,23 +945,31 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
       isPremium?: boolean;
       isVerified?: boolean;
       minSharedConnections?: number;
-    }
+    },
   ): TransformedCandidateForTable[] {
-    return candidates.filter(candidate => {
+    return candidates.filter((candidate) => {
       if (filters.hasProfilePicture && !candidate.profilePictureUrl) {
         return false;
       }
 
-      if (filters.isPremium !== undefined && candidate.premium !== filters.isPremium) {
+      if (
+        filters.isPremium !== undefined &&
+        candidate.premium !== filters.isPremium
+      ) {
         return false;
       }
 
-      if (filters.isVerified !== undefined && candidate.verified !== filters.isVerified) {
+      if (
+        filters.isVerified !== undefined &&
+        candidate.verified !== filters.isVerified
+      ) {
         return false;
       }
 
-      if (filters.minSharedConnections !== undefined &&
-          (candidate.sharedConnectionsCount || 0) < filters.minSharedConnections) {
+      if (
+        filters.minSharedConnections !== undefined &&
+        (candidate.sharedConnectionsCount || 0) < filters.minSharedConnections
+      ) {
         return false;
       }
 

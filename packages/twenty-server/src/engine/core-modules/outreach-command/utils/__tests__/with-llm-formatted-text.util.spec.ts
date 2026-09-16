@@ -59,7 +59,7 @@ describe('maybeWithLlmFormattedText', () => {
     ).toEqual({
       success: true,
       slots,
-      text: '(0) 2026-01-01T00:00:00.000Z → 2026-01-01T00:30:00.000Z',
+      text: '(0) Thu, Jan 1 · 5:30–6:00 AM IST',
     });
   });
 });

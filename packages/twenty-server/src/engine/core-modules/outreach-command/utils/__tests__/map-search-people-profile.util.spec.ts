@@ -114,4 +114,38 @@ describe('mapSearchPeopleProfile', () => {
       stdGrade: 'c-level',
     });
   });
+
+  it('keeps LinkedIn invitation and recent post signals', () => {
+    const mapped = mapSearchPeopleProfile({
+      name: 'Sam Geha',
+      public_identifier: 'sam-geha-921b899',
+      public_profile_url: 'https://www.linkedin.com/in/sam-geha-921b899',
+      profile_url:
+        'https://www.linkedin.com/sales/lead/ACwAAAHGnek,NAME_SEARCH,Qh1K',
+      network_distance: 'DISTANCE_1',
+      pending_invitation: false,
+      recent_posts_count: 1,
+      shared_connections_count: 3,
+      recently_hired: true,
+      last_outreach_activity: {
+        type: 'ACCEPT_INVITATION',
+        performed_at: '2026-09-14T17:15:57.681Z',
+      },
+    });
+
+    expect(mapped).toMatchObject({
+      linkedinUrl: 'https://www.linkedin.com/in/sam-geha-921b899',
+      salesNavigatorProfileUrl:
+        'https://www.linkedin.com/sales/lead/ACwAAAHGnek,NAME_SEARCH,Qh1K',
+      networkDistance: 'DISTANCE_1',
+      pendingInvitation: false,
+      recentPostsCount: 1,
+      sharedConnectionsCount: 3,
+      recentlyHired: true,
+      lastOutreachActivity: {
+        type: 'ACCEPT_INVITATION',
+        performed_at: '2026-09-14T17:15:57.681Z',
+      },
+    });
+  });
 });

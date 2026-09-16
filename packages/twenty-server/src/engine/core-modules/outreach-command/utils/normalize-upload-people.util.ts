@@ -28,6 +28,15 @@ export type UploadProfilesPerson = {
   followersCount?: number;
   sharedConnectionsCount?: number;
   networkDistance?: string;
+  pendingInvitation?: boolean;
+  recentPostsCount?: number;
+  sharedConnectionsCount?: number;
+  recentlyHired?: boolean;
+  salesNavigatorProfileUrl?: string;
+  lastOutreachActivity?: {
+    type?: string;
+    performed_at?: string;
+  };
   recruitingActivity?: unknown[];
 };
 
@@ -275,6 +284,35 @@ export const toUploadProfilesPerson = (
     'networkDistance',
     'network_distance',
   ]);
+  const pendingInvitationRaw =
+    person.pendingInvitation ?? person.pending_invitation;
+  const recentPostsCount = readNumber(person, [
+    'recentPostsCount',
+    'recent_posts_count',
+  ]);
+  const recentlyHiredRaw = person.recentlyHired ?? person.recently_hired;
+  const salesNavigatorProfileUrl =
+    readString(person, [
+      'salesNavigatorProfileUrl',
+      'sales_navigator_profile_url',
+    ]) ||
+    (() => {
+      const profileUrl = readString(person, ['profile_url', 'profileUrl']);
+
+      return /linkedin\.com\/sales\//i.test(profileUrl) ? profileUrl : '';
+    })();
+  const lastOutreachActivityRecord =
+    person.lastOutreachActivity ?? person.last_outreach_activity;
+  const lastOutreachActivity =
+    lastOutreachActivityRecord &&
+    typeof lastOutreachActivityRecord === 'object' &&
+    !Array.isArray(lastOutreachActivityRecord)
+      ? (lastOutreachActivityRecord as {
+          type?: string;
+          performed_at?: string;
+          performedAt?: string;
+        })
+      : null;
   const recruitingActivity = Array.isArray(person.recruitingActivity)
     ? person.recruitingActivity
     : Array.isArray(person.recruiting_activity)
@@ -315,6 +353,30 @@ export const toUploadProfilesPerson = (
     ...(followersCount !== undefined ? { followersCount } : {}),
     ...(sharedConnectionsCount !== undefined ? { sharedConnectionsCount } : {}),
     ...(isNonEmptyString(networkDistance) ? { networkDistance } : {}),
+    ...(typeof pendingInvitationRaw === 'boolean'
+      ? { pendingInvitation: pendingInvitationRaw }
+      : {}),
+    ...(recentPostsCount !== undefined ? { recentPostsCount } : {}),
+    ...(typeof recentlyHiredRaw === 'boolean'
+      ? { recentlyHired: recentlyHiredRaw }
+      : {}),
+    ...(isNonEmptyString(salesNavigatorProfileUrl)
+      ? { salesNavigatorProfileUrl }
+      : {}),
+    ...(lastOutreachActivity
+      ? {
+          lastOutreachActivity: {
+            ...(typeof lastOutreachActivity.type === 'string'
+              ? { type: lastOutreachActivity.type }
+              : {}),
+            ...(typeof lastOutreachActivity.performed_at === 'string'
+              ? { performed_at: lastOutreachActivity.performed_at }
+              : typeof lastOutreachActivity.performedAt === 'string'
+                ? { performed_at: lastOutreachActivity.performedAt }
+                : {}),
+          },
+        }
+      : {}),
     ...(recruitingActivity !== undefined ? { recruitingActivity } : {}),
   };
 };

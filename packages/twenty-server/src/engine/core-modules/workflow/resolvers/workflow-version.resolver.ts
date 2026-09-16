@@ -7,6 +7,7 @@ import { CoreResolver } from 'src/engine/api/graphql/graphql-config/decorators/c
 import { PreventNestToAutoLogGraphqlErrorsFilter } from 'src/engine/core-modules/graphql/filters/prevent-nest-to-auto-log-graphql-errors.filter';
 import { ResolverValidationPipe } from 'src/engine/core-modules/graphql/pipes/resolver-validation.pipe';
 import { CreateDraftFromWorkflowVersionInput } from 'src/engine/core-modules/workflow/dtos/create-draft-from-workflow-version.input';
+import { ApplyOutreachSequencerGraphOptionsInput } from 'src/engine/core-modules/workflow/dtos/apply-outreach-sequencer-graph-options.input';
 import { DuplicateWorkflowInput } from 'src/engine/core-modules/workflow/dtos/duplicate-workflow.input';
 import { UpdateWorkflowVersionPositionsInput } from 'src/engine/core-modules/workflow/dtos/update-workflow-version-positions.input';
 import { WorkflowVersionDTO } from 'src/engine/core-modules/workflow/dtos/workflow-version.dto';
@@ -48,6 +49,32 @@ export class WorkflowVersionResolver {
       workflowId,
       workflowVersionIdToCopy,
     });
+  }
+
+  @Mutation(() => WorkflowVersionDTO)
+  async applyOutreachSequencerGraphOptions(
+    @AuthWorkspace() { id: workspaceId }: WorkspaceEntity,
+    @Args('input')
+    {
+      workflowId,
+      useLlmConnectionNote,
+      humanInTheLoop,
+      whatsappEnabled,
+      meetingFollowUpEnabled,
+    }: ApplyOutreachSequencerGraphOptionsInput,
+  ): Promise<WorkflowVersionDTO> {
+    return this.workflowVersionWorkspaceService.applyOutreachSequencerGraphOptions(
+      {
+        workspaceId,
+        workflowId,
+        options: {
+          useLlmConnectionNote,
+          humanInTheLoop,
+          whatsappEnabled,
+          meetingFollowUpEnabled,
+        },
+      },
+    );
   }
 
   @Mutation(() => WorkflowVersionDTO)

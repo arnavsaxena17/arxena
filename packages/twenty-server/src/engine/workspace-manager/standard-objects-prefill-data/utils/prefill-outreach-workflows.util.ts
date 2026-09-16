@@ -149,6 +149,33 @@ export const getOutreachAgentIds = (workspaceId: string) => ({
   ),
 });
 
+export const getOutreachReplyAgentRoleIds = (workspaceId: string) => ({
+  roleId: v5(
+    `gtmOutreachRole:replyCandidateCrud:${workspaceId}`,
+    OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
+  ),
+  roleUniversalIdentifier: v5(
+    `gtmOutreachRoleUniversal:replyCandidateCrud:${workspaceId}`,
+    OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
+  ),
+  objectPermissionId: v5(
+    `gtmOutreachObjectPermission:replyCandidate:${workspaceId}`,
+    OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
+  ),
+  objectPermissionUniversalIdentifier: v5(
+    `gtmOutreachObjectPermissionUniversal:replyCandidate:${workspaceId}`,
+    OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
+  ),
+  roleTargetId: v5(
+    `gtmOutreachRoleTarget:reply:${workspaceId}`,
+    OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
+  ),
+  roleTargetUniversalIdentifier: v5(
+    `gtmOutreachRoleTargetUniversal:reply:${workspaceId}`,
+    OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
+  ),
+});
+
 export const getOutreachHarvestProjectId = (workspaceId: string) =>
   v5(
     `gtmHarvestProject:${workspaceId}`,
@@ -231,7 +258,10 @@ const upsertAgents = async ({
       label: 'GTM LinkedIn message',
       modelId: AUTO_SELECT_SMART_MODEL_ID,
       prompt: OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS.linkedinMessage,
-      responseFormat: { type: 'json', schema: OUTREACH_SEEDED_LINKEDIN_MESSAGE_SCHEMA },
+      responseFormat: {
+        type: 'json',
+        schema: OUTREACH_SEEDED_LINKEDIN_MESSAGE_SCHEMA,
+      },
       universalIdentifier: v5(
         `gtmOutreachAgentUniversal:linkedinMessage:${workspaceId}`,
         OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
@@ -244,7 +274,10 @@ const upsertAgents = async ({
       label: 'GTM fallback email',
       modelId: AUTO_SELECT_SMART_MODEL_ID,
       prompt: OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS.fallbackEmail,
-      responseFormat: { type: 'json', schema: OUTREACH_SEEDED_FALLBACK_EMAIL_SCHEMA },
+      responseFormat: {
+        type: 'json',
+        schema: OUTREACH_SEEDED_FALLBACK_EMAIL_SCHEMA,
+      },
       universalIdentifier: v5(
         `gtmOutreachAgentUniversal:fallbackEmail:${workspaceId}`,
         OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
@@ -270,7 +303,10 @@ const upsertAgents = async ({
       label: 'GTM inbound signal extraction',
       modelId: OUTREACH_EXTRACT_SIGNALS_MODEL_ID,
       prompt: OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS.extractSignals,
-      responseFormat: { type: 'json', schema: OUTREACH_SEEDED_EXTRACT_SIGNALS_SCHEMA },
+      responseFormat: {
+        type: 'json',
+        schema: OUTREACH_SEEDED_EXTRACT_SIGNALS_SCHEMA,
+      },
       universalIdentifier: v5(
         `gtmOutreachAgentUniversal:extractSignals:${workspaceId}`,
         OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
@@ -283,7 +319,10 @@ const upsertAgents = async ({
       label: 'GTM qualify prospect',
       modelId: AUTO_SELECT_SMART_MODEL_ID,
       prompt: OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS.qualifyProspect,
-      responseFormat: { type: 'json', schema: OUTREACH_SEEDED_QUALIFY_PROSPECT_SCHEMA },
+      responseFormat: {
+        type: 'json',
+        schema: OUTREACH_SEEDED_QUALIFY_PROSPECT_SCHEMA,
+      },
       universalIdentifier: v5(
         `gtmOutreachAgentUniversal:qualifyProspect:${workspaceId}`,
         OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
@@ -353,6 +392,203 @@ const upsertAgents = async ({
   }
 
   return resolved;
+};
+
+// Explicit candidate read+update so DATABASE_CRUD tools advertise for the reply
+// agent (create is gated by canUpdateObjectRecords).
+const upsertReplyAgentCandidateRole = async ({
+  entityManager,
+  workspaceId,
+  applicationId,
+  replyAgentId,
+}: {
+  entityManager: EntityManager;
+  workspaceId: string;
+  applicationId: string;
+  replyAgentId: string;
+}) => {
+  const roleIds = getOutreachReplyAgentRoleIds(workspaceId);
+  const roleLabel = 'GTM Outreach Reply Candidate CRUD';
+
+  const existingRoles = (await entityManager.query(
+    `
+      SELECT id FROM core.role
+      WHERE "workspaceId" = $1
+        AND (
+          "universalIdentifier" = $2
+          OR label = $3
+        )
+      LIMIT 1
+    `,
+    [workspaceId, roleIds.roleUniversalIdentifier, roleLabel],
+  )) as Array<{ id: string }>;
+
+  const roleId = existingRoles[0]?.id ?? roleIds.roleId;
+
+  if (existingRoles[0]?.id) {
+    await entityManager.query(
+      `
+        UPDATE core.role
+        SET label = $2,
+            description = $3,
+            "canBeAssignedToAgents" = true,
+            "canBeAssignedToUsers" = false,
+            "canBeAssignedToApiKeys" = false,
+            "canReadAllObjectRecords" = false,
+            "canUpdateAllObjectRecords" = false,
+            "canSoftDeleteAllObjectRecords" = false,
+            "canDestroyAllObjectRecords" = false,
+            "canAccessAllTools" = false,
+            "canUpdateAllSettings" = false
+        WHERE id = $1
+      `,
+      [
+        roleId,
+        roleLabel,
+        'Candidate CRUD for gtm-outreach-reply workflow agent tool calls',
+      ],
+    );
+  } else {
+    await entityManager.query(
+      `
+        INSERT INTO core.role (
+          id, label, description, icon,
+          "canUpdateAllSettings", "canAccessAllTools",
+          "canReadAllObjectRecords", "canUpdateAllObjectRecords",
+          "canSoftDeleteAllObjectRecords", "canDestroyAllObjectRecords",
+          "isEditable", "canBeAssignedToUsers", "canBeAssignedToAgents",
+          "canBeAssignedToApiKeys", "workspaceId", "universalIdentifier",
+          "applicationId"
+        )
+        VALUES (
+          $1, $2, $3, $4,
+          false, false,
+          false, false,
+          false, false,
+          true, false, true,
+          false, $5, $6,
+          $7
+        )
+      `,
+      [
+        roleId,
+        roleLabel,
+        'Candidate CRUD for gtm-outreach-reply workflow agent tool calls',
+        'IconRobot',
+        workspaceId,
+        roleIds.roleUniversalIdentifier,
+        applicationId,
+      ],
+    );
+  }
+
+  const candidateObjects = (await entityManager.query(
+    `
+      SELECT id FROM core."objectMetadata"
+      WHERE "workspaceId" = $1
+        AND "nameSingular" = 'candidate'
+        AND "isActive" = true
+      LIMIT 1
+    `,
+    [workspaceId],
+  )) as Array<{ id: string }>;
+
+  const candidateObjectMetadataId = candidateObjects[0]?.id;
+
+  if (!isDefined(candidateObjectMetadataId)) {
+    throw new Error(
+      `Missing candidate object metadata for reply agent role in workspace ${workspaceId}`,
+    );
+  }
+
+  const existingObjectPermissions = (await entityManager.query(
+    `
+      SELECT id FROM core."objectPermission"
+      WHERE "roleId" = $1 AND "objectMetadataId" = $2
+      LIMIT 1
+    `,
+    [roleId, candidateObjectMetadataId],
+  )) as Array<{ id: string }>;
+
+  if (existingObjectPermissions[0]?.id) {
+    await entityManager.query(
+      `
+        UPDATE core."objectPermission"
+        SET "canReadObjectRecords" = true,
+            "canUpdateObjectRecords" = true,
+            "canSoftDeleteObjectRecords" = false,
+            "canDestroyObjectRecords" = false
+        WHERE id = $1
+      `,
+      [existingObjectPermissions[0].id],
+    );
+  } else {
+    await entityManager.query(
+      `
+        INSERT INTO core."objectPermission" (
+          id, "roleId", "objectMetadataId",
+          "canReadObjectRecords", "canUpdateObjectRecords",
+          "canSoftDeleteObjectRecords", "canDestroyObjectRecords",
+          "workspaceId", "universalIdentifier", "applicationId"
+        )
+        VALUES (
+          $1, $2, $3,
+          true, true,
+          false, false,
+          $4, $5, $6
+        )
+      `,
+      [
+        roleIds.objectPermissionId,
+        roleId,
+        candidateObjectMetadataId,
+        workspaceId,
+        roleIds.objectPermissionUniversalIdentifier,
+        applicationId,
+      ],
+    );
+  }
+
+  const existingRoleTargets = (await entityManager.query(
+    `
+      SELECT id FROM core."roleTarget"
+      WHERE "workspaceId" = $1 AND "agentId" = $2
+      LIMIT 1
+    `,
+    [workspaceId, replyAgentId],
+  )) as Array<{ id: string }>;
+
+  if (existingRoleTargets[0]?.id) {
+    await entityManager.query(
+      `
+        UPDATE core."roleTarget"
+        SET "roleId" = $2
+        WHERE id = $1
+      `,
+      [existingRoleTargets[0].id, roleId],
+    );
+  } else {
+    await entityManager.query(
+      `
+        INSERT INTO core."roleTarget" (
+          id, "roleId", "agentId", "userWorkspaceId", "apiKeyId",
+          "workspaceId", "universalIdentifier", "applicationId"
+        )
+        VALUES (
+          $1, $2, $3, NULL, NULL,
+          $4, $5, $6
+        )
+      `,
+      [
+        roleIds.roleTargetId,
+        roleId,
+        replyAgentId,
+        workspaceId,
+        roleIds.roleTargetUniversalIdentifier,
+        applicationId,
+      ],
+    );
+  }
 };
 
 const resolveWorkspaceTableName = async ({
@@ -535,6 +771,13 @@ export const prefillOutreachWorkflows = async ({
     applicationId,
   });
 
+  await upsertReplyAgentCandidateRole({
+    entityManager,
+    workspaceId,
+    applicationId,
+    replyAgentId: agentIds.reply,
+  });
+
   const candidateIdFieldId = await loadFieldMetadataId({
     entityManager,
     workspaceId,
@@ -605,7 +848,9 @@ export const prefillOutreachWorkflows = async ({
     replacements[token] = lfIds[idKey as keyof typeof lfIds];
   }
 
-  const deactivatedNames = new Set<string>(OUTREACH_WORKFLOW_NAMES_TO_DEACTIVATE);
+  const deactivatedNames = new Set<string>(
+    OUTREACH_WORKFLOW_NAMES_TO_DEACTIVATE,
+  );
   const activeGraphTemplates = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.filter(
     (graph) => !deactivatedNames.has(graph.name),
   );

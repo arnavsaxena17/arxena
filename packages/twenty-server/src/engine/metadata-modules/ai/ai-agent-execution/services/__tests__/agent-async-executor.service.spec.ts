@@ -155,7 +155,18 @@ describe('AgentAsyncExecutorService — workflow agent role-scoped tool resoluti
         rolePermissionConfig: { intersectionOf: [agentRoleId] },
         workspaceId,
       }),
-      expect.objectContaining({ wrapWithErrorContext: false }),
+      expect.objectContaining({
+        wrapWithErrorContext: false,
+        excludeTools: expect.arrayContaining([
+          'extract_json_paths',
+          'search_output',
+          'search_help_center',
+          'navigate_app',
+          'highlight_org_chart',
+          'upsert_outreach_target_companies',
+          'upsert_outreach_target_people',
+        ]),
+      }),
     );
   });
 

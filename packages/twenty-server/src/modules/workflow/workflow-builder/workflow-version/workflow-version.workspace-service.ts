@@ -13,8 +13,13 @@ import { WithLock } from 'src/engine/core-modules/cache-lock/with-lock.decorator
 import { RecordPositionService } from 'src/engine/core-modules/record-position/services/record-position.service';
 import { type WorkflowStepPositionUpdateInput } from 'src/engine/core-modules/workflow/dtos/update-workflow-step-position-update.input';
 import { WorkflowVersionCoreSyncService } from 'src/engine/core-modules/workflow/services/workflow-version-core-sync.service';
+import { buildFieldByObjectIdAndNameKey } from 'src/engine/metadata-modules/flat-field-metadata/utils/build-field-by-object-id-and-name-key.util';
+import { buildFieldIdByNameMaps } from 'src/engine/metadata-modules/flat-field-metadata/utils/build-field-id-by-name-maps.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
+import { SEEDED_OUTREACH_WORKFLOW } from 'src/engine/workspace-manager/standard-objects-prefill-data/constants/seeded-outreach-workflow-names.const';
+import { type OutreachSequencerGraphOptions } from 'src/engine/workspace-manager/standard-objects-prefill-data/data/outreach-workflow-graphs';
+import { buildSubstitutedCandidateSequencerGraph } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/build-substituted-candidate-sequencer-graph.util';
 import {
   WorkflowVersionStepException,
   WorkflowVersionStepExceptionCode,
@@ -38,6 +43,7 @@ import {
   type WorkflowAction,
   type WorkflowIteratorAction,
 } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
+import { type WorkflowTrigger } from 'src/modules/workflow/workflow-trigger/types/workflow-trigger.type';
 
 @Injectable()
 export class WorkflowVersionWorkspaceService {
@@ -488,5 +494,201 @@ export class WorkflowVersionWorkspaceService {
       positions,
       workspaceId,
     });
+  }
+
+  @WithLock('workflowId')
+  async applyOutreachSequencerGraphOptions({
+    workspaceId,
+    workflowId,
+    options,
+  }: {
+    workspaceId: string;
+    workflowId: string;
+    options: OutreachSequencerGraphOptions;
+  }) {
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const workflowRepository =
+          await this.globalWorkspaceOrmManager.getRepository(
+            workspaceId,
+            'workflow',
+            { shouldBypassPermissionChecks: true },
+          );
+        const workflowVersionRepository =
+          await this.globalWorkspaceOrmManager.getRepository<WorkflowVersionWorkspaceEntity>(
+            workspaceId,
+            'workflowVersion',
+            { shouldBypassPermissionChecks: true },
+          );
+
+        const workflow = await workflowRepository.findOne({
+          where: { id: workflowId },
+        });
+
+        if (!isDefined(workflow)) {
+          throw new WorkflowVersionStepException(
+            'Workflow not found',
+            WorkflowVersionStepExceptionCode.NOT_FOUND,
+          );
+        }
+
+        if (
+          workflow.name !== SEEDED_OUTREACH_WORKFLOW.candidateSequencer.name
+        ) {
+          throw new WorkflowVersionStepException(
+            'Edit Workflow options are only available for Outreach — Candidate Sequencer',
+            WorkflowVersionStepExceptionCode.INVALID_REQUEST,
+          );
+        }
+
+        const existingDraftVersion = await workflowVersionRepository.findOne({
+          where: {
+            workflowId,
+            status: WorkflowVersionStatus.DRAFT,
+          },
+        });
+
+        const { flatFieldMetadataMaps, objectIdByNameSingular } =
+          await this.workflowCommonWorkspaceService.getFlatEntityMaps(
+            workspaceId,
+          );
+        const { fieldIdByObjectIdAndName } = buildFieldIdByNameMaps(
+          flatFieldMetadataMaps,
+        );
+
+        const resolveFieldId = (
+          objectName: string,
+          fieldNames: string[],
+        ): string => {
+          const objectMetadataId = objectIdByNameSingular[objectName];
+
+          if (!isDefined(objectMetadataId)) {
+            throw new WorkflowVersionStepException(
+              `Object "${objectName}" not found`,
+              WorkflowVersionStepExceptionCode.NOT_FOUND,
+            );
+          }
+
+          for (const fieldName of fieldNames) {
+            const fieldMetadataId = fieldIdByObjectIdAndName.get(
+              buildFieldByObjectIdAndNameKey(objectMetadataId, fieldName),
+            );
+
+            if (isDefined(fieldMetadataId)) {
+              return fieldMetadataId;
+            }
+          }
+
+          throw new WorkflowVersionStepException(
+            `Field ${objectName}.${fieldNames.join('|')} not found`,
+            WorkflowVersionStepExceptionCode.NOT_FOUND,
+          );
+        };
+
+        const { trigger, steps } = buildSubstitutedCandidateSequencerGraph({
+          workspaceId,
+          fieldMetadataIds: {
+            candidateId: resolveFieldId('candidate', ['id']),
+            outreachSequenceStage: resolveFieldId('candidate', [
+              'outreachSequenceStage',
+            ]),
+            jobCompanyName: resolveFieldId('candidate', ['jobCompanyName']),
+            projectId: resolveFieldId('candidate', ['projectId', 'project']),
+            createdAt: resolveFieldId('candidate', ['createdAt']),
+            chatCandidateId: resolveFieldId('chatMessage', [
+              'candidateId',
+              'candidate',
+            ]),
+            chatCreatedAt: resolveFieldId('chatMessage', ['createdAt']),
+          },
+          options,
+        });
+
+        const newSteps = steps as WorkflowAction[];
+        const newTrigger = trigger as WorkflowTrigger;
+
+        if (isDefined(existingDraftVersion)) {
+          assertWorkflowVersionIsDraft(existingDraftVersion);
+
+          await this.workflowVersionCoreSyncService.writeWorkflowVersionAndMirror(
+            workspaceId,
+            async (scopedRepository, entityManager) => {
+              await scopedRepository.update(
+                existingDraftVersion.id,
+                {
+                  steps: newSteps,
+                  trigger: newTrigger,
+                },
+                undefined,
+                entityManager,
+              );
+
+              return existingDraftVersion.id;
+            },
+          );
+
+          return {
+            ...existingDraftVersion,
+            name: existingDraftVersion.name ?? '',
+            steps: newSteps,
+            trigger: newTrigger,
+          };
+        }
+
+        const workflowVersionsCount = await workflowVersionRepository.count({
+          where: { workflowId },
+        });
+
+        const position = await this.recordPositionService.buildRecordPosition({
+          value: 'first',
+          objectMetadata: {
+            isCustom: false,
+            nameSingular: 'workflowVersion',
+          },
+          workspaceId,
+        });
+
+        let draftWorkflowVersion: WorkflowVersionWorkspaceEntity | undefined;
+
+        await this.workflowVersionCoreSyncService.writeWorkflowVersionAndMirror(
+          workspaceId,
+          async (scopedRepository, entityManager) => {
+            const insertResult = await scopedRepository.insert(
+              {
+                workflowId,
+                name: `v${workflowVersionsCount + 1}`,
+                status: WorkflowVersionStatus.DRAFT,
+                steps: newSteps,
+                trigger: newTrigger,
+                position,
+              },
+              entityManager,
+            );
+
+            draftWorkflowVersion = insertResult
+              .generatedMaps[0] as WorkflowVersionWorkspaceEntity;
+
+            return draftWorkflowVersion.id;
+          },
+        );
+
+        if (!isDefined(draftWorkflowVersion)) {
+          throw new WorkflowVersionStepException(
+            'Failed to create draft workflow version',
+            WorkflowVersionStepExceptionCode.NOT_FOUND,
+          );
+        }
+
+        return {
+          ...draftWorkflowVersion,
+          name: draftWorkflowVersion.name ?? '',
+          steps: newSteps,
+          trigger: newTrigger,
+        };
+      },
+      authContext,
+    );
   }
 }

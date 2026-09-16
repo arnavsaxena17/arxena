@@ -25,16 +25,26 @@ describe('LinkedInSearchTransformerService Unipile Sales Nav fields', () => {
     summary:
       'Director with 20+ years leading strategic change across FTSE 100 organisations',
     premium: false,
+    pending_invitation: true,
+    recent_posts_count: 2,
+    shared_connections_count: 3,
+    recently_hired: true,
+    last_outreach_activity: {
+      type: 'SEND_INVITATION',
+      performed_at: '2026-09-15T11:17:53.890Z',
+    },
     current_positions: [
       {
         company: 'British Airways',
         company_id: '2962',
+        company_url: 'https://www.linkedin.com/company/2962',
         description: 'Leading enterprise-wide product and platform delivery',
         location: 'West Drayton, England, United Kingdom',
         industry: ['Airlines and Aviation'],
         role: 'Director of Customer & Commercial Technology',
         tenure_at_company: { years: 4, months: 4 },
         tenure_at_role: { years: 4, months: 4 },
+        skills: [{ name: 'Product Strategy', endorsement_count: 12 }],
         start: { month: 6, year: 2022 },
       },
     ],
@@ -64,6 +74,35 @@ describe('LinkedInSearchTransformerService Unipile Sales Nav fields', () => {
     expect(profile.jobCompanyId).toBe('2962');
     expect(profile.linkedinSpecificData?.isPremium).toBe(false);
     expect(profile.linkedinSpecificData?.networkDistance).toBe('DISTANCE_3');
+    expect(profile.linkedinSpecificData?.pendingInvitation).toBe(true);
+    expect(profile.linkedinSpecificData?.recentPostsCount).toBe(2);
+    expect(profile.linkedinSpecificData?.sharedConnectionsCount).toBe(3);
+    expect(profile.linkedinSpecificData?.recentlyHired).toBe(true);
+    expect(profile.linkedinSpecificData?.salesNavigatorProfileUrl).toBe(
+      sampleHit.profile_url,
+    );
+    expect(profile.linkedinSpecificData?.lastOutreachActivity).toEqual({
+      type: 'SEND_INVITATION',
+      performed_at: '2026-09-15T11:17:53.890Z',
+    });
+    expect((profile as { pendingInvitation?: boolean }).pendingInvitation).toBe(
+      true,
+    );
+    expect((profile as { recentPostsCount?: number }).recentPostsCount).toBe(2);
+    expect(
+      (profile as { sharedConnectionsCount?: number }).sharedConnectionsCount,
+    ).toBe(3);
+    expect((profile as { recentlyHired?: boolean }).recentlyHired).toBe(true);
+    expect(
+      (profile as { salesNavigatorProfileUrl?: string })
+        .salesNavigatorProfileUrl,
+    ).toBe(sampleHit.profile_url);
+    expect(profile.experience[0]?.companyUrl).toBe(
+      'https://www.linkedin.com/company/2962',
+    );
+    expect(profile.experience[0]?.skills).toEqual([
+      { name: 'Product Strategy', endorsement_count: 12 },
+    ]);
     expect(profile.linkedinSpecificData?.profilePictureUrlLarge).toBe(
       'https://media.licdn.com/large.jpg',
     );

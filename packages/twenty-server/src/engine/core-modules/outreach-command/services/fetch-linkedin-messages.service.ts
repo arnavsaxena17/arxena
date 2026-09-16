@@ -18,6 +18,7 @@ import {
   type LinkedinMessagingApi,
 } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-attendee-id.util';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
+import { summarizeFetchedLinkedinMessages } from 'src/engine/core-modules/outreach-command/utils/summarize-fetched-linkedin-messages.util';
 import { OutreachMessagePersistService } from 'src/engine/core-modules/outreach-command/services/outreach-message-persist.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
@@ -116,6 +117,8 @@ export class FetchLinkedinMessagesService {
     attendeeId: string;
     total: number;
     messages: FetchLinkedinMessageItem[];
+    hasInboundReply: boolean;
+    inboundCount: number;
     error?: string;
   }> {
     // temporary: `&& false` forces real Unipile; send/connect stay mock-gated
@@ -153,6 +156,7 @@ export class FetchLinkedinMessagesService {
         attendeeId: identifier,
         total: transcript.messages.length,
         messages: transcript.messages,
+        ...summarizeFetchedLinkedinMessages(transcript.messages),
         error: '',
       };
     }
@@ -229,6 +233,7 @@ export class FetchLinkedinMessagesService {
       attendeeId: '',
       total: 0,
       messages: [] as FetchLinkedinMessageItem[],
+      ...summarizeFetchedLinkedinMessages([]),
     };
 
     if (
@@ -276,6 +281,7 @@ export class FetchLinkedinMessagesService {
           attendeeId,
           total: transcript.messages.length,
           messages: transcript.messages,
+          ...summarizeFetchedLinkedinMessages(transcript.messages),
           error: '',
         };
       }
@@ -374,6 +380,7 @@ export class FetchLinkedinMessagesService {
         attendeeId,
         total: messages.length,
         messages,
+        ...summarizeFetchedLinkedinMessages(messages),
         error: '',
       };
     } catch (error) {

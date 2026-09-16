@@ -1,4 +1,5 @@
 import { getOutputSchemaFromValue } from 'twenty-shared/logic-function';
+import { isDefined } from 'twenty-shared/utils';
 
 export const OUTREACH_WF_ERROR_HANDLING = {
   retryOnFailure: { value: false },
@@ -87,6 +88,12 @@ export const OUTREACH_WF_AI_REPLY_OUTPUT = {
     isLeaf: true,
     type: 'string',
     label: 'referralMessage',
+    value: '',
+  },
+  referralCandidateId: {
+    isLeaf: true,
+    type: 'string',
+    label: 'referralCandidateId',
     value: '',
   },
 };
@@ -582,6 +589,7 @@ export const gtmWfMultiIfElseStep = ({
 export const OUTREACH_POST_REPLY_EMAIL_SUBJECT = 'Quick follow-up';
 
 // EMAIL → WhatsApp → LinkedIn default for preferred / last-inbound channel.
+// Omit whatsappBranch to collapse to EMAIL → LinkedIn.
 export const gtmWfPreferredChannelRouterStep = ({
   id,
   name,
@@ -599,7 +607,7 @@ export const gtmWfPreferredChannelRouterStep = ({
     filterId: string;
     nextStepIds: string[];
   };
-  whatsappBranch: {
+  whatsappBranch?: {
     id: string;
     filterGroupId: string;
     filterId: string;
@@ -621,13 +629,17 @@ export const gtmWfPreferredChannelRouterStep = ({
         type: 'TEXT',
         operand: 'CONTAINS',
       },
-      {
-        ...whatsappBranch,
-        stepOutputKey: channelStepOutputKey,
-        value: 'WHATSAPP',
-        type: 'TEXT',
-        operand: 'CONTAINS',
-      },
+      ...(isDefined(whatsappBranch)
+        ? [
+            {
+              ...whatsappBranch,
+              stepOutputKey: channelStepOutputKey,
+              value: 'WHATSAPP',
+              type: 'TEXT' as const,
+              operand: 'CONTAINS' as const,
+            },
+          ]
+        : []),
       linkedinBranch,
     ],
   });
@@ -944,15 +956,22 @@ export const gtmWfDatabaseEventTrigger = ({
   nextStepIds,
 });
 
-// Stages a candidate may enter the sequencer on. Disjoint from every stage the
-// sequencer itself writes (CONNECTION_SENT, DEFERRED, EMAIL_SENT, FAILED_ENRICH,
-// WAITING_REPLY, FAILED_NO_REPLY), so a create-or-update trigger cannot wake on
-// its own stamps.
+// Stages a candidate may enter the sequencer on. Disjoint from stamps the
+// reply agent / UPDATE_RECORD nodes write except MEETING_BOOKED, which
+// intentionally re-enters the meeting-booked branch after calendar create.
+// Safe non-entry stamps: CONNECTION_SENT, DEFERRED, EMAIL_SENT, FAILED_ENRICH,
+// WAITING_REPLY, FAILED_NO_REPLY.
 export const OUTREACH_WF_ENTRY_STAGES = [
   'QUEUED',
   'CONNECTION_ACCEPTED',
   'REPLIED',
   'MEETING_BOOKED',
+] as const;
+
+export const OUTREACH_WF_ENTRY_STAGES_WITHOUT_MEETING_BOOKED = [
+  'QUEUED',
+  'CONNECTION_ACCEPTED',
+  'REPLIED',
 ] as const;
 
 const OUTREACH_WF_ENTRY_STAGE_FILTER_GROUP_ID =
@@ -962,7 +981,11 @@ const OUTREACH_WF_ENTRY_STAGE_FILTER_ID =
 
 // Evaluated against the event payload before a run is created, so noise stamps
 // never enqueue a throwaway run.
-export const gtmWfEntryStageTriggerFilter = () => ({
+export const gtmWfEntryStageTriggerFilter = ({
+  includeMeetingBooked = true,
+}: {
+  includeMeetingBooked?: boolean;
+} = {}) => ({
   stepFilterGroups: [
     { id: OUTREACH_WF_ENTRY_STAGE_FILTER_GROUP_ID, logicalOperator: 'AND' },
   ],
@@ -970,7 +993,11 @@ export const gtmWfEntryStageTriggerFilter = () => ({
     {
       id: OUTREACH_WF_ENTRY_STAGE_FILTER_ID,
       type: 'SELECT',
-      value: JSON.stringify(OUTREACH_WF_ENTRY_STAGES),
+      value: JSON.stringify(
+        includeMeetingBooked
+          ? OUTREACH_WF_ENTRY_STAGES
+          : OUTREACH_WF_ENTRY_STAGES_WITHOUT_MEETING_BOOKED,
+      ),
       operand: 'IS',
       stepOutputKey: gtmWfTriggerAfter('outreachSequenceStage'),
       stepFilterGroupId: OUTREACH_WF_ENTRY_STAGE_FILTER_GROUP_ID,

@@ -1,5 +1,10 @@
 // Re-export shared types
-import type { AiFiltersResponse, LinkedInSearchCategory, LinkedInSearchType, SearchAiFilterField } from 'twenty-shared/types';
+import type {
+  AiFiltersResponse,
+  LinkedInSearchCategory,
+  LinkedInSearchType,
+  SearchAiFilterField,
+} from 'twenty-shared/types';
 
 export type { AiFiltersResponse, LinkedInSearchCategory, LinkedInSearchType };
 // Re-export with alias for backward compatibility
@@ -45,7 +50,15 @@ export type ClassicJobsSearchParameters = BaseLinkedInSearchParameters & {
   seniority?: string[];
   function?: string[];
   role?: string[];
-  job_type?: ('full_time' | 'part_time' | 'contract' | 'temporary' | 'volunteer' | 'internship' | 'other')[];
+  job_type?: (
+    | 'full_time'
+    | 'part_time'
+    | 'contract'
+    | 'temporary'
+    | 'volunteer'
+    | 'internship'
+    | 'other'
+  )[];
   company?: string[];
   presence?: ('on_site' | 'hybrid' | 'remote')[];
   easy_apply?: boolean;
@@ -62,142 +75,211 @@ export type ClassicJobsSearchParameters = BaseLinkedInSearchParameters & {
 };
 
 // Sales Navigator People Search Parameters
-export type SalesNavigatorPeopleSearchParameters = BaseLinkedInSearchParameters & {
-  last_viewed_at?: number;
-  saved_search_id?: string;
-  recent_search_id?: string;
-  location?: {
-    include?: string[];
-    exclude?: string[];
+export type SalesNavigatorPeopleSearchParameters =
+  BaseLinkedInSearchParameters & {
+    last_viewed_at?: number;
+    saved_search_id?: string;
+    recent_search_id?: string;
+    location?: {
+      include?: string[];
+      exclude?: string[];
+    };
+    location_by_postal_code?: {
+      include?: string[];
+      exclude?: string[];
+      within_area?: number;
+    };
+    industry?: {
+      include?: string[];
+      exclude?: string[];
+    };
+    first_name?: string;
+    last_name?: string;
+    tenure?: Array<{ min?: number; max?: number }>;
+    groups?: string[];
+    school?: {
+      include?: string[];
+      exclude?: string[];
+    };
+    profile_language?: string[];
+    company?: {
+      include?: string[];
+      exclude?: string[];
+    };
+    company_headcount?: Array<{ min?: number; max?: number }>;
+    company_type?: (
+      | 'public_company'
+      | 'privately_held'
+      | 'non_profit'
+      | 'educational_institution'
+      | 'partnership'
+      | 'self_employed'
+      | 'self_owned'
+      | 'government_agency'
+    )[];
+    company_location?: {
+      include?: string[];
+      exclude?: string[];
+    };
+    tenure_at_company?: Array<{ min?: number; max?: number }>;
+    past_company?: {
+      include?: string[];
+      exclude?: string[];
+    };
+    function?: {
+      include?: string[];
+      exclude?: string[];
+    };
+    role?: {
+      include?: string[];
+      exclude?: string[];
+    };
+    tenure_at_role?: Array<{ min?: number; max?: number }>;
+    seniority?: {
+      include?: (
+        | 'owner/partner'
+        | 'cxo'
+        | 'vice_president'
+        | 'director'
+        | 'experienced_manager'
+        | 'entry_level_manager'
+        | 'strategic'
+        | 'senior'
+        | 'entry_level'
+        | 'in_training'
+      )[];
+      exclude?: (
+        | 'owner/partner'
+        | 'cxo'
+        | 'vice_president'
+        | 'director'
+        | 'experienced_manager'
+        | 'entry_level_manager'
+        | 'strategic'
+        | 'senior'
+        | 'entry_level'
+        | 'in_training'
+      )[];
+    };
+    past_role?: {
+      include?: string[];
+      exclude?: string[];
+    };
+    following_your_company?: boolean;
+    viewed_your_profile_recently?: boolean;
+    network_distance?: (1 | 2 | 3 | 'GROUP')[];
+    connections_of?: string[];
+    past_colleague?: boolean;
+    shared_experiences?: boolean;
+    changed_jobs?: boolean;
+    posted_on_linkedin?: boolean;
+    mentionned_in_news?: boolean;
+    persona?: string[];
+    account_lists?: {
+      include?: string[];
+      exclude?: string[];
+    };
+    lead_lists?: {
+      include?: string[];
+      exclude?: string[];
+    };
+    viewed_profile_recently?: boolean;
+    messaged_recently?: boolean;
+    include_saved_leads?: boolean;
+    include_saved_accounts?: boolean;
   };
-  location_by_postal_code?: {
-    include?: string[];
-    exclude?: string[];
-    within_area?: number;
-  };
-  industry?: {
-    include?: string[];
-    exclude?: string[];
-  };
-  first_name?: string;
-  last_name?: string;
-  tenure?: Array<{ min?: number; max?: number }>;
-  groups?: string[];
-  school?: {
-    include?: string[];
-    exclude?: string[];
-  };
-  profile_language?: string[];
-  company?: {
-    include?: string[];
-    exclude?: string[];
-  };
-  company_headcount?: Array<{ min?: number; max?: number }>;
-  company_type?: ('public_company' | 'privately_held' | 'non_profit' | 'educational_institution' | 'partnership' | 'self_employed' | 'self_owned' | 'government_agency')[];
-  company_location?: {
-    include?: string[];
-    exclude?: string[];
-  };
-  tenure_at_company?: Array<{ min?: number; max?: number }>;
-  past_company?: {
-    include?: string[];
-    exclude?: string[];
-  };
-  function?: {
-    include?: string[];
-    exclude?: string[];
-  };
-  role?: {
-    include?: string[];
-    exclude?: string[];
-  };
-  tenure_at_role?: Array<{ min?: number; max?: number }>;
-  seniority?: {
-    include?: ('owner/partner' | 'cxo' | 'vice_president' | 'director' | 'experienced_manager' | 'entry_level_manager' | 'strategic' | 'senior' | 'entry_level' | 'in_training')[];
-    exclude?: ('owner/partner' | 'cxo' | 'vice_president' | 'director' | 'experienced_manager' | 'entry_level_manager' | 'strategic' | 'senior' | 'entry_level' | 'in_training')[];
-  };
-  past_role?: {
-    include?: string[];
-    exclude?: string[];
-  };
-  following_your_company?: boolean;
-  viewed_your_profile_recently?: boolean;
-  network_distance?: (1 | 2 | 3 | 'GROUP')[];
-  connections_of?: string[];
-  past_colleague?: boolean;
-  shared_experiences?: boolean;
-  changed_jobs?: boolean;
-  posted_on_linkedin?: boolean;
-  mentionned_in_news?: boolean;
-  persona?: string[];
-  account_lists?: {
-    include?: string[];
-    exclude?: string[];
-  };
-  lead_lists?: {
-    include?: string[];
-    exclude?: string[];
-  };
-  viewed_profile_recently?: boolean;
-  messaged_recently?: boolean;
-  include_saved_leads?: boolean;
-  include_saved_accounts?: boolean;
-};
 
 // Sales Navigator Companies Search Parameters
-export type SalesNavigatorCompaniesSearchParameters = BaseLinkedInSearchParameters & {
-  last_viewed_at?: number;
-  saved_search_id?: string;
-  recent_search_id?: string;
-  industry?: {
-    include?: string[];
-    exclude?: string[];
+export type SalesNavigatorCompaniesSearchParameters =
+  BaseLinkedInSearchParameters & {
+    last_viewed_at?: number;
+    saved_search_id?: string;
+    recent_search_id?: string;
+    industry?: {
+      include?: string[];
+      exclude?: string[];
+    };
+    location?: {
+      include?: string[];
+      exclude?: string[];
+    };
+    location_by_postal_code?: {
+      include?: string[];
+      exclude?: string[];
+      within_area?: number;
+    };
+    has_job_offers?: boolean;
+    headcount?: Array<{ min?: number; max?: number }>;
+    headcount_growth?: {
+      min?: number;
+      max?: number;
+    };
+    department_headcount?: {
+      department?: string[];
+      min?: number;
+      max?: number;
+    };
+    department_headcount_growth?: {
+      department?: string[];
+      min?: number;
+      max?: number;
+    };
+    network_distance?: (1 | 2 | 3)[];
+    annual_revenue?: {
+      currency: string;
+      min?: number;
+      max?: number;
+    };
+    followers_count?: Array<{ min?: number; max?: number }>;
+    fortune?: Array<{ min?: number; max?: number }>;
+    technologies?: string[];
+    recent_activities?: ('senior_leadership_changes' | 'funding_events')[];
+    saved_accounts?: string[];
+    account_lists?: {
+      include?: string[];
+      exclude?: string[];
+    };
   };
-  location?: {
-    include?: string[];
-    exclude?: string[];
-  };
-  location_by_postal_code?: {
-    include?: string[];
-    exclude?: string[];
-    within_area?: number;
-  };
-  has_job_offers?: boolean;
-  headcount?: Array<{ min?: number; max?: number }>;
-  headcount_growth?: {
-    min?: number;
-    max?: number;
-  };
-  department_headcount?: {
-    department?: string[];
-    min?: number;
-    max?: number;
-  };
-  department_headcount_growth?: {
-    department?: string[];
-    min?: number;
-    max?: number;
-  };
-  network_distance?: (1 | 2 | 3)[];
-  annual_revenue?: {
-    currency: string;
-    min?: number;
-    max?: number;
-  };
-  followers_count?: Array<{ min?: number; max?: number }>;
-  fortune?: Array<{ min?: number; max?: number }>;
-  technologies?: string[];
-  recent_activities?: ('senior_leadership_changes' | 'funding_events')[];
-  saved_accounts?: string[];
-  account_lists?: {
-    include?: string[];
-    exclude?: string[];
-  };
-};
 
 // LinkedIn Recruiter People Search Parameters
 export type RecruiterPeopleSearchParameters = BaseLinkedInSearchParameters & {
-  locale?: ('arabic' | 'bangla' | 'czech' | 'danish' | 'german' | 'greek' | 'english' | 'spanish' | 'persian' | 'finnish' | 'french' | 'hindi' | 'hungarian' | 'indonesian' | 'italian' | 'hebrew' | 'japanese' | 'korean' | 'marathi' | 'malay' | 'dutch' | 'norwegian' | 'punjabi' | 'polish' | 'portuguese' | 'romanian' | 'russian' | 'swedish' | 'telugu' | 'thai' | 'tagalog' | 'turkish' | 'ukrainian' | 'vietnamese' | 'chinese_simplified' | 'chinese_traditional');
+  locale?:
+    | 'arabic'
+    | 'bangla'
+    | 'czech'
+    | 'danish'
+    | 'german'
+    | 'greek'
+    | 'english'
+    | 'spanish'
+    | 'persian'
+    | 'finnish'
+    | 'french'
+    | 'hindi'
+    | 'hungarian'
+    | 'indonesian'
+    | 'italian'
+    | 'hebrew'
+    | 'japanese'
+    | 'korean'
+    | 'marathi'
+    | 'malay'
+    | 'dutch'
+    | 'norwegian'
+    | 'punjabi'
+    | 'polish'
+    | 'portuguese'
+    | 'romanian'
+    | 'russian'
+    | 'swedish'
+    | 'telugu'
+    | 'thai'
+    | 'tagalog'
+    | 'turkish'
+    | 'ukrainian'
+    | 'vietnamese'
+    | 'chinese_simplified'
+    | 'chinese_traditional';
   saved_search?: {
     id: string;
     project_id: string;
@@ -219,7 +301,12 @@ export type RecruiterPeopleSearchParameters = BaseLinkedInSearchParameters & {
     is_selection?: boolean;
     keywords?: string;
     priority?: 'CAN_HAVE' | 'MUST_HAVE' | 'DOESNT_HAVE';
-    scope?: 'CURRENT_OR_PAST' | 'CURRENT' | 'PAST' | 'PAST_NOT_CURRENT' | 'OPEN_TO_WORK';
+    scope?:
+      | 'CURRENT_OR_PAST'
+      | 'CURRENT'
+      | 'PAST'
+      | 'PAST_NOT_CURRENT'
+      | 'OPEN_TO_WORK';
   }>;
   skills?: Array<{
     id?: string;
@@ -256,22 +343,56 @@ export type RecruiterPeopleSearchParameters = BaseLinkedInSearchParameters & {
     max?: number;
   };
   seniority?: {
-    include?: ('owner' | 'partner' | 'cxo' | 'vp' | 'director' | 'manager' | 'senior' | 'entry' | 'training' | 'unpaid')[];
-    exclude?: ('owner' | 'partner' | 'cxo' | 'vp' | 'director' | 'manager' | 'senior' | 'entry' | 'training' | 'unpaid')[];
+    include?: (
+      | 'owner'
+      | 'partner'
+      | 'cxo'
+      | 'vp'
+      | 'director'
+      | 'manager'
+      | 'senior'
+      | 'entry'
+      | 'training'
+      | 'unpaid'
+    )[];
+    exclude?: (
+      | 'owner'
+      | 'partner'
+      | 'cxo'
+      | 'vp'
+      | 'director'
+      | 'manager'
+      | 'senior'
+      | 'entry'
+      | 'training'
+      | 'unpaid'
+    )[];
   };
   function?: string[];
   network_distance?: (1 | 2 | 3 | 'GROUP')[];
   spoken_languages?: Array<{
     language: string;
     priority?: 'CAN_HAVE' | 'MUST_HAVE' | 'DOESNT_HAVE';
-    scope?: 'ELEMENTARY' | 'LIMITED_WORKING' | 'PROFESSIONAL_WORKING' | 'FULL_PROFESSIONAL' | 'NATIVE_OR_BILINGUAL';
+    scope?:
+      | 'ELEMENTARY'
+      | 'LIMITED_WORKING'
+      | 'PROFESSIONAL_WORKING'
+      | 'FULL_PROFESSIONAL'
+      | 'NATIVE_OR_BILINGUAL';
   }>;
   hide_previously_viewed?: {
     timespan: number;
   };
   profile_language?: string[];
   recently_joined?: Array<{ min?: number; max?: number }>;
-  spotlights?: ('OPEN_TO_WORK' | 'ACTIVE_TALENT' | 'REDISCOVERED_CANDIDATES' | 'INTERNAL_CANDIDATES' | 'INTERESTED_IN_YOUR_COMPANY' | 'HAVE_COMPANY_CONNECTIONS')[];
+  spotlights?: (
+    | 'OPEN_TO_WORK'
+    | 'ACTIVE_TALENT'
+    | 'REDISCOVERED_CANDIDATES'
+    | 'INTERNAL_CANDIDATES'
+    | 'INTERESTED_IN_YOUR_COMPANY'
+    | 'HAVE_COMPANY_CONNECTIONS'
+  )[];
   first_name?: string[];
   last_name?: string[];
   has_military_background?: boolean;
@@ -289,7 +410,7 @@ export type RecruiterPeopleSearchParameters = BaseLinkedInSearchParameters & {
 };
 
 // Union type for all search parameters
-export type LinkedInSearchParameters = 
+export type LinkedInSearchParameters =
   | ClassicPeopleSearchParameters
   | ClassicCompaniesSearchParameters
   | ClassicJobsSearchParameters
@@ -325,7 +446,7 @@ export type LinkedInSearchResult = {
   recently_hired?: boolean;
   mentioned_in_the_news?: boolean;
   last_outreach_activity?: {
-    type: 'SEND_MESSAGE' | 'ACCEPT_INVITATION';
+    type: 'SEND_MESSAGE' | 'SEND_INVITATION' | 'ACCEPT_INVITATION';
     performed_at: string;
   };
   current_positions?: Array<{
@@ -414,7 +535,13 @@ export type LinkedInSearchResult = {
   comment_counter?: number;
   repost_counter?: number;
   impressions_counter?: number;
-  user_reacted?: 'LIKE' | 'PRAISE' | 'APPRECIATION' | 'EMPATHY' | 'INTEREST' | 'ENTERTAINMENT';
+  user_reacted?:
+    | 'LIKE'
+    | 'PRAISE'
+    | 'APPRECIATION'
+    | 'EMPATHY'
+    | 'INTEREST'
+    | 'ENTERTAINMENT';
   written_by?: {
     id: string;
     public_identifier: string;
@@ -459,7 +586,13 @@ export type LinkedInSearchResult = {
     mimetype?: string;
     url?: string;
     url_expires_at?: number;
-    type: 'img' | 'video' | 'audio' | 'file' | 'linkedin_post' | 'video_meeting';
+    type:
+      | 'img'
+      | 'video'
+      | 'audio'
+      | 'file'
+      | 'linkedin_post'
+      | 'video_meeting';
     size?: { width: number; height: number };
     sticker?: boolean;
     gif?: boolean;
@@ -578,7 +711,7 @@ export type SearchParametersManagerProps = {
     searchType: LinkedInSearchType,
     searchCategory: LinkedInSearchCategory,
     generatedParameters: any,
-    resolvedParameters: any
+    resolvedParameters: any,
   ) => Promise<void>;
   onSearch?: () => void;
   onClear?: () => void;
@@ -596,10 +729,22 @@ export type ParameterHandlers = {
   handleKeywordsChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleKeywordsInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleNetworkDistanceChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleIndustryChange: (values: string[], display?: Array<{ id: string; title: string }>) => void;
-  handleLocationChange: (values: string[], display?: Array<{ id: string; title: string }>) => void;
-  handleCompanyChange: (values: string[], display?: Array<{ id: string; title: string }>) => void;
-  handleSchoolChange: (values: string[], display?: Array<{ id: string; title: string }>) => void;
+  handleIndustryChange: (
+    values: string[],
+    display?: Array<{ id: string; title: string }>,
+  ) => void;
+  handleLocationChange: (
+    values: string[],
+    display?: Array<{ id: string; title: string }>,
+  ) => void;
+  handleCompanyChange: (
+    values: string[],
+    display?: Array<{ id: string; title: string }>,
+  ) => void;
+  handleSchoolChange: (
+    values: string[],
+    display?: Array<{ id: string; title: string }>,
+  ) => void;
   handleSeniorityChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   handleJobTypeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   handlePresenceChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
@@ -671,8 +816,6 @@ export type DefaultParameters = {
   company_headcount_ranges: any[];
 };
 
-
-
 export interface SearchStrategyNode {
   id: string;
   name: string;
@@ -684,7 +827,11 @@ export interface SearchStrategyNode {
     type: string;
     description: string;
   }>;
-  outputDestination: 'searchParameters' | 'enrichments' | 'filters' | 'intermediate';
+  outputDestination:
+    | 'searchParameters'
+    | 'enrichments'
+    | 'filters'
+    | 'intermediate';
   children: string[];
   parent?: string;
   searchType?: 'classic' | 'sales_navigator' | 'recruiter';
@@ -713,7 +860,12 @@ export interface StrategyExecutionResult {
     modelName: string;
     prompt: string;
     selectedModel: string;
-    fields: Array<{ name: string; type: string; description: string; enumValues?: string[] }>;
+    fields: Array<{
+      name: string;
+      type: string;
+      description: string;
+      enumValues?: string[];
+    }>;
     selectedMetadataFields: string[];
   }>;
   filters: Array<{
@@ -755,12 +907,24 @@ export interface FilterableCandidate {
   [key: string]: any; // Dynamic fields from enrichments or LinkedIn data
 }
 
-
 // Enrichment and Filter types are now imported from twenty-shared
 
 export interface CandidateSearchFilter {
   field: string;
-  type: 'text_search' | 'dropdown_selection' | 'date_range' | 'numeric_range' | 'boolean' | 'multi_select' | 'location' | 'company' | 'industry' | 'seniority' | 'network_distance' | 'experience_range' | 'salary_range';
+  type:
+    | 'text_search'
+    | 'dropdown_selection'
+    | 'date_range'
+    | 'numeric_range'
+    | 'boolean'
+    | 'multi_select'
+    | 'location'
+    | 'company'
+    | 'industry'
+    | 'seniority'
+    | 'network_distance'
+    | 'experience_range'
+    | 'salary_range';
   label: string;
   value?: any;
   values?: any[];
@@ -775,7 +939,20 @@ export interface CandidateSearchFilter {
 // Frontend-specific filter type (not in shared)
 export interface CandidateSearchFilter {
   field: string;
-  type: 'text_search' | 'dropdown_selection' | 'date_range' | 'numeric_range' | 'boolean' | 'multi_select' | 'location' | 'company' | 'industry' | 'seniority' | 'network_distance' | 'experience_range' | 'salary_range';
+  type:
+    | 'text_search'
+    | 'dropdown_selection'
+    | 'date_range'
+    | 'numeric_range'
+    | 'boolean'
+    | 'multi_select'
+    | 'location'
+    | 'company'
+    | 'industry'
+    | 'seniority'
+    | 'network_distance'
+    | 'experience_range'
+    | 'salary_range';
   label: string;
   value?: any;
   values?: any[];
@@ -784,7 +961,6 @@ export interface CandidateSearchFilter {
   options?: string[];
   placeholder?: string;
 }
-
 
 export interface SearchVariation {
   id: string;

@@ -20,19 +20,20 @@ export abstract class BaseDataSourceTransformerService {
   constructor(protected readonly dataProcessingUtils: DataProcessingUtils) {}
   abstract transformToUserProfile(
     candidateData: any,
-    context: TransformationContext
+    context: TransformationContext,
   ): UserProfile;
 
   abstract getDataSourceIdentifier(): string;
   protected createBaseUserProfile(
     candidateData: any,
-    context: TransformationContext
+    context: TransformationContext,
   ): UserProfile {
     // Use existing uniqueStringKey if available, otherwise generate one
-    const uniqueStringKey = candidateData.uniqueStringKey ||
+    const uniqueStringKey =
+      candidateData.uniqueStringKey ||
       this.dataProcessingUtils.generateUniqueStringKey(
         candidateData,
-        context.dataSource
+        context.dataSource,
       );
     const timestamp = new Date().toISOString();
     return {
@@ -74,7 +75,7 @@ export abstract class BaseDataSourceTransformerService {
       experience: [],
       experienceStats: {
         total_years_experience: { years: null, months: null },
-        current_salary: { type: null, ctc: null }
+        current_salary: { type: null, ctc: null },
       },
       education: [],
       interests: [],
@@ -107,7 +108,10 @@ export abstract class BaseDataSourceTransformerService {
       source: context.dataSource,
     } as unknown as UserProfile;
   }
-  protected processNameData(candidateData: any, userProfile: UserProfile): void {
+  protected processNameData(
+    candidateData: any,
+    userProfile: UserProfile,
+  ): void {
     const fullName = this.extractFullName(candidateData);
     const nameInfo = this.dataProcessingUtils.processName(fullName);
     userProfile.names = {
@@ -119,24 +123,35 @@ export abstract class BaseDataSourceTransformerService {
     userProfile.lastName = nameInfo.last_name;
   }
 
-  protected processContactData(candidateData: any, userProfile: UserProfile): void {
-    const emailInput = candidateData.email_address || candidateData['Email ID'] || candidateData.email || candidateData.emailAddress || candidateData.emailId;
+  protected processContactData(
+    candidateData: any,
+    userProfile: UserProfile,
+  ): void {
+    const emailInput =
+      candidateData.email_address ||
+      candidateData['Email ID'] ||
+      candidateData.email ||
+      candidateData.emailAddress ||
+      candidateData.emailId;
     if (emailInput) {
-      const cleanedEmails = this.dataProcessingUtils.cleanEmailAddresses(emailInput);
+      const cleanedEmails =
+        this.dataProcessingUtils.cleanEmailAddresses(emailInput);
       if (cleanedEmails.length > 0) {
         userProfile.emailAddresses = cleanedEmails;
         userProfile.emailAddress = cleanedEmails[0] || '';
       }
     }
-    const phoneInput = candidateData.phone_numbers ||
-                      candidateData['Phone Number'] ||
-                      candidateData.phone ||
-                      candidateData.phoneNumber ||
-                      candidateData.phone_number ||
-                      candidateData.phoneNumberValue;
+    const phoneInput =
+      candidateData.phone_numbers ||
+      candidateData['Phone Number'] ||
+      candidateData.phone ||
+      candidateData.phoneNumber ||
+      candidateData.phone_number ||
+      candidateData.phoneNumberValue;
 
     if (phoneInput) {
-      const cleanedPhones = this.dataProcessingUtils.cleanPhoneNumbers(phoneInput);
+      const cleanedPhones =
+        this.dataProcessingUtils.cleanPhoneNumbers(phoneInput);
       if (cleanedPhones.length > 0) {
         userProfile.phoneNumbers = cleanedPhones;
         userProfile.phoneNumber = cleanedPhones[0] || '';
@@ -144,7 +159,11 @@ export abstract class BaseDataSourceTransformerService {
     }
   }
 
-  protected processProfileData(candidateData: any, userProfile: UserProfile, dataSource: string): void {
+  protected processProfileData(
+    candidateData: any,
+    userProfile: UserProfile,
+    dataSource: string,
+  ): void {
     const profileUrl = candidateData.profileUrl || '';
 
     if (profileUrl) {
@@ -155,36 +174,45 @@ export abstract class BaseDataSourceTransformerService {
   /**
    * Process location information - simplified structure
    */
-  protected processLocationData(candidateData: any, userProfile: UserProfile): void {
-    const locationData = candidateData.location || candidateData.currentLocation || '';
+  protected processLocationData(
+    candidateData: any,
+    userProfile: UserProfile,
+  ): void {
+    const locationData =
+      candidateData.location || candidateData.currentLocation || '';
     const cleanLocation = this.dataProcessingUtils.cleanLocation(locationData);
 
     if (cleanLocation) {
       userProfile.locationName = cleanLocation;
-      userProfile.locations = [{
-        name: cleanLocation,
-        locality: null,
-        region: null,
-        subregion: null,
-        country: null,
-        continent: null,
-        type: 'current',
-        geo: null,
-        postal_code: null,
-        zip_plus_4: null,
-        street_address: null,
-        address_line_2: null,
-        most_recent: true,
-        is_primary: true,
-        last_updated: new Date().toISOString(),
-      }];
+      userProfile.locations = [
+        {
+          name: cleanLocation,
+          locality: null,
+          region: null,
+          subregion: null,
+          country: null,
+          continent: null,
+          type: 'current',
+          geo: null,
+          postal_code: null,
+          zip_plus_4: null,
+          street_address: null,
+          address_line_2: null,
+          most_recent: true,
+          is_primary: true,
+          last_updated: new Date().toISOString(),
+        },
+      ];
     }
   }
 
   /**
    * Process skills information - simplified
    */
-  protected processSkillsData(candidateData: any, userProfile: UserProfile): void {
+  protected processSkillsData(
+    candidateData: any,
+    userProfile: UserProfile,
+  ): void {
     const skillsInput = candidateData.skills || candidateData.keySkills || '';
     if (skillsInput) {
       const skillsArray = this.dataProcessingUtils.extractSkills(skillsInput);
@@ -196,8 +224,12 @@ export abstract class BaseDataSourceTransformerService {
   /**
    * Process experience information
    */
-  protected processExperienceData(candidateData: any, userProfile: UserProfile): void {
-    const experienceData = candidateData.experience || candidateData.workExp || '';
+  protected processExperienceData(
+    candidateData: any,
+    userProfile: UserProfile,
+  ): void {
+    const experienceData =
+      candidateData.experience || candidateData.workExp || '';
 
     if (experienceData && Array.isArray(experienceData)) {
       userProfile.experience = experienceData.map((exp, index) => {
@@ -214,13 +246,22 @@ export abstract class BaseDataSourceTransformerService {
           exp.company_id ||
           (typeof exp.company === 'object' ? exp.company?.id : null) ||
           null;
+        const companyUrl =
+          exp.companyUrl ||
+          exp.company_url ||
+          (typeof exp.company === 'object' ? exp.company?.url : null) ||
+          null;
         const description =
-          exp.description || exp.roleDescription || exp.role_description || null;
+          exp.description ||
+          exp.roleDescription ||
+          exp.role_description ||
+          null;
         const location = exp.location || exp.locationName || null;
         const industry = exp.industry ?? null;
         const tenureAtRole = exp.tenureAtRole || exp.tenure_at_role || null;
         const tenureAtCompany =
           exp.tenureAtCompany || exp.tenure_at_company || null;
+        const skills = Array.isArray(exp.skills) ? exp.skills : null;
 
         return {
           company: {
@@ -228,11 +269,7 @@ export abstract class BaseDataSourceTransformerService {
           },
           title: {
             name:
-              exp.title?.name ||
-              exp.title ||
-              exp.designation ||
-              exp.role ||
-              '',
+              exp.title?.name || exp.title || exp.designation || exp.role || '',
           },
           startDate,
           endDate,
@@ -241,9 +278,11 @@ export abstract class BaseDataSourceTransformerService {
           ...(description ? { description } : {}),
           ...(location ? { location } : {}),
           ...(companyId ? { companyId: String(companyId) } : {}),
+          ...(companyUrl ? { companyUrl: String(companyUrl) } : {}),
           ...(industry ? { industry } : {}),
           ...(tenureAtRole ? { tenureAtRole } : {}),
           ...(tenureAtCompany ? { tenureAtCompany } : {}),
+          ...(skills ? { skills } : {}),
         };
       });
 
@@ -259,7 +298,7 @@ export abstract class BaseDataSourceTransformerService {
   protected inferIsCurrentFromDates(
     startDate: string | null,
     endDate: string | null,
-    index: number
+    index: number,
   ): boolean | undefined {
     if (endDate) {
       return false;
@@ -277,8 +316,12 @@ export abstract class BaseDataSourceTransformerService {
   /**
    * Process education information
    */
-  protected processEducationData(candidateData: any, userProfile: UserProfile): void {
-    const educationData = candidateData.education || candidateData.educationDetails || '';
+  protected processEducationData(
+    candidateData: any,
+    userProfile: UserProfile,
+  ): void {
+    const educationData =
+      candidateData.education || candidateData.educationDetails || '';
 
     if (educationData && Array.isArray(educationData)) {
       userProfile.education = educationData.map((edu, index) => ({
@@ -304,19 +347,25 @@ export abstract class BaseDataSourceTransformerService {
    * Extract full name from various candidate data formats
    */
   protected extractFullName(candidateData: any): string {
-    let fullName = candidateData.name ||
-                   candidateData.jsUserName ||
-                   candidateData.full_name ||
-                   candidateData.fullName || '';
+    let fullName =
+      candidateData.name ||
+      candidateData.jsUserName ||
+      candidateData.full_name ||
+      candidateData.fullName ||
+      '';
     if (!fullName) {
-      const firstName = candidateData['First Name (name)'] ||
-                       candidateData.firstName ||
-                       candidateData.first_name ||
-                       candidateData['First Name'] || '';
-      const lastName = candidateData['Last Name (name)'] ||
-                      candidateData.lastName ||
-                      candidateData.last_name ||
-                      candidateData['Last Name'] || '';
+      const firstName =
+        candidateData['First Name (name)'] ||
+        candidateData.firstName ||
+        candidateData.first_name ||
+        candidateData['First Name'] ||
+        '';
+      const lastName =
+        candidateData['Last Name (name)'] ||
+        candidateData.lastName ||
+        candidateData.last_name ||
+        candidateData['Last Name'] ||
+        '';
 
       // Only construct full name if we have at least one non-empty name component
       if (firstName.trim() || lastName.trim()) {
@@ -333,7 +382,9 @@ export abstract class BaseDataSourceTransformerService {
     if (!profileUrl) return null;
     try {
       const url = new URL(profileUrl);
-      const pathParts = url.pathname.split('/').filter(part => part.length > 0);
+      const pathParts = url.pathname
+        .split('/')
+        .filter((part) => part.length > 0);
       return pathParts[pathParts.length - 1] || null;
     } catch (error) {
       return null;
@@ -356,12 +407,12 @@ export abstract class BaseDataSourceTransformerService {
     userProfile.experienceStats = {
       totalYearsExperience: {
         years: totalYears,
-        months: null
+        months: null,
       },
       currentSalary: {
         type: null,
-        ctc: null
-      }
+        ctc: null,
+      },
     };
 
     userProfile.inferredYearsExperience = totalYears;
@@ -370,14 +421,19 @@ export abstract class BaseDataSourceTransformerService {
   /**
    * Process salary information - simplified
    */
-  protected processSalaryData(candidateData: any, userProfile: UserProfile): void {
-    const salaryData = candidateData.salary ||
-                      candidateData.currentSalary ||
-                      candidateData.annual_salary ||
-                      candidateData.ctc;
+  protected processSalaryData(
+    candidateData: any,
+    userProfile: UserProfile,
+  ): void {
+    const salaryData =
+      candidateData.salary ||
+      candidateData.currentSalary ||
+      candidateData.annual_salary ||
+      candidateData.ctc;
 
     if (salaryData) {
-      const salaryNumber = this.dataProcessingUtils.extractSalaryNumber(salaryData);
+      const salaryNumber =
+        this.dataProcessingUtils.extractSalaryNumber(salaryData);
       userProfile.inferredSalary = salaryNumber || null;
     }
   }
@@ -385,7 +441,11 @@ export abstract class BaseDataSourceTransformerService {
   /**
    * Add event to job process - utility method to reduce code duplication
    */
-  protected addProjectProcessEvent(userProfile: UserProfile, type: string, value: any): void {
+  protected addProjectProcessEvent(
+    userProfile: UserProfile,
+    type: string,
+    value: any,
+  ): void {
     if (value !== null && value !== undefined && value !== '') {
       // Note: UserProfile job_process doesn't have events array, so we'll store in a custom field
       if (!userProfile.jobProcessEvents) {
@@ -403,16 +463,18 @@ export abstract class BaseDataSourceTransformerService {
    * Set basic job information - utility method
    */
   protected setJobInfo(candidateData: any, userProfile: UserProfile): void {
-    const jobTitle = candidateData.jobTitle ||
-                    candidateData.current_designation ||
-                    candidateData.headline ||
-                    candidateData.title;
+    const jobTitle =
+      candidateData.jobTitle ||
+      candidateData.current_designation ||
+      candidateData.headline ||
+      candidateData.title;
 
-    const companyName = candidateData.jobCompanyName ||
-                       candidateData.job_company_name ||
-                       candidateData.company_name ||
-                       candidateData.current_company ||
-                       candidateData.currentCompany;
+    const companyName =
+      candidateData.jobCompanyName ||
+      candidateData.job_company_name ||
+      candidateData.company_name ||
+      candidateData.current_company ||
+      candidateData.currentCompany;
 
     if (jobTitle) {
       userProfile.jobTitle = jobTitle;
@@ -427,14 +489,19 @@ export abstract class BaseDataSourceTransformerService {
   /**
    * Process industry information - utility method
    */
-  protected processIndustryData(candidateData: any, userProfile: UserProfile): void {
+  protected processIndustryData(
+    candidateData: any,
+    userProfile: UserProfile,
+  ): void {
     const industry = candidateData.industry;
     if (industry) {
       userProfile.industry = industry;
-      userProfile.industries = [{
-        name: industry,
-        is_primary: true,
-      }];
+      userProfile.industries = [
+        {
+          name: industry,
+          is_primary: true,
+        },
+      ];
     }
   }
 }

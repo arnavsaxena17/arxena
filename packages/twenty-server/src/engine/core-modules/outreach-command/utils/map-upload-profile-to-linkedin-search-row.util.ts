@@ -92,6 +92,39 @@ export const mapUploadProfileToLinkedinSearchRow = (
     'network_distance',
     'networkDistance',
   ]);
+  const pendingInvitationRaw =
+    person.pending_invitation ?? person.pendingInvitation;
+  const recentPostsCount =
+    typeof person.recent_posts_count === 'number'
+      ? person.recent_posts_count
+      : typeof person.recentPostsCount === 'number'
+        ? person.recentPostsCount
+        : undefined;
+  const sharedConnectionsCount =
+    typeof person.sharedConnectionsCount === 'number'
+      ? person.sharedConnectionsCount
+      : typeof person.shared_connections_count === 'number'
+        ? person.shared_connections_count
+        : undefined;
+  const recentlyHiredRaw = person.recently_hired ?? person.recentlyHired;
+  const salesNavigatorProfileUrl =
+    readString(person, [
+      'salesNavigatorProfileUrl',
+      'sales_navigator_profile_url',
+    ]) ||
+    (() => {
+      const profileUrl = readString(person, ['profile_url', 'profileUrl']);
+
+      return /linkedin\.com\/sales\//i.test(profileUrl) ? profileUrl : '';
+    })();
+  const lastOutreachActivity =
+    person.last_outreach_activity &&
+    typeof person.last_outreach_activity === 'object'
+      ? person.last_outreach_activity
+      : person.lastOutreachActivity &&
+          typeof person.lastOutreachActivity === 'object'
+        ? person.lastOutreachActivity
+        : undefined;
   const premium =
     typeof person.premium === 'boolean'
       ? person.premium
@@ -112,12 +145,6 @@ export const mapUploadProfileToLinkedinSearchRow = (
         : typeof person.follower_count === 'number'
           ? person.follower_count
           : undefined;
-  const sharedConnectionsCount =
-    typeof person.sharedConnectionsCount === 'number'
-      ? person.sharedConnectionsCount
-      : typeof person.shared_connections_count === 'number'
-        ? person.shared_connections_count
-        : undefined;
   const recruitingActivity = Array.isArray(person.recruitingActivity)
     ? person.recruitingActivity
     : Array.isArray(person.recruiting_activity)
@@ -138,7 +165,7 @@ export const mapUploadProfileToLinkedinSearchRow = (
     location,
     linkedinUrl,
     profileUrl: linkedinUrl,
-    profile_url: linkedinUrl,
+    profile_url: salesNavigatorProfileUrl || linkedinUrl,
     public_profile_url: linkedinUrl,
     public_identifier: linkedinProfileId,
     linkedinProfileId,
@@ -150,6 +177,36 @@ export const mapUploadProfileToLinkedinSearchRow = (
       : {}),
     ...(summary ? { summary, linkedinSummary: summary } : {}),
     ...(networkDistance ? { network_distance: networkDistance } : {}),
+    ...(typeof pendingInvitationRaw === 'boolean'
+      ? {
+          pending_invitation: pendingInvitationRaw,
+          pendingInvitation: pendingInvitationRaw,
+        }
+      : {}),
+    ...(recentPostsCount !== undefined
+      ? {
+          recent_posts_count: recentPostsCount,
+          recentPostsCount,
+        }
+      : {}),
+    ...(typeof recentlyHiredRaw === 'boolean'
+      ? {
+          recently_hired: recentlyHiredRaw,
+          recentlyHired: recentlyHiredRaw,
+        }
+      : {}),
+    ...(salesNavigatorProfileUrl
+      ? {
+          salesNavigatorProfileUrl,
+          sales_navigator_profile_url: salesNavigatorProfileUrl,
+        }
+      : {}),
+    ...(lastOutreachActivity
+      ? {
+          last_outreach_activity: lastOutreachActivity,
+          lastOutreachActivity,
+        }
+      : {}),
     ...(premium !== undefined ? { premium } : {}),
     ...(connectionsCount !== undefined
       ? {

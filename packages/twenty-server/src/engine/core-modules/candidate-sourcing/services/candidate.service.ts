@@ -37,6 +37,7 @@ import {
 import {
   buildOutreachQueuedCreateFields,
   isOutreachSourcingEnrollment,
+  type LinkedinEnrollmentSignals,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-queued-enrollment.util';
 import {
   assignOutreachExperimentVariant,
@@ -1825,6 +1826,7 @@ export class CandidateService {
             otherFields,
             ...(enrollOutreach
               ? buildOutreachQueuedCreateFields({
+                  ...(profile as UserProfile & LinkedinEnrollmentSignals),
                   linkedinUrl: profile.linkedinUrl,
                   profileUrl: profile.profileUrl,
                   linkedinProfileId: (

@@ -48,6 +48,12 @@ describe('normalizeUploadPeople', () => {
         followersCount: 1269,
         sharedConnectionsCount: 1,
         networkDistance: 'SECOND_DEGREE',
+        pendingInvitation: true,
+        recentPostsCount: 1,
+        lastOutreachActivity: {
+          type: 'SEND_INVITATION',
+          performed_at: '2026-09-15T11:17:53.890Z',
+        },
         snapshot: '{}',
         error: '',
       }),
@@ -69,6 +75,12 @@ describe('normalizeUploadPeople', () => {
         followersCount: 1269,
         sharedConnectionsCount: 1,
         networkDistance: 'SECOND_DEGREE',
+        pendingInvitation: true,
+        recentPostsCount: 1,
+        lastOutreachActivity: {
+          type: 'SEND_INVITATION',
+          performed_at: '2026-09-15T11:17:53.890Z',
+        },
       },
     ]);
   });

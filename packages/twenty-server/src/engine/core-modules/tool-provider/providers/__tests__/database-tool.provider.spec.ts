@@ -7,8 +7,10 @@ import { type ToolIndexEntry } from 'src/engine/core-modules/tool-provider/types
 import { createEmptyFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/constant/create-empty-flat-entity-maps.constant';
 import { type WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { type FlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/types/flat-entity-maps.type';
+import { type FlatObjectPermission } from 'src/engine/metadata-modules/flat-object-permission/types/flat-object-permission.type';
 import { getFlatObjectMetadataMock } from 'src/engine/metadata-modules/flat-object-metadata/__mocks__/get-flat-object-metadata.mock';
 import { type FlatObjectMetadata } from 'src/engine/metadata-modules/flat-object-metadata/types/flat-object-metadata.type';
+import { type FlatRole } from 'src/engine/metadata-modules/flat-role/types/flat-role.type';
 import { type WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 
 const roleId = 'role-id';
@@ -35,8 +37,71 @@ const createFlatObject = (
     ...overrides,
   });
 
+const buildFlatRoleMaps = ({
+  canReadAllObjectRecords = true,
+}: {
+  canReadAllObjectRecords?: boolean;
+} = {}) => {
+  const flatRoleMaps = createEmptyFlatEntityMaps() as FlatEntityMaps<FlatRole>;
+  const flatRole = {
+    id: roleId,
+    universalIdentifier: roleId,
+    applicationId: 'application-id',
+    canReadAllObjectRecords,
+    canUpdateAllObjectRecords: canReadAllObjectRecords,
+    canSoftDeleteAllObjectRecords: canReadAllObjectRecords,
+    canDestroyAllObjectRecords: canReadAllObjectRecords,
+    objectPermissionIds: [],
+    rolePermissionFlagIds: [],
+    fieldPermissionIds: [],
+  } as FlatRole;
+
+  flatRoleMaps.byUniversalIdentifier[roleId] = flatRole;
+  flatRoleMaps.universalIdentifierById[roleId] = roleId;
+
+  return flatRoleMaps;
+};
+
+const buildFlatObjectPermissionMaps = (
+  objectMetadataIds: string[],
+): FlatEntityMaps<FlatObjectPermission> => {
+  const flatObjectPermissionMaps =
+    createEmptyFlatEntityMaps() as FlatEntityMaps<FlatObjectPermission>;
+
+  for (const objectMetadataId of objectMetadataIds) {
+    const permissionId = `permission-${objectMetadataId}`;
+    const flatObjectPermission = {
+      id: permissionId,
+      universalIdentifier: permissionId,
+      applicationId: 'application-id',
+      roleId,
+      objectMetadataId,
+      workspaceId,
+      canReadObjectRecords: true,
+      canUpdateObjectRecords: true,
+      canSoftDeleteObjectRecords: true,
+      canDestroyObjectRecords: true,
+    } as FlatObjectPermission;
+
+    flatObjectPermissionMaps.byUniversalIdentifier[permissionId] =
+      flatObjectPermission;
+    flatObjectPermissionMaps.universalIdentifierById[permissionId] =
+      permissionId;
+  }
+
+  return flatObjectPermissionMaps;
+};
+
 describe('DatabaseToolProvider', () => {
-  const generateDescriptors = async (objects: FlatObjectMetadata[]) => {
+  const generateDescriptors = async ({
+    objects,
+    canReadAllObjectRecords = true,
+    explicitObjectMetadataIds,
+  }: {
+    objects: FlatObjectMetadata[];
+    canReadAllObjectRecords?: boolean;
+    explicitObjectMetadataIds?: string[];
+  }) => {
     const flatObjectMetadataMaps =
       createEmptyFlatEntityMaps() as FlatEntityMaps<FlatObjectMetadata>;
 
@@ -54,6 +119,10 @@ describe('DatabaseToolProvider', () => {
             objects.map((object) => [object.id, allObjectPermissions]),
           ),
         },
+        flatRoleMaps: buildFlatRoleMaps({ canReadAllObjectRecords }),
+        flatObjectPermissionMaps: buildFlatObjectPermissionMaps(
+          explicitObjectMetadataIds ?? [],
+        ),
       }),
     } as unknown as WorkspaceCacheService;
 
@@ -95,8 +164,17 @@ describe('DatabaseToolProvider', () => {
     )) as (ToolIndexEntry | ToolDescriptor)[];
   };
 
-  const generateDescriptorNames = async (objects: FlatObjectMetadata[]) => {
-    const descriptors = await generateDescriptors(objects);
+  const generateDescriptorNames = async (
+    objects: FlatObjectMetadata[],
+    options?: {
+      canReadAllObjectRecords?: boolean;
+      explicitObjectMetadataIds?: string[];
+    },
+  ) => {
+    const descriptors = await generateDescriptors({
+      objects,
+      ...options,
+    });
 
     return descriptors.map((descriptor) => descriptor.name);
   };
@@ -255,15 +333,60 @@ describe('DatabaseToolProvider', () => {
     );
   });
 
+  it('only advertises tools for explicitly granted objects when the role has no blanket grant', async () => {
+    const candidate = createFlatObject({
+      nameSingular: 'candidate',
+      namePlural: 'candidates',
+    });
+    const attachment = createFlatObject({
+      nameSingular: 'attachment',
+      namePlural: 'attachments',
+      isSystem: true,
+    });
+    const message = createFlatObject({
+      nameSingular: 'message',
+      namePlural: 'messages',
+      isSystem: true,
+    });
+
+    const descriptorNames = await generateDescriptorNames(
+      [candidate, attachment, message],
+      {
+        canReadAllObjectRecords: false,
+        explicitObjectMetadataIds: [candidate.id],
+      },
+    );
+
+    expect(descriptorNames).toEqual(
+      expect.arrayContaining([
+        'find_many_candidates',
+        'find_one_candidate',
+        'create_one_candidate',
+        'update_one_candidate',
+      ]),
+    );
+
+    expect(descriptorNames).toEqual(
+      expect.not.arrayContaining([
+        'find_many_attachments',
+        'create_one_attachment',
+        'find_many_messages',
+        'find_one_message',
+      ]),
+    );
+  });
+
   it('generates labels from operation verb and object metadata labels', async () => {
-    const descriptors = await generateDescriptors([
-      createFlatObject({
-        nameSingular: 'company',
-        namePlural: 'companies',
-        labelSingular: 'Company',
-        labelPlural: 'Companies',
-      }),
-    ]);
+    const descriptors = await generateDescriptors({
+      objects: [
+        createFlatObject({
+          nameSingular: 'company',
+          namePlural: 'companies',
+          labelSingular: 'Company',
+          labelPlural: 'Companies',
+        }),
+      ],
+    });
 
     const labelByName = new Map(descriptors.map((d) => [d.name, d.label]));
 
@@ -280,14 +403,16 @@ describe('DatabaseToolProvider', () => {
   });
 
   it('uses the object labelSingular/labelPlural from metadata, not the programmatic name', async () => {
-    const descriptors = await generateDescriptors([
-      createFlatObject({
-        nameSingular: 'person',
-        namePlural: 'people',
-        labelSingular: 'Contact',
-        labelPlural: 'Contacts',
-      }),
-    ]);
+    const descriptors = await generateDescriptors({
+      objects: [
+        createFlatObject({
+          nameSingular: 'person',
+          namePlural: 'people',
+          labelSingular: 'Contact',
+          labelPlural: 'Contacts',
+        }),
+      ],
+    });
 
     const labelByName = new Map(descriptors.map((d) => [d.name, d.label]));
 
@@ -298,14 +423,16 @@ describe('DatabaseToolProvider', () => {
   });
 
   it('includes label on every generated descriptor', async () => {
-    const descriptors = await generateDescriptors([
-      createFlatObject({
-        nameSingular: 'task',
-        namePlural: 'tasks',
-        labelSingular: 'Task',
-        labelPlural: 'Tasks',
-      }),
-    ]);
+    const descriptors = await generateDescriptors({
+      objects: [
+        createFlatObject({
+          nameSingular: 'task',
+          namePlural: 'tasks',
+          labelSingular: 'Task',
+          labelPlural: 'Tasks',
+        }),
+      ],
+    });
 
     for (const descriptor of descriptors) {
       expect(descriptor.label).toBeDefined();

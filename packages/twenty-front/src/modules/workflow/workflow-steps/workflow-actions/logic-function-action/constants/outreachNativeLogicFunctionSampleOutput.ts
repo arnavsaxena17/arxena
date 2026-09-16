@@ -15,9 +15,17 @@ export const OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME =
 export const OUTREACH_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME =
   'fetch-company-details';
 export const OUTREACH_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME = 'upload-profiles';
+export const OUTREACH_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME = 'upsert-companies';
+export const OUTREACH_ENRICH_CONTACT_LOGIC_FUNCTION_NAME = 'enrich-contact';
+export const OUTREACH_FETCH_EMAIL_LOGIC_FUNCTION_NAME = 'fetch-email';
+export const OUTREACH_FETCH_PHONE_LOGIC_FUNCTION_NAME = 'fetch-phone';
+export const OUTREACH_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME =
+  'get-calendar-availability';
 export const OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME =
   'detect-fake-profiles';
 export const OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME = 'filter-profiles';
+export const OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME =
+  'validate-inbound-signals';
 
 const withLlmFormattedText = <T extends object>(
   result: T,
@@ -274,6 +282,8 @@ export const OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT =
     chatId: 'chat-1',
     attendeeId: 'ACoAAExampleProviderId1234567890',
     total: 1,
+    hasInboundReply: true,
+    inboundCount: 1,
     error: '',
     messages: [
       {
@@ -384,6 +394,73 @@ export const OUTREACH_FILTER_PROFILES_SAMPLE_OUTPUT = {
   ],
 };
 
+export const OUTREACH_UPSERT_COMPANIES_SAMPLE_OUTPUT = withLlmFormattedText({
+  success: true,
+  created: 1,
+  updated: 0,
+  skipped: 0,
+  projectId: 'project-id',
+  companyIds: ['company-id'],
+  error: '',
+});
+
+export const OUTREACH_ENRICH_CONTACT_SAMPLE_OUTPUT = withLlmFormattedText({
+  success: true,
+  email: 'arapahara@acme.com',
+  emails: ['arapahara@acme.com'],
+  phones: ['+1-555-0100'],
+  source: 'arxena',
+  enrichStatus: 'FOUND',
+  error: '',
+});
+
+export const OUTREACH_FETCH_EMAIL_SAMPLE_OUTPUT = withLlmFormattedText({
+  success: true,
+  email: 'arapahara@acme.com',
+  emails: ['arapahara@acme.com'],
+  phones: [],
+  source: 'arxena',
+  enrichStatus: 'FOUND',
+  error: '',
+});
+
+export const OUTREACH_FETCH_PHONE_SAMPLE_OUTPUT = withLlmFormattedText({
+  success: true,
+  email: '',
+  emails: [],
+  phones: ['+1-555-0100'],
+  source: 'arxena',
+  enrichStatus: 'FOUND',
+  error: '',
+});
+
+export const OUTREACH_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT = {
+  success: true,
+  error: '',
+  slots: [
+    {
+      startsAt: '2026-08-24T16:00:00.000Z',
+      endsAt: '2026-08-24T16:30:00.000Z',
+    },
+  ],
+  text: '(0) Mon, Aug 24 · 9:30–10:00 PM IST',
+};
+
+export const OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT =
+  withLlmFormattedText({
+    success: true,
+    startsAt: '2026-08-24T16:00:00.000Z',
+    endsAt: '2026-08-24T16:30:00.000Z',
+    replyChannel: 'LINKEDIN',
+    preferredChannelToStamp: '',
+    prospectEmail: '',
+    referralName: 'Priya Nair',
+    referralEmail: 'priya.nair@acme.com',
+    referralPhone: '',
+    hasReferral: true,
+    shouldNotRespond: false,
+  });
+
 export const OUTREACH_NATIVE_LOGIC_FUNCTION_NAMES = new Set([
   OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
@@ -396,8 +473,14 @@ export const OUTREACH_NATIVE_LOGIC_FUNCTION_NAMES = new Set([
   OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME,
   OUTREACH_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME,
+  OUTREACH_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME,
+  OUTREACH_ENRICH_CONTACT_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_EMAIL_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_PHONE_LOGIC_FUNCTION_NAME,
+  OUTREACH_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
   OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
+  OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME,
 ]);
 
 const SAMPLE_OUTPUT_BY_NAME: Record<string, Record<string, unknown>> = {
@@ -423,10 +506,22 @@ const SAMPLE_OUTPUT_BY_NAME: Record<string, Record<string, unknown>> = {
     OUTREACH_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT,
   [OUTREACH_UPLOAD_PROFILES_LOGIC_FUNCTION_NAME]:
     OUTREACH_UPLOAD_PROFILES_SAMPLE_OUTPUT,
+  [OUTREACH_UPSERT_COMPANIES_LOGIC_FUNCTION_NAME]:
+    OUTREACH_UPSERT_COMPANIES_SAMPLE_OUTPUT,
+  [OUTREACH_ENRICH_CONTACT_LOGIC_FUNCTION_NAME]:
+    OUTREACH_ENRICH_CONTACT_SAMPLE_OUTPUT,
+  [OUTREACH_FETCH_EMAIL_LOGIC_FUNCTION_NAME]:
+    OUTREACH_FETCH_EMAIL_SAMPLE_OUTPUT,
+  [OUTREACH_FETCH_PHONE_LOGIC_FUNCTION_NAME]:
+    OUTREACH_FETCH_PHONE_SAMPLE_OUTPUT,
+  [OUTREACH_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME]:
+    OUTREACH_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
   [OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME]:
     OUTREACH_DETECT_FAKE_PROFILES_SAMPLE_OUTPUT,
   [OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME]:
     OUTREACH_FILTER_PROFILES_SAMPLE_OUTPUT,
+  [OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME]:
+    OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT,
 };
 
 export const isNativeOutreachLogicFunction = (name?: string | null): boolean =>

@@ -2,11 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 import moment from 'moment';
-import { FeatureFlagKey } from 'twenty-shared/types';
 
 import { GoogleCalendarService } from 'src/engine/core-modules/calendar-events/google-calendar.service';
-import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { OutreachWorkspaceAuthTokenService } from 'src/engine/core-modules/outreach-command/services/outreach-workspace-auth-token.service';
+
+// Flip to false for hardcoded weekday 11:00 slots (no Google call)
+const USE_LIVE_GOOGLE_CALENDAR = true;
 
 export type GetCalendarAvailabilityInput = {
   workspaceMemberId?: string;
@@ -26,7 +27,6 @@ export class GetCalendarAvailabilityService {
   constructor(
     private readonly googleCalendarService: GoogleCalendarService,
     private readonly gtmWorkspaceAuthTokenService: OutreachWorkspaceAuthTokenService,
-    private readonly featureFlagService: FeatureFlagService,
   ) {}
 
   async execute({
@@ -45,13 +45,7 @@ export class GetCalendarAvailabilityService {
     const timeMin = moment().startOf('hour').toISOString();
     const timeMax = moment().add(days, 'days').endOf('day').toISOString();
 
-    const isOutreachMockEnabled =
-      await this.featureFlagService.isFeatureEnabled(
-        FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
-        workspaceId,
-      );
-
-    if (isOutreachMockEnabled) {
+    if (!USE_LIVE_GOOGLE_CALENDAR) {
       const slots: CalendarSlot[] = [];
       const cursor = moment().add(1, 'day').hour(11).minute(0).second(0);
 
@@ -66,7 +60,7 @@ export class GetCalendarAvailabilityService {
       }
 
       this.logger.log(
-        `IS_OUTREACH_MOCK_UNIPILE_ENABLED: mock calendar slots (${slots.length})`,
+        `USE_LIVE_GOOGLE_CALENDAR=false: mock calendar slots (${slots.length})`,
       );
 
       return { success: true, slots, error: '' };

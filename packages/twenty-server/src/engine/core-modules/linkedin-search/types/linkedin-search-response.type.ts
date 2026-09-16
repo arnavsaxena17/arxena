@@ -32,6 +32,7 @@ export interface LinkedInDateInfo {
 export interface LinkedInCurrentPosition {
   company: string;
   company_id: string | null;
+  company_url?: string | null;
   description: string | null;
   role: string;
   location: string | null;
@@ -88,7 +89,7 @@ export interface LinkedInProject {
 }
 
 export interface LinkedInLastOutreachActivity {
-  type: 'SEND_MESSAGE' | 'ACCEPT_INVITATION';
+  type: 'SEND_MESSAGE' | 'SEND_INVITATION' | 'ACCEPT_INVITATION';
   performed_at: string;
 }
 
@@ -282,7 +283,12 @@ export interface LinkedInPeopleSearchResult {
   name: string | null;
   first_name: string;
   last_name: string;
-  network_distance: 'SELF' | 'DISTANCE_1' | 'DISTANCE_2' | 'DISTANCE_3' | 'OUT_OF_NETWORK';
+  network_distance:
+    | 'SELF'
+    | 'DISTANCE_1'
+    | 'DISTANCE_2'
+    | 'DISTANCE_3'
+    | 'OUT_OF_NETWORK';
   location: string | null;
   industry: string | null;
   keywords_match: string;
@@ -345,7 +351,13 @@ export interface LinkedInPostSearchResult {
   comment_counter: number;
   repost_counter: number;
   impressions_counter: number;
-  user_reacted?: 'LIKE' | 'PRAISE' | 'APPRECIATION' | 'EMPATHY' | 'INTEREST' | 'ENTERTAINMENT';
+  user_reacted?:
+    | 'LIKE'
+    | 'PRAISE'
+    | 'APPRECIATION'
+    | 'EMPATHY'
+    | 'INTEREST'
+    | 'ENTERTAINMENT';
   author: LinkedInAuthor;
   written_by: LinkedInWrittenBy;
   permissions: LinkedInPermissions;

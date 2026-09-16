@@ -277,6 +277,8 @@ export const OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT =
     chatId: 'chat-1',
     attendeeId: 'ACoAAExampleProviderId1234567890',
     total: 1,
+    hasInboundReply: true,
+    inboundCount: 1,
     error: '',
     messages: [
       {
@@ -366,7 +368,7 @@ export const OUTREACH_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT = {
       endsAt: '2026-08-24T16:30:00.000Z',
     },
   ],
-  text: '(0) 2026-08-24T16:00:00.000Z → 2026-08-24T16:30:00.000Z',
+  text: '(0) Mon, Aug 24 · 9:30–10:00 PM IST',
 };
 
 export const OUTREACH_DETECT_FAKE_PROFILES_SAMPLE_OUTPUT = {

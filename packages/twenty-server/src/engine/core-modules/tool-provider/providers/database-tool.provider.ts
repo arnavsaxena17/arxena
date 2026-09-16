@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import {
   canExposeDatabaseCrudReadTools,
   canExposeDatabaseCrudWriteTools,
+  ToolCategory,
 } from 'twenty-shared/ai';
 import { camelToSnakeCase, isDefined } from 'twenty-shared/utils';
 import { canObjectBeManagedByAutomation } from 'twenty-shared/workflow';
@@ -29,12 +30,13 @@ import {
 } from 'src/engine/core-modules/record-crud/zod-schemas/group-by-tool.zod-schema';
 import { type ToolDescriptor } from 'src/engine/core-modules/tool-provider/types/tool-descriptor.type';
 import { type ToolIndexEntry } from 'src/engine/core-modules/tool-provider/types/tool-index-entry.type';
+import { shouldAdvertiseDatabaseCrudToolsForObject } from 'src/engine/core-modules/tool-provider/utils/should-advertise-database-crud-tools-for-object.util';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 import { getDatabaseCrudToolFlatObjects } from 'src/engine/metadata-modules/ai/ai-agent/utils/get-database-crud-tool-flat-objects.util';
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
+import { findFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps.util';
 import { getObjectsPermissionsFromRolePermissionConfig } from 'src/engine/twenty-orm/utils/get-objects-permissions-from-role-permission-config.util';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
-import { ToolCategory } from 'twenty-shared/ai';
 
 @Injectable()
 export class DatabaseToolProvider implements ToolProvider {
@@ -72,9 +74,11 @@ export class DatabaseToolProvider implements ToolProvider {
     const toolNames = options?.toolNames;
     const descriptors: (ToolIndexEntry | ToolDescriptor)[] = [];
 
-    const { rolesPermissions } =
+    const { rolesPermissions, flatRoleMaps, flatObjectPermissionMaps } =
       await this.workspaceCacheService.getOrRecompute(context.workspaceId, [
         'rolesPermissions',
+        'flatRoleMaps',
+        'flatObjectPermissionMaps',
       ]);
 
     const objectPermissions = getObjectsPermissionsFromRolePermissionConfig({
@@ -85,6 +89,20 @@ export class DatabaseToolProvider implements ToolProvider {
     if (Object.keys(objectPermissions).length === 0) {
       return descriptors;
     }
+
+    const role = findFlatEntityByIdInFlatEntityMaps({
+      flatEntityMaps: flatRoleMaps,
+      flatEntityId: context.roleId,
+    });
+
+    const explicitObjectPermissionObjectMetadataIds = new Set(
+      Object.values(flatObjectPermissionMaps.byUniversalIdentifier)
+        .filter(isDefined)
+        .filter(
+          (objectPermission) => objectPermission.roleId === context.roleId,
+        )
+        .map((objectPermission) => objectPermission.objectMetadataId),
+    );
 
     const { flatObjectMetadataMaps, flatFieldMetadataMaps } =
       await this.flatEntityMapsCacheService.getOrRecomputeManyOrAllFlatEntityMaps(
@@ -102,6 +120,16 @@ export class DatabaseToolProvider implements ToolProvider {
       const permission = objectPermissions[flatObject.id];
 
       if (!permission) {
+        continue;
+      }
+
+      if (
+        !shouldAdvertiseDatabaseCrudToolsForObject({
+          objectMetadataId: flatObject.id,
+          role,
+          explicitObjectPermissionObjectMetadataIds,
+        })
+      ) {
         continue;
       }
 

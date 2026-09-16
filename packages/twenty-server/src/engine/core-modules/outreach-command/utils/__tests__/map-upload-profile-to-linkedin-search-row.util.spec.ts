@@ -16,9 +16,16 @@ describe('mapUploadProfileToLinkedinSearchRow', () => {
         peopleId: 'ACwAAABcZlcB',
         profilePictureUrl: 'https://media.licdn.com/dms/image/linda.jpg',
         summary: 'About Linda',
-        profile_picture_url_large: 'https://media.licdn.com/dms/image/linda-lg.jpg',
+        profile_picture_url_large:
+          'https://media.licdn.com/dms/image/linda-lg.jpg',
         network_distance: 'DISTANCE_2',
         premium: true,
+        pending_invitation: true,
+        recent_posts_count: 2,
+        last_outreach_activity: {
+          type: 'SEND_INVITATION',
+          performed_at: '2026-09-15T11:17:53.890Z',
+        },
       },
       '3616d8a1-0219-408a-a6e9-75105117be4e',
     );
@@ -42,6 +49,14 @@ describe('mapUploadProfileToLinkedinSearchRow', () => {
         linkedinSummary: 'About Linda',
         network_distance: 'DISTANCE_2',
         premium: true,
+        pending_invitation: true,
+        pendingInvitation: true,
+        recent_posts_count: 2,
+        recentPostsCount: 2,
+        last_outreach_activity: {
+          type: 'SEND_INVITATION',
+          performed_at: '2026-09-15T11:17:53.890Z',
+        },
         current_positions: [
           {
             company: 'Korn Ferry',

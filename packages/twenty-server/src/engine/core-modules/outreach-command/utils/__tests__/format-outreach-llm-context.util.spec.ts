@@ -67,7 +67,7 @@ describe('formatOutreachTranscriptForLlm', () => {
 });
 
 describe('formatOutreachSlotsForLlm', () => {
-  it('renders indexed windows', () => {
+  it('renders indexed windows in human-readable IST', () => {
     expect(
       formatOutreachSlotsForLlm([
         {
@@ -75,7 +75,15 @@ describe('formatOutreachSlotsForLlm', () => {
           endsAt: '2024-11-10T09:30:00.000Z',
         },
       ]),
-    ).toBe('(0) 2024-11-10T09:00:00.000Z → 2024-11-10T09:30:00.000Z');
+    ).toBe('(0) Sun, Nov 10 · 2:30–3:00 PM IST');
+  });
+
+  it('re-humanizes leftover ISO indexed lines', () => {
+    expect(
+      formatOutreachSlotsForLlm(
+        '(0) 2026-09-17T05:30:00.849Z → 2026-09-17T05:50:00.849Z',
+      ),
+    ).toBe('(0) Thu, Sep 17 · 11:00–11:20 AM IST');
   });
 });
 
@@ -154,9 +162,7 @@ describe('rewriteOutreachResolvedPromptSections', () => {
     );
 
     expect(rewritten).toContain('Sender: Naresh');
-    expect(rewritten).toContain(
-      '(0) 2024-11-10T09:00:00.000Z → 2024-11-10T09:30:00.000Z',
-    );
+    expect(rewritten).toContain('(0) Sun, Nov 10 · 2:30–3:00 PM IST');
     expect(rewritten).not.toContain('"product_name"');
   });
 
@@ -172,7 +178,7 @@ describe('rewriteOutreachResolvedPromptSections', () => {
       'chat_history: them: Thanks, I am interested. Can we talk next week?',
     );
     expect(rewritten).toContain(
-      'calendar: (0) 2026-09-15T05:30:00.412Z → 2026-09-15T05:50:00.412Z',
+      'calendar: (0) Tue, Sep 15 · 11:00–11:20 AM IST',
     );
     expect(rewritten).not.toContain('"isSender"');
   });

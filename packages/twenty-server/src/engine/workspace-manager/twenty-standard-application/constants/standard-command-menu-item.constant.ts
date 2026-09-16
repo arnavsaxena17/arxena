@@ -466,6 +466,22 @@ export const STANDARD_COMMAND_MENU_ITEMS = {
     engineComponentKey: EngineComponentKey.ADD_NODE_WORKFLOW,
     hotKeys: null,
   },
+  editWorkflow: {
+    universalIdentifier: 'b2e8c4d1-9f70-4a3e-8c15-6d0a1b2e3f47',
+    label: 'Edit Workflow',
+    icon: 'IconPencil',
+    isPinned: true,
+    position: 29,
+    shortLabel: 'Edit Workflow',
+    availabilityType: CommandMenuItemAvailabilityType.RECORD_SELECTION,
+    conditionalAvailabilityExpression:
+      'pageType == "RECORD_PAGE" and everyEquals(selectedRecords, "name", "Outreach — Candidate Sequencer") and everyDefined(selectedRecords, "currentVersion.trigger") and everyDefined(selectedRecords, "currentVersion.steps") and every(selectedRecords, "currentVersion.steps.length") and noneDefined(selectedRecords, "deletedAt")',
+    availabilityObjectMetadataUniversalIdentifier:
+      STANDARD_OBJECTS.workflow.universalIdentifier,
+    frontComponentUniversalIdentifier: null,
+    engineComponentKey: EngineComponentKey.EDIT_WORKFLOW,
+    hotKeys: null,
+  },
   tidyUpWorkflow: {
     universalIdentifier: '1f3a3cab-161a-4775-af47-11be4d0bf411',
     label: 'Tidy up Workflow',

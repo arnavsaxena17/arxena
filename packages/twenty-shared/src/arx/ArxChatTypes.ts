@@ -536,9 +536,11 @@ interface Experience {
   description?: string | null;
   location?: string | null;
   companyId?: string | null;
+  companyUrl?: string | null;
   industry?: string[] | string | null;
   tenureAtRole?: { years?: number; months?: number } | null;
   tenureAtCompany?: { years?: number; months?: number } | null;
+  skills?: Array<{ name?: string; endorsement_count?: number } | string> | null;
 }
 
 interface TotalYearsExperience {

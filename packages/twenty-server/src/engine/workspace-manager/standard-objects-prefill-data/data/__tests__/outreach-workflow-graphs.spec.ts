@@ -1,6 +1,11 @@
 import { workflowActionSchema } from 'twenty-shared/workflow';
 
-import { OUTREACH_WORKFLOW_GRAPH_TEMPLATES } from 'src/engine/workspace-manager/standard-objects-prefill-data/data/outreach-workflow-graphs';
+import {
+  buildCandidateSequencerGraph,
+  inferOutreachSequencerGraphOptionsFromSteps,
+  OUTREACH_SEQUENCER_STEP_IDS,
+  OUTREACH_WORKFLOW_GRAPH_TEMPLATES,
+} from 'src/engine/workspace-manager/standard-objects-prefill-data/data/outreach-workflow-graphs';
 
 type DatabaseEventTrigger = {
   type: string;
@@ -366,10 +371,83 @@ describe('GTM outreach workflow graphs', () => {
     expect(byName('Draft connection note')).toBeDefined();
     expect(byName('Draft first LinkedIn message')).toBeDefined();
     expect(byName('Get calendar availability (opener)')).toBeDefined();
+    expect(byName('Fetch LinkedIn messages')?.nextStepIds).toEqual([
+      byName('Prior inbound reply in history?')?.id,
+    ]);
+    expect(byName('Prior inbound reply in history?')?.type).toBe('IF_ELSE');
+    expect(
+      (
+        byName('Prior inbound reply in history?')?.settings as {
+          input: {
+            stepFilters: Array<{
+              type: string;
+              value: string;
+              stepOutputKey: string;
+            }>;
+            branches: Array<{ nextStepIds: string[] }>;
+          };
+        }
+      ).input,
+    ).toEqual(
+      expect.objectContaining({
+        stepFilters: [
+          expect.objectContaining({
+            type: 'BOOLEAN',
+            value: 'true',
+            stepOutputKey: expect.stringContaining('.hasInboundReply}}'),
+          }),
+        ],
+        branches: [
+          expect.objectContaining({
+            nextStepIds: [
+              byName('Mark REPLIED — prior inbound in history')?.id,
+            ],
+          }),
+          expect.objectContaining({
+            nextStepIds: [byName('Fetch LinkedIn profile')?.id],
+          }),
+        ],
+      }),
+    );
+    expect(
+      byName('Mark REPLIED — prior inbound in history')?.nextStepIds ?? [],
+    ).toEqual([]);
     expect(byName('Draft sales reply')).toBeDefined();
-    expect(byName('Stamp preferred channel')).toBeDefined();
+    expect(byName('Stamp preferred channel')).toBeUndefined();
+    expect(byName('Persist prospect email')).toBeUndefined();
+    expect(byName('Create referred candidate')?.type).toBe('AI_AGENT');
+    expect(byName('Mark MEETING_BOOKED')?.type).toBe('AI_AGENT');
+    expect(byName('Mark WAITING_REPLY')?.type).toBe('AI_AGENT');
     expect(byName('Draft meeting reminder')).toBeDefined();
     expect(byName('Mark MEETING_BOOKED')).toBeDefined();
+
+    expect(byName('Validate inbound signals')?.nextStepIds).toEqual([
+      byName('Draft sales reply')?.id,
+    ]);
+
+    const draftSalesReply = byName('Draft sales reply') as {
+      settings?: {
+        input?: { prompt?: string; agentId?: string };
+        outputSchema?: Record<string, unknown>;
+      };
+    };
+
+    expect(draftSalesReply.settings?.input?.agentId).toBe('__AGENT_reply__');
+    expect(draftSalesReply.settings?.input?.prompt).toContain(
+      'CANDIDATE TOOL CALLS',
+    );
+    expect(draftSalesReply.settings?.input?.prompt).toContain(
+      'update_one_candidate',
+    );
+    expect(
+      Object.keys(draftSalesReply.settings?.outputSchema ?? {}).sort(),
+    ).toEqual([
+      'emailBody',
+      'emailSubject',
+      'message',
+      'referralCandidateId',
+      'referralMessage',
+    ]);
 
     const qualifyProspect = byName('Qualify prospect') as {
       settings?: {
@@ -502,5 +580,104 @@ describe('GTM outreach workflow graphs', () => {
         expect(step.settings?.input?.fieldsToUpdate?.length).toBeGreaterThan(0);
       }
     }
+  });
+
+  it('omits connection draft/approve when LLM connection note is off', () => {
+    const graph = buildCandidateSequencerGraph({
+      useLlmConnectionNote: false,
+    });
+    const steps = graph.steps as GraphStep[];
+    const stepIds = new Set(steps.map((step) => step.id));
+
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.draftConnectNote)).toBe(
+      false,
+    );
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.approveConnectNote)).toBe(
+      false,
+    );
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.sendConnect)).toBe(true);
+
+    const sendConnect = steps.find(
+      (step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.sendConnect,
+    ) as { settings?: { input?: { message?: string } } };
+
+    expect(sendConnect.settings?.input?.message).toBe('');
+  });
+
+  it('omits all FORM approve steps when human-in-the-loop is off', () => {
+    const graph = buildCandidateSequencerGraph({ humanInTheLoop: false });
+    const steps = graph.steps as GraphStep[];
+    const formSteps = steps.filter((step) => step.type === 'FORM');
+
+    expect(formSteps).toHaveLength(0);
+
+    const sendFirst = steps.find(
+      (step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.sendFirst,
+    ) as { settings?: { input?: { body?: string } } };
+
+    expect(sendFirst.settings?.input?.body).toBe(
+      `{{${OUTREACH_SEQUENCER_STEP_IDS.draftFirst}.message}}`,
+    );
+  });
+
+  it('omits WhatsApp send steps when WhatsApp is disabled', () => {
+    const graph = buildCandidateSequencerGraph({ whatsappEnabled: false });
+    const stepIds = new Set(
+      (graph.steps as GraphStep[]).map((step) => step.id),
+    );
+
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.sendReplyWhatsapp)).toBe(
+      false,
+    );
+    expect(
+      stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.sendPostReplyFu1Whatsapp),
+    ).toBe(false);
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.sendReply)).toBe(true);
+  });
+
+  it('omits meeting follow-up tree when meeting follow-up is off', () => {
+    const graph = buildCandidateSequencerGraph({
+      meetingFollowUpEnabled: false,
+    });
+    const steps = graph.steps as GraphStep[];
+    const stepIds = new Set(steps.map((step) => step.id));
+
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.meetingBookedFind)).toBe(
+      false,
+    );
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.stampMeetingBooked)).toBe(
+      false,
+    );
+
+    const meetingCreate = steps.find(
+      (step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.meetingCreate,
+    );
+
+    expect(meetingCreate?.nextStepIds).toEqual([
+      OUTREACH_SEQUENCER_STEP_IDS.stampWaiting,
+    ]);
+  });
+
+  it('infers graph options from step ids', () => {
+    const defaults = buildCandidateSequencerGraph().steps as GraphStep[];
+    const automated = buildCandidateSequencerGraph({
+      humanInTheLoop: false,
+      whatsappEnabled: false,
+      meetingFollowUpEnabled: false,
+      useLlmConnectionNote: false,
+    }).steps as GraphStep[];
+
+    expect(inferOutreachSequencerGraphOptionsFromSteps(defaults)).toEqual({
+      useLlmConnectionNote: true,
+      humanInTheLoop: true,
+      whatsappEnabled: true,
+      meetingFollowUpEnabled: true,
+    });
+    expect(inferOutreachSequencerGraphOptionsFromSteps(automated)).toEqual({
+      useLlmConnectionNote: false,
+      humanInTheLoop: false,
+      whatsappEnabled: false,
+      meetingFollowUpEnabled: false,
+    });
   });
 });

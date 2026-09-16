@@ -72,6 +72,7 @@ import { AddNodeWorkflowSingleRecordCommand } from '@/command-menu-item/engine-c
 import { DeactivateWorkflowSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/workflow/components/DeactivateWorkflowSingleRecordCommand';
 import { DiscardDraftWorkflowSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/workflow/components/DiscardDraftWorkflowSingleRecordCommand';
 import { DuplicateWorkflowSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/workflow/components/DuplicateWorkflowSingleRecordCommand';
+import { EditWorkflowSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/workflow/components/EditWorkflowSingleRecordCommand';
 import { SeeActiveVersionWorkflowSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/workflow/components/SeeActiveVersionWorkflowSingleRecordCommand';
 import { SeeRunsWorkflowSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/workflow/components/SeeRunsWorkflowSingleRecordCommand';
 import { SeeVersionsWorkflowSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/workflow/components/SeeVersionsWorkflowSingleRecordCommand';
@@ -262,6 +263,7 @@ export const ENGINE_COMPONENT_KEY_COMPONENT_MAP: Record<
   [EngineComponentKey.ADD_NODE_WORKFLOW]: (
     <AddNodeWorkflowSingleRecordCommand />
   ),
+  [EngineComponentKey.EDIT_WORKFLOW]: <EditWorkflowSingleRecordCommand />,
   [EngineComponentKey.SEE_VERSION_WORKFLOW_RUN]: (
     <SeeVersionWorkflowRunSingleRecordCommand />
   ),

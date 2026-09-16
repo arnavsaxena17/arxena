@@ -44,20 +44,8 @@ export const OUTREACH_QUALIFY_JSON_KEYS =
 export const OUTREACH_FALLBACK_EMAIL_CORE =
   'Draft short ICP-aligned emails when LinkedIn connect is ignored. Do not invent LinkedIn facts.';
 
-export const OUTREACH_EXTRACT_SIGNAL_FIELD_SUMMARY = [
-  'Return JSON { "acceptedSlotIndex", "requestedChannelSwitch", "prospectEmail", "referralName", "referralEmail", "referralPhone", "shouldNotRespond" }.',
-  'acceptedSlotIndex is 0-based into injected slots, -1 unless they confirmed one.',
-  `requestedChannelSwitch is ${OUTREACH_NO_CHANNEL_SWITCH} unless they asked to move channel.`,
-  'Copy contacts from the transcript; leave empty rather than guessing.',
-  'shouldNotRespond is true only for opt-out.',
-].join(' ');
-
-export const OUTREACH_REPLY_SCHEDULING_LADDER_SUMMARY = [
-  `Soft-ask (${OUTREACH_CADENCE_SOFT_ASK_THIS_WEEK_OR_NEXT}) until they name a time window; then ask which times; paste Available slots only when closing.`,
-  OUTREACH_CADENCE_NO_AVAILABLE_SLOTS_AT_STAGE,
-].join(' ');
-
 // --- core.agent system prompts (upserted by prefillOutreachWorkflows) ---
+// Keep these to role + output contract. Field-level rules live in the per-step user prompts.
 
 export const OUTREACH_SEEDED_AGENT_LINKEDIN_MESSAGE_SYSTEM_PROMPT =
   'You draft short LinkedIn messages for GTM outreach. Return JSON { "message": "<body>" } only.';
@@ -68,29 +56,22 @@ export const OUTREACH_SEEDED_AGENT_FALLBACK_EMAIL_SYSTEM_PROMPT = [
 ].join(' ');
 
 export const OUTREACH_SEEDED_AGENT_REPLY_SYSTEM_PROMPT = [
-  'You draft short GTM sales replies after the inbound signals have been extracted and validated.',
-  'Return JSON { "message", "emailSubject", "emailBody", "referralMessage" }.',
-  'Empty strings when unused.',
-  'Write copy only: reply channel, meeting time and contacts are injected as verified facts — never restate a time that is not injected and never extract a contact yourself.',
-  OUTREACH_REPLY_SCHEDULING_LADDER_SUMMARY,
-  'If they are the wrong person, ask for a referral.',
-  'Do not ask recruiting screening questions or share a job description.',
+  'You draft short GTM sales replies after inbound signals are validated, and you may update the candidate via tools.',
+  'Never invent emails, phones, slots, or stages. Never set outreachConversationStage (classifier owns it).',
+  'Never write entry sequence stages QUEUED, CONNECTION_ACCEPTED, or REPLIED.',
+  'MEETING_BOOKED is allowed only when the workflow already created the calendar invite.',
+  'Prefer WAITING_REPLY / EMAIL_SENT / field stamps that do not re-enter the sequencer.',
+  'Return structured JSON after any tool calls.',
 ].join(' ');
 
 export const OUTREACH_SEEDED_AGENT_EXTRACT_SIGNALS_SYSTEM_PROMPT = [
   'You extract structured signals from an inbound sales reply.',
-  'You never write prose and never classify intent.',
-  OUTREACH_EXTRACT_SIGNAL_FIELD_SUMMARY,
+  'Never write prose. Never classify intent. Return JSON only.',
 ].join(' ');
 
 export const OUTREACH_QUALIFY_PROSPECT_SYSTEM_PROMPT = [
   'You decide whether to contact a prospect for the sender offer and extract personalization hooks.',
-  'Return JSON only:',
-  OUTREACH_QUALIFY_JSON_KEYS,
-  '.',
-  OUTREACH_QUALIFY_HOOKS_CONTRACT,
-  '.',
-  'Never invent facts.',
+  'Return JSON only.',
 ].join(' ');
 
 export const OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS = {
@@ -100,6 +81,13 @@ export const OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS = {
   extractSignals: OUTREACH_SEEDED_AGENT_EXTRACT_SIGNALS_SYSTEM_PROMPT,
   qualifyProspect: OUTREACH_QUALIFY_PROSPECT_SYSTEM_PROMPT,
 } as const;
+
+// Candidate field allowlist for reply-agent CRUD tool calls (not conversation stage).
+export const OUTREACH_REPLY_AGENT_CANDIDATE_TOOL_FIELDS = [
+  'outreachPreferredChannel',
+  'email.primaryEmail',
+  'outreachSequenceStage',
+] as const;
 
 // --- AI-agent node prompts (baked into seeded workflow version steps) ---
 
@@ -287,8 +275,9 @@ export const buildOutreachInboundSignalExtractionPrompt = ({
     'The transcript may span several rounds. Read the full thread, not only the last line.',
     'acceptedSlotIndex: 0-based index into Available slots of the one slot they accepted.',
     '  Only when they confirmed that specific injected slot (by index, or by matching the',
-    '  exact offered window). Relative times ("tomorrow", "2:30 pm tomorrow", "second half",',
-    '  "next week", "Friday-ish") are always -1 — never map them onto a slot yourself.',
+    '  offered window as it was shown to them). Relative times ("tomorrow", "2:30 pm tomorrow",',
+    '  "second half", "next week", "Friday-ish") are always -1 — never map them onto a slot',
+    '  yourself.',
     '  Anything you are unsure about is -1.',
     `requestedChannelSwitch: ${OUTREACH_NO_CHANNEL_SWITCH} unless they explicitly asked to move`,
     '  channel ("email me", "WhatsApp me") — then LINKEDIN, WHATSAPP, or EMAIL.',
@@ -324,7 +313,9 @@ export const buildOutreachSalesChatDraftPrompt = ({
   confirmedStartsAt,
   referralName,
   prospectEmail,
+  preferredChannelToStamp,
   shouldNotRespond,
+  candidateId,
   senderJson,
   prospectEnrichmentJson,
 }: {
@@ -337,14 +328,26 @@ export const buildOutreachSalesChatDraftPrompt = ({
   confirmedStartsAt?: string;
   referralName?: string;
   prospectEmail?: string;
+  preferredChannelToStamp?: string;
   shouldNotRespond?: string;
+  candidateId?: string;
   senderJson?: string;
   prospectEnrichmentJson?: string;
 }): string =>
   [
     'You drive a sales outreach conversation on LinkedIn / WhatsApp / email.',
     'Goal: book a short intro using the sender meeting defaults.',
-    'Draft the next outbound message only. Do not re-classify and do not extract contacts.',
+    'Draft the next outbound message. Do not re-classify and do not invent contacts or slots.',
+    candidateId?.trim()
+      ? [
+          'CANDIDATE TOOL CALLS (before drafting) — use only validated inputs below:',
+          `- Candidate id: ${candidateId.trim()}`,
+          `- If Preferred channel to stamp is non-empty: update_one_candidate with only outreachPreferredChannel.`,
+          `- If Prospect email for details is non-empty: update_one_candidate with only email.primaryEmail.`,
+          `- Do not create referrals here. Do not set outreachSequenceStage or outreachConversationStage here.`,
+          `- Allowlisted update fields only: ${OUTREACH_REPLY_AGENT_CANDIDATE_TOOL_FIELDS.join(', ')}.`,
+        ].join('\n')
+      : 'Draft the next outbound message only. Do not re-classify and do not extract contacts.',
     senderJson?.trim()
       ? `SENDER_JSON (voice, offer, FAQ, meeting): ${formatOutreachSenderForLlm(senderJson) || '(none)'}`
       : '',
@@ -399,19 +402,79 @@ export const buildOutreachSalesChatDraftPrompt = ({
     `Confirmed meeting time: ${confirmedStartsAt?.trim() || '(none)'}`,
     `Referred person: ${referralName?.trim() || '(none)'}`,
     `Prospect email for details: ${prospectEmail?.trim() || '(none)'}`,
+    `Preferred channel to stamp: ${preferredChannelToStamp?.trim() || '(none)'}`,
     `Name: ${name}`,
     `Title: ${title}`,
     `Transcript: ${formatOutreachTranscriptForLlm(transcript) || '(none)'}`,
-    'Return JSON only: {',
+    'Return JSON: {',
     '  "message": "<reply on the injected reply channel>",',
     '  "emailSubject": "<subject when emailing details, else empty string>",',
     '  "emailBody": "<details email body, else empty string>",',
-    '  "referralMessage": "<intro to the referred person or empty string>"',
+    '  "referralMessage": "<intro to the referred person or empty string>",',
+    '  "referralCandidateId": ""',
     '}',
-    'Always include all four keys. Use "" when a field does not apply.',
+    'Always include all five keys. Use "" when a field does not apply. referralCandidateId stays "" here.',
   ]
     .filter((line) => line !== '')
     .join('\n');
+
+export const buildOutreachCreateReferralCandidatePrompt = ({
+  referralName,
+  referralEmail,
+  referralPhone,
+  jobCompanyName,
+  projectId,
+}: {
+  referralName: string;
+  referralEmail: string;
+  referralPhone: string;
+  jobCompanyName: string;
+  projectId: string;
+}): string =>
+  [
+    'Create a referred candidate with create_one_candidate when a name and at least one contact exist.',
+    'Use only the injected fields. Do not invent contacts.',
+    'Set outreachSequenceStage to EMAIL_SENT (not an entry stage — will not re-fire the sequencer).',
+    'Do not set outreachConversationStage. Do not draft messages.',
+    `referralName: ${referralName.trim() || '(none)'}`,
+    `referralEmail: ${referralEmail.trim() || '(none)'}`,
+    `referralPhone: ${referralPhone.trim() || '(none)'}`,
+    `jobCompanyName: ${jobCompanyName.trim() || '(none)'}`,
+    `projectId: ${projectId.trim() || '(none)'}`,
+    'If name is empty or both email and phone are empty: call no tools.',
+    'Otherwise create_one_candidate with:',
+    '- name = referralName',
+    '- jobCompanyName, projectId as injected',
+    '- outreachSequenceStage = EMAIL_SENT',
+    '- email.primaryEmail when referralEmail is non-empty',
+    '- phoneNumber.primaryPhoneNumber when referralPhone is non-empty',
+    'Return JSON: {',
+    '  "message": "",',
+    '  "emailSubject": "",',
+    '  "emailBody": "",',
+    '  "referralMessage": "",',
+    '  "referralCandidateId": "<created id or empty>"',
+    '}',
+  ].join('\n');
+
+export const buildOutreachStampSequenceStagePrompt = ({
+  candidateId,
+  outreachSequenceStage,
+}: {
+  candidateId: string;
+  outreachSequenceStage: 'WAITING_REPLY' | 'MEETING_BOOKED';
+}): string =>
+  [
+    'Update the candidate sequence stage with update_one_candidate.',
+    `Candidate id: ${candidateId}`,
+    `Set outreachSequenceStage to ${outreachSequenceStage} only.`,
+    'Do not change any other fields. Do not set outreachConversationStage.',
+    outreachSequenceStage === 'MEETING_BOOKED'
+      ? 'MEETING_BOOKED intentionally re-enters the sequencer meeting branch.'
+      : 'WAITING_REPLY does not re-enter the sequencer entry filter.',
+    'Do not draft messages. Call the tool, then return JSON:',
+    '{ "message": "", "emailSubject": "", "emailBody": "", "referralMessage": "", "referralCandidateId": "" }',
+  ].join('\n');
 
 export const buildOutreachFallbackEmailPrompt = ({
   name,

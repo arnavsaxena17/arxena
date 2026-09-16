@@ -40,8 +40,19 @@ export const OUTREACH_SEEDED_REPLY_SCHEMA = {
       description:
         'Intro message to the referred person (email or WhatsApp), else empty',
     },
+    referralCandidateId: {
+      type: 'string' as const,
+      description:
+        'Id returned by create_one_candidate for a referral, else empty',
+    },
   },
-  required: ['message', 'emailSubject', 'emailBody', 'referralMessage'],
+  required: [
+    'message',
+    'emailSubject',
+    'emailBody',
+    'referralMessage',
+    'referralCandidateId',
+  ],
   additionalProperties: false as const,
 };
 

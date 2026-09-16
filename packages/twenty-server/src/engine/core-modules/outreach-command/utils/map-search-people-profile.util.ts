@@ -50,6 +50,16 @@ export type SearchPeopleProfile = {
   experience: SearchPeopleExperience[];
   education: SearchPeopleEducation[];
   current_positions: unknown[];
+  networkDistance?: string;
+  pendingInvitation?: boolean;
+  recentPostsCount?: number;
+  sharedConnectionsCount?: number;
+  recentlyHired?: boolean;
+  salesNavigatorProfileUrl?: string;
+  lastOutreachActivity?: {
+    type?: string;
+    performed_at?: string;
+  };
 };
 
 const readString = (item: Record<string, unknown>, keys: string[]): string => {
@@ -266,21 +276,42 @@ export const mapSearchPeopleProfile = (
 ): SearchPeopleProfile => {
   const firstName = readString(item, ['firstName', 'first_name']);
   const lastName = readString(item, ['lastName', 'last_name']);
-  const linkedinUrl = readString(item, [
-    'linkedinUrl',
-    'linkedin_url',
-    'profile_url',
-    'profileUrl',
-    'public_profile_url',
-    'url',
-  ]);
+  const classicOrPublicUrl =
+    readString(item, [
+      'linkedinUrl',
+      'linkedin_url',
+      'public_profile_url',
+      'publicProfileUrl',
+      'url',
+    ]) ||
+    (() => {
+      const profileUrl = readString(item, ['profile_url', 'profileUrl']);
+
+      return /linkedin\.com\/(?:mwlite\/)?in\//i.test(profileUrl)
+        ? profileUrl
+        : '';
+    })();
+  const salesNavigatorProfileUrl =
+    readString(item, [
+      'salesNavigatorProfileUrl',
+      'sales_navigator_profile_url',
+    ]) ||
+    (() => {
+      const profileUrl = readString(item, ['profile_url', 'profileUrl']);
+
+      return /linkedin\.com\/sales\//i.test(profileUrl) ? profileUrl : '';
+    })();
+  const linkedinUrl = classicOrPublicUrl || salesNavigatorProfileUrl;
   const titleOptions = {
     companyName: options?.companyName,
     companyId: options?.companyId,
     companyIds: options?.companyIds,
     companySlug: options?.companySlug,
   };
-  const matchedPosition = pickCurrentPositionForSearchIntent(item, titleOptions);
+  const matchedPosition = pickCurrentPositionForSearchIntent(
+    item,
+    titleOptions,
+  );
   const flattened = flattenCandidateFromMatchedPosition(item, matchedPosition);
   const title =
     extractCandidateJobTitle(flattened, titleOptions) ??
@@ -293,6 +324,29 @@ export const mapSearchPeopleProfile = (
     flattened.current_positions ?? flattened.currentPositions,
   );
   const taxonomy = readTaxonomy(flattened);
+  const networkDistance = readString(item, [
+    'network_distance',
+    'networkDistance',
+  ]);
+  const pendingInvitationRaw =
+    item.pending_invitation ?? item.pendingInvitation;
+  const recentPostsCountRaw = item.recent_posts_count ?? item.recentPostsCount;
+  const sharedConnectionsCountRaw =
+    item.shared_connections_count ?? item.sharedConnectionsCount;
+  const recentlyHiredRaw = item.recently_hired ?? item.recentlyHired;
+  const lastOutreachActivity =
+    asRecord(item.last_outreach_activity) ??
+    asRecord(item.lastOutreachActivity);
+  const recentPostsCount =
+    typeof recentPostsCountRaw === 'number' &&
+    Number.isFinite(recentPostsCountRaw)
+      ? recentPostsCountRaw
+      : undefined;
+  const sharedConnectionsCount =
+    typeof sharedConnectionsCountRaw === 'number' &&
+    Number.isFinite(sharedConnectionsCountRaw)
+      ? sharedConnectionsCountRaw
+      : undefined;
 
   return {
     name:
@@ -323,5 +377,29 @@ export const mapSearchPeopleProfile = (
     experience: mapSearchPeopleExperience(item),
     education: mapSearchPeopleEducation(item),
     current_positions: currentPositions,
+    ...(networkDistance ? { networkDistance } : {}),
+    ...(typeof pendingInvitationRaw === 'boolean'
+      ? { pendingInvitation: pendingInvitationRaw }
+      : {}),
+    ...(recentPostsCount !== undefined ? { recentPostsCount } : {}),
+    ...(sharedConnectionsCount !== undefined ? { sharedConnectionsCount } : {}),
+    ...(typeof recentlyHiredRaw === 'boolean'
+      ? { recentlyHired: recentlyHiredRaw }
+      : {}),
+    ...(salesNavigatorProfileUrl ? { salesNavigatorProfileUrl } : {}),
+    ...(lastOutreachActivity
+      ? {
+          lastOutreachActivity: {
+            ...(typeof lastOutreachActivity.type === 'string'
+              ? { type: lastOutreachActivity.type }
+              : {}),
+            ...(typeof lastOutreachActivity.performed_at === 'string'
+              ? { performed_at: lastOutreachActivity.performed_at }
+              : typeof lastOutreachActivity.performedAt === 'string'
+                ? { performed_at: lastOutreachActivity.performedAt }
+                : {}),
+          },
+        }
+      : {}),
   };
 };

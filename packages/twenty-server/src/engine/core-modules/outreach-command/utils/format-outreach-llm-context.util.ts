@@ -136,6 +136,93 @@ export const formatOutreachTranscriptForLlm = (value: unknown): string => {
   return '';
 };
 
+// Product default for proposing times in copy (matches outreach send window).
+const OUTREACH_SLOT_DISPLAY_TIMEZONE = 'Asia/Kolkata';
+const OUTREACH_SLOT_DISPLAY_ZONE_LABEL: Record<string, string> = {
+  'Asia/Kolkata': 'IST',
+};
+
+const parseSlotInstant = (iso: string): Date | null => {
+  const date = new Date(iso);
+
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const slotFormatParts = (
+  date: Date,
+  options: Intl.DateTimeFormatOptions,
+): Record<string, string> =>
+  Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: OUTREACH_SLOT_DISPLAY_TIMEZONE,
+      ...options,
+    })
+      .formatToParts(date)
+      .filter((part) => part.type !== 'literal')
+      .map((part) => [part.type, part.value]),
+  );
+
+// (0) Wed, Sep 17 · 11:00–11:20 AM IST
+const formatSlotWindowForLlm = (
+  startsAt: string,
+  endsAt: string,
+  index: number,
+): string => {
+  const start = parseSlotInstant(startsAt);
+
+  if (!isDefined(start)) {
+    return isNonEmptyString(endsAt)
+      ? `(${index}) ${startsAt} → ${endsAt}`
+      : `(${index}) ${startsAt}`;
+  }
+
+  const dayParts = slotFormatParts(start, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+  const startTimeParts = slotFormatParts(start, {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+  const day = `${dayParts.weekday}, ${dayParts.month} ${dayParts.day}`;
+  const zone =
+    OUTREACH_SLOT_DISPLAY_ZONE_LABEL[OUTREACH_SLOT_DISPLAY_TIMEZONE] ??
+    OUTREACH_SLOT_DISPLAY_TIMEZONE;
+  const end = parseSlotInstant(endsAt);
+
+  if (!isDefined(end)) {
+    return `(${index}) ${day} · ${startTimeParts.hour}:${startTimeParts.minute} ${startTimeParts.dayPeriod} ${zone}`;
+  }
+
+  const endTimeParts = slotFormatParts(end, {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+  const timeRange =
+    startTimeParts.dayPeriod === endTimeParts.dayPeriod
+      ? `${startTimeParts.hour}:${startTimeParts.minute}–${endTimeParts.hour}:${endTimeParts.minute} ${endTimeParts.dayPeriod}`
+      : `${startTimeParts.hour}:${startTimeParts.minute} ${startTimeParts.dayPeriod}–${endTimeParts.hour}:${endTimeParts.minute} ${endTimeParts.dayPeriod}`;
+
+  return `(${index}) ${day} · ${timeRange} ${zone}`;
+};
+
+const reformatIndexedIsoSlotLine = (line: string): string => {
+  const match = line
+    .trim()
+    .match(
+      /^\((\d+)\)\s+(\d{4}-\d{2}-\d{2}T\S+?)(?:\s*→\s*(\d{4}-\d{2}-\d{2}T\S+))?$/,
+    );
+
+  if (!isDefined(match)) {
+    return line.trim();
+  }
+
+  return formatSlotWindowForLlm(match[2], match[3] ?? '', Number(match[1]));
+};
+
 export const formatOutreachSlotsForLlm = (value: unknown): string => {
   if (typeof value === 'string') {
     const trimmed = value.trim();
@@ -144,8 +231,13 @@ export const formatOutreachSlotsForLlm = (value: unknown): string => {
       return trimmed;
     }
 
+    // Indexed lines — humanize leftover ISO windows; leave prose alone.
     if (/^\(\d+\)\s/.test(trimmed)) {
-      return trimmed;
+      return trimmed
+        .split('\n')
+        .map((line) => reformatIndexedIsoSlotLine(line))
+        .filter(isNonEmptyString)
+        .join('\n');
     }
 
     const parsed = tryParseJson(trimmed);
@@ -160,7 +252,7 @@ export const formatOutreachSlotsForLlm = (value: unknown): string => {
         .split(',')
         .map((part) => part.trim())
         .filter(isNonEmptyString)
-        .map((startsAt, index) => `(${index}) ${startsAt}`)
+        .map((startsAt, index) => formatSlotWindowForLlm(startsAt, '', index))
         .join('\n');
     }
 
@@ -182,9 +274,7 @@ export const formatOutreachSlotsForLlm = (value: unknown): string => {
         return '';
       }
 
-      return isNonEmptyString(endsAt)
-        ? `(${index}) ${startsAt} → ${endsAt}`
-        : `(${index}) ${startsAt}`;
+      return formatSlotWindowForLlm(startsAt, endsAt, index);
     })
     .filter(isNonEmptyString)
     .join('\n');

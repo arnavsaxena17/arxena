@@ -37,11 +37,12 @@ describe('buildOutreachSalesChatDraftPrompt', () => {
     expect(prompt).toContain('"emailSubject"');
     expect(prompt).toContain('"emailBody"');
     expect(prompt).toContain('"referralMessage"');
+    expect(prompt).toContain('"referralCandidateId"');
     expect(prompt).not.toContain('"startsAt"');
     expect(prompt).not.toContain('"endsAt"');
     expect(prompt).not.toContain('"replyChannel"');
     expect(prompt).not.toContain('"referralEmail"');
-    expect(prompt).toContain('do not extract contacts');
+    expect(prompt).toContain('do not invent contacts or slots');
     expect(prompt).toContain(OUTREACH_DONT_RESPOND_SENTINEL);
   });
 
@@ -68,7 +69,30 @@ describe('buildOutreachSalesChatDraftPrompt', () => {
     expect(bare).toContain('Reply channel: LINKEDIN');
     expect(bare).toContain('Confirmed meeting time: (none)');
     expect(bare).toContain('Referred person: (none)');
+    expect(bare).toContain('Preferred channel to stamp: (none)');
     expect(bare).toContain('Asked to stop: false');
+    expect(bare).not.toContain('CANDIDATE TOOL CALLS');
+  });
+
+  it('should instruct candidate CRUD tool stamps when candidateId is set', () => {
+    const withTools = buildOutreachSalesChatDraftPrompt({
+      name: 'Naresh',
+      title: 'Founder',
+      transcript: TRANSCRIPT,
+      slots: '',
+      conversationStage: 'INTENT',
+      candidateId: 'candidate-1',
+      preferredChannelToStamp: 'EMAIL',
+      prospectEmail: 'a@b.com',
+    });
+
+    expect(withTools).toContain('CANDIDATE TOOL CALLS');
+    expect(withTools).toContain('update_one_candidate');
+    expect(withTools).toContain('Candidate id: candidate-1');
+    expect(withTools).toContain('Preferred channel to stamp: EMAIL');
+    expect(withTools).toContain(
+      'Do not set outreachSequenceStage or outreachConversationStage here.',
+    );
   });
 
   it('should hand the opt-out decision to the validated flag', () => {
@@ -161,9 +185,7 @@ describe('buildOutreachInboundSignalExtractionPrompt', () => {
 
   it('should inject the thread, the slots, and the last inbound channel', () => {
     expect(prompt).toContain('Last inbound channel: WHATSAPP');
-    expect(prompt).toContain(
-      '(0) 2024-11-25T15:00:00.000Z → 2024-11-25T15:30:00.000Z',
-    );
+    expect(prompt).toContain('(0) Mon, Nov 25 · 8:30–9:00 PM IST');
     expect(prompt).toContain('Interested, can you call on 8826545599');
   });
 

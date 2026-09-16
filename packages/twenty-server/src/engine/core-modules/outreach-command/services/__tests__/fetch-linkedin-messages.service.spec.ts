@@ -364,6 +364,8 @@ describe('FetchLinkedinMessagesService', () => {
       chatId: 'stored-chat-1',
       attendeeId: 'divyesh-shah-b1b97698',
       total: 1,
+      hasInboundReply: false,
+      inboundCount: 0,
       messages: [{ id: 'msg-local-1', text: 'Hi Divyesh', isSender: true }],
     });
     expect(
@@ -413,6 +415,8 @@ describe('FetchLinkedinMessagesService', () => {
       chatId: 'cached-chat-1',
       attendeeId: VALID_PROVIDER_ID,
       total: 1,
+      hasInboundReply: true,
+      inboundCount: 1,
       messages: [{ id: 'msg-cached-1', text: 'Cached hello' }],
     });
     expect(
