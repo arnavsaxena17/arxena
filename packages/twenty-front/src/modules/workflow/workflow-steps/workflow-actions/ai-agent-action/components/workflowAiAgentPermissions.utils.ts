@@ -5,6 +5,33 @@ export type FilteredPermissionsResult<T> = {
   filteredEnabledPermissions: T[];
 };
 
+export type ObjectPermissionGrantFlags = {
+  canReadObjectRecords?: boolean | null;
+  canUpdateObjectRecords?: boolean | null;
+  canSoftDeleteObjectRecords?: boolean | null;
+  canDestroyObjectRecords?: boolean | null;
+};
+
+// All-false rows are left behind after deleting the last CRUD grant; treat
+// them as empty so the picker (not a blank "existing" list) is shown.
+export const hasGrantedObjectPermission = (
+  objectPermission: ObjectPermissionGrantFlags,
+): boolean =>
+  objectPermission.canReadObjectRecords === true ||
+  objectPermission.canUpdateObjectRecords === true ||
+  objectPermission.canSoftDeleteObjectRecords === true ||
+  objectPermission.canDestroyObjectRecords === true;
+
+export const hasAnyGrantedAgentPermission = ({
+  objectPermissions,
+  permissionFlagKeys,
+}: {
+  objectPermissions: ObjectPermissionGrantFlags[];
+  permissionFlagKeys: string[];
+}): boolean =>
+  permissionFlagKeys.length > 0 ||
+  objectPermissions.some(hasGrantedObjectPermission);
+
 export const getFilteredPermissions = <
   T extends { key: string; name: string },
 >({

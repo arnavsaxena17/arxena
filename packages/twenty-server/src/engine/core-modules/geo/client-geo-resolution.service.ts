@@ -5,6 +5,7 @@ import {
   CLIENT_GEO_IP_HEADER,
   getCountryCodeFromCdnHeaders,
   isPrivateOrLocalClientIp,
+  shouldSkipIpInfoLookup,
 } from 'twenty-shared';
 
 import { normalizeLinkedinConnectionCountry } from 'src/engine/core-modules/arx-chat/utils/build-unipile-linkedin-cookie-connect-body.util';
@@ -32,7 +33,9 @@ export class ClientGeoResolutionService {
     return resolveLinkedinSyncClientIp(args);
   }
 
-  async resolveLinkedinSessionCountry(ip?: string | null): Promise<string | undefined> {
+  async resolveLinkedinSessionCountry(
+    ip?: string | null,
+  ): Promise<string | undefined> {
     if (!ip) {
       return undefined;
     }
@@ -42,7 +45,9 @@ export class ClientGeoResolutionService {
   }
 
   private getCountryCodeFromRequest(req: Request): CountryHeaderMatch | null {
-    return getCountryCodeFromCdnHeaders((headerName) => req.headers[headerName]);
+    return getCountryCodeFromCdnHeaders(
+      (headerName) => req.headers[headerName],
+    );
   }
 
   private getClientCountryHintFromRequest(req: Request): string | null {
@@ -81,6 +86,10 @@ export class ClientGeoResolutionService {
       return cdnCountry;
     }
 
+    if (shouldSkipIpInfoLookup((headerName) => req.headers[headerName])) {
+      return null;
+    }
+
     const trustedIp = this.resolveTrustedClientIp(req);
     if (trustedIp && !isPrivateOrLocalClientIp(trustedIp)) {
       const countryCodeFromIp =
@@ -109,9 +118,7 @@ export class ClientGeoResolutionService {
     return null;
   }
 
-  normalizeLinkedinCountry(
-    value?: string | null,
-  ): string | undefined {
+  normalizeLinkedinCountry(value?: string | null): string | undefined {
     return normalizeLinkedinConnectionCountry(value ?? undefined);
   }
 }

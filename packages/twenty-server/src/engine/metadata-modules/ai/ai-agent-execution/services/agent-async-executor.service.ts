@@ -32,7 +32,10 @@ import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.ent
 import { WORKFLOW_AGENT_REGISTRY_TOOL_CATEGORIES } from 'src/engine/metadata-modules/ai/ai-agent-execution/constants/workflow-agent-registry-tool-categories.const';
 import { type AgentExecutionResult } from 'src/engine/metadata-modules/ai/ai-agent-execution/types/agent-execution-result.type';
 import { AGENT_CONFIG } from 'src/engine/metadata-modules/ai/ai-agent/constants/agent-config.const';
-import { WORKFLOW_SYSTEM_PROMPTS } from 'src/engine/metadata-modules/ai/ai-agent/constants/agent-system-prompts.const';
+import {
+  buildWorkflowAgentSystemPrompt,
+  getWorkflowOutputGeneratorPrompt,
+} from 'src/engine/metadata-modules/ai/ai-agent/constants/agent-system-prompts.const';
 import { type AgentEntity } from 'src/engine/metadata-modules/ai/ai-agent/entities/agent.entity';
 import { repairToolCall } from 'src/engine/metadata-modules/ai/ai-agent/utils/repair-tool-call.util';
 import { NATIVE_WEB_SEARCH_COST_PER_CALL_DOLLARS } from 'src/engine/metadata-modules/ai/ai-billing/constants/native-web-search-cost-per-call-dollars';
@@ -233,6 +236,8 @@ export class AgentAsyncExecutorService {
         });
       }
 
+      const hasTools = Object.keys(tools).length > 0;
+
       this.logger.log(`Generated ${Object.keys(tools).length} tools for agent`);
 
       let hasNoMoreAvailableCredits = false;
@@ -241,8 +246,13 @@ export class AgentAsyncExecutorService {
         registeredModel.modelId,
       );
 
+      const systemPrompt = buildWorkflowAgentSystemPrompt({
+        agentPrompt: agent ? agent.prompt : '',
+        hasTools,
+      });
+
       const textResponse = await generateText({
-        system: `${WORKFLOW_SYSTEM_PROMPTS.BASE}\n\n${agent ? agent.prompt : ''}`,
+        system: systemPrompt,
         tools,
         model: registeredModel.model,
         prompt: userPrompt,
@@ -348,7 +358,7 @@ export class AgentAsyncExecutorService {
 
       if (agentSchema) {
         const structuredResult = await generateText({
-          system: WORKFLOW_SYSTEM_PROMPTS.OUTPUT_GENERATOR,
+          system: getWorkflowOutputGeneratorPrompt(hasTools),
           model: registeredModel.model,
           prompt: `Based on the following execution results, generate the structured output according to the schema:
 

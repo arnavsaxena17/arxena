@@ -5,6 +5,7 @@ import {
 import { headers } from 'next/headers';
 import { getCountryCodeFromCdnHeaders } from '@/lib/client-geo/getCountryCodeFromCdnHeaders';
 import { lookupCountryByIp } from '@/lib/client-geo/lookupCountryByIp';
+import { shouldSkipIpInfoLookup } from 'twenty-shared';
 
 import { getClientIpFromHeaders } from '@/lib/bot-detection';
 
@@ -15,7 +16,11 @@ export async function getRequestPricingCurrency(): Promise<SupportedPricingCurre
   let countryHeader = getCountryCodeFromCdnHeaders((headerName) =>
     headersList.get(headerName),
   );
-  if (!countryHeader && clientIp) {
+  if (
+    !countryHeader &&
+    clientIp &&
+    !shouldSkipIpInfoLookup((headerName) => headersList.get(headerName))
+  ) {
     const countryCodeFromIp = await lookupCountryByIp(clientIp);
     if (countryCodeFromIp) {
       countryHeader = {

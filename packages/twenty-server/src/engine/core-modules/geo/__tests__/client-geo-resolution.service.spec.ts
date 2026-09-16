@@ -52,4 +52,19 @@ describe('ClientGeoResolutionService', () => {
     });
     console.log('[ClientGeoResolutionService.test] verified client hint used');
   });
+
+  it('resolvePricingCountry skips ipinfo for verified bots', async () => {
+    const req = {
+      headers: {
+        'x-org-chart-verified-bot': '1',
+        'x-forwarded-for': '203.0.113.50',
+      },
+      socket: { remoteAddress: '203.0.113.50' },
+    } as unknown as Request;
+
+    const result = await service.resolvePricingCountry(req);
+
+    expect(result).toBeNull();
+    expect(ipInfoGeoService.lookupCountryByIp).not.toHaveBeenCalled();
+  });
 });

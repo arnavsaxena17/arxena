@@ -11,7 +11,7 @@ import { UsageOperationType } from 'src/engine/core-modules/usage/enums/usage-op
 import { TestAiAgentDTO } from 'src/engine/core-modules/workflow/dtos/test-ai-agent.dto';
 import { WorkflowAiAgentTestContextService } from 'src/engine/core-modules/workflow/services/workflow-ai-agent-test-context.service';
 import { AgentAsyncExecutorService } from 'src/engine/metadata-modules/ai/ai-agent-execution/services/agent-async-executor.service';
-import { WORKFLOW_SYSTEM_PROMPTS } from 'src/engine/metadata-modules/ai/ai-agent/constants/agent-system-prompts.const';
+import { buildWorkflowAgentSystemPrompt } from 'src/engine/metadata-modules/ai/ai-agent/constants/agent-system-prompts.const';
 import { AgentEntity } from 'src/engine/metadata-modules/ai/ai-agent/entities/agent.entity';
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
 import { WorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/workspace-scoped-repository';
@@ -64,8 +64,11 @@ export class WorkflowAiAgentTestService {
         stepId,
       });
 
-      // Same composition as AgentAsyncExecutorService.generateText `system`
-      const systemPrompt = `${WORKFLOW_SYSTEM_PROMPTS.BASE}\n\n${agent.prompt}`;
+      // Tool strategy is appended in AgentAsyncExecutorService when tools resolve non-empty
+      const systemPrompt = buildWorkflowAgentSystemPrompt({
+        agentPrompt: agent.prompt,
+        hasTools: false,
+      });
 
       this.logger.log(
         `[AI_AGENT_TEST] systemPrompt agentId=${agentId} stepId=${stepId ?? 'n/a'}\n${systemPrompt}`,

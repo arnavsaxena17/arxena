@@ -25,7 +25,10 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { WorkflowAiAgentPermissionsCrudList } from './WorkflowAiAgentPermissionsCrudList';
 import { WorkflowAiAgentPermissionsFlagList } from './WorkflowAiAgentPermissionsFlagList';
 import { WorkflowAiAgentPermissionsObjectsList } from './WorkflowAiAgentPermissionsObjectsList';
-import { getFilteredPermissions } from './workflowAiAgentPermissions.utils';
+import {
+  getFilteredPermissions,
+  hasAnyGrantedAgentPermission,
+} from './workflowAiAgentPermissions.utils';
 
 const StyledSearchInputContainer = styled.div`
   background-color: ${themeCssVariables.background.transparent.lighter};
@@ -102,7 +105,10 @@ export const WorkflowAiAgentPermissionsTab = ({
     role?.permissionFlags?.map((permissionFlag) => permissionFlag.flag) ?? [];
   const hasRoleWithPermissions =
     isDefined(workflowAiAgentActionAgent?.roleId) &&
-    (objectPermissions.length > 0 || permissionFlagKeys.length > 0);
+    hasAnyGrantedAgentPermission({
+      objectPermissions,
+      permissionFlagKeys,
+    });
   const actionPermissionsConfig = useActionRolePermissionFlagConfig({
     assignmentCapabilities: { canBeAssignedToAgents: true },
   });

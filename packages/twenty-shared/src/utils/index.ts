@@ -51,6 +51,11 @@ export {
   clearClientGeoSessionCache,
 } from './clientGeo/clientGeoSessionCache';
 export { fetchClientGeoFromIpinfo } from './clientGeo/fetchClientGeoFromIpinfo';
+export type { IpInfoLookupPayload } from './clientGeo/fetchIpInfoLookup';
+export {
+  fetchIpInfoLookup,
+  clearIpInfoLookupCache,
+} from './clientGeo/fetchIpInfoLookup';
 export type { CdnCountryHeaderMatch } from './clientGeo/getCountryCodeFromCdnHeaders';
 export {
   CDN_COUNTRY_HEADER_NAMES,
@@ -62,6 +67,10 @@ export { lookupCompanyByIp } from './clientGeo/lookupCompanyByIp';
 export { lookupCountryByIp } from './clientGeo/lookupCountryByIp';
 export { resolveClientIpinfoToken } from './clientGeo/resolveClientIpinfoToken';
 export { resolveIpinfoToken } from './clientGeo/resolveIpinfoToken';
+export {
+  isDeclaredBotUserAgent,
+  shouldSkipIpInfoLookup,
+} from './clientGeo/shouldSkipIpInfoLookup';
 export { conditionalAvailabilityParser } from './command-menu-items/conditionalAvailabilityParser';
 export { evaluateConditionalAvailabilityExpression } from './command-menu-items/evaluateConditionalAvailabilityExpression';
 export { interpolateCommandMenuItemTemplate } from './command-menu-items/interpolateCommandMenuItemTemplate';

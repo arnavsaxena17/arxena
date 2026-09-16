@@ -3,8 +3,9 @@ import { type SettingsRoleObjectPermissionKey } from '@/settings/roles/role-perm
 import { useActionRolePermissionFlagConfig } from '@/settings/roles/role-permissions/permission-flags/hooks/useActionRolePermissionFlagConfig';
 import { useSettingsRolePermissionFlagConfig } from '@/settings/roles/role-permissions/permission-flags/hooks/useSettingsRolePermissionFlagConfig';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-import { CRUD_PERMISSIONS } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/constants/WorkflowAiAgentCrudPermissions';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
+import { hasGrantedObjectPermission } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/components/workflowAiAgentPermissions.utils';
+import { CRUD_PERMISSIONS } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/constants/WorkflowAiAgentCrudPermissions';
 import { workflowAiAgentActionAgentState } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/states/workflowAiAgentActionAgentState';
 import { workflowAiAgentPermissionsIsAddingPermissionState } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/states/workflowAiAgentPermissionsIsAddingPermissionState';
 import { workflowAiAgentPermissionsSelectedObjectIdState } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/states/workflowAiAgentPermissionsSelectedObjectIdState';
@@ -253,7 +254,7 @@ export const useWorkflowAiAgentPermissionActions = ({
       updatedPermission.canDestroyObjectRecords = false;
     }
 
-    const allObjectPermissions = objectPermissions
+    const remainingObjectPermissions = objectPermissions
       .filter((permission) => permission.objectMetadataId !== objectMetadataId)
       .map((permission) => ({
         objectMetadataId: permission.objectMetadataId,
@@ -264,7 +265,7 @@ export const useWorkflowAiAgentPermissionActions = ({
         canDestroyObjectRecords: permission.canDestroyObjectRecords ?? false,
       }));
 
-    allObjectPermissions.push({
+    const updatedObjectPermissionPayload = {
       objectMetadataId: updatedPermission.objectMetadataId,
       canReadObjectRecords: updatedPermission.canReadObjectRecords ?? false,
       canUpdateObjectRecords: updatedPermission.canUpdateObjectRecords ?? false,
@@ -272,7 +273,12 @@ export const useWorkflowAiAgentPermissionActions = ({
         updatedPermission.canSoftDeleteObjectRecords ?? false,
       canDestroyObjectRecords:
         updatedPermission.canDestroyObjectRecords ?? false,
-    });
+    };
+
+    // Omitting a revoked object deletes the row (empty list clears all).
+    const allObjectPermissions = hasGrantedObjectPermission(updatedPermission)
+      ? [...remainingObjectPermissions, updatedObjectPermissionPayload]
+      : remainingObjectPermissions;
 
     await upsertObjectPermissions({
       variables: {

@@ -8,7 +8,7 @@ import { rewriteOutreachResolvedPromptSections } from 'src/engine/core-modules/o
 import { UsageOperationType } from 'src/engine/core-modules/usage/enums/usage-operation-type.enum';
 import { AgentAsyncExecutorService } from 'src/engine/metadata-modules/ai/ai-agent-execution/services/agent-async-executor.service';
 import { type AgentExecutionResult } from 'src/engine/metadata-modules/ai/ai-agent-execution/types/agent-execution-result.type';
-import { WORKFLOW_SYSTEM_PROMPTS } from 'src/engine/metadata-modules/ai/ai-agent/constants/agent-system-prompts.const';
+import { buildWorkflowAgentSystemPrompt } from 'src/engine/metadata-modules/ai/ai-agent/constants/agent-system-prompts.const';
 import { AgentEntity } from 'src/engine/metadata-modules/ai/ai-agent/entities/agent.entity';
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
 import { WorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/workspace-scoped-repository';
@@ -84,8 +84,11 @@ export class AiAgentWorkflowAction implements WorkflowAction {
         ? executionContext.authContext.userWorkspaceId
         : null;
 
-    // Same composition as AgentAsyncExecutorService.generateText `system`
-    const systemPrompt = `${WORKFLOW_SYSTEM_PROMPTS.BASE}\n\n${agent ? agent.prompt : ''}`;
+    // Tool strategy is appended in AgentAsyncExecutorService when tools resolve non-empty
+    const systemPrompt = buildWorkflowAgentSystemPrompt({
+      agentPrompt: agent ? agent.prompt : '',
+      hasTools: false,
+    });
     const logContext =
       `workflowRunId=${runInfo.workflowRunId} stepId=${currentStepId} ` +
       `agentId=${agentId ?? 'n/a'}`;

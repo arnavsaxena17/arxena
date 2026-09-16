@@ -69,9 +69,7 @@ describe('AgentAsyncExecutorService — workflow agent role-scoped tool resoluti
     toolRegistry = { getToolsByCategories: jest.fn().mockResolvedValue({}) };
     roleTargetRepository = { findOne: jest.fn() };
     aiBillingService = {
-      assertHasAvailableCreditsOrThrow: jest
-        .fn()
-        .mockResolvedValue(undefined),
+      assertHasAvailableCreditsOrThrow: jest.fn().mockResolvedValue(undefined),
       decrementAndCheckAvailableCredits: jest
         .fn()
         .mockResolvedValue({ hasNoMoreAvailableCredits: false }),
@@ -171,6 +169,30 @@ describe('AgentAsyncExecutorService — workflow agent role-scoped tool resoluti
     });
 
     expect(toolRegistry.getToolsByCategories).not.toHaveBeenCalled();
+    expect(generateTextMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        system: expect.not.stringContaining('Tool usage strategy'),
+      }),
+    );
+  });
+
+  it('includes tool strategy when registry tools are present', async () => {
+    roleTargetRepository.findOne.mockResolvedValueOnce({ roleId: agentRoleId });
+    toolRegistry.getToolsByCategories.mockResolvedValueOnce({
+      find_many_people: {},
+    });
+
+    await service.executeAgent({
+      agent: buildAgent(),
+      userPrompt: 'test',
+      workspaceId,
+    });
+
+    expect(generateTextMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        system: expect.stringContaining('Tool usage strategy'),
+      }),
+    );
   });
 
   describe('cost folding', () => {
