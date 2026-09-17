@@ -8,7 +8,7 @@ import {
   Logger,
   Param,
   Post,
-  Query
+  Query,
 } from '@nestjs/common';
 import { WorkspaceMemberUnipileService } from '../../arx-chat/services/workspace-member-unipile.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
@@ -78,9 +78,12 @@ export class LinkedInSearchController {
     }
 
     try {
-      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
       const workspaceMemberId =
-        await this.workspaceQueryService.getWorkspaceMemberIdFromToken(apiToken);
+        await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
+          apiToken,
+        );
       const linkedinAccountId =
         await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
           workspaceMemberId,
@@ -98,7 +101,9 @@ export class LinkedInSearchController {
 
       return linkedinAccountId;
     } catch (error) {
-      this.logger.error(`Error getting LinkedIn account ID from token: ${error}`);
+      this.logger.error(
+        `Error getting LinkedIn account ID from token: ${error}`,
+      );
       if (error instanceof HttpException) {
         throw error;
       }
@@ -121,17 +126,24 @@ export class LinkedInSearchController {
     @Headers() headers?: any,
   ): Promise<LinkedInSearchResponse> {
     try {
-      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
+      );
 
-      this.logger.log(`Performing LinkedIn search for account: ${resolvedAccountId}`);
-      
+      this.logger.log(
+        `Performing LinkedIn search for account: ${resolvedAccountId}`,
+      );
+
       const result = await this.linkedInSearchService.search(
         searchRequest,
         resolvedAccountId,
-        { cursor, limit }
+        { cursor, limit },
       );
 
-      this.logger.log(`LinkedIn search completed successfully. Found ${result.items.length} results.`);
+      this.logger.log(
+        `LinkedIn search completed successfully. Found ${result.items.length} results.`,
+      );
       return result;
     } catch (error) {
       this.logger.error('LinkedIn search failed', error);
@@ -162,7 +174,7 @@ export class LinkedInSearchController {
     if (!classified || !matches) {
       throw new HttpException(
         expectedCategory === 'people'
-          ? 'url must be a LinkedIn people search URL (classic /search/results/people, Sales Navigator /sales/search/people, or Recruiter /talent/search)'
+          ? 'url must be a LinkedIn people search URL (classic /search/results/people, Sales Navigator /sales/search/people or /sales/lists/people, or Recruiter /talent/search)'
           : 'url must be a LinkedIn company search URL (classic /search/results/companies or Sales Navigator /sales/search/company)',
         HttpStatus.BAD_REQUEST,
       );
@@ -176,7 +188,8 @@ export class LinkedInSearchController {
    */
   @Post('search/people')
   async searchPeople(
-    @Body() request: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'> & {
+    @Body()
+    request: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'> & {
       url?: string;
     },
     @Query('account_id') accountId: string | undefined,
@@ -185,7 +198,10 @@ export class LinkedInSearchController {
     @Headers() headers?: any,
   ): Promise<LinkedInSearchResponse> {
     try {
-      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
+      );
       const searchUrl = this.extractSearchUrl(request);
 
       if (searchUrl) {
@@ -197,15 +213,19 @@ export class LinkedInSearchController {
         );
       }
 
-      this.logger.log(`Searching for people on LinkedIn for account: ${resolvedAccountId}`);
-      
+      this.logger.log(
+        `Searching for people on LinkedIn for account: ${resolvedAccountId}`,
+      );
+
       const result = await this.linkedInSearchService.searchPeopleClassic(
         request,
         resolvedAccountId,
-        { cursor, limit }
+        { cursor, limit },
       );
 
-      this.logger.log(`People search completed successfully. Found ${result.items.length} results.`);
+      this.logger.log(
+        `People search completed successfully. Found ${result.items.length} results.`,
+      );
       return result;
     } catch (error) {
       this.logger.error('LinkedIn people search failed', error);
@@ -225,7 +245,8 @@ export class LinkedInSearchController {
    */
   @Post('search/people/compare-classic-raw')
   async comparePeopleClassicAndRaw(
-    @Body() request: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
+    @Body()
+    request: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
     @Query('account_id') accountId: string | undefined,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
@@ -244,17 +265,21 @@ export class LinkedInSearchController {
     };
   }> {
     try {
-      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
+      );
 
       this.logger.log(
         `Comparing LinkedIn classic vs raw people search for account: ${resolvedAccountId}`,
       );
 
-      const result = await this.linkedInSearchService.comparePeopleClassicAndRaw(
-        request,
-        resolvedAccountId,
-        { cursor, limit, start, workspaceId },
-      );
+      const result =
+        await this.linkedInSearchService.comparePeopleClassicAndRaw(
+          request,
+          resolvedAccountId,
+          { cursor, limit, start, workspaceId },
+        );
 
       this.logger.log(
         `Comparison completed. classicCount=${result.comparison.classicCount}, rawCount=${result.comparison.rawCount}, overlapById=${result.comparison.overlapById}`,
@@ -262,12 +287,16 @@ export class LinkedInSearchController {
 
       return result;
     } catch (error) {
-      this.logger.error('LinkedIn classic vs raw people search comparison failed', error);
+      this.logger.error(
+        'LinkedIn classic vs raw people search comparison failed',
+        error,
+      );
       if (error instanceof HttpException) {
         throw error;
       }
       throw new HttpException(
-        error.message || 'LinkedIn classic vs raw people search comparison failed',
+        error.message ||
+          'LinkedIn classic vs raw people search comparison failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -278,7 +307,8 @@ export class LinkedInSearchController {
    */
   @Post('search/companies')
   async searchCompanies(
-    @Body() request: Omit<LinkedInClassicCompaniesSearchRequest, 'api' | 'category'> & {
+    @Body()
+    request: Omit<LinkedInClassicCompaniesSearchRequest, 'api' | 'category'> & {
       url?: string;
     },
     @Query('account_id') accountId: string | undefined,
@@ -287,11 +317,17 @@ export class LinkedInSearchController {
     @Headers() headers?: any,
   ): Promise<LinkedInSearchResponse> {
     try {
-      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
+      );
       const searchUrl = this.extractSearchUrl(request);
 
       if (searchUrl) {
-        const normalizedUrl = this.assertSearchUrlCategory(searchUrl, 'companies');
+        const normalizedUrl = this.assertSearchUrlCategory(
+          searchUrl,
+          'companies',
+        );
         return await this.linkedInSearchService.searchFromUrl(
           normalizedUrl,
           resolvedAccountId,
@@ -299,15 +335,19 @@ export class LinkedInSearchController {
         );
       }
 
-      this.logger.log(`Searching for companies on LinkedIn for account: ${resolvedAccountId}`);
-      
+      this.logger.log(
+        `Searching for companies on LinkedIn for account: ${resolvedAccountId}`,
+      );
+
       const result = await this.linkedInSearchService.searchCompanies(
         request,
         resolvedAccountId,
-        { cursor, limit }
+        { cursor, limit },
       );
 
-      this.logger.log(`Companies search completed successfully. Found ${result.items.length} results.`);
+      this.logger.log(
+        `Companies search completed successfully. Found ${result.items.length} results.`,
+      );
       return result;
     } catch (error) {
       this.logger.error('LinkedIn companies search failed', error);
@@ -326,24 +366,32 @@ export class LinkedInSearchController {
    */
   @Post('search/posts')
   async searchPosts(
-    @Body() request: Omit<LinkedInClassicPostsSearchRequest, 'api' | 'category'>,
+    @Body()
+    request: Omit<LinkedInClassicPostsSearchRequest, 'api' | 'category'>,
     @Query('account_id') accountId: string | undefined,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
     @Headers() headers?: any,
   ): Promise<LinkedInSearchResponse> {
     try {
-      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
+      );
 
-      this.logger.log(`Searching for posts on LinkedIn for account: ${resolvedAccountId}`);
-      
+      this.logger.log(
+        `Searching for posts on LinkedIn for account: ${resolvedAccountId}`,
+      );
+
       const result = await this.linkedInSearchService.searchPosts(
         request,
         resolvedAccountId,
-        { cursor, limit }
+        { cursor, limit },
       );
 
-      this.logger.log(`Posts search completed successfully. Found ${result.items.length} results.`);
+      this.logger.log(
+        `Posts search completed successfully. Found ${result.items.length} results.`,
+      );
       return result;
     } catch (error) {
       this.logger.error('LinkedIn posts search failed', error);
@@ -369,17 +417,24 @@ export class LinkedInSearchController {
     @Headers() headers?: any,
   ): Promise<LinkedInSearchResponse> {
     try {
-      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
+      );
 
-      this.logger.log(`Searching for jobs on LinkedIn for account: ${resolvedAccountId}`);
-      
+      this.logger.log(
+        `Searching for jobs on LinkedIn for account: ${resolvedAccountId}`,
+      );
+
       const result = await this.linkedInSearchService.searchJobs(
         request,
         resolvedAccountId,
-        { cursor, limit }
+        { cursor, limit },
       );
 
-      this.logger.log(`Projects search completed successfully. Found ${result.items.length} results.`);
+      this.logger.log(
+        `Projects search completed successfully. Found ${result.items.length} results.`,
+      );
       return result;
     } catch (error) {
       this.logger.error('LinkedIn jobs search failed', error);
@@ -398,7 +453,11 @@ export class LinkedInSearchController {
    */
   @Post('search/sales-navigator/people')
   async searchPeopleSalesNavigator(
-    @Body() request: Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'> & {
+    @Body()
+    request: Omit<
+      LinkedInSalesNavigatorPeopleSearchRequest,
+      'api' | 'category'
+    > & {
       url?: string;
     },
     @Query('account_id') accountId: string | undefined,
@@ -407,7 +466,10 @@ export class LinkedInSearchController {
     @Headers() headers?: any,
   ): Promise<LinkedInSearchResponse> {
     try {
-      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
+      );
       const searchUrl = this.extractSearchUrl(request);
 
       if (searchUrl) {
@@ -419,15 +481,20 @@ export class LinkedInSearchController {
         );
       }
 
-      this.logger.log(`Searching for people on LinkedIn Sales Navigator for account: ${resolvedAccountId}`);
-      
-      const result = await this.linkedInSearchService.searchPeopleSalesNavigator(
-        request,
-        resolvedAccountId,
-        { cursor, limit }
+      this.logger.log(
+        `Searching for people on LinkedIn Sales Navigator for account: ${resolvedAccountId}`,
       );
 
-      this.logger.log(`Sales Navigator people search completed successfully. Found ${result.items.length} results.`);
+      const result =
+        await this.linkedInSearchService.searchPeopleSalesNavigator(
+          request,
+          resolvedAccountId,
+          { cursor, limit },
+        );
+
+      this.logger.log(
+        `Sales Navigator people search completed successfully. Found ${result.items.length} results.`,
+      );
       return result;
     } catch (error) {
       this.logger.error('LinkedIn Sales Navigator people search failed', error);
@@ -446,7 +513,11 @@ export class LinkedInSearchController {
    */
   @Post('search/sales-navigator/companies')
   async searchCompaniesSalesNavigator(
-    @Body() request: Omit<LinkedInSalesNavigatorCompaniesSearchRequest, 'api' | 'category'> & {
+    @Body()
+    request: Omit<
+      LinkedInSalesNavigatorCompaniesSearchRequest,
+      'api' | 'category'
+    > & {
       url?: string;
     },
     @Query('account_id') accountId: string | undefined,
@@ -455,11 +526,17 @@ export class LinkedInSearchController {
     @Headers() headers?: any,
   ): Promise<LinkedInSearchResponse> {
     try {
-      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
+      );
       const searchUrl = this.extractSearchUrl(request);
 
       if (searchUrl) {
-        const normalizedUrl = this.assertSearchUrlCategory(searchUrl, 'companies');
+        const normalizedUrl = this.assertSearchUrlCategory(
+          searchUrl,
+          'companies',
+        );
         return await this.linkedInSearchService.searchFromUrl(
           normalizedUrl,
           resolvedAccountId,
@@ -467,18 +544,26 @@ export class LinkedInSearchController {
         );
       }
 
-      this.logger.log(`Searching for companies on LinkedIn Sales Navigator for account: ${resolvedAccountId}`);
-      
-      const result = await this.linkedInSearchService.searchCompaniesSalesNavigator(
-        request,
-        resolvedAccountId,
-        { cursor, limit }
+      this.logger.log(
+        `Searching for companies on LinkedIn Sales Navigator for account: ${resolvedAccountId}`,
       );
 
-      this.logger.log(`Sales Navigator companies search completed successfully. Found ${result.items.length} results.`);
+      const result =
+        await this.linkedInSearchService.searchCompaniesSalesNavigator(
+          request,
+          resolvedAccountId,
+          { cursor, limit },
+        );
+
+      this.logger.log(
+        `Sales Navigator companies search completed successfully. Found ${result.items.length} results.`,
+      );
       return result;
     } catch (error) {
-      this.logger.error('LinkedIn Sales Navigator companies search failed', error);
+      this.logger.error(
+        'LinkedIn Sales Navigator companies search failed',
+        error,
+      );
       if (error instanceof HttpException) {
         throw error;
       }
@@ -494,7 +579,8 @@ export class LinkedInSearchController {
    */
   @Post('search/recruiter/people')
   async searchPeopleRecruiter(
-    @Body() request: Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'> & {
+    @Body()
+    request: Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'> & {
       url?: string;
     },
     @Query('account_id') accountId: string | undefined,
@@ -503,7 +589,10 @@ export class LinkedInSearchController {
     @Headers() headers?: any,
   ): Promise<LinkedInSearchResponse> {
     try {
-      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
+      );
       const searchUrl = this.extractSearchUrl(request);
 
       if (searchUrl) {
@@ -515,15 +604,19 @@ export class LinkedInSearchController {
         );
       }
 
-      this.logger.log(`Searching for people on LinkedIn Recruiter for account: ${resolvedAccountId}`);
-      
+      this.logger.log(
+        `Searching for people on LinkedIn Recruiter for account: ${resolvedAccountId}`,
+      );
+
       const result = await this.linkedInSearchService.searchPeopleRecruiter(
         request,
         resolvedAccountId,
-        { cursor, limit }
+        { cursor, limit },
       );
 
-      this.logger.log(`Recruiter people search completed successfully. Found ${result.items.length} results.`);
+      this.logger.log(
+        `Recruiter people search completed successfully. Found ${result.items.length} results.`,
+      );
       return result;
     } catch (error) {
       this.logger.error('LinkedIn Recruiter people search failed', error);
@@ -549,21 +642,28 @@ export class LinkedInSearchController {
     @Headers() headers?: any,
   ): Promise<LinkedInSearchResponse> {
     try {
-      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
+      );
 
       if (!body.url) {
         throw new HttpException('URL is required', HttpStatus.BAD_REQUEST);
       }
 
-      this.logger.log(`Searching LinkedIn using URL for account: ${resolvedAccountId}`);
-      
+      this.logger.log(
+        `Searching LinkedIn using URL for account: ${resolvedAccountId}`,
+      );
+
       const result = await this.linkedInSearchService.searchFromUrl(
         body.url,
         resolvedAccountId,
-        { cursor, limit }
+        { cursor, limit },
       );
 
-      this.logger.log(`URL search completed successfully. Found ${result.items.length} results.`);
+      this.logger.log(
+        `URL search completed successfully. Found ${result.items.length} results.`,
+      );
       return result;
     } catch (error) {
       this.logger.error('LinkedIn URL search failed', error);
@@ -588,21 +688,28 @@ export class LinkedInSearchController {
     @Headers() headers?: any,
   ): Promise<LinkedInSearchResponse> {
     try {
-      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
+      );
 
       if (!body.cursor) {
         throw new HttpException('Cursor is required', HttpStatus.BAD_REQUEST);
       }
 
-      this.logger.log(`Continuing LinkedIn search with cursor for account: ${resolvedAccountId}`);
-      
+      this.logger.log(
+        `Continuing LinkedIn search with cursor for account: ${resolvedAccountId}`,
+      );
+
       const result = await this.linkedInSearchService.searchWithCursor(
         body.cursor,
         resolvedAccountId,
-        { limit }
+        { limit },
       );
 
-      this.logger.log(`Cursor search completed successfully. Found ${result.items.length} results.`);
+      this.logger.log(
+        `Cursor search completed successfully. Found ${result.items.length} results.`,
+      );
       return result;
     } catch (error) {
       this.logger.error('LinkedIn cursor search failed', error);
@@ -630,7 +737,10 @@ export class LinkedInSearchController {
     @Headers() headers?: any,
   ): Promise<UnipileUserRelationsList> {
     try {
-      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
+      );
 
       this.logger.log(
         `Listing LinkedIn relations for account: ${resolvedAccountId} (limit=${limit ?? 'default'})`,
@@ -641,9 +751,7 @@ export class LinkedInSearchController {
         { cursor, limit, filter },
       );
 
-      this.logger.log(
-        `Retrieved ${result.items.length} LinkedIn relations.`,
-      );
+      this.logger.log(`Retrieved ${result.items.length} LinkedIn relations.`);
       return result;
     } catch (error) {
       this.logger.error('Failed to list LinkedIn relations', error);
@@ -668,14 +776,19 @@ export class LinkedInSearchController {
     @Headers() headers?: any,
   ): Promise<LinkedInSearchParametersList> {
     try {
-      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
+      );
 
-      this.logger.log(`Getting LinkedIn location parameters for account: ${resolvedAccountId}`);
-      
+      this.logger.log(
+        `Getting LinkedIn location parameters for account: ${resolvedAccountId}`,
+      );
+
       const result = await this.linkedInSearchService.getLocationParameters(
         resolvedAccountId,
         keywords,
-        limit
+        limit,
       );
 
       this.logger.log(`Retrieved ${result.items.length} location parameters`);
@@ -703,14 +816,19 @@ export class LinkedInSearchController {
     @Headers() headers?: any,
   ): Promise<LinkedInSearchParametersList> {
     try {
-      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
+      );
 
-      this.logger.log(`Getting LinkedIn industry parameters for account: ${resolvedAccountId}`);
-      
+      this.logger.log(
+        `Getting LinkedIn industry parameters for account: ${resolvedAccountId}`,
+      );
+
       const result = await this.linkedInSearchService.getIndustryParameters(
         resolvedAccountId,
         keywords,
-        limit
+        limit,
       );
 
       this.logger.log(`Retrieved ${result.items.length} industry parameters`);
@@ -738,14 +856,19 @@ export class LinkedInSearchController {
     @Headers() headers?: any,
   ): Promise<LinkedInSearchParametersList> {
     try {
-      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
+      );
 
-      this.logger.log(`Getting LinkedIn company parameters for account: ${resolvedAccountId}`);
-      
+      this.logger.log(
+        `Getting LinkedIn company parameters for account: ${resolvedAccountId}`,
+      );
+
       const result = await this.linkedInSearchService.getCompanyParameters(
         resolvedAccountId,
         keywords,
-        limit
+        limit,
       );
 
       this.logger.log(`Retrieved ${result.items.length} company parameters`);
@@ -773,14 +896,19 @@ export class LinkedInSearchController {
     @Headers() headers?: any,
   ): Promise<LinkedInSearchParametersList> {
     try {
-      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
+      );
 
-      this.logger.log(`Getting LinkedIn school parameters for account: ${resolvedAccountId}`);
-      
+      this.logger.log(
+        `Getting LinkedIn school parameters for account: ${resolvedAccountId}`,
+      );
+
       const result = await this.linkedInSearchService.getSchoolParameters(
         resolvedAccountId,
         keywords,
-        limit
+        limit,
       );
 
       this.logger.log(`Retrieved ${result.items.length} school parameters`);
@@ -808,14 +936,19 @@ export class LinkedInSearchController {
     @Headers() headers?: any,
   ): Promise<LinkedInSearchParametersList> {
     try {
-      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
+      );
 
-      this.logger.log(`Getting LinkedIn job title parameters for account: ${resolvedAccountId}`);
-      
+      this.logger.log(
+        `Getting LinkedIn job title parameters for account: ${resolvedAccountId}`,
+      );
+
       const result = await this.linkedInSearchService.getJobTitleParameters(
         resolvedAccountId,
         keywords,
-        limit
+        limit,
       );
 
       this.logger.log(`Retrieved ${result.items.length} job title parameters`);
@@ -843,14 +976,19 @@ export class LinkedInSearchController {
     @Headers() headers?: any,
   ): Promise<LinkedInSearchParametersList> {
     try {
-      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
+      );
 
-      this.logger.log(`Getting LinkedIn skill parameters for account: ${resolvedAccountId}`);
-      
+      this.logger.log(
+        `Getting LinkedIn skill parameters for account: ${resolvedAccountId}`,
+      );
+
       const result = await this.linkedInSearchService.getSkillParameters(
         resolvedAccountId,
         keywords,
-        limit
+        limit,
       );
 
       this.logger.log(`Retrieved ${result.items.length} skill parameters`);
@@ -877,19 +1015,30 @@ export class LinkedInSearchController {
     @Headers() headers?: any,
   ): Promise<LinkedInSearchParametersList> {
     try {
-      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
-
-      this.logger.log(`Getting LinkedIn saved searches parameters for account: ${resolvedAccountId}`);
-      
-      const result = await this.linkedInSearchService.getSavedSearchesParameters(
-        resolvedAccountId,
-        limit
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
       );
 
-      this.logger.log(`Retrieved ${result.items.length} saved searches parameters`);
+      this.logger.log(
+        `Getting LinkedIn saved searches parameters for account: ${resolvedAccountId}`,
+      );
+
+      const result =
+        await this.linkedInSearchService.getSavedSearchesParameters(
+          resolvedAccountId,
+          limit,
+        );
+
+      this.logger.log(
+        `Retrieved ${result.items.length} saved searches parameters`,
+      );
       return result;
     } catch (error) {
-      this.logger.error('Failed to get LinkedIn saved searches parameters', error);
+      this.logger.error(
+        'Failed to get LinkedIn saved searches parameters',
+        error,
+      );
       if (error instanceof HttpException) {
         throw error;
       }
@@ -910,19 +1059,30 @@ export class LinkedInSearchController {
     @Headers() headers?: any,
   ): Promise<LinkedInSearchParametersList> {
     try {
-      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
-
-      this.logger.log(`Getting LinkedIn recent searches parameters for account: ${resolvedAccountId}`);
-      
-      const result = await this.linkedInSearchService.getRecentSearchesParameters(
-        resolvedAccountId,
-        limit
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
       );
 
-      this.logger.log(`Retrieved ${result.items.length} recent searches parameters`);
+      this.logger.log(
+        `Getting LinkedIn recent searches parameters for account: ${resolvedAccountId}`,
+      );
+
+      const result =
+        await this.linkedInSearchService.getRecentSearchesParameters(
+          resolvedAccountId,
+          limit,
+        );
+
+      this.logger.log(
+        `Retrieved ${result.items.length} recent searches parameters`,
+      );
       return result;
     } catch (error) {
-      this.logger.error('Failed to get LinkedIn recent searches parameters', error);
+      this.logger.error(
+        'Failed to get LinkedIn recent searches parameters',
+        error,
+      );
       if (error instanceof HttpException) {
         throw error;
       }
@@ -937,7 +1097,10 @@ export class LinkedInSearchController {
    * Map URL path segment values to LinkedIn API enum values.
    * Unipile API expects uppercase enum (e.g. SKILL, LOCATION), not plural path values (skills, locations).
    */
-  private static readonly PARAM_TYPE_MAP: Record<string, LinkedInSearchParameterType> = {
+  private static readonly PARAM_TYPE_MAP: Record<
+    string,
+    LinkedInSearchParameterType
+  > = {
     skills: 'SKILL',
     locations: 'LOCATION',
     industries: 'INDUSTRY',
@@ -961,20 +1124,28 @@ export class LinkedInSearchController {
     @Headers() headers?: any,
   ): Promise<LinkedInSearchParametersList> {
     try {
-      const resolvedAccountId = await this.getAccountId(accountId, headers || {});
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
+      );
 
       const apiType: LinkedInSearchParameterType =
-        LinkedInSearchController.PARAM_TYPE_MAP[type] ?? (type as LinkedInSearchParameterType);
+        LinkedInSearchController.PARAM_TYPE_MAP[type] ??
+        (type as LinkedInSearchParameterType);
 
-      this.logger.log(`Getting LinkedIn search parameters for type: ${apiType}, account: ${resolvedAccountId}`);
+      this.logger.log(
+        `Getting LinkedIn search parameters for type: ${apiType}, account: ${resolvedAccountId}`,
+      );
 
       const result = await this.linkedInSearchService.getSearchParameters(
         apiType,
         resolvedAccountId,
-        { limit, keywords }
+        { limit, keywords },
       );
 
-      this.logger.log(`Retrieved ${result.items.length} parameters for type: ${apiType}`);
+      this.logger.log(
+        `Retrieved ${result.items.length} parameters for type: ${apiType}`,
+      );
       return result;
     } catch (error) {
       this.logger.error('Failed to get LinkedIn search parameters', error);

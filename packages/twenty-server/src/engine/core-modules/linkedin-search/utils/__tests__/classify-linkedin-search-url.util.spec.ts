@@ -17,6 +17,18 @@ describe('classifyLinkedInSearchUrl', () => {
     expect(isHarvestSalesNavigatorPeopleSearchUrl(classified)).toBe(true);
   });
 
+  it('classifies Sales Navigator saved people list URLs for Unipile, not Harvest', () => {
+    const classified = classifyLinkedInSearchUrl(
+      'https://www.linkedin.com/sales/lists/people/7242931776162041856?sortCriteria=CREATED_TIME&sortOrder=DESCENDING',
+    );
+
+    expect(classified).toMatchObject({
+      category: 'people',
+      product: 'sales_navigator',
+    });
+    expect(isHarvestSalesNavigatorPeopleSearchUrl(classified)).toBe(false);
+  });
+
   it('classifies classic people and company search URLs', () => {
     expect(
       classifyLinkedInSearchUrl(
@@ -57,15 +69,21 @@ describe('classifyLinkedInSearchUrl', () => {
   it('extracts Sales Navigator account list ids', () => {
     expect(
       extractSalesNavigatorAccountListId(
-        'https://www.linkedin.com/sales/accounts/dashboard?listGroup=CUSTOM_LISTS&listId=7378394885466337283',
+        'https://www.linkedin.com/sales/accounts/dashboard?listGroup=CUSTOM_LISTS&listId=7496487791112110080',
       ),
-    ).toBe('7378394885466337283');
+    ).toBe('7496487791112110080');
 
     expect(
       extractSalesNavigatorAccountListId(
         'https://www.linkedin.com/sales/accounts/dashboard?listGroup=CUSTOM_LISTS&listId=ACCOUNT_7378394885466337283',
       ),
     ).toBe('7378394885466337283');
+
+    expect(
+      extractSalesNavigatorAccountListId(
+        'https://www.linkedin.com/sales/lists/people/7242931776162041856?sortCriteria=CREATED_TIME&sortOrder=DESCENDING',
+      ),
+    ).toBeNull();
 
     expect(
       extractSalesNavigatorAccountListId(

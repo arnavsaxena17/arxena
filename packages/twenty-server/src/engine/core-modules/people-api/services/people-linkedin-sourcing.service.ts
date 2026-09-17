@@ -355,7 +355,7 @@ export class PeopleLinkedInSourcingService {
     const classified = classifyLinkedInSearchUrl(searchUrl);
     if (!isPeopleLinkedInSearchUrl(classified) || !classified) {
       throw new HttpException(
-        'searchUrl must be a LinkedIn people search URL (classic /search/results/people, Sales Navigator /sales/search/people, or Recruiter /talent/search)',
+        'searchUrl must be a LinkedIn people search URL (classic /search/results/people, Sales Navigator /sales/search/people or /sales/lists/people, or Recruiter /talent/search)',
         HttpStatus.BAD_REQUEST,
       );
     }

@@ -31,6 +31,15 @@ export const classifyLinkedInSearchUrl = (
     };
   }
 
+  // Saved Sales Navigator lead lists — Unipile accepts these as people URL search
+  if (pathname.includes('/sales/lists/people')) {
+    return {
+      url: parsed.toString(),
+      category: 'people',
+      product: 'sales_navigator',
+    };
+  }
+
   if (
     pathname.includes('/sales/search/company') ||
     pathname.includes('/sales/search/companies')
@@ -82,9 +91,23 @@ export const isCompanyLinkedInSearchUrl = (
 
 export const isHarvestSalesNavigatorPeopleSearchUrl = (
   classified: ClassifiedLinkedInSearchUrl | null,
-): boolean =>
-  classified?.category === 'people' &&
-  classified.product === 'sales_navigator';
+): boolean => {
+  if (
+    classified?.category !== 'people' ||
+    classified.product !== 'sales_navigator'
+  ) {
+    return false;
+  }
+
+  // Harvest only supports Sales Nav people search, not saved lead lists
+  try {
+    const pathname = new URL(classified.url).pathname.toLowerCase();
+
+    return pathname.includes('/sales/search/people');
+  } catch {
+    return false;
+  }
+};
 
 export const extractSalesNavigatorAccountListId = (
   raw: string,
@@ -95,6 +118,12 @@ export const extractSalesNavigatorAccountListId = (
   }
 
   const pathname = parsed.pathname.toLowerCase();
+
+  // People lead lists share /sales/lists but are not account lists
+  if (pathname.includes('/sales/lists/people')) {
+    return null;
+  }
+
   const rawId =
     parsed.searchParams.get('listId') ?? parsed.searchParams.get('list_id');
   if (!rawId?.trim()) {

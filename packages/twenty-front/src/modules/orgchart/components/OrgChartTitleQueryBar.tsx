@@ -1,6 +1,13 @@
-import type { KeyboardEvent } from 'react';
+import type { FocusEvent, KeyboardEvent } from 'react';
+import { useCallback } from 'react';
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
+
+import { usePushFocusItemToFocusStack } from '@/ui/utilities/focus/hooks/usePushFocusItemToFocusStack';
+import { useRemoveFocusItemFromFocusStackById } from '@/ui/utilities/focus/hooks/useRemoveFocusItemFromFocusStackById';
+import { FocusComponentType } from '@/ui/utilities/focus/types/FocusComponentType';
+
+const ORG_CHART_TITLE_QUERY_FOCUS_ID = 'org-chart-title-query-input';
 
 const StyledWrap = styled.div`
   display: flex;
@@ -133,6 +140,10 @@ export const OrgChartTitleQueryBar = ({
   isSubmitting,
   resolved,
 }: OrgChartTitleQueryBarProps) => {
+  const { pushFocusItemToFocusStack } = usePushFocusItemToFocusStack();
+  const { removeFocusItemFromFocusStackById } =
+    useRemoveFocusItemFromFocusStackById();
+
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       event.preventDefault();
@@ -141,6 +152,29 @@ export const OrgChartTitleQueryBar = ({
       }
     }
   };
+
+  // Same as company search: page `g` go-to hotkeys steal keystrokes otherwise.
+  const handleFocus = useCallback(() => {
+    pushFocusItemToFocusStack({
+      focusId: ORG_CHART_TITLE_QUERY_FOCUS_ID,
+      component: {
+        type: FocusComponentType.TEXT_INPUT,
+        instanceId: ORG_CHART_TITLE_QUERY_FOCUS_ID,
+      },
+      globalHotkeysConfig: {
+        enableGlobalHotkeysConflictingWithKeyboard: false,
+      },
+    });
+  }, [pushFocusItemToFocusStack]);
+
+  const handleBlur = useCallback(
+    (_event: FocusEvent<HTMLInputElement>) => {
+      removeFocusItemFromFocusStackById({
+        focusId: ORG_CHART_TITLE_QUERY_FOCUS_ID,
+      });
+    },
+    [removeFocusItemFromFocusStackById],
+  );
 
   const chips: Array<{ key: string; label: string }> = [];
 
@@ -182,6 +216,8 @@ export const OrgChartTitleQueryBar = ({
           aria-label="Resolve job title on org chart"
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={handleKeyDown}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
         />
         <StyledSubmit
           type="button"
