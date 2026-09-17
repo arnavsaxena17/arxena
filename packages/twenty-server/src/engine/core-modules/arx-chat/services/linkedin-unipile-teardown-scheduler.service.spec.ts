@@ -5,10 +5,12 @@ describe('LinkedinUnipileTeardownSchedulerService', () => {
   const workspaceId = 'workspace-1';
   const accountId = 'account-1';
   const authToken = 'auth-token';
+  const projectId = `linkedin-unipile-teardown-${workspaceMemberId}`;
 
   const createService = (options?: {
     idleTtlMs?: number;
     queueAvailable?: boolean;
+    existingJobs?: Array<{ id: string; data: { workspaceMemberId: string } }>;
   }) => {
     const idleTtlMs = options?.idleTtlMs ?? 300_000;
     const queueAvailable = options?.queueAvailable ?? true;
@@ -25,8 +27,11 @@ describe('LinkedinUnipileTeardownSchedulerService', () => {
 
     const teardownQueue = queueAvailable
       ? {
-          scheduleOrRescheduleDelayed: jest.fn(),
-          cancelDelayed: jest.fn(),
+          getInFlightJobs: jest
+            .fn()
+            .mockResolvedValue(options?.existingJobs ?? []),
+          removeJob: jest.fn().mockResolvedValue(undefined),
+          add: jest.fn().mockResolvedValue(undefined),
         }
       : undefined;
 
@@ -48,7 +53,7 @@ describe('LinkedinUnipileTeardownSchedulerService', () => {
       authToken,
     });
 
-    expect(teardownQueue?.scheduleOrRescheduleDelayed).toHaveBeenCalledWith(
+    expect(teardownQueue?.add).toHaveBeenCalledWith(
       'LinkedinUnipileTeardownProcessor',
       expect.objectContaining({
         workspaceMemberId,
@@ -57,20 +62,27 @@ describe('LinkedinUnipileTeardownSchedulerService', () => {
         authToken,
       }),
       {
-        id: `linkedin-unipile-teardown-${workspaceMemberId}`,
-        delayMs: 300_000,
+        id: projectId,
+        delay: 300_000,
+        allowDuplicatedPrefixes: true,
       },
     );
   });
 
   it('cancels pending disconnect by workspace member id', async () => {
-    const { service, teardownQueue } = createService();
+    const existingJobId = `${projectId}-uuid`;
+    const { service, teardownQueue } = createService({
+      existingJobs: [
+        {
+          id: existingJobId,
+          data: { workspaceMemberId },
+        },
+      ],
+    });
 
     await service.cancelPendingDisconnect(workspaceMemberId);
 
-    expect(teardownQueue?.cancelDelayed).toHaveBeenCalledWith(
-      `linkedin-unipile-teardown-${workspaceMemberId}`,
-    );
+    expect(teardownQueue?.removeJob).toHaveBeenCalledWith(existingJobId);
   });
 
   it('clamps idle ttl to supported bounds', async () => {
@@ -83,10 +95,10 @@ describe('LinkedinUnipileTeardownSchedulerService', () => {
       authToken,
     });
 
-    expect(teardownQueue?.scheduleOrRescheduleDelayed).toHaveBeenCalledWith(
+    expect(teardownQueue?.add).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(Object),
-      expect.objectContaining({ delayMs: 60_000 }),
+      expect.objectContaining({ delay: 60_000 }),
     );
   });
 });

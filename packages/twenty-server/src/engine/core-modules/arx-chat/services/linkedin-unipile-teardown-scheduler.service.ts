@@ -1,5 +1,7 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 
+import { isDefined } from 'twenty-shared/utils';
+
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
@@ -7,8 +9,8 @@ import { MessageQueueService } from 'src/engine/core-modules/message-queue/servi
 
 import { LinkedinUnipileTeardownJobData } from '../types/linkedin-unipile-teardown.types';
 import {
-    getLinkedinUnipileTeardownProjectId,
-    LINKEDIN_UNIPILE_TEARDOWN_PROCESSOR_NAME,
+  getLinkedinUnipileTeardownProjectId,
+  LINKEDIN_UNIPILE_TEARDOWN_PROCESSOR_NAME,
 } from '../utils/linkedin-unipile-teardown-job.util';
 
 const DEFAULT_IDLE_TTL_MS = 5 * 60 * 1000;
@@ -17,7 +19,9 @@ const MAX_IDLE_TTL_MS = 60 * 60 * 1000;
 
 @Injectable()
 export class LinkedinUnipileTeardownSchedulerService {
-  private readonly logger = new Logger(LinkedinUnipileTeardownSchedulerService.name);
+  private readonly logger = new Logger(
+    LinkedinUnipileTeardownSchedulerService.name,
+  );
 
   constructor(
     private readonly environmentService: EnvironmentService,
@@ -31,10 +35,36 @@ export class LinkedinUnipileTeardownSchedulerService {
       this.environmentService.get('LINKEDIN_UNIPILE_SESSION_IDLE_TTL_MS') ??
       DEFAULT_IDLE_TTL_MS;
 
-    return Math.min(
-      MAX_IDLE_TTL_MS,
-      Math.max(MIN_IDLE_TTL_MS, configured),
-    );
+    return Math.min(MAX_IDLE_TTL_MS, Math.max(MIN_IDLE_TTL_MS, configured));
+  }
+
+  private async removePendingJobsForMember(
+    workspaceMemberId: string,
+  ): Promise<number> {
+    if (!this.teardownQueue) {
+      return 0;
+    }
+
+    const jobs =
+      await this.teardownQueue.getInFlightJobs<LinkedinUnipileTeardownJobData>();
+    const projectIdPrefix =
+      getLinkedinUnipileTeardownProjectId(workspaceMemberId);
+    let removed = 0;
+
+    for (const job of jobs) {
+      const matchesMember =
+        job.data?.workspaceMemberId === workspaceMemberId ||
+        (isDefined(job.id) && job.id.startsWith(projectIdPrefix));
+
+      if (!matchesMember || !isDefined(job.id)) {
+        continue;
+      }
+
+      await this.teardownQueue.removeJob(job.id);
+      removed += 1;
+    }
+
+    return removed;
   }
 
   async cancelPendingDisconnect(workspaceMemberId: string): Promise<void> {
@@ -43,10 +73,9 @@ export class LinkedinUnipileTeardownSchedulerService {
       return;
     }
 
-    const projectId = getLinkedinUnipileTeardownProjectId(trimmedMemberId);
-    await this.teardownQueue.cancelDelayed(projectId);
+    const removed = await this.removePendingJobsForMember(trimmedMemberId);
     this.logger.log(
-      `Cancelled pending LinkedIn Unipile idle disconnect workspaceMemberId=${trimmedMemberId} projectId=${projectId}`,
+      `Cancelled pending LinkedIn Unipile idle disconnect workspaceMemberId=${trimmedMemberId} removed=${removed}`,
     );
   }
 
@@ -82,10 +111,16 @@ export class LinkedinUnipileTeardownSchedulerService {
       scheduledAt: Date.now(),
     };
 
-    await this.teardownQueue.scheduleOrRescheduleDelayed(
+    // Reschedule: drop any prior delayed/waiting job for this member, then enqueue.
+    await this.removePendingJobsForMember(workspaceMemberId);
+    await this.teardownQueue.add(
       LINKEDIN_UNIPILE_TEARDOWN_PROCESSOR_NAME,
       jobData,
-      { id: projectId, delayMs },
+      {
+        id: projectId,
+        delay: delayMs,
+        allowDuplicatedPrefixes: true,
+      },
     );
 
     this.logger.log(
