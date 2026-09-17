@@ -2,6 +2,11 @@ import type { KeyboardEvent } from 'react';
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
+import { useDisableConflictingHotkeysWhileFocused } from '@/ui/utilities/hotkey/hooks/useDisableConflictingHotkeysWhileFocused';
+
+const ORG_CHART_BUSINESS_DIVISION_FOCUS_ID =
+  'org-chart-business-division-query';
+
 const StyledWrap = styled.div`
   display: flex;
   flex: 1 1 140px;
@@ -84,6 +89,10 @@ export const OrgChartBusinessDivisionQuery = ({
   onSubmit,
   isSubmitting,
 }: OrgChartBusinessDivisionQueryProps) => {
+  const { onFocus, onBlur } = useDisableConflictingHotkeysWhileFocused(
+    ORG_CHART_BUSINESS_DIVISION_FOCUS_ID,
+  );
+
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
@@ -92,13 +101,6 @@ export const OrgChartBusinessDivisionQuery = ({
       }
     }
   };
-
-  // const adjustHeight = (el: HTMLTextAreaElement | null) => {
-  //   if (!el) return;
-  //   el.style.height = 'auto';
-  //   const next = Math.min(el.scrollHeight, 160);
-  //   el.style.height = `${Math.max(next, 36)}px`;
-  // };
 
   return (
     <StyledWrap>
@@ -109,14 +111,12 @@ export const OrgChartBusinessDivisionQuery = ({
           value={value}
           rows={1}
           aria-label="Business division description"
-          // onInput={(event) => {
-          //   // adjustHeight(event.currentTarget);
-          // }}
           onChange={(event) => {
             onChange(event.target.value);
-            // adjustHeight(event.target);
           }}
           onKeyDown={handleKeyDown}
+          onFocus={onFocus}
+          onBlur={onBlur}
         />
         <StyledSubmit
           type="button"

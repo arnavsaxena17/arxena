@@ -39,6 +39,7 @@ import {
     tableStateAtom,
 } from '@/candidate-table/states/states';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useDisableConflictingHotkeysWhileFocused } from '@/ui/utilities/hotkey/hooks/useDisableConflictingHotkeysWhileFocused';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 
@@ -486,6 +487,8 @@ export const ProjectTopBar = memo(
     const tableState = useAtomStateValue(tableStateAtom);
     const columns = useAtomStateValue(columnsSelector);
     const { enqueueErrorSnackBar } = useSnackBar();
+    const { onFocus: handleSearchFocus, onBlur: handleSearchBlur } =
+      useDisableConflictingHotkeysWhileFocused('project-top-bar-search');
 
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -579,6 +582,8 @@ export const ProjectTopBar = memo(
                   placeholder={searchPlaceholder}
                   value={chatSearchQuery}
                   onChange={handleSearchChange}
+                  onFocus={handleSearchFocus}
+                  onBlur={handleSearchBlur}
                 />
               </StyledSearchContainer>
             )}
