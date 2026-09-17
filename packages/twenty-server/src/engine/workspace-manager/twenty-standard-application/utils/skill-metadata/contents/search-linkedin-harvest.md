@@ -54,7 +54,7 @@ Resolve facet IDs with `search_linkedin_parameters` before ID-based filters. Pag
 | `search_linkedin_from_url` | Paste browser search URL |
 | `search_linkedin_continue` | Next page via `cursor` |
 | `list_linkedin_relations` | Last n 1st-degree connections (`limit`); newest first via `created_at` |
-| `search_linkedin_parameters` | Resolve LOCATION / REGION / INDUSTRY / SALES_INDUSTRY / COMPANY / SCHOOL / JOB_TITLE / SKILL / saved\|recent searches |
+| `search_linkedin_parameters` | Resolve LOCATION / REGION / INDUSTRY / SALES_INDUSTRY / COMPANY / SCHOOL / JOB_TITLE / SKILL / **LEAD_LISTS** / **ACCOUNT_LISTS** / saved\|recent searches |
 
 Do **not** call `search_linkedin_with_query` — catalogued but not active in MCP.
 
@@ -74,8 +74,64 @@ search_linkedin_parameters({
 | Industry | `INDUSTRY` | `SALES_INDUSTRY` | `INDUSTRY` |
 | Job title | `JOB_TITLE` | `JOB_TITLE` | `JOB_TITLE` |
 | Company / school / skill | `COMPANY` / `SCHOOL` / `SKILL` | same | same |
+| People / lead lists | — | `LEAD_LISTS` | — |
+| Company / account lists | — | `ACCOUNT_LISTS` | — |
 
 Use returned `id` values in `searchParameters`. Never invent facet IDs.
+
+### Sales Navigator lead & account lists
+
+When the user asks to search / import from a **named** Sales Nav list (or “what lists do I have?”), resolve list IDs first — do **not** invent list IDs and do **not** require a pasted URL.
+
+**List all lead (people) lists** — `keywords` optional (omit to return every list):
+
+```
+search_linkedin_parameters({
+  "parameterType": "LEAD_LISTS",
+  "limit": 100
+})
+```
+
+**List all account (company) lists:**
+
+```
+search_linkedin_parameters({
+  "parameterType": "ACCOUNT_LISTS",
+  "limit": 100
+})
+```
+
+Optional `keywords` filters by list title (e.g. `"SDI"`). Match returned `title` to the user’s list name, then search:
+
+**People from a lead list** — pass list `id` into `lead_lists.include`:
+
+```json
+{
+  "searchType": "sales_navigator",
+  "searchParameters": {
+    "api": "sales_navigator",
+    "category": "people",
+    "lead_lists": { "include": ["7242931776162041856"] }
+  },
+  "limit": 25
+}
+```
+
+**Companies from an account list** — pass list `id` into `account_lists.include`:
+
+```json
+{
+  "searchType": "sales_navigator",
+  "searchParameters": {
+    "api": "sales_navigator",
+    "category": "companies",
+    "account_lists": { "include": ["7496487791112110080"] }
+  },
+  "limit": 25
+}
+```
+
+If the user pastes a `/sales/lists/people/{id}` or `/sales/accounts/dashboard?listId=...` URL, prefer `search_linkedin_from_url` (or Company API for account-list URLs) instead of resolving by name.
 
 ### Shape rules by search type (critical)
 
@@ -200,13 +256,19 @@ If continue fails with `invalid_cursor`, re-extract from the spill file — do n
 | Spill file (`outputRef.fileId`) | `$.result.items[*]` via `code_interpreter` | `extract_json_paths` → `$.result.cursor` |
 | Inline tool result (not spilled) | use `preview.result.items` in the response | still prefer `extract_json_paths` on the spill file when `spilled: true` |
 
-**Sales Navigator saved people list** (`/sales/lists/people/{id}` — user says import / find / add leads):
+**Sales Navigator saved people list** (`/sales/lists/people/{id}` — user pastes a URL):
 
 1. `search_linkedin_from_url({ url, limit: 25 })` — save `outputRef.fileId` as page 0.
 2. Loop: `extract_json_paths` → cursor from spill file → `search_linkedin_continue({ cursor, limit: 25 })` until all pages fetched (`paging.start + paging.page_count >= paging.total_count`).
 3. **One** `code_interpreter`: mount all page files, map each `result.items[]` → `{ name, title, companyName, linkedinUrl, stage: "queued" }` (see **People** field mapping).
 4. **One** `execute_tool({ toolName: "upsert_outreach_target_people", arguments: { projectId, mode: "merge", people } })`.
 5. Do not call `search_help_center` for this URL shape. Do not upsert from inside `code_interpreter`.
+
+**Named Sales Navigator lead list** (user says a list name, no URL) — resolve via parameters first:
+
+1. `search_linkedin_parameters({ parameterType: "LEAD_LISTS", limit: 100 })` (optional `keywords` to filter by title).
+2. Pick the matching list `id` from `items[].title`.
+3. `search_linkedin_people` with `searchType: "sales_navigator"` and `lead_lists: { include: ["<id>"] }`, then paginate / upsert as above.
 
 **Recently added connections** — use `list_linkedin_relations` (not `search_linkedin_people`):
 
@@ -269,6 +331,7 @@ After `search_linkedin_parameters`, check that returned `title` roughly matches 
 
 - Respect LinkedIn rate limits; fetch only the last n connections the user asked for.
 - Do not invent facet IDs — always resolve via `search_linkedin_parameters`.
+- For named Sales Nav lists: resolve with `LEAD_LISTS` / `ACCOUNT_LISTS` first, then search with `lead_lists` / `account_lists` — never invent list IDs.
 - Call `generate_linkedin_query_set` only once per unique requirement.
 - For Sales Navigator people, use `role` / `{ include: [...] }` — never classic flat `job_title` or bare arrays.
 - On Outreach after people search: follow **Ephemeral write contract** (preamble) → `execute_tool` `upsert_outreach_target_people` — do not enroll until user confirms.

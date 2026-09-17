@@ -66,6 +66,14 @@ const LINKEDIN_PARAMETER_TYPE_MAP: Record<string, string> = {
   RECENT_SEARCHES: 'RECENT_SEARCHES',
   'recent-searches': 'RECENT_SEARCHES',
   'recent-search': 'RECENT_SEARCHES',
+  LEAD_LISTS: 'LEAD_LISTS',
+  'lead-lists': 'LEAD_LISTS',
+  'lead-list': 'LEAD_LISTS',
+  lead_lists: 'LEAD_LISTS',
+  ACCOUNT_LISTS: 'ACCOUNT_LISTS',
+  'account-lists': 'ACCOUNT_LISTS',
+  'account-list': 'ACCOUNT_LISTS',
+  account_lists: 'ACCOUNT_LISTS',
 };
 
 const normalizeLinkedInParameterType = (parameterType: string): string =>
@@ -471,7 +479,7 @@ export const linkedinSearchTools: McpTool[] = [
     definition: {
       name: 'search_linkedin_parameters',
       description:
-        'Get LinkedIn search parameters (locations, industries, companies, schools, job titles, skills).',
+        "Get LinkedIn search parameters (locations, industries, companies, schools, job titles, skills). For Sales Navigator: use LEAD_LISTS / ACCOUNT_LISTS to list the connected account's people and company lists (keywords optional — omit to return all), then pass returned ids into search_linkedin_people lead_lists or search_linkedin_companies account_lists.",
       inputSchema: (() => {
         const baseSchema = descriptorToInputSchema(
           SEARCH_LINKEDIN_PARAMETERS_INPUT_DESCRIPTOR,
@@ -491,6 +499,8 @@ export const linkedinSearchTools: McpTool[] = [
                 'SCHOOL',
                 'JOB_TITLE',
                 'SKILL',
+                'LEAD_LISTS',
+                'ACCOUNT_LISTS',
                 'SAVED_SEARCHES',
                 'RECENT_SEARCHES',
                 'locations',
@@ -500,6 +510,8 @@ export const linkedinSearchTools: McpTool[] = [
                 'schools',
                 'job-titles',
                 'skills',
+                'lead-lists',
+                'account-lists',
                 'saved-searches',
                 'recent-searches',
               ],
@@ -520,11 +532,19 @@ export const linkedinSearchTools: McpTool[] = [
       if (limit) queryParams.limit = String(limit);
       const normalizedType = normalizeLinkedInParameterType(parameterType);
 
+      // Prefer kebab path aliases for list types (dedicated controller routes)
+      const pathType =
+        normalizedType === 'LEAD_LISTS'
+          ? 'lead-lists'
+          : normalizedType === 'ACCOUNT_LISTS'
+            ? 'account-lists'
+            : normalizedType;
+
       return callRestAPIGet(
         config.baseUrl,
         config.apiToken,
         'linkedin-search',
-        `parameters/${normalizedType}`,
+        `parameters/${pathType}`,
         queryParams,
       );
     },

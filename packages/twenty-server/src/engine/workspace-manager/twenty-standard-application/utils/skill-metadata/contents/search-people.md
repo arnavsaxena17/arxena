@@ -76,6 +76,7 @@ Live LinkedIn people. **Full facet workflow: LinkedIn / Harvest section below.**
 
 - `searchType`: `classic`, `sales_navigator`, or `recruiter` — check **Connected Accounts** in the system prompt.
 - Resolve facet IDs with `search_linkedin_parameters` before ID-based filters.
+- Named Sales Nav lead lists: `search_linkedin_parameters({ parameterType: "LEAD_LISTS" })` → `search_linkedin_people` with `lead_lists.include`.
 - `search_linkedin_from_url` for pasted LinkedIn / Sales Nav / Recruiter URLs.
 - Recently added 1st-degree connections: `list_linkedin_relations` with `limit` = n.
 - Do **not** call `search_linkedin_with_query` (not active in MCP).

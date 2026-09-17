@@ -370,7 +370,7 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
     pack: 'prospecting',
     label: 'Search Linkedin Parameters',
     description:
-      'Search Linkedin Parameters (prospecting pack). Use for GTM prospecting workflows.',
+      'Resolve LinkedIn facet IDs (location, industry, …) and Sales Nav LEAD_LISTS / ACCOUNT_LISTS for the connected account.',
   },
   {
     name: 'generate_linkedin_query_set',

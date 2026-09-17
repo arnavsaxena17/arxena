@@ -1,4 +1,3 @@
-
 export const classicRules = `
   STRICT RULES FOR CLASSIC SEARCH
 
@@ -45,33 +44,31 @@ export const classicRules = `
   • All other fields: Set to null unless explicitly mentioned in requirement
 `;
 
-
-  
 export const salesNavRules = `
   STRICT RULES FOR SALES NAVIGATOR SEARCH
-  
+
   9-Keyword Maximum Rule (Mandatory for Sales Navigator):
   The keywords field may contain maximum 9 Boolean terms.
   • Each quoted phrase counts as one term (e.g., "word1 word2" = 1 term).
   • Each unquoted word counts as one term (e.g., word1 = 1 term, word2 = 1 term).
   • Boolean operators (AND, OR, NOT) and parentheses do NOT count as terms.
   • The total number of terms inside the keywords string must never exceed 9.
-  
+
   TERM COUNTING EXAMPLES:
   - "word1 word2" OR "word3 word4" OR "word5 word6" OR "word7 word8" = 4 terms ✓
   - ("word1 word2" OR "word3 word4" OR chro OR "VP HR") AND manufacturing = 5 terms ✓
   - ("word1 word2" OR "word3 word4" OR "word5 word6" OR chro) AND (term1 OR term2 OR term3 OR term4 OR term5) = 9 terms ✓
   - ("word1 word2" OR "word3 word4" OR "word5 word6" OR chro) AND (term1 OR term2 OR term3 OR term4 OR term5 OR term6) = 10 terms ✗ (EXCEEDS LIMIT)
-  
+
   LOCATION HANDLING FOR SALES NAVIGATOR:
   • Extract location from keywords
   • Set in location object: { "include": ["Gujarat", "Ahmedabad"], "exclude": null }
   • Format: location: { include: string[] | null, exclude: string[] | null } | null
-  
+
   VALIDATION REQUIRED:
   Before returning your response, count the terms in each query's keywords field.
   If any query exceeds 9 terms, you MUST split it further or simplify it.
-  
+
   SALES NAVIGATOR SPLITTING STRATEGY:
   With 9 term limit (more flexible than Classic), you should:
   • Aim for comprehensive single query when possible
@@ -80,7 +77,7 @@ export const salesNavRules = `
     2. Multiple distinct seniority levels exist (C-suite vs VP vs Manager)
     3. Multiple distinct role families exist
   • Keep splits to 2-4 queries unless requirement is very broad
-  
+
   SALES NAVIGATOR FIELD RULES:
   • keywords: Required, max 9 terms
   • location: Object with include/exclude arrays
@@ -93,10 +90,9 @@ export const salesNavRules = `
     - saved_search_id, recent_search_id (no dummy values)
     - first_name, last_name (only if searching for specific person)
     - network_distance (only if user specifies connection level)
-    - persona, account_lists, lead_lists (only if user mentions them)
+    - persona, account_lists, lead_lists (only if user mentions them — resolve list names to IDs via search parameters type LEAD_LISTS / ACCOUNT_LISTS first; never invent list IDs)
     - All engagement fields (following_your_company, viewed_profile, etc.) should be null
   `;
-  
 
 export const recruiterRules = `
   STRICT RULES FOR RECRUITER SEARCH
@@ -135,10 +131,6 @@ export const recruiterRules = `
     - hiring_projects, recruiting_activity (only if user mentions them)
 `;
 
-  
-
-
-
 export const basePrompt = `
   Interpret a natural-language LinkedIn People search strategy and generate multiple search queries that produce mutually exclusive, cumulatively exhaustive (MECE) search results.
 
@@ -160,7 +152,7 @@ export const basePrompt = `
     - recent_search_id (only if user references a recent search)
     - first_name, last_name (only if user specifies a person's name)
     - persona (only if user mentions specific personas)
-    - account_lists, lead_lists (only if user specifies list names)
+    - account_lists, lead_lists (only if user specifies list names — IDs must come from LEAD_LISTS / ACCOUNT_LISTS parameter lookup, never invent)
     - Any ID fields should be null unless you have real values
 
   LOCATION EXTRACTION (CRITICAL):
@@ -230,8 +222,6 @@ export const basePrompt = `
   • Company mentions are examples, not exhaustive targets
 `;
 
-
-
 const parameterGenerationInputFormat = `
   INPUT FORMAT:
   You will receive:
@@ -257,23 +247,24 @@ const parameterGenerationInputFormat = `
   4. Only split into multiple queries when truly necessary for MECE or term limits
   5. Prefer keywords over industry filters unless specifically required
   6. Each query should target a distinct, non-overlapping candidate segment
-`
+`;
 
+export const parameterGenerationPrompt = (
+  searchType: 'classic' | 'sales_navigator' | 'recruiter',
+): string => {
+  let searchTypeRules = '';
+  if (searchType === 'classic') {
+    searchTypeRules = classicRules;
+  } else if (searchType === 'sales_navigator') {
+    searchTypeRules = salesNavRules;
+  } else {
+    searchTypeRules = recruiterRules;
+  }
 
-export const parameterGenerationPrompt = (searchType: 'classic' | 'sales_navigator' | 'recruiter'): string => {
-    let searchTypeRules = '';
-    if (searchType === 'classic') {
-      searchTypeRules = classicRules;
-    } else if (searchType === 'sales_navigator') {
-      searchTypeRules = salesNavRules;
-    } else {
-      searchTypeRules = recruiterRules;
-    }
-
-    const parameterGenerationPrompt = `
+  const parameterGenerationPrompt = `
     ${basePrompt}
     ${searchTypeRules}
     ${parameterGenerationInputFormat}
     `;
-    return parameterGenerationPrompt;
-  };
+  return parameterGenerationPrompt;
+};

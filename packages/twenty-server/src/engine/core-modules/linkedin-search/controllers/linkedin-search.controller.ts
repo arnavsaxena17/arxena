@@ -1094,6 +1094,84 @@ export class LinkedInSearchController {
   }
 
   /**
+   * Get Sales Navigator lead (people) lists for the connected account
+   */
+  @Get('parameters/lead-lists')
+  async getLeadListsParameters(
+    @Query('account_id') accountId: string | undefined,
+    @Query('limit') limit?: number,
+    @Query('keywords') keywords?: string,
+    @Headers() headers?: any,
+  ): Promise<LinkedInSearchParametersList> {
+    try {
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
+      );
+
+      this.logger.log(
+        `Getting LinkedIn lead lists for account: ${resolvedAccountId}`,
+      );
+
+      const result = await this.linkedInSearchService.getLeadListsParameters(
+        resolvedAccountId,
+        { keywords, limit },
+      );
+
+      this.logger.log(`Retrieved ${result.items.length} lead lists`);
+      return result;
+    } catch (error) {
+      this.logger.error('Failed to get LinkedIn lead lists', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error.message || 'Failed to get LinkedIn lead lists',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Get Sales Navigator account (company) lists for the connected account
+   */
+  @Get('parameters/account-lists')
+  async getAccountListsParameters(
+    @Query('account_id') accountId: string | undefined,
+    @Query('limit') limit?: number,
+    @Query('keywords') keywords?: string,
+    @Headers() headers?: any,
+  ): Promise<LinkedInSearchParametersList> {
+    try {
+      const resolvedAccountId = await this.getAccountId(
+        accountId,
+        headers || {},
+      );
+
+      this.logger.log(
+        `Getting LinkedIn account lists for account: ${resolvedAccountId}`,
+      );
+
+      const result = await this.linkedInSearchService.getAccountListsParameters(
+        resolvedAccountId,
+        { keywords, limit },
+      );
+
+      this.logger.log(`Retrieved ${result.items.length} account lists`);
+      return result;
+    } catch (error) {
+      this.logger.error('Failed to get LinkedIn account lists', error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error.message || 'Failed to get LinkedIn account lists',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
    * Map URL path segment values to LinkedIn API enum values.
    * Unipile API expects uppercase enum (e.g. SKILL, LOCATION), not plural path values (skills, locations).
    */
@@ -1109,6 +1187,8 @@ export class LinkedInSearchController {
     'job-titles': 'JOB_TITLE',
     'saved-searches': 'SAVED_SEARCHES',
     'recent-searches': 'RECENT_SEARCHES',
+    'lead-lists': 'LEAD_LISTS',
+    'account-lists': 'ACCOUNT_LISTS',
   };
 
   /**

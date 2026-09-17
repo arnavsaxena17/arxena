@@ -1,13 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
-import moment from 'moment';
+import moment from 'moment-timezone';
 
 import { GoogleCalendarService } from 'src/engine/core-modules/calendar-events/google-calendar.service';
 import { OutreachWorkspaceAuthTokenService } from 'src/engine/core-modules/outreach-command/services/outreach-workspace-auth-token.service';
 
-// Flip to false for hardcoded weekday 11:00 slots (no Google call)
+// Flip to false for hardcoded weekday slots (no Google call)
 const USE_LIVE_GOOGLE_CALENDAR = true;
+
+const DEFAULT_AVAILABILITY_TIMEZONE = 'Asia/Kolkata';
+const DEFAULT_WINDOW_START_HOUR = 10;
+const DEFAULT_WINDOW_END_HOUR = 17;
+const DEFAULT_MAX_SLOTS = 12;
 
 export type GetCalendarAvailabilityInput = {
   workspaceMemberId?: string;
@@ -18,6 +23,59 @@ export type GetCalendarAvailabilityInput = {
 export type CalendarSlot = {
   startsAt: string;
   endsAt: string;
+};
+
+// Always-available weekday windows when Google Calendar is not connected.
+const buildDefaultAlwaysAvailableSlots = ({
+  days,
+  slotMinutes,
+}: {
+  days: number;
+  slotMinutes: number;
+}): CalendarSlot[] => {
+  const slots: CalendarSlot[] = [];
+  const cursor = moment
+    .tz(DEFAULT_AVAILABILITY_TIMEZONE)
+    .add(1, 'day')
+    .hour(DEFAULT_WINDOW_START_HOUR)
+    .minute(0)
+    .second(0)
+    .millisecond(0);
+  const latest = moment
+    .tz(DEFAULT_AVAILABILITY_TIMEZONE)
+    .add(days, 'days')
+    .endOf('day');
+
+  while (cursor.isBefore(latest) && slots.length < DEFAULT_MAX_SLOTS) {
+    const hour = cursor.hour();
+    const weekday = cursor.isoWeekday();
+
+    if (
+      weekday <= 5 &&
+      hour >= DEFAULT_WINDOW_START_HOUR &&
+      hour < DEFAULT_WINDOW_END_HOUR
+    ) {
+      const slotEnd = cursor.clone().add(slotMinutes, 'minutes');
+
+      slots.push({
+        startsAt: cursor.toISOString(),
+        endsAt: slotEnd.toISOString(),
+      });
+    }
+
+    cursor.add(slotMinutes, 'minutes');
+
+    if (cursor.hour() >= DEFAULT_WINDOW_END_HOUR) {
+      cursor
+        .add(1, 'day')
+        .hour(DEFAULT_WINDOW_START_HOUR)
+        .minute(0)
+        .second(0)
+        .millisecond(0);
+    }
+  }
+
+  return slots;
 };
 
 @Injectable()
@@ -46,39 +104,39 @@ export class GetCalendarAvailabilityService {
     const timeMax = moment().add(days, 'days').endOf('day').toISOString();
 
     if (!USE_LIVE_GOOGLE_CALENDAR) {
-      const slots: CalendarSlot[] = [];
-      const cursor = moment().add(1, 'day').hour(11).minute(0).second(0);
-
-      while (slots.length < 6) {
-        if (cursor.isoWeekday() <= 5) {
-          slots.push({
-            startsAt: cursor.toISOString(),
-            endsAt: cursor.clone().add(slotMinutes, 'minutes').toISOString(),
-          });
-        }
-        cursor.add(1, 'day');
-      }
+      const slots = buildDefaultAlwaysAvailableSlots({ days, slotMinutes });
 
       this.logger.log(
-        `USE_LIVE_GOOGLE_CALENDAR=false: mock calendar slots (${slots.length})`,
+        `USE_LIVE_GOOGLE_CALENDAR=false: default IST slots (${slots.length})`,
       );
 
       return { success: true, slots, error: '' };
     }
+
+    const fallbackToDefaultAvailability = (reason: string) => {
+      const slots = buildDefaultAlwaysAvailableSlots({ days, slotMinutes });
+
+      this.logger.warn(
+        `get-calendar-availability: ${reason}; using default 10:00-17:00 IST slots (${slots.length})`,
+      );
+
+      return { success: true, slots, error: '' };
+    };
 
     try {
       const apiToken =
         await this.gtmWorkspaceAuthTokenService.resolveOrMint(workspaceId);
 
       if (!isNonEmptyString(apiToken)) {
-        return {
-          success: false,
-          slots: [],
-          error: 'Workspace API token is required for calendar availability',
-        };
+        return fallbackToDefaultAvailability('Workspace API token unavailable');
       }
 
       const auth = await this.googleCalendarService.authorize(apiToken);
+
+      if (!auth?.credentials?.refresh_token) {
+        return fallbackToDefaultAvailability('Google Calendar not connected');
+      }
+
       const events = (await this.googleCalendarService.listEvents(
         auth,
         timeMin,
@@ -99,7 +157,7 @@ export class GetCalendarAvailabilityService {
       const cursor = moment().add(1, 'hour').startOf('hour');
       const latest = moment(timeMax);
 
-      while (cursor.isBefore(latest) && slots.length < 12) {
+      while (cursor.isBefore(latest) && slots.length < DEFAULT_MAX_SLOTS) {
         const hour = cursor.hour();
         const weekday = cursor.isoWeekday();
 
@@ -129,11 +187,9 @@ export class GetCalendarAvailabilityService {
     } catch (error) {
       this.logger.error('get-calendar-availability failed', error);
 
-      return {
-        success: false,
-        slots: [],
-        error: error instanceof Error ? error.message : String(error),
-      };
+      return fallbackToDefaultAvailability(
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 }

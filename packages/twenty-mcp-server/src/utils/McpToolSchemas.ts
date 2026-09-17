@@ -1641,14 +1641,15 @@ export const SEARCH_LINKEDIN_PARAMETERS_INPUT_DESCRIPTOR: readonly McpInputField
       key: 'parameterType',
       type: 'string',
       description:
-        'Facet type: LOCATION, REGION (Sales Nav geography), INDUSTRY, SALES_INDUSTRY, COMPANY, SCHOOL, JOB_TITLE, SKILL, SAVED_SEARCHES, RECENT_SEARCHES (aliases like locations, job-titles also work)',
+        'Facet type: LOCATION, REGION (Sales Nav geography), INDUSTRY, SALES_INDUSTRY, COMPANY, SCHOOL, JOB_TITLE, SKILL, LEAD_LISTS (Sales Nav people/lead lists), ACCOUNT_LISTS (Sales Nav company/account lists), SAVED_SEARCHES, RECENT_SEARCHES (aliases like locations, job-titles, lead-lists, account-lists also work)',
       required: true,
     },
     {
       key: 'keywords',
       type: 'string',
-      description: 'Keywords to filter parameters',
-      required: true,
+      description:
+        'Keywords to filter parameters. Optional for LEAD_LISTS / ACCOUNT_LISTS / SAVED_SEARCHES / RECENT_SEARCHES (omit to return all lists for the connected account).',
+      required: false,
     },
     {
       key: 'limit',
@@ -3060,7 +3061,8 @@ export const LINKEDIN_UNIPILE_POST_REACTION_INPUT_DESCRIPTOR: readonly McpInputF
     {
       key: 'post_id',
       type: 'string',
-      description: 'Post social_id from FETCH_LINKEDIN_ACTIVITY / get_user_posts',
+      description:
+        'Post social_id from FETCH_LINKEDIN_ACTIVITY / get_user_posts',
       required: true,
     },
     {
@@ -3079,7 +3081,8 @@ export const LINKEDIN_UNIPILE_POST_REACTION_INPUT_DESCRIPTOR: readonly McpInputF
     {
       key: 'as_organization',
       type: 'string',
-      description: 'Optional LinkedIn organization id to react as a company page',
+      description:
+        'Optional LinkedIn organization id to react as a company page',
       required: false,
     },
   ] as const;

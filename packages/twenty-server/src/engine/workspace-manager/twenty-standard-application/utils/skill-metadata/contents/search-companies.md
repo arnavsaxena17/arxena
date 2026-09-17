@@ -75,6 +75,7 @@ Live LinkedIn company results. **Full facet workflow: LinkedIn / Harvest section
 
 - `searchType`: `classic` or `sales_navigator`.
 - Resolve geo/industry facet IDs with `search_linkedin_parameters` (`LOCATION`, `INDUSTRY`).
+- Named Sales Nav account lists: `search_linkedin_parameters({ parameterType: "ACCOUNT_LISTS" })` → `search_linkedin_companies` with `account_lists.include`.
 - `search_linkedin_from_url` for a pasted LinkedIn company search URL.
 - Do **not** call `search_linkedin_with_query` (not active in MCP).
 

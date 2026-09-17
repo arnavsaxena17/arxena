@@ -2,34 +2,34 @@ import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { ApifyLinkedInCompanyProfileTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/apify-linkedin-company-profile-transformer.service';
 import type { TransformedCandidateForTable } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import {
-    ApifyService,
-    type ApifyRunLogProgressArgs,
+  ApifyService,
+  type ApifyRunLogProgressArgs,
 } from '../../apify/services/apify.service';
 import { withAcquiredAccountRateLimit } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
 import {
-    isLinkedInSearchCursorRequest,
-    shouldCountLinkedInSearchQuota,
-    type LinkedInSearchQuotaInput,
+  isLinkedInSearchCursorRequest,
+  shouldCountLinkedInSearchQuota,
+  type LinkedInSearchQuotaInput,
 } from 'src/engine/core-modules/linkedin-search/utils/linkedin-search-quota.util';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { LinkedInSearchParameterType } from '../types/linkedin-search-parameter.type';
 import {
-    LinkedInClassicCompaniesSearchRequest,
-    LinkedInClassicJobsSearchRequest,
-    LinkedInClassicPeopleSearchRequest,
-    LinkedInClassicPostsSearchRequest,
-    LinkedInRecruiterPeopleSearchRequest,
-    LinkedInSalesNavigatorCompaniesSearchRequest,
-    LinkedInSalesNavigatorPeopleSearchRequest,
-    LinkedInSearchFromUrlRequest,
-    LinkedInSearchRequest,
-    LinkedInSearchWithCursorRequest
+  LinkedInClassicCompaniesSearchRequest,
+  LinkedInClassicJobsSearchRequest,
+  LinkedInClassicPeopleSearchRequest,
+  LinkedInClassicPostsSearchRequest,
+  LinkedInRecruiterPeopleSearchRequest,
+  LinkedInSalesNavigatorCompaniesSearchRequest,
+  LinkedInSalesNavigatorPeopleSearchRequest,
+  LinkedInSearchFromUrlRequest,
+  LinkedInSearchRequest,
+  LinkedInSearchWithCursorRequest,
 } from '../types/linkedin-search-request.type';
 import {
-    LinkedInErrorResponse,
-    LinkedInSearchParametersList,
-    LinkedInSearchResponse,
+  LinkedInErrorResponse,
+  LinkedInSearchParametersList,
+  LinkedInSearchResponse,
 } from '../types/linkedin-search-response.type';
 import {
   normalizeSalesNavigatorCompaniesSearchRequest,
@@ -40,11 +40,12 @@ import {
   SALES_NAVIGATOR_ACCOUNT_LIST_DEFAULT_SORT_ORDER,
   toUnipileV2AccountListId,
 } from '../utils/sales-navigator-account-list-sort.util';
+import { isSalesNavigatorSearchParameterType } from '../utils/sales-navigator-search-parameter-type.util';
 import { RawSearchRequestBuilder } from '../utils/raw-search-request-builder.util';
 import {
-    clampUnipileRelationsLimit,
-    normalizeUnipileUserRelationsList,
-    type UnipileUserRelationsList,
+  clampUnipileRelationsLimit,
+  normalizeUnipileUserRelationsList,
+  type UnipileUserRelationsList,
 } from '../utils/unipile-user-relations.util';
 import { LinkedInHtmlParserService } from './linkedin-html-parser.service';
 import { LinkedInSessionTrackerService } from './linkedin-session-tracker.service';
@@ -160,7 +161,10 @@ export class LinkedInSearchService {
     }
 
     // Ensure minimum 1 second delay between requests
-    this.minRequestIntervalMs = Math.max(1000, Number(process.env.LINKEDIN_REQUEST_DELAY_MS ?? 1000));
+    this.minRequestIntervalMs = Math.max(
+      1000,
+      Number(process.env.LINKEDIN_REQUEST_DELAY_MS ?? 1000),
+    );
   }
 
   /**
@@ -176,7 +180,7 @@ export class LinkedInSearchService {
       start?: number;
       offset?: number;
       countSearchQuota?: boolean;
-    } = {}
+    } = {},
   ): Promise<LinkedInSearchResponse> {
     try {
       return await this.unipileSearchResultsCache.getOrFetch(
@@ -215,67 +219,80 @@ export class LinkedInSearchService {
         countSearchQuota: options.countSearchQuota,
       },
       async () => {
-    // Track request if workspaceId is provided
-    if (options.workspaceId) {
-      const trackingResult = await this.requestTracker.trackRequest(options.workspaceId, 'search');
+        // Track request if workspaceId is provided
+        if (options.workspaceId) {
+          const trackingResult = await this.requestTracker.trackRequest(
+            options.workspaceId,
+            'search',
+          );
 
-      if (!trackingResult.allowed) {
-        throw new Error(trackingResult.warning || 'LinkedIn request limit exceeded');
-      }
+          if (!trackingResult.allowed) {
+            throw new Error(
+              trackingResult.warning || 'LinkedIn request limit exceeded',
+            );
+          }
 
-      if (trackingResult.warning) {
-        this.logger.warn(trackingResult.warning);
-      }
-    }
+          if (trackingResult.warning) {
+            this.logger.warn(trackingResult.warning);
+          }
+        }
 
-    const url = `${this.baseUrl}/api/v1/linkedin/search`;
-    this.logger.debug(
-      `LinkedIn search request:
+        const url = `${this.baseUrl}/api/v1/linkedin/search`;
+        this.logger.debug(
+          `LinkedIn search request:
           URL: ${url}
           Account ID: ${accountId}
           Options: ${JSON.stringify(options, null, 2)}
-          Search Request: ${JSON.stringify(searchRequest, null, 2)}`
-    );
-    const queryParams = new URLSearchParams({
-      account_id: accountId,
-      ...(options.cursor && { cursor: options.cursor }),
-      ...(options.limit != null && { limit: options.limit.toString() }),
-    });
+          Search Request: ${JSON.stringify(searchRequest, null, 2)}`,
+        );
+        const queryParams = new URLSearchParams({
+          account_id: accountId,
+          ...(options.cursor && { cursor: options.cursor }),
+          ...(options.limit != null && { limit: options.limit.toString() }),
+        });
 
-    this.logger.log(`Making LinkedIn API call with URL: ${url}?${queryParams}`);
-    this.logger.log(`Request body: ${JSON.stringify(searchRequest, null, 2)}`);
-    const response = await this.searchWithRetry(url, queryParams, searchRequest);
-    this.logger.log(
-      `LinkedIn search response: ${JSON.stringify(
-        response.items.map((item) => {
-          if (item.type !== 'PEOPLE') {
-            return { id: item.id ?? '', type: item.type };
-          }
+        this.logger.log(
+          `Making LinkedIn API call with URL: ${url}?${queryParams}`,
+        );
+        this.logger.log(
+          `Request body: ${JSON.stringify(searchRequest, null, 2)}`,
+        );
+        const response = await this.searchWithRetry(
+          url,
+          queryParams,
+          searchRequest,
+        );
+        this.logger.log(
+          `LinkedIn search response: ${JSON.stringify(
+            response.items.map((item) => {
+              if (item.type !== 'PEOPLE') {
+                return { id: item.id ?? '', type: item.type };
+              }
 
-          const jobTitles = (item.current_positions ?? [])
-            .map((position) => position.role)
-            .filter(Boolean);
-          const currentPositions = (item.current_positions ?? []).map(
-            (position) => ({
-              role: position.role,
-              company: position.company,
-              company_id: position.company_id,
+              const jobTitles = (item.current_positions ?? [])
+                .map((position) => position.role)
+                .filter(Boolean);
+              const currentPositions = (item.current_positions ?? []).map(
+                (position) => ({
+                  role: position.role,
+                  company: position.company,
+                  company_id: position.company_id,
+                }),
+              );
+
+              return {
+                id: item.id ?? '',
+                name: item.name,
+                headline: item.headline,
+                jobTitles,
+                current_positions: currentPositions,
+              };
             }),
-          );
-
-          return {
-            id: item.id ?? '',
-            name: item.name,
-            headline: item.headline,
-            jobTitles,
-            current_positions: currentPositions,
-          };
-        }),
-        null,
-        2,
-      )}`,
-    );
-    return response;
+            null,
+            2,
+          )}`,
+        );
+        return response;
       },
       searchRequest,
     );
@@ -290,7 +307,7 @@ export class LinkedInSearchService {
     queryParams: URLSearchParams,
     searchRequest: LinkedInSearchRequest,
     retryCount = 0,
-    maxRetries = 1
+    maxRetries = 1,
   ): Promise<LinkedInSearchResponse> {
     await this.enforceRequestSpacing();
 
@@ -309,16 +326,26 @@ export class LinkedInSearchService {
       // Exponential backoff: 2^retryCount seconds (2s, 4s, 8s, 16s)
       const backoffMs = Math.min(2000 * Math.pow(2, retryCount), 16000);
       this.logger.warn(
-        `Received 503 error (Service unavailable), waiting ${backoffMs / 1000}s before retry (attempt ${retryCount + 1}/${maxRetries})`
+        `Received 503 error (Service unavailable), waiting ${backoffMs / 1000}s before retry (attempt ${retryCount + 1}/${maxRetries})`,
       );
       await this.delay(backoffMs);
-      return this.searchWithRetry(url, queryParams, searchRequest, retryCount + 1, maxRetries);
+      return this.searchWithRetry(
+        url,
+        queryParams,
+        searchRequest,
+        retryCount + 1,
+        maxRetries,
+      );
     }
 
     if (!response.ok) {
       const errorData: LinkedInErrorResponse = await response.json();
-      this.logger.error(`LinkedIn API error response: ${JSON.stringify(errorData, null, 2)}`);
-      throw new Error(`LinkedIn search failed: ${errorData.title} - ${errorData.detail || 'Unknown error'}`);
+      this.logger.error(
+        `LinkedIn API error response: ${JSON.stringify(errorData, null, 2)}`,
+      );
+      throw new Error(
+        `LinkedIn search failed: ${errorData.title} - ${errorData.detail || 'Unknown error'}`,
+      );
     }
 
     const data: LinkedInSearchResponse = await response.json();
@@ -345,14 +372,15 @@ export class LinkedInSearchService {
 
     try {
       await this.enforceRequestSpacing();
-      const data = await this.linkedinUnipileRequestService.fetchLinkedinRelations(
-        accountId,
-        {
-          limit,
-          cursor: options.cursor,
-          filter: options.filter,
-        },
-      );
+      const data =
+        await this.linkedinUnipileRequestService.fetchLinkedinRelations(
+          accountId,
+          {
+            limit,
+            cursor: options.cursor,
+            filter: options.filter,
+          },
+        );
 
       const result = normalizeUnipileUserRelationsList(data, limit);
       this.logger.log(
@@ -374,7 +402,8 @@ export class LinkedInSearchService {
     options: {
       limit?: number;
       keywords?: string;
-    } = {}
+      service?: 'CLASSIC' | 'RECRUITER' | 'SALES_NAVIGATOR';
+    } = {},
   ): Promise<LinkedInSearchParametersList> {
     try {
       // Location / company / industry / other facet lookups are not a people
@@ -387,16 +416,25 @@ export class LinkedInSearchService {
           method: 'endpoint',
         },
         async () => {
-      const url = `${this.baseUrl}/api/v1/linkedin/search/parameters`;
-      const queryParams = new URLSearchParams({
-        type,
-        account_id: accountId,
-        ...(options.limit && { limit: options.limit.toString() }),
-        ...(options.keywords && { keywords: options.keywords }),
-      });
-      this.logger.log(`Query params in getSearchParameters:: ${queryParams}`);
+          const url = `${this.baseUrl}/api/v1/linkedin/search/parameters`;
+          // Sales Nav list / geography facets need service=SALES_NAVIGATOR
+          const service =
+            options.service ??
+            (isSalesNavigatorSearchParameterType(type)
+              ? 'SALES_NAVIGATOR'
+              : undefined);
+          const queryParams = new URLSearchParams({
+            type,
+            account_id: accountId,
+            ...(options.limit && { limit: options.limit.toString() }),
+            ...(options.keywords && { keywords: options.keywords }),
+            ...(service && { service }),
+          });
+          this.logger.log(
+            `Query params in getSearchParameters:: ${queryParams}`,
+          );
 
-      return await this.getSearchParametersWithRetry(url, queryParams);
+          return await this.getSearchParametersWithRetry(url, queryParams);
         },
       );
     } catch (error) {
@@ -412,28 +450,39 @@ export class LinkedInSearchService {
     url: string,
     queryParams: URLSearchParams,
     retryCount = 0,
-    maxRetries = 1
+    maxRetries = 1,
   ): Promise<LinkedInSearchParametersList> {
     await this.enforceRequestSpacing();
 
     const response = await fetch(`${url}?${queryParams}`, {
       method: 'GET',
-      headers: { 'X-API-KEY': this.apiKey, },
+      headers: { 'X-API-KEY': this.apiKey },
     });
 
     if (response.status === 503 && retryCount < maxRetries) {
-      this.logger.warn(`Received 503 error when getting search parameters, waiting 3 seconds before retry (attempt ${retryCount + 1}/${maxRetries})`);
+      this.logger.warn(
+        `Received 503 error when getting search parameters, waiting 3 seconds before retry (attempt ${retryCount + 1}/${maxRetries})`,
+      );
       await this.delay(3000);
-      return this.getSearchParametersWithRetry(url, queryParams, retryCount + 1, maxRetries);
+      return this.getSearchParametersWithRetry(
+        url,
+        queryParams,
+        retryCount + 1,
+        maxRetries,
+      );
     }
 
     if (!response.ok) {
       const errorData: LinkedInErrorResponse = await response.json();
-      throw new Error(`Failed to get LinkedIn search parameters: ${errorData.title} - ${errorData.detail || 'Unknown error'}`);
+      throw new Error(
+        `Failed to get LinkedIn search parameters: ${errorData.title} - ${errorData.detail || 'Unknown error'}`,
+      );
     }
 
     const data: LinkedInSearchParametersList = await response.json();
-    this.logger.log(`Retrieved ${data.items.length} LinkedIn search parameters for type: ${queryParams.get('type')}`);
+    this.logger.log(
+      `Retrieved ${data.items.length} LinkedIn search parameters for type: ${queryParams.get('type')}`,
+    );
 
     return data;
   }
@@ -445,7 +494,12 @@ export class LinkedInSearchService {
   async searchPeopleClassicRaw(
     request: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
     accountId: string,
-    options: { cursor?: string; limit?: number; start?: number; workspaceId?: string } = {}
+    options: {
+      cursor?: string;
+      limit?: number;
+      start?: number;
+      workspaceId?: string;
+    } = {},
   ): Promise<LinkedInSearchResponse> {
     try {
       return await this.withSearchQuotaIfNeeded(
@@ -455,113 +509,136 @@ export class LinkedInSearchService {
           start: options.start,
         },
         async () => {
-      // Track request if workspaceId is provided
-      if (options.workspaceId) {
-        const trackingResult = await this.requestTracker.trackRequest(options.workspaceId, 'search');
+          // Track request if workspaceId is provided
+          if (options.workspaceId) {
+            const trackingResult = await this.requestTracker.trackRequest(
+              options.workspaceId,
+              'search',
+            );
 
-        if (!trackingResult.allowed) {
-          throw new Error(trackingResult.warning || 'LinkedIn request limit exceeded');
-        }
+            if (!trackingResult.allowed) {
+              throw new Error(
+                trackingResult.warning || 'LinkedIn request limit exceeded',
+              );
+            }
 
-        if (trackingResult.warning) {
-          this.logger.warn(trackingResult.warning);
-        }
-      }
+            if (trackingResult.warning) {
+              this.logger.warn(trackingResult.warning);
+            }
+          }
 
-      // Build raw request (with optional start for pagination)
-      const rawRequest = RawSearchRequestBuilder.buildRawRequest(request, accountId, {
-        start: options.start,
-        limit: options.limit,
-      });
+          // Build raw request (with optional start for pagination)
+          const rawRequest = RawSearchRequestBuilder.buildRawRequest(
+            request,
+            accountId,
+            {
+              start: options.start,
+              limit: options.limit,
+            },
+          );
 
+          this.logger.log(
+            `LinkedIn raw search request:: ${JSON.stringify(rawRequest, null, 2)}`,
+          );
 
-      this.logger.log(
-        `LinkedIn raw search request:: ${JSON.stringify(rawRequest, null, 2)}`);
+          // Call Unipile raw endpoint
+          const url = `${this.baseUrl}/api/v1/linkedin`;
+          await this.enforceRequestSpacing();
 
-      // Call Unipile raw endpoint
-      const url = `${this.baseUrl}/api/v1/linkedin`;
-      await this.enforceRequestSpacing();
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-API-KEY': this.apiKey,
+              accept: 'application/json',
+            },
+            body: JSON.stringify(rawRequest),
+          });
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-KEY': this.apiKey,
-          'accept': 'application/json',
-        },
-        body: JSON.stringify(rawRequest),
-      });
+          if (!response.ok) {
+            const errorData: LinkedInErrorResponse = await response.json();
+            this.logger.error(
+              `LinkedIn raw API error response: ${JSON.stringify(errorData, null, 2)}`,
+            );
+            throw new Error(
+              `LinkedIn raw search failed: ${errorData.title} - ${errorData.detail || 'Unknown error'}`,
+            );
+          }
 
+          // Parse response - Unipile returns JSON with HTML in data field
+          const responseData = await response.json();
+          const html = responseData.data || responseData;
 
-      if (!response.ok) {
-        const errorData: LinkedInErrorResponse = await response.json();
-        this.logger.error(`LinkedIn raw API error response: ${JSON.stringify(errorData, null, 2)}`);
-        throw new Error(`LinkedIn raw search failed: ${errorData.title} - ${errorData.detail || 'Unknown error'}`);
-      }
+          // Debug: log raw response for troubleshooting (length + truncated sample)
+          const htmlLength = typeof html === 'string' ? html.length : 0;
+          const sample =
+            typeof html === 'string'
+              ? html.substring(0, 2000).replace(/\s+/g, ' ')
+              : JSON.stringify(responseData).substring(0, 1000);
 
-      // Parse response - Unipile returns JSON with HTML in data field
-      const responseData = await response.json();
-      const html = responseData.data || responseData;
+          this.logger.log(
+            `LinkedIn raw response: htmlLength=${htmlLength}, sample=${sample}`,
+          );
 
-      // Debug: log raw response for troubleshooting (length + truncated sample)
-      const htmlLength = typeof html === 'string' ? html.length : 0;
-      const sample =
-        typeof html === 'string'
-          ? html.substring(0, 2000).replace(/\s+/g, ' ')
-          : JSON.stringify(responseData).substring(0, 1000);
+          if (typeof html !== 'string') {
+            this.logger.error('Expected HTML string in response data');
+            throw new Error(
+              'Invalid response format from LinkedIn raw endpoint',
+            );
+          }
 
-      this.logger.log(`LinkedIn raw response: htmlLength=${htmlLength}, sample=${sample}`);
+          // Parse HTML to extract search results
+          const items = this.htmlParser.parseLinkedInSearchResults(html);
+          this.logger.log(
+            `items in searchPeopleClassicRaw:: ${JSON.stringify(items, null, 2)}`,
+          );
+          this.logger.log(
+            `Parsed ${items.length} LinkedIn search results from HTML`,
+          );
 
-      if (typeof html !== 'string') {
-        this.logger.error('Expected HTML string in response data');
-        throw new Error('Invalid response format from LinkedIn raw endpoint');
-      }
+          // Fallback: if HTML parser returned 0 results but the page is substantial (real data
+          // was returned — not an empty page), the parser may be outdated. Try the JSON endpoint.
+          if (items.length === 0 && htmlLength > 50000) {
+            // Dump a larger HTML sample to help diagnose which selectors are needed
+            const diagnosticSample =
+              typeof html === 'string'
+                ? html.substring(0, 10000).replace(/\s+/g, ' ')
+                : '';
+            this.logger.warn(
+              `HTML parser returned 0 results despite ${htmlLength}-byte response. Falling back to JSON endpoint.\nDiagnostic HTML sample (first 10KB):\n${diagnosticSample}`,
+            );
+            const jsonRequest = {
+              api: 'classic' as const,
+              category: 'people' as const,
+              ...request,
+            };
+            return this.search(jsonRequest, accountId, {
+              cursor: options.cursor,
+              limit: options.limit,
+              workspaceId: options.workspaceId,
+              countSearchQuota: false,
+            });
+          }
 
-      // Parse HTML to extract search results
-      const items = this.htmlParser.parseLinkedInSearchResults(html);
-      this.logger.log(`items in searchPeopleClassicRaw:: ${JSON.stringify(items, null, 2)}`);
-      this.logger.log(`Parsed ${items.length} LinkedIn search results from HTML`);
+          // Build LinkedInSearchResponse
+          const searchResponse: LinkedInSearchResponse = {
+            object: 'LinkedinSearch',
+            items: items,
+            config: {
+              params: request,
+            },
+            paging: {
+              start: options.start ?? 0,
+              page_count: 1,
+              total_count: items.length,
+            },
+            cursor: null,
+          };
 
-      // Fallback: if HTML parser returned 0 results but the page is substantial (real data
-      // was returned — not an empty page), the parser may be outdated. Try the JSON endpoint.
-      if (items.length === 0 && htmlLength > 50000) {
-        // Dump a larger HTML sample to help diagnose which selectors are needed
-        const diagnosticSample = typeof html === 'string'
-          ? html.substring(0, 10000).replace(/\s+/g, ' ')
-          : '';
-        this.logger.warn(
-          `HTML parser returned 0 results despite ${htmlLength}-byte response. Falling back to JSON endpoint.\nDiagnostic HTML sample (first 10KB):\n${diagnosticSample}`
-        );
-        const jsonRequest = {
-          api: 'classic' as const,
-          category: 'people' as const,
-          ...request,
-        };
-        return this.search(jsonRequest, accountId, {
-          cursor: options.cursor,
-          limit: options.limit,
-          workspaceId: options.workspaceId,
-          countSearchQuota: false,
-        });
-      }
-
-      // Build LinkedInSearchResponse
-      const searchResponse: LinkedInSearchResponse = {
-        object: 'LinkedinSearch',
-        items: items,
-        config: {
-          params: request,
-        },
-        paging: {
-          start: options.start ?? 0,
-          page_count: 1,
-          total_count: items.length,
-        },
-        cursor: null,
-      };
-
-      this.logger.log(`LinkedIn raw search completed successfully. Found ${items.length} results.`);
-      return searchResponse;
+          this.logger.log(
+            `LinkedIn raw search completed successfully. Found ${items.length} results.`,
+          );
+          return searchResponse;
         },
       );
     } catch (error) {
@@ -577,7 +654,12 @@ export class LinkedInSearchService {
   async comparePeopleClassicAndRaw(
     request: Omit<LinkedInClassicPeopleSearchRequest, 'api' | 'category'>,
     accountId: string,
-    options: { cursor?: string; limit?: number; start?: number; workspaceId?: string } = {}
+    options: {
+      cursor?: string;
+      limit?: number;
+      start?: number;
+      workspaceId?: string;
+    } = {},
   ): Promise<{
     classic: LinkedInSearchResponse;
     raw: LinkedInSearchResponse;
@@ -589,7 +671,9 @@ export class LinkedInSearchService {
       onlyInRaw: number;
     };
   }> {
-    this.logger.log('Comparing LinkedIn classic JSON search vs raw HTML search for people');
+    this.logger.log(
+      'Comparing LinkedIn classic JSON search vs raw HTML search for people',
+    );
 
     const [classic, raw] = await Promise.all([
       this.searchPeopleClassic(
@@ -599,24 +683,20 @@ export class LinkedInSearchService {
           cursor: options.cursor,
           limit: options.limit,
           workspaceId: options.workspaceId,
-        }
+        },
       ),
-      this.searchPeopleClassicRaw(
-        request,
-        accountId,
-        {
-          start: options.start,
-          limit: options.limit,
-          workspaceId: options.workspaceId,
-        }
-      ),
+      this.searchPeopleClassicRaw(request, accountId, {
+        start: options.start,
+        limit: options.limit,
+        workspaceId: options.workspaceId,
+      }),
     ]);
 
-    const classicIds = new Set(classic.items.map(item => item.id));
-    const rawIds = new Set(raw.items.map(item => item.id));
+    const classicIds = new Set(classic.items.map((item) => item.id));
+    const rawIds = new Set(raw.items.map((item) => item.id));
 
     let overlapById = 0;
-    classicIds.forEach(id => {
+    classicIds.forEach((id) => {
       if (rawIds.has(id)) {
         overlapById += 1;
       }
@@ -649,7 +729,7 @@ export class LinkedInSearchService {
       limit?: number;
       start?: number;
       workspaceId?: string;
-    } = {}
+    } = {},
   ): Promise<LinkedInSearchResponse> {
     // Check if raw endpoint should be used
     if (request.useRawEndpoint) {
@@ -672,9 +752,11 @@ export class LinkedInSearchService {
   async searchCompanies(
     request: Omit<LinkedInClassicCompaniesSearchRequest, 'api' | 'category'>,
     accountId: string,
-    options: { cursor?: string; limit?: number } = {}
+    options: { cursor?: string; limit?: number } = {},
   ): Promise<LinkedInSearchResponse> {
-    this.logger.log(`Request in searchCompanies:: ${JSON.stringify(request, null, 2)}`);
+    this.logger.log(
+      `Request in searchCompanies:: ${JSON.stringify(request, null, 2)}`,
+    );
     const searchRequest: LinkedInClassicCompaniesSearchRequest = {
       api: 'classic',
       category: 'companies',
@@ -690,7 +772,7 @@ export class LinkedInSearchService {
   async searchPosts(
     request: Omit<LinkedInClassicPostsSearchRequest, 'api' | 'category'>,
     accountId: string,
-    options: { cursor?: string; limit?: number } = {}
+    options: { cursor?: string; limit?: number } = {},
   ): Promise<LinkedInSearchResponse> {
     const searchRequest: LinkedInClassicPostsSearchRequest = {
       api: 'classic',
@@ -707,7 +789,7 @@ export class LinkedInSearchService {
   async searchJobs(
     request: Omit<LinkedInClassicJobsSearchRequest, 'api' | 'category'>,
     accountId: string,
-    options: { cursor?: string; limit?: number } = {}
+    options: { cursor?: string; limit?: number } = {},
   ): Promise<LinkedInSearchResponse> {
     const searchRequest: LinkedInClassicJobsSearchRequest = {
       api: 'classic',
@@ -722,9 +804,12 @@ export class LinkedInSearchService {
    * Search for people using LinkedIn Sales Navigator API
    */
   async searchPeopleSalesNavigator(
-    request: Omit<LinkedInSalesNavigatorPeopleSearchRequest, 'api' | 'category'>,
+    request: Omit<
+      LinkedInSalesNavigatorPeopleSearchRequest,
+      'api' | 'category'
+    >,
     accountId: string,
-    options: { cursor?: string; limit?: number } = {}
+    options: { cursor?: string; limit?: number } = {},
   ): Promise<LinkedInSearchResponse> {
     const normalizedRequest = normalizeSalesNavigatorPeopleSearchRequest(
       request as Record<string, unknown>,
@@ -744,16 +829,16 @@ export class LinkedInSearchService {
    * Search for companies using LinkedIn Sales Navigator API
    */
   async searchCompaniesSalesNavigator(
-    request: Omit<LinkedInSalesNavigatorCompaniesSearchRequest, 'api' | 'category'>,
+    request: Omit<
+      LinkedInSalesNavigatorCompaniesSearchRequest,
+      'api' | 'category'
+    >,
     accountId: string,
-    options: { cursor?: string; limit?: number } = {}
+    options: { cursor?: string; limit?: number } = {},
   ): Promise<LinkedInSearchResponse> {
     const normalizedRequest = normalizeSalesNavigatorCompaniesSearchRequest(
       request as Record<string, unknown>,
-    ) as Omit<
-      LinkedInSalesNavigatorCompaniesSearchRequest,
-      'api' | 'category'
-    >;
+    ) as Omit<LinkedInSalesNavigatorCompaniesSearchRequest, 'api' | 'category'>;
     const searchRequest: LinkedInSalesNavigatorCompaniesSearchRequest = {
       api: 'sales_navigator',
       category: 'companies',
@@ -783,88 +868,89 @@ export class LinkedInSearchService {
         offset: options.offset,
       },
       async () => {
-    await this.enforceRequestSpacing();
+        await this.enforceRequestSpacing();
 
-    const { baseUrl, apiKey } = this.unipileV2AccountResolver.getCredentials();
-    const v2AccountId =
-      await this.unipileV2AccountResolver.resolveAccountId(accountId);
-    const v2ListId = toUnipileV2AccountListId(listId);
-    const queryParams = new URLSearchParams();
-    if (options.limit != null) {
-      queryParams.set('limit', String(options.limit));
-    }
-    if (options.offset != null) {
-      queryParams.set('offset', String(options.offset));
-    }
-    const query = queryParams.toString();
-    const url = `${baseUrl}/v2/${encodeURIComponent(v2AccountId)}/linkedin/sales-navigator/account-lists/${encodeURIComponent(v2ListId)}${query ? `?${query}` : ''}`;
-    const body = {
-      sort_by: SALES_NAVIGATOR_ACCOUNT_LIST_DEFAULT_SORT_BY,
-      sort_order: SALES_NAVIGATOR_ACCOUNT_LIST_DEFAULT_SORT_ORDER,
-    };
+        const { baseUrl, apiKey } =
+          this.unipileV2AccountResolver.getCredentials();
+        const v2AccountId =
+          await this.unipileV2AccountResolver.resolveAccountId(accountId);
+        const v2ListId = toUnipileV2AccountListId(listId);
+        const queryParams = new URLSearchParams();
+        if (options.limit != null) {
+          queryParams.set('limit', String(options.limit));
+        }
+        if (options.offset != null) {
+          queryParams.set('offset', String(options.offset));
+        }
+        const query = queryParams.toString();
+        const url = `${baseUrl}/v2/${encodeURIComponent(v2AccountId)}/linkedin/sales-navigator/account-lists/${encodeURIComponent(v2ListId)}${query ? `?${query}` : ''}`;
+        const body = {
+          sort_by: SALES_NAVIGATOR_ACCOUNT_LIST_DEFAULT_SORT_BY,
+          sort_order: SALES_NAVIGATOR_ACCOUNT_LIST_DEFAULT_SORT_ORDER,
+        };
 
-    this.logger.log(
-      `Browsing Sales Nav account list v2 list=${v2ListId} v1Account=${accountId} v2Account=${v2AccountId} body=${JSON.stringify(body)}`,
-    );
+        this.logger.log(
+          `Browsing Sales Nav account list v2 list=${v2ListId} v1Account=${accountId} v2Account=${v2AccountId} body=${JSON.stringify(body)}`,
+        );
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        'X-API-KEY': apiKey,
-      },
-      body: JSON.stringify(body),
-    });
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'X-API-KEY': apiKey,
+          },
+          body: JSON.stringify(body),
+        });
 
-    if (!response.ok) {
-      const errorData: LinkedInErrorResponse = await response.json().catch(
-        () =>
-          ({
-            title: 'Unipile v2 browse failed',
-            type: 'errors/unexpected_error',
-            status: response.status,
-          }) as LinkedInErrorResponse,
-      );
-      this.logger.error(
-        `Unipile v2 account-list browse failed: ${JSON.stringify(errorData)}`,
-      );
-      throw new Error(
-        `LinkedIn account list browse failed: ${errorData.title} - ${errorData.detail || 'Unknown error'}`,
-      );
-    }
+        if (!response.ok) {
+          const errorData: LinkedInErrorResponse = await response.json().catch(
+            () =>
+              ({
+                title: 'Unipile v2 browse failed',
+                type: 'errors/unexpected_error',
+                status: response.status,
+              }) as LinkedInErrorResponse,
+          );
+          this.logger.error(
+            `Unipile v2 account-list browse failed: ${JSON.stringify(errorData)}`,
+          );
+          throw new Error(
+            `LinkedIn account list browse failed: ${errorData.title} - ${errorData.detail || 'Unknown error'}`,
+          );
+        }
 
-    const payload = (await response.json()) as {
-      data?: Array<Record<string, unknown>>;
-      total_count?: number;
-      next_cursor?: string | null;
-    };
-    const data = payload.data ?? [];
-    const items = data.map((item) => ({
-      ...item,
-      type: (item.type as string | undefined) ?? 'COMPANY',
-      name:
-        (typeof item.name === 'string' && item.name) ||
-        (typeof item.display_name === 'string' && item.display_name) ||
-        '',
-    })) as LinkedInSearchResponse['items'];
+        const payload = (await response.json()) as {
+          data?: Array<Record<string, unknown>>;
+          total_count?: number;
+          next_cursor?: string | null;
+        };
+        const data = payload.data ?? [];
+        const items = data.map((item) => ({
+          ...item,
+          type: (item.type as string | undefined) ?? 'COMPANY',
+          name:
+            (typeof item.name === 'string' && item.name) ||
+            (typeof item.display_name === 'string' && item.display_name) ||
+            '',
+        })) as LinkedInSearchResponse['items'];
 
-    return {
-      object: 'LinkedinSearch',
-      items,
-      config: {
-        params: {
-          api: 'sales_navigator',
-          category: 'companies',
-        },
-      },
-      paging: {
-        start: options.offset ?? 0,
-        page_count: items.length,
-        total_count: payload.total_count ?? items.length,
-      },
-      cursor: payload.next_cursor ?? null,
-    };
+        return {
+          object: 'LinkedinSearch',
+          items,
+          config: {
+            params: {
+              api: 'sales_navigator',
+              category: 'companies',
+            },
+          },
+          paging: {
+            start: options.offset ?? 0,
+            page_count: items.length,
+            total_count: payload.total_count ?? items.length,
+          },
+          cursor: payload.next_cursor ?? null,
+        };
       },
     );
   }
@@ -875,14 +961,16 @@ export class LinkedInSearchService {
   async searchPeopleRecruiter(
     request: Omit<LinkedInRecruiterPeopleSearchRequest, 'api' | 'category'>,
     accountId: string,
-    options: { cursor?: string; limit?: number } = {}
+    options: { cursor?: string; limit?: number } = {},
   ): Promise<LinkedInSearchResponse> {
     const searchRequest: LinkedInRecruiterPeopleSearchRequest = {
       api: 'recruiter',
       category: 'people',
       ...request,
     };
-    this.logger.log(`Request in searchPeopleRecruiter:: ${JSON.stringify(searchRequest, null, 2)}`);
+    this.logger.log(
+      `Request in searchPeopleRecruiter:: ${JSON.stringify(searchRequest, null, 2)}`,
+    );
     return this.search(searchRequest, accountId, options);
   }
 
@@ -908,10 +996,12 @@ export class LinkedInSearchService {
   async searchFromUrl(
     url: string,
     accountId: string,
-    options: { cursor?: string; limit?: number } = {}
+    options: { cursor?: string; limit?: number } = {},
   ): Promise<LinkedInSearchResponse> {
     const searchRequest: LinkedInSearchFromUrlRequest = { url };
-    this.logger.log(`Request in searchFromUrl:: ${JSON.stringify(searchRequest, null, 2)}`);
+    this.logger.log(
+      `Request in searchFromUrl:: ${JSON.stringify(searchRequest, null, 2)}`,
+    );
     return this.search(searchRequest, accountId, options);
   }
 
@@ -921,7 +1011,7 @@ export class LinkedInSearchService {
   async searchWithCursor(
     cursor: string,
     accountId: string,
-    options: { limit?: number } = {}
+    options: { limit?: number } = {},
   ): Promise<LinkedInSearchResponse> {
     const searchRequest: LinkedInSearchWithCursorRequest = { cursor };
     return this.search(searchRequest, accountId, {
@@ -936,7 +1026,7 @@ export class LinkedInSearchService {
   async getLocationParameters(
     accountId: string,
     keywords?: string,
-    limit?: number
+    limit?: number,
   ): Promise<LinkedInSearchParametersList> {
     return this.getSearchParameters('LOCATION', accountId, { keywords, limit });
   }
@@ -947,7 +1037,7 @@ export class LinkedInSearchService {
   async getIndustryParameters(
     accountId: string,
     keywords?: string,
-    limit?: number
+    limit?: number,
   ): Promise<LinkedInSearchParametersList> {
     return this.getSearchParameters('INDUSTRY', accountId, { keywords, limit });
   }
@@ -958,7 +1048,7 @@ export class LinkedInSearchService {
   async getCompanyParameters(
     accountId: string,
     keywords?: string,
-    limit?: number
+    limit?: number,
   ): Promise<LinkedInSearchParametersList> {
     return this.getSearchParameters('COMPANY', accountId, { keywords, limit });
   }
@@ -969,7 +1059,7 @@ export class LinkedInSearchService {
   async getSchoolParameters(
     accountId: string,
     keywords?: string,
-    limit?: number
+    limit?: number,
   ): Promise<LinkedInSearchParametersList> {
     return this.getSearchParameters('SCHOOL', accountId, { keywords, limit });
   }
@@ -980,9 +1070,12 @@ export class LinkedInSearchService {
   async getJobTitleParameters(
     accountId: string,
     keywords?: string,
-    limit?: number
+    limit?: number,
   ): Promise<LinkedInSearchParametersList> {
-    return this.getSearchParameters('JOB_TITLE', accountId, { keywords, limit });
+    return this.getSearchParameters('JOB_TITLE', accountId, {
+      keywords,
+      limit,
+    });
   }
 
   /**
@@ -991,7 +1084,7 @@ export class LinkedInSearchService {
   async getSkillParameters(
     accountId: string,
     keywords?: string,
-    limit?: number
+    limit?: number,
   ): Promise<LinkedInSearchParametersList> {
     return this.getSearchParameters('SKILL', accountId, { keywords, limit });
   }
@@ -1002,7 +1095,7 @@ export class LinkedInSearchService {
   async getPeopleParameters(
     accountId: string,
     keywords?: string,
-    limit?: number
+    limit?: number,
   ): Promise<LinkedInSearchParametersList> {
     return this.getSearchParameters('PEOPLE', accountId, { keywords, limit });
   }
@@ -1013,9 +1106,12 @@ export class LinkedInSearchService {
   async getConnectionsParameters(
     accountId: string,
     keywords?: string,
-    limit?: number
+    limit?: number,
   ): Promise<LinkedInSearchParametersList> {
-    return this.getSearchParameters('CONNECTIONS', accountId, { keywords, limit });
+    return this.getSearchParameters('CONNECTIONS', accountId, {
+      keywords,
+      limit,
+    });
   }
 
   /**
@@ -1023,7 +1119,7 @@ export class LinkedInSearchService {
    */
   async getSavedSearchesParameters(
     accountId: string,
-    limit?: number
+    limit?: number,
   ): Promise<LinkedInSearchParametersList> {
     return this.getSearchParameters('SAVED_SEARCHES', accountId, { limit });
   }
@@ -1033,9 +1129,29 @@ export class LinkedInSearchService {
    */
   async getRecentSearchesParameters(
     accountId: string,
-    limit?: number
+    limit?: number,
   ): Promise<LinkedInSearchParametersList> {
     return this.getSearchParameters('RECENT_SEARCHES', accountId, { limit });
+  }
+
+  /**
+   * Get Sales Navigator lead (people) lists for the connected account
+   */
+  async getLeadListsParameters(
+    accountId: string,
+    options: { keywords?: string; limit?: number } = {},
+  ): Promise<LinkedInSearchParametersList> {
+    return this.getSearchParameters('LEAD_LISTS', accountId, options);
+  }
+
+  /**
+   * Get Sales Navigator account (company) lists for the connected account
+   */
+  async getAccountListsParameters(
+    accountId: string,
+    options: { keywords?: string; limit?: number } = {},
+  ): Promise<LinkedInSearchParametersList> {
+    return this.getSearchParameters('ACCOUNT_LISTS', accountId, options);
   }
 
   /**
@@ -1044,7 +1160,7 @@ export class LinkedInSearchService {
   async getGroupsParameters(
     accountId: string,
     keywords?: string,
-    limit?: number
+    limit?: number,
   ): Promise<LinkedInSearchParametersList> {
     return this.getSearchParameters('GROUPS', accountId, { keywords, limit });
   }
@@ -1055,9 +1171,12 @@ export class LinkedInSearchService {
   async getDepartmentParameters(
     accountId: string,
     keywords?: string,
-    limit?: number
+    limit?: number,
   ): Promise<LinkedInSearchParametersList> {
-    return this.getSearchParameters('DEPARTMENT', accountId, { keywords, limit });
+    return this.getSearchParameters('DEPARTMENT', accountId, {
+      keywords,
+      limit,
+    });
   }
 
   /**
@@ -1066,7 +1185,7 @@ export class LinkedInSearchService {
   async getPersonaParameters(
     accountId: string,
     keywords?: string,
-    limit?: number
+    limit?: number,
   ): Promise<LinkedInSearchParametersList> {
     return this.getSearchParameters('PERSONA', accountId, { keywords, limit });
   }
@@ -1077,9 +1196,12 @@ export class LinkedInSearchService {
   async getTechnologiesParameters(
     accountId: string,
     keywords?: string,
-    limit?: number
+    limit?: number,
   ): Promise<LinkedInSearchParametersList> {
-    return this.getSearchParameters('TECHNOLOGIES', accountId, { keywords, limit });
+    return this.getSearchParameters('TECHNOLOGIES', accountId, {
+      keywords,
+      limit,
+    });
   }
 
   /**
@@ -1088,9 +1210,12 @@ export class LinkedInSearchService {
   async getPostalCodeParameters(
     accountId: string,
     keywords?: string,
-    limit?: number
+    limit?: number,
   ): Promise<LinkedInSearchParametersList> {
-    return this.getSearchParameters('POSTAL_CODE', accountId, { keywords, limit });
+    return this.getSearchParameters('POSTAL_CODE', accountId, {
+      keywords,
+      limit,
+    });
   }
 
   /**
@@ -1099,9 +1224,12 @@ export class LinkedInSearchService {
   async getHiringProjectsParameters(
     accountId: string,
     keywords?: string,
-    limit?: number
+    limit?: number,
   ): Promise<LinkedInSearchParametersList> {
-    return this.getSearchParameters('HIRING_PROJECTS', accountId, { keywords, limit });
+    return this.getSearchParameters('HIRING_PROJECTS', accountId, {
+      keywords,
+      limit,
+    });
   }
 
   /**
@@ -1110,9 +1238,12 @@ export class LinkedInSearchService {
   async getSavedFiltersParameters(
     accountId: string,
     keywords?: string,
-    limit?: number
+    limit?: number,
   ): Promise<LinkedInSearchParametersList> {
-    return this.getSearchParameters('SAVED_FILTERS', accountId, { keywords, limit });
+    return this.getSearchParameters('SAVED_FILTERS', accountId, {
+      keywords,
+      limit,
+    });
   }
 
   /**
@@ -1125,7 +1256,7 @@ export class LinkedInSearchService {
     if (!this.apifyService.isConfigured()) {
       throw new Error('Apify is not configured (set APIFY_API_TOKEN)');
     }
-    console.log("params for org chart build", params)
+    console.log('params for org chart build', params);
 
     const maxItems = Math.min(Math.max(1, params.maxItems), 10000);
     const input: Record<string, unknown> = {
@@ -1148,7 +1279,9 @@ export class LinkedInSearchService {
     this.logger.log(
       `Apify company profile scraper: actor=${LINKEDIN_COMPANY_PROFILE_SCRAPER_ACTOR_ID}, companies=${JSON.stringify(input.companies)}, maxItems=${maxItems}`,
     );
-    console.log("Apify company profile scraper: actor=${LINKEDIN_COMPANY_PROFILE_SCRAPER_ACTOR_ID}, companies=${JSON.stringify(input.companies)}, maxItems=${maxItems}")
+    console.log(
+      'Apify company profile scraper: actor=${LINKEDIN_COMPANY_PROFILE_SCRAPER_ACTOR_ID}, companies=${JSON.stringify(input.companies)}, maxItems=${maxItems}',
+    );
     await params.onProgress?.(
       `Apify actor ${LINKEDIN_COMPANY_PROFILE_SCRAPER_ACTOR_ID} configured for company employee scrape.`,
     );
@@ -1192,7 +1325,7 @@ export class LinkedInSearchService {
         .map((line) => line.trim())
         .filter(Boolean)
         .slice(-3);
-      console.log("Log Lines : ", logLines)
+      console.log('Log Lines : ', logLines);
       for (const line of logLines) {
         this.logger.debug(`Apify log tail: ${line.slice(0, 220)}`);
       }
@@ -1243,7 +1376,8 @@ export class LinkedInSearchService {
       'M2FMdjRVeF1HPGFcc';
 
     const maxProfilesRaw =
-      typeof params.maxProfiles === 'number' && Number.isFinite(params.maxProfiles)
+      typeof params.maxProfiles === 'number' &&
+      Number.isFinite(params.maxProfiles)
         ? params.maxProfiles
         : 2500;
     const maxItems = Math.min(Math.max(1, Math.floor(maxProfilesRaw)), 10000);
@@ -1278,7 +1412,9 @@ export class LinkedInSearchService {
         input,
         params.onProgress
           ? {
-              onRunLogProgress: async ({ newLines }: ApifyRunLogProgressArgs) => {
+              onRunLogProgress: async ({
+                newLines,
+              }: ApifyRunLogProgressArgs) => {
                 for (const line of newLines) {
                   const raw = line.trim();
                   if (!raw || isApifyLogLineNoiseForOrgChartProgress(raw)) {
@@ -1324,10 +1460,12 @@ export class LinkedInSearchService {
     current: TransformedCandidateForTable[];
     past: TransformedCandidateForTable[];
   }> {
-    const current = await this.fetchCompanyEmployeesViaApifyEmployeeSearchActor({
-      ...params,
-      employment: 'current',
-    });
+    const current = await this.fetchCompanyEmployeesViaApifyEmployeeSearchActor(
+      {
+        ...params,
+        employment: 'current',
+      },
+    );
     const past = await this.fetchCompanyEmployeesViaApifyEmployeeSearchActor({
       ...params,
       employment: 'past',
@@ -1387,6 +1525,6 @@ export class LinkedInSearchService {
       return Promise.resolve();
     }
 
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
