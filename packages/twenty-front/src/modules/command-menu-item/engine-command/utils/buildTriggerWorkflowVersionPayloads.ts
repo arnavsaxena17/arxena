@@ -2,11 +2,33 @@ import { isBulkRecordsManualTrigger } from '@/command-menu-item/record/utils/isB
 import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/EnrichedObjectMetadataItem';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { type WorkflowTrigger } from '@/workflow/types/Workflow';
+import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 import {
   type CommandMenuItemAvailabilityType,
   CommandMenuItemAvailabilityType as CommandMenuItemAvailabilityTypeEnum,
 } from '~/generated-metadata/graphql';
+
+// Outreach People rows keep person/working-set id as `id`; Candidate Sequencer
+// and other candidate MANUAL workflows need the CRM candidate id.
+const toCandidateWorkflowPayload = (
+  selectedRecord: ObjectRecord,
+): Record<string, unknown> | null => {
+  if (selectedRecord.isOutreachHomeRow !== true) {
+    return selectedRecord;
+  }
+
+  const candidateId = selectedRecord.candidateId;
+
+  if (!isNonEmptyString(candidateId)) {
+    return null;
+  }
+
+  return {
+    ...selectedRecord,
+    id: candidateId,
+  };
+};
 
 export const buildTriggerWorkflowVersionPayloads = ({
   trigger,
@@ -33,18 +55,24 @@ export const buildTriggerWorkflowVersionPayloads = ({
         (metadata) => metadata.id === availabilityObjectMetadataId,
       );
 
+      const remappedRecords = selectedRecords
+        .map(toCandidateWorkflowPayload)
+        .filter((record): record is Record<string, unknown> =>
+          isDefined(record),
+        );
+
       if (isDefined(trigger) && isBulkRecordsManualTrigger(trigger)) {
-        if (isDefined(objectMetadataItem)) {
+        if (isDefined(objectMetadataItem) && remappedRecords.length > 0) {
           payloads.push({
-            [objectMetadataItem.namePlural]: selectedRecords,
+            [objectMetadataItem.namePlural]: remappedRecords,
           });
         }
 
         return payloads;
       }
 
-      for (const selectedRecord of selectedRecords) {
-        payloads.push(selectedRecord);
+      for (const remappedRecord of remappedRecords) {
+        payloads.push(remappedRecord);
       }
 
       return payloads;

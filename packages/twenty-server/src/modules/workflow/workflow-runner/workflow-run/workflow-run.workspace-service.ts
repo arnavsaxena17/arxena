@@ -32,6 +32,7 @@ import {
   extractWorkflowRunTriggerRecord,
 } from 'src/modules/workflow/workflow-runner/utils/extract-workflow-run-trigger-record.util';
 import { mergeWorkflowRunStepInfo } from 'src/modules/workflow/workflow-runner/utils/merge-workflow-run-step-info.util';
+import { normalizeOutreachHomeWorkflowPayload } from 'src/modules/workflow/workflow-runner/utils/normalize-outreach-home-workflow-payload.util';
 
 type CandidateProjectIdRecord = {
   projectId?: string | null;
@@ -113,9 +114,12 @@ export class WorkflowRunWorkspaceService {
           workspaceId,
         });
 
+        const normalizedTriggerPayload =
+          normalizeOutreachHomeWorkflowPayload(triggerPayload);
+
         const initState = this.getInitState(
           workflowVersion,
-          triggerPayload,
+          normalizedTriggerPayload,
           error,
         );
 
@@ -134,7 +138,7 @@ export class WorkflowRunWorkspaceService {
 
         const relatedRecord = extractWorkflowRunTriggerRecord({
           trigger: workflowVersion.trigger,
-          triggerPayload,
+          triggerPayload: normalizedTriggerPayload,
         });
 
         const workflowRun = {

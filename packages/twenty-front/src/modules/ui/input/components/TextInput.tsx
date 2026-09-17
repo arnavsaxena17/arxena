@@ -1,7 +1,10 @@
 import { InputErrorHelper } from '@/ui/input/components/InputErrorHelper';
+import { InputLabel } from '@/ui/input/components/InputLabel';
+import { usePushFocusItemToFocusStack } from '@/ui/utilities/focus/hooks/usePushFocusItemToFocusStack';
+import { useRemoveFocusItemFromFocusStackById } from '@/ui/utilities/focus/hooks/useRemoveFocusItemFromFocusStackById';
+import { FocusComponentType } from '@/ui/utilities/focus/types/FocusComponentType';
 import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
-import { InputLabel } from '@/ui/input/components/InputLabel';
 import { css } from '@linaria/core';
 import { styled } from '@linaria/react';
 import React, {
@@ -16,9 +19,9 @@ import React, {
 } from 'react';
 import { type IconComponent, IconEye, IconEyeOff } from 'twenty-ui/icon';
 import { AutogrowWrapper } from 'twenty-ui/layout';
+import { ThemeContext, themeCssVariables } from 'twenty-ui/theme-constants';
 import { useCombinedRefs } from '~/hooks/useCombinedRefs';
 import { turnIntoEmptyStringIfWhitespacesOnly } from '~/utils/string/turnIntoEmptyStringIfWhitespacesOnly';
-import { ThemeContext, themeCssVariables } from 'twenty-ui/theme-constants';
 const StyledContainer = styled.div<Pick<TextInputComponentProps, 'fullWidth'>>`
   box-sizing: border-box;
   display: inline-flex;
@@ -289,6 +292,10 @@ const TextInputComponent = forwardRef<
     const { theme } = useContext(ThemeContext);
     const inputRef = useRef<HTMLInputElement>(null);
     const combinedRef = useCombinedRefs(ref, inputRef);
+    const instanceId = useId();
+    const { pushFocusItemToFocusStack } = usePushFocusItemToFocusStack();
+    const { removeFocusItemFromFocusStackById } =
+      useRemoveFocusItemFromFocusStackById();
 
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
@@ -297,17 +304,27 @@ const TextInputComponent = forwardRef<
       setPasswordVisible(!passwordVisible);
     };
 
+    // Match TextArea: page `g`… go-to hotkeys must not steal keystrokes.
     const handleFocus: FocusEventHandler<HTMLInputElement> = (event) => {
       setIsFocused(true);
+      pushFocusItemToFocusStack({
+        focusId: instanceId,
+        component: {
+          type: FocusComponentType.TEXT_INPUT,
+          instanceId,
+        },
+        globalHotkeysConfig: {
+          enableGlobalHotkeysConflictingWithKeyboard: false,
+        },
+      });
       onFocus?.(event);
     };
 
     const handleBlur: FocusEventHandler<HTMLInputElement> = (event) => {
       setIsFocused(false);
+      removeFocusItemFromFocusStackById({ focusId: instanceId });
       onBlur?.(event);
     };
-
-    const instanceId = useId();
 
     return (
       <StyledContainer

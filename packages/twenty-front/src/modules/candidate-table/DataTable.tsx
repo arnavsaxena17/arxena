@@ -61,6 +61,9 @@ import { useNotification } from '@/notification-context/NotificationContextProvi
 import { useOutreachCacheSocket } from '@/outreach-home/hooks/useOutreachCacheSocket';
 import { useOutreachProjectJourneySummary } from '@/outreach-home/hooks/useOutreachProjectJourneySummary';
 import { useRightDrawer } from '@/ui/layout/right-drawer/hooks/useRightDrawer';
+import { usePushFocusItemToFocusStack } from '@/ui/utilities/focus/hooks/usePushFocusItemToFocusStack';
+import { useRemoveFocusItemFromFocusStackById } from '@/ui/utilities/focus/hooks/useRemoveFocusItemFromFocusStackById';
+import { FocusComponentType } from '@/ui/utilities/focus/types/FocusComponentType';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useSetAtomComponentState';
@@ -333,6 +336,11 @@ export const DataTable = forwardRef<
     dataTableApplySortsFunctionState,
   );
   const { showNotification } = useNotification();
+  const { pushFocusItemToFocusStack } = usePushFocusItemToFocusStack();
+  const { removeFocusItemFromFocusStackById } =
+    useRemoveFocusItemFromFocusStackById();
+  const hotTypingFocusId = `handsontable-typing-${projectId}`;
+  const isHotCellEditingRef = useRef(false);
 
   const journeyProjectId = isBackendBackedDataTableProjectId(projectId)
     ? projectId
@@ -1392,8 +1400,22 @@ export const DataTable = forwardRef<
         rawDataRef.current,
         selectedRowIdsRef,
       );
+
+      if (!isHotCellEditingRef.current) {
+        return;
+      }
+
+      const editor = tableRef.current?.hotInstance?.getActiveEditor?.();
+      if (editor?.isOpened?.() === true) {
+        return;
+      }
+
+      isHotCellEditingRef.current = false;
+      removeFocusItemFromFocusStackById({ focusId: hotTypingFocusId });
     },
     [
+      hotTypingFocusId,
+      removeFocusItemFromFocusStackById,
       setTableStateAtom,
       setSelectedCandidateId,
       setUnreadMessagesCounts,
@@ -2114,6 +2136,46 @@ export const DataTable = forwardRef<
     [setTableStateAtom],
   );
 
+  // HOT filter menus + cell editors are plain DOM inputs; disable page `g`… hotkeys.
+  const pushHotTypingFocus = useCallback(() => {
+    pushFocusItemToFocusStack({
+      focusId: hotTypingFocusId,
+      component: {
+        type: FocusComponentType.TEXT_INPUT,
+        instanceId: hotTypingFocusId,
+      },
+      globalHotkeysConfig: {
+        enableGlobalHotkeysConflictingWithKeyboard: false,
+      },
+    });
+  }, [hotTypingFocusId, pushFocusItemToFocusStack]);
+
+  const clearHotTypingFocus = useCallback(() => {
+    isHotCellEditingRef.current = false;
+    removeFocusItemFromFocusStackById({ focusId: hotTypingFocusId });
+  }, [hotTypingFocusId, removeFocusItemFromFocusStackById]);
+
+  const afterDropdownMenuShowHandler = useCallback(() => {
+    pushHotTypingFocus();
+  }, [pushHotTypingFocus]);
+
+  const afterDropdownMenuHideHandler = useCallback(() => {
+    if (!isHotCellEditingRef.current) {
+      clearHotTypingFocus();
+    }
+  }, [clearHotTypingFocus]);
+
+  const afterBeginEditingHandler = useCallback(() => {
+    isHotCellEditingRef.current = true;
+    pushHotTypingFocus();
+  }, [pushHotTypingFocus]);
+
+  useEffect(() => {
+    return () => {
+      removeFocusItemFromFocusStackById({ focusId: hotTypingFocusId });
+    };
+  }, [hotTypingFocusId, removeFocusItemFromFocusStackById]);
+
   const afterColumnSortHandler = useCallback(
     (
       _currentSortConfig: SortConfig[] | undefined,
@@ -2253,6 +2315,9 @@ export const DataTable = forwardRef<
           afterFilter={afterFilterHandler}
           beforeKeyDown={beforeKeyDownHandler}
           afterColumnSort={afterColumnSortHandler}
+          afterDropdownMenuShow={afterDropdownMenuShowHandler}
+          afterDropdownMenuHide={afterDropdownMenuHideHandler}
+          afterBeginEditing={afterBeginEditingHandler}
         />
       </StyledTableContainer>
     </StyledTableWrapper>

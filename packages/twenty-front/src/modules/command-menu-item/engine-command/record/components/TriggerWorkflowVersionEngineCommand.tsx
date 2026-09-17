@@ -9,8 +9,12 @@ import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { useRunWorkflowVersion } from '@/workflow/hooks/useRunWorkflowVersion';
 import { useStore } from 'jotai';
 import { useCallback } from 'react';
-import { CoreObjectNameSingular, type RecordGqlOperationFilter } from 'twenty-shared/types';
+import {
+  CoreObjectNameSingular,
+  type RecordGqlOperationFilter,
+} from 'twenty-shared/types';
 import { isNonEmptyArray } from 'twenty-shared/utils';
+import { CommandMenuItemAvailabilityType } from '~/generated-metadata/graphql';
 
 export const TriggerWorkflowVersionEngineCommand = () => {
   const mountedCommandState = useHeadlessCommandContextApi();
@@ -55,6 +59,16 @@ export const TriggerWorkflowVersionEngineCommand = () => {
     });
 
     if (!isNonEmptyArray(payloads)) {
+      // RECORD_SELECTION with no usable payloads (e.g. outreach rows missing
+      // candidateId) must not fall through to a global empty-payload run.
+      if (
+        mountedCommandState.availabilityType ===
+          CommandMenuItemAvailabilityType.RECORD_SELECTION &&
+        selectedRecords.length > 0
+      ) {
+        return;
+      }
+
       await runWorkflowVersion({
         workflowId: mountedCommandState.workflowId,
         workflowVersionId: mountedCommandState.workflowVersionId,
