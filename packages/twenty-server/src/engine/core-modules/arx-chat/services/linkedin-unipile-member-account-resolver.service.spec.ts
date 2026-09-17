@@ -60,21 +60,23 @@ describe('LinkedinUnipileMemberAccountResolverService', () => {
         .mockImplementation((account: { id?: string }) =>
           account.id === disconnectedIdentityId ? 'disconnected' : 'connected',
         ),
-      mapLinkedinApiItemToAccountRow: jest.fn().mockImplementation(
-        (item: {
-          id: string;
-          status?: string;
-          connection_params?: { im?: { publicIdentifier?: string } };
-        }) => ({
-          id: item.id,
-          status: item.status ?? 'connected',
-          username: item.connection_params?.im?.publicIdentifier ?? item.id,
-          name: item.connection_params?.im?.publicIdentifier ?? item.id,
-          type: 'LINKEDIN',
-          provider: 'LINKEDIN',
-          connection_params: item.connection_params,
-        }),
-      ),
+      mapLinkedinApiItemToAccountRow: jest
+        .fn()
+        .mockImplementation(
+          (item: {
+            id: string;
+            status?: string;
+            connection_params?: { im?: { publicIdentifier?: string } };
+          }) => ({
+            id: item.id,
+            status: item.status ?? 'connected',
+            username: item.connection_params?.im?.publicIdentifier ?? item.id,
+            name: item.connection_params?.im?.publicIdentifier ?? item.id,
+            type: 'LINKEDIN',
+            provider: 'LINKEDIN',
+            connection_params: item.connection_params,
+          }),
+        ),
       listAllLinkedinAccountsFromUnipileApi: jest
         .fn()
         .mockResolvedValue({ accounts: [] }),

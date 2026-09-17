@@ -33,13 +33,14 @@ let cachedSnapshot: UnipileLinkedinSnapshot | null = null;
 export const isUnipileLinkedinSnapshotFresh = (): boolean =>
   cachedSnapshot !== null && cachedSnapshot.expiresAt > Date.now();
 
-export const getUnipileLinkedinSnapshot = (): UnipileLinkedinSnapshot | null => {
-  if (!isUnipileLinkedinSnapshotFresh()) {
-    return null;
-  }
+export const getUnipileLinkedinSnapshot =
+  (): UnipileLinkedinSnapshot | null => {
+    if (!isUnipileLinkedinSnapshotFresh()) {
+      return null;
+    }
 
-  return cachedSnapshot;
-};
+    return cachedSnapshot;
+  };
 
 export const setUnipileLinkedinSnapshot = (
   snapshot: Omit<UnipileLinkedinSnapshot, 'refreshedAt' | 'expiresAt'> & {
@@ -64,9 +65,9 @@ export const getSnapshotRawAccountsList = (): {
   items?: UnipileLinkedinSnapshotRawAccount[];
 } | null => getUnipileLinkedinSnapshot()?.rawAccountsList ?? null;
 
-export const getSnapshotLinkedinAccounts =
-  (): UnipileLinkedinSnapshotAccountRow[] | null =>
-    getUnipileLinkedinSnapshot()?.linkedinAccounts ?? null;
+export const getSnapshotLinkedinAccounts = ():
+  | UnipileLinkedinSnapshotAccountRow[]
+  | null => getUnipileLinkedinSnapshot()?.linkedinAccounts ?? null;
 
 export const hasSnapshotOwnerProfile = (accountId: string): boolean => {
   const snapshot = getUnipileLinkedinSnapshot();
@@ -137,7 +138,9 @@ export const patchSnapshotRawAccount = (
   }
 
   const items = snapshot.rawAccountsList.items ?? [];
-  const existingIndex = items.findIndex((item) => item.id?.trim() === accountId);
+  const existingIndex = items.findIndex(
+    (item) => item.id?.trim() === accountId,
+  );
   if (existingIndex >= 0) {
     items[existingIndex] = account;
   } else {
@@ -180,7 +183,9 @@ export const removeSnapshotAccountById = (accountId: string): boolean => {
   }
 
   const rawItems = snapshot.rawAccountsList.items ?? [];
-  const filteredRawItems = rawItems.filter((item) => item.id?.trim() !== trimmed);
+  const filteredRawItems = rawItems.filter(
+    (item) => item.id?.trim() !== trimmed,
+  );
   if (filteredRawItems.length !== rawItems.length) {
     snapshot.rawAccountsList.items = filteredRawItems;
     removed = true;
