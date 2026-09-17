@@ -1592,7 +1592,59 @@ export class LinkedinUnipileRequestService {
     }
   }
 
-  async getAllAccounts(workspace: WorkspaceEntity): Promise<{
+  /**
+   * When the process-wide Unipile snapshot/list omits an account that we already
+   * stored on the workspace or member profile, fetch it live by id and append.
+   * Settings UI otherwise shows "no matching account" for freshly connected rows.
+   */
+  private async ensureLinkedinAccountIdInAccountsList(
+    accounts: Array<{
+      id?: string;
+      username: string;
+      name: string;
+      type?: string;
+      status: 'connected' | 'disconnected' | 'pending' | 'checkpoint_required';
+      created_at?: string;
+      provider: 'LINKEDIN';
+      connection_params?: LinkedinUnipileAccountItem['connection_params'];
+      sources?: { status?: string }[];
+      groups?: unknown[];
+    }>,
+    accountId: string | null | undefined,
+    context: string,
+  ): Promise<void> {
+    const trimmed = accountId?.trim();
+    if (!trimmed) {
+      return;
+    }
+    if (accounts.some((account) => account.id === trimmed)) {
+      return;
+    }
+
+    const single = await this.fetchAccountByIdIfExists(trimmed, {
+      bypassSnapshot: true,
+    });
+    if (!single) {
+      this.logger.warn(
+        `Could not include ${context} LinkedIn account ${trimmed}: Unipile GET /accounts/:id miss`,
+      );
+      return;
+    }
+
+    const mapped = this.mapLinkedinApiItemToAccountRow(single);
+    accounts.push(mapped);
+    patchSnapshotRawAccount(single as UnipileLinkedinSnapshotRawAccount);
+    this.logger.log(
+      `Included ${context} LinkedIn account ${trimmed} from live GET /accounts/:id (was missing from snapshot/list)`,
+    );
+  }
+
+  async getAllAccounts(
+    workspace: WorkspaceEntity,
+    options?: {
+      memberLinkedinUnipileAccountId?: string | null;
+    },
+  ): Promise<{
     success: boolean;
     accounts: LinkedinUnipileAccountItem[];
     message?: string;
@@ -1604,6 +1656,8 @@ export class LinkedinUnipileRequestService {
       const linkedinUrl = workspaceKeys.linkedin_url?.trim() || undefined;
       const linkedinUnipileAccountId =
         workspaceKeys.linkedin_unipile_account_id?.trim() || undefined;
+      const memberLinkedinUnipileAccountId =
+        options?.memberLinkedinUnipileAccountId?.trim() || undefined;
 
       const listed = await this.listAllLinkedinAccountsFromUnipileApi();
       const allAccounts = listed.accounts;
@@ -1613,6 +1667,11 @@ export class LinkedinUnipileRequestService {
       if (!linkedinUrl && !linkedinUnipileAccountId) {
         this.logger.log(
           `No workspace linkedin_url / linkedin_unipile_account_id for ${workspace.id}; returning ${allAccounts.length} LinkedIn account(s) for member-level filtering`,
+        );
+        await this.ensureLinkedinAccountIdInAccountsList(
+          allAccounts,
+          memberLinkedinUnipileAccountId,
+          'member',
         );
         return {
           success: true,
@@ -1632,6 +1691,13 @@ export class LinkedinUnipileRequestService {
           this.logger.log(
             `Account ${account.id} matches workspace linkedin_unipile_account_id`,
           );
+          return true;
+        }
+
+        if (
+          memberLinkedinUnipileAccountId &&
+          account.id === memberLinkedinUnipileAccountId
+        ) {
           return true;
         }
 
@@ -1664,21 +1730,16 @@ export class LinkedinUnipileRequestService {
         return matches;
       });
 
-      if (
-        linkedinUnipileAccountId &&
-        !accounts.some((a) => a.id === linkedinUnipileAccountId)
-      ) {
-        const single = await this.fetchAccountByIdIfExists(
-          linkedinUnipileAccountId,
-        );
-        if (single) {
-          const mapped = this.mapLinkedinApiItemToAccountRow(single);
-          accounts.push(mapped);
-          this.logger.log(
-            `Included workspace linked account ${linkedinUnipileAccountId} from single-account fetch`,
-          );
-        }
-      }
+      await this.ensureLinkedinAccountIdInAccountsList(
+        accounts,
+        linkedinUnipileAccountId,
+        'workspace',
+      );
+      await this.ensureLinkedinAccountIdInAccountsList(
+        accounts,
+        memberLinkedinUnipileAccountId,
+        'member',
+      );
 
       this.logger.log(
         `Filtered ${accounts.length} LinkedIn accounts from ${allAccounts.length} total accounts`,

@@ -79,7 +79,7 @@ export const WorkflowEditActionCommentOnLinkedinPost = ({
         />
         <FormTextFieldInput
           label={t`Post social ID`}
-          placeholder={t`{{fetchStep.mostRecentPost.socialId}}`}
+          placeholder="{{fetchStep.mostRecentPost.socialId}}"
           readonly={actionOptions.readonly}
           defaultValue={formData.postId}
           onChange={(value) => handleFieldChange('postId', value)}

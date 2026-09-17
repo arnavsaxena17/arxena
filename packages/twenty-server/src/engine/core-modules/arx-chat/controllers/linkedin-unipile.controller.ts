@@ -1972,8 +1972,33 @@ export class LinkedinUnipileController {
   }
 
   @Post('accounts')
-  async getAllAccounts(@AuthWorkspace() workspace: WorkspaceEntity) {
-    return this.linkedinUnipileRequestService.getAllAccounts(workspace);
+  async getAllAccounts(
+    @AuthWorkspace() workspace: WorkspaceEntity,
+    @Req()
+    request: {
+      workspaceMemberId?: string;
+      headers?: { authorization?: string };
+    },
+  ) {
+    const workspaceMemberId = request.workspaceMemberId;
+    const authToken =
+      request.headers?.authorization?.replace(/^Bearer\s+/i, '') ?? '';
+
+    let memberLinkedinUnipileAccountId: string | null = null;
+
+    if (workspaceMemberId && authToken) {
+      const profile =
+        await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileFields(
+          workspaceMemberId,
+          authToken,
+        );
+      memberLinkedinUnipileAccountId =
+        profile?.linkedinUnipileAccountId?.trim() || null;
+    }
+
+    return this.linkedinUnipileRequestService.getAllAccounts(workspace, {
+      memberLinkedinUnipileAccountId,
+    });
   }
 
   @Post('accounts/:accountId')
