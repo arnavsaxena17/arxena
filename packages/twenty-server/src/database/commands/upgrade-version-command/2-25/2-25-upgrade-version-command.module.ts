@@ -106,6 +106,7 @@ import { AddQualifyProspectCommandMenuItemsCommand } from 'src/database/commands
 import { AddLinkedinFetchCommandMenuItemsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000115-add-linkedin-fetch-command-menu-items.command';
 import { AddFetchEmailPhoneCommandMenuItemsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000116-add-fetch-email-phone-command-menu-items.command';
 import { CutoverOutreachCandidateSequencerCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000117-cutover-outreach-candidate-sequencer.command';
+import { AddEditWorkflowCommandMenuItemCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000118-add-edit-workflow-command-menu-item.command';
 import { SetOutreachExtractSignalsDeepseekCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000106-set-outreach-extract-signals-deepseek.command';
 import { DropChatMessageObjWithTimeStampCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000099-drop-chat-message-obj-with-time-stamp.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
@@ -249,6 +250,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     AddLinkedinFetchCommandMenuItemsCommand,
     AddFetchEmailPhoneCommandMenuItemsCommand,
     CutoverOutreachCandidateSequencerCommand,
+    AddEditWorkflowCommandMenuItemCommand,
     MigrateOtherFieldsService,
     DropCandidateFieldObjectsCommand,
   ],

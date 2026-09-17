@@ -21,6 +21,7 @@ type EditOutreachSequencerOptionsModalProps = {
   workflowId: string;
   steps: Array<{ id?: string }> | null | undefined;
   trigger?: { type?: string } | null;
+  onDismiss?: () => void;
 };
 
 const StyledCenteredTitle = styled.div`
@@ -67,6 +68,7 @@ export const EditOutreachSequencerOptionsModal = ({
   workflowId,
   steps,
   trigger,
+  onDismiss,
 }: EditOutreachSequencerOptionsModalProps) => {
   const { t } = useLingui();
   const { closeModal } = useModal();
@@ -93,6 +95,7 @@ export const EditOutreachSequencerOptionsModal = ({
 
   const handleClose = () => {
     closeModal(EDIT_OUTREACH_SEQUENCER_OPTIONS_MODAL_ID);
+    onDismiss?.();
   };
 
   const handleApply = async () => {
