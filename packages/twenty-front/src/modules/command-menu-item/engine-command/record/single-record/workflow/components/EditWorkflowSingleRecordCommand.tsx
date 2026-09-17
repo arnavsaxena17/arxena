@@ -33,6 +33,7 @@ export const EditWorkflowSingleRecordCommand = () => {
       <EditOutreachSequencerOptionsModal
         workflowId={recordId}
         steps={workflowWithCurrentVersion?.currentVersion?.steps}
+        trigger={workflowWithCurrentVersion?.currentVersion?.trigger}
       />
     </>
   );

@@ -16,6 +16,7 @@ import {
   type IconComponent,
   IconArrowUp,
   IconDatabase,
+  IconPlayerPlay,
   IconPlayerStop,
   IconUserPlus,
 } from 'twenty-ui/icon';
@@ -36,6 +37,7 @@ import { OutreachSafeDashboardPath } from '@/outreach-home/components/OutreachSa
 import { useAddOutreachRecordsToCrm } from '@/outreach-home/hooks/useAddOutreachRecordsToCrm';
 import { useOutreachEnroll } from '@/outreach-home/hooks/useOutreachEnroll';
 import { useOutreachProjectJourneySummary } from '@/outreach-home/hooks/useOutreachProjectJourneySummary';
+import { useStartOutreachSequencerOnCandidates } from '@/outreach-home/hooks/useStartOutreachSequencerOnCandidates';
 import { useStopOutreach } from '@/outreach-home/hooks/useStopOutreach';
 import {
   type OutreachCompanyRow,
@@ -314,6 +316,8 @@ export const OutreachPeoplePanel = ({
   const { enrollSelectedPeople, promoteDeferredCandidate } =
     useOutreachEnroll();
   const { isStopping, stopOutreachForCandidates } = useStopOutreach();
+  const { isStarting, isManualTrigger, startSequencerOnCandidateIds } =
+    useStartOutreachSequencerOnCandidates();
   const {
     summary: journeySummary,
     isLoading: isJourneySummaryLoading,
@@ -565,6 +569,8 @@ export const OutreachPeoplePanel = ({
     .map((person) => person.candidateId)
     .filter((candidateId): candidateId is string => isDefined(candidateId));
 
+  const startableCandidateIds = stoppableCandidateIds;
+
   const handleRefresh = useCallback(async () => {
     if (isRefreshing) {
       return;
@@ -674,6 +680,22 @@ export const OutreachPeoplePanel = ({
         onClick={() =>
           enrollSelectedPeople(selectedPeople, companiesByWorkingSetId)
         }
+      />
+      <TooltipIconButton
+        title={
+          !isManualTrigger
+            ? 'Start sequencer (enable Manual trigger in Edit Workflow)'
+            : startableCandidateIds.length > 0
+              ? `Start sequencer (${startableCandidateIds.length})`
+              : 'Start sequencer'
+        }
+        Icon={IconPlayerPlay}
+        disabled={
+          startableCandidateIds.length === 0 || isStarting || !isManualTrigger
+        }
+        onClick={() => {
+          void startSequencerOnCandidateIds(startableCandidateIds);
+        }}
       />
       <TooltipIconButton
         title={

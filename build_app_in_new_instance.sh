@@ -289,18 +289,41 @@ run_production_upgrade() {
     return 0
   fi
 
+  mkdir -p "$BUILD_LOG_DIR"
+  local upgrade_log="$BUILD_LOG_DIR/prod_upgrade.latest.log"
+  # Status file: pipe to tee would otherwise lose upgrade_ok in a subshell.
+  local upgrade_status_file
+  upgrade_status_file="$(mktemp)"
+  echo 1 > "$upgrade_status_file"
+
   echo "Running production workspace upgrade (cache flush → upgrade → cache flush)"
-  if ! run_prod_server_command cache:flush cache:flush; then
-    echo "WARNING: cache:flush before upgrade failed; continuing"
+  echo "Upgrade log: $upgrade_log"
+  {
+    echo "=== production upgrade $(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M:%S %Z') ==="
+    if ! run_prod_server_command cache:flush cache:flush; then
+      echo "WARNING: cache:flush before upgrade failed; continuing"
+    fi
+    if run_prod_server_command upgrade upgrade; then
+      echo "Production upgrade completed."
+    else
+      echo "ERROR: yarn command:prod upgrade exited non-zero."
+      echo 0 > "$upgrade_status_file"
+    fi
+    if ! run_prod_server_command cache:flush cache:flush; then
+      echo "WARNING: cache:flush after upgrade failed; continuing"
+    fi
+  } 2>&1 | tee "$upgrade_log"
+
+  local upgrade_ok
+  upgrade_ok="$(cat "$upgrade_status_file")"
+  rm -f "$upgrade_status_file"
+
+  if [ "$upgrade_ok" != "1" ]; then
+    echo "Production upgrade failed. See $upgrade_log"
+    echo "Refusing TWENTY_SERVER process cutover so new code is not served on an unmigrated schema."
+    return 1
   fi
-  if run_prod_server_command upgrade upgrade; then
-    echo "Production upgrade completed."
-  else
-    echo "WARNING: yarn command:prod upgrade exited non-zero. Some workspaces may not be fully migrated. Check logs."
-  fi
-  if ! run_prod_server_command cache:flush cache:flush; then
-    echo "WARNING: cache:flush after upgrade failed; continuing"
-  fi
+  return 0
 }
 
 cleanup() {
@@ -1223,7 +1246,11 @@ maybe_stream_component() {
         echo "[timing] production lingui compile skipped for twenty-server (i18n inputs unchanged)"
         ensure_prod_yarn
       fi
-      run_production_upgrade
+      # Schema/instance commands must succeed before serving the new server build.
+      if ! run_production_upgrade; then
+        echo "TWENTY_SERVER artifacts are staged but pm2 was not restarted (upgrade failed)."
+        return 1
+      fi
       cd "$REPO_DIR"
       pm2 restart twenty-server twenty-worker || pm2 restart twenty-server || true
       ;;

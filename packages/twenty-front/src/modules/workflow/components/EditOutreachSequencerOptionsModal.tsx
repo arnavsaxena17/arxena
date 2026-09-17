@@ -20,6 +20,7 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 type EditOutreachSequencerOptionsModalProps = {
   workflowId: string;
   steps: Array<{ id?: string }> | null | undefined;
+  trigger?: { type?: string } | null;
 };
 
 const StyledCenteredTitle = styled.div`
@@ -65,6 +66,7 @@ const StyledButtonRow = styled.div`
 export const EditOutreachSequencerOptionsModal = ({
   workflowId,
   steps,
+  trigger,
 }: EditOutreachSequencerOptionsModalProps) => {
   const { t } = useLingui();
   const { closeModal } = useModal();
@@ -76,12 +78,12 @@ export const EditOutreachSequencerOptionsModal = ({
     EDIT_OUTREACH_SEQUENCER_OPTIONS_MODAL_ID,
   );
   const [options, setOptions] = useState<OutreachSequencerGraphOptions>(() =>
-    inferOutreachSequencerGraphOptionsFromSteps(steps),
+    inferOutreachSequencerGraphOptionsFromSteps(steps, trigger),
   );
   const [optionsSyncedForOpen, setOptionsSyncedForOpen] = useState(false);
 
   if (isModalOpened && !optionsSyncedForOpen) {
-    setOptions(inferOutreachSequencerGraphOptionsFromSteps(steps));
+    setOptions(inferOutreachSequencerGraphOptionsFromSteps(steps, trigger));
     setOptionsSyncedForOpen(true);
   }
 
@@ -148,6 +150,38 @@ export const EditOutreachSequencerOptionsModal = ({
           {t`Applying rebuilds the Candidate Sequencer draft from the outreach template and discards hand-edits on the draft. Activate when ready.`}
         </Section>
       </StyledSectionContainer>
+      <StyledOptionRow>
+        <Checkbox
+          checked={!options.manualTrigger}
+          onCheckedChange={(value) => {
+            if (value) {
+              setOption('manualTrigger', false);
+            }
+          }}
+        />
+        <StyledOptionText>
+          <StyledOptionLabel>{t`Automated trigger`}</StyledOptionLabel>
+          <StyledOptionHelp>
+            {t`Fires when a candidate is created or updated (outreach sequence stage).`}
+          </StyledOptionHelp>
+        </StyledOptionText>
+      </StyledOptionRow>
+      <StyledOptionRow>
+        <Checkbox
+          checked={options.manualTrigger}
+          onCheckedChange={(value) => {
+            if (value) {
+              setOption('manualTrigger', true);
+            }
+          }}
+        />
+        <StyledOptionText>
+          <StyledOptionLabel>{t`Manual trigger`}</StyledOptionLabel>
+          <StyledOptionHelp>
+            {t`Launch from a candidate record, selected candidates, or Start sequencer on the Outreach People tab.`}
+          </StyledOptionHelp>
+        </StyledOptionText>
+      </StyledOptionRow>
       <StyledOptionRow>
         <Checkbox
           checked={options.useLlmConnectionNote}

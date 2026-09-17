@@ -61,6 +61,7 @@ export class WorkflowVersionResolver {
       humanInTheLoop,
       whatsappEnabled,
       meetingFollowUpEnabled,
+      manualTrigger,
     }: ApplyOutreachSequencerGraphOptionsInput,
   ): Promise<WorkflowVersionDTO> {
     return this.workflowVersionWorkspaceService.applyOutreachSequencerGraphOptions(
@@ -72,6 +73,7 @@ export class WorkflowVersionResolver {
           humanInTheLoop,
           whatsappEnabled,
           meetingFollowUpEnabled,
+          manualTrigger,
         },
       },
     );

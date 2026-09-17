@@ -659,25 +659,73 @@ describe('GTM outreach workflow graphs', () => {
   });
 
   it('infers graph options from step ids', () => {
-    const defaults = buildCandidateSequencerGraph().steps as GraphStep[];
+    const defaults = buildCandidateSequencerGraph();
     const automated = buildCandidateSequencerGraph({
       humanInTheLoop: false,
       whatsappEnabled: false,
       meetingFollowUpEnabled: false,
       useLlmConnectionNote: false,
-    }).steps as GraphStep[];
+    });
 
-    expect(inferOutreachSequencerGraphOptionsFromSteps(defaults)).toEqual({
+    expect(
+      inferOutreachSequencerGraphOptionsFromSteps(
+        defaults.steps as GraphStep[],
+        defaults.trigger,
+      ),
+    ).toEqual({
       useLlmConnectionNote: true,
       humanInTheLoop: true,
       whatsappEnabled: true,
       meetingFollowUpEnabled: true,
+      manualTrigger: false,
     });
-    expect(inferOutreachSequencerGraphOptionsFromSteps(automated)).toEqual({
+    expect(
+      inferOutreachSequencerGraphOptionsFromSteps(
+        automated.steps as GraphStep[],
+        automated.trigger,
+      ),
+    ).toEqual({
       useLlmConnectionNote: false,
       humanInTheLoop: false,
       whatsappEnabled: false,
       meetingFollowUpEnabled: false,
+      manualTrigger: false,
     });
+  });
+
+  it('builds MANUAL single-candidate trigger with payload variable paths', () => {
+    const graph = buildCandidateSequencerGraph({ manualTrigger: true });
+    const trigger = graph.trigger as {
+      type: string;
+      settings: {
+        availability?: {
+          type?: string;
+          objectNameSingular?: string;
+        };
+        objectType?: string;
+        isPinned?: boolean;
+      };
+    };
+
+    expect(trigger.type).toBe('MANUAL');
+    expect(trigger.settings.availability).toEqual({
+      type: 'SINGLE_RECORD',
+      objectNameSingular: 'candidate',
+    });
+    expect(trigger.settings.objectType).toBe('candidate');
+    expect(trigger.settings.isPinned).toBe(true);
+
+    const stepsJson = JSON.stringify(graph.steps);
+
+    expect(stepsJson).toContain('{{trigger.payload.outreachSequenceStage}}');
+    expect(stepsJson).toContain('{{trigger.payload.id}}');
+    expect(stepsJson).not.toContain('{{trigger.properties.after.');
+
+    expect(
+      inferOutreachSequencerGraphOptionsFromSteps(
+        graph.steps as GraphStep[],
+        graph.trigger,
+      ).manualTrigger,
+    ).toBe(true);
   });
 });

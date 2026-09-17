@@ -71,21 +71,32 @@ Inspect the commits / diff vs production HEAD before the pull.
 
 **twenty-server only:**
 
+Always migrate before restart. New entity columns / instance commands without this step break sign-in (missing `core.workspace` columns, etc.).
+
 ```bash
 cd /home/ubuntu/twenty
 npx nx run twenty-server:build
-pm2 restart all
+cd packages/twenty-server
+yarn command:prod cache:flush
+yarn command:prod upgrade
+# If full upgrade is blocked on workspace failures but core schema is missing:
+# yarn command:prod run-instance-commands --force
+yarn command:prod cache:flush
+cd ../..
+pm2 restart twenty-server twenty-worker
 ```
 
-**twenty-website only** (or website + server, still nothing from the new-instance list):
+Do not `pm2 restart` the server if upgrade / `run-instance-commands` exited non-zero.
+
+**twenty-website only** (nothing from the new-instance list, no server schema change):
 
 ```bash
 cd /home/ubuntu/twenty
 npx nx run twenty-website:build
-pm2 restart all
+pm2 restart twenty-website
 ```
 
-If both server and website changed, run both nx builds, then `pm2 restart all`.
+If both server and website changed, build both, run the server upgrade path above, then restart `twenty-server`, `twenty-worker`, and `twenty-website`.
 
 **New-instance build** — do **not** build these in place on production. Use `build_app_in_new_instance.sh` if any of these changed:
 
@@ -101,9 +112,9 @@ cd /home/ubuntu/twenty
 ./build_app_in_new_instance.sh
 ```
 
-That script syncs the build branch, spins a builder instance, deploys the built app, then runs production `yarn command:prod upgrade` (cache flush → upgrade all workspaces → cache flush) **before** `pm2 restart`. Do not substitute `npx nx run twenty-front:build`, orgchart/mcp/shared/docs (Mintlify) builds, or `yarn build` on the live box.
+That script syncs the build branch, spins a builder instance, deploys the built app, then runs production `yarn command:prod upgrade` (cache flush → upgrade all workspaces → cache flush) **before** `pm2 restart`. If upgrade fails, it **refuses** the TWENTY_SERVER pm2 restart and writes `/home/ubuntu/logs/prod_upgrade.latest.log`. Do not substitute `npx nx run twenty-front:build`, orgchart/mcp/shared/docs (Mintlify) builds, or `yarn build` on the live box.
 
-Skip the upgrade step only with `SKIP_PROD_UPGRADE=1`. Do not use `npx nx run twenty-server:command` on production for this — Nx can hang after "Command completed!". Use `yarn command:prod …` from `packages/twenty-server`.
+Skip the upgrade step only with `SKIP_PROD_UPGRADE=1` (emergency only — expect schema drift). Do not use `npx nx run twenty-server:command` on production for this — Nx can hang after "Command completed!". Use `yarn command:prod …` from `packages/twenty-server`.
 
 The orchestrator kills a remote builder SSH session that is still open ~90s after the log shows `Required build check passed` / `failed`, so a completed build cannot leave the pipeline stuck. CLI commands force-exit after Nest `app.close()` for the same reason.
 

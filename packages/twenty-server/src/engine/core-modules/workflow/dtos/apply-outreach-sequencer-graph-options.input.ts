@@ -33,4 +33,11 @@ export class ApplyOutreachSequencerGraphOptionsInput {
     nullable: false,
   })
   meetingFollowUpEnabled: boolean;
+
+  @Field(() => Boolean, {
+    description:
+      'Use MANUAL single-candidate trigger instead of candidate.upserted',
+    nullable: false,
+  })
+  manualTrigger: boolean;
 }

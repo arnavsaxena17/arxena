@@ -8,6 +8,7 @@ export type ApplyOutreachSequencerGraphOptionsInput = {
   humanInTheLoop: boolean;
   whatsappEnabled: boolean;
   meetingFollowUpEnabled: boolean;
+  manualTrigger: boolean;
 };
 
 export const useApplyOutreachSequencerGraphOptions = () => {

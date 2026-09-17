@@ -223,6 +223,9 @@ const v = (stepId: string, path: string) => `{{${stepId}.${path}}}`;
 export const gtmWfTriggerAfter = (field: string) =>
   `{{trigger.properties.after.${field}}}`;
 
+export const gtmWfTriggerPayload = (field: string) =>
+  `{{trigger.payload.${field}}}`;
+
 export const gtmWfMemberId = (
   memberStepId: string = OUTREACH_WF_MEMBER_STEP_ID,
 ) => v(memberStepId, 'first.id');
@@ -1026,3 +1029,41 @@ export const gtmWfManualTrigger = ({
   },
   nextStepIds,
 });
+
+export const gtmWfManualRecordTrigger = ({
+  name = 'Launch manually',
+  icon = 'IconHandMove',
+  objectNameSingular,
+  nextStepIds,
+  isPinned = true,
+}: {
+  name?: string;
+  icon?: string;
+  objectNameSingular: string;
+  nextStepIds: string[];
+  isPinned?: boolean;
+}) => ({
+  name,
+  type: 'MANUAL',
+  position: { x: 0, y: 0 },
+  settings: {
+    outputSchema: {},
+    icon,
+    isPinned,
+    objectType: objectNameSingular,
+    availability: {
+      type: 'SINGLE_RECORD' as const,
+      objectNameSingular,
+    },
+  },
+  nextStepIds,
+});
+
+// Rewrite DATABASE_EVENT trigger paths to MANUAL single-record payload paths.
+export const rewriteTriggerAfterPathsToPayload = <T>(value: T): T =>
+  JSON.parse(
+    JSON.stringify(value).replaceAll(
+      '{{trigger.properties.after.',
+      '{{trigger.payload.',
+    ),
+  );
