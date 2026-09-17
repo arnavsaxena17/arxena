@@ -786,7 +786,7 @@ export class LinkedinUnipileController {
       workspaceMemberId?: string;
       headers?: { authorization?: string };
     },
-    workspaceId: string,
+    _workspaceId: string,
   ): Promise<void> {
     const trimmed = typeof accountId === 'string' ? accountId.trim() : '';
 
@@ -801,19 +801,8 @@ export class LinkedinUnipileController {
       return;
     }
 
-    let previousId: string | null = null;
-    try {
-      previousId =
-        await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
-          workspaceMemberId,
-          workspaceId,
-          authToken,
-          'linkedin',
-        );
-    } catch {
-      previousId = null;
-    }
-
+    // Rebind the member only. Never DELETE the previous Unipile account — other
+    // members / older sessions may still need it (shared Unipile org cache).
     try {
       const accountPayload =
         await this.linkedinUnipileRequestService.fetchAccountByIdIfExists(
@@ -834,15 +823,6 @@ export class LinkedinUnipileController {
           authToken,
           'linkedin',
           trimmed,
-        );
-      }
-      if (previousId && previousId !== trimmed) {
-        this.logger.log(
-          `Disconnecting superseded LinkedIn Unipile account after new connection: previousAccountId=${previousId} newAccountId=${trimmed} workspaceMemberId=${workspaceMemberId}`,
-        );
-        await this.linkedinUnipileRequestService.disconnectAccountBestEffort(
-          previousId,
-          'superseded LinkedIn Unipile account after new connection',
         );
       }
     } catch (err) {
@@ -1736,20 +1716,46 @@ export class LinkedinUnipileController {
         HttpStatus.BAD_REQUEST,
       );
     }
-    let previousLinkedinUnipileId: string | null = null;
-    try {
-      previousLinkedinUnipileId =
-        await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
-          workspaceMemberId,
-          workspace.id,
-          authToken,
-          'linkedin',
-        );
-    } catch {
-      previousLinkedinUnipileId = null;
-    }
     const newId = body.accountId.trim();
+    // Rebind the member only. Never DELETE other Unipile accounts from the shared org.
     try {
+      let existingLinkedinUnipileId: string | null = null;
+      try {
+        existingLinkedinUnipileId =
+          await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
+            workspaceMemberId,
+            workspace.id,
+            authToken,
+            'linkedin',
+          );
+      } catch {
+        existingLinkedinUnipileId = null;
+      }
+
+      const keepLinkedinConnected =
+        await this.workspaceMemberUnipileService.getKeepLinkedinConnected(
+          workspaceMemberId,
+          authToken,
+        );
+
+      // keepLinkedinConnected: do not swap onto a different org-cache account
+      if (
+        keepLinkedinConnected &&
+        existingLinkedinUnipileId &&
+        existingLinkedinUnipileId !== newId
+      ) {
+        this.logger.warn(
+          `Refusing LinkedIn update-member rebind while keepLinkedinConnected=true: ` +
+            `workspaceMemberId=${workspaceMemberId} existing=${existingLinkedinUnipileId} requested=${newId}`,
+        );
+        return {
+          success: false,
+          refused: true,
+          reason: 'keep_linkedin_connected',
+          existingAccountId: existingLinkedinUnipileId,
+        };
+      }
+
       const account =
         await this.linkedinUnipileRequestService.fetchAccountByIdIfExists(
           newId,
@@ -1769,15 +1775,6 @@ export class LinkedinUnipileController {
           authToken,
           'linkedin',
           newId,
-        );
-      }
-      if (previousLinkedinUnipileId && previousLinkedinUnipileId !== newId) {
-        this.logger.log(
-          `Disconnecting superseded LinkedIn Unipile account after manual member update: previousAccountId=${previousLinkedinUnipileId} newAccountId=${newId} workspaceMemberId=${workspaceMemberId}`,
-        );
-        await this.linkedinUnipileRequestService.disconnectAccountBestEffort(
-          previousLinkedinUnipileId,
-          'superseded LinkedIn Unipile account after manual member update',
         );
       }
     } catch (err) {

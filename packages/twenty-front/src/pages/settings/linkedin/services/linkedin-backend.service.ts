@@ -319,13 +319,11 @@ export class LinkedinBackendService {
     accessToken?: string,
   ): Promise<{ success: boolean }> {
     try {
-      await this.makeRequest<{ success: boolean }>(
-        '/accounts/update-member',
-        'POST',
-        { accountId },
-        accessToken,
-      );
-      return { success: true };
+      const response = await this.makeRequest<{
+        success?: boolean;
+        refused?: boolean;
+      }>('/accounts/update-member', 'POST', { accountId }, accessToken);
+      return { success: response.success !== false };
     } catch (error) {
       console.error('Failed to update member LinkedIn account:', error);
       return { success: false };

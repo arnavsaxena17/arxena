@@ -84,19 +84,8 @@ export class WhatsappUnipileController {
         HttpStatus.BAD_REQUEST,
       );
     }
-    let previousWhatsappUnipileId: string | null = null;
-    try {
-      previousWhatsappUnipileId =
-        await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
-          workspaceMemberId,
-          workspace.id,
-          authToken,
-          'whatsapp',
-        );
-    } catch {
-      previousWhatsappUnipileId = null;
-    }
     const newId = body.accountId.trim();
+    // Rebind the member only. Never DELETE other Unipile accounts from the shared org.
     try {
       const account = await this.unipileRequestService.makeUnipileRequest(
         `/api/v1/accounts/${newId}`,
@@ -108,12 +97,6 @@ export class WhatsappUnipileController {
         newId,
         account,
       );
-      if (previousWhatsappUnipileId && previousWhatsappUnipileId !== newId) {
-        await this.unipileRequestService.disconnectAccountBestEffort(
-          previousWhatsappUnipileId,
-          'superseded WhatsApp Unipile account after manual member update',
-        );
-      }
     } catch (err) {
       this.logger.warn(
         `Could not sync WhatsApp phone to workspace member profile: ${err instanceof Error ? err.message : err}`,
@@ -244,6 +227,7 @@ export class WhatsappUnipileController {
 
           if (existingId !== response.id) {
             try {
+              // Rebind only — keep the previous Unipile account in the shared org.
               await this.workspaceMemberUnipileService.applyUnipileAccountToWorkspaceMember(
                 workspaceMemberId,
                 authToken,
@@ -251,12 +235,6 @@ export class WhatsappUnipileController {
                 response.id,
                 response,
               );
-              if (existingId && existingId !== response.id) {
-                await this.unipileRequestService.disconnectAccountBestEffort(
-                  existingId,
-                  'superseded WhatsApp Unipile account after new QR connect (same member)',
-                );
-              }
             } catch (syncErr) {
               this.logger.warn(
                 `Could not sync WhatsApp account to workspace member profile after connect: ${syncErr instanceof Error ? syncErr.message : syncErr}`,

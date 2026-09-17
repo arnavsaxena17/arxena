@@ -2,21 +2,21 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { styled } from '@linaria/react';
 import React, {
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
 } from 'react';
 import type { UnipileWhatsappAccount } from 'twenty-shared/arx';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { tokenPairState } from '~/modules/auth/states/tokenPairState';
 import { workspaceMemberUnipileFieldsState } from '~/modules/unipile/states/workspaceMemberUnipileFieldsState';
 import {
-    filterWhatsappAccountsForWorkspaceMemberProfile,
-    shouldRestrictWhatsappByProfile,
-    shouldShowWhatsappUnipileConnectQr,
-    whatsappAccountMatchesWorkspaceMemberProfile,
+  filterWhatsappAccountsForWorkspaceMemberProfile,
+  shouldRestrictWhatsappByProfile,
+  shouldShowWhatsappUnipileConnectQr,
+  whatsappAccountMatchesWorkspaceMemberProfile,
 } from '~/modules/unipile/utils/matchUnipileToWorkspaceMemberProfile';
 import { whatsappUnipileAccountsState } from '~/modules/whatsapp-unipile/states/whatsappUnipileAccountsState';
 import { getWhatsappUnipileService } from '~/pages/settings/whatsapp/services/whatsapp-unipile-backend.service';
@@ -242,18 +242,32 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<
       const accountList = allAccounts.filter((acc) => acc.type === 'WHATSAPP');
 
       // Check if there's a new connected account that wasn't in the previous list
+      // First load of the shared Unipile org list must not auto-bind older
+      // accounts onto this member.
+      const isInitialAccountsLoad = previousAccountsRef.current.length === 0;
       const previousAccountIds = previousAccountsRef.current.map(
         (acc) => acc.id,
       );
-      const newConnectedAccounts = accountList.filter(
-        (acc) =>
-          getNormalizedStatus(acc.status) === 'connected' &&
-          acc.type === 'WHATSAPP' &&
-          !previousAccountIds.includes(acc.id),
-      );
+      const newConnectedAccounts = isInitialAccountsLoad
+        ? []
+        : accountList.filter(
+            (acc) =>
+              getNormalizedStatus(acc.status) === 'connected' &&
+              acc.type === 'WHATSAPP' &&
+              !previousAccountIds.includes(acc.id),
+          );
+
+      const storedWhatsappUnipileAccountId =
+        workspaceMemberUnipileFields?.whatsappUnipileAccountId?.trim() ?? '';
 
       const accountToPersist = newConnectedAccounts.find((acc) => {
         if (acc.type !== 'WHATSAPP') {
+          return false;
+        }
+        if (
+          storedWhatsappUnipileAccountId &&
+          acc.id !== storedWhatsappUnipileAccountId
+        ) {
           return false;
         }
         if (
@@ -447,45 +461,45 @@ export const ConnectedWhatsappUnipileAccounts: React.FC<
         displayedAccounts.map((account) => (
           <AccountCard key={account.id}>
             <AccountHeader>
-            <AccountInfo>
-              <Avatar>{getInitials(account.username)}</Avatar>
-              <AccountDetails>
-                <AccountName>{account.username}</AccountName>
-                {account.phone_number && (
-                  <AccountName
-                    style={{
-                      fontSize: '0.75rem',
-                      fontWeight: 'normal',
-                      color: '#6b7280',
-                    }}
+              <AccountInfo>
+                <Avatar>{getInitials(account.username)}</Avatar>
+                <AccountDetails>
+                  <AccountName>{account.username}</AccountName>
+                  {account.phone_number && (
+                    <AccountName
+                      style={{
+                        fontSize: '0.75rem',
+                        fontWeight: 'normal',
+                        color: '#6b7280',
+                      }}
+                    >
+                      {account.phone_number}
+                    </AccountName>
+                  )}
+                  <AccountStatus status={account.status}>
+                    {account.status}
+                  </AccountStatus>
+                  <AccountId>{account.id}</AccountId>
+                </AccountDetails>
+              </AccountInfo>
+
+              <AccountActions>
+                {getNormalizedStatus(account.status) === 'connected' && (
+                  <ActionButton
+                    variant="secondary"
+                    onClick={() => handleResync(account.id)}
                   >
-                    {account.phone_number}
-                  </AccountName>
+                    Resync
+                  </ActionButton>
                 )}
-                <AccountStatus status={account.status}>
-                  {account.status}
-                </AccountStatus>
-                <AccountId>{account.id}</AccountId>
-              </AccountDetails>
-            </AccountInfo>
 
-            <AccountActions>
-              {getNormalizedStatus(account.status) === 'connected' && (
                 <ActionButton
-                  variant="secondary"
-                  onClick={() => handleResync(account.id)}
+                  variant="danger"
+                  onClick={() => handleDisconnect(account.id)}
                 >
-                  Resync
+                  Disconnect
                 </ActionButton>
-              )}
-
-              <ActionButton
-                variant="danger"
-                onClick={() => handleDisconnect(account.id)}
-              >
-                Disconnect
-              </ActionButton>
-            </AccountActions>
+              </AccountActions>
             </AccountHeader>
             {getNormalizedStatus(account.status) === 'connected' && (
               <WhatsappAccountRateLimitsPanel

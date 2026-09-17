@@ -11,11 +11,15 @@ describe('LinkedinUnipileController', () => {
       updateWorkspaceMemberLinkedinCookieTokens: jest.fn(),
       getKeepLinkedinConnected: jest.fn(),
       clearWorkspaceMemberUnipileAccountId: jest.fn(),
+      getWorkspaceMemberUnipileAccountId: jest.fn(),
+      applyUnipileAccountToWorkspaceMember: jest.fn(),
+      updateWorkspaceMemberUnipileAccountId: jest.fn(),
     };
 
     const linkedinUnipileRequestService = {
       disconnectAccountBestEffort: jest.fn(),
       inferLinkedinSearchTypeForAccount: jest.fn(),
+      fetchAccountByIdIfExists: jest.fn(),
     };
 
     const environmentService = {
@@ -32,7 +36,8 @@ describe('LinkedinUnipileController', () => {
 
     const memberLinkedinUnipileConnectionService = {
       disconnectMemberLinkedinUnipileAccount: jest.fn(),
-      disconnectStoredLinkedinAccountWhenLiAChangedWhileLiAtUnchanged: jest.fn(),
+      disconnectStoredLinkedinAccountWhenLiAChangedWhileLiAtUnchanged:
+        jest.fn(),
     };
 
     const linkedinUnipileMemberAccountResolverService = {
@@ -113,7 +118,11 @@ describe('LinkedinUnipileController', () => {
           connected: boolean,
         ) => Promise<Record<string, unknown>>;
       }
-    ).buildLinkedinSyncResponseFields('unipile-account-id', 'not_connected', false);
+    ).buildLinkedinSyncResponseFields(
+      'unipile-account-id',
+      'not_connected',
+      false,
+    );
 
     expect(
       linkedinUnipileRequestService.inferLinkedinSearchTypeForAccount,
@@ -535,7 +544,8 @@ describe('LinkedinUnipileController', () => {
   });
 
   it('validate-session schedules idle disconnect when keepLinkedinConnected is false', async () => {
-    const { controller, linkedinStoredCookieValidationService } = createController();
+    const { controller, linkedinStoredCookieValidationService } =
+      createController();
 
     linkedinStoredCookieValidationService.validateStoredCookiesForMember.mockResolvedValue(
       {
@@ -547,7 +557,8 @@ describe('LinkedinUnipileController', () => {
         hasLiA: false,
         lastSyncedAt: '2026-06-18T00:00:00.000Z',
         lastValidatedAt: '2026-06-18T00:01:00.000Z',
-        message: 'LinkedIn connection succeeded; idle disconnect scheduled after validation',
+        message:
+          'LinkedIn connection succeeded; idle disconnect scheduled after validation',
         errorCode: null,
         reconnectAttempted: true,
         reconnectSucceeded: true,
@@ -593,7 +604,8 @@ describe('LinkedinUnipileController', () => {
   });
 
   it('validate-session returns 404 when the feature flag is disabled', async () => {
-    const { controller, linkedinStoredCookieValidationService } = createController();
+    const { controller, linkedinStoredCookieValidationService } =
+      createController();
     const { HttpException } = await import('@nestjs/common');
     linkedinStoredCookieValidationService.validateStoredCookiesForMember.mockRejectedValue(
       new HttpException(
@@ -614,5 +626,45 @@ describe('LinkedinUnipileController', () => {
     ).rejects.toMatchObject({
       status: HttpStatus.NOT_FOUND,
     });
+  });
+
+  it('update-member refuses rebind when keepLinkedinConnected and existing account differs', async () => {
+    const {
+      controller,
+      workspaceMemberUnipileService,
+      linkedinUnipileRequestService,
+    } = createController();
+
+    workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId.mockResolvedValue(
+      'existing-account',
+    );
+    workspaceMemberUnipileService.getKeepLinkedinConnected.mockResolvedValue(
+      true,
+    );
+
+    const result = await controller.updateMemberLinkedinAccount(
+      { accountId: 'other-account' },
+      { id: 'workspace-id' } as never,
+      {
+        workspaceMemberId: 'member-id',
+        headers: { authorization: 'Bearer auth-token' },
+      } as never,
+    );
+
+    expect(result).toMatchObject({
+      success: false,
+      refused: true,
+      reason: 'keep_linkedin_connected',
+      existingAccountId: 'existing-account',
+    });
+    expect(
+      linkedinUnipileRequestService.fetchAccountByIdIfExists,
+    ).not.toHaveBeenCalled();
+    expect(
+      linkedinUnipileRequestService.disconnectAccountBestEffort,
+    ).not.toHaveBeenCalled();
+    expect(
+      workspaceMemberUnipileService.applyUnipileAccountToWorkspaceMember,
+    ).not.toHaveBeenCalled();
   });
 });

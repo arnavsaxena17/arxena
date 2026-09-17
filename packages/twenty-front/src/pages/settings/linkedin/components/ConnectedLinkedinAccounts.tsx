@@ -2,11 +2,11 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { styled } from '@linaria/react';
 import React, {
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
 } from 'react';
 import type { UnipileLinkedinAccount } from 'twenty-shared/arx';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
@@ -16,10 +16,10 @@ import { tokenPairState } from '~/modules/auth/states/tokenPairState';
 import { linkedinUnipileAccountsState } from '~/modules/linkedin-unipile/states/linkedinUnipileAccountsState';
 import { workspaceMemberUnipileFieldsState } from '~/modules/unipile/states/workspaceMemberUnipileFieldsState';
 import {
-    filterLinkedinAccountsForWorkspaceMemberProfile,
-    hasMatchingConnectedLinkedinAccount,
-    linkedinAccountMatchesWorkspaceMemberProfile,
-    shouldRestrictLinkedinByProfile,
+  filterLinkedinAccountsForWorkspaceMemberProfile,
+  hasMatchingConnectedLinkedinAccount,
+  linkedinAccountMatchesWorkspaceMemberProfile,
+  shouldRestrictLinkedinByProfile,
 } from '~/modules/unipile/utils/matchUnipileToWorkspaceMemberProfile';
 import { getLinkedinService } from '~/pages/settings/linkedin/services/linkedin-backend.service';
 
@@ -236,19 +236,35 @@ export const ConnectedLinkedinAccounts: React.FC<
       // Filter to only show LinkedIn accounts
       const accountList = allAccounts.filter((acc) => acc.type === 'LINKEDIN');
 
-      // Check if there's a new connected account that wasn't in the previous list
+      // Only treat accounts as "newly connected" after we already had a list.
+      // First load of the shared Unipile org cache must not auto-bind older
+      // accounts onto this member (that overwrote Naresh with Saranya, etc.).
+      const isInitialAccountsLoad = previousAccountsRef.current.length === 0;
       const previousAccountIds = previousAccountsRef.current.map(
         (acc) => acc.id,
       );
-      const newConnectedAccounts = accountList.filter(
-        (acc) =>
-          acc.status === 'connected' &&
-          acc.type === 'LINKEDIN' &&
-          !previousAccountIds.includes(acc.id),
-      );
+      const newConnectedAccounts = isInitialAccountsLoad
+        ? []
+        : accountList.filter(
+            (acc) =>
+              acc.status === 'connected' &&
+              acc.type === 'LINKEDIN' &&
+              !previousAccountIds.includes(acc.id),
+          );
+
+      const storedLinkedinUnipileAccountId =
+        workspaceMemberUnipileFields?.linkedinUnipileAccountId?.trim() ?? '';
 
       const accountToPersist = newConnectedAccounts.find((acc) => {
         if (acc.type !== 'LINKEDIN') {
+          return false;
+        }
+        // Do not swap a member who already has an account onto a different
+        // id that merely appeared in the shared Unipile list.
+        if (
+          storedLinkedinUnipileAccountId &&
+          acc.id !== storedLinkedinUnipileAccountId
+        ) {
           return false;
         }
         if (
@@ -482,43 +498,43 @@ export const ConnectedLinkedinAccounts: React.FC<
         displayedAccounts.map((account) => (
           <AccountCard key={account.id}>
             <AccountHeader>
-            <AccountInfo>
-              <Avatar>{getInitials(getDisplayName(account))}</Avatar>
-              <AccountDetails>
-                <AccountName>{getDisplayName(account)}</AccountName>
-                <AccountStatus status={account.status}>
-                  {account.status}
-                </AccountStatus>
-                <AccountId>{account.id}</AccountId>
-              </AccountDetails>
-            </AccountInfo>
+              <AccountInfo>
+                <Avatar>{getInitials(getDisplayName(account))}</Avatar>
+                <AccountDetails>
+                  <AccountName>{getDisplayName(account)}</AccountName>
+                  <AccountStatus status={account.status}>
+                    {account.status}
+                  </AccountStatus>
+                  <AccountId>{account.id}</AccountId>
+                </AccountDetails>
+              </AccountInfo>
 
-            <AccountActions>
-              {account.status === 'disconnected' && (
+              <AccountActions>
+                {account.status === 'disconnected' && (
+                  <ActionButton
+                    variant="primary"
+                    onClick={() => handleReconnect(account.id)}
+                  >
+                    Reconnect
+                  </ActionButton>
+                )}
+
+                {account.status === 'connected' && (
+                  <ActionButton
+                    variant="secondary"
+                    onClick={() => handleResync(account.id)}
+                  >
+                    Resync
+                  </ActionButton>
+                )}
+
                 <ActionButton
-                  variant="primary"
-                  onClick={() => handleReconnect(account.id)}
+                  variant="danger"
+                  onClick={() => handleDisconnect(account.id)}
                 >
-                  Reconnect
+                  Disconnect
                 </ActionButton>
-              )}
-
-              {account.status === 'connected' && (
-                <ActionButton
-                  variant="secondary"
-                  onClick={() => handleResync(account.id)}
-                >
-                  Resync
-                </ActionButton>
-              )}
-
-              <ActionButton
-                variant="danger"
-                onClick={() => handleDisconnect(account.id)}
-              >
-                Disconnect
-              </ActionButton>
-            </AccountActions>
+              </AccountActions>
             </AccountHeader>
             {account.status === 'connected' && (
               <LinkedinAccountRateLimitsPanel
