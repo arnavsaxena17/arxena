@@ -96,6 +96,8 @@ export type OutreachPersonRow = {
   lastInboundAt?: string | null;
   lastOutboundAt?: string | null;
   replyAfterTouch?: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 };
 
 export type OutreachProjectOption = {

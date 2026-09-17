@@ -74,6 +74,7 @@ import { DiscardDraftWorkflowSingleRecordCommand } from '@/command-menu-item/eng
 import { DuplicateWorkflowSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/workflow/components/DuplicateWorkflowSingleRecordCommand';
 import { EditWorkflowSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/workflow/components/EditWorkflowSingleRecordCommand';
 import { SeeActiveVersionWorkflowSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/workflow/components/SeeActiveVersionWorkflowSingleRecordCommand';
+import { BulkForceStopWorkflowRunsSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/workflow/components/BulkForceStopWorkflowRunsSingleRecordCommand';
 import { SeeRunsWorkflowSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/workflow/components/SeeRunsWorkflowSingleRecordCommand';
 import { SeeVersionsWorkflowSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/workflow/components/SeeVersionsWorkflowSingleRecordCommand';
 import { TestWorkflowSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/workflow/components/TestWorkflowSingleRecordCommand';
@@ -256,6 +257,9 @@ export const ENGINE_COMPONENT_KEY_COMPONENT_MAP: Record<
   ),
   [EngineComponentKey.SEE_RUNS_WORKFLOW]: (
     <SeeRunsWorkflowSingleRecordCommand />
+  ),
+  [EngineComponentKey.BULK_FORCE_STOP_WORKFLOW_RUNS]: (
+    <BulkForceStopWorkflowRunsSingleRecordCommand />
   ),
   [EngineComponentKey.SEE_VERSIONS_WORKFLOW]: (
     <SeeVersionsWorkflowSingleRecordCommand />

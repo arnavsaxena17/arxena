@@ -434,6 +434,22 @@ export const STANDARD_COMMAND_MENU_ITEMS = {
     engineComponentKey: EngineComponentKey.SEE_RUNS_WORKFLOW,
     hotKeys: null,
   },
+  bulkForceStopWorkflowRuns: {
+    universalIdentifier: 'a8c3e1f2-4b5d-6e7f-8091-a2b3c4d5e6f7',
+    label: 'Bulk Force Stop',
+    icon: 'IconPlayerStop',
+    isPinned: true,
+    position: 28,
+    shortLabel: 'Bulk Force Stop',
+    availabilityType: CommandMenuItemAvailabilityType.RECORD_SELECTION,
+    conditionalAvailabilityExpression:
+      'noneDefined(selectedRecords, "deletedAt")',
+    availabilityObjectMetadataUniversalIdentifier:
+      STANDARD_OBJECTS.workflow.universalIdentifier,
+    frontComponentUniversalIdentifier: null,
+    engineComponentKey: EngineComponentKey.BULK_FORCE_STOP_WORKFLOW_RUNS,
+    hotKeys: null,
+  },
   seeVersionsWorkflow: {
     universalIdentifier: '92781d24-b875-4282-8cdb-d127f04a5c7d',
     label: 'See Versions History',

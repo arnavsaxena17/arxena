@@ -157,7 +157,7 @@ const outreachPersonSignature = (people: OutreachPersonRow[]): string =>
   people
     .map(
       (person) =>
-        `${person.id}:${person.stage}:${person.candidateId ?? ''}:${person.name}:${person.title}:${person.companyName}:${person.experimentVariant ?? ''}:${person.recruiterStatus ?? ''}:${person.candConversationStatus ?? ''}:${person.workflowRunStatus ?? ''}:${person.messagesExchanged?.length ?? 0}:${person.outreachConversationStage ?? ''}:${person.needsApproval ? '1' : '0'}:${person.nextStepLabel ?? ''}:${person.nextRetryAt ?? ''}:${person.outreachResumeAt ?? ''}`,
+        `${person.id}:${person.stage}:${person.candidateId ?? ''}:${person.name}:${person.title}:${person.companyName}:${person.experimentVariant ?? ''}:${person.recruiterStatus ?? ''}:${person.candConversationStatus ?? ''}:${person.workflowRunStatus ?? ''}:${person.messagesExchanged?.length ?? 0}:${person.outreachConversationStage ?? ''}:${person.needsApproval ? '1' : '0'}:${person.nextStepLabel ?? ''}:${person.nextRetryAt ?? ''}:${person.outreachResumeAt ?? ''}:${person.createdAt ?? ''}:${person.updatedAt ?? ''}`,
     )
     .join('|');
 
@@ -810,6 +810,8 @@ export const useOutreachLiveWorkingSet = () => {
             null,
           lastOutboundAt: resolveCandidateLastOutboundAt(candidate),
           replyAfterTouch: formatReplyAfterTouch(candidate),
+          createdAt: candidate.createdAt ?? null,
+          updatedAt: candidate.updatedAt ?? null,
         };
       }),
     [journeySummary?.byCandidateId, outboundSenderFirstName, projectCandidates],

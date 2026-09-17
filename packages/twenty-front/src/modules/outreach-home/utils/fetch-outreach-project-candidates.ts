@@ -27,6 +27,8 @@ export type OutreachProjectCandidateRecord = {
   linkedinUrl?: { primaryLinkUrl?: string; primaryLinkLabel?: string } | null;
   email?: { primaryEmail?: string } | null;
   peopleId?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
   chatMessages?: {
     edges?: Array<{
       node?: {
@@ -47,13 +49,11 @@ export const resolveCandidateOutreachResumeAt = (
 
 export const resolveCandidateLastInboundAt = (
   candidate: Pick<OutreachProjectCandidateRecord, 'outreachAnalytics'>,
-): string | null =>
-  resolveOutreachLastInboundAt(candidate.outreachAnalytics);
+): string | null => resolveOutreachLastInboundAt(candidate.outreachAnalytics);
 
 export const resolveCandidateLastOutboundAt = (
   candidate: Pick<OutreachProjectCandidateRecord, 'outreachAnalytics'>,
-): string | null =>
-  resolveOutreachLastOutboundAt(candidate.outreachAnalytics);
+): string | null => resolveOutreachLastOutboundAt(candidate.outreachAnalytics);
 
 export const formatReplyAfterTouch = (
   candidate: Pick<

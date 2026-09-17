@@ -26,10 +26,15 @@ import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system
 import { WorkspaceEventEmitter } from 'src/engine/workspace-event-emitter/workspace-event-emitter';
 import { AutomatedTriggerType } from 'src/modules/workflow/common/standard-objects/workflow-automated-trigger.workspace-entity';
 import {
+  WorkflowRunStatus,
+  type WorkflowRunWorkspaceEntity,
+} from 'src/modules/workflow/common/standard-objects/workflow-run.workspace-entity';
+import {
   WorkflowVersionStatus,
   type WorkflowVersionWorkspaceEntity,
 } from 'src/modules/workflow/common/standard-objects/workflow-version.workspace-entity';
 import { type WorkflowWorkspaceEntity } from 'src/modules/workflow/common/standard-objects/workflow.workspace-entity';
+import { WorkflowThrottlingWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run-queue/workspace-services/workflow-throttling.workspace-service';
 import { assertWorkflowVersionTriggerIsDefined } from 'src/modules/workflow/common/utils/assert-workflow-version-trigger-is-defined.util';
 import { WorkflowCommonWorkspaceService } from 'src/modules/workflow/common/workspace-services/workflow-common.workspace-service';
 import { getPickRecordLoadBalanceConfigError } from 'src/modules/workflow/workflow-builder/workflow-validation/utils/get-pick-record-load-balance-config-error.util';
@@ -69,6 +74,7 @@ export class WorkflowTriggerWorkspaceService {
     private readonly workflowCommonWorkspaceService: WorkflowCommonWorkspaceService,
     private readonly codeStepBuildService: CodeStepBuildService,
     private readonly workflowRunnerWorkspaceService: WorkflowRunnerWorkspaceService,
+    private readonly workflowThrottlingWorkspaceService: WorkflowThrottlingWorkspaceService,
     private readonly automatedTriggerWorkspaceService: AutomatedTriggerWorkspaceService,
     private readonly workspaceEventEmitter: WorkspaceEventEmitter,
     private readonly commandMenuItemService: CommandMenuItemService,
@@ -489,6 +495,77 @@ export class WorkflowTriggerWorkspaceService {
       workspaceId,
       workflowRunId,
     );
+  }
+
+  async bulkForceStopWorkflowRuns({
+    workflowId,
+    workspaceId,
+  }: {
+    workflowId: string;
+    workspaceId: string;
+  }): Promise<{ stoppedCount: number }> {
+    const authContext = buildSystemAuthContext(workspaceId);
+    const stoppableStatuses = [
+      WorkflowRunStatus.NOT_STARTED,
+      WorkflowRunStatus.ENQUEUED,
+      WorkflowRunStatus.RUNNING,
+      WorkflowRunStatus.STOPPING,
+    ];
+
+    const runIds =
+      await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+        async () => {
+          const workflowRunRepository =
+            await this.globalWorkspaceOrmManager.getRepository<WorkflowRunWorkspaceEntity>(
+              workspaceId,
+              'workflowRun',
+              { shouldBypassPermissionChecks: true },
+            );
+
+          const runs = await workflowRunRepository.find({
+            where: {
+              workflowId,
+              status: In(stoppableStatuses),
+            },
+            select: { id: true },
+            take: 5000,
+          });
+
+          return runs.map((run) => run.id);
+        },
+        authContext,
+      );
+
+    let stoppedCount = 0;
+
+    for (const workflowRunId of runIds) {
+      try {
+        const result =
+          await this.workflowRunnerWorkspaceService.stopWorkflowRun(
+            workspaceId,
+            workflowRunId,
+          );
+
+        if (
+          result.status === WorkflowRunStatus.STOPPED ||
+          result.status === WorkflowRunStatus.STOPPING
+        ) {
+          stoppedCount += 1;
+        }
+      } catch (error) {
+        this.logger.warn(
+          `Failed to force-stop workflow run ${workflowRunId}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    }
+
+    await this.workflowThrottlingWorkspaceService.recomputeWorkflowRunNotStartedCount(
+      workspaceId,
+    );
+
+    return { stoppedCount };
   }
 
   async retryWorkflowRun(workflowRunId: string, workspaceId: string) {

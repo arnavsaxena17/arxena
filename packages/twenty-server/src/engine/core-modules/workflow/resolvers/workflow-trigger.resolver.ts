@@ -16,6 +16,7 @@ import { ResolverValidationPipe } from 'src/engine/core-modules/graphql/pipes/re
 import { type AuthContextUser } from 'src/engine/core-modules/auth/types/auth-context.type';
 import { RunWorkflowVersionInput } from 'src/engine/core-modules/workflow/dtos/run-workflow-version.input';
 import { RunWorkflowVersionDTO } from 'src/engine/core-modules/workflow/dtos/run-workflow-version.dto';
+import { BulkForceStopWorkflowRunsDTO } from 'src/engine/core-modules/workflow/dtos/bulk-force-stop-workflow-runs.dto';
 import { WorkflowRunDTO } from 'src/engine/core-modules/workflow/dtos/workflow-run.dto';
 import { WorkflowTriggerGraphqlApiExceptionFilter } from 'src/engine/core-modules/workflow/filters/workflow-trigger-graphql-api-exception.filter';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -144,6 +145,18 @@ export class WorkflowTriggerResolver {
       workflowRunId,
       workspace.id,
     );
+  }
+
+  @Mutation(() => BulkForceStopWorkflowRunsDTO)
+  async bulkForceStopWorkflowRuns(
+    @AuthWorkspace() workspace: WorkspaceEntity,
+    @Args('workflowId', { type: () => UUIDScalarType })
+    workflowId: string,
+  ) {
+    return this.workflowTriggerWorkspaceService.bulkForceStopWorkflowRuns({
+      workflowId,
+      workspaceId: workspace.id,
+    });
   }
 
   @Mutation(() => WorkflowRunDTO)

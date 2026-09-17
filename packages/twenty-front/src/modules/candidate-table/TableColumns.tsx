@@ -36,6 +36,7 @@ export type ProcessedDataItem = {
   startChat: boolean;
   startChatCompleted: boolean;
   jobTitle: string;
+  createdAt?: string;
   updatedAt: string;
   stopChat: boolean;
   source: string;
@@ -181,6 +182,8 @@ const COLUMN_TITLE_OVERRIDES: Record<string, string> = {
   nextStep: 'Next',
   nextRetry: 'Next retry',
   needsApproval: 'Needs approval',
+  createdAt: 'Date Added',
+  updatedAt: 'Last Modified',
 };
 
 const getColumnTitle = (key: string) =>
@@ -236,6 +239,8 @@ const OUTREACH_HOME_ALWAYS_SHOW_COLUMNS = [
   'outreachConversationStage',
   'nextStep',
   'messagesExchanged',
+  'createdAt',
+  'updatedAt',
 ];
 
 const OUTREACH_HOME_HIDDEN_COLUMNS = [
@@ -1167,6 +1172,8 @@ export const TableColumns = ({
     'replyAfterTouch',
     'lastOutboundAt',
     'nextFollowUp',
+    'createdAt',
+    'updatedAt',
     'email',
     'phone',
     'messagingChannel',
@@ -1194,7 +1201,10 @@ export const TableColumns = ({
       const isNextRetryField = column === 'nextRetry';
       const isNeedsApprovalField = column === 'needsApproval';
       const isOutreachDateField =
-        column === 'lastInboundAt' || column === 'lastOutboundAt';
+        column === 'lastInboundAt' ||
+        column === 'lastOutboundAt' ||
+        column === 'createdAt' ||
+        column === 'updatedAt';
 
       columns.push({
         data: column,

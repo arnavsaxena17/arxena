@@ -9,6 +9,7 @@ import { WorkflowCommonModule } from 'src/modules/workflow/common/workflow-commo
 import { CodeStepBuildModule } from 'src/modules/workflow/workflow-builder/workflow-version-step/code-step/code-step-build.module';
 import { WorkflowCoreConsistencyModule } from 'src/modules/workflow/workflow-core-consistency/workflow-core-consistency.module';
 import { WorkflowRunnerModule } from 'src/modules/workflow/workflow-runner/workflow-runner.module';
+import { WorkflowRunQueueModule } from 'src/modules/workflow/workflow-runner/workflow-run-queue/workflow-run-queue.module';
 import { AutomatedTriggerModule } from 'src/modules/workflow/workflow-trigger/automated-trigger/automated-trigger.module';
 import { WorkflowTriggerJob } from 'src/modules/workflow/workflow-trigger/jobs/workflow-trigger.job';
 import { WorkflowTriggerWorkspaceService } from 'src/modules/workflow/workflow-trigger/workspace-services/workflow-trigger.workspace-service';
@@ -18,6 +19,7 @@ import { WorkflowTriggerWorkspaceService } from 'src/modules/workflow/workflow-t
     WorkflowCommonModule,
     CodeStepBuildModule,
     WorkflowRunnerModule,
+    WorkflowRunQueueModule,
     AutomatedTriggerModule,
     WorkflowCoreConsistencyModule,
     CacheStorageModule,

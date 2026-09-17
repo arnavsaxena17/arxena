@@ -236,8 +236,8 @@ const mapOutreachPersonToDataTableRow = (
     peopleId: person.id,
     personId: person.id,
     candidateId: person.candidateId,
-    updatedAt: '',
-    createdAt: '',
+    updatedAt: person.updatedAt ?? '',
+    createdAt: person.createdAt ?? '',
     messagesExchanged: person.messagesExchanged ?? '',
   };
 };
@@ -496,7 +496,9 @@ export const OutreachPeoplePanel = ({
             row.messagesExchanged === nextRow.messagesExchanged &&
             row.lastInboundAt === nextRow.lastInboundAt &&
             row.lastOutboundAt === nextRow.lastOutboundAt &&
-            row.nextFollowUp === nextRow.nextFollowUp
+            row.nextFollowUp === nextRow.nextFollowUp &&
+            row.createdAt === nextRow.createdAt &&
+            row.updatedAt === nextRow.updatedAt
           );
         })
       ) {

@@ -87,6 +87,9 @@ export const ProcessedData = ({
       startChatCompleted: flattenedCandidate?.startChatCompleted || false,
       jobTitle: flattenedCandidate?.jobTitle || '',
       jobCompanyName: flattenedCandidate?.jobCompanyName || '',
+      createdAt: flattenedCandidate?.createdAt
+        ? String(flattenedCandidate.createdAt)
+        : '',
       updatedAt: flattenedCandidate?.updatedAt
         ? String(flattenedCandidate.updatedAt)
         : '',
