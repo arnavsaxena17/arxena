@@ -140,8 +140,8 @@ const StyledBottomActionMenu = styled.div`
 `;
 
 const PEOPLE_QUEUE_CHIPS = [
-  { id: 'queued', label: 'To send' },
-  { id: 'connection_sent', label: 'Connect sent' },
+  { id: 'QUEUED', label: 'To send' },
+  { id: 'CONNECTION_SENT', label: 'Connect sent' },
   { id: 'awaiting_reply', label: 'Awaiting reply' },
   { id: 'needs_approval', label: 'Needs approval' },
   { id: 'workflow_failed', label: 'Workflow failed' },
@@ -150,7 +150,7 @@ const PEOPLE_QUEUE_CHIPS = [
   { id: 'meeting_booked', label: 'Meeting booked' },
   { id: 'not_interested', label: 'Not interested' },
   { id: 'snoozed', label: 'Snoozed' },
-  { id: 'stopped', label: 'Stopped' },
+  { id: 'STOPPED', label: 'Stopped' },
 ] as const;
 
 type OutreachPeopleQueueFilter =
@@ -337,8 +337,8 @@ export const OutreachPeoplePanel = ({
 
     return {
       all: journeySummary.totalEnrolled,
-      queued: byStage.QUEUED ?? 0,
-      connection_sent: byStage.CONNECTION_SENT ?? 0,
+      QUEUED: byStage.QUEUED ?? 0,
+      CONNECTION_SENT: byStage.CONNECTION_SENT ?? 0,
       awaiting_reply:
         (byStage.CONNECTION_ACCEPTED ?? 0) + (byStage.WAITING_REPLY ?? 0),
       needs_approval: journeySummary.needsApproval,
@@ -348,7 +348,7 @@ export const OutreachPeoplePanel = ({
       meeting_booked: byConversation.MEETING_BOOKED ?? 0,
       not_interested: byConversation.NOT_INTERESTED ?? 0,
       snoozed: journeySummary.snoozed,
-      stopped: byStage.STOPPED ?? 0,
+      STOPPED: byStage.STOPPED ?? 0,
       dueThisWeek: journeySummary.dueThisWeek,
     };
   }, [isJourneySummaryLoading, journeySummary]);
@@ -404,11 +404,11 @@ export const OutreachPeoplePanel = ({
         }
       } else if (stageFilter === 'awaiting_reply') {
         if (
-          person.stage !== 'connection_accepted' &&
-          person.stage !== 'followed_up' &&
-          person.stage !== 'followed_up_2' &&
-          person.stage !== 'followed_up_3' &&
-          person.stage !== 'waiting_reply'
+          person.stage !== 'CONNECTION_ACCEPTED' &&
+          person.stage !== 'FOLLOW_UP_1' &&
+          person.stage !== 'FOLLOW_UP_2' &&
+          person.stage !== 'FOLLOW_UP_3' &&
+          person.stage !== 'WAITING_REPLY'
         ) {
           return false;
         }
@@ -564,7 +564,7 @@ export const OutreachPeoplePanel = ({
   }, [filteredPeople, selectedPersonId, contextStoreTargetedRecordsRule]);
 
   const deferredCandidateId = selectedPeople.find(
-    (person) => person.stage === 'deferred' && isDefined(person.candidateId),
+    (person) => person.stage === 'DEFERRED' && isDefined(person.candidateId),
   )?.candidateId;
 
   const stoppableCandidateIds = selectedPeople

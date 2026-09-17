@@ -9,6 +9,7 @@ import { useProjectRefetch } from '@/candidate-table/hooks/useProjectRefetch';
 import { projectIdAtom, projectsState } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useOrgChartSnackBar } from '@/orgchart/hooks/useOrgChartSnackBar';
+import { useDisableConflictingHotkeysWhileActive } from '@/ui/utilities/hotkey/hooks/useDisableConflictingHotkeysWhileActive';
 import { useUploadProgressSseSession } from '@/websocket-context/hooks/useUploadProgressSseSession';
 
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
@@ -268,6 +269,10 @@ export const OrgChartAddToProjectModal = ({
   queueStartChatAfter = true,
   onSuccess,
 }: OrgChartAddToProjectModalProps) => {
+  useDisableConflictingHotkeysWhileActive({
+    focusId: 'org-chart-add-to-project-modal',
+    isActive: isOpen,
+  });
   const { enqueueSnackBar } = useOrgChartSnackBar();
   const tokenPair = useAtomStateValue(tokenPairState);
   const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);

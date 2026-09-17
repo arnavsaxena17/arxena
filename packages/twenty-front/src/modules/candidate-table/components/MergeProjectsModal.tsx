@@ -11,12 +11,13 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useProjectRefetch } from '@/candidate-table/hooks/useProjectRefetch';
 import { projectsState } from '@/candidate-table/states/states';
 import {
-    candidateToLinkedInPremiumFormat,
-    deduplicateCandidatesByPeopleId,
-    type CandidateNodeFromApi,
+  candidateToLinkedInPremiumFormat,
+  deduplicateCandidatesByPeopleId,
+  type CandidateNodeFromApi,
 } from '@/candidate-table/utils/mergeCandidatesUtils';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useDisableConflictingHotkeysWhileActive } from '@/ui/utilities/hotkey/hooks/useDisableConflictingHotkeysWhileActive';
 import { useUploadProgressSseSession } from '@/websocket-context/hooks/useUploadProgressSseSession';
 import { graphqlToAddNewProject } from 'twenty-shared/graphql';
 
@@ -180,13 +181,19 @@ export const MergeProjectsModal = ({
   sourceJobs,
   onSuccess,
 }: MergeProjectsModalProps) => {
+  useDisableConflictingHotkeysWhileActive({
+    focusId: 'merge-projects-modal',
+    isActive: isOpen,
+  });
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
   const tokenPair = useAtomStateValue(tokenPairState);
   const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
   const projects = useAtomStateValue(projectsState);
   const { refetchJobs } = useProjectRefetch();
-  const { beginUploadProgressSseSession, endUploadProgressSseSessionAfterDelay } =
-    useUploadProgressSseSession();
+  const {
+    beginUploadProgressSseSession,
+    endUploadProgressSseSessionAfterDelay,
+  } = useUploadProgressSseSession();
 
   const apolloCoreClient = useApolloCoreClient();
   const [createProject] = useMutation(gql(graphqlToAddNewProject), {
@@ -234,7 +241,10 @@ export const MergeProjectsModal = ({
     if (targetMode === 'new') {
       const trimmedName = newJobName.trim();
       if (!trimmedName) {
-        enqueueErrorSnackBar({ message: 'Enter a job name', options: { duration: 3000, } });
+        enqueueErrorSnackBar({
+          message: 'Enter a job name',
+          options: { duration: 3000 },
+        });
         return;
       }
       try {
@@ -258,7 +268,10 @@ export const MergeProjectsModal = ({
       }
     } else {
       if (!selectedTargetJob) {
-        enqueueErrorSnackBar({ message: 'Select a target job', options: { duration: 3000, } });
+        enqueueErrorSnackBar({
+          message: 'Select a target job',
+          options: { duration: 3000 },
+        });
         return;
       }
       projectId = selectedTargetJob.id;
@@ -276,7 +289,10 @@ export const MergeProjectsModal = ({
       const deduped = deduplicateCandidatesByPeopleId(allCandidates);
 
       if (deduped.length === 0) {
-        enqueueErrorSnackBar({ message: 'No candidates to merge', options: { duration: 3000, } });
+        enqueueErrorSnackBar({
+          message: 'No candidates to merge',
+          options: { duration: 3000 },
+        });
         setIsSubmitting(false);
         return;
       }
@@ -331,7 +347,7 @@ export const MergeProjectsModal = ({
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to merge candidates';
-      enqueueErrorSnackBar({ message: message, options: { duration: 5000, } });
+      enqueueErrorSnackBar({ message: message, options: { duration: 5000 } });
     } finally {
       setIsSubmitting(false);
     }
@@ -344,7 +360,8 @@ export const MergeProjectsModal = ({
     fetchCandidatesByProjectId,
     currentWorkspaceMember?.id,
     tokenPair?.accessOrWorkspaceAgnosticToken?.token,
-    enqueueSuccessSnackBar, enqueueErrorSnackBar,
+    enqueueSuccessSnackBar,
+    enqueueErrorSnackBar,
     refetchJobs,
     onSuccess,
     onClose,

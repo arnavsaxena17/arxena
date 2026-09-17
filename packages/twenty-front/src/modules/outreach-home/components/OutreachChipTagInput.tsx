@@ -3,6 +3,9 @@ import { type KeyboardEvent, useState } from 'react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { BaseChip } from '@/object-record/record-field/ui/form-types/components/BaseChip';
+import { useDisableConflictingHotkeysWhileFocused } from '@/ui/utilities/hotkey/hooks/useDisableConflictingHotkeysWhileFocused';
+
+const OUTREACH_CHIP_TAG_INPUT_FOCUS_ID = 'outreach-chip-tag-input';
 
 const StyledChipContainer = styled.div<{ disabled?: boolean }>`
   background: ${themeCssVariables.background.transparent.lighter};
@@ -54,6 +57,9 @@ export const OutreachChipTagInput = ({
   disabled = false,
 }: OutreachChipTagInputProps) => {
   const [draft, setDraft] = useState('');
+  const { onFocus, onBlur } = useDisableConflictingHotkeysWhileFocused(
+    OUTREACH_CHIP_TAG_INPUT_FOCUS_ID,
+  );
 
   const commitDraft = () => {
     const next = draft.trim();
@@ -101,7 +107,11 @@ export const OutreachChipTagInput = ({
           disabled={disabled}
           placeholder={values.length === 0 ? placeholder : 'Add'}
           onChange={(event) => setDraft(event.target.value)}
-          onBlur={commitDraft}
+          onFocus={onFocus}
+          onBlur={(event) => {
+            onBlur(event);
+            commitDraft();
+          }}
           onKeyDown={handleKeyDown}
         />
       </StyledRow>

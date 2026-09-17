@@ -92,7 +92,7 @@ export const applyMaxPersonasPerCompany = ({
       result.push({
         ...entry.person,
         personaPriorityScore: entry.score,
-        stage: index < maxPersonasPerCompany ? 'queued' : 'deferred',
+        stage: index < maxPersonasPerCompany ? 'QUEUED' : 'DEFERRED',
       });
     });
   });

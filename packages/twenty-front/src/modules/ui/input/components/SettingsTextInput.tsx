@@ -5,9 +5,6 @@ import {
   TextInput,
   type TextInputComponentProps,
 } from '@/ui/input/components/TextInput';
-import { usePushFocusItemToFocusStack } from '@/ui/utilities/focus/hooks/usePushFocusItemToFocusStack';
-import { useRemoveFocusItemFromFocusStackById } from '@/ui/utilities/focus/hooks/useRemoveFocusItemFromFocusStackById';
-import { FocusComponentType } from '@/ui/utilities/focus/types/FocusComponentType';
 import { useHotkeysOnFocusedElement } from '@/ui/utilities/hotkey/hooks/useHotkeysOnFocusedElement';
 import { isDefined } from 'twenty-shared/utils';
 
@@ -48,35 +45,14 @@ export const SettingsTextInput = ({
     }
   }, [autoSelectOnMount]);
 
-  const { pushFocusItemToFocusStack } = usePushFocusItemToFocusStack();
-  const { removeFocusItemFromFocusStackById } =
-    useRemoveFocusItemFromFocusStackById();
-
-  const handleFocus: FocusEventHandler<HTMLInputElement> = (e) => {
-    onFocus?.(e);
+  const handleFocus: FocusEventHandler<HTMLInputElement> = (event) => {
+    onFocus?.(event);
     setIsFocused(true);
-
-    if (!disableHotkeys) {
-      pushFocusItemToFocusStack({
-        focusId: instanceId,
-        component: {
-          type: FocusComponentType.TEXT_INPUT,
-          instanceId: instanceId,
-        },
-        globalHotkeysConfig: {
-          enableGlobalHotkeysConflictingWithKeyboard: false,
-        },
-      });
-    }
   };
 
-  const handleBlur: FocusEventHandler<HTMLInputElement> = (e) => {
-    onBlur?.(e);
+  const handleBlur: FocusEventHandler<HTMLInputElement> = (event) => {
+    onBlur?.(event);
     setIsFocused(false);
-
-    if (!disableHotkeys) {
-      removeFocusItemFromFocusStackById({ focusId: instanceId });
-    }
   };
 
   const handleEscape = () => {
@@ -126,6 +102,8 @@ export const SettingsTextInput = ({
       // oxlint-disable-next-line react/jsx-props-no-spreading
       {...props}
       dataTestId={dataTestId}
+      focusId={instanceId}
+      disableHotkeys={disableHotkeys}
       onFocus={handleFocus}
       onBlur={handleBlur}
     />

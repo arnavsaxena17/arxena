@@ -2,6 +2,8 @@ import { IconButton } from 'twenty-ui/input';
 import { IconX } from 'twenty-ui/icon';
 import { type ReactNode } from 'react';
 
+import { useDisableConflictingHotkeysWhileActive } from '@/ui/utilities/hotkey/hooks/useDisableConflictingHotkeysWhileActive';
+
 import {
   StyledAdjuster,
   StyledBackdrop,
@@ -31,6 +33,11 @@ export const ArxJDModalLayout = ({
   footer,
   navigation,
 }: ArxJDModalLayoutProps) => {
+  useDisableConflictingHotkeysWhileActive({
+    focusId: 'arx-jd-upload-modal',
+    isActive: isOpen,
+  });
+
   if (!isOpen) {
     return null;
   }
@@ -57,7 +64,9 @@ export const ArxJDModalLayout = ({
               <StyledBody>{children}</StyledBody>
             </StyledScrollableContent>
             {navigation && (
-              <StyledFooter onClick={stopPropagation}>{navigation}</StyledFooter>
+              <StyledFooter onClick={stopPropagation}>
+                {navigation}
+              </StyledFooter>
             )}
             {footer && <StyledFooter>{footer}</StyledFooter>}
           </StyledModalContent>

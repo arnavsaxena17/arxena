@@ -26,6 +26,7 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| Disable `g` hotkeys while typing (ARX + HOT) | Handsontable filter/cell editors push focus stack; `TextInput` matches `TextArea`; shared `useDisableConflictingHotkeysWhileFocused` / `WhileActive`; wired into ProjectTopBar search, orgchart/outreach/JD/video-interview raw inputs + custom modals. | `DataTable.tsx`, `TextInput.tsx`, `SettingsTextInput.tsx`, `useDisableConflictingHotkeysWhile*.ts`, orgchart/outreach/candidate-table/arx-jd-upload/video-interview |
 | Org chart search `g` hotkey | Company autocomplete + title query push focus stack with `enableGlobalHotkeysConflictingWithKeyboard: false` so page `g`… go-to sequences do not `preventDefault` while typing. | `OrgChartCompanySearchWrapper.tsx`, `OrgChartTitleQueryBar.tsx` |
 | Candidate Sequencer cutover | Pause/resume + A/B pin-primary on `Outreach — Candidate Sequencer`; QUEUED `connectionSentAt` IS_EMPTY gate before Send LinkedIn connection; deactivate B/C; migrate/clear Stage B/C experiment bindings; harvest pin → Sequencer; LLM inventory lists Sequencer. Cmd `1785600000117`. | `resolve-outreach-pause-resume-workflow-ids.util.ts`, `outreach-experiment.util.ts`, `workflow-trigger.workspace-service.ts`, `outreach-workflow-graphs.ts`, `useOutreachWorkflowEmbed.ts`, `2-25-*-1785600000117-*` |
 | Fetch email / phone split | CMI + workflow LF + Ask AI: **Fetch Contacts** (both), **Fetch Email**, **Fetch Phone**. Same `EnrichContactService` waterfall; email/phone force flags. Workflow LF `enrich-contact` relabeled Fetch contacts; new `fetch-email` / `fetch-phone`. MCP/Ask AI tools `fetch_email` / `fetch_phone`. Cmd `1785600000116`. | `EnrichContactService`, `ArxFetchContactDetailsCommand`, `prefill-outreach-logic-functions.util.ts`, `linkedin-search-tools.ts`, `arxena-tool-catalog.const.ts`, `2-25-*-1785600000116-*` |
@@ -932,6 +933,8 @@ Edit these carefully on rebase — product integration points.
 | `packages/twenty-shared/src/workflow/schemas/workflow-run-schema.ts` | working · intent | `workflowVersionId` / `name` nullable to match DB |
 | `packages/twenty-shared/src/types/SidePanelPages.ts` | working · intent | Add `CandidateChat` side-panel page (candidate profile/chat drawer) |
 | `packages/twenty-front/src/modules/side-panel/constants/SidePanelPagesConfig.tsx` | working · intent | Mount `CandidateChatDrawer` (+ WhatsApp templates) for `CandidateChat` |
+| `packages/twenty-front/src/modules/ui/input/components/TextInput.tsx` | working · intent | Disable conflicting global hotkeys while focused (match TextArea); optional `focusId` / `disableHotkeys` |
+| `packages/twenty-front/src/modules/ui/input/components/SettingsTextInput.tsx` | working · intent | Delegate focus-stack hotkey disable to TextInput via `focusId` / `disableHotkeys` |
 | `.nvmrc` | working · intent | Node version pin for port env |
 
 ### 9.3 Working-tree format-only / low-value core churn

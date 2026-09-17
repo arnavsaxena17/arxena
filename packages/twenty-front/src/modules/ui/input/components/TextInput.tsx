@@ -246,6 +246,10 @@ export type TextInputComponentProps = Omit<
   rightAdornment?: string;
   leftAdornment?: string;
   textClickOutsideId?: string;
+  // When true, skip focus-stack push (e.g. modal already owns hotkey config).
+  disableHotkeys?: boolean;
+  // Override focus-stack id (SettingsTextInput needs a stable instanceId).
+  focusId?: string;
 };
 
 type TextInputWithAutoGrowWrapperProps = TextInputComponentProps;
@@ -286,6 +290,8 @@ const TextInputComponent = forwardRef<
       rightAdornment,
       leftAdornment,
       textClickOutsideId,
+      disableHotkeys = false,
+      focusId,
     },
     ref,
   ) => {
@@ -293,6 +299,7 @@ const TextInputComponent = forwardRef<
     const inputRef = useRef<HTMLInputElement>(null);
     const combinedRef = useCombinedRefs(ref, inputRef);
     const instanceId = useId();
+    const resolvedFocusId = focusId ?? instanceId;
     const { pushFocusItemToFocusStack } = usePushFocusItemToFocusStack();
     const { removeFocusItemFromFocusStackById } =
       useRemoveFocusItemFromFocusStackById();
@@ -307,22 +314,26 @@ const TextInputComponent = forwardRef<
     // Match TextArea: page `g`… go-to hotkeys must not steal keystrokes.
     const handleFocus: FocusEventHandler<HTMLInputElement> = (event) => {
       setIsFocused(true);
-      pushFocusItemToFocusStack({
-        focusId: instanceId,
-        component: {
-          type: FocusComponentType.TEXT_INPUT,
-          instanceId,
-        },
-        globalHotkeysConfig: {
-          enableGlobalHotkeysConflictingWithKeyboard: false,
-        },
-      });
+      if (!disableHotkeys) {
+        pushFocusItemToFocusStack({
+          focusId: resolvedFocusId,
+          component: {
+            type: FocusComponentType.TEXT_INPUT,
+            instanceId: resolvedFocusId,
+          },
+          globalHotkeysConfig: {
+            enableGlobalHotkeysConflictingWithKeyboard: false,
+          },
+        });
+      }
       onFocus?.(event);
     };
 
     const handleBlur: FocusEventHandler<HTMLInputElement> = (event) => {
       setIsFocused(false);
-      removeFocusItemFromFocusStackById({ focusId: instanceId });
+      if (!disableHotkeys) {
+        removeFocusItemFromFocusStackById({ focusId: resolvedFocusId });
+      }
       onBlur?.(event);
     };
 

@@ -2,6 +2,8 @@ import { IconTrash } from 'twenty-ui/icon';
 import { styled } from '@linaria/react';
 import { themeCssVariables, useTheme } from 'twenty-ui/theme-constants';
 
+import { useDisableConflictingHotkeysWhileFocused } from '@/ui/utilities/hotkey/hooks/useDisableConflictingHotkeysWhileFocused';
+
 const StyledInputArea = styled.input`
   background-color: ${themeCssVariables.background.transparent.lighter};
   border: 1px solid ${themeCssVariables.border.color.medium};
@@ -60,6 +62,9 @@ export const InstructionsTextArea = ({
 }) => {
   const thisInstructionId = id;
   const theme = useTheme();
+  const { onFocus, onBlur } = useDisableConflictingHotkeysWhileFocused(
+    `video-interview-instruction-${id}`,
+  );
   const deleteIns = () => {
     deleteInstruction(thisInstructionId);
   };
@@ -72,6 +77,8 @@ export const InstructionsTextArea = ({
         placeholder={'Start Typing...'}
         type={'text'}
         name={name}
+        onFocus={onFocus}
+        onBlur={onBlur}
       />
       <StyledTrashIconContainer>
         <IconTrash

@@ -85,7 +85,7 @@ export const useOutreachEnroll = () => {
       const toUpload: OutreachPersonRow[] = [];
 
       for (const person of ranked) {
-        if (person.doNotContact === true || person.stage === 'deferred') {
+        if (person.doNotContact === true || person.stage === 'DEFERRED') {
           deferred += 1;
           continue;
         }

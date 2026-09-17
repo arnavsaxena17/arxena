@@ -44,7 +44,7 @@ describe('OutreachPeopleCacheService', () => {
         companyName: 'Analytical Engines',
         linkedinUrl: '',
         warmPath: '—',
-        stage: 'queued',
+        stage: 'QUEUED',
         email: '',
       },
     ]);

@@ -1,9 +1,7 @@
 import { type FocusEvent, useCallback } from 'react';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { orgChartSelectedCompanyInfoState } from '@/orgchart/states/orgChartSelectedCompanyInfoState';
-import { usePushFocusItemToFocusStack } from '@/ui/utilities/focus/hooks/usePushFocusItemToFocusStack';
-import { useRemoveFocusItemFromFocusStackById } from '@/ui/utilities/focus/hooks/useRemoveFocusItemFromFocusStackById';
-import { FocusComponentType } from '@/ui/utilities/focus/types/FocusComponentType';
+import { useDisableConflictingHotkeysWhileFocused } from '@/ui/utilities/hotkey/hooks/useDisableConflictingHotkeysWhileFocused';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { Mixpanel } from '~/mixpanel';
@@ -44,11 +42,10 @@ export const OrgChartCompanySearchWrapper = ({
   const setOrgChartSelectedCompanyInfo = useSetAtomState(
     orgChartSelectedCompanyInfoState,
   );
-  const { pushFocusItemToFocusStack } = usePushFocusItemToFocusStack();
-  const { removeFocusItemFromFocusStackById } =
-    useRemoveFocusItemFromFocusStackById();
+  const { onFocus, onBlur } = useDisableConflictingHotkeysWhileFocused(
+    ORG_CHART_COMPANY_SEARCH_FOCUS_ID,
+  );
   const autocompletePath = '/org-chart/companies/autocomplete';
-  // const autocompletePathM7kq = '/org-chart/companies/autocomplete-m7kq';
   const handleCompanySelect = useCallback(
     (company: {
       companyId: string;
@@ -72,35 +69,15 @@ export const OrgChartCompanySearchWrapper = ({
     [onCompanySelect, setOrgChartSelectedCompanyInfo],
   );
 
-  // Go-to hotkeys (`g` then …) use preventDefault; disable them while typing.
-  const handleFocus = useCallback(() => {
-    pushFocusItemToFocusStack({
-      focusId: ORG_CHART_COMPANY_SEARCH_FOCUS_ID,
-      component: {
-        type: FocusComponentType.TEXT_INPUT,
-        instanceId: ORG_CHART_COMPANY_SEARCH_FOCUS_ID,
-      },
-      globalHotkeysConfig: {
-        enableGlobalHotkeysConflictingWithKeyboard: false,
-      },
-    });
-  }, [pushFocusItemToFocusStack]);
-
   const handleBlur = useCallback(
     (event: FocusEvent<HTMLDivElement>) => {
-      if (event.currentTarget.contains(event.relatedTarget as Node | null)) {
-        return;
-      }
-
-      removeFocusItemFromFocusStackById({
-        focusId: ORG_CHART_COMPANY_SEARCH_FOCUS_ID,
-      });
+      onBlur(event);
     },
-    [removeFocusItemFromFocusStackById],
+    [onBlur],
   );
 
   return (
-    <div onFocus={handleFocus} onBlur={handleBlur}>
+    <div onFocus={onFocus} onBlur={handleBlur}>
       <CompanySearchAutocomplete
         key={autocompletePath}
         onCompanySelect={handleCompanySelect}

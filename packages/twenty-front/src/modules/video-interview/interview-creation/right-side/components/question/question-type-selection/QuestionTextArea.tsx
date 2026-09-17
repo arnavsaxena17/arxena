@@ -1,6 +1,8 @@
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
+import { useDisableConflictingHotkeysWhileFocused } from '@/ui/utilities/hotkey/hooks/useDisableConflictingHotkeysWhileFocused';
+
 const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -46,6 +48,9 @@ export const QuestionTextArea = ({
   questionNumber: number;
 }) => {
   const name = `newVideoInterviewTemplate[${questionNumber}][question]`;
+  const { onFocus, onBlur } = useDisableConflictingHotkeysWhileFocused(
+    `video-interview-question-${questionNumber}`,
+  );
 
   return (
     <StyledContainer>
@@ -53,6 +58,8 @@ export const QuestionTextArea = ({
         placeholder={'Type Question Here...'}
         rows={4}
         name={name}
+        onFocus={onFocus}
+        onBlur={onBlur}
       />
     </StyledContainer>
   );

@@ -57,81 +57,31 @@ const mapPersonStageToCandidate = (
   outreachSequenceStage: string;
   enrichStatus: string;
 } => {
-  switch (stage) {
-    case 'needs_connection':
+  // Display-only follow-up timeline ids stay CONNECTION_ACCEPTED in CRM.
+  const outreachSequenceStage =
+    stage === 'FOLLOW_UP_1' ||
+    stage === 'FOLLOW_UP_2' ||
+    stage === 'FOLLOW_UP_3'
+      ? 'CONNECTION_ACCEPTED'
+      : stage;
+
+  switch (outreachSequenceStage) {
+    case 'EMAIL_ENRICHING':
       return {
-        outreachSequenceStage: 'NEEDS_CONNECTION',
-        enrichStatus: 'NOT_STARTED',
-      };
-    case 'deferred':
-      return {
-        outreachSequenceStage: 'DEFERRED',
-        enrichStatus: 'NOT_STARTED',
-      };
-    case 'stopped':
-      return {
-        outreachSequenceStage: 'STOPPED',
-        enrichStatus: 'NOT_STARTED',
-      };
-    case 'connection_ignored':
-      return {
-        outreachSequenceStage: 'CONNECTION_IGNORED',
-        enrichStatus: 'NOT_STARTED',
-      };
-    case 'inmail_sent':
-      return {
-        outreachSequenceStage: 'INMAIL_SENT',
-        enrichStatus: 'NOT_STARTED',
-      };
-    case 'connection_sent':
-      return {
-        outreachSequenceStage: 'CONNECTION_SENT',
-        enrichStatus: 'NOT_STARTED',
-      };
-    case 'profile_checked':
-      return {
-        outreachSequenceStage: 'PROFILE_CHECKED',
-        enrichStatus: 'NOT_STARTED',
-      };
-    case 'warm_path':
-      return {
-        outreachSequenceStage: 'WARM_PATH',
-        enrichStatus: 'NOT_STARTED',
-      };
-    case 'commented':
-      return {
-        outreachSequenceStage: 'COMMENTED',
-        enrichStatus: 'NOT_STARTED',
-      };
-    case 'email_enriching':
-      return {
-        outreachSequenceStage: 'EMAIL_ENRICHING',
+        outreachSequenceStage,
         enrichStatus: 'RUNNING',
       };
-    case 'email_sent':
+    case 'EMAIL_SENT':
+    case 'REPLIED':
+    case 'NEGOTIATING':
+    case 'MEETING_BOOKED':
       return {
-        outreachSequenceStage: 'EMAIL_SENT',
+        outreachSequenceStage,
         enrichStatus: 'FOUND',
       };
-    case 'replied':
-      return {
-        outreachSequenceStage: 'REPLIED',
-        enrichStatus: 'FOUND',
-      };
-    case 'negotiating':
-      return {
-        outreachSequenceStage: 'NEGOTIATING',
-        enrichStatus: 'FOUND',
-      };
-    case 'meeting_booked':
-      return {
-        outreachSequenceStage: 'MEETING_BOOKED',
-        enrichStatus: 'FOUND',
-      };
-    case 'queued':
     default:
       return {
-        outreachSequenceStage: 'QUEUED',
+        outreachSequenceStage,
         enrichStatus: 'NOT_STARTED',
       };
   }

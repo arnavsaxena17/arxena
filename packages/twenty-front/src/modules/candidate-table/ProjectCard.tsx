@@ -25,13 +25,17 @@ import { AuthContext } from '@/auth/contexts/AuthContext';
 import { RecordLink } from '@/ai/components/RecordLink';
 import { useDeleteProject } from '@/candidate-table/hooks/useDeleteProject';
 import { useProjectStatusToggle } from '@/candidate-table/hooks/useProjectStatusToggle';
-import { type ProjectCreatedBy, projectsState } from '@/candidate-table/states/states';
+import {
+  type ProjectCreatedBy,
+  projectsState,
+} from '@/candidate-table/states/states';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
 import { DropdownContent } from '@/ui/layout/dropdown/components/DropdownContent';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
 import { useCloseDropdown } from '@/ui/layout/dropdown/hooks/useCloseDropdown';
 import { ActorDisplay } from '@/ui/field/display/components/ActorDisplay';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useDisableConflictingHotkeysWhileActive } from '@/ui/utilities/hotkey/hooks/useDisableConflictingHotkeysWhileActive';
 import { ConfirmationModal } from '@/ui/layout/modal/components/ConfirmationModal';
 import { useModal } from '@/ui/layout/modal/hooks/useModal';
 import { isNavigationDrawerExpandedState } from '@/ui/navigation/states/isNavigationDrawerExpanded';
@@ -157,7 +161,9 @@ const StyledCardFooter = styled.div`
 const StyledActiveStatus = styled.div<{ isActive: boolean }>`
   align-items: center;
   color: ${({ isActive }) =>
-    isActive ? themeCssVariables.font.color.primary : themeCssVariables.font.color.tertiary};
+    isActive
+      ? themeCssVariables.font.color.primary
+      : themeCssVariables.font.color.tertiary};
   display: flex;
   font-size: ${themeCssVariables.font.size.sm};
   gap: ${themeCssVariables.spacing[1]};
@@ -282,7 +288,9 @@ const ProjectCreatedByChip = ({
   const relatedWorkspaceMember = [
     ...(currentWorkspaceDeletedMembers ?? []),
     ...(currentWorkspaceMembers ?? []),
-  ].find((workspaceMember) => workspaceMember.id === createdBy.workspaceMemberId);
+  ].find(
+    (workspaceMember) => workspaceMember.id === createdBy.workspaceMemberId,
+  );
 
   const displayName = relatedWorkspaceMember
     ? `${relatedWorkspaceMember.name.firstName} ${relatedWorkspaceMember.name.lastName}`.trim()
@@ -327,7 +335,7 @@ export const ProjectCard = ({
 
   const { toggleJobStatus } = useProjectStatusToggle({
     projectId: id,
-    currentJobActive: isActive
+    currentJobActive: isActive,
   });
   const { deleteProject, isDeleting } = useDeleteProject();
   const { openModal } = useModal();
@@ -343,6 +351,11 @@ export const ProjectCard = ({
   const [nameValue, setNameValue] = useState(name);
   const [isEditingSearchName, setIsEditingSearchName] = useState(false);
   const [searchNameValue, setSearchNameValue] = useState(searchName || '');
+
+  useDisableConflictingHotkeysWhileActive({
+    focusId: `project-card-edit-${id}`,
+    isActive: isEditingName || isEditingSearchName,
+  });
 
   const formattedDate = new Date(createdAt).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -465,8 +478,8 @@ export const ProjectCard = ({
 
   const handleSearchNameSave = () => {
     if (searchNameValue !== searchName) {
-      const updatedJobs = projects.map(job =>
-        job.id === id ? { ...job, searchName: searchNameValue } : job
+      const updatedJobs = projects.map((job) =>
+        job.id === id ? { ...job, searchName: searchNameValue } : job,
       );
       setProjects(updatedJobs);
 
@@ -474,14 +487,14 @@ export const ProjectCard = ({
         variables: {
           idToUpdate: id,
           input: {
-            searchName: searchNameValue
-          }
+            searchName: searchNameValue,
+          },
         },
         onError: (error) => {
           console.error('Failed to update search name:', error);
           setProjects(projects);
           setSearchNameValue(searchName || '');
-        }
+        },
       });
     }
     setIsEditingSearchName(false);
@@ -624,7 +637,7 @@ export const ProjectCard = ({
 
         {jobLocation && (
           <StyledInfoItem>
-          <IconMap size={16} />
+            <IconMap size={16} />
             {jobLocation}
           </StyledInfoItem>
         )}

@@ -4,12 +4,13 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { IconX } from 'twenty-ui/icon';
 
 import { Modal } from '@/ui/layout/modal/components/Modal';
+import { useDisableConflictingHotkeysWhileActive } from '@/ui/utilities/hotkey/hooks/useDisableConflictingHotkeysWhileActive';
 import { OnboardingIntentModalLayout } from '~/pages/onboarding/OnboardingIntentModalLayout';
 
 import type { ContextResultItem } from '../types';
 import {
-    OrgChartModalTightContent,
-    OrgChartModalTightHeader,
+  OrgChartModalTightContent,
+  OrgChartModalTightHeader,
 } from './OrgChartModalTightContent';
 import { OrgChartResultsAddToProjectPanel } from './OrgChartResultsAddToProjectPanel';
 
@@ -54,6 +55,11 @@ export const OrgChartResultsAddToProjectModal = ({
   queueStartChatAfter = true,
   onSuccess,
 }: OrgChartResultsAddToProjectModalProps) => {
+  useDisableConflictingHotkeysWhileActive({
+    focusId: 'org-chart-results-add-to-project-modal',
+    isActive: isOpen,
+  });
+
   if (!isOpen) {
     return null;
   }

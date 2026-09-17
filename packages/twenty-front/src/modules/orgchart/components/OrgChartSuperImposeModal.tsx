@@ -1,12 +1,20 @@
-import { Checkbox, CheckboxSize, CheckboxVariant, CircularProgressBar, IconButton, MainButton, MOBILE_VIEWPORT } from 'twenty-ui';
+import {
+  Checkbox,
+  CheckboxSize,
+  CheckboxVariant,
+  CircularProgressBar,
+  IconButton,
+  MainButton,
+  MOBILE_VIEWPORT,
+} from 'twenty-ui';
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { IconX } from 'twenty-ui/icon';
 import { useLingui } from '@lingui/react/macro';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-    buildVisibleFunctionRoots,
-    formatOrgChartFunctionRootOptionLabel,
+  buildVisibleFunctionRoots,
+  formatOrgChartFunctionRootOptionLabel,
 } from 'twenty-orgchart';
 import { resolveOrgChartCanonicalCompanyId } from 'twenty-shared/utils';
 
@@ -18,19 +26,20 @@ import { useNotifyLinkedInNotConnected } from '@/unipile/hooks/useNotifyLinkedIn
 import { TextArea } from '@/ui/input/components/TextArea';
 import { TextInput } from '@/ui/input/components/TextInput';
 import { Modal } from '@/ui/layout/modal/components/Modal';
+import { useDisableConflictingHotkeysWhileActive } from '@/ui/utilities/hotkey/hooks/useDisableConflictingHotkeysWhileActive';
 import { OnboardingIntentModalLayout } from '~/pages/onboarding/OnboardingIntentModalLayout';
 
 import {
-    buildSuperImposeTargetCompanyFromAutocomplete,
-    buildSuperImposeTargetLocationFromAutocomplete,
-    isDifferentSuperImposeTargetCompany,
-    type SuperImposeAutocompleteItem,
-    type SuperImposeTargetCompany,
-    type SuperImposeTargetLocation,
+  buildSuperImposeTargetCompanyFromAutocomplete,
+  buildSuperImposeTargetLocationFromAutocomplete,
+  isDifferentSuperImposeTargetCompany,
+  type SuperImposeAutocompleteItem,
+  type SuperImposeTargetCompany,
+  type SuperImposeTargetLocation,
 } from '../types/superImposeTypes';
 import {
-    canAppendToExistingSuperImposeChart,
-    parseMultilineUrlInput,
+  canAppendToExistingSuperImposeChart,
+  parseMultilineUrlInput,
 } from '../utils/superImposeAppendEligibility';
 import { SuperImposeLinkedInFacetAutocomplete } from './SuperImposeLinkedInFacetAutocomplete';
 
@@ -66,8 +75,7 @@ const StyledHeader = styled(Modal.Header)`
   background-color: ${themeCssVariables.background.secondary};
   border-bottom: 1px solid ${themeCssVariables.border.color.medium};
   height: 60px;
-  padding: 0 ${themeCssVariables.spacing[8]} 0
-    ${themeCssVariables.spacing[6]};
+  padding: 0 ${themeCssVariables.spacing[8]} 0 ${themeCssVariables.spacing[6]};
 
   @media (max-width: ${MOBILE_VIEWPORT}px) {
     padding-left: ${themeCssVariables.spacing[4]};
@@ -232,8 +240,7 @@ const buildInitialTargetCompany = (
     title: companyName?.trim() || slug,
     slug,
     profileUrl:
-      linkedinCompanyUrl?.trim() ||
-      `https://www.linkedin.com/company/${slug}/`,
+      linkedinCompanyUrl?.trim() || `https://www.linkedin.com/company/${slug}/`,
   };
 };
 
@@ -296,6 +303,10 @@ export const OrgChartSuperImposeModal = ({
   onGenerate,
   isGenerating,
 }: OrgChartSuperImposeModalProps) => {
+  useDisableConflictingHotkeysWhileActive({
+    focusId: 'org-chart-super-impose-modal',
+    isActive: isOpen,
+  });
   const { t } = useLingui();
   const { enqueueSnackBar } = useOrgChartSnackBar();
   const { notifyLinkedInNotConnected } = useNotifyLinkedInNotConnected();
@@ -810,7 +821,9 @@ export const OrgChartSuperImposeModal = ({
           disabled={isGenerating}
         />
         <MainButton
-          Icon={isGenerating || estimateLoading ? CircularProgressBar : undefined}
+          Icon={
+            isGenerating || estimateLoading ? CircularProgressBar : undefined
+          }
           title={isGenerating ? `Generating...` : `Generate`}
           variant="primary"
           onClick={!isGenerating ? handleGenerate : undefined}

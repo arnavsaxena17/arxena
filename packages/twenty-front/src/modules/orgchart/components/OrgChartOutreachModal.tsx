@@ -13,6 +13,7 @@ import { projectIdAtom, projectsState } from '@/candidate-table/states/states';
 import { SnackBarVariant } from '@/ui/feedback/snack-bar-manager/components/SnackBar';
 import { useOrgChartSnackBar } from '@/orgchart/hooks/useOrgChartSnackBar';
 import { Modal } from '@/ui/layout/modal/components/Modal';
+import { useDisableConflictingHotkeysWhileActive } from '@/ui/utilities/hotkey/hooks/useDisableConflictingHotkeysWhileActive';
 import { useUploadProgressSseSession } from '@/websocket-context/hooks/useUploadProgressSseSession';
 import type { OrgChartNodeData } from 'twenty-shared/utils';
 import { OnboardingIntentModalLayout } from '~/pages/onboarding/OnboardingIntentModalLayout';
@@ -162,6 +163,10 @@ export const OrgChartOutreachModal = ({
   companyName,
   allowSkipJob = false,
 }: OrgChartOutreachModalProps) => {
+  useDisableConflictingHotkeysWhileActive({
+    focusId: 'org-chart-outreach-modal',
+    isActive: isOpen,
+  });
   const { enqueueSnackBar } = useOrgChartSnackBar();
   const tokenPair = useAtomStateValue(tokenPairState);
   const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
