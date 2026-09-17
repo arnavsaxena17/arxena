@@ -18,7 +18,9 @@ export const isUnipileConnectedStatus = (status?: string | null): boolean =>
   normalizeUnipileStatus(status) === 'connected';
 
 /** Connected or still syncing — usable for extension / org-chart “LinkedIn linked” UI. */
-export const isUnipileLinkedinUsableStatus = (status?: string | null): boolean => {
+export const isUnipileLinkedinUsableStatus = (
+  status?: string | null,
+): boolean => {
   const n = normalizeUnipileStatus(status);
   return n === 'connected' || n === 'pending' || n === 'syncing';
 };
@@ -237,15 +239,7 @@ const linkedinAccountIdentityMatchesWorkspaceMemberProfileWithStatusCheck = (
   if (!statusOk(account.status)) {
     return false;
   }
-  const storedId = profile.linkedinUnipileAccountId?.trim();
-  if (storedId != null && storedId !== '' && storedId === account.id) {
-    return true;
-  }
-  const profileUrl = profile.linkedinUrl?.trim();
-  if (profileUrl == null || profileUrl === '') {
-    return false;
-  }
-  return linkedinSlugMatchesProfile(profileUrl, account);
+  return linkedinAccountIdentityMatchesWorkspaceMemberProfile(profile, account);
 };
 
 export const linkedinAccountMatchesWorkspaceMemberProfile = (
@@ -372,19 +366,29 @@ export const shouldBlockNewUnipileConnectionForStatus = (
   return true;
 };
 
+// Match on member LinkedIn URL and/or stored Unipile account id.
+// URL slug is the identity when Unipile exposes publicIdentifier; a stale stored id
+// for someone else must not match. If the account has no publicIdentifier yet, fall
+// back to the member's stored Unipile id.
 export const linkedinAccountIdentityMatchesWorkspaceMemberProfile = (
   profile: WorkspaceMemberProfileUnipileFields,
   account: UnipileLinkedinAccount,
 ): boolean => {
-  const storedId = profile.linkedinUnipileAccountId?.trim();
-  if (storedId != null && storedId !== '' && storedId === account.id) {
-    return true;
-  }
   const profileUrl = profile.linkedinUrl?.trim();
-  if (profileUrl == null || profileUrl === '') {
-    return false;
+  const storedId = profile.linkedinUnipileAccountId?.trim();
+  const idMatches =
+    storedId != null && storedId !== '' && storedId === account.id;
+
+  if (profileUrl != null && profileUrl !== '') {
+    // Only publicIdentifier is a stable LinkedIn identity; username is often a display name.
+    const publicIdentifier = getUnipileLinkedinPublicIdentifier(account);
+    if (publicIdentifier !== '') {
+      return linkedinSlugMatchesProfile(profileUrl, account);
+    }
+    return idMatches;
   }
-  return linkedinSlugMatchesProfile(profileUrl, account);
+
+  return idMatches;
 };
 
 export const whatsappAccountIdentityMatchesWorkspaceMemberProfile = (

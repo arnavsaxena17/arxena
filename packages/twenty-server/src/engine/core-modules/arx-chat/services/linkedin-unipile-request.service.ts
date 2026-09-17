@@ -50,6 +50,7 @@ import {
   isUnipileLinkedinSnapshotFresh,
   patchSnapshotOwnerProfile,
   patchSnapshotRawAccount,
+  patchSnapshotLinkedinAccountRow,
   removeSnapshotAccountById,
   setUnipileLinkedinSnapshot,
   UNIPILE_LINKEDIN_SNAPSHOT_TTL_MS,
@@ -150,9 +151,7 @@ export class LinkedinUnipileRequestService {
 
       const response = await fetch(url, config);
       const data = await response.json().catch(() => ({}));
-      this.logger.log(
-        `Data in MAKE UNIPILE REQUEST: ${JSON.stringify(data, null, 2)}`,
-      );
+
       if (!response.ok) {
         this.logger.error(
           `Unipile API error: ${response.status} ${response.statusText}`,
@@ -1634,6 +1633,9 @@ export class LinkedinUnipileRequestService {
     const mapped = this.mapLinkedinApiItemToAccountRow(single);
     accounts.push(mapped);
     patchSnapshotRawAccount(single as UnipileLinkedinSnapshotRawAccount);
+    patchSnapshotLinkedinAccountRow(
+      mapped as UnipileLinkedinSnapshotAccountRow,
+    );
     this.logger.log(
       `Included ${context} LinkedIn account ${trimmed} from live GET /accounts/:id (was missing from snapshot/list)`,
     );

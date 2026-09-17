@@ -2,8 +2,9 @@ import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import {
   findLinkedinUnipileAccountSameIdentityForProfile,
   isUnipileConnectedStatus,
+  linkedinAccountIdentityMatchesWorkspaceMemberProfile,
   shouldBlockNewUnipileConnectionForStatus,
-  type UnipileLinkedinAccount
+  type UnipileLinkedinAccount,
 } from 'twenty-shared';
 
 import {
@@ -42,17 +43,32 @@ export class LinkedinUnipileMemberAccountResolverService {
     args: ResolveMemberLinkedinUnipileAccountArgs,
   ): Promise<LinkedinUnipileMemberAccountResolution> {
     const cleanupContext =
-      args.cleanupContext?.trim() || 'LinkedIn Unipile member account resolution';
+      args.cleanupContext?.trim() ||
+      'LinkedIn Unipile member account resolution';
     const reconnectLogContext =
       args.reconnectLogContext?.trim() || 'member LinkedIn Unipile account';
 
-    this.logger.log(`Resolve member linkedin unipile account for workspace member id: ${args.workspaceMemberId}`);
-    this.logger.log(`Workspace id in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${args.workspaceId}`);
-    this.logger.log(`Auth token in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${args.authToken}`);
-    this.logger.log(`Reconnect source token in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${args.reconnectSourceToken?.trim() ?? undefined}`);
-    this.logger.log(`Premium token in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${args.premiumToken?.trim() ?? undefined}`);
-    this.logger.log(`User agent in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${args.userAgent?.trim() ?? undefined}`);
-    this.logger.log(`Ip in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${args.ip?.trim() ?? undefined}`);
+    this.logger.log(
+      `Resolve member linkedin unipile account for workspace member id: ${args.workspaceMemberId}`,
+    );
+    this.logger.log(
+      `Workspace id in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${args.workspaceId}`,
+    );
+    this.logger.log(
+      `Auth token in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${args.authToken}`,
+    );
+    this.logger.log(
+      `Reconnect source token in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${args.reconnectSourceToken?.trim() ?? undefined}`,
+    );
+    this.logger.log(
+      `Premium token in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${args.premiumToken?.trim() ?? undefined}`,
+    );
+    this.logger.log(
+      `User agent in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${args.userAgent?.trim() ?? undefined}`,
+    );
+    this.logger.log(
+      `Ip in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${args.ip?.trim() ?? undefined}`,
+    );
     let staleProfileAccountCleared = false;
     let accountId =
       await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
@@ -72,12 +88,24 @@ export class LinkedinUnipileMemberAccountResolverService {
     let accountCreatedThisSession = false;
 
     if (accountId) {
-      this.logger.log(`Trying to resolve stored profile account id in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT`);
-      this.logger.log(`Account id in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${accountId}`);
-      this.logger.log(`Workspace member id in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${args.workspaceMemberId}`);
-      this.logger.log(`Workspace id in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${args.workspaceId}`);
-      this.logger.log(`Auth token in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${args.authToken}`);
-      this.logger.log(`Cleanup context in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${cleanupContext}`);
+      this.logger.log(
+        `Trying to resolve stored profile account id in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT`,
+      );
+      this.logger.log(
+        `Account id in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${accountId}`,
+      );
+      this.logger.log(
+        `Workspace member id in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${args.workspaceMemberId}`,
+      );
+      this.logger.log(
+        `Workspace id in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${args.workspaceId}`,
+      );
+      this.logger.log(
+        `Auth token in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${args.authToken}`,
+      );
+      this.logger.log(
+        `Cleanup context in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${cleanupContext}`,
+      );
       const storedResolution = await this.tryResolveStoredProfileAccountId({
         accountId,
         workspaceMemberId: args.workspaceMemberId,
@@ -96,7 +124,8 @@ export class LinkedinUnipileMemberAccountResolverService {
           reconnectSucceeded: false,
           reconnectMessage: null,
           accountCreatedThisSession: false,
-          staleProfileAccountCleared: storedResolution.staleProfileAccountCleared,
+          staleProfileAccountCleared:
+            storedResolution.staleProfileAccountCleared,
         };
       }
 
@@ -165,13 +194,27 @@ export class LinkedinUnipileMemberAccountResolverService {
     reconnectAttempted = true;
 
     try {
-      this.logger.log(`With member linkedin connect lock in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT`);
-      this.logger.log(`Workspace member id in WITH MEMBER LINKEDIN CONNECT LOCK: ${args.workspaceMemberId}`);
-      this.logger.log(`Reconnect source token in WITH MEMBER LINKEDIN CONNECT LOCK: ${reconnectSourceToken}`);
-      this.logger.log(`Premium token in WITH MEMBER LINKEDIN CONNECT LOCK: ${args.premiumToken?.trim() ?? undefined}`);
-      this.logger.log(`User agent in WITH MEMBER LINKEDIN CONNECT LOCK: ${args.userAgent?.trim() ?? undefined}`);
-      this.logger.log(`Ip in WITH MEMBER LINKEDIN CONNECT LOCK: ${args.ip?.trim() ?? undefined}`);
-      this.logger.log(`Country in WITH MEMBER LINKEDIN CONNECT LOCK: ${args.country?.trim() ?? undefined}`);
+      this.logger.log(
+        `With member linkedin connect lock in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT`,
+      );
+      this.logger.log(
+        `Workspace member id in WITH MEMBER LINKEDIN CONNECT LOCK: ${args.workspaceMemberId}`,
+      );
+      this.logger.log(
+        `Reconnect source token in WITH MEMBER LINKEDIN CONNECT LOCK: ${reconnectSourceToken}`,
+      );
+      this.logger.log(
+        `Premium token in WITH MEMBER LINKEDIN CONNECT LOCK: ${args.premiumToken?.trim() ?? undefined}`,
+      );
+      this.logger.log(
+        `User agent in WITH MEMBER LINKEDIN CONNECT LOCK: ${args.userAgent?.trim() ?? undefined}`,
+      );
+      this.logger.log(
+        `Ip in WITH MEMBER LINKEDIN CONNECT LOCK: ${args.ip?.trim() ?? undefined}`,
+      );
+      this.logger.log(
+        `Country in WITH MEMBER LINKEDIN CONNECT LOCK: ${args.country?.trim() ?? undefined}`,
+      );
       const reconnectResult =
         await this.memberLinkedinUnipileConnectionService.withMemberLinkedinConnectLock(
           args.workspaceMemberId,
@@ -191,7 +234,9 @@ export class LinkedinUnipileMemberAccountResolverService {
             }),
         );
 
-      this.logger.log(`Reconnect result in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${JSON.stringify(reconnectResult, null, 2)}`);
+      this.logger.log(
+        `Reconnect result in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${JSON.stringify(reconnectResult, null, 2)}`,
+      );
 
       accountId = reconnectResult.accountId;
       accountStatus = reconnectResult.accountStatus;
@@ -201,13 +246,27 @@ export class LinkedinUnipileMemberAccountResolverService {
       reconnectMessage = reconnectResult.reconnectMessage;
       accountCreatedThisSession = reconnectResult.accountCreatedThisSession;
 
-      this.logger.log(`Account id in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${accountId}`);
-      this.logger.log(`Account status in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${accountStatus}`);
-      this.logger.log(`Is connected in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${isConnected}`);
-      this.logger.log(`Resolution in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${resolution}`);
-      this.logger.log(`Reconnect succeeded in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${reconnectSucceeded}`);
-      this.logger.log(`Reconnect message in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${reconnectMessage}`);
-      this.logger.log(`Account created this session in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${accountCreatedThisSession}`);
+      this.logger.log(
+        `Account id in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${accountId}`,
+      );
+      this.logger.log(
+        `Account status in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${accountStatus}`,
+      );
+      this.logger.log(
+        `Is connected in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${isConnected}`,
+      );
+      this.logger.log(
+        `Resolution in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${resolution}`,
+      );
+      this.logger.log(
+        `Reconnect succeeded in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${reconnectSucceeded}`,
+      );
+      this.logger.log(
+        `Reconnect message in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${reconnectMessage}`,
+      );
+      this.logger.log(
+        `Account created this session in RESOLVE MEMBER LINKEDIN UNIPILE ACCOUNT: ${accountCreatedThisSession}`,
+      );
     } catch (error) {
       reconnectMessage =
         error instanceof Error ? error.message : 'Failed to reconnect';
@@ -265,18 +324,28 @@ export class LinkedinUnipileMemberAccountResolverService {
         staleProfileAccountCleared: boolean;
       }
   > {
-
-    this.logger.log(`Trying to resolve stored profile account id: ${args.accountId}`);
-    this.logger.log(`Account id in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${args.accountId}`);
-    this.logger.log(`Workspace member id in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${args.workspaceMemberId}`);
-    this.logger.log(`Workspace id in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${args.workspaceId}`);
-    this.logger.log(`Auth token in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${args.authToken}`);
-    this.logger.log(`Cleanup context in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${args.cleanupContext}`);
-    const lookup =
-      await this.linkedinUnipileRequestService.lookupAccountById(
-        args.accountId,
-        { bypassSnapshot: true },
-      );
+    this.logger.log(
+      `Trying to resolve stored profile account id: ${args.accountId}`,
+    );
+    this.logger.log(
+      `Account id in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${args.accountId}`,
+    );
+    this.logger.log(
+      `Workspace member id in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${args.workspaceMemberId}`,
+    );
+    this.logger.log(
+      `Workspace id in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${args.workspaceId}`,
+    );
+    this.logger.log(
+      `Auth token in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${args.authToken}`,
+    );
+    this.logger.log(
+      `Cleanup context in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${args.cleanupContext}`,
+    );
+    const lookup = await this.linkedinUnipileRequestService.lookupAccountById(
+      args.accountId,
+      { bypassSnapshot: true },
+    );
     this.logger.log(
       `Account lookup in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${JSON.stringify(lookup, null, 2)}`,
     );
@@ -294,21 +363,58 @@ export class LinkedinUnipileMemberAccountResolverService {
     }
 
     const account = lookup.status === 'found' ? lookup.account : null;
-    this.logger.log(`Account in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${JSON.stringify(account, null, 2)}`);
+    this.logger.log(
+      `Account in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${JSON.stringify(account, null, 2)}`,
+    );
     if (account) {
       const mappedStatus =
         this.linkedinUnipileRequestService.mapAccountStatus(account);
-      this.logger.log(`Mapped status in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${mappedStatus}`);
+      this.logger.log(
+        `Mapped status in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${mappedStatus}`,
+      );
       if (
         mappedStatus === 'connected' ||
         mappedStatus === 'pending' ||
         isUnipileConnectedStatus(account.status)
       ) {
+        const accountRow =
+          this.linkedinUnipileRequestService.mapLinkedinApiItemToAccountRow(
+            account,
+          ) as UnipileLinkedinAccount;
+        const profile =
+          await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileFields(
+            args.workspaceMemberId,
+            args.authToken,
+          );
+        // Unipile says this id is healthy, but it may belong to someone else.
+        // Require member LinkedIn URL / identity match before short-circuit.
+        if (
+          profile != null &&
+          !linkedinAccountIdentityMatchesWorkspaceMemberProfile(
+            profile,
+            accountRow,
+          )
+        ) {
+          this.logger.warn(
+            `Stored Unipile account id=${args.accountId} is live but does not match workspaceMemberId=${args.workspaceMemberId} LinkedIn identity; clearing and falling through to reconnect`,
+          );
+          const staleProfileAccountCleared =
+            await this.memberLinkedinUnipileConnectionService.clearStaleStoredLinkedinAccountIdIfNeeded(
+              args.workspaceMemberId,
+              args.authToken,
+              args.accountId,
+              args.workspaceId,
+            );
+          return { kind: 'inactive', staleProfileAccountCleared };
+        }
+
         const isConnected =
           mappedStatus === 'connected' ||
           mappedStatus === 'pending' ||
           isUnipileConnectedStatus(account.status);
-        this.logger.log(`Is connected in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${isConnected}`);
+        this.logger.log(
+          `Is connected in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${isConnected}`,
+        );
         return {
           kind: 'active',
           accountId: args.accountId,
@@ -317,9 +423,13 @@ export class LinkedinUnipileMemberAccountResolverService {
           staleProfileAccountCleared: false,
         };
       }
-      this.logger.log(`Mapped status in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${mappedStatus}`); 
+      this.logger.log(
+        `Mapped status in TRY RESOLVE STORED PROFILE ACCOUNT ID: ${mappedStatus}`,
+      );
       if (mappedStatus === 'disconnected') {
-        this.logger.log(`Cleaning up unusable stored linkedin account if needed in TRY RESOLVE STORED PROFILE ACCOUNT ID`);
+        this.logger.log(
+          `Cleaning up unusable stored linkedin account if needed in TRY RESOLVE STORED PROFILE ACCOUNT ID`,
+        );
         await this.memberLinkedinUnipileConnectionService.cleanupUnusableStoredLinkedinAccountIfNeeded(
           args.workspaceMemberId,
           args.authToken,
@@ -417,13 +527,27 @@ export class LinkedinUnipileMemberAccountResolverService {
     reconnectMessage: string | null;
     accountCreatedThisSession: boolean;
   }> {
-    this.logger.log(`Reconnect from cookies under lock for workspace member id: ${args.workspaceMemberId}`);
-    this.logger.log(`Auth token in RECONNECT FROM COOKIES UNDER LOCK: ${args.authToken}`);
-    this.logger.log(`Reconnect source token in RECONNECT FROM COOKIES UNDER LOCK: ${args.reconnectSourceToken}`);
-    this.logger.log(`Premium token in RECONNECT FROM COOKIES UNDER LOCK: ${args.premiumToken?.trim() ?? undefined}`);
-    this.logger.log(`User agent in RECONNECT FROM COOKIES UNDER LOCK: ${args.userAgent?.trim() ?? undefined}`);
-    this.logger.log(`Ip in RECONNECT FROM COOKIES UNDER LOCK: ${args.ip?.trim() ?? undefined}`);
-    this.logger.log(`Country in RECONNECT FROM COOKIES UNDER LOCK: ${args.country?.trim() ?? undefined}`);
+    this.logger.log(
+      `Reconnect from cookies under lock for workspace member id: ${args.workspaceMemberId}`,
+    );
+    this.logger.log(
+      `Auth token in RECONNECT FROM COOKIES UNDER LOCK: ${args.authToken}`,
+    );
+    this.logger.log(
+      `Reconnect source token in RECONNECT FROM COOKIES UNDER LOCK: ${args.reconnectSourceToken}`,
+    );
+    this.logger.log(
+      `Premium token in RECONNECT FROM COOKIES UNDER LOCK: ${args.premiumToken?.trim() ?? undefined}`,
+    );
+    this.logger.log(
+      `User agent in RECONNECT FROM COOKIES UNDER LOCK: ${args.userAgent?.trim() ?? undefined}`,
+    );
+    this.logger.log(
+      `Ip in RECONNECT FROM COOKIES UNDER LOCK: ${args.ip?.trim() ?? undefined}`,
+    );
+    this.logger.log(
+      `Country in RECONNECT FROM COOKIES UNDER LOCK: ${args.country?.trim() ?? undefined}`,
+    );
     const reconnectSourceToken = args.reconnectSourceToken?.trim() ?? '';
     if (!reconnectSourceToken) {
       this.logger.warn(
@@ -435,7 +559,8 @@ export class LinkedinUnipileMemberAccountResolverService {
         isConnected: false,
         resolution: 'none',
         reconnectSucceeded: false,
-        reconnectMessage: 'No LinkedIn li_at cookie available for Unipile connect',
+        reconnectMessage:
+          'No LinkedIn li_at cookie available for Unipile connect',
         accountCreatedThisSession: false,
       };
     }
@@ -445,20 +570,36 @@ export class LinkedinUnipileMemberAccountResolverService {
         args.workspaceMemberId,
         args.authToken,
       );
-    this.logger.log(`Usable existing in RECONNECT FROM COOKIES UNDER LOCK: ${JSON.stringify(usableExisting, null, 2)}`);
+    this.logger.log(
+      `Usable existing in RECONNECT FROM COOKIES UNDER LOCK: ${JSON.stringify(usableExisting, null, 2)}`,
+    );
     if (usableExisting?.id) {
       await this.applyExistingAccountToProfile(
         args.workspaceMemberId,
         args.authToken,
         usableExisting.id,
       );
-      this.logger.log(`Account id in RECONNECT FROM COOKIES UNDER LOCK: ${usableExisting.id}`);
-      this.logger.log(`Account status in RECONNECT FROM COOKIES UNDER LOCK: connected`);
-      this.logger.log(`Is connected in RECONNECT FROM COOKIES UNDER LOCK: true`);
-      this.logger.log(`Resolution in RECONNECT FROM COOKIES UNDER LOCK: usable_existing`);
-      this.logger.log(`Reconnect succeeded in RECONNECT FROM COOKIES UNDER LOCK: true`);
-      this.logger.log(`Reconnect message in RECONNECT FROM COOKIES UNDER LOCK: Reused existing Unipile LinkedIn account for this profile`);
-      this.logger.log(`Account created this session in RECONNECT FROM COOKIES UNDER LOCK: false`);
+      this.logger.log(
+        `Account id in RECONNECT FROM COOKIES UNDER LOCK: ${usableExisting.id}`,
+      );
+      this.logger.log(
+        `Account status in RECONNECT FROM COOKIES UNDER LOCK: connected`,
+      );
+      this.logger.log(
+        `Is connected in RECONNECT FROM COOKIES UNDER LOCK: true`,
+      );
+      this.logger.log(
+        `Resolution in RECONNECT FROM COOKIES UNDER LOCK: usable_existing`,
+      );
+      this.logger.log(
+        `Reconnect succeeded in RECONNECT FROM COOKIES UNDER LOCK: true`,
+      );
+      this.logger.log(
+        `Reconnect message in RECONNECT FROM COOKIES UNDER LOCK: Reused existing Unipile LinkedIn account for this profile`,
+      );
+      this.logger.log(
+        `Account created this session in RECONNECT FROM COOKIES UNDER LOCK: false`,
+      );
       return {
         accountId: usableExisting.id,
         accountStatus: 'connected',
@@ -476,14 +617,18 @@ export class LinkedinUnipileMemberAccountResolverService {
         args.workspaceMemberId,
         args.authToken,
       );
-    this.logger.log(`Identity match in RECONNECT FROM COOKIES UNDER LOCK: ${JSON.stringify(identityMatch, null, 2)}`);
+    this.logger.log(
+      `Identity match in RECONNECT FROM COOKIES UNDER LOCK: ${JSON.stringify(identityMatch, null, 2)}`,
+    );
     if (identityMatch && isUnipileConnectedStatus(identityMatch.status)) {
       await this.applyExistingAccountToProfile(
         args.workspaceMemberId,
         args.authToken,
         identityMatch.id,
       );
-      this.logger.log(`Account id in RECONNECT FROM COOKIES UNDER LOCK: ${identityMatch.id}`);
+      this.logger.log(
+        `Account id in RECONNECT FROM COOKIES UNDER LOCK: ${identityMatch.id}`,
+      );
       return {
         accountId: identityMatch.id,
         accountStatus: 'connected',
@@ -506,12 +651,22 @@ export class LinkedinUnipileMemberAccountResolverService {
       `LinkedIn reconnect via POST /accounts (${args.reconnectLogContext}) workspaceMemberId=${args.workspaceMemberId}${reconnectAccountIdForUnipile ? ` reconnect_account=${reconnectAccountIdForUnipile}` : ''}`,
     );
 
-    this.logger.log(`Reconnect account id for unipile in RECONNECT FROM COOKIES UNDER LOCK: ${reconnectAccountIdForUnipile}`);
-    this.logger.log(`Reconnect source token in RECONNECT FROM COOKIES UNDER LOCK: ${args.reconnectSourceToken}`);
-    this.logger.log(`Premium token in RECONNECT FROM COOKIES UNDER LOCK: ${args.premiumToken}`);
-    this.logger.log(`User agent in RECONNECT FROM COOKIES UNDER LOCK: ${args.userAgent}`);
+    this.logger.log(
+      `Reconnect account id for unipile in RECONNECT FROM COOKIES UNDER LOCK: ${reconnectAccountIdForUnipile}`,
+    );
+    this.logger.log(
+      `Reconnect source token in RECONNECT FROM COOKIES UNDER LOCK: ${args.reconnectSourceToken}`,
+    );
+    this.logger.log(
+      `Premium token in RECONNECT FROM COOKIES UNDER LOCK: ${args.premiumToken}`,
+    );
+    this.logger.log(
+      `User agent in RECONNECT FROM COOKIES UNDER LOCK: ${args.userAgent}`,
+    );
     this.logger.log(`Ip in RECONNECT FROM COOKIES UNDER LOCK: ${args.ip}`);
-    this.logger.log(`Country in RECONNECT FROM COOKIES UNDER LOCK: ${args.country}`);
+    this.logger.log(
+      `Country in RECONNECT FROM COOKIES UNDER LOCK: ${args.country}`,
+    );
     const payload = buildUnipileLinkedinCookieConnectBody({
       accessToken: reconnectSourceToken,
       premiumToken: args.premiumToken ?? undefined,
@@ -521,9 +676,10 @@ export class LinkedinUnipileMemberAccountResolverService {
       reconnectAccountId: reconnectAccountIdForUnipile ?? undefined,
     });
 
-    this.logger.log(`Payload in RECONNECT FROM COOKIES UNDER LOCK: ${JSON.stringify(payload, null, 2)}`);
+    this.logger.log(
+      `Payload in RECONNECT FROM COOKIES UNDER LOCK: ${JSON.stringify(payload, null, 2)}`,
+    );
 
-    
     const result = (await this.linkedinUnipileRequestService.makeUnipileRequest(
       '/api/v1/accounts',
       'POST',
@@ -531,11 +687,15 @@ export class LinkedinUnipileMemberAccountResolverService {
       { returnStatus: true },
     )) as UnipileConnectHttpResult;
 
-    this.logger.log(`Result in RECONNECT FROM COOKIES UNDER LOCK: ${JSON.stringify(result, null, 2)}`);
+    this.logger.log(
+      `Result in RECONNECT FROM COOKIES UNDER LOCK: ${JSON.stringify(result, null, 2)}`,
+    );
 
     const { status, data } = result;
     const rawAccountId = data?.id || data?.account_id || null;
-    this.logger.log(`Raw account id in RECONNECT FROM COOKIES UNDER LOCK: ${rawAccountId}`);
+    this.logger.log(
+      `Raw account id in RECONNECT FROM COOKIES UNDER LOCK: ${rawAccountId}`,
+    );
     const isCheckpoint =
       (status === 202 && data?.account_id) ||
       (data?.object === 'Checkpoint' && data?.account_id);
@@ -550,7 +710,9 @@ export class LinkedinUnipileMemberAccountResolverService {
         );
     }
 
-    this.logger.log(`Account id in RECONNECT FROM COOKIES UNDER LOCK: ${accountId}`);
+    this.logger.log(
+      `Account id in RECONNECT FROM COOKIES UNDER LOCK: ${accountId}`,
+    );
 
     if (isCheckpoint) {
       return {
@@ -567,12 +729,22 @@ export class LinkedinUnipileMemberAccountResolverService {
     if (!accountId) {
       this.logger.log(`Account id in RECONNECT FROM COOKIES UNDER LOCK: null`);
 
-      this.logger.log(`Account status in RECONNECT FROM COOKIES UNDER LOCK: not_connected`);
-      this.logger.log(`Is connected in RECONNECT FROM COOKIES UNDER LOCK: false`);
+      this.logger.log(
+        `Account status in RECONNECT FROM COOKIES UNDER LOCK: not_connected`,
+      );
+      this.logger.log(
+        `Is connected in RECONNECT FROM COOKIES UNDER LOCK: false`,
+      );
       this.logger.log(`Resolution in RECONNECT FROM COOKIES UNDER LOCK: none`);
-      this.logger.log(`Reconnect succeeded in RECONNECT FROM COOKIES UNDER LOCK: false`);
-      this.logger.log(`Reconnect message in RECONNECT FROM COOKIES UNDER LOCK: Failed to create LinkedIn Unipile session`);
-      this.logger.log(`Account created this session in RECONNECT FROM COOKIES UNDER LOCK: false`);
+      this.logger.log(
+        `Reconnect succeeded in RECONNECT FROM COOKIES UNDER LOCK: false`,
+      );
+      this.logger.log(
+        `Reconnect message in RECONNECT FROM COOKIES UNDER LOCK: Failed to create LinkedIn Unipile session`,
+      );
+      this.logger.log(
+        `Account created this session in RECONNECT FROM COOKIES UNDER LOCK: false`,
+      );
 
       return {
         accountId: null,
@@ -626,7 +798,9 @@ export class LinkedinUnipileMemberAccountResolverService {
         ? 'LinkedIn Unipile account is still connecting'
         : null;
 
-    this.logger.log(`Account id in RECONNECT FROM COOKIES UNDER LOCK: ${accountId}`);
+    this.logger.log(
+      `Account id in RECONNECT FROM COOKIES UNDER LOCK: ${accountId}`,
+    );
     return {
       accountId,
       accountStatus,
@@ -647,14 +821,28 @@ export class LinkedinUnipileMemberAccountResolverService {
       await this.linkedinUnipileRequestService.fetchAccountByIdIfExists(
         accountId,
       );
-    this.logger.log(`Account payload in APPLY EXISTING ACCOUNT TO PROFILE: ${JSON.stringify(accountPayload, null, 2)}`);
+    this.logger.log(
+      `Account payload in APPLY EXISTING ACCOUNT TO PROFILE: ${JSON.stringify(accountPayload, null, 2)}`,
+    );
     if (accountPayload) {
-      this.logger.log(`Applying unipile account to workspace member profile in APPLY EXISTING ACCOUNT TO PROFILE`);
-      this.logger.log(`Workspace member id in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${workspaceMemberId}`);
-      this.logger.log(`Auth token in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${authToken}`);
-      this.logger.log(`Type in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: linkedin`);
-      this.logger.log(`Account id in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${accountId}`);
-      this.logger.log(`Account payload in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${JSON.stringify(accountPayload, null, 2)}`);
+      this.logger.log(
+        `Applying unipile account to workspace member profile in APPLY EXISTING ACCOUNT TO PROFILE`,
+      );
+      this.logger.log(
+        `Workspace member id in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${workspaceMemberId}`,
+      );
+      this.logger.log(
+        `Auth token in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${authToken}`,
+      );
+      this.logger.log(
+        `Type in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: linkedin`,
+      );
+      this.logger.log(
+        `Account id in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${accountId}`,
+      );
+      this.logger.log(
+        `Account payload in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${JSON.stringify(accountPayload, null, 2)}`,
+      );
       await this.workspaceMemberUnipileService.applyUnipileAccountToWorkspaceMember(
         workspaceMemberId,
         authToken,
@@ -665,11 +853,21 @@ export class LinkedinUnipileMemberAccountResolverService {
       return;
     }
 
-    this.logger.log(`Updating workspace member unipile account id in APPLY EXISTING ACCOUNT TO PROFILE`);
-    this.logger.log(`Workspace member id in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${workspaceMemberId}`);
-    this.logger.log(`Auth token in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${authToken}`);
-    this.logger.log(`Type in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: linkedin`);
-    this.logger.log(`Account id in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${accountId}`);
+    this.logger.log(
+      `Updating workspace member unipile account id in APPLY EXISTING ACCOUNT TO PROFILE`,
+    );
+    this.logger.log(
+      `Workspace member id in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${workspaceMemberId}`,
+    );
+    this.logger.log(
+      `Auth token in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${authToken}`,
+    );
+    this.logger.log(
+      `Type in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: linkedin`,
+    );
+    this.logger.log(
+      `Account id in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${accountId}`,
+    );
 
     await this.workspaceMemberUnipileService.updateWorkspaceMemberUnipileAccountId(
       workspaceMemberId,

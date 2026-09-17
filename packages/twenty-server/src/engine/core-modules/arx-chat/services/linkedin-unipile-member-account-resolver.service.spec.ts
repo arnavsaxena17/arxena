@@ -32,15 +32,17 @@ describe('LinkedinUnipileMemberAccountResolverService', () => {
     };
 
     const linkedinUnipileRequestService = {
-      fetchAccountByIdIfExists: jest.fn().mockImplementation(async (id: string) => {
-        if (id === staleAccountId) {
-          return null;
-        }
-        if (id === disconnectedIdentityId) {
-          return { id: disconnectedIdentityId, status: 'disconnected' };
-        }
-        return { id, status: 'connected' };
-      }),
+      fetchAccountByIdIfExists: jest
+        .fn()
+        .mockImplementation(async (id: string) => {
+          if (id === staleAccountId) {
+            return null;
+          }
+          if (id === disconnectedIdentityId) {
+            return { id: disconnectedIdentityId, status: 'disconnected' };
+          }
+          return { id, status: 'connected' };
+        }),
       lookupAccountById: jest.fn().mockImplementation(async (id: string) => {
         if (id === staleAccountId) {
           return { status: 'not_found' };
@@ -53,8 +55,25 @@ describe('LinkedinUnipileMemberAccountResolverService', () => {
         }
         return { status: 'found', account: { id, status: 'connected' } };
       }),
-      mapAccountStatus: jest.fn().mockImplementation((account: { id?: string }) =>
-        account.id === disconnectedIdentityId ? 'disconnected' : 'connected',
+      mapAccountStatus: jest
+        .fn()
+        .mockImplementation((account: { id?: string }) =>
+          account.id === disconnectedIdentityId ? 'disconnected' : 'connected',
+        ),
+      mapLinkedinApiItemToAccountRow: jest.fn().mockImplementation(
+        (item: {
+          id: string;
+          status?: string;
+          connection_params?: { im?: { publicIdentifier?: string } };
+        }) => ({
+          id: item.id,
+          status: item.status ?? 'connected',
+          username: item.connection_params?.im?.publicIdentifier ?? item.id,
+          name: item.connection_params?.im?.publicIdentifier ?? item.id,
+          type: 'LINKEDIN',
+          provider: 'LINKEDIN',
+          connection_params: item.connection_params,
+        }),
       ),
       listAllLinkedinAccountsFromUnipileApi: jest
         .fn()
@@ -72,7 +91,9 @@ describe('LinkedinUnipileMemberAccountResolverService', () => {
       withMemberLinkedinConnectLock: jest.fn(
         async (_memberId: string, run: () => Promise<unknown>) => run(),
       ),
-      findUsableLinkedinAccountForMember: jest.fn().mockResolvedValue(undefined),
+      findUsableLinkedinAccountForMember: jest
+        .fn()
+        .mockResolvedValue(undefined),
       findLinkedinAccountSameIdentityForMember: jest
         .fn()
         .mockResolvedValue(identityMatch),
@@ -129,7 +150,9 @@ describe('LinkedinUnipileMemberAccountResolverService', () => {
       staleAccountId,
       workspaceId,
     );
-    expect(linkedinUnipileRequestService.makeUnipileRequest).toHaveBeenCalledWith(
+    expect(
+      linkedinUnipileRequestService.makeUnipileRequest,
+    ).toHaveBeenCalledWith(
       '/api/v1/accounts',
       'POST',
       expect.not.objectContaining({
@@ -155,6 +178,7 @@ describe('LinkedinUnipileMemberAccountResolverService', () => {
       account: {
         id: activeAccountId,
         status: 'connected',
+        connection_params: { im: { publicIdentifier: 'test-user' } },
       },
     });
 
@@ -165,7 +189,9 @@ describe('LinkedinUnipileMemberAccountResolverService', () => {
       reconnectSourceToken: 'li-at-token',
     });
 
-    expect(linkedinUnipileRequestService.makeUnipileRequest).not.toHaveBeenCalled();
+    expect(
+      linkedinUnipileRequestService.makeUnipileRequest,
+    ).not.toHaveBeenCalled();
     expect(result).toMatchObject({
       accountId: activeAccountId,
       resolution: 'stored_profile',
@@ -173,12 +199,71 @@ describe('LinkedinUnipileMemberAccountResolverService', () => {
     });
   });
 
+  it('clears wrong-person stored account and reconnects from cookies', async () => {
+    const wrongPersonAccountId = 'saranya-account';
+    const {
+      service,
+      linkedinUnipileRequestService,
+      memberLinkedinUnipileConnectionService,
+    } = createService({
+      storedAccountId: wrongPersonAccountId,
+    });
+
+    linkedinUnipileRequestService.lookupAccountById.mockResolvedValue({
+      status: 'found',
+      account: {
+        id: wrongPersonAccountId,
+        status: 'connected',
+        name: 'Saranya KR',
+        connection_params: {
+          im: { publicIdentifier: 'saranya-kr-b6b636251' },
+        },
+      },
+    });
+
+    const result = await service.resolveMemberLinkedinUnipileAccount({
+      workspaceId,
+      workspaceMemberId,
+      authToken,
+      reconnectSourceToken: 'li-at-token',
+      reconnectLogContext: 'admin panel LinkedIn Unipile connect',
+    });
+
+    expect(
+      memberLinkedinUnipileConnectionService.clearStaleStoredLinkedinAccountIdIfNeeded,
+    ).toHaveBeenCalledWith(
+      workspaceMemberId,
+      authToken,
+      wrongPersonAccountId,
+      workspaceId,
+    );
+    expect(
+      linkedinUnipileRequestService.makeUnipileRequest,
+    ).toHaveBeenCalledWith(
+      '/api/v1/accounts',
+      'POST',
+      expect.not.objectContaining({
+        reconnect_account: expect.anything(),
+      }),
+      { returnStatus: true },
+    );
+    expect(result).toMatchObject({
+      accountId,
+      resolution: 'cookie_reconnect',
+      reconnectAttempted: true,
+      staleProfileAccountCleared: true,
+    });
+  });
+
   it('keeps stored account when Unipile lookup is unavailable', async () => {
     const activeAccountId = 'active-account';
-    const { service, linkedinUnipileRequestService, memberLinkedinUnipileConnectionService } =
-      createService({
-        storedAccountId: activeAccountId,
-      });
+    const {
+      service,
+      linkedinUnipileRequestService,
+      memberLinkedinUnipileConnectionService,
+    } = createService({
+      storedAccountId: activeAccountId,
+    });
 
     linkedinUnipileRequestService.lookupAccountById.mockResolvedValue({
       status: 'unavailable',
@@ -195,7 +280,9 @@ describe('LinkedinUnipileMemberAccountResolverService', () => {
     expect(
       memberLinkedinUnipileConnectionService.clearStaleStoredLinkedinAccountIdIfNeeded,
     ).not.toHaveBeenCalled();
-    expect(linkedinUnipileRequestService.makeUnipileRequest).not.toHaveBeenCalled();
+    expect(
+      linkedinUnipileRequestService.makeUnipileRequest,
+    ).not.toHaveBeenCalled();
     expect(result).toMatchObject({
       accountId: activeAccountId,
       resolution: 'stored_profile',

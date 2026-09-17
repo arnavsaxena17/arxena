@@ -147,6 +147,25 @@ export const patchSnapshotRawAccount = (
   snapshot.rawAccountsList.items = items;
 };
 
+export const patchSnapshotLinkedinAccountRow = (
+  accountRow: UnipileLinkedinSnapshotAccountRow,
+): void => {
+  const snapshot = getUnipileLinkedinSnapshot();
+  const accountId = accountRow.id?.trim();
+  if (!snapshot || !accountId) {
+    return;
+  }
+
+  const existingIndex = snapshot.linkedinAccounts.findIndex(
+    (item) => item.id?.trim() === accountId,
+  );
+  if (existingIndex >= 0) {
+    snapshot.linkedinAccounts[existingIndex] = accountRow;
+  } else {
+    snapshot.linkedinAccounts.push(accountRow);
+  }
+};
+
 export const removeSnapshotAccountById = (accountId: string): boolean => {
   const snapshot = getUnipileLinkedinSnapshot();
   const trimmed = accountId.trim();
