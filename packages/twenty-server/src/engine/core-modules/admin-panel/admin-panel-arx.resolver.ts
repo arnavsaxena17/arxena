@@ -131,6 +131,20 @@ export class AdminPanelArxResolver {
   }
 
   @UseGuards(AdminPanelGuard)
+  @Mutation(() => Boolean)
+  async adminSetMemberKeepLinkedinConnected(
+    @Args('workspaceId') workspaceId: string,
+    @Args('workspaceMemberId') workspaceMemberId: string,
+    @Args('keepLinkedinConnected') keepLinkedinConnected: boolean,
+  ): Promise<boolean> {
+    return this.adminPanelArxService.setMemberKeepLinkedinConnected(
+      workspaceId,
+      workspaceMemberId,
+      keepLinkedinConnected,
+    );
+  }
+
+  @UseGuards(AdminPanelGuard)
   @Query(() => [AdminPublishedOrgChart])
   async adminPublishedOrgCharts(): Promise<AdminPublishedOrgChart[]> {
     return this.orgChartPublishedAdminService.listPublishedOrgCharts();

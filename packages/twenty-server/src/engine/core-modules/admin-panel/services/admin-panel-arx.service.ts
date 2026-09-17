@@ -361,6 +361,50 @@ export class AdminPanelArxService {
     };
   }
 
+  async setMemberKeepLinkedinConnected(
+    workspaceId: string,
+    workspaceMemberId: string,
+    keepLinkedinConnected: boolean,
+  ): Promise<boolean> {
+    const workspace = await this.workspaceRepository.findOne({
+      where: { id: workspaceId, deletedAt: IsNull() },
+    });
+
+    assertIsDefinedOrThrow(
+      workspace,
+      new AuthException('Workspace not found', AuthExceptionCode.INVALID_INPUT),
+    );
+
+    const schema = this.resolveSchemaName(
+      workspaceId,
+      workspace.databaseSchema,
+    );
+    const memberRows = await this.coreDataSource.query(
+      `SELECT id FROM ${schema}."workspaceMember" WHERE id = $1 LIMIT 1`,
+      [workspaceMemberId],
+    );
+
+    if (!memberRows?.length) {
+      throw new AuthException(
+        'Workspace member not found',
+        AuthExceptionCode.INVALID_INPUT,
+      );
+    }
+
+    await this.coreDataSource.query(
+      `UPDATE ${schema}."workspaceMember"
+       SET "keepLinkedinConnected" = $1, "updatedAt" = NOW()
+       WHERE id = $2`,
+      [keepLinkedinConnected, workspaceMemberId],
+    );
+
+    this.logger.log(
+      `Set keepLinkedinConnected=${keepLinkedinConnected} for workspace ${workspaceId} member ${workspaceMemberId}`,
+    );
+
+    return keepLinkedinConnected;
+  }
+
   async connectMemberLinkedinUnipile(
     workspaceId: string,
     workspaceMemberId: string,

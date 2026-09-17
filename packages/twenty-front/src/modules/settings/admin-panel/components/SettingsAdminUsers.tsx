@@ -1,5 +1,6 @@
 import { useApolloAdminClient } from '@/settings/admin-panel/apollo/hooks/useApolloAdminClient';
 import { ADMIN_CONNECT_MEMBER_LINKEDIN_UNIPILE } from '@/settings/admin-panel/graphql/mutations/adminConnectMemberLinkedinUnipile';
+import { ADMIN_SET_MEMBER_KEEP_LINKEDIN_CONNECTED } from '@/settings/admin-panel/graphql/mutations/adminSetMemberKeepLinkedinConnected';
 import { ADMIN_VALIDATE_MEMBER_LINKEDIN_STORED_COOKIES } from '@/settings/admin-panel/graphql/mutations/adminValidateMemberLinkedinStoredCookies';
 import { GET_ADMIN_PANEL_ALL_WORKSPACE_MEMBERS } from '@/settings/admin-panel/graphql/queries/getAdminPanelAllWorkspaceMembers';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -13,7 +14,7 @@ import { styled } from '@linaria/react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback, useContext, useMemo, useState } from 'react';
 import { IconCopy } from 'twenty-ui/icon';
-import { Button, LightIconButton } from 'twenty-ui/input';
+import { Button, Checkbox, LightIconButton } from 'twenty-ui/input';
 import { Section } from 'twenty-ui/layout';
 import { ThemeContext, themeCssVariables } from 'twenty-ui/theme-constants';
 import { H2Title } from 'twenty-ui/typography';
@@ -98,6 +99,10 @@ type ConnectLinkedinUnipileResult = {
   };
 };
 
+type SetKeepLinkedinConnectedResult = {
+  adminSetMemberKeepLinkedinConnected: boolean;
+};
+
 const StyledTableScroll = styled.div`
   margin-top: ${themeCssVariables.spacing[3]};
   overflow-x: auto;
@@ -165,6 +170,21 @@ const StyledCopyRow = styled.div`
   max-width: 100%;
   min-width: 0;
   width: 100%;
+`;
+
+const StyledKeepLinkedinRow = styled.div`
+  align-items: center;
+  display: flex;
+  gap: ${themeCssVariables.spacing[1]};
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+`;
+
+const StyledKeepLinkedinLabel = styled.span`
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  white-space: nowrap;
 `;
 
 const StyledCopyTextButton = styled.button<{ $muted?: boolean }>`
@@ -419,6 +439,9 @@ export const SettingsAdminUsers = () => {
   const [filterText, setFilterText] = useState('');
   const [validatingKey, setValidatingKey] = useState<string | null>(null);
   const [connectingKey, setConnectingKey] = useState<string | null>(null);
+  const [updatingKeepLinkedinKey, setUpdatingKeepLinkedinKey] = useState<
+    string | null
+  >(null);
 
   const { data, loading, error, refetch } =
     useQuery<AdminPanelAllWorkspaceMembersData>(
@@ -438,6 +461,12 @@ export const SettingsAdminUsers = () => {
     ADMIN_CONNECT_MEMBER_LINKEDIN_UNIPILE,
     { client: apolloAdminClient },
   );
+
+  const [setKeepLinkedinConnected] =
+    useMutation<SetKeepLinkedinConnectedResult>(
+      ADMIN_SET_MEMBER_KEEP_LINKEDIN_CONNECTED,
+      { client: apolloAdminClient },
+    );
 
   const rows = data?.adminPanelAllWorkspaceMembers ?? [];
 
@@ -568,6 +597,43 @@ export const SettingsAdminUsers = () => {
     }
   };
 
+  const handleKeepLinkedinConnectedChange = async (
+    workspaceId: string,
+    workspaceMemberId: string,
+    keepLinkedinConnected: boolean,
+  ) => {
+    const rowKey = `${workspaceId}-${workspaceMemberId}`;
+    setUpdatingKeepLinkedinKey(rowKey);
+
+    try {
+      await setKeepLinkedinConnected({
+        variables: {
+          workspaceId,
+          workspaceMemberId,
+          keepLinkedinConnected,
+        },
+      });
+      enqueueSuccessSnackBar({
+        message: keepLinkedinConnected
+          ? t`Keep LinkedIn connected enabled`
+          : t`Keep LinkedIn connected disabled`,
+        options: { duration: 3000 },
+      });
+      await refetch();
+    } catch (mutationError) {
+      const message =
+        mutationError instanceof Error
+          ? mutationError.message
+          : t`Failed to update keep LinkedIn connected`;
+      enqueueErrorSnackBar({
+        message,
+        options: { duration: 8000 },
+      });
+    } finally {
+      setUpdatingKeepLinkedinKey(null);
+    }
+  };
+
   return (
     <Section>
       <H2Title
@@ -678,15 +744,6 @@ export const SettingsAdminUsers = () => {
                     .join(' ')
                     .trim();
 
-                  let keepLinkedinLabel: string | null = null;
-
-                  if (workspaceMemberArx?.keepLinkedinConnected === true) {
-                    keepLinkedinLabel = 'keepLI: true';
-                  }
-                  if (workspaceMemberArx?.keepLinkedinConnected === false) {
-                    keepLinkedinLabel = 'keepLI: false';
-                  }
-
                   const cookieSummary = workspaceMemberArx
                     ? [
                         workspaceMemberArx.linkedinCookiesStored
@@ -714,6 +771,12 @@ export const SettingsAdminUsers = () => {
                   );
                   const isConnecting =
                     validateKey != null && connectingKey === validateKey;
+                  const canSetKeepLinkedin = Boolean(
+                    workspaceMemberArx?.workspaceMemberId,
+                  );
+                  const isUpdatingKeepLinkedin =
+                    validateKey != null &&
+                    updatingKeepLinkedinKey === validateKey;
 
                   const workspaceMemberArxJson = workspaceMemberArx
                     ? JSON.stringify(workspaceMemberArx, null, 2)
@@ -801,10 +864,31 @@ export const SettingsAdminUsers = () => {
                             }
                             onCopy={handleCopy}
                           />
-                          {keepLinkedinLabel ? (
-                            <StyledCellSecondary>
-                              {keepLinkedinLabel}
-                            </StyledCellSecondary>
+                          {canSetKeepLinkedin ? (
+                            <StyledKeepLinkedinRow>
+                              <Checkbox
+                                checked={
+                                  workspaceMemberArx?.keepLinkedinConnected ===
+                                  true
+                                }
+                                disabled={isUpdatingKeepLinkedin}
+                                aria-label={t`Keep LinkedIn connected`}
+                                onCheckedChange={(checked) => {
+                                  if (!workspaceMemberArx?.workspaceMemberId) {
+                                    return;
+                                  }
+
+                                  void handleKeepLinkedinConnectedChange(
+                                    row.workspaceId,
+                                    workspaceMemberArx.workspaceMemberId,
+                                    checked,
+                                  );
+                                }}
+                              />
+                              <StyledKeepLinkedinLabel>
+                                <Trans>Keep LI</Trans>
+                              </StyledKeepLinkedinLabel>
+                            </StyledKeepLinkedinRow>
                           ) : null}
                           {workspaceMemberArxJson ? (
                             <CopyableLine
