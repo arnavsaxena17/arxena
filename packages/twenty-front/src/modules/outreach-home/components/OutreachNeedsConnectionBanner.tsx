@@ -1,8 +1,10 @@
 import { InformationBanner } from '@/information-banner/components/InformationBanner';
-import { useNavigateSettings } from '~/hooks/useNavigateSettings';
+import { informationBannerIsOpenComponentState } from '@/information-banner/states/informationBannerIsOpenComponentState';
+import { useSetAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useSetAtomComponentState';
 import { useLingui } from '@lingui/react/macro';
 import { SettingsPath } from 'twenty-shared/types';
 import { IconMail } from 'twenty-ui/icon';
+import { useNavigateSettings } from '~/hooks/useNavigateSettings';
 
 const COMPONENT_INSTANCE_ID = 'information-banner-outreach-needs-connection';
 
@@ -31,6 +33,10 @@ export const OutreachNeedsConnectionBanner = ({
 }: OutreachNeedsConnectionBannerProps) => {
   const { t } = useLingui();
   const navigateSettings = useNavigateSettings();
+  const setInformationBannerIsOpen = useSetAtomComponentState(
+    informationBannerIsOpenComponentState,
+    COMPONENT_INSTANCE_ID,
+  );
   const missing: string[] = [];
 
   if (!linkedinConnected) {
@@ -60,6 +66,7 @@ export const OutreachNeedsConnectionBanner = ({
       buttonTitle={t`Open accounts`}
       buttonIcon={IconMail}
       buttonOnClick={() => navigateSettings(SettingsPath.Accounts)}
+      onClose={() => setInformationBannerIsOpen(false)}
     />
   );
 };

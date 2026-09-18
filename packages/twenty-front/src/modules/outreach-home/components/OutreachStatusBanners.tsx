@@ -1,9 +1,14 @@
 import { InformationBannerChromeExtensionNotInstalled } from '@/information-banner/components/chrome-extension/InformationBannerChromeExtensionNotInstalled';
 import { InformationBanner } from '@/information-banner/components/InformationBanner';
+import { informationBannerIsOpenComponentState } from '@/information-banner/states/informationBannerIsOpenComponentState';
 import { OutreachNeedsConnectionBanner } from '@/outreach-home/components/OutreachNeedsConnectionBanner';
+import { useSetAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useSetAtomComponentState';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { useLingui } from '@lingui/react/macro';
 import { FeatureFlagKey } from 'twenty-shared/types';
+
+const MOCK_UNIPILE_BANNER_INSTANCE_ID =
+  'information-banner-outreach-mock-unipile';
 
 type OutreachStatusBannersProps = {
   linkedinConnected: boolean;
@@ -24,6 +29,10 @@ export const OutreachStatusBanners = ({
   const isMockUnipileEnabled = useIsFeatureEnabled(
     FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
   );
+  const setMockUnipileBannerIsOpen = useSetAtomComponentState(
+    informationBannerIsOpenComponentState,
+    MOCK_UNIPILE_BANNER_INSTANCE_ID,
+  );
   const needsConnection =
     !linkedinConnected || !gmailConnected || !whatsappConnected;
 
@@ -31,9 +40,10 @@ export const OutreachStatusBanners = ({
     <>
       {isMockUnipileEnabled && (
         <InformationBanner
-          componentInstanceId="information-banner-outreach-mock-unipile"
+          componentInstanceId={MOCK_UNIPILE_BANNER_INSTANCE_ID}
           variant="secondary"
           message={t`Mock Unipile is enabled for this workspace.`}
+          onClose={() => setMockUnipileBannerIsOpen(false)}
         />
       )}
       {needsConnection ? (
