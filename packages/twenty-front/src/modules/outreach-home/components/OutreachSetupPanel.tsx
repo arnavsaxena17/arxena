@@ -36,6 +36,45 @@ import { TextInput } from '@/ui/input/components/TextInput';
 
 const HH_MM_PATTERN = /^([01]?\d|2[0-3]):([0-5]\d)$/;
 
+const DEFAULT_SEND_WINDOW_START = '00:00';
+const DEFAULT_SEND_WINDOW_END = '23:59';
+
+const normalizeSendWindowTime = (value: string, fallback: string): string => {
+  const match = value.trim().match(HH_MM_PATTERN);
+
+  if (!match) {
+    return fallback;
+  }
+
+  return `${match[1].padStart(2, '0')}:${match[2]}`;
+};
+
+const SEND_WINDOW_TIME_OPTIONS: SelectOption<string>[] = [
+  ...Array.from({ length: 48 }, (_, index) => {
+    const hours = Math.floor(index / 2);
+    const minutes = index % 2 === 0 ? 0 : 30;
+    const value = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+
+    return { label: value, value };
+  }),
+  { label: '23:59', value: '23:59' },
+];
+
+const buildSendWindowTimeOptions = (
+  currentValue: string,
+): SelectOption<string>[] => {
+  if (
+    SEND_WINDOW_TIME_OPTIONS.some((option) => option.value === currentValue)
+  ) {
+    return SEND_WINDOW_TIME_OPTIONS;
+  }
+
+  return [
+    ...SEND_WINDOW_TIME_OPTIONS,
+    { label: currentValue, value: currentValue },
+  ].sort((left, right) => left.value.localeCompare(right.value));
+};
+
 const MAX_PERSONAS_PER_COMPANY_TOOLTIP_ID =
   'outreach-max-personas-per-company-tooltip';
 
@@ -298,8 +337,12 @@ export const OutreachSetupPanel = ({
   const [isJsonOpen, setIsJsonOpen] = useState(false);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [timezoneDraft, setTimezoneDraft] = useState(sendTimezone);
-  const [windowStartDraft, setWindowStartDraft] = useState(sendWindowStart);
-  const [windowEndDraft, setWindowEndDraft] = useState(sendWindowEnd);
+  const [windowStartDraft, setWindowStartDraft] = useState(() =>
+    normalizeSendWindowTime(sendWindowStart, DEFAULT_SEND_WINDOW_START),
+  );
+  const [windowEndDraft, setWindowEndDraft] = useState(() =>
+    normalizeSendWindowTime(sendWindowEnd, DEFAULT_SEND_WINDOW_END),
+  );
   const [sendDaysDraft, setSendDaysDraft] = useState<SendWindowWeekday[]>(() =>
     parseSendWindowDays(sendWindowDays),
   );
@@ -321,8 +364,12 @@ export const OutreachSetupPanel = ({
 
   useEffect(() => {
     setTimezoneDraft(sendTimezone);
-    setWindowStartDraft(sendWindowStart);
-    setWindowEndDraft(sendWindowEnd);
+    setWindowStartDraft(
+      normalizeSendWindowTime(sendWindowStart, DEFAULT_SEND_WINDOW_START),
+    );
+    setWindowEndDraft(
+      normalizeSendWindowTime(sendWindowEnd, DEFAULT_SEND_WINDOW_END),
+    );
     setSendDaysDraft(parseSendWindowDays(sendWindowDays));
   }, [sendTimezone, sendWindowStart, sendWindowEnd, sendWindowDays]);
 
@@ -353,8 +400,12 @@ export const OutreachSetupPanel = ({
     maxPersonasDraft !== String(maxPersonasPerCompany);
   const isScheduleDirty =
     timezoneDraft !== sendTimezone ||
-    windowStartDraft !== sendWindowStart ||
-    windowEndDraft !== sendWindowEnd ||
+    windowStartDraft !==
+      normalizeSendWindowTime(sendWindowStart, DEFAULT_SEND_WINDOW_START) ||
+    windowEndDraft !==
+      normalizeSendWindowTime(sendWindowEnd, DEFAULT_SEND_WINDOW_END) ||
+    !HH_MM_PATTERN.test(sendWindowStart.trim()) ||
+    !HH_MM_PATTERN.test(sendWindowEnd.trim()) ||
     !areSendWindowDaysEqual(sendDaysDraft, parseSendWindowDays(sendWindowDays));
   const canSaveSetup =
     (isIcpDirty && canPersist) ||
@@ -381,7 +432,7 @@ export const OutreachSetupPanel = ({
       timezoneOptions.find((option) => option.value === timezoneDraft)?.label ??
       timezoneDraft;
 
-    return `${daySummary} · ${windowStartDraft || '10:00'}–${windowEndDraft || '20:00'} · ${timezoneLabel}`;
+    return `${daySummary} · ${windowStartDraft || DEFAULT_SEND_WINDOW_START}–${windowEndDraft || DEFAULT_SEND_WINDOW_END} · ${timezoneLabel}`;
   }, [
     sendDaysDraft,
     timezoneDraft,
@@ -389,6 +440,15 @@ export const OutreachSetupPanel = ({
     windowEndDraft,
     windowStartDraft,
   ]);
+
+  const windowStartOptions = useMemo(
+    () => buildSendWindowTimeOptions(windowStartDraft),
+    [windowStartDraft],
+  );
+  const windowEndOptions = useMemo(
+    () => buildSendWindowTimeOptions(windowEndDraft),
+    [windowEndDraft],
+  );
 
   const updateChipField = (key: IcpChipFieldKey, values: string[]) => {
     setIcpDraft((current) => writeIcpChipValues(current, key, values));
@@ -664,23 +724,31 @@ export const OutreachSetupPanel = ({
               <StyledTimeWindowRow>
                 <StyledFieldStack>
                   <StyledFieldLabel>Start time</StyledFieldLabel>
-                  <TextInput
+                  <Select<string>
+                    dropdownId="outreach-setup-window-start-select"
                     value={windowStartDraft}
-                    onChange={setWindowStartDraft}
-                    placeholder="10:00"
                     disabled={!hasProject}
+                    onChange={setWindowStartDraft}
+                    options={windowStartOptions}
                     fullWidth
+                    selectSizeVariant="small"
+                    withSearchInput
+                    needIconCheck={false}
                   />
                 </StyledFieldStack>
                 <StyledTimeSeparator>to</StyledTimeSeparator>
                 <StyledFieldStack>
                   <StyledFieldLabel>End time</StyledFieldLabel>
-                  <TextInput
+                  <Select<string>
+                    dropdownId="outreach-setup-window-end-select"
                     value={windowEndDraft}
-                    onChange={setWindowEndDraft}
-                    placeholder="20:00"
                     disabled={!hasProject}
+                    onChange={setWindowEndDraft}
+                    options={windowEndOptions}
                     fullWidth
+                    selectSizeVariant="small"
+                    withSearchInput
+                    needIconCheck={false}
                   />
                 </StyledFieldStack>
               </StyledTimeWindowRow>

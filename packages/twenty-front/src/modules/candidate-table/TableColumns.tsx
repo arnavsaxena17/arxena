@@ -378,6 +378,9 @@ export const TableColumns = ({
     }
   }
 
+  // Use Handsontable's CheckboxRenderer so change/mouseup handlers update
+  // cell data. A custom <input> click listener loses to td.area::before
+  // selection overlays (cell focuses, checkbox never toggles).
   const checkboxRenderer: ColumnRenderer = (
     instance,
     td,
@@ -387,14 +390,15 @@ export const TableColumns = ({
     value,
     cellProperties,
   ) => {
-    td.innerHTML = '';
-    // Get the physical row index after sorting
-    const physicalRow = instance.toPhysicalRow(row);
-    const rowData = instance.getSourceDataAtRow(physicalRow);
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.checked = value || false;
-    checkbox.className = 'row-checkbox';
+    Handsontable.renderers.CheckboxRenderer(
+      instance,
+      td,
+      row,
+      column,
+      prop,
+      value,
+      cellProperties,
+    );
     td.style.textAlign = 'center';
 
     const rowElement = td.parentElement;
@@ -406,16 +410,6 @@ export const TableColumns = ({
       }
     }
 
-    checkbox.addEventListener('click', (e) => {
-      e.stopPropagation();
-      // Use physical row index when setting data
-      instance.setDataAtRowProp(physicalRow, 'checkbox', !value);
-      if (rowElement) {
-        rowElement.classList.toggle('selected-row');
-      }
-    });
-
-    td.appendChild(checkbox);
     return td;
   };
 

@@ -7,6 +7,7 @@ import {
   useId,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { Link } from 'react-router-dom';
@@ -303,6 +304,10 @@ export const OutreachPeoplePanel = ({
   isLoading = false,
   onRefresh,
 }: OutreachPeoplePanelProps) => {
+  const dataTableRef = useRef<{
+    removeFilter: (columnIndex: number) => void;
+    clearAllFilters: () => void;
+  }>(null);
   const setSearchResults = useSetAtomState(searchResultsState);
   const setTableStateAtom = useSetAtomState(tableStateAtom);
   const setChatSearchQuery = useSetAtomState(chatSearchQueryState);
@@ -618,7 +623,16 @@ export const OutreachPeoplePanel = ({
     setStageFilter('all');
     setSearchQuery('');
     setChatSearchQuery('');
+    dataTableRef.current?.clearAllFilters();
   }, [setChatSearchQuery]);
+
+  const handleRemoveFilter = useCallback((columnIndex: number) => {
+    dataTableRef.current?.removeFilter(columnIndex);
+  }, []);
+
+  const handleClearAllColumnFilters = useCallback(() => {
+    dataTableRef.current?.clearAllFilters();
+  }, []);
 
   const stageFilterChips = (
     <StyledStageFilters>
@@ -744,7 +758,9 @@ export const OutreachPeoplePanel = ({
         showClearAll={true}
         onClearAll={handleClearFilters}
         showJobStatusToggle={false}
-        showFilterChips={false}
+        showFilterChips={true}
+        onRemoveFilter={handleRemoveFilter}
+        onClearAllFilters={handleClearAllColumnFilters}
         showRedirectToObject={false}
         showImportCandidates={false}
         showStatistics={false}
@@ -776,7 +792,7 @@ export const OutreachPeoplePanel = ({
           <TableContainer>
             {isTableDataReady ? (
               <Suspense fallback={<Loader />}>
-                <DataTable projectId={tableInstanceId} />
+                <DataTable ref={dataTableRef} projectId={tableInstanceId} />
               </Suspense>
             ) : (
               <Loader />

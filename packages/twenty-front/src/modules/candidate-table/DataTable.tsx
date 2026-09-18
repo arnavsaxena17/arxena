@@ -50,6 +50,7 @@ import {
 import { isAiFilterField } from '@/candidate-table/utils/is-ai-filter-field';
 import {
   clearPersistedTableFilters,
+  canPersistDataTableFilters,
   isBackendBackedDataTableProjectId,
   loadPersistedTableFilters,
   mapPersistedFiltersToColumnIndexes,
@@ -151,6 +152,11 @@ const StyledTableContainer = styled.div`
   /* Ensure selected row style persists on hover */
   .handsontable tr.selected-row:hover td {
     background-color: ${themeCssVariables.background.tertiary} !important;
+  }
+
+  /* Selection tint must not intercept checkbox / header input clicks */
+  .handsontable td[class*='area']::before {
+    pointer-events: none;
   }
 `;
 
@@ -1656,7 +1662,7 @@ export const DataTable = forwardRef<
       return;
     }
 
-    if (!isBackendBackedDataTableProjectId(projectId)) {
+    if (!canPersistDataTableFilters(projectId)) {
       return;
     }
 
@@ -1839,7 +1845,7 @@ export const DataTable = forwardRef<
 
   const colHeaders = useCallback(
     (col: number) => {
-      if (col === 0) return '';
+      if (columns[col]?.data === 'checkbox') return '';
       return columns[col]?.title || '';
     },
     [columns],
@@ -1847,22 +1853,37 @@ export const DataTable = forwardRef<
 
   const afterGetColHeader = useCallback(
     (col: number, TH: HTMLTableCellElement) => {
-      if (col === 0) {
-        if (TH.querySelector('input[type="checkbox"]')) return;
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.style.marginTop = '8px';
+      if (columns[col]?.data === 'checkbox') {
+        // Filter/sort caret on the checkbox header steals select-all clicks
+        TH.querySelector('.changeType')?.remove();
+
+        let checkbox = TH.querySelector(
+          'input[type="checkbox"]',
+        ) as HTMLInputElement | null;
+
+        if (!checkbox) {
+          checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.style.marginTop = '8px';
+          checkbox.style.cursor = 'pointer';
+          TH.innerHTML = '';
+          TH.appendChild(checkbox);
+        }
+
         checkbox.checked = headerSelectRef.current.allSelected;
         checkbox.indeterminate = headerSelectRef.current.someSelected;
-        checkbox.style.cursor = 'pointer';
-        checkbox.onclick = (e) => {
-          e.stopPropagation();
+        // mousedown: stop Handsontable header selection before click is lost
+        checkbox.onmousedown = (event) => {
+          event.stopPropagation();
+          event.preventDefault();
+        };
+        checkbox.onclick = (event) => {
+          event.stopPropagation();
+          event.preventDefault();
           headerSelectRef.current.handleSelectAll(
             !headerSelectRef.current.allSelected,
           );
         };
-        TH.innerHTML = '';
-        TH.appendChild(checkbox);
       } else {
         const columnTitle = columns[col]?.title || '';
         TH.title = columnTitle;

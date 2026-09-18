@@ -268,6 +268,7 @@ export type OutreachSequencerGraphOptions = {
   whatsappEnabled: boolean;
   meetingFollowUpEnabled: boolean;
   manualTrigger: boolean;
+  checkDeduplicationPerCompany: boolean;
 };
 
 export const DEFAULT_OUTREACH_SEQUENCER_GRAPH_OPTIONS: OutreachSequencerGraphOptions =
@@ -277,6 +278,7 @@ export const DEFAULT_OUTREACH_SEQUENCER_GRAPH_OPTIONS: OutreachSequencerGraphOpt
     whatsappEnabled: true,
     meetingFollowUpEnabled: true,
     manualTrigger: false,
+    checkDeduplicationPerCompany: true,
   };
 
 const resolveOutreachSequencerGraphOptions = (
@@ -315,6 +317,7 @@ export const inferOutreachSequencerGraphOptionsFromSteps = (
     whatsappEnabled: stepIds.has(IDS.sendReplyWhatsapp),
     meetingFollowUpEnabled: stepIds.has(IDS.meetingBookedFind),
     manualTrigger: trigger?.type === 'MANUAL',
+    checkDeduplicationPerCompany: stepIds.has(IDS.hasCompanyIf),
   };
 };
 
@@ -1322,8 +1325,8 @@ const repliedBranchSteps = ({
   ];
 };
 
-// QUEUED entry: qualify/enrich, company dedupe, connection note, LinkedIn
-// connection, then email fallback.
+// QUEUED entry: qualify/enrich, optional company dedupe, connection note,
+// LinkedIn connection, then email fallback.
 // hoistedMember=true means workspace member is loaded once above the stage router,
 // so both send-connection variants read the shared load and the duplicate
 // "no company" member step disappears.
@@ -1331,10 +1334,12 @@ const queuedBranchSteps = ({
   hoistedMember,
   useLlmConnectionNote,
   humanInTheLoop,
+  checkDeduplicationPerCompany,
 }: {
   hoistedMember: boolean;
   useLlmConnectionNote: boolean;
   humanInTheLoop: boolean;
+  checkDeduplicationPerCompany: boolean;
 }) => {
   const companyConnectEntryId = useLlmConnectionNote
     ? IDS.draftConnectNote
@@ -1367,15 +1372,19 @@ const queuedBranchSteps = ({
       ? []
       : [
           gtmWfMemberStep([IDS.queuedFetchProfile]),
-          gtmWfMemberStep(
-            useLlmConnectionNote
-              ? [IDS.draftConnectNoteNoCompany]
-              : [IDS.connectionNotSentNoCompanyIf],
-            {
-              memberStepId: OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID,
-              memberStepName: 'Load workspace member (no company)',
-            },
-          ),
+          ...(checkDeduplicationPerCompany
+            ? [
+                gtmWfMemberStep(
+                  useLlmConnectionNote
+                    ? [IDS.draftConnectNoteNoCompany]
+                    : [IDS.connectionNotSentNoCompanyIf],
+                  {
+                    memberStepId: OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID,
+                    memberStepName: 'Load workspace member (no company)',
+                  },
+                ),
+              ]
+            : []),
         ]),
     gtmWfLogicFunctionStep({
       id: IDS.queuedFetchProfile,
@@ -1441,7 +1450,11 @@ const queuedBranchSteps = ({
       value: 'true',
       type: 'TEXT',
       operand: 'CONTAINS',
-      ifNextStepIds: [IDS.hasCompanyIf],
+      // When company dedupe is off, skip has-company / sibling checks and go
+      // straight to the single connection-note path.
+      ifNextStepIds: [
+        checkDeduplicationPerCompany ? IDS.hasCompanyIf : companyConnectEntryId,
+      ],
       elseNextStepIds: [IDS.markSkippedQualify],
     }),
     gtmWfUpdateRecordStep({
@@ -1452,95 +1465,99 @@ const queuedBranchSteps = ({
         outreachSequenceStage: 'DEFERRED',
       },
     }),
-    gtmWfIfElseStep({
-      id: IDS.hasCompanyIf,
-      name: 'Has company name?',
-      stepOutputKey: gtmWfFindField(IDS.queuedFind, 'jobCompanyName'),
-      value: '',
-      type: 'TEXT',
-      operand: 'IS_NOT_EMPTY',
-      ifNextStepIds: [IDS.findContacted],
-      // Own draft path — must not share draftConnectNote with company path, or
-      // IF_ELSE skip kills the later join from earlierQueuedIf.
-      elseNextStepIds: hoistedMember
-        ? [noCompanyConnectEntryId]
-        : [OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID],
-    }),
-    gtmWfFindRecordsStep({
-      id: IDS.findContacted,
-      name: 'Find contacted company sibling',
-      objectName: 'candidate',
-      filters: companySiblingFilters([
-        {
-          fieldMetadataId: OUTREACH_WF_FIELD.outreachSequenceStage,
-          filterValue: JSON.stringify(CONTACTED_COMPANY_SIBLING_STAGES),
-          filterType: 'SELECT',
-          filterLabel: 'Outreach Sequence Stage',
-          filterOperand: 'IS',
-        },
-      ]),
-      nextStepIds: [IDS.contactedIf],
-    }),
-    gtmWfIfElseStep({
-      id: IDS.contactedIf,
-      name: 'Company already contacted?',
-      stepOutputKey: gtmWfFindId(IDS.findContacted),
-      value: '',
-      type: 'TEXT',
-      operand: 'IS_NOT_EMPTY',
-      ifNextStepIds: [IDS.markDeferredContacted],
-      elseNextStepIds: [IDS.findEarlierQueued],
-    }),
-    gtmWfFindRecordsStep({
-      id: IDS.findEarlierQueued,
-      name: 'Find earlier QUEUED sibling',
-      objectName: 'candidate',
-      filters: companySiblingFilters([
-        {
-          fieldMetadataId: OUTREACH_WF_FIELD.outreachSequenceStage,
-          filterValue: gtmWfSelectIsValue('QUEUED'),
-          filterType: 'SELECT',
-          filterLabel: 'Outreach Sequence Stage',
-          filterOperand: 'IS',
-        },
-        {
-          fieldMetadataId: OUTREACH_WF_FIELD.createdAt,
-          filterValue: gtmWfFindField(IDS.queuedFind, 'createdAt'),
-          filterType: 'DATE_TIME',
-          filterLabel: 'Creation date',
-          filterOperand: 'IS_BEFORE',
-        },
-      ]),
-      nextStepIds: [IDS.earlierQueuedIf],
-    }),
-    gtmWfIfElseStep({
-      id: IDS.earlierQueuedIf,
-      name: 'Earlier QUEUED sibling?',
-      stepOutputKey: gtmWfFindId(IDS.findEarlierQueued),
-      value: '',
-      type: 'TEXT',
-      operand: 'IS_NOT_EMPTY',
-      ifNextStepIds: [IDS.markDeferredEarlierQueued],
-      elseNextStepIds: [companyConnectEntryId],
-    }),
-    // Unique DEFERRED terminals — shared id would be cascade-skipped when the
-    // other IF_ELSE's unused branch is pruned.
-    gtmWfUpdateRecordStep({
-      id: IDS.markDeferredContacted,
-      name: 'Mark DEFERRED — company already contacted',
-      objectRecordId: gtmWfFindId(IDS.queuedFind),
-      objectRecord: {
-        outreachSequenceStage: 'DEFERRED',
-      },
-    }),
-    gtmWfUpdateRecordStep({
-      id: IDS.markDeferredEarlierQueued,
-      name: 'Mark DEFERRED — earlier QUEUED sibling',
-      objectRecordId: gtmWfFindId(IDS.queuedFind),
-      objectRecord: {
-        outreachSequenceStage: 'DEFERRED',
-      },
-    }),
+    ...(checkDeduplicationPerCompany
+      ? [
+          gtmWfIfElseStep({
+            id: IDS.hasCompanyIf,
+            name: 'Has company name?',
+            stepOutputKey: gtmWfFindField(IDS.queuedFind, 'jobCompanyName'),
+            value: '',
+            type: 'TEXT',
+            operand: 'IS_NOT_EMPTY',
+            ifNextStepIds: [IDS.findContacted],
+            // Own draft path — must not share draftConnectNote with company path, or
+            // IF_ELSE skip kills the later join from earlierQueuedIf.
+            elseNextStepIds: hoistedMember
+              ? [noCompanyConnectEntryId]
+              : [OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID],
+          }),
+          gtmWfFindRecordsStep({
+            id: IDS.findContacted,
+            name: 'Find contacted company sibling',
+            objectName: 'candidate',
+            filters: companySiblingFilters([
+              {
+                fieldMetadataId: OUTREACH_WF_FIELD.outreachSequenceStage,
+                filterValue: JSON.stringify(CONTACTED_COMPANY_SIBLING_STAGES),
+                filterType: 'SELECT',
+                filterLabel: 'Outreach Sequence Stage',
+                filterOperand: 'IS',
+              },
+            ]),
+            nextStepIds: [IDS.contactedIf],
+          }),
+          gtmWfIfElseStep({
+            id: IDS.contactedIf,
+            name: 'Company already contacted?',
+            stepOutputKey: gtmWfFindId(IDS.findContacted),
+            value: '',
+            type: 'TEXT',
+            operand: 'IS_NOT_EMPTY',
+            ifNextStepIds: [IDS.markDeferredContacted],
+            elseNextStepIds: [IDS.findEarlierQueued],
+          }),
+          gtmWfFindRecordsStep({
+            id: IDS.findEarlierQueued,
+            name: 'Find earlier QUEUED sibling',
+            objectName: 'candidate',
+            filters: companySiblingFilters([
+              {
+                fieldMetadataId: OUTREACH_WF_FIELD.outreachSequenceStage,
+                filterValue: gtmWfSelectIsValue('QUEUED'),
+                filterType: 'SELECT',
+                filterLabel: 'Outreach Sequence Stage',
+                filterOperand: 'IS',
+              },
+              {
+                fieldMetadataId: OUTREACH_WF_FIELD.createdAt,
+                filterValue: gtmWfFindField(IDS.queuedFind, 'createdAt'),
+                filterType: 'DATE_TIME',
+                filterLabel: 'Creation date',
+                filterOperand: 'IS_BEFORE',
+              },
+            ]),
+            nextStepIds: [IDS.earlierQueuedIf],
+          }),
+          gtmWfIfElseStep({
+            id: IDS.earlierQueuedIf,
+            name: 'Earlier QUEUED sibling?',
+            stepOutputKey: gtmWfFindId(IDS.findEarlierQueued),
+            value: '',
+            type: 'TEXT',
+            operand: 'IS_NOT_EMPTY',
+            ifNextStepIds: [IDS.markDeferredEarlierQueued],
+            elseNextStepIds: [companyConnectEntryId],
+          }),
+          // Unique DEFERRED terminals — shared id would be cascade-skipped when the
+          // other IF_ELSE's unused branch is pruned.
+          gtmWfUpdateRecordStep({
+            id: IDS.markDeferredContacted,
+            name: 'Mark DEFERRED — company already contacted',
+            objectRecordId: gtmWfFindId(IDS.queuedFind),
+            objectRecord: {
+              outreachSequenceStage: 'DEFERRED',
+            },
+          }),
+          gtmWfUpdateRecordStep({
+            id: IDS.markDeferredEarlierQueued,
+            name: 'Mark DEFERRED — earlier QUEUED sibling',
+            objectRecordId: gtmWfFindId(IDS.queuedFind),
+            objectRecord: {
+              outreachSequenceStage: 'DEFERRED',
+            },
+          }),
+        ]
+      : []),
     ...(useLlmConnectionNote
       ? [
           gtmWfAiAgentStep({
@@ -1572,35 +1589,39 @@ const queuedBranchSteps = ({
                 }),
               ]
             : []),
-          gtmWfAiAgentStep({
-            id: IDS.draftConnectNoteNoCompany,
-            name: 'Draft connection note (no company)',
-            prompt: buildOutreachConnectionNotePrompt({
-              senderJson: senderJson(),
-              prospectEnrichmentJson: qualifyEnrichmentJson(),
-            }),
-            agentId: OUTREACH_WF_AGENT_LINKEDIN,
-            outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
-            nextStepIds: [
-              humanInTheLoop
-                ? IDS.approveConnectNoteNoCompany
-                : IDS.connectionNotSentNoCompanyIf,
-            ],
-          }),
-          ...(humanInTheLoop
+          ...(checkDeduplicationPerCompany
             ? [
-                gtmWfFormStep({
-                  id: IDS.approveConnectNoteNoCompany,
-                  name: 'Approve connection note (no company)',
-                  editedBodyValue: `{{${IDS.draftConnectNoteNoCompany}.message}}`,
-                  contextTemplate:
-                    OUTREACH_HITL_CONTEXT_TEMPLATES.linkedInConnectionNote,
-                  detailsTemplate: gtmWfFormDetailsTemplate({
-                    findId: IDS.queuedFind,
-                    draftStepId: IDS.draftConnectNoteNoCompany,
+                gtmWfAiAgentStep({
+                  id: IDS.draftConnectNoteNoCompany,
+                  name: 'Draft connection note (no company)',
+                  prompt: buildOutreachConnectionNotePrompt({
+                    senderJson: senderJson(),
+                    prospectEnrichmentJson: qualifyEnrichmentJson(),
                   }),
-                  nextStepIds: [IDS.connectionNotSentNoCompanyIf],
+                  agentId: OUTREACH_WF_AGENT_LINKEDIN,
+                  outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
+                  nextStepIds: [
+                    humanInTheLoop
+                      ? IDS.approveConnectNoteNoCompany
+                      : IDS.connectionNotSentNoCompanyIf,
+                  ],
                 }),
+                ...(humanInTheLoop
+                  ? [
+                      gtmWfFormStep({
+                        id: IDS.approveConnectNoteNoCompany,
+                        name: 'Approve connection note (no company)',
+                        editedBodyValue: `{{${IDS.draftConnectNoteNoCompany}.message}}`,
+                        contextTemplate:
+                          OUTREACH_HITL_CONTEXT_TEMPLATES.linkedInConnectionNote,
+                        detailsTemplate: gtmWfFormDetailsTemplate({
+                          findId: IDS.queuedFind,
+                          draftStepId: IDS.draftConnectNoteNoCompany,
+                        }),
+                        nextStepIds: [IDS.connectionNotSentNoCompanyIf],
+                      }),
+                    ]
+                  : []),
               ]
             : []),
         ]
@@ -1620,19 +1641,23 @@ const queuedBranchSteps = ({
       ifNextStepIds: [IDS.sendConnect],
       elseNextStepIds: [],
     }),
-    gtmWfIfElseStep({
-      id: IDS.connectionNotSentNoCompanyIf,
-      name: 'Connection not yet sent? (no company)',
-      stepOutputKey: gtmWfFindField(
-        IDS.queuedFind,
-        'outreachAnalytics.connectionSentAt',
-      ),
-      value: '',
-      type: 'TEXT',
-      operand: 'IS_EMPTY',
-      ifNextStepIds: [IDS.sendConnectNoCompany],
-      elseNextStepIds: [],
-    }),
+    ...(checkDeduplicationPerCompany
+      ? [
+          gtmWfIfElseStep({
+            id: IDS.connectionNotSentNoCompanyIf,
+            name: 'Connection not yet sent? (no company)',
+            stepOutputKey: gtmWfFindField(
+              IDS.queuedFind,
+              'outreachAnalytics.connectionSentAt',
+            ),
+            value: '',
+            type: 'TEXT',
+            operand: 'IS_EMPTY',
+            ifNextStepIds: [IDS.sendConnectNoCompany],
+            elseNextStepIds: [],
+          }),
+        ]
+      : []),
     {
       id: IDS.sendConnect,
       name: 'Send LinkedIn connection',
@@ -1657,32 +1682,36 @@ const queuedBranchSteps = ({
       },
       nextStepIds: [IDS.markSent],
     },
-    {
-      id: IDS.sendConnectNoCompany,
-      name: 'Send LinkedIn connection (no company)',
-      type: 'SEND_LINKEDIN_CONNECTION_REQUEST',
-      valid: true,
-      settings: {
-        input: {
-          message: connectMessageNoCompany,
-          linkedinUrl: gtmWfFindField(
-            IDS.queuedFind,
-            'linkedinUrl.primaryLinkUrl',
-          ),
-          linkedinProfileId: gtmWfFindField(
-            IDS.queuedFind,
-            'linkedinProfileId',
-          ),
-          candidateId: gtmWfFindId(IDS.queuedFind),
-          workspaceMemberId: hoistedMember
-            ? gtmWfMemberId()
-            : gtmWfMemberId(OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID),
-        },
-        outputSchema: {},
-        errorHandlingOptions: OUTREACH_WF_ERROR_HANDLING,
-      },
-      nextStepIds: [IDS.markSent],
-    },
+    ...(checkDeduplicationPerCompany
+      ? [
+          {
+            id: IDS.sendConnectNoCompany,
+            name: 'Send LinkedIn connection (no company)',
+            type: 'SEND_LINKEDIN_CONNECTION_REQUEST',
+            valid: true,
+            settings: {
+              input: {
+                message: connectMessageNoCompany,
+                linkedinUrl: gtmWfFindField(
+                  IDS.queuedFind,
+                  'linkedinUrl.primaryLinkUrl',
+                ),
+                linkedinProfileId: gtmWfFindField(
+                  IDS.queuedFind,
+                  'linkedinProfileId',
+                ),
+                candidateId: gtmWfFindId(IDS.queuedFind),
+                workspaceMemberId: hoistedMember
+                  ? gtmWfMemberId()
+                  : gtmWfMemberId(OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID),
+              },
+              outputSchema: {},
+              errorHandlingOptions: OUTREACH_WF_ERROR_HANDLING,
+            },
+            nextStepIds: [IDS.markSent],
+          },
+        ]
+      : []),
     gtmWfUpdateRecordStep({
       id: IDS.markSent,
       name: 'Mark CONNECTION_SENT',
@@ -2023,6 +2052,7 @@ export const buildCandidateSequencerGraph = (
     whatsappEnabled,
     meetingFollowUpEnabled,
     manualTrigger,
+    checkDeduplicationPerCompany,
   } = resolved;
 
   const stageBranches = [
@@ -2079,6 +2109,7 @@ export const buildCandidateSequencerGraph = (
       hoistedMember: true,
       useLlmConnectionNote,
       humanInTheLoop,
+      checkDeduplicationPerCompany,
     }),
     ...acceptedBranchSteps({ humanInTheLoop }),
     ...repliedBranchSteps({

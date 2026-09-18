@@ -360,8 +360,8 @@ export const afterSelectionEnd = (
 
     // Checkbox clicks are owned by afterChange/handleCheckboxChange. Updating
     // selectedRowIds here as well toggles on every HotTable updateSettings and
-    // loops with afterSelectionEnd.
-    if (column === 0) {
+    // loops with afterSelectionEnd. Match by data key — columns can be moved.
+    if (getColumnDataKey(hot, column) === 'checkbox') {
       return;
     }
 

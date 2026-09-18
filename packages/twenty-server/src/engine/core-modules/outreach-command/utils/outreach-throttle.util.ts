@@ -1,9 +1,10 @@
-import {
-  parseSendWindowDays,
-  type SendWindowWeekday,
-} from 'twenty-shared/arx';
+import { parseSendWindowDays, type SendWindowWeekday } from 'twenty-shared/arx';
 
-export type OutreachThrottleChannel = 'connect' | 'comment' | 'email' | 'message';
+export type OutreachThrottleChannel =
+  | 'connect'
+  | 'comment'
+  | 'email'
+  | 'message';
 
 export type OutreachThrottleCounters = {
   lastLinkedinConnectAt?: string | Date | null;
@@ -30,7 +31,9 @@ export const incrementThrottleCounter = (
 };
 
 // Parses HH:mm; returns minutes from midnight or null
-export const parseHhMmToMinutes = (value: string | null | undefined): number | null => {
+export const parseHhMmToMinutes = (
+  value: string | null | undefined,
+): number | null => {
   if (!value) {
     return null;
   }
@@ -112,12 +115,12 @@ const resolveAllowedWeekdays = (
   sendWindowDays?: string | null,
 ): Set<SendWindowWeekday> => new Set(parseSendWindowDays(sendWindowDays));
 
-// Default window: Mon–Sat 10:00–20:00 in project timezone (or UTC)
+// Default window: every day 00:00–23:59 in project timezone (or UTC)
 export const computeNextSendWindow = ({
   now,
   timezone = 'UTC',
-  sendWindowStart = '10:00',
-  sendWindowEnd = '20:00',
+  sendWindowStart = '00:00',
+  sendWindowEnd = '23:59',
   sendWindowDays,
   delayMsOverride,
 }: OutreachSendWindowInput): OutreachSendWindowResult => {
@@ -136,8 +139,11 @@ export const computeNextSendWindow = ({
   }
 
   const resolvedTimezone = timezone || 'UTC';
-  const startMinutes = parseHhMmToMinutes(sendWindowStart) ?? 10 * 60;
-  const endMinutes = parseHhMmToMinutes(sendWindowEnd) ?? 20 * 60;
+  const startMinutes = parseHhMmToMinutes(sendWindowStart) ?? 0;
+  // 23:59 means through end of day (exclusive upper bound at 24:00)
+  const parsedEndMinutes = parseHhMmToMinutes(sendWindowEnd) ?? 23 * 60 + 59;
+  const endMinutes =
+    parsedEndMinutes >= 23 * 60 + 59 ? 24 * 60 : parsedEndMinutes;
   const allowedWeekdays = resolveAllowedWeekdays(sendWindowDays);
   const { weekday, minutes } = getZonedParts(now, resolvedTimezone);
 

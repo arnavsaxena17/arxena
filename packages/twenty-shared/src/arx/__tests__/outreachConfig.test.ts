@@ -44,7 +44,7 @@ describe('outreachConfig', () => {
     expect(update).toEqual({
       outreachConfig: expect.objectContaining({
         sendWindowStart: '07:30',
-        sendWindowEnd: '20:00',
+        sendWindowEnd: '23:59',
       }),
     });
     expect(update).not.toHaveProperty('sendWindowStart');

@@ -18,14 +18,13 @@ import { WORKSPACE_CREDITS } from '@/billing/graphql/workspaceCredits';
 import { ArxDownloadModal } from '@/candidate-table/components/ArxDownloadModal';
 import { CandidateTableProjectsPageMenuDropdown } from '@/candidate-table/components/CandidateTableProjectsPageMenuDropdown';
 import { useChromeExtensionDetection } from '@/candidate-table/hooks/useChromeExtensionDetection';
-import { InformationBannerChromeExtensionNotInstalled } from '@/information-banner/components/chrome-extension/InformationBannerChromeExtensionNotInstalled';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { OutreachCompaniesPanel } from '@/outreach-home/components/OutreachCompaniesPanel';
 import { OutreachMainTabs } from '@/outreach-home/components/OutreachMainTabs';
-import { OutreachNeedsConnectionBanner } from '@/outreach-home/components/OutreachNeedsConnectionBanner';
 import { OutreachPeoplePanel } from '@/outreach-home/components/OutreachPeoplePanel';
 import { OutreachRunProgressHeader } from '@/outreach-home/components/OutreachRunProgressHeader';
 import { OutreachSetupPanel } from '@/outreach-home/components/OutreachSetupPanel';
+import { OutreachStatusBanners } from '@/outreach-home/components/OutreachStatusBanners';
 import { OUTREACH_PROJECT_ID_QUERY_PARAM } from '@/outreach-home/constants/outreach-command.constants';
 import { useOutreachLiveWorkingSet } from '@/outreach-home/hooks/useOutreachLiveWorkingSet';
 import { useOutreachWorkflowEmbed } from '@/outreach-home/hooks/useOutreachWorkflowEmbed';
@@ -88,7 +87,14 @@ const StyledSetupWrap = styled.div`
 `;
 
 const StyledLoading = styled.div`
+  align-items: center;
   color: ${themeCssVariables.font.color.secondary};
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[2]};
+  justify-content: center;
+  min-height: 240px;
   padding: ${themeCssVariables.spacing[6]};
 `;
 
@@ -624,14 +630,12 @@ const OutreachHomePageContent = () => {
           }
         />
       </PageHeader>
-      <InformationBannerChromeExtensionNotInstalled
-        isExtensionInstalled={isExtensionInstalled}
-        isChecking={isExtensionChecking}
-      />
-      <OutreachNeedsConnectionBanner
+      <OutreachStatusBanners
         linkedinConnected={linkedinConnected}
         gmailConnected={gmailConnected}
         whatsappConnected={whatsappConnected}
+        isExtensionInstalled={isExtensionInstalled}
+        isExtensionChecking={isExtensionChecking}
       />
       {isDefined(workflowRunId) && (
         <WorkflowRunRateLimitSnackBarEffect workflowRunId={workflowRunId} />
@@ -646,7 +650,8 @@ const OutreachHomePageContent = () => {
           />
           {loading ? (
             <StyledLoading>
-              <Loader /> Loading GTM project…
+              <Loader />
+              Loading GTM project…
             </StyledLoading>
           ) : !activeProjectId ? (
             <StyledEmpty>

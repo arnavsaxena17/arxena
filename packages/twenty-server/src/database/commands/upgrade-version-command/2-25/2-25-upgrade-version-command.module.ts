@@ -108,6 +108,7 @@ import { AddFetchEmailPhoneCommandMenuItemsCommand } from 'src/database/commands
 import { CutoverOutreachCandidateSequencerCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000117-cutover-outreach-candidate-sequencer.command';
 import { AddEditWorkflowCommandMenuItemCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000118-add-edit-workflow-command-menu-item.command';
 import { AddBulkForceStopWorkflowRunsCommandMenuItemCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000119-add-bulk-force-stop-workflow-runs-command-menu-item.command';
+import { SyncCommandMenuItemIsPinnedCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000120-sync-command-menu-item-is-pinned.command';
 import { SetOutreachExtractSignalsDeepseekCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000106-set-outreach-extract-signals-deepseek.command';
 import { DropChatMessageObjWithTimeStampCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000099-drop-chat-message-obj-with-time-stamp.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
@@ -253,6 +254,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     CutoverOutreachCandidateSequencerCommand,
     AddEditWorkflowCommandMenuItemCommand,
     AddBulkForceStopWorkflowRunsCommandMenuItemCommand,
+    SyncCommandMenuItemIsPinnedCommand,
     MigrateOtherFieldsService,
     DropCandidateFieldObjectsCommand,
   ],

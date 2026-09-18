@@ -27,9 +27,9 @@ export const DEFAULT_OUTREACH_CONFIG_VALUES: Omit<OutreachConfig, 'v'> = {
   maxPersonasPerCompany: 2,
   inMailFallbackEnabled: false,
   sendTimezone: 'Asia/Kolkata',
-  sendWindowStart: '10:00',
-  sendWindowEnd: '20:00',
-  sendWindowDays: '1,2,3,4,5,6',
+  sendWindowStart: '00:00',
+  sendWindowEnd: '23:59',
+  sendWindowDays: '0,1,2,3,4,5,6',
   icpSpec: null,
   experimentConfig: null,
 };
@@ -120,11 +120,7 @@ const parseExperimentConfigObject = (
   const record = value as Record<string, unknown>;
   const status = record.status;
 
-  if (
-    status !== 'running' &&
-    status !== 'paused' &&
-    status !== 'completed'
-  ) {
+  if (status !== 'running' && status !== 'paused' && status !== 'completed') {
     return null;
   }
 
@@ -144,9 +140,7 @@ const parseExperimentConfigObject = (
   };
 };
 
-export const parseOutreachConfig = (
-  value: unknown,
-): OutreachConfig | null => {
+export const parseOutreachConfig = (value: unknown): OutreachConfig | null => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return null;
   }
@@ -205,7 +199,7 @@ export const resolveOutreachConfigSendWindowStart = (
   parseOutreachConfig(config)?.sendWindowStart ??
   flatFallback ??
   DEFAULT_OUTREACH_CONFIG_VALUES.sendWindowStart ??
-  '10:00';
+  '00:00';
 
 export const resolveOutreachConfigSendWindowEnd = (
   config: unknown,
@@ -214,7 +208,7 @@ export const resolveOutreachConfigSendWindowEnd = (
   parseOutreachConfig(config)?.sendWindowEnd ??
   flatFallback ??
   DEFAULT_OUTREACH_CONFIG_VALUES.sendWindowEnd ??
-  '20:00';
+  '23:59';
 
 export const resolveOutreachConfigSendWindowDays = (
   config: unknown,
@@ -223,7 +217,7 @@ export const resolveOutreachConfigSendWindowDays = (
   parseOutreachConfig(config)?.sendWindowDays ??
   flatFallback ??
   DEFAULT_OUTREACH_CONFIG_VALUES.sendWindowDays ??
-  '1,2,3,4,5,6';
+  '0,1,2,3,4,5,6';
 
 export const resolveOutreachConfigIcpSpecString = (
   config: unknown,
@@ -333,9 +327,9 @@ export const applyOutreachConfigPatch = ({
     maxPersonasPerCompany: base.maxPersonasPerCompany ?? 2,
     inMailFallbackEnabled: base.inMailFallbackEnabled ?? false,
     sendTimezone: base.sendTimezone ?? 'Asia/Kolkata',
-    sendWindowStart: base.sendWindowStart ?? '10:00',
-    sendWindowEnd: base.sendWindowEnd ?? '20:00',
-    sendWindowDays: base.sendWindowDays ?? '1,2,3,4,5,6',
+    sendWindowStart: base.sendWindowStart ?? '00:00',
+    sendWindowEnd: base.sendWindowEnd ?? '23:59',
+    sendWindowDays: base.sendWindowDays ?? '0,1,2,3,4,5,6',
     icpSpec: base.icpSpec ?? null,
     experimentConfig: base.experimentConfig ?? null,
     updatedAt: base.updatedAt ?? nowIso,

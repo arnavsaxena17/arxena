@@ -40,4 +40,11 @@ export class ApplyOutreachSequencerGraphOptionsInput {
     nullable: false,
   })
   manualTrigger: boolean;
+
+  @Field(() => Boolean, {
+    description:
+      'Skip company sibling dedupe when false; qualify go wires straight to connection note',
+    nullable: false,
+  })
+  checkDeduplicationPerCompany: boolean;
 }

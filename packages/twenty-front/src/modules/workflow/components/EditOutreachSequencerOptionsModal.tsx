@@ -239,6 +239,22 @@ export const EditOutreachSequencerOptionsModal = ({
           </StyledOptionHelp>
         </StyledOptionText>
       </StyledOptionRow>
+      <StyledOptionRow>
+        <Checkbox
+          checked={options.checkDeduplicationPerCompany}
+          onCheckedChange={(value) =>
+            setOption('checkDeduplicationPerCompany', value)
+          }
+        />
+        <StyledOptionText>
+          <StyledOptionLabel>
+            {t`Check deduplication per company`}
+          </StyledOptionLabel>
+          <StyledOptionHelp>
+            {t`When off, skip has-company / sibling-contacted checks and go straight from qualify to the connection note.`}
+          </StyledOptionHelp>
+        </StyledOptionText>
+      </StyledOptionRow>
       <StyledButtonRow>
         <Button
           title={t`Apply`}

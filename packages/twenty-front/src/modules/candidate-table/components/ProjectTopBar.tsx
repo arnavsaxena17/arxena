@@ -1,42 +1,42 @@
 import { styled } from '@linaria/react';
 import {
-    type ChangeEvent,
-    type ReactNode,
-    memo,
-    useCallback,
-    useId,
-    useMemo,
-    useState,
+  type ChangeEvent,
+  type ReactNode,
+  memo,
+  useCallback,
+  useId,
+  useMemo,
+  useState,
 } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
-    type IconComponent,
-    IconArrowsVertical,
-    IconBriefcase,
-    IconChartCandle,
-    IconCheck,
-    IconDatabase,
-    IconExternalLink,
-    IconFileImport,
-    IconFilterCog,
-    IconMessage,
-    IconRefresh,
-    IconSearch,
-    IconTrash,
-    IconX,
+  type IconComponent,
+  IconArrowsVertical,
+  IconBriefcase,
+  IconChartCandle,
+  IconCheck,
+  IconDatabase,
+  IconExternalLink,
+  IconFileImport,
+  IconFilterCog,
+  IconMessage,
+  IconRefresh,
+  IconSearch,
+  IconTrash,
+  IconX,
 } from 'twenty-ui/icon';
 import { IconButton } from 'twenty-ui/input';
 import { AppTooltip, TooltipDelay } from 'twenty-ui/surfaces';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import {
-    searchMetadataState,
-    searchResultsState,
+  searchMetadataState,
+  searchResultsState,
 } from '@/candidate-search/states/searchResultsState';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import {
-    columnsSelector,
-    tableStateAtom,
+  columnsSelector,
+  tableStateAtom,
 } from '@/candidate-table/states/states';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useDisableConflictingHotkeysWhileFocused } from '@/ui/utilities/hotkey/hooks/useDisableConflictingHotkeysWhileFocused';
@@ -481,7 +481,8 @@ export const ProjectTopBar = memo(
       location.pathname.includes('/project/') ||
       location.pathname.includes('/projects/');
 
-    const [chatSearchQuery, setChatSearchQuery] = useAtomState(chatSearchQueryState);
+    const [chatSearchQuery, setChatSearchQuery] =
+      useAtomState(chatSearchQueryState);
     const searchResults = useAtomStateValue(searchResultsState);
     const searchMetadata = useAtomStateValue(searchMetadataState);
     const tableState = useAtomStateValue(tableStateAtom);
@@ -605,8 +606,7 @@ export const ProjectTopBar = memo(
           <StyledFilterSection>
             {centerComponent}
             {activeFilterChips}
-            {isProjectPage &&
-              showFilterChips &&
+            {showFilterChips &&
               tableState.activeFilters?.length > 0 &&
               onClearAllFilters && (
                 <StyledInlineButton onClick={onClearAllFilters}>

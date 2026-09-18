@@ -658,6 +658,31 @@ describe('GTM outreach workflow graphs', () => {
     ]);
   });
 
+  it('omits company dedupe when check deduplication per company is off', () => {
+    const graph = buildCandidateSequencerGraph({
+      checkDeduplicationPerCompany: false,
+    });
+    const steps = graph.steps as GraphStep[];
+    const stepIds = new Set(steps.map((step) => step.id));
+    const byName = (name: string) => steps.find((step) => step.name === name);
+    const branchNext = (stepName: string, branchIndex: number) =>
+      byName(stepName)?.settings?.input?.branches?.[branchIndex]?.nextStepIds ??
+      [];
+
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.hasCompanyIf)).toBe(false);
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.findContacted)).toBe(false);
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.sendConnectNoCompany)).toBe(
+      false,
+    );
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.draftConnectNote)).toBe(
+      true,
+    );
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.sendConnect)).toBe(true);
+    expect(branchNext('Qualify go?', 0)).toEqual([
+      byName('Draft connection note')?.id,
+    ]);
+  });
+
   it('infers graph options from step ids', () => {
     const defaults = buildCandidateSequencerGraph();
     const automated = buildCandidateSequencerGraph({
@@ -665,6 +690,7 @@ describe('GTM outreach workflow graphs', () => {
       whatsappEnabled: false,
       meetingFollowUpEnabled: false,
       useLlmConnectionNote: false,
+      checkDeduplicationPerCompany: false,
     });
 
     expect(
@@ -678,6 +704,7 @@ describe('GTM outreach workflow graphs', () => {
       whatsappEnabled: true,
       meetingFollowUpEnabled: true,
       manualTrigger: false,
+      checkDeduplicationPerCompany: true,
     });
     expect(
       inferOutreachSequencerGraphOptionsFromSteps(
@@ -690,6 +717,7 @@ describe('GTM outreach workflow graphs', () => {
       whatsappEnabled: false,
       meetingFollowUpEnabled: false,
       manualTrigger: false,
+      checkDeduplicationPerCompany: false,
     });
   });
 

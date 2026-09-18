@@ -29,8 +29,19 @@ export const isBackendBackedDataTableProjectId = (
   return true;
 };
 
+// localStorage filter chips — real projects plus embedded people tables
+export const canPersistDataTableFilters = (
+  projectId: string | undefined,
+): projectId is string => {
+  if (!projectId || projectId === 'project-id' || projectId === '__search__') {
+    return false;
+  }
+
+  return true;
+};
+
 export const clearPersistedTableFilters = (projectId: string) => {
-  if (!isBackendBackedDataTableProjectId(projectId)) {
+  if (!canPersistDataTableFilters(projectId)) {
     return;
   }
 
@@ -46,7 +57,7 @@ export const savePersistedTableFilters = (
   filters: FilterCondition[],
   columns: Array<{ data?: string | number } | undefined> | undefined,
 ) => {
-  if (!isBackendBackedDataTableProjectId(projectId)) {
+  if (!canPersistDataTableFilters(projectId)) {
     return;
   }
 
@@ -89,7 +100,7 @@ export const savePersistedTableFilters = (
 export const loadPersistedTableFilters = (
   projectId: string,
 ): PersistedFilterCondition[] => {
-  if (!isBackendBackedDataTableProjectId(projectId)) {
+  if (!canPersistDataTableFilters(projectId)) {
     return [];
   }
 

@@ -9,6 +9,7 @@ export type ApplyOutreachSequencerGraphOptionsInput = {
   whatsappEnabled: boolean;
   meetingFollowUpEnabled: boolean;
   manualTrigger: boolean;
+  checkDeduplicationPerCompany: boolean;
 };
 
 export const useApplyOutreachSequencerGraphOptions = () => {

@@ -25,6 +25,10 @@ export const TableContainer = styled.div`
   .handsontable .wtHolder {
     overflow: auto;
   }
+  /* Selection tint must not intercept checkbox clicks */
+  .handsontable td[class*='area']::before {
+    pointer-events: none;
+  }
   @media (max-width: 768px) {
     margin: 0;
     padding: 0;
