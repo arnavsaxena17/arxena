@@ -36,6 +36,17 @@ export const OutreachStatusBanners = ({
   const needsConnection =
     !linkedinConnected || !gmailConnected || !whatsappConnected;
 
+  if (needsConnection) {
+    return (
+      <OutreachNeedsConnectionBanner
+        linkedinConnected={linkedinConnected}
+        gmailConnected={gmailConnected}
+        whatsappConnected={whatsappConnected}
+        isMockUnipileEnabled={isMockUnipileEnabled}
+      />
+    );
+  }
+
   return (
     <>
       {isMockUnipileEnabled && (
@@ -46,18 +57,10 @@ export const OutreachStatusBanners = ({
           onClose={() => setMockUnipileBannerIsOpen(false)}
         />
       )}
-      {needsConnection ? (
-        <OutreachNeedsConnectionBanner
-          linkedinConnected={linkedinConnected}
-          gmailConnected={gmailConnected}
-          whatsappConnected={whatsappConnected}
-        />
-      ) : (
-        <InformationBannerChromeExtensionNotInstalled
-          isExtensionInstalled={isExtensionInstalled}
-          isChecking={isExtensionChecking}
-        />
-      )}
+      <InformationBannerChromeExtensionNotInstalled
+        isExtensionInstalled={isExtensionInstalled}
+        isChecking={isExtensionChecking}
+      />
     </>
   );
 };

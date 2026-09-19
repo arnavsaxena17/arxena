@@ -19,12 +19,24 @@ import {
   setValueAtWorkflowVariablePath,
 } from 'src/engine/core-modules/workflow/utils/resolve-workflow-prompt-from-context.util';
 
-// Test-only defaults when chips point at fields the candidate/member may not
-// have yet. Live runs stamp outreachProspectEnrichment after Qualify; empty
-// sender profile matches prompt builders that tolerate blank sender JSON.
+// Test-only defaults when chips point at fields the candidate/member/person
+// may not have yet. Live runs stamp outreachProspectEnrichment after Qualify;
+// empty sender profile matches prompt builders that tolerate blank sender JSON.
+// Person/CRM scalars and chat.channel are often null before enrichment / inbound.
 const TEST_DEFAULT_BY_CHIP_FIELD: Record<string, unknown> = {
   outreachProspectEnrichment: {},
   outreachSenderProfile: {},
+  jobTitle: '',
+  jobCompanyName: '',
+  linkedinProfileId: '',
+  primaryLinkUrl: '',
+  primaryEmail: '',
+  primaryPhoneNumber: '',
+  outreachPreferredChannel: '',
+  outreachConversationStage: '',
+  projectId: '',
+  // extractSignals chips findChats.first.channel; prompt falls back to LINKEDIN
+  channel: 'LINKEDIN',
 };
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { findFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps.util';
@@ -35,10 +47,12 @@ import { isWorkflowFindRecordsAction } from 'src/modules/workflow/workflow-execu
 import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
 
 const CANDIDATE_OBJECT_NAME = 'candidate';
+const PERSON_OBJECT_NAME = 'person';
 const WORKSPACE_MEMBER_OBJECT_NAME = 'workspaceMember';
 const CHAT_MESSAGE_OBJECT_NAME = 'chatMessage';
 
 type RecordWithId = ObjectLiteral & { id: string };
+type CandidateWithPeopleId = RecordWithId & { peopleId?: string | null };
 
 @Injectable()
 export class WorkflowAiAgentTestContextService {
@@ -260,6 +274,13 @@ export class WorkflowAiAgentTestContextService {
         : undefined;
     }
 
+    if (objectName === PERSON_OBJECT_NAME) {
+      return this.executePersonFindPredecessor({
+        workspaceId,
+        candidateId,
+      });
+    }
+
     if (objectName === WORKSPACE_MEMBER_OBJECT_NAME) {
       if (!isNonEmptyString(workspaceMemberId)) {
         return undefined;
@@ -289,6 +310,34 @@ export class WorkflowAiAgentTestContextService {
     }
 
     return undefined;
+  }
+
+  // Outreach graphs Load Person via candidate.peopleId (queuedPersonFind, etc.)
+  private async executePersonFindPredecessor({
+    workspaceId,
+    candidateId,
+  }: {
+    workspaceId: string;
+    candidateId: string;
+  }): Promise<unknown> {
+    const candidate = (await this.findRecordById({
+      workspaceId,
+      objectName: CANDIDATE_OBJECT_NAME,
+      recordId: candidateId,
+    })) as CandidateWithPeopleId | null;
+    const peopleId = candidate?.peopleId?.trim() ?? '';
+
+    if (!isNonEmptyString(peopleId)) {
+      return undefined;
+    }
+
+    const person = await this.findRecordById({
+      workspaceId,
+      objectName: PERSON_OBJECT_NAME,
+      recordId: peopleId,
+    });
+
+    return isDefined(person) ? buildFindRecordsStepResult([person]) : undefined;
   }
 
   private async executeLogicFunctionPredecessor({

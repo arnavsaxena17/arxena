@@ -1,10 +1,20 @@
+import { type CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { OUTREACH_BUILD_SENDER_PROFILE_SYSTEM_PROMPT } from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
 import { outreachSenderProfileLlmSchema } from 'src/engine/core-modules/outreach-command/schemas/outreach-sender-profile-llm.schema';
-import { OutreachSenderProfileService } from 'src/engine/core-modules/outreach-command/services/outreach-sender-profile.service';
+import {
+  type OutreachSenderProfileDraftJob,
+  OutreachSenderProfileService,
+} from 'src/engine/core-modules/outreach-command/services/outreach-sender-profile.service';
 
 describe('OutreachSenderProfileService.getBuildPrompt', () => {
   it('should include system prompt and input sections', () => {
-    const service = new OutreachSenderProfileService({} as never, {} as never);
+    const service = new OutreachSenderProfileService(
+      {} as never,
+      {} as never,
+      undefined,
+      undefined,
+      {} as never,
+    );
     const prompt = service.getBuildPrompt({
       linkedinProfileText: 'Jane Doe\nCEO',
       collateralText: 'Pitch one-pager',
@@ -16,6 +26,96 @@ describe('OutreachSenderProfileService.getBuildPrompt', () => {
     expect(prompt.user).toContain('linkedin_profile: Jane Doe');
     expect(prompt.user).toContain('collateral: Pitch one-pager');
     expect(prompt.user).toContain('sender_notes: Focus on factories');
+  });
+});
+
+describe('OutreachSenderProfileService draft jobs', () => {
+  const createCache = () => {
+    const store = new Map<string, OutreachSenderProfileDraftJob>();
+
+    return {
+      cache: {
+        get: jest.fn(async (key: string) => store.get(key)),
+        set: jest.fn(
+          async (key: string, value: OutreachSenderProfileDraftJob) => {
+            store.set(key, value);
+          },
+        ),
+      } as unknown as CacheStorageService,
+    };
+  };
+
+  it('writes pending then ready and rejects wrong member ownership', async () => {
+    const { cache } = createCache();
+    const service = new OutreachSenderProfileService(
+      {} as never,
+      {} as never,
+      undefined,
+      undefined,
+      cache,
+    );
+
+    let resolveDraft!: (value: {
+      draft: { id: string };
+      prompt: { system: string; user: string };
+      linkedinProfileText: string;
+      existingSenderProfile: null;
+    }) => void;
+
+    const draftPromise = new Promise<{
+      draft: { id: string };
+      prompt: { system: string; user: string };
+      linkedinProfileText: string;
+      existingSenderProfile: null;
+    }>((resolve) => {
+      resolveDraft = resolve;
+    });
+
+    jest
+      .spyOn(service, 'draftSenderProfile')
+      .mockReturnValue(draftPromise as never);
+
+    const { draftJobId } = await service.enqueueDraftSenderProfile({
+      workspaceId: 'ws-1',
+      workspaceMemberId: 'member-1',
+      linkedinProfileText: 'Jane Doe',
+    });
+
+    await expect(
+      service.getDraftSenderProfileJob({
+        draftJobId,
+        workspaceId: 'ws-1',
+        workspaceMemberId: 'member-other',
+      }),
+    ).rejects.toThrow('Draft job not found or expired');
+
+    const pending = await service.getDraftSenderProfileJob({
+      draftJobId,
+      workspaceId: 'ws-1',
+      workspaceMemberId: 'member-1',
+    });
+
+    expect(pending.status).toBe('pending');
+
+    resolveDraft({
+      draft: { id: 'sender-1' },
+      prompt: { system: 'system', user: 'user' },
+      linkedinProfileText: 'Jane Doe',
+      existingSenderProfile: null,
+    });
+    await draftPromise;
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const ready = await service.getDraftSenderProfileJob({
+      draftJobId,
+      workspaceId: 'ws-1',
+      workspaceMemberId: 'member-1',
+    });
+
+    expect(ready.status).toBe('ready');
+    expect(ready.draft).toEqual({ id: 'sender-1' });
+    expect(ready.linkedinProfileText).toBe('Jane Doe');
   });
 });
 

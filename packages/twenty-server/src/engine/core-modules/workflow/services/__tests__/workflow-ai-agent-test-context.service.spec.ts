@@ -22,10 +22,17 @@ describe('WorkflowAiAgentTestContextService', () => {
   const draftStepId = '55555555-5555-4555-8555-555555555555';
   const logicFunctionId = '66666666-6666-4666-8666-666666666666';
 
+  const personId = '99999999-9999-4999-8999-999999999999';
   const candidate = {
     id: candidateId,
     name: 'Jane Doe',
+    peopleId: personId,
     jobTitle: 'Head of Sales',
+  };
+  const person = {
+    id: personId,
+    jobTitle: 'Head of Sales',
+    linkedinProfileId: 'ACoAAA-test',
   };
 
   const userAuthContext = {
@@ -225,17 +232,66 @@ describe('WorkflowAiAgentTestContextService', () => {
       prompt: `History:\n{{${fetchMessagesStepId}.text}}`,
     });
 
-    expect(resolvedPrompt).toBe(
-      `History:\n${JSON.stringify(
+    expect(resolvedPrompt).toBe('History:\nthem: Thanks for connecting');
+  });
+
+  it('should load person via candidate.peopleId for qualify chips', async () => {
+    const loadPersonStepId = '77777777-7777-4777-8777-777777777771';
+    const qualifyStepId = '88888888-8888-4888-8888-888888888881';
+    const candidateFind = jest.fn().mockResolvedValue([candidate]);
+    const personFind = jest.fn().mockResolvedValue([person]);
+
+    workflowCommonWorkspaceService.getWorkflowVersionOrFail.mockResolvedValue({
+      id: workflowVersionId,
+      steps: [
         {
-          success: true,
-          messages: [{ text: 'Thanks for connecting' }],
-          total: 1,
+          id: loadCandidateStepId,
+          name: 'Load Candidate',
+          type: WorkflowActionType.FIND_RECORDS,
+          valid: true,
+          nextStepIds: [loadPersonStepId],
+          settings: { input: { objectName: 'candidate' }, outputSchema: {} },
         },
-        null,
-        2,
-      )}`,
+        {
+          id: loadPersonStepId,
+          name: 'Load Person',
+          type: WorkflowActionType.FIND_RECORDS,
+          valid: true,
+          nextStepIds: [qualifyStepId],
+          settings: { input: { objectName: 'person' }, outputSchema: {} },
+        },
+        {
+          id: qualifyStepId,
+          name: 'Qualify prospect',
+          type: WorkflowActionType.AI_AGENT,
+          valid: true,
+          settings: { input: { prompt: '' }, outputSchema: {} },
+        },
+      ],
+    });
+    globalWorkspaceOrmManager.getRepository.mockImplementation(
+      async (_workspaceId: string, objectName: string) => {
+        if (objectName === 'person') {
+          return { find: personFind };
+        }
+
+        return { find: candidateFind };
+      },
     );
+
+    const resolvedPrompt = await service.resolvePromptForCandidate({
+      workspaceId,
+      workflowVersionId,
+      stepId: qualifyStepId,
+      candidateId,
+      prompt: `Title: {{${loadPersonStepId}.first.jobTitle}}`,
+    });
+
+    expect(personFind).toHaveBeenCalledWith({
+      where: { id: personId },
+      take: 1,
+    });
+    expect(resolvedPrompt).toBe('Title: Head of Sales');
   });
 
   it('should load prior chat messages for a reply prompt', async () => {
@@ -402,6 +458,78 @@ describe('WorkflowAiAgentTestContextService', () => {
     });
 
     expect(resolvedPrompt).toBe('sender: {}');
+  });
+
+  it('should default missing person CRM scalars and empty chat channel for Test', async () => {
+    const loadPersonStepId = '77777777-7777-4777-8777-777777777772';
+    const chatStepId = '77777777-7777-4777-8777-777777777773';
+    const extractStepId = '88888888-8888-4888-8888-888888888882';
+
+    workflowCommonWorkspaceService.getWorkflowVersionOrFail.mockResolvedValue({
+      id: workflowVersionId,
+      steps: [
+        {
+          id: loadCandidateStepId,
+          name: 'Load Candidate',
+          type: WorkflowActionType.FIND_RECORDS,
+          valid: true,
+          nextStepIds: [loadPersonStepId],
+          settings: { input: { objectName: 'candidate' }, outputSchema: {} },
+        },
+        {
+          id: loadPersonStepId,
+          name: 'Load Person',
+          type: WorkflowActionType.FIND_RECORDS,
+          valid: true,
+          nextStepIds: [chatStepId],
+          settings: { input: { objectName: 'person' }, outputSchema: {} },
+        },
+        {
+          id: chatStepId,
+          name: 'Load chats',
+          type: WorkflowActionType.FIND_RECORDS,
+          valid: true,
+          nextStepIds: [extractStepId],
+          settings: { input: { objectName: 'chatMessage' }, outputSchema: {} },
+        },
+        {
+          id: extractStepId,
+          name: 'Extract inbound signals',
+          type: WorkflowActionType.AI_AGENT,
+          valid: true,
+          settings: { input: { prompt: '' }, outputSchema: {} },
+        },
+      ],
+    });
+    globalWorkspaceOrmManager.getRepository.mockImplementation(
+      async (_workspaceId: string, objectName: string) => {
+        if (objectName === 'person') {
+          return {
+            find: jest
+              .fn()
+              .mockResolvedValue([
+                { id: personId, jobTitle: null, jobCompanyName: null },
+              ]),
+          };
+        }
+
+        if (objectName === 'chatMessage') {
+          return { find: jest.fn().mockResolvedValue([]) };
+        }
+
+        return { find: jest.fn().mockResolvedValue([candidate]) };
+      },
+    );
+
+    const resolvedPrompt = await service.resolvePromptForCandidate({
+      workspaceId,
+      workflowVersionId,
+      stepId: extractStepId,
+      candidateId,
+      prompt: `Title: {{${loadPersonStepId}.first.jobTitle}}\nCompany: {{${loadPersonStepId}.first.jobCompanyName}}\nChannel: {{${chatStepId}.first.channel}}`,
+    });
+
+    expect(resolvedPrompt).toBe('Title: \nCompany: \nChannel: LINKEDIN');
   });
 
   it('should still throw for missing chips without a test default', async () => {

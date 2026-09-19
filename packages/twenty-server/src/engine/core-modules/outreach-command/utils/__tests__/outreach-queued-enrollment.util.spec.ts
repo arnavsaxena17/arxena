@@ -84,25 +84,13 @@ describe('inferOutreachEnrollmentStageFromLinkedin', () => {
 });
 
 describe('buildOutreachQueuedCreateFields', () => {
-  it('sets QUEUED and extracts a LinkedIn slug', () => {
+  it('sets QUEUED without Candidate linkedinProfileId', () => {
     expect(
       buildOutreachQueuedCreateFields({
         linkedinUrl: 'https://www.linkedin.com/in/jane-doe/',
       }),
     ).toEqual({
       outreachSequenceStage: 'QUEUED',
-      linkedinProfileId: 'jane-doe',
-    });
-  });
-
-  it('keeps an explicit linkedinProfileId when the URL is missing', () => {
-    expect(
-      buildOutreachQueuedCreateFields({
-        linkedinProfileId: 'ACoAAA123',
-      }),
-    ).toEqual({
-      outreachSequenceStage: 'QUEUED',
-      linkedinProfileId: 'ACoAAA123',
     });
   });
 

@@ -83,7 +83,9 @@ describe('processArxCandidate', () => {
     );
 
     expect(personNode.uniqueStringKey).toBe('jigneshpatelfalcor');
+    expect(personNode.linkedinProfileId).toBe('jignesh-patel');
     expect(candidateNode.projectId).toBe('project-1');
     expect(candidateNode.messagingChannel).toBe('LINKEDIN_CONNECT');
+    expect(candidateNode).not.toHaveProperty('linkedinProfileId');
   });
 });

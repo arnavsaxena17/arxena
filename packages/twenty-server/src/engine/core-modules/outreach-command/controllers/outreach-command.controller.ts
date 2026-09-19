@@ -709,14 +709,8 @@ export class OutreachCommandController {
     const { workspaceId, workspaceMemberId } =
       await this.resolveSenderProfileAuthContext(body, request);
 
-    console.log('body', body);
-    console.log('workspaceId', workspaceId);
-    console.log('workspaceMemberId', workspaceMemberId);
-    console.log('linkedinProfileText', body.linkedinProfileText);
-    console.log('collateralText', body.collateralText);
-    console.log('senderNotes', body.senderNotes);
     try {
-      return await this.outreachSenderProfileService.draftSenderProfile({
+      return await this.outreachSenderProfileService.enqueueDraftSenderProfile({
         workspaceId,
         workspaceMemberId,
         linkedinProfileText: body.linkedinProfileText,
@@ -728,13 +722,58 @@ export class OutreachCommandController {
         throw error;
       }
 
-      this.logger.error('Failed to draft outreach sender profile', error);
+      this.logger.error(
+        'Failed to enqueue outreach sender profile draft',
+        error,
+      );
       throw new HttpException(
         error instanceof Error
           ? error.message
-          : 'Failed to draft outreach sender profile',
+          : 'Failed to enqueue outreach sender profile draft',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  @Get('sender-profile/draft/:draftJobId')
+  async getDraftSenderProfileJob(
+    @Param('draftJobId') draftJobId: string,
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const { workspaceId, workspaceMemberId } =
+      await this.resolveSenderProfileAuthContext({}, request);
+
+    try {
+      const job =
+        await this.outreachSenderProfileService.getDraftSenderProfileJob({
+          draftJobId,
+          workspaceId,
+          workspaceMemberId,
+        });
+
+      return {
+        status: job.status,
+        draft: job.draft,
+        linkedinProfileText: job.linkedinProfileText,
+        existingSenderProfile: job.existingSenderProfile ?? null,
+        error: job.error,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Failed to load outreach sender profile draft';
+
+      if (message === 'Draft job not found or expired') {
+        throw new HttpException(message, HttpStatus.NOT_FOUND);
+      }
+
+      this.logger.error('Failed to load outreach sender profile draft', error);
+      throw new HttpException(message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 

@@ -5,6 +5,7 @@ import {
   type PersonCreateInput,
 } from 'twenty-shared';
 import { normalizeMessagingChannel } from 'src/engine/core-modules/arx-chat/utils/messaging-channel.util';
+import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
 import {
   extractDisplayPictureUrl,
   readPrimaryLinkUrl,
@@ -169,6 +170,13 @@ const mapArxCandidateToPersonNodeInner = (draft: any): PersonNodeMapping => {
     readPrimaryLinkUrl(draft?.resdexNaukriUrl),
     'Resdex Naukri',
   );
+  const linkedinProfileId =
+    (isNonEmptyString(draft?.linkedinProfileId)
+      ? draft.linkedinProfileId.trim()
+      : '') ||
+    extractLinkedinProfileId(normalizedLinkedinUrl) ||
+    extractLinkedinProfileId(draft?.profileUrl) ||
+    '';
 
   const personNode: PersonNodeMapping = {
     name: { firstName, lastName },
@@ -197,9 +205,7 @@ const mapArxCandidateToPersonNodeInner = (draft: any): PersonNodeMapping => {
       : isNonEmptyString(draft?.location)
         ? { locationName: String(draft.location).trim() }
         : {}),
-    ...(isNonEmptyString(draft?.linkedinProfileId)
-      ? { linkedinProfileId: draft.linkedinProfileId.trim() }
-      : {}),
+    ...(linkedinProfileId ? { linkedinProfileId } : {}),
     ...(hiringNaukriLink ? { hiringNaukriUrl: hiringNaukriLink } : {}),
     ...(resdexNaukriLink ? { resdexNaukriUrl: resdexNaukriLink } : {}),
     ...(draft?.linkedinProfile != null

@@ -12,6 +12,7 @@ type OutreachNeedsConnectionBannerProps = {
   linkedinConnected: boolean;
   gmailConnected: boolean;
   whatsappConnected?: boolean;
+  isMockUnipileEnabled?: boolean;
 };
 
 const formatChannelList = (channels: string[]) => {
@@ -30,6 +31,7 @@ export const OutreachNeedsConnectionBanner = ({
   linkedinConnected,
   gmailConnected,
   whatsappConnected = true,
+  isMockUnipileEnabled = false,
 }: OutreachNeedsConnectionBannerProps) => {
   const { t } = useLingui();
   const navigateSettings = useNavigateSettings();
@@ -56,13 +58,16 @@ export const OutreachNeedsConnectionBanner = ({
   }
 
   const channels = formatChannelList(missing);
+  const message = isMockUnipileEnabled
+    ? t`Mock Unipile is enabled for this workspace. Connect ${channels} to start live outreach.`
+    : t`Connect ${channels} to start live outreach.`;
 
   return (
     <InformationBanner
       componentInstanceId={COMPONENT_INSTANCE_ID}
       color="blue"
       variant="secondary"
-      message={t`Connect ${channels} to start live outreach.`}
+      message={message}
       buttonTitle={t`Open accounts`}
       buttonIcon={IconMail}
       buttonOnClick={() => navigateSettings(SettingsPath.Accounts)}

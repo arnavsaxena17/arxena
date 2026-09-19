@@ -48,6 +48,77 @@ export type OutreachSenderProfileDraftResponse = {
   existingSenderProfile: Record<string, unknown> | null;
 };
 
+const DRAFT_POLL_INTERVAL_MS = 1_500;
+const DRAFT_POLL_MAX_WAIT_MS = 3 * 60 * 1_000;
+
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
+const pollOutreachSenderProfileDraft = async (input: {
+  accessToken: string;
+  baseUrl: string;
+  draftJobId: string;
+}): Promise<OutreachSenderProfileDraftResponse> => {
+  const deadline = Date.now() + DRAFT_POLL_MAX_WAIT_MS;
+
+  while (Date.now() < deadline) {
+    const response = await fetch(
+      `${input.baseUrl}/outreach-command/sender-profile/draft/${input.draftJobId}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${input.accessToken}`,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        await readErrorMessage(
+          response,
+          'Failed to load sender profile draft status.',
+        ),
+      );
+    }
+
+    const payload = (await response.json()) as {
+      status?: string;
+      draft?: Record<string, unknown>;
+      linkedinProfileText?: string;
+      existingSenderProfile?: Record<string, unknown> | null;
+      error?: string;
+    };
+
+    if (payload.status === 'ready') {
+      if (!payload.draft || typeof payload.draft !== 'object') {
+        throw new Error('Sender profile draft completed without a draft.');
+      }
+
+      return {
+        draft: payload.draft,
+        linkedinProfileText: payload.linkedinProfileText ?? '',
+        existingSenderProfile: payload.existingSenderProfile ?? null,
+      };
+    }
+
+    if (payload.status === 'failed') {
+      throw new Error(
+        typeof payload.error === 'string' && payload.error.trim()
+          ? payload.error
+          : 'Failed to draft sender profile.',
+      );
+    }
+
+    await sleep(DRAFT_POLL_INTERVAL_MS);
+  }
+
+  throw new Error(
+    'Sender profile draft timed out. Please try again in a moment.',
+  );
+};
+
 export const fetchOutreachSenderProfilePrompt = async (input: {
   accessToken: string | undefined;
   senderNotes?: string;
@@ -196,7 +267,17 @@ export const draftOutreachSenderProfile = async (input: {
     );
   }
 
-  return (await response.json()) as OutreachSenderProfileDraftResponse;
+  const payload = (await response.json()) as { draftJobId?: string };
+
+  if (!payload.draftJobId?.trim()) {
+    throw new Error('Failed to start sender profile draft.');
+  }
+
+  return pollOutreachSenderProfileDraft({
+    accessToken,
+    baseUrl,
+    draftJobId: payload.draftJobId,
+  });
 };
 
 export const saveOutreachSenderProfile = async (input: {

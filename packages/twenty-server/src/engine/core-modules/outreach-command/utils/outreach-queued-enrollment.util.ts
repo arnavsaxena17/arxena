@@ -3,8 +3,6 @@ import {
   type OutreachAnalytics,
 } from 'twenty-shared';
 
-import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
-
 export type OutreachEnrollmentStage =
   | 'QUEUED'
   | 'CONNECTION_SENT'
@@ -153,14 +151,9 @@ export const buildOutreachQueuedCreateFields = (
   options?: { nowIso?: string },
 ): {
   outreachSequenceStage: OutreachEnrollmentStage;
-  linkedinProfileId?: string;
   experimentVariant?: 'A' | 'B';
   outreachAnalytics?: OutreachAnalytics;
 } => {
-  const linkedinProfileId =
-    extractLinkedinProfileId(profile.linkedinUrl || profile.profileUrl || '') ||
-    profile.linkedinProfileId ||
-    '';
   const nowIso = options?.nowIso ?? new Date().toISOString();
   const outreachSequenceStage =
     inferOutreachEnrollmentStageFromLinkedin(profile);
@@ -170,11 +163,12 @@ export const buildOutreachQueuedCreateFields = (
     nowIso,
   });
 
+  // linkedinProfileId lives on Person (dropped from Candidate) — set via
+  // mapArxCandidateToPersonNode, not CandidateCreateInput.
   // startOutreach / stopOutreach default false via candidateFlags defaults —
   // enroll must not flip startOutreach or the sequencer will flood on upload.
   return {
     outreachSequenceStage,
-    ...(linkedinProfileId ? { linkedinProfileId } : {}),
     ...(profile.experimentVariant
       ? { experimentVariant: profile.experimentVariant }
       : {}),

@@ -1,5 +1,6 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useArxCandidateRecordsFromHeadlessContext } from '@/command-menu-item/engine-command/record/arx/hooks/useArxCandidateRecordsFromHeadlessContext';
+import { buildOutreachSelectionPayload } from '@/command-menu-item/engine-command/record/arx/utils/resolve-people-and-candidate-ids-from-records.util';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import axios from 'axios';
 import { useCallback, useState } from 'react';
@@ -29,9 +30,15 @@ export const useArxOutreachSelectionCommand = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const tokenPair = useAtomStateValue(tokenPairState);
-  const { objectMetadataItem, resolveRecordIds } =
+  const { objectMetadataItem, resolveRecords } =
     useArxCandidateRecordsFromHeadlessContext({
-      recordGqlFields: { id: true },
+      recordGqlFields: {
+        id: true,
+        peopleId: true,
+        personId: true,
+        candidateId: true,
+        people: true,
+      },
     });
 
   const execute =
@@ -42,17 +49,15 @@ export const useArxOutreachSelectionCommand = ({
         throw new Error('Authentication required');
       }
 
-      const recordIds = await resolveRecordIds();
+      const records = await resolveRecords();
+      const body = buildOutreachSelectionPayload(
+        records,
+        objectMetadataItem?.nameSingular ?? 'candidate',
+      );
 
-      if (recordIds.length === 0) {
+      if (body.personIds.length === 0 && body.candidateIds.length === 0) {
         throw new Error('Please select at least one record');
       }
-
-      const objectNameSingular = objectMetadataItem?.nameSingular;
-      const body =
-        objectNameSingular === 'person'
-          ? { personIds: recordIds }
-          : { candidateIds: recordIds };
 
       setLoading(true);
 
@@ -84,7 +89,7 @@ export const useArxOutreachSelectionCommand = ({
       endpoint,
       failureMessage,
       objectMetadataItem?.nameSingular,
-      resolveRecordIds,
+      resolveRecords,
       tokenPair,
     ]);
 
