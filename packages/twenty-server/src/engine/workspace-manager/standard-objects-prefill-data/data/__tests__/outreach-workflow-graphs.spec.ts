@@ -287,7 +287,10 @@ describe('GTM outreach workflow graphs', () => {
     };
 
     expect(trigger.settings.eventName).toBe('candidate.upserted');
-    expect(trigger.settings.fields).toEqual(['outreachSequenceStage']);
+    expect(trigger.settings.fields).toEqual([
+      'outreachSequenceStage',
+      'startOutreach',
+    ]);
 
     // Entry-stage allowlist evaluated before a run is created, so the graph never
     // wakes on the stages it stamps itself.
@@ -302,6 +305,18 @@ describe('GTM outreach workflow graphs', () => {
           'MEETING_BOOKED',
         ]),
         stepOutputKey: '{{trigger.properties.after.outreachSequenceStage}}',
+      }),
+      expect.objectContaining({
+        type: 'BOOLEAN',
+        operand: 'IS',
+        value: 'true',
+        stepOutputKey: '{{trigger.properties.after.startOutreach}}',
+      }),
+      expect.objectContaining({
+        type: 'BOOLEAN',
+        operand: 'IS',
+        value: 'false',
+        stepOutputKey: '{{trigger.properties.after.stopOutreach}}',
       }),
     ]);
 
@@ -703,7 +718,6 @@ describe('GTM outreach workflow graphs', () => {
       humanInTheLoop: true,
       whatsappEnabled: true,
       meetingFollowUpEnabled: true,
-      manualTrigger: false,
       checkDeduplicationPerCompany: true,
     });
     expect(
@@ -716,44 +730,53 @@ describe('GTM outreach workflow graphs', () => {
       humanInTheLoop: false,
       whatsappEnabled: false,
       meetingFollowUpEnabled: false,
-      manualTrigger: false,
       checkDeduplicationPerCompany: false,
     });
   });
 
-  it('builds MANUAL single-candidate trigger with payload variable paths', () => {
-    const graph = buildCandidateSequencerGraph({ manualTrigger: true });
+  it('always builds automated candidate.upserted trigger gated by startOutreach', () => {
+    const graph = buildCandidateSequencerGraph({});
     const trigger = graph.trigger as {
       type: string;
       settings: {
-        availability?: {
-          type?: string;
-          objectNameSingular?: string;
+        eventName?: string;
+        fields?: string[];
+        filter?: {
+          stepFilters?: Array<{
+            type?: string;
+            value?: string;
+            stepOutputKey?: string;
+          }>;
         };
-        objectType?: string;
-        isPinned?: boolean;
       };
     };
 
-    expect(trigger.type).toBe('MANUAL');
-    expect(trigger.settings.availability).toEqual({
-      type: 'SINGLE_RECORD',
-      objectNameSingular: 'candidate',
-    });
-    expect(trigger.settings.objectType).toBe('candidate');
-    expect(trigger.settings.isPinned).toBe(true);
+    expect(trigger.type).toBe('DATABASE_EVENT');
+    expect(trigger.settings.eventName).toBe('candidate.upserted');
+    expect(trigger.settings.fields).toEqual([
+      'outreachSequenceStage',
+      'startOutreach',
+    ]);
 
-    const stepsJson = JSON.stringify(graph.steps);
+    const filterTypes = (trigger.settings.filter?.stepFilters ?? []).map(
+      (stepFilter) => stepFilter.type,
+    );
 
-    expect(stepsJson).toContain('{{trigger.payload.outreachSequenceStage}}');
-    expect(stepsJson).toContain('{{trigger.payload.id}}');
-    expect(stepsJson).not.toContain('{{trigger.properties.after.');
-
+    expect(filterTypes).toContain('SELECT');
+    expect(filterTypes).toContain('BOOLEAN');
     expect(
-      inferOutreachSequencerGraphOptionsFromSteps(
-        graph.steps as GraphStep[],
-        graph.trigger,
-      ).manualTrigger,
+      trigger.settings.filter?.stepFilters?.some(
+        (stepFilter) =>
+          stepFilter.stepOutputKey?.includes('startOutreach') &&
+          stepFilter.value === 'true',
+      ),
+    ).toBe(true);
+    expect(
+      trigger.settings.filter?.stepFilters?.some(
+        (stepFilter) =>
+          stepFilter.stepOutputKey?.includes('stopOutreach') &&
+          stepFilter.value === 'false',
+      ),
     ).toBe(true);
   });
 });

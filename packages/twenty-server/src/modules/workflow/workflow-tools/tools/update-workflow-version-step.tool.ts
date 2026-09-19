@@ -38,7 +38,7 @@ export const createUpdateWorkflowVersionStepTool = (
 ) => ({
   name: 'update_workflow_version_step' as const,
   description:
-    'Update an existing step in a workflow version. This modifies the step configuration. Returns a compact validation summary; for the full report with available variable paths, call validate_workflow once after your edits — not after every change.',
+    'Update an existing step in a workflow version. Content-only updates (settings, name) are allowed on ACTIVE versions; adding/removing nodes or changing edges requires a draft.',
   inputSchema: updateWorkflowVersionStepSchema,
   execute: async (parameters: UpdateWorkflowVersionStepToolInput) => {
     let result;

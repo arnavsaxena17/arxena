@@ -837,6 +837,120 @@ export class OutreachCommandController {
     });
   }
 
+  @Post('candidates/start-outreach')
+  async startCandidateOutreach(
+    @Body()
+    body: {
+      candidateIds?: string[];
+      personIds?: string[];
+      projectId?: string;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    const candidateIds = Array.isArray(body?.candidateIds)
+      ? body.candidateIds.filter((id): id is string => typeof id === 'string')
+      : [];
+    const personIds = Array.isArray(body?.personIds)
+      ? body.personIds.filter((id): id is string => typeof id === 'string')
+      : [];
+
+    if (candidateIds.length === 0 && personIds.length === 0) {
+      throw new HttpException(
+        'candidateIds or personIds is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const result =
+        await this.outreachProjectOutreachControlService.startCandidates({
+          workspaceId,
+          candidateIds,
+          personIds,
+          projectId: body?.projectId,
+        });
+
+      return { success: true, ok: true, ...result };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      this.logger.error('Failed to start candidate outreach', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to start candidate outreach',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('candidates/stop-outreach')
+  async stopCandidateOutreachBySelection(
+    @Body()
+    body: {
+      candidateIds?: string[];
+      personIds?: string[];
+      projectId?: string;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    const candidateIds = Array.isArray(body?.candidateIds)
+      ? body.candidateIds.filter((id): id is string => typeof id === 'string')
+      : [];
+    const personIds = Array.isArray(body?.personIds)
+      ? body.personIds.filter((id): id is string => typeof id === 'string')
+      : [];
+
+    if (candidateIds.length === 0 && personIds.length === 0) {
+      throw new HttpException(
+        'candidateIds or personIds is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const result =
+        await this.outreachProjectOutreachControlService.stopCandidates({
+          workspaceId,
+          projectId: body?.projectId,
+          candidateIds,
+          personIds,
+        });
+
+      return { success: true, ok: true, ...result };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      this.logger.error('Failed to stop candidate outreach', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to stop candidate outreach',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Post('projects/:projectId/candidates/stop')
   async stopCandidateOutreach(
     @Param('projectId') projectId: string,

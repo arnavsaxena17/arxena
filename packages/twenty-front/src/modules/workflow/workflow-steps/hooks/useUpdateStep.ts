@@ -8,7 +8,9 @@ export const useUpdateStep = () => {
   const { updateWorkflowVersionStep } = useUpdateWorkflowVersionStep();
 
   const updateStep = async (updatedStep: WorkflowAction) => {
-    const workflowVersionId = await getUpdatableWorkflowVersion();
+    const workflowVersionId = await getUpdatableWorkflowVersion({
+      contentOnly: true,
+    });
 
     const result = await updateWorkflowVersionStep({
       workflowVersionId,

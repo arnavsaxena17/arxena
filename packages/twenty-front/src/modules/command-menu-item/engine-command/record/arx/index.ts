@@ -8,7 +8,11 @@ export { ArxDeleteCandidatesAndPeopleCommand } from './ArxDeleteCandidatesAndPeo
 export { ArxDownloadAsExcelCommand } from './ArxDownloadAsExcelCommand';
 export { ArxDownloadCandidateCVsCommand } from './ArxDownloadCandidateCVsCommand';
 export { ArxDownloadShortlistCommand } from './ArxDownloadShortlistCommand';
-export { ArxFetchContactDetailsCommand, ArxFetchEmailCommand, ArxFetchPhoneCommand } from './ArxFetchContactDetailsCommand';
+export {
+  ArxFetchContactDetailsCommand,
+  ArxFetchEmailCommand,
+  ArxFetchPhoneCommand,
+} from './ArxFetchContactDetailsCommand';
 export {
   ArxFetchLinkedinMessagesCommand,
   ArxFetchLinkedinPostsCommand,
@@ -26,7 +30,9 @@ export { ArxShareChatAndVideoInterviewBasedShortlistCommand } from './ArxShareCh
 export { ArxShareChatBasedShortlistCommand } from './ArxShareChatBasedShortlistCommand';
 export { ArxShareMultipleVideoInterviewLinksCommand } from './ArxShareMultipleVideoInterviewLinksCommand';
 export { ArxStartChatWithCandidatesCommand } from './ArxStartChatWithCandidatesCommand';
+export { ArxStartOutreachCommand } from './ArxStartOutreachCommand';
 export { ArxStopChatWithCandidatesCommand } from './ArxStopChatWithCandidatesCommand';
+export { ArxStopOutreachCommand } from './ArxStopOutreachCommand';
 export { ArxSyncChatsWithWhatsappCommand } from './ArxSyncChatsWithWhatsappCommand';
 export { ArxTranscribeCallCommand } from './ArxTranscribeCallCommand';
 export { ArxUpdateMessagingChannelForCandidatesCommand } from './ArxUpdateMessagingChannelForCandidatesCommand';

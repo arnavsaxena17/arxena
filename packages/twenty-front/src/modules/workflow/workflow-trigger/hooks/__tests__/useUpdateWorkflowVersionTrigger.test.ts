@@ -82,7 +82,9 @@ describe('useUpdateWorkflowVersionTrigger', () => {
       await result.current.updateTrigger(trigger);
     });
 
-    expect(mockGetUpdatableWorkflowVersion).toHaveBeenCalled();
+    expect(mockGetUpdatableWorkflowVersion).toHaveBeenCalledWith({
+      contentOnly: true,
+    });
     expect(mockMutate).toHaveBeenCalledWith(
       expect.objectContaining({
         variables: {

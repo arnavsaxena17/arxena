@@ -16,31 +16,22 @@ const updateWorkflowVersionTriggerSchema = z.object({
 });
 
 export const createUpdateWorkflowVersionTriggerTool = (
-  deps: Pick<WorkflowToolDependencies, 'workflowVersionStepHelpersService'>,
+  deps: Pick<WorkflowToolDependencies, 'workflowVersionStepService'>,
   context: WorkflowToolContext,
 ) => ({
   name: 'update_workflow_version_trigger' as const,
   description:
-    'Update the trigger of a workflow version. This modifies the trigger configuration (e.g., changing trigger type, settings, or conditions).',
+    'Update the trigger of a workflow version. This modifies the trigger configuration (e.g., changing trigger type, settings, or conditions). Content-only updates are allowed on ACTIVE versions; graph changes require a draft.',
   inputSchema: updateWorkflowVersionTriggerSchema,
   execute: async (parameters: UpdateWorkflowVersionTriggerInput) => {
     try {
-      await deps.workflowVersionStepHelpersService.getValidatedDraftWorkflowVersion(
-        {
-          workflowVersionId: parameters.workflowVersionId,
-          workspaceId: context.workspaceId,
-        },
-      );
-
-      await deps.workflowVersionStepHelpersService.updateWorkflowVersionStepsAndTrigger(
+      return await deps.workflowVersionStepService.updateWorkflowVersionTrigger(
         {
           workspaceId: context.workspaceId,
           workflowVersionId: parameters.workflowVersionId,
           trigger: parameters.trigger,
         },
       );
-
-      return parameters.trigger;
     } catch (error) {
       return {
         success: false,

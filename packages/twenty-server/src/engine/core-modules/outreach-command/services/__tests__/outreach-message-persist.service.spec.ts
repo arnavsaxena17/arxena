@@ -497,6 +497,8 @@ describe('OutreachMessagePersistService.findOutreachCandidateForInboundEmail', (
         id: 'cand-1',
         outreachSequenceStage: 'WAITING_REPLY',
         projectId: 'project-1',
+        startOutreach: true,
+        stopOutreach: false,
       });
 
     await expect(
@@ -518,6 +520,8 @@ describe('OutreachMessagePersistService.findOutreachCandidateForInboundEmail', (
         id: 'cand-1',
         outreachSequenceStage: 'WAITING_REPLY',
         projectId: 'project-1',
+        startOutreach: true,
+        stopOutreach: false,
       });
     candidateRepository.find.mockResolvedValueOnce([{ id: 'cand-1' }]);
 

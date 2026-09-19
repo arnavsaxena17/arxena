@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { WorkflowVersionCoreSyncService } from 'src/engine/core-modules/workflow/services/workflow-version-core-sync.service';
 import { type WorkflowVersionWorkspaceEntity } from 'src/modules/workflow/common/standard-objects/workflow-version.workspace-entity';
+import { assertWorkflowVersionAllowsContentUpdate } from 'src/modules/workflow/common/utils/assert-workflow-version-allows-content-update.util';
 import { assertWorkflowVersionIsDraft } from 'src/modules/workflow/common/utils/assert-workflow-version-is-draft.util';
 import { WorkflowCommonWorkspaceService } from 'src/modules/workflow/common/workspace-services/workflow-common.workspace-service';
 import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
@@ -28,6 +29,24 @@ export class WorkflowVersionStepHelpersWorkspaceService {
       });
 
     assertWorkflowVersionIsDraft(workflowVersion);
+
+    return workflowVersion;
+  }
+
+  async getValidatedWorkflowVersionForContentUpdate({
+    workflowVersionId,
+    workspaceId,
+  }: {
+    workflowVersionId: string;
+    workspaceId: string;
+  }): Promise<WorkflowVersionWorkspaceEntity> {
+    const workflowVersion =
+      await this.workflowCommonWorkspaceService.getWorkflowVersionOrFail({
+        workflowVersionId,
+        workspaceId,
+      });
+
+    assertWorkflowVersionAllowsContentUpdate(workflowVersion);
 
     return workflowVersion;
   }

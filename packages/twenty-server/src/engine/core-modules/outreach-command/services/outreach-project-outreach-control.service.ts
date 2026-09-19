@@ -387,18 +387,105 @@ export class OutreachProjectOutreachControlService {
     );
   }
 
+  async startCandidates({
+    workspaceId,
+    candidateIds,
+    personIds,
+    projectId,
+  }: {
+    workspaceId: string;
+    candidateIds?: string[];
+    personIds?: string[];
+    projectId?: string | null;
+  }): Promise<{ startedCandidates: number }> {
+    const uniqueCandidateIds = [
+      ...new Set((candidateIds ?? []).filter(isNonEmptyString)),
+    ];
+    const uniquePersonIds = [
+      ...new Set((personIds ?? []).filter(isNonEmptyString)),
+    ];
+
+    if (uniqueCandidateIds.length === 0 && uniquePersonIds.length === 0) {
+      return { startedCandidates: 0 };
+    }
+
+    const authContext = buildSystemAuthContext(workspaceId);
+    const entryStages = new Set([
+      'QUEUED',
+      'CONNECTION_ACCEPTED',
+      'REPLIED',
+      'MEETING_BOOKED',
+    ]);
+
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const candidateRepository =
+          await this.globalWorkspaceOrmManager.getRepository<
+            CandidateRecord & {
+              peopleId?: string | null;
+              outreachSequenceStage?: string | null;
+              startOutreach?: boolean | null;
+              stopOutreach?: boolean | null;
+              projectId?: string | null;
+            }
+          >(workspaceId, 'candidate', { shouldBypassPermissionChecks: true });
+
+        let candidates =
+          uniqueCandidateIds.length > 0
+            ? await candidateRepository.find({
+                where: { id: In(uniqueCandidateIds) },
+              })
+            : await candidateRepository.find({
+                where: { peopleId: In(uniquePersonIds) },
+              });
+
+        if (isNonEmptyString(projectId)) {
+          candidates = candidates.filter(
+            (candidate) => candidate.projectId === projectId,
+          );
+        }
+
+        let startedCandidates = 0;
+
+        for (const candidate of candidates) {
+          const currentStage = candidate.outreachSequenceStage ?? '';
+          const nextStage = entryStages.has(currentStage)
+            ? currentStage
+            : 'QUEUED';
+
+          await candidateRepository.update(candidate.id, {
+            startOutreach: true,
+            stopOutreach: false,
+            outreachSequenceStage: nextStage,
+          });
+          startedCandidates += 1;
+        }
+
+        return { startedCandidates };
+      },
+      authContext,
+    );
+  }
+
   async stopCandidates({
     workspaceId,
     projectId,
     candidateIds,
+    personIds,
   }: {
     workspaceId: string;
-    projectId: string;
-    candidateIds: string[];
+    projectId?: string | null;
+    candidateIds?: string[];
+    personIds?: string[];
   }): Promise<{ stoppedCandidates: number; stoppedRuns: number }> {
-    const uniqueIds = [...new Set(candidateIds.filter(isNonEmptyString))];
+    const uniqueCandidateIds = [
+      ...new Set((candidateIds ?? []).filter(isNonEmptyString)),
+    ];
+    const uniquePersonIds = [
+      ...new Set((personIds ?? []).filter(isNonEmptyString)),
+    ];
 
-    if (uniqueIds.length === 0) {
+    if (uniqueCandidateIds.length === 0 && uniquePersonIds.length === 0) {
       return { stoppedCandidates: 0, stoppedRuns: 0 };
     }
 
@@ -411,41 +498,56 @@ export class OutreachProjectOutreachControlService {
             CandidateRecord & {
               peopleId?: string | null;
               outreachSequenceStage?: string | null;
+              projectId?: string | null;
             }
           >(workspaceId, 'candidate', { shouldBypassPermissionChecks: true });
 
-        const candidates = await candidateRepository.find({
-          where: {
-            id: In(uniqueIds),
-            projectId: projectId,
-          },
-        });
+        let candidates =
+          uniqueCandidateIds.length > 0
+            ? await candidateRepository.find({
+                where: { id: In(uniqueCandidateIds) },
+              })
+            : await candidateRepository.find({
+                where: { peopleId: In(uniquePersonIds) },
+              });
+
+        if (isNonEmptyString(projectId)) {
+          candidates = candidates.filter(
+            (candidate) => candidate.projectId === projectId,
+          );
+        }
 
         let stoppedCandidates = 0;
         let stoppedRuns = 0;
-        const personIds = new Set<string>();
+        const personIdsToBlock = new Set<string>();
 
         for (const candidate of candidates) {
           await candidateRepository.update(candidate.id, {
             outreachSequenceStage: 'STOPPED',
+            startOutreach: false,
+            stopOutreach: true,
           });
           stoppedCandidates += 1;
 
           if (isNonEmptyString(candidate.peopleId)) {
-            personIds.add(candidate.peopleId);
+            personIdsToBlock.add(candidate.peopleId);
           }
         }
 
-        if (personIds.size > 0) {
+        if (personIdsToBlock.size > 0) {
           const personRepository =
             await this.globalWorkspaceOrmManager.getRepository<
               ObjectLiteral & { id: string; doNotContact?: boolean | null }
             >(workspaceId, 'person', { shouldBypassPermissionChecks: true });
 
           await personRepository.update(
-            { id: In([...personIds]) },
+            { id: In([...personIdsToBlock]) },
             { doNotContact: true },
           );
+        }
+
+        if (candidates.length === 0) {
+          return { stoppedCandidates, stoppedRuns };
         }
 
         const workflowRunRepository =

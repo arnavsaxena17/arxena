@@ -291,6 +291,32 @@ export const getOutreachCommandFieldsData = (
     objectName: 'candidate',
     field: {
       description:
+        'Operator opted this prospect into the Candidate Sequencer. Enroll alone does not start outreach.',
+      icon: 'IconPlayerPlay',
+      label: 'Start Outreach',
+      name: 'startOutreach',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'BOOLEAN',
+      defaultValue: false,
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
+      description:
+        'Operator stopped outreach. Blocks sequencer re-entry on later stage changes and replies.',
+      icon: 'IconPlayerStop',
+      label: 'Stop Outreach',
+      name: 'stopOutreach',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'BOOLEAN',
+      defaultValue: false,
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
+      description:
         'Operator conversation outcome (intent, meeting, not interested) separate from sequence cadence',
       icon: 'IconMessage',
       label: 'Outreach Conversation Stage',

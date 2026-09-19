@@ -53,6 +53,8 @@ type CandidateRecord = ObjectLiteral & {
   phoneNumber?: { primaryPhoneNumber?: string } | null;
   email?: { primaryEmail?: string } | null;
   outreachSequenceStage?: string | null;
+  startOutreach?: boolean | null;
+  stopOutreach?: boolean | null;
   outreachAnalytics?: unknown;
   linkedinFollowUpCount?: number | null;
 };
@@ -468,7 +470,12 @@ export class OutreachMessagePersistService {
         });
         const stage = candidate?.outreachSequenceStage ?? '';
 
-        if (!isNonEmptyString(stage) || STOPPED_OUTREACH_STAGES.has(stage)) {
+        if (
+          !isNonEmptyString(stage) ||
+          STOPPED_OUTREACH_STAGES.has(stage) ||
+          candidate?.stopOutreach === true ||
+          candidate?.startOutreach !== true
+        ) {
           return null;
         }
 

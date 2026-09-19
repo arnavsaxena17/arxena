@@ -25,6 +25,8 @@ export const OUTREACH_WF_FIELD = {
   chatCandidateId: '__FIELD_chatMessage.candidateId__',
   chatCreatedAt: '__FIELD_chatMessage.createdAt__',
   outreachSequenceStage: '__FIELD_candidate.outreachSequenceStage__',
+  startOutreach: '__FIELD_candidate.startOutreach__',
+  stopOutreach: '__FIELD_candidate.stopOutreach__',
   jobCompanyName: '__FIELD_candidate.jobCompanyName__',
   projectId: '__FIELD_candidate.projectId__',
   createdAt: '__FIELD_candidate.createdAt__',
@@ -981,9 +983,14 @@ const OUTREACH_WF_ENTRY_STAGE_FILTER_GROUP_ID =
   '7d3a1b90-5c2e-4f18-9a64-2b8e0c1d3f45';
 const OUTREACH_WF_ENTRY_STAGE_FILTER_ID =
   '8e4b2ca1-6d3f-4a29-8b75-3c9f1d2e4a56';
+const OUTREACH_WF_ENTRY_START_OUTREACH_FILTER_ID =
+  '9f5c3db2-7e40-4b3a-9c86-4d0a2e3f5b67';
+const OUTREACH_WF_ENTRY_STOP_OUTREACH_FILTER_ID =
+  'a06d4ec3-8f51-4c4b-ad97-5e1b3f4a6c78';
 
 // Evaluated against the event payload before a run is created, so noise stamps
-// never enqueue a throwaway run.
+// never enqueue a throwaway run. startOutreach must be true (manual ignite);
+// stopOutreach blocks reply / stage re-entry.
 export const gtmWfEntryStageTriggerFilter = ({
   includeMeetingBooked = true,
 }: {
@@ -1006,6 +1013,26 @@ export const gtmWfEntryStageTriggerFilter = ({
       stepFilterGroupId: OUTREACH_WF_ENTRY_STAGE_FILTER_GROUP_ID,
       positionInStepFilterGroup: 0,
       fieldMetadataId: OUTREACH_WF_FIELD.outreachSequenceStage,
+    },
+    {
+      id: OUTREACH_WF_ENTRY_START_OUTREACH_FILTER_ID,
+      type: 'BOOLEAN',
+      value: 'true',
+      operand: 'IS',
+      stepOutputKey: gtmWfTriggerAfter('startOutreach'),
+      stepFilterGroupId: OUTREACH_WF_ENTRY_STAGE_FILTER_GROUP_ID,
+      positionInStepFilterGroup: 1,
+      fieldMetadataId: OUTREACH_WF_FIELD.startOutreach,
+    },
+    {
+      id: OUTREACH_WF_ENTRY_STOP_OUTREACH_FILTER_ID,
+      type: 'BOOLEAN',
+      value: 'false',
+      operand: 'IS',
+      stepOutputKey: gtmWfTriggerAfter('stopOutreach'),
+      stepFilterGroupId: OUTREACH_WF_ENTRY_STAGE_FILTER_GROUP_ID,
+      positionInStepFilterGroup: 2,
+      fieldMetadataId: OUTREACH_WF_FIELD.stopOutreach,
     },
   ],
 });

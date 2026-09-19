@@ -8,7 +8,6 @@ export type ApplyOutreachSequencerGraphOptionsInput = {
   humanInTheLoop: boolean;
   whatsappEnabled: boolean;
   meetingFollowUpEnabled: boolean;
-  manualTrigger: boolean;
   checkDeduplicationPerCompany: boolean;
 };
 

@@ -75,6 +75,31 @@ describe('useGetUpdatableWorkflowVersionOrThrow', () => {
     expect(workflowVersionId).toEqual('457');
   });
 
+  it('should return active version id for content-only updates', async () => {
+    const mockActiveWorkflow = {
+      ...mockWorkflow,
+      currentVersion: {
+        ...mockWorkflow.currentVersion,
+        status: 'ACTIVE',
+      },
+    } as WorkflowWithCurrentVersion;
+
+    const {
+      useWorkflowWithCurrentVersion,
+    } = require('@/workflow/hooks/useWorkflowWithCurrentVersion');
+    useWorkflowWithCurrentVersion.mockReturnValue(mockActiveWorkflow);
+
+    const { result } = renderHook(() =>
+      useGetUpdatableWorkflowVersionOrThrow(),
+    );
+    const workflowVersionId = await result.current.getUpdatableWorkflowVersion({
+      contentOnly: true,
+    });
+
+    expect(mockCreateDraftFromWorkflowVersion).not.toHaveBeenCalled();
+    expect(workflowVersionId).toEqual('456');
+  });
+
   it('should throw an error when workflow is not found', async () => {
     const {
       useWorkflowWithCurrentVersion,

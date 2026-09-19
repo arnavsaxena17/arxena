@@ -15,15 +15,16 @@ Seeded graphs ship as **DRAFT**. Triggers are CRON / `company.created` / `candid
 | `Harvest — LinkedIn Companies` | CRON | Harvest |
 | `Company Created → ICP People Search` | `company.created` | Enroll-on-company (search + upload-profiles) |
 | `Outreach — Fetch & Save People Profiles` | MANUAL | Manual enroll via upload-profiles |
-| `Outreach — Candidate Sequencer` | `candidate.upserted` (+ entry stages) | Sequencer (QUEUED / accepted / replied / meeting) |
+| `Outreach — Candidate Sequencer` | `candidate.upserted` (+ entry stages + `startOutreach`) | Sequencer (QUEUED / accepted / replied / meeting) |
 
 **Ignite path:**
 
 1. `list_workflows` by the names above (or use browsing-context `outreachWorkflowId` for the Sequencer).
-2. Prefer reuse: activate DRAFT with `activate_workflow_version`. Clone via `create_draft_from_workflow_version` before editing — do not rebuild the Sequencer from scratch.
-3. Enroll: native `upload-profiles` / Candidates with `outreachSequenceStage=QUEUED` → fires Candidate Sequencer.
-4. Harvest and company-created run once ACTIVE — no manual fire.
-5. Finish with `list_workflow_runs`.
+2. Prefer reuse: activate DRAFT with `activate_workflow_version`. Clone via `create_draft_from_workflow_version` before editing — do not rebuild the Sequencer from scratch. Edit Workflow has no Manual trigger toggle; sequencer is always automated.
+3. Enroll: native `upload-profiles` / Candidates with `outreachSequenceStage=QUEUED` and `startOutreach=false` — enroll alone does **not** fire the Sequencer.
+4. Start: record action **Start Outreach** on Candidate or Person (or People tab) sets `startOutreach=true` → Sequencer runs. **Stop Outreach** sets `stopOutreach=true` / stage `STOPPED` and blocks reply re-entry.
+5. Harvest and company-created run once ACTIVE — no manual fire.
+6. Finish with `list_workflow_runs`.
 
 ## When to load this skill
 

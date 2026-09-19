@@ -169,7 +169,9 @@ export const SidePanelWorkflowStepInfo = ({
       return;
     }
 
-    const targetWorkflowVersionId = await getUpdatableWorkflowVersion();
+    const targetWorkflowVersionId = await getUpdatableWorkflowVersion({
+      contentOnly: true,
+    });
 
     await updateWorkflowVersionStep({
       workflowVersionId: targetWorkflowVersionId,

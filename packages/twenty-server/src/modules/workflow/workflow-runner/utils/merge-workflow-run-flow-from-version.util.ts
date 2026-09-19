@@ -41,6 +41,11 @@ export type MergeWorkflowRunFlowFromVersionResult = {
   resetStepIds: string[];
 };
 
+type StepIndex = {
+  byId: Map<string, WorkflowAction>;
+  uniqueByName: Map<string, WorkflowAction>;
+};
+
 export const mergeWorkflowRunFlowFromVersion = ({
   currentState,
   nextTrigger,
@@ -48,28 +53,22 @@ export const mergeWorkflowRunFlowFromVersion = ({
 }: MergeWorkflowRunFlowFromVersionInput): MergeWorkflowRunFlowFromVersionResult => {
   const oldSteps = currentState.flow.steps;
   const oldStepInfos = currentState.stepInfos ?? {};
-
-  const oldStepByName = new Map(
-    oldSteps.map((step) => [normalizeStepName(step.name), step]),
-  );
-  const newStepByName = new Map(
-    nextSteps.map((step) => [normalizeStepName(step.name), step]),
-  );
+  const oldStepIndex = buildStepIndex(oldSteps);
+  const newStepIndex = buildStepIndex(nextSteps);
 
   const oldStepIdToNewStepId = buildOldStepIdToNewStepIdMap({
     oldSteps,
-    newSteps: nextSteps,
+    newStepIndex,
   });
 
-  const contentChangedStepNames = findContentChangedStepNames({
-    oldSteps,
+  const contentChangedStepIds = findContentChangedStepIds({
+    oldStepIndex,
     newSteps: nextSteps,
   });
 
   const resetStepIds = collectStepIdsToReset({
-    contentChangedStepNames,
-    newStepByName,
-    oldStepByName,
+    contentChangedStepIds,
+    oldStepIndex,
     oldStepInfos,
     nextSteps,
   });
@@ -79,11 +78,12 @@ export const mergeWorkflowRunFlowFromVersion = ({
   };
 
   for (const nextStep of nextSteps) {
-    const stepName = normalizeStepName(nextStep.name);
-    const oldStep = oldStepByName.get(stepName);
-    const oldStepId = oldStep?.id;
-    const previousStepInfo = isDefined(oldStepId)
-      ? oldStepInfos[oldStepId]
+    const oldStep = resolveCorrespondingOldStep({
+      nextStep,
+      oldStepIndex,
+    });
+    const previousStepInfo = isDefined(oldStep)
+      ? oldStepInfos[oldStep.id]
       : undefined;
 
     if (resetStepIds.has(nextStep.id)) {
@@ -118,42 +118,86 @@ export const mergeWorkflowRunFlowFromVersion = ({
 
 const normalizeStepName = (name: string): string => name.trim().toLowerCase();
 
+// Prefer stable step ids. Fall back to name only when that name is unique in
+// the graph — duplicate names (e.g. three "Load Candidate") must not collide.
+const buildStepIndex = (steps: WorkflowAction[]): StepIndex => {
+  const byId = new Map(steps.map((step) => [step.id, step]));
+  const countsByName = new Map<string, number>();
+
+  for (const step of steps) {
+    const stepName = normalizeStepName(step.name);
+    countsByName.set(stepName, (countsByName.get(stepName) ?? 0) + 1);
+  }
+
+  const uniqueByName = new Map<string, WorkflowAction>();
+
+  for (const step of steps) {
+    const stepName = normalizeStepName(step.name);
+
+    if (countsByName.get(stepName) === 1) {
+      uniqueByName.set(stepName, step);
+    }
+  }
+
+  return { byId, uniqueByName };
+};
+
+const resolveCorrespondingOldStep = ({
+  nextStep,
+  oldStepIndex,
+}: {
+  nextStep: WorkflowAction;
+  oldStepIndex: StepIndex;
+}): WorkflowAction | undefined => {
+  const byId = oldStepIndex.byId.get(nextStep.id);
+
+  if (isDefined(byId)) {
+    return byId;
+  }
+
+  return oldStepIndex.uniqueByName.get(normalizeStepName(nextStep.name));
+};
+
 const buildOldStepIdToNewStepIdMap = ({
   oldSteps,
-  newSteps,
+  newStepIndex,
 }: {
   oldSteps: WorkflowAction[];
-  newSteps: WorkflowAction[];
+  newStepIndex: StepIndex;
 }): Map<string, string> => {
-  const newStepIdByName = new Map(
-    newSteps.map((step) => [normalizeStepName(step.name), step.id]),
-  );
-
   return oldSteps.reduce<Map<string, string>>((accumulator, oldStep) => {
-    const nextStepId = newStepIdByName.get(normalizeStepName(oldStep.name));
+    const nextStepById = newStepIndex.byId.get(oldStep.id);
 
-    if (isDefined(nextStepId)) {
-      accumulator.set(oldStep.id, nextStepId);
+    if (isDefined(nextStepById)) {
+      accumulator.set(oldStep.id, nextStepById.id);
+
+      return accumulator;
+    }
+
+    const nextStepByName = newStepIndex.uniqueByName.get(
+      normalizeStepName(oldStep.name),
+    );
+
+    if (isDefined(nextStepByName)) {
+      accumulator.set(oldStep.id, nextStepByName.id);
     }
 
     return accumulator;
   }, new Map());
 };
 
-const findContentChangedStepNames = ({
-  oldSteps,
+const findContentChangedStepIds = ({
+  oldStepIndex,
   newSteps,
 }: {
-  oldSteps: WorkflowAction[];
+  oldStepIndex: StepIndex;
   newSteps: WorkflowAction[];
 }): Set<string> => {
-  const oldStepByName = new Map(
-    oldSteps.map((step) => [normalizeStepName(step.name), step]),
-  );
-
   return newSteps.reduce<Set<string>>((accumulator, nextStep) => {
-    const stepName = normalizeStepName(nextStep.name);
-    const oldStep = oldStepByName.get(stepName);
+    const oldStep = resolveCorrespondingOldStep({
+      nextStep,
+      oldStepIndex,
+    });
 
     if (!isDefined(oldStep)) {
       return accumulator;
@@ -164,10 +208,9 @@ const findContentChangedStepNames = ({
     }
 
     if (
-      getStepContentFingerprint(oldStep) !==
-      getStepContentFingerprint(nextStep)
+      getStepContentFingerprint(oldStep) !== getStepContentFingerprint(nextStep)
     ) {
-      accumulator.add(stepName);
+      accumulator.add(nextStep.id);
     }
 
     return accumulator;
@@ -175,30 +218,33 @@ const findContentChangedStepNames = ({
 };
 
 const collectStepIdsToReset = ({
-  contentChangedStepNames,
-  newStepByName,
-  oldStepByName,
+  contentChangedStepIds,
+  oldStepIndex,
   oldStepInfos,
   nextSteps,
 }: {
-  contentChangedStepNames: Set<string>;
-  newStepByName: Map<string, WorkflowAction>;
-  oldStepByName: Map<string, WorkflowAction>;
+  contentChangedStepIds: Set<string>;
+  oldStepIndex: StepIndex;
   oldStepInfos: Record<string, WorkflowRunStepInfo>;
   nextSteps: WorkflowAction[];
 }): Set<string> => {
   const resetStepIds = new Set<string>();
   const nextStepById = new Map(nextSteps.map((step) => [step.id, step]));
 
-  for (const stepName of contentChangedStepNames) {
-    const nextStep = newStepByName.get(stepName);
-    const oldStep = oldStepByName.get(stepName);
+  for (const nextStepId of contentChangedStepIds) {
+    const nextStep = nextStepById.get(nextStepId);
 
-    if (!isDefined(nextStep) || !isDefined(oldStep)) {
+    if (!isDefined(nextStep)) {
       continue;
     }
 
-    const previousStepInfo = oldStepInfos[oldStep.id];
+    const oldStep = resolveCorrespondingOldStep({
+      nextStep,
+      oldStepIndex,
+    });
+    const previousStepInfo = isDefined(oldStep)
+      ? oldStepInfos[oldStep.id]
+      : undefined;
 
     if (!isDefined(previousStepInfo)) {
       continue;
@@ -220,7 +266,7 @@ const collectStepIdsToReset = ({
       hasSuccessfulDownstreamSend({
         startStepId: nextStep.id,
         nextStepById,
-        oldStepByName,
+        oldStepIndex,
         oldStepInfos,
       })
     ) {
@@ -251,11 +297,8 @@ const collectStepIdsToReset = ({
       }
 
       const nextStep = nextStepById.get(nextStepId);
-      const stepName = isDefined(nextStep)
-        ? normalizeStepName(nextStep.name)
-        : undefined;
-      const oldStep = isDefined(stepName)
-        ? oldStepByName.get(stepName)
+      const oldStep = isDefined(nextStep)
+        ? resolveCorrespondingOldStep({ nextStep, oldStepIndex })
         : undefined;
       const previousStepInfo = isDefined(oldStep)
         ? oldStepInfos[oldStep.id]
@@ -281,12 +324,12 @@ const collectStepIdsToReset = ({
 const hasSuccessfulDownstreamSend = ({
   startStepId,
   nextStepById,
-  oldStepByName,
+  oldStepIndex,
   oldStepInfos,
 }: {
   startStepId: string;
   nextStepById: Map<string, WorkflowAction>;
-  oldStepByName: Map<string, WorkflowAction>;
+  oldStepIndex: StepIndex;
   oldStepInfos: Record<string, WorkflowRunStepInfo>;
 }): boolean => {
   const visitedStepIds = new Set<string>();
@@ -314,7 +357,10 @@ const hasSuccessfulDownstreamSend = ({
         continue;
       }
 
-      const oldStep = oldStepByName.get(normalizeStepName(nextStep.name));
+      const oldStep = resolveCorrespondingOldStep({
+        nextStep,
+        oldStepIndex,
+      });
       const previousStepInfo = isDefined(oldStep)
         ? oldStepInfos[oldStep.id]
         : undefined;

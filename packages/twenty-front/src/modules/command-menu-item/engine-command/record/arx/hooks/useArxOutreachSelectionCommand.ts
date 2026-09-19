@@ -14,6 +14,9 @@ type OutreachSelectionCommandResponse = {
     total?: number;
     error?: string;
   }>;
+  startedCandidates?: number;
+  stoppedCandidates?: number;
+  stoppedRuns?: number;
   error?: string;
 };
 

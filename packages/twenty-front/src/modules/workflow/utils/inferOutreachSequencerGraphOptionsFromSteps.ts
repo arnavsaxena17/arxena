@@ -13,13 +13,12 @@ export type OutreachSequencerGraphOptions = {
   humanInTheLoop: boolean;
   whatsappEnabled: boolean;
   meetingFollowUpEnabled: boolean;
-  manualTrigger: boolean;
   checkDeduplicationPerCompany: boolean;
 };
 
 export const inferOutreachSequencerGraphOptionsFromSteps = (
   steps: Array<{ id?: string }> | null | undefined,
-  trigger?: { type?: string } | null,
+  _trigger?: { type?: string } | null,
 ): OutreachSequencerGraphOptions => {
   const stepIds = new Set(
     (steps ?? [])
@@ -40,7 +39,6 @@ export const inferOutreachSequencerGraphOptionsFromSteps = (
     meetingFollowUpEnabled: stepIds.has(
       OUTREACH_SEQUENCER_INFERENCE_STEP_IDS.meetingBookedFind,
     ),
-    manualTrigger: trigger?.type === 'MANUAL',
     checkDeduplicationPerCompany: stepIds.has(
       OUTREACH_SEQUENCER_INFERENCE_STEP_IDS.hasCompanyIf,
     ),

@@ -267,6 +267,84 @@ describe('mergeWorkflowRunFlowFromVersion', () => {
     expect(result.state.flow.steps[0].settings.input.body).toBe('New body');
   });
 
+  it('preserves each duplicate-named step by id instead of collapsing by name', () => {
+    const queuedLoadId = 'bf5db0df-c7ec-4392-8c41-0845300ba790';
+    const acceptLoadId = '0191a76e-bf48-417c-b2e2-7ce97e49edf3';
+    const repliedLoadId = '2ce89d31-aaaa-4fcb-a7d8-17a7736ed045';
+    const sendId = 'c7a1000a-aaaa-4fcb-a7d8-17a7736ed045';
+
+    const buildFindStep = (id: string): WorkflowAction =>
+      ({
+        id,
+        name: 'Load Candidate',
+        type: WorkflowActionType.FIND_RECORDS,
+        valid: true,
+        settings: {
+          input: {
+            objectName: 'candidate',
+            limit: 1,
+          },
+        },
+        nextStepIds: id === queuedLoadId ? [sendId] : [],
+      }) as WorkflowAction;
+
+    const steps = [
+      buildFindStep(queuedLoadId),
+      buildFindStep(acceptLoadId),
+      buildFindStep(repliedLoadId),
+      buildSendStep({
+        id: sendId,
+        name: 'Send LinkedIn connection (no company)',
+        body: 'Connect',
+      }),
+    ];
+
+    const currentState: WorkflowRunState = {
+      flow: {
+        trigger: { type: 'MANUAL', nextStepIds: [queuedLoadId] } as never,
+        steps,
+      },
+      stepInfos: {
+        trigger: { status: StepStatus.SUCCESS, result: {} },
+        [queuedLoadId]: {
+          status: StepStatus.SUCCESS,
+          result: {
+            first: {
+              id: 'candidate-1',
+              linkedinProfileId: 'ACoAAA',
+            },
+          },
+        },
+        [acceptLoadId]: { status: StepStatus.SKIPPED },
+        [repliedLoadId]: { status: StepStatus.SKIPPED },
+        [sendId]: { status: StepStatus.PENDING, pendingReason: 'rate_limit' },
+      },
+    };
+
+    const result = mergeWorkflowRunFlowFromVersion({
+      currentState,
+      nextTrigger: { type: 'MANUAL', nextStepIds: [queuedLoadId] } as never,
+      nextSteps: steps,
+    });
+
+    expect(result.state.stepInfos[queuedLoadId]).toEqual({
+      status: StepStatus.SUCCESS,
+      result: {
+        first: {
+          id: 'candidate-1',
+          linkedinProfileId: 'ACoAAA',
+        },
+      },
+    });
+    expect(result.state.stepInfos[acceptLoadId]?.status).toBe(
+      StepStatus.SKIPPED,
+    );
+    expect(result.state.stepInfos[repliedLoadId]?.status).toBe(
+      StepStatus.SKIPPED,
+    );
+    expect(result.state.stepInfos[sendId]?.status).toBe(StepStatus.PENDING);
+  });
+
   it('does not reopen approve when the LinkedIn send already succeeded', () => {
     const oldApproveId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
     const newApproveId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';

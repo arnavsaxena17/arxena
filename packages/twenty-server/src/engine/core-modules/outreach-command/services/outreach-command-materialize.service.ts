@@ -77,10 +77,26 @@ export class OutreachCommandMaterializeService {
     try {
       const actionTimestampsEvent =
         mapCandidateEventToOutreachActionTimestampsEvent(event);
-      const candidateSnapshot =
-        actionTimestampsEvent !== null
-          ? await this.fetchCandidateMaterializeSnapshot(candidateId, apiToken)
-          : null;
+      const needsCandidateSnapshot =
+        actionTimestampsEvent !== null || event === 'inbound_reply_flush';
+      const candidateSnapshot = needsCandidateSnapshot
+        ? await this.fetchCandidateMaterializeSnapshot(candidateId, apiToken)
+        : null;
+
+      // Stopped / never-started outreach must not stamp REPLIED (avoids sequencer re-entry).
+      if (
+        event === 'inbound_reply_flush' &&
+        classifiedOutreachStage !== 'STOPPED' &&
+        (candidateSnapshot?.stopOutreach === true ||
+          candidateSnapshot?.startOutreach !== true ||
+          candidateSnapshot?.outreachSequenceStage === 'STOPPED')
+      ) {
+        this.logger.log(
+          `Skipping REPLIED stamp for ${candidateId}: startOutreach=${String(candidateSnapshot?.startOutreach)} stopOutreach=${String(candidateSnapshot?.stopOutreach)} stage=${String(candidateSnapshot?.outreachSequenceStage)}`,
+        );
+
+        return;
+      }
 
       const snapshotAnalytics = parseOutreachAnalytics(
         candidateSnapshot?.outreachAnalytics,
@@ -573,6 +589,9 @@ export class OutreachCommandMaterializeService {
     createdAt?: string;
     outreachAnalytics?: unknown;
     projectId?: string | null;
+    outreachSequenceStage?: string | null;
+    startOutreach?: boolean | null;
+    stopOutreach?: boolean | null;
   } | null> {
     try {
       const response = (await this.staticGraphQLService.executeGraphQL(
@@ -584,6 +603,9 @@ export class OutreachCommandMaterializeService {
                 createdAt
                 outreachAnalytics
                 projectId
+                outreachSequenceStage
+                startOutreach
+                stopOutreach
               }
             }
           }
@@ -600,6 +622,9 @@ export class OutreachCommandMaterializeService {
                 createdAt?: string;
                 outreachAnalytics?: unknown;
                 projectId?: string | null;
+                outreachSequenceStage?: string | null;
+                startOutreach?: boolean | null;
+                stopOutreach?: boolean | null;
               };
             }>;
           }

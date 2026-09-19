@@ -47,7 +47,9 @@ export const useUpdateWorkflowVersionTrigger = (instanceId?: string) => {
   });
 
   const updateTrigger = async (updatedTrigger: WorkflowTrigger) => {
-    const workflowVersionId = await getUpdatableWorkflowVersion();
+    const workflowVersionId = await getUpdatableWorkflowVersion({
+      contentOnly: true,
+    });
 
     const { data } = await mutate({
       variables: {

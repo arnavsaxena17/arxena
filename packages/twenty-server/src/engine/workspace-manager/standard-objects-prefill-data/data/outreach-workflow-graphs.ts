@@ -59,7 +59,6 @@ import {
   gtmWfPreferredChannelRouterStep,
   OUTREACH_POST_REPLY_EMAIL_SUBJECT,
   gtmWfLogicFunctionStep,
-  gtmWfManualRecordTrigger,
   gtmWfManualTrigger,
   gtmWfMemberEmail,
   gtmWfMemberSenderProfile,
@@ -71,7 +70,6 @@ import {
   gtmWfSendWhatsappMessageStep,
   gtmWfTriggerAfter,
   gtmWfUpdateRecordStep,
-  rewriteTriggerAfterPathsToPayload,
 } from 'src/engine/workspace-manager/standard-objects-prefill-data/data/outreach-workflow-graph-helpers';
 
 const IDS = {
@@ -267,7 +265,6 @@ export type OutreachSequencerGraphOptions = {
   humanInTheLoop: boolean;
   whatsappEnabled: boolean;
   meetingFollowUpEnabled: boolean;
-  manualTrigger: boolean;
   checkDeduplicationPerCompany: boolean;
 };
 
@@ -277,7 +274,6 @@ export const DEFAULT_OUTREACH_SEQUENCER_GRAPH_OPTIONS: OutreachSequencerGraphOpt
     humanInTheLoop: true,
     whatsappEnabled: true,
     meetingFollowUpEnabled: true,
-    manualTrigger: false,
     checkDeduplicationPerCompany: true,
   };
 
@@ -302,7 +298,7 @@ const hitlOrDraftMessage = ({
 
 export const inferOutreachSequencerGraphOptionsFromSteps = (
   steps: Array<{ id?: string; type?: string }> | null | undefined,
-  trigger?: { type?: string } | null,
+  _trigger?: { type?: string } | null,
 ): OutreachSequencerGraphOptions => {
   const stepIds = new Set(
     (steps ?? [])
@@ -316,7 +312,6 @@ export const inferOutreachSequencerGraphOptionsFromSteps = (
       stepIds.has(IDS.approveFirst) || stepIds.has(IDS.approveReply),
     whatsappEnabled: stepIds.has(IDS.sendReplyWhatsapp),
     meetingFollowUpEnabled: stepIds.has(IDS.meetingBookedFind),
-    manualTrigger: trigger?.type === 'MANUAL',
     checkDeduplicationPerCompany: stepIds.has(IDS.hasCompanyIf),
   };
 };
@@ -2051,7 +2046,6 @@ export const buildCandidateSequencerGraph = (
     humanInTheLoop,
     whatsappEnabled,
     meetingFollowUpEnabled,
-    manualTrigger,
     checkDeduplicationPerCompany,
   } = resolved;
 
@@ -2122,24 +2116,12 @@ export const buildCandidateSequencerGraph = (
       : []),
   ];
 
-  if (manualTrigger) {
-    return {
-      name: 'Outreach — Candidate Sequencer',
-      trigger: gtmWfManualRecordTrigger({
-        name: 'Launch on candidate',
-        objectNameSingular: 'candidate',
-        nextStepIds: [OUTREACH_WF_MEMBER_STEP_ID],
-      }),
-      steps: rewriteTriggerAfterPathsToPayload(steps),
-    };
-  }
-
   return {
     name: 'Outreach — Candidate Sequencer',
     trigger: gtmWfDatabaseEventTrigger({
       name: 'Prospect is Created or Updated',
       eventName: 'candidate.upserted',
-      fields: ['outreachSequenceStage'],
+      fields: ['outreachSequenceStage', 'startOutreach'],
       filter: gtmWfEntryStageTriggerFilter({
         includeMeetingBooked: meetingFollowUpEnabled,
       }),

@@ -30,7 +30,9 @@ import {
   ArxShareChatAndVideoInterviewBasedShortlistCommand,
   ArxShareChatBasedShortlistCommand,
   ArxStartChatWithCandidatesCommand,
+  ArxStartOutreachCommand,
   ArxStopChatWithCandidatesCommand,
+  ArxStopOutreachCommand,
   ArxSyncChatsWithWhatsappCommand,
   ArxTranscribeCallCommand,
   ArxUpdateMessagingChannelForCandidatesCommand,
@@ -302,6 +304,8 @@ export const ENGINE_COMPONENT_KEY_COMPONENT_MAP: Record<
   [EngineComponentKey.ARX_STOP_CHAT_WITH_CANDIDATES]: (
     <ArxStopChatWithCandidatesCommand />
   ),
+  [EngineComponentKey.ARX_START_OUTREACH]: <ArxStartOutreachCommand />,
+  [EngineComponentKey.ARX_STOP_OUTREACH]: <ArxStopOutreachCommand />,
   [EngineComponentKey.ARX_UPDATE_MESSAGING_CHANNEL_FOR_CANDIDATES]: (
     <ArxUpdateMessagingChannelForCandidatesCommand />
   ),

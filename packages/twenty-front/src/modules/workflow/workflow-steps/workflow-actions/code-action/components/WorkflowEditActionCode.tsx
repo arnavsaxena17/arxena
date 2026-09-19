@@ -38,7 +38,11 @@ import { type editor } from 'monaco-editor';
 import { AutoTypings } from 'monaco-editor-auto-typings';
 import { useState } from 'react';
 import { Key } from 'ts-key-enum';
-import { getOutputSchemaFromValue, jsonSchemaToInputSchema, type InputJsonSchema } from 'twenty-shared/logic-function';
+import {
+  getOutputSchemaFromValue,
+  jsonSchemaToInputSchema,
+  type InputJsonSchema,
+} from 'twenty-shared/logic-function';
 import { isDefined } from 'twenty-shared/utils';
 import { getFunctionInputFromInputSchema } from 'twenty-shared/workflow';
 import { IconCode, IconPlayerPlay } from 'twenty-ui/icon';
@@ -274,7 +278,7 @@ export const WorkflowEditActionCode = ({
 
     const inferredJsonSchema = await onChange('sourceHandlerCode')(newCode);
 
-    await getUpdatableWorkflowVersion();
+    await getUpdatableWorkflowVersion({ contentOnly: true });
 
     if (isDefined(inferredJsonSchema)) {
       await handleUpdateFunctionInputSchema(newCode, inferredJsonSchema);

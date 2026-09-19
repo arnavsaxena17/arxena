@@ -321,7 +321,7 @@ export const OutreachPeoplePanel = ({
   const { enrollSelectedPeople, promoteDeferredCandidate } =
     useOutreachEnroll();
   const { isStopping, stopOutreachForCandidates } = useStopOutreach();
-  const { isStarting, isManualTrigger, startSequencerOnCandidateIds } =
+  const { isStarting, startSequencerOnCandidateIds } =
     useStartOutreachSequencerOnCandidates();
   const {
     summary: journeySummary,
@@ -699,16 +699,12 @@ export const OutreachPeoplePanel = ({
       />
       <TooltipIconButton
         title={
-          !isManualTrigger
-            ? 'Start sequencer (enable Manual trigger in Edit Workflow)'
-            : startableCandidateIds.length > 0
-              ? `Start sequencer (${startableCandidateIds.length})`
-              : 'Start sequencer'
+          startableCandidateIds.length > 0
+            ? `Start outreach (${startableCandidateIds.length})`
+            : 'Start outreach'
         }
         Icon={IconPlayerPlay}
-        disabled={
-          startableCandidateIds.length === 0 || isStarting || !isManualTrigger
-        }
+        disabled={startableCandidateIds.length === 0 || isStarting}
         onClick={() => {
           void startSequencerOnCandidateIds(startableCandidateIds);
         }}

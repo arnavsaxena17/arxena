@@ -55,7 +55,9 @@ describe('useUpdateStep', () => {
       await result.current.updateStep(mockStep);
     });
 
-    expect(mockGetUpdatableWorkflowVersion).toHaveBeenCalled();
+    expect(mockGetUpdatableWorkflowVersion).toHaveBeenCalledWith({
+      contentOnly: true,
+    });
     expect(mockUpdateWorkflowVersionStep).toHaveBeenCalledWith({
       workflowVersionId: mockWorkflowVersionId,
       step: mockStep,

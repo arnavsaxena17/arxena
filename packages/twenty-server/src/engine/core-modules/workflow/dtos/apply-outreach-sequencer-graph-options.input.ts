@@ -36,13 +36,6 @@ export class ApplyOutreachSequencerGraphOptionsInput {
 
   @Field(() => Boolean, {
     description:
-      'Use MANUAL single-candidate trigger instead of candidate.upserted',
-    nullable: false,
-  })
-  manualTrigger: boolean;
-
-  @Field(() => Boolean, {
-    description:
       'Skip company sibling dedupe when false; qualify go wires straight to connection note',
     nullable: false,
   })

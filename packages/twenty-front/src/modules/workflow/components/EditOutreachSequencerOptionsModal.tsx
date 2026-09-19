@@ -150,41 +150,9 @@ export const EditOutreachSequencerOptionsModal = ({
           alignment={SectionAlignment.Left}
           fontColor={SectionFontColor.Secondary}
         >
-          {t`Applying rebuilds the Candidate Sequencer draft from the outreach template and discards hand-edits on the draft. Activate when ready.`}
+          {t`Applying rebuilds the Candidate Sequencer draft from the outreach template and discards hand-edits on the draft. Activate when ready. Start Outreach on candidates or people to ignite; replies continue automatically until Stop Outreach.`}
         </Section>
       </StyledSectionContainer>
-      <StyledOptionRow>
-        <Checkbox
-          checked={!options.manualTrigger}
-          onCheckedChange={(value) => {
-            if (value) {
-              setOption('manualTrigger', false);
-            }
-          }}
-        />
-        <StyledOptionText>
-          <StyledOptionLabel>{t`Automated trigger`}</StyledOptionLabel>
-          <StyledOptionHelp>
-            {t`Fires when a candidate is created or updated (outreach sequence stage).`}
-          </StyledOptionHelp>
-        </StyledOptionText>
-      </StyledOptionRow>
-      <StyledOptionRow>
-        <Checkbox
-          checked={options.manualTrigger}
-          onCheckedChange={(value) => {
-            if (value) {
-              setOption('manualTrigger', true);
-            }
-          }}
-        />
-        <StyledOptionText>
-          <StyledOptionLabel>{t`Manual trigger`}</StyledOptionLabel>
-          <StyledOptionHelp>
-            {t`Launch from a candidate record, selected candidates, or Start sequencer on the Outreach People tab.`}
-          </StyledOptionHelp>
-        </StyledOptionText>
-      </StyledOptionRow>
       <StyledOptionRow>
         <Checkbox
           checked={options.useLlmConnectionNote}

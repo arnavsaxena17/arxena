@@ -7,6 +7,8 @@ import {
   WorkflowVersionStepException,
   WorkflowVersionStepExceptionCode,
 } from 'src/modules/workflow/common/exceptions/workflow-version-step.exception';
+import { assertWorkflowStepIsContentOnlyUpdate } from 'src/modules/workflow/common/utils/assert-workflow-step-is-content-only-update.util';
+import { isPublishedWorkflowVersionStatus } from 'src/modules/workflow/common/utils/assert-workflow-version-allows-content-update.util';
 import { WorkflowSchemaWorkspaceService } from 'src/modules/workflow/workflow-builder/workflow-schema/workflow-schema.workspace-service';
 import { WorkflowVersionStepHelpersWorkspaceService } from 'src/modules/workflow/workflow-builder/workflow-version-step/workflow-version-step-helpers.workspace-service';
 import { WorkflowVersionStepOperationsWorkspaceService } from 'src/modules/workflow/workflow-builder/workflow-version-step/workflow-version-step-operations.workspace-service';
@@ -30,7 +32,7 @@ export class WorkflowVersionStepUpdateWorkspaceService {
     step: WorkflowAction;
   }): Promise<WorkflowActionDTO> {
     const workflowVersion =
-      await this.workflowVersionStepHelpersWorkspaceService.getValidatedDraftWorkflowVersion(
+      await this.workflowVersionStepHelpersWorkspaceService.getValidatedWorkflowVersionForContentUpdate(
         {
           workflowVersionId,
           workspaceId,
@@ -53,6 +55,13 @@ export class WorkflowVersionStepUpdateWorkspaceService {
         'Step not found',
         WorkflowVersionStepExceptionCode.NOT_FOUND,
       );
+    }
+
+    if (isPublishedWorkflowVersionStatus(workflowVersion.status)) {
+      assertWorkflowStepIsContentOnlyUpdate({
+        existingStep,
+        updatedStep: step,
+      });
     }
 
     const isStepTypeChanged = existingStep.type !== step.type;

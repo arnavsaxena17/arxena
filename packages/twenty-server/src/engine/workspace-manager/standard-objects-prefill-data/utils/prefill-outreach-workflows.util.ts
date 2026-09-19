@@ -790,6 +790,18 @@ export const prefillOutreachWorkflows = async ({
     objectName: 'candidate',
     fieldNames: ['outreachSequenceStage'],
   });
+  const startOutreachFieldId = await loadFieldMetadataId({
+    entityManager,
+    workspaceId,
+    objectName: 'candidate',
+    fieldNames: ['startOutreach'],
+  });
+  const stopOutreachFieldId = await loadFieldMetadataId({
+    entityManager,
+    workspaceId,
+    objectName: 'candidate',
+    fieldNames: ['stopOutreach'],
+  });
   const jobCompanyNameFieldId = await loadFieldMetadataId({
     entityManager,
     workspaceId,
@@ -837,6 +849,8 @@ export const prefillOutreachWorkflows = async ({
     [OUTREACH_WF_HARVEST_PROJECT_ID]: harvestProjectId,
     [OUTREACH_WF_FIELD.candidateId]: candidateIdFieldId,
     [OUTREACH_WF_FIELD.outreachSequenceStage]: outreachSequenceStageFieldId,
+    [OUTREACH_WF_FIELD.startOutreach]: startOutreachFieldId,
+    [OUTREACH_WF_FIELD.stopOutreach]: stopOutreachFieldId,
     [OUTREACH_WF_FIELD.jobCompanyName]: jobCompanyNameFieldId,
     [OUTREACH_WF_FIELD.projectId]: projectIdFieldId,
     [OUTREACH_WF_FIELD.createdAt]: createdAtFieldId,
