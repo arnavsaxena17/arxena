@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UserProfile } from 'twenty-shared';
+import { PersonCandidateDraft } from 'twenty-shared';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 
 export interface TransformationContext {
@@ -21,13 +21,13 @@ export abstract class BaseDataSourceTransformerService {
   abstract transformToUserProfile(
     candidateData: any,
     context: TransformationContext,
-  ): UserProfile;
+  ): PersonCandidateDraft;
 
   abstract getDataSourceIdentifier(): string;
   protected createBaseUserProfile(
     candidateData: any,
     context: TransformationContext,
-  ): UserProfile {
+  ): PersonCandidateDraft {
     // Use existing uniqueStringKey if available, otherwise generate one
     const uniqueStringKey =
       candidateData.uniqueStringKey ||
@@ -106,11 +106,11 @@ export abstract class BaseDataSourceTransformerService {
       displayPicture: null,
       campaign: context.dataSource,
       source: context.dataSource,
-    } as unknown as UserProfile;
+    } as unknown as PersonCandidateDraft;
   }
   protected processNameData(
     candidateData: any,
-    userProfile: UserProfile,
+    userProfile: PersonCandidateDraft,
   ): void {
     const fullName = this.extractFullName(candidateData);
     const nameInfo = this.dataProcessingUtils.processName(fullName);
@@ -125,7 +125,7 @@ export abstract class BaseDataSourceTransformerService {
 
   protected processContactData(
     candidateData: any,
-    userProfile: UserProfile,
+    userProfile: PersonCandidateDraft,
   ): void {
     const emailInput =
       candidateData.email_address ||
@@ -161,7 +161,7 @@ export abstract class BaseDataSourceTransformerService {
 
   protected processProfileData(
     candidateData: any,
-    userProfile: UserProfile,
+    userProfile: PersonCandidateDraft,
     dataSource: string,
   ): void {
     const profileUrl = candidateData.profileUrl || '';
@@ -176,7 +176,7 @@ export abstract class BaseDataSourceTransformerService {
    */
   protected processLocationData(
     candidateData: any,
-    userProfile: UserProfile,
+    userProfile: PersonCandidateDraft,
   ): void {
     const locationData =
       candidateData.location || candidateData.currentLocation || '';
@@ -211,7 +211,7 @@ export abstract class BaseDataSourceTransformerService {
    */
   protected processSkillsData(
     candidateData: any,
-    userProfile: UserProfile,
+    userProfile: PersonCandidateDraft,
   ): void {
     const skillsInput = candidateData.skills || candidateData.keySkills || '';
     if (skillsInput) {
@@ -226,7 +226,7 @@ export abstract class BaseDataSourceTransformerService {
    */
   protected processExperienceData(
     candidateData: any,
-    userProfile: UserProfile,
+    userProfile: PersonCandidateDraft,
   ): void {
     const experienceData =
       candidateData.experience || candidateData.workExp || '';
@@ -318,7 +318,7 @@ export abstract class BaseDataSourceTransformerService {
    */
   protected processEducationData(
     candidateData: any,
-    userProfile: UserProfile,
+    userProfile: PersonCandidateDraft,
   ): void {
     const educationData =
       candidateData.education || candidateData.educationDetails || '';
@@ -394,7 +394,7 @@ export abstract class BaseDataSourceTransformerService {
   /**
    * Calculate experience statistics
    */
-  protected calculateExperienceStats(userProfile: UserProfile): void {
+  protected calculateExperienceStats(userProfile: PersonCandidateDraft): void {
     const experience = userProfile.experience;
 
     if (!experience || experience.length === 0) {
@@ -423,7 +423,7 @@ export abstract class BaseDataSourceTransformerService {
    */
   protected processSalaryData(
     candidateData: any,
-    userProfile: UserProfile,
+    userProfile: PersonCandidateDraft,
   ): void {
     const salaryData =
       candidateData.salary ||
@@ -442,12 +442,12 @@ export abstract class BaseDataSourceTransformerService {
    * Add event to job process - utility method to reduce code duplication
    */
   protected addProjectProcessEvent(
-    userProfile: UserProfile,
+    userProfile: PersonCandidateDraft,
     type: string,
     value: any,
   ): void {
     if (value !== null && value !== undefined && value !== '') {
-      // Note: UserProfile job_process doesn't have events array, so we'll store in a custom field
+      // Note: PersonCandidateDraft job_process doesn't have events array, so we'll store in a custom field
       if (!userProfile.jobProcessEvents) {
         userProfile.jobProcessEvents = [];
       }
@@ -462,7 +462,7 @@ export abstract class BaseDataSourceTransformerService {
   /**
    * Set basic job information - utility method
    */
-  protected setJobInfo(candidateData: any, userProfile: UserProfile): void {
+  protected setJobInfo(candidateData: any, userProfile: PersonCandidateDraft): void {
     const jobTitle =
       candidateData.jobTitle ||
       candidateData.current_designation ||
@@ -491,7 +491,7 @@ export abstract class BaseDataSourceTransformerService {
    */
   protected processIndustryData(
     candidateData: any,
-    userProfile: UserProfile,
+    userProfile: PersonCandidateDraft,
   ): void {
     const industry = candidateData.industry;
     if (industry) {

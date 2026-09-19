@@ -5,13 +5,13 @@ import { RightDrawerPages } from '@/ui/layout/right-drawer/types/RightDrawerPage
 import { IconMessage } from 'twenty-ui/icon';
 import { useCallback } from 'react';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
-import type { TransformedCandidateForTable } from 'twenty-shared/arx';
+import type { CandidateTableRow } from 'twenty-shared/arx';
 
 export type OpenCandidateChatDrawerParams = {
   candidateId: string;
   displayName?: string;
   /** When set, upsert into searchResultsState before opening (org-chart / ephemeral rows). */
-  seedRow?: TransformedCandidateForTable | Record<string, unknown>;
+  seedRow?: CandidateTableRow | Record<string, unknown>;
 };
 
 export const useOpenCandidateChatDrawer = () => {
@@ -30,7 +30,7 @@ export const useOpenCandidateChatDrawer = () => {
           const nextRow = {
             ...seedRow,
             id: rowId,
-          } as TransformedCandidateForTable;
+          } as CandidateTableRow;
           const without = prev.filter((row) => row.id !== rowId);
           return [nextRow, ...without];
         });

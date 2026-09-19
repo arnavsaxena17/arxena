@@ -87,7 +87,7 @@ describe('buildOutreachSalesChatDraftPrompt', () => {
     });
 
     expect(withTools).toContain('CANDIDATE TOOL CALLS');
-    expect(withTools).toContain('update_one_candidate');
+    expect(withTools).toContain('update_one_person');
     expect(withTools).toContain('Candidate id: candidate-1');
     expect(withTools).toContain('Preferred channel to stamp: EMAIL');
     expect(withTools).toContain(

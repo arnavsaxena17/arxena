@@ -96,6 +96,24 @@ export const buildMissingPersonPatch = (
   assignIfMissing(patch, existing, 'phones', incoming.phones);
   assignIfMissing(patch, existing, 'linkedinLink', incoming.linkedinLink);
   assignIfMissing(patch, existing, 'jobTitle', incoming.jobTitle);
+  assignIfMissing(patch, existing, 'jobCompanyName', incoming.jobCompanyName);
+  assignIfMissing(patch, existing, 'locationName', incoming.locationName);
+  assignIfMissing(
+    patch,
+    existing,
+    'linkedinProfileId',
+    incoming.linkedinProfileId,
+  );
+  assignIfMissing(patch, existing, 'hiringNaukriUrl', incoming.hiringNaukriUrl);
+  assignIfMissing(patch, existing, 'resdexNaukriUrl', incoming.resdexNaukriUrl);
+  assignIfMissing(patch, existing, 'linkedinProfile', incoming.linkedinProfile);
+  assignIfMissing(patch, existing, 'linkedinPosts', incoming.linkedinPosts);
+  assignIfMissing(
+    patch,
+    existing,
+    'outreachPreferredChannel',
+    incoming.outreachPreferredChannel,
+  );
   assignIfMissing(patch, existing, 'avatarUrl', incoming.avatarUrl);
   assignIfMissing(patch, existing, 'displayPicture', incoming.displayPicture);
   assignIfMissing(patch, existing, 'companyId', incoming.companyId);
@@ -112,23 +130,12 @@ export const buildMissingCandidatePatch = (
   }
   const patch: Record<string, unknown> = {};
 
+  // Membership / project-scoped only — identity patches go to Person
   assignIfMissing(patch, existing, 'name', incoming.name);
-  assignIfMissing(patch, existing, 'email', incoming.email);
-  assignIfMissing(patch, existing, 'phoneNumber', incoming.phoneNumber);
-  assignIfMissing(patch, existing, 'linkedinUrl', incoming.linkedinUrl);
-  assignIfMissing(
-    patch,
-    existing,
-    'linkedinProfileId',
-    incoming.linkedinProfileId,
-  );
-  assignIfMissing(patch, existing, 'hiringNaukriUrl', incoming.hiringNaukriUrl);
-  assignIfMissing(patch, existing, 'resdexNaukriUrl', incoming.resdexNaukriUrl);
-  assignIfMissing(patch, existing, 'jobTitle', incoming.jobTitle);
-  assignIfMissing(patch, existing, 'jobCompanyName', incoming.jobCompanyName);
-  assignIfMissing(patch, existing, 'displayPicture', incoming.displayPicture);
-  assignIfMissing(patch, existing, 'avatarUrl', incoming.avatarUrl);
   assignIfMissing(patch, existing, 'peopleId', incoming.peopleId);
+  assignIfMissing(patch, existing, 'campaign', incoming.campaign);
+  assignIfMissing(patch, existing, 'source', incoming.source);
+  assignIfMissing(patch, existing, 'messagingChannel', incoming.messagingChannel);
 
   return patch;
 };

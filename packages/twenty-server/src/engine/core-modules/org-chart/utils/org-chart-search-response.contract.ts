@@ -65,7 +65,7 @@ function requireStringArray(obj: Record<string, unknown>, key: string): string[]
   return v as string[];
 }
 
-/** Each item is an opaque object (TransformedCandidateForTable-like). */
+/** Each item is an opaque object (CandidateTableRow-like). */
 function assertOrgChartSearchItemRows(items: unknown[]): void {
   for (let i = 0; i < items.length; i += 1) {
     const row = items[i];

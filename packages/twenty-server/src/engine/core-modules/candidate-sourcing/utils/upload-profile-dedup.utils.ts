@@ -1,4 +1,4 @@
-import { UserProfile } from 'twenty-shared';
+import { PersonCandidateDraft } from 'twenty-shared';
 
 import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
@@ -32,7 +32,7 @@ export const normalizeUrlForDedup = (raw: string): string => {
   }
 };
 
-type LooseProfile = UserProfile | Record<string, unknown>;
+type LooseProfile = PersonCandidateDraft | Record<string, unknown>;
 
 export const extractLinkedinIdentityKey = (value: unknown): string => {
   return extractLinkedinProfileId(value).trim().toLowerCase();

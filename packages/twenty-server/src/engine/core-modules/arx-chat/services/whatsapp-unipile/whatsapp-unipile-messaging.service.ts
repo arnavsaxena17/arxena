@@ -24,9 +24,7 @@ export class WhatsappUnipileMessagingService {
   private accessToken: string;
 
   private resolveCandidatePrimaryPhone(candidate: CandidateNode): string | undefined {
-    const fromPerson = candidate?.people?.phones?.primaryPhoneNumber;
-    const fromCandidate = candidate?.phoneNumber?.primaryPhoneNumber;
-    const raw = fromPerson || fromCandidate;
+    const raw = candidate?.people?.phones?.primaryPhoneNumber;
     const trimmed = raw?.trim();
     return trimmed || undefined;
   }

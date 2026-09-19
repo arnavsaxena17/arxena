@@ -12,8 +12,6 @@ import { REACT_APP_SERVER_BASE_URL } from '~/config';
 export type OutreachProjectCandidateRecord = {
   id: string;
   name?: string;
-  jobTitle?: string | null;
-  jobCompanyName?: string | null;
   campaign?: string | null;
   projectId?: string | null;
   status?: string | null;
@@ -24,11 +22,20 @@ export type OutreachProjectCandidateRecord = {
   linkedinFollowUpCount?: number | null;
   outreachAnalytics?: unknown;
   experimentVariant?: string | null;
-  linkedinUrl?: { primaryLinkUrl?: string; primaryLinkLabel?: string } | null;
-  email?: { primaryEmail?: string } | null;
   peopleId?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
+  people?: {
+    id?: string;
+    jobTitle?: string | null;
+    jobCompanyName?: string | null;
+    locationName?: string | null;
+    emails?: { primaryEmail?: string } | null;
+    linkedinLink?: {
+      primaryLinkUrl?: string;
+      primaryLinkLabel?: string;
+    } | null;
+  } | null;
   chatMessages?: {
     edges?: Array<{
       node?: {

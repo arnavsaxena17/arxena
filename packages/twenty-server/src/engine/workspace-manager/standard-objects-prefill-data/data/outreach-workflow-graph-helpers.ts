@@ -25,9 +25,12 @@ export const OUTREACH_WF_FIELD = {
   chatCandidateId: '__FIELD_chatMessage.candidateId__',
   chatCreatedAt: '__FIELD_chatMessage.createdAt__',
   outreachSequenceStage: '__FIELD_candidate.outreachSequenceStage__',
-  startOutreach: '__FIELD_candidate.startOutreach__',
-  stopOutreach: '__FIELD_candidate.stopOutreach__',
-  jobCompanyName: '__FIELD_candidate.jobCompanyName__',
+  candidateFlags: '__FIELD_candidate.candidateFlags__',
+  // FIND Person filter metadata (identity lives on people, not candidate)
+  jobCompanyName: '__FIELD_person.jobCompanyName__',
+  peopleJobCompanyName: 'people.jobCompanyName',
+  peopleLinkedinProfileId: 'people.linkedinProfileId',
+  peopleJobTitle: 'people.jobTitle',
   projectId: '__FIELD_candidate.projectId__',
   createdAt: '__FIELD_candidate.createdAt__',
 } as const;
@@ -262,8 +265,8 @@ export const gtmWfFormDetailsTemplate = ({
 }): string =>
   [
     `Contact: ${gtmWfFindField(findId, 'name')}`,
-    `Title: ${gtmWfFindField(findId, 'jobTitle')}`,
-    `Company: ${gtmWfFindField(findId, 'jobCompanyName')}`,
+    `Title: ${gtmWfFindField(findId, OUTREACH_WF_FIELD.peopleJobTitle)}`,
+    `Company: ${gtmWfFindField(findId, OUTREACH_WF_FIELD.peopleJobCompanyName)}`,
     ...(draftStepId ? [`Draft: {{${draftStepId}.message}}`] : []),
     ...(extra ?? []),
   ].join(' | ');
@@ -989,8 +992,8 @@ const OUTREACH_WF_ENTRY_STOP_OUTREACH_FILTER_ID =
   'a06d4ec3-8f51-4c4b-ad97-5e1b3f4a6c78';
 
 // Evaluated against the event payload before a run is created, so noise stamps
-// never enqueue a throwaway run. startOutreach must be true (manual ignite);
-// stopOutreach blocks reply / stage re-entry.
+// never enqueue a throwaway run. startOutreach / stopOutreach live in
+// candidateFlags (same JSON as startChat), nested under the after payload.
 export const gtmWfEntryStageTriggerFilter = ({
   includeMeetingBooked = true,
 }: {
@@ -1019,20 +1022,20 @@ export const gtmWfEntryStageTriggerFilter = ({
       type: 'BOOLEAN',
       value: 'true',
       operand: 'IS',
-      stepOutputKey: gtmWfTriggerAfter('startOutreach'),
+      stepOutputKey: gtmWfTriggerAfter('candidateFlags.startOutreach'),
       stepFilterGroupId: OUTREACH_WF_ENTRY_STAGE_FILTER_GROUP_ID,
       positionInStepFilterGroup: 1,
-      fieldMetadataId: OUTREACH_WF_FIELD.startOutreach,
+      fieldMetadataId: OUTREACH_WF_FIELD.candidateFlags,
     },
     {
       id: OUTREACH_WF_ENTRY_STOP_OUTREACH_FILTER_ID,
       type: 'BOOLEAN',
       value: 'false',
       operand: 'IS',
-      stepOutputKey: gtmWfTriggerAfter('stopOutreach'),
+      stepOutputKey: gtmWfTriggerAfter('candidateFlags.stopOutreach'),
       stepFilterGroupId: OUTREACH_WF_ENTRY_STAGE_FILTER_GROUP_ID,
       positionInStepFilterGroup: 2,
-      fieldMetadataId: OUTREACH_WF_FIELD.stopOutreach,
+      fieldMetadataId: OUTREACH_WF_FIELD.candidateFlags,
     },
   ],
 });

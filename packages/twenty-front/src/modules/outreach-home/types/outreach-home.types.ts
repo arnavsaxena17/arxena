@@ -79,6 +79,7 @@ export type OutreachPersonRow = {
   /** Active outreach workflow run status (RUNNING, STOPPED, …). */
   workflowRunStatus?: string | null;
   email: string;
+  locationName?: string;
   connectionDegree?: number;
   personaPriorityScore?: number;
   doNotContact?: boolean;

@@ -62,8 +62,7 @@ export const buildSubstitutedCandidateSequencerGraph = ({
   fieldMetadataIds: {
     candidateId: string;
     outreachSequenceStage: string;
-    startOutreach: string;
-    stopOutreach: string;
+    candidateFlags: string;
     jobCompanyName: string;
     projectId: string;
     createdAt: string;
@@ -89,8 +88,7 @@ export const buildSubstitutedCandidateSequencerGraph = ({
     [OUTREACH_WF_FIELD.candidateId]: fieldMetadataIds.candidateId,
     [OUTREACH_WF_FIELD.outreachSequenceStage]:
       fieldMetadataIds.outreachSequenceStage,
-    [OUTREACH_WF_FIELD.startOutreach]: fieldMetadataIds.startOutreach,
-    [OUTREACH_WF_FIELD.stopOutreach]: fieldMetadataIds.stopOutreach,
+    [OUTREACH_WF_FIELD.candidateFlags]: fieldMetadataIds.candidateFlags,
     [OUTREACH_WF_FIELD.jobCompanyName]: fieldMetadataIds.jobCompanyName,
     [OUTREACH_WF_FIELD.projectId]: fieldMetadataIds.projectId,
     [OUTREACH_WF_FIELD.createdAt]: fieldMetadataIds.createdAt,

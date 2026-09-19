@@ -28,7 +28,7 @@ import { PythonQueryGenerationService } from 'src/engine/core-modules/candidate-
 import { ResultValidationService } from 'src/engine/core-modules/candidate-search/services/result-validation.service';
 import { extractApiToken } from 'src/engine/core-modules/candidate-search/utils/auth.utils';
 import { CandidateDataService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-data.service';
-import { TransformedCandidateForTable } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
+import { CandidateTableRow } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { LinkedinXrayTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-xray-transformer.service';
 import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-sourcing/services/orgchart-progress-redis.service';
 import { linkedInPeopleSearchResultMatchesTargetCompany } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-orgchart-company-match.util';
@@ -66,7 +66,7 @@ import { OrgChartS3Service } from './orgchart-s3.service';
 import { PythonOrgChartService } from './python-org-chart.service';
 
 type OrgChartBuildCandidateRow =
-  | TransformedCandidateForTable
+  | CandidateTableRow
   | Record<string, unknown>;
 type OrgchartSearchType = 'classic' | 'sales_navigator' | 'recruiter';
 const APIFY_ORG_INTELLIGENCE_SOURCE_TAG = 'apify-org-intelligence';
@@ -480,7 +480,7 @@ export class OrgChartBuildService {
     searchType: OrgchartSearchType;
     canonicalCompanyLinkedinUrl?: string;
   }): Promise<{
-    items: TransformedCandidateForTable[];
+    items: CandidateTableRow[];
     itemCount: number;
     isCached: false;
     cacheSource: 'none';
@@ -902,7 +902,7 @@ export class OrgChartBuildService {
         stdGrade: body.stdGrade,
         selectedNodeStdScopes: body.selectedNodeStdScopes,
       },
-    ) as TransformedCandidateForTable[];
+    ) as CandidateTableRow[];
 
     return {
       items: scopedItems,
@@ -933,7 +933,7 @@ export class OrgChartBuildService {
     jobTitles: string[];
     canonicalCompanyLinkedinUrl?: string;
   }): Promise<{
-    items: TransformedCandidateForTable[];
+    items: CandidateTableRow[];
     itemCount: number;
     isCached: false;
     cacheSource: 'none';
@@ -1054,7 +1054,7 @@ export class OrgChartBuildService {
     const APOLLO_MAX_RECORDS = 1000;
     const APOLLO_MAX_PAGES = Math.ceil(APOLLO_MAX_RECORDS / APOLLO_PER_PAGE);
 
-    const merged: TransformedCandidateForTable[] = [];
+    const merged: CandidateTableRow[] = [];
     const requestIdForCache = args.requestId?.trim() ?? undefined;
     const s3PersistKey =
       args.companyId && args.resolvedCompanyName
@@ -1314,7 +1314,7 @@ export class OrgChartBuildService {
         stdGrade: args.body.stdGrade,
         selectedNodeStdScopes: args.body.selectedNodeStdScopes,
       },
-    ) as TransformedCandidateForTable[];
+    ) as CandidateTableRow[];
 
     return {
       items: scopedItems,
@@ -3600,7 +3600,7 @@ export class OrgChartBuildService {
     const apifyStrategyLabel = 'Apify company employees';
     let apifyReportedTotalProfiles: number | undefined;
 
-    let items: TransformedCandidateForTable[] = [];
+    let items: CandidateTableRow[] = [];
 
     try {
       items =

@@ -198,8 +198,8 @@ const mapOutreachPersonToDataTableRow = (
     headline: person.title,
     company: person.companyName,
     jobCompanyName: person.companyName,
-    location: '',
-    locationName: '',
+    location: person.locationName ?? '',
+    locationName: person.locationName ?? '',
     linkedinUrl: linkedinUrl
       ? { primaryLinkUrl: linkedinUrl }
       : { primaryLinkUrl: '' },

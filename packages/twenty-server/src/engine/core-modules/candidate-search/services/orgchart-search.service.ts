@@ -8,7 +8,7 @@ import { OrgChartIntentService } from 'src/engine/core-modules/candidate-search/
 import { LinkedInRecruiterPeopleTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-recruiter-people-transformer.service';
 import {
   LinkedInSearchTransformerService,
-  type TransformedCandidateForTable,
+  type CandidateTableRow,
 } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-sourcing/services/orgchart-progress-redis.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
@@ -75,7 +75,7 @@ import {
 } from './orgchart-linkedin-query-router.service';
 import { SearchExecutionService } from './search-execution.service';
 
-type OrgChartCandidateInput = TransformedCandidateForTable | Record<string, unknown>;
+type OrgChartCandidateInput = CandidateTableRow | Record<string, unknown>;
 
 type StandardizedOrgChartPerson = {
   full_name: string;
@@ -765,7 +765,7 @@ export class OrgChartSearchService {
   transformUnipileRawItemsToOrgChartCandidates(
     items: LinkedInSearchResult[],
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
-  ): TransformedCandidateForTable[] {
+  ): CandidateTableRow[] {
     if (!Array.isArray(items) || items.length === 0) {
       return [];
     }

@@ -147,7 +147,7 @@ export interface WhatsappMessageJobData {
 }
 
 export interface ProcessCandidatesJobData {
-  data: UserProfile[];
+  data: PersonCandidateDraft[];
   rawData?: any[];
   dataSource?: string;
   projectId: string;
@@ -581,8 +581,8 @@ interface SocialProfiles {
   linkedin: string;
 }
 
-export type TransformedCandidateForTable = Omit<
-  UserProfile,
+export type CandidateTableRow = Omit<
+  PersonCandidateDraft,
   'phoneNumber' | 'emailAddress' | 'linkedinUrl'
 > & {
   // DataTable UI-specific fields
@@ -651,7 +651,7 @@ export type TransformedCandidateForTable = Omit<
   createdAt: string;
 };
 
-export interface UserProfile {
+export interface PersonCandidateDraft {
   // Basic profile information
   id: string | null;
   names: Name;
@@ -800,83 +800,20 @@ export interface UserProfile {
 
 // Define the onePersonObject interface
 
-export interface ArxenaCandidateNode {
+export interface CandidateCreateInput {
   name: string;
   candidateFlags?: CandidateFlags;
-  jobTitle: string;
-  jobCompanyName: string;
-  phoneNumber: { primaryPhoneNumber: string };
-  email: { primaryEmail: any };
   campaign: string;
   source: string;
-  uniqueStringKey: string;
-  hiringNaukriUrl?: { primaryLinkLabel: string; primaryLinkUrl: string };
-  resdexNaukriUrl?: { primaryLinkLabel: string; primaryLinkUrl: string };
-  linkedinUrl?: { primaryLinkLabel: string; primaryLinkUrl: string };
-  displayPicture: { primaryLinkLabel: string; primaryLinkUrl: string };
-  avatarUrl?: string;
   projectId: string;
   peopleId: string;
-  linkedinProfileId?: string;
   outreachSequenceStage?: string;
   outreachConversationStage?: string;
   messagingChannel: string;
   otherFields?: Record<string, unknown>;
 }
 
-export interface ArxenaJobCandidateNode {
-  id?: string;
-  lastActive?: DateTimeField;
-  lastUpdated?: DateTimeField;
-  campaignName?: string;
-  profileUrl: { primaryLinkLabel: string; primaryLinkUrl: string };
-  displayPicture: { primaryLinkLabel: string; primaryLinkUrl: string };
-  educationUgYear?: number;
-  educationUgSpecialization?: string;
-  educationUgCourse?: string;
-  birthDate?: string;
-  age?: number;
-
-  inferredSalary?: number;
-  gender?: string;
-  inferredYearsExperience?: string;
-  homeTown?: string;
-
-  ugInstituteName: string;
-  ugGraduationYear: number;
-  pgGradudationDegree: string;
-  ugGraduationDegree: string;
-  pgGraduationYear: number;
-  resumeHeadline: string;
-  industry: string;
-  maritalStatus?: string;
-  educationUgInstitute?: string;
-  profileTitle: string;
-  name?: string;
-  linkedinLink?: string;
-  emails: { primaryEmail: string };
-  uniqueStringKey?: string;
-  phones?: { primaryPhoneNumber: string };
-  jobTitle?: string;
-  jsUserName?: string;
-  keySkills?: string;
-  focusedSkills?: string;
-  currentLocation?: string;
-  preferredLocations?: string;
-  noticePeriod?: string;
-  modifyDateLabel?: string;
-  experienceYears?: string;
-  experienceMonths?: number;
-  currentDesignation?: string;
-  currentOrganization?: string;
-  previousDesignation?: string;
-  previousOrganization?: string;
-  personId?: string;
-  projectId?: string;
-  candidateId?: string;
-}
-
-export interface ArxenaPersonNode {
+export interface PersonCreateInput {
   id?: any;
   educationUgYear?: number;
   educationUgSpecialization?: string;
@@ -896,6 +833,14 @@ export interface ArxenaPersonNode {
   phones?: { primaryPhoneNumber: string };
   uniqueStringKey?: string | null;
   jobTitle?: string | null;
+  jobCompanyName?: string | null;
+  locationName?: string | null;
+  linkedinProfileId?: string | null;
+  hiringNaukriUrl?: { primaryLinkLabel: string; primaryLinkUrl: string };
+  resdexNaukriUrl?: { primaryLinkLabel: string; primaryLinkUrl: string };
+  linkedinProfile?: unknown;
+  linkedinPosts?: unknown;
+  outreachPreferredChannel?: string | null;
   companyId?: string;
   jsUserName?: string;
   keySkills?: string;
@@ -1084,6 +1029,16 @@ export interface PersonNode {
   position: number;
   name: Name;
   candidates: Candidates;
+  locationName?: string;
+  jobCompanyName?: string;
+  linkedinProfileId?: string;
+  hiringNaukriUrl?: { primaryLinkUrl: string };
+  resdexNaukriUrl?: { primaryLinkUrl: string };
+  displayPicture?: { primaryLinkUrl: string };
+  avatarUrl?: string;
+  linkedinProfile?: string;
+  linkedinPosts?: unknown;
+  outreachPreferredChannel?: string;
 }
 
 export interface PersonEdge {
@@ -1201,12 +1156,6 @@ export const emptyCandidateProfileObj: CandidateNode = {
         },
       },
     ],
-  },
-  phoneNumber: {
-    primaryPhoneNumber: '',
-  },
-  email: {
-    primaryEmail: '',
   },
   chatMessages: {
     edges: [
@@ -1784,19 +1733,15 @@ export interface CandidateNode {
   updatedAt: string | number | Date;
   videoInterview: videoInterview;
   whatsappProvider: string | 'application03';
+  // Display label (membership snapshot); identity name lives on people.name
   name: string;
   source?: string;
   campaign?: string;
   remarks?: string;
-  jobTitle?: string;
-
-  jobCompanyName?: string;
   messagingChannel?: string;
   attachments: any;
   id: string;
   candidateFlags?: CandidateFlags | null;
-  phoneNumber: { primaryPhoneNumber: string };
-  email: { primaryEmail: string };
   chatCount: number;
 
   createdAt: string | number | Date;
@@ -1812,9 +1757,6 @@ export interface CandidateNode {
   peopleId: string;
   otherFields?: OtherFieldsRecord | null;
   people: PersonNode;
-  hiringNaukriUrl?: { primaryLinkUrl: string };
-  resdexNaukriUrl?: { primaryLinkUrl: string };
-  linkedinUrl?: { primaryLinkUrl: string };
 }
 
 // export interface Candidate {
@@ -1954,8 +1896,10 @@ export const emptyInterviewData: InterviewData = {
     },
     peopleId: '',
     name: '',
-    email: { primaryEmail: '' },
-    phoneNumber: { primaryPhoneNumber: '' },
+    people: {
+      emails: { primaryEmail: '' },
+      phones: { primaryPhoneNumber: '' },
+    },
   },
   videoInterview: {
     id: '',
@@ -1993,8 +1937,10 @@ export interface InterviewData {
     };
     peopleId: string;
     name: string;
-    email: { primaryEmail: string };
-    phoneNumber: { primaryPhoneNumber: string };
+    people: {
+      emails: { primaryEmail: string };
+      phones: { primaryPhoneNumber: string };
+    };
   };
   videoInterview: {
     id: string;

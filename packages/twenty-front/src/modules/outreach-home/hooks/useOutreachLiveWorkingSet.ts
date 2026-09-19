@@ -733,11 +733,6 @@ export const useOutreachLiveWorkingSet = () => {
   const crmPeople: OutreachPersonRow[] = useMemo(
     () =>
       projectCandidates.map((candidate) => {
-        const linkedinUrl =
-          candidate.linkedinUrl?.primaryLinkUrl ??
-          candidate.linkedinUrl?.primaryLinkLabel ??
-          '';
-
         const runSummary =
           journeySummary?.byCandidateId?.[candidate.id] ?? null;
         const outreachResumeAt = resolveCandidateOutreachResumeAt(candidate);
@@ -780,16 +775,17 @@ export const useOutreachLiveWorkingSet = () => {
           id: candidate.peopleId ?? candidate.id,
           candidateId: candidate.id,
           name: candidate.name ?? 'Untitled',
-          title: candidate.jobTitle ?? '',
+          title: candidate.people?.jobTitle ?? '',
           companyId: '',
-          companyName: candidate.jobCompanyName ?? '',
-          linkedinUrl,
+          companyName: candidate.people?.jobCompanyName ?? '',
+          locationName: candidate.people?.locationName ?? '',
+          linkedinUrl: candidate.people?.linkedinLink?.primaryLinkUrl ?? '',
           warmPath: '—',
           stage: mapCrmStageToOutreachStage(displayStageId),
           recruiterStatus: candidate.status ?? undefined,
           candConversationStatus: candidate.candConversationStatus ?? undefined,
           workflowRunStatus: runSummary?.status ?? null,
-          email: candidate.email?.primaryEmail ?? '',
+          email: candidate.people?.emails?.primaryEmail ?? '',
           pendingChannel: candidate.pendingChannel ?? undefined,
           linkedinFollowUpCount: followUpCount,
           outreachResumeAt,

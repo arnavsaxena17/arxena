@@ -479,17 +479,19 @@ export class MessagingControls {
       chatControlType: 'startChat',
     };
 
+    const candidatePrimaryPhone =
+      candidateNode?.people?.phones?.primaryPhoneNumber ?? '';
     let messageTo: string =
-      candidateNode?.phoneNumber?.primaryPhoneNumber?.length === 10
-        ? '91' + candidateNode?.phoneNumber?.primaryPhoneNumber
-        : candidateNode?.phoneNumber?.primaryPhoneNumber || '';
+      candidatePrimaryPhone.length === 10
+        ? '91' + candidatePrimaryPhone
+        : candidatePrimaryPhone;
     if (messagingChannelEquals(candidateNode?.messagingChannel, MessagingChannel.LINKEDIN_CONNECT)) {
-      messageTo = candidateNode?.linkedinUrl?.primaryLinkUrl || '';
+      messageTo = candidateNode?.people?.linkedinLink?.primaryLinkUrl ?? '';
     } else {
       messageTo =
-        candidateNode?.phoneNumber?.primaryPhoneNumber?.length === 10
-          ? '91' + candidateNode?.phoneNumber?.primaryPhoneNumber
-          : candidateNode?.phoneNumber?.primaryPhoneNumber || '';
+        candidatePrimaryPhone.length === 10
+          ? '91' + candidatePrimaryPhone
+          : candidatePrimaryPhone;
     }
 
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
@@ -687,12 +689,12 @@ export class MessagingControls {
         MessagingChannel.LINKEDIN_CONNECT,
       )
     ) {
-      phoneNumberTo = candidate.linkedinUrl?.primaryLinkUrl || '';
+      phoneNumberTo = candidate.people?.linkedinLink?.primaryLinkUrl ?? '';
       phoneNumberFrom = workspaceMember.linkedinUrl || '';
-    } else if (candidate?.phoneNumber?.primaryPhoneNumber) {
-      phoneNumberTo = candidate.phoneNumber.primaryPhoneNumber.length == 10
-        ? '91' + candidate.phoneNumber.primaryPhoneNumber
-        : candidate.phoneNumber.primaryPhoneNumber;
+    } else if (candidate?.people?.phones?.primaryPhoneNumber) {
+      phoneNumberTo = candidate.people.phones.primaryPhoneNumber.length == 10
+        ? '91' + candidate.people.phones.primaryPhoneNumber
+        : candidate.people.phones.primaryPhoneNumber;
       phoneNumberFrom = workspaceMember.phoneNumber;
     } else {
       console.warn('No phone number found for candidate, using empty string');

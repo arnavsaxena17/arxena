@@ -813,8 +813,8 @@ export const CandidateChatDrawer = React.memo(() => {
           if (candidate.name) {
             setCandidateName(candidate.name);
           }
-          if (candidate?.phoneNumber?.primaryPhoneNumber) {
-            setPhoneNumber(candidate?.phoneNumber?.primaryPhoneNumber);
+          if (candidate?.people?.phones?.primaryPhoneNumber) {
+            setPhoneNumber(candidate.people.phones.primaryPhoneNumber);
           }
         } else {
           applyTableRowAsCandidateData(selectedTableRow);

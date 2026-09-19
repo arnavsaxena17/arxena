@@ -180,20 +180,28 @@ function processCandidate(
       : '';
   node[`linkedin_url_${index}`] = linkedinUrl;
 
+  const people = candidate.people as
+    | {
+        emails?: { primaryEmail?: string };
+        phones?: { primaryPhoneNumber?: string };
+      }
+    | undefined;
   const emailFromCandidate =
-    typeof candidate.email === 'string' && candidate.email.trim()
-      ? candidate.email.trim()
-      : Array.isArray(candidate.emails) && candidate.emails.length > 0
-        ? String(candidate.emails[0] ?? '').trim()
-        : '';
+    (typeof people?.emails?.primaryEmail === 'string' &&
+      people.emails.primaryEmail.trim()) ||
+    (typeof candidate.email === 'string' && candidate.email.trim()) ||
+    (Array.isArray(candidate.emails) && candidate.emails.length > 0
+      ? String(candidate.emails[0] ?? '').trim()
+      : '');
   node[`email_${index}`] = emailFromCandidate;
 
   const phoneFromCandidate =
-    typeof candidate.phone === 'string' && candidate.phone.trim()
-      ? candidate.phone.trim()
-      : Array.isArray(candidate.phones) && candidate.phones.length > 0
-        ? String(candidate.phones[0] ?? '').trim()
-        : '';
+    (typeof people?.phones?.primaryPhoneNumber === 'string' &&
+      people.phones.primaryPhoneNumber.trim()) ||
+    (typeof candidate.phone === 'string' && candidate.phone.trim()) ||
+    (Array.isArray(candidate.phones) && candidate.phones.length > 0
+      ? String(candidate.phones[0] ?? '').trim()
+      : '');
   node[`phone_${index}`] = phoneFromCandidate;
 }
 

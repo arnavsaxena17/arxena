@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UserProfile } from 'twenty-shared';
+import { PersonCandidateDraft } from 'twenty-shared';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
 
@@ -66,7 +66,7 @@ export class ParsedCVTransformerService extends BaseDataSourceTransformerService
   transformToUserProfile(
     candidateData: ParsedCVData,
     context: TransformationContext
-  ): UserProfile {
+  ): PersonCandidateDraft {
     const userProfile = this.createBaseUserProfile(candidateData, context);
     
     // Use base transformer methods for common processing
@@ -91,7 +91,7 @@ export class ParsedCVTransformerService extends BaseDataSourceTransformerService
   /**
    * Process work experience from parsed CV
    */
-  private processWorkExperience(workExp: ParsedCVData['workExperience'], userProfile: UserProfile): void {
+  private processWorkExperience(workExp: ParsedCVData['workExperience'], userProfile: PersonCandidateDraft): void {
     if (!workExp || !Array.isArray(workExp)) return;
 
     // Convert work experience to experience format expected by base transformer
@@ -132,7 +132,7 @@ export class ParsedCVTransformerService extends BaseDataSourceTransformerService
   /**
    * Process project experience from parsed CV
    */
-  private processProjectExperience(projectExp: ParsedCVData['projectExperience'], userProfile: UserProfile): void {
+  private processProjectExperience(projectExp: ParsedCVData['projectExperience'], userProfile: PersonCandidateDraft): void {
     if (!projectExp || !Array.isArray(projectExp)) return;
 
     // Convert project experience to skills or interests

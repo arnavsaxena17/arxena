@@ -3,7 +3,7 @@ import { ApifyService } from 'src/engine/core-modules/apify/services/apify.servi
 import { ApifyLinkedInCompanyProfileTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/apify-linkedin-company-profile-transformer.service';
 import {
     LinkedInSearchTransformerService,
-    type TransformedCandidateForTable,
+    type CandidateTableRow,
 } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
 import { LinkedInHtmlParserService } from 'src/engine/core-modules/linkedin-search/services/linkedin-html-parser.service';
@@ -35,7 +35,7 @@ const ORG_CHART_CANDIDATE_SHAPE_KEYS = [
 ] as const;
 
 function assertOrgChartTableRow(
-  row: TransformedCandidateForTable,
+  row: CandidateTableRow,
   context: string,
 ): void {
   for (const key of ORG_CHART_CANDIDATE_SHAPE_KEYS) {
@@ -284,7 +284,7 @@ describe('Org chart candidate sources (integration-style: real transformers, moc
       { defaultCompanyName: 'Acme', companyLinkedinUrl: COMPANY_LI },
     );
 
-    const keysBothMustHave: (keyof TransformedCandidateForTable)[] = [
+    const keysBothMustHave: (keyof CandidateTableRow)[] = [
       'name',
       'jobTitle',
       'company',

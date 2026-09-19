@@ -171,6 +171,68 @@ describe('generateRecordOutputSchema', () => {
     expect((result.fields.address as any).value).toHaveProperty('addressCity');
   });
 
+  it('should expand known RAW_JSON paths for candidateFlags', () => {
+    const objectMetadataItem = createMockObjectMetadataItem({
+      fields: [
+        {
+          id: 'candidate-flags-id',
+          name: 'candidateFlags',
+          label: 'Candidate flags',
+          type: FieldMetadataType.RAW_JSON,
+          isActive: true,
+          isSystem: false,
+          icon: 'IconFlag',
+        },
+      ] as any,
+    });
+
+    const result = generateRecordOutputSchema(objectMetadataItem);
+
+    expect(result.fields.candidateFlags).toMatchObject({
+      isLeaf: false,
+      type: FieldMetadataType.RAW_JSON,
+      label: 'Candidate flags',
+      fieldMetadataId: 'candidate-flags-id',
+    });
+    expect((result.fields.candidateFlags as any).value.startOutreach).toEqual(
+      expect.objectContaining({
+        isLeaf: true,
+        type: FieldMetadataType.BOOLEAN,
+        label: 'Start Outreach',
+        fieldMetadataId: 'candidate-flags-id',
+        isCompositeSubField: true,
+      }),
+    );
+    expect((result.fields.candidateFlags as any).value.stopOutreach).toEqual(
+      expect.objectContaining({
+        isLeaf: true,
+        type: FieldMetadataType.BOOLEAN,
+      }),
+    );
+  });
+
+  it('should keep unknown RAW_JSON fields as leaves', () => {
+    const objectMetadataItem = createMockObjectMetadataItem({
+      fields: [
+        {
+          id: 'custom-json-id',
+          name: 'customPayload',
+          label: 'Custom payload',
+          type: FieldMetadataType.RAW_JSON,
+          isActive: true,
+          isSystem: false,
+        },
+      ] as any,
+    });
+
+    const result = generateRecordOutputSchema(objectMetadataItem);
+
+    expect(result.fields.customPayload).toMatchObject({
+      isLeaf: true,
+      type: FieldMetadataType.RAW_JSON,
+    });
+  });
+
   it('should convert relation fields to UUID id fields', () => {
     const objectMetadataItem = createMockObjectMetadataItem({
       fields: [

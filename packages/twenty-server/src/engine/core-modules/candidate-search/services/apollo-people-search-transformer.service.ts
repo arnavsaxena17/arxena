@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import {
   LinkedInSearchTransformerService,
-  TransformedCandidateForTable,
+  CandidateTableRow,
 } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import type {
   LinkedInCurrentPosition,
@@ -212,7 +212,7 @@ export class ApolloPeopleSearchTransformerService {
       companyId?: string;
       companyLinkedinUrl?: string;
     },
-  ): TransformedCandidateForTable[] {
+  ): CandidateTableRow[] {
     const rawPeople = this.extractPeopleFromApolloResponse(apolloResponse);
     if (!rawPeople.length) {
       return [];

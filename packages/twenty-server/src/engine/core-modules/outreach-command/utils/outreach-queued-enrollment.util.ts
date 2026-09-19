@@ -153,8 +153,6 @@ export const buildOutreachQueuedCreateFields = (
   options?: { nowIso?: string },
 ): {
   outreachSequenceStage: OutreachEnrollmentStage;
-  startOutreach: false;
-  stopOutreach: false;
   linkedinProfileId?: string;
   experimentVariant?: 'A' | 'B';
   outreachAnalytics?: OutreachAnalytics;
@@ -172,10 +170,10 @@ export const buildOutreachQueuedCreateFields = (
     nowIso,
   });
 
+  // startOutreach / stopOutreach default false via candidateFlags defaults —
+  // enroll must not flip startOutreach or the sequencer will flood on upload.
   return {
     outreachSequenceStage,
-    startOutreach: false,
-    stopOutreach: false,
     ...(linkedinProfileId ? { linkedinProfileId } : {}),
     ...(profile.experimentVariant
       ? { experimentVariant: profile.experimentVariant }

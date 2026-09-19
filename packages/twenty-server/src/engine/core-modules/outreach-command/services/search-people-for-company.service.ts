@@ -8,7 +8,7 @@ import { type ObjectLiteral, Repository } from 'typeorm';
 
 import {
   LinkedInSearchTransformerService,
-  type TransformedCandidateForTable,
+  type CandidateTableRow,
 } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { EnsureOutreachProjectService } from 'src/engine/core-modules/outreach-command/services/ensure-outreach-project.service';
 import { OutreachWorkspaceAuthTokenService } from 'src/engine/core-modules/outreach-command/services/outreach-workspace-auth-token.service';
@@ -346,7 +346,7 @@ export class SearchPeopleForCompanyService {
     const shouldTransformUnipileHits =
       dataSource !== 'harvest' && items.some(isUnipilePeopleSearchHit);
 
-    const transformed: TransformedCandidateForTable[] = shouldTransformUnipileHits
+    const transformed: CandidateTableRow[] = shouldTransformUnipileHits
       ? this.linkedInSearchTransformer.addMetadataToCandidates(
           this.linkedInSearchTransformer.transformSearchResultsToTableFormat(
             items as LinkedInSearchResult[],
@@ -368,7 +368,7 @@ export class SearchPeopleForCompanyService {
             processingTime: 0,
           },
         )
-      : (items as unknown as TransformedCandidateForTable[]);
+      : (items as unknown as CandidateTableRow[]);
 
     return transformed.map((row, index) => {
       const linkedinUrl =

@@ -15,7 +15,7 @@ import { RequirementAnalyzerService } from 'src/engine/core-modules/candidate-se
 import { OrgChartLinkedInBuildService } from 'src/engine/core-modules/org-chart/services/org-chart-linkedin-build.service';
 import { OrgChartTheOrgEnrichmentService } from 'src/engine/core-modules/org-chart/services/org-chart-theorg-enrichment.service';
 import type { OrgChartLinkedinCandidateSource } from 'src/engine/core-modules/org-chart/types/orgchart-linkedin-candidate-source.type';
-import { TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
+import { CandidateTableRow } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { LinkedInSearchResult as LinkedInSearchResultFromLinkedIn } from '../../linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { CandidateRelevanceScoring } from '../schemas/candidate-relevance-scoring.schema';
@@ -63,9 +63,9 @@ export interface SearchParametersResult {
 export interface SearchResultsResult {
   searchResultsPages: Array<{
     page: number;
-    candidates: (LinkedInSearchResult | TransformedCandidateForTable)[];
+    candidates: (LinkedInSearchResult | CandidateTableRow)[];
   }>;
-  allResults: (LinkedInSearchResult | TransformedCandidateForTable)[];
+  allResults: (LinkedInSearchResult | CandidateTableRow)[];
 }
 
 export interface ResultValidationResponse {
@@ -549,8 +549,8 @@ export class CandidateSearchPipelineController {
           undefined, // sendEvent
         );
 
-      const allCandidates: (LinkedInSearchResult | TransformedCandidateForTable)[] = [];
-      const resultsByPage: Array<{ page: number; candidates: (LinkedInSearchResult | TransformedCandidateForTable)[] }> = [];
+      const allCandidates: (LinkedInSearchResult | CandidateTableRow)[] = [];
+      const resultsByPage: Array<{ page: number; candidates: (LinkedInSearchResult | CandidateTableRow)[] }> = [];
 
       if (searchPreview && searchPreview.transformedCandidates) {
         const candidates = searchPreview.transformedCandidates;
@@ -624,8 +624,8 @@ export class CandidateSearchPipelineController {
   //       undefined, // sendEvent
   //     );
 
-  //   const allCandidates: (LinkedInSearchResult | TransformedCandidateForTable)[] = [];
-  //   const resultsByPage: Array<{ page: number; candidates: (LinkedInSearchResult | TransformedCandidateForTable)[] }> = [];
+  //   const allCandidates: (LinkedInSearchResult | CandidateTableRow)[] = [];
+  //   const resultsByPage: Array<{ page: number; candidates: (LinkedInSearchResult | CandidateTableRow)[] }> = [];
 
   //   if (searchPreview && searchPreview.transformedCandidates) {
   //     const candidates = searchPreview.transformedCandidates;
@@ -670,7 +670,7 @@ export class CandidateSearchPipelineController {
     @Req() req: Request,
   ): Promise<{
     page: number;
-    candidates: (LinkedInSearchResult | TransformedCandidateForTable)[];
+    candidates: (LinkedInSearchResult | CandidateTableRow)[];
     nextCursor?: string;
     hasMore: boolean;
   }> {
@@ -722,10 +722,10 @@ export class CandidateSearchPipelineController {
       this.logger.log(`Page ${body.page}: Found ${pageItems.length} candidates`);
 
       // Combine candidates ensuring proper union type
-      const candidates: (LinkedInSearchResult | TransformedCandidateForTable)[] = 
+      const candidates: (LinkedInSearchResult | CandidateTableRow)[] = 
         pageTransformed.length > 0 
           ? pageTransformed 
-          : (pageItems as (LinkedInSearchResult | TransformedCandidateForTable)[]);
+          : (pageItems as (LinkedInSearchResult | CandidateTableRow)[]);
 
       return {
         page: body.page,
@@ -790,7 +790,7 @@ export class CandidateSearchPipelineController {
   async testScoreCandidates(
     @Body() body: {
       prompt: string;
-      candidates: (LinkedInSearchResult | TransformedCandidateForTable)[];
+      candidates: (LinkedInSearchResult | CandidateTableRow)[];
       parsedJobDescription?: ParsedJobDescription;
     },
     @Req() req: Request,
@@ -820,7 +820,7 @@ export class CandidateSearchPipelineController {
 
       // Convert map to array format
       const scoresArray = body.candidates.map((candidate, index) => {
-        // Handle both LinkedInSearchResult and TransformedCandidateForTable types
+        // Handle both LinkedInSearchResult and CandidateTableRow types
         const isLinkedInResult = 'type' in candidate;
         const candidateUrn = isLinkedInResult 
           ? (candidate as LinkedInSearchResult).member_urn 
@@ -875,7 +875,7 @@ export class CandidateSearchPipelineController {
   async testValidateResults(
     @Body() body: {
       prompt: string;
-      candidates: (LinkedInSearchResult | TransformedCandidateForTable)[];
+      candidates: (LinkedInSearchResult | CandidateTableRow)[];
     },
     @Req() req: Request,
   ): Promise<ResultValidationResponse> {
@@ -887,7 +887,7 @@ export class CandidateSearchPipelineController {
 
       this.logger.log(`Validating ${body.candidates.length} search results...`);
 
-      // Filter out TransformedCandidateForTable (which has __isFetched or tempId) and keep only LinkedInSearchResult
+      // Filter out CandidateTableRow (which has __isFetched or tempId) and keep only LinkedInSearchResult
       // Then cast to the expected LinkedInSearchResultFromLinkedIn type
       const linkedInResults = body.candidates.filter(
         (candidate): candidate is LinkedInSearchResult => 

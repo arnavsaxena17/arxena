@@ -128,7 +128,7 @@ export class ToolCallingAgents {
       sendEmailNameFrom:
         workspaceMemberDisplayName(workspaceMember),
       sendEmailFrom: workspaceMemberEmail(workspaceMember)!,
-      sendEmailTo: candidate?.email?.primaryEmail,
+      sendEmailTo: candidate?.people?.emails?.primaryEmail,
       subject:
         'Video Interview - ' + candidate?.name + '<>' + companyName,
       message: videoInterviewInviteTemplate,
@@ -167,7 +167,7 @@ export class ToolCallingAgents {
       sendEmailNameFrom:
         workspaceMemberDisplayName(workspaceMember),
       sendEmailFrom: workspaceMemberEmail(workspaceMember)!,
-      sendEmailTo: candidate?.email?.primaryEmail,
+      sendEmailTo: candidate?.people?.emails?.primaryEmail,
       subject: inputs?.subject || 'Email from the recruiter',
       message: inputs?.message || '',
     };
@@ -317,7 +317,7 @@ export class ToolCallingAgents {
       end: { dateTime: gptInputs?.endDateTime, timeZone: gptInputs?.timeZone },
       attendees: [
         {
-          email: candidate?.email?.primaryEmail || '',
+          email: candidate?.people?.emails?.primaryEmail ?? '',
           responseStatus: 'needsAction',
         },
       ].filter((attendee) => Boolean(attendee.email?.trim())),

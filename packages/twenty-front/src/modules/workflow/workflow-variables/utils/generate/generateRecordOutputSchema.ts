@@ -12,7 +12,12 @@ import {
   FieldMetadataType,
   RelationType,
 } from 'twenty-shared/types';
-import { capitalize, isDefined } from 'twenty-shared/utils';
+import {
+  capitalize,
+  getKnownRawJsonPathKeysForField,
+  getKnownRawJsonPathLeafType,
+  isDefined,
+} from 'twenty-shared/utils';
 
 const camelToTitleCase = (camelCaseText: string): string =>
   capitalize(
@@ -56,6 +61,40 @@ const shouldGenerateFieldOutput = (
   return true;
 };
 
+const generateKnownRawJsonPathLeaves = ({
+  fieldName,
+  fieldMetadataId,
+}: {
+  fieldName: string;
+  fieldMetadataId: string;
+}): Record<string, RecordFieldLeaf> | undefined => {
+  const knownPathKeys = getKnownRawJsonPathKeysForField(fieldName);
+
+  if (!isDefined(knownPathKeys) || knownPathKeys.length === 0) {
+    return undefined;
+  }
+
+  return knownPathKeys.reduce(
+    (accumulator, pathKey) => {
+      const leafType =
+        getKnownRawJsonPathLeafType({ fieldName, pathKey }) ??
+        FieldMetadataType.TEXT;
+
+      accumulator[pathKey] = {
+        isLeaf: true,
+        type: leafType,
+        label: camelToTitleCase(pathKey),
+        value: generateFakeValue(leafType, 'FieldMetadataType'),
+        fieldMetadataId,
+        isCompositeSubField: true,
+      };
+
+      return accumulator;
+    },
+    {} as Record<string, RecordFieldLeaf>,
+  );
+};
+
 const generateRecordField = (
   fieldMetadataItem: FieldMetadataItem,
 ): FieldOutputSchemaV2 => {
@@ -85,6 +124,24 @@ const generateRecordField = (
         {} as Record<string, RecordFieldLeaf>,
       ),
     };
+  }
+
+  if (fieldMetadataItem.type === FieldMetadataType.RAW_JSON) {
+    const knownPathLeaves = generateKnownRawJsonPathLeaves({
+      fieldName: fieldMetadataItem.name,
+      fieldMetadataId: fieldMetadataItem.id,
+    });
+
+    if (isDefined(knownPathLeaves)) {
+      return {
+        isLeaf: false,
+        icon,
+        type: fieldMetadataItem.type,
+        label: fieldMetadataItem.label,
+        fieldMetadataId: fieldMetadataItem.id,
+        value: knownPathLeaves,
+      };
+    }
   }
 
   return {

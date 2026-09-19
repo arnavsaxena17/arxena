@@ -26,11 +26,15 @@ import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system
 type CandidateRecord = ObjectLiteral & {
   id: string;
   name?: string | null;
-  jobTitle?: string | null;
   peopleId?: string | null;
-  linkedinUrl?: { primaryLinkUrl?: string | null } | null;
-  linkedinProfileId?: string | null;
   outreachProspectEnrichment?: Record<string, unknown> | null;
+};
+
+type PersonIdentityRecord = ObjectLiteral & {
+  id: string;
+  jobTitle?: string | null;
+  linkedinLink?: { primaryLinkUrl?: string | null } | null;
+  linkedinProfileId?: string | null;
 };
 
 export type QualifyProspectInput = {
@@ -176,13 +180,17 @@ export class QualifyProspectService {
     modelId: string;
     model: LanguageModel;
   }): Promise<QualifyProspectRecordResult> {
+    const person = await this.resolvePersonIdentity({
+      workspaceId,
+      peopleId: candidate.peopleId,
+    });
     const profileResult = await this.fetchLinkedinProfileService.execute({
       workspaceId,
       input: {
         workspaceMemberId,
         candidateId: candidate.id,
-        linkedinUrl: candidate.linkedinUrl?.primaryLinkUrl ?? undefined,
-        linkedinProfileId: candidate.linkedinProfileId ?? undefined,
+        linkedinUrl: person?.linkedinLink?.primaryLinkUrl ?? undefined,
+        linkedinProfileId: person?.linkedinProfileId ?? undefined,
       },
     });
 
@@ -203,7 +211,7 @@ export class QualifyProspectService {
       posts: '',
       crm: [
         `Name: ${candidate.name ?? ''}`,
-        `Title: ${candidate.jobTitle ?? ''}`,
+        `Title: ${person?.jobTitle ?? ''}`,
       ].join('\n'),
     });
 
@@ -244,6 +252,38 @@ export class QualifyProspectService {
       go: generationResult.object.go,
       score: generationResult.object.score,
     };
+  }
+
+  private async resolvePersonIdentity({
+    workspaceId,
+    peopleId,
+  }: {
+    workspaceId: string;
+    peopleId?: string | null;
+  }): Promise<PersonIdentityRecord | null> {
+    const trimmedPeopleId = peopleId?.trim() ?? '';
+
+    if (!isNonEmptyString(trimmedPeopleId)) {
+      return null;
+    }
+
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const personRepository =
+          await this.globalWorkspaceOrmManager.getRepository<PersonIdentityRecord>(
+            workspaceId,
+            'person',
+            { shouldBypassPermissionChecks: true },
+          );
+
+        return personRepository.findOne({
+          where: { id: trimmedPeopleId },
+        });
+      },
+      authContext,
+    );
   }
 
   private async resolveCandidates({

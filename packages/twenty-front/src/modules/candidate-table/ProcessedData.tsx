@@ -61,12 +61,19 @@ export const ProcessedData = ({
   if (!rawData || !rawData.length) return [];
   return rawData.map((candidate) => {
     const flattenedCandidate = flattenCandidateFlags(candidate);
+    const person = flattenedCandidate?.people;
+    const personFullName = [person?.name?.firstName, person?.name?.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    const linkedinFromPerson = person?.linkedinLink?.primaryLinkUrl;
+    const linkedinRaw = linkedinFromPerson || '';
     const baseData: ProcessedDataItem = {
       id: flattenedCandidate?.id || '',
-      personId: flattenedCandidate?.peopleId || '',
-      name: flattenedCandidate?.name || '',
-      phone: flattenedCandidate?.phoneNumber?.primaryPhoneNumber || '',
-      email: flattenedCandidate?.email?.primaryEmail || '',
+      personId: flattenedCandidate?.peopleId || person?.id || '',
+      name: personFullName || flattenedCandidate?.name || '',
+      phone: person?.phones?.primaryPhoneNumber || '',
+      email: person?.emails?.primaryEmail || '',
       remarks: flattenedCandidate?.remarks || '',
       status: flattenedCandidate?.status || 'No Status',
       candConversationStatus:
@@ -85,8 +92,9 @@ export const ProcessedData = ({
       checkbox: selectedRowIds.includes(flattenedCandidate?.id || ''),
       startChat: flattenedCandidate?.startChat || false,
       startChatCompleted: flattenedCandidate?.startChatCompleted || false,
-      jobTitle: flattenedCandidate?.jobTitle || '',
-      jobCompanyName: flattenedCandidate?.jobCompanyName || '',
+      jobTitle: person?.jobTitle || '',
+      jobCompanyName: person?.jobCompanyName || '',
+      locationName: person?.locationName || '',
       createdAt: flattenedCandidate?.createdAt
         ? String(flattenedCandidate.createdAt)
         : '',
@@ -96,24 +104,19 @@ export const ProcessedData = ({
       stopChat: flattenedCandidate?.stopChat || false,
       source: flattenedCandidate?.source || 'N/A',
       messagingChannel: flattenedCandidate?.messagingChannel || '',
-      resdexNaukriUrl:
-        flattenedCandidate?.resdexNaukriUrl?.primaryLinkUrl?.includes(
-          'resdex.naukri.com',
-        )
-          ? flattenedCandidate?.resdexNaukriUrl?.primaryLinkUrl
-          : '',
-      hiringNaukriUrl:
-        flattenedCandidate?.hiringNaukriUrl?.primaryLinkUrl?.includes(
-          'hiring.naukri.com',
-        )
-          ? flattenedCandidate?.hiringNaukriUrl?.primaryLinkUrl
-          : '',
+      resdexNaukriUrl: (person?.resdexNaukriUrl?.primaryLinkUrl || '').includes(
+        'resdex.naukri.com',
+      )
+        ? person?.resdexNaukriUrl?.primaryLinkUrl || ''
+        : '',
+      hiringNaukriUrl: (person?.hiringNaukriUrl?.primaryLinkUrl || '').includes(
+        'hiring.naukri.com',
+      )
+        ? person?.hiringNaukriUrl?.primaryLinkUrl || ''
+        : '',
       linkedinUrl:
-        flattenedCandidate?.linkedinUrl?.primaryLinkUrl &&
-        isLinkedInUrl(flattenedCandidate.linkedinUrl.primaryLinkUrl)
-          ? reconstructLinkedInUrlForDisplay(
-              flattenedCandidate.linkedinUrl.primaryLinkUrl,
-            )
+        linkedinRaw && isLinkedInUrl(linkedinRaw)
+          ? reconstructLinkedInUrlForDisplay(linkedinRaw)
           : '',
       lastMessage: formatLastInboundMessage(flattenedCandidate?.chatMessages),
       messagesExchanged: formatMessagesExchanged(

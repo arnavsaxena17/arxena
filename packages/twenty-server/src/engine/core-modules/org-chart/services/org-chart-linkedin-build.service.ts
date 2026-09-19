@@ -32,7 +32,7 @@ import { PythonQueryGenerationService } from 'src/engine/core-modules/candidate-
 import { ResultValidationService } from 'src/engine/core-modules/candidate-search/services/result-validation.service';
 import { extractApiToken } from 'src/engine/core-modules/candidate-search/utils/auth.utils';
 import { CandidateDataService } from 'src/engine/core-modules/candidate-sourcing/services/candidate-data.service';
-import { TransformedCandidateForTable } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
+import { CandidateTableRow } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { LinkedinXrayTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-xray-transformer.service';
 import { OrgChartProgressRedisService } from 'src/engine/core-modules/candidate-sourcing/services/orgchart-progress-redis.service';
 import { linkedInPeopleSearchResultMatchesTargetCompany } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-orgchart-company-match.util';
@@ -83,7 +83,7 @@ import { PythonOrgChartService } from './python-org-chart.service';
 
 /** Matches OrgChartSearchService.buildOrgChartFromLinkedInCompanyCandidates input rows */
 type OrgChartBuildCandidateRow =
-  | TransformedCandidateForTable
+  | CandidateTableRow
   | Record<string, unknown>;
 
 type OrgchartSearchType = 'classic' | 'sales_navigator' | 'recruiter';
@@ -731,7 +731,7 @@ export class OrgChartLinkedInBuildService {
     searchType: OrgchartSearchType;
     canonicalCompanyLinkedinUrl?: string;
   }): Promise<{
-    items: TransformedCandidateForTable[];
+    items: CandidateTableRow[];
     itemCount: number;
     isCached: false;
     cacheSource: 'none';
@@ -1153,7 +1153,7 @@ export class OrgChartLinkedInBuildService {
         stdGrade: body.stdGrade,
         selectedNodeStdScopes: body.selectedNodeStdScopes,
       },
-    ) as TransformedCandidateForTable[];
+    ) as CandidateTableRow[];
 
     return {
       items: scopedItems,
@@ -1184,7 +1184,7 @@ export class OrgChartLinkedInBuildService {
     jobTitles: string[];
     canonicalCompanyLinkedinUrl?: string;
   }): Promise<{
-    items: TransformedCandidateForTable[];
+    items: CandidateTableRow[];
     itemCount: number;
     isCached: false;
     cacheSource: 'none';
@@ -1305,7 +1305,7 @@ export class OrgChartLinkedInBuildService {
     const APOLLO_MAX_RECORDS = 500;
     const APOLLO_MAX_PAGES = Math.ceil(APOLLO_MAX_RECORDS / APOLLO_PER_PAGE);
 
-    const merged: TransformedCandidateForTable[] = [];
+    const merged: CandidateTableRow[] = [];
     const requestIdForCache = args.requestId?.trim() ?? undefined;
     const s3PersistKey =
       args.companyId && args.resolvedCompanyName
@@ -1564,7 +1564,7 @@ export class OrgChartLinkedInBuildService {
         stdGrade: args.body.stdGrade,
         selectedNodeStdScopes: args.body.selectedNodeStdScopes,
       },
-    ) as TransformedCandidateForTable[];
+    ) as CandidateTableRow[];
 
     return {
       items: scopedItems,
@@ -4197,7 +4197,7 @@ export class OrgChartLinkedInBuildService {
     const apifyStrategyLabel = 'Apify company employees';
     let apifyReportedTotalProfiles: number | undefined;
 
-    let items: TransformedCandidateForTable[] = [];
+    let items: CandidateTableRow[] = [];
 
     try {
       items =
@@ -4228,7 +4228,7 @@ export class OrgChartLinkedInBuildService {
                   dedupeAndMergeOrgChartCandidates([
                     ...(current as unknown as Array<Record<string, unknown>>),
                     ...(past as unknown as Array<Record<string, unknown>>),
-                  ]) as unknown as TransformedCandidateForTable[],
+                  ]) as unknown as CandidateTableRow[],
               )
           : await this.linkedInSearchService.fetchCompanyEmployeesViaApifyActor(
               {
@@ -5164,7 +5164,7 @@ export class OrgChartLinkedInBuildService {
       const merged = dedupeAndMergeOrgChartCandidates([
         ...(currentRows as unknown as Array<Record<string, unknown>>),
         ...(pastRows as unknown as Array<Record<string, unknown>>),
-      ]) as unknown as TransformedCandidateForTable[];
+      ]) as unknown as CandidateTableRow[];
 
       const result = {
         items: merged,

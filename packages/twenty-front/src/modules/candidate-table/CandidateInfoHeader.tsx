@@ -522,7 +522,10 @@ export const CandidateInfoHeader = React.memo(({
   };
 
   // Get basic candidate info
-  const jobTitle = getFieldValue(candidateData, 'job_title') || candidateData.jobTitle || '';
+  const jobTitle =
+    getFieldValue(candidateData, 'job_title') ||
+    candidateData.people?.jobTitle ||
+    '';
   const companyName = getFieldValue(candidateData, 'job_company_name') || '';
   const location = getFieldValue(candidateData, 'location_name') || '';
   const experience = getFieldValue(candidateData, 'inferred_years_experience') || '';
@@ -530,13 +533,9 @@ export const CandidateInfoHeader = React.memo(({
   const industry = getFieldValue(candidateData, 'industry') || '';
 
   // Extract phone and email values safely
-  const phoneValue = typeof candidateData.phone === 'string'
-    ? candidateData.phone
-    : candidateData.phone?.primaryPhoneNumber || '';
+  const phoneValue = candidateData.people?.phones?.primaryPhoneNumber || '';
 
-  const emailValue = typeof candidateData.email === 'string'
-    ? candidateData.email
-    : candidateData.email?.primaryEmail || '';
+  const emailValue = candidateData.people?.emails?.primaryEmail || '';
 
   return (
     <StyledContainer>

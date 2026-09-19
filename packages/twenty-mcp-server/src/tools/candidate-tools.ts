@@ -464,7 +464,7 @@ export const candidateTools: McpTool[] = [
             data: {
               type: 'array',
               items: { type: 'object' },
-              description: 'Array of candidate profile objects (UserProfile shape)',
+              description: 'Array of candidate profile objects (PersonCandidateDraft shape)',
             },
           },
         };

@@ -6,7 +6,7 @@ import type {
 import { extractLinkedinProfileUrlFromOrgChartCandidateRow } from 'src/engine/core-modules/org-chart/utils/orgchart-candidate-linkedin-url.util';
 import {
     LinkedInSearchTransformerService,
-    TransformedCandidateForTable,
+    CandidateTableRow,
 } from './linkedin-search-transformer.service';
 
 type ApifyDatePart = {
@@ -195,7 +195,7 @@ export class ApifyLinkedInCompanyProfileTransformerService {
   transformApifyRowsToTableFormat(
     items: Record<string, unknown>[],
     options: { defaultCompanyName: string; companyLinkedinUrl?: string },
-  ): TransformedCandidateForTable[] {
+  ): CandidateTableRow[] {
     if (!items.length) {
       return [];
     }

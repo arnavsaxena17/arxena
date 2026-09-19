@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { MessagingChannel, UserProfile } from 'twenty-shared';
+import {
+  MessagingChannel,
+  type CandidateTableRow,
+  type PersonCandidateDraft,
+} from 'twenty-shared';
 import {
   LinkedInPeopleSearchResult,
   LinkedInSearchResult,
@@ -13,92 +17,7 @@ import {
   TransformationContext,
 } from './base-data-source-transformer.service';
 
-/**
- * Extended UserProfile type for DataTable display with UI-specific fields
- * Omits conflicting fields from UserProfile and redefines them for Handsontable compatibility
- */
-export type TransformedCandidateForTable = Omit<
-  UserProfile,
-  'phoneNumber' | 'emailAddress' | 'linkedinUrl'
-> & {
-  // DataTable UI-specific fields
-  __isFetched?: boolean;
-  tempId?: string;
-
-  // Handsontable-compatible field overrides (wrap strings in objects for consistency)
-  phoneNumber: string;
-  email: string;
-  linkedinUrl?: string;
-  hiringNaukriUrl?: string;
-  resdexNaukriUrl?: string;
-  displayPicture?: string;
-
-  // UI state fields
-  candConversationStatus: string;
-  status: string;
-  startChat: boolean;
-  stopChat: boolean;
-  startChatCompleted: boolean;
-  startVideoInterviewChat: boolean;
-  startVideoInterviewChatCompleted: boolean;
-  startMeetingSchedulingChat: boolean;
-  startMeetingSchedulingChatCompleted: boolean;
-  engagementStatus: boolean;
-  messagingChannel: string;
-  chatCount: number;
-  lastEngagementChatControl: any;
-
-  // Relationship edges
-  chatMessages: { edges: any[] };
-  emailMessages: { edges: any[] };
-  otherFields?: Record<string, unknown>;
-  project: { id: string; name: string };
-  people: { id: string };
-  attachments: any;
-  videoInterview: any;
-  whatsappProvider: string;
-  input: string;
-  remarks?: string;
-
-  // LinkedIn-specific display fields
-  name: string;
-  headline?: string;
-  profilePictureUrl?: string;
-  networkDistance?: string;
-  premium?: boolean;
-  verified?: boolean;
-  openProfile?: boolean;
-  sharedConnectionsCount?: number;
-  followersCount?: number;
-  connectionsCount?: number;
-  keywordsMatch?: string;
-
-  // Relevance scoring fields
-  relevanceScore?: number; // 0-1 relevance score
-  relevanceLabel?: 'highly_relevant' | 'somewhat_relevant' | 'less_relevant';
-  matchReasons?: string[];
-  mismatchReasons?: string[];
-
-  // Naming aliases for backwards compatibility
-  jobTitle: string;
-  company: string;
-  location: string;
-  peopleId: string | null;
-  updatedAt: string;
-  createdAt: string;
-
-  /** Set by addMetadataToCandidates (LinkedIn search / org-chart pipelines). */
-  campaign?: string;
-  source?: string;
-
-  /**
-   * Opaque contact hints from the active provider (public slug, e.g. m7kqHasEmail).
-   * @see orgChartProviderContactHintRowKeys in merge-orgchart-profile-source-slugs.util
-   */
-  m7kqHasEmail?: boolean;
-  m7kqHasDirectPhone?: boolean;
-  m7kqHasOrgPhone?: boolean;
-};
+export type { CandidateTableRow };
 
 type LinkedInSearchOrMappedHit = LinkedInPeopleSearchResult & {
   firstName?: string;
@@ -152,7 +71,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
   transformToUserProfile(
     candidateData: LinkedInSearchResult,
     context: TransformationContext,
-  ): UserProfile {
+  ): PersonCandidateDraft {
     // Cast to LinkedInPeopleSearchResult since this transformer handles people search results
     const peopleData = candidateData as LinkedInPeopleSearchResult;
     const userProfile = this.createBaseUserProfile(peopleData, context);
@@ -171,7 +90,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
 
   private processLinkedInProfileData(
     candidateData: LinkedInSearchOrMappedHit,
-    userProfile: UserProfile,
+    userProfile: PersonCandidateDraft,
   ): void {
     if (candidateData.name) {
       const nameParts = candidateData.name.split(' ');
@@ -267,7 +186,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
       typeof candidateData.companyId === 'string' &&
       isValidUuid(candidateData.companyId.trim())
     ) {
-      (userProfile as UserProfile & { companyId?: string }).companyId =
+      (userProfile as PersonCandidateDraft & { companyId?: string }).companyId =
         candidateData.companyId.trim();
     }
 
@@ -322,45 +241,45 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
     // Top-level so enrollment stage + otherFields keys survive create
     if (candidateData.pending_invitation !== undefined) {
       (
-        userProfile as UserProfile & { pendingInvitation?: boolean }
+        userProfile as PersonCandidateDraft & { pendingInvitation?: boolean }
       ).pendingInvitation = candidateData.pending_invitation;
     }
     if (candidateData.network_distance) {
       (
-        userProfile as UserProfile & { networkDistance?: string }
+        userProfile as PersonCandidateDraft & { networkDistance?: string }
       ).networkDistance = candidateData.network_distance;
     }
     if (candidateData.last_outreach_activity) {
       (
-        userProfile as UserProfile & {
+        userProfile as PersonCandidateDraft & {
           lastOutreachActivity?: LinkedInPeopleSearchResult['last_outreach_activity'];
         }
       ).lastOutreachActivity = candidateData.last_outreach_activity;
     }
     if (typeof candidateData.recent_posts_count === 'number') {
       (
-        userProfile as UserProfile & { recentPostsCount?: number }
+        userProfile as PersonCandidateDraft & { recentPostsCount?: number }
       ).recentPostsCount = candidateData.recent_posts_count;
     }
     if (typeof candidateData.shared_connections_count === 'number') {
       (
-        userProfile as UserProfile & { sharedConnectionsCount?: number }
+        userProfile as PersonCandidateDraft & { sharedConnectionsCount?: number }
       ).sharedConnectionsCount = candidateData.shared_connections_count;
     } else if (typeof candidateData.sharedConnectionsCount === 'number') {
       (
-        userProfile as UserProfile & { sharedConnectionsCount?: number }
+        userProfile as PersonCandidateDraft & { sharedConnectionsCount?: number }
       ).sharedConnectionsCount = candidateData.sharedConnectionsCount;
     }
     if (candidateData.recently_hired !== undefined) {
-      (userProfile as UserProfile & { recentlyHired?: boolean }).recentlyHired =
+      (userProfile as PersonCandidateDraft & { recentlyHired?: boolean }).recentlyHired =
         candidateData.recently_hired;
     } else if (candidateData.recentlyHired !== undefined) {
-      (userProfile as UserProfile & { recentlyHired?: boolean }).recentlyHired =
+      (userProfile as PersonCandidateDraft & { recentlyHired?: boolean }).recentlyHired =
         candidateData.recentlyHired;
     }
     if (salesNavigatorProfileUrl) {
       (
-        userProfile as UserProfile & { salesNavigatorProfileUrl?: string }
+        userProfile as PersonCandidateDraft & { salesNavigatorProfileUrl?: string }
       ).salesNavigatorProfileUrl = salesNavigatorProfileUrl;
     }
 
@@ -374,7 +293,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
 
   private processLinkedInContactData(
     candidateData: LinkedInPeopleSearchResult,
-    userProfile: UserProfile,
+    userProfile: PersonCandidateDraft,
   ): void {
     // LinkedIn doesn't provide direct contact info in search results
     // This would typically be enriched later through other means
@@ -429,7 +348,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
 
   private processLinkedInExperienceData(
     candidateData: LinkedInSearchOrMappedHit,
-    userProfile: UserProfile,
+    userProfile: PersonCandidateDraft,
     context: TransformationContext,
   ): void {
     if (
@@ -631,7 +550,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
 
   private processLinkedInEducationData(
     candidateData: LinkedInPeopleSearchResult,
-    userProfile: UserProfile,
+    userProfile: PersonCandidateDraft,
   ): void {
     const education = candidateData.education;
     if (!Array.isArray(education) || education.length === 0) {
@@ -667,7 +586,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
 
   private processLinkedInSkillsData(
     candidateData: LinkedInPeopleSearchResult,
-    userProfile: UserProfile,
+    userProfile: PersonCandidateDraft,
   ): void {
     // LinkedIn search results typically don't include detailed skills
     // This would be enriched through profile scraping or other means
@@ -678,7 +597,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
   }
 
   private ensureUniqueStringKey(
-    userProfile: UserProfile,
+    userProfile: PersonCandidateDraft,
     candidateData: LinkedInPeopleSearchResult,
   ): void {
     // If uniqueStringKey is empty or invalid, regenerate it with the processed data
@@ -707,7 +626,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
 
   /**
    * Transform LinkedIn search results into DataTable-compatible format
-   * This creates a UserProfile with UI-specific extensions for DataTable display
+   * This creates a PersonCandidateDraft with UI-specific extensions for DataTable display
    */
   transformSearchResultsToTableFormat(
     searchResults: LinkedInSearchResult[],
@@ -719,7 +638,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
       targetCompanyIds?: string[];
       targetCompanySlug?: string;
     },
-  ): TransformedCandidateForTable[] {
+  ): CandidateTableRow[] {
     return searchResults.map((result, index) => {
       const peopleResult = result as LinkedInPeopleSearchResult;
       const timestamp = new Date().toISOString();
@@ -729,7 +648,7 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
           ? String(peopleResult.id)
           : '';
 
-      // Create base UserProfile using the standard transformation
+      // Create base PersonCandidateDraft using the standard transformation
       const context: TransformationContext = {
         projectId,
         jobName,
@@ -767,43 +686,51 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
         this.extractCompanyFromHeadline(peopleResult.headline) ||
         'Not specified';
 
-      const transformedCandidate: TransformedCandidateForTable = {
+      const linkedinUrlValue =
+        peopleResult.public_profile_url ||
+        peopleResult.profile_url ||
+        userProfile.linkedinUrl ||
+        '';
+      const displayPictureValue =
+        peopleResult.profile_picture_url ||
+        peopleResult.profile_picture_url_large ||
+        '';
+
+      const transformedCandidate: CandidateTableRow = {
         ...userProfile,
 
         // DataTable UI fields
         __isFetched: true,
         tempId: peopleResult.id,
 
-        // Override string fields for Handsontable compatibility
-        phoneNumber: userProfile.phoneNumber || '',
-        email: userProfile.emailAddress || '',
-        linkedinUrl:
-          peopleResult.public_profile_url ||
-          peopleResult.profile_url ||
-          userProfile.linkedinUrl ||
-          '',
-        hiringNaukriUrl:
-          userProfile.linkedinSpecificData?.hiringNaukriUrl || '',
-        resdexNaukriUrl: '',
-        displayPicture:
-          peopleResult.profile_picture_url ||
-          peopleResult.profile_picture_url_large ||
-          '',
+        phoneNumber: {
+          primaryPhoneNumber: userProfile.phoneNumber || '',
+        },
+        email: { primaryEmail: userProfile.emailAddress || '' },
+        linkedinUrl: linkedinUrlValue
+          ? { primaryLinkUrl: linkedinUrlValue }
+          : { primaryLinkUrl: '' },
+        hiringNaukriUrl: {
+          primaryLinkUrl:
+            userProfile.linkedinSpecificData?.hiringNaukriUrl || '',
+        },
+        resdexNaukriUrl: { primaryLinkUrl: '' },
+        displayPicture: displayPictureValue
+          ? { primaryLinkUrl: displayPictureValue }
+          : { primaryLinkUrl: '' },
 
         // UI state fields
         status: 'No Status',
         candConversationStatus: 'No Conversation',
-        candidateFlags: {
-          startChat: false,
-          stopChat: false,
-          startChatCompleted: false,
-          startVideoInterviewChat: false,
-          startVideoInterviewChatCompleted: false,
-          startMeetingSchedulingChat: false,
-          startMeetingSchedulingChatCompleted: false,
-          engagementStatus: false,
-          lastEngagementChatControl: 'startChat',
-        },
+        startChat: false,
+        stopChat: false,
+        startChatCompleted: false,
+        startVideoInterviewChat: false,
+        startVideoInterviewChatCompleted: false,
+        startMeetingSchedulingChat: false,
+        startMeetingSchedulingChatCompleted: false,
+        engagementStatus: false,
+        lastEngagementChatControl: 'startChat',
         messagingChannel: MessagingChannel.LINKEDIN_CONNECT,
         chatCount: 0,
 
@@ -920,14 +847,14 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
    * Add additional metadata to transformed candidates
    */
   addMetadataToCandidates(
-    candidates: TransformedCandidateForTable[],
+    candidates: CandidateTableRow[],
     searchMetadata: {
       searchType: string;
       searchCategory: string;
       timestamp: string;
       processingTime: number;
     },
-  ): TransformedCandidateForTable[] {
+  ): CandidateTableRow[] {
     return candidates.map((candidate) => ({
       ...candidate,
       campaign: `linkedin_${searchMetadata.searchType}_${searchMetadata.searchCategory}`,
@@ -939,14 +866,14 @@ export class LinkedInSearchTransformerService extends BaseDataSourceTransformerS
    * Filter candidates based on criteria
    */
   filterCandidates(
-    candidates: TransformedCandidateForTable[],
+    candidates: CandidateTableRow[],
     filters: {
       hasProfilePicture?: boolean;
       isPremium?: boolean;
       isVerified?: boolean;
       minSharedConnections?: number;
     },
-  ): TransformedCandidateForTable[] {
+  ): CandidateTableRow[] {
     return candidates.filter((candidate) => {
       if (filters.hasProfilePicture && !candidate.profilePictureUrl) {
         return false;

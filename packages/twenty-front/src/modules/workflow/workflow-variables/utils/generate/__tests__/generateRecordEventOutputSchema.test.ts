@@ -261,6 +261,42 @@ describe('generateRecordEventOutputSchema', () => {
       });
     });
 
+    it('should expand candidateFlags nested paths under properties.after', () => {
+      const objectMetadataItem = createMockObjectMetadataItem({
+        fields: [
+          {
+            id: 'candidate-flags-id',
+            name: 'candidateFlags',
+            label: 'Candidate flags',
+            type: FieldMetadataType.RAW_JSON,
+            isActive: true,
+            isSystem: false,
+            icon: 'IconFlag',
+          },
+        ] as any,
+      });
+
+      const result = generateRecordEventOutputSchema(
+        objectMetadataItem,
+        DatabaseEventAction.UPDATED,
+      );
+
+      const candidateFlagsField =
+        result.fields['properties.after.candidateFlags'];
+
+      expect(candidateFlagsField).toMatchObject({
+        isLeaf: false,
+        type: FieldMetadataType.RAW_JSON,
+      });
+      expect((candidateFlagsField as any).value.startOutreach).toEqual(
+        expect.objectContaining({
+          isLeaf: true,
+          type: FieldMetadataType.BOOLEAN,
+          label: 'Start Outreach',
+        }),
+      );
+    });
+
     it('should expand MORPH_RELATION fields into one prefixed UUID id field per target when MANY_TO_ONE', () => {
       const objectMetadataItem = createMockObjectMetadataItem({
         fields: [

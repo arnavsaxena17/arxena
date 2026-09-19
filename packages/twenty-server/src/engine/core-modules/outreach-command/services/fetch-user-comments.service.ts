@@ -20,7 +20,12 @@ type WorkspaceMemberArxRecord = ObjectLiteral & {
 
 type CandidateRecord = ObjectLiteral & {
   id: string;
-  linkedinUrl?: { primaryLinkUrl?: string } | null;
+  peopleId?: string | null;
+};
+
+type PersonIdentityRecord = ObjectLiteral & {
+  id: string;
+  linkedinLink?: { primaryLinkUrl?: string } | null;
   linkedinProfileId?: string | null;
 };
 
@@ -334,10 +339,25 @@ export class FetchUserCommentsService {
     const candidate = await candidateRepository.findOne({
       where: { id: input.candidateId },
     });
+    const peopleId = candidate?.peopleId?.trim() ?? '';
+
+    if (!isNonEmptyString(peopleId)) {
+      return '';
+    }
+
+    const personRepository =
+      await this.globalWorkspaceOrmManager.getRepository<PersonIdentityRecord>(
+        workspaceId,
+        'person',
+        { shouldBypassPermissionChecks: true },
+      );
+    const person = await personRepository.findOne({
+      where: { id: peopleId },
+    });
 
     return (
-      extractLinkedinProfileId(candidate?.linkedinProfileId) ||
-      extractLinkedinProfileId(candidate?.linkedinUrl?.primaryLinkUrl)
+      extractLinkedinProfileId(person?.linkedinProfileId) ||
+      extractLinkedinProfileId(person?.linkedinLink?.primaryLinkUrl)
     );
   }
 

@@ -43,16 +43,8 @@ type CompanyRecord = ObjectLiteral & {
 type CandidateRecord = ObjectLiteral & {
   id: string;
   name?: string | null;
-  firstName?: string | null;
-  lastName?: string | null;
-  jobTitle?: string | null;
-  jobCompanyName?: string | null;
-  location?: string | null;
   peopleId?: string | null;
-  personId?: string | null;
   projectId?: string | null;
-  linkedinProfileId?: string | null;
-  linkedinUrl?: { primaryLinkUrl?: string | null } | null;
 };
 
 export type { UploadProfilesPerson };
@@ -430,7 +422,7 @@ export class UploadProfilesService {
     }
 
     const authContext = buildSystemAuthContext(workspaceId);
-    const candidates =
+    const people =
       (await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
         async () => {
           const candidateRepository =
@@ -439,32 +431,49 @@ export class UploadProfilesService {
               'candidate',
               { shouldBypassPermissionChecks: true },
             );
-          const found: CandidateRecord[] = [];
+          const personRepository =
+            await this.globalWorkspaceOrmManager.getRepository<ObjectLiteral>(
+              workspaceId,
+              'person',
+              { shouldBypassPermissionChecks: true },
+            );
+          const mapped: UploadProfilesPerson[] = [];
 
           for (const candidateId of candidateIds) {
             const candidate = await candidateRepository.findOne({
               where: { id: candidateId },
             });
 
-            if (isDefined(candidate)) {
-              found.push(candidate);
+            if (!isDefined(candidate)) {
+              continue;
+            }
+
+            const peopleId = candidate.peopleId?.trim() ?? '';
+            const person = isNonEmptyString(peopleId)
+              ? await personRepository.findOne({ where: { id: peopleId } })
+              : null;
+            const uploadPerson = toUploadProfilesPerson({
+              ...(person ?? {}),
+              candidateId: candidate.id,
+              projectId: candidate.projectId,
+              peopleId: peopleId || undefined,
+            });
+
+            if (isDefined(uploadPerson)) {
+              mapped.push(uploadPerson);
             }
           }
 
-          return found;
+          return mapped;
         },
         authContext,
       )) ?? [];
 
-    const people = candidates
-      .map((candidate) => toUploadProfilesPerson(candidate))
-      .filter((person): person is UploadProfilesPerson => person !== null);
-
     return {
       people,
-      projectId: candidates.find((candidate) =>
-        isNonEmptyString(candidate.projectId),
-      )?.projectId?.trim() ?? '',
+      projectId:
+        people.find((person) => isNonEmptyString(person.projectId))?.projectId
+          ?.trim() ?? '',
     };
   }
 

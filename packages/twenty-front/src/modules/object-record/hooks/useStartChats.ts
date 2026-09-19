@@ -75,11 +75,11 @@ export const useStartChats = ({
             }
 
             if (isWhatsappMessagingChannel(messagingChannel)) {
-              return !candidate?.phoneNumber?.primaryPhoneNumber;
+              return !candidate?.people?.phones?.primaryPhoneNumber;
             }
 
             if (isLinkedinDirectMessagingChannel(messagingChannel)) {
-              return !candidate?.linkedinUrl;
+              return !candidate?.people?.linkedinLink?.primaryLinkUrl;
             }
 
             return true;
@@ -95,7 +95,9 @@ export const useStartChats = ({
           const selectedRows = tableState.rawData.filter((candidate) =>
             candidateIds.includes(candidate.id),
           );
-          const integrityOptions: CheckDataIntegrityOfProjectOptions | undefined =
+          const integrityOptions:
+            | CheckDataIntegrityOfProjectOptions
+            | undefined =
             selectedRows.length === candidateIds.length &&
             candidateIds.length > 0
               ? {

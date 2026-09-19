@@ -265,11 +265,6 @@ export class EngagedCandidateQueueService {
         phoneNumberFrom = candidateProfileDataNodeObj.people.phones.primaryPhoneNumber.length == 10
           ? '91' + candidateProfileDataNodeObj.people.phones.primaryPhoneNumber
           : candidateProfileDataNodeObj.people.phones.primaryPhoneNumber;
-      } else if (candidateProfileDataNodeObj.phoneNumber?.primaryPhoneNumber) {
-        phoneNumberFrom =
-          candidateProfileDataNodeObj.phoneNumber.primaryPhoneNumber.length == 10
-            ? '91' + candidateProfileDataNodeObj.phoneNumber.primaryPhoneNumber
-            : candidateProfileDataNodeObj.phoneNumber.primaryPhoneNumber;
       } else {
         console.warn(`No phone number found for candidate ${candidateProfileDataNodeObj.id}, using empty string`);
       }
@@ -496,7 +491,10 @@ export class EngagedCandidateQueueService {
       const phoneNumber = candidateProfileData.people?.phones?.primaryPhoneNumber || '';
       const email = candidateProfileData.people?.emails?.primaryEmail || '';
       const company = candidateJob.company?.name || 'Unknown Company';
-      const jobTitle = candidateJob.name || candidateProfileData.jobTitle || 'Unknown Title';
+      const jobTitle =
+        candidateJob.name ||
+        candidateProfileData.people?.jobTitle ||
+        'Unknown Title';
       const searchName = `Arxena-${candidateJob.name || 'Candidates'}`;
 
       // Only queue if we have essential information
@@ -608,7 +606,8 @@ export class EngagedCandidateQueueService {
           const phoneNumber = candidate.people?.phones?.primaryPhoneNumber || '';
           const email = candidate.people?.emails?.primaryEmail || '';
           const company = candidateJob.company?.name || 'Unknown Company';
-          const jobTitle = candidateJob.name || candidate.jobTitle || 'Unknown Title';
+          const jobTitle =
+            candidateJob.name || candidate.people?.jobTitle || 'Unknown Title';
 
           return {
             contactPerson: {

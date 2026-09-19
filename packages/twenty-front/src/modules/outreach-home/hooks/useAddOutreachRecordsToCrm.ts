@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { isNonEmptyString } from '@sniptt/guards';
 import { MessagingChannel } from 'twenty-shared/arx';
 import { isDefined } from 'twenty-shared/utils';
 
@@ -279,6 +280,10 @@ export const useAddOutreachRecordsToCrm = () => {
               lastName,
             },
             jobTitle: person.title,
+            jobCompanyName: person.companyName,
+            ...(isNonEmptyString(person.locationName)
+              ? { locationName: person.locationName }
+              : {}),
             ...(isDefined(crmCompanyId) ? { companyId: crmCompanyId } : {}),
             ...(person.email ? { emails: { primaryEmail: person.email } } : {}),
             linkedinLink: {
@@ -291,18 +296,6 @@ export const useAddOutreachRecordsToCrm = () => {
           if (isDefined(createdPerson?.id)) {
             await createCandidate({
               name: person.name,
-              jobTitle: person.title,
-              jobCompanyName: person.companyName,
-              ...(person.email
-                ? { email: { primaryEmail: person.email } }
-                : {}),
-              linkedinUrl: {
-                primaryLinkUrl: linkedinUrl,
-                primaryLinkLabel: person.linkedinUrl.replace(
-                  /^https?:\/\//,
-                  '',
-                ),
-              },
               projectId,
               peopleId: createdPerson.id,
               outreachSequenceStage: sequenceFields.outreachSequenceStage,

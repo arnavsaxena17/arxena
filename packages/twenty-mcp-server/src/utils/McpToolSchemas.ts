@@ -272,7 +272,7 @@ export const POST_CANDIDATES_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[
     {
       key: 'data',
       type: 'object',
-      description: 'Array of candidate profile objects (UserProfile shape)',
+      description: 'Array of candidate profile objects (PersonCandidateDraft shape)',
       required: true,
     },
     {

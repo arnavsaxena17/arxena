@@ -61,15 +61,18 @@ export class TestArxChat {
           break;
         }
         hasNextPage = candidatesData.pageInfo?.hasNextPage ?? false;
-        type CandidateNodeWithPerson = { id: string; person?: { id: string }; phoneNumber?: string | { primaryPhoneNumber: string } };
+        type CandidateNodeWithPerson = {
+          id: string;
+          peopleId?: string;
+          people?: { id?: string; phones?: { primaryPhoneNumber?: string } };
+        };
         allCandidates.push(
           ...candidatesData.edges.map((edge) => {
             const node = edge.node as unknown as CandidateNodeWithPerson;
-            const phone = typeof node.phoneNumber === 'string' ? node.phoneNumber : node.phoneNumber?.primaryPhoneNumber;
             return {
               id: node.id,
-              personId: node.person?.id ?? '',
-              phoneNumber: phone,
+              personId: node.people?.id ?? node.peopleId ?? '',
+              phoneNumber: node.people?.phones?.primaryPhoneNumber ?? '',
             };
           }),
         );

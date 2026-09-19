@@ -13,7 +13,7 @@ import { styled } from '@linaria/react';
 import Handsontable from 'handsontable';
 import {
   OUTREACH_CONVERSATION_STAGE_LABELS,
-  type TransformedCandidateForTable,
+  type CandidateTableRow,
 } from 'twenty-shared/arx';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { formatToHumanReadableDateTime } from '~/utils/date-utils';
@@ -53,7 +53,7 @@ export type ProcessedDataItem = {
 // Union type for all candidate data sources
 export type CandidateDataItem = (
   | ProcessedDataItem
-  | TransformedCandidateForTable
+  | CandidateTableRow
 ) & { [key: string]: any };
 
 const StyledSelectedRow = styled.tr`

@@ -7,7 +7,11 @@ import { getStepFilterOperands } from '@/workflow/workflow-steps/filters/utils/g
 import { searchVariableThroughOutputSchemaV2 } from '@/workflow/workflow-variables/utils/searchVariableThroughOutputSchemaV2';
 import { useStore } from 'jotai';
 import { useCallback } from 'react';
-import type { FilterableAndTSVectorFieldType, StepFilter } from 'twenty-shared/types';
+import {
+  FieldMetadataType,
+  type FilterableAndTSVectorFieldType,
+  type StepFilter,
+} from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { extractRawVariableNamePart } from 'twenty-shared/workflow';
 
@@ -60,9 +64,18 @@ export const useApplyStepFilterFieldFromVariable = () => {
         ? getFieldMetadataItemByIdOrThrow(fieldMetadataId)
         : { fieldMetadataItem: undefined };
 
-      const filterType = isDefined(fieldMetadataId)
-        ? (filterFieldMetadataItem?.type ?? 'unknown')
-        : variableType;
+      const parentFieldType = filterFieldMetadataItem?.type;
+
+      // Nested RAW_JSON leaves (candidateFlags.startOutreach) publish BOOLEAN;
+      // prefer that over the parent RAW_JSON type so gates get True/False.
+      const filterType =
+        parentFieldType === FieldMetadataType.RAW_JSON &&
+        isDefined(variableType) &&
+        variableType !== FieldMetadataType.RAW_JSON
+          ? variableType
+          : isDefined(fieldMetadataId)
+            ? (parentFieldType ?? 'unknown')
+            : variableType;
 
       const availableOperandsForFilter = getStepFilterOperands({
         filterType,

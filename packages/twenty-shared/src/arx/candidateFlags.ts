@@ -10,6 +10,8 @@ export const CANDIDATE_BOOLEAN_FLAG_KEYS = [
   'startMeetingSchedulingChat',
   'startMeetingSchedulingChatCompleted',
   'stopChat',
+  'startOutreach',
+  'stopOutreach',
 ] as const;
 
 export type CandidateBooleanFlagKey =
@@ -34,6 +36,8 @@ export type CandidateFlags = {
   startMeetingSchedulingChat?: boolean;
   startMeetingSchedulingChatCompleted?: boolean;
   stopChat?: boolean;
+  startOutreach?: boolean;
+  stopOutreach?: boolean;
   lastEngagementChatControl?: chatControlType | null;
 };
 
@@ -60,6 +64,8 @@ const DEFAULT_CANDIDATE_FLAGS: CandidateFlags = {
   startMeetingSchedulingChat: false,
   startMeetingSchedulingChatCompleted: false,
   stopChat: false,
+  startOutreach: false,
+  stopOutreach: false,
   lastEngagementChatControl: null,
 };
 

@@ -219,7 +219,7 @@ export const EditOutreachSequencerOptionsModal = ({
             {t`Check deduplication per company`}
           </StyledOptionLabel>
           <StyledOptionHelp>
-            {t`When off, skip has-company / sibling-contacted checks and go straight from qualify to the connection note.`}
+            {t`When on, defer prospects whose company already has someone contacted or an earlier QUEUED sibling. Off by default — qualify goes straight to the connection note.`}
           </StyledOptionHelp>
         </StyledOptionText>
       </StyledOptionRow>

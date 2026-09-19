@@ -19,7 +19,7 @@ const LIVE = process.env.ICP_LIVE_E2E === '1';
 const describeLive = LIVE ? describe : describe.skip;
 
 const PERSON_PROFILE: Record<string, unknown> = {
-  object: 'UserProfile',
+  object: 'PersonCandidateDraft',
   provider: 'LINKEDIN',
   provider_id: 'ACoAAAHU7vABvj0KTKkaLOIc5El2eMWE5aLnPq4',
   public_identifier: 'gaurav-sherlocks-ai',

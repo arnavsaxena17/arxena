@@ -66,9 +66,9 @@ OUTREACH_DELAY_MS=1000 OUTREACH_SIMULATE_MODE=full OUTREACH_PROJECT_ID=<uuid> AP
 - **People tab** — ephemeral Redis list per `projectId` (merged with enrolled CRM Candidates); stage filters; next-step from active workflow runs; row name opens Journey tab
 - **KPI strip** (People) — enrolled / by stage / needs approval / due this week + link to Outreach dashboard
 - **Add selected to CRM** (People) — upsert Company + Person + Candidate under Project
-- **Enroll in outreach** — Candidate at `QUEUED` with `startOutreach=false` (does not fire Sequencer yet); also upserts Company when ephemeral company is known
-- **Start outreach** — sets `startOutreach=true` on selected candidates (People tab / record actions on Candidate or Person) → Candidate Sequencer runs; replies auto-continue until Stop
-- **Stop outreach** — `stopOutreach=true`, stage `STOPPED`, ends runs; blocks reply re-entry
+- **Enroll in outreach** — Candidate at `QUEUED` with `candidateFlags.startOutreach=false` (does not fire Sequencer yet); also upserts Company when ephemeral company is known
+- **Start outreach** — sets `candidateFlags.startOutreach=true` on selected candidates (People tab / record actions on Candidate or Person) → Candidate Sequencer runs; replies auto-continue until Stop
+- **Stop outreach** — `candidateFlags.stopOutreach=true`, stage `STOPPED`, ends runs; blocks reply re-entry
 - **Promote deferred** — Deferred → Queued when under persona cap
 - **Needs connection** — live LinkedIn Unipile / Gmail / WhatsApp flags → Settings → Accounts
 

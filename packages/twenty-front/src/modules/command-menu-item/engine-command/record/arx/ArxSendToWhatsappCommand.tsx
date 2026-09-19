@@ -82,6 +82,10 @@ export const ArxSendToWhatsappCommand = () => {
             jobTitle?: string;
             skills?: string;
             name?: { firstName?: string; lastName?: string };
+            phones?: { primaryPhoneNumber?: string };
+            emails?: { primaryEmail?: string };
+            resdexNaukriUrl?: { primaryLinkUrl?: string };
+            hiringNaukriUrl?: { primaryLinkUrl?: string };
           }
         | undefined;
 
@@ -92,9 +96,8 @@ export const ArxSendToWhatsappCommand = () => {
         people?.jobTitle || '',
         project?.pathPosition || 'unclassified',
         project?.grade || 'entry',
-        (record.resdexNaukriUrl as { primaryLinkUrl?: string } | undefined)
-          ?.primaryLinkUrl
-          ? `<a href='${(record.resdexNaukriUrl as { primaryLinkUrl: string }).primaryLinkUrl}' target='_blank'>Naukri</a>`
+        people?.resdexNaukriUrl?.primaryLinkUrl
+          ? `<a href='${people.resdexNaukriUrl.primaryLinkUrl}' target='_blank'>Naukri</a>`
           : '',
         (record.candConversationStatus as string) || 'Sourced',
         project?.pathPosition || '',
@@ -102,10 +105,8 @@ export const ArxSendToWhatsappCommand = () => {
         people?.skills || '',
         null,
         null,
-        (record.phoneNumber as { primaryPhoneNumber?: string } | undefined)
-          ?.primaryPhoneNumber || '',
-        (record.email as { primaryEmail?: string } | undefined)
-          ?.primaryEmail || '',
+        people?.phones?.primaryPhoneNumber || '',
+        people?.emails?.primaryEmail || '',
         '10',
         4,
         null,
@@ -113,9 +114,8 @@ export const ArxSendToWhatsappCommand = () => {
         '',
         '0',
         null,
-        (record.hiringNaukriUrl as { primaryLinkUrl?: string } | undefined)
-          ?.primaryLinkUrl
-          ? `<a href='${(record.hiringNaukriUrl as { primaryLinkUrl: string }).primaryLinkUrl}' target='_blank'>Naukri Search URL</a>`
+        people?.hiringNaukriUrl?.primaryLinkUrl
+          ? `<a href='${people.hiringNaukriUrl.primaryLinkUrl}' target='_blank'>Naukri Search URL</a>`
           : '',
         null,
         null,

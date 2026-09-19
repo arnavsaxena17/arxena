@@ -82,11 +82,11 @@ export const useArxCheckContactAvailability = () => {
       const candidates = await response.json();
       const linkedinUrls = candidates
         .map((candidate: Record<string, unknown>) => {
+          const people = candidate.people as
+            | { linkedinLink?: { primaryLinkUrl?: string } }
+            | undefined;
           const linkedinUrlField =
-            (candidate.linkedinUrl as { primaryLinkUrl?: string } | undefined)
-              ?.primaryLinkUrl ||
-            candidate.linkedinUrl ||
-            candidate.profile_url;
+            people?.linkedinLink?.primaryLinkUrl || candidate.profile_url;
           return linkedinUrlField;
         })
         .filter(

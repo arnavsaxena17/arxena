@@ -219,20 +219,12 @@ export class GoogleContactsService {
               emails?: { primaryEmail?: string };
               name?: { firstName?: string; lastName?: string };
               jobTitle?: string;
+              jobCompanyName?: string;
             }
           | undefined;
-        const phoneNumberField = candidate.phoneNumber as
-          | { primaryPhoneNumber?: string }
-          | undefined;
-        const emailField = candidate.email as
-          | { primaryEmail?: string }
-          | undefined;
 
-        const phoneNumber =
-          people?.phones?.primaryPhoneNumber ||
-          phoneNumberField?.primaryPhoneNumber;
-        const email =
-          people?.emails?.primaryEmail || emailField?.primaryEmail;
+        const phoneNumber = people?.phones?.primaryPhoneNumber;
+        const email = people?.emails?.primaryEmail;
         const nameParts =
           typeof candidate.name === 'string'
             ? candidate.name.trim().split(/\s+/)
@@ -240,14 +232,8 @@ export class GoogleContactsService {
         const firstName = people?.name?.firstName || nameParts[0] || '';
         const lastName =
           people?.name?.lastName || nameParts.slice(1).join(' ') || '';
-        const jobTitle =
-          people?.jobTitle ||
-          (typeof candidate.jobTitle === 'string' ? candidate.jobTitle : '') ||
-          '';
-        const companyName =
-          typeof candidate.jobCompanyName === 'string'
-            ? candidate.jobCompanyName
-            : '';
+        const jobTitle = people?.jobTitle || '';
+        const companyName = people?.jobCompanyName || '';
         const candidateId =
           typeof candidate.id === 'string' ? candidate.id : 'unknown';
 

@@ -1,5 +1,5 @@
 // import { ProcessCandidatesJob } from '../jobs/process-candidates.job';
-import { ProcessCandidatesJobData, UserProfile } from 'twenty-shared';
+import { ProcessCandidatesJobData, PersonCandidateDraft } from 'twenty-shared';
 import { v4 } from 'uuid';
 
 import { QueueCronJobOptions } from 'src/engine/core-modules/message-queue/drivers/interfaces/job-options.interface';
@@ -244,7 +244,7 @@ export class ProcessCandidatesService {
   }
 
   async send(
-    data: UserProfile[],
+    data: PersonCandidateDraft[],
     projectId: string,
     jobName: string,
     timestamp: string,

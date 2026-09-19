@@ -18,7 +18,7 @@ import {
 } from './icp-extraction.service';
 
 const PERSON_PROFILE_FIXTURE: Record<string, unknown> = {
-  object: 'UserProfile',
+  object: 'PersonCandidateDraft',
   provider: 'LINKEDIN',
   provider_id: 'ACoAAAHU7vABvj0KTKkaLOIc5El2eMWE5aLnPq4',
   public_identifier: 'gaurav-sherlocks-ai',

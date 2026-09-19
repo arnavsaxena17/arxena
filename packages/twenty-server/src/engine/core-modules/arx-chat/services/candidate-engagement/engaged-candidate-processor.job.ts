@@ -160,7 +160,7 @@ export class EngagedCandidateProcessor {
       const chatReply = interimChat;
 
       // Set the appropriate message identifier based on messaging channel
-      let messageFrom = candidate?.phoneNumber?.primaryPhoneNumber || '';
+      let messageFrom = candidate?.people?.phones?.primaryPhoneNumber ?? '';
       let messageTo = workspaceMember?.phoneNumber || '';
       let messageType = 'string';
 
@@ -171,7 +171,7 @@ export class EngagedCandidateProcessor {
           MessagingChannel.LINKEDIN_SOCK,
         )
       ) {
-        messageFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
+        messageFrom = candidate?.people?.linkedinLink?.primaryLinkUrl ?? '';
         messageTo = workspaceMember?.linkedinUrl || '';
         messageType = 'linkedin';
       }

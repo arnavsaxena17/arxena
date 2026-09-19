@@ -46,7 +46,7 @@ import {
   queries,
   resolveIsOrgChartEnabledFromWorkspace,
   UpdateOneProject,
-  UserProfile,
+  PersonCandidateDraft,
 } from 'twenty-shared';
 import { isNonEmptyString } from '@sniptt/guards';
 import { v4 } from 'uuid';
@@ -1059,7 +1059,7 @@ export class CandidateSourcingController {
 
     console.log('arxenaSiteId:', jobId);
     console.log('dataSource:', dataSource);
-    const data: UserProfile[] = req.body?.data;
+    const data: PersonCandidateDraft[] = req.body?.data;
 
     console.log(
       'Data len of candidates received in post candidates API:',
@@ -3343,19 +3343,20 @@ export class CandidateSourcingController {
         this.workspaceQueryService.getDataSourceSchema(payload);
       const sql = `
         SELECT
-          c.id, c.name, c."updatedAt", c."createdAt", c."status", c."jobTitle", c."whatsappProvider",
+          c.id, c.name, c."updatedAt", c."createdAt", c."status", p."jobTitle", c."whatsappProvider",
           c."candConversationStatus", c."peopleId", c.source, c.campaign,
-          c."projectId", c.remarks, c."messagingChannel", c."candidateFlags", c."uniqueStringKey",
+          c."projectId", c.remarks, c."messagingChannel", c."candidateFlags", p."uniqueStringKey",
           c."chatCount", c."otherFields",
           COALESCE(JSON_AGG(CASE WHEN wm.id IS NOT NULL THEN JSON_BUILD_OBJECT('updatedAt', wm."updatedAt", 'messageObj', wm."messageObj", 'createdAt', wm."createdAt", 'whatsappDeliveryStatus', wm."whatsappDeliveryStatus", 'id', wm.id, 'name', wm.name, 'recruiterId', wm."recruiterId", 'message', wm.message, 'candidateId', wm."candidateId", 'projectId', wm."projectId", 'position', wm.position, 'phoneTo', wm."phoneTo", 'phoneFrom', wm."phoneFrom") ELSE NULL END) FILTER (WHERE wm.id IS NOT NULL), '[]'::json) as chatMessages
         FROM ${dataSourceSchema}."_candidate" c
+        LEFT JOIN ${dataSourceSchema}."person" p ON c."peopleId" = p.id AND p."deletedAt" IS NULL
         LEFT JOIN ${dataSourceSchema}."_chatMessage" wm ON c.id = wm."candidateId"
         WHERE c."deletedAt" IS NULL
           AND COALESCE(c."candidateFlags"->>'stopChat', 'false') = 'false'
           AND COALESCE(c."candidateFlags"->>'startChat', 'false') = 'true'
           AND COALESCE(c."candidateFlags"->>'startVideoInterviewChatCompleted', 'false') != 'true'
           AND c."projectId" = ANY($1) ${body.lastCursor ? 'AND c."updatedAt" < $3' : ''}
-        GROUP BY c.id
+        GROUP BY c.id, p."jobTitle", p."uniqueStringKey"
         ORDER BY c."updatedAt" DESC
         LIMIT $2
       `;
@@ -3480,7 +3481,11 @@ export class CandidateSourcingController {
       const response = await this.staticGraphQLService.executeGraphQL(
         graphqlToFetchAllCandidateData,
         {
-          filter: { hiringNaukriUrl: { url: { eq: hiringNaukriUrl } } },
+          filter: {
+            people: {
+              hiringNaukriUrl: { primaryLinkUrl: { eq: hiringNaukriUrl } },
+            },
+          },
         },
         apiToken,
       );
@@ -3505,7 +3510,11 @@ export class CandidateSourcingController {
       const response = await this.staticGraphQLService.executeGraphQL(
         graphqlToFetchAllCandidateData,
         {
-          filter: { resdexNaukriUrl: { url: { eq: resdexNaukriUrl } } },
+          filter: {
+            people: {
+              resdexNaukriUrl: { primaryLinkUrl: { eq: resdexNaukriUrl } },
+            },
+          },
         },
         apiToken,
       );

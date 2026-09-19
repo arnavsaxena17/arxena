@@ -110,6 +110,7 @@ export {
   computeMorphRelationGqlFieldJoinColumnName,
 } from './fieldMetadata/compute-relation-gql-field-join-column-name';
 export { getKnownRawJsonPathKeysForField } from './fieldMetadata/getKnownRawJsonPathKeysForField';
+export { getKnownRawJsonPathLeafType } from './fieldMetadata/getKnownRawJsonPathLeafType';
 export { isAllowedRawJsonPathKey } from './fieldMetadata/isAllowedRawJsonPathKey';
 export { isFieldMetadataArrayKind } from './fieldMetadata/isFieldMetadataArrayKind';
 export { isFieldMetadataDateKind } from './fieldMetadata/isFieldMetadataDateKind';

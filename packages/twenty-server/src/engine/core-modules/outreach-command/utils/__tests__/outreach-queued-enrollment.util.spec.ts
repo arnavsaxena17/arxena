@@ -91,8 +91,6 @@ describe('buildOutreachQueuedCreateFields', () => {
       }),
     ).toEqual({
       outreachSequenceStage: 'QUEUED',
-      startOutreach: false,
-      stopOutreach: false,
       linkedinProfileId: 'jane-doe',
     });
   });
@@ -104,8 +102,6 @@ describe('buildOutreachQueuedCreateFields', () => {
       }),
     ).toEqual({
       outreachSequenceStage: 'QUEUED',
-      startOutreach: false,
-      stopOutreach: false,
       linkedinProfileId: 'ACoAAA123',
     });
   });

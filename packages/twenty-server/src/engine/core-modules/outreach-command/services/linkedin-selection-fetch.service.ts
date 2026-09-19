@@ -25,11 +25,15 @@ type WorkspaceMemberArxRecord = ObjectLiteral & {
 type CandidateRecord = ObjectLiteral & {
   id: string;
   peopleId?: string | null;
-  linkedinUrl?: { primaryLinkUrl?: string | null } | null;
+  otherFields?: Record<string, unknown> | null;
+};
+
+type PersonIdentityRecord = ObjectLiteral & {
+  id: string;
+  linkedinLink?: { primaryLinkUrl?: string | null } | null;
   linkedinProfileId?: string | null;
   linkedinProfile?: Record<string, unknown> | null;
   linkedinPosts?: Record<string, unknown> | null;
-  otherFields?: Record<string, unknown> | null;
 };
 
 export type LinkedinSelectionFetchInput = {
@@ -72,13 +76,17 @@ export class LinkedinSelectionFetchService {
       input,
       emptyError: 'No candidates found to fetch LinkedIn messages for',
       runOne: async (candidate) => {
+        const person = await this.resolvePersonIdentity({
+          workspaceId,
+          peopleId: candidate.peopleId,
+        });
         const result = await this.fetchLinkedinMessagesService.execute({
           workspaceId,
           input: {
             workspaceMemberId: input.workspaceMemberId,
             candidateId: candidate.id,
-            linkedinUrl: candidate.linkedinUrl?.primaryLinkUrl ?? undefined,
-            linkedinProfileId: candidate.linkedinProfileId ?? undefined,
+            linkedinUrl: person?.linkedinLink?.primaryLinkUrl ?? undefined,
+            linkedinProfileId: person?.linkedinProfileId ?? undefined,
             forceRefresh: input.forceRefresh ?? true,
             limit: input.limit,
           },
@@ -135,9 +143,13 @@ export class LinkedinSelectionFetchService {
       input,
       emptyError: 'No candidates found to fetch LinkedIn posts for',
       runOne: async (candidate) => {
+        const person = await this.resolvePersonIdentity({
+          workspaceId,
+          peopleId: candidate.peopleId,
+        });
         const identifier =
-          extractLinkedinProfileId(candidate.linkedinProfileId) ||
-          extractLinkedinProfileId(candidate.linkedinUrl?.primaryLinkUrl);
+          extractLinkedinProfileId(person?.linkedinProfileId) ||
+          extractLinkedinProfileId(person?.linkedinLink?.primaryLinkUrl);
 
         if (!isNonEmptyString(identifier)) {
           return {
@@ -188,8 +200,9 @@ export class LinkedinSelectionFetchService {
           mostRecentPost,
         };
 
-        await this.stampCandidateJson({
+        await this.stampPersonLinkedinJson({
           workspaceId,
+          peopleId: candidate.peopleId,
           candidateId: candidate.id,
           existingOtherFields: candidate.otherFields,
           linkedinPosts,
@@ -216,13 +229,17 @@ export class LinkedinSelectionFetchService {
       input,
       emptyError: 'No candidates found to fetch LinkedIn profiles for',
       runOne: async (candidate) => {
+        const person = await this.resolvePersonIdentity({
+          workspaceId,
+          peopleId: candidate.peopleId,
+        });
         const result = await this.fetchLinkedinProfileService.execute({
           workspaceId,
           input: {
             workspaceMemberId: input.workspaceMemberId,
             candidateId: candidate.id,
-            linkedinUrl: candidate.linkedinUrl?.primaryLinkUrl ?? undefined,
-            linkedinProfileId: candidate.linkedinProfileId ?? undefined,
+            linkedinUrl: person?.linkedinLink?.primaryLinkUrl ?? undefined,
+            linkedinProfileId: person?.linkedinProfileId ?? undefined,
           },
         });
 
@@ -240,8 +257,9 @@ export class LinkedinSelectionFetchService {
           fetchedAt: new Date().toISOString(),
         };
 
-        await this.stampCandidateJson({
+        await this.stampPersonLinkedinJson({
           workspaceId,
+          peopleId: candidate.peopleId,
           candidateId: candidate.id,
           existingOtherFields: candidate.otherFields,
           linkedinProfile,
@@ -390,21 +408,61 @@ export class LinkedinSelectionFetchService {
     );
   }
 
-  // Prefer dedicated RAW_JSON columns; also mirror into otherFields when present
-  // so older workspaces without the synced columns still keep the payload.
-  private async stampCandidateJson({
+  private async resolvePersonIdentity({
     workspaceId,
+    peopleId,
+  }: {
+    workspaceId: string;
+    peopleId?: string | null;
+  }): Promise<PersonIdentityRecord | null> {
+    const trimmedPeopleId = peopleId?.trim() ?? '';
+
+    if (!isNonEmptyString(trimmedPeopleId)) {
+      return null;
+    }
+
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const personRepository =
+          await this.globalWorkspaceOrmManager.getRepository<PersonIdentityRecord>(
+            workspaceId,
+            'person',
+            { shouldBypassPermissionChecks: true },
+          );
+
+        return personRepository.findOne({
+          where: { id: trimmedPeopleId },
+        });
+      },
+      authContext,
+    );
+  }
+
+  // Persist LinkedIn JSON caches on Person; mirror into Candidate.otherFields
+  // when present so older UI paths that still read otherFields keep working.
+  private async stampPersonLinkedinJson({
+    workspaceId,
+    peopleId,
     candidateId,
     existingOtherFields,
     linkedinProfile,
     linkedinPosts,
   }: {
     workspaceId: string;
+    peopleId?: string | null;
     candidateId: string;
     existingOtherFields?: Record<string, unknown> | null;
     linkedinProfile?: Record<string, unknown>;
     linkedinPosts?: Record<string, unknown>;
   }): Promise<void> {
+    const trimmedPeopleId = peopleId?.trim() ?? '';
+
+    if (!isNonEmptyString(trimmedPeopleId)) {
+      return;
+    }
+
     const authContext = buildSystemAuthContext(workspaceId);
     const otherFields = {
       ...normalizeOtherFields(existingOtherFields),
@@ -415,6 +473,28 @@ export class LinkedinSelectionFetchService {
     };
 
     await this.globalWorkspaceOrmManager.executeInWorkspaceContext(async () => {
+      const personRepository =
+        await this.globalWorkspaceOrmManager.getRepository<PersonIdentityRecord>(
+          workspaceId,
+          'person',
+          { shouldBypassPermissionChecks: true },
+        );
+
+      const personPatch: Partial<PersonIdentityRecord> = {};
+
+      if (isDefined(linkedinProfile)) {
+        personPatch.linkedinProfile = linkedinProfile;
+      }
+
+      if (isDefined(linkedinPosts)) {
+        personPatch.linkedinPosts = linkedinPosts;
+      }
+
+      if (Object.keys(personPatch).length > 0) {
+        await personRepository.update(trimmedPeopleId, personPatch);
+      }
+
+      // Keep Candidate.otherFields mirror for UI that still reads enrichment there
       const candidateRepository =
         await this.globalWorkspaceOrmManager.getRepository<CandidateRecord>(
           workspaceId,
@@ -422,29 +502,7 @@ export class LinkedinSelectionFetchService {
           { shouldBypassPermissionChecks: true },
         );
 
-      const patch: Partial<CandidateRecord> = {
-        otherFields,
-      };
-
-      if (isDefined(linkedinProfile)) {
-        patch.linkedinProfile = linkedinProfile;
-      }
-
-      if (isDefined(linkedinPosts)) {
-        patch.linkedinPosts = linkedinPosts;
-      }
-
-      try {
-        await candidateRepository.update(candidateId, patch);
-      } catch (error) {
-        // Column may not exist until arxena standard sync — fall back to otherFields only.
-        this.logger.warn(
-          `Dedicated LinkedIn JSON column update failed for ${candidateId}; writing otherFields only: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        );
-        await candidateRepository.update(candidateId, { otherFields });
-      }
+      await candidateRepository.update(candidateId, { otherFields });
     }, authContext);
   }
 }

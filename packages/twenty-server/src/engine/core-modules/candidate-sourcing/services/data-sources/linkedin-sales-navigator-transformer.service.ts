@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UserProfile } from 'twenty-shared';
+import { PersonCandidateDraft } from 'twenty-shared';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
 
@@ -16,7 +16,7 @@ export class LinkedinSalesNavigatorTransformerService extends BaseDataSourceTran
   transformToUserProfile(
     candidateData: any,
     context: TransformationContext
-  ): UserProfile {
+  ): PersonCandidateDraft {
     const userProfile = this.createBaseUserProfile(candidateData, context);
 
     // Use simplified base methods
@@ -35,7 +35,7 @@ export class LinkedinSalesNavigatorTransformerService extends BaseDataSourceTran
     return userProfile;
   }
 
-  private processSalesNavigatorProfileData(candidateData: any, userProfile: UserProfile): void {
+  private processSalesNavigatorProfileData(candidateData: any, userProfile: PersonCandidateDraft): void {
     // Process LinkedIn profile URL - Sales Navigator uses different URL format
     let linkedinUrl = candidateData.public_linkedin_url || candidateData.linkedinUrl || '';
 
@@ -60,7 +60,7 @@ export class LinkedinSalesNavigatorTransformerService extends BaseDataSourceTran
     this.setJobInfo(candidateData, userProfile);
   }
 
-  private processSalesNavigatorExperienceData(candidateData: any, userProfile: UserProfile): void {
+  private processSalesNavigatorExperienceData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const experience =
       candidateData.experience ||
       candidateData.positions ||
@@ -122,7 +122,7 @@ export class LinkedinSalesNavigatorTransformerService extends BaseDataSourceTran
     }
   }
 
-  private processSalesNavigatorSpecificData(candidateData: any, userProfile: UserProfile): void {
+  private processSalesNavigatorSpecificData(candidateData: any, userProfile: PersonCandidateDraft): void {
     // Set LinkedIn Sales Navigator-specific fields
     if (candidateData.summary || candidateData.about) {
       userProfile.linkedinSummary = candidateData.summary || candidateData.about;

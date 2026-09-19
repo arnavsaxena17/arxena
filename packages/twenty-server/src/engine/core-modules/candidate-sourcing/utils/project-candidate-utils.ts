@@ -1,4 +1,4 @@
-import { ArxenaPersonNode } from 'twenty-shared';
+import { PersonCreateInput } from 'twenty-shared';
 
 export class JobCandidateUtils {
   static getJobCandidatePathPosition(
@@ -25,7 +25,7 @@ export class JobCandidateUtils {
       .replace(/[-_\s]+(.)?/g, (_, c) => (c ? c.toUpperCase() : ''));
   }
 
-  static extractKeysFromObjects = (objects: ArxenaPersonNode[]): string[] => {
+  static extractKeysFromObjects = (objects: PersonCreateInput[]): string[] => {
     console.log('number of onjects:', objects?.length);
     const keys = new Set<string>();
 

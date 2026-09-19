@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UserProfile } from 'twenty-shared';
+import { PersonCandidateDraft } from 'twenty-shared';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
 
@@ -16,7 +16,7 @@ export class LinkedinRecruiterJobsTransformerService extends BaseDataSourceTrans
   transformToUserProfile(
     candidateData: any,
     context: TransformationContext
-  ): UserProfile {
+  ): PersonCandidateDraft {
     const userProfile = this.createBaseUserProfile(candidateData, context);
     
     // Process name
@@ -46,7 +46,7 @@ export class LinkedinRecruiterJobsTransformerService extends BaseDataSourceTrans
     return userProfile;
   }
 
-  private processLinkedInRecruiterProfileData(candidateData: any, userProfile: UserProfile): void {
+  private processLinkedInRecruiterProfileData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const recruiterProfileUrl = candidateData.recruiter_profile_url;
     const publicLinkedInUrl = candidateData.public_linkedin_url || candidateData.linkedin_url || candidateData.linkedinUrl;
     const title = candidateData.title || candidateData.profile_headline || '';
@@ -58,7 +58,7 @@ export class LinkedinRecruiterJobsTransformerService extends BaseDataSourceTrans
     }
   }
 
-  private processLinkedInRecruiterContactData(candidateData: any, userProfile: UserProfile): void {
+  private processLinkedInRecruiterContactData(candidateData: any, userProfile: PersonCandidateDraft): void {
     // Process phone numbers
     const phoneNumbers = candidateData.phone_numbers;
     
@@ -89,7 +89,7 @@ export class LinkedinRecruiterJobsTransformerService extends BaseDataSourceTrans
     }
   }
 
-  private processLinkedInRecruiterEducationData(candidateData: any, userProfile: UserProfile): void {
+  private processLinkedInRecruiterEducationData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const education = candidateData.education;
     
     if (education) {
@@ -139,7 +139,7 @@ export class LinkedinRecruiterJobsTransformerService extends BaseDataSourceTrans
     }
   }
 
-  private processLinkedInRecruiterExperienceData(candidateData: any, userProfile: UserProfile): void {
+  private processLinkedInRecruiterExperienceData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const experience = candidateData.experience;
     
     if (experience && Array.isArray(experience)) {
@@ -168,7 +168,7 @@ export class LinkedinRecruiterJobsTransformerService extends BaseDataSourceTrans
     }
   }
 
-  private processLinkedInRecruiterLocationData(candidateData: any, userProfile: UserProfile): void {
+  private processLinkedInRecruiterLocationData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const locationName = candidateData.location_name || candidateData.profile_location;
     
     if (locationName) {
@@ -194,7 +194,7 @@ export class LinkedinRecruiterJobsTransformerService extends BaseDataSourceTrans
     }
   }
 
-  private processLinkedInRecruiterSpecificData(candidateData: any, userProfile: UserProfile): void {
+  private processLinkedInRecruiterSpecificData(candidateData: any, userProfile: PersonCandidateDraft): void {
     // Process industry
     if (candidateData.industry) {
       userProfile.industries = [{
@@ -246,9 +246,9 @@ export class LinkedinRecruiterJobsTransformerService extends BaseDataSourceTrans
   }
 
   /**
-   * Add event to job process - utility method for UserProfile
+   * Add event to job process - utility method for PersonCandidateDraft
    */
-  // protected addProjectProcessEvent(userProfile: UserProfile, type: string, value: any): void {
+  // protected addProjectProcessEvent(userProfile: PersonCandidateDraft, type: string, value: any): void {
     // if (value !== null && value !== undefined && value !== '') {
     //   if (!userProfile.job_process_events) {
     //     userProfile.job_process_events = [];

@@ -6,42 +6,38 @@ export type CandidateNodeFromApi = {
   id: string;
   name?: string;
   peopleId?: string;
-  phoneNumber?: { primaryPhoneNumber?: string };
-  email?: { primaryEmail?: string };
-  linkedinUrl?: { primaryLinkUrl?: string; primaryLinkLabel?: string };
-  uniqueStringKey?: string;
-  jobTitle?: string;
-  jobCompanyName?: string;
+  people?: {
+    phones?: { primaryPhoneNumber?: string };
+    emails?: { primaryEmail?: string };
+    linkedinLink?: { primaryLinkUrl?: string; primaryLinkLabel?: string };
+    jobTitle?: string;
+    jobCompanyName?: string;
+    uniqueStringKey?: string;
+  };
 };
 
 export const candidateToLinkedInPremiumFormat = (
   candidate: CandidateNodeFromApi,
 ): Record<string, unknown> => {
+  const person = candidate.people;
   const linkedinUrl =
-    typeof candidate.linkedinUrl === 'object' && candidate.linkedinUrl
-      ? candidate.linkedinUrl.primaryLinkUrl ?? candidate.linkedinUrl.primaryLinkLabel
-      : typeof candidate.linkedinUrl === 'string'
-        ? candidate.linkedinUrl
-        : '';
+    typeof person?.linkedinLink === 'object' && person.linkedinLink
+      ? person.linkedinLink.primaryLinkUrl ??
+        person.linkedinLink.primaryLinkLabel
+      : '';
   const publicIdentifier =
     linkedinUrl && typeof linkedinUrl === 'string'
       ? linkedinUrl.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//i, '').split('/')[0]
       : '';
   const uniqueStringKey =
-    candidate.uniqueStringKey ||
+    person?.uniqueStringKey ||
     (linkedinUrl && typeof linkedinUrl === 'string' ? linkedinUrl : `candidate-${candidate.id}`);
-  const email =
-    typeof candidate.email === 'object' && candidate.email
-      ? candidate.email.primaryEmail
-      : undefined;
-  const phone =
-    typeof candidate.phoneNumber === 'object' && candidate.phoneNumber
-      ? candidate.phoneNumber.primaryPhoneNumber
-      : undefined;
+  const email = person?.emails?.primaryEmail;
+  const phone = person?.phones?.primaryPhoneNumber;
 
   return {
     full_name: candidate.name ?? 'Unknown',
-    job_title: candidate.jobTitle ?? '',
+    job_title: person?.jobTitle ?? '',
     linkedin_url: linkedinUrl,
     profile_url: linkedinUrl,
     public_identifier: publicIdentifier || undefined,

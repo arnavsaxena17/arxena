@@ -12,10 +12,6 @@ import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system
 type CandidateLinkedinRecord = ObjectLiteral & {
   id: string;
   peopleId?: string | null;
-  personId?: string | null;
-  linkedinProfileId?: string | null;
-  linkedinUrl?: { primaryLinkUrl?: string | null } | null;
-  linkedinUrlPrimaryLinkUrl?: string | null;
   outreachSequenceStage?: string | null;
 };
 
@@ -43,15 +39,6 @@ const repositoryHasColumn = (
   }
 
   return columns.some((column) => column.propertyName === columnName);
-};
-
-const personIdFromCandidate = (
-  candidate: CandidateLinkedinRecord | null,
-): string => {
-  const peopleId = candidate?.peopleId?.trim() ?? '';
-  const personId = candidate?.personId?.trim() ?? '';
-
-  return isNonEmptyString(peopleId) ? peopleId : personId;
 };
 
 @Injectable()
@@ -85,6 +72,7 @@ export class LinkedinProviderIdStoreService {
           });
 
         return this.lookupCandidate(candidateRepository, {
+          workspaceId,
           candidateId,
           identifier,
         });
@@ -110,22 +98,28 @@ export class LinkedinProviderIdStoreService {
 
     return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
       async () => {
-        const candidateRepository = await this.globalWorkspaceOrmManager
-          .getRepository<CandidateLinkedinRecord>(workspaceId, 'candidate', {
-            shouldBypassPermissionChecks: true,
-          });
-        const candidate = await this.lookupCandidate(candidateRepository, {
-          candidateId,
-          identifier,
-        });
+        const personRepository = await this.tryGetPersonRepository(workspaceId);
 
-        if (isValidLinkedInProviderId(candidate?.linkedinProfileId)) {
-          return candidate?.linkedinProfileId?.trim() ?? '';
+        if (!isDefined(personRepository)) {
+          return '';
         }
 
-        const personRepository = await this.tryGetPersonRepository(workspaceId);
+        let personId = '';
+
+        if (isNonEmptyString(candidateId)) {
+          const candidateRepository = await this.globalWorkspaceOrmManager
+            .getRepository<CandidateLinkedinRecord>(workspaceId, 'candidate', {
+              shouldBypassPermissionChecks: true,
+            });
+          const candidate = await candidateRepository.findOne({
+            where: { id: candidateId },
+          });
+
+          personId = candidate?.peopleId?.trim() ?? '';
+        }
+
         const person = await this.lookupPerson(personRepository, {
-          personId: personIdFromCandidate(candidate),
+          personId,
           identifier,
         });
 
@@ -162,24 +156,6 @@ export class LinkedinProviderIdStoreService {
     try {
       await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
         async () => {
-          const candidateRepository = await this.globalWorkspaceOrmManager
-            .getRepository<CandidateLinkedinRecord>(workspaceId, 'candidate', {
-              shouldBypassPermissionChecks: true,
-            });
-          const candidate = await this.lookupCandidate(candidateRepository, {
-            candidateId,
-            identifier,
-          });
-
-          if (
-            isDefined(candidate) &&
-            candidate.linkedinProfileId !== trimmedProviderId
-          ) {
-            await candidateRepository.update(candidate.id, {
-              linkedinProfileId: trimmedProviderId,
-            });
-          }
-
           const personRepository =
             await this.tryGetPersonRepository(workspaceId);
 
@@ -191,8 +167,24 @@ export class LinkedinProviderIdStoreService {
             return;
           }
 
+          let personId = '';
+
+          if (isNonEmptyString(candidateId)) {
+            const candidateRepository = await this.globalWorkspaceOrmManager
+              .getRepository<CandidateLinkedinRecord>(
+                workspaceId,
+                'candidate',
+                { shouldBypassPermissionChecks: true },
+              );
+            const candidate = await candidateRepository.findOne({
+              where: { id: candidateId },
+            });
+
+            personId = candidate?.peopleId?.trim() ?? '';
+          }
+
           const person = await this.lookupPerson(personRepository, {
-            personId: personIdFromCandidate(candidate),
+            personId,
             identifier,
           });
 
@@ -267,9 +259,11 @@ export class LinkedinProviderIdStoreService {
   private async lookupCandidate(
     repository: WorkspaceRepositoryLike<CandidateLinkedinRecord>,
     {
+      workspaceId,
       candidateId,
       identifier,
     }: {
+      workspaceId: string;
       candidateId?: string;
       identifier?: string;
     },
@@ -282,24 +276,14 @@ export class LinkedinProviderIdStoreService {
       }
     }
 
-    const slug = extractLinkedinProfileId(identifier ?? '');
+    const personRepository = await this.tryGetPersonRepository(workspaceId);
+    const person = await this.lookupPerson(personRepository, { identifier });
 
-    if (!isNonEmptyString(slug)) {
+    if (!isDefined(person)) {
       return null;
     }
 
-    const byProfileId = await repository.findOne({
-      where: { linkedinProfileId: slug },
-    });
-
-    if (isDefined(byProfileId)) {
-      return byProfileId;
-    }
-
-    return this.findByLinkedinUrl(repository, {
-      urlColumn: 'linkedinUrlPrimaryLinkUrl',
-      slug,
-    });
+    return repository.findOne({ where: { peopleId: person.id } });
   }
 
   private async lookupPerson(
@@ -407,4 +391,4 @@ export class LinkedinProviderIdStoreService {
       return null;
     }
   }
-}
+};

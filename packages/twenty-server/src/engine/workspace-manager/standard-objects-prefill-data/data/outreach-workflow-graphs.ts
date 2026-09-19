@@ -274,7 +274,7 @@ export const DEFAULT_OUTREACH_SEQUENCER_GRAPH_OPTIONS: OutreachSequencerGraphOpt
     humanInTheLoop: true,
     whatsappEnabled: true,
     meetingFollowUpEnabled: true,
-    checkDeduplicationPerCompany: true,
+    checkDeduplicationPerCompany: false,
   };
 
 const resolveOutreachSequencerGraphOptions = (
@@ -373,7 +373,7 @@ const companySiblingFilters = (
 ): OutreachWfFindRecordFilter[] => [
   {
     fieldMetadataId: OUTREACH_WF_FIELD.jobCompanyName,
-    filterValue: gtmWfFindField(IDS.queuedFind, 'jobCompanyName'),
+    filterValue: gtmWfFindField(IDS.queuedFind, 'people.jobCompanyName'),
     filterType: 'TEXT',
     filterLabel: 'Job Company Name',
     filterOperand: 'CONTAINS',
@@ -468,7 +468,7 @@ const followUpSteps = ({
     name: `Send follow-up ${n}`,
     body: hitlOrDraftMessage({ draftId, approveId, humanInTheLoop }),
     candidateId: gtmWfFindId(findId),
-    linkedinProfileId: gtmWfFindField(findId, 'linkedinProfileId'),
+    linkedinProfileId: gtmWfFindField(findId, 'people.linkedinProfileId'),
     nextStepIds: [stampId],
   }),
   gtmWfUpdateRecordStep({
@@ -512,7 +512,7 @@ const acceptedBranchSteps = ({
     logicFunctionInput: {
       candidateId: gtmWfFindId(IDS.acceptFind),
       linkedinUrl: gtmWfFindField(IDS.acceptFind, 'linkedinUrl.primaryLinkUrl'),
-      linkedinProfileId: gtmWfFindField(IDS.acceptFind, 'linkedinProfileId'),
+      linkedinProfileId: gtmWfFindField(IDS.acceptFind, 'people.linkedinProfileId'),
       workspaceMemberId: gtmWfMemberId(),
     },
     sampleOutput: OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT,
@@ -543,7 +543,7 @@ const acceptedBranchSteps = ({
     logicFunctionInput: {
       candidateId: gtmWfFindId(IDS.acceptFind),
       linkedinUrl: gtmWfFindField(IDS.acceptFind, 'linkedinUrl.primaryLinkUrl'),
-      linkedinProfileId: gtmWfFindField(IDS.acceptFind, 'linkedinProfileId'),
+      linkedinProfileId: gtmWfFindField(IDS.acceptFind, 'people.linkedinProfileId'),
       workspaceMemberId: gtmWfMemberId(),
     },
     sampleOutput: OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
@@ -593,7 +593,7 @@ const acceptedBranchSteps = ({
       humanInTheLoop,
     }),
     candidateId: gtmWfFindId(IDS.acceptFind),
-    linkedinProfileId: gtmWfFindField(IDS.acceptFind, 'linkedinProfileId'),
+    linkedinProfileId: gtmWfFindField(IDS.acceptFind, 'people.linkedinProfileId'),
     nextStepIds: [IDS.waitFu1],
   }),
   gtmWfDelayStep({
@@ -729,7 +729,7 @@ const repliedBranchSteps = ({
         lastInboundChannel: `{{${IDS.findChats}.first.channel}}`,
         preferredChannel: gtmWfFindField(
           IDS.repliedFind,
-          'outreachPreferredChannel',
+          'people.outreachPreferredChannel',
         ),
         acceptedSlotIndex: `{{${IDS.extractSignals}.acceptedSlotIndex}}`,
         requestedChannelSwitch: `{{${IDS.extractSignals}.requestedChannelSwitch}}`,
@@ -748,7 +748,7 @@ const repliedBranchSteps = ({
       name: 'Draft sales reply',
       prompt: buildOutreachSalesChatDraftPrompt({
         name: gtmWfFindField(IDS.repliedFind, 'name'),
-        title: gtmWfFindField(IDS.repliedFind, 'jobTitle'),
+        title: gtmWfFindField(IDS.repliedFind, 'people.jobTitle'),
         transcript: `{{${IDS.findChats}.text}}`,
         slots: `{{${IDS.calendar}.text}}`,
         conversationStage: gtmWfFindField(
@@ -834,7 +834,7 @@ const repliedBranchSteps = ({
     gtmWfSendEmailStep({
       id: IDS.sendReplyEmail,
       name: 'Send reply by email',
-      to: gtmWfFindField(IDS.repliedFind, 'email.primaryEmail'),
+      to: gtmWfFindField(IDS.repliedFind, 'people.emails.primaryEmail'),
       subject: `{{${IDS.draftReply}.emailSubject}}`,
       body: replyBody,
       nextStepIds: [
@@ -850,7 +850,7 @@ const repliedBranchSteps = ({
             name: 'Send reply on WhatsApp',
             phone: gtmWfFindField(
               IDS.repliedFind,
-              'phoneNumber.primaryPhoneNumber',
+              'people.phones.primaryPhoneNumber',
             ),
             body: replyBody,
             candidateId: gtmWfFindId(IDS.repliedFind),
@@ -867,7 +867,7 @@ const repliedBranchSteps = ({
       name: 'Send reply on LinkedIn',
       body: replyBody,
       candidateId: gtmWfFindId(IDS.repliedFind),
-      linkedinProfileId: gtmWfFindField(IDS.repliedFind, 'linkedinProfileId'),
+      linkedinProfileId: gtmWfFindField(IDS.repliedFind, 'people.linkedinProfileId'),
       nextStepIds: [
         IDS.hasProspectEmailIf,
         IDS.hasReferralIf,
@@ -928,7 +928,7 @@ const repliedBranchSteps = ({
         referralName: `{{${IDS.validateSignals}.referralName}}`,
         referralEmail: `{{${IDS.validateSignals}.referralEmail}}`,
         referralPhone: `{{${IDS.validateSignals}.referralPhone}}`,
-        jobCompanyName: gtmWfFindField(IDS.repliedFind, 'jobCompanyName'),
+        jobCompanyName: gtmWfFindField(IDS.repliedFind, 'people.jobCompanyName'),
         projectId: gtmWfFindField(IDS.repliedFind, 'projectId'),
       }),
       agentId: OUTREACH_WF_AGENT_REPLY,
@@ -992,12 +992,12 @@ const repliedBranchSteps = ({
       valid: true,
       settings: {
         input: {
-          title: `Walkthrough — ${gtmWfFindField(IDS.repliedFind, 'jobCompanyName')}`,
+          title: `Walkthrough — ${gtmWfFindField(IDS.repliedFind, 'people.jobCompanyName')}`,
           endsAt: `{{${IDS.validateSignals}.endsAt}}`,
           location: '',
           startsAt: `{{${IDS.validateSignals}.startsAt}}`,
           timeZone: '',
-          attendees: `${gtmWfFindField(IDS.repliedFind, 'email.primaryEmail')}, ${gtmWfMemberEmail()}`,
+          attendees: `${gtmWfFindField(IDS.repliedFind, 'people.emails.primaryEmail')}, ${gtmWfMemberEmail()}`,
           isFullDay: false,
           description: `{{${OUTREACH_WF_MEMBER_STEP_ID}.first.outreachSenderProfile.meeting.agenda_template}}`,
           addConferencing: true,
@@ -1104,7 +1104,7 @@ const repliedBranchSteps = ({
       name: 'Send post-reply FU1 on preferred channel',
       channelStepOutputKey: gtmWfFindField(
         IDS.reloadAfterInboundWait,
-        'outreachPreferredChannel',
+        'people.outreachPreferredChannel',
       ),
       emailBranch: {
         id: IDS.postReplyFu1EmailBranch,
@@ -1130,7 +1130,7 @@ const repliedBranchSteps = ({
     gtmWfSendEmailStep({
       id: IDS.sendPostReplyFu1Email,
       name: 'Send post-reply FU1 by email',
-      to: gtmWfFindField(IDS.reloadAfterInboundWait, 'email.primaryEmail'),
+      to: gtmWfFindField(IDS.reloadAfterInboundWait, 'people.emails.primaryEmail'),
       subject: OUTREACH_POST_REPLY_EMAIL_SUBJECT,
       body: postReplyFu1Body,
       nextStepIds: [IDS.waitPostReplyFu2],
@@ -1142,7 +1142,7 @@ const repliedBranchSteps = ({
             name: 'Send post-reply FU1 on WhatsApp',
             phone: gtmWfFindField(
               IDS.reloadAfterInboundWait,
-              'phoneNumber.primaryPhoneNumber',
+              'people.phones.primaryPhoneNumber',
             ),
             body: postReplyFu1Body,
             candidateId: gtmWfFindId(IDS.reloadAfterInboundWait),
@@ -1155,10 +1155,7 @@ const repliedBranchSteps = ({
       name: 'Send post-reply FU1 on LinkedIn',
       body: postReplyFu1Body,
       candidateId: gtmWfFindId(IDS.reloadAfterInboundWait),
-      linkedinProfileId: gtmWfFindField(
-        IDS.reloadAfterInboundWait,
-        'linkedinProfileId',
-      ),
+      linkedinProfileId: gtmWfFindField(IDS.reloadAfterInboundWait, 'people.linkedinProfileId'),
       nextStepIds: [IDS.waitPostReplyFu2],
     }),
     gtmWfDelayStep({
@@ -1229,7 +1226,7 @@ const repliedBranchSteps = ({
       name: 'Send post-reply FU2 on preferred channel',
       channelStepOutputKey: gtmWfFindField(
         IDS.reloadPostReplyFu2,
-        'outreachPreferredChannel',
+        'people.outreachPreferredChannel',
       ),
       emailBranch: {
         id: IDS.postReplyFu2EmailBranch,
@@ -1255,7 +1252,7 @@ const repliedBranchSteps = ({
     gtmWfSendEmailStep({
       id: IDS.sendPostReplyFu2Email,
       name: 'Send post-reply FU2 by email',
-      to: gtmWfFindField(IDS.reloadPostReplyFu2, 'email.primaryEmail'),
+      to: gtmWfFindField(IDS.reloadPostReplyFu2, 'people.emails.primaryEmail'),
       subject: OUTREACH_POST_REPLY_EMAIL_SUBJECT,
       body: postReplyFu2Body,
       nextStepIds: [IDS.waitPostReplyPark],
@@ -1267,7 +1264,7 @@ const repliedBranchSteps = ({
             name: 'Send post-reply FU2 on WhatsApp',
             phone: gtmWfFindField(
               IDS.reloadPostReplyFu2,
-              'phoneNumber.primaryPhoneNumber',
+              'people.phones.primaryPhoneNumber',
             ),
             body: postReplyFu2Body,
             candidateId: gtmWfFindId(IDS.reloadPostReplyFu2),
@@ -1280,10 +1277,7 @@ const repliedBranchSteps = ({
       name: 'Send post-reply FU2 on LinkedIn',
       body: postReplyFu2Body,
       candidateId: gtmWfFindId(IDS.reloadPostReplyFu2),
-      linkedinProfileId: gtmWfFindField(
-        IDS.reloadPostReplyFu2,
-        'linkedinProfileId',
-      ),
+      linkedinProfileId: gtmWfFindField(IDS.reloadPostReplyFu2, 'people.linkedinProfileId'),
       nextStepIds: [IDS.waitPostReplyPark],
     }),
     gtmWfDelayStep({
@@ -1391,7 +1385,7 @@ const queuedBranchSteps = ({
           IDS.queuedFind,
           'linkedinUrl.primaryLinkUrl',
         ),
-        linkedinProfileId: gtmWfFindField(IDS.queuedFind, 'linkedinProfileId'),
+        linkedinProfileId: gtmWfFindField(IDS.queuedFind, 'people.linkedinProfileId'),
         workspaceMemberId: gtmWfMemberId(),
       },
       sampleOutput: OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
@@ -1409,7 +1403,7 @@ const queuedBranchSteps = ({
         posts: '',
         crm: [
           `Name: ${gtmWfFindField(IDS.queuedFind, 'name')}`,
-          `Title: ${gtmWfFindField(IDS.queuedFind, 'jobTitle')}`,
+          `Title: ${gtmWfFindField(IDS.queuedFind, 'people.jobTitle')}`,
         ].join('\n'),
       }),
       agentId: OUTREACH_WF_AGENT_QUALIFY,
@@ -1465,7 +1459,7 @@ const queuedBranchSteps = ({
           gtmWfIfElseStep({
             id: IDS.hasCompanyIf,
             name: 'Has company name?',
-            stepOutputKey: gtmWfFindField(IDS.queuedFind, 'jobCompanyName'),
+            stepOutputKey: gtmWfFindField(IDS.queuedFind, 'people.jobCompanyName'),
             value: '',
             type: 'TEXT',
             operand: 'IS_NOT_EMPTY',
@@ -1665,10 +1659,7 @@ const queuedBranchSteps = ({
             IDS.queuedFind,
             'linkedinUrl.primaryLinkUrl',
           ),
-          linkedinProfileId: gtmWfFindField(
-            IDS.queuedFind,
-            'linkedinProfileId',
-          ),
+          linkedinProfileId: gtmWfFindField(IDS.queuedFind, 'people.linkedinProfileId'),
           candidateId: gtmWfFindId(IDS.queuedFind),
           workspaceMemberId: gtmWfMemberId(),
         },
@@ -1691,10 +1682,7 @@ const queuedBranchSteps = ({
                   IDS.queuedFind,
                   'linkedinUrl.primaryLinkUrl',
                 ),
-                linkedinProfileId: gtmWfFindField(
-                  IDS.queuedFind,
-                  'linkedinProfileId',
-                ),
+                linkedinProfileId: gtmWfFindField(IDS.queuedFind, 'people.linkedinProfileId'),
                 candidateId: gtmWfFindId(IDS.queuedFind),
                 workspaceMemberId: hoistedMember
                   ? gtmWfMemberId()
@@ -1766,7 +1754,7 @@ const queuedBranchSteps = ({
       name: 'Draft fallback email',
       prompt: buildOutreachFallbackEmailPrompt({
         name: gtmWfFindField(IDS.reloadAfterWait, 'name'),
-        title: gtmWfFindField(IDS.reloadAfterWait, 'jobTitle'),
+        title: gtmWfFindField(IDS.reloadAfterWait, 'people.jobTitle'),
       }),
       agentId: OUTREACH_WF_AGENT_EMAIL,
       outputSchema: OUTREACH_WF_AI_EMAIL_OUTPUT,
@@ -1902,10 +1890,7 @@ const meetingBookedBranchSteps = ({
       humanInTheLoop,
     }),
     candidateId: gtmWfFindId(IDS.meetingBookedFind),
-    linkedinProfileId: gtmWfFindField(
-      IDS.meetingBookedFind,
-      'linkedinProfileId',
-    ),
+    linkedinProfileId: gtmWfFindField(IDS.meetingBookedFind, 'people.linkedinProfileId'),
     nextStepIds: [IDS.waitToMeeting],
   }),
   gtmWfDelayStep({
@@ -1949,10 +1934,7 @@ const meetingBookedBranchSteps = ({
       humanInTheLoop,
     }),
     candidateId: gtmWfFindId(IDS.meetingBookedFind),
-    linkedinProfileId: gtmWfFindField(
-      IDS.meetingBookedFind,
-      'linkedinProfileId',
-    ),
+    linkedinProfileId: gtmWfFindField(IDS.meetingBookedFind, 'people.linkedinProfileId'),
     nextStepIds: [IDS.waitNextDay],
   }),
   gtmWfDelayStep({
@@ -1996,10 +1978,7 @@ const meetingBookedBranchSteps = ({
       humanInTheLoop,
     }),
     candidateId: gtmWfFindId(IDS.meetingBookedFind),
-    linkedinProfileId: gtmWfFindField(
-      IDS.meetingBookedFind,
-      'linkedinProfileId',
-    ),
+    linkedinProfileId: gtmWfFindField(IDS.meetingBookedFind, 'people.linkedinProfileId'),
     nextStepIds: [IDS.stampStalled],
   }),
   gtmWfUpdateRecordStep({
@@ -2121,7 +2100,7 @@ export const buildCandidateSequencerGraph = (
     trigger: gtmWfDatabaseEventTrigger({
       name: 'Prospect is Created or Updated',
       eventName: 'candidate.upserted',
-      fields: ['outreachSequenceStage', 'startOutreach'],
+      fields: ['outreachSequenceStage', 'candidateFlags'],
       filter: gtmWfEntryStageTriggerFilter({
         includeMeetingBooked: meetingFollowUpEnabled,
       }),

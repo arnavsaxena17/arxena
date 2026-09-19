@@ -184,11 +184,64 @@ export const getCandidateCustomField = (
 /**
  * Resolve a field from a flattened candidate row (e.g. after otherFieldsToFlatRow),
  * accepting either snake_case or camelCase keys from AI filter selectedMetadataFields.
+ * Identity fields resolve only from nested people (never Candidate root).
  */
 export const getValueFromCandidateRecord = (
   candidate: Record<string, unknown>,
   fieldName: string,
 ): unknown => {
+  const people =
+    candidate.people && typeof candidate.people === 'object'
+      ? (candidate.people as Record<string, unknown>)
+      : undefined;
+
+  const personIdentityFields = new Set([
+    'email',
+    'emails',
+    'phone',
+    'phoneNumber',
+    'phones',
+    'linkedinUrl',
+    'linkedinLink',
+    'linkedinProfileId',
+    'jobTitle',
+    'jobCompanyName',
+    'locationName',
+    'uniqueStringKey',
+    'displayPicture',
+    'avatarUrl',
+    'hiringNaukriUrl',
+    'resdexNaukriUrl',
+    'linkedinProfile',
+    'linkedinPosts',
+    'outreachPreferredChannel',
+  ]);
+
+  if (people) {
+    if (Object.prototype.hasOwnProperty.call(people, fieldName)) {
+      return people[fieldName];
+    }
+
+    const peopleFieldAliases: Record<string, string> = {
+      linkedinUrl: 'linkedinLink',
+      email: 'emails',
+      phoneNumber: 'phones',
+      phone: 'phones',
+    };
+    const peopleAlias = peopleFieldAliases[fieldName];
+
+    if (
+      peopleAlias &&
+      Object.prototype.hasOwnProperty.call(people, peopleAlias)
+    ) {
+      return people[peopleAlias];
+    }
+  }
+
+  if (personIdentityFields.has(fieldName)) {
+    return undefined;
+  }
+
   if (Object.prototype.hasOwnProperty.call(candidate, fieldName)) {
     return candidate[fieldName];
   }

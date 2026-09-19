@@ -2,7 +2,7 @@
 import { Injectable } from '@nestjs/common';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
-import { columnDefinitions, Project, UpdateOneProject, UserProfile } from 'twenty-shared';
+import { columnDefinitions, Project, UpdateOneProject, PersonCandidateDraft } from 'twenty-shared';
 import { formatChat } from '../arx-chat/utils/arx-chat-agent-utils';
 import { GoogleConnectedAccountAuthService } from '../google-auth/google-connected-account-auth.service';
 import { StaticGraphQLService } from '../graphql/static-graphql.service';
@@ -425,7 +425,7 @@ export class GoogleSheetsService {
     }
   }
 
-  private getHeadersFromData(data: UserProfile[]): string[] {
+  private getHeadersFromData(data: PersonCandidateDraft[]): string[] {
     if (!data || data.length === 0) {
       return columnDefinitions.slice(0, 4).map(col => col.header);
     }
@@ -450,7 +450,7 @@ export class GoogleSheetsService {
     return Array.from(headers);
   }
 
-  private formatCandidateRow(candidate: UserProfile, headers: string[]): string[] {
+  private formatCandidateRow(candidate: PersonCandidateDraft, headers: string[]): string[] {
     return headers.map(header => {
       if (header === 'personId' || header === 'candidateId') {
         return '';
@@ -479,7 +479,7 @@ export class GoogleSheetsService {
     });
   }
 
-  private async appendNewCandidates(auth: any, googleSheetId: string, batch: UserProfile[], headers: string[], existingData: any, apiToken: string): Promise<void> {
+  private async appendNewCandidates(auth: any, googleSheetId: string, batch: PersonCandidateDraft[], headers: string[], existingData: any, apiToken: string): Promise<void> {
     // Find index of unique key column
     const uniqueStringKeyIndex = headers.findIndex(header => header.toLowerCase().includes('unique') && header.toLowerCase().includes('key'));
 
@@ -532,7 +532,7 @@ export class GoogleSheetsService {
     }
   }
 
-  async processGoogleSheetBatch(batch: UserProfile[], results: any, tracking: any, apiToken: string, googleSheetId: string, jobObject: Project): Promise<void> {
+  async processGoogleSheetBatch(batch: PersonCandidateDraft[], results: any, tracking: any, apiToken: string, googleSheetId: string, jobObject: Project): Promise<void> {
     return this.retryWithBackoff(async () => {
       try {
         const auth = await this.loadSavedCredentialsIfExist(apiToken);
@@ -612,7 +612,7 @@ export class GoogleSheetsService {
     return googleSheetId;
   }
 
-  private async appendNewCandidatesToSheet(auth: any, googleSheetId: string, batch: UserProfile[], headers: string[], existingData: any, apiToken: string): Promise<void> {
+  private async appendNewCandidatesToSheet(auth: any, googleSheetId: string, batch: PersonCandidateDraft[], headers: string[], existingData: any, apiToken: string): Promise<void> {
     const updates: Array<{ range: string; values: any[][] }> = [];
     // console.log("existingData.values::", existingData.values);
     const uniqueStringKeyIndex = existingData?.values[0].indexOf('uniqueStringKey');
@@ -908,7 +908,7 @@ export class GoogleSheetsService {
     }
   }
 
-  async updateCandidateInSheet(auth: any, spreadsheetId: string, candidate: UserProfile, apiToken: string) {
+  async updateCandidateInSheet(auth: any, spreadsheetId: string, candidate: PersonCandidateDraft, apiToken: string) {
     try {
       // Get existing headers and data
       const sheets = google.sheets({ version: 'v4', auth });

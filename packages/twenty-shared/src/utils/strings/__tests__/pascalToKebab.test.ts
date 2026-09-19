@@ -2,7 +2,7 @@ import { pascalToKebab } from '../pascalToKebab';
 
 describe('pascalToKebab', () => {
   it('should convert PascalCase to kebab-case', () => {
-    expect(pascalToKebab('UserProfile')).toBe('user-profile');
+    expect(pascalToKebab('PersonCandidateDraft')).toBe('person-candidate-draft');
   });
 
   it('should convert single word', () => {

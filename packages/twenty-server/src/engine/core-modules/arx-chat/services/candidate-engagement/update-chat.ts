@@ -55,12 +55,19 @@ export class UpdateChat {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
-    @Optional() @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
-    @Optional() @Inject(forwardRef(() => {
-      // Lazy require to avoid circular dependency at module load time
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      return require('./engaged-candidate-queue.service').EngagedCandidateQueueService;
-    })) private readonly engagedCandidateQueueService?: any, // EngagedCandidateQueueService type to avoid circular dependency
+    @Optional()
+    @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue)
+    private readonly messageQueueService?: MessageQueueService,
+    @Optional()
+    @Inject(
+      forwardRef(() => {
+        // Lazy require to avoid circular dependency at module load time
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        return require('./engaged-candidate-queue.service')
+          .EngagedCandidateQueueService;
+      }),
+    )
+    private readonly engagedCandidateQueueService?: any, // EngagedCandidateQueueService type to avoid circular dependency
   ) {}
 
   // Static factory method for backward compatibility
@@ -68,12 +75,15 @@ export class UpdateChat {
     workspaceQueryService: WorkspaceQueryService,
     staticGraphQLService: StaticGraphQLService,
   ): UpdateChat {
-    const instance = new UpdateChat(workspaceQueryService, staticGraphQLService, undefined);
+    const instance = new UpdateChat(
+      workspaceQueryService,
+      staticGraphQLService,
+      undefined,
+    );
     return instance;
   }
 
   // Add this new method to the ScheduledJobService
-
 
   async updateMeetingStatusAfterCompletion(
     candidate: CandidateNode,
@@ -84,28 +94,31 @@ export class UpdateChat {
         'Going to update the meeitng after completion of the interview',
       );
       // Get candidate ID
-      const candidateId =
-        candidate?.id;
+      const candidateId = candidate?.id;
       // Get updated version of candidate profile data
       const graphqlQueryObjToFetchCandidateData = JSON.stringify({
         query: graphqlToFetchAllCandidateData,
         variables: { filter: { id: { eq: candidateId } } },
       });
 
-      const updatedCandidateResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { id: { eq: candidateId } } }, apiToken);
+      const updatedCandidateResponse =
+        await this.staticGraphQLService.executeGraphQL(
+          graphqlToFetchAllCandidateData,
+          { filter: { id: { eq: candidateId } } },
+          apiToken,
+        );
 
       console.log('updatedCandidateResponse::', updatedCandidateResponse);
-      const candidates = updatedCandidateResponse?.data?.data?.candidates as {
-        edges: CandidatesEdge[];
-        pageInfo: PageInfo;
-      } | undefined;
+      const candidates = updatedCandidateResponse?.data?.data?.candidates as
+        | {
+            edges: CandidatesEdge[];
+            pageInfo: PageInfo;
+          }
+        | undefined;
 
-
-
-      const updatedCandidateProfileDataNodeObj =
-        candidates?.edges.filter(
-          (edge) => edge.node.project.id === candidate.project.id,
-        )[0]?.node;
+      const updatedCandidateProfileDataNodeObj = candidates?.edges.filter(
+        (edge) => edge.node.project.id === candidate.project.id,
+      )[0]?.node;
 
       console.log(
         'updatedCandidateProfileDataNodeObj::',
@@ -120,8 +133,11 @@ export class UpdateChat {
         }),
       };
 
-
-      await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, updateCandidateVariables, apiToken);
+      await this.staticGraphQLService.executeGraphQL(
+        graphQltoUpdateOneCandidate,
+        updateCandidateVariables,
+        apiToken,
+      );
       console.log(
         `Successfully updated candidate status to "Interview Completed" for candidate ${candidateId}`,
       );
@@ -131,9 +147,13 @@ export class UpdateChat {
         candidateId,
         touch: 'meeting_held',
         apiToken,
-        companyId: (candidate as { project?: { companyId?: string; company?: { id?: string } } })
-          ?.project?.companyId
-          ?? (candidate as { project?: { company?: { id?: string } } })?.project
+        companyId:
+          (
+            candidate as {
+              project?: { companyId?: string; company?: { id?: string } };
+            }
+          )?.project?.companyId ??
+          (candidate as { project?: { company?: { id?: string } } })?.project
             ?.company?.id,
         messagingChannel: (candidate as { messagingChannel?: string })
           ?.messagingChannel,
@@ -203,8 +223,11 @@ export class UpdateChat {
     return response.data;
   }
 
-
-  async createGmailDraftShortlist(candidateIds: string[], origin: string, apiToken: string) {
+  async createGmailDraftShortlist(
+    candidateIds: string[],
+    origin: string,
+    apiToken: string,
+  ) {
     const url =
       process.env.ENV_NODE === 'production'
         ? 'https://arxena.com/create_gmail_draft_shortlist'
@@ -307,10 +330,6 @@ export class UpdateChat {
     return response.data;
   }
 
-
-
-
-
   async resetMessagesFromWhatsapp(candidateId: string, apiToken: string) {
     const chatMessages = await new FilterCandidates(
       this.workspaceQueryService,
@@ -318,7 +337,12 @@ export class UpdateChat {
     ).fetchAllChatMessages(candidateId, apiToken);
     for (const message of chatMessages) {
       try {
-        const deleteMessageResponse = await this.staticGraphQLService.executeGraphQL(deleteOneChatMessage, { idToDelete: message.id }, apiToken);
+        const deleteMessageResponse =
+          await this.staticGraphQLService.executeGraphQL(
+            deleteOneChatMessage,
+            { idToDelete: message.id },
+            apiToken,
+          );
         // console.log('deleteMessageResponse::', deleteMessageResponse.data);
       } catch (error) {
         console.error('Error deleting message:', message.id, error);
@@ -345,7 +369,9 @@ export class UpdateChat {
     ).getCandidateDetailsById(candidateId, apiToken);
 
     const candidateJob: Project = candidate?.project as Project;
-    const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(candidateJob, apiToken);
+    const workspaceMember = await new WorkspaceMemberArxService(
+      this.staticGraphQLService,
+    ).getByProject(candidateJob, apiToken);
     if (!workspaceMember) {
       console.warn(
         '[UpdateChat] Skipping interim chat: job has no recruiter (projectId: %s, candidateId: %s)',
@@ -357,7 +383,7 @@ export class UpdateChat {
     const chatReply = interimChat;
 
     // Set the appropriate message identifier based on messaging channel
-    let messageFrom = candidate?.phoneNumber?.primaryPhoneNumber || '';
+    let messageFrom = candidate?.people?.phones?.primaryPhoneNumber ?? '';
     let messageTo = workspaceMember.phoneNumber || '';
     let messageType = 'string';
 
@@ -368,7 +394,7 @@ export class UpdateChat {
         MessagingChannel.LINKEDIN_SOCK,
       )
     ) {
-      messageFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
+      messageFrom = candidate?.people?.linkedinLink?.primaryLinkUrl ?? '';
       messageTo = workspaceMember.linkedinUrl || '';
       messageType = 'linkedin';
     }
@@ -386,12 +412,14 @@ export class UpdateChat {
 
     console.log(
       'This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::',
-      chatReply, "candidateProfileData", candidateProfileData
+      chatReply,
+      'candidateProfileData',
+      candidateProfileData,
     );
     const replyObject = {
       chatReply: chatReply,
       whatsappDeliveryStatus: 'receivedFromCandidate',
-      phoneNumberFrom: candidate?.phoneNumber?.primaryPhoneNumber || '',
+      phoneNumberFrom: candidate?.people?.phones?.primaryPhoneNumber ?? '',
       externalMessageId: 'NA',
     };
     const responseAfterMessageUpdate = await new IncomingWhatsappMessages(
@@ -405,9 +433,7 @@ export class UpdateChat {
       false, // Don't queue interim chats
     );
 
-    console.log(
-      'This is the response after message update::',
-    );
+    console.log('This is the response after message update::');
   }
 
   async createInterimChatQueue(
@@ -422,7 +448,8 @@ export class UpdateChat {
         this.workspaceQueryService,
         this.staticGraphQLService,
       ).getCandidateDetailsById(candidateId, apiToken);
-      const slidingWindowDelayMinutes = candidate?.project?.engagementProcessingDelayMinutes;
+      const slidingWindowDelayMinutes =
+        candidate?.project?.engagementProcessingDelayMinutes;
       const chatControlType =
         options?.chatControlType ??
         (CANDIDATE_CHAT_START_CONTROL_FIELDS.has(interimChat)
@@ -461,10 +488,15 @@ export class UpdateChat {
     console.log('Candidate ID:', candidateId);
     console.log('Interim Chat:', interimChat);
     console.log('Chat Control Type:', chatControlType);
-    console.log('EngagedCandidateQueueService available:', !!this.engagedCandidateQueueService);
+    console.log(
+      'EngagedCandidateQueueService available:',
+      !!this.engagedCandidateQueueService,
+    );
 
     if (!this.engagedCandidateQueueService) {
-      console.warn('❌ EngagedCandidateQueueService not available, falling back to direct processing');
+      console.warn(
+        '❌ EngagedCandidateQueueService not available, falling back to direct processing',
+      );
       // Fallback to direct processing if queue service is not available
       await this.createInterimChat(interimChat, candidateId, apiToken);
       return;
@@ -483,9 +515,14 @@ export class UpdateChat {
         delayMs,
       );
 
-      console.log(`Queued candidate ${candidateId} for engagement processing with interim chat data: ${interimChat} and chat control: ${chatControlType}`);
+      console.log(
+        `Queued candidate ${candidateId} for engagement processing with interim chat data: ${interimChat} and chat control: ${chatControlType}`,
+      );
     } catch (error) {
-      console.error(`Failed to queue candidate ${candidateId} for engagement:`, error);
+      console.error(
+        `Failed to queue candidate ${candidateId} for engagement:`,
+        error,
+      );
       throw error;
     }
   }
@@ -501,11 +538,17 @@ export class UpdateChat {
         query: graphqlToFetchAllCandidateData,
         variables: { filter: { id: { in: candidateIds } } },
       });
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { id: { in: candidateIds } } }, apiToken);
-      const candidates = response?.data?.data?.candidates as {
-        edges: CandidatesEdge[];
-        pageInfo: PageInfo;
-      } | undefined;
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFetchAllCandidateData,
+        { filter: { id: { in: candidateIds } } },
+        apiToken,
+      );
+      const candidates = response?.data?.data?.candidates as
+        | {
+            edges: CandidatesEdge[];
+            pageInfo: PageInfo;
+          }
+        | undefined;
       const currentCandidates = candidates?.edges || [];
 
       console.log('Number of current Candidates:', currentCandidates.length);
@@ -516,7 +559,7 @@ export class UpdateChat {
         const messagesList = await new FilterCandidates(
           this.workspaceQueryService,
           this.staticGraphQLService,
-          ).fetchAllChatMessages(candidate.node.id, apiToken);
+        ).fetchAllChatMessages(candidate.node.id, apiToken);
         const newCount = messagesList.length;
 
         console.log('New chat count::', newCount);
@@ -556,16 +599,26 @@ export class UpdateChat {
     }
   }
 
-  private async sendInsufficientCreditsEmail(apiToken: string, recruiterId: string) {
+  private async sendInsufficientCreditsEmail(
+    apiToken: string,
+    recruiterId: string,
+  ) {
     try {
-      const workspaceName = await this.workspaceQueryService.getWorkspaceNameFromToken(apiToken);
-      const currentUser = await new WorkspaceMemberArxService(this.staticGraphQLService).getById(recruiterId, apiToken);
+      const workspaceName =
+        await this.workspaceQueryService.getWorkspaceNameFromToken(apiToken);
+      const currentUser = await new WorkspaceMemberArxService(
+        this.staticGraphQLService,
+      ).getById(recruiterId, apiToken);
 
       // Send socket notification to the recruiter
       if (recruiterId) {
-        this.workspaceQueryService.webSocketService.sendToUser(recruiterId, 'openai_credits_status', {
-          hasInsufficientCredits: true
-        });
+        this.workspaceQueryService.webSocketService.sendToUser(
+          recruiterId,
+          'openai_credits_status',
+          {
+            hasInsufficientCredits: true,
+          },
+        );
       }
 
       const emailTemplate = InsufficientCreditsEmail({
@@ -587,7 +640,10 @@ export class UpdateChat {
         text,
       });
 
-      console.log('Sent insufficient credits email to:', workspaceMemberEmail(currentUser));
+      console.log(
+        'Sent insufficient credits email to:',
+        workspaceMemberEmail(currentUser),
+      );
     } catch (error) {
       console.error('Error sending insufficient credits email:', error);
     }
@@ -597,7 +653,7 @@ export class UpdateChat {
     apiToken: string,
     projectIds: string[],
     candidateIds: string[] | null = null,
-    updateType: string = "processCandidatesChatsGetStatuses",
+    updateType: string = 'processCandidatesChatsGetStatuses',
   ) {
     console.log('This is the update type::', updateType);
     console.log('Processing candidates chats to get statuses with chat true');
@@ -608,7 +664,7 @@ export class UpdateChat {
       this.staticGraphQLService,
     ).fetchAllCandidatesWithAllChatControls(
       'allStartedAndStoppedChats',
-    apiToken,
+      apiToken,
     );
 
     console.log(
@@ -618,7 +674,9 @@ export class UpdateChat {
     if (candidateIds && Array.isArray(candidateIds)) {
       allCandidates = allCandidates.filter(
         (candidate) =>
-          candidateIds.includes(candidate.id) && candidate.candConversationStatus !== 'CONVERSATION_CLOSED_TO_BE_CONTACTED',
+          candidateIds.includes(candidate.id) &&
+          candidate.candConversationStatus !==
+            'CONVERSATION_CLOSED_TO_BE_CONTACTED',
       );
     } else {
       console.log('Candidate Ids are not present in the request');
@@ -646,11 +704,13 @@ export class UpdateChat {
           ? projectIds[candidateIds.indexOf(candidateId)]
           : '';
 
-
         const recruiterId = candidate?.project?.recruiterId;
 
         if (projectId == '') {
-          console.log('Project ID is not present for the candidate::', candidateId);
+          console.log(
+            'Project ID is not present for the candidate::',
+            candidateId,
+          );
         }
         const chatMessages = await new FilterCandidates(
           this.workspaceQueryService,
@@ -687,7 +747,10 @@ export class UpdateChat {
           };
         } catch (error) {
           console.log('Error in processing candidate:', error);
-          if (error?.error?.type === 'insufficient_quota' || error?.code === 'insufficient_quota') {
+          if (
+            error?.error?.type === 'insufficient_quota' ||
+            error?.code === 'insufficient_quota'
+          ) {
             console.log('OpenAI credits depleted, sending notification email');
             await this.sendInsufficientCreditsEmail(apiToken, recruiterId);
           }
@@ -735,13 +798,21 @@ export class UpdateChat {
         });
 
         try {
-          await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, updateCandidateVariables, apiToken);
+          await this.staticGraphQLService.executeGraphQL(
+            graphQltoUpdateOneCandidate,
+            updateCandidateVariables,
+            apiToken,
+          );
         } catch (e) {
           console.log('Error in candidate status update::', e);
         }
       }
       try {
-        const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, updateCandidateObjectVariables, apiToken);
+        const response = await this.staticGraphQLService.executeGraphQL(
+          graphQltoUpdateOneCandidate,
+          updateCandidateObjectVariables,
+          apiToken,
+        );
 
         console.log(
           'Candidate chat status updated successfully "with the status of ::',
@@ -756,7 +827,6 @@ export class UpdateChat {
 
     return validResults;
   }
-
 
   async createAndUpdateChatMessage(
     candidate: CandidateNode,
@@ -775,14 +845,16 @@ export class UpdateChat {
         candidateId: candidate?.id,
         personId: candidate?.peopleId,
         message:
-        whatappUpdateMessageObj?.messages[0]?.content ||
-        whatappUpdateMessageObj?.messages[0]?.text || '',
+          whatappUpdateMessageObj?.messages[0]?.content ||
+          whatappUpdateMessageObj?.messages[0]?.text ||
+          '',
         phoneFrom: whatappUpdateMessageObj?.phoneNumberFrom,
         phoneTo: whatappUpdateMessageObj?.phoneNumberTo,
         projectId: candidate?.project?.id,
         recruiterId: candidate?.project?.recruiterId,
         name: whatappUpdateMessageObj?.messageType,
-        lastEngagementChatControl: whatappUpdateMessageObj?.lastEngagementChatControl,
+        lastEngagementChatControl:
+          whatappUpdateMessageObj?.lastEngagementChatControl,
         messageObj: whatappUpdateMessageObj?.messageObj,
         whatsappDeliveryStatus: whatappUpdateMessageObj.whatsappDeliveryStatus,
         externalMessageId: whatappUpdateMessageObj?.externalMessageId,
@@ -791,7 +863,6 @@ export class UpdateChat {
         ...(options?.createdAt ? { createdAt: options.createdAt } : {}),
       },
     };
-
 
     try {
       console.log(
@@ -822,15 +893,27 @@ export class UpdateChat {
       const recruiterId = candidate?.project?.recruiterId;
       console.log('This is the recruiterId::', recruiterId);
       if (recruiterId) {
-        console.log('Sending WebSocket event to the specific recruiter::', recruiterId);
-        this.workspaceQueryService.webSocketService.sendToUser(recruiterId, 'chat_message_updated', {
-          candidateId: candidate?.id,
-          projectId: candidate?.project?.id,
-          messageId: createNewChatMessageUpdateVariables.input.id,
-        });
-        console.log('WebSocket event sent to the specific recruiter::', recruiterId);
+        console.log(
+          'Sending WebSocket event to the specific recruiter::',
+          recruiterId,
+        );
+        this.workspaceQueryService.webSocketService.sendToUser(
+          recruiterId,
+          'chat_message_updated',
+          {
+            candidateId: candidate?.id,
+            projectId: candidate?.project?.id,
+            messageId: createNewChatMessageUpdateVariables.input.id,
+          },
+        );
+        console.log(
+          'WebSocket event sent to the specific recruiter::',
+          recruiterId,
+        );
       } else {
-        console.log('No recruiterId found for the message, skipping WebSocket notification');
+        console.log(
+          'No recruiterId found for the message, skipping WebSocket notification',
+        );
       }
 
       return response.data;
@@ -848,9 +931,15 @@ export class UpdateChat {
       skipOutreachMaterialize?: boolean;
     },
   ) {
-    const candidateEngagementStatus = whatappUpdateMessageObj.messageType !== 'botMessage';
+    const candidateEngagementStatus =
+      whatappUpdateMessageObj.messageType !== 'botMessage';
 
-    console.log( 'Updating candidate engagement status to:', candidateEngagementStatus, 'for candidate id::', candidate?.id);
+    console.log(
+      'Updating candidate engagement status to:',
+      candidateEngagementStatus,
+      'for candidate id::',
+      candidate?.id,
+    );
     const updateCandidateObjectVariables = {
       idToUpdate: candidate?.id,
       input: buildCandidateFlagsPatchUpdate(candidate, {
@@ -860,7 +949,11 @@ export class UpdateChat {
       }),
     };
     try {
-      const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, updateCandidateObjectVariables, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphQltoUpdateOneCandidate,
+        updateCandidateObjectVariables,
+        apiToken,
+      );
 
       if (!options?.skipOutreachMaterialize) {
         const touch =
@@ -876,9 +969,12 @@ export class UpdateChat {
           existingFirstOutboundAt: (candidate as { firstOutboundAt?: string })
             ?.firstOutboundAt,
           companyId:
-            (candidate as { project?: { companyId?: string; company?: { id?: string } } })
-              ?.project?.companyId
-            ?? (candidate as { project?: { company?: { id?: string } } })?.project
+            (
+              candidate as {
+                project?: { companyId?: string; company?: { id?: string } };
+              }
+            )?.project?.companyId ??
+            (candidate as { project?: { company?: { id?: string } } })?.project
               ?.company?.id,
           messagingChannel:
             options?.messagingChannelOverride ??
@@ -908,7 +1004,9 @@ export class UpdateChat {
       apiToken,
     );
     const candidateNode = (
-      candidate?.data?.data?.candidates as { edges: CandidatesEdge[] } | undefined
+      candidate?.data?.data?.candidates as
+        | { edges: CandidatesEdge[] }
+        | undefined
     )?.edges[0]?.node;
 
     const updateCandidateObjectVariables = {
@@ -919,7 +1017,11 @@ export class UpdateChat {
     };
 
     try {
-      const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, updateCandidateObjectVariables, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphQltoUpdateOneCandidate,
+        updateCandidateObjectVariables,
+        apiToken,
+      );
 
       console.log(
         'Candidate engagement status updated successfully to false ::',
@@ -981,7 +1083,6 @@ export class UpdateChat {
     apiToken: string,
     isAfterMessageSent = false,
   ) {
-
     if (candidate?.name === '') return;
     console.log('Candidate information retrieved successfully');
     const chatMessage = await this.createAndUpdateChatMessage(
@@ -991,7 +1092,9 @@ export class UpdateChat {
     );
 
     if (!chatMessage || isAfterMessageSent) {
-      console.log( 'WhatsApp message not found or message already sent, hence not updating the candidate engagement status to true', );
+      console.log(
+        'WhatsApp message not found or message already sent, hence not updating the candidate engagement status to true',
+      );
       return;
     }
     const updateCandidateStatusObj = await this.updateCandidateEngagementStatus(
@@ -1013,7 +1116,6 @@ export class UpdateChat {
     };
   }
 
-
   async updateCandidateEngagementStatusAndChatCounts(
     candidate: CandidateNode,
     whatappUpdateMessageObj: whatappUpdateMessageObjType,
@@ -1026,7 +1128,12 @@ export class UpdateChat {
 
     await this.updateCandidatesWithChatCount([candidate?.id], apiToken);
 
-    const results = await this.processCandidatesChatsGetStatuses(apiToken, [candidate?.project?.id],[candidate?.id], "updateCandidateEngagementStatusAndChatCounts");
+    const results = await this.processCandidatesChatsGetStatuses(
+      apiToken,
+      [candidate?.project?.id],
+      [candidate?.id],
+      'updateCandidateEngagementStatusAndChatCounts',
+    );
     // console.log('Results from updating candidate engagement status and chat counts::', results);
     return results;
   }
@@ -1037,7 +1144,11 @@ export class UpdateChat {
       query: graphqlQueryToRemoveMessages,
       variables: graphQLVariables,
     });
-    const response = await this.staticGraphQLService.executeGraphQL(graphqlQueryToRemoveMessages, graphQLVariables, apiToken);
+    const response = await this.staticGraphQLService.executeGraphQL(
+      graphqlQueryToRemoveMessages,
+      graphQLVariables,
+      apiToken,
+    );
 
     console.log('REsponse status:', response.data);
 
@@ -1066,7 +1177,11 @@ export class UpdateChat {
 
     console.log('GraphQL query to update candidate status:');
     try {
-      const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, updateCandidateObjectVariables, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphQltoUpdateOneCandidate,
+        updateCandidateObjectVariables,
+        apiToken,
+      );
 
       console.log('REsponse from updating candidate status:', response.data);
 
@@ -1084,7 +1199,9 @@ export class UpdateChat {
     candidateId: string,
     apiToken: string,
   ): Promise<{ synced: number; skipped: number; errors: number }> {
-    console.log(`🔄 Syncing ${baileysMessages.length} Baileys messages with database for candidate: ${candidateId}`);
+    console.log(
+      `🔄 Syncing ${baileysMessages.length} Baileys messages with database for candidate: ${candidateId}`,
+    );
 
     let synced = 0;
     let skipped = 0;
@@ -1096,13 +1213,20 @@ export class UpdateChat {
         this.workspaceQueryService,
         this.staticGraphQLService,
       ).fetchAllChatMessages(candidateId, apiToken);
-      console.log("existingMessages in syncBaileysMessagesWithDatabase:", existingMessages);
+      console.log(
+        'existingMessages in syncBaileysMessagesWithDatabase:',
+        existingMessages,
+      );
       // Create a set of existing message IDs for quick lookup
       const existingMessageIds = new Set(
-        existingMessages.map(msg => (msg as any).externalMessageId).filter(Boolean)
+        existingMessages
+          .map((msg) => (msg as any).externalMessageId)
+          .filter(Boolean),
       );
 
-      console.log(`📊 Found ${existingMessages.length} existing messages in database`);
+      console.log(
+        `📊 Found ${existingMessages.length} existing messages in database`,
+      );
 
       // Get candidate details
       const candidate = await new FilterCandidates(
@@ -1133,48 +1257,55 @@ export class UpdateChat {
           const chatMessageObj: whatappUpdateMessageObjType = {
             id: baileysMessage.id,
             phoneNumberFrom: isFromMe
-              ? candidate.phoneNumber?.primaryPhoneNumber || ''
+              ? (candidate.people?.phones?.primaryPhoneNumber ?? '')
               : baileysMessage.phoneFrom || '',
             phoneNumberTo: isFromMe
               ? baileysMessage.phoneTo || ''
-              : candidate.phoneNumber?.primaryPhoneNumber || '',
+              : (candidate.people?.phones?.primaryPhoneNumber ?? ''),
             messageType: isFromMe ? 'botMessage' : 'userMessage',
-            messages: [{
-              role: isFromMe ? 'assistant' : 'user',
-              content: messageContent
-            }],
-            messageObj: [{
-              role: isFromMe ? 'assistant' : 'user',
-              content: messageContent
-            }],
+            messages: [
+              {
+                role: isFromMe ? 'assistant' : 'user',
+                content: messageContent,
+              },
+            ],
+            messageObj: [
+              {
+                role: isFromMe ? 'assistant' : 'user',
+                content: messageContent,
+              },
+            ],
             whatsappDeliveryStatus: 'receivedFromCandidate',
             externalMessageId: baileysMessage.id,
             typeOfMessage: messageType,
             lastEngagementChatControl: 'startChat',
             candidateProfile: candidate,
             candidateFirstName: candidate.name?.split(' ')[0] || '',
-            whatsappMessageType: messageType
+            whatsappMessageType: messageType,
           };
 
           // Save message to database
           await this.createAndUpdateChatMessage(
             candidate,
             chatMessageObj,
-            apiToken
+            apiToken,
           );
 
           synced++;
           console.log(`✅ Synced message: ${baileysMessage.id}`);
-
         } catch (error) {
-          console.error(`❌ Error syncing message ${baileysMessage.id}:`, error);
+          console.error(
+            `❌ Error syncing message ${baileysMessage.id}:`,
+            error,
+          );
           errors++;
         }
       }
 
-      console.log(`📈 Sync completed - Synced: ${synced}, Skipped: ${skipped}, Errors: ${errors}`);
+      console.log(
+        `📈 Sync completed - Synced: ${synced}, Skipped: ${skipped}, Errors: ${errors}`,
+      );
       return { synced, skipped, errors };
-
     } catch (error) {
       console.error('❌ Error in syncBaileysMessagesWithDatabase:', error);
       return { synced, skipped, errors: baileysMessages.length };
@@ -1285,7 +1416,9 @@ export class UpdateChat {
 
       const existingMessageIds = new Set(
         existingMessages
-          .map((msg) => (msg as { externalMessageId?: string }).externalMessageId)
+          .map(
+            (msg) => (msg as { externalMessageId?: string }).externalMessageId,
+          )
           .filter(Boolean),
       );
 
@@ -1311,8 +1444,7 @@ export class UpdateChat {
 
       const candidatePhoneDigits = this.normalizePhoneDigitsForSync(
         context.candidatePhone ||
-          candidate.phoneNumber?.primaryPhoneNumber ||
-          '',
+          (candidate.people?.phones?.primaryPhoneNumber ?? ''),
       );
       const recruiterPhoneDigits = this.normalizePhoneDigitsForSync(
         context.recruiterPhone,
@@ -1337,7 +1469,8 @@ export class UpdateChat {
           }
 
           const isFromConnectedUser = unipileMessage.is_sender === 1;
-          const messageContent = this.extractUnipileMessageContent(unipileMessage);
+          const messageContent =
+            this.extractUnipileMessageContent(unipileMessage);
 
           if (!messageContent) {
             skipped++;
@@ -1366,7 +1499,9 @@ export class UpdateChat {
             id: uuidv4(),
             phoneNumberFrom: phoneFrom,
             phoneNumberTo: phoneTo,
-            messageType: isFromConnectedUser ? 'botMessage' : 'whatsapp-unipile',
+            messageType: isFromConnectedUser
+              ? 'botMessage'
+              : 'whatsapp-unipile',
             messages: [
               {
                 role: isFromConnectedUser ? 'assistant' : 'user',
@@ -1387,7 +1522,8 @@ export class UpdateChat {
             lastEngagementChatControl: 'startChat',
             candidateProfile: candidate,
             candidateFirstName: candidate.name?.split(' ')[0] || '',
-            whatsappMessageType: this.determineUnipileMessageType(unipileMessage),
+            whatsappMessageType:
+              this.determineUnipileMessageType(unipileMessage),
           };
 
           const createdMessage = await this.createAndUpdateChatMessage(
@@ -1487,36 +1623,45 @@ export class UpdateChat {
     phoneNumber: string,
     candidateId: string,
     apiToken: string,
-    baileysMessages: any[]
+    baileysMessages: any[],
   ): Promise<{ synced: number; skipped: number; errors: number }> {
-    console.log(`🔄 Syncing messages for phone number: ${phoneNumber}, candidate: ${candidateId}`);
+    console.log(
+      `🔄 Syncing messages for phone number: ${phoneNumber}, candidate: ${candidateId}`,
+    );
 
     try {
-      console.log("baileysMessages in syncMessagesForPhoneNumber:", baileysMessages);
+      console.log(
+        'baileysMessages in syncMessagesForPhoneNumber:',
+        baileysMessages,
+      );
       // Filter messages for this specific phone number
       const phoneNumberClean = phoneNumber.replace(/[^0-9]/g, '');
-      const relevantMessages = baileysMessages.filter(msg => {
+      const relevantMessages = baileysMessages.filter((msg) => {
         const fromPhone = msg.phoneFrom?.replace(/[^0-9]/g, '') || '';
         const toPhone = msg.phoneTo?.replace(/[^0-9]/g, '') || '';
         return fromPhone === phoneNumberClean || toPhone === phoneNumberClean;
       });
 
-      console.log(`📱 Found ${relevantMessages.length} relevant messages for phone number: ${phoneNumber}`);
+      console.log(
+        `📱 Found ${relevantMessages.length} relevant messages for phone number: ${phoneNumber}`,
+      );
 
       if (relevantMessages.length === 0) {
-        console.log("No relevant messages found in syncMessagesForPhoneNumber");
+        console.log('No relevant messages found in syncMessagesForPhoneNumber');
         return { synced: 0, skipped: 0, errors: 0 };
       }
 
-      console.log("relevantMessages in syncMessagesForPhoneNumber:", relevantMessages);
+      console.log(
+        'relevantMessages in syncMessagesForPhoneNumber:',
+        relevantMessages,
+      );
 
       // Sync the messages
       return await this.syncBaileysMessagesWithDatabase(
         relevantMessages,
         candidateId,
-        apiToken
+        apiToken,
       );
-
     } catch (error) {
       console.error('❌ Error syncing messages for phone number:', error);
       return { synced: 0, skipped: 0, errors: baileysMessages.length };

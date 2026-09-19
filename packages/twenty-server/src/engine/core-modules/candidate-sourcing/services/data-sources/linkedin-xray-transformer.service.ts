@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 
 import type { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
-import { UserProfile } from 'twenty-shared';
+import { PersonCandidateDraft } from 'twenty-shared';
 
 import {
   LinkedInSearchTransformerService,
-  TransformedCandidateForTable,
+  CandidateTableRow,
 } from './linkedin-search-transformer.service';
 import {
   BaseDataSourceTransformerService,
@@ -32,7 +32,7 @@ export class LinkedinXrayTransformerService extends BaseDataSourceTransformerSer
   transformToUserProfile(
     candidateData: LinkedInPeopleSearchResult,
     context: TransformationContext,
-  ): UserProfile {
+  ): PersonCandidateDraft {
     return this.linkedInSearchTransformer.transformToUserProfile(
       candidateData,
       {
@@ -49,7 +49,7 @@ export class LinkedinXrayTransformerService extends BaseDataSourceTransformerSer
       companyId?: string;
       companyLinkedinUrl?: string;
     },
-  ): TransformedCandidateForTable[] {
+  ): CandidateTableRow[] {
     if (!items.length) {
       return [];
     }

@@ -4,6 +4,7 @@ import { graphQltoUpdateOneCandidate } from 'twenty-shared';
 import {
   buildCandidateAnalyticsUpdate,
   buildCompanyAnalyticsRollup,
+  isCandidateFlagTrue,
   parseOutreachAnalytics,
   resolveOutreachFirstContactAt,
   resolveOutreachFirstOutboundAt,
@@ -87,12 +88,12 @@ export class OutreachCommandMaterializeService {
       if (
         event === 'inbound_reply_flush' &&
         classifiedOutreachStage !== 'STOPPED' &&
-        (candidateSnapshot?.stopOutreach === true ||
-          candidateSnapshot?.startOutreach !== true ||
+        (!isCandidateFlagTrue(candidateSnapshot, 'startOutreach') ||
+          isCandidateFlagTrue(candidateSnapshot, 'stopOutreach') ||
           candidateSnapshot?.outreachSequenceStage === 'STOPPED')
       ) {
         this.logger.log(
-          `Skipping REPLIED stamp for ${candidateId}: startOutreach=${String(candidateSnapshot?.startOutreach)} stopOutreach=${String(candidateSnapshot?.stopOutreach)} stage=${String(candidateSnapshot?.outreachSequenceStage)}`,
+          `Skipping REPLIED stamp for ${candidateId}: startOutreach=${String(isCandidateFlagTrue(candidateSnapshot, 'startOutreach'))} stopOutreach=${String(isCandidateFlagTrue(candidateSnapshot, 'stopOutreach'))} stage=${String(candidateSnapshot?.outreachSequenceStage)}`,
         );
 
         return;
@@ -300,7 +301,6 @@ export class OutreachCommandMaterializeService {
             edges {
               node {
                 id
-                linkedinUrl { primaryLinkUrl }
                 people { linkedinLink { primaryLinkUrl } }
               }
             }
@@ -310,8 +310,10 @@ export class OutreachCommandMaterializeService {
           filter: {
             or: [
               {
-                linkedinUrl: {
-                  primaryLinkUrl: { ilike: `%${slug}%` },
+                people: {
+                  linkedinLink: {
+                    primaryLinkUrl: { ilike: `%${slug}%` },
+                  },
                 },
               },
             ],
@@ -326,7 +328,6 @@ export class OutreachCommandMaterializeService {
             edges?: Array<{
               node: {
                 id: string;
-                linkedinUrl?: { primaryLinkUrl?: string };
                 people?: { linkedinLink?: { primaryLinkUrl?: string } };
               };
             }>;
@@ -334,19 +335,11 @@ export class OutreachCommandMaterializeService {
         )?.edges ?? [];
 
       const match = edges.find((edge) => {
-        const candidateUrl = normalizeLinkedinUrl(
-          edge.node.linkedinUrl?.primaryLinkUrl,
-        );
         const personUrl = normalizeLinkedinUrl(
           edge.node.people?.linkedinLink?.primaryLinkUrl,
         );
 
-        return (
-          candidateUrl.includes(slug) ||
-          personUrl.includes(slug) ||
-          normalized.includes(candidateUrl) ||
-          normalized.includes(personUrl)
-        );
+        return personUrl.includes(slug) || normalized.includes(personUrl);
       });
 
       return match?.node.id ?? edges[0]?.node.id ?? null;
@@ -590,8 +583,7 @@ export class OutreachCommandMaterializeService {
     outreachAnalytics?: unknown;
     projectId?: string | null;
     outreachSequenceStage?: string | null;
-    startOutreach?: boolean | null;
-    stopOutreach?: boolean | null;
+    candidateFlags?: unknown;
   } | null> {
     try {
       const response = (await this.staticGraphQLService.executeGraphQL(
@@ -604,8 +596,7 @@ export class OutreachCommandMaterializeService {
                 outreachAnalytics
                 projectId
                 outreachSequenceStage
-                startOutreach
-                stopOutreach
+                candidateFlags
               }
             }
           }
@@ -623,8 +614,7 @@ export class OutreachCommandMaterializeService {
                 outreachAnalytics?: unknown;
                 projectId?: string | null;
                 outreachSequenceStage?: string | null;
-                startOutreach?: boolean | null;
-                stopOutreach?: boolean | null;
+                candidateFlags?: unknown;
               };
             }>;
           }

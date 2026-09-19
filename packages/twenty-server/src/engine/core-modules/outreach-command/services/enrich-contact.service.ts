@@ -13,14 +13,14 @@ import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system
 
 type CandidateRecord = ObjectLiteral & {
   id: string;
-  linkedinUrl?: { primaryLinkUrl?: string | null } | null;
   enrichStatus?: string | null;
-  personId?: string | null;
+  peopleId?: string | null;
 };
 
 type PersonRecord = ObjectLiteral & {
   id: string;
   emails?: { primaryEmail?: string | null; additionalEmails?: string[] | null };
+  linkedinLink?: { primaryLinkUrl?: string | null } | null;
 };
 
 export type EnrichContactInput = {
@@ -88,9 +88,19 @@ export class EnrichContactService {
             };
           }
 
-          personId = candidate.personId ?? null;
-          if (!isNonEmptyString(linkedinUrl)) {
-            linkedinUrl = candidate.linkedinUrl?.primaryLinkUrl?.trim() ?? '';
+          personId = candidate.peopleId ?? null;
+          if (!isNonEmptyString(linkedinUrl) && isNonEmptyString(personId)) {
+            const personRepository =
+              await this.globalWorkspaceOrmManager.getRepository<PersonRecord>(
+                workspaceId,
+                'person',
+                { shouldBypassPermissionChecks: true },
+              );
+            const person = await personRepository.findOne({
+              where: { id: personId },
+            });
+
+            linkedinUrl = person?.linkedinLink?.primaryLinkUrl?.trim() ?? '';
           }
 
           await candidateRepository.update(candidateId, {

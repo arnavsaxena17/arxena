@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { ApifyLinkedInCompanyProfileTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/apify-linkedin-company-profile-transformer.service';
-import type { TransformedCandidateForTable } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
+import type { CandidateTableRow } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import {
   ApifyService,
   type ApifyRunLogProgressArgs,
@@ -1248,11 +1248,11 @@ export class LinkedInSearchService {
 
   /**
    * Fetch company employees via Apify LinkedIn company profile scraper actor (not Unipile).
-   * Returns the same TransformedCandidateForTable shape as Unipile LinkedIn people search (org chart path).
+   * Returns the same CandidateTableRow shape as Unipile LinkedIn people search (org chart path).
    */
   async fetchCompanyEmployeesViaApifyActor(
     params: LinkedInCompanyProfileApifyFetchParams,
-  ): Promise<TransformedCandidateForTable[]> {
+  ): Promise<CandidateTableRow[]> {
     if (!this.apifyService.isConfigured()) {
       throw new Error('Apify is not configured (set APIFY_API_TOKEN)');
     }
@@ -1365,7 +1365,7 @@ export class LinkedInSearchService {
    */
   async fetchCompanyEmployeesViaApifyEmployeeSearchActor(
     params: ApifyEmployeeSearchFetchParams,
-  ): Promise<TransformedCandidateForTable[]> {
+  ): Promise<CandidateTableRow[]> {
     if (!this.apifyService.isConfigured()) {
       throw new Error('Apify is not configured (set APIFY_API_TOKEN)');
     }
@@ -1457,8 +1457,8 @@ export class LinkedInSearchService {
       actorId?: string;
     },
   ): Promise<{
-    current: TransformedCandidateForTable[];
-    past: TransformedCandidateForTable[];
+    current: CandidateTableRow[];
+    past: CandidateTableRow[];
   }> {
     const current = await this.fetchCompanyEmployeesViaApifyEmployeeSearchActor(
       {

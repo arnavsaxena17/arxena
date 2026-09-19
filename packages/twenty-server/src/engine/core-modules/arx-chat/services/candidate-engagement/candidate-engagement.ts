@@ -156,11 +156,11 @@ export class CandidateEngagementArx {
         MessagingChannel.LINKEDIN_SOCK,
       )
     ) {
-      messageFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
-    } else if (candidate?.phoneNumber?.primaryPhoneNumber) {
-      messageFrom = candidate.phoneNumber.primaryPhoneNumber.length == 10
-          ? '91' + candidate.phoneNumber.primaryPhoneNumber
-          : candidate.phoneNumber.primaryPhoneNumber;
+      messageFrom = candidate?.people?.linkedinLink?.primaryLinkUrl ?? '';
+    } else if (candidate?.people?.phones?.primaryPhoneNumber) {
+      messageFrom = candidate.people.phones.primaryPhoneNumber.length == 10
+          ? '91' + candidate.people.phones.primaryPhoneNumber
+          : candidate.people.phones.primaryPhoneNumber;
     } else {
       console.warn('No phone number found for candidate, using empty string');
       messageFrom = '';
@@ -219,7 +219,7 @@ export class CandidateEngagementArx {
 
     // For LinkedIn candidates, we should allow startChat even without phone number
     if (
-      !candidate?.phoneNumber?.primaryPhoneNumber &&
+      !candidate?.people?.phones?.primaryPhoneNumber &&
       !messagingChannelEquals(
         candidate.messagingChannel,
         MessagingChannel.LINKEDIN_CONNECT,

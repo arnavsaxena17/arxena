@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UserProfile } from 'twenty-shared';
+import { PersonCandidateDraft } from 'twenty-shared';
 
 import { CandidateAvatarStorageService } from 'src/engine/core-modules/candidate-avatar/services/candidate-avatar-storage.service';
 import { ApnaDatabaseTransformerService } from './data-sources/apna-database-transformer.service';
@@ -96,7 +96,7 @@ export class DataSourceTransformerFactoryService {
     candidateData: any,
     dataSource: string,
     context: Omit<TransformationContext, 'dataSource'>
-  ): Promise<UserProfile | null> {
+  ): Promise<PersonCandidateDraft | null> {
     const transformer = this.getTransformer(dataSource);
     
     if (!transformer) {
@@ -125,13 +125,13 @@ export class DataSourceTransformerFactoryService {
   }
 
   /**
-   * Transform multiple candidates from the same data source and convert to UserProfile format
+   * Transform multiple candidates from the same data source and convert to PersonCandidateDraft format
    */
   async transformCandidatesBatch(
     candidatesData: any[],
     dataSource: string,
     context: Omit<TransformationContext, 'dataSource'>
-  ): Promise<UserProfile[]> {
+  ): Promise<PersonCandidateDraft[]> {
     const transformer = this.getTransformer(dataSource);
     
     if (!transformer) {
@@ -144,7 +144,7 @@ export class DataSourceTransformerFactoryService {
       dataSource,
     };
 
-    const transformedCandidates: UserProfile[] = [];
+    const transformedCandidates: PersonCandidateDraft[] = [];
 
     for (const candidateData of candidatesData) {
       try {

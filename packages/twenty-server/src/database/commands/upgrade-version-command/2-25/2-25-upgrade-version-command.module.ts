@@ -110,6 +110,9 @@ import { AddEditWorkflowCommandMenuItemCommand } from 'src/database/commands/upg
 import { AddBulkForceStopWorkflowRunsCommandMenuItemCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000119-add-bulk-force-stop-workflow-runs-command-menu-item.command';
 import { SyncCommandMenuItemIsPinnedCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000120-sync-command-menu-item-is-pinned.command';
 import { AddStartStopOutreachGateCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000121-add-start-stop-outreach-gate.command';
+import { BackfillPersonIdentityFromCandidateCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000122-backfill-person-identity-from-candidate.command';
+import { DropCandidateIdentityFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000123-drop-candidate-identity-fields.command';
+import { FoldStartStopOutreachIntoCandidateFlagsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000124-fold-start-stop-outreach-into-candidate-flags.command';
 import { SetOutreachExtractSignalsDeepseekCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000106-set-outreach-extract-signals-deepseek.command';
 import { DropChatMessageObjWithTimeStampCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000099-drop-chat-message-obj-with-time-stamp.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
@@ -257,6 +260,9 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     AddBulkForceStopWorkflowRunsCommandMenuItemCommand,
     SyncCommandMenuItemIsPinnedCommand,
     AddStartStopOutreachGateCommand,
+    BackfillPersonIdentityFromCandidateCommand,
+    DropCandidateIdentityFieldsCommand,
+    FoldStartStopOutreachIntoCandidateFlagsCommand,
     MigrateOtherFieldsService,
     DropCandidateFieldObjectsCommand,
   ],

@@ -8,12 +8,12 @@ import {
   linkedinIlikePattern,
   linkedinUrlVariantsForIdentity,
 } from 'src/engine/core-modules/candidate-sourcing/utils/upload-profile-dedup.utils';
-import { ArxenaPersonNode, CreateManyPeople, graphqlQueryToFindManyPeople, PersonNode } from 'twenty-shared';
+import { PersonCreateInput, CreateManyPeople, graphqlQueryToFindManyPeople, PersonNode } from 'twenty-shared';
 
 @Injectable()
 export class PersonService {
   constructor(private readonly staticGraphQLService: StaticGraphQLService) {}
-    async createPeople(manyPersonObjects: ArxenaPersonNode[], apiToken: string): Promise<any> {
+    async createPeople(manyPersonObjects: PersonCreateInput[], apiToken: string): Promise<any> {
     console.log('Creating people, manyPersonObjects:', manyPersonObjects.length);
 
     const graphqlVariables = { data: manyPersonObjects };

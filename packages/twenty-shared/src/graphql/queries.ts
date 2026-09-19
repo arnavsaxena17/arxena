@@ -1234,29 +1234,12 @@ export const graphQueryToFindManyvideoInterviews = `query FindManyVideoInterview
           createdAt
           source
           campaign
-          jobCompanyName
           updatedAt
           candidateFlags
           messagingChannel
           candConversationStatus
           candidateFlags
-          uniqueStringKey
           whatsappProvider
-          hiringNaukriUrl {
-            primaryLinkLabel
-            primaryLinkUrl
-            __typename
-          }
-          resdexNaukriUrl {
-            primaryLinkLabel
-            primaryLinkUrl
-            __typename
-          }
-          linkedinUrl {
-            primaryLinkLabel
-            primaryLinkUrl
-            __typename
-          }
           project {
             name
             id
@@ -1271,17 +1254,32 @@ export const graphQueryToFindManyvideoInterviews = `query FindManyVideoInterview
               firstName
               lastName
             }
-            emails{
+            locationName
+            jobCompanyName
+            jobTitle
+            emails {
               primaryEmail
             }
-            phones{
+            phones {
               primaryPhoneNumber
             }
-            linkedinLink{
-              primaryLinkLabel
+            linkedinLink {
               primaryLinkUrl
+              primaryLinkLabel
               secondaryLinks
             }
+            linkedinProfileId
+            displayPicture {
+              primaryLinkUrl
+            }
+            avatarUrl
+            hiringNaukriUrl {
+              primaryLinkUrl
+            }
+            resdexNaukriUrl {
+              primaryLinkUrl
+            }
+            uniqueStringKey
           }
         }
       }
@@ -1721,6 +1719,31 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                         firstName
                         lastName
                       }
+                      locationName
+                      jobCompanyName
+                      jobTitle
+                      emails {
+                        primaryEmail
+                      }
+                      phones {
+                        primaryPhoneNumber
+                      }
+                      linkedinLink {
+                        primaryLinkUrl
+                        primaryLinkLabel
+                      }
+                      linkedinProfileId
+                      displayPicture {
+                        primaryLinkUrl
+                      }
+                      avatarUrl
+                      hiringNaukriUrl {
+                        primaryLinkUrl
+                      }
+                      resdexNaukriUrl {
+                        primaryLinkUrl
+                      }
+                      uniqueStringKey
                     }
                     whatsappProvider
                     candidateFlags
@@ -1752,9 +1775,6 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
                     chatCount
                     candidateFlags
                     remarks
-                    phoneNumber{
-                      primaryPhoneNumber
-                    }
                     candidateFlags
                     status
                     updatedAt
@@ -1766,22 +1786,34 @@ export const graphqlQueryToFindManyPeople = `query FindManyPeople($filter: Perso
           firstName
           lastName
         }
-        linkedinLink{
-          primaryLinkLabel
-          primaryLinkUrl
-          secondaryLinks
+        locationName
+        jobCompanyName
+        jobTitle
+        emails {
+          primaryEmail
         }
-        phones{
+        phones {
           primaryPhoneNumber
         }
-        emails{
-            primaryEmail
+        linkedinLink {
+          primaryLinkUrl
+          primaryLinkLabel
+          secondaryLinks
         }
-        salary
-        jobTitle
+        linkedinProfileId
+        displayPicture {
+          primaryLinkUrl
+        }
         avatarUrl
-        id
+        hiringNaukriUrl {
+          primaryLinkUrl
+        }
+        resdexNaukriUrl {
+          primaryLinkUrl
+        }
         uniqueStringKey
+        salary
+        id
         position
       }
     }
@@ -1862,10 +1894,6 @@ query FindManySMS($filter: SMSFilterInput, $orderBy: [SMSOrderByInput], $lastCur
             node {
                 id
                 personId
-                phoneNumber{
-                  primaryPhoneNumber
-
-                }
                 messageType
                 message
                 timestamp
@@ -1920,8 +1948,6 @@ export const graphQlToFetchChatMessages = `query FindManyChatMessages($filter: C
           chatCount
           remarks
           candidateFlags
-          jobTitle
-          jobCompanyName
         }
 
       }
@@ -1951,7 +1977,6 @@ fragment UserQueryFragment on User {
   id
   firstName
   lastName
-  email
   canImpersonate
   supportUserHash
   analyticsTinybirdJwts {
@@ -2053,7 +2078,6 @@ fragment WorkspaceMemberQueryFragment on WorkspaceMember {
     __typename
   }
   colorScheme
-  avatarUrl
   locale
   userEmail
   timeZone
@@ -2145,7 +2169,6 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
       status
       source
       campaign
-      jobCompanyName
       jobSpecificFields
       projectId
       createdAt
@@ -2154,23 +2177,7 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
       messagingChannel
       candConversationStatus
       candidateFlags
-      uniqueStringKey
       whatsappProvider
-      hiringNaukriUrl {
-        primaryLinkLabel
-        primaryLinkUrl
-        __typename
-      }
-      resdexNaukriUrl {
-        primaryLinkLabel
-        primaryLinkUrl
-        __typename
-      }
-      linkedinUrl {
-        primaryLinkLabel
-        primaryLinkUrl
-        __typename
-      }
       project {
         name
         id
@@ -2185,17 +2192,32 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
           firstName
           lastName
         }
-        emails{
+        locationName
+        jobCompanyName
+        jobTitle
+        emails {
           primaryEmail
         }
-        phones{
+        phones {
           primaryPhoneNumber
         }
-        linkedinLink{
-          primaryLinkLabel
+        linkedinLink {
           primaryLinkUrl
+          primaryLinkLabel
           secondaryLinks
         }
+        linkedinProfileId
+        displayPicture {
+          primaryLinkUrl
+        }
+        avatarUrl
+        hiringNaukriUrl {
+          primaryLinkUrl
+        }
+        resdexNaukriUrl {
+          primaryLinkUrl
+        }
+        uniqueStringKey
       }
     }
     videoInterviewResponse {
@@ -2328,7 +2350,7 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
 //           startVideoInterviewChat
 //           startMeetingSchedulingChat
 //           stopChat
-//           uniqueStringKey
+//
 //           hiringNaukriUrl{
 //             primaryLinkUrl
 //             primaryLinkLabel
@@ -2416,8 +2438,8 @@ export const queryByvideoInterview = `query FindOneVideoInterview($objectRecordI
 //             emails {
 //                 primaryEmail
 //             }
-//             jobTitle
-//             uniqueStringKey
+//
+//
 //             phoneCall {
 //                 edges {
 //                     node {
@@ -2519,24 +2541,15 @@ export const graphqlToFetchAllCandidateData = `
           createdAt
           status
           whatsappProvider
-          phoneNumber{
-            primaryPhoneNumber
-          }
-          email{
-            primaryEmail
-          }
           candConversationStatus
           peopleId
           projectId
           candidateFlags
           source
           campaign
-          jobTitle
-          jobCompanyName
           remarks
           messagingChannel
           candidateFlags
-          uniqueStringKey
           attachments {
             edges {
               node {
@@ -2559,23 +2572,6 @@ export const graphqlToFetchAllCandidateData = `
               }
             }
           }
-          hiringNaukriUrl{
-            primaryLinkUrl
-            primaryLinkLabel
-          }
-          resdexNaukriUrl{
-            primaryLinkUrl
-            primaryLinkLabel
-          }
-          linkedinUrl {
-            primaryLinkUrl
-            primaryLinkLabel
-          }
-          displayPicture {
-            primaryLinkUrl
-            primaryLinkLabel
-          }
-          avatarUrl
           otherFields
           people {
             id
@@ -2583,19 +2579,31 @@ export const graphqlToFetchAllCandidateData = `
               firstName
               lastName
             }
-            linkedinLink {
-              primaryLinkLabel
-              primaryLinkUrl
-              secondaryLinks
+            locationName
+            jobCompanyName
+            jobTitle
+            emails {
+              primaryEmail
             }
             phones {
-                primaryPhoneNumber
+              primaryPhoneNumber
             }
-            emails {
-                primaryEmail
+            linkedinLink {
+              primaryLinkUrl
+              primaryLinkLabel
+              secondaryLinks
             }
-            jobTitle
+            linkedinProfileId
+            displayPicture {
+              primaryLinkUrl
+            }
             avatarUrl
+            hiringNaukriUrl {
+              primaryLinkUrl
+            }
+            resdexNaukriUrl {
+              primaryLinkUrl
+            }
             uniqueStringKey
           }
           candidateFlags
@@ -2664,20 +2672,12 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
           createdAt
           status
           whatsappProvider
-          phoneNumber {
-            primaryPhoneNumber
-          }
-          email {
-            primaryEmail
-          }
           candConversationStatus
           peopleId
           candidateFlags
           source
           campaign
-          jobCompanyName
           projectId
-          jobTitle
           remarks
           messagingChannel
           outreachSequenceStage
@@ -2687,7 +2687,6 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
           outreachAnalytics
           experimentVariant
           candidateFlags
-          uniqueStringKey
           attachments {
             edges {
               node {
@@ -2710,19 +2709,35 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
               }
             }
           }
-          hiringNaukriUrl {
-            primaryLinkUrl
-            primaryLinkLabel
-          }
-          resdexNaukriUrl {
-            primaryLinkUrl
-            primaryLinkLabel
-          }
-          linkedinUrl {
-            primaryLinkUrl
-            primaryLinkLabel
-          }
           otherFields
+          people {
+            id
+            name {
+              firstName
+              lastName
+            }
+            locationName
+            emails {
+              primaryEmail
+            }
+            phones {
+              primaryPhoneNumber
+            }
+            linkedinLink {
+              primaryLinkUrl
+              primaryLinkLabel
+            }
+            linkedinProfileId
+            displayPicture {
+              primaryLinkUrl
+            }
+            hiringNaukriUrl {
+              primaryLinkUrl
+            }
+            resdexNaukriUrl {
+              primaryLinkUrl
+            }
+          }
           chatMessages {
             edges {
               node {
@@ -2769,26 +2784,16 @@ export const graphqlToFetchAllCandidateDataForTable = `
           updatedAt
           createdAt
           status
-          jobTitle
-          jobCompanyName
           whatsappProvider
-          phoneNumber {
-            primaryPhoneNumber
-          }
-          email {
-            primaryEmail
-          }
           candConversationStatus
           peopleId
           candidateFlags
           source
           campaign
           projectId
-          jobTitle
           remarks
           messagingChannel
           candidateFlags
-          uniqueStringKey
           attachments {
             edges {
               node {
@@ -2811,19 +2816,39 @@ export const graphqlToFetchAllCandidateDataForTable = `
               }
             }
           }
-          hiringNaukriUrl {
-            primaryLinkUrl
-            primaryLinkLabel
-          }
-          resdexNaukriUrl {
-            primaryLinkUrl
-            primaryLinkLabel
-          }
-          linkedinUrl {
-            primaryLinkUrl
-            primaryLinkLabel
-          }
           otherFields
+          people {
+            id
+            name {
+              firstName
+              lastName
+            }
+            locationName
+            jobCompanyName
+            jobTitle
+            emails {
+              primaryEmail
+            }
+            phones {
+              primaryPhoneNumber
+            }
+            linkedinLink {
+              primaryLinkUrl
+              primaryLinkLabel
+            }
+            linkedinProfileId
+            displayPicture {
+              primaryLinkUrl
+            }
+            avatarUrl
+            hiringNaukriUrl {
+              primaryLinkUrl
+            }
+            resdexNaukriUrl {
+              primaryLinkUrl
+            }
+            uniqueStringKey
+          }
           candidateFlags
           remarks
           chatCount
@@ -2846,7 +2871,6 @@ export const findManyPhoneCalls = `
                   id
                   personId
                   transcript
-                  phoneNumber
                   name
                   position
                   timestamp
@@ -2922,19 +2946,6 @@ export const findManyShortlistsquery = `query FindManyShortlists($filter: Shortl
           createdAt
           whatsappProvider
           remarks
-          phoneNumber{
-            primaryPhoneNumber
-          }
-          email{
-            primaryEmail
-          }
-          linkedinUrl{
-            primaryLinkUrl
-            primaryLinkLabel
-          }
-          displayPicture{
-            primaryLinkUrl
-          }
         }
         createdAt
         currentCompany
@@ -2959,20 +2970,33 @@ candidate(filter: {id: {eq: $objectRecordId}}) {
       firstName
       lastName
     }
-    linkedinLink{
-      primaryLinkLabel
+    locationName
+    jobCompanyName
+    jobTitle
+    emails {
+      primaryEmail
+    }
+    phones {
+      primaryPhoneNumber
+    }
+    linkedinLink {
       primaryLinkUrl
+      primaryLinkLabel
       secondaryLinks
     }
-    companyId
-    phones{
-        primaryPhoneNumber
+    linkedinProfileId
+    displayPicture {
+      primaryLinkUrl
     }
-    emails{
-        primaryEmail
-    }
-    id
     avatarUrl
+    hiringNaukriUrl {
+      primaryLinkUrl
+    }
+    resdexNaukriUrl {
+      primaryLinkUrl
+    }
+    uniqueStringKey
+    companyId
     }
     candidateFlags
     messagingChannel
@@ -2991,23 +3015,11 @@ export const findOnePersonQuery = `
     person(filter: { id: { eq: $objectRecordId } }) {
       id
       createdAt
-      jobTitle
       name {
         firstName
         lastName
       }
-        phones{
-            primaryPhoneNumber
-        }
-        emails{
-            primaryEmail
-        }
-        linkedinLink {
-            primaryLinkLabel
-            primaryLinkUrl
-      }
       updatedAt
-      avatarUrl
       companyId
     }
   }
@@ -3056,16 +3068,8 @@ export const graphqlQueryToFindManyPeopleEngagedCandidatesOlderSchema = `query F
           firstName
           lastName
         }
-        email
-        linkedinLink{
-          primaryLinkLabel
-          primaryLinkUrl
-          secondaryLinks
-        }
         salary
-        jobTitle
         id
-        uniqueStringKey
         position
       }
     }

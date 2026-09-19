@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UserProfile } from 'twenty-shared';
+import { PersonCandidateDraft } from 'twenty-shared';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
 
@@ -136,7 +136,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
   transformToUserProfile(
     candidateData: ResdexNaukriCandidateData | any,
     context: TransformationContext
-  ): UserProfile {
+  ): PersonCandidateDraft {
     const userProfile = this.createBaseUserProfile(candidateData, context);
     
     // Extract nested json_data if present (from CV upload flow)
@@ -184,7 +184,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     return userProfile;
   }
 
-  private processResdexNameData(candidateData: ResdexNaukriCandidateData | any, userProfile: UserProfile): void {
+  private processResdexNameData(candidateData: ResdexNaukriCandidateData | any, userProfile: PersonCandidateDraft): void {
     const fullName = candidateData.jsUserName || candidateData.name || '';
     const nameInfo = this.dataProcessingUtils.processName(fullName);
     
@@ -200,7 +200,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     userProfile.fullName = nameInfo.full_name;
   }
 
-  private processResdexProfileData(candidateData: ResdexNaukriCandidateData | any, userProfile: UserProfile): void {
+  private processResdexProfileData(candidateData: ResdexNaukriCandidateData | any, userProfile: PersonCandidateDraft): void {
     // Construct Resdex profile URL from dynamicEncryptedUniqueId
     let profileUrl = candidateData.profile_url || candidateData.profileUrl;
     
@@ -217,7 +217,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     userProfile.jobCompanyName = candidateData.employment.current.organization || candidateData.current_company || '';
     userProfile.profileTitle = candidateData.jobTitle || candidateData.current_designation || '';
   }
-  private processResdexLocationData(candidateData: ResdexNaukriCandidateData | any, userProfile: UserProfile): void {
+  private processResdexLocationData(candidateData: ResdexNaukriCandidateData | any, userProfile: PersonCandidateDraft): void {
     const currentLocation = candidateData.currentLocation || candidateData.current_location;
     const preferredLocations = candidateData.preferredLocations || candidateData.preferred_locations;
     console.log("Preferred locations:", preferredLocations);
@@ -272,7 +272,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     }
   }
 
-  private processResdexSkillsData(candidateData: ResdexNaukriCandidateData | any, userProfile: UserProfile): void {
+  private processResdexSkillsData(candidateData: ResdexNaukriCandidateData | any, userProfile: PersonCandidateDraft): void {
     // Resdex has both keySkills and focusedSkills
     const keySkills = this.dataProcessingUtils.extractSkills(candidateData.keySkills || candidateData.key_skills);
     const focusedSkills = this.dataProcessingUtils.extractSkills(candidateData.focusedSkills || candidateData.focused_skills);
@@ -284,7 +284,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     userProfile.keySkills = uniqueSkills.join(', ');
   }
 
-  private processResdexExperienceData(candidateData: ResdexNaukriCandidateData | any, userProfile: UserProfile): void {
+  private processResdexExperienceData(candidateData: ResdexNaukriCandidateData | any, userProfile: PersonCandidateDraft): void {
     // Resdex provides experience in years and months separately
     const experienceYears = parseInt(candidateData.experience?.years || candidateData.experience_years || '0', 10);
     const experienceMonths = parseInt(candidateData.experience?.months || candidateData.experience_months || '0', 10);
@@ -340,7 +340,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     };
   }
 
-  private processResdexEducationData(candidateData: ResdexNaukriCandidateData | any, userProfile: UserProfile): void {
+  private processResdexEducationData(candidateData: ResdexNaukriCandidateData | any, userProfile: PersonCandidateDraft): void {
     const educationEntries: any[] = [];
     
     // Process UG education
@@ -391,7 +391,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     userProfile.education = educationEntries;
   }
 
-  private processResdexSalaryData(candidateData: ResdexNaukriCandidateData | any, userProfile: UserProfile): void {
+  private processResdexSalaryData(candidateData: ResdexNaukriCandidateData | any, userProfile: PersonCandidateDraft): void {
     // Resdex provides salary in lakhs and thousands
     const ctcInfo = candidateData.ctcInfo;
     if (ctcInfo) {
@@ -406,7 +406,7 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
     }
   }
 
-  private processResdexSpecificData(candidateData: ResdexNaukriCandidateData | any, userProfile: UserProfile): void {
+  private processResdexSpecificData(candidateData: ResdexNaukriCandidateData | any, userProfile: PersonCandidateDraft): void {
     // Add notice period information if available
     if (candidateData.noticePeriod || candidateData.notice_period) {
       // this.addProjectProcessEvent(userProfile, 'notice_period', candidateData.noticePeriod || candidateData.notice_period);
@@ -535,9 +535,9 @@ export class ResdexNaukriTransformerService extends BaseDataSourceTransformerSer
   }
 
   /**
-   * Add event to job process - utility method for UserProfile
+   * Add event to job process - utility method for PersonCandidateDraft
    */
-  // protected addProjectProcessEvent(userProfile: UserProfile, type: string, value: any): void {
+  // protected addProjectProcessEvent(userProfile: PersonCandidateDraft, type: string, value: any): void {
     // if (value !== null && value !== undefined && value !== '') {
     //   if (!userProfile.job_process_events) {
     //     userProfile.job_process_events = [];

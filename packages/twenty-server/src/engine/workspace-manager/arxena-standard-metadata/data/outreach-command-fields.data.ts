@@ -138,15 +138,15 @@ const CONVERSATION_STAGE_COLORS: Record<string, string> = {
   SNOOZED: 'gray',
 };
 
-export const OUTREACH_CONVERSATION_STAGE_OPTIONS = OUTREACH_CONVERSATION_STAGES.map(
-  (value, position) =>
+export const OUTREACH_CONVERSATION_STAGE_OPTIONS =
+  OUTREACH_CONVERSATION_STAGES.map((value, position) =>
     selectOption(
       value,
       OUTREACH_CONVERSATION_STAGE_LABELS[value],
       CONVERSATION_STAGE_COLORS[value] ?? 'gray',
       position,
     ),
-);
+  );
 
 export const OUTREACH_ENRICH_STATUS_OPTIONS = [
   selectOption('NOT_STARTED', 'Not started', 'gray', 0),
@@ -167,15 +167,15 @@ const MESSAGING_CHANNEL_OPTION_COLORS: Record<MessagingChannel, string> = {
   [MessagingChannel.EMAIL]: 'purple',
 };
 
-export const OUTREACH_MESSAGING_CHANNEL_OPTIONS = MESSAGING_CHANNEL_SELECT_VALUES.map(
-  (value, position) =>
+export const OUTREACH_MESSAGING_CHANNEL_OPTIONS =
+  MESSAGING_CHANNEL_SELECT_VALUES.map((value, position) =>
     selectOption(
       value,
       MESSAGING_CHANNEL_LABELS[value],
       MESSAGING_CHANNEL_OPTION_COLORS[value],
       position,
     ),
-);
+  );
 
 export const OUTREACH_MEETING_OUTCOME_OPTIONS = [
   selectOption('BOOKED', 'Booked', 'sky', 0),
@@ -277,40 +277,13 @@ export const getOutreachCommandFieldsData = (
   {
     objectName: 'candidate',
     field: {
-      description:
-        'Outreach sequence stage (separate from ATS hiring status)',
+      description: 'Outreach sequence stage (separate from ATS hiring status)',
       icon: 'IconRoute',
       label: 'Outreach Sequence Stage',
       name: 'outreachSequenceStage',
       objectMetadataId: objectsNameIdMap.candidate,
       type: 'SELECT',
       options: OUTREACH_SEQUENCE_STAGE_OPTIONS,
-    },
-  },
-  {
-    objectName: 'candidate',
-    field: {
-      description:
-        'Operator opted this prospect into the Candidate Sequencer. Enroll alone does not start outreach.',
-      icon: 'IconPlayerPlay',
-      label: 'Start Outreach',
-      name: 'startOutreach',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'BOOLEAN',
-      defaultValue: false,
-    },
-  },
-  {
-    objectName: 'candidate',
-    field: {
-      description:
-        'Operator stopped outreach. Blocks sequencer re-entry on later stage changes and replies.',
-      icon: 'IconPlayerStop',
-      label: 'Stop Outreach',
-      name: 'stopOutreach',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'BOOLEAN',
-      defaultValue: false,
     },
   },
   {
@@ -327,18 +300,7 @@ export const getOutreachCommandFieldsData = (
       defaultValue: "'NONE'",
     },
   },
-  {
-    objectName: 'candidate',
-    field: {
-      description:
-        'Unipile LinkedIn provider id (ACoAA…) for SEND_*. Distinct from linkedinUrl.',
-      icon: 'IconId',
-      label: 'LinkedIn Profile Id',
-      name: 'linkedinProfileId',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'TEXT',
-    },
-  },
+
   {
     objectName: 'candidate',
     field: {
@@ -378,7 +340,8 @@ export const getOutreachCommandFieldsData = (
   {
     objectName: 'candidate',
     field: {
-      description: 'Sticky A/B experiment arm assigned at enroll (hash of LinkedIn profile id)',
+      description:
+        'Sticky A/B experiment arm assigned at enroll (hash of LinkedIn profile id)',
       icon: 'IconAB',
       label: 'Experiment Variant',
       name: 'experimentVariant',
@@ -399,19 +362,7 @@ export const getOutreachCommandFieldsData = (
       type: 'RAW_JSON',
     },
   },
-  {
-    objectName: 'candidate',
-    field: {
-      description:
-        'Sticky preferred outbound channel until the prospect explicitly switches back',
-      icon: 'IconArrowsExchange',
-      label: 'Outreach Preferred Channel',
-      name: 'outreachPreferredChannel',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'SELECT',
-      options: OUTREACH_PREFERRED_CHANNEL_OPTIONS,
-    },
-  },
+
   {
     objectName: 'candidate',
     field: {
@@ -424,34 +375,12 @@ export const getOutreachCommandFieldsData = (
       type: 'RAW_JSON',
     },
   },
-  {
-    objectName: 'candidate',
-    field: {
-      description:
-        'Cached LinkedIn profile JSON from Unipile for this prospect (mirrors workspaceMember.linkedinProfile)',
-      icon: 'IconBrandLinkedin',
-      label: 'LinkedIn Profile',
-      name: 'linkedinProfile',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'RAW_JSON',
-    },
-  },
-  {
-    objectName: 'candidate',
-    field: {
-      description:
-        'Cached LinkedIn posts fetched for this prospect (normalized posts + mostRecentPost)',
-      icon: 'IconNews',
-      label: 'LinkedIn Posts',
-      name: 'linkedinPosts',
-      objectMetadataId: objectsNameIdMap.candidate,
-      type: 'RAW_JSON',
-    },
-  },
+
   {
     objectName: 'person',
     field: {
-      description: 'Unipile LinkedIn provider id (ACoAA…). Distinct from linkedinLink.',
+      description:
+        'Unipile LinkedIn provider id (ACoAA…). Distinct from linkedinLink.',
       icon: 'IconId',
       label: 'LinkedIn Profile Id',
       name: 'linkedinProfileId',
@@ -469,6 +398,87 @@ export const getOutreachCommandFieldsData = (
       objectMetadataId: objectsNameIdMap.person,
       type: 'BOOLEAN',
       defaultValue: false,
+    },
+  },
+  {
+    objectName: 'person',
+    field: {
+      description: 'Location Name',
+      icon: 'IconLocation',
+      label: 'Location Name',
+      name: 'locationName',
+      objectMetadataId: objectsNameIdMap.person,
+      type: 'TEXT',
+    },
+  },
+  {
+    objectName: 'person',
+    field: {
+      description: 'Job Company Name (denormalized employer string)',
+      icon: 'IconBuilding',
+      label: 'Job Company Name',
+      name: 'jobCompanyName',
+      objectMetadataId: objectsNameIdMap.person,
+      type: 'TEXT',
+    },
+  },
+  {
+    objectName: 'person',
+    field: {
+      description: 'Hiring Naukri URL',
+      icon: 'IconLink',
+      label: 'hiringNaukriUrl',
+      name: 'hiringNaukriUrl',
+      objectMetadataId: objectsNameIdMap.person,
+      type: 'LINKS',
+    },
+  },
+  {
+    objectName: 'person',
+    field: {
+      description: 'Resdex Naukri URL',
+      icon: 'IconLink',
+      label: 'resdexNaukriUrl',
+      name: 'resdexNaukriUrl',
+      objectMetadataId: objectsNameIdMap.person,
+      type: 'LINKS',
+    },
+  },
+  {
+    objectName: 'person',
+    field: {
+      description:
+        'Cached LinkedIn profile JSON from Unipile (identity cache)',
+      icon: 'IconBrandLinkedin',
+      label: 'LinkedIn Profile',
+      name: 'linkedinProfile',
+      objectMetadataId: objectsNameIdMap.person,
+      type: 'RAW_JSON',
+    },
+  },
+  {
+    objectName: 'person',
+    field: {
+      description:
+        'Cached LinkedIn posts fetched for this person (normalized posts + mostRecentPost)',
+      icon: 'IconNews',
+      label: 'LinkedIn Posts',
+      name: 'linkedinPosts',
+      objectMetadataId: objectsNameIdMap.person,
+      type: 'RAW_JSON',
+    },
+  },
+  {
+    objectName: 'person',
+    field: {
+      description:
+        'Sticky preferred outbound channel until the prospect explicitly switches back',
+      icon: 'IconArrowsExchange',
+      label: 'Outreach Preferred Channel',
+      name: 'outreachPreferredChannel',
+      objectMetadataId: objectsNameIdMap.person,
+      type: 'SELECT',
+      options: OUTREACH_PREFERRED_CHANNEL_OPTIONS,
     },
   },
 
@@ -552,7 +562,8 @@ export const getOutreachCommandFieldsData = (
   {
     objectName: 'chatMessage',
     field: {
-      description: 'Channel for this transcript row (one row per candidate × channel)',
+      description:
+        'Channel for this transcript row (one row per candidate × channel)',
       icon: 'IconMessage',
       label: 'Channel',
       name: 'channel',

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UserProfile } from 'twenty-shared';
+import { PersonCandidateDraft } from 'twenty-shared';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
 
@@ -16,7 +16,7 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
   transformToUserProfile(
     candidateData: any,
     context: TransformationContext
-  ): UserProfile {
+  ): PersonCandidateDraft {
     const userProfile = this.createBaseUserProfile(candidateData, context);
     
     // Process name - RMS uses 'full_name' field
@@ -46,7 +46,7 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
     return userProfile;
   }
 
-  private processRmsNameData(candidateData: any, userProfile: UserProfile): void {
+  private processRmsNameData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const fullName = candidateData.full_name || candidateData.fullName || '';
     
     if (fullName) {
@@ -66,7 +66,7 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
     }
   }
 
-  private processRmsProfileData(candidateData: any, userProfile: UserProfile): void {
+  private processRmsProfileData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const profileIntro = candidateData.profile_intro;
     const profileId = candidateData.id;
     
@@ -76,7 +76,7 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
     }
   }
 
-  private processRmsLocationData(candidateData: any, userProfile: UserProfile): void {
+  private processRmsLocationData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const currentLocation = candidateData.current_location;
     
     if (currentLocation) {
@@ -102,7 +102,7 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
     }
   }
 
-  private processRmsSkillsData(candidateData: any, userProfile: UserProfile): void {
+  private processRmsSkillsData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const keySkills = candidateData.keySkills;
     
     if (keySkills) {
@@ -112,7 +112,7 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
     }
   }
 
-  private processRmsEducationData(candidateData: any, userProfile: UserProfile): void {
+  private processRmsEducationData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const education = candidateData.education;
     
     if (education) {
@@ -162,7 +162,7 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
     }
   }
 
-  private processRmsExperienceData(candidateData: any, userProfile: UserProfile): void {
+  private processRmsExperienceData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const currentCompany = candidateData.current_company;
     const currentDesignation = candidateData.current_designation;
     const previousCompany = candidateData.previous_company;
@@ -205,7 +205,7 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
     userProfile.inferredYearsExperience = experienceInYears || null;
   }
 
-  private processRmsSpecificData(candidateData: any, userProfile: UserProfile): void {
+  private processRmsSpecificData(candidateData: any, userProfile: PersonCandidateDraft): void {
     // Process industry
     if (candidateData.industry) {
       userProfile.industries = [{
@@ -251,9 +251,9 @@ export class RmsNaukriTransformerService extends BaseDataSourceTransformerServic
   }
 
   /**
-   * Add event to job process - utility method for UserProfile
+   * Add event to job process - utility method for PersonCandidateDraft
    */
-  // protected addProjectProcessEvent(userProfile: UserProfile, type: string, value: any): void {
+  // protected addProjectProcessEvent(userProfile: PersonCandidateDraft, type: string, value: any): void {
   //   if (value !== null && value !== undefined && value !== '') {
   //     if (!userProfile.job_process_events) {
   //       userProfile.job_process_events = [];

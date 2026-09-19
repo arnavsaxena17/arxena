@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UserProfile } from 'twenty-shared';
+import { PersonCandidateDraft } from 'twenty-shared';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
 
@@ -16,7 +16,7 @@ export class NaukriProfileDataTransformerService extends BaseDataSourceTransform
   transformToUserProfile(
     candidateData: any,
     context: TransformationContext
-  ): UserProfile {
+  ): PersonCandidateDraft {
     const userProfile = this.createBaseUserProfile(candidateData, context);
     
     // Map company and job title fields
@@ -50,7 +50,7 @@ export class NaukriProfileDataTransformerService extends BaseDataSourceTransform
     candidateData.url = candidateData.profile_url || '';
   }
 
-  private processNaukriContactData(candidateData: any, userProfile: UserProfile): void {
+  private processNaukriContactData(candidateData: any, userProfile: PersonCandidateDraft): void {
     // Process phone numbers
     let phoneNumbers = candidateData.phone_number;
     
@@ -90,7 +90,7 @@ export class NaukriProfileDataTransformerService extends BaseDataSourceTransform
     }
   }
 
-  private processNaukriProfileData(candidateData: any, userProfile: UserProfile): void {
+  private processNaukriProfileData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const fullName = candidateData.full_name;
     const jobCompanyName = candidateData.job_company_name;
     
@@ -123,7 +123,7 @@ export class NaukriProfileDataTransformerService extends BaseDataSourceTransform
     }
   }
 
-  private processNaukriWorkExperience(candidateData: any, userProfile: UserProfile): void {
+  private processNaukriWorkExperience(candidateData: any, userProfile: PersonCandidateDraft): void {
     const jobTitle = candidateData.job_title || '';
     const jobCompanyName = candidateData.job_company_name || '';
 
@@ -145,7 +145,7 @@ export class NaukriProfileDataTransformerService extends BaseDataSourceTransform
     }
   }
 
-  private processNaukriSpecificData(candidateData: any, userProfile: UserProfile): void {
+  private processNaukriSpecificData(candidateData: any, userProfile: PersonCandidateDraft): void {
     // Process distance from job
     if (candidateData.distance_from_job) {
       // this.addProjectProcessEvent(userProfile, 'distance_from_job', candidateData.distance_from_job);
@@ -187,9 +187,9 @@ export class NaukriProfileDataTransformerService extends BaseDataSourceTransform
   }
 
   /**
-   * Add event to job process - utility method for UserProfile
+   * Add event to job process - utility method for PersonCandidateDraft
    */
-  // protected addProjectProcessEvent(userProfile: UserProfile, type: string, value: any): void {
+  // protected addProjectProcessEvent(userProfile: PersonCandidateDraft, type: string, value: any): void {
     // if (value !== null && value !== undefined && value !== '') {
     //   if (!userProfile.job_process_events) {
     //     userProfile.job_process_events = [];

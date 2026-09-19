@@ -784,28 +784,7 @@ const getAllFieldsData = (
         type: 'RAW_JSON',
       },
     },
-    {
-      objectName: 'candidate',
-      field: {
-        description: '',
-        icon: 'IconMail',
-        label: 'email',
-        name: 'email',
-        objectMetadataId: objectsNameIdMap.candidate,
-        type: 'EMAILS',
-      },
-    },
-    {
-      objectName: 'candidate',
-      field: {
-        description: '',
-        icon: 'IconPhone',
-        label: 'phoneNumber',
-        name: 'phoneNumber',
-        objectMetadataId: objectsNameIdMap.candidate,
-        type: 'PHONES',
-      },
-    },
+
     {
       objectName: 'candidate',
       field: {
@@ -1534,17 +1513,7 @@ const getAllFieldsData = (
         type: 'TEXT',
       },
     },
-    {
-      objectName: 'candidate',
-      field: {
-        description: 'uniqueStringKey for the candidate',
-        icon: 'IconPencilStar',
-        label: 'uniqueStringKey',
-        name: 'uniqueStringKey',
-        objectMetadataId: objectsNameIdMap.candidate,
-        type: 'TEXT',
-      },
-    },
+
     {
       objectName: 'candidate',
       field: {
@@ -1567,39 +1536,7 @@ const getAllFieldsData = (
         type: 'TEXT',
       },
     },
-    {
-      objectName: 'candidate',
-      field: {
-        description: 'Job Title',
-        icon: 'IconPencilStar',
-        label: 'jobTitle',
-        name: 'jobTitle',
-        objectMetadataId: objectsNameIdMap.candidate,
-        type: 'TEXT',
-      },
-    },
-    {
-      objectName: 'candidate',
-      field: {
-        description: 'Job Company Name',
-        icon: 'IconBuilding',
-        label: 'Job Company Name',
-        name: 'jobCompanyName',
-        objectMetadataId: objectsNameIdMap.candidate,
-        type: 'TEXT',
-      },
-    },
-    {
-      objectName: 'candidate',
-      field: {
-        description: 'Location Name',
-        icon: 'IconLocation',
-        label: 'Location Name',
-        name: 'locationName',
-        objectMetadataId: objectsNameIdMap.candidate,
-        type: 'TEXT',
-      },
-    },
+
     {
       objectName: 'candidate',
       field: {
@@ -1644,61 +1581,7 @@ const getAllFieldsData = (
         type: 'LINKS',
       },
     },
-    {
-      objectName: 'candidate',
-      field: {
-        description: 'Hiring Naukri URL',
-        icon: 'IconLink',
-        label: 'hiringNaukriUrl',
-        name: 'hiringNaukriUrl',
-        objectMetadataId: objectsNameIdMap.candidate,
-        type: 'LINKS',
-      },
-    },
-    {
-      objectName: 'candidate',
-      field: {
-        description: 'Resdex Naukri URL',
-        icon: 'IconLink',
-        label: 'resdexNaukriUrl',
-        name: 'resdexNaukriUrl',
-        objectMetadataId: objectsNameIdMap.candidate,
-        type: 'LINKS',
-      },
-    },
-    {
-      objectName: 'candidate',
-      field: {
-        description: 'LinkedIn URL',
-        icon: 'IconLink',
-        label: 'linkedinUrl',
-        name: 'linkedinUrl',
-        objectMetadataId: objectsNameIdMap.candidate,
-        type: 'LINKS',
-      },
-    },
-    {
-      objectName: 'candidate',
-      field: {
-        description: 'Display Picture URL',
-        icon: 'IconLink',
-        label: 'displayPicture',
-        name: 'displayPicture',
-        objectMetadataId: objectsNameIdMap.candidate,
-        type: 'LINKS',
-      },
-    },
-    {
-      objectName: 'candidate',
-      field: {
-        description: 'Candidate profile photo for record avatars',
-        icon: 'IconFileUpload',
-        label: 'avatarUrl',
-        name: 'avatarUrl',
-        objectMetadataId: objectsNameIdMap.candidate,
-        type: 'TEXT',
-      },
-    },
+
     {
       objectName: 'person',
       field: {

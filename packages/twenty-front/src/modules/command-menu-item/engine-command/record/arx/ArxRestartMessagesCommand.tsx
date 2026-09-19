@@ -46,8 +46,10 @@ export const ArxRestartMessagesCommand = () => {
 
       for (const record of selectedRecords) {
         const phoneNumber = (
-          record.phoneNumber as { primaryPhoneNumber?: string } | undefined
-        )?.primaryPhoneNumber;
+          record.people as
+            | { phones?: { primaryPhoneNumber?: string } }
+            | undefined
+        )?.phones?.primaryPhoneNumber;
 
         if (!phoneNumber) {
           errorCount++;

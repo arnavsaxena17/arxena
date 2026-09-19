@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UserProfile } from 'twenty-shared';
+import { PersonCandidateDraft } from 'twenty-shared';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
 
@@ -16,7 +16,7 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
   transformToUserProfile(
     candidateData: any,
     context: TransformationContext
-  ): UserProfile {
+  ): PersonCandidateDraft {
     // When data comes from Excel-only (no JSON), map Excel column headers to expected keys
     candidateData = this.normalizeExcelRow(candidateData);
     console.log("Transforming hiring naukri profile for candidate data:", candidateData);
@@ -171,7 +171,7 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
     return row;
   }
 
-  private processHiringProfileData(candidateData: any, userProfile: UserProfile): void {
+  private processHiringProfileData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const profileUrl = candidateData.profile_url || candidateData.profileUrl;
     
     if (profileUrl) {
@@ -195,7 +195,7 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
     }
   }
 
-  private processHiringLocationData(candidateData: any, userProfile: UserProfile): void {
+  private processHiringLocationData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const currentCity =
       candidateData.currentCity ||
       candidateData.current_city ||
@@ -275,7 +275,7 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
     }
   }
 
-  private processHiringExperienceData(candidateData: any, userProfile: UserProfile): void {
+  private processHiringExperienceData(candidateData: any, userProfile: PersonCandidateDraft): void {
     // Hiring Naukri provides work experience as structured data (JSON) or scalar fields (Excel)
     const workExp = candidateData.workExp || candidateData.work_experience || candidateData.experience;
     
@@ -335,7 +335,7 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
     }
   }
 
-  private processHiringEducationData(candidateData: any, userProfile: UserProfile): void {
+  private processHiringEducationData(candidateData: any, userProfile: PersonCandidateDraft): void {
     let education = candidateData.education || candidateData.educationDetails;
     
     // Excel-only: build education array from UG/PG columns if not already an array
@@ -403,7 +403,7 @@ export class HiringNaukriTransformerService extends BaseDataSourceTransformerSer
     }
   }
 
-  private processHiringSpecificData(candidateData: any, userProfile: UserProfile): void {
+  private processHiringSpecificData(candidateData: any, userProfile: PersonCandidateDraft): void {
     // Process phone numbers from hiring naukri specific structure
     // Only override if we have valid phone numbers from the array structure
     if (candidateData.phoneNumber && Array.isArray(candidateData.phoneNumber)) {

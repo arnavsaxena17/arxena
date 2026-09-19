@@ -248,7 +248,7 @@ export class ResumeReadParseUploadService {
 
       this.logger.log(`Successfully parsed ${parsedCVs.length} resumes`);
 
-      // Step 3: Transform parsed CVs to UserProfile format
+      // Step 3: Transform parsed CVs to PersonCandidateDraft format
       const userProfiles = await this.transformParsedCVsToUserProfiles(
         parsedCVs,
         projectId,
@@ -443,7 +443,7 @@ export class ResumeReadParseUploadService {
   }
 
   /**
-   * Transform parsed CVs to UserProfile format
+   * Transform parsed CVs to PersonCandidateDraft format
    */
   private async transformParsedCVsToUserProfiles(
     parsedCVs: ParsedCVData[],

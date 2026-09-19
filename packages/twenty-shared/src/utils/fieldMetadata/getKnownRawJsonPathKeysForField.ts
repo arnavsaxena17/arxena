@@ -1,3 +1,5 @@
+import { CANDIDATE_BOOLEAN_FLAG_KEYS } from '../../arx/candidateFlags';
+
 const OUTREACH_ANALYTICS_CANDIDATE_JSON_PATH_KEYS = [
   'enrolledAt',
   'connectionSentAt',
@@ -43,6 +45,11 @@ const OUTREACH_CONFIG_JSON_PATH_KEYS = [
   'updatedAt',
 ] as const;
 
+const CANDIDATE_FLAGS_JSON_PATH_KEYS = [
+  ...CANDIDATE_BOOLEAN_FLAG_KEYS,
+  'lastEngagementChatControl',
+] as const;
+
 const KNOWN_RAW_JSON_PATH_KEYS_BY_FIELD_NAME: Record<string, readonly string[]> =
   {
     outreachSpeedTimestamps: OUTREACH_ANALYTICS_CANDIDATE_JSON_PATH_KEYS,
@@ -50,6 +57,7 @@ const KNOWN_RAW_JSON_PATH_KEYS_BY_FIELD_NAME: Record<string, readonly string[]> 
     // superset of candidate keys, so one list covers both objects.
     outreachAnalytics: OUTREACH_ANALYTICS_COMPANY_JSON_PATH_KEYS,
     outreachConfig: OUTREACH_CONFIG_JSON_PATH_KEYS,
+    candidateFlags: CANDIDATE_FLAGS_JSON_PATH_KEYS,
   };
 
 export const getKnownRawJsonPathKeysForField = (

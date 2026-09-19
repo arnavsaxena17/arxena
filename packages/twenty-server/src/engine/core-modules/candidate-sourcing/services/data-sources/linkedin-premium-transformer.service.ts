@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UserProfile } from 'twenty-shared';
+import { PersonCandidateDraft } from 'twenty-shared';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import {
   BaseDataSourceTransformerService,
@@ -19,7 +19,7 @@ export class LinkedinPremiumTransformerService extends BaseDataSourceTransformer
   transformToUserProfile(
     candidateData: any,
     context: TransformationContext,
-  ): UserProfile {
+  ): PersonCandidateDraft {
     const userProfile = this.createBaseUserProfile(candidateData, context);
 
     this.processNameData(candidateData, userProfile);
@@ -36,7 +36,7 @@ export class LinkedinPremiumTransformerService extends BaseDataSourceTransformer
 
   private processLinkedInProfileData(
     candidateData: any,
-    userProfile: UserProfile,
+    userProfile: PersonCandidateDraft,
   ): void {
     const linkedinUrl =
       candidateData.linkedin_profile_id_url ||
@@ -72,7 +72,7 @@ export class LinkedinPremiumTransformerService extends BaseDataSourceTransformer
 
   private processLinkedInExperienceData(
     candidateData: any,
-    userProfile: UserProfile,
+    userProfile: PersonCandidateDraft,
   ): void {
     const experience =
       candidateData.experience ||
@@ -108,7 +108,7 @@ export class LinkedinPremiumTransformerService extends BaseDataSourceTransformer
 
   private processLinkedInSpecificData(
     candidateData: any,
-    userProfile: UserProfile,
+    userProfile: PersonCandidateDraft,
   ): void {
     // Set LinkedIn-specific fields
     if (candidateData.summary || candidateData.about) {

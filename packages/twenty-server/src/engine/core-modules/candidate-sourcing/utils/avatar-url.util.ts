@@ -1,9 +1,9 @@
 const AVATAR_PUBLIC_PATH_PREFIX = '/avatars/';
 
 export const extractDisplayPictureUrl = (
-  candidate: Record<string, unknown>,
+  draft: Record<string, unknown>,
 ): string => {
-  const dp = candidate.displayPicture ?? candidate.display_picture;
+  const dp = draft.displayPicture ?? draft.display_picture;
   if (typeof dp === 'string') {
     return dp.trim();
   }
@@ -15,22 +15,22 @@ export const extractDisplayPictureUrl = (
     return (dp as { primaryLinkUrl: string }).primaryLinkUrl.trim();
   }
 
-  const profilePictureUrl = candidate.profilePictureUrl;
+  const profilePictureUrl = draft.profilePictureUrl;
   if (typeof profilePictureUrl === 'string') {
     return profilePictureUrl.trim();
   }
 
-  const profilePictureUrlSnake = candidate.profile_picture_url;
+  const profilePictureUrlSnake = draft.profile_picture_url;
   if (typeof profilePictureUrlSnake === 'string') {
     return profilePictureUrlSnake.trim();
   }
 
-  const profilePictureUrlLarge = candidate.profile_picture_url_large;
+  const profilePictureUrlLarge = draft.profile_picture_url_large;
   if (typeof profilePictureUrlLarge === 'string') {
     return profilePictureUrlLarge.trim();
   }
 
-  const jobProcessEvents = candidate.job_process_events;
+  const jobProcessEvents = draft.job_process_events;
   if (Array.isArray(jobProcessEvents)) {
     const profilePictureEvent = jobProcessEvents.find(
       (event) =>
@@ -77,10 +77,7 @@ export const toCrmPrimaryLink = (
 ): { primaryLinkLabel: string; primaryLinkUrl: string } | undefined => {
   const absolute = resolveAvatarUrlFromDisplayPictureUrl(url);
 
-  if (
-    !absolute.startsWith('http://') &&
-    !absolute.startsWith('https://')
-  ) {
+  if (!absolute.startsWith('http://') && !absolute.startsWith('https://')) {
     return undefined;
   }
 

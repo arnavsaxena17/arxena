@@ -82,11 +82,14 @@ export const OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS = {
   qualifyProspect: OUTREACH_QUALIFY_PROSPECT_SYSTEM_PROMPT,
 } as const;
 
-// Candidate field allowlist for reply-agent CRUD tool calls (not conversation stage).
+// Candidate membership fields vs Person identity for reply-agent CRUD tool calls.
 export const OUTREACH_REPLY_AGENT_CANDIDATE_TOOL_FIELDS = [
-  'outreachPreferredChannel',
-  'email.primaryEmail',
   'outreachSequenceStage',
+] as const;
+
+export const OUTREACH_REPLY_AGENT_PERSON_TOOL_FIELDS = [
+  'outreachPreferredChannel',
+  'emails.primaryEmail',
 ] as const;
 
 // --- AI-agent node prompts (baked into seeded workflow version steps) ---
@@ -342,10 +345,11 @@ export const buildOutreachSalesChatDraftPrompt = ({
       ? [
           'CANDIDATE TOOL CALLS (before drafting) — use only validated inputs below:',
           `- Candidate id: ${candidateId.trim()}`,
-          `- If Preferred channel to stamp is non-empty: update_one_candidate with only outreachPreferredChannel.`,
-          `- If Prospect email for details is non-empty: update_one_candidate with only email.primaryEmail.`,
+          `- If Preferred channel to stamp is non-empty: update_one_person (via peopleId) with only outreachPreferredChannel.`,
+          `- If Prospect email for details is non-empty: update_one_person with only emails.primaryEmail.`,
           `- Do not create referrals here. Do not set outreachSequenceStage or outreachConversationStage here.`,
-          `- Allowlisted update fields only: ${OUTREACH_REPLY_AGENT_CANDIDATE_TOOL_FIELDS.join(', ')}.`,
+          `- Candidate allowlisted update fields only: ${OUTREACH_REPLY_AGENT_CANDIDATE_TOOL_FIELDS.join(', ')}.`,
+          `- Person allowlisted update fields only: ${OUTREACH_REPLY_AGENT_PERSON_TOOL_FIELDS.join(', ')}.`,
         ].join('\n')
       : 'Draft the next outbound message only. Do not re-classify and do not extract contacts.',
     senderJson?.trim()
@@ -432,9 +436,9 @@ export const buildOutreachCreateReferralCandidatePrompt = ({
   projectId: string;
 }): string =>
   [
-    'Create a referred candidate with create_one_candidate when a name and at least one contact exist.',
+    'Create a referred prospect: create_one_person for identity, then create_one_candidate linked via peopleId.',
     'Use only the injected fields. Do not invent contacts.',
-    'Set outreachSequenceStage to EMAIL_SENT (not an entry stage — will not re-fire the sequencer).',
+    'Set candidate outreachSequenceStage to EMAIL_SENT (not an entry stage — will not re-fire the sequencer).',
     'Do not set outreachConversationStage. Do not draft messages.',
     `referralName: ${referralName.trim() || '(none)'}`,
     `referralEmail: ${referralEmail.trim() || '(none)'}`,
@@ -442,12 +446,9 @@ export const buildOutreachCreateReferralCandidatePrompt = ({
     `jobCompanyName: ${jobCompanyName.trim() || '(none)'}`,
     `projectId: ${projectId.trim() || '(none)'}`,
     'If name is empty or both email and phone are empty: call no tools.',
-    'Otherwise create_one_candidate with:',
-    '- name = referralName',
-    '- jobCompanyName, projectId as injected',
-    '- outreachSequenceStage = EMAIL_SENT',
-    '- email.primaryEmail when referralEmail is non-empty',
-    '- phoneNumber.primaryPhoneNumber when referralPhone is non-empty',
+    'Otherwise:',
+    '1) create_one_person with name, jobCompanyName, emails.primaryEmail / phones.primaryPhoneNumber when present',
+    '2) create_one_candidate with name, projectId, peopleId from the person, outreachSequenceStage = EMAIL_SENT',
     'Return JSON: {',
     '  "message": "",',
     '  "emailSubject": "",',

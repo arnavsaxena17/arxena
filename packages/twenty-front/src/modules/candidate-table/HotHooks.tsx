@@ -241,12 +241,10 @@ export const getPermanentId = (
     const matchingCandidate = rawData.find((candidate: any) => {
       // LinkedIn URL field logic: prefer primaryLinkUrl if a non-empty string
       const candidateLinkedInUrl =
-        typeof candidate?.linkedinUrl?.primaryLinkUrl === 'string' &&
-        candidate?.linkedinUrl?.primaryLinkUrl !== ''
-          ? candidate.linkedinUrl.primaryLinkUrl
-          : typeof candidate?.linkedinUrl === 'string'
-            ? candidate.linkedinUrl
-            : undefined;
+        typeof candidate?.people?.linkedinLink?.primaryLinkUrl === 'string' &&
+        candidate?.people?.linkedinLink?.primaryLinkUrl !== ''
+          ? candidate.people.linkedinLink.primaryLinkUrl
+          : undefined;
 
       const normalizedCandidateUrl = normalizeLinkedInUrl(candidateLinkedInUrl);
 
@@ -276,11 +274,11 @@ export const getPermanentId = (
 
       // Match by uniqueStringKey if both provided as non-empty strings
       if (
-        typeof candidate?.uniqueStringKey === 'string' &&
+        typeof candidate?.people?.uniqueStringKey === 'string' &&
         typeof rowData?.uniqueStringKey === 'string' &&
-        candidate.uniqueStringKey.length > 0 &&
+        candidate.people.uniqueStringKey.length > 0 &&
         rowData.uniqueStringKey.length > 0 &&
-        candidate.uniqueStringKey.toLowerCase() ===
+        candidate.people.uniqueStringKey.toLowerCase() ===
           (rowData.uniqueStringKey as string).toLowerCase()
       ) {
         return true;

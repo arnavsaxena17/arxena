@@ -19,10 +19,14 @@ export const getCandidateProfileUrl = (candidateData: unknown): string => {
   }
 
   const record = candidateData as Record<string, unknown>;
+  const people =
+    record.people && typeof record.people === 'object'
+      ? (record.people as Record<string, unknown>)
+      : undefined;
 
   const linkedin =
+    readLinkUrl(people?.linkedinLink) ||
     readLinkUrl(record.linkedin) ||
-    readLinkUrl(record.linkedinUrl) ||
     readLinkUrl(record.profileUrl);
 
   if (linkedin) {
@@ -30,8 +34,8 @@ export const getCandidateProfileUrl = (candidateData: unknown): string => {
   }
 
   return (
-    readLinkUrl(record.resdexNaukriUrl) ||
-    readLinkUrl(record.hiringNaukriUrl) ||
+    readLinkUrl(people?.resdexNaukriUrl) ||
+    readLinkUrl(people?.hiringNaukriUrl) ||
     ''
   );
 };

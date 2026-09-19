@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UserProfile } from 'twenty-shared';
+import { PersonCandidateDraft } from 'twenty-shared';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
 
@@ -16,7 +16,7 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
   transformToUserProfile(
     candidateData: any,
     context: TransformationContext
-  ): UserProfile {
+  ): PersonCandidateDraft {
     const userProfile = this.createBaseUserProfile(candidateData, context);
     
     // Process name
@@ -40,7 +40,7 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
     return userProfile;
   }
 
-  private processSpreadsheetContactData(candidateData: any, userProfile: UserProfile): void {
+  private processSpreadsheetContactData(candidateData: any, userProfile: PersonCandidateDraft): void {
     // Process phone numbers - prefer GraphQL-style nested phones (primaryPhoneNumber), then flat keys
     const phonesShape = candidateData.phones ?? candidateData.phone;
     const fromNested =
@@ -93,7 +93,7 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
     }
   }
 
-  private processSpreadsheetProfileData(candidateData: any, userProfile: UserProfile): void {
+  private processSpreadsheetProfileData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const profileUrl = candidateData.phone_number || candidateData.email_address || '';
     
     if (profileUrl) {
@@ -104,7 +104,7 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
     userProfile.profileTitle = candidateData.profileSummary || null;
   }
 
-  private processSpreadsheetSpecificData(candidateData: any, userProfile: UserProfile): void {
+  private processSpreadsheetSpecificData(candidateData: any, userProfile: PersonCandidateDraft): void {
     // Set application ID if available
     if (candidateData.applicationId) {
       userProfile.id = candidateData.applicationId.toString();
@@ -157,9 +157,9 @@ export class SpreadsheetImportTwentyTransformerService extends BaseDataSourceTra
   }
 
   /**
-   * Add event to job process - utility method for UserProfile
+   * Add event to job process - utility method for PersonCandidateDraft
    */
-  // protected addProjectProcessEvent(userProfile: UserProfile, type: string, value: any): void {
+  // protected addProjectProcessEvent(userProfile: PersonCandidateDraft, type: string, value: any): void {
   //   if (value !== null && value !== undefined && value !== '') {
   //     if (!userProfile.job_process_events) {
   //       userProfile.job_process_events = [];

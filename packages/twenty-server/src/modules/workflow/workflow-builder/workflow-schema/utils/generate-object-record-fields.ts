@@ -43,6 +43,7 @@ export const generateObjectRecordFields = ({
         label: field.label,
         icon: field.icon ?? undefined,
         fieldMetadataId: field.id,
+        fieldName: field.name,
       });
     }
   }

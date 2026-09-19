@@ -74,30 +74,33 @@ export const ArxUpdateSnapshotProfilesFromJobBoardsCommand = () => {
 
       const naukriRecords = recordsToUpdate.filter((record) => {
         const source = record.source as string | undefined;
+        const people = record.people as
+          | {
+              hiringNaukriUrl?: { primaryLinkUrl?: string };
+              resdexNaukriUrl?: { primaryLinkUrl?: string };
+            }
+          | undefined;
         return (
           source?.includes('naukri') ||
-          (record.hiringNaukriUrl as { primaryLinkUrl?: string } | undefined)
-            ?.primaryLinkUrl?.trim() ||
-          (record.resdexNaukriUrl as { primaryLinkUrl?: string } | undefined)
-            ?.primaryLinkUrl?.trim()
+          people?.hiringNaukriUrl?.primaryLinkUrl?.trim() ||
+          people?.resdexNaukriUrl?.primaryLinkUrl?.trim()
         );
       });
 
       if (naukriRecords.length > 0) {
         const naukriUrls = naukriRecords
-          .map(
-            (record) =>
-              (
-                record.hiringNaukriUrl as
-                  | { primaryLinkUrl?: string }
-                  | undefined
-              )?.primaryLinkUrl?.trim() ||
-              (
-                record.resdexNaukriUrl as
-                  | { primaryLinkUrl?: string }
-                  | undefined
-              )?.primaryLinkUrl?.trim(),
-          )
+          .map((record) => {
+            const people = record.people as
+              | {
+                  hiringNaukriUrl?: { primaryLinkUrl?: string };
+                  resdexNaukriUrl?: { primaryLinkUrl?: string };
+                }
+              | undefined;
+            return (
+              people?.hiringNaukriUrl?.primaryLinkUrl?.trim() ||
+              people?.resdexNaukriUrl?.primaryLinkUrl?.trim()
+            );
+          })
           .filter((url): url is string => Boolean(url));
 
         if (naukriUrls.length > 0) {
@@ -134,7 +137,11 @@ export const ArxUpdateSnapshotProfilesFromJobBoardsCommand = () => {
           .map((record) => record.peopleId as string | undefined)
           .filter(isDefined);
         uniqueStringKeysToUpdate = recordsToUpdate
-          .map((record) => record.uniqueStringKey as string | undefined)
+          .map(
+            (record) =>
+              (record.people as { uniqueStringKey?: string } | undefined)
+                ?.uniqueStringKey,
+          )
           .filter(isDefined);
       } else if (
         objectMetadataItem.nameSingular.toLowerCase().includes('jobcandidate')

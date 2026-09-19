@@ -1,7 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
-import { MessagingChannel, parseOutreachAnalytics } from 'twenty-shared/arx';
+import {
+  isCandidateFlagTrue,
+  MessagingChannel,
+  parseOutreachAnalytics,
+} from 'twenty-shared/arx';
 import {
   isDefined,
   escapeForIlike,
@@ -48,20 +52,18 @@ type CandidateRecord = ObjectLiteral & {
   id: string;
   peopleId?: string | null;
   projectId?: string | null;
-  linkedinProfileId?: string | null;
-  linkedinUrl?: { primaryLinkUrl?: string } | null;
-  phoneNumber?: { primaryPhoneNumber?: string } | null;
-  email?: { primaryEmail?: string } | null;
   outreachSequenceStage?: string | null;
-  startOutreach?: boolean | null;
-  stopOutreach?: boolean | null;
+  candidateFlags?: unknown;
   outreachAnalytics?: unknown;
   linkedinFollowUpCount?: number | null;
 };
 
 type PersonRecord = ObjectLiteral & {
   id: string;
+  linkedinProfileId?: string | null;
+  linkedinLink?: { primaryLinkUrl?: string } | null;
   phones?: { primaryPhoneNumber?: string } | null;
+  emails?: { primaryEmail?: string } | null;
 };
 
 const STOPPED_OUTREACH_STAGES = new Set(['STOPPED']);
@@ -473,8 +475,8 @@ export class OutreachMessagePersistService {
         if (
           !isNonEmptyString(stage) ||
           STOPPED_OUTREACH_STAGES.has(stage) ||
-          candidate?.stopOutreach === true ||
-          candidate?.startOutreach !== true
+          isCandidateFlagTrue(candidate, 'stopOutreach') ||
+          !isCandidateFlagTrue(candidate, 'startOutreach')
         ) {
           return null;
         }
@@ -558,25 +560,34 @@ export class OutreachMessagePersistService {
         };
 
         if (isNonEmptyString(slug)) {
-          const byProfileId = await candidateRepository.findOne({
+          const personRepository = await getPersonRepository();
+          const byProfileId = await personRepository.findOne({
             where: { linkedinProfileId: slug },
           });
 
           if (isDefined(byProfileId)) {
-            return byProfileId.id;
+            const byPerson = await findCandidateIdByPeopleId(byProfileId.id);
+
+            if (isDefined(byPerson)) {
+              return byPerson;
+            }
           }
 
           try {
-            const byUrl = await candidateRepository.findOne({
+            const byUrl = await personRepository.findOne({
               where: {
-                linkedinUrlPrimaryLinkUrl: ILike(
+                linkedinLinkPrimaryLinkUrl: ILike(
                   `%/in/${escapeForIlike(slug)}%`,
                 ),
               },
             });
 
             if (isDefined(byUrl)) {
-              return byUrl.id;
+              const byPerson = await findCandidateIdByPeopleId(byUrl.id);
+
+              if (isDefined(byPerson)) {
+                return byPerson;
+              }
             }
           } catch {
             // Composite URL column may be unavailable on older workspaces.
@@ -601,28 +612,6 @@ export class OutreachMessagePersistService {
 
           if (isNonEmptyString(phoneNeedle)) {
             const phoneFilter = ILike(`%${escapeForIlike(phoneNeedle)}%`);
-
-            try {
-              const byPhoneColumn = await candidateRepository.find({
-                where: { phoneNumberPrimaryPhoneNumber: phoneFilter },
-                take: 10,
-                order: { updatedAt: 'DESC' },
-              });
-              const match = byPhoneColumn.find((row) => {
-                const stored = row.phoneNumber?.primaryPhoneNumber;
-
-                return isNonEmptyString(stored) && phonesMatch(stored, phone);
-              });
-
-              if (isDefined(match)) {
-                return match.id;
-              }
-            } catch {
-              // Composite phone column is missing on older workspaces.
-            }
-
-            // Enrichment writes discovered phones onto person.phones, so an
-            // enriched candidate can have an empty candidate.phoneNumber.
             const personRepository = await getPersonRepository();
             const people = await personRepository.find({
               where: { phonesPrimaryPhoneNumber: phoneFilter },
@@ -649,21 +638,6 @@ export class OutreachMessagePersistService {
 
         if (isNonEmptyString(email)) {
           const normalizedEmail = email.trim().toLowerCase();
-
-          try {
-            const byEmailColumn = await candidateRepository.findOne({
-              where: { emailPrimaryEmail: ILike(normalizedEmail) },
-            });
-
-            if (isDefined(byEmailColumn)) {
-              return byEmailColumn.id;
-            }
-          } catch {
-            // Composite email column is missing on older workspaces.
-          }
-
-          // Enrichment writes discovered emails onto person.emails, so an
-          // enriched candidate can have an empty candidate.email.
           const personRepository = await getPersonRepository();
           const person = await personRepository.findOne({
             where: { emailsPrimaryEmail: ILike(normalizedEmail) },

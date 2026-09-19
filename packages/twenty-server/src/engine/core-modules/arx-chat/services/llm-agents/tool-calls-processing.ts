@@ -103,11 +103,11 @@ export class ToolCallsProcessing {
         MessagingChannel.LINKEDIN_CONNECT,
       )
     ) {
-      phoneNumberFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
-    } else if (candidate?.phoneNumber?.primaryPhoneNumber) {
-      phoneNumberFrom = candidate.phoneNumber.primaryPhoneNumber.length == 10
-          ? '91' + candidate.phoneNumber.primaryPhoneNumber
-          : candidate.phoneNumber.primaryPhoneNumber;
+      phoneNumberFrom = candidate?.people?.linkedinLink?.primaryLinkUrl ?? '';
+    } else if (candidate?.people?.phones?.primaryPhoneNumber) {
+      phoneNumberFrom = candidate.people.phones.primaryPhoneNumber.length == 10
+          ? '91' + candidate.people.phones.primaryPhoneNumber
+          : candidate.people.phones.primaryPhoneNumber;
     } else {
       console.warn('No phone number found for candidate, using empty string');
     }
@@ -193,11 +193,11 @@ export class ToolCallsProcessing {
         MessagingChannel.LINKEDIN_CONNECT,
       )
     ) {
-      phoneNumberFrom = candidate?.linkedinUrl?.primaryLinkUrl || '';
-    } else if (candidate?.phoneNumber?.primaryPhoneNumber) {
-      phoneNumberFrom = candidate.phoneNumber.primaryPhoneNumber.length == 10
-          ? '91' + candidate.phoneNumber.primaryPhoneNumber
-          : candidate.phoneNumber.primaryPhoneNumber;
+      phoneNumberFrom = candidate?.people?.linkedinLink?.primaryLinkUrl ?? '';
+    } else if (candidate?.people?.phones?.primaryPhoneNumber) {
+      phoneNumberFrom = candidate.people.phones.primaryPhoneNumber.length == 10
+          ? '91' + candidate.people.phones.primaryPhoneNumber
+          : candidate.people.phones.primaryPhoneNumber;
     } else {
       console.warn('No phone number found for candidate, using empty string');
     }

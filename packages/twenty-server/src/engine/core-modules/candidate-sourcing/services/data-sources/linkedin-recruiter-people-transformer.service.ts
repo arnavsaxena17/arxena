@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { MessagingChannel, UserProfile } from 'twenty-shared';
+import { MessagingChannel, PersonCandidateDraft } from 'twenty-shared';
 import {
     LinkedInEducation,
     LinkedInPeopleSearchResult,
@@ -10,7 +10,7 @@ import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { TransformationContext } from './base-data-source-transformer.service';
 import {
     LinkedInSearchTransformerService,
-    TransformedCandidateForTable,
+    CandidateTableRow,
 } from './linkedin-search-transformer.service';
 
 type RecruiterPrimaryRole = {
@@ -33,7 +33,7 @@ export class LinkedInRecruiterPeopleTransformerService extends LinkedInSearchTra
   override transformToUserProfile(
     candidateData: LinkedInSearchResult,
     context: TransformationContext,
-  ): UserProfile {
+  ): PersonCandidateDraft {
     const peopleData = candidateData as LinkedInPeopleSearchResult;
     const userProfile = super.transformToUserProfile(candidateData, context);
 
@@ -46,7 +46,7 @@ export class LinkedInRecruiterPeopleTransformerService extends LinkedInSearchTra
     searchResults: LinkedInSearchResult[],
     projectId: string,
     jobName = 'LinkedIn Recruiter Search Results',
-  ): TransformedCandidateForTable[] {
+  ): CandidateTableRow[] {
     return searchResults.map((result, index) => {
       const peopleResult = result as LinkedInPeopleSearchResult;
       const timestamp = new Date().toISOString();
@@ -64,34 +64,41 @@ export class LinkedInRecruiterPeopleTransformerService extends LinkedInSearchTra
         ...userProfile,
         __isFetched: true,
         tempId: peopleResult.id,
-        phoneNumber: userProfile.phoneNumber || '',
-        email: userProfile.emailAddress || '',
-        linkedinUrl:
-          peopleResult.public_profile_url ||
-          peopleResult.profile_url ||
-          userProfile.linkedinUrl ||
-          '',
-        hiringNaukriUrl: userProfile.linkedinSpecificData?.hiringNaukriUrl || '',
-        resdexNaukriUrl: '',
-        displayPicture:
-          peopleResult.profile_picture_url ||
-          (typeof userProfile.displayPicture === 'string'
-            ? userProfile.displayPicture
-            : '') ||
-          '',
+        phoneNumber: {
+          primaryPhoneNumber: userProfile.phoneNumber || '',
+        },
+        email: { primaryEmail: userProfile.emailAddress || '' },
+        linkedinUrl: {
+          primaryLinkUrl:
+            peopleResult.public_profile_url ||
+            peopleResult.profile_url ||
+            userProfile.linkedinUrl ||
+            '',
+        },
+        hiringNaukriUrl: {
+          primaryLinkUrl:
+            userProfile.linkedinSpecificData?.hiringNaukriUrl || '',
+        },
+        resdexNaukriUrl: { primaryLinkUrl: '' },
+        displayPicture: {
+          primaryLinkUrl:
+            peopleResult.profile_picture_url ||
+            (typeof userProfile.displayPicture === 'string'
+              ? userProfile.displayPicture
+              : '') ||
+            '',
+        },
         status: 'No Status',
         candConversationStatus: 'No Conversation',
-        candidateFlags: {
-          startChat: false,
-          stopChat: false,
-          startChatCompleted: false,
-          startVideoInterviewChat: false,
-          startVideoInterviewChatCompleted: false,
-          startMeetingSchedulingChat: false,
-          startMeetingSchedulingChatCompleted: false,
-          engagementStatus: false,
-          lastEngagementChatControl: 'startChat',
-        },
+        startChat: false,
+        stopChat: false,
+        startChatCompleted: false,
+        startVideoInterviewChat: false,
+        startVideoInterviewChatCompleted: false,
+        startMeetingSchedulingChat: false,
+        startMeetingSchedulingChatCompleted: false,
+        engagementStatus: false,
+        lastEngagementChatControl: 'startChat',
         messagingChannel: MessagingChannel.LINKEDIN_CONNECT,
         chatCount: 0,
         chatMessages: { edges: [] },
@@ -146,7 +153,7 @@ export class LinkedInRecruiterPeopleTransformerService extends LinkedInSearchTra
 
   private applyRecruiterNormalization(
     candidateData: LinkedInPeopleSearchResult,
-    userProfile: UserProfile,
+    userProfile: PersonCandidateDraft,
   ): void {
     const fullName =
       candidateData.name ||

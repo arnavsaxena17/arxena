@@ -4,8 +4,8 @@ import * as os from 'os';
 import * as path from 'path';
 
 import {
-  ArxenaCandidateNode,
-  ArxenaPersonNode,
+  CandidateCreateInput,
+  PersonCreateInput,
   buildCandidateFlagsPatchUpdate,
   buildOtherFieldsFromUnmapped,
   CANDIDATE_BOOLEAN_FLAG_KEYS,
@@ -24,7 +24,7 @@ import {
   questionTextToKey,
   resolveIsOrgChartEnabledFromWorkspace,
   toSnakeCaseKey,
-  UserProfile,
+  PersonCandidateDraft,
 } from 'twenty-shared';
 import { NameProcessor } from '../../workspace-modifications/object-apis/data/nameProcessor';
 
@@ -197,59 +197,77 @@ export class CandidateService {
     if (!node?.id) {
       return;
     }
-    const usk = node.uniqueStringKey;
+    const people =
+      node.people && typeof node.people === 'object'
+        ? (node.people as Record<string, unknown>)
+        : undefined;
+
+    const usk =
+      (typeof people?.uniqueStringKey === 'string'
+        ? people.uniqueStringKey
+        : undefined) ||
+      (typeof node.uniqueStringKey === 'string' ? node.uniqueStringKey : undefined);
     if (typeof usk === 'string' && usk.trim() !== '') {
       lookup.byUniqueStringKey.set(usk, node);
     }
-    const email = node.email as { primaryEmail?: string } | undefined;
-    const em = email?.primaryEmail;
-    if (typeof em === 'string' && em.trim() !== '') {
-      lookup.byEmail.set(em.toLowerCase().trim(), node);
+
+    const email =
+      (people?.emails as { primaryEmail?: string } | undefined)?.primaryEmail ||
+      (node.email as { primaryEmail?: string } | undefined)?.primaryEmail;
+    if (typeof email === 'string' && email.trim() !== '') {
+      lookup.byEmail.set(email.toLowerCase().trim(), node);
     }
-    const phone = node.phoneNumber as
-      | { primaryPhoneNumber?: string }
-      | undefined;
-    const ph = phone?.primaryPhoneNumber;
-    if (typeof ph === 'string' && ph.trim() !== '') {
-      const cleaned = this.dataProcessingUtils.cleanPhoneNumber(ph);
+
+    const phone =
+      (people?.phones as { primaryPhoneNumber?: string } | undefined)
+        ?.primaryPhoneNumber ||
+      (node.phoneNumber as { primaryPhoneNumber?: string } | undefined)
+        ?.primaryPhoneNumber;
+    if (typeof phone === 'string' && phone.trim() !== '') {
+      const cleaned = this.dataProcessingUtils.cleanPhoneNumber(phone);
       if (cleaned) {
         lookup.byPhone.set(cleaned, node);
       }
     }
-    const li = (node.linkedinUrl as { primaryLinkUrl?: string } | undefined)
-      ?.primaryLinkUrl;
-    indexLinkedinIdentitiesIntoMap(lookup.byLinkedinUrl, node, li);
-    const nestedPerson = node.people as
-      | { linkedinLink?: { primaryLinkUrl?: string } }
-      | undefined;
-    if (nestedPerson?.linkedinLink) {
+
+    const linkedinUrl =
+      (people?.linkedinLink as { primaryLinkUrl?: string } | undefined)
+        ?.primaryLinkUrl ||
+      (node.linkedinUrl as { primaryLinkUrl?: string } | undefined)
+        ?.primaryLinkUrl;
+    indexLinkedinIdentitiesIntoMap(lookup.byLinkedinUrl, node, linkedinUrl);
+
+    const linkedinProfileId =
+      (typeof people?.linkedinProfileId === 'string'
+        ? people.linkedinProfileId
+        : undefined) ||
+      (typeof node.linkedinProfileId === 'string'
+        ? node.linkedinProfileId
+        : undefined);
+    if (linkedinProfileId?.trim()) {
       indexLinkedinIdentitiesIntoMap(
         lookup.byLinkedinUrl,
         node,
-        nestedPerson.linkedinLink,
+        linkedinProfileId,
       );
     }
-    if (
-      typeof node.linkedinProfileId === 'string' &&
-      node.linkedinProfileId.trim()
-    ) {
-      indexLinkedinIdentitiesIntoMap(
-        lookup.byLinkedinUrl,
-        node,
-        node.linkedinProfileId,
-      );
+
+    const hiringUrl =
+      (people?.hiringNaukriUrl as { primaryLinkUrl?: string } | undefined)
+        ?.primaryLinkUrl ||
+      (node.hiringNaukriUrl as { primaryLinkUrl?: string } | undefined)
+        ?.primaryLinkUrl;
+    if (typeof hiringUrl === 'string' && hiringUrl.trim() !== '') {
+      lookup.byHiringNaukriUrl.set(normalizeUrlForDedup(hiringUrl), node);
     }
-    const hir = (
-      node.hiringNaukriUrl as { primaryLinkUrl?: string } | undefined
-    )?.primaryLinkUrl;
-    if (typeof hir === 'string' && hir.trim() !== '') {
-      lookup.byHiringNaukriUrl.set(normalizeUrlForDedup(hir), node);
-    }
-    const res = (
-      node.resdexNaukriUrl as { primaryLinkUrl?: string } | undefined
-    )?.primaryLinkUrl;
-    if (typeof res === 'string' && res.trim() !== '') {
-      lookup.byResdexNaukriUrl.set(normalizeUrlForDedup(res), node);
+
+    const resdexUrl =
+      (people?.resdexNaukriUrl as { primaryLinkUrl?: string } | undefined)
+        ?.primaryLinkUrl ||
+      (node.resdexNaukriUrl as { primaryLinkUrl?: string } | undefined)
+        ?.primaryLinkUrl;
+    if (typeof resdexUrl === 'string' && resdexUrl.trim() !== '') {
+      lookup.byResdexNaukriUrl.set(normalizeUrlForDedup(resdexUrl), node);
     }
   }
 
@@ -266,7 +284,7 @@ export class CandidateService {
    * so uploads do not create duplicates when uniqueStringKey is name-only but phone/email/URL match.
    */
   async batchCheckExistingCandidates(
-    profiles: UserProfile[],
+    profiles: PersonCandidateDraft[],
     projectId: string,
     apiToken: string,
   ): Promise<CandidateUploadLookup> {
@@ -316,7 +334,7 @@ export class CandidateService {
       const nodes = await runCandidatesQuery({
         and: [
           { projectId: { eq: projectId } },
-          { uniqueStringKey: { in: part } },
+          { people: { uniqueStringKey: { in: part } } },
         ],
       });
       ingestNodes(nodes);
@@ -375,7 +393,7 @@ export class CandidateService {
       const nodes = await runCandidatesQuery({
         and: [
           { projectId: { eq: projectId } },
-          { email: { primaryEmail: { in: part } } },
+          { people: { emails: { primaryEmail: { in: part } } } },
         ],
       });
       ingestNodes(nodes);
@@ -388,7 +406,7 @@ export class CandidateService {
       const nodes = await runCandidatesQuery({
         and: [
           { projectId: { eq: projectId } },
-          { phoneNumber: { primaryPhoneNumber: { in: part } } },
+          { people: { phones: { primaryPhoneNumber: { in: part } } } },
         ],
       });
       ingestNodes(nodes);
@@ -401,7 +419,7 @@ export class CandidateService {
       const nodes = await runCandidatesQuery({
         and: [
           { projectId: { eq: projectId } },
-          { linkedinUrl: { primaryLinkUrl: { in: part } } },
+          { people: { linkedinLink: { primaryLinkUrl: { in: part } } } },
         ],
       });
       ingestNodes(nodes);
@@ -415,7 +433,7 @@ export class CandidateService {
         .map((identity) => linkedinIlikePattern(identity))
         .filter(Boolean)
         .map((pattern) => ({
-          linkedinUrl: { primaryLinkUrl: { ilike: pattern } },
+          people: { linkedinLink: { primaryLinkUrl: { ilike: pattern } } },
         }));
       if (orFilters.length === 0) {
         continue;
@@ -436,7 +454,7 @@ export class CandidateService {
       const nodes = await runCandidatesQuery({
         and: [
           { projectId: { eq: projectId } },
-          { hiringNaukriUrl: { primaryLinkUrl: { in: part } } },
+          { people: { hiringNaukriUrl: { primaryLinkUrl: { in: part } } } },
         ],
       });
       ingestNodes(nodes);
@@ -449,7 +467,7 @@ export class CandidateService {
       const nodes = await runCandidatesQuery({
         and: [
           { projectId: { eq: projectId } },
-          { resdexNaukriUrl: { primaryLinkUrl: { in: part } } },
+          { people: { resdexNaukriUrl: { primaryLinkUrl: { in: part } } } },
         ],
       });
       ingestNodes(nodes);
@@ -474,20 +492,20 @@ export class CandidateService {
   }
 
   private async processBatches(
-    data: UserProfile[],
+    data: PersonCandidateDraft[],
     jobObject: Project,
     tracking: any,
     origin: string,
     apiToken: string,
   ): Promise<{
-    manyPersonObjects: ArxenaPersonNode[];
-    manyCandidateObjects: ArxenaCandidateNode[];
+    manyPersonObjects: PersonCreateInput[];
+    manyCandidateObjects: CandidateCreateInput[];
     allPersonObjects: PersonNode[];
   }> {
     const results = {
-      manyPersonObjects: [] as ArxenaPersonNode[],
+      manyPersonObjects: [] as PersonCreateInput[],
       allPersonObjects: [] as PersonNode[],
-      manyCandidateObjects: [] as ArxenaCandidateNode[],
+      manyCandidateObjects: [] as CandidateCreateInput[],
     };
 
     if (!jobObject) {
@@ -586,7 +604,7 @@ export class CandidateService {
    * Process CV uploads for candidates that have CV file paths in their data
    */
   private async processCvUploadsForCandidates(
-    data: UserProfile[],
+    data: PersonCandidateDraft[],
     results: any,
     tracking: any,
     origin: string,
@@ -636,7 +654,7 @@ export class CandidateService {
 
   // Helper method to process a chunk of candidates
   async processChunk(
-    candidates: UserProfile[],
+    candidates: PersonCandidateDraft[],
     projectId: string,
     jobName: any,
     timestamp: any,
@@ -749,15 +767,15 @@ export class CandidateService {
   }
 
   async processProfilesWithRateLimiting(
-    data: UserProfile[],
+    data: PersonCandidateDraft[],
     projectId: string,
     jobName: string,
     timestamp: string,
     origin: string,
     apiToken: string,
   ): Promise<{
-    manyPersonObjects: ArxenaPersonNode[];
-    manyCandidateObjects: ArxenaCandidateNode[];
+    manyPersonObjects: PersonCreateInput[];
+    manyCandidateObjects: CandidateCreateInput[];
     allPersonObjects: PersonNode[];
     timestamp: string;
     createdCandidateIds: string[];
@@ -878,7 +896,7 @@ export class CandidateService {
     );
   }
   private async processPeopleBatch(
-    batch: UserProfile[],
+    batch: PersonCandidateDraft[],
     uniqueStringKeys: string[],
     results: any,
     tracking: any,
@@ -923,7 +941,7 @@ export class CandidateService {
         Array.from(personDetailsMap.keys()),
       );
       console.log('Person LinkedIn Map size:', personByLinkedin.size);
-      const peopleToCreate: ArxenaPersonNode[] = [];
+      const peopleToCreate: PersonCreateInput[] = [];
       const peopleKeys: string[] = [];
       let peopleToSkip = 0;
 
@@ -1034,11 +1052,11 @@ export class CandidateService {
   private async fillMissingPersonFields(
     existingPerson:
       | PersonNode
-      | ArxenaPersonNode
+      | PersonCreateInput
       | Record<string, unknown>
       | null
       | undefined,
-    incomingProfileOrPerson: UserProfile | ArxenaPersonNode,
+    incomingProfileOrPerson: PersonCandidateDraft | PersonCreateInput,
     tracking: { patchedPersonIds?: Set<string> },
     apiToken: string,
   ): Promise<void> {
@@ -1092,7 +1110,7 @@ export class CandidateService {
     incomingCandidate: Record<string, unknown>,
     personId: string | undefined,
     tracking: { patchedPersonIds?: Set<string> },
-    incomingProfile: UserProfile,
+    incomingProfile: PersonCandidateDraft,
     apiToken: string,
   ): Promise<void> {
     const candidatePatch = buildMissingCandidatePatch(
@@ -1156,7 +1174,7 @@ export class CandidateService {
    *      or LinkedIn.
    */
   private async createPeopleWithDuplicateHandling(
-    peopleToCreate: ArxenaPersonNode[],
+    peopleToCreate: PersonCreateInput[],
     peopleKeys: string[],
     tracking: any,
     apiToken: string,
@@ -1206,7 +1224,7 @@ export class CandidateService {
       }
     }
 
-    const toInsertPeople: ArxenaPersonNode[] = [];
+    const toInsertPeople: PersonCreateInput[] = [];
     const toInsertKeys: string[] = [];
     const linkContext: UploadPersonLinkContext = {
       keyToEmail: new Map<string, string>(),
@@ -1343,7 +1361,7 @@ export class CandidateService {
   }
 
   private async bulkCreateAndLinkPeople(
-    people: ArxenaPersonNode[],
+    people: PersonCreateInput[],
     keys: string[],
     linkContext: UploadPersonLinkContext,
     tracking: any,
@@ -1396,7 +1414,7 @@ export class CandidateService {
   }
 
   private async createPeopleIndividually(
-    people: ArxenaPersonNode[],
+    people: PersonCreateInput[],
     keys: string[],
     linkContext: UploadPersonLinkContext,
     tracking: any,
@@ -1458,7 +1476,7 @@ export class CandidateService {
 
   private async recoverExistingPersonId(
     key: string,
-    person: ArxenaPersonNode,
+    person: PersonCreateInput,
     linkContext: UploadPersonLinkContext,
     tracking: any,
     apiToken: string,
@@ -1573,7 +1591,7 @@ export class CandidateService {
   }
 
   private async processCandidatesBatch(
-    batch: UserProfile[],
+    batch: PersonCandidateDraft[],
     jobObject: Project,
     results: any,
     tracking: any,
@@ -1615,7 +1633,7 @@ export class CandidateService {
         'whatsapp-unipile';
       console.log('whatsapp_key:', whatsapp_key);
 
-      const candidatesToCreate: ArxenaCandidateNode[] = [];
+      const candidatesToCreate: CandidateCreateInput[] = [];
       const candidateKeys: string[] = [];
 
       for (const profile of batch) {
@@ -1804,7 +1822,7 @@ export class CandidateService {
           );
           const linkedinProfileIdForVariant =
             extractLinkedinProfileId(
-              (profile as UserProfile & { linkedinProfileId?: string })
+              (profile as PersonCandidateDraft & { linkedinProfileId?: string })
                 .linkedinProfileId,
             ) ||
             extractLinkedinProfileId(profile.linkedinUrl) ||
@@ -1826,11 +1844,11 @@ export class CandidateService {
             otherFields,
             ...(enrollOutreach
               ? buildOutreachQueuedCreateFields({
-                  ...(profile as UserProfile & LinkedinEnrollmentSignals),
+                  ...(profile as PersonCandidateDraft & LinkedinEnrollmentSignals),
                   linkedinUrl: profile.linkedinUrl,
                   profileUrl: profile.profileUrl,
                   linkedinProfileId: (
-                    profile as UserProfile & { linkedinProfileId?: string }
+                    profile as PersonCandidateDraft & { linkedinProfileId?: string }
                   ).linkedinProfileId,
                   experimentVariant,
                 })
@@ -1907,7 +1925,7 @@ export class CandidateService {
   }
 
   async createCandidates(
-    manyCandidateObjects: ArxenaCandidateNode[],
+    manyCandidateObjects: CandidateCreateInput[],
     apiToken: string,
   ): Promise<any> {
     console.log('Creating candidates, count:', manyCandidateObjects?.length);
@@ -1978,26 +1996,24 @@ export class CandidateService {
         apiToken,
       );
 
+      const candidateNode =
+        candidateResponse?.data?.data?.candidates?.edges[0]?.node;
+      const personId = candidateNode?.peopleId;
       const oldPhoneNumber =
-        candidateResponse?.data?.data?.candidates?.edges[0]?.node?.phoneNumber
-          ?.primaryPhoneNumber;
-      const personId =
-        candidateResponse?.data?.data?.candidates?.edges[0]?.node?.peopleId;
-      // Update candidate phone number
-      const updateCandidateResponse = await this.updateCandidatePhoneNumber(
-        candidateId,
+        candidateNode?.people?.phones?.primaryPhoneNumber;
+
+      if (!personId) {
+        return {
+          success: false,
+          message: 'Person id missing for phoneNumber',
+        };
+      }
+
+      await this.updatePersonPhoneNumber(
+        personId,
         { primaryPhoneNumber: String(value) },
         apiToken,
       );
-
-      // Update person phone number
-      if (personId) {
-        await this.updatePersonPhoneNumber(
-          personId,
-          { primaryPhoneNumber: String(value) },
-          apiToken,
-        );
-      }
 
       // Only update whitelist if the phone number has actually changed
       if (oldPhoneNumber !== value) {
@@ -2009,45 +2025,6 @@ export class CandidateService {
       console.error('Error updating phone number fields:', error);
       throw error;
     }
-  }
-
-  /**
-   * Update candidate phone number
-   */
-  private async updateCandidatePhoneNumber(
-    candidateId: string,
-    phoneData: {
-      primaryPhoneNumber: string;
-      primaryPhoneCountryCode?: string;
-      primaryPhoneCallingCode?: string;
-      additionalPhones?: Array<{
-        number: string;
-        callingCode: string;
-        countryCode: string;
-      }>;
-    },
-    apiToken: string,
-  ): Promise<any> {
-    const candidateUpdateData = {
-      phoneNumber: {
-        primaryPhoneNumber: phoneData.primaryPhoneNumber,
-        ...(phoneData.primaryPhoneCountryCode && {
-          primaryPhoneCountryCode: phoneData.primaryPhoneCountryCode,
-        }),
-        ...(phoneData.primaryPhoneCallingCode && {
-          primaryPhoneCallingCode: phoneData.primaryPhoneCallingCode,
-        }),
-        ...(phoneData.additionalPhones && {
-          additionalPhones: phoneData.additionalPhones,
-        }),
-      },
-    };
-
-    return await this.staticGraphQLService.executeGraphQL(
-      graphQltoUpdateOneCandidate,
-      { idToUpdate: candidateId, input: candidateUpdateData },
-      apiToken,
-    );
   }
 
   /**
@@ -2109,18 +2086,6 @@ export class CandidateService {
     try {
       console.log('Updating phone number with structure:', phoneData);
 
-      // Update candidate phone number with structured data
-      const candidateResponse = await this.updateCandidatePhoneNumber(
-        candidateId,
-        phoneData,
-        apiToken,
-      );
-      console.log(
-        'Candidate phone update response:',
-        candidateResponse?.data?.data,
-      );
-
-      // Get person ID and update person phone as well
       const candidateResponseForPerson =
         await this.staticGraphQLService.executeGraphQL(
           graphqlToFetchAllCandidateData,
@@ -2132,17 +2097,22 @@ export class CandidateService {
         candidateResponseForPerson?.data?.data?.candidates?.edges[0]?.node
           ?.peopleId;
 
-      if (personId) {
-        const personResponse = await this.updatePersonPhoneNumber(
-          personId,
-          phoneData,
-          apiToken,
-        );
-        console.log(
-          'Person phone update response:',
-          personResponse?.data?.data,
-        );
+      if (!personId) {
+        return {
+          success: false,
+          message: 'Person id missing for phoneNumber',
+        };
       }
+
+      const personResponse = await this.updatePersonPhoneNumber(
+        personId,
+        phoneData,
+        apiToken,
+      );
+      console.log(
+        'Person phone update response:',
+        personResponse?.data?.data,
+      );
 
       // Handle whitelist update for WhatsApp if phone number changed
       if (phoneData.primaryPhoneNumber) {
@@ -2171,62 +2141,45 @@ export class CandidateService {
     try {
       console.log('Updating email with structure:', emailData);
 
-      // Update candidate email with structured data
-      const candidateUpdateData = {
-        email: {
-          primaryEmail: emailData.primaryEmail,
-          additionalEmails: emailData.additionalEmails,
-        },
-      };
+      if (!personId) {
+        return {
+          success: false,
+          message: 'Person id missing for email',
+        };
+      }
 
-      const candidateResponse = await this.staticGraphQLService.executeGraphQL(
-        graphQltoUpdateOneCandidate,
-        { idToUpdate: candidateId, input: candidateUpdateData },
-        apiToken,
-      );
+      try {
+        const personUpdateData = {
+          emails: {
+            primaryEmail: emailData.primaryEmail,
+            additionalEmails: emailData.additionalEmails,
+          },
+        };
 
-      console.log(
-        'Candidate email update response:',
-        candidateResponse?.data?.data,
-      );
+        const personResponse = await this.staticGraphQLService.executeGraphQL(
+          mutationToUpdateOnePerson,
+          { idToUpdate: personId, input: personUpdateData },
+          apiToken,
+        );
 
-      // Update person email if personId is available
-      if (personId) {
-        try {
-          const personUpdateData = {
-            emails: {
-              primaryEmail: emailData.primaryEmail,
-              additionalEmails: emailData.additionalEmails,
-            },
-          };
-
-          const personResponse = await this.staticGraphQLService.executeGraphQL(
-            mutationToUpdateOnePerson,
-            { idToUpdate: personId, input: personUpdateData },
-            apiToken,
+        console.log(
+          'Person email update response:',
+          personResponse?.data?.data,
+        );
+      } catch (error) {
+        console.error('Error updating person email with structure:', error);
+        if (
+          error.message &&
+          error.message.includes(
+            'duplicate key value violates unique constraint',
+          )
+        ) {
+          console.warn(
+            `Email ${emailData.primaryEmail} already exists for another person. Skipping person email update.`,
           );
-
-          console.log(
-            'Person email update response:',
-            personResponse?.data?.data,
-          );
-        } catch (error) {
-          console.error('Error updating person email with structure:', error);
-          // Check if it's a duplicate key error
-          if (
-            error.message &&
-            error.message.includes(
-              'duplicate key value violates unique constraint',
-            )
-          ) {
-            console.warn(
-              `Email ${emailData.primaryEmail} already exists for another person. Skipping person email update.`,
-            );
-            // Continue execution - don't throw error
-          } else {
-            console.error('Non-constraint error updating person email:', error);
-            throw error;
-          }
+        } else {
+          console.error('Non-constraint error updating person email:', error);
+          throw error;
         }
       }
 
@@ -2277,27 +2230,23 @@ export class CandidateService {
         'lastEngagementChatControl',
       ]);
 
+      // Membership / run-state fields that still live on Candidate
       const directFields = [
         'remarks',
         'status',
-        'hiringNaukriUrl',
         'candConversationStatus',
         'messagingChannel',
-        'linkedinUrl',
-        'email',
-        'jobTitle',
-        'jobCompanyName',
-        'mobilePhone',
-        'phone',
-        'phoneNumber',
       ];
 
       const isDirectField = directFields.includes(fieldName);
-      // Special handling for specific fields
+      // Identity fields write to Person only
       if (fieldName === 'email') {
+        if (!personId) {
+          return { success: false, message: 'Person id missing for email' };
+        }
+
         try {
-          const updateData = { email: { primaryEmail: formattedValue } };
-          const response = await this.staticGraphQLService.executeGraphQL(
+          await this.staticGraphQLService.executeGraphQL(
             mutationToUpdateOnePerson,
             {
               idToUpdate: personId,
@@ -2307,7 +2256,6 @@ export class CandidateService {
           );
         } catch (error) {
           console.error('Error updating person email:', error);
-          // Check if it's a duplicate key error
           if (
             error.message &&
             error.message.includes(
@@ -2317,7 +2265,6 @@ export class CandidateService {
             console.warn(
               `Email ${formattedValue} already exists for another person. Skipping person email update.`,
             );
-            // Return a success response but don't update the person email
             return {
               success: true,
               message:
@@ -2325,58 +2272,100 @@ export class CandidateService {
             };
           }
           console.error('Non-constraint error updating person email:', error);
+          throw error;
         }
 
-        try {
-          const updateData = { email: { primaryEmail: formattedValue } };
-          const response = await this.staticGraphQLService.executeGraphQL(
-            graphQltoUpdateOneCandidate,
-            { idToUpdate: candidateId, input: updateData },
-            apiToken,
-          );
-        } catch (error) {
-          console.error('Error updating person email:', error);
-        }
         return { success: true, message: 'Email updated successfully' };
       }
 
+      if (
+        fieldName === 'hiringNaukriUrl' ||
+        fieldName === 'resdexNaukriUrl' ||
+        fieldName === 'displayPicture'
+      ) {
+        if (!personId) {
+          return {
+            success: false,
+            message: `Person id missing for ${fieldName}`,
+          };
+        }
+
+        const linkValue =
+          typeof formattedValue === 'string'
+            ? {
+                primaryLinkLabel: formattedValue,
+                primaryLinkUrl: formattedValue,
+              }
+            : formattedValue;
+
+        return this.staticGraphQLService.executeGraphQL(
+          mutationToUpdateOnePerson,
+          { idToUpdate: personId, input: { [fieldName]: linkValue } },
+          apiToken,
+        );
+      }
+
+      if (fieldName === 'avatarUrl') {
+        if (!personId) {
+          return { success: false, message: 'Person id missing for avatarUrl' };
+        }
+
+        return this.staticGraphQLService.executeGraphQL(
+          mutationToUpdateOnePerson,
+          { idToUpdate: personId, input: { avatarUrl: formattedValue } },
+          apiToken,
+        );
+      }
+
       if (fieldName === 'jobTitle') {
-        const updateData = { jobTitle: formattedValue };
+        if (!personId) {
+          return { success: false, message: 'Person id missing for jobTitle' };
+        }
+
         const response = await this.staticGraphQLService.executeGraphQL(
           mutationToUpdateOnePerson,
-          { idToUpdate: personId, input: updateData },
+          { idToUpdate: personId, input: { jobTitle: formattedValue } },
           apiToken,
         );
         console.log('response for job title update::', response?.data?.data);
 
-        const updateCandidateResponse =
-          await this.staticGraphQLService.executeGraphQL(
-            graphQltoUpdateOneCandidate,
-            { idToUpdate: candidateId, input: { jobTitle: formattedValue } },
-            apiToken,
-          );
-        console.log(
-          'updateCandidateResponse::',
-          updateCandidateResponse?.data?.data,
-        );
         return response?.data?.data;
       }
 
       if (fieldName === 'jobCompanyName') {
-        const updateCandidateResponse =
-          await this.staticGraphQLService.executeGraphQL(
-            graphQltoUpdateOneCandidate,
-            {
-              idToUpdate: candidateId,
-              input: { jobCompanyName: formattedValue },
-            },
-            apiToken,
-          );
-        console.log(
-          'updateCandidateResponse for jobCompanyName::',
-          updateCandidateResponse?.data?.data,
+        if (!personId) {
+          return {
+            success: false,
+            message: 'Person id missing for jobCompanyName',
+          };
+        }
+
+        return this.staticGraphQLService.executeGraphQL(
+          mutationToUpdateOnePerson,
+          {
+            idToUpdate: personId,
+            input: { jobCompanyName: formattedValue },
+          },
+          apiToken,
         );
-        return updateCandidateResponse?.data?.data;
+      }
+
+      if (fieldName === 'locationName' || fieldName === 'location') {
+        if (!personId) {
+          return {
+            success: false,
+            message: 'Person id missing for locationName',
+          };
+        }
+
+        return this.staticGraphQLService.executeGraphQL(
+          mutationToUpdateOnePerson,
+          {
+            idToUpdate: personId,
+            input: { locationName: formattedValue },
+          },
+          apiToken,
+        );
       }
 
       if (
@@ -2391,51 +2380,36 @@ export class CandidateService {
         );
       }
 
-      // Special handling for linkedinUrl field - update both candidate and person
+      // Identity: LinkedIn URL lives on Person.linkedinLink
       if (fieldName === 'linkedinUrl') {
-        console.log('Updating linkedinUrl in both candidate and person');
+        console.log('Updating linkedinLink on Person');
 
-        // Normalize the LinkedIn URL using the utility function
         const normalizedLinkedInUrl = normalizeLinkedInUrl(
           formattedValue || '',
         );
-        console.log('Original LinkedIn URL:', formattedValue);
-        console.log('Normalized LinkedIn URL:', normalizedLinkedInUrl);
-
-        // Format the value as a link object
         const linkValue = {
           primaryLinkLabel: normalizedLinkedInUrl,
           primaryLinkUrl: normalizedLinkedInUrl,
         };
 
-        // Update candidate linkedinUrl
-        const candidateUpdateData = { linkedinUrl: linkValue };
-        const candidateResponse =
-          await this.staticGraphQLService.executeGraphQL(
-            graphQltoUpdateOneCandidate,
-            { idToUpdate: candidateId, input: candidateUpdateData },
-            apiToken,
-          );
-        console.log(
-          'Candidate linkedinUrl update response:',
-          candidateResponse?.data?.data,
-        );
-
-        // Update person linkedinLink (note: person uses linkedinLink, not linkedinUrl)
-        if (personId) {
-          const personUpdateData = { linkedinLink: linkValue };
-          const personResponse = await this.staticGraphQLService.executeGraphQL(
-            mutationToUpdateOnePerson,
-            { idToUpdate: personId, input: personUpdateData },
-            apiToken,
-          );
-          console.log(
-            'Person linkedinLink update response:',
-            personResponse?.data?.data,
-          );
+        if (!personId) {
+          return {
+            success: false,
+            message: 'Person id missing for linkedinUrl',
+          };
         }
 
-        return candidateResponse?.data?.data;
+        const personResponse = await this.staticGraphQLService.executeGraphQL(
+          mutationToUpdateOnePerson,
+          { idToUpdate: personId, input: { linkedinLink: linkValue } },
+          apiToken,
+        );
+        console.log(
+          'Person linkedinLink update response:',
+          personResponse?.data?.data,
+        );
+
+        return personResponse?.data?.data;
       }
 
       if (candidateFlagFields.has(fieldName)) {
@@ -4003,8 +3977,10 @@ export class CandidateService {
       if (profileUrl.includes('resdex')) {
         graphqlQuery = {
           filter: {
-            resdexNaukriUrl: {
-              primaryLinkUrl: { ilike: `%${profileUrl}%` },
+            people: {
+              resdexNaukriUrl: {
+                primaryLinkUrl: { ilike: `%${profileUrl}%` },
+              },
             },
           },
           orderBy: [{ position: 'AscNullsFirst' }],
@@ -4012,8 +3988,10 @@ export class CandidateService {
       } else if (profileUrl.includes('hiring')) {
         graphqlQuery = {
           filter: {
-            hiringNaukriUrl: {
-              primaryLinkUrl: { ilike: `%${profileUrl}%` },
+            people: {
+              hiringNaukriUrl: {
+                primaryLinkUrl: { ilike: `%${profileUrl}%` },
+              },
             },
           },
           orderBy: [{ position: 'AscNullsFirst' }],
@@ -4021,8 +3999,10 @@ export class CandidateService {
       } else if (profileUrl.includes('linkedin')) {
         graphqlQuery = {
           filter: {
-            linkedinUrl: {
-              primaryLinkUrl: { ilike: `%${linkedinLookupUrl}%` },
+            people: {
+              linkedinLink: {
+                primaryLinkUrl: { ilike: `%${linkedinLookupUrl}%` },
+              },
             },
           },
           orderBy: [{ position: 'AscNullsFirst' }],
@@ -4033,18 +4013,24 @@ export class CandidateService {
           filter: {
             or: [
               {
-                resdexNaukriUrl: {
-                  primaryLinkUrl: { ilike: `%${profileUrl}%` },
+                people: {
+                  resdexNaukriUrl: {
+                    primaryLinkUrl: { ilike: `%${profileUrl}%` },
+                  },
                 },
               },
               {
-                hiringNaukriUrl: {
-                  primaryLinkUrl: { ilike: `%${profileUrl}%` },
+                people: {
+                  hiringNaukriUrl: {
+                    primaryLinkUrl: { ilike: `%${profileUrl}%` },
+                  },
                 },
               },
               {
-                linkedinUrl: {
-                  primaryLinkUrl: { ilike: `%${linkedinLookupUrl}%` },
+                people: {
+                  linkedinLink: {
+                    primaryLinkUrl: { ilike: `%${linkedinLookupUrl}%` },
+                  },
                 },
               },
             ],
@@ -4288,7 +4274,7 @@ export class CandidateService {
 
       const graphqlQuery = {
         filter: {
-          uniqueStringKey: { eq: uniqueStringKey },
+          people: { uniqueStringKey: { eq: uniqueStringKey } },
         },
         orderBy: [{ position: 'AscNullsFirst' }],
       };
@@ -4443,16 +4429,22 @@ export class CandidateService {
         ...phones.map((phone) => `spreadsheet_import|phone:${phone}`),
       ];
       if (spreadsheetKeys.length > 0) {
-        orConditions.push({ uniqueStringKey: { in: spreadsheetKeys } });
+        orConditions.push({
+          people: { uniqueStringKey: { in: spreadsheetKeys } },
+        });
       }
 
-      // Match any candidate carrying this email/phone directly, regardless of source/key format.
+      // Match any candidate whose Person carries this email/phone
       if (emails.length > 0) {
-        orConditions.push({ email: { primaryEmail: { in: emails } } });
+        orConditions.push({
+          people: { emails: { primaryEmail: { in: emails } } },
+        });
       }
       for (const phone of phones) {
         orConditions.push({
-          phoneNumber: { primaryPhoneNumber: { ilike: `%${phone}%` } },
+          people: {
+            phones: { primaryPhoneNumber: { ilike: `%${phone}%` } },
+          },
         });
       }
 
@@ -4664,19 +4656,14 @@ export class CandidateService {
       return { matchedCandidateIds: [], attachmentsCreated: 0 };
     }
 
-    const primaryEmail =
-      seedCandidate?.email?.primaryEmail ||
-      seedCandidate?.people?.emails?.primaryEmail ||
-      '';
+    const primaryEmail = seedCandidate?.people?.emails?.primaryEmail || '';
     const primaryPhone =
-      seedCandidate?.phoneNumber?.primaryPhoneNumber ||
-      seedCandidate?.people?.phones?.primaryPhoneNumber ||
-      '';
-    const uniqueStringKey = seedCandidate?.uniqueStringKey || '';
+      seedCandidate?.people?.phones?.primaryPhoneNumber || '';
+    const uniqueStringKey = seedCandidate?.people?.uniqueStringKey || '';
     const profileUrl =
-      seedCandidate?.linkedinUrl?.primaryLinkUrl ||
-      seedCandidate?.resdexNaukriUrl?.primaryLinkUrl ||
-      seedCandidate?.hiringNaukriUrl?.primaryLinkUrl ||
+      seedCandidate?.people?.linkedinLink?.primaryLinkUrl ||
+      seedCandidate?.people?.resdexNaukriUrl?.primaryLinkUrl ||
+      seedCandidate?.people?.hiringNaukriUrl?.primaryLinkUrl ||
       '';
 
     const contactData = {
@@ -4980,20 +4967,14 @@ export class CandidateService {
     const keys = new Set<string>();
 
     for (const candidate of candidates) {
-      const emailRaw =
-        candidate?.email?.primaryEmail ||
-        candidate?.people?.emails?.primaryEmail ||
-        '';
+      const emailRaw = candidate?.people?.emails?.primaryEmail || '';
       const email = emailRaw ? String(emailRaw).toLowerCase().trim() : '';
       if (email) {
         emails.add(email);
         keys.add(`spreadsheet_import|email:${email}`);
       }
 
-      const phoneRaw =
-        candidate?.phoneNumber?.primaryPhoneNumber ||
-        candidate?.people?.phones?.primaryPhoneNumber ||
-        '';
+      const phoneRaw = candidate?.people?.phones?.primaryPhoneNumber || '';
       const phone = phoneRaw
         ? this.dataProcessingUtils.cleanPhoneNumbers(phoneRaw)[0]
         : '';
@@ -5002,8 +4983,8 @@ export class CandidateService {
         keys.add(`spreadsheet_import|phone:${phone}`);
       }
 
-      if (candidate?.uniqueStringKey) {
-        keys.add(candidate.uniqueStringKey);
+      if (candidate?.people?.uniqueStringKey) {
+        keys.add(candidate.people.uniqueStringKey);
       }
     }
 
@@ -5030,17 +5011,21 @@ export class CandidateService {
 
     for (const part of this.chunkArray(tokens.emails, 30)) {
       if (part.length > 0) {
-        await runFilter({ email: { primaryEmail: { in: part } } });
+        await runFilter({
+          people: { emails: { primaryEmail: { in: part } } },
+        });
       }
     }
     for (const part of this.chunkArray(tokens.keys, 30)) {
       if (part.length > 0) {
-        await runFilter({ uniqueStringKey: { in: part } });
+        await runFilter({ people: { uniqueStringKey: { in: part } } });
       }
     }
     for (const part of this.chunkArray(tokens.phones, 30)) {
       if (part.length > 0) {
-        await runFilter({ phoneNumber: { primaryPhoneNumber: { in: part } } });
+        await runFilter({
+          people: { phones: { primaryPhoneNumber: { in: part } } },
+        });
       }
     }
 
@@ -5247,19 +5232,13 @@ export class CandidateService {
       }
       const tokens: string[] = [];
 
-      const emailRaw =
-        candidate?.email?.primaryEmail ||
-        candidate?.people?.emails?.primaryEmail ||
-        '';
+      const emailRaw = candidate?.people?.emails?.primaryEmail || '';
       const email = emailRaw ? String(emailRaw).toLowerCase().trim() : '';
       if (email) {
         tokens.push(`email:${email}`);
       }
 
-      const phoneRaw =
-        candidate?.phoneNumber?.primaryPhoneNumber ||
-        candidate?.people?.phones?.primaryPhoneNumber ||
-        '';
+      const phoneRaw = candidate?.people?.phones?.primaryPhoneNumber || '';
       const phone = phoneRaw
         ? this.dataProcessingUtils.cleanPhoneNumbers(phoneRaw)[0]
         : '';
@@ -5267,8 +5246,8 @@ export class CandidateService {
         tokens.push(`phone:${phone}`);
       }
 
-      if (candidate?.uniqueStringKey) {
-        tokens.push(`key:${candidate.uniqueStringKey}`);
+      if (candidate?.people?.uniqueStringKey) {
+        tokens.push(`key:${candidate.people.uniqueStringKey}`);
       }
 
       for (const token of tokens) {

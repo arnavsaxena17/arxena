@@ -102,10 +102,7 @@ export class VoiceCallService {
     }) as Project;
     const personId =
       candidateNode.peopleId ?? (candidateNode as any).people?.id;
-    const rawPhone =
-      candidateNode.phoneNumber?.primaryPhoneNumber ??
-      (candidateNode as any).people?.phones?.primaryPhoneNumber ??
-      '';
+    const rawPhone = candidateNode.people?.phones?.primaryPhoneNumber ?? '';
     const phoneNumber = normalizePhoneNumber(rawPhone);
     if (!phoneNumber) {
       return {
@@ -208,10 +205,7 @@ export class VoiceCallService {
     }) as Project;
     const personId =
       candidateNode.peopleId ?? (candidateNode as any).people?.id;
-    const rawPhone =
-      candidateNode.phoneNumber?.primaryPhoneNumber ??
-      (candidateNode as any).people?.phones?.primaryPhoneNumber ??
-      '';
+    const rawPhone = candidateNode.people?.phones?.primaryPhoneNumber ?? '';
     const phoneNumber = normalizePhoneNumber(rawPhone);
 
     const chatControlType =

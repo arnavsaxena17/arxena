@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
+import { buildCandidateFlagsPatchUpdate } from 'twenty-shared/arx';
 import { isDefined } from 'twenty-shared/utils';
 import { StepStatus, WorkflowActionType } from 'twenty-shared/workflow';
 import { In, type ObjectLiteral } from 'typeorm';
@@ -81,7 +82,9 @@ type WorkflowRunRecord = ObjectLiteral & {
 
 @Injectable()
 export class OutreachProjectOutreachControlService {
-  private readonly logger = new Logger(OutreachProjectOutreachControlService.name);
+  private readonly logger = new Logger(
+    OutreachProjectOutreachControlService.name,
+  );
 
   constructor(
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
@@ -267,10 +270,12 @@ export class OutreachProjectOutreachControlService {
           }
 
           try {
-            await this.outreachWorkflowRunRepairService.repairStaleFormAfterSend({
-              workspaceId,
-              workflowRunId: run.id,
-            });
+            await this.outreachWorkflowRunRepairService.repairStaleFormAfterSend(
+              {
+                workspaceId,
+                workflowRunId: run.id,
+              },
+            );
           } catch (error) {
             this.logger.warn(
               `Failed stale FORM-after-send repair for run ${run.id}: ${
@@ -424,8 +429,7 @@ export class OutreachProjectOutreachControlService {
             CandidateRecord & {
               peopleId?: string | null;
               outreachSequenceStage?: string | null;
-              startOutreach?: boolean | null;
-              stopOutreach?: boolean | null;
+              candidateFlags?: unknown;
               projectId?: string | null;
             }
           >(workspaceId, 'candidate', { shouldBypassPermissionChecks: true });
@@ -454,8 +458,10 @@ export class OutreachProjectOutreachControlService {
             : 'QUEUED';
 
           await candidateRepository.update(candidate.id, {
-            startOutreach: true,
-            stopOutreach: false,
+            ...buildCandidateFlagsPatchUpdate(candidate, {
+              startOutreach: true,
+              stopOutreach: false,
+            }),
             outreachSequenceStage: nextStage,
           });
           startedCandidates += 1;
@@ -498,6 +504,7 @@ export class OutreachProjectOutreachControlService {
             CandidateRecord & {
               peopleId?: string | null;
               outreachSequenceStage?: string | null;
+              candidateFlags?: unknown;
               projectId?: string | null;
             }
           >(workspaceId, 'candidate', { shouldBypassPermissionChecks: true });
@@ -524,8 +531,10 @@ export class OutreachProjectOutreachControlService {
         for (const candidate of candidates) {
           await candidateRepository.update(candidate.id, {
             outreachSequenceStage: 'STOPPED',
-            startOutreach: false,
-            stopOutreach: true,
+            ...buildCandidateFlagsPatchUpdate(candidate, {
+              startOutreach: false,
+              stopOutreach: true,
+            }),
           });
           stoppedCandidates += 1;
 

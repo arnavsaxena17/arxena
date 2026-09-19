@@ -11,7 +11,7 @@ import {
 import { LinkedinUnipileSessionService } from '../../arx-chat/services/linkedin-unipile-session.service';
 import { WorkspaceMemberUnipileService } from '../../arx-chat/services/workspace-member-unipile.service';
 import { LinkedInRecruiterPeopleTransformerService } from '../../candidate-sourcing/services/data-sources/linkedin-recruiter-people-transformer.service';
-import { LinkedInSearchTransformerService, TransformedCandidateForTable } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
+import { LinkedInSearchTransformerService, CandidateTableRow } from '../../candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { ResumeReadParseUploadService } from '../../candidate-sourcing/services/resume-read-parse-upload.service';
 import { StaticGraphQLService } from '../../graphql/static-graphql.service';
 import { LinkedInSearchService } from '../../linkedin-search/services/linkedin-search.service';
@@ -48,7 +48,7 @@ type PeopleSearchStrategyResult =
 type SearchExecutionPreview = {
   itemCount: number;
   searchResults: LinkedInSearchResponse | null;
-  transformedCandidates?: TransformedCandidateForTable[];
+  transformedCandidates?: CandidateTableRow[];
   /** When set, final assistant `table_data` should reuse this id so rows are not duplicated in the UI */
   streamTableId?: string;
   searchMetadata?: {
@@ -332,7 +332,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
 
       const state = {
         allItems: [] as LinkedInSearchResult[],
-        allTransformedCandidates: [] as TransformedCandidateForTable[],
+        allTransformedCandidates: [] as CandidateTableRow[],
         currentCursor: undefined as string | undefined,
         currentPage: 1,
         firstPageConfig: { params: {} } as LinkedInSearchConfig,
@@ -408,7 +408,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           ),
         );
         const newItemsNoVal: LinkedInSearchResult[] = [];
-        const newTransformedNoVal: TransformedCandidateForTable[] = [];
+        const newTransformedNoVal: CandidateTableRow[] = [];
         pageResult.items.forEach((item, idx) => {
           const key =
             (item as { public_identifier?: string }).public_identifier ??
@@ -566,7 +566,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     const pageLimit = getLinkedInUnipileSearchPageLimit(searchType);
     let stateForPartialCatch: {
       allItems: LinkedInSearchResult[];
-      allTransformedCandidates: TransformedCandidateForTable[];
+      allTransformedCandidates: CandidateTableRow[];
       currentCursor: string | undefined;
       currentPage: number;
       firstPageConfig: LinkedInSearchConfig;
@@ -638,7 +638,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         sendEvent && searchCategory === 'people' ? crypto.randomUUID() : undefined;
       const state = {
         allItems: [] as LinkedInSearchResult[],
-        allTransformedCandidates: [] as TransformedCandidateForTable[],
+        allTransformedCandidates: [] as CandidateTableRow[],
         currentCursor: undefined as string | undefined,
         currentPage: 1,
         firstPageConfig: { params: {} } as LinkedInSearchConfig,
@@ -677,7 +677,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
 
         let pageResult: {
           items: LinkedInSearchResult[];
-          transformed: TransformedCandidateForTable[];
+          transformed: CandidateTableRow[];
           cursor?: string | null;
           config?: LinkedInSearchConfig;
           paging?: { total_count: number };
@@ -762,7 +762,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
           ),
         );
         const newItems: LinkedInSearchResult[] = [];
-        const newTransformed: TransformedCandidateForTable[] = [];
+        const newTransformed: CandidateTableRow[] = [];
         page.items.forEach((item, idx) => {
           const key =
             (item as { public_identifier?: string }).public_identifier ??
@@ -946,7 +946,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
   private emitProgressiveCandidateTable(
     sendEvent: ((event: string, data: unknown) => boolean | void) | undefined,
     streamTableId: string | undefined,
-    allTransformed: TransformedCandidateForTable[],
+    allTransformed: CandidateTableRow[],
     candidateScores: Map<string, CandidateRelevanceScoring>,
   ): void {
     if (!sendEvent || !streamTableId) {
@@ -993,7 +993,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     linkedInAccountIdSource?: string,
   ): Promise<{
     items: LinkedInSearchResult[];
-    transformed: TransformedCandidateForTable[];
+    transformed: CandidateTableRow[];
     cursor?: string | null;
     config?: LinkedInSearchConfig;
     paging?: { total_count: number };
@@ -1052,7 +1052,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
       `Search results items length: ${searchResults.items?.length ?? 0}`,
     );
 
-    let transformedCandidates: TransformedCandidateForTable[] = [];
+    let transformedCandidates: CandidateTableRow[] = [];
     if (searchResults.items && searchCategory === 'people') {
       const transformer =
         searchType === 'recruiter'
@@ -1087,7 +1087,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
 
   private async processPageResults(
     pageItems: LinkedInSearchResult[],
-    pageTransformed: TransformedCandidateForTable[],
+    pageTransformed: CandidateTableRow[],
     currentPage: number,
     totalItemsCount: number,
     strategy: PeopleSearchStrategyResult,
@@ -1098,7 +1098,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     apiToken: string,
     candidateScores: Map<string, CandidateRelevanceScoring>,
     validationResults: Array<{ page: number; validation: ResultValidationResult; timestamp: string }>,
-    allTransformedCandidates: TransformedCandidateForTable[],
+    allTransformedCandidates: CandidateTableRow[],
     streamTableId: string | undefined,
     sendEvent?: (event: string, data: any) => boolean | void,
   ): Promise<boolean> {
@@ -1206,9 +1206,9 @@ export class SearchExecutionService extends CandidateSearchBaseService {
   }
 
   private attachScoresToCandidates(
-    candidates: TransformedCandidateForTable[],
+    candidates: CandidateTableRow[],
     scores: Map<string, CandidateRelevanceScoring>,
-  ): TransformedCandidateForTable[] {
+  ): CandidateTableRow[] {
     return candidates.map((candidate) => {
       const candidateId = candidate.tempId || candidate.id || candidate.peopleId || '';
       const candidateName = candidate.name || '';
@@ -1229,7 +1229,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
   }
 
   private attachScoresToAllCandidates(
-    allTransformedCandidates: TransformedCandidateForTable[],
+    allTransformedCandidates: CandidateTableRow[],
     allItems: LinkedInSearchResult[],
     candidateScores: Map<string, CandidateRelevanceScoring>,
   ): void {
@@ -1291,7 +1291,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
   }
 
   private sendFinalBatch(
-    allTransformedCandidates: TransformedCandidateForTable[],
+    allTransformedCandidates: CandidateTableRow[],
     candidateScores: Map<string, CandidateRelevanceScoring>,
     strategy: PeopleSearchStrategyResult,
     sendEvent?: (event: string, data: any) => boolean | void,
@@ -1310,7 +1310,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
 
   private buildResponse(
     allItems: LinkedInSearchResult[],
-    allTransformedCandidates: TransformedCandidateForTable[],
+    allTransformedCandidates: CandidateTableRow[],
     firstPageConfig: LinkedInSearchConfig,
     currentCursor: string | undefined,
     currentPage: number,
@@ -1448,7 +1448,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
     items: LinkedInSearchResult[],
     searchType: 'classic' | 'sales_navigator' | 'recruiter',
     searchCategory: 'people' | 'companies' | 'posts' | 'jobs',
-  ): TransformedCandidateForTable[] {
+  ): CandidateTableRow[] {
     if (!items || items.length === 0 || searchCategory !== 'people') {
       return [];
     }

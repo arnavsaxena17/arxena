@@ -397,7 +397,7 @@ export const DataTable = forwardRef<
   }, []);
 
   // Merge database candidates with search results
-  // Note: searchResults now contain TransformedCandidateForTable (extends UserProfile)
+  // Note: searchResults now contain CandidateTableRow (extends PersonCandidateDraft)
   const mergedData = useMemo(() => {
     // In contexts like Assistant, processedData can be empty even though
     // rawData (from get-candidates-by-project-id) has candidates. In that case,
@@ -405,11 +405,11 @@ export const DataTable = forwardRef<
     const baseProcessedData =
       processedData.length > 0 ? processedData : (tableState.rawData ?? []);
     // Search results are already transformed to the correct format by the backend
-    // They extend UserProfile and have all necessary fields including:
+    // They extend PersonCandidateDraft and have all necessary fields including:
     // - __isFetched, tempId (UI fields)
     // - jobTitle, company, location (display aliases)
     // - candConversationStatus, status (UI state)
-    // - All UserProfile fields (experience, education, skills, etc.)
+    // - All PersonCandidateDraft fields (experience, education, skills, etc.)
     console.log('DataTable mergedData calculation:', {
       searchResultsCount: searchResults.length,
       processedDataCount: processedData.length,
@@ -1129,7 +1129,7 @@ export const DataTable = forwardRef<
           },
         );
 
-        // Prioritize transformed candidates (which extend UserProfile)
+        // Prioritize transformed candidates (which extend PersonCandidateDraft)
         let newResults: any[];
         let nextCursor: string | undefined;
         let paging: any;

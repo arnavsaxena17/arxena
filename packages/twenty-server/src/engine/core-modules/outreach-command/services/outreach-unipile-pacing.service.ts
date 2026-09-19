@@ -43,8 +43,13 @@ type WorkspaceMemberPacingRecord = ObjectLiteral & {
 type CandidateLookupRecord = ObjectLiteral & {
   id: string;
   projectId?: string | null;
+  peopleId?: string | null;
+};
+
+type PersonLookupRecord = ObjectLiteral & {
+  id: string;
   linkedinProfileId?: string | null;
-  linkedinUrl?: { primaryLinkUrl?: string } | null;
+  linkedinLinkPrimaryLinkUrl?: string | null;
 };
 
 @Injectable()
@@ -201,36 +206,46 @@ export class OutreachUnipilePacingService {
         let project: ProjectPacingRecord | null = null;
 
         if (isNonEmptyString(linkedinProfileId)) {
+          const personRepository =
+            await this.globalWorkspaceOrmManager.getRepository<PersonLookupRecord>(
+              workspaceId,
+              'person',
+              { shouldBypassPermissionChecks: true },
+            );
+          let person =
+            (await personRepository.findOne({
+              where: { linkedinProfileId },
+            })) ?? null;
+
+          if (!isDefined(person)) {
+            const slug = extractLinkedinProfileId(linkedinProfileId);
+
+            if (isNonEmptyString(slug)) {
+              try {
+                person = await personRepository.findOne({
+                  where: {
+                    linkedinLinkPrimaryLinkUrl: ILike(
+                      `%/in/${escapeForIlike(slug)}%`,
+                    ),
+                  },
+                });
+              } catch {
+                person = null;
+              }
+            }
+          }
+
           const candidateRepository =
             await this.globalWorkspaceOrmManager.getRepository<CandidateLookupRecord>(
               workspaceId,
               'candidate',
               { shouldBypassPermissionChecks: true },
             );
-          const candidates = await candidateRepository.find({
-            where: { linkedinProfileId },
-            take: 1,
-          });
-          let match = candidates[0];
-
-          if (!isDefined(match)) {
-            const slug = extractLinkedinProfileId(linkedinProfileId);
-
-            if (isNonEmptyString(slug)) {
-              try {
-                match =
-                  (await candidateRepository.findOne({
-                    where: {
-                      linkedinUrlPrimaryLinkUrl: ILike(
-                        `%/in/${escapeForIlike(slug)}%`,
-                      ),
-                    },
-                  })) ?? undefined;
-              } catch {
-                match = undefined;
-              }
-            }
-          }
+          const match = isDefined(person)
+            ? await candidateRepository.findOne({
+                where: { peopleId: person.id },
+              })
+            : null;
 
           const projectId = match?.projectId;
 

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { TransformedCandidateForTable } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
+import type { CandidateTableRow } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 
 /**
  * Harvest API LeadShort schema (from /linkedin/lead-search):
@@ -28,7 +28,7 @@ export class HarvestLinkedinTransformerService {
     leads: Array<Record<string, unknown>>,
     companyName: string,
     companyLinkedinUrl?: string,
-  ): TransformedCandidateForTable[] {
+  ): CandidateTableRow[] {
     return leads.map((lead, index) =>
       this.toCandidateRow({
         lead,
@@ -44,7 +44,7 @@ export class HarvestLinkedinTransformerService {
     leadsWithProfiles: Array<Record<string, unknown>>,
     companyName: string,
     companyLinkedinUrl?: string,
-  ): TransformedCandidateForTable[] {
+  ): CandidateTableRow[] {
     return leadsWithProfiles.map((lead, index) =>
       this.toCandidateRow({
         lead,
@@ -62,7 +62,7 @@ export class HarvestLinkedinTransformerService {
     companyName: string;
     companyLinkedinUrl?: string;
     index: number;
-  }): TransformedCandidateForTable {
+  }): CandidateTableRow {
     const { lead, profile } = input;
 
     const fullName =
@@ -186,7 +186,7 @@ export class HarvestLinkedinTransformerService {
         : {}),
     };
 
-    return row as unknown as TransformedCandidateForTable;
+    return row as unknown as CandidateTableRow;
   }
 
   private unwrapProfile(value: unknown): Record<string, unknown> | null {

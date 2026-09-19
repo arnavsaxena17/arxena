@@ -36,7 +36,7 @@ export class ApplyOutreachSequencerGraphOptionsInput {
 
   @Field(() => Boolean, {
     description:
-      'Skip company sibling dedupe when false; qualify go wires straight to connection note',
+      'When true, insert company sibling dedupe before connection send; default is off',
     nullable: false,
   })
   checkDeduplicationPerCompany: boolean;

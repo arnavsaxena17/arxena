@@ -594,9 +594,8 @@ export class WorkflowVersionWorkspaceService {
             outreachSequenceStage: resolveFieldId('candidate', [
               'outreachSequenceStage',
             ]),
-            startOutreach: resolveFieldId('candidate', ['startOutreach']),
-            stopOutreach: resolveFieldId('candidate', ['stopOutreach']),
-            jobCompanyName: resolveFieldId('candidate', ['jobCompanyName']),
+            candidateFlags: resolveFieldId('candidate', ['candidateFlags']),
+            jobCompanyName: resolveFieldId('person', ['jobCompanyName']),
             projectId: resolveFieldId('candidate', ['projectId', 'project']),
             createdAt: resolveFieldId('candidate', ['createdAt']),
             chatCandidateId: resolveFieldId('chatMessage', [

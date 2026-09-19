@@ -16,8 +16,8 @@ export const normalizeCampaignRecipients = (
   const seenEmails = new Set<string>();
   const recipients: CampaignRecipient[] = [];
 
-  for (const candidate of rawRecipients) {
-    const normalizedEmail = candidate.email?.trim().toLowerCase();
+  for (const recipient of rawRecipients) {
+    const normalizedEmail = recipient.email?.trim().toLowerCase();
 
     if (!isNonEmptyString(normalizedEmail)) {
       skipped.noEmail += 1;
@@ -36,7 +36,7 @@ export const normalizeCampaignRecipients = (
       continue;
     }
 
-    recipients.push({ email: normalizedEmail, personId: candidate.personId });
+    recipients.push({ email: normalizedEmail, personId: recipient.personId });
   }
 
   return { recipients, skipped };

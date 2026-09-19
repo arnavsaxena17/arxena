@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UserProfile } from 'twenty-shared';
+import { PersonCandidateDraft } from 'twenty-shared';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
 
@@ -16,7 +16,7 @@ export class ApnaDatabaseTransformerService extends BaseDataSourceTransformerSer
   transformToUserProfile(
     candidateData: any,
     context: TransformationContext
-  ): UserProfile {
+  ): PersonCandidateDraft {
     const userProfile = this.createBaseUserProfile(candidateData, context);
     
     // Use simplified base methods where possible
@@ -34,7 +34,7 @@ export class ApnaDatabaseTransformerService extends BaseDataSourceTransformerSer
   }
 
 
-  private processApnaExperienceData(candidateData: any, userProfile: UserProfile): void {
+  private processApnaExperienceData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const currentExperience = candidateData.currentExperience;
     const totalExperienceInYears = candidateData.totalExperienceInYears;
     const currentSalary = candidateData.currentSalary;
@@ -72,7 +72,7 @@ export class ApnaDatabaseTransformerService extends BaseDataSourceTransformerSer
     }
   }
 
-  private processApnaEducationData(candidateData: any, userProfile: UserProfile): void {
+  private processApnaEducationData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const education = candidateData.education;
     
     if (education?.title) {
@@ -106,7 +106,7 @@ export class ApnaDatabaseTransformerService extends BaseDataSourceTransformerSer
     }
   }
 
-  private processApnaSkillsData(candidateData: any, userProfile: UserProfile): void {
+  private processApnaSkillsData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const skills = candidateData.skills;
     
     if (skills && Array.isArray(skills)) {
@@ -115,7 +115,7 @@ export class ApnaDatabaseTransformerService extends BaseDataSourceTransformerSer
     }
   }
 
-  private processApnaLocationData(candidateData: any, userProfile: UserProfile): void {
+  private processApnaLocationData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const location = candidateData.location;
     
     if (location) {
@@ -145,7 +145,7 @@ export class ApnaDatabaseTransformerService extends BaseDataSourceTransformerSer
     }
   }
 
-  private processApnaPhotoData(candidateData: any, userProfile: UserProfile): void {
+  private processApnaPhotoData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const profilePhotoUrl = candidateData.profilePhotoUrl;
     
     if (profilePhotoUrl) {
@@ -154,7 +154,7 @@ export class ApnaDatabaseTransformerService extends BaseDataSourceTransformerSer
     }
   }
 
-  private processApnaSpecificData(candidateData: any, userProfile: UserProfile): void {
+  private processApnaSpecificData(candidateData: any, userProfile: PersonCandidateDraft): void {
     // Use utility method for events
     // this.addProjectProcessEvent(userProfile, 'last_active', candidateData.activeOn);
     // this.addProjectProcessEvent(userProfile, 'last_updated', candidateData.updatedOn);

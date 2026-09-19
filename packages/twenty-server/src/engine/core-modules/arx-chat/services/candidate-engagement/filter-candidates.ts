@@ -76,11 +76,11 @@ export class FilterCandidates {
         MessagingChannel.LINKEDIN_CONNECT,
       )
     ) {
-      phoneNumberTo = candidate?.linkedinUrl?.primaryLinkUrl || '';
-    } else if (candidate?.phoneNumber?.primaryPhoneNumber) {
-      phoneNumberTo = candidate.phoneNumber.primaryPhoneNumber.length == 10
-          ? '91' + candidate.phoneNumber.primaryPhoneNumber
-          : candidate.phoneNumber.primaryPhoneNumber;
+      phoneNumberTo = candidate?.people?.linkedinLink?.primaryLinkUrl ?? '';
+    } else if (candidate?.people?.phones?.primaryPhoneNumber) {
+      phoneNumberTo = candidate.people.phones.primaryPhoneNumber.length == 10
+          ? '91' + candidate.people.phones.primaryPhoneNumber
+          : candidate.people.phones.primaryPhoneNumber;
     } else {
       console.warn('No phone number found for candidate, using empty string');
     }
@@ -672,11 +672,10 @@ export class FilterCandidates {
 
       const personObj = {
         phones: personFromCandidate?.phones || {
-          primaryPhoneNumber:
-            primaryCandidate?.phoneNumber?.primaryPhoneNumber || '',
+          primaryPhoneNumber: '',
         },
         emails: personFromCandidate?.emails || {
-          primaryEmail: primaryCandidate?.email?.primaryEmail || '',
+          primaryEmail: '',
         },
         linkedinLink: personFromCandidate?.linkedinLink,
         salary: personFromCandidate?.salary || '',
@@ -888,10 +887,10 @@ export class FilterCandidates {
     const activeJobCandidate: CandidateNode = activeJobCandidateObj?.node;
     const activeJob: Project = activeJobCandidate?.project as Project;
     const activeCompany = activeJob?.company;
-    const candidatePhone =
-      activeJobCandidate?.phoneNumber?.primaryPhoneNumber || '';
-    const personPhone = personNode?.phones?.primaryPhoneNumber || '';
-    const resolvedPhone = candidatePhone || personPhone;
+    const person = (personNode || activeJobCandidate?.people) as PersonNode;
+    const rawPhone = person?.phones?.primaryPhoneNumber ?? '';
+    const normalizedPhone =
+      rawPhone.length === 10 ? '91' + rawPhone : rawPhone;
 
     return {
       name:
@@ -921,17 +920,6 @@ export class FilterCandidates {
       createdAt: activeJobCandidate?.createdAt,
       videoInterview: activeJobCandidate?.videoInterview,
       candidateFlags: activeJobCandidate?.candidateFlags,
-      phoneNumber: {
-        primaryPhoneNumber:
-          resolvedPhone.length === 10 ? '91' + resolvedPhone : resolvedPhone,
-      },
-      email: {
-        primaryEmail:
-          personNode?.emails?.primaryEmail ||
-          activeJobCandidate?.email?.primaryEmail ||
-          activeJobCandidate?.people?.emails?.primaryEmail ||
-          '',
-      },
       peopleId: personNode?.id || activeJobCandidate?.peopleId || '',
       input: userMessage?.messages[0]?.content,
       otherFields: activeJobCandidate?.otherFields ?? {},
@@ -940,7 +928,16 @@ export class FilterCandidates {
       messagingChannel: activeJobCandidate?.messagingChannel,
       emailMessages: { edges: activeJobCandidate?.emailMessages?.edges },
       updatedAt: activeJobCandidate.updatedAt,
-      people: (personNode || activeJobCandidate?.people) as PersonNode,
+      people: {
+        ...person,
+        phones: {
+          primaryPhoneNumber:
+            normalizedPhone || person?.phones?.primaryPhoneNumber || '',
+        },
+        emails: {
+          primaryEmail: person?.emails?.primaryEmail ?? '',
+        },
+      },
       chatCount: activeJobCandidate.chatCount,
     };
   }

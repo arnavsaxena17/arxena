@@ -106,7 +106,7 @@ describe('GTM outreach workflow graphs', () => {
     expect(createdGraphs).toHaveLength(0);
   });
 
-  it('skips Candidate Sequencer connection send when another person at the company is already in outreach', () => {
+  it('wires Candidate Sequencer qualify go straight to connection note by default', () => {
     const candidateSequencer = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.find(
       (graph) => graph.name === 'Outreach — Candidate Sequencer',
     );
@@ -119,21 +119,14 @@ describe('GTM outreach workflow graphs', () => {
     expect(byName('Load Candidate')?.nextStepIds).toEqual([
       byName('Fetch LinkedIn profile (qualify)')?.id,
     ]);
-    expect(byName('Has company name?')).toBeDefined();
-    expect(byName('Find contacted company sibling')).toBeDefined();
-    expect(byName('Company already contacted?')).toBeDefined();
-    expect(byName('Find earlier QUEUED sibling')).toBeDefined();
-    expect(byName('Earlier QUEUED sibling?')).toBeDefined();
+    expect(byName('Has company name?')).toBeUndefined();
+    expect(byName('Find contacted company sibling')).toBeUndefined();
+    expect(byName('Draft connection note (no company)')).toBeUndefined();
     expect(byName('Qualify prospect')).toBeDefined();
     expect(byName('Draft connection note')).toBeDefined();
-    expect(
-      byName('Mark DEFERRED — company already contacted')?.settings?.input
-        ?.fieldsToUpdate,
-    ).toEqual(['outreachSequenceStage']);
-    expect(
-      byName('Mark DEFERRED — earlier QUEUED sibling')?.settings?.input
-        ?.fieldsToUpdate,
-    ).toEqual(['outreachSequenceStage']);
+    expect(branchNext('Qualify go?', 0)).toEqual([
+      byName('Draft connection note')?.id,
+    ]);
 
     const qualifyProspect = byName('Qualify prospect') as {
       settings?: {
@@ -161,6 +154,62 @@ describe('GTM outreach workflow graphs', () => {
       'score',
       'segment',
     ]);
+
+    expect(byName('Load Candidate')?.nextStepIds).not.toContain(
+      byName('Send LinkedIn connection')?.id,
+    );
+
+    expect(byName('Approve connection note')?.nextStepIds).toEqual([
+      byName('Connection not yet sent?')?.id,
+    ]);
+    expect(byName('Connection not yet sent?')?.type).toBe('IF_ELSE');
+    expect(
+      (
+        byName('Connection not yet sent?')?.settings as {
+          input: {
+            stepFilters: Array<{ operand: string; stepOutputKey: string }>;
+          };
+        }
+      ).input.stepFilters[0],
+    ).toEqual(
+      expect.objectContaining({
+        operand: 'IS_EMPTY',
+        stepOutputKey: expect.stringContaining(
+          'outreachAnalytics.connectionSentAt',
+        ),
+      }),
+    );
+    expect(
+      (
+        byName('Connection not yet sent?')?.settings as {
+          input: { branches: Array<{ nextStepIds: string[] }> };
+        }
+      ).input.branches[0]?.nextStepIds,
+    ).toEqual([byName('Send LinkedIn connection')?.id]);
+  });
+
+  it('skips connection send when company dedupe is on and a sibling is already in outreach', () => {
+    const steps = buildCandidateSequencerGraph({
+      checkDeduplicationPerCompany: true,
+    }).steps as GraphStep[];
+    const byName = (name: string) => steps.find((step) => step.name === name);
+    const branchNext = (stepName: string, branchIndex: number) =>
+      byName(stepName)?.settings?.input?.branches?.[branchIndex]?.nextStepIds ??
+      [];
+
+    expect(byName('Has company name?')).toBeDefined();
+    expect(byName('Find contacted company sibling')).toBeDefined();
+    expect(byName('Company already contacted?')).toBeDefined();
+    expect(byName('Find earlier QUEUED sibling')).toBeDefined();
+    expect(byName('Earlier QUEUED sibling?')).toBeDefined();
+    expect(
+      byName('Mark DEFERRED — company already contacted')?.settings?.input
+        ?.fieldsToUpdate,
+    ).toEqual(['outreachSequenceStage']);
+    expect(
+      byName('Mark DEFERRED — earlier QUEUED sibling')?.settings?.input
+        ?.fieldsToUpdate,
+    ).toEqual(['outreachSequenceStage']);
 
     // IF_ELSE branches must not share join step ids (skip cascade bug).
     expect(branchNext('Has company name?', 0)).toEqual([
@@ -232,38 +281,6 @@ describe('GTM outreach workflow graphs', () => {
         }),
       ]),
     );
-
-    expect(byName('Load Candidate')?.nextStepIds).not.toContain(
-      byName('Send LinkedIn connection')?.id,
-    );
-
-    expect(byName('Approve connection note')?.nextStepIds).toEqual([
-      byName('Connection not yet sent?')?.id,
-    ]);
-    expect(byName('Connection not yet sent?')?.type).toBe('IF_ELSE');
-    expect(
-      (
-        byName('Connection not yet sent?')?.settings as {
-          input: {
-            stepFilters: Array<{ operand: string; stepOutputKey: string }>;
-          };
-        }
-      ).input.stepFilters[0],
-    ).toEqual(
-      expect.objectContaining({
-        operand: 'IS_EMPTY',
-        stepOutputKey: expect.stringContaining(
-          'outreachAnalytics.connectionSentAt',
-        ),
-      }),
-    );
-    expect(
-      (
-        byName('Connection not yet sent?')?.settings as {
-          input: { branches: Array<{ nextStepIds: string[] }> };
-        }
-      ).input.branches[0]?.nextStepIds,
-    ).toEqual([byName('Send LinkedIn connection')?.id]);
   });
 
   it('merges QUEUED, CONNECTION_ACCEPTED and REPLIED into one candidate.upserted sequencer', () => {
@@ -289,7 +306,7 @@ describe('GTM outreach workflow graphs', () => {
     expect(trigger.settings.eventName).toBe('candidate.upserted');
     expect(trigger.settings.fields).toEqual([
       'outreachSequenceStage',
-      'startOutreach',
+      'candidateFlags',
     ]);
 
     // Entry-stage allowlist evaluated before a run is created, so the graph never
@@ -310,13 +327,15 @@ describe('GTM outreach workflow graphs', () => {
         type: 'BOOLEAN',
         operand: 'IS',
         value: 'true',
-        stepOutputKey: '{{trigger.properties.after.startOutreach}}',
+        stepOutputKey:
+          '{{trigger.properties.after.candidateFlags.startOutreach}}',
       }),
       expect.objectContaining({
         type: 'BOOLEAN',
         operand: 'IS',
         value: 'false',
-        stepOutputKey: '{{trigger.properties.after.stopOutreach}}',
+        stepOutputKey:
+          '{{trigger.properties.after.candidateFlags.stopOutreach}}',
       }),
     ]);
 
@@ -351,7 +370,7 @@ describe('GTM outreach workflow graphs', () => {
       JSON.stringify(['MEETING_BOOKED']),
     ]);
 
-    // Single hoisted member step — the duplicate "no company" load is gone.
+    // Single hoisted member step — no-company path only exists when dedupe is on.
     expect(byName('Load workspace member (no company)')).toBeUndefined();
     expect(
       byName('Load workspace member profile (no company)'),
@@ -364,12 +383,7 @@ describe('GTM outreach workflow graphs', () => {
       byName(stepName)?.settings?.input?.branches?.[branchIndex]?.nextStepIds ??
       [];
 
-    expect(branchNext('Has company name?', 1)).toEqual([
-      byName('Draft connection note (no company)')?.id,
-    ]);
-    expect(branchNext('Earlier QUEUED sibling?', 1)).toEqual([
-      byName('Draft connection note')?.id,
-    ]);
+    expect(byName('Has company name?')).toBeUndefined();
     expect(byName('Qualify prospect')?.nextStepIds).toEqual([
       byName('Stamp prospect enrichment')?.id,
     ]);
@@ -377,7 +391,7 @@ describe('GTM outreach workflow graphs', () => {
       byName('Qualify go?')?.id,
     ]);
     expect(branchNext('Qualify go?', 0)).toEqual([
-      byName('Has company name?')?.id,
+      byName('Draft connection note')?.id,
     ]);
 
     // All bodies present, and no duplicate step ids across branches.
@@ -452,7 +466,7 @@ describe('GTM outreach workflow graphs', () => {
       'CANDIDATE TOOL CALLS',
     );
     expect(draftSalesReply.settings?.input?.prompt).toContain(
-      'update_one_candidate',
+      'update_one_person',
     );
     expect(
       Object.keys(draftSalesReply.settings?.outputSchema ?? {}).sort(),
@@ -673,9 +687,9 @@ describe('GTM outreach workflow graphs', () => {
     ]);
   });
 
-  it('omits company dedupe when check deduplication per company is off', () => {
+  it('includes company dedupe when check deduplication per company is on', () => {
     const graph = buildCandidateSequencerGraph({
-      checkDeduplicationPerCompany: false,
+      checkDeduplicationPerCompany: true,
     });
     const steps = graph.steps as GraphStep[];
     const stepIds = new Set(steps.map((step) => step.id));
@@ -684,28 +698,30 @@ describe('GTM outreach workflow graphs', () => {
       byName(stepName)?.settings?.input?.branches?.[branchIndex]?.nextStepIds ??
       [];
 
-    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.hasCompanyIf)).toBe(false);
-    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.findContacted)).toBe(false);
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.hasCompanyIf)).toBe(true);
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.findContacted)).toBe(true);
     expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.sendConnectNoCompany)).toBe(
-      false,
+      true,
     );
     expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.draftConnectNote)).toBe(
       true,
     );
     expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.sendConnect)).toBe(true);
     expect(branchNext('Qualify go?', 0)).toEqual([
-      byName('Draft connection note')?.id,
+      byName('Has company name?')?.id,
     ]);
   });
 
   it('infers graph options from step ids', () => {
     const defaults = buildCandidateSequencerGraph();
+    const withDedupe = buildCandidateSequencerGraph({
+      checkDeduplicationPerCompany: true,
+    });
     const automated = buildCandidateSequencerGraph({
       humanInTheLoop: false,
       whatsappEnabled: false,
       meetingFollowUpEnabled: false,
       useLlmConnectionNote: false,
-      checkDeduplicationPerCompany: false,
     });
 
     expect(
@@ -718,8 +734,14 @@ describe('GTM outreach workflow graphs', () => {
       humanInTheLoop: true,
       whatsappEnabled: true,
       meetingFollowUpEnabled: true,
-      checkDeduplicationPerCompany: true,
+      checkDeduplicationPerCompany: false,
     });
+    expect(
+      inferOutreachSequencerGraphOptionsFromSteps(
+        withDedupe.steps as GraphStep[],
+        withDedupe.trigger,
+      ).checkDeduplicationPerCompany,
+    ).toBe(true);
     expect(
       inferOutreachSequencerGraphOptionsFromSteps(
         automated.steps as GraphStep[],
@@ -734,7 +756,7 @@ describe('GTM outreach workflow graphs', () => {
     });
   });
 
-  it('always builds automated candidate.upserted trigger gated by startOutreach', () => {
+  it('always builds automated candidate.upserted trigger gated by candidateFlags.startOutreach', () => {
     const graph = buildCandidateSequencerGraph({});
     const trigger = graph.trigger as {
       type: string;
@@ -755,7 +777,7 @@ describe('GTM outreach workflow graphs', () => {
     expect(trigger.settings.eventName).toBe('candidate.upserted');
     expect(trigger.settings.fields).toEqual([
       'outreachSequenceStage',
-      'startOutreach',
+      'candidateFlags',
     ]);
 
     const filterTypes = (trigger.settings.filter?.stepFilters ?? []).map(
@@ -767,14 +789,14 @@ describe('GTM outreach workflow graphs', () => {
     expect(
       trigger.settings.filter?.stepFilters?.some(
         (stepFilter) =>
-          stepFilter.stepOutputKey?.includes('startOutreach') &&
+          stepFilter.stepOutputKey?.includes('candidateFlags.startOutreach') &&
           stepFilter.value === 'true',
       ),
     ).toBe(true);
     expect(
       trigger.settings.filter?.stepFilters?.some(
         (stepFilter) =>
-          stepFilter.stepOutputKey?.includes('stopOutreach') &&
+          stepFilter.stepOutputKey?.includes('candidateFlags.stopOutreach') &&
           stepFilter.value === 'false',
       ),
     ).toBe(true);

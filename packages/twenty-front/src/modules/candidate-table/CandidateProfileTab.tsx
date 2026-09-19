@@ -162,9 +162,9 @@ export const CandidateProfileTab = ({ candidateData, isLoading }: CandidateProfi
         </StyledField>
 
         {(() => {
-          const phoneValue = typeof candidateData.phone === 'string'
-            ? candidateData.phone
-            : candidateData.phone?.primaryPhoneNumber || '';
+          const phoneValue =
+            candidateData.people?.phones?.primaryPhoneNumber ||
+            (typeof candidateData.phone === 'string' ? candidateData.phone : '');
           return phoneValue && (
             <StyledField>
               <StyledIconWrapper>
@@ -177,9 +177,9 @@ export const CandidateProfileTab = ({ candidateData, isLoading }: CandidateProfi
         })()}
 
         {(() => {
-          const emailValue = typeof candidateData.email === 'string'
-            ? candidateData.email
-            : candidateData.email?.primaryEmail || '';
+          const emailValue =
+            candidateData.people?.emails?.primaryEmail ||
+            (typeof candidateData.email === 'string' ? candidateData.email : '');
           return emailValue && (
             <StyledField>
               <StyledIconWrapper>

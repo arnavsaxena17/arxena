@@ -49,39 +49,34 @@ describe('upload-profile fill missing fields', () => {
     expect(patch.companyId).toBeUndefined();
   });
 
-  it('fills candidate fields that are missing and does not overwrite existing values', () => {
+  it('fills only membership candidate fields and ignores identity incoming values', () => {
     const patch = buildMissingCandidatePatch(
       {
-        email: { primaryEmail: 'kept@arxena.com' },
-        phoneNumber: { primaryPhoneNumber: '' },
-        linkedinUrl: { primaryLinkUrl: '' },
-        jobTitle: '',
-        jobCompanyName: 'Acme',
-        linkedinProfileId: '',
+        name: '',
+        peopleId: '',
+        campaign: 'kept-campaign',
+        source: '',
+        messagingChannel: '',
       },
       {
-        email: { primaryEmail: 'new@arxena.com' },
-        phoneNumber: { primaryPhoneNumber: '+15550000' },
-        linkedinUrl: {
-          primaryLinkUrl: 'https://linkedin.com/in/jane-doe',
-          primaryLinkLabel: 'https://linkedin.com/in/jane-doe',
-        },
-        linkedinProfileId: 'jane-doe',
+        name: 'Jane Doe',
+        peopleId: 'person-1',
+        campaign: 'new-campaign',
+        source: 'linkedin',
+        messagingChannel: 'LINKEDIN_CONNECT',
         jobTitle: 'Engineer',
-        jobCompanyName: 'Other Co',
+        linkedinProfileId: 'jane-doe',
       },
     );
 
     expect(patch).toEqual({
-      phoneNumber: { primaryPhoneNumber: '+15550000' },
-      linkedinUrl: {
-        primaryLinkUrl: 'https://linkedin.com/in/jane-doe',
-        primaryLinkLabel: 'https://linkedin.com/in/jane-doe',
-      },
-      linkedinProfileId: 'jane-doe',
-      jobTitle: 'Engineer',
+      name: 'Jane Doe',
+      peopleId: 'person-1',
+      source: 'linkedin',
+      messagingChannel: 'LINKEDIN_CONNECT',
     });
-    expect(patch.email).toBeUndefined();
-    expect(patch.jobCompanyName).toBeUndefined();
+    expect(patch.campaign).toBeUndefined();
+    expect(patch.jobTitle).toBeUndefined();
+    expect(patch.linkedinProfileId).toBeUndefined();
   });
 });

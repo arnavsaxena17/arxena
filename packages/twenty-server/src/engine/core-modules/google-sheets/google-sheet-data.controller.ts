@@ -305,31 +305,59 @@ export class GoogleSheetsDataController {
       throw new Error('No valid workspace found for this spreadsheet');
     }
 
-    const candidateResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, { filter: { uniqueStringKey: { eq: data.uniqueStringKey }, }, limit: 1 } , tokenData?.token || '');
+    const candidateResponse = await this.staticGraphQLService.executeGraphQL(
+      graphqlToFetchAllCandidateData,
+      {
+        filter: {
+          people: { uniqueStringKey: { eq: data.uniqueStringKey } },
+        },
+        limit: 1,
+      },
+      tokenData?.token || '',
+    );
 
     const candidate = candidateResponse.data?.data?.candidates?.edges[0]?.node;
     if (!candidate) {
       throw new NotFoundException('Candidate not found');
     }
 
-    const updateMutation = {
-      query: graphQltoUpdateOneCandidate,
-      variables: {
-      idToUpdate: candidate.id,
-      input: data
-      }
+    const peopleId = candidate.peopleId;
+    if (!peopleId) {
+      throw new NotFoundException('Person not found for candidate');
+    }
+
+    const {
+      uniqueStringKey: _uniqueStringKey,
+      full_name,
+      spreadsheetId: _spreadsheetId,
+      ...personInput
+    } = data as {
+      spreadsheetId: string;
+      full_name: string;
+      uniqueStringKey: string;
+      [key: string]: unknown;
     };
 
-      const updateResponse = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, { idToUpdate: candidate.id, input: data }, tokenData?.token || '');
+    const updateResponse = await this.staticGraphQLService.executeGraphQL(
+      mutationToUpdateOnePerson,
+      {
+        idToUpdate: peopleId,
+        input: {
+          ...(full_name ? { name: { firstName: full_name, lastName: '' } } : {}),
+          ...personInput,
+        },
+      },
+      tokenData?.token || '',
+    );
 
-      if (updateResponse.data?.errors) {
-        throw new InternalServerErrorException('Failed to update candidate');
-      }
-
-      return {
-        success: true,
-        candidateId: candidate.id,
-        timestamp: moment().format('YYYY-MM-DD HH:mm:ss')
-      };
+    if (updateResponse.data?.errors) {
+      throw new InternalServerErrorException('Failed to update person');
     }
+
+    return {
+      success: true,
+      candidateId: candidate.id,
+      timestamp: moment().format('YYYY-MM-DD HH:mm:ss'),
+    };
+  }
 }

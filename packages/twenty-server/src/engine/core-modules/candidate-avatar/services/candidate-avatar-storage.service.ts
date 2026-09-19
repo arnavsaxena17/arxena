@@ -17,7 +17,7 @@ import {
 import {
     resolveAvatarUrlFromDisplayPictureUrl,
 } from 'src/engine/core-modules/candidate-sourcing/utils/avatar-url.util';
-import { UserProfile } from 'twenty-shared';
+import { PersonCandidateDraft } from 'twenty-shared';
 
 import {
     AVATAR_FILENAME,
@@ -395,7 +395,7 @@ export class CandidateAvatarStorageService {
     return (await this.rewriteValue(orgChart)) as T;
   }
 
-  async ingestUserProfileImages(profile: UserProfile): Promise<UserProfile> {
+  async ingestUserProfileImages(profile: PersonCandidateDraft): Promise<PersonCandidateDraft> {
     if (!this.isIngestEnabled()) {
       return profile;
     }

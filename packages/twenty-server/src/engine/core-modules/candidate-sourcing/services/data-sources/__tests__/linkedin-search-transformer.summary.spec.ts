@@ -50,7 +50,7 @@ describe('LinkedInSearchTransformerService Unipile Sales Nav fields', () => {
     ],
   };
 
-  it('maps summary, pictures, tenure, and role description onto UserProfile', () => {
+  it('maps summary, pictures, tenure, and role description onto PersonCandidateDraft', () => {
     const profile = transformer.transformToUserProfile(sampleHit as never, {
       projectId: 'job-1',
       jobName: 'BA search',

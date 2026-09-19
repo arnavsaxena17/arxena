@@ -296,8 +296,9 @@ export class CandidateDataService {
   private processCandidateData(rawCandidates: any[]): CandidateData[] {
     return rawCandidates.map(candidate => {
       const jobTitleFromCandidate =
-        (typeof candidate.jobTitle === 'string' && candidate.jobTitle.trim()) ||
-        (candidate.people && typeof candidate.people.jobTitle === 'string' && candidate.people.jobTitle.trim()) ||
+        (candidate.people &&
+          typeof candidate.people.jobTitle === 'string' &&
+          candidate.people.jobTitle.trim()) ||
         '';
       const attachments: CandidateAttachmentMeta[] = (
         candidate.attachments?.edges || []
@@ -319,15 +320,18 @@ export class CandidateDataService {
       const baseData: CandidateData = {
         id: candidate.id,
         name: candidate.name || 'N/A',
-        phoneNumber: candidate.phoneNumber || 'N/A',
-        email: candidate.email || 'N/A',
+        phoneNumber:
+          candidate.people?.phones?.primaryPhoneNumber || 'N/A',
+        email: candidate.people?.emails?.primaryEmail || 'N/A',
         status: candidate.status || 'N/A',
         jobTitle: jobTitleFromCandidate || 'N/A',
         chatCount: candidate.chatCount || 'N/A',
-        hiringNaukriUrl: candidate.hiringNaukriUrl || 'N/A',
+        hiringNaukriUrl:
+          candidate.people?.hiringNaukriUrl || 'N/A',
         lastEngagementChatControl:
           flattenedCandidate.lastEngagementChatControl || 'N/A',
-        resdexNaukriUrl: candidate.resdexNaukriUrl || 'N/A',
+        resdexNaukriUrl:
+          candidate.people?.resdexNaukriUrl || 'N/A',
         source: candidate.source || 'N/A',
         startChat: flattenedCandidate.startChat || 'N/A',
         startChatCompleted: flattenedCandidate.startChatCompleted || 'N/A',
@@ -340,7 +344,8 @@ export class CandidateDataService {
         startVideoInterviewChatCompleted:
           flattenedCandidate.startVideoInterviewChatCompleted || 'N/A',
         stopChat: flattenedCandidate.stopChat || 'N/A',
-        linkedinUrl: candidate.linkedinUrl || 'N/A',
+        linkedinUrl:
+          candidate.people?.linkedinLink?.primaryLinkUrl || 'N/A',
         _attachments: attachments,
       };
 

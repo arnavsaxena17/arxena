@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UserProfile } from 'twenty-shared';
+import { PersonCandidateDraft } from 'twenty-shared';
 import { DataProcessingUtils } from '../../utils/data-processing.utils';
 import { BaseDataSourceTransformerService, TransformationContext } from './base-data-source-transformer.service';
 
@@ -16,7 +16,7 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
   transformToUserProfile(
     candidateData: any,
     context: TransformationContext
-  ): UserProfile {
+  ): PersonCandidateDraft {
     const userProfile = this.createBaseUserProfile(candidateData, context);
     
     // Process name - LinkedIn Premium Projects uses 'name_person' field
@@ -46,7 +46,7 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
     return userProfile;
   }
 
-  private processLinkedInPremiumJobsNameData(candidateData: any, userProfile: UserProfile): void {
+  private processLinkedInPremiumJobsNameData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const namePerson = candidateData.name_person;
     
     if (!namePerson) {
@@ -99,7 +99,7 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
     userProfile.middleInitial = middleInitial;
   }
 
-  private processLinkedInPremiumJobsProfileData(candidateData: any, userProfile: UserProfile): void {
+  private processLinkedInPremiumJobsProfileData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const profileTitle = candidateData.profile_title;
     const jobsProfileUrlLocation = candidateData.jobs_profile_url_location;
     const linkedinUrl = candidateData.linkedin_url || candidateData.linkedinUrl;
@@ -121,7 +121,7 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
     }
   }
 
-  private processLinkedInPremiumJobsContactData(candidateData: any, userProfile: UserProfile): void {
+  private processLinkedInPremiumJobsContactData(candidateData: any, userProfile: PersonCandidateDraft): void {
     // Process phone numbers
     const phoneNumbers = candidateData.phone_number;
     
@@ -153,7 +153,7 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
     }
   }
 
-  private processLinkedInPremiumJobsEducationData(candidateData: any, userProfile: UserProfile): void {
+  private processLinkedInPremiumJobsEducationData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const education = candidateData.education;
     
     if (education && Array.isArray(education)) {
@@ -214,7 +214,7 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
     }
   }
 
-  private processLinkedInPremiumJobsExperienceData(candidateData: any, userProfile: UserProfile): void {
+  private processLinkedInPremiumJobsExperienceData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const experience = candidateData.experience;
     
     if (experience && Array.isArray(experience)) {
@@ -243,7 +243,7 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
     }
   }
 
-  private processLinkedInPremiumJobsLocationData(candidateData: any, userProfile: UserProfile): void {
+  private processLinkedInPremiumJobsLocationData(candidateData: any, userProfile: PersonCandidateDraft): void {
     const location = candidateData.location;
     
     if (location) {
@@ -269,7 +269,7 @@ export class LinkedinPremiumJobsTransformerService extends BaseDataSourceTransfo
     }
   }
 
-  private processLinkedInPremiumJobsSpecificData(candidateData: any, userProfile: UserProfile): void {
+  private processLinkedInPremiumJobsSpecificData(candidateData: any, userProfile: PersonCandidateDraft): void {
     // Process industry
     if (candidateData.industry) {
       userProfile.industries = [{
