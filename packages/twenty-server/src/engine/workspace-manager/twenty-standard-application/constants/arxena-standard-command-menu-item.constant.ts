@@ -463,7 +463,7 @@ export const ARXENA_STANDARD_COMMAND_MENU_ITEMS = {
     hotKeys: null,
   },
   arxStopOutreachPerson: {
-    universalIdentifier: 'e5f7b1c4-9d60-51a3-c245-b07d0f4e3166',
+    universalIdentifier: 'e5f7b1c4-9d60-51a3-a245-b07d0f4e3166',
     label: 'Stop Outreach',
     icon: 'IconPlayerStop',
     isPinned: true,
