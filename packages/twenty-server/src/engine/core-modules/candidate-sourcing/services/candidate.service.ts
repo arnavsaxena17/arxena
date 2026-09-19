@@ -206,7 +206,9 @@ export class CandidateService {
       (typeof people?.uniqueStringKey === 'string'
         ? people.uniqueStringKey
         : undefined) ||
-      (typeof node.uniqueStringKey === 'string' ? node.uniqueStringKey : undefined);
+      (typeof node.uniqueStringKey === 'string'
+        ? node.uniqueStringKey
+        : undefined);
     if (typeof usk === 'string' && usk.trim() !== '') {
       lookup.byUniqueStringKey.set(usk, node);
     }
@@ -950,71 +952,79 @@ export class CandidateService {
 
         if (!key) continue;
 
-        const existingCandForPerson = findExistingCandidateForUpload(
-          candidatesLookup,
-          profile,
-          this.dataProcessingUtils,
-        ) as UploadExistingCandidateNode | undefined;
-        const personByKey = personDetailsMap?.get(key);
-        const personByLi = findExistingPersonByLinkedinIdentity(
-          profile,
-          personByLinkedin,
-        );
-        if (existingCandForPerson?.peopleId) {
-          tracking.personIdMap.set(key, existingCandForPerson.peopleId);
-          const existingPerson =
-            (personByKey?.id === existingCandForPerson.peopleId
+        // One bad profile must not abort the rest of the upload batch
+        try {
+          const existingCandForPerson = findExistingCandidateForUpload(
+            candidatesLookup,
+            profile,
+            this.dataProcessingUtils,
+          ) as UploadExistingCandidateNode | undefined;
+          const personByKey = personDetailsMap?.get(key);
+          const personByLi = findExistingPersonByLinkedinIdentity(
+            profile,
+            personByLinkedin,
+          );
+          if (existingCandForPerson?.peopleId) {
+            tracking.personIdMap.set(key, existingCandForPerson.peopleId);
+            const existingPerson =
+              (personByKey?.id === existingCandForPerson.peopleId
+                ? personByKey
+                : null) ||
+              (personByLi?.id === existingCandForPerson.peopleId
+                ? personByLi
+                : null) ||
+              existingCandForPerson.people;
+            await this.fillMissingPersonFields(
+              existingPerson,
+              profile,
+              tracking,
+              apiToken,
+            );
+            peopleToSkip++;
+            continue;
+          }
+
+          const reusablePerson =
+            personByKey?.id && personByKey?.name?.firstName
               ? personByKey
-              : null) ||
-            (personByLi?.id === existingCandForPerson.peopleId
-              ? personByLi
-              : null) ||
-            existingCandForPerson.people;
-          await this.fillMissingPersonFields(
-            existingPerson,
-            profile,
-            tracking,
-            apiToken,
-          );
-          peopleToSkip++;
-          continue;
-        }
+              : personByLi?.id
+                ? personByLi
+                : null;
 
-        const reusablePerson =
-          personByKey?.id && personByKey?.name?.firstName
-            ? personByKey
-            : personByLi?.id
-              ? personByLi
-              : null;
-
-        if (!reusablePerson) {
-          console.log(
-            'Person object not found or incomplete, creating new person for key:',
-            profile?.uniqueStringKey,
+          if (!reusablePerson) {
+            console.log(
+              'Person object not found or incomplete, creating new person for key:',
+              profile?.uniqueStringKey,
+            );
+            const personNode = mapArxCandidateToPersonNode(profile);
+            peopleToCreate.push(personNode);
+            peopleKeys.push(key);
+            results.manyPersonObjects.push(personNode);
+          } else {
+            console.log(
+              'Using existing person for key:',
+              profile?.uniqueStringKey,
+              'personId:',
+              reusablePerson.id,
+              personByLi?.id === reusablePerson.id
+                ? '(linkedin match)'
+                : '(uniqueStringKey match)',
+            );
+            results.allPersonObjects.push(reusablePerson);
+            tracking.personIdMap.set(key, reusablePerson.id);
+            await this.fillMissingPersonFields(
+              reusablePerson,
+              profile,
+              tracking,
+              apiToken,
+            );
+            peopleToSkip++;
+          }
+        } catch (error) {
+          console.warn(
+            `Skipping person profile ${key} after error:`,
+            (error as { message?: string })?.message || error,
           );
-          const personNode = mapArxCandidateToPersonNode(profile);
-          peopleToCreate.push(personNode);
-          peopleKeys.push(key);
-          results.manyPersonObjects.push(personNode);
-        } else {
-          console.log(
-            'Using existing person for key:',
-            profile?.uniqueStringKey,
-            'personId:',
-            reusablePerson.id,
-            personByLi?.id === reusablePerson.id
-              ? '(linkedin match)'
-              : '(uniqueStringKey match)',
-          );
-          results.allPersonObjects.push(reusablePerson);
-          tracking.personIdMap.set(key, reusablePerson.id);
-          await this.fillMissingPersonFields(
-            reusablePerson,
-            profile,
-            tracking,
-            apiToken,
-          );
-          peopleToSkip++;
         }
       }
 
@@ -1640,241 +1650,254 @@ export class CandidateService {
         const key = profile?.uniqueStringKey;
 
         if (!key) continue;
-        console.log('This is the candidates uniqueStringKey:', key);
-        // console.log("This is the candidates candidatesMap:", candidatesMap);
-        const existingCandidate = findExistingCandidateForUpload(
-          candidatesLookup,
-          profile,
-          this.dataProcessingUtils,
-        ) as UploadExistingCandidateNode | undefined;
-        let personId = tracking.personIdMap.get(key);
 
-        console.log(`- personId: ${personId}`);
-        console.log(
-          `- existingCandidate: ${existingCandidate ? 'found' : 'not found'}`,
-        );
+        // One bad profile must not abort the rest of the upload batch
+        try {
+          console.log('This is the candidates uniqueStringKey:', key);
+          // console.log("This is the candidates candidatesMap:", candidatesMap);
+          const existingCandidate = findExistingCandidateForUpload(
+            candidatesLookup,
+            profile,
+            this.dataProcessingUtils,
+          ) as UploadExistingCandidateNode | undefined;
+          let personId = tracking.personIdMap.get(key);
 
-        // If personId is not found in tracking, try to find existing person by
-        // email, LinkedIn identity, or uniqueStringKey.
-        if (!personId) {
+          console.log(`- personId: ${personId}`);
           console.log(
-            `PersonId not found for ${key}, attempting to find existing person`,
+            `- existingCandidate: ${existingCandidate ? 'found' : 'not found'}`,
           );
-          try {
-            const email = (profile.emailAddress || '').toLowerCase().trim();
-            const linkedinIdentities =
-              collectLinkedinIdentityKeysFromProfile(profile);
-            let existingPerson: PersonNode | null = null;
 
-            if (email) {
-              const existingByEmail =
-                await this.personService.batchGetPersonDetailsByEmails(
-                  [email],
-                  apiToken,
-                );
-              existingPerson = existingByEmail.get(email) || null;
-            }
-
-            if (!existingPerson && linkedinIdentities.length > 0) {
-              const existingByLinkedin =
-                await this.personService.batchGetPersonDetailsByLinkedinIdentities(
-                  linkedinIdentities,
-                  apiToken,
-                );
-              existingPerson =
-                findExistingPersonByLinkedinIdentity(
-                  profile,
-                  existingByLinkedin,
-                ) || null;
-            }
-
-            if (!existingPerson) {
-              const existingPersonsByKey =
-                await this.personService.batchGetPersonDetailsByStringKeys(
-                  [key],
-                  apiToken,
-                );
-              existingPerson = existingPersonsByKey.get(key) || null;
-            }
-
-            if ((existingPerson as PersonNode | null)?.id) {
-              const personIdFromExisting = (existingPerson as PersonNode).id;
-              personId = personIdFromExisting;
-              tracking.personIdMap.set(key, personIdFromExisting);
-              console.log(
-                `Found existing person for ${key}: ${personIdFromExisting}`,
-              );
-            } else {
-              console.log(
-                `No existing person found for ${key}, will create candidate without personId`,
-              );
-            }
-          } catch (error) {
+          // If personId is not found in tracking, try to find existing person by
+          // email, LinkedIn identity, or uniqueStringKey.
+          if (!personId) {
             console.log(
-              `Error finding existing person for ${key}:`,
-              (error as any)?.message || error,
+              `PersonId not found for ${key}, attempting to find existing person`,
             );
-          }
-        }
+            try {
+              const email = (profile.emailAddress || '').toLowerCase().trim();
+              const linkedinIdentities =
+                collectLinkedinIdentityKeysFromProfile(profile);
+              let existingPerson: PersonNode | null = null;
 
-        // Spreadsheet import: ensure we always have a linked Person.
-        // These imports can legitimately arrive without an existing Person (no match by uniqueStringKey),
-        // but the UI expects Candidate.peopleId to exist to persist edits (e.g. remarks).
-        if (!personId && profile?.creationSource === 'spreadsheet_import') {
-          console.log(
-            `No personId for spreadsheet import key ${key}. Creating person before candidate.`,
-          );
-          try {
-            const personNode = mapArxCandidateToPersonNode(profile);
-            const createPersonResponse = await this.personService.createPeople(
-              [personNode],
-              apiToken,
-            );
-            const createdPersonId =
-              createPersonResponse?.data?.data?.createPeople?.[0]?.id;
-            if (createdPersonId) {
-              personId = createdPersonId;
-              tracking.personIdMap.set(key, personId);
-              console.log(`Created person for ${key}: ${personId}`);
-            } else {
-              // As a fallback (e.g. if createPeople returns errors), try to fetch again by uniqueStringKey.
-              const existingPersons =
-                await this.personService.batchGetPersonDetailsByStringKeys(
-                  [key],
-                  apiToken,
-                );
-              const existingPerson = existingPersons.get(key);
-              if (existingPerson?.id) {
-                personId = existingPerson.id;
-                tracking.personIdMap.set(key, personId);
+              if (email) {
+                const existingByEmail =
+                  await this.personService.batchGetPersonDetailsByEmails(
+                    [email],
+                    apiToken,
+                  );
+                existingPerson = existingByEmail.get(email) || null;
+              }
+
+              if (!existingPerson && linkedinIdentities.length > 0) {
+                const existingByLinkedin =
+                  await this.personService.batchGetPersonDetailsByLinkedinIdentities(
+                    linkedinIdentities,
+                    apiToken,
+                  );
+                existingPerson =
+                  findExistingPersonByLinkedinIdentity(
+                    profile,
+                    existingByLinkedin,
+                  ) || null;
+              }
+
+              if (!existingPerson) {
+                const existingPersonsByKey =
+                  await this.personService.batchGetPersonDetailsByStringKeys(
+                    [key],
+                    apiToken,
+                  );
+                existingPerson = existingPersonsByKey.get(key) || null;
+              }
+
+              if ((existingPerson as PersonNode | null)?.id) {
+                const personIdFromExisting = (existingPerson as PersonNode).id;
+                personId = personIdFromExisting;
+                tracking.personIdMap.set(key, personIdFromExisting);
                 console.log(
-                  `Resolved person after creation attempt for ${key}: ${personId}`,
+                  `Found existing person for ${key}: ${personIdFromExisting}`,
                 );
               } else {
-                console.warn(
-                  `Failed to create/resolve person for spreadsheet import key ${key}. Candidate may be unlinked.`,
+                console.log(
+                  `No existing person found for ${key}, will create candidate without personId`,
                 );
               }
+            } catch (error) {
+              console.log(
+                `Error finding existing person for ${key}:`,
+                (error as any)?.message || error,
+              );
             }
-          } catch (error) {
-            console.warn(
-              `Error creating person for spreadsheet import key ${key}:`,
-              error?.message || error,
-            );
           }
-        }
 
-        console.log(`- Final personId: ${personId}`);
-        console.log(
-          `- Will create candidate: ${!existingCandidate ? 'YES' : 'NO'}`,
-        );
-
-        // If a spreadsheet-import candidate already exists but is not linked to a person, link it now.
-        if (
-          existingCandidate &&
-          profile?.creationSource === 'spreadsheet_import' &&
-          personId &&
-          !existingCandidate?.peopleId
-        ) {
-          try {
+          // Spreadsheet import: ensure we always have a linked Person.
+          // These imports can legitimately arrive without an existing Person (no match by uniqueStringKey),
+          // but the UI expects Candidate.peopleId to exist to persist edits (e.g. remarks).
+          if (!personId && profile?.creationSource === 'spreadsheet_import') {
             console.log(
-              `Linking existing candidate ${existingCandidate.id} to person ${personId} (spreadsheet import).`,
+              `No personId for spreadsheet import key ${key}. Creating person before candidate.`,
             );
-            await this.staticGraphQLService.executeGraphQL(
-              graphQltoUpdateOneCandidate,
-              {
-                idToUpdate: existingCandidate.id,
-                input: { peopleId: personId },
+            try {
+              const personNode = mapArxCandidateToPersonNode(profile);
+              const createPersonResponse =
+                await this.personService.createPeople([personNode], apiToken);
+              const createdPersonId =
+                createPersonResponse?.data?.data?.createPeople?.[0]?.id;
+              if (createdPersonId) {
+                personId = createdPersonId;
+                tracking.personIdMap.set(key, personId);
+                console.log(`Created person for ${key}: ${personId}`);
+              } else {
+                // As a fallback (e.g. if createPeople returns errors), try to fetch again by uniqueStringKey.
+                const existingPersons =
+                  await this.personService.batchGetPersonDetailsByStringKeys(
+                    [key],
+                    apiToken,
+                  );
+                const existingPerson = existingPersons.get(key);
+                if (existingPerson?.id) {
+                  personId = existingPerson.id;
+                  tracking.personIdMap.set(key, personId);
+                  console.log(
+                    `Resolved person after creation attempt for ${key}: ${personId}`,
+                  );
+                } else {
+                  console.warn(
+                    `Failed to create/resolve person for spreadsheet import key ${key}. Candidate may be unlinked.`,
+                  );
+                }
+              }
+            } catch (error) {
+              console.warn(
+                `Error creating person for spreadsheet import key ${key}:`,
+                error?.message || error,
+              );
+            }
+          }
+
+          console.log(`- Final personId: ${personId}`);
+          console.log(
+            `- Will create candidate: ${!existingCandidate ? 'YES' : 'NO'}`,
+          );
+
+          // If a spreadsheet-import candidate already exists but is not linked to a person, link it now.
+          if (
+            existingCandidate &&
+            profile?.creationSource === 'spreadsheet_import' &&
+            personId &&
+            !existingCandidate?.peopleId
+          ) {
+            try {
+              console.log(
+                `Linking existing candidate ${existingCandidate.id} to person ${personId} (spreadsheet import).`,
+              );
+              await this.staticGraphQLService.executeGraphQL(
+                graphQltoUpdateOneCandidate,
+                {
+                  idToUpdate: existingCandidate.id,
+                  input: { peopleId: personId },
+                },
+                apiToken,
+              );
+            } catch (error) {
+              console.warn(
+                `Failed linking existing candidate ${existingCandidate.id} to person ${personId}:`,
+                error?.message || error,
+              );
+            }
+          }
+
+          // Create candidate if it doesn't already exist, regardless of personId status
+          if (!existingCandidate) {
+            const { unmappedCandidateObject } = await generateCompleteMappings(
+              profile,
+              jobObject,
+            );
+            const { candidateNode } = await processArxCandidate(
+              profile,
+              jobObject,
+              whatsapp_key,
+            );
+            const otherFields = buildOtherFieldsFromUnmapped(
+              unmappedCandidateObject,
+            );
+            const enrollOutreach = isOutreachSourcingEnrollment(
+              origin,
+              jobObject,
+            );
+            const experimentConfig = readProjectExperimentConfig(
+              jobObject as {
+                outreachConfig?: unknown;
+                experimentConfig?: string | null;
               },
+            );
+            const linkedinProfileIdForVariant =
+              extractLinkedinProfileId(
+                (
+                  profile as PersonCandidateDraft & {
+                    linkedinProfileId?: string;
+                  }
+                ).linkedinProfileId,
+              ) ||
+              extractLinkedinProfileId(profile.linkedinUrl) ||
+              extractLinkedinProfileId(profile.profileUrl) ||
+              '';
+            const experimentVariant =
+              enrollOutreach &&
+              experimentConfig?.status === 'running' &&
+              linkedinProfileIdForVariant
+                ? assignOutreachExperimentVariant({
+                    seed: linkedinProfileIdForVariant,
+                    split: experimentConfig.split,
+                  })
+                : null;
+
+            const candidateWithOtherFields = {
+              ...candidateNode,
+              peopleId: personId || undefined,
+              otherFields,
+              ...(enrollOutreach
+                ? buildOutreachQueuedCreateFields({
+                    ...(profile as PersonCandidateDraft &
+                      LinkedinEnrollmentSignals),
+                    linkedinUrl: profile.linkedinUrl,
+                    profileUrl: profile.profileUrl,
+                    linkedinProfileId: (
+                      profile as PersonCandidateDraft & {
+                        linkedinProfileId?: string;
+                      }
+                    ).linkedinProfileId,
+                    experimentVariant,
+                  })
+                : {}),
+            };
+            candidatesToCreate.push(candidateWithOtherFields);
+            candidateKeys.push(key);
+            results.manyCandidateObjects.push(candidateWithOtherFields);
+            console.log(
+              `- Candidate personId: ${candidateWithOtherFields.peopleId || 'undefined (will need to be linked later)'}`,
+            );
+          } else if (existingCandidate) {
+            const { candidateNode } = await processArxCandidate(
+              profile,
+              jobObject,
+              whatsapp_key,
+            );
+            await this.fillMissingCandidateFields(
+              existingCandidate,
+              candidateNode as unknown as Record<string, unknown>,
+              personId,
+              tracking,
+              profile,
               apiToken,
             );
-          } catch (error) {
-            console.warn(
-              `Failed linking existing candidate ${existingCandidate.id} to person ${personId}:`,
-              error?.message || error,
-            );
+            tracking.candidateIdMap.set(key, existingCandidate?.id);
           }
-        }
-
-        // Create candidate if it doesn't already exist, regardless of personId status
-        if (!existingCandidate) {
-          const { unmappedCandidateObject } = await generateCompleteMappings(
-            profile,
-            jobObject,
+        } catch (error) {
+          console.warn(
+            `Skipping candidate profile ${key} after error:`,
+            (error as { message?: string })?.message || error,
           );
-          const { candidateNode } = await processArxCandidate(
-            profile,
-            jobObject,
-            whatsapp_key,
-          );
-          const otherFields = buildOtherFieldsFromUnmapped(
-            unmappedCandidateObject,
-          );
-          const enrollOutreach = isOutreachSourcingEnrollment(
-            origin,
-            jobObject,
-          );
-          const experimentConfig = readProjectExperimentConfig(
-            jobObject as {
-              outreachConfig?: unknown;
-              experimentConfig?: string | null;
-            },
-          );
-          const linkedinProfileIdForVariant =
-            extractLinkedinProfileId(
-              (profile as PersonCandidateDraft & { linkedinProfileId?: string })
-                .linkedinProfileId,
-            ) ||
-            extractLinkedinProfileId(profile.linkedinUrl) ||
-            extractLinkedinProfileId(profile.profileUrl) ||
-            '';
-          const experimentVariant =
-            enrollOutreach &&
-            experimentConfig?.status === 'running' &&
-            linkedinProfileIdForVariant
-              ? assignOutreachExperimentVariant({
-                  seed: linkedinProfileIdForVariant,
-                  split: experimentConfig.split,
-                })
-              : null;
-
-          const candidateWithOtherFields = {
-            ...candidateNode,
-            peopleId: personId || undefined,
-            otherFields,
-            ...(enrollOutreach
-              ? buildOutreachQueuedCreateFields({
-                  ...(profile as PersonCandidateDraft & LinkedinEnrollmentSignals),
-                  linkedinUrl: profile.linkedinUrl,
-                  profileUrl: profile.profileUrl,
-                  linkedinProfileId: (
-                    profile as PersonCandidateDraft & { linkedinProfileId?: string }
-                  ).linkedinProfileId,
-                  experimentVariant,
-                })
-              : {}),
-          };
-          candidatesToCreate.push(candidateWithOtherFields);
-          candidateKeys.push(key);
-          results.manyCandidateObjects.push(candidateWithOtherFields);
-          console.log(
-            `- Candidate personId: ${candidateWithOtherFields.peopleId || 'undefined (will need to be linked later)'}`,
-          );
-        } else if (existingCandidate) {
-          const { candidateNode } = await processArxCandidate(
-            profile,
-            jobObject,
-            whatsapp_key,
-          );
-          await this.fillMissingCandidateFields(
-            existingCandidate,
-            candidateNode as unknown as Record<string, unknown>,
-            personId,
-            tracking,
-            profile,
-            apiToken,
-          );
-          tracking.candidateIdMap.set(key, existingCandidate?.id);
         }
       }
 
@@ -1999,8 +2022,7 @@ export class CandidateService {
       const candidateNode =
         candidateResponse?.data?.data?.candidates?.edges[0]?.node;
       const personId = candidateNode?.peopleId;
-      const oldPhoneNumber =
-        candidateNode?.people?.phones?.primaryPhoneNumber;
+      const oldPhoneNumber = candidateNode?.people?.phones?.primaryPhoneNumber;
 
       if (!personId) {
         return {
@@ -2109,10 +2131,7 @@ export class CandidateService {
         phoneData,
         apiToken,
       );
-      console.log(
-        'Person phone update response:',
-        personResponse?.data?.data,
-      );
+      console.log('Person phone update response:', personResponse?.data?.data);
 
       // Handle whitelist update for WhatsApp if phone number changed
       if (phoneData.primaryPhoneNumber) {

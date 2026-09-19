@@ -22,15 +22,21 @@ export const OUTREACH_WF_HARVEST_PROJECT_ID = '__PROJECT_OUTREACH_HARVEST__';
 
 export const OUTREACH_WF_FIELD = {
   candidateId: '__FIELD_candidate.id__',
+  personId: '__FIELD_person.id__',
   chatCandidateId: '__FIELD_chatMessage.candidateId__',
   chatCreatedAt: '__FIELD_chatMessage.createdAt__',
   outreachSequenceStage: '__FIELD_candidate.outreachSequenceStage__',
   candidateFlags: '__FIELD_candidate.candidateFlags__',
-  // FIND Person filter metadata (identity lives on people, not candidate)
+  // FIND Person filter metadata (identity lives on person, not candidate)
   jobCompanyName: '__FIELD_person.jobCompanyName__',
-  peopleJobCompanyName: 'people.jobCompanyName',
-  peopleLinkedinProfileId: 'people.linkedinProfileId',
-  peopleJobTitle: 'people.jobTitle',
+  // Paths on a person FIND_RECORDS step (first.*)
+  jobCompanyNamePath: 'jobCompanyName',
+  linkedinProfileIdPath: 'linkedinProfileId',
+  linkedinLinkUrlPath: 'linkedinLink.primaryLinkUrl',
+  jobTitlePath: 'jobTitle',
+  emailsPrimaryPath: 'emails.primaryEmail',
+  phonesPrimaryPath: 'phones.primaryPhoneNumber',
+  outreachPreferredChannelPath: 'outreachPreferredChannel',
   projectId: '__FIELD_candidate.projectId__',
   createdAt: '__FIELD_candidate.createdAt__',
 } as const;
@@ -228,8 +234,8 @@ const v = (stepId: string, path: string) => `{{${stepId}.${path}}}`;
 export const gtmWfTriggerAfter = (field: string) =>
   `{{trigger.properties.after.${field}}}`;
 
-export const gtmWfTriggerPayload = (field: string) =>
-  `{{trigger.payload.${field}}}`;
+// WEBHOOK / MANUAL payload fields sit on the trigger root (not under .payload).
+export const gtmWfTriggerField = (field: string) => `{{trigger.${field}}}`;
 
 export const gtmWfMemberId = (
   memberStepId: string = OUTREACH_WF_MEMBER_STEP_ID,
@@ -256,17 +262,19 @@ export const gtmWfFindField = (findStepId: string, field: string) =>
 // Meta-safe one-liners (template {{2}}) or real newlines (Flow / Unipile).
 export const gtmWfFormDetailsTemplate = ({
   findId,
+  personFindId,
   draftStepId,
   extra,
 }: {
   findId: string;
+  personFindId: string;
   draftStepId?: string;
   extra?: string[];
 }): string =>
   [
     `Contact: ${gtmWfFindField(findId, 'name')}`,
-    `Title: ${gtmWfFindField(findId, OUTREACH_WF_FIELD.peopleJobTitle)}`,
-    `Company: ${gtmWfFindField(findId, OUTREACH_WF_FIELD.peopleJobCompanyName)}`,
+    `Title: ${gtmWfFindField(personFindId, OUTREACH_WF_FIELD.jobTitlePath)}`,
+    `Company: ${gtmWfFindField(personFindId, OUTREACH_WF_FIELD.jobCompanyNamePath)}`,
     ...(draftStepId ? [`Draft: {{${draftStepId}.message}}`] : []),
     ...(extra ?? []),
   ].join(' | ');
@@ -820,6 +828,7 @@ export const gtmWfSendLinkedInMessageStep = ({
   body,
   candidateId,
   linkedinProfileId,
+  linkedinUrl,
   nextStepIds,
 }: {
   id: string;
@@ -827,6 +836,7 @@ export const gtmWfSendLinkedInMessageStep = ({
   body: string;
   candidateId: string;
   linkedinProfileId: string;
+  linkedinUrl?: string;
   nextStepIds?: string[];
 }): StepBase =>
   withNext(
@@ -840,6 +850,7 @@ export const gtmWfSendLinkedInMessageStep = ({
           body,
           candidateId,
           linkedinProfileId,
+          ...(linkedinUrl ? { linkedinUrl } : {}),
           workspaceMemberId: gtmWfMemberId(),
           files: [],
         },
@@ -1057,6 +1068,39 @@ export const gtmWfManualTrigger = ({
     icon,
     availability: { type: 'GLOBAL' },
   },
+  nextStepIds,
+});
+
+export const gtmWfWebhookTrigger = ({
+  name = 'Webhook',
+  nextStepIds,
+  expectedBody,
+  httpMethod = 'POST',
+  authentication = 'API_KEY',
+}: {
+  name?: string;
+  nextStepIds: string[];
+  expectedBody: Record<string, unknown>;
+  httpMethod?: 'GET' | 'POST';
+  authentication?: 'API_KEY' | null;
+}) => ({
+  name,
+  type: 'WEBHOOK',
+  position: { x: 0, y: 0 },
+  settings:
+    httpMethod === 'GET'
+      ? {
+          outputSchema: {},
+          httpMethod,
+          authentication,
+        }
+      : {
+          outputSchema: getOutputSchemaFromValue(expectedBody),
+          expectedOutputSchema: expectedBody,
+          expectedBody,
+          httpMethod,
+          authentication,
+        },
   nextStepIds,
 });
 

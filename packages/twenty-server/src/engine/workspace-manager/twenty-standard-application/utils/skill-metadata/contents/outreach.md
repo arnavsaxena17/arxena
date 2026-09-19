@@ -8,13 +8,14 @@ This is **not** ICP preference collection (`setup`) and **not** Ask AI target-li
 
 ## Ignite (prefer reuse — do not invent webhooks)
 
-Seeded graphs ship as **DRAFT**. Triggers are CRON / `company.created` / `candidate.upserted` — **not** WEBHOOK. Do **not** call `http_request` against `/webhooks/workflows/...` for these seeds.
+Seeded graphs ship as **DRAFT**. Triggers are CRON / `company.created` / `candidate.upserted` / WEBHOOK (search+upload only). Do **not** invent extra webhooks for Harvest / Sequencer / company-created — reuse those seeds as-is.
 
 | Seeded name | Trigger | Role |
 | --- | --- | --- |
 | `Harvest — LinkedIn Companies` | CRON | Harvest |
 | `Company Created → ICP People Search` | `company.created` | Enroll-on-company (search + upload-profiles) |
 | `Outreach — Fetch & Save People Profiles` | MANUAL | Manual enroll via upload-profiles |
+| `Search and Upload People Profiles` | WEBHOOK | Search-people then upload-profiles (POST body: `projectId` + search fields) |
 | `Outreach — Candidate Sequencer` | `candidate.upserted` (+ entry stages + `candidateFlags.startOutreach`) | Sequencer (QUEUED / accepted / replied / meeting) |
 
 **Ignite path:**
@@ -73,6 +74,7 @@ Do **not** add a workflow whose only job is “mark connection accepted” — U
 | **Harvest** | `CRON` `HOURS` | Native `search-companies` `{ query, keywords, limit }` → native `upsert-companies` `{ projectId, companies: "{{searchUuid.companies}}" }` (CRM + `projectIds`). Seed Project **Harvest**. Do **not** `upsert_outreach_target_companies`. Skip rows already tagged to this project. |
 | **Workflow 1** (company people search) | `company.created` | LOGIC_FUNCTION `search-people-for-company` → LOGIC_FUNCTION `upload-profiles`. Optional FORM between only if the user wants to approve enroll. |
 | **Fetch & Save** (`Outreach — Fetch & Save People Profiles`) | MANUAL | Native `upload-profiles` for ad-hoc enroll from the workflow launcher (org-chart / People tab paths may still use HTTP `upload-profiles` directly). |
+| **Search and Upload** (`Search and Upload People Profiles`) | WEBHOOK POST | Native `search-people` → `upload-profiles`. Body: `projectId` (required for enroll) plus search fields (`naturalLanguage`, `searchUrl`, `companyName`, `website`, `companyId`, `jobTitle`, `country`, `limit`). Activate then POST the workflow webhook URL. |
 | **Workflow U** (manual HTTP) | HTTP Ask AI / org-chart / GTM Home `upload-profiles` | Same enroll path; GTM projects get `QUEUED` + `linkedinProfileId` — not a seeded workflow. |
 | **Candidate Sequencer** (`Outreach — Candidate Sequencer`) | `candidate.upserted` + entry-stage allowlist | Routes QUEUED / CONNECTION_ACCEPTED / REPLIED / MEETING_BOOKED. QUEUED: qualify → connection note → gate on empty `outreachAnalytics.connectionSentAt` → `SEND_LINKEDIN_CONNECTION_REQUEST`. Accepted / replied / meeting branches match the former Stage C recipes. Do **not** DELAY-poll accept. Do not add NEGOTIATING / DEFERRED as separate sequence branches. |
 | **Stage C inbound classify** | silence-window flush (not a workflow) | LinkedIn + WhatsApp Unipile webhooks and inbound CRM email (`messageChannelMessageAssociation` INCOMING) all buffer into the same silence window. Flush writes `chatMessage` with `channel` `LINKEDIN` / `WHATSAPP` / `EMAIL` (do not merge email/WhatsApp into the LinkedIn row). LLM classifies the **recipient burst** → stamps cadence + conversation stage. Cadence: `unsubscribe`→`STOPPED` (no send); every other intent→`REPLIED` (fires Candidate Sequencer replied branch). Conversation: `unsubscribe`→`NOT_INTERESTED`, `not_now`→`SNOOZED`, `interested`→`INTENT`, `times_proposed`→`FOLLOW_UP_MEETING`, `book`→`MEETING_BOOKED`, `question`→`ACKNOWLEDGEMENT`. Keyword fallback if the model fails. Do **not** trigger on `chatMessage.created` / `updated`. |

@@ -363,6 +363,47 @@ describe('WorkflowAiAgentTestContextService', () => {
     expect(resolvedPrompt).toBe('prospect: {}');
   });
 
+  it('should default missing outreachSenderProfile to {} for Test', async () => {
+    const loadMemberStepId = '77777777-7777-4777-8777-777777777777';
+
+    workflowCommonWorkspaceService.getWorkflowVersionOrFail.mockResolvedValue({
+      id: workflowVersionId,
+      steps: [
+        {
+          id: loadMemberStepId,
+          name: 'Load workspace member',
+          type: WorkflowActionType.FIND_RECORDS,
+          valid: true,
+          nextStepIds: [draftStepId],
+          settings: {
+            input: { objectName: 'workspaceMember' },
+            outputSchema: {},
+          },
+        },
+        {
+          id: draftStepId,
+          name: 'Draft connection note',
+          type: WorkflowActionType.AI_AGENT,
+          valid: true,
+          settings: { input: { prompt: '' }, outputSchema: {} },
+        },
+      ],
+    });
+    globalWorkspaceOrmManager.getRepository.mockResolvedValue({
+      find: jest.fn().mockResolvedValue([{ id: memberId }]),
+    });
+
+    const resolvedPrompt = await service.resolvePromptForCandidate({
+      workspaceId,
+      workflowVersionId,
+      stepId: draftStepId,
+      candidateId,
+      prompt: `sender: {{${loadMemberStepId}.first.outreachSenderProfile}}`,
+    });
+
+    expect(resolvedPrompt).toBe('sender: {}');
+  });
+
   it('should still throw for missing chips without a test default', async () => {
     workflowCommonWorkspaceService.getWorkflowVersionOrFail.mockResolvedValue({
       id: workflowVersionId,

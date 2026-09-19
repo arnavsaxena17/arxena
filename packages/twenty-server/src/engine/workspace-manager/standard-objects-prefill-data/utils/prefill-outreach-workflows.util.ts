@@ -71,6 +71,7 @@ const tableExists = async ({
 
 const LF_TOKEN_TO_ID_KEY = {
   '__LF_search-people-for-company__': 'searchPeopleForCompanyId',
+  '__LF_search-people__': 'searchPeopleId',
   '__LF_upload-profiles__': 'uploadProfilesId',
   '__LF_search-companies__': 'searchCompaniesId',
   '__LF_upsert-companies__': 'upsertCompaniesId',
@@ -784,6 +785,12 @@ export const prefillOutreachWorkflows = async ({
     objectName: 'candidate',
     fieldNames: ['id'],
   });
+  const personIdFieldId = await loadFieldMetadataId({
+    entityManager,
+    workspaceId,
+    objectName: 'person',
+    fieldNames: ['id'],
+  });
   const outreachSequenceStageFieldId = await loadFieldMetadataId({
     entityManager,
     workspaceId,
@@ -842,6 +849,7 @@ export const prefillOutreachWorkflows = async ({
     [OUTREACH_WF_AGENT_QUALIFY]: agentIds.qualifyProspect,
     [OUTREACH_WF_HARVEST_PROJECT_ID]: harvestProjectId,
     [OUTREACH_WF_FIELD.candidateId]: candidateIdFieldId,
+    [OUTREACH_WF_FIELD.personId]: personIdFieldId,
     [OUTREACH_WF_FIELD.outreachSequenceStage]: outreachSequenceStageFieldId,
     [OUTREACH_WF_FIELD.candidateFlags]: candidateFlagsFieldId,
     [OUTREACH_WF_FIELD.jobCompanyName]: jobCompanyNameFieldId,

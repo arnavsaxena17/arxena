@@ -113,6 +113,9 @@ import { AddStartStopOutreachGateCommand } from 'src/database/commands/upgrade-v
 import { BackfillPersonIdentityFromCandidateCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000122-backfill-person-identity-from-candidate.command';
 import { DropCandidateIdentityFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000123-drop-candidate-identity-fields.command';
 import { FoldStartStopOutreachIntoCandidateFlagsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000124-fold-start-stop-outreach-into-candidate-flags.command';
+import { ResyncOutreachPersonIdentityFindsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000125-resync-outreach-person-identity-finds.command';
+import { ResyncOutreachConnectionNoteStampedEnrichmentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000126-resync-outreach-connection-note-stamped-enrichment.command';
+import { SeedSearchAndUploadPeopleProfilesWorkflowCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000127-seed-search-and-upload-people-profiles-workflow.command';
 import { SetOutreachExtractSignalsDeepseekCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000106-set-outreach-extract-signals-deepseek.command';
 import { DropChatMessageObjWithTimeStampCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000099-drop-chat-message-obj-with-time-stamp.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
@@ -263,6 +266,9 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     BackfillPersonIdentityFromCandidateCommand,
     DropCandidateIdentityFieldsCommand,
     FoldStartStopOutreachIntoCandidateFlagsCommand,
+    ResyncOutreachPersonIdentityFindsCommand,
+    ResyncOutreachConnectionNoteStampedEnrichmentCommand,
+    SeedSearchAndUploadPeopleProfilesWorkflowCommand,
     MigrateOtherFieldsService,
     DropCandidateFieldObjectsCommand,
   ],

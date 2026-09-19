@@ -47,9 +47,30 @@ export const extractDisplayPictureUrl = (
   return '';
 };
 
+// Optional Links / string fields may be missing on linkedin_search drafts —
+// never throw; callers treat empty as "omit field".
+export const readPrimaryLinkUrl = (value: unknown): string | undefined => {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (
+    value &&
+    typeof value === 'object' &&
+    typeof (value as { primaryLinkUrl?: unknown }).primaryLinkUrl === 'string'
+  ) {
+    return (value as { primaryLinkUrl: string }).primaryLinkUrl;
+  }
+
+  return undefined;
+};
+
 export const resolveAvatarUrlFromDisplayPictureUrl = (
-  displayPictureUrl: string,
+  displayPictureUrl: string | null | undefined,
 ): string => {
+  if (typeof displayPictureUrl !== 'string') {
+    return '';
+  }
+
   const trimmed = displayPictureUrl.trim();
   if (!trimmed) {
     return '';
@@ -72,7 +93,7 @@ export const resolveAvatarUrlFromDisplayPictureUrl = (
 };
 
 export const toCrmPrimaryLink = (
-  url: string,
+  url: string | null | undefined,
   label = '',
 ): { primaryLinkLabel: string; primaryLinkUrl: string } | undefined => {
   const absolute = resolveAvatarUrlFromDisplayPictureUrl(url);

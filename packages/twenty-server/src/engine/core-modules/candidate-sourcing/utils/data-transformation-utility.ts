@@ -7,6 +7,7 @@ import {
 import { normalizeMessagingChannel } from 'src/engine/core-modules/arx-chat/utils/messaging-channel.util';
 import {
   extractDisplayPictureUrl,
+  readPrimaryLinkUrl,
   resolveAvatarUrlFromDisplayPictureUrl,
   toCrmPrimaryLink,
 } from './avatar-url.util';
@@ -30,8 +31,51 @@ type EnhancedEmailsValue = {
   additionalEmails: string[];
 };
 
+type PersonNodeMapping = PersonCreateInput & {
+  emails: EnhancedEmailsValue;
+  phones: EnhancedPhonesValue;
+};
+
+const emptyPersonNodeMapping = (draft: {
+  firstName?: string;
+  lastName?: string;
+  uniqueStringKey?: string;
+  jobTitle?: string;
+  profileTitle?: string;
+}): PersonNodeMapping => ({
+  name: {
+    firstName: draft?.firstName || '',
+    lastName: draft?.lastName || '',
+  },
+  avatarUrl: '',
+  emails: { primaryEmail: '', additionalEmails: [] },
+  linkedinLink: { primaryLinkUrl: '', primaryLinkLabel: '' },
+  phones: {
+    primaryPhoneNumber: '',
+    primaryPhoneCountryCode: '',
+    primaryPhoneCallingCode: '',
+    additionalPhones: [],
+  },
+  uniqueStringKey: draft?.uniqueStringKey || '',
+  jobTitle: draft?.jobTitle || draft?.profileTitle || '',
+});
+
 // Maps PersonCandidateDraft (ingest) → Person create payload. Identity never lands on Candidate.
-export const mapArxCandidateToPersonNode = (draft: any) => {
+// Optional source fields must never abort mapping — omit them and keep uploading.
+export const mapArxCandidateToPersonNode = (draft: any): PersonNodeMapping => {
+  try {
+    return mapArxCandidateToPersonNodeInner(draft);
+  } catch (error) {
+    console.warn(
+      `mapArxCandidateToPersonNode failed for ${draft?.uniqueStringKey ?? 'unknown'}; using minimal person:`,
+      (error as { message?: string })?.message || error,
+    );
+
+    return emptyPersonNodeMapping(draft ?? {});
+  }
+};
+
+const mapArxCandidateToPersonNodeInner = (draft: any): PersonNodeMapping => {
   const firstName = draft?.firstName || '';
   const lastName = draft?.lastName || '';
   const displayPictureUrl = extractDisplayPictureUrl(
@@ -104,20 +148,29 @@ export const mapArxCandidateToPersonNode = (draft: any) => {
     typeof draft.linkedinUrl.primaryLinkUrl === 'string'
   ) {
     linkedinUrl = draft.linkedinUrl.primaryLinkUrl;
-  } else if (draft?.profileUrl && draft.profileUrl.includes('linkedin')) {
+  } else if (
+    typeof draft?.profileUrl === 'string' &&
+    draft.profileUrl.includes('linkedin')
+  ) {
     linkedinUrl = draft.profileUrl;
   }
+  const normalizedLinkedinUrl = normalizeLinkedInUrl(linkedinUrl);
   const linkedinLink = toCrmPrimaryLink(
-    normalizeLinkedInUrl(linkedinUrl),
-    normalizeLinkedInUrl(linkedinUrl),
+    normalizedLinkedinUrl,
+    normalizedLinkedinUrl,
   ) ?? { primaryLinkUrl: '', primaryLinkLabel: '' };
 
   const jobTitle = draft?.jobTitle || draft?.profileTitle || '';
+  const hiringNaukriLink = toCrmPrimaryLink(
+    readPrimaryLinkUrl(draft?.hiringNaukriUrl),
+    'Hiring Naukri',
+  );
+  const resdexNaukriLink = toCrmPrimaryLink(
+    readPrimaryLinkUrl(draft?.resdexNaukriUrl),
+    'Resdex Naukri',
+  );
 
-  const personNode: PersonCreateInput & {
-    emails: EnhancedEmailsValue;
-    phones: EnhancedPhonesValue;
-  } = {
+  const personNode: PersonNodeMapping = {
     name: { firstName, lastName },
     ...(displayPictureLink ? { displayPicture: displayPictureLink } : {}),
     avatarUrl,
@@ -147,36 +200,8 @@ export const mapArxCandidateToPersonNode = (draft: any) => {
     ...(isNonEmptyString(draft?.linkedinProfileId)
       ? { linkedinProfileId: draft.linkedinProfileId.trim() }
       : {}),
-    ...(toCrmPrimaryLink(
-      typeof draft?.hiringNaukriUrl === 'string'
-        ? draft.hiringNaukriUrl
-        : draft?.hiringNaukriUrl?.primaryLinkUrl,
-      'Hiring Naukri',
-    )
-      ? {
-          hiringNaukriUrl: toCrmPrimaryLink(
-            typeof draft?.hiringNaukriUrl === 'string'
-              ? draft.hiringNaukriUrl
-              : draft?.hiringNaukriUrl?.primaryLinkUrl,
-            'Hiring Naukri',
-          ),
-        }
-      : {}),
-    ...(toCrmPrimaryLink(
-      typeof draft?.resdexNaukriUrl === 'string'
-        ? draft.resdexNaukriUrl
-        : draft?.resdexNaukriUrl?.primaryLinkUrl,
-      'Resdex Naukri',
-    )
-      ? {
-          resdexNaukriUrl: toCrmPrimaryLink(
-            typeof draft?.resdexNaukriUrl === 'string'
-              ? draft.resdexNaukriUrl
-              : draft?.resdexNaukriUrl?.primaryLinkUrl,
-            'Resdex Naukri',
-          ),
-        }
-      : {}),
+    ...(hiringNaukriLink ? { hiringNaukriUrl: hiringNaukriLink } : {}),
+    ...(resdexNaukriLink ? { resdexNaukriUrl: resdexNaukriLink } : {}),
     ...(draft?.linkedinProfile != null
       ? { linkedinProfile: draft.linkedinProfile }
       : {}),

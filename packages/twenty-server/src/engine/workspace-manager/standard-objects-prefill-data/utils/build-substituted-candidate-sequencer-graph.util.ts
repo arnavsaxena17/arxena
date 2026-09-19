@@ -21,6 +21,7 @@ import {
 
 const LF_TOKEN_TO_ID_KEY = {
   '__LF_search-people-for-company__': 'searchPeopleForCompanyId',
+  '__LF_search-people__': 'searchPeopleId',
   '__LF_upload-profiles__': 'uploadProfilesId',
   '__LF_search-companies__': 'searchCompaniesId',
   '__LF_upsert-companies__': 'upsertCompaniesId',

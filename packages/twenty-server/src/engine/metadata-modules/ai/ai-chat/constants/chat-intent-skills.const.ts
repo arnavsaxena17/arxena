@@ -37,6 +37,11 @@ export const SEEDED_OUTREACH_WORKFLOW_INVENTORY = [
     role: SEEDED_OUTREACH_WORKFLOW.fetchAndSaveProfiles.role,
   },
   {
+    name: SEEDED_OUTREACH_WORKFLOW.searchAndUploadPeopleProfiles.name,
+    trigger: SEEDED_OUTREACH_WORKFLOW.searchAndUploadPeopleProfiles.trigger,
+    role: SEEDED_OUTREACH_WORKFLOW.searchAndUploadPeopleProfiles.role,
+  },
+  {
     name: SEEDED_OUTREACH_WORKFLOW.candidateSequencer.name,
     trigger: SEEDED_OUTREACH_WORKFLOW.candidateSequencer.trigger,
     role: SEEDED_OUTREACH_WORKFLOW.candidateSequencer.role,

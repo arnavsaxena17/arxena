@@ -1,3 +1,4 @@
+import { validate as uuidValidate } from 'uuid';
 import { workflowActionSchema } from 'twenty-shared/workflow';
 
 import {
@@ -38,8 +39,30 @@ const getTrigger = (
 ) => graph.trigger as DatabaseEventTrigger;
 
 describe('GTM outreach workflow graphs', () => {
-  it('seeds four outreach workflow templates', () => {
-    expect(OUTREACH_WORKFLOW_GRAPH_TEMPLATES).toHaveLength(4);
+  it('seeds five outreach workflow templates', () => {
+    expect(OUTREACH_WORKFLOW_GRAPH_TEMPLATES).toHaveLength(5);
+  });
+
+  // GraphQL UUID scalar uses uuid.validate — placeholder-looking IDs with
+  // wrong variant bits (e.g. ...-1f2a-...) fail UpdateWorkflowVersionStep.
+  it('uses RFC 4122 step ids in every seeded graph', () => {
+    for (const graph of OUTREACH_WORKFLOW_GRAPH_TEMPLATES) {
+      const steps = (graph.steps ?? []) as GraphStep[];
+
+      for (const step of steps) {
+        expect(step.id).toBeDefined();
+        expect(uuidValidate(step.id!)).toBe(true);
+
+        for (const nextStepId of step.nextStepIds ?? []) {
+          expect(uuidValidate(nextStepId)).toBe(true);
+        }
+      }
+
+      for (const nextStepId of (graph.trigger as { nextStepIds?: string[] })
+        .nextStepIds ?? []) {
+        expect(uuidValidate(nextStepId)).toBe(true);
+      }
+    }
   });
 
   it('keeps upload-profiles on Company Created → ICP People Search', () => {
@@ -64,6 +87,26 @@ describe('GTM outreach workflow graphs', () => {
     expect(steps).toHaveLength(1);
     expect(steps[0]?.name).toBe('Fetch & Save People Profiles');
     expect(steps[0]?.type).toBe('LOGIC_FUNCTION');
+  });
+
+  it('seeds Search and Upload People Profiles as webhook search → upload', () => {
+    const searchAndUpload = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.find(
+      (graph) => graph.name === 'Search and Upload People Profiles',
+    );
+
+    expect(searchAndUpload).toBeDefined();
+    expect((searchAndUpload?.trigger as { type: string }).type).toBe('WEBHOOK');
+    expect(
+      (searchAndUpload?.trigger as { settings?: { httpMethod?: string } })
+        .settings?.httpMethod,
+    ).toBe('POST');
+
+    const steps = (searchAndUpload?.steps ?? []) as GraphStep[];
+
+    expect(steps).toHaveLength(2);
+    expect(steps[0]?.name).toBe('Search people');
+    expect(steps[1]?.name).toBe('Upload profiles');
+    expect(steps[0]?.nextStepIds).toEqual([steps[1]?.id]);
   });
 
   it('does not seed a candidate.updated workflow', () => {
@@ -117,8 +160,45 @@ describe('GTM outreach workflow graphs', () => {
       [];
 
     expect(byName('Load Candidate')?.nextStepIds).toEqual([
+      byName('Load Person')?.id,
+    ]);
+    expect(byName('Load Person')?.nextStepIds).toEqual([
       byName('Fetch LinkedIn profile (qualify)')?.id,
     ]);
+    expect(
+      (
+        byName('Load Person')?.settings as {
+          input?: { objectName?: string };
+        }
+      )?.input?.objectName,
+    ).toBe('person');
+
+    const qualifyFetch = byName('Fetch LinkedIn profile (qualify)') as {
+      settings?: {
+        input?: {
+          logicFunctionInput?: {
+            linkedinUrl?: string;
+            linkedinProfileId?: string;
+          };
+        };
+      };
+    };
+    const qualifyInput = qualifyFetch.settings?.input?.logicFunctionInput;
+
+    expect(qualifyInput?.linkedinUrl).toContain(
+      OUTREACH_SEQUENCER_STEP_IDS.queuedPersonFind,
+    );
+    expect(qualifyInput?.linkedinUrl).toContain('linkedinLink.primaryLinkUrl');
+    expect(qualifyInput?.linkedinProfileId).toContain(
+      OUTREACH_SEQUENCER_STEP_IDS.queuedPersonFind,
+    );
+    expect(qualifyInput?.linkedinProfileId).toContain('linkedinProfileId');
+    expect(qualifyInput?.linkedinUrl).not.toContain(
+      'linkedinUrl.primaryLinkUrl',
+    );
+    expect(qualifyInput?.linkedinProfileId).not.toContain(
+      'people.linkedinProfileId',
+    );
     expect(byName('Has company name?')).toBeUndefined();
     expect(byName('Find contacted company sibling')).toBeUndefined();
     expect(byName('Draft connection note (no company)')).toBeUndefined();

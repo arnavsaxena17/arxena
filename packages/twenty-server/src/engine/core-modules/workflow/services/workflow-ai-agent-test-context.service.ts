@@ -19,10 +19,12 @@ import {
   setValueAtWorkflowVariablePath,
 } from 'src/engine/core-modules/workflow/utils/resolve-workflow-prompt-from-context.util';
 
-// Test-only: live runs stamp this after Qualify. Empty object matches prompt
-// builders' `|| '{}'` so drafts can still be exercised without inventing facts.
+// Test-only defaults when chips point at fields the candidate/member may not
+// have yet. Live runs stamp outreachProspectEnrichment after Qualify; empty
+// sender profile matches prompt builders that tolerate blank sender JSON.
 const TEST_DEFAULT_BY_CHIP_FIELD: Record<string, unknown> = {
   outreachProspectEnrichment: {},
+  outreachSenderProfile: {},
 };
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { findFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps.util';

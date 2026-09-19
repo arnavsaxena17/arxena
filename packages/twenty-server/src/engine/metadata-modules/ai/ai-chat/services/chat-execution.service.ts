@@ -1002,7 +1002,7 @@ export class ChatExecutionService {
       'When the user asks to start LinkedIn connection / outreach / enroll / send connection requests for this project:',
       `1. load_skills(["${outreach}","${workflowBuilding}"]) — treat that ask as execute authorization for enrollment`,
       '2. Prefer Project outreachWorkflowId / name "Outreach — Candidate Sequencer"; clone via create_draft_from_workflow_version before editing; do not rebuild from scratch',
-      '3. Candidate Links field is linkedinUrl.primaryLinkUrl (Person uses linkedinLink) — fix SEND_* templates if they still say linkedinLink',
+      '3. Person Links field is linkedinLink.primaryLinkUrl (not Candidate linkedinUrl) — load Person after Candidate and wire SEND_* / fetch-linkedin inputs from the person FIND',
       '4. Activate the draft, then create Candidates for ephemeral People with projectId=projectId, outreachSequenceStage=QUEUED, linkedinUrl set',
       '5. list_workflow_runs for outreachWorkflowId and summarize — do not end the turn stuck on metadata or parse retries',
     ].join('\n');

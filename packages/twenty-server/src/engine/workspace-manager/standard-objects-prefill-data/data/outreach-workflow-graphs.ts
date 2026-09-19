@@ -23,6 +23,7 @@ import {
   OUTREACH_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
   OUTREACH_SEARCH_COMPANIES_SAMPLE_OUTPUT,
   OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT,
+  OUTREACH_SEARCH_PEOPLE_SAMPLE_OUTPUT,
   OUTREACH_UPLOAD_PROFILES_SAMPLE_OUTPUT,
   OUTREACH_UPSERT_COMPANIES_SAMPLE_OUTPUT,
   OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT,
@@ -69,13 +70,17 @@ import {
   gtmWfSendEmailStep,
   gtmWfSendWhatsappMessageStep,
   gtmWfTriggerAfter,
+  gtmWfTriggerField,
   gtmWfUpdateRecordStep,
+  gtmWfWebhookTrigger,
 } from 'src/engine/workspace-manager/standard-objects-prefill-data/data/outreach-workflow-graph-helpers';
 
 const IDS = {
   searchPeople: '31ece1d2-e7d3-4af6-93e3-cfd08aacd81d',
   uploadProfiles: '046369f4-3fba-4fde-81bd-7a0a68ce73ce',
   fetchAndSaveUpload: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+  webhookSearchPeople: '12e8080d-8fe4-4f9c-9f6f-ca61c6f1ddba',
+  webhookUploadProfiles: '137cf204-1cb1-4579-964c-2ed0a1abb687',
   searchCompanies: '6f42bcf3-9860-461e-9a90-26a513320895',
   upsertCompanies: '12ed9ad9-6f51-42d3-a038-ff4f2cabd15c',
   acceptFilter: 'cf89ad04-1bfd-4fcf-82d1-05fe1e364bc8',
@@ -256,6 +261,17 @@ const IDS = {
   stageBranchMeetingBooked: '60a10004-aaaa-4fcb-a7d8-17a7736ed045',
   stageGroupMeetingBooked: '60a10107-aaaa-4fcb-a7d8-17a7736ed045',
   stageFilterMeetingBooked: '60a10108-aaaa-4fcb-a7d8-17a7736ed045',
+  // Person identity loads (after each candidate FIND)
+  acceptPersonFind: 'c7a10201-aaaa-4fcb-a7d8-17a7736ed045',
+  repliedPersonFind: 'c7a10202-aaaa-4fcb-a7d8-17a7736ed045',
+  reloadAfterInboundWaitPersonFind: 'c7a10203-aaaa-4fcb-a7d8-17a7736ed045',
+  reloadPostReplyFu2PersonFind: 'c7a10204-aaaa-4fcb-a7d8-17a7736ed045',
+  queuedPersonFind: 'c7a10206-aaaa-4fcb-a7d8-17a7736ed045',
+  reloadAfterWaitPersonFind: 'c7a10207-aaaa-4fcb-a7d8-17a7736ed045',
+  meetingBookedPersonFind: 'c7a10208-aaaa-4fcb-a7d8-17a7736ed045',
+  reloadFu1PersonFind: 'c7a10209-aaaa-4fcb-a7d8-17a7736ed045',
+  reloadFu2PersonFind: 'c7a1020a-aaaa-4fcb-a7d8-17a7736ed045',
+  reloadFu3PersonFind: 'c7a1020b-aaaa-4fcb-a7d8-17a7736ed045',
 } as const;
 
 export const OUTREACH_SEQUENCER_STEP_IDS = IDS;
@@ -320,24 +336,6 @@ const senderJson = () => gtmWfMemberSenderProfile();
 const prospectEnrichment = (findId: string) =>
   gtmWfFindField(findId, 'outreachProspectEnrichment');
 
-const qualifyEnrichmentJson = () =>
-  [
-    `{`,
-    `"go":"{{${IDS.qualifyDraft}.go}}",`,
-    `"score":"{{${IDS.qualifyDraft}.score}}",`,
-    `"segment":"{{${IDS.qualifyDraft}.segment}}",`,
-    `"reason":"{{${IDS.qualifyDraft}.reason}}",`,
-    `"first_name":"{{${IDS.qualifyDraft}.first_name}}",`,
-    `"honorific":"{{${IDS.qualifyDraft}.honorific}}",`,
-    `"company_short":"{{${IDS.qualifyDraft}.company_short}}",`,
-    `"industry_phrase":"{{${IDS.qualifyDraft}.industry_phrase}}",`,
-    `"hooks":"{{${IDS.qualifyDraft}.hooks}}",`,
-    `"likely_systems":"{{${IDS.qualifyDraft}.likely_systems}}",`,
-    `"matching_problem_statement":"{{${IDS.qualifyDraft}.matching_problem_statement}}",`,
-    `"referral_source":"{{${IDS.qualifyDraft}.referral_source}}"`,
-    `}`,
-  ].join('');
-
 const candidateFind = (id: string, name: string, nextStepIds: string[]) =>
   gtmWfFindRecordsStep({
     id,
@@ -345,6 +343,23 @@ const candidateFind = (id: string, name: string, nextStepIds: string[]) =>
     objectName: 'candidate',
     fieldMetadataId: OUTREACH_WF_FIELD.candidateId,
     filterValue: gtmWfTriggerAfter('id'),
+    filterLabel: 'Id',
+    nextStepIds,
+  });
+
+// Identity (LinkedIn / email / phone / title) lives on person — load after candidate.
+const personFind = (
+  id: string,
+  name: string,
+  candidateFindId: string,
+  nextStepIds: string[],
+) =>
+  gtmWfFindRecordsStep({
+    id,
+    name,
+    objectName: 'person',
+    fieldMetadataId: OUTREACH_WF_FIELD.personId,
+    filterValue: gtmWfFindField(candidateFindId, 'peopleId'),
     filterLabel: 'Id',
     nextStepIds,
   });
@@ -373,7 +388,10 @@ const companySiblingFilters = (
 ): OutreachWfFindRecordFilter[] => [
   {
     fieldMetadataId: OUTREACH_WF_FIELD.jobCompanyName,
-    filterValue: gtmWfFindField(IDS.queuedFind, 'people.jobCompanyName'),
+    filterValue: gtmWfFindField(
+      IDS.queuedPersonFind,
+      OUTREACH_WF_FIELD.jobCompanyNamePath,
+    ),
     filterType: 'TEXT',
     filterLabel: 'Job Company Name',
     filterOperand: 'CONTAINS',
@@ -410,6 +428,7 @@ const linkedinDraftPrompt = (
 const followUpSteps = ({
   n,
   findId,
+  personFindId,
   filterId,
   draftId,
   approveId,
@@ -422,6 +441,7 @@ const followUpSteps = ({
 }: {
   n: 1 | 2 | 3;
   findId: string;
+  personFindId: string;
   filterId: string;
   draftId: string;
   approveId: string;
@@ -432,7 +452,10 @@ const followUpSteps = ({
   isLast: boolean;
   humanInTheLoop: boolean;
 }) => [
-  candidateFind(findId, `Reload candidate before follow-up ${n}`, [filterId]),
+  candidateFind(findId, `Reload candidate before follow-up ${n}`, [
+    personFindId,
+  ]),
+  personFind(personFindId, `Load Person (follow-up ${n})`, findId, [filterId]),
   gtmWfFilterStep({
     id: filterId,
     name: `No reply yet (follow-up ${n})`,
@@ -457,6 +480,7 @@ const followUpSteps = ({
           contextTemplate: OUTREACH_HITL_CONTEXT_TEMPLATES.linkedInFollowUp(n),
           detailsTemplate: gtmWfFormDetailsTemplate({
             findId,
+            personFindId,
             draftStepId: draftId,
           }),
           nextStepIds: [sendId],
@@ -468,7 +492,14 @@ const followUpSteps = ({
     name: `Send follow-up ${n}`,
     body: hitlOrDraftMessage({ draftId, approveId, humanInTheLoop }),
     candidateId: gtmWfFindId(findId),
-    linkedinProfileId: gtmWfFindField(findId, 'people.linkedinProfileId'),
+    linkedinProfileId: gtmWfFindField(
+      personFindId,
+      OUTREACH_WF_FIELD.linkedinProfileIdPath,
+    ),
+    linkedinUrl: gtmWfFindField(
+      personFindId,
+      OUTREACH_WF_FIELD.linkedinLinkUrlPath,
+    ),
     nextStepIds: [stampId],
   }),
   gtmWfUpdateRecordStep({
@@ -504,15 +535,16 @@ const acceptedBranchSteps = ({
 }: {
   humanInTheLoop: boolean;
 }) => [
-  candidateFind(IDS.acceptFind, 'Load Candidate', [IDS.fetchMessages]),
+  candidateFind(IDS.acceptFind, 'Load Candidate', [IDS.acceptPersonFind]),
+  personFind(IDS.acceptPersonFind, 'Load Person', IDS.acceptFind, [
+    IDS.fetchMessages,
+  ]),
   gtmWfLogicFunctionStep({
     id: IDS.fetchMessages,
     name: 'Fetch LinkedIn messages',
     logicFunctionId: '__LF_fetch-linkedin-messages__',
     logicFunctionInput: {
       candidateId: gtmWfFindId(IDS.acceptFind),
-      linkedinUrl: gtmWfFindField(IDS.acceptFind, 'linkedinUrl.primaryLinkUrl'),
-      linkedinProfileId: gtmWfFindField(IDS.acceptFind, 'people.linkedinProfileId'),
       workspaceMemberId: gtmWfMemberId(),
     },
     sampleOutput: OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT,
@@ -541,9 +573,15 @@ const acceptedBranchSteps = ({
     name: 'Fetch LinkedIn profile',
     logicFunctionId: '__LF_fetch-linkedin-profile__',
     logicFunctionInput: {
+      linkedinUrl: gtmWfFindField(
+        IDS.acceptPersonFind,
+        OUTREACH_WF_FIELD.linkedinLinkUrlPath,
+      ),
+      linkedinProfileId: gtmWfFindField(
+        IDS.acceptPersonFind,
+        OUTREACH_WF_FIELD.linkedinProfileIdPath,
+      ),
       candidateId: gtmWfFindId(IDS.acceptFind),
-      linkedinUrl: gtmWfFindField(IDS.acceptFind, 'linkedinUrl.primaryLinkUrl'),
-      linkedinProfileId: gtmWfFindField(IDS.acceptFind, 'people.linkedinProfileId'),
       workspaceMemberId: gtmWfMemberId(),
     },
     sampleOutput: OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
@@ -578,6 +616,7 @@ const acceptedBranchSteps = ({
           contextTemplate: OUTREACH_HITL_CONTEXT_TEMPLATES.firstLinkedInMessage,
           detailsTemplate: gtmWfFormDetailsTemplate({
             findId: IDS.acceptFind,
+            personFindId: IDS.acceptPersonFind,
             draftStepId: IDS.draftFirst,
           }),
           nextStepIds: [IDS.sendFirst],
@@ -593,7 +632,14 @@ const acceptedBranchSteps = ({
       humanInTheLoop,
     }),
     candidateId: gtmWfFindId(IDS.acceptFind),
-    linkedinProfileId: gtmWfFindField(IDS.acceptFind, 'people.linkedinProfileId'),
+    linkedinProfileId: gtmWfFindField(
+      IDS.acceptPersonFind,
+      OUTREACH_WF_FIELD.linkedinProfileIdPath,
+    ),
+    linkedinUrl: gtmWfFindField(
+      IDS.acceptPersonFind,
+      OUTREACH_WF_FIELD.linkedinLinkUrlPath,
+    ),
     nextStepIds: [IDS.waitFu1],
   }),
   gtmWfDelayStep({
@@ -605,6 +651,7 @@ const acceptedBranchSteps = ({
   ...followUpSteps({
     n: 1,
     findId: IDS.reloadFu1,
+    personFindId: IDS.reloadFu1PersonFind,
     filterId: IDS.filterFu1,
     draftId: IDS.draftFu1,
     approveId: IDS.approveFu1,
@@ -618,6 +665,7 @@ const acceptedBranchSteps = ({
   ...followUpSteps({
     n: 2,
     findId: IDS.reloadFu2,
+    personFindId: IDS.reloadFu2PersonFind,
     filterId: IDS.filterFu2,
     draftId: IDS.draftFu2,
     approveId: IDS.approveFu2,
@@ -631,6 +679,7 @@ const acceptedBranchSteps = ({
   ...followUpSteps({
     n: 3,
     findId: IDS.reloadFu3,
+    personFindId: IDS.reloadFu3PersonFind,
     filterId: IDS.filterFu3,
     draftId: IDS.draftFu3,
     approveId: IDS.approveFu3,
@@ -671,7 +720,10 @@ const repliedBranchSteps = ({
     : [IDS.stampWaiting];
 
   return [
-    candidateFind(IDS.repliedFind, 'Load Candidate', [IDS.findChats]),
+    candidateFind(IDS.repliedFind, 'Load Candidate', [IDS.repliedPersonFind]),
+    personFind(IDS.repliedPersonFind, 'Load Person', IDS.repliedFind, [
+      IDS.findChats,
+    ]),
     gtmWfFindRecordsStep({
       id: IDS.findChats,
       name: 'Load inbound WhatsApp / LinkedIn / email messages',
@@ -728,8 +780,8 @@ const repliedBranchSteps = ({
         slots: `{{${IDS.calendar}.slots}}`,
         lastInboundChannel: `{{${IDS.findChats}.first.channel}}`,
         preferredChannel: gtmWfFindField(
-          IDS.repliedFind,
-          'people.outreachPreferredChannel',
+          IDS.repliedPersonFind,
+          OUTREACH_WF_FIELD.outreachPreferredChannelPath,
         ),
         acceptedSlotIndex: `{{${IDS.extractSignals}.acceptedSlotIndex}}`,
         requestedChannelSwitch: `{{${IDS.extractSignals}.requestedChannelSwitch}}`,
@@ -748,7 +800,10 @@ const repliedBranchSteps = ({
       name: 'Draft sales reply',
       prompt: buildOutreachSalesChatDraftPrompt({
         name: gtmWfFindField(IDS.repliedFind, 'name'),
-        title: gtmWfFindField(IDS.repliedFind, 'people.jobTitle'),
+        title: gtmWfFindField(
+          IDS.repliedPersonFind,
+          OUTREACH_WF_FIELD.jobTitlePath,
+        ),
         transcript: `{{${IDS.findChats}.text}}`,
         slots: `{{${IDS.calendar}.text}}`,
         conversationStage: gtmWfFindField(
@@ -780,6 +835,7 @@ const repliedBranchSteps = ({
             contextTemplate: OUTREACH_HITL_CONTEXT_TEMPLATES.inboundSalesReply,
             detailsTemplate: gtmWfFormDetailsTemplate({
               findId: IDS.repliedFind,
+              personFindId: IDS.repliedPersonFind,
               draftStepId: IDS.draftReply,
               extra: [
                 buildOutreachMeetingBookedDetailsTemplate({
@@ -834,7 +890,10 @@ const repliedBranchSteps = ({
     gtmWfSendEmailStep({
       id: IDS.sendReplyEmail,
       name: 'Send reply by email',
-      to: gtmWfFindField(IDS.repliedFind, 'people.emails.primaryEmail'),
+      to: gtmWfFindField(
+        IDS.repliedPersonFind,
+        OUTREACH_WF_FIELD.emailsPrimaryPath,
+      ),
       subject: `{{${IDS.draftReply}.emailSubject}}`,
       body: replyBody,
       nextStepIds: [
@@ -849,8 +908,8 @@ const repliedBranchSteps = ({
             id: IDS.sendReplyWhatsapp,
             name: 'Send reply on WhatsApp',
             phone: gtmWfFindField(
-              IDS.repliedFind,
-              'people.phones.primaryPhoneNumber',
+              IDS.repliedPersonFind,
+              OUTREACH_WF_FIELD.phonesPrimaryPath,
             ),
             body: replyBody,
             candidateId: gtmWfFindId(IDS.repliedFind),
@@ -867,7 +926,14 @@ const repliedBranchSteps = ({
       name: 'Send reply on LinkedIn',
       body: replyBody,
       candidateId: gtmWfFindId(IDS.repliedFind),
-      linkedinProfileId: gtmWfFindField(IDS.repliedFind, 'people.linkedinProfileId'),
+      linkedinProfileId: gtmWfFindField(
+        IDS.repliedPersonFind,
+        OUTREACH_WF_FIELD.linkedinProfileIdPath,
+      ),
+      linkedinUrl: gtmWfFindField(
+        IDS.repliedPersonFind,
+        OUTREACH_WF_FIELD.linkedinLinkUrlPath,
+      ),
       nextStepIds: [
         IDS.hasProspectEmailIf,
         IDS.hasReferralIf,
@@ -928,7 +994,10 @@ const repliedBranchSteps = ({
         referralName: `{{${IDS.validateSignals}.referralName}}`,
         referralEmail: `{{${IDS.validateSignals}.referralEmail}}`,
         referralPhone: `{{${IDS.validateSignals}.referralPhone}}`,
-        jobCompanyName: gtmWfFindField(IDS.repliedFind, 'people.jobCompanyName'),
+        jobCompanyName: gtmWfFindField(
+          IDS.repliedPersonFind,
+          OUTREACH_WF_FIELD.jobCompanyNamePath,
+        ),
         projectId: gtmWfFindField(IDS.repliedFind, 'projectId'),
       }),
       agentId: OUTREACH_WF_AGENT_REPLY,
@@ -992,12 +1061,12 @@ const repliedBranchSteps = ({
       valid: true,
       settings: {
         input: {
-          title: `Walkthrough — ${gtmWfFindField(IDS.repliedFind, 'people.jobCompanyName')}`,
+          title: `Walkthrough — ${gtmWfFindField(IDS.repliedPersonFind, OUTREACH_WF_FIELD.jobCompanyNamePath)}`,
           endsAt: `{{${IDS.validateSignals}.endsAt}}`,
           location: '',
           startsAt: `{{${IDS.validateSignals}.startsAt}}`,
           timeZone: '',
-          attendees: `${gtmWfFindField(IDS.repliedFind, 'people.emails.primaryEmail')}, ${gtmWfMemberEmail()}`,
+          attendees: `${gtmWfFindField(IDS.repliedPersonFind, OUTREACH_WF_FIELD.emailsPrimaryPath)}, ${gtmWfMemberEmail()}`,
           isFullDay: false,
           description: `{{${OUTREACH_WF_MEMBER_STEP_ID}.first.outreachSenderProfile.meeting.agenda_template}}`,
           addConferencing: true,
@@ -1044,8 +1113,14 @@ const repliedBranchSteps = ({
       nextStepIds: [IDS.reloadAfterInboundWait],
     }),
     candidateFind(IDS.reloadAfterInboundWait, 'Reload after post-reply wait', [
-      IDS.stillWaitingFilter,
+      IDS.reloadAfterInboundWaitPersonFind,
     ]),
+    personFind(
+      IDS.reloadAfterInboundWaitPersonFind,
+      'Load Person (post-reply wait)',
+      IDS.reloadAfterInboundWait,
+      [IDS.stillWaitingFilter],
+    ),
     gtmWfFilterStep({
       id: IDS.stillWaitingFilter,
       name: 'Still WAITING_REPLY (before FU1)',
@@ -1093,6 +1168,7 @@ const repliedBranchSteps = ({
             contextTemplate: OUTREACH_HITL_CONTEXT_TEMPLATES.postReplyFollowUp1,
             detailsTemplate: gtmWfFormDetailsTemplate({
               findId: IDS.reloadAfterInboundWait,
+              personFindId: IDS.reloadAfterInboundWaitPersonFind,
               draftStepId: IDS.draftPostReplyFu1,
             }),
             nextStepIds: [IDS.routePostReplyFu1],
@@ -1103,8 +1179,8 @@ const repliedBranchSteps = ({
       id: IDS.routePostReplyFu1,
       name: 'Send post-reply FU1 on preferred channel',
       channelStepOutputKey: gtmWfFindField(
-        IDS.reloadAfterInboundWait,
-        'people.outreachPreferredChannel',
+        IDS.reloadAfterInboundWaitPersonFind,
+        OUTREACH_WF_FIELD.outreachPreferredChannelPath,
       ),
       emailBranch: {
         id: IDS.postReplyFu1EmailBranch,
@@ -1130,7 +1206,10 @@ const repliedBranchSteps = ({
     gtmWfSendEmailStep({
       id: IDS.sendPostReplyFu1Email,
       name: 'Send post-reply FU1 by email',
-      to: gtmWfFindField(IDS.reloadAfterInboundWait, 'people.emails.primaryEmail'),
+      to: gtmWfFindField(
+        IDS.reloadAfterInboundWaitPersonFind,
+        OUTREACH_WF_FIELD.emailsPrimaryPath,
+      ),
       subject: OUTREACH_POST_REPLY_EMAIL_SUBJECT,
       body: postReplyFu1Body,
       nextStepIds: [IDS.waitPostReplyFu2],
@@ -1141,8 +1220,8 @@ const repliedBranchSteps = ({
             id: IDS.sendPostReplyFu1Whatsapp,
             name: 'Send post-reply FU1 on WhatsApp',
             phone: gtmWfFindField(
-              IDS.reloadAfterInboundWait,
-              'people.phones.primaryPhoneNumber',
+              IDS.reloadAfterInboundWaitPersonFind,
+              OUTREACH_WF_FIELD.phonesPrimaryPath,
             ),
             body: postReplyFu1Body,
             candidateId: gtmWfFindId(IDS.reloadAfterInboundWait),
@@ -1155,7 +1234,14 @@ const repliedBranchSteps = ({
       name: 'Send post-reply FU1 on LinkedIn',
       body: postReplyFu1Body,
       candidateId: gtmWfFindId(IDS.reloadAfterInboundWait),
-      linkedinProfileId: gtmWfFindField(IDS.reloadAfterInboundWait, 'people.linkedinProfileId'),
+      linkedinProfileId: gtmWfFindField(
+        IDS.reloadAfterInboundWaitPersonFind,
+        OUTREACH_WF_FIELD.linkedinProfileIdPath,
+      ),
+      linkedinUrl: gtmWfFindField(
+        IDS.reloadAfterInboundWaitPersonFind,
+        OUTREACH_WF_FIELD.linkedinLinkUrlPath,
+      ),
       nextStepIds: [IDS.waitPostReplyFu2],
     }),
     gtmWfDelayStep({
@@ -1165,8 +1251,14 @@ const repliedBranchSteps = ({
       nextStepIds: [IDS.reloadPostReplyFu2],
     }),
     candidateFind(IDS.reloadPostReplyFu2, 'Reload before post-reply FU2', [
-      IDS.stillWaitingFu2Filter,
+      IDS.reloadPostReplyFu2PersonFind,
     ]),
+    personFind(
+      IDS.reloadPostReplyFu2PersonFind,
+      'Load Person (post-reply FU2)',
+      IDS.reloadPostReplyFu2,
+      [IDS.stillWaitingFu2Filter],
+    ),
     gtmWfFilterStep({
       id: IDS.stillWaitingFu2Filter,
       name: 'Still WAITING_REPLY (before FU2)',
@@ -1215,6 +1307,7 @@ const repliedBranchSteps = ({
               OUTREACH_HITL_CONTEXT_TEMPLATES.postReplyFollowUp2Last,
             detailsTemplate: gtmWfFormDetailsTemplate({
               findId: IDS.reloadPostReplyFu2,
+              personFindId: IDS.reloadPostReplyFu2PersonFind,
               draftStepId: IDS.draftPostReplyFu2,
             }),
             nextStepIds: [IDS.routePostReplyFu2],
@@ -1225,8 +1318,8 @@ const repliedBranchSteps = ({
       id: IDS.routePostReplyFu2,
       name: 'Send post-reply FU2 on preferred channel',
       channelStepOutputKey: gtmWfFindField(
-        IDS.reloadPostReplyFu2,
-        'people.outreachPreferredChannel',
+        IDS.reloadPostReplyFu2PersonFind,
+        OUTREACH_WF_FIELD.outreachPreferredChannelPath,
       ),
       emailBranch: {
         id: IDS.postReplyFu2EmailBranch,
@@ -1252,7 +1345,10 @@ const repliedBranchSteps = ({
     gtmWfSendEmailStep({
       id: IDS.sendPostReplyFu2Email,
       name: 'Send post-reply FU2 by email',
-      to: gtmWfFindField(IDS.reloadPostReplyFu2, 'people.emails.primaryEmail'),
+      to: gtmWfFindField(
+        IDS.reloadPostReplyFu2PersonFind,
+        OUTREACH_WF_FIELD.emailsPrimaryPath,
+      ),
       subject: OUTREACH_POST_REPLY_EMAIL_SUBJECT,
       body: postReplyFu2Body,
       nextStepIds: [IDS.waitPostReplyPark],
@@ -1263,8 +1359,8 @@ const repliedBranchSteps = ({
             id: IDS.sendPostReplyFu2Whatsapp,
             name: 'Send post-reply FU2 on WhatsApp',
             phone: gtmWfFindField(
-              IDS.reloadPostReplyFu2,
-              'people.phones.primaryPhoneNumber',
+              IDS.reloadPostReplyFu2PersonFind,
+              OUTREACH_WF_FIELD.phonesPrimaryPath,
             ),
             body: postReplyFu2Body,
             candidateId: gtmWfFindId(IDS.reloadPostReplyFu2),
@@ -1277,7 +1373,14 @@ const repliedBranchSteps = ({
       name: 'Send post-reply FU2 on LinkedIn',
       body: postReplyFu2Body,
       candidateId: gtmWfFindId(IDS.reloadPostReplyFu2),
-      linkedinProfileId: gtmWfFindField(IDS.reloadPostReplyFu2, 'people.linkedinProfileId'),
+      linkedinProfileId: gtmWfFindField(
+        IDS.reloadPostReplyFu2PersonFind,
+        OUTREACH_WF_FIELD.linkedinProfileIdPath,
+      ),
+      linkedinUrl: gtmWfFindField(
+        IDS.reloadPostReplyFu2PersonFind,
+        OUTREACH_WF_FIELD.linkedinLinkUrlPath,
+      ),
       nextStepIds: [IDS.waitPostReplyPark],
     }),
     gtmWfDelayStep({
@@ -1352,9 +1455,11 @@ const queuedBranchSteps = ({
       });
 
   return [
-    candidateFind(
+    candidateFind(IDS.queuedFind, 'Load Candidate', [IDS.queuedPersonFind]),
+    personFind(
+      IDS.queuedPersonFind,
+      'Load Person',
       IDS.queuedFind,
-      'Load Candidate',
       hoistedMember ? [IDS.queuedFetchProfile] : [OUTREACH_WF_MEMBER_STEP_ID],
     ),
     ...(hoistedMember
@@ -1380,12 +1485,15 @@ const queuedBranchSteps = ({
       name: 'Fetch LinkedIn profile (qualify)',
       logicFunctionId: '__LF_fetch-linkedin-profile__',
       logicFunctionInput: {
-        candidateId: gtmWfFindId(IDS.queuedFind),
         linkedinUrl: gtmWfFindField(
-          IDS.queuedFind,
-          'linkedinUrl.primaryLinkUrl',
+          IDS.queuedPersonFind,
+          OUTREACH_WF_FIELD.linkedinLinkUrlPath,
         ),
-        linkedinProfileId: gtmWfFindField(IDS.queuedFind, 'people.linkedinProfileId'),
+        linkedinProfileId: gtmWfFindField(
+          IDS.queuedPersonFind,
+          OUTREACH_WF_FIELD.linkedinProfileIdPath,
+        ),
+        candidateId: gtmWfFindId(IDS.queuedFind),
         workspaceMemberId: gtmWfMemberId(),
       },
       sampleOutput: OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
@@ -1403,7 +1511,7 @@ const queuedBranchSteps = ({
         posts: '',
         crm: [
           `Name: ${gtmWfFindField(IDS.queuedFind, 'name')}`,
-          `Title: ${gtmWfFindField(IDS.queuedFind, 'people.jobTitle')}`,
+          `Title: ${gtmWfFindField(IDS.queuedPersonFind, OUTREACH_WF_FIELD.jobTitlePath)}`,
         ].join('\n'),
       }),
       agentId: OUTREACH_WF_AGENT_QUALIFY,
@@ -1459,7 +1567,10 @@ const queuedBranchSteps = ({
           gtmWfIfElseStep({
             id: IDS.hasCompanyIf,
             name: 'Has company name?',
-            stepOutputKey: gtmWfFindField(IDS.queuedFind, 'people.jobCompanyName'),
+            stepOutputKey: gtmWfFindField(
+              IDS.queuedPersonFind,
+              OUTREACH_WF_FIELD.jobCompanyNamePath,
+            ),
             value: '',
             type: 'TEXT',
             operand: 'IS_NOT_EMPTY',
@@ -1554,7 +1665,10 @@ const queuedBranchSteps = ({
             name: 'Draft connection note',
             prompt: buildOutreachConnectionNotePrompt({
               senderJson: senderJson(),
-              prospectEnrichmentJson: qualifyEnrichmentJson(),
+              // Stamped on candidate after Qualify — Test can fill from the record
+              // (or default {}). Do not chip qualifyDraft.* (AI_AGENT predecessors
+              // are not hydrated by AI agent Test).
+              prospectEnrichmentJson: prospectEnrichment(IDS.queuedFind),
             }),
             agentId: OUTREACH_WF_AGENT_LINKEDIN,
             outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
@@ -1572,6 +1686,7 @@ const queuedBranchSteps = ({
                     OUTREACH_HITL_CONTEXT_TEMPLATES.linkedInConnectionNote,
                   detailsTemplate: gtmWfFormDetailsTemplate({
                     findId: IDS.queuedFind,
+                    personFindId: IDS.queuedPersonFind,
                     draftStepId: IDS.draftConnectNote,
                   }),
                   nextStepIds: [IDS.connectionNotSentIf],
@@ -1585,7 +1700,7 @@ const queuedBranchSteps = ({
                   name: 'Draft connection note (no company)',
                   prompt: buildOutreachConnectionNotePrompt({
                     senderJson: senderJson(),
-                    prospectEnrichmentJson: qualifyEnrichmentJson(),
+                    prospectEnrichmentJson: prospectEnrichment(IDS.queuedFind),
                   }),
                   agentId: OUTREACH_WF_AGENT_LINKEDIN,
                   outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
@@ -1605,6 +1720,7 @@ const queuedBranchSteps = ({
                           OUTREACH_HITL_CONTEXT_TEMPLATES.linkedInConnectionNote,
                         detailsTemplate: gtmWfFormDetailsTemplate({
                           findId: IDS.queuedFind,
+                          personFindId: IDS.queuedPersonFind,
                           draftStepId: IDS.draftConnectNoteNoCompany,
                         }),
                         nextStepIds: [IDS.connectionNotSentNoCompanyIf],
@@ -1656,10 +1772,13 @@ const queuedBranchSteps = ({
         input: {
           message: connectMessage,
           linkedinUrl: gtmWfFindField(
-            IDS.queuedFind,
-            'linkedinUrl.primaryLinkUrl',
+            IDS.queuedPersonFind,
+            OUTREACH_WF_FIELD.linkedinLinkUrlPath,
           ),
-          linkedinProfileId: gtmWfFindField(IDS.queuedFind, 'people.linkedinProfileId'),
+          linkedinProfileId: gtmWfFindField(
+            IDS.queuedPersonFind,
+            OUTREACH_WF_FIELD.linkedinProfileIdPath,
+          ),
           candidateId: gtmWfFindId(IDS.queuedFind),
           workspaceMemberId: gtmWfMemberId(),
         },
@@ -1679,10 +1798,13 @@ const queuedBranchSteps = ({
               input: {
                 message: connectMessageNoCompany,
                 linkedinUrl: gtmWfFindField(
-                  IDS.queuedFind,
-                  'linkedinUrl.primaryLinkUrl',
+                  IDS.queuedPersonFind,
+                  OUTREACH_WF_FIELD.linkedinLinkUrlPath,
                 ),
-                linkedinProfileId: gtmWfFindField(IDS.queuedFind, 'people.linkedinProfileId'),
+                linkedinProfileId: gtmWfFindField(
+                  IDS.queuedPersonFind,
+                  OUTREACH_WF_FIELD.linkedinProfileIdPath,
+                ),
                 candidateId: gtmWfFindId(IDS.queuedFind),
                 workspaceMemberId: hoistedMember
                   ? gtmWfMemberId()
@@ -1711,8 +1833,14 @@ const queuedBranchSteps = ({
       nextStepIds: [IDS.reloadAfterWait],
     }),
     candidateFind(IDS.reloadAfterWait, 'Reload candidate after wait', [
-      IDS.stillSent,
+      IDS.reloadAfterWaitPersonFind,
     ]),
+    personFind(
+      IDS.reloadAfterWaitPersonFind,
+      'Load Person (after wait)',
+      IDS.reloadAfterWait,
+      [IDS.stillSent],
+    ),
     gtmWfFilterStep({
       id: IDS.stillSent,
       name: 'Still CONNECTION_SENT',
@@ -1730,8 +1858,8 @@ const queuedBranchSteps = ({
       logicFunctionInput: {
         candidateId: gtmWfFindId(IDS.reloadAfterWait),
         linkedinUrl: gtmWfFindField(
-          IDS.reloadAfterWait,
-          'linkedinUrl.primaryLinkUrl',
+          IDS.reloadAfterWaitPersonFind,
+          OUTREACH_WF_FIELD.linkedinLinkUrlPath,
         ),
         wantEmail: true,
         wantPhone: false,
@@ -1754,7 +1882,10 @@ const queuedBranchSteps = ({
       name: 'Draft fallback email',
       prompt: buildOutreachFallbackEmailPrompt({
         name: gtmWfFindField(IDS.reloadAfterWait, 'name'),
-        title: gtmWfFindField(IDS.reloadAfterWait, 'people.jobTitle'),
+        title: gtmWfFindField(
+          IDS.reloadAfterWaitPersonFind,
+          OUTREACH_WF_FIELD.jobTitlePath,
+        ),
       }),
       agentId: OUTREACH_WF_AGENT_EMAIL,
       outputSchema: OUTREACH_WF_AI_EMAIL_OUTPUT,
@@ -1769,6 +1900,7 @@ const queuedBranchSteps = ({
             contextTemplate: OUTREACH_HITL_CONTEXT_TEMPLATES.fallbackEmail,
             detailsTemplate: gtmWfFormDetailsTemplate({
               findId: IDS.reloadAfterWait,
+              personFindId: IDS.reloadAfterWaitPersonFind,
               draftStepId: IDS.draftEmail,
             }),
             nextStepIds: [IDS.saveEmail],
@@ -1847,8 +1979,14 @@ const meetingBookedBranchSteps = ({
   humanInTheLoop: boolean;
 }) => [
   candidateFind(IDS.meetingBookedFind, 'Load Candidate (meeting booked)', [
-    IDS.reminderDelay,
+    IDS.meetingBookedPersonFind,
   ]),
+  personFind(
+    IDS.meetingBookedPersonFind,
+    'Load Person (meeting booked)',
+    IDS.meetingBookedFind,
+    [IDS.reminderDelay],
+  ),
   gtmWfDelayStep({
     id: IDS.reminderDelay,
     name: 'Wait 1 day before reminder',
@@ -1875,6 +2013,7 @@ const meetingBookedBranchSteps = ({
           contextTemplate: OUTREACH_HITL_CONTEXT_TEMPLATES.meetingReminder,
           detailsTemplate: gtmWfFormDetailsTemplate({
             findId: IDS.meetingBookedFind,
+            personFindId: IDS.meetingBookedPersonFind,
             draftStepId: IDS.draftReminder,
           }),
           nextStepIds: [IDS.sendReminder],
@@ -1890,7 +2029,14 @@ const meetingBookedBranchSteps = ({
       humanInTheLoop,
     }),
     candidateId: gtmWfFindId(IDS.meetingBookedFind),
-    linkedinProfileId: gtmWfFindField(IDS.meetingBookedFind, 'people.linkedinProfileId'),
+    linkedinProfileId: gtmWfFindField(
+      IDS.meetingBookedPersonFind,
+      OUTREACH_WF_FIELD.linkedinProfileIdPath,
+    ),
+    linkedinUrl: gtmWfFindField(
+      IDS.meetingBookedPersonFind,
+      OUTREACH_WF_FIELD.linkedinLinkUrlPath,
+    ),
     nextStepIds: [IDS.waitToMeeting],
   }),
   gtmWfDelayStep({
@@ -1919,6 +2065,7 @@ const meetingBookedBranchSteps = ({
           contextTemplate: OUTREACH_HITL_CONTEXT_TEMPLATES.noShowPing,
           detailsTemplate: gtmWfFormDetailsTemplate({
             findId: IDS.meetingBookedFind,
+            personFindId: IDS.meetingBookedPersonFind,
             draftStepId: IDS.draftNoShow,
           }),
           nextStepIds: [IDS.sendNoShow],
@@ -1934,7 +2081,14 @@ const meetingBookedBranchSteps = ({
       humanInTheLoop,
     }),
     candidateId: gtmWfFindId(IDS.meetingBookedFind),
-    linkedinProfileId: gtmWfFindField(IDS.meetingBookedFind, 'people.linkedinProfileId'),
+    linkedinProfileId: gtmWfFindField(
+      IDS.meetingBookedPersonFind,
+      OUTREACH_WF_FIELD.linkedinProfileIdPath,
+    ),
+    linkedinUrl: gtmWfFindField(
+      IDS.meetingBookedPersonFind,
+      OUTREACH_WF_FIELD.linkedinLinkUrlPath,
+    ),
     nextStepIds: [IDS.waitNextDay],
   }),
   gtmWfDelayStep({
@@ -1963,6 +2117,7 @@ const meetingBookedBranchSteps = ({
           contextTemplate: OUTREACH_HITL_CONTEXT_TEMPLATES.rescheduleOffer,
           detailsTemplate: gtmWfFormDetailsTemplate({
             findId: IDS.meetingBookedFind,
+            personFindId: IDS.meetingBookedPersonFind,
             draftStepId: IDS.draftReschedule,
           }),
           nextStepIds: [IDS.sendReschedule],
@@ -1978,7 +2133,14 @@ const meetingBookedBranchSteps = ({
       humanInTheLoop,
     }),
     candidateId: gtmWfFindId(IDS.meetingBookedFind),
-    linkedinProfileId: gtmWfFindField(IDS.meetingBookedFind, 'people.linkedinProfileId'),
+    linkedinProfileId: gtmWfFindField(
+      IDS.meetingBookedPersonFind,
+      OUTREACH_WF_FIELD.linkedinProfileIdPath,
+    ),
+    linkedinUrl: gtmWfFindField(
+      IDS.meetingBookedPersonFind,
+      OUTREACH_WF_FIELD.linkedinLinkUrlPath,
+    ),
     nextStepIds: [IDS.stampStalled],
   }),
   gtmWfUpdateRecordStep({
@@ -2156,6 +2318,54 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
         name: 'Fetch & Save People Profiles',
         logicFunctionId: '__LF_upload-profiles__',
         logicFunctionInput: {},
+        sampleOutput: OUTREACH_UPLOAD_PROFILES_SAMPLE_OUTPUT,
+      }),
+    ],
+  },
+  {
+    name: 'Search and Upload People Profiles',
+    trigger: gtmWfWebhookTrigger({
+      name: 'Search and upload webhook',
+      nextStepIds: [IDS.webhookSearchPeople],
+      expectedBody: {
+        projectId: '',
+        naturalLanguage: '',
+        searchUrl: '',
+        companyName: '',
+        website: '',
+        companyId: '',
+        jobTitle: '',
+        country: '',
+        limit: 25,
+      },
+    }),
+    steps: [
+      gtmWfLogicFunctionStep({
+        id: IDS.webhookSearchPeople,
+        name: 'Search people',
+        logicFunctionId: '__LF_search-people__',
+        logicFunctionInput: {
+          naturalLanguage: gtmWfTriggerField('naturalLanguage'),
+          searchUrl: gtmWfTriggerField('searchUrl'),
+          companyName: gtmWfTriggerField('companyName'),
+          website: gtmWfTriggerField('website'),
+          companyId: gtmWfTriggerField('companyId'),
+          jobTitle: gtmWfTriggerField('jobTitle'),
+          country: gtmWfTriggerField('country'),
+          limit: gtmWfTriggerField('limit'),
+        },
+        sampleOutput: OUTREACH_SEARCH_PEOPLE_SAMPLE_OUTPUT,
+        nextStepIds: [IDS.webhookUploadProfiles],
+      }),
+      gtmWfLogicFunctionStep({
+        id: IDS.webhookUploadProfiles,
+        name: 'Upload profiles',
+        logicFunctionId: '__LF_upload-profiles__',
+        logicFunctionInput: {
+          people: `{{${IDS.webhookSearchPeople}.people}}`,
+          projectId: gtmWfTriggerField('projectId'),
+          companyId: gtmWfTriggerField('companyId'),
+        },
         sampleOutput: OUTREACH_UPLOAD_PROFILES_SAMPLE_OUTPUT,
       }),
     ],

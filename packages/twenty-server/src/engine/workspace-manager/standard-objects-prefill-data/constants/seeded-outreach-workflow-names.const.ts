@@ -20,6 +20,12 @@ export const SEEDED_OUTREACH_WORKFLOW = {
     role: 'Manual enroll' as const,
     trigger: 'MANUAL',
   },
+  searchAndUploadPeopleProfiles: {
+    name: 'Search and Upload People Profiles',
+    slug: 'searchAndUploadPeopleProfiles',
+    role: 'Webhook search+enroll' as const,
+    trigger: 'WEBHOOK',
+  },
   perCandidate: {
     name: 'Outreach — Per Enrolled Candidate',
     slug: 'perCandidate',
