@@ -47,6 +47,34 @@ export const normalizeOrgChartCompanySlug = (raw: string): string => {
   return trimmed.replace(/_/g, '-');
 };
 
+/**
+ * Strip LinkedIn company URL/path forms to the company slug.
+ * e.g. linkedin.com/company/metlife → metlife
+ *      https://www.linkedin.com/company/metlife/ → metlife
+ */
+export const extractOrgChartLinkedInCompanySlug = (
+  companyId: string,
+): string | null => {
+  const trimmed = companyId.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const withoutQuery = trimmed.split(/[?#]/)[0] ?? trimmed;
+  const match = withoutQuery.match(
+    /(?:https?:\/\/)?(?:www\.)?linkedin\.com\/company\/([^/]+)/i,
+  );
+  if (!match?.[1]) {
+    return null;
+  }
+
+  try {
+    return normalizeOrgChartCompanySlug(decodeURIComponent(match[1]));
+  } catch {
+    return normalizeOrgChartCompanySlug(match[1]);
+  }
+};
+
 const slugKey = (raw: string): string => normalizeOrgChartCompanySlug(raw);
 
 const buildAliasIndex = (): Map<string, OrgChartCompanyAliasGroup> => {
@@ -74,7 +102,8 @@ const ALIAS_INDEX = buildAliasIndex();
 export const resolveOrgChartCompanyAliasGroup = (
   companyId: string,
 ): OrgChartCompanyAliasGroup | null => {
-  const key = slugKey(companyId);
+  const linkedInSlug = extractOrgChartLinkedInCompanySlug(companyId);
+  const key = slugKey(linkedInSlug ?? companyId);
   if (!key) {
     return null;
   }
@@ -83,9 +112,13 @@ export const resolveOrgChartCompanyAliasGroup = (
 
 /** Canonical slug for URLs/API, or the normalized input when no alias group exists. */
 export const resolveOrgChartCanonicalCompanyId = (companyId: string): string => {
-  const group = resolveOrgChartCompanyAliasGroup(companyId);
+  const linkedInSlug = extractOrgChartLinkedInCompanySlug(companyId);
+  const group = resolveOrgChartCompanyAliasGroup(linkedInSlug ?? companyId);
   if (group) {
     return group.canonicalId;
+  }
+  if (linkedInSlug) {
+    return linkedInSlug;
   }
   return normalizeOrgChartCompanySlug(companyId) || companyId.trim().toLowerCase();
 };
@@ -94,19 +127,22 @@ export const resolveOrgChartCanonicalCompanyId = (companyId: string): string => 
 export const collectOrgChartCompanyIdsForLookup = (
   companyId: string,
 ): string[] => {
-  const group = resolveOrgChartCompanyAliasGroup(companyId);
-  const normalizedInput = normalizeOrgChartCompanySlug(companyId);
+  const linkedInSlug = extractOrgChartLinkedInCompanySlug(companyId);
+  const primaryForAlias = linkedInSlug ?? companyId;
+  const group = resolveOrgChartCompanyAliasGroup(primaryForAlias);
+  const normalizedPath = normalizeOrgChartCompanySlug(companyId);
+  const normalizedSlug =
+    linkedInSlug ?? normalizeOrgChartCompanySlug(companyId);
 
-  if (!group) {
-    return normalizedInput ? [normalizedInput] : [];
-  }
-
-  const ordered = [
-    group.canonicalId,
-    group.linkedinSlug,
-    ...group.aliases,
-    normalizedInput,
-  ];
+  const ordered = group
+    ? [
+        group.canonicalId,
+        group.linkedinSlug,
+        ...group.aliases,
+        normalizedSlug,
+        normalizedPath,
+      ]
+    : [normalizedSlug, normalizedPath];
 
   const seen = new Set<string>();
   const result: string[] = [];

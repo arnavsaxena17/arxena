@@ -803,6 +803,9 @@ export class OrgChartService {
           });
 
         if (catalogDocument) {
+          this.logger.log(
+            `Serving org chart from catalog S3 for companyId=${companyId} via=${catalogCompanyId}`,
+          );
           return {
             data: normalizeOrgChartPayload(catalogDocument),
           };
@@ -818,6 +821,9 @@ export class OrgChartService {
         orgChartEsTransportError = esOutcome.esTransportError === true;
 
         if (esOutcome.document) {
+          this.logger.log(
+            `Serving org chart from ES (catalog miss) companyId=${companyId} via=${esCompanyId}`,
+          );
           void this.orgChartCatalogS3Service.putCatalogDocument({
             companyId: esCompanyId,
             country: catalogCountry,

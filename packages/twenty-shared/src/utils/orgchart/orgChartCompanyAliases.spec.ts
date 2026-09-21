@@ -40,6 +40,17 @@ describe('orgChartCompanyAliases', () => {
     ]);
   });
 
+  it('strips linkedin.com/company path to slug for catalog lookup', () => {
+    expect(
+      collectOrgChartCompanyIdsForLookup('linkedin.com/company/metlife'),
+    ).toEqual(['metlife', 'linkedin.com/company/metlife']);
+    expect(
+      collectOrgChartCompanyIdsForLookup(
+        'https://www.linkedin.com/company/Mary-Kay-Inc/',
+      ),
+    ).toContain('mary-kay-inc');
+  });
+
   it('redirects meta to facebook canonical path', () => {
     expect(shouldRedirectOrgChartCompanySlug('meta')).toBe(true);
     expect(buildCanonicalOrgChartPath({ companyId: 'meta' })).toBe(

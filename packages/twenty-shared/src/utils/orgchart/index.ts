@@ -17,6 +17,7 @@ export {
     buildCanonicalOrgChartPath,
     buildOrgChartS3LookupPlan,
     collectOrgChartCompanyIdsForLookup,
+    extractOrgChartLinkedInCompanySlug,
     normalizeOrgChartCompanySlug,
     resolveOrgChartCanonicalCompanyId,
     resolveOrgChartCompanyAliasGroup,

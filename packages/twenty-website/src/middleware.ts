@@ -159,10 +159,10 @@ export async function middleware(request: NextRequest) {
   });
 
   if (isOrgChartDocumentPath(pathname) && request.method === 'GET') {
-    // Let CloudFront cache catalog HTML (SSR loopback still hits Nest/S3)
+    // Short CDN TTL: long HTML cache + hashed Next chunks caused ChunkLoadError after deploys
     res.headers.set(
       'Cache-Control',
-      'public, s-maxage=86400, max-age=300, stale-while-revalidate=86400',
+      'public, s-maxage=300, max-age=60, stale-while-revalidate=600',
     );
   }
 
