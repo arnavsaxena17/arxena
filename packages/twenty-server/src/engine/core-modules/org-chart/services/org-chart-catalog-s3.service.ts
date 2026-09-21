@@ -143,9 +143,6 @@ export class OrgChartCatalogS3Service implements OnModuleInit {
     }
 
     const key = this.buildCatalogKey(input);
-    const docType = input.type?.trim() || 'fullcompany';
-    const countryRaw = input.country?.trim() || 'global';
-    const country = countryRaw.toLowerCase().replace(/ /g, '-');
 
     try {
       await this.client.send(
@@ -154,11 +151,6 @@ export class OrgChartCatalogS3Service implements OnModuleInit {
           Key: key,
           Body: JSON.stringify(input.document),
           ContentType: 'application/json',
-          Metadata: {
-            company_id: input.companyId,
-            country,
-            type: docType,
-          },
         }),
       );
       this.logger.debug(
