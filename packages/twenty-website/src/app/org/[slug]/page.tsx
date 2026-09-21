@@ -19,7 +19,7 @@ import { readOrgChartStaticOnlyFromHeaders } from '@/lib/org-chart-static-only';
 import { processPublishedOrgChartPayload } from '@/lib/process-published-org-chart-payload';
 import { decodeOverEncodedPath } from '@/lib/url-utils';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 86400;
 
 type PageProps = {
   params: Promise<{ slug: string }>;

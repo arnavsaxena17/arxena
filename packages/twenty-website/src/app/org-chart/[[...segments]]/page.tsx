@@ -34,7 +34,9 @@ import { OrgChartPageClient } from './OrgChartPageClient';
 import { OrgChartStructureSSR } from './OrgChartStructureSSR';
 import { StaticOrgChartPage } from './StaticOrgChartPage';
 
-export const dynamic = 'force-dynamic';
+// CDN may cache successful catalog HTML (s-maxage from middleware). Browsers still
+// hydrate/fetch interactively; bots use SSR static-only.
+export const revalidate = 86400;
 
 function buildForwardedOrgChartHeaders(
   requestHeaders: Headers,
