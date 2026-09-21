@@ -12,6 +12,7 @@ import { ListOrphanedWorkspaceEntitiesCommand } from 'src/database/commands/list
 import { ConfirmationQuestion } from 'src/database/commands/questions/confirmation.question';
 import { RebuildApplicationDefaultDepsCommand } from 'src/database/commands/rebuild-application-default-deps.command';
 import { ResyncOutreachSeededWorkflowPromptsCommand } from 'src/database/commands/resync-outreach-seeded-workflow-prompts.command';
+import { KickConnectionAcceptedCommand } from 'src/database/commands/kick-connection-accepted.command';
 import { SyncArxenaStandardCommand } from 'src/database/commands/sync-arxena-standard.command';
 import { RunInstanceCommandsCommand } from 'src/database/commands/run-instance-commands.command';
 import { UpgradeVersionCommandModule } from 'src/database/commands/upgrade-version-command/upgrade-version-command.module';
@@ -121,6 +122,7 @@ import { WorkflowCoreConsistencyModule } from 'src/modules/workflow/workflow-cor
     RebuildApplicationDefaultDepsCommand,
     SyncArxenaStandardCommand,
     ResyncOutreachSeededWorkflowPromptsCommand,
+    KickConnectionAcceptedCommand,
     InstallPreInstalledAppsCommand,
     provideWorkspaceScopedRepository(RoleEntity),
   ],
