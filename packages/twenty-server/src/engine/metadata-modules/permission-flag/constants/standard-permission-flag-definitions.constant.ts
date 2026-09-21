@@ -134,6 +134,11 @@ const STANDARD_PERMISSION_FLAG_METADATA: Record<
     description: 'Run code to analyze files and data',
     icon: 'IconCode',
   },
+  [PermissionFlagType.SEND_FILES_TOOL]: {
+    label: 'Send Files',
+    description: 'Send uploaded files via LinkedIn, email, or WhatsApp',
+    icon: 'IconFileUpload',
+  },
   [PermissionFlagType.IMPORT_CSV]: {
     label: 'Import CSV',
     description: 'Allow importing data from CSV files',

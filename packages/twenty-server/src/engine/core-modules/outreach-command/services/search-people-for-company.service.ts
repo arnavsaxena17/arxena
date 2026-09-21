@@ -1,18 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 
 import { isNonEmptyString } from '@sniptt/guards';
-import { resolveOutreachConfigIcpSpecString } from 'twenty-shared/arx';
 import { isDefined } from 'twenty-shared/utils';
-import { type ObjectLiteral, Repository } from 'typeorm';
+import { type ObjectLiteral } from 'typeorm';
 
 import {
   LinkedInSearchTransformerService,
   type CandidateTableRow,
 } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { EnsureOutreachProjectService } from 'src/engine/core-modules/outreach-command/services/ensure-outreach-project.service';
+import { OutreachSenderProfileService } from 'src/engine/core-modules/outreach-command/services/outreach-sender-profile.service';
 import { OutreachWorkspaceAuthTokenService } from 'src/engine/core-modules/outreach-command/services/outreach-workspace-auth-token.service';
-import { parseIcpSpec } from 'src/engine/core-modules/outreach-command/utils/outreach-icp-spec.util';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
 import {
   mapSearchPeopleProfile,
@@ -23,7 +21,6 @@ import { UnipileSearchAccountResolver } from 'src/engine/core-modules/linkedin-s
 import type { LinkedInSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { PeopleApiService } from 'src/engine/core-modules/people-api/people-api.service';
-import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
@@ -41,8 +38,6 @@ type ProjectRecord = ObjectLiteral & {
   id: string;
   name?: string | null;
   projectIds?: string | null;
-  outreachConfig?: unknown;
-  icpSpec?: string | null;
   maxPersonasPerCompany?: number | null;
 };
 
@@ -100,7 +95,8 @@ const parseStringList = (value: unknown): string[] => {
   }
 
   return value.filter(
-    (item): item is string => typeof item === 'string' && item.trim().length > 0,
+    (item): item is string =>
+      typeof item === 'string' && item.trim().length > 0,
   );
 };
 
@@ -122,8 +118,7 @@ const readTaxonomyResolved = (
       typeof resolved?.stdFunctionRoot === 'string'
         ? resolved.stdFunctionRoot
         : null,
-    stdGrade:
-      typeof resolved?.stdGrade === 'string' ? resolved.stdGrade : null,
+    stdGrade: typeof resolved?.stdGrade === 'string' ? resolved.stdGrade : null,
   };
 };
 
@@ -139,14 +134,13 @@ export class SearchPeopleForCompanyService {
   private readonly logger = new Logger(SearchPeopleForCompanyService.name);
 
   constructor(
-    @InjectRepository(WorkspaceEntity)
-    private readonly workspaceRepository: Repository<WorkspaceEntity>,
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     private readonly peopleApiService: PeopleApiService,
     private readonly linkedInSearchTransformer: LinkedInSearchTransformerService,
     private readonly ensureOutreachProjectService: EnsureOutreachProjectService,
     private readonly gtmWorkspaceAuthTokenService: OutreachWorkspaceAuthTokenService,
     private readonly unipileSearchAccountResolver: UnipileSearchAccountResolver,
+    private readonly outreachSenderProfileService: OutreachSenderProfileService,
   ) {}
 
   async execute({
@@ -193,39 +187,37 @@ export class SearchPeopleForCompanyService {
       };
     }
 
-    const workspace = await this.workspaceRepository.findOneBy({
-      id: workspaceId,
-    });
     const authContext = buildSystemAuthContext(workspaceId);
-    const context = await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
-      async () => {
-        const companyRepository =
-          await this.globalWorkspaceOrmManager.getRepository<CompanyRecord>(
-            workspaceId,
-            'company',
-            { shouldBypassPermissionChecks: true },
-          );
-        const projectRepository =
-          await this.globalWorkspaceOrmManager.getRepository<ProjectRecord>(
-            workspaceId,
-            'project',
-            { shouldBypassPermissionChecks: true },
-          );
+    const context =
+      await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+        async () => {
+          const companyRepository =
+            await this.globalWorkspaceOrmManager.getRepository<CompanyRecord>(
+              workspaceId,
+              'company',
+              { shouldBypassPermissionChecks: true },
+            );
+          const projectRepository =
+            await this.globalWorkspaceOrmManager.getRepository<ProjectRecord>(
+              workspaceId,
+              'project',
+              { shouldBypassPermissionChecks: true },
+            );
 
-        const company = await companyRepository.findOne({
-          where: { id: companyId },
-        });
-        const project = await projectRepository.findOne({
-          where: { id: ensured.projectId },
-        });
+          const company = await companyRepository.findOne({
+            where: { id: companyId },
+          });
+          const project = await projectRepository.findOne({
+            where: { id: ensured.projectId },
+          });
 
-        return {
-          company,
-          project,
-        };
-      },
-      authContext,
-    );
+          return {
+            company,
+            project,
+          };
+        },
+        authContext,
+      );
 
     if (!isDefined(context.company) || !isDefined(context.project)) {
       return {
@@ -238,14 +230,13 @@ export class SearchPeopleForCompanyService {
       };
     }
 
-    const icp = parseIcpSpec(
-      resolveOutreachConfigIcpSpecString(
-        context.project.outreachConfig,
-        context.project.icpSpec,
-      ) || workspace?.icpSpec,
-    );
-    const targetTitle = input.jobTitle?.trim() || icp.targetTitles[0];
-    const locations = icp.locations;
+    const senderProfile =
+      await this.outreachSenderProfileService.resolveOperatorSenderProfile({
+        workspaceId,
+      });
+    const targetTitle =
+      input.jobTitle?.trim() || senderProfile?.targetTitles[0] || '';
+    const locations = senderProfile?.locations ?? [];
     const website = companyWebsite(context.company);
     const linkedinCompanyUrl = companyLinkedinUrl(context.company);
 
@@ -255,12 +246,8 @@ export class SearchPeopleForCompanyService {
       await this.unipileSearchAccountResolver.resolveDefaultWorkspaceAccount(
         workspaceId,
       );
-    const maxLimit =
-      defaultAccount?.product === 'sales_navigator' ? 50 : 10;
-    const limit = Math.min(
-      Math.max(1, input.limit ?? maxLimit),
-      maxLimit,
-    );
+    const maxLimit = defaultAccount?.product === 'sales_navigator' ? 50 : 10;
+    const limit = Math.min(Math.max(1, input.limit ?? maxLimit), maxLimit);
 
     try {
       const search = await this.peopleApiService.searchPeople(
@@ -380,7 +367,8 @@ export class SearchPeopleForCompanyService {
         companyName: targetCompany?.companyName,
         companySlug: targetCompany?.companySlug,
       });
-      const transformerCompany = row.company?.trim() || row.jobCompanyName?.trim() || '';
+      const transformerCompany =
+        row.company?.trim() || row.jobCompanyName?.trim() || '';
       const company =
         (transformerCompany && transformerCompany !== 'Not specified'
           ? transformerCompany
@@ -395,10 +383,14 @@ export class SearchPeopleForCompanyService {
         firstName: row.firstName?.trim() || mapped.firstName,
         lastName: row.lastName?.trim() || mapped.lastName,
         title: transformerTitle || mapped.title,
-        headline: row.headline?.trim() || row.linkedinHeadline?.trim() || mapped.headline,
+        headline:
+          row.headline?.trim() ||
+          row.linkedinHeadline?.trim() ||
+          mapped.headline,
         company,
         companyName: company,
-        location: row.location?.trim() || row.locationName?.trim() || mapped.location,
+        location:
+          row.location?.trim() || row.locationName?.trim() || mapped.location,
         linkedinUrl: linkedinUrl || mapped.linkedinUrl,
         linkedinProfileId:
           extractLinkedinProfileId(linkedinUrl) || mapped.linkedinProfileId,
@@ -410,7 +402,8 @@ export class SearchPeopleForCompanyService {
         companyId,
         source: row.source || mapped.source || dataSource || '',
         stdFunction: taxonomy.stdFunction || mapped.stdFunction || null,
-        stdFunctionRoot: taxonomy.stdFunctionRoot || mapped.stdFunctionRoot || null,
+        stdFunctionRoot:
+          taxonomy.stdFunctionRoot || mapped.stdFunctionRoot || null,
         stdGrade: taxonomy.stdGrade || mapped.stdGrade || null,
         experience: mapped.experience,
         education: mapped.education,

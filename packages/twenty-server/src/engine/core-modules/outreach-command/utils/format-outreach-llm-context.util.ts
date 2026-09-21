@@ -2,6 +2,7 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 
 import { asChatTurns } from 'src/engine/core-modules/outreach-command/utils/chat-message-turns.util';
+import { flattenFatOutreachSenderProfile } from 'src/engine/core-modules/outreach-command/utils/flatten-fat-outreach-sender-profile.util';
 
 // Leave workflow template chips alone so resolveInput can still substitute them.
 export const isUnresolvedWorkflowTemplate = (value: string): boolean =>
@@ -288,13 +289,8 @@ export const formatOutreachSenderForLlm = (value: unknown): string => {
       return trimmed;
     }
 
-    if (trimmed === '{}') {
+    if (trimmed === '{}' || trimmed === 'null') {
       return '';
-    }
-
-    // Already formatted prose (idempotent rewrite).
-    if (trimmed.startsWith('Sender:') || trimmed.startsWith('Offer:')) {
-      return trimmed;
     }
 
     const parsed = tryParseJson(trimmed);
@@ -312,118 +308,35 @@ export const formatOutreachSenderForLlm = (value: unknown): string => {
     return '';
   }
 
+  // Slim member profile: brief + discovery chips.
   if (
-    typeof record.identity === 'undefined' &&
-    typeof record.offer === 'undefined'
+    typeof record.brief === 'string' ||
+    typeof record.prose === 'string' ||
+    Array.isArray(record.targetTitles) ||
+    (Array.isArray(record.locations) && !('identity' in record))
   ) {
-    return '';
+    const brief =
+      typeof record.brief === 'string' && isNonEmptyString(record.brief.trim())
+        ? record.brief.trim()
+        : typeof record.prose === 'string' &&
+            isNonEmptyString(record.prose.trim())
+          ? record.prose.trim()
+          : '';
+    const lines = [
+      brief,
+      ...listLine('Target titles', record.targetTitles),
+      ...listLine('Locations', record.locations),
+    ].filter(isNonEmptyString);
+
+    return lines.join('\n');
   }
 
-  const identity = asRecord(record.identity) ?? {};
-  const credibility = asRecord(record.credibility) ?? {};
-  const offer = asRecord(record.offer) ?? {};
-  const icp = asRecord(record.icp) ?? {};
-  const voice = asRecord(record.voice) ?? {};
-  const meeting = asRecord(record.meeting) ?? {};
-  const faq = Array.isArray(offer.faq) ? offer.faq : [];
-  const objections = Array.isArray(icp.known_objections)
-    ? icp.known_objections
-    : [];
+  // Legacy fat JSON still in flight during upgrade.
+  if ('identity' in record || 'offer' in record) {
+    return formatOutreachSenderForLlm(flattenFatOutreachSenderProfile(record));
+  }
 
-  const lines = [
-    ...listLine(
-      'Sender',
-      [identity.full_name, identity.title, identity.company]
-        .filter((part) => typeof part === 'string' && isNonEmptyString(part))
-        .join(' · '),
-    ),
-    ...listLine('Signs as', identity.how_they_sign),
-    ...listLine('Sign-off', voice.sign_off),
-    ...listLine('Timezone', identity.timezone),
-    ...listLine('Voice', voice.register),
-    ...listLine('Formality', voice.formality),
-    ...listLine('Uses honorifics', voice.uses_honorifics),
-    ...listLine('Signature phrases', voice.signature_phrases),
-    ...listLine('Avoid phrases', voice.avoid_phrases),
-    ...listLine('Credibility', credibility.one_liner),
-    ...listLine('Operator', credibility.operator_line),
-    ...listLine('Credentials', credibility.credentials),
-    ...listLine('Industries known', credibility.industries_known),
-    ...listLine('Offer', offer.product_name),
-    ...listLine('Category', offer.category),
-    ...listLine('One-sentence offer', offer.one_sentence),
-    ...listLine('Problem statements', offer.problem_statements),
-    ...listLine('Outcomes', offer.outcomes),
-    ...listLine('Proof points', offer.proof_points),
-    ...listLine('Works with', offer.works_with),
-    ...listLine('Implementation', offer.implementation_time),
-    ...listLine('Pilot', offer.pilot_offer),
-    ...listLine('Pricing', offer.pricing_line),
-    ...listLine('Data security', offer.data_security_line),
-    ...(faq.length > 0
-      ? [
-          'FAQ:',
-          ...faq.flatMap((item) => {
-            const faqItem = asRecord(item);
-
-            if (!isDefined(faqItem)) {
-              return [];
-            }
-
-            const question =
-              typeof faqItem.q === 'string' ? faqItem.q.trim() : '';
-            const answer =
-              typeof faqItem.a === 'string' ? faqItem.a.trim() : '';
-
-            if (!isNonEmptyString(question)) {
-              return [];
-            }
-
-            return [`- Q: ${question}`, `  A: ${answer || '(none)'}`];
-          }),
-        ]
-      : []),
-    ...listLine('ICP roles', icp.target_roles),
-    ...listLine('ICP companies', icp.target_company_profile),
-    ...listLine('ICP geography', icp.geography),
-    ...listLine('Exclude roles', icp.exclude_roles),
-    ...(objections.length > 0
-      ? [
-          'Known objections:',
-          ...objections.flatMap((item) => {
-            const objection = asRecord(item);
-
-            if (!isDefined(objection)) {
-              return [];
-            }
-
-            const objectionText =
-              typeof objection.objection === 'string'
-                ? objection.objection.trim()
-                : '';
-            const response =
-              typeof objection.response === 'string'
-                ? objection.response.trim()
-                : '';
-
-            if (!isNonEmptyString(objectionText)) {
-              return [];
-            }
-
-            return [
-              `- Objection: ${objectionText}`,
-              `  Response: ${response || '(none)'}`,
-            ];
-          }),
-        ]
-      : []),
-    ...listLine('Meeting duration (min)', meeting.default_duration_min),
-    ...listLine('Meeting platform', meeting.platform),
-    ...listLine('Preferred windows', meeting.preferred_windows),
-    ...listLine('Agenda', meeting.agenda_template),
-  ];
-
-  return lines.join('\n');
+  return '';
 };
 
 export const formatOutreachProspectEnrichmentForLlm = (
@@ -545,10 +458,6 @@ export const rewriteOutreachResolvedPromptSections = (
       format: formatOutreachSlotsForLlm,
     },
     { prefix: 'calendar: ', format: formatOutreachSlotsForLlm },
-    {
-      prefix: 'SENDER_JSON (voice, offer, FAQ, meeting): ',
-      format: formatOutreachSenderForLlm,
-    },
     { prefix: 'SENDER_JSON: ', format: formatOutreachSenderForLlm },
     {
       prefix: 'PROSPECT_ENRICHMENT: ',

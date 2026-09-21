@@ -15,6 +15,7 @@ import { resolveWhatsappOutboundMessagesPerMinute, toWhatsappOutboundRateLimitJo
 import { getRegisteredWhatsappOutboundRateLimiter } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.registry';
 import { WhatsappOutboundRateLimiterService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.service';
 import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
+import { appendUnipileChatAttachments } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile/utils/append-unipile-chat-attachments.util';
 import { normalizeWhatsAppOutboundMessage } from 'src/engine/core-modules/arx-chat/utils/whatsapp-message-format.util';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -251,7 +252,20 @@ export class WhatsappUnipileMessagingService {
     formData.append('text', message);
     
     if (attachments && attachments.length > 0) {
-      formData.append('attachments', JSON.stringify(attachments));
+      const hasBuffers = attachments.some(
+        (attachment) =>
+          typeof attachment === 'object' &&
+          attachment !== null &&
+          Buffer.isBuffer(
+            (attachment as { fileBuffer?: unknown }).fileBuffer,
+          ),
+      );
+
+      if (hasBuffers) {
+        appendUnipileChatAttachments(formData, attachments);
+      } else {
+        formData.append('attachments', JSON.stringify(attachments));
+      }
     }
 
     console.log('Sending WhatsApp message via Unipile API in sendMessage:', {

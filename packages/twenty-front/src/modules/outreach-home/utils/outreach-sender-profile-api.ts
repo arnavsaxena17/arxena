@@ -65,7 +65,7 @@ const pollOutreachSenderProfileDraft = async (input: {
 
   while (Date.now() < deadline) {
     const response = await fetch(
-      `${input.baseUrl}/outreach-command/sender-profile/draft/${input.draftJobId}`,
+      `${input.baseUrl}/outreach-command/sender-profile/generate/${input.draftJobId}`,
       {
         method: 'GET',
         headers: {
@@ -107,7 +107,7 @@ const pollOutreachSenderProfileDraft = async (input: {
       throw new Error(
         typeof payload.error === 'string' && payload.error.trim()
           ? payload.error
-          : 'Failed to draft sender profile.',
+          : 'Failed to generate sender profile.',
       );
     }
 
@@ -115,7 +115,7 @@ const pollOutreachSenderProfileDraft = async (input: {
   }
 
   throw new Error(
-    'Sender profile draft timed out. Please try again in a moment.',
+    'Sender profile generate timed out. Please try again in a moment.',
   );
 };
 
@@ -236,7 +236,7 @@ export const fetchOutreachSenderLinkedinProfile = async (input: {
   };
 };
 
-export const draftOutreachSenderProfile = async (input: {
+export const generateOutreachSenderProfile = async (input: {
   accessToken: string | undefined;
   senderNotes?: string;
   collateralText?: string;
@@ -246,7 +246,7 @@ export const draftOutreachSenderProfile = async (input: {
   const baseUrl = requireBaseUrl();
 
   const response = await fetch(
-    `${baseUrl}/outreach-command/sender-profile/draft`,
+    `${baseUrl}/outreach-command/sender-profile/generate`,
     {
       method: 'POST',
       headers: {
@@ -263,14 +263,14 @@ export const draftOutreachSenderProfile = async (input: {
 
   if (!response.ok) {
     throw new Error(
-      await readErrorMessage(response, 'Failed to draft sender profile.'),
+      await readErrorMessage(response, 'Failed to generate sender profile.'),
     );
   }
 
   const payload = (await response.json()) as { draftJobId?: string };
 
   if (!payload.draftJobId?.trim()) {
-    throw new Error('Failed to start sender profile draft.');
+    throw new Error('Failed to start sender profile generate.');
   }
 
   return pollOutreachSenderProfileDraft({
@@ -315,38 +315,6 @@ export const saveOutreachSenderProfile = async (input: {
   };
 };
 
-export const syncOutreachSenderIcpFromWorkspace = async (input: {
-  accessToken: string | undefined;
-  icpSpec: string | { targetTitles: string[]; locations: string[] };
-}): Promise<{ outreachSenderProfile: Record<string, unknown> }> => {
-  const accessToken = requireAccessToken(input.accessToken);
-  const baseUrl = requireBaseUrl();
-
-  const response = await fetch(
-    `${baseUrl}/outreach-command/sender-profile/sync-icp`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        icpSpec: input.icpSpec,
-      }),
-    },
-  );
-
-  if (!response.ok) {
-    throw new Error(
-      await readErrorMessage(response, 'Failed to sync sender ICP.'),
-    );
-  }
-
-  return (await response.json()) as {
-    outreachSenderProfile: Record<string, unknown>;
-  };
-};
-
 export const extractOutreachSenderCollateral = async (input: {
   accessToken: string | undefined;
   fileName: string;
@@ -379,30 +347,72 @@ export const extractOutreachSenderCollateral = async (input: {
   return (await response.json()) as { collateralText: string };
 };
 
-export const summarizeOutreachSenderProfile = (
-  profile: Record<string, unknown> | null | undefined,
-): string | null => {
-  if (!profile || typeof profile !== 'object') {
-    return null;
+export const appendOutreachSenderCollateralFile = async (input: {
+  accessToken: string | undefined;
+  fileId: string;
+  fileName: string;
+  mimeType?: string;
+}): Promise<{ outreachSenderProfile: Record<string, unknown> }> => {
+  const accessToken = requireAccessToken(input.accessToken);
+  const baseUrl = requireBaseUrl();
+
+  const response = await fetch(
+    `${baseUrl}/outreach-command/sender-profile/collateral-files`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        fileId: input.fileId,
+        fileName: input.fileName,
+        mimeType: input.mimeType,
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      await readErrorMessage(response, 'Failed to save collateral file.'),
+    );
   }
 
-  const identity =
-    profile.identity && typeof profile.identity === 'object'
-      ? (profile.identity as Record<string, unknown>)
-      : null;
-  const offer =
-    profile.offer && typeof profile.offer === 'object'
-      ? (profile.offer as Record<string, unknown>)
-      : null;
-
-  const fullName =
-    typeof identity?.full_name === 'string' ? identity.full_name.trim() : '';
-  const productName =
-    typeof offer?.product_name === 'string' ? offer.product_name.trim() : '';
-
-  if (fullName && productName) {
-    return `${fullName} · ${productName}`;
-  }
-
-  return fullName || productName || null;
+  return (await response.json()) as {
+    outreachSenderProfile: Record<string, unknown>;
+  };
 };
+
+export const removeOutreachSenderCollateralFile = async (input: {
+  accessToken: string | undefined;
+  fileId: string;
+}): Promise<{ outreachSenderProfile: Record<string, unknown> }> => {
+  const accessToken = requireAccessToken(input.accessToken);
+  const baseUrl = requireBaseUrl();
+
+  const response = await fetch(
+    `${baseUrl}/outreach-command/sender-profile/collateral-files/remove`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        fileId: input.fileId,
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      await readErrorMessage(response, 'Failed to remove collateral file.'),
+    );
+  }
+
+  return (await response.json()) as {
+    outreachSenderProfile: Record<string, unknown>;
+  };
+};
+
+export { summarizeSenderProfileDraft as summarizeOutreachSenderProfile } from '@/outreach-home/utils/outreach-sender-profile-draft.util';

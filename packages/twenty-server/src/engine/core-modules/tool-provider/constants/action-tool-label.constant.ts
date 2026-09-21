@@ -10,6 +10,7 @@ export const ACTION_TOOL_IDS = [
   'create_calendar_event',
   'search_help_center',
   'code_interpreter',
+  'send_files',
   'navigate_app',
   'highlight_org_chart',
   'upsert_outreach_target_companies',
@@ -36,6 +37,9 @@ export const ACTION_TOOL_LABELS: Record<ActionToolId, ActionToolLabel> = {
   },
   code_interpreter: {
     label: i18nLabel(msg`Code Interpreter`),
+  },
+  send_files: {
+    label: i18nLabel(msg`Send Files`),
   },
   navigate_app: {
     label: i18nLabel(msg`Navigate App`),

@@ -9,6 +9,7 @@ import { FormTextFieldInput } from '@/object-record/record-field/ui/form-types/c
 import { Select } from '@/ui/input/components/Select';
 import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { type WorkflowAiAgentAction } from '@/workflow/types/Workflow';
+import { WorkflowAiAgentSendFilesConfig } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentSendFilesConfig';
 import { WorkflowOutputSchemaBuilder } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowOutputSchemaBuilder';
 import { workflowAiAgentActionAgentState } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/states/workflowAiAgentActionAgentState';
 import { WorkflowVariablePicker } from '@/workflow/workflow-variables/components/WorkflowVariablePicker';
@@ -202,6 +203,14 @@ export const WorkflowAiAgentPromptTab = ({
         modelConfiguration={agent.modelConfiguration || {}}
         onConfigurationChange={handleModelConfigurationChange}
         disabled={readonly}
+      />
+
+      <WorkflowAiAgentSendFilesConfig
+        agent={agent}
+        readonly={readonly}
+        onAgentUpdate={(nextAgent) => {
+          setWorkflowAiAgentActionAgent(nextAgent);
+        }}
       />
 
       <WorkflowOutputSchemaBuilder

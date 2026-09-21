@@ -1,22 +1,29 @@
 import { styled } from '@linaria/react';
 import { isNonEmptyString } from '@sniptt/guards';
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useState } from 'react';
+import { type WorkflowEmailFiles } from 'twenty-shared/workflow';
 import { Button } from 'twenty-ui/input';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useDebouncedCallback } from 'use-debounce';
 
+import { WorkflowSendEmailAttachments } from '@/advanced-text-editor/components/WorkflowSendEmailAttachments';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { OutreachSenderProfileDraftEditor } from '@/outreach-home/components/OutreachSenderProfileDraftEditor';
 import { OutreachSetupSectionCard } from '@/outreach-home/components/OutreachSetupSectionCard';
 import {
-  draftOutreachSenderProfile,
-  extractOutreachSenderCollateral,
+  appendOutreachSenderCollateralFile,
   fetchOutreachSenderLinkedinProfile,
   fetchOutreachSenderProfilePrompt,
+  generateOutreachSenderProfile,
+  removeOutreachSenderCollateralFile,
   saveOutreachSenderProfile,
   summarizeOutreachSenderProfile,
   updateOutreachSenderLinkedinUrl,
 } from '@/outreach-home/utils/outreach-sender-profile-api';
+import {
+  normalizeSenderProfileDraft,
+  stringifySenderProfileDraft,
+} from '@/outreach-home/utils/outreach-sender-profile-draft.util';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TextArea } from '@/ui/input/components/TextArea';
 import { TextInput } from '@/ui/input/components/TextInput';
@@ -55,10 +62,6 @@ const StyledBadge = styled.span`
   padding: 2px ${themeCssVariables.spacing[1]};
 `;
 
-const StyledHiddenFileInput = styled.input`
-  display: none;
-`;
-
 const StyledJsonToggle = styled.button`
   align-self: flex-start;
   appearance: none;
@@ -73,36 +76,53 @@ const StyledJsonToggle = styled.button`
   text-underline-offset: 2px;
 `;
 
-const fileToBase64 = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result !== 'string') {
-        reject(new Error('Failed to read file'));
-        return;
+const readCollateralFilesFromProfile = (
+  profile: Record<string, unknown> | null,
+): WorkflowEmailFiles => {
+  const raw = profile?.collateralFiles;
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  return raw
+    .map((item) => {
+      if (item === null || typeof item !== 'object' || Array.isArray(item)) {
+        return null;
       }
-      const commaIndex = result.indexOf(',');
-      resolve(commaIndex >= 0 ? result.slice(commaIndex + 1) : result);
-    };
-    reader.onerror = () =>
-      reject(reader.error ?? new Error('Failed to read file'));
-    reader.readAsDataURL(file);
-  });
+
+      const file = item as Record<string, unknown>;
+      const id = typeof file.fileId === 'string' ? file.fileId : '';
+      const name = typeof file.fileName === 'string' ? file.fileName : '';
+
+      if (!isNonEmptyString(id) || !isNonEmptyString(name)) {
+        return null;
+      }
+
+      return {
+        id,
+        name,
+        size: 0,
+        type: typeof file.mimeType === 'string' ? file.mimeType : '',
+        createdAt: new Date().toISOString(),
+      };
+    })
+    .filter((file): file is NonNullable<typeof file> => file !== null);
+};
 
 export const OutreachSetupSenderProfileSection = () => {
   const tokenPair = useAtomStateValue(tokenPairState);
   const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isLoadingSeed, setIsLoadingSeed] = useState(true);
   const [isFetchingLinkedin, setIsFetchingLinkedin] = useState(false);
   const [isDrafting, setIsDrafting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isExtracting, setIsExtracting] = useState(false);
   const [senderNotes, setSenderNotes] = useState('');
   const [collateralText, setCollateralText] = useState('');
+  const [collateralFiles, setCollateralFiles] = useState<WorkflowEmailFiles>(
+    [],
+  );
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [linkedinUnipileAccountId, setLinkedinUnipileAccountId] = useState<
     string | null
@@ -149,7 +169,14 @@ export const OutreachSetupSenderProfileSection = () => {
       try {
         const saved = await saveOutreachSenderProfile({
           accessToken,
-          senderProfile,
+          senderProfile: {
+            ...senderProfile,
+            collateralFiles: collateralFiles.map((file) => ({
+              fileId: file.id,
+              fileName: file.name,
+              mimeType: file.type,
+            })),
+          },
           senderNotes,
           collateralText,
           linkedinProfileText,
@@ -157,6 +184,9 @@ export const OutreachSetupSenderProfileSection = () => {
 
         setSavedSummary(
           summarizeOutreachSenderProfile(saved.outreachSenderProfile),
+        );
+        setCollateralFiles(
+          readCollateralFilesFromProfile(saved.outreachSenderProfile),
         );
       } catch (error) {
         enqueueErrorSnackBar({
@@ -195,8 +225,15 @@ export const OutreachSetupSenderProfileSection = () => {
         setSavedSummary(
           summarizeOutreachSenderProfile(seed.existingSenderProfile),
         );
+        setCollateralFiles(
+          readCollateralFilesFromProfile(seed.existingSenderProfile),
+        );
         if (seed.existingSenderProfile) {
-          setDraftJson(JSON.stringify(seed.existingSenderProfile, null, 2));
+          setDraftJson(
+            stringifySenderProfileDraft(
+              normalizeSenderProfileDraft(seed.existingSenderProfile),
+            ),
+          );
         }
       } catch (error) {
         if (!cancelled) {
@@ -257,35 +294,37 @@ export const OutreachSetupSenderProfileSection = () => {
     }
   };
 
-  const handleGenerateDraft = async () => {
+  const handleGenerate = async () => {
     if (!isNonEmptyString(linkedinProfileText.trim())) {
       enqueueErrorSnackBar({
-        message: 'Fetch your LinkedIn profile before generating a draft.',
+        message: 'Fetch your LinkedIn profile before generating.',
       });
       return;
     }
 
     setIsDrafting(true);
     try {
-      const result = await draftOutreachSenderProfile({
+      const result = await generateOutreachSenderProfile({
         accessToken,
         senderNotes,
         collateralText,
         linkedinProfileText,
       });
-      setDraftJson(JSON.stringify(result.draft, null, 2));
+      setDraftJson(
+        stringifySenderProfileDraft(normalizeSenderProfileDraft(result.draft)),
+      );
       setLinkedinProfileText(result.linkedinProfileText);
       setSavedSummary(summarizeOutreachSenderProfile(result.draft));
       setIsJsonOpen(false);
       enqueueSuccessSnackBar({
-        message: 'Sender profile draft saved to your seat.',
+        message: 'Sender profile generated and saved to your seat.',
       });
     } catch (error) {
       enqueueErrorSnackBar({
         message:
           error instanceof Error
             ? error.message
-            : 'Failed to draft sender profile.',
+            : 'Failed to generate sender profile.',
       });
     } finally {
       setIsDrafting(false);
@@ -310,7 +349,14 @@ export const OutreachSetupSenderProfileSection = () => {
     try {
       const saved = await saveOutreachSenderProfile({
         accessToken,
-        senderProfile,
+        senderProfile: {
+          ...senderProfile,
+          collateralFiles: collateralFiles.map((file) => ({
+            fileId: file.id,
+            fileName: file.name,
+            mimeType: file.type,
+          })),
+        },
         senderNotes,
         collateralText,
         linkedinProfileText,
@@ -318,7 +364,14 @@ export const OutreachSetupSenderProfileSection = () => {
       setSavedSummary(
         summarizeOutreachSenderProfile(saved.outreachSenderProfile),
       );
-      setDraftJson(JSON.stringify(saved.outreachSenderProfile, null, 2));
+      setCollateralFiles(
+        readCollateralFilesFromProfile(saved.outreachSenderProfile),
+      );
+      setDraftJson(
+        stringifySenderProfileDraft(
+          normalizeSenderProfileDraft(saved.outreachSenderProfile),
+        ),
+      );
       enqueueSuccessSnackBar({ message: 'Sender profile saved to your seat.' });
     } catch (error) {
       enqueueErrorSnackBar({
@@ -332,36 +385,55 @@ export const OutreachSetupSenderProfileSection = () => {
     }
   };
 
-  const handleFileSelected = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) {
-      return;
+  const handleCollateralFilesChange = async (nextFiles: WorkflowEmailFiles) => {
+    const previousIds = new Set(collateralFiles.map((file) => file.id));
+    const nextIds = new Set(nextFiles.map((file) => file.id));
+    const added = nextFiles.filter((file) => !previousIds.has(file.id));
+    const removed = collateralFiles.filter((file) => !nextIds.has(file.id));
+
+    setCollateralFiles(nextFiles);
+
+    for (const file of added) {
+      try {
+        const saved = await appendOutreachSenderCollateralFile({
+          accessToken,
+          fileId: file.id,
+          fileName: file.name,
+          mimeType: file.type,
+        });
+        setCollateralFiles(
+          readCollateralFilesFromProfile(saved.outreachSenderProfile),
+        );
+        enqueueSuccessSnackBar({
+          message: `Saved ${file.name} for sending`,
+        });
+      } catch (error) {
+        enqueueErrorSnackBar({
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Failed to save collateral file.',
+        });
+      }
     }
 
-    setIsExtracting(true);
-    try {
-      const fileBase64 = await fileToBase64(file);
-      const result = await extractOutreachSenderCollateral({
-        accessToken,
-        fileName: file.name,
-        fileBase64,
-      });
-      setCollateralText((previous) =>
-        isNonEmptyString(previous.trim())
-          ? `${previous.trim()}\n\n--- ${file.name} ---\n${result.collateralText}`
-          : result.collateralText,
-      );
-      enqueueSuccessSnackBar({ message: `Extracted text from ${file.name}` });
-    } catch (error) {
-      enqueueErrorSnackBar({
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Failed to extract collateral.',
-      });
-    } finally {
-      setIsExtracting(false);
+    for (const file of removed) {
+      try {
+        const saved = await removeOutreachSenderCollateralFile({
+          accessToken,
+          fileId: file.id,
+        });
+        setCollateralFiles(
+          readCollateralFilesFromProfile(saved.outreachSenderProfile),
+        );
+      } catch (error) {
+        enqueueErrorSnackBar({
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Failed to remove collateral file.',
+        });
+      }
     }
   };
 
@@ -449,7 +521,7 @@ export const OutreachSetupSenderProfileSection = () => {
 
           <StyledFieldStack>
             <StyledFieldLabel>
-              Collateral (paste or upload PDF / DOCX / TXT)
+              Collateral (paste notes; upload decks / PDFs to send)
             </StyledFieldLabel>
             <TextArea
               textAreaId="outreach-setup-sender-collateral"
@@ -459,32 +531,46 @@ export const OutreachSetupSenderProfileSection = () => {
               onChange={setCollateralText}
               placeholder="Paste pitch deck talking points, one-pagers, FAQ…"
             />
-            <StyledActions>
-              <Button
-                title={isExtracting ? 'Extracting…' : 'Upload file'}
-                variant="secondary"
-                size="small"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isExtracting || !accessToken}
-              />
-              <StyledHiddenFileInput
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.docx,.txt,.md,.markdown"
-                onChange={(event) => {
-                  void handleFileSelected(event);
-                }}
-              />
-            </StyledActions>
+            {collateralFiles.length > 0 ? (
+              <>
+                <StyledFieldLabel>
+                  Uploaded files ({collateralFiles.length})
+                </StyledFieldLabel>
+                <StyledMuted>
+                  These stay on your seat for the Send Files agent tool. Remove
+                  a chip to delete.
+                </StyledMuted>
+              </>
+            ) : (
+              <StyledMuted>
+                No files uploaded yet. Add decks / PDFs below — they appear here
+                after upload.
+              </StyledMuted>
+            )}
+            <WorkflowSendEmailAttachments
+              label={
+                collateralFiles.length > 0
+                  ? 'Manage attachments'
+                  : 'Attachments'
+              }
+              files={collateralFiles}
+              onChange={(nextFiles) => {
+                void handleCollateralFilesChange(nextFiles);
+              }}
+              readonly={!accessToken}
+            />
+            <StyledMuted>
+              PPT / PDF / DOCX are supported for sending.
+            </StyledMuted>
           </StyledFieldStack>
 
           <StyledActions>
             <Button
-              title={isDrafting ? 'Generating…' : 'Generate draft'}
+              title={isDrafting ? 'Generating…' : 'Generate'}
               variant="secondary"
               size="small"
               onClick={() => {
-                void handleGenerateDraft();
+                void handleGenerate();
               }}
               disabled={
                 isDrafting ||

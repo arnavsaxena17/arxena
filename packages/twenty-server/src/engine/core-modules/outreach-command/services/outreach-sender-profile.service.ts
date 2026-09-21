@@ -1,10 +1,9 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 
 import { isNonEmptyString } from '@sniptt/guards';
 import { type LanguageModel } from 'ai';
 import { isDefined } from 'twenty-shared/utils';
-import { type ObjectLiteral, type Repository } from 'typeorm';
+import { type ObjectLiteral } from 'typeorm';
 import { v4 } from 'uuid';
 
 import { buildCreatedByFromSystem } from 'src/engine/core-modules/actor/utils/build-created-by-from-system.util';
@@ -24,19 +23,11 @@ import {
 import { type OutreachSenderProfile } from 'src/engine/core-modules/outreach-command/types/outreach-sender-profile.type';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
 import {
-  applyIcpSpecToSenderProfile,
-  buildSenderProfileSeedFromWorkspace,
-  icpSpecFromSenderIcp,
-  mergeSenderProfileSeedOntoExisting,
-} from 'src/engine/core-modules/outreach-command/utils/outreach-sender-icp-sync.util';
-import {
-  normalizeIcpSpec,
-  parseIcpSpec,
-  stringifyIcpSpec,
-  type IcpSpec,
-} from 'src/engine/core-modules/outreach-command/utils/outreach-icp-spec.util';
+  EMPTY_OUTREACH_SENDER_PROFILE,
+  buildSenderProfileSeed,
+  normalizeOutreachSenderProfile,
+} from 'src/engine/core-modules/outreach-command/utils/outreach-sender-profile.util';
 import { formatLinkedinProfileAsResumeText } from 'src/engine/core-modules/org-chart-outreach/prompts/mom-test-question-generator.prompt';
-import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import {
   AiSdkExecutionService,
   runGenerateObject,
@@ -46,8 +37,8 @@ import { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
-const SENDER_PROFILE_DRAFT_LLM_TIMEOUT_MS = 120_000;
-const SENDER_PROFILE_DRAFT_JOB_TTL_MS = 10 * 60 * 1000;
+const SENDER_PROFILE_GENERATE_LLM_TIMEOUT_MS = 120_000;
+const SENDER_PROFILE_GENERATE_JOB_TTL_MS = 10 * 60 * 1000;
 
 type WorkspaceMemberArxRecord = ObjectLiteral & {
   id: string;
@@ -72,7 +63,8 @@ export type StampSenderProfileFromWorkspaceBootstrapInput = {
   industry?: string | null;
   summary?: string | null;
   hq?: string | null;
-  icpSpec: IcpSpec;
+  targetTitles?: string[];
+  locations?: string[];
   force?: boolean;
 };
 
@@ -83,10 +75,9 @@ type BuildAndSaveSenderProfileInput = {
   collateralText?: string;
   senderNotes?: string;
   senderProfile?: OutreachSenderProfile;
-  draftedProfile?: OutreachSenderProfile;
 };
 
-type DraftSenderProfileInput = {
+type GenerateSenderProfileInput = {
   workspaceId: string;
   workspaceMemberId: string;
   linkedinProfileText?: string;
@@ -95,23 +86,23 @@ type DraftSenderProfileInput = {
   modelId?: string;
 };
 
-type DraftSenderProfileResult = {
-  draft: OutreachSenderProfileLlmResult;
+type GenerateSenderProfileResult = {
+  draft: OutreachSenderProfile;
   prompt: { system: string; user: string };
   linkedinProfileText: string;
   existingSenderProfile: OutreachSenderProfile | null;
 };
 
-export type OutreachSenderProfileDraftJobStatus =
+export type OutreachSenderProfileGenerateJobStatus =
   | 'pending'
   | 'ready'
   | 'failed';
 
-export type OutreachSenderProfileDraftJob = {
-  status: OutreachSenderProfileDraftJobStatus;
+export type OutreachSenderProfileGenerateJob = {
+  status: OutreachSenderProfileGenerateJobStatus;
   workspaceId: string;
   workspaceMemberId: string;
-  draft?: OutreachSenderProfileLlmResult;
+  draft?: OutreachSenderProfile;
   linkedinProfileText?: string;
   existingSenderProfile?: OutreachSenderProfile | null;
   error?: string;
@@ -124,8 +115,6 @@ export class OutreachSenderProfileService {
   constructor(
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
-    @InjectRepository(WorkspaceEntity)
-    private readonly workspaceRepository: Repository<WorkspaceEntity>,
     @Optional()
     private readonly aiModelRegistryService?: AiModelRegistryService,
     @Optional()
@@ -170,10 +159,14 @@ export class OutreachSenderProfileService {
       workspaceId,
       workspaceMemberId,
     );
+    const rawProfile = member?.outreachSenderProfile ?? null;
+    const outreachSenderProfile = isDefined(rawProfile)
+      ? normalizeOutreachSenderProfile(rawProfile)
+      : null;
 
     return {
       profileId: member?.id ?? null,
-      outreachSenderProfile: member?.outreachSenderProfile ?? null,
+      outreachSenderProfile,
       linkedinUrl: member?.linkedinUrl?.trim() ?? '',
       linkedinUnipileAccountId:
         member?.linkedinUnipileAccountId?.trim() ?? null,
@@ -278,28 +271,28 @@ export class OutreachSenderProfileService {
     );
   }
 
-  async enqueueDraftSenderProfile(
-    input: DraftSenderProfileInput,
+  async enqueueGenerateSenderProfile(
+    input: GenerateSenderProfileInput,
   ): Promise<{ draftJobId: string }> {
     const draftJobId = v4();
-    const pendingJob: OutreachSenderProfileDraftJob = {
+    const pendingJob: OutreachSenderProfileGenerateJob = {
       status: 'pending',
       workspaceId: input.workspaceId,
       workspaceMemberId: input.workspaceMemberId,
     };
 
     await this.cache.set(
-      this.draftJobCacheKey(draftJobId),
+      this.generateJobCacheKey(draftJobId),
       pendingJob,
-      SENDER_PROFILE_DRAFT_JOB_TTL_MS,
+      SENDER_PROFILE_GENERATE_JOB_TTL_MS,
     );
 
-    void this.runDraftSenderProfileJob(draftJobId, input);
+    void this.runGenerateSenderProfileJob(draftJobId, input);
 
     return { draftJobId };
   }
 
-  async getDraftSenderProfileJob({
+  async getGenerateSenderProfileJob({
     draftJobId,
     workspaceId,
     workspaceMemberId,
@@ -307,28 +300,28 @@ export class OutreachSenderProfileService {
     draftJobId: string;
     workspaceId: string;
     workspaceMemberId: string;
-  }): Promise<OutreachSenderProfileDraftJob> {
-    const job = await this.cache.get<OutreachSenderProfileDraftJob>(
-      this.draftJobCacheKey(draftJobId),
+  }): Promise<OutreachSenderProfileGenerateJob> {
+    const job = await this.cache.get<OutreachSenderProfileGenerateJob>(
+      this.generateJobCacheKey(draftJobId),
     );
 
     if (!isDefined(job)) {
-      throw new Error('Draft job not found or expired');
+      throw new Error('Generate job not found or expired');
     }
 
     if (
       job.workspaceId !== workspaceId ||
       job.workspaceMemberId !== workspaceMemberId
     ) {
-      throw new Error('Draft job not found or expired');
+      throw new Error('Generate job not found or expired');
     }
 
     return job;
   }
 
-  async draftSenderProfile(
-    input: DraftSenderProfileInput,
-  ): Promise<DraftSenderProfileResult> {
+  async generateSenderProfile(
+    input: GenerateSenderProfileInput,
+  ): Promise<GenerateSenderProfileResult> {
     const existing = await this.getExistingSenderProfile({
       workspaceId: input.workspaceId,
       workspaceMemberId: input.workspaceMemberId,
@@ -340,7 +333,7 @@ export class OutreachSenderProfileService {
 
     if (!isNonEmptyString(linkedinProfileText)) {
       throw new Error(
-        'Fetch the LinkedIn profile for this seat before drafting a sender profile',
+        'Fetch the LinkedIn profile for this seat before generating a sender profile',
       );
     }
 
@@ -357,7 +350,9 @@ export class OutreachSenderProfileService {
     });
 
     if (!registeredModel) {
-      throw new Error('No AI model available to draft outreach sender profile');
+      throw new Error(
+        'No AI model available to generate outreach sender profile',
+      );
     }
 
     const generationResult = await runGenerateObject(
@@ -370,44 +365,47 @@ export class OutreachSenderProfileService {
           schema: outreachSenderProfileLlmSchema,
           system: prompt.system,
           prompt: prompt.user,
-          timeout: { totalMs: SENDER_PROFILE_DRAFT_LLM_TIMEOUT_MS },
+          timeout: { totalMs: SENDER_PROFILE_GENERATE_LLM_TIMEOUT_MS },
           experimental_telemetry: AI_TELEMETRY_CONFIG,
         },
       },
     );
 
+    const draft = normalizeOutreachSenderProfile(
+      generationResult.object as OutreachSenderProfileLlmResult,
+    );
+
     this.logger.log(
-      `Drafted outreachSenderProfile for member ${input.workspaceMemberId} model=${registeredModel.modelId}`,
+      `Generated outreachSenderProfile for member ${input.workspaceMemberId} model=${registeredModel.modelId}`,
     );
 
     return {
-      draft: generationResult.object,
+      draft,
       prompt,
       linkedinProfileText,
       existingSenderProfile: existing.outreachSenderProfile,
     };
   }
 
-  private draftJobCacheKey(draftJobId: string): string {
+  private generateJobCacheKey(draftJobId: string): string {
     return `sender-profile-draft:${draftJobId}`;
   }
 
-  private async runDraftSenderProfileJob(
+  private async runGenerateSenderProfileJob(
     draftJobId: string,
-    input: DraftSenderProfileInput,
+    input: GenerateSenderProfileInput,
   ): Promise<void> {
     try {
-      const result = await this.draftSenderProfileWithRetry(input);
-      const senderProfile = result.draft as OutreachSenderProfile;
+      const result = await this.generateSenderProfileWithRetry(input);
 
       await this.saveSenderProfile({
         workspaceId: input.workspaceId,
         workspaceMemberId: input.workspaceMemberId,
-        senderProfile,
+        senderProfile: result.draft,
       });
 
       await this.cache.set(
-        this.draftJobCacheKey(draftJobId),
+        this.generateJobCacheKey(draftJobId),
         {
           status: 'ready',
           workspaceId: input.workspaceId,
@@ -415,38 +413,38 @@ export class OutreachSenderProfileService {
           draft: result.draft,
           linkedinProfileText: result.linkedinProfileText,
           existingSenderProfile: result.existingSenderProfile,
-        } satisfies OutreachSenderProfileDraftJob,
-        SENDER_PROFILE_DRAFT_JOB_TTL_MS,
+        } satisfies OutreachSenderProfileGenerateJob,
+        SENDER_PROFILE_GENERATE_JOB_TTL_MS,
       );
     } catch (error) {
       const errorMessage =
         error instanceof Error
           ? error.message
-          : 'Failed to draft outreach sender profile';
+          : 'Failed to generate outreach sender profile';
 
       this.logger.error(
-        `Sender profile draft job ${draftJobId} failed: ${errorMessage}`,
+        `Sender profile generate job ${draftJobId} failed: ${errorMessage}`,
         error instanceof Error ? error.stack : undefined,
       );
 
       await this.cache.set(
-        this.draftJobCacheKey(draftJobId),
+        this.generateJobCacheKey(draftJobId),
         {
           status: 'failed',
           workspaceId: input.workspaceId,
           workspaceMemberId: input.workspaceMemberId,
           error: errorMessage,
-        } satisfies OutreachSenderProfileDraftJob,
-        SENDER_PROFILE_DRAFT_JOB_TTL_MS,
+        } satisfies OutreachSenderProfileGenerateJob,
+        SENDER_PROFILE_GENERATE_JOB_TTL_MS,
       );
     }
   }
 
-  private async draftSenderProfileWithRetry(
-    input: DraftSenderProfileInput,
-  ): Promise<DraftSenderProfileResult> {
+  private async generateSenderProfileWithRetry(
+    input: GenerateSenderProfileInput,
+  ): Promise<GenerateSenderProfileResult> {
     try {
-      return await this.draftSenderProfile(input);
+      return await this.generateSenderProfile(input);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const isEmptyResponse =
@@ -458,10 +456,10 @@ export class OutreachSenderProfileService {
       }
 
       this.logger.warn(
-        `Sender profile draft empty response for member ${input.workspaceMemberId}; retrying once`,
+        `Sender profile generate empty response for member ${input.workspaceMemberId}; retrying once`,
       );
 
-      return await this.draftSenderProfile(input);
+      return await this.generateSenderProfile(input);
     }
   }
 
@@ -469,16 +467,18 @@ export class OutreachSenderProfileService {
     workspaceId,
     workspaceMemberId,
     senderProfile,
-    skipWorkspaceIcpSync = false,
+    replaceCollateralFiles = false,
   }: {
     workspaceId: string;
     workspaceMemberId: string;
     senderProfile: OutreachSenderProfile;
-    skipWorkspaceIcpSync?: boolean;
+    // Draft/generate saves omit files; append/remove/explicit UI saves replace.
+    replaceCollateralFiles?: boolean;
   }): Promise<{
     profileId: string;
     outreachSenderProfile: OutreachSenderProfile;
   }> {
+    const normalized = normalizeOutreachSenderProfile(senderProfile);
     const authContext = buildSystemAuthContext(workspaceId);
 
     return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
@@ -500,22 +500,27 @@ export class OutreachSenderProfileService {
           );
         }
 
+        const existingProfile = isDefined(existing.outreachSenderProfile)
+          ? normalizeOutreachSenderProfile(existing.outreachSenderProfile)
+          : EMPTY_OUTREACH_SENDER_PROFILE;
+        const incomingCollateral = normalized.collateralFiles ?? [];
+        const nextProfile: OutreachSenderProfile = {
+          ...normalized,
+          collateralFiles:
+            replaceCollateralFiles || incomingCollateral.length > 0
+              ? incomingCollateral
+              : (existingProfile.collateralFiles ?? []),
+        };
+
         const systemActor = buildCreatedByFromSystem();
 
         await repository.update(
           { id: existing.id },
           {
-            outreachSenderProfile: senderProfile,
+            outreachSenderProfile: nextProfile,
             updatedBy: systemActor,
           },
         );
-
-        if (!skipWorkspaceIcpSync) {
-          await this.syncWorkspaceIcpFromSenderProfile({
-            workspaceId,
-            senderProfile,
-          });
-        }
 
         this.logger.log(
           `Saved outreachSenderProfile for member ${workspaceMemberId}`,
@@ -523,74 +528,88 @@ export class OutreachSenderProfileService {
 
         return {
           profileId: existing.id,
-          outreachSenderProfile: senderProfile,
+          outreachSenderProfile: nextProfile,
         };
       },
       authContext,
     );
   }
 
-  async syncWorkspaceIcpFromSenderProfile({
-    workspaceId,
-    senderProfile,
-  }: {
-    workspaceId: string;
-    senderProfile: OutreachSenderProfile;
-  }): Promise<IcpSpec> {
-    const nextIcpSpec = icpSpecFromSenderIcp(senderProfile.icp);
-
-    await this.workspaceRepository.update(
-      { id: workspaceId },
-      { icpSpec: stringifyIcpSpec(nextIcpSpec) },
-    );
-
-    return nextIcpSpec;
-  }
-
-  async syncSenderIcpFromWorkspaceIcpSpec({
+  async appendCollateralFile({
     workspaceId,
     workspaceMemberId,
-    icpSpec,
-    fillEmptyOnly = false,
+    fileId,
+    fileName,
+    mimeType,
   }: {
     workspaceId: string;
     workspaceMemberId: string;
-    icpSpec: IcpSpec | string;
-    fillEmptyOnly?: boolean;
+    fileId: string;
+    fileName: string;
+    mimeType?: string;
   }): Promise<{
     profileId: string;
     outreachSenderProfile: OutreachSenderProfile;
   }> {
-    const normalizedIcpSpec =
-      typeof icpSpec === 'string'
-        ? parseIcpSpec(icpSpec)
-        : normalizeIcpSpec(icpSpec);
-
     const existing = await this.getExistingSenderProfile({
       workspaceId,
       workspaceMemberId,
     });
 
     const baseProfile =
-      existing.outreachSenderProfile ??
-      buildSenderProfileSeedFromWorkspace({
-        member: {
-          id: workspaceMemberId,
-        },
-        icpSpec: normalizedIcpSpec,
-      });
-
-    const nextProfile = applyIcpSpecToSenderProfile(
-      baseProfile,
-      normalizedIcpSpec,
-      { fillEmptyOnly },
-    );
+      existing.outreachSenderProfile ?? EMPTY_OUTREACH_SENDER_PROFILE;
+    const nextFiles = [
+      ...(baseProfile.collateralFiles ?? []).filter(
+        (file) => file.fileId !== fileId,
+      ),
+      {
+        fileId,
+        fileName,
+        mimeType,
+      },
+    ];
 
     return this.saveSenderProfile({
       workspaceId,
       workspaceMemberId,
-      senderProfile: nextProfile,
-      skipWorkspaceIcpSync: true,
+      senderProfile: {
+        ...baseProfile,
+        collateralFiles: nextFiles,
+      },
+      replaceCollateralFiles: true,
+    });
+  }
+
+  async removeCollateralFile({
+    workspaceId,
+    workspaceMemberId,
+    fileId,
+  }: {
+    workspaceId: string;
+    workspaceMemberId: string;
+    fileId: string;
+  }): Promise<{
+    profileId: string;
+    outreachSenderProfile: OutreachSenderProfile;
+  }> {
+    const existing = await this.getExistingSenderProfile({
+      workspaceId,
+      workspaceMemberId,
+    });
+
+    const baseProfile =
+      existing.outreachSenderProfile ?? EMPTY_OUTREACH_SENDER_PROFILE;
+
+    return this.saveSenderProfile({
+      workspaceId,
+      workspaceMemberId,
+      senderProfile: {
+        ...baseProfile,
+        collateralFiles: (baseProfile.collateralFiles ?? []).filter(
+          (file) => file.fileId !== fileId,
+        ),
+      },
+      replaceCollateralFiles: true,
     });
   }
 
@@ -607,77 +626,73 @@ export class OutreachSenderProfileService {
       return null;
     }
 
-    const seed = buildSenderProfileSeedFromWorkspace({
-      member,
+    const firstName = member.name?.firstName?.trim() ?? '';
+    const lastName = member.name?.lastName?.trim() ?? '';
+    const fullName = [firstName, lastName].filter(isNonEmptyString).join(' ');
+
+    const seed = buildSenderProfileSeed({
+      fullName,
+      title: member.jobTitle,
       companyName: input.companyName,
-      companyDomain: input.companyDomain,
       industry: input.industry,
       summary: input.summary,
-      hq: input.hq,
-      icpSpec: input.icpSpec,
+      targetTitles: input.targetTitles,
+      locations: input.locations,
     });
 
     const force = input.force === true;
-    const existingProfile = member.outreachSenderProfile ?? null;
+    const existingProfile = isDefined(member.outreachSenderProfile)
+      ? normalizeOutreachSenderProfile(member.outreachSenderProfile)
+      : null;
 
     if (isDefined(existingProfile) && !force) {
-      const filled = applyIcpSpecToSenderProfile(
-        {
-          ...existingProfile,
-          identity: {
-            ...existingProfile.identity,
-            company: existingProfile.identity.company ?? seed.identity.company,
-            company_short:
-              existingProfile.identity.company_short ??
-              seed.identity.company_short,
-            website: existingProfile.identity.website ?? seed.identity.website,
-          },
-          offer: {
-            ...existingProfile.offer,
-            one_sentence:
-              existingProfile.offer.one_sentence ?? seed.offer.one_sentence,
-          },
-          icp: {
-            ...existingProfile.icp,
-            target_company_profile:
-              existingProfile.icp.target_company_profile ??
-              seed.icp.target_company_profile,
-          },
-        },
-        input.icpSpec,
-        { fillEmptyOnly: true },
-      );
+      const filled: OutreachSenderProfile = {
+        targetTitles:
+          existingProfile.targetTitles.length > 0
+            ? existingProfile.targetTitles
+            : seed.targetTitles,
+        locations:
+          existingProfile.locations.length > 0
+            ? existingProfile.locations
+            : seed.locations,
+        brief: isNonEmptyString(existingProfile.brief)
+          ? existingProfile.brief
+          : seed.brief,
+      };
 
       const saved = await this.saveSenderProfile({
         workspaceId: input.workspaceId,
         workspaceMemberId: member.id,
         senderProfile: filled,
-        skipWorkspaceIcpSync: true,
       });
 
       return saved.outreachSenderProfile;
     }
 
-    let nextProfile = isDefined(existingProfile)
-      ? mergeSenderProfileSeedOntoExisting(existingProfile, seed, {
-          force: true,
-        })
-      : seed;
-
+    let nextProfile = seed;
     const linkedinProfileText = this.buildLinkedinProfileText(member);
 
     if (isNonEmptyString(linkedinProfileText)) {
       try {
-        const drafted = await this.draftSenderProfileWithRetry({
+        const generated = await this.generateSenderProfileWithRetry({
           workspaceId: input.workspaceId,
           workspaceMemberId: member.id,
           linkedinProfileText,
         });
 
-        nextProfile = applyIcpSpecToSenderProfile(
-          drafted.draft as OutreachSenderProfile,
-          input.icpSpec,
-        );
+        nextProfile = {
+          targetTitles:
+            generated.draft.targetTitles.length > 0
+              ? generated.draft.targetTitles
+              : seed.targetTitles,
+          locations:
+            generated.draft.locations.length > 0
+              ? generated.draft.locations
+              : seed.locations,
+          brief: isNonEmptyString(generated.draft.brief)
+            ? generated.draft.brief
+            : seed.brief,
+        };
       } catch (error) {
         this.logger.warn(
           `Sender profile LLM stamp failed for member ${member.id}; using seed: ${
@@ -691,7 +706,6 @@ export class OutreachSenderProfileService {
       workspaceId: input.workspaceId,
       workspaceMemberId: member.id,
       senderProfile: nextProfile,
-      skipWorkspaceIcpSync: true,
     });
 
     return saved.outreachSenderProfile;
@@ -744,7 +758,6 @@ export class OutreachSenderProfileService {
     );
   }
 
-  // Step 0 entry: accept a human-reviewed draft and persist.
   async buildAndSaveSenderProfile(
     input: BuildAndSaveSenderProfileInput,
   ): Promise<{
@@ -768,14 +781,11 @@ export class OutreachSenderProfileService {
       existingObject: existing.outreachSenderProfile,
     });
 
-    const senderProfile =
-      input.senderProfile ??
-      input.draftedProfile ??
-      existing.outreachSenderProfile;
+    const senderProfile = input.senderProfile ?? existing.outreachSenderProfile;
 
     if (!isDefined(senderProfile)) {
       throw new Error(
-        'senderProfile or draftedProfile is required after human review (Step 0 does not auto-call the LLM)',
+        'senderProfile is required after human review (generate does not auto-call the LLM on save)',
       );
     }
 
@@ -783,9 +793,40 @@ export class OutreachSenderProfileService {
       workspaceId: input.workspaceId,
       workspaceMemberId: input.workspaceMemberId,
       senderProfile,
+      // HTTP save from setup always sends the attachment list the UI holds.
+      replaceCollateralFiles: true,
     });
 
     return { ...saved, prompt };
+  }
+
+  async resolveOperatorSenderProfile({
+    workspaceId,
+    workspaceMemberId,
+  }: {
+    workspaceId: string;
+    workspaceMemberId?: string | null;
+  }): Promise<OutreachSenderProfile | null> {
+    if (isNonEmptyString(workspaceMemberId)) {
+      const existing = await this.getExistingSenderProfile({
+        workspaceId,
+        workspaceMemberId,
+      });
+
+      return existing.outreachSenderProfile;
+    }
+
+    const member = await this.resolveBootstrapWorkspaceMember({
+      workspaceId,
+    });
+
+    if (!isDefined(member?.id)) {
+      return null;
+    }
+
+    return isDefined(member.outreachSenderProfile)
+      ? normalizeOutreachSenderProfile(member.outreachSenderProfile)
+      : null;
   }
 
   private buildLinkedinProfileText(
@@ -829,7 +870,7 @@ export class OutreachSenderProfileService {
       return this.aiModelRegistryService.getModel(modelId) ?? defaultFastModel;
     } catch (error) {
       this.logger.warn(
-        `Failed to resolve AI model for sender profile draft: ${
+        `Failed to resolve AI model for sender profile generate: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );
@@ -871,6 +912,14 @@ export class OutreachSenderProfileService {
 
           if (members.length === 0) {
             return null;
+          }
+
+          const withUnipile = members.find((member) =>
+            isNonEmptyString(member.linkedinUnipileAccountId?.trim()),
+          );
+
+          if (isDefined(withUnipile)) {
+            return withUnipile;
           }
 
           const userEmail = input.userEmail?.trim().toLowerCase() ?? '';

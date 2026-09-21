@@ -14,7 +14,6 @@ import { Button, type SelectOption } from 'twenty-ui/input';
 import { AppTooltip, TooltipDelay } from 'twenty-ui/surfaces';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
-import { OutreachChipTagInput } from '@/outreach-home/components/OutreachChipTagInput';
 import { OutreachSendWindowDayPicker } from '@/outreach-home/components/OutreachSendWindowDayPicker';
 import { OutreachSetupSectionCard } from '@/outreach-home/components/OutreachSetupSectionCard';
 import { OutreachSetupSenderProfileSection } from '@/outreach-home/components/OutreachSetupSenderProfileSection';
@@ -22,16 +21,8 @@ import {
   type OutreachSendMode,
   type OutreachWorkspaceCompany,
 } from '@/outreach-home/types/outreach-home.types';
-import {
-  ICP_CHIP_FIELDS,
-  parseIcpSpecObject,
-  readIcpChipValues,
-  writeIcpChipValues,
-  type IcpChipFieldKey,
-} from '@/outreach-home/utils/outreach-icp-chip-fields.util';
 import { AVAILABLE_TIMEZONE_OPTIONS } from '@/settings/experience/constants/AvailableTimezoneOptions';
 import { Select } from '@/ui/input/components/Select';
-import { TextArea } from '@/ui/input/components/TextArea';
 import { TextInput } from '@/ui/input/components/TextInput';
 
 const HH_MM_PATTERN = /^([01]?\d|2[0-3]):([0-5]\d)$/;
@@ -256,24 +247,6 @@ const StyledFieldStack = styled.div`
   gap: ${themeCssVariables.spacing[1]};
 `;
 
-const StyledChipFields = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${themeCssVariables.spacing[3]};
-`;
-
-const formatIcpDraft = (icpSpec: string | null): string => {
-  if (!isNonEmptyString(icpSpec)) {
-    return '';
-  }
-
-  try {
-    return JSON.stringify(JSON.parse(icpSpec), null, 2);
-  } catch {
-    return icpSpec;
-  }
-};
-
 export type OutreachSendScheduleInput = {
   sendTimezone: string;
   sendWindowStart: string;
@@ -288,14 +261,8 @@ export type OutreachPolicyInput = {
 
 type OutreachSetupPanelProps = {
   workspaceCompany: OutreachWorkspaceCompany;
-  icpSpec: string | null;
-  isIcpProjectOverride: boolean;
   hasWorkspaceCompany: boolean;
   hasProject: boolean;
-  isSavingIcp: boolean;
-  onRegenerateIcp: () => void;
-  isRegeneratingIcp: boolean;
-  onSaveIcp: (input: { icpSpec: string }) => Promise<void>;
   sendTimezone: string;
   sendWindowStart: string;
   sendWindowEnd: string;
@@ -312,14 +279,8 @@ type OutreachSetupPanelProps = {
 
 export const OutreachSetupPanel = ({
   workspaceCompany,
-  icpSpec,
-  isIcpProjectOverride,
   hasWorkspaceCompany,
   hasProject,
-  isSavingIcp,
-  onRegenerateIcp,
-  isRegeneratingIcp,
-  onSaveIcp,
   sendTimezone,
   sendWindowStart,
   sendWindowEnd,
@@ -333,8 +294,6 @@ export const OutreachSetupPanel = ({
   onFindCompanies,
   onFindPeople,
 }: OutreachSetupPanelProps) => {
-  const [icpDraft, setIcpDraft] = useState(() => formatIcpDraft(icpSpec));
-  const [isJsonOpen, setIsJsonOpen] = useState(false);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [timezoneDraft, setTimezoneDraft] = useState(sendTimezone);
   const [windowStartDraft, setWindowStartDraft] = useState(() =>
@@ -359,10 +318,6 @@ export const OutreachSetupPanel = ({
   );
 
   useEffect(() => {
-    setIcpDraft(formatIcpDraft(icpSpec));
-  }, [icpSpec]);
-
-  useEffect(() => {
     setTimezoneDraft(sendTimezone);
     setWindowStartDraft(
       normalizeSendWindowTime(sendWindowStart, DEFAULT_SEND_WINDOW_START),
@@ -378,9 +333,6 @@ export const OutreachSetupPanel = ({
     setMaxPersonasDraft(String(maxPersonasPerCompany));
   }, [outreachSendMode, maxPersonasPerCompany]);
 
-  const canPersist = hasWorkspaceCompany || hasProject;
-  const parsedIcp = parseIcpSpecObject(icpDraft);
-  const canEditChips = parsedIcp !== null || icpDraft.trim().length === 0;
   const sellerChips = [
     workspaceCompany.industry,
     workspaceCompany.employeeRange
@@ -393,8 +345,6 @@ export const OutreachSetupPanel = ({
   const visibleSummary =
     isSummaryOpen || !isSummaryLong ? summary : `${summary.slice(0, 160)}…`;
 
-  const formattedIcpSpec = formatIcpDraft(icpSpec);
-  const isIcpDirty = icpDraft !== formattedIcpSpec;
   const isPolicyDirty =
     sendModeDraft !== outreachSendMode ||
     maxPersonasDraft !== String(maxPersonasPerCompany);
@@ -407,11 +357,8 @@ export const OutreachSetupPanel = ({
     !HH_MM_PATTERN.test(sendWindowStart.trim()) ||
     !HH_MM_PATTERN.test(sendWindowEnd.trim()) ||
     !areSendWindowDaysEqual(sendDaysDraft, parseSendWindowDays(sendWindowDays));
-  const canSaveSetup =
-    (isIcpDirty && canPersist) ||
-    (hasProject && (isPolicyDirty || isScheduleDirty));
-  const isSavingSetup =
-    isSavingIcp || isSavingSendSchedule || isSavingOutreachPolicy;
+  const canSaveSetup = hasProject && (isPolicyDirty || isScheduleDirty);
+  const isSavingSetup = isSavingSendSchedule || isSavingOutreachPolicy;
 
   const timezoneOptions = useMemo(() => {
     const options = [...AVAILABLE_TIMEZONE_OPTIONS];
@@ -449,10 +396,6 @@ export const OutreachSetupPanel = ({
     () => buildSendWindowTimeOptions(windowEndDraft),
     [windowEndDraft],
   );
-
-  const updateChipField = (key: IcpChipFieldKey, values: string[]) => {
-    setIcpDraft((current) => writeIcpChipValues(current, key, values));
-  };
 
   const validateOutreachPolicy = (): OutreachPolicyInput | null => {
     const parsedMax = Number.parseInt(maxPersonasDraft.trim(), 10);
@@ -536,12 +479,6 @@ export const OutreachSetupPanel = ({
       return;
     }
 
-    if (isIcpDirty && canPersist) {
-      await onSaveIcp({
-        icpSpec: icpDraft,
-      });
-    }
-
     if (policyInput !== null) {
       await onSaveOutreachPolicy(policyInput);
     }
@@ -582,60 +519,6 @@ export const OutreachSetupPanel = ({
         </OutreachSetupSectionCard>
 
         <OutreachSetupSenderProfileSection />
-
-        <OutreachSetupSectionCard
-          title="ICP"
-          headerAdornment={
-            <StyledBadge>
-              {isIcpProjectOverride ? 'Project override' : 'Workspace default'}
-            </StyledBadge>
-          }
-          headerAction={
-            <Button
-              title={isRegeneratingIcp ? 'Regenerating…' : 'Regenerate'}
-              variant="secondary"
-              size="small"
-              onClick={onRegenerateIcp}
-              disabled={isRegeneratingIcp}
-            />
-          }
-        >
-          <StyledChipFields>
-            {ICP_CHIP_FIELDS.map((field) => (
-              <StyledFieldStack key={field.key}>
-                <StyledFieldLabel>{field.label}</StyledFieldLabel>
-                <OutreachChipTagInput
-                  values={readIcpChipValues(icpDraft, field.key)}
-                  onChange={(next) => updateChipField(field.key, next)}
-                  disabled={!canEditChips}
-                  placeholder={`Add ${field.label.toLowerCase()}`}
-                />
-              </StyledFieldStack>
-            ))}
-          </StyledChipFields>
-          {!canEditChips && (
-            <StyledMuted>
-              ICP JSON is invalid — open Edit as JSON to fix it before changing
-              chips.
-            </StyledMuted>
-          )}
-          <StyledJsonToggle
-            type="button"
-            onClick={() => setIsJsonOpen((open) => !open)}
-          >
-            {isJsonOpen ? 'Hide JSON' : 'Edit as JSON'}
-          </StyledJsonToggle>
-          {isJsonOpen && (
-            <TextArea
-              textAreaId="outreach-setup-icp"
-              minRows={8}
-              maxRows={16}
-              value={icpDraft}
-              onChange={setIcpDraft}
-              placeholder="ICP JSON will appear here after bootstrap or regenerate."
-            />
-          )}
-        </OutreachSetupSectionCard>
 
         <OutreachSetupSectionCard
           title="Outreach policy"

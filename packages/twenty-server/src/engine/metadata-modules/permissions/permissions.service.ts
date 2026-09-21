@@ -122,6 +122,7 @@ export class PermissionsService {
         [PermissionFlagType.CREATE_CALENDAR_EVENT_TOOL]: false,
         [PermissionFlagType.HTTP_REQUEST_TOOL]: false,
         [PermissionFlagType.CODE_INTERPRETER_TOOL]: false,
+        [PermissionFlagType.SEND_FILES_TOOL]: false,
         [PermissionFlagType.IMPORT_CSV]: false,
         [PermissionFlagType.EXPORT_CSV]: false,
         [PermissionFlagType.CONNECTED_ACCOUNTS]: false,

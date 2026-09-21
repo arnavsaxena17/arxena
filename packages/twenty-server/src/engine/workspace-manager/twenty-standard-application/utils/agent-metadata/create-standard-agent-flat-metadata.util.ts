@@ -21,6 +21,7 @@ export type CreateStandardAgentContext = {
   isCustom: boolean;
   modelConfiguration: ModelConfiguration | null;
   evaluationInputs: string[];
+  toolConfigs?: Record<string, unknown> | null;
 };
 
 export type CreateStandardAgentArgs = StandardBuilderArgs<'agent'> & {
@@ -40,6 +41,7 @@ export const createStandardAgentFlatMetadata = ({
     isCustom,
     modelConfiguration,
     evaluationInputs,
+    toolConfigs,
   },
   workspaceId,
   twentyStandardApplicationId,
@@ -60,6 +62,7 @@ export const createStandardAgentFlatMetadata = ({
     isCustom,
     modelConfiguration,
     evaluationInputs,
+    toolConfigs: toolConfigs ?? {},
     workspaceId,
     applicationId: twentyStandardApplicationId,
     applicationUniversalIdentifier:

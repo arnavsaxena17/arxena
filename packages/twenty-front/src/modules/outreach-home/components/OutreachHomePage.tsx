@@ -37,12 +37,6 @@ import {
   buildFindPeopleSendPrompt,
   type OutreachSendMode,
 } from '@/outreach-home/types/outreach-home.types';
-import {
-  parseIcpSpec,
-  stringifyIcpSpec,
-} from '@/outreach-home/utils/outreach-effective-icp.util';
-import { regenerateOutreachWorkspaceProfile } from '@/outreach-home/utils/outreach-workspace-profile-regenerate';
-import { syncOutreachSenderIcpFromWorkspace } from '@/outreach-home/utils/outreach-sender-profile-api';
 import { useGetResourceCreditUsage } from '@/settings/billing/hooks/useGetResourceCreditUsage';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
@@ -132,7 +126,7 @@ const OutreachHomePageContent = () => {
     setActiveProjectId,
     refetchProjects,
     createOutreachProject,
-    isIcpProjectOverride,
+    isIcpProjectOverride: _isIcpProjectOverride,
     linkedinConnected,
     gmailConnected,
     whatsappConnected,
@@ -159,12 +153,10 @@ const OutreachHomePageContent = () => {
   const [updateWorkspace] = useMutation(UpdateWorkspaceDocument);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
-  const [isSavingIcp, setIsSavingIcp] = useState(false);
   const [isSavingSendSchedule, setIsSavingSendSchedule] = useState(false);
   const [isSavingOutreachPolicy, setIsSavingOutreachPolicy] = useState(false);
   const [isUpdatingOutreachStatus, setIsUpdatingOutreachStatus] =
     useState(false);
-  const [isRegeneratingIcp, setIsRegeneratingIcp] = useState(false);
   const { workflowRunId } = useOutreachWorkflowEmbed({
     enabled: isDefined(activeProjectId),
   });
@@ -317,134 +309,6 @@ const OutreachHomePageContent = () => {
 
   const handleCreateProject = async () => {
     await createOutreachProject();
-  };
-
-  const handleRegenerateIcp = async () => {
-    setIsRegeneratingIcp(true);
-
-    try {
-      await regenerateOutreachWorkspaceProfile({
-        accessToken: tokenPair?.accessOrWorkspaceAgnosticToken?.token,
-        userEmail: currentUser?.email,
-        workspaceDisplayName: currentWorkspace?.displayName,
-        userFirstName: currentUser?.firstName,
-        userLastName: currentUser?.lastName,
-      });
-      await refetchWorkspaceCompany();
-      enqueueSuccessSnackBar({
-        message: 'Your company and workspace ICP regenerated from enrichment.',
-      });
-    } catch (error) {
-      enqueueErrorSnackBar({
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Failed to regenerate workspace ICP.',
-      });
-    } finally {
-      setIsRegeneratingIcp(false);
-    }
-  };
-
-  const handleSaveIcp = async (input: { icpSpec: string }) => {
-    const parsedIcp = parseIcpSpec(input.icpSpec.trim());
-    const normalizedIcpSpec = parsedIcp
-      ? stringifyIcpSpec(parsedIcp)
-      : input.icpSpec.trim();
-
-    if (!isNonEmptyString(normalizedIcpSpec)) {
-      enqueueErrorSnackBar({ message: 'ICP JSON cannot be empty.' });
-      return;
-    }
-
-    if (parsedIcp === null) {
-      enqueueErrorSnackBar({ message: 'ICP must be valid JSON.' });
-      return;
-    }
-
-    setIsSavingIcp(true);
-
-    try {
-      const persistTarget = resolvePersistTarget(
-        projectSettings.isIcpProjectOverride,
-      );
-
-      if (persistTarget === 'workspace' && hasWorkspaceCompany) {
-        const result = await updateWorkspace({
-          variables: {
-            input: {
-              icpSpec: normalizedIcpSpec,
-            },
-          },
-        });
-
-        if (isDefined(result.data?.updateWorkspace)) {
-          setCurrentWorkspace((previousWorkspace) =>
-            previousWorkspace === null
-              ? previousWorkspace
-              : {
-                  ...previousWorkspace,
-                  icpSpec: normalizedIcpSpec,
-                },
-          );
-        }
-
-        try {
-          await syncOutreachSenderIcpFromWorkspace({
-            accessToken: tokenPair?.accessOrWorkspaceAgnosticToken?.token,
-            icpSpec: parsedIcp,
-          });
-        } catch (syncError) {
-          enqueueErrorSnackBar({
-            message:
-              syncError instanceof Error
-                ? syncError.message
-                : 'ICP saved on workspace, but sender profile sync failed.',
-          });
-          return;
-        }
-
-        enqueueSuccessSnackBar({ message: 'ICP saved' });
-        return;
-      }
-
-      if (persistTarget === 'project' && isDefined(activeProjectId)) {
-        await updateOneRecord({
-          objectNameSingular: 'project',
-          idToUpdate: activeProjectId,
-          updateOneRecordInput: buildProjectConfigUpdate({
-            existingConfig: projectSettings.outreachConfig,
-            patch: { icpSpec: parsedIcp },
-          }),
-        });
-
-        try {
-          await syncOutreachSenderIcpFromWorkspace({
-            accessToken: tokenPair?.accessOrWorkspaceAgnosticToken?.token,
-            icpSpec: parsedIcp,
-          });
-        } catch (syncError) {
-          enqueueErrorSnackBar({
-            message:
-              syncError instanceof Error
-                ? syncError.message
-                : 'Project ICP saved, but sender profile sync failed.',
-          });
-          return;
-        }
-
-        enqueueSuccessSnackBar({ message: 'ICP saved (this project)' });
-        return;
-      }
-
-      throw new Error('No workspace or GTM project to save to.');
-    } catch (error) {
-      enqueueErrorSnackBar({
-        message: error instanceof Error ? error.message : 'Failed to save ICP.',
-      });
-    } finally {
-      setIsSavingIcp(false);
-    }
   };
 
   const handleSaveSendSchedule = async (input: {
@@ -720,16 +584,8 @@ const OutreachHomePageContent = () => {
                 <StyledSetupWrap>
                   <OutreachSetupPanel
                     workspaceCompany={workspaceCompany}
-                    icpSpec={projectSettings.icpSpec}
-                    isIcpProjectOverride={isIcpProjectOverride}
                     hasWorkspaceCompany={hasWorkspaceCompany}
                     hasProject={isDefined(activeProjectId)}
-                    isSavingIcp={isSavingIcp}
-                    onRegenerateIcp={() => {
-                      void handleRegenerateIcp();
-                    }}
-                    isRegeneratingIcp={isRegeneratingIcp}
-                    onSaveIcp={handleSaveIcp}
                     sendTimezone={projectSettings.sendTimezone}
                     sendWindowStart={projectSettings.sendWindowStart}
                     sendWindowEnd={projectSettings.sendWindowEnd}

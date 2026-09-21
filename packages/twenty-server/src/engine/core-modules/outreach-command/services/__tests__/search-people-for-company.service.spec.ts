@@ -19,14 +19,14 @@ describe('SearchPeopleForCompanyService', () => {
     transformSearchResultsToTableFormat: jest.fn((items: unknown[]) => items),
     addMetadataToCandidates: jest.fn((items: unknown[]) => items),
   };
+  const outreachSenderProfileService = {
+    resolveOperatorSenderProfile: jest.fn(),
+  };
   const companyRepository = {
     findOne: jest.fn(),
   };
   const projectRepository = {
     findOne: jest.fn(),
-  };
-  const workspaceRepository = {
-    findOneBy: jest.fn(),
   };
   const globalWorkspaceOrmManager = {
     getRepository: jest.fn(async (_workspaceId: string, objectName: string) => {
@@ -45,13 +45,13 @@ describe('SearchPeopleForCompanyService', () => {
   };
 
   const service = new SearchPeopleForCompanyService(
-    workspaceRepository as never,
     globalWorkspaceOrmManager as never,
     peopleApiService as never,
     linkedInSearchTransformer as never,
     ensureOutreachProjectService as never,
     gtmWorkspaceAuthTokenService as never,
     unipileSearchAccountResolver as never,
+    outreachSenderProfileService as never,
   );
 
   beforeEach(() => {
@@ -71,16 +71,15 @@ describe('SearchPeopleForCompanyService', () => {
     projectRepository.findOne.mockResolvedValue({
       id: projectId,
       name: 'GTM Harvest',
-      icpSpec: JSON.stringify({
-        targetTitles: ['Head of Talent'],
-        locations: ['United States', 'United Kingdom'],
-      }),
       maxPersonasPerCompany: 2,
     });
-    workspaceRepository.findOneBy.mockResolvedValue({
-      id: 'ws-1',
-      icpSpec: null,
-    });
+    outreachSenderProfileService.resolveOperatorSenderProfile.mockResolvedValue(
+      {
+        targetTitles: ['Head of Talent'],
+        locations: ['United States', 'United Kingdom'],
+        brief: 'Sender brief',
+      },
+    );
     gtmWorkspaceAuthTokenService.resolveApiKeyToken.mockResolvedValue('tok');
     unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(
       { accountId: 'acct-1', product: 'classic' },
@@ -101,7 +100,6 @@ describe('SearchPeopleForCompanyService', () => {
       }),
     ).resolves.toMatchObject({
       success: true,
-      companyId,
       projectId,
     });
 
@@ -120,12 +118,9 @@ describe('SearchPeopleForCompanyService', () => {
       'tok',
       { workspaceId: 'ws-1' },
     );
-    expect(peopleApiService.searchPeople.mock.calls[0][0]).not.toHaveProperty(
-      'naturalLanguage',
-    );
   });
 
-  it('uses the provided job title instead of the Project icpSpec target title', async () => {
+  it('uses the provided job title instead of the sender target title', async () => {
     await service.execute({
       workspaceId: 'ws-1',
       input: { companyId, jobTitle: 'VP Engineering' },
@@ -141,7 +136,7 @@ describe('SearchPeopleForCompanyService', () => {
     );
   });
 
-  it('falls back to the Project icpSpec target title when job title is blank', async () => {
+  it('falls back to the sender target title when job title is blank', async () => {
     await service.execute({
       workspaceId: 'ws-1',
       input: { companyId, jobTitle: '   ' },
@@ -156,20 +151,10 @@ describe('SearchPeopleForCompanyService', () => {
     );
   });
 
-  it('falls back to workspace icpSpec when project icpSpec is empty', async () => {
-    projectRepository.findOne.mockResolvedValue({
-      id: projectId,
-      name: 'GTM Harvest',
-      icpSpec: null,
-      outreachConfig: null,
-    });
-    workspaceRepository.findOneBy.mockResolvedValue({
-      id: 'ws-1',
-      icpSpec: JSON.stringify({
-        targetTitles: ['Chief People Officer'],
-        locations: ['Germany'],
-      }),
-    });
+  it('uses empty titles when the operator has no sender profile', async () => {
+    outreachSenderProfileService.resolveOperatorSenderProfile.mockResolvedValue(
+      null,
+    );
 
     await service.execute({
       workspaceId: 'ws-1',
@@ -178,8 +163,8 @@ describe('SearchPeopleForCompanyService', () => {
 
     expect(peopleApiService.searchPeople).toHaveBeenCalledWith(
       expect.objectContaining({
-        jobTitle: 'Chief People Officer',
-        locations: ['Germany'],
+        jobTitle: '',
+        locations: [],
       }),
       'tok',
       { workspaceId: 'ws-1' },

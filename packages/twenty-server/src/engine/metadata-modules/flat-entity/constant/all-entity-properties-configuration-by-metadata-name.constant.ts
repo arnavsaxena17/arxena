@@ -936,6 +936,11 @@ export const ALL_ENTITY_PROPERTIES_CONFIGURATION_BY_METADATA_NAME = {
       toStringify: true,
       universalProperty: undefined,
     },
+    toolConfigs: {
+      toCompare: true,
+      toStringify: true,
+      universalProperty: undefined,
+    },
     isCustom: {
       toCompare: false,
       toStringify: false,

@@ -25,6 +25,7 @@ import { HighlightOrgChartTool } from 'src/engine/core-modules/tool/tools/highli
 import { ExtractJsonPathsTool } from 'src/engine/core-modules/tool/tools/output-navigation-tool/extract-json-paths-tool';
 import { SearchOutputTool } from 'src/engine/core-modules/tool/tools/output-navigation-tool/search-output-tool';
 import { SearchHelpCenterTool } from 'src/engine/core-modules/tool/tools/search-help-center-tool/search-help-center-tool';
+import { SendFilesTool } from 'src/engine/core-modules/tool/tools/send-files-tool/send-files-tool';
 import { CommentOnLinkedinPostTool } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/comment-on-linkedin-post-tool';
 import { FetchLinkedinActivityTool } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/fetch-linkedin-activity-tool';
 import { FollowLinkedinProfileTool } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/follow-linkedin-profile-tool';
@@ -85,6 +86,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     EmailComposerService,
     SearchHelpCenterTool,
     CodeInterpreterTool,
+    SendFilesTool,
     NavigateAppTool,
     HighlightOrgChartTool,
     UpsertOutreachTargetCompaniesTool,
@@ -114,6 +116,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     EmailComposerService,
     SearchHelpCenterTool,
     CodeInterpreterTool,
+    SendFilesTool,
     NavigateAppTool,
     HighlightOrgChartTool,
     UpsertOutreachTargetCompaniesTool,

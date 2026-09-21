@@ -122,6 +122,8 @@ import { BackfillPersonJobTitleCompanyFromCandidateCommand } from 'src/database/
 import { BackfillPersonJobCompanyFromCandidateExperienceCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000131-backfill-person-job-company-from-candidate-experience.command';
 import { SyncWorkspaceMemberCrunchbaseCookiesFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000132-sync-workspace-member-crunchbase-cookies-fields.command';
 import { EnsureSearchCrunchbaseCompaniesLogicFunctionCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000133-ensure-search-crunchbase-companies-logic-function.command';
+import { SlimOutreachSenderProfileCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000134-slim-outreach-sender-profile.command';
+import { SeedSendFilesAgentToolConfigCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000136-seed-send-files-agent-tool-config.command';
 import { SetOutreachExtractSignalsDeepseekCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000106-set-outreach-extract-signals-deepseek.command';
 import { DropChatMessageObjWithTimeStampCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000099-drop-chat-message-obj-with-time-stamp.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
@@ -279,6 +281,8 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     UnpinBulkForceStopWorkflowRunsCommandMenuItemCommand,
     BackfillPersonJobTitleCompanyFromCandidateCommand,
     BackfillPersonJobCompanyFromCandidateExperienceCommand,
+    SlimOutreachSenderProfileCommand,
+    SeedSendFilesAgentToolConfigCommand,
     SyncWorkspaceMemberCrunchbaseCookiesFieldsCommand,
     EnsureSearchCrunchbaseCompaniesLogicFunctionCommand,
     MigrateOtherFieldsService,

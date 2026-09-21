@@ -11,6 +11,7 @@ import {
 import { AgentResponseFormat } from 'src/engine/metadata-modules/ai/ai-agent/types/agent-response-format.type';
 import { ModelConfiguration } from 'src/engine/metadata-modules/ai/ai-agent/types/modelConfiguration';
 import { AUTO_SELECT_SMART_MODEL_ID } from 'twenty-shared/constants';
+import { type AgentToolConfigs } from 'twenty-shared/ai';
 import { type ModelId } from 'src/engine/metadata-modules/ai/ai-models/types/model-id.type';
 import { SyncableEntity } from 'src/engine/workspace-manager/types/syncable-entity.interface';
 import { JsonbProperty } from 'src/engine/workspace-manager/workspace-migration/universal-flat-entity/types/jsonb-property.type';
@@ -71,4 +72,7 @@ export class AgentEntity
 
   @Column({ type: 'text', array: true, default: '{}' })
   evaluationInputs: string[];
+
+  @Column({ nullable: true, type: 'jsonb', default: {} })
+  toolConfigs: JsonbProperty<AgentToolConfigs> | null;
 }

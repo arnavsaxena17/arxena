@@ -1,18 +1,35 @@
+import { isNonEmptyString } from '@sniptt/guards';
+
 import { toStringList } from '@/outreach-home/utils/outreach-icp-chip-fields.util';
 
-export type OutreachSenderFaqDraftItem = {
-  q: string;
-  a: string;
+export type OutreachSenderProfileDraft = {
+  targetTitles: string[];
+  locations: string[];
+  brief: string;
 };
 
-export type OutreachSenderObjectionDraftItem = {
-  objection: string;
-  response: string;
+export const EMPTY_SENDER_PROFILE_DRAFT: OutreachSenderProfileDraft = {
+  targetTitles: [],
+  locations: [],
+  brief: '',
+};
+
+const readDraftBrief = (record: Record<string, unknown>): string => {
+  if (typeof record.brief === 'string') {
+    return record.brief;
+  }
+
+  // Legacy slim key until stored drafts are rewritten.
+  if (typeof record.prose === 'string') {
+    return record.prose;
+  }
+
+  return '';
 };
 
 export const parseSenderProfileDraft = (
   draftJson: string,
-): Record<string, unknown> | null => {
+): OutreachSenderProfileDraft | null => {
   try {
     const parsed: unknown = JSON.parse(draftJson);
 
@@ -24,203 +41,100 @@ export const parseSenderProfileDraft = (
       return null;
     }
 
-    return parsed as Record<string, unknown>;
+    return normalizeSenderProfileDraft(parsed);
   } catch {
     return null;
   }
 };
 
-const getNestedRecord = (
-  root: Record<string, unknown>,
-  section: string,
-): Record<string, unknown> => {
-  const value = root[section];
-
+export const normalizeSenderProfileDraft = (
+  value: unknown,
+): OutreachSenderProfileDraft => {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-    return {};
+    return { ...EMPTY_SENDER_PROFILE_DRAFT };
   }
 
-  return value as Record<string, unknown>;
+  const record = value as Record<string, unknown>;
+
+  // Fat legacy → keep titles/locations if present under icp; brief empty for UI
+  // (server migration folds fat → brief; UI only edits slim).
+  if ('identity' in record || 'icp' in record) {
+    const icp =
+      record.icp !== null &&
+      typeof record.icp === 'object' &&
+      !Array.isArray(record.icp)
+        ? (record.icp as Record<string, unknown>)
+        : {};
+
+    return {
+      targetTitles: toStringList(icp.target_roles ?? record.targetTitles),
+      locations: toStringList(icp.geography ?? record.locations),
+      brief: readDraftBrief(record),
+    };
+  }
+
+  return {
+    targetTitles: toStringList(record.targetTitles),
+    locations: toStringList(record.locations),
+    brief: readDraftBrief(record),
+  };
 };
 
-export const readSenderDraftString = (
+export const stringifySenderProfileDraft = (
+  draft: OutreachSenderProfileDraft,
+): string => JSON.stringify(draft);
+
+export const readSenderDraftBrief = (draftJson: string): string =>
+  parseSenderProfileDraft(draftJson)?.brief ?? '';
+
+export const writeSenderDraftBrief = (
   draftJson: string,
-  section: string,
-  key: string,
+  brief: string,
 ): string => {
-  const parsed = parseSenderProfileDraft(draftJson);
+  const current =
+    parseSenderProfileDraft(draftJson) ?? EMPTY_SENDER_PROFILE_DRAFT;
 
-  if (parsed === null) {
-    return '';
-  }
-
-  const value = getNestedRecord(parsed, section)[key];
-
-  return typeof value === 'string' ? value : '';
+  return stringifySenderProfileDraft({ ...current, brief });
 };
 
-export const readSenderDraftStringList = (
+export const readSenderDraftChipList = (
   draftJson: string,
-  section: string,
-  key: string,
-): string[] => {
-  const parsed = parseSenderProfileDraft(draftJson);
+  key: 'targetTitles' | 'locations',
+): string[] => parseSenderProfileDraft(draftJson)?.[key] ?? [];
 
-  if (parsed === null) {
-    return [];
-  }
+export const writeSenderDraftChipList = (
+  draftJson: string,
+  key: 'targetTitles' | 'locations',
+  values: string[],
+): string => {
+  const current =
+    parseSenderProfileDraft(draftJson) ?? EMPTY_SENDER_PROFILE_DRAFT;
 
-  return toStringList(getNestedRecord(parsed, section)[key]);
+  return stringifySenderProfileDraft({
+    ...current,
+    [key]: values
+      .map((value) => value.trim())
+      .filter((value) => isNonEmptyString(value)),
+  });
 };
 
-export const readSenderDraftBoolean = (
-  draftJson: string,
-  section: string,
-  key: string,
-): boolean => {
-  const parsed = parseSenderProfileDraft(draftJson);
-
-  if (parsed === null) {
-    return false;
-  }
-
-  return getNestedRecord(parsed, section)[key] === true;
-};
-
-export const readSenderDraftNumber = (
-  draftJson: string,
-  section: string,
-  key: string,
-): number | null => {
-  const parsed = parseSenderProfileDraft(draftJson);
-
-  if (parsed === null) {
+export const summarizeSenderProfileDraft = (
+  profile: Record<string, unknown> | null | undefined,
+): string | null => {
+  if (!profile || typeof profile !== 'object') {
     return null;
   }
 
-  const value = getNestedRecord(parsed, section)[key];
+  const normalized = normalizeSenderProfileDraft(profile);
+  const titles =
+    normalized.targetTitles.length > 0
+      ? normalized.targetTitles.slice(0, 3).join(', ')
+      : '';
+  const briefPreview = normalized.brief.trim().slice(0, 80);
 
-  return typeof value === 'number' && Number.isFinite(value) ? value : null;
-};
-
-export const readSenderDraftReviewFlags = (draftJson: string): string[] => {
-  const parsed = parseSenderProfileDraft(draftJson);
-
-  if (parsed === null) {
-    return [];
+  if (titles && briefPreview) {
+    return `${titles} · ${briefPreview}${normalized.brief.length > 80 ? '…' : ''}`;
   }
 
-  return toStringList(parsed.review_flags);
+  return titles || briefPreview || null;
 };
-
-export const readSenderDraftFaq = (
-  draftJson: string,
-): OutreachSenderFaqDraftItem[] => {
-  const parsed = parseSenderProfileDraft(draftJson);
-
-  if (parsed === null) {
-    return [];
-  }
-
-  const faq = getNestedRecord(parsed, 'offer').faq;
-
-  if (!Array.isArray(faq)) {
-    return [];
-  }
-
-  return faq.flatMap((item) => {
-    if (item === null || typeof item !== 'object' || Array.isArray(item)) {
-      return [];
-    }
-
-    const record = item as Record<string, unknown>;
-
-    return [
-      {
-        q: typeof record.q === 'string' ? record.q : '',
-        a: typeof record.a === 'string' ? record.a : '',
-      },
-    ];
-  });
-};
-
-export const readSenderDraftObjections = (
-  draftJson: string,
-): OutreachSenderObjectionDraftItem[] => {
-  const parsed = parseSenderProfileDraft(draftJson);
-
-  if (parsed === null) {
-    return [];
-  }
-
-  const objections = getNestedRecord(parsed, 'icp').known_objections;
-
-  if (!Array.isArray(objections)) {
-    return [];
-  }
-
-  return objections.flatMap((item) => {
-    if (item === null || typeof item !== 'object' || Array.isArray(item)) {
-      return [];
-    }
-
-    const record = item as Record<string, unknown>;
-
-    return [
-      {
-        objection: typeof record.objection === 'string' ? record.objection : '',
-        response: typeof record.response === 'string' ? record.response : '',
-      },
-    ];
-  });
-};
-
-const writeNestedField = (
-  draftJson: string,
-  section: string,
-  key: string,
-  value: unknown,
-): string => {
-  const parsed = parseSenderProfileDraft(draftJson) ?? {};
-  const nested = { ...getNestedRecord(parsed, section), [key]: value };
-
-  return JSON.stringify({ ...parsed, [section]: nested }, null, 2);
-};
-
-export const writeSenderDraftString = (
-  draftJson: string,
-  section: string,
-  key: string,
-  value: string,
-): string => writeNestedField(draftJson, section, key, value || null);
-
-export const writeSenderDraftStringList = (
-  draftJson: string,
-  section: string,
-  key: string,
-  values: string[],
-): string => writeNestedField(draftJson, section, key, values);
-
-export const writeSenderDraftBoolean = (
-  draftJson: string,
-  section: string,
-  key: string,
-  value: boolean,
-): string => writeNestedField(draftJson, section, key, value);
-
-export const writeSenderDraftNumber = (
-  draftJson: string,
-  section: string,
-  key: string,
-  value: number | null,
-): string => writeNestedField(draftJson, section, key, value);
-
-export const writeSenderDraftFaq = (
-  draftJson: string,
-  faq: OutreachSenderFaqDraftItem[],
-): string => writeNestedField(draftJson, 'offer', 'faq', faq);
-
-export const writeSenderDraftObjections = (
-  draftJson: string,
-  objections: OutreachSenderObjectionDraftItem[],
-): string => writeNestedField(draftJson, 'icp', 'known_objections', objections);

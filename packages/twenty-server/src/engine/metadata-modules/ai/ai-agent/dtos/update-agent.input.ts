@@ -86,4 +86,9 @@ export class UpdateAgentInput {
   @IsOptional()
   @Field(() => [String], { nullable: true })
   evaluationInputs?: string[];
+
+  @IsObject()
+  @IsOptional()
+  @Field(() => GraphQLJSON, { nullable: true })
+  toolConfigs?: object | null;
 }

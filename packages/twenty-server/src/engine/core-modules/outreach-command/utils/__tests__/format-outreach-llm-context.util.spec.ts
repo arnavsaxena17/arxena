@@ -88,30 +88,18 @@ describe('formatOutreachSlotsForLlm', () => {
 });
 
 describe('formatOutreachSenderForLlm', () => {
-  it('formats sender profile prose instead of raw JSON', () => {
+  it('formats slim sender profile brief', () => {
     const formatted = formatOutreachSenderForLlm({
-      identity: {
-        full_name: 'Naresh Lahoti',
-        title: 'Founder',
-        company: 'Projective Tech',
-        how_they_sign: 'Naresh',
-      },
-      voice: { sign_off: 'Regards, Naresh', register: 'operator peer' },
-      offer: {
-        product_name: 'IMAGE-I',
-        one_sentence: 'Realtime MIS',
-        faq: [{ q: 'Software or consulting?', a: 'SaaS' }],
-      },
-      credibility: { one_liner: 'Ex-CFO' },
-      icp: { target_roles: ['CFO'] },
-      meeting: { default_duration_min: 30, platform: 'teams' },
+      targetTitles: ['CFO'],
+      locations: ['India'],
+      brief:
+        'Sender: Naresh Lahoti · Founder · Projective Tech\nOffer: IMAGE-I realtime MIS',
     });
 
-    expect(formatted).toContain(
-      'Sender: Naresh Lahoti · Founder · Projective Tech',
-    );
+    expect(formatted).toContain('Sender: Naresh Lahoti');
     expect(formatted).toContain('Offer: IMAGE-I');
-    expect(formatted).toContain('- Q: Software or consulting?');
+    expect(formatted).toContain('Target titles: CFO');
+    expect(formatted).toContain('Locations: India');
     expect(formatted).not.toContain('"product_name"');
   });
 });
@@ -156,14 +144,14 @@ describe('rewriteOutreachResolvedPromptSections', () => {
   it('rewrites SENDER_JSON blobs after resolveInput', () => {
     const rewritten = rewriteOutreachResolvedPromptSections(
       [
-        'SENDER_JSON: {"identity":{"full_name":"Naresh"},"offer":{"product_name":"IMAGE-I"},"credibility":{},"icp":{},"voice":{},"meeting":{}}',
+        'SENDER_JSON: {"targetTitles":["CFO"],"locations":["India"],"brief":"Sender: Naresh\\nOffer: IMAGE-I"}',
         'Available slots (only source of times): [{"startsAt":"2024-11-10T09:00:00.000Z","endsAt":"2024-11-10T09:30:00.000Z"}]',
       ].join('\n'),
     );
 
     expect(rewritten).toContain('Sender: Naresh');
     expect(rewritten).toContain('(0) Sun, Nov 10 · 2:30–3:00 PM IST');
-    expect(rewritten).not.toContain('"product_name"');
+    expect(rewritten).not.toContain('"targetTitles"');
   });
 
   it('rewrites chat_history Unipile dumps into us/them turns', () => {

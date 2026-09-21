@@ -73,4 +73,7 @@ export class AgentDTO {
 
   @Field(() => [String])
   evaluationInputs: string[];
+
+  @Field(() => GraphQLJSON, { nullable: true })
+  toolConfigs?: object | null;
 }

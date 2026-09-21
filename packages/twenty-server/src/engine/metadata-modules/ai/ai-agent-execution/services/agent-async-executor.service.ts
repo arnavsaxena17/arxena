@@ -220,6 +220,7 @@ export class AgentAsyncExecutorService {
               isDefined(authContext) && isUserAuthContext(authContext)
                 ? authContext.userWorkspaceId
                 : undefined,
+            toolConfigs: agent.toolConfigs ?? {},
           };
 
           registryTools = await this.toolRegistry.getToolsByCategories(

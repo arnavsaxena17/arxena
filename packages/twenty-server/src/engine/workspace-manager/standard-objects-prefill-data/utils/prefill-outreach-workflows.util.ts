@@ -352,7 +352,8 @@ const upsertAgents = async ({
           SET prompt = $2,
               "responseFormat" = $3::jsonb,
               label = $4,
-              "modelId" = $5
+              "modelId" = $5,
+              "toolConfigs" = COALESCE("toolConfigs", '{}'::jsonb) || $6::jsonb
           WHERE id = $1
         `,
         [
@@ -361,6 +362,16 @@ const upsertAgents = async ({
           JSON.stringify(agent.responseFormat),
           agent.label,
           agent.modelId,
+          JSON.stringify(
+            agent.key === 'linkedinMessage'
+              ? {
+                  send_files: {
+                    fileSource: 'sender_collateral',
+                    fileIds: [],
+                  },
+                }
+              : {},
+          ),
         ],
       );
 
@@ -372,9 +383,9 @@ const upsertAgents = async ({
         INSERT INTO core.agent (
           id, name, label, icon, description, prompt, "modelId",
           "responseFormat", "isCustom", "workspaceId", "universalIdentifier",
-          "applicationId", "evaluationInputs"
+          "applicationId", "evaluationInputs", "toolConfigs"
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, true, $9, $10, $11, '{}')
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, true, $9, $10, $11, '{}', $12::jsonb)
       `,
       [
         agent.id,
@@ -388,6 +399,16 @@ const upsertAgents = async ({
         workspaceId,
         agent.universalIdentifier,
         applicationId,
+        JSON.stringify(
+          agent.key === 'linkedinMessage'
+            ? {
+                send_files: {
+                  fileSource: 'sender_collateral',
+                  fileIds: [],
+                },
+              }
+            : {},
+        ),
       ],
     );
   }

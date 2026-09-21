@@ -23,6 +23,7 @@ export const SystemPermissionFlag = {
   CREATE_CALENDAR_EVENT_TOOL: '5b8c104e-24d3-4e89-986b-1d9208df6cf4',
   HTTP_REQUEST_TOOL: '1bf49cf1-bb8f-5eb9-809a-5f34ea79fc6a',
   CODE_INTERPRETER_TOOL: '11f31c3a-7042-54b7-a2dd-ae31dd9e9fa2',
+  SEND_FILES_TOOL: '40eb1103-ca10-47cc-b2cd-c3cd37dff54f',
   IMPORT_CSV: 'c4912536-a4db-5af9-85ac-be2919c24c5e',
   EXPORT_CSV: '88efced9-ca6d-5316-a695-f1b9158e7370',
   CONNECTED_ACCOUNTS: 'e5f63b2d-5369-5df6-8f32-a8bd9e79e653',

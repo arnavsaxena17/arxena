@@ -512,8 +512,8 @@ export {
 export { getViewLayoutFromViewType } from './views/getViewLayoutFromViewType';
 export { isWidgetViewType } from './views/isWidgetViewType';
 export type {
-  BrowserExtensionCookie,
   WorkspaceMemberLinkedinCookieTokens,
+  BrowserExtensionCookie,
   WorkspaceMemberArxGraphqlNode,
   WorkspaceMembersConnection,
   WorkspaceMembersGraphqlResponse,

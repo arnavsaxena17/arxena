@@ -1068,7 +1068,7 @@ const repliedBranchSteps = ({
           timeZone: '',
           attendees: `${gtmWfFindField(IDS.repliedPersonFind, OUTREACH_WF_FIELD.emailsPrimaryPath)}, ${gtmWfMemberEmail()}`,
           isFullDay: false,
-          description: `{{${OUTREACH_WF_MEMBER_STEP_ID}.first.outreachSenderProfile.meeting.agenda_template}}`,
+          description: `{{${OUTREACH_WF_MEMBER_STEP_ID}.first.outreachSenderProfile.brief}}`,
           addConferencing: true,
           sendInvitations: true,
           connectedAccountId: '',

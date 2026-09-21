@@ -695,8 +695,8 @@ export class OutreachCommandController {
     }
   }
 
-  @Post('sender-profile/draft')
-  async draftSenderProfile(
+  @Post('sender-profile/generate')
+  async generateSenderProfile(
     @Body()
     body: {
       workspaceMemberId?: string;
@@ -710,33 +710,35 @@ export class OutreachCommandController {
       await this.resolveSenderProfileAuthContext(body, request);
 
     try {
-      return await this.outreachSenderProfileService.enqueueDraftSenderProfile({
-        workspaceId,
-        workspaceMemberId,
-        linkedinProfileText: body.linkedinProfileText,
-        collateralText: body.collateralText,
-        senderNotes: body.senderNotes,
-      });
+      return await this.outreachSenderProfileService.enqueueGenerateSenderProfile(
+        {
+          workspaceId,
+          workspaceMemberId,
+          linkedinProfileText: body.linkedinProfileText,
+          collateralText: body.collateralText,
+          senderNotes: body.senderNotes,
+        },
+      );
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
       }
 
       this.logger.error(
-        'Failed to enqueue outreach sender profile draft',
+        'Failed to enqueue outreach sender profile generate',
         error,
       );
       throw new HttpException(
         error instanceof Error
           ? error.message
-          : 'Failed to enqueue outreach sender profile draft',
+          : 'Failed to enqueue outreach sender profile generate',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
-  @Get('sender-profile/draft/:draftJobId')
-  async getDraftSenderProfileJob(
+  @Get('sender-profile/generate/:draftJobId')
+  async getGenerateSenderProfileJob(
     @Param('draftJobId') draftJobId: string,
     @Req() request: { headers?: { authorization?: string } },
   ) {
@@ -745,7 +747,7 @@ export class OutreachCommandController {
 
     try {
       const job =
-        await this.outreachSenderProfileService.getDraftSenderProfileJob({
+        await this.outreachSenderProfileService.getGenerateSenderProfileJob({
           draftJobId,
           workspaceId,
           workspaceMemberId,
@@ -766,7 +768,7 @@ export class OutreachCommandController {
       const message =
         error instanceof Error
           ? error.message
-          : 'Failed to load outreach sender profile draft';
+          : 'Failed to load outreach sender profile generate job';
 
       if (message === 'Draft job not found or expired') {
         throw new HttpException(message, HttpStatus.NOT_FOUND);
@@ -820,6 +822,59 @@ export class OutreachCommandController {
     }
   }
 
+  @Post('sender-profile/collateral-files')
+  async appendSenderProfileCollateralFile(
+    @Body()
+    body: {
+      workspaceMemberId?: string;
+      fileId?: string;
+      fileName?: string;
+      mimeType?: string;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    if (!body?.fileId?.trim() || !body?.fileName?.trim()) {
+      throw new HttpException(
+        'fileId and fileName are required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const { workspaceId, workspaceMemberId } =
+      await this.resolveSenderProfileAuthContext(body, request);
+
+    return this.outreachSenderProfileService.appendCollateralFile({
+      workspaceId,
+      workspaceMemberId,
+      fileId: body.fileId.trim(),
+      fileName: body.fileName.trim(),
+      mimeType: body.mimeType?.trim(),
+    });
+  }
+
+  @Post('sender-profile/collateral-files/remove')
+  async removeSenderProfileCollateralFile(
+    @Body()
+    body: {
+      workspaceMemberId?: string;
+      fileId?: string;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    if (!body?.fileId?.trim()) {
+      throw new HttpException('fileId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const { workspaceId, workspaceMemberId } =
+      await this.resolveSenderProfileAuthContext(body, request);
+
+    return this.outreachSenderProfileService.removeCollateralFile({
+      workspaceId,
+      workspaceMemberId,
+      fileId: body.fileId.trim(),
+    });
+  }
+
   @Post('sender-profile')
   async saveSenderProfile(
     @Body()
@@ -850,45 +905,6 @@ export class OutreachCommandController {
       senderNotes: body.senderNotes,
       senderProfile: body.senderProfile,
     });
-  }
-
-  @Post('sender-profile/sync-icp')
-  async syncSenderProfileIcpFromWorkspace(
-    @Body()
-    body: {
-      workspaceMemberId?: string;
-      icpSpec?: string | { targetTitles?: string[]; locations?: string[] };
-    },
-    @Req() request: { headers?: { authorization?: string } },
-  ) {
-    if (!isDefined(body?.icpSpec)) {
-      throw new HttpException('icpSpec is required', HttpStatus.BAD_REQUEST);
-    }
-
-    const { workspaceId, workspaceMemberId } =
-      await this.resolveSenderProfileAuthContext(body, request);
-
-    try {
-      return await this.outreachSenderProfileService.syncSenderIcpFromWorkspaceIcpSpec(
-        {
-          workspaceId,
-          workspaceMemberId,
-          icpSpec: body.icpSpec,
-        },
-      );
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      this.logger.error('Failed to sync sender ICP from workspace', error);
-      throw new HttpException(
-        error instanceof Error
-          ? error.message
-          : 'Failed to sync sender ICP from workspace',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
   }
 
   @Post('projects/:projectId/pause')

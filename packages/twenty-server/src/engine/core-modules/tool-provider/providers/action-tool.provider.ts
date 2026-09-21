@@ -33,6 +33,7 @@ import { HighlightOrgChartTool } from 'src/engine/core-modules/tool/tools/highli
 import { ExtractJsonPathsTool } from 'src/engine/core-modules/tool/tools/output-navigation-tool/extract-json-paths-tool';
 import { SearchOutputTool } from 'src/engine/core-modules/tool/tools/output-navigation-tool/search-output-tool';
 import { SearchHelpCenterTool } from 'src/engine/core-modules/tool/tools/search-help-center-tool/search-help-center-tool';
+import { SendFilesTool } from 'src/engine/core-modules/tool/tools/send-files-tool/send-files-tool';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
 import { PermissionsService } from 'src/engine/metadata-modules/permissions/permissions.service';
@@ -50,6 +51,7 @@ export class ActionToolProvider implements ToolProvider {
     private readonly createCalendarEventTool: CreateCalendarEventTool,
     private readonly searchHelpCenterTool: SearchHelpCenterTool,
     private readonly codeInterpreterTool: CodeInterpreterTool,
+    private readonly sendFilesTool: SendFilesTool,
     private readonly navigateAppTool: NavigateAppTool,
     private readonly highlightOrgChartTool: HighlightOrgChartTool,
     private readonly upsertOutreachTargetCompaniesTool: UpsertOutreachTargetCompaniesTool,
@@ -67,6 +69,7 @@ export class ActionToolProvider implements ToolProvider {
       ['create_calendar_event', this.createCalendarEventTool],
       ['search_help_center', this.searchHelpCenterTool],
       ['code_interpreter', this.codeInterpreterTool],
+      ['send_files', this.sendFilesTool],
       ['navigate_app', this.navigateAppTool],
       ['highlight_org_chart', this.highlightOrgChartTool],
       [
@@ -230,6 +233,24 @@ export class ActionToolProvider implements ToolProvider {
       );
     }
 
+    const hasSendFilesPermission =
+      await this.permissionsService.hasToolPermission(
+        context.rolePermissionConfig,
+        context.workspaceId,
+        PermissionFlagType.SEND_FILES_TOOL,
+      );
+
+    if (hasSendFilesPermission) {
+      descriptors.push(
+        this.buildDescriptor(
+          'send_files',
+          this.sendFilesTool,
+          includeSchemas,
+          context.locale,
+        ),
+      );
+    }
+
     return descriptors;
   }
 
@@ -252,6 +273,7 @@ export class ActionToolProvider implements ToolProvider {
       userWorkspaceId: context.userWorkspaceId,
       threadId: context.threadId,
       onCodeExecutionUpdate: context.onCodeExecutionUpdate,
+      toolConfigs: context.toolConfigs,
     });
   }
 

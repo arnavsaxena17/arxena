@@ -48,7 +48,7 @@ export const OUTREACH_FALLBACK_EMAIL_CORE =
 // Keep these to role + output contract. Field-level rules live in the per-step user prompts.
 
 export const OUTREACH_SEEDED_AGENT_LINKEDIN_MESSAGE_SYSTEM_PROMPT =
-  'You draft short LinkedIn messages for GTM outreach. Return JSON { "message": "<body>" } only.';
+  'You draft short LinkedIn messages for GTM outreach. Return JSON { "message": "<body>" } only. If the user prompt asks to share a deck or presentation, call send_files with channel linkedin after drafting (files come from sender collateral / agent config).';
 
 export const OUTREACH_SEEDED_AGENT_FALLBACK_EMAIL_SYSTEM_PROMPT = [
   OUTREACH_FALLBACK_EMAIL_CORE,
@@ -144,7 +144,7 @@ export const buildOutreachQualifyProspectPrompt = ({
     `profile: ${profile.trim() || '(empty)'}`,
     `posts: ${(posts ?? '').trim() || '(empty)'}`,
     `crm: ${(crm ?? '').trim() || '(empty)'}`,
-    'SCORING 0–5 per sender.icp. Role match + company match → 4–5. Exclude hits → 0–2 go=false.',
+    'SCORING 0–5 vs sender targetTitles / locations and brief ICP. Role match + company match → 4–5. Clear exclude signals in brief → 0–2 go=false.',
     'Retired/ex-/advisor/independent director/consultant → go=false.',
     'HOOKS at most 3: business fact, pain-related post, shared background.',
     `Return JSON only: ${OUTREACH_QUALIFY_JSON_KEYS}`,
@@ -353,7 +353,7 @@ export const buildOutreachSalesChatDraftPrompt = ({
         ].join('\n')
       : 'Draft the next outbound message only. Do not re-classify and do not extract contacts.',
     senderJson?.trim()
-      ? `SENDER_JSON (voice, offer, FAQ, meeting): ${formatOutreachSenderForLlm(senderJson) || '(none)'}`
+      ? `SENDER_JSON: ${formatOutreachSenderForLlm(senderJson) || '(none)'}`
       : '',
     prospectEnrichmentJson?.trim()
       ? `PROSPECT_ENRICHMENT: ${formatOutreachProspectEnrichmentForLlm(prospectEnrichmentJson) || '(none)'}`
@@ -598,51 +598,19 @@ export const buildOutreachInboundReplyClassifierUserPrompt = ({
     'Return JSON: { "intent", "confidence", "reasoning", "extractedTimeHint" }',
   ].join('\n');
 
-// Step 0 — build a reusable sender profile for outbound messaging agents.
-export const OUTREACH_BUILD_SENDER_PROFILE_SYSTEM_PROMPT = `You are building a reusable "sender" profile for an outbound-messaging agent. The agent
-will write LinkedIn, WhatsApp and email messages in this person's voice to book meetings.
-Everything you output must be traceable to the inputs. Where an input is missing, set the
-field to null — do not invent.
+// Build a slim sender profile for outbound messaging agents + discovery chips.
+export const OUTREACH_BUILD_SENDER_PROFILE_SYSTEM_PROMPT = `You build a reusable sender profile for an outbound-messaging agent.
 
-EXTRACTION RULES
-identity
-- first_name is how prospects would address them. how_they_sign = the name they use in
-  post sign-offs, if any.
-- company_short = the name they use conversationally (often without "Pvt Ltd").
-- Phone/email only if present in inputs.
+Return JSON with exactly three keys:
+- targetTitles: string[] — buyer job titles to find (discovery). Prefer 3–8 concrete titles.
+- locations: string[] — geos to search (countries/cities/regions). Prefer 1–5.
+- brief: string — freeform paragraphs the agent will read when writing LinkedIn / WhatsApp / email.
+  Cover: who the sender is and how they sign, company + offer/pitch, voice/tone, FAQ and
+  common objections, meeting prefs. Traceable to inputs only — do not invent facts.
+  Prefer short paragraphs over bullet laundry lists.
 
-credibility
-- one_liner: ≤14 words. Prefer operator framing over titles.
-- operator_line: ≤20 words, must mention the kind of business they have worked in.
-- credentials: max 3, shortest form.
-- industries_known: only industries with actual work history in the profile.
-- shared_background_tags: schools, employers, cities, professional bodies.
-
-offer
-- Derive from About, featured posts, and collateral. Product name exactly as they write it.
-- problem_statements: buyer words, ≤20 words each, no product name.
-- outcomes: concrete and checkable (≤15 words). Drop adjective-only claims.
-- proof_points: only if the input contains a number. Anonymise client names.
-- faq: 6–10 Q&As. If unsupported, answer "Ask sender before answering".
-- collateral: list each file with a one-line when_to_send rule.
-
-icp
-- From sender_notes first, then from who the posts address.
-- Mark inferred exclude_* items with "(inferred)".
-- known_objections: 3–6 with one-sentence responses.
-
-voice
-- register ≤10 words from how they write posts.
-- signature_phrases: up to 5. Skip hashtags and emoji.
-- avoid_phrases: hype vocabulary plus follow-up clichés.
-- sign_off: how they end messages if visible; else "Regards, {{first_name}}".
-
-meeting
-- Defaults: 20 min, teams, weekdays 14:00–17:00 local, weekends allowed if proposed.
-- agenda_template: three bullets that work for any prospect.
-
-OUTPUT: the JSON object only, matching the schema. Add top-level "review_flags": [] listing
-every field that was inferred rather than stated.`;
+If sender_notes specify ICP titles or geos, prefer those for targetTitles / locations.
+If existing_object is set, merge; never drop human-edited brief the inputs still support.`;
 
 export const buildOutreachSenderProfileUserPrompt = ({
   linkedinProfileText,
@@ -662,8 +630,7 @@ export const buildOutreachSenderProfileUserPrompt = ({
     `sender_notes: ${(senderNotes ?? '').trim() || '(empty)'}`,
     `existing_object: ${(existingObjectJson ?? '').trim() || '(none)'}`,
     '',
-    'If existing_object is set, merge; never drop human-edited fields.',
-    'Return JSON only.',
+    'Return JSON only: { "targetTitles": [], "locations": [], "brief": "" }',
   ].join('\n');
 
 export const OUTREACH_COMPANY_PROFILE_SUMMARIZER_SYSTEM_PROMPT = `You synthesize a concise company profile for Outreach workspace onboarding.

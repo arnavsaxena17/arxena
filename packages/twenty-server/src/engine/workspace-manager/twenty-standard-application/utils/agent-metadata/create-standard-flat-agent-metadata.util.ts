@@ -45,6 +45,7 @@ Always base answers on official Arxena documentation. Be patient and helpful.`,
         isCustom: false,
         modelConfiguration: {},
         evaluationInputs: [],
+        toolConfigs: {},
       },
     }),
 } satisfies {

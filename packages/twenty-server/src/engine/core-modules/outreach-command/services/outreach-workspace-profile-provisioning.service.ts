@@ -15,7 +15,6 @@ import { OutreachCompanyEnrichmentCollectorService } from 'src/engine/core-modul
 import { OutreachCompanyProfileSummarizerService } from 'src/engine/core-modules/outreach-command/services/outreach-company-profile-summarizer.service';
 import { IcpBootstrapSummarizerService } from 'src/engine/core-modules/outreach-command/services/outreach-icp-bootstrap-summarizer.service';
 import { OutreachSenderProfileService } from 'src/engine/core-modules/outreach-command/services/outreach-sender-profile.service';
-import { stringifyIcpSpec } from 'src/engine/core-modules/outreach-command/utils/outreach-icp-spec.util';
 import { buildOutreachWorkspaceProfileDraftFromDomain } from 'src/engine/core-modules/outreach-command/utils/outreach-workspace-profile-draft.util';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import type {
@@ -114,11 +113,7 @@ export class OutreachWorkspaceProfileProvisioningService {
 
       const force = data.force === true;
 
-      if (
-        !force &&
-        (isNonEmptyString(existingWorkspace.icpSpec) ||
-          isDefined(existingWorkspace.enrichmentJson))
-      ) {
+      if (!force && isDefined(existingWorkspace.enrichmentJson)) {
         this.logger.log(
           `Skipping GTM workspace profile bootstrap for ${workspaceId}: already enriched`,
         );
@@ -207,7 +202,6 @@ export class OutreachWorkspaceProfileProvisioningService {
           employeeRange: draft.employeeRange,
           hq: draft.hq,
           enrichmentJson: draft.enrichmentJson,
-          icpSpec: stringifyIcpSpec(draft.icpSpec),
         },
       );
 
@@ -232,7 +226,8 @@ export class OutreachWorkspaceProfileProvisioningService {
             industry: draft.industry,
             summary: draft.summary,
             hq: draft.hq,
-            icpSpec: draft.icpSpec,
+            targetTitles: draft.icpSpec?.targetTitles,
+            locations: draft.icpSpec?.locations,
             force,
           },
         );
@@ -277,8 +272,9 @@ export class OutreachWorkspaceProfileProvisioningService {
     try {
       await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
         async () => {
-          const memberRepository =
-            await this.getWorkspaceMemberRepository(input.workspaceId);
+          const memberRepository = await this.getWorkspaceMemberRepository(
+            input.workspaceId,
+          );
 
           if (!isDefined(memberRepository)) {
             return;
