@@ -31,11 +31,29 @@ describe('readPersonTitleCompanyFromCandidate', () => {
     });
   });
 
+  it('reads nested experience[0] title/company name objects', () => {
+    expect(
+      readPersonTitleCompanyFromCandidate({
+        otherFields: {
+          experience: [
+            {
+              title: { name: 'Chief Executive Officer' },
+              company: { name: 'Petrochem Middle East' },
+            },
+          ],
+        },
+      }),
+    ).toEqual({
+      jobTitle: 'Chief Executive Officer',
+      jobCompanyName: 'Petrochem Middle East',
+    });
+  });
+
   it('returns empty when nothing usable is present', () => {
     expect(
       readPersonTitleCompanyFromCandidate({
         jobTitle: '  ',
-        otherFields: { unrelated: 'x' },
+        otherFields: { unrelated: 'x', job_name: 'Harvest' },
       }),
     ).toEqual({});
   });

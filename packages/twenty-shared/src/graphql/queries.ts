@@ -2717,6 +2717,8 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
               lastName
             }
             locationName
+            jobTitle
+            jobCompanyName
             emails {
               primaryEmail
             }
