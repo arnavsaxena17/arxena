@@ -116,8 +116,8 @@ import { FoldStartStopOutreachIntoCandidateFlagsCommand } from 'src/database/com
 import { ResyncOutreachPersonIdentityFindsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000125-resync-outreach-person-identity-finds.command';
 import { ResyncOutreachConnectionNoteStampedEnrichmentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000126-resync-outreach-connection-note-stamped-enrichment.command';
 import { SeedSearchAndUploadPeopleProfilesWorkflowCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000127-seed-search-and-upload-people-profiles-workflow.command';
-import { SetOutreachExtractSignalsDeepseekCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000106-set-outreach-extract-signals-deepseek.command';
-import { DropChatMessageObjWithTimeStampCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000099-drop-chat-message-obj-with-time-stamp.command';
+import { ResyncOutreachSequencerAutomatedTriggerCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000128-resync-outreach-sequencer-automated-trigger.command';
+import { SetOutreachExtractSignalsDeepseekCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000106-set-outreach-extract-signals-deepseek.command';import { DropChatMessageObjWithTimeStampCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000099-drop-chat-message-obj-with-time-stamp.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { MigrateOtherFieldsService } from 'src/engine/core-modules/candidate-sourcing/services/migrate-other-fields.service';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
@@ -269,6 +269,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     ResyncOutreachPersonIdentityFindsCommand,
     ResyncOutreachConnectionNoteStampedEnrichmentCommand,
     SeedSearchAndUploadPeopleProfilesWorkflowCommand,
+    ResyncOutreachSequencerAutomatedTriggerCommand,
     MigrateOtherFieldsService,
     DropCandidateFieldObjectsCommand,
   ],
