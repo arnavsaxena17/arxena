@@ -18,6 +18,16 @@ describe('bot-detection', () => {
           'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.3; +https://openai.com/gptbot)',
         ),
       ).toBe(true);
+      expect(
+        isDeclaredBotUserAgent(
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 (compatible; meta-externalagent/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler))',
+        ),
+      ).toBe(true);
+      expect(
+        isDeclaredBotUserAgent(
+          'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+        ),
+      ).toBe(true);
     });
 
     it('returns false for typical browser user agents', () => {

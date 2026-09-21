@@ -27,9 +27,9 @@ const BLOCKED_BOT_PATTERNS = [
   /blexbot/i,
 ];
 
-/** Self-declared crawlers (bingbot, SeznamBot, GPTBot, etc.) — not treated as scrapers. */
+/** Self-declared crawlers (bingbot, Meta, GPTBot, etc.) — not treated as scrapers. */
 const DECLARED_BOT_UA_PATTERN =
-  /bot|crawler|spider|scraper|bytespider|petalbot/i;
+  /bot|crawler|spider|scraper|bytespider|petalbot|meta-externalagent|facebookexternalhit|facebot/i;
 
 /**
  * Returns true if the User-Agent indicates an unauthorized crawler/scraper.

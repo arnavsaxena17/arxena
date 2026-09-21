@@ -1,4 +1,8 @@
-import { getClientIpFromHeaders, isBlockedBot } from '@/lib/bot-detection';
+import {
+  getClientIpFromHeaders,
+  isBlockedBot,
+  isDeclaredBotUserAgent,
+} from '@/lib/bot-detection';
 import { isLikelyBrowserRequest } from '@/lib/is-likely-browser-request';
 
 export const ORG_CHART_STATIC_ONLY_HEADER = 'x-org-chart-static-only';
@@ -79,7 +83,7 @@ export const resolveOrgChartStaticOnly = (
   }
 
   const userAgent = input.headers.get('user-agent');
-  if (isBlockedBot(userAgent)) {
+  if (isBlockedBot(userAgent) || isDeclaredBotUserAgent(userAgent)) {
     return true;
   }
 

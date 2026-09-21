@@ -133,13 +133,8 @@ export async function GET(
     }
 
     const data = JSON.parse(text) as Record<string, unknown>;
-    const isLikelyBot =
-      effectiveUserAgent &&
-      /bot|crawler|spider|scraper|bytespider|petalbot/i.test(
-        effectiveUserAgent,
-      );
-    const shouldLog = process.env.LOG_ORG_CHART_REQUESTS === '1' || isLikelyBot;
-    if (effectiveUserAgent && shouldLog) {
+    // Opt-in only — bot traffic otherwise floods PM2 logs in prod
+    if (process.env.LOG_ORG_CHART_REQUESTS === '1') {
       console.log('[OrgChart proxy]', {
         path: pathPart,
         userAgent: effectiveUserAgent,
@@ -147,7 +142,16 @@ export async function GET(
         clientIp: clientIp ?? undefined,
       });
     }
-    return NextResponse.json(data, { status: response.status });
+    return NextResponse.json(data, {
+      status: response.status,
+      headers:
+        response.status === 200
+          ? {
+              'Cache-Control':
+                'public, s-maxage=86400, max-age=60, stale-while-revalidate=86400',
+            }
+          : undefined,
+    });
   } catch {
     return NextResponse.json(
       { status: 'error', message: 'Failed to fetch org chart' },

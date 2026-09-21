@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   HttpException,
   HttpStatus,
   Logger,
@@ -2218,6 +2219,10 @@ export class OrgChartController {
   }
 
   @Get(':companyId/:country/:functionRoot')
+  @Header(
+    'Cache-Control',
+    'public, s-maxage=86400, max-age=60, stale-while-revalidate=86400',
+  )
   async getOrgChartPath3(
     @Param('companyId') companyId: string,
     @Param('country') country: string,
@@ -2240,6 +2245,10 @@ export class OrgChartController {
   }
 
   @Get(':companyId/:country')
+  @Header(
+    'Cache-Control',
+    'public, s-maxage=86400, max-age=60, stale-while-revalidate=86400',
+  )
   async getOrgChartPath2(
     @Param('companyId') companyId: string,
     @Param('country') country: string,
@@ -2267,6 +2276,10 @@ export class OrgChartController {
   }
 
   @Get(':companyId')
+  @Header(
+    'Cache-Control',
+    'public, s-maxage=86400, max-age=60, stale-while-revalidate=86400',
+  )
   async getOrgChart(
     @Param('companyId') companyId: string,
     @Query('companyName') companyName: string | undefined,

@@ -39,6 +39,20 @@ describe('org-chart-static-only', () => {
     ).toBe(true);
   });
 
+  it('resolveOrgChartStaticOnly is true for Meta crawlers', () => {
+    expect(
+      resolveOrgChartStaticOnly({
+        headers: new Headers({
+          'user-agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 (compatible; meta-externalagent/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler))',
+          'sec-fetch-site': 'none',
+          'sec-fetch-mode': 'navigate',
+        }),
+        isVerifiedBot: false,
+      }),
+    ).toBe(true);
+  });
+
   it('resolveOrgChartStaticOnly stays interactive for crawl-rate IPs with browser signals', () => {
     expect(
       resolveOrgChartStaticOnly({

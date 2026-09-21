@@ -4,7 +4,11 @@ import { Client } from '@elastic/elasticsearch';
 
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 
-import { buildCompanyWebsiteLookupVariants, isUsableOrgChartEsDocument, isUsableOrgChartResolveCompanyId } from '../utils/org-chart-resolve-domain.util';
+import {
+  buildCompanyWebsiteLookupVariants,
+  isUsableOrgChartEsDocument,
+  isUsableOrgChartResolveCompanyId,
+} from '../utils/org-chart-resolve-domain.util';
 
 type OrgChartDocument = Record<string, unknown>;
 
@@ -172,7 +176,7 @@ export class OrgChartEsService {
     };
 
     try {
-      this.logger.log(
+      this.logger.debug(
         `Executing org chart ES query for companyId=${normalizedCompanyId}, companyName=${normalizedCompanyName ?? ''}, website=${website ?? ''}, country=${countryValue}, type=${typeValue}: ${JSON.stringify(
           query,
         ).slice(0, 4000)}`,
@@ -189,13 +193,13 @@ export class OrgChartEsService {
       const firstHit = response.hits.hits[0];
 
       if (!firstHit?._source) {
-        this.logger.warn(
+        this.logger.debug(
           `No org chart document found in ES for companyId=${companyId}`,
         );
         return { document: null };
       }
 
-      this.logger.log(
+      this.logger.debug(
         `Org chart ES query succeeded for companyId=${companyId}, totalHits=${JSON.stringify(
           response.hits.total,
         )}`,
@@ -208,7 +212,10 @@ export class OrgChartEsService {
         error as Error,
       );
       const esTransportError = isElasticsearchTransportLayerError(error);
-      return { document: null, ...(esTransportError ? { esTransportError: true } : {}) };
+      return {
+        document: null,
+        ...(esTransportError ? { esTransportError: true } : {}),
+      };
     }
   }
 
@@ -230,8 +237,7 @@ export class OrgChartEsService {
       return [];
     }
 
-    const companiesIndex =
-      this.environmentService.get('COMPANIES_ES_INDEX');
+    const companiesIndex = this.environmentService.get('COMPANIES_ES_INDEX');
 
     try {
       const searchResponse = await this.client.search<{
@@ -273,7 +279,10 @@ export class OrgChartEsService {
         _source: ['id', 'name', 'website'],
       });
 
-      const byId = new Map<string, { id: string; name: string; website?: string }>();
+      const byId = new Map<
+        string,
+        { id: string; name: string; website?: string }
+      >();
       for (const h of fetchResponse.hits.hits) {
         const src = h._source;
         if (!src?.id) continue;
@@ -291,7 +300,9 @@ export class OrgChartEsService {
 
       return idsToFetch
         .map((id) => byId.get(id))
-        .filter((c): c is { id: string; name: string; website?: string } => !!c);
+        .filter(
+          (c): c is { id: string; name: string; website?: string } => !!c,
+        );
     } catch (error) {
       this.logger.error(
         `Elasticsearch getTopHiredFromCompanies failed for companyId=${companyId}`,
@@ -306,8 +317,7 @@ export class OrgChartEsService {
     'us-army',
     'us-navy',
     'united-states-air-force',
-    'united-states-marine-corps'
-
+    'united-states-marine-corps',
   ]);
 
   /**
@@ -341,8 +351,12 @@ export class OrgChartEsService {
         },
       });
 
-      const buckets = (response.aggregations?.companies as { buckets?: Array<{ key: string }> })
-        ?.buckets ?? [];
+      const buckets =
+        (
+          response.aggregations?.companies as {
+            buckets?: Array<{ key: string }>;
+          }
+        )?.buckets ?? [];
       return buckets
         .map((b) => b.key)
         .filter(
@@ -379,9 +393,9 @@ export class OrgChartEsService {
           bool: {
             must_not: [
               { term: { type: '0' } },
-              ...Array.from(
-                OrgChartEsService.SITEMAP_EXCLUDED_COMPANY_IDS,
-              ).map((id) => ({ term: { job_company_id: id } })),
+              ...Array.from(OrgChartEsService.SITEMAP_EXCLUDED_COMPANY_IDS).map(
+                (id) => ({ term: { job_company_id: id } }),
+              ),
             ],
           },
         },
@@ -407,9 +421,12 @@ export class OrgChartEsService {
         },
       });
 
-      const buckets = (response.aggregations?.companies as {
-        buckets?: Array<{ key: string }>;
-      })?.buckets ?? [];
+      const buckets =
+        (
+          response.aggregations?.companies as {
+            buckets?: Array<{ key: string }>;
+          }
+        )?.buckets ?? [];
       return buckets
         .map((b) => b.key)
         .filter(
@@ -562,10 +579,9 @@ export class OrgChartEsService {
       }
 
       const lastHit = hits[hits.length - 1];
-      const nextSearchAfter =
-        lastHit?.sort
-          ? (lastHit.sort as unknown[])
-          : null;
+      const nextSearchAfter = lastHit?.sort
+        ? (lastHit.sort as unknown[])
+        : null;
 
       return {
         urls,
@@ -617,7 +633,10 @@ export class OrgChartEsService {
         }
       }
 
-      if (!nextSearchAfter || urls.length < OrgChartEsService.SEARCH_AFTER_CHUNK_SIZE) {
+      if (
+        !nextSearchAfter ||
+        urls.length < OrgChartEsService.SEARCH_AFTER_CHUNK_SIZE
+      ) {
         break;
       }
     }
@@ -733,10 +752,7 @@ export class OrgChartEsService {
       const numSitemaps = Math.ceil(pair.docCount / PHASE2_SITEMAP_SIZE);
       if (remainingBatchIndex < numSitemaps) {
         const offset = remainingBatchIndex * PHASE2_SITEMAP_SIZE;
-        const limit = Math.min(
-          PHASE2_SITEMAP_SIZE,
-          pair.docCount - offset,
-        );
+        const limit = Math.min(PHASE2_SITEMAP_SIZE, pair.docCount - offset);
         return {
           country: pair.country,
           type: pair.type,
@@ -830,7 +846,8 @@ export class OrgChartEsService {
       });
 
       const hits = response.hits.hits;
-      const results: { companyId: string; country: string; type: string }[] = [];
+      const results: { companyId: string; country: string; type: string }[] =
+        [];
       for (const hit of hits) {
         const src = hit._source as
           | { job_company_id?: string; country?: string; type?: string }
@@ -859,7 +876,8 @@ export class OrgChartEsService {
   }
 
   /** Letters for company list browsing (a-z). */
-  private static readonly COMPANY_LIST_LETTERS = 'abcdefghijklmnopqrstuvwxyz'.split('');
+  private static readonly COMPANY_LIST_LETTERS =
+    'abcdefghijklmnopqrstuvwxyz'.split('');
 
   /**
    * Get top N company IDs by global rank (count_org desc).
@@ -900,8 +918,12 @@ export class OrgChartEsService {
         },
       });
 
-      const buckets = (response.aggregations?.companies as { buckets?: Array<{ key: string }> })
-        ?.buckets ?? [];
+      const buckets =
+        (
+          response.aggregations?.companies as {
+            buckets?: Array<{ key: string }>;
+          }
+        )?.buckets ?? [];
       return buckets
         .map((b) => b.key)
         .filter(
@@ -942,7 +964,11 @@ export class OrgChartEsService {
     const from = (Math.max(1, page) - 1) * pageSize;
 
     let topCompanyIds: string[] | undefined;
-    if (maxExposedCount != null && maxExposedCount > 0 && maxExposedCount <= 10000) {
+    if (
+      maxExposedCount != null &&
+      maxExposedCount > 0 &&
+      maxExposedCount <= 10000
+    ) {
       topCompanyIds = await this.getTopCompanyIdsByRank(maxExposedCount);
     }
 
@@ -988,8 +1014,12 @@ export class OrgChartEsService {
         },
       });
 
-      const buckets = (response.aggregations?.companies as { buckets?: Array<{ key: string }> })
-        ?.buckets ?? [];
+      const buckets =
+        (
+          response.aggregations?.companies as {
+            buckets?: Array<{ key: string }>;
+          }
+        )?.buckets ?? [];
       const companyIds = buckets
         .map((b) => b.key)
         .filter((id): id is string => !!id && typeof id === 'string')
@@ -1031,7 +1061,11 @@ export class OrgChartEsService {
     const from = (Math.max(1, page) - 1) * pageSize;
 
     let topCompanyIds: string[] | undefined;
-    if (maxExposedCount != null && maxExposedCount > 0 && maxExposedCount <= 10000) {
+    if (
+      maxExposedCount != null &&
+      maxExposedCount > 0 &&
+      maxExposedCount <= 10000
+    ) {
       topCompanyIds = await this.getTopCompanyIdsByRank(maxExposedCount);
     }
 
@@ -1074,8 +1108,12 @@ export class OrgChartEsService {
         },
       });
 
-      const buckets = (response.aggregations?.companies as { buckets?: Array<{ key: string }> })
-        ?.buckets ?? [];
+      const buckets =
+        (
+          response.aggregations?.companies as {
+            buckets?: Array<{ key: string }>;
+          }
+        )?.buckets ?? [];
       const companyIds = buckets
         .map((b) => b.key)
         .filter((id): id is string => !!id && typeof id === 'string')
@@ -1118,7 +1156,11 @@ export class OrgChartEsService {
     const from = (Math.max(1, page) - 1) * pageSize;
 
     let topCompanyIds: string[] | undefined;
-    if (maxExposedCount != null && maxExposedCount > 0 && maxExposedCount <= 10000) {
+    if (
+      maxExposedCount != null &&
+      maxExposedCount > 0 &&
+      maxExposedCount <= 10000
+    ) {
       topCompanyIds = await this.getTopCompanyIdsByRank(maxExposedCount);
     }
 
@@ -1162,8 +1204,12 @@ export class OrgChartEsService {
         },
       });
 
-      const buckets = (response.aggregations?.companies as { buckets?: Array<{ key: string }> })
-        ?.buckets ?? [];
+      const buckets =
+        (
+          response.aggregations?.companies as {
+            buckets?: Array<{ key: string }>;
+          }
+        )?.buckets ?? [];
       const companyIds = buckets
         .map((b) => b.key)
         .filter((id): id is string => !!id && typeof id === 'string')
@@ -1246,7 +1292,10 @@ export class OrgChartEsService {
         });
 
         const agg = response.aggregations?.combos as
-          | { buckets?: Array<{ key: { country: string; type: string } }>; after?: Record<string, string | number> }
+          | {
+              buckets?: Array<{ key: { country: string; type: string } }>;
+              after?: Record<string, string | number>;
+            }
           | undefined;
         const buckets = agg?.buckets ?? [];
         after = agg?.after;
@@ -1260,7 +1309,7 @@ export class OrgChartEsService {
         }
       } while (after);
 
-      this.logger.log(
+      this.logger.debug(
         `getIndexedUrlsForCompany companyId=${normalizedCompanyId} found ${results.length} URL combinations`,
       );
       return results;
@@ -1317,7 +1366,10 @@ export class OrgChartEsService {
       for (const hit of searchResponse.hits.hits) {
         const src = hit._source;
         const companyId = src?.job_company_id?.trim().toLowerCase();
-        if (!companyId || !isUsableOrgChartEsDocument({ ...src, job_company_id: companyId })) {
+        if (
+          !companyId ||
+          !isUsableOrgChartEsDocument({ ...src, job_company_id: companyId })
+        ) {
           continue;
         }
         return {
@@ -1352,8 +1404,7 @@ export class OrgChartEsService {
       return null;
     }
 
-    const companiesIndex =
-      this.environmentService.get('COMPANIES_ES_INDEX');
+    const companiesIndex = this.environmentService.get('COMPANIES_ES_INDEX');
 
     try {
       const searchResponse = await this.client.search<{
@@ -1381,8 +1432,7 @@ export class OrgChartEsService {
           return {
             id,
             name: typeof src?.name === 'string' ? src.name : undefined,
-            website:
-              typeof src?.website === 'string' ? src.website : undefined,
+            website: typeof src?.website === 'string' ? src.website : undefined,
           };
         }
       }
@@ -1439,7 +1489,10 @@ export class OrgChartEsService {
 
       const src = searchResponse.hits.hits[0]?._source;
       const resolvedId = src?.job_company_id?.trim().toLowerCase();
-      if (!resolvedId || !isUsableOrgChartEsDocument({ ...src, job_company_id: resolvedId })) {
+      if (
+        !resolvedId ||
+        !isUsableOrgChartEsDocument({ ...src, job_company_id: resolvedId })
+      ) {
         return null;
       }
 
@@ -1475,7 +1528,7 @@ export class OrgChartEsService {
       return null;
     }
 
-    this.logger.log(
+    this.logger.debug(
       `resolveCompanyByDomain bareDomain=${bareDomain} variants=${websiteVariants.length}`,
     );
 

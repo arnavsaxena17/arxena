@@ -158,6 +158,14 @@ export async function middleware(request: NextRequest) {
     request: { headers: requestHeaders },
   });
 
+  if (isOrgChartDocumentPath(pathname) && request.method === 'GET') {
+    // Let CloudFront cache catalog HTML (SSR loopback still hits Nest/S3)
+    res.headers.set(
+      'Cache-Control',
+      'public, s-maxage=86400, max-age=300, stale-while-revalidate=86400',
+    );
+  }
+
   if (
     isOrgChartDocumentPath(pathname) &&
     !staticOnly &&

@@ -186,6 +186,12 @@ export const resolveIsLikelyBrowser = (headers: Headers): boolean => {
   if (headers.get(ORG_CHART_LIKELY_BROWSER_HEADER) === '1') {
     return true;
   }
+  const userAgent =
+    headers.get('x-forwarded-user-agent') ?? headers.get('user-agent');
+  // Declared crawlers (incl. Meta) must not skip crawl_static tracking
+  if (isDeclaredBotUserAgent(userAgent)) {
+    return false;
+  }
   return isLikelyBrowserRequest(headers);
 };
 
@@ -257,7 +263,12 @@ export const checkOrgChartApiGuard = async (
 export const applyOrgChartLikelyBrowserRequestHeader = (
   requestHeaders: Headers,
 ): void => {
-  const isLikelyBrowser = isLikelyBrowserRequest(requestHeaders);
+  const userAgent =
+    requestHeaders.get('x-forwarded-user-agent') ??
+    requestHeaders.get('user-agent');
+  const isLikelyBrowser =
+    !isDeclaredBotUserAgent(userAgent) &&
+    isLikelyBrowserRequest(requestHeaders);
   requestHeaders.set(
     ORG_CHART_LIKELY_BROWSER_HEADER,
     isLikelyBrowser ? '1' : '0',

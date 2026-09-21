@@ -54,6 +54,7 @@ import {
 import { buildCompanyOrgChartLogicalCacheKey } from '../utils/orgchart-cache-keys.util';
 import { ArxenaBackendService } from './arxena-backend.service';
 import { CompaniesEsService } from './companies-es.service';
+import { OrgChartCatalogS3Service } from './org-chart-catalog-s3.service';
 import { OrgChartEsService } from './org-chart-es.service';
 import { normalizeOrgChartPayload } from './org-chart-payload-normalize';
 import { OrgChartS3Service } from './orgchart-s3.service';
@@ -92,6 +93,7 @@ export class OrgChartService {
     private readonly workspaceCreditsService: WorkspaceCreditsService,
     private readonly creditTransactionService: CreditTransactionService,
     private readonly orgChartS3Service: OrgChartS3Service,
+    private readonly orgChartCatalogS3Service: OrgChartCatalogS3Service,
     private readonly orgChartCacheService: OrgChartCacheService,
     @InjectCacheStorage(CacheStorageNamespace.EngineOrgChart)
     private readonly orgChartCacheStorageService: CacheStorageService,
@@ -784,11 +786,29 @@ export class OrgChartService {
     // Prefer workspace-scoped S3/Redis when this workspace has org-chart access. If there is
     // no org chart in the default S3 path for this company (`s3OrgChart` is null after an
     // attempted read, or we never read S3 because the workspace lacks access), fall back
-    // to the shared Elasticsearch org-charts index instead of serving only the blank
-    // placeholder.
+    // to the public catalog S3 cache, then shared Elasticsearch org-charts index, instead
+    // of serving only the blank placeholder.
     const canReadFromEs =
       !hasAuthToken || workspaceHasOrgChartAccess || s3OrgChart === null;
     if (!options.serveCachedOnly && canReadFromEs) {
+      const catalogCountry = options.country ?? 'global';
+      const catalogType = options.functionRoot ?? 'fullcompany';
+
+      for (const catalogCompanyId of aliasCompanyIds) {
+        const catalogDocument =
+          await this.orgChartCatalogS3Service.getCatalogDocument({
+            companyId: catalogCompanyId,
+            country: catalogCountry,
+            type: catalogType,
+          });
+
+        if (catalogDocument) {
+          return {
+            data: normalizeOrgChartPayload(catalogDocument),
+          };
+        }
+      }
+
       for (const esCompanyId of aliasCompanyIds) {
         const esOutcome = await this.orgChartEsService.getOrgChartByCompanyId(
           esCompanyId,
@@ -798,6 +818,13 @@ export class OrgChartService {
         orgChartEsTransportError = esOutcome.esTransportError === true;
 
         if (esOutcome.document) {
+          void this.orgChartCatalogS3Service.putCatalogDocument({
+            companyId: esCompanyId,
+            country: catalogCountry,
+            type: catalogType,
+            document: esOutcome.document,
+          });
+
           return {
             data: normalizeOrgChartPayload(esOutcome.document),
           };
@@ -870,7 +897,7 @@ export class OrgChartService {
     });
 
     if (blankChart) {
-      this.logger.log(
+      this.logger.debug(
         `Serving blank org chart placeholder for companyId=${companyId} from static file`,
       );
 

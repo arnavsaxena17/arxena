@@ -2419,6 +2419,15 @@ export class ConfigVariables {
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,
+    description:
+      'S3 bucket for public SEO org-chart catalog JSON (ES write-through / S3-first reads)',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  ORGCHARTS_PUBLIC_S3_BUCKET = 'arxena-orgcharts-940813655147';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
     description: 'Elasticsearch index for companies (legacy text index)',
     type: ConfigVariableType.STRING,
   })
