@@ -4,6 +4,8 @@ import { resolveIpinfoToken } from './resolveIpinfoToken';
 const IPINFO_API_BASE = 'https://ipinfo.io';
 const LOOKUP_TIMEOUT_MS = 3_000;
 const IPINFO_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const IPINFO_NEGATIVE_CACHE_TTL_MS = 30 * 60 * 1000;
+const IPINFO_RATE_LIMIT_COOLDOWN_MS = 15 * 60 * 1000;
 const IPINFO_CACHE_MAX_ENTRIES = 5_000;
 
 export type IpInfoLookupPayload = {
@@ -15,10 +17,13 @@ export type IpInfoLookupPayload = {
 type CachedIpInfoLookup = {
   payload: IpInfoLookupPayload;
   cachedAt: number;
+  ttlMs: number;
 };
 
 const ipInfoLookupCache = new Map<string, CachedIpInfoLookup>();
 const inFlightIpInfoLookups = new Map<string, Promise<IpInfoLookupPayload>>();
+
+let rateLimitedUntilMs = 0;
 
 const EMPTY_PAYLOAD: IpInfoLookupPayload = {
   country: null,
@@ -31,7 +36,7 @@ const readCachedPayload = (ip: string): IpInfoLookupPayload | null => {
   if (!cached) {
     return null;
   }
-  if (Date.now() - cached.cachedAt > IPINFO_CACHE_TTL_MS) {
+  if (Date.now() - cached.cachedAt > cached.ttlMs) {
     ipInfoLookupCache.delete(ip);
     return null;
   }
@@ -41,8 +46,12 @@ const readCachedPayload = (ip: string): IpInfoLookupPayload | null => {
   return cached.payload;
 };
 
-const writeCachedPayload = (ip: string, payload: IpInfoLookupPayload): void => {
-  ipInfoLookupCache.set(ip, { payload, cachedAt: Date.now() });
+const writeCachedPayload = (
+  ip: string,
+  payload: IpInfoLookupPayload,
+  ttlMs: number = IPINFO_CACHE_TTL_MS,
+): void => {
+  ipInfoLookupCache.set(ip, { payload, cachedAt: Date.now(), ttlMs });
   while (ipInfoLookupCache.size > IPINFO_CACHE_MAX_ENTRIES) {
     const oldestKey = ipInfoLookupCache.keys().next().value;
     if (oldestKey === undefined) {
@@ -54,7 +63,11 @@ const writeCachedPayload = (ip: string, payload: IpInfoLookupPayload): void => {
 
 const fetchIpInfoLookupUncached = async (
   normalizedIp: string,
-): Promise<{ payload: IpInfoLookupPayload; cacheable: boolean }> => {
+): Promise<{
+  payload: IpInfoLookupPayload;
+  cacheable: boolean;
+  ttlMs: number;
+}> => {
   const token = resolveIpinfoToken();
   const url = token
     ? `${IPINFO_API_BASE}/${encodeURIComponent(normalizedIp)}?token=${encodeURIComponent(token)}`
@@ -75,7 +88,20 @@ const fetchIpInfoLookupUncached = async (
         clientIp: normalizedIp,
         status: response.status,
       });
-      return { payload: EMPTY_PAYLOAD, cacheable: false };
+      // Stop hammering the API while quota is exhausted
+      if (response.status === 429) {
+        rateLimitedUntilMs = Date.now() + IPINFO_RATE_LIMIT_COOLDOWN_MS;
+        return {
+          payload: EMPTY_PAYLOAD,
+          cacheable: true,
+          ttlMs: IPINFO_NEGATIVE_CACHE_TTL_MS,
+        };
+      }
+      return {
+        payload: EMPTY_PAYLOAD,
+        cacheable: false,
+        ttlMs: IPINFO_CACHE_TTL_MS,
+      };
     }
 
     const data = (await response.json()) as {
@@ -91,13 +117,18 @@ const fetchIpInfoLookupUncached = async (
         hostname: data.hostname?.trim() || null,
       },
       cacheable: true,
+      ttlMs: IPINFO_CACHE_TTL_MS,
     };
   } catch (error) {
     console.warn('[fetchIpInfoLookup] ipinfo lookup error', {
       clientIp: normalizedIp,
       error: error instanceof Error ? error.message : String(error),
     });
-    return { payload: EMPTY_PAYLOAD, cacheable: false };
+    return {
+      payload: EMPTY_PAYLOAD,
+      cacheable: false,
+      ttlMs: IPINFO_CACHE_TTL_MS,
+    };
   }
 };
 
@@ -106,6 +137,10 @@ export const fetchIpInfoLookup = async (
 ): Promise<IpInfoLookupPayload> => {
   const normalizedIp = clientIp.trim();
   if (!normalizedIp || isPrivateOrLocalClientIp(normalizedIp)) {
+    return EMPTY_PAYLOAD;
+  }
+
+  if (Date.now() < rateLimitedUntilMs) {
     return EMPTY_PAYLOAD;
   }
 
@@ -120,9 +155,9 @@ export const fetchIpInfoLookup = async (
   }
 
   const lookupPromise = fetchIpInfoLookupUncached(normalizedIp)
-    .then(({ payload, cacheable }) => {
+    .then(({ payload, cacheable, ttlMs }) => {
       if (cacheable) {
-        writeCachedPayload(normalizedIp, payload);
+        writeCachedPayload(normalizedIp, payload, ttlMs);
       }
       return payload;
     })
@@ -137,4 +172,5 @@ export const fetchIpInfoLookup = async (
 export const clearIpInfoLookupCache = (): void => {
   ipInfoLookupCache.clear();
   inFlightIpInfoLookups.clear();
+  rateLimitedUntilMs = 0;
 };

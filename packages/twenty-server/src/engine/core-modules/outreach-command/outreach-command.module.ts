@@ -63,6 +63,7 @@ import { OutreachCandidateJourneyService } from 'src/engine/core-modules/outreac
 import { OutreachDeferredResumeCronService } from 'src/engine/core-modules/outreach-command/services/outreach-deferred-resume-cron.service';
 import { OutreachDeferredResumeService } from 'src/engine/core-modules/outreach-command/services/outreach-deferred-resume.service';
 import { OutreachDeferredResumeJob } from 'src/engine/core-modules/outreach-command/jobs/outreach-deferred-resume.job';
+import { RefreshPendingHitlAfterPromptChangeJob } from 'src/engine/core-modules/outreach-command/jobs/refresh-pending-hitl-after-prompt-change.job';
 import { OutreachWorkflowRunFlowSyncService } from 'src/engine/core-modules/outreach-command/services/outreach-workflow-run-flow-sync.service';
 import { OutreachWorkflowRunRepairService } from 'src/engine/core-modules/outreach-command/services/outreach-workflow-run-repair.service';
 import { OutreachWikidataCompanyEnrichmentSource } from 'src/engine/core-modules/outreach-command/services/outreach-wikidata-company-enrichment.source';
@@ -182,6 +183,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     OutreachDeferredResumeCronService,
     OutreachWorkflowRunFlowSyncService,
     OutreachWorkflowRunRepairService,
+    RefreshPendingHitlAfterPromptChangeJob,
     OutreachInboundReplyWindowService,
     OutreachInboundEmailListener,
     OutreachSenderProfileService,

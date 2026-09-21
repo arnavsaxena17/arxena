@@ -9,6 +9,7 @@ import type {
   ContactEnrichmentOptions,
   ContactResult,
 } from '../types/contact-enrichment.types';
+import { formatContactEnrichmentError } from '../utils/format-contact-enrichment-error.util';
 
 @Injectable()
 export class ContactOutProvider implements ContactEnrichmentProvider {
@@ -18,8 +19,9 @@ export class ContactOutProvider implements ContactEnrichmentProvider {
 
   constructor(private readonly environmentService: EnvironmentService) {
     this.apiToken =
-      (this.environmentService.get('CONTACTOUT_API_TOKEN' as any) as string | undefined) ??
-      null;
+      (this.environmentService.get('CONTACTOUT_API_TOKEN' as any) as
+        | string
+        | undefined) ?? null;
 
     this.client = axios.create({
       baseURL: 'https://api.contactout.com',
@@ -37,9 +39,7 @@ export class ContactOutProvider implements ContactEnrichmentProvider {
     return this.apiToken !== null && this.apiToken.length > 0;
   }
 
-  async checkAvailability(
-    linkedinUrl: string,
-  ): Promise<ContactAvailability> {
+  async checkAvailability(linkedinUrl: string): Promise<ContactAvailability> {
     if (!this.isEnabled()) {
       return { emailAvailable: false, phoneAvailable: false };
     }
@@ -76,8 +76,8 @@ export class ContactOutProvider implements ContactEnrichmentProvider {
       );
 
       const emailAvailable =
-        (personalEmailResponse.data?.profile?.email === true) ||
-        (workEmailResponse.data?.profile?.email === true);
+        personalEmailResponse.data?.profile?.email === true ||
+        workEmailResponse.data?.profile?.email === true;
 
       const phoneAvailable = phoneResponse.data?.profile?.phone === true;
 
@@ -88,8 +88,7 @@ export class ContactOutProvider implements ContactEnrichmentProvider {
       };
     } catch (error) {
       this.logger.error(
-        `ContactOut availability check failed for ${linkedinUrl}`,
-        error as Error,
+        `ContactOut availability check failed for ${linkedinUrl}: ${formatContactEnrichmentError(error)}`,
       );
       return { emailAvailable: false, phoneAvailable: false };
     }
@@ -128,19 +127,31 @@ export class ContactOutProvider implements ContactEnrichmentProvider {
         // Extract emails
         if (wantEmail) {
           if (profile.email && Array.isArray(profile.email)) {
-            emails.push(...profile.email.filter((e: unknown) => typeof e === 'string'));
+            emails.push(
+              ...profile.email.filter((e: unknown) => typeof e === 'string'),
+            );
           }
           if (profile.work_email && Array.isArray(profile.work_email)) {
-            emails.push(...profile.work_email.filter((e: unknown) => typeof e === 'string'));
+            emails.push(
+              ...profile.work_email.filter(
+                (e: unknown) => typeof e === 'string',
+              ),
+            );
           }
           if (profile.personal_email && Array.isArray(profile.personal_email)) {
-            emails.push(...profile.personal_email.filter((e: unknown) => typeof e === 'string'));
+            emails.push(
+              ...profile.personal_email.filter(
+                (e: unknown) => typeof e === 'string',
+              ),
+            );
           }
         }
 
         // Extract phone numbers
         if (wantPhone && profile.phone && Array.isArray(profile.phone)) {
-          phones.push(...profile.phone.filter((p: unknown) => typeof p === 'string'));
+          phones.push(
+            ...profile.phone.filter((p: unknown) => typeof p === 'string'),
+          );
         }
 
         return {
@@ -163,8 +174,7 @@ export class ContactOutProvider implements ContactEnrichmentProvider {
         return { emails: [], phones: [], source: 'contactout' };
       }
       this.logger.error(
-        `ContactOut fetch failed for ${linkedinUrl}`,
-        error as Error,
+        `ContactOut fetch failed for ${linkedinUrl}: ${formatContactEnrichmentError(error)}`,
       );
       throw error;
     }

@@ -169,7 +169,9 @@ export const HeaderDesktop = ({
         <StyledNavLink href="/engage" aria-label="Outreach — LinkedIn & email">
           Outreach
         </StyledNavLink>
-        <StyledNavLink href="/pricing">Pricing</StyledNavLink>
+        <StyledNavLink href="/pricing" prefetch={false}>
+          Pricing
+        </StyledNavLink>
         <StyledNavLinkHiddenOnTablet href="/chrome-extension">
           Chrome extension
         </StyledNavLinkHiddenOnTablet>

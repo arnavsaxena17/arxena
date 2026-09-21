@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
+import { StepStatus, WorkflowActionType } from 'twenty-shared/workflow';
 import { type ObjectLiteral } from 'typeorm';
 
 import {
@@ -11,6 +12,9 @@ import {
 } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
 import { isOutreachSequencerWorkflow } from 'src/engine/core-modules/outreach-command/utils/resolve-outreach-pause-resume-workflow-ids.util';
 import { OutreachWorkflowRunRepairService } from 'src/engine/core-modules/outreach-command/services/outreach-workflow-run-repair.service';
+import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
+import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
+import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import { WorkflowVersionStatus } from 'src/modules/workflow/common/standard-objects/workflow-version.workspace-entity';
@@ -20,6 +24,10 @@ import {
 } from 'src/modules/workflow/common/standard-objects/workflow-run.workspace-entity';
 import { type WorkflowWorkspaceEntity } from 'src/modules/workflow/common/standard-objects/workflow.workspace-entity';
 import { WorkflowCommonWorkspaceService } from 'src/modules/workflow/common/workspace-services/workflow-common.workspace-service';
+import { RUN_WORKFLOW_JOB_NAME } from 'src/modules/workflow/workflow-runner/constants/run-workflow-job-name';
+import { type RunWorkflowJobData } from 'src/modules/workflow/workflow-runner/types/run-workflow-job-data.type';
+import { buildRunWorkflowJobOptions } from 'src/modules/workflow/workflow-runner/utils/build-run-workflow-job-options.util';
+import { getRunnableStepIds } from 'src/modules/workflow/workflow-runner/utils/get-runnable-step-ids.util';
 import { mergeWorkflowRunFlowFromVersion } from 'src/modules/workflow/workflow-runner/utils/merge-workflow-run-flow-from-version.util';
 import { WorkflowRunWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.workspace-service';
 
@@ -49,6 +57,7 @@ export type SyncOutreachWorkflowRunFlowResult = {
   nextWorkflowVersionId?: string;
   resetStepIds?: string[];
   repairedStaleFormAfterSend?: boolean;
+  kicked?: boolean;
 };
 
 @Injectable()
@@ -60,6 +69,8 @@ export class OutreachWorkflowRunFlowSyncService {
     private readonly workflowCommonWorkspaceService: WorkflowCommonWorkspaceService,
     private readonly workflowRunWorkspaceService: WorkflowRunWorkspaceService,
     private readonly outreachWorkflowRunRepairService: OutreachWorkflowRunRepairService,
+    @InjectMessageQueue(MessageQueue.workflowQueue)
+    private readonly workflowQueue: MessageQueueService,
   ) {}
 
   async syncRunToLatestPublishedVersion({
@@ -152,10 +163,12 @@ export class OutreachWorkflowRunFlowSyncService {
 
         try {
           const repairResult =
-            await this.outreachWorkflowRunRepairService.repairStaleFormAfterSend({
-              workspaceId,
-              workflowRunId,
-            });
+            await this.outreachWorkflowRunRepairService.repairStaleFormAfterSend(
+              {
+                workspaceId,
+                workflowRunId,
+              },
+            );
           repairedStaleFormAfterSend = repairResult.repaired;
         } catch (error) {
           this.logger.warn(
@@ -176,6 +189,247 @@ export class OutreachWorkflowRunFlowSyncService {
       },
       authContext,
     );
+  }
+
+  // Same-version content refresh: Active AI_AGENT prompt edits keep the version
+  // id, so syncRunToLatestPublishedVersion never fires. Merge run flow against
+  // live steps, reset draft→pending FORM when the prompt fingerprint changed,
+  // then kick so HITL re-parks with a regenerated message.
+  async syncRunToLiveVersionContent({
+    workspaceId,
+    workflowRunId,
+    changedStepIds,
+  }: {
+    workspaceId: string;
+    workflowRunId: string;
+    changedStepIds: string[];
+  }): Promise<SyncOutreachWorkflowRunFlowResult> {
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const workflowRun =
+          await this.workflowRunWorkspaceService.getWorkflowRunOrFail({
+            workflowRunId,
+            workspaceId,
+          });
+
+        if (workflowRun.status !== WorkflowRunStatus.RUNNING) {
+          return { synced: false, workflowRunId };
+        }
+
+        if (!isDefined(workflowRun.state?.flow?.steps)) {
+          return { synced: false, workflowRunId };
+        }
+
+        const workflowVersion =
+          await this.workflowCommonWorkspaceService.getWorkflowVersionOrFail({
+            workspaceId,
+            workflowVersionId: workflowRun.workflowVersionId,
+          });
+
+        if (
+          !isDefined(workflowVersion.trigger) ||
+          !isDefined(workflowVersion.steps)
+        ) {
+          return { synced: false, workflowRunId };
+        }
+
+        const hasStaleChangedStep = changedStepIds.some((stepId) => {
+          const runStep = workflowRun.state?.flow?.steps?.find(
+            (step) => step.id === stepId,
+          );
+          const versionStep = workflowVersion.steps?.find(
+            (step) => step.id === stepId,
+          );
+
+          if (!isDefined(runStep) || !isDefined(versionStep)) {
+            return false;
+          }
+
+          if (versionStep.type !== WorkflowActionType.AI_AGENT) {
+            return false;
+          }
+
+          return (
+            getStepInputFingerprint(runStep) !==
+            getStepInputFingerprint(versionStep)
+          );
+        });
+
+        if (!hasStaleChangedStep) {
+          return { synced: false, workflowRunId };
+        }
+
+        const mergeResult = mergeWorkflowRunFlowFromVersion({
+          currentState: workflowRun.state,
+          nextTrigger: workflowVersion.trigger,
+          nextSteps: workflowVersion.steps,
+        });
+
+        const changedStepWasReset = changedStepIds.some((stepId) =>
+          mergeResult.resetStepIds.includes(stepId),
+        );
+        const changedStepIsRunnableWithoutReset = changedStepIds.some(
+          (stepId) => {
+            const stepInfo = mergeResult.state.stepInfos?.[stepId];
+
+            return stepInfo?.status === StepStatus.NOT_STARTED;
+          },
+        );
+
+        await this.workflowRunWorkspaceService.updateWorkflowRun({
+          workflowRunId,
+          workspaceId,
+          partialUpdate: {
+            state: mergeResult.state,
+          },
+        });
+
+        this.logger.log(
+          `Synced live content for run ${workflowRunId}` +
+            (mergeResult.resetStepIds.length > 0
+              ? `; reset steps: ${mergeResult.resetStepIds.join(', ')}`
+              : ''),
+        );
+
+        if (!changedStepWasReset && !changedStepIsRunnableWithoutReset) {
+          return {
+            synced: true,
+            workflowRunId,
+            resetStepIds: mergeResult.resetStepIds,
+            kicked: false,
+          };
+        }
+
+        const freshRun =
+          await this.workflowRunWorkspaceService.getWorkflowRunOrFail({
+            workflowRunId,
+            workspaceId,
+          });
+
+        const kicked = await this.kickIdleRunningWorkflowRun({
+          workspaceId,
+          workflowRun: freshRun,
+        });
+
+        return {
+          synced: true,
+          workflowRunId,
+          resetStepIds: mergeResult.resetStepIds,
+          kicked,
+        };
+      },
+      authContext,
+    );
+  }
+
+  async refreshPendingHitlForWorkflowVersion({
+    workspaceId,
+    workflowVersionId,
+    changedStepIds,
+  }: {
+    workspaceId: string;
+    workflowVersionId: string;
+    changedStepIds: string[];
+  }): Promise<{ syncedRuns: number; kickedRuns: number }> {
+    if (changedStepIds.length === 0) {
+      return { syncedRuns: 0, kickedRuns: 0 };
+    }
+
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const workflowRunRepository =
+          await this.globalWorkspaceOrmManager.getRepository<WorkflowRunWorkspaceEntity>(
+            workspaceId,
+            'workflowRun',
+            { shouldBypassPermissionChecks: true },
+          );
+
+        const runs = await workflowRunRepository.find({
+          where: {
+            workflowVersionId,
+            status: WorkflowRunStatus.RUNNING,
+          },
+        });
+
+        let syncedRuns = 0;
+        let kickedRuns = 0;
+
+        for (const run of runs) {
+          try {
+            const result = await this.syncRunToLiveVersionContent({
+              workspaceId,
+              workflowRunId: run.id,
+              changedStepIds,
+            });
+
+            if (result.synced) {
+              syncedRuns += 1;
+            }
+
+            if (result.kicked) {
+              kickedRuns += 1;
+            }
+          } catch (error) {
+            this.logger.warn(
+              `Failed live content sync for run ${run.id}: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            );
+          }
+        }
+
+        this.logger.log(
+          `refreshPendingHitlForWorkflowVersion ${workflowVersionId}: synced=${syncedRuns} kicked=${kickedRuns} of ${runs.length} running`,
+        );
+
+        return { syncedRuns, kickedRuns };
+      },
+      authContext,
+    );
+  }
+
+  private async kickIdleRunningWorkflowRun({
+    workspaceId,
+    workflowRun,
+  }: {
+    workspaceId: string;
+    workflowRun: WorkflowRunWorkspaceEntity;
+  }): Promise<boolean> {
+    const steps = workflowRun.state?.flow?.steps;
+
+    if (!isDefined(steps) || steps.length === 0) {
+      return false;
+    }
+
+    const stepInfos = workflowRun.state?.stepInfos ?? {};
+    const runnableStepIds = getRunnableStepIds({
+      steps,
+      stepInfos,
+    });
+
+    if (runnableStepIds.length === 0) {
+      return false;
+    }
+
+    await this.workflowQueue.add<RunWorkflowJobData>(
+      RUN_WORKFLOW_JOB_NAME,
+      {
+        workspaceId,
+        workflowRunId: workflowRun.id,
+        stepIdsToRetry: runnableStepIds,
+      },
+      buildRunWorkflowJobOptions(workflowRun.id),
+    );
+
+    this.logger.log(
+      `Kicked idle workflow run ${workflowRun.id} for steps: ${runnableStepIds.join(', ')}`,
+    );
+
+    return true;
   }
 
   private async resolveTargetWorkflowVersionId({
@@ -318,3 +572,9 @@ export class OutreachWorkflowRunFlowSyncService {
     });
   }
 }
+
+const getStepInputFingerprint = (step: {
+  settings?: { input?: unknown };
+}): string => {
+  return JSON.stringify(step.settings?.input ?? {});
+};

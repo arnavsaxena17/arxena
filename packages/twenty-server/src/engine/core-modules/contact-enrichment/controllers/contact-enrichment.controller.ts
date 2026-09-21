@@ -9,7 +9,7 @@ import {
   Post,
   Query,
   Req,
-  UseGuards
+  UseGuards,
 } from '@nestjs/common';
 
 import { Request } from 'express';
@@ -24,6 +24,7 @@ import { LushaProvider } from '../providers/lusha.provider';
 import { PdlProvider } from '../providers/pdl.provider';
 import { ContactEnrichmentJobService } from '../services/contact-enrichment-job.service';
 import { ContactEnrichmentWaterfallService } from '../services/contact-enrichment-waterfall.service';
+import { formatContactEnrichmentError } from '../utils/format-contact-enrichment-error.util';
 import type {
   ContactAvailability,
   ContactEnrichmentOptions,
@@ -99,10 +100,7 @@ export class ContactEnrichmentController {
     }
 
     if (this.jobService.shouldProcessAsync(urls.length)) {
-      const jobId = await this.jobService.queueBulkJob(
-        urls,
-        'availability',
-      );
+      const jobId = await this.jobService.queueBulkJob(urls, 'availability');
       return {
         jobId,
         status: 'queued',
@@ -115,7 +113,9 @@ export class ContactEnrichmentController {
       try {
         results[url] = await this.waterfallService.checkAvailability(url);
       } catch (error) {
-        this.logger.error(`Availability check failed for ${url}`, error as Error);
+        this.logger.error(
+          `Availability check failed for ${url}: ${formatContactEnrichmentError(error)}`,
+        );
         results[url] = {
           emailAvailable: false,
           phoneAvailable: false,
@@ -154,7 +154,7 @@ export class ContactEnrichmentController {
     | { jobId: string; status: string; total: number }
     | { results: Record<string, ContactResult> }
   > {
-    console.log("This is the body:", body);
+    console.log('This is the body:', body);
     const apolloId = body.apolloPersonId?.trim() ?? body.m7kqPersonId?.trim();
     const apolloDomain = body.companyDomain?.trim();
     const hasApollo = Boolean(apolloId && apolloDomain);
@@ -280,7 +280,9 @@ export class ContactEnrichmentController {
 
         results[url] = await this.waterfallService.fetchContacts(url, options);
       } catch (error) {
-        this.logger.error(`Fetch failed for ${url}`, error as Error);
+        this.logger.error(
+          `Fetch failed for ${url}: ${formatContactEnrichmentError(error)}`,
+        );
         results[url] = {
           emails: [],
           phones: [],
@@ -553,7 +555,9 @@ export class ContactEnrichmentController {
           results[url].provider = providerName;
         }
       } catch (error) {
-        this.logger.error(`Availability check failed for ${url} using ${providerName}`, error as Error);
+        this.logger.error(
+          `Availability check failed for ${url} using ${providerName}: ${formatContactEnrichmentError(error)}`,
+        );
         results[url] = {
           emailAvailable: false,
           phoneAvailable: false,
@@ -673,7 +677,9 @@ export class ContactEnrichmentController {
           results[url].source = providerName;
         }
       } catch (error) {
-        this.logger.error(`Fetch failed for ${url} using ${providerName}`, error as Error);
+        this.logger.error(
+          `Fetch failed for ${url} using ${providerName}: ${formatContactEnrichmentError(error)}`,
+        );
         results[url] = {
           emails: [],
           phones: [],
@@ -693,9 +699,7 @@ export class ContactEnrichmentController {
   /**
    * Get provider by name.
    */
-  private getProvider(
-    providerName: ContactEnrichmentProviderName,
-  ) {
+  private getProvider(providerName: ContactEnrichmentProviderName) {
     switch (providerName) {
       case 'arxena':
         return this.arxenaProvider;

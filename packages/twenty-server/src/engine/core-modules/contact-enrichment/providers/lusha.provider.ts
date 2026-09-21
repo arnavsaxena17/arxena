@@ -9,6 +9,7 @@ import type {
   ContactResult,
 } from '../types/contact-enrichment.types';
 import type { ContactEnrichmentProvider } from '../interfaces/contact-enrichment-provider.interface';
+import { formatContactEnrichmentError } from '../utils/format-contact-enrichment-error.util';
 
 @Injectable()
 export class LushaProvider implements ContactEnrichmentProvider {
@@ -18,8 +19,9 @@ export class LushaProvider implements ContactEnrichmentProvider {
 
   constructor(private readonly environmentService: EnvironmentService) {
     this.apiKey =
-      (this.environmentService.get('LUSHA_API_KEY' as any) as string | undefined) ??
-      null;
+      (this.environmentService.get('LUSHA_API_KEY' as any) as
+        | string
+        | undefined) ?? null;
 
     this.client = axios.create({
       baseURL: 'https://api.lusha.com',
@@ -37,9 +39,7 @@ export class LushaProvider implements ContactEnrichmentProvider {
     return this.apiKey !== null && this.apiKey.length > 0;
   }
 
-  async checkAvailability(
-    linkedinUrl: string,
-  ): Promise<ContactAvailability> {
+  async checkAvailability(linkedinUrl: string): Promise<ContactAvailability> {
     // Lusha doesn't have a dedicated availability checker
     // Return both true and rely on fetch to fail without charging where possible
     return { emailAvailable: true, phoneAvailable: true };
@@ -50,7 +50,9 @@ export class LushaProvider implements ContactEnrichmentProvider {
     options?: ContactEnrichmentOptions,
   ): Promise<ContactResult> {
     if (!this.isEnabled()) {
-      throw new Error('Lusha provider is not enabled (LUSHA_API_KEY not configured)');
+      throw new Error(
+        'Lusha provider is not enabled (LUSHA_API_KEY not configured)',
+      );
     }
 
     const { wantEmail = true, wantPhone = true } = options ?? {};
@@ -83,7 +85,9 @@ export class LushaProvider implements ContactEnrichmentProvider {
         // Extract emails
         if (wantEmail) {
           if (data.emails && Array.isArray(data.emails)) {
-            emails.push(...data.emails.filter((e: unknown) => typeof e === 'string'));
+            emails.push(
+              ...data.emails.filter((e: unknown) => typeof e === 'string'),
+            );
           }
           if (data.email && typeof data.email === 'string') {
             emails.push(data.email);
@@ -93,13 +97,19 @@ export class LushaProvider implements ContactEnrichmentProvider {
         // Extract phone numbers
         if (wantPhone) {
           if (data.phoneNumbers && Array.isArray(data.phoneNumbers)) {
-            phones.push(...data.phoneNumbers.filter((p: unknown) => typeof p === 'string'));
+            phones.push(
+              ...data.phoneNumbers.filter(
+                (p: unknown) => typeof p === 'string',
+              ),
+            );
           }
           if (data.phone && typeof data.phone === 'string') {
             phones.push(data.phone);
           }
           if (data.phones && Array.isArray(data.phones)) {
-            phones.push(...data.phones.filter((p: unknown) => typeof p === 'string'));
+            phones.push(
+              ...data.phones.filter((p: unknown) => typeof p === 'string'),
+            );
           }
         }
 
@@ -126,8 +136,7 @@ export class LushaProvider implements ContactEnrichmentProvider {
         }
       }
       this.logger.error(
-        `Lusha fetch failed for ${linkedinUrl}`,
-        error as Error,
+        `Lusha fetch failed for ${linkedinUrl}: ${formatContactEnrichmentError(error)}`,
       );
       throw error;
     }

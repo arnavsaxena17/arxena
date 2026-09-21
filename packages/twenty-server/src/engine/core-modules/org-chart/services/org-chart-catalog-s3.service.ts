@@ -1,10 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 
-import {
-  GetObjectCommand,
-  PutObjectCommand,
-  S3,
-} from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand, S3 } from '@aws-sdk/client-s3';
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import { isNonEmptyString } from '@sniptt/guards';
 

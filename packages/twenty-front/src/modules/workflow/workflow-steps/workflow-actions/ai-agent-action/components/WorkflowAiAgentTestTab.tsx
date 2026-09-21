@@ -24,6 +24,7 @@ type WorkflowAiAgentTestTabProps = {
   aiAgentTestData: AiAgentTestData;
   onCandidateChange: (candidateId: string | undefined) => void;
   onPromptChange: (value: string) => void;
+  onPromptBlur?: () => void;
   onActionUpdate?: (action: WorkflowAiAgentAction) => void;
 };
 
@@ -45,6 +46,7 @@ export const WorkflowAiAgentTestTab = ({
   aiAgentTestData,
   onCandidateChange,
   onPromptChange,
+  onPromptBlur,
   onActionUpdate,
 }: WorkflowAiAgentTestTabProps) => {
   const { t } = useLingui();
@@ -80,6 +82,7 @@ export const WorkflowAiAgentTestTab = ({
         readonly={readonly}
         modelSelectDropdownId={`select-agent-model-test-${action.id}`}
         onPromptChange={onPromptChange}
+        onPromptBlur={onPromptBlur}
         onActionUpdate={onActionUpdate}
       />
       <AiAgentExecutionResult

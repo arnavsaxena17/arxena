@@ -447,4 +447,81 @@ describe('mergeWorkflowRunFlowFromVersion', () => {
     expect(result.state.stepInfos[newSendId]?.status).toBe(StepStatus.SUCCESS);
     expect(result.state.stepInfos[newWaitId]?.status).toBe(StepStatus.PENDING);
   });
+
+  it('resets completed draft and pending HITL form when the AI prompt changes in place', () => {
+    const draftId = '4582ca2b-2b80-4c4f-a802-7a923b296322';
+    const approveId = '4d4e9ac8-ecdd-4174-af3e-43b31971079b';
+    const sendId = 'c7a1000a-aaaa-4fcb-a7d8-17a7736ed045';
+
+    const buildFormStep = ({ body }: { body: string }): WorkflowAction =>
+      ({
+        id: approveId,
+        name: 'Approve / edit first message',
+        type: WorkflowActionType.FORM,
+        valid: true,
+        settings: {
+          input: [{ name: 'editedBody', type: 'TEXT', value: body }],
+        },
+        nextStepIds: [sendId],
+      }) as WorkflowAction;
+
+    const currentState: WorkflowRunState = {
+      flow: {
+        trigger: { type: 'MANUAL', nextStepIds: [draftId] } as never,
+        steps: [
+          buildAiStep({
+            id: draftId,
+            name: 'Draft first LinkedIn message',
+            prompt: 'Old prompt',
+            nextStepIds: [approveId],
+          }),
+          buildFormStep({ body: 'Old generated message' }),
+          buildSendStep({
+            id: sendId,
+            name: 'Send LinkedIn message',
+            body: '{{approve.editedBody}}',
+          }),
+        ],
+      },
+      stepInfos: {
+        trigger: { status: StepStatus.SUCCESS, result: {} },
+        [draftId]: {
+          status: StepStatus.SUCCESS,
+          result: { message: 'Old generated message' },
+        },
+        [approveId]: { status: StepStatus.PENDING },
+        [sendId]: { status: StepStatus.NOT_STARTED },
+      },
+    };
+
+    const result = mergeWorkflowRunFlowFromVersion({
+      currentState,
+      nextTrigger: { type: 'MANUAL', nextStepIds: [draftId] } as never,
+      nextSteps: [
+        buildAiStep({
+          id: draftId,
+          name: 'Draft first LinkedIn message',
+          prompt: 'New prompt',
+          nextStepIds: [approveId],
+        }),
+        buildFormStep({ body: '{{draft.message}}' }),
+        buildSendStep({
+          id: sendId,
+          name: 'Send LinkedIn message',
+          body: '{{approve.editedBody}}',
+        }),
+      ],
+    });
+
+    expect(result.resetStepIds).toEqual(
+      expect.arrayContaining([draftId, approveId, sendId]),
+    );
+    expect(result.state.stepInfos[draftId]).toEqual({
+      status: StepStatus.NOT_STARTED,
+    });
+    expect(result.state.stepInfos[approveId]).toEqual({
+      status: StepStatus.NOT_STARTED,
+    });
+    expect(result.state.flow.steps[0].settings.input.prompt).toBe('New prompt');
+  });
 });

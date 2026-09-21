@@ -10,7 +10,7 @@ import { WorkflowOutputSchemaBuilder } from '@/workflow/workflow-steps/workflow-
 import { WorkflowVariablePicker } from '@/workflow/workflow-variables/components/WorkflowVariablePicker';
 import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from 'twenty-ui/input';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import {
@@ -18,6 +18,7 @@ import {
   type AiFilteringFieldLike,
 } from 'twenty-shared/workflow';
 import { isDefined } from 'twenty-shared/utils';
+import { useDebouncedCallback } from 'use-debounce';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const METADATA_OPTIONS = [
@@ -28,6 +29,8 @@ const METADATA_OPTIONS = [
   'headline',
   'linkedinUrl',
 ] as const;
+
+const PROMPT_SAVE_DEBOUNCE_MS = 1_500;
 
 type WorkflowAiFilteringConfigureTabProps = {
   action: WorkflowAiFilteringAction;
@@ -106,28 +109,72 @@ export const WorkflowAiFilteringConfigureTab = ({
   const input = action.settings.input;
   const [isProcessingDescription, setIsProcessingDescription] = useState(false);
   const [processError, setProcessError] = useState<string | null>(null);
+  const promptRef = useRef(input.prompt || '');
+  const actionRef = useRef(action);
+  const onActionUpdateRef = useRef(onActionUpdate);
+
+  actionRef.current = action;
+  onActionUpdateRef.current = onActionUpdate;
 
   const updateInput = (
     patch: Partial<WorkflowAiFilteringAction['settings']['input']>,
+    actionOverride: WorkflowAiFilteringAction = actionRef.current,
   ) => {
-    if (readonly || !isDefined(onActionUpdate)) {
+    const currentOnActionUpdate = onActionUpdateRef.current;
+
+    if (readonly || !isDefined(currentOnActionUpdate)) {
       return;
     }
 
     const nextInput = {
-      ...input,
+      ...actionOverride.settings.input,
       ...patch,
     };
     const fields = nextInput.fields ?? [];
 
-    onActionUpdate({
-      ...action,
+    currentOnActionUpdate({
+      ...actionOverride,
       settings: {
-        ...action.settings,
+        ...actionOverride.settings,
         input: nextInput,
         outputSchema: aiFilteringFieldsToOutputSchema(fields),
       },
     });
+  };
+
+  const persistPrompt = (newPrompt: string) => {
+    const currentAction = actionRef.current;
+    const persistedPrompt = currentAction.settings.input.prompt || '';
+
+    if (newPrompt === persistedPrompt) {
+      return;
+    }
+
+    updateInput({ prompt: newPrompt }, currentAction);
+  };
+
+  const savePromptDebounced = useDebouncedCallback(
+    persistPrompt,
+    PROMPT_SAVE_DEBOUNCE_MS,
+  );
+
+  const flushPrompt = () => {
+    savePromptDebounced.cancel();
+    persistPrompt(promptRef.current);
+  };
+
+  useEffect(() => {
+    return () => {
+      savePromptDebounced.cancel();
+      persistPrompt(promptRef.current);
+    };
+    // Flush once on unmount with the latest ref values.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handlePromptChange = (value: string) => {
+    promptRef.current = value;
+    savePromptDebounced(value);
   };
 
   const handleProcessDescription = async () => {
@@ -165,10 +212,14 @@ export const WorkflowAiFilteringConfigureTab = ({
 
       const payload = await response.json();
       const generated = payload?.data ?? payload;
+      const nextPrompt = generated.prompt || input.prompt;
+
+      promptRef.current = nextPrompt || '';
+      savePromptDebounced.cancel();
 
       updateInput({
         name: generated.modelName || input.name,
-        prompt: generated.prompt || input.prompt,
+        prompt: nextPrompt,
         fields: generated.fields || input.fields,
         selectedMetadataFields:
           generated.selectedMetadataFields || input.selectedMetadataFields,
@@ -240,7 +291,8 @@ export const WorkflowAiFilteringConfigureTab = ({
         <FormTextFieldInput
           label={t`Prompt`}
           defaultValue={input.prompt || ''}
-          onChange={(value) => updateInput({ prompt: value })}
+          onChange={handlePromptChange}
+          onBlur={flushPrompt}
           readonly={readonly}
           multiline
           placeholder={t`Decide whether each profile matches…`}

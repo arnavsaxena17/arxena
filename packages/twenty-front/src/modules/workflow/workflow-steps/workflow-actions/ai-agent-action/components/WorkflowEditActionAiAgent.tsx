@@ -21,7 +21,7 @@ import { useQuery } from '@apollo/client/react';
 import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
 import { isNonEmptyString } from '@sniptt/guards';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { SettingsPath } from 'twenty-shared/types';
 import { isDefined, isValidUuid } from 'twenty-shared/utils';
 import { Callout } from 'twenty-ui/feedback';
@@ -60,6 +60,8 @@ const StyledTabListContainer = styled.div`
   padding-left: ${themeCssVariables.spacing[2]};
 `;
 
+const PROMPT_SAVE_DEBOUNCE_MS = 1_500;
+
 export const WorkflowEditActionAiAgent = ({
   action,
   actionOptions,
@@ -96,8 +98,17 @@ export const WorkflowEditActionAiAgent = ({
   useResetWorkflowAiAgentPermissionsStateOnSidePanelClose();
 
   const actionPrompt = action.settings.input.prompt || '';
+  const promptRef = useRef(actionPrompt);
+  // Synced on flush / tab switch so Test uses the latest draft without
+  // re-rendering the Prompt chrome on every keystroke.
   const [prompt, setPrompt] = useState(actionPrompt);
   const [candidateId, setCandidateId] = useState<string | undefined>(undefined);
+  const actionRef = useRef(action);
+  const actionOptionsRef = useRef(actionOptions);
+
+  actionRef.current = action;
+  actionOptionsRef.current = actionOptions;
+
   const workflowVisualizerWorkflowId = useAtomComponentStateValue(
     workflowVisualizerWorkflowIdComponentState,
   );
@@ -110,32 +121,69 @@ export const WorkflowEditActionAiAgent = ({
   const { testAiAgent, showTestError, isTesting, aiAgentTestData } =
     useTestAiAgent(action.id);
 
-  const savePrompt = useDebouncedCallback((newPrompt: string) => {
-    if (actionOptions.readonly === true) {
+  const persistPrompt = (newPrompt: string) => {
+    const currentActionOptions = actionOptionsRef.current;
+
+    if (currentActionOptions.readonly === true) {
       return;
     }
 
-    actionOptions.onActionUpdate({
-      ...action,
+    const currentAction = actionRef.current;
+    const persistedPrompt = currentAction.settings.input.prompt || '';
+
+    if (newPrompt === persistedPrompt) {
+      return;
+    }
+
+    currentActionOptions.onActionUpdate({
+      ...currentAction,
       settings: {
-        ...action.settings,
+        ...currentAction.settings,
         input: {
-          ...action.settings.input,
+          ...currentAction.settings.input,
           prompt: newPrompt,
         },
       },
     });
-  }, 500);
+  };
+
+  const savePromptDebounced = useDebouncedCallback(
+    persistPrompt,
+    PROMPT_SAVE_DEBOUNCE_MS,
+  );
+
+  const flushPrompt = () => {
+    savePromptDebounced.cancel();
+    const latestPrompt = promptRef.current;
+
+    setPrompt(latestPrompt);
+    persistPrompt(latestPrompt);
+  };
+
+  useEffect(() => {
+    return () => {
+      savePromptDebounced.cancel();
+      persistPrompt(promptRef.current);
+    };
+    // Flush once on unmount with the latest ref values.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAgentPromptChange = (newPrompt: string) => {
-    setPrompt(newPrompt);
-    savePrompt(newPrompt);
+    promptRef.current = newPrompt;
+    savePromptDebounced(newPrompt);
+  };
+
+  const handleAgentPromptBlur = () => {
+    flushPrompt();
   };
 
   const handleTestAgent = async () => {
     if (actionOptions.readonly === true || !isDefined(agentId)) {
       return;
     }
+
+    const latestPrompt = promptRef.current;
 
     if (isNonEmptyString(candidateId)) {
       if (!isNonEmptyString(workflowVisualizerWorkflowVersionId)) {
@@ -148,7 +196,7 @@ export const WorkflowEditActionAiAgent = ({
 
       await testAiAgent({
         agentId,
-        prompt,
+        prompt: latestPrompt,
         candidateId,
         workflowVersionId: workflowVisualizerWorkflowVersionId,
         stepId: action.id,
@@ -158,7 +206,7 @@ export const WorkflowEditActionAiAgent = ({
     }
 
     const { resolvedPrompt, missingVariablePaths } =
-      await resolvePrompt(prompt);
+      await resolvePrompt(latestPrompt);
 
     if (missingVariablePaths.length > 0) {
       showTestError(
@@ -198,6 +246,17 @@ export const WorkflowEditActionAiAgent = ({
   );
   const currentTabId =
     (activeTabId as WorkflowAiAgentTabId) ?? WORKFLOW_AI_AGENT_TABS.PROMPT;
+
+  useEffect(() => {
+    if (currentTabId === WORKFLOW_AI_AGENT_TABS.TEST) {
+      setPrompt(promptRef.current);
+    }
+
+    if (currentTabId !== WORKFLOW_AI_AGENT_TABS.PROMPT) {
+      flushPrompt();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTabId]);
 
   const navigateSettings = useNavigateSettings();
   const { data: rolesData } = useQuery(GetRolesDocument);
@@ -308,6 +367,7 @@ export const WorkflowEditActionAiAgent = ({
             aiAgentTestData={aiAgentTestData}
             onCandidateChange={setCandidateId}
             onPromptChange={handleAgentPromptChange}
+            onPromptBlur={handleAgentPromptBlur}
             onActionUpdate={
               actionOptions.readonly === true
                 ? undefined
@@ -322,6 +382,7 @@ export const WorkflowEditActionAiAgent = ({
             prompt={prompt}
             readonly={actionOptions.readonly === true}
             onPromptChange={handleAgentPromptChange}
+            onPromptBlur={handleAgentPromptBlur}
             onActionUpdate={
               actionOptions.readonly === true
                 ? undefined

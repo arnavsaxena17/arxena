@@ -51,6 +51,24 @@ describe('fetchIpInfoLookup cache', () => {
     expect(second.country).toBe('IN');
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
+
+  it('stops calling ipinfo after a 429 until the cooldown clears', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: false,
+      status: 429,
+    });
+
+    const first = await fetchIpInfoLookup('203.0.113.30');
+    const second = await fetchIpInfoLookup('203.0.113.31');
+
+    expect(first).toEqual({
+      country: null,
+      org: null,
+      hostname: null,
+    });
+    expect(second).toEqual(first);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('shouldSkipIpInfoLookup', () => {
@@ -69,6 +87,11 @@ describe('shouldSkipIpInfoLookup', () => {
     expect(
       shouldSkipIpInfoLookup((name) =>
         name === 'user-agent' ? 'Mozilla/5.0 (compatible; bingbot/2.0)' : null,
+      ),
+    ).toBe(true);
+    expect(
+      isDeclaredBotUserAgent(
+        'Mozilla/5.0 (compatible; meta-externalagent/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler))',
       ),
     ).toBe(true);
   });

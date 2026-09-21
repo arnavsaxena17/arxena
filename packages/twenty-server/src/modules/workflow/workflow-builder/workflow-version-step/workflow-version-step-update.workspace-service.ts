@@ -1,7 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { isDefined } from 'twenty-shared/utils';
+import { WorkflowActionType } from 'twenty-shared/workflow';
 
+import {
+  REFRESH_PENDING_HITL_AFTER_PROMPT_CHANGE_DELAY_MS,
+  REFRESH_PENDING_HITL_AFTER_PROMPT_CHANGE_JOB_NAME,
+  type RefreshPendingHitlAfterPromptChangeJobData,
+} from 'src/engine/core-modules/outreach-command/jobs/refresh-pending-hitl-after-prompt-change.job';
+import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
+import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
+import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { WorkflowActionDTO } from 'src/engine/core-modules/workflow/dtos/workflow-action.dto';
 import {
   WorkflowVersionStepException,
@@ -16,10 +25,16 @@ import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/work
 
 @Injectable()
 export class WorkflowVersionStepUpdateWorkspaceService {
+  private readonly logger = new Logger(
+    WorkflowVersionStepUpdateWorkspaceService.name,
+  );
+
   constructor(
     private readonly workflowSchemaWorkspaceService: WorkflowSchemaWorkspaceService,
     private readonly workflowVersionStepOperationsWorkspaceService: WorkflowVersionStepOperationsWorkspaceService,
     private readonly workflowVersionStepHelpersWorkspaceService: WorkflowVersionStepHelpersWorkspaceService,
+    @InjectMessageQueue(MessageQueue.workflowQueue)
+    private readonly workflowQueue: MessageQueueService,
   ) {}
 
   async updateWorkflowVersionStep({
@@ -64,6 +79,12 @@ export class WorkflowVersionStepUpdateWorkspaceService {
       });
     }
 
+    const shouldRefreshPendingHitl =
+      isPublishedWorkflowVersionStatus(workflowVersion.status) &&
+      existingStep.type === WorkflowActionType.AI_AGENT &&
+      step.type === WorkflowActionType.AI_AGENT &&
+      getAiAgentPrompt(existingStep) !== getAiAgentPrompt(step);
+
     const isStepTypeChanged = existingStep.type !== step.type;
 
     const { updatedStep, additionalCreatedSteps } = isStepTypeChanged
@@ -101,6 +122,29 @@ export class WorkflowVersionStepUpdateWorkspaceService {
         steps: updatedSteps,
       },
     );
+
+    if (shouldRefreshPendingHitl) {
+      try {
+        await this.workflowQueue.add<RefreshPendingHitlAfterPromptChangeJobData>(
+          REFRESH_PENDING_HITL_AFTER_PROMPT_CHANGE_JOB_NAME,
+          {
+            workspaceId,
+            workflowVersionId: workflowVersion.id,
+            changedStepIds: [step.id],
+          },
+          {
+            id: `refresh-pending-hitl-${workflowVersion.id}`,
+            delay: REFRESH_PENDING_HITL_AFTER_PROMPT_CHANGE_DELAY_MS,
+          },
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Failed to enqueue pending HITL refresh for version ${workflowVersion.id}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    }
 
     return updatedStep;
   }
@@ -168,3 +212,9 @@ export class WorkflowVersionStepUpdateWorkspaceService {
     });
   }
 }
+
+const getAiAgentPrompt = (step: WorkflowAction): string => {
+  const input = step.settings?.input as { prompt?: unknown } | undefined;
+
+  return typeof input?.prompt === 'string' ? input.prompt : '';
+};

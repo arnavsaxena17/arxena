@@ -258,7 +258,9 @@ export const HeaderMobile = ({
           >
             Outreach
           </StyledNavLink>
-          <StyledNavLink href="/pricing">Pricing</StyledNavLink>
+          <StyledNavLink href="/pricing" prefetch={false}>
+            Pricing
+          </StyledNavLink>
           {showCurrencySelector && (
             <StyledCurrencySelect
               aria-label="Select currency"

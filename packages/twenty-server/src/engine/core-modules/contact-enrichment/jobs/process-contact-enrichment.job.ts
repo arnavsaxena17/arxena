@@ -18,8 +18,9 @@ import type {
   ContactEnrichmentJobProgress,
   ContactEnrichmentOptions,
   ContactEnrichmentProviderName,
-  ContactResult
+  ContactResult,
 } from '../types/contact-enrichment.types';
+import { formatContactEnrichmentError } from '../utils/format-contact-enrichment-error.util';
 
 export type ContactEnrichmentJobData = {
   jobId: string;
@@ -50,8 +51,14 @@ export class ContactEnrichmentQueueProcessor {
 
   @Process(ContactEnrichmentQueueProcessor.name)
   async handle(jobData: ContactEnrichmentJobData): Promise<void> {
-    const { jobId, linkedinUrls, operation, options, providerName, workspaceId } =
-      jobData;
+    const {
+      jobId,
+      linkedinUrls,
+      operation,
+      options,
+      providerName,
+      workspaceId,
+    } = jobData;
 
     this.logger.log(
       `Processing contact enrichment job ${jobId}: ${operation} for ${linkedinUrls.length} URLs${providerName ? ` using ${providerName} provider` : ' using waterfall'}`,
@@ -119,7 +126,10 @@ export class ContactEnrichmentQueueProcessor {
           if (operation === 'availability') {
             result = await this.waterfallService.checkAvailability(linkedinUrl);
           } else {
-            result = await this.waterfallService.fetchContacts(linkedinUrl, options);
+            result = await this.waterfallService.fetchContacts(
+              linkedinUrl,
+              options,
+            );
           }
         }
 
@@ -128,8 +138,7 @@ export class ContactEnrichmentQueueProcessor {
         progress.completed += 1;
       } catch (error) {
         this.logger.error(
-          `Failed to process ${linkedinUrl} in job ${jobId}`,
-          error as Error,
+          `Failed to process ${linkedinUrl} in job ${jobId}: ${formatContactEnrichmentError(error)}`,
         );
         progress.failed += 1;
         progress.results = progress.results ?? {};

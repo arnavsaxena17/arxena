@@ -121,7 +121,9 @@ export const FooterMobile = ({ phase2Exposed = false }: FooterMobileProps) => {
         <StyledSectionTitle>Product</StyledSectionTitle>
         <StyledLink href="/products">Products</StyledLink>
         <StyledLink href="/solutions">Solutions</StyledLink>
-        <StyledLink href="/pricing">Pricing</StyledLink>
+        <StyledLink href="/pricing" prefetch={false}>
+          Pricing
+        </StyledLink>
         <StyledLink href="/engage">Outreach</StyledLink>
         <StyledLink href="/chrome-extension">Chrome extension</StyledLink>
       </StyledLinkSection>

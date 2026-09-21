@@ -6,10 +6,11 @@ import { EnvironmentService } from 'src/engine/core-modules/environment/environm
 
 import type { ContactEnrichmentProvider } from '../interfaces/contact-enrichment-provider.interface';
 import type {
-    ContactAvailability,
-    ContactEnrichmentOptions,
-    ContactResult,
+  ContactAvailability,
+  ContactEnrichmentOptions,
+  ContactResult,
 } from '../types/contact-enrichment.types';
+import { formatContactEnrichmentError } from '../utils/format-contact-enrichment-error.util';
 
 @Injectable()
 export class ApolloProvider implements ContactEnrichmentProvider {
@@ -34,9 +35,7 @@ export class ApolloProvider implements ContactEnrichmentProvider {
     return this.apiKey !== null && this.apiKey.length > 0;
   }
 
-  async checkAvailability(
-    _linkedinUrl: string,
-  ): Promise<ContactAvailability> {
+  async checkAvailability(_linkedinUrl: string): Promise<ContactAvailability> {
     return { emailAvailable: true, phoneAvailable: true };
   }
 
@@ -104,8 +103,7 @@ export class ApolloProvider implements ContactEnrichmentProvider {
         }
       }
       this.logger.error(
-        `Apollo people/match (id+domain) failed for id=${id.slice(0, 8)}...`,
-        error as Error,
+        `Apollo people/match (id+domain) failed for id=${id.slice(0, 8)}...: ${formatContactEnrichmentError(error)}`,
       );
       throw error;
     }
@@ -158,18 +156,17 @@ export class ApolloProvider implements ContactEnrichmentProvider {
         }
       }
 
+      // Apollo rejects query-string api_key; use X-Api-Key like ApolloIoRestService.
       const response = await axios.post(
         'https://api.apollo.io/api/v1/people/match',
-        null,
+        {},
         {
           headers: {
             'Cache-Control': 'no-cache',
             'Content-Type': 'application/json',
+            'x-api-key': this.apiKey ?? '',
           },
-          params: {
-            ...params,
-            api_key: this.apiKey ?? '',
-          },
+          params,
         },
       );
 
@@ -189,8 +186,7 @@ export class ApolloProvider implements ContactEnrichmentProvider {
         }
       }
       this.logger.error(
-        `Apollo fetch failed for ${linkedinUrl}`,
-        error as Error,
+        `Apollo fetch failed for ${linkedinUrl}: ${formatContactEnrichmentError(error)}`,
       );
       throw error;
     }
@@ -214,10 +210,7 @@ export class ApolloProvider implements ContactEnrichmentProvider {
         person.contact !== null
       ) {
         const c = person.contact as Record<string, unknown>;
-        if (
-          c.contact_emails &&
-          Array.isArray(c.contact_emails)
-        ) {
+        if (c.contact_emails && Array.isArray(c.contact_emails)) {
           for (const emailObj of c.contact_emails) {
             if (
               emailObj &&
@@ -281,7 +274,11 @@ export class ApolloProvider implements ContactEnrichmentProvider {
         ? person.last_name.trim()
         : '';
     const derivedFullName =
-      rawName ?? [first, last].filter((p) => p.length > 0).join(' ').trim();
+      rawName ??
+      [first, last]
+        .filter((p) => p.length > 0)
+        .join(' ')
+        .trim();
     const fullName = derivedFullName.length > 0 ? derivedFullName : undefined;
 
     return {

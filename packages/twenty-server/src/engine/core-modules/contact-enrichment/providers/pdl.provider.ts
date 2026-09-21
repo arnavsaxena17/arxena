@@ -9,6 +9,7 @@ import type {
   ContactResult,
 } from '../types/contact-enrichment.types';
 import type { ContactEnrichmentProvider } from '../interfaces/contact-enrichment-provider.interface';
+import { formatContactEnrichmentError } from '../utils/format-contact-enrichment-error.util';
 
 @Injectable()
 export class PdlProvider implements ContactEnrichmentProvider {
@@ -37,9 +38,7 @@ export class PdlProvider implements ContactEnrichmentProvider {
     return this.apiKey !== null && this.apiKey.length > 0;
   }
 
-  async checkAvailability(
-    linkedinUrl: string,
-  ): Promise<ContactAvailability> {
+  async checkAvailability(linkedinUrl: string): Promise<ContactAvailability> {
     if (!this.isEnabled()) {
       return { emailAvailable: false, phoneAvailable: false };
     }
@@ -56,9 +55,13 @@ export class PdlProvider implements ContactEnrichmentProvider {
         const data = response.data.data;
         return {
           emailAvailable:
-            data.emails === true || data.personal_emails === true || data.work_email === true,
+            data.emails === true ||
+            data.personal_emails === true ||
+            data.work_email === true,
           phoneAvailable:
-            data.phone_numbers === true || data.mobile_phone === true || data.phones === true,
+            data.phone_numbers === true ||
+            data.mobile_phone === true ||
+            data.phones === true,
           provider: 'pdl',
         };
       }
@@ -66,8 +69,7 @@ export class PdlProvider implements ContactEnrichmentProvider {
       return { emailAvailable: false, phoneAvailable: false };
     } catch (error) {
       this.logger.error(
-        `PDL availability check failed for ${linkedinUrl}`,
-        error as Error,
+        `PDL availability check failed for ${linkedinUrl}: ${formatContactEnrichmentError(error)}`,
       );
       return { emailAvailable: false, phoneAvailable: false };
     }
@@ -78,7 +80,9 @@ export class PdlProvider implements ContactEnrichmentProvider {
     options?: ContactEnrichmentOptions,
   ): Promise<ContactResult> {
     if (!this.isEnabled()) {
-      throw new Error('PDL provider is not enabled (PDL_API_KEY not configured)');
+      throw new Error(
+        'PDL provider is not enabled (PDL_API_KEY not configured)',
+      );
     }
 
     const { wantEmail = true, wantPhone = true } = options ?? {};
@@ -170,8 +174,7 @@ export class PdlProvider implements ContactEnrichmentProvider {
         return { emails: [], phones: [], source: 'pdl' };
       }
       this.logger.error(
-        `PDL fetch failed for ${linkedinUrl}`,
-        error as Error,
+        `PDL fetch failed for ${linkedinUrl}: ${formatContactEnrichmentError(error)}`,
       );
       throw error;
     }

@@ -28,6 +28,7 @@ type WorkflowAiAgentPromptTabProps = {
   prompt: string;
   readonly: boolean;
   onPromptChange: (value: string) => void;
+  onPromptBlur?: () => void;
   onActionUpdate?: (action: WorkflowAiAgentAction) => void;
   modelSelectDropdownId?: string;
 };
@@ -54,6 +55,7 @@ export const WorkflowAiAgentPromptTab = ({
   prompt,
   readonly,
   onPromptChange,
+  onPromptBlur,
   onActionUpdate,
   modelSelectDropdownId = 'select-agent-model',
 }: WorkflowAiAgentPromptTabProps) => {
@@ -144,6 +146,7 @@ export const WorkflowAiAgentPromptTab = ({
         placeholder={t`Describe what you want the AI to do...`}
         defaultValue={prompt}
         onChange={onPromptChange}
+        onBlur={onPromptBlur}
         readonly={readonly}
       />
     );
@@ -190,6 +193,7 @@ export const WorkflowAiAgentPromptTab = ({
         placeholder={t`Describe what you want the AI to do...`}
         defaultValue={prompt}
         onChange={onPromptChange}
+        onBlur={onPromptBlur}
         readonly={readonly}
       />
 

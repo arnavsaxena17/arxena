@@ -2,11 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import type { ContactEnrichmentProvider } from '../interfaces/contact-enrichment-provider.interface';
 import type {
-    ContactAvailability,
-    ContactEnrichmentOptions,
-    ContactEnrichmentProviderName,
-    ContactResult,
+  ContactAvailability,
+  ContactEnrichmentOptions,
+  ContactEnrichmentProviderName,
+  ContactResult,
 } from '../types/contact-enrichment.types';
+import { formatContactEnrichmentError } from '../utils/format-contact-enrichment-error.util';
 import { ContactAvailabilityCacheService } from './contact-availability-cache.service';
 import { RateLimiterService } from './rate-limiter.service';
 
@@ -47,9 +48,7 @@ export class ContactEnrichmentWaterfallService {
   /**
    * Check availability of email/phone for a LinkedIn URL using waterfall.
    */
-  async checkAvailability(
-    linkedinUrl: string,
-  ): Promise<ContactAvailability> {
+  async checkAvailability(linkedinUrl: string): Promise<ContactAvailability> {
     // Check cache first
     const cached = await this.cacheService.getAvailability(linkedinUrl);
     if (cached) {
@@ -64,7 +63,7 @@ export class ContactEnrichmentWaterfallService {
         );
 
         const availability = await provider.checkAvailability(linkedinUrl);
-        
+
         // Accept availability if:
         // 1. Provider field exists (real availability data from providers with availability APIs)
         // 2. At least one contact type is unavailable (specific negative info)
@@ -81,8 +80,7 @@ export class ContactEnrichmentWaterfallService {
         // If both are true without provider field, continue to next provider
       } catch (error) {
         this.logger.warn(
-          `Provider ${provider.getName()} availability check failed for ${linkedinUrl}`,
-          error as Error,
+          `Provider ${provider.getName()} availability check failed for ${linkedinUrl}: ${formatContactEnrichmentError(error)}`,
         );
         // Continue to next provider
       }
@@ -138,7 +136,10 @@ export class ContactEnrichmentWaterfallService {
         : this.providers;
 
     // Check cache first (key includes Apollo fields when present)
-    const cached = await this.getCachedFetchContactsResult(linkedinUrl, options);
+    const cached = await this.getCachedFetchContactsResult(
+      linkedinUrl,
+      options,
+    );
     if (cached) return cached;
 
     for (const provider of providerChain) {
@@ -159,8 +160,7 @@ export class ContactEnrichmentWaterfallService {
         }
       } catch (error) {
         this.logger.warn(
-          `Provider ${provider.getName()} fetch failed for ${linkedinUrl || `apollo:${apolloId ?? ''}`}`,
-          error as Error,
+          `Provider ${provider.getName()} fetch failed for ${linkedinUrl || `apollo:${apolloId ?? ''}`}: ${formatContactEnrichmentError(error)}`,
         );
       }
     }

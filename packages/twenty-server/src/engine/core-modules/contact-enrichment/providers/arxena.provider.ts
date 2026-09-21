@@ -9,6 +9,7 @@ import type {
   ContactEnrichmentOptions,
   ContactResult,
 } from '../types/contact-enrichment.types';
+import { formatContactEnrichmentError } from '../utils/format-contact-enrichment-error.util';
 
 type ElasticsearchQuery = {
   bool?: {
@@ -113,9 +114,8 @@ export class ArxenaProvider implements ContactEnrichmentProvider {
     wantEmail?: boolean,
     wantPhone?: boolean,
   ): ElasticsearchQuery {
-    const personLinkedInQueryObj = this.createPersonLinkedInUrlQuery(
-      linkedinUrl,
-    );
+    const personLinkedInQueryObj =
+      this.createPersonLinkedInUrlQuery(linkedinUrl);
 
     const mustClauses: ElasticsearchQuery[] = [personLinkedInQueryObj];
 
@@ -184,9 +184,7 @@ export class ArxenaProvider implements ContactEnrichmentProvider {
     return { emails, phones };
   }
 
-  async checkAvailability(
-    linkedinUrl: string,
-  ): Promise<ContactAvailability> {
+  async checkAvailability(linkedinUrl: string): Promise<ContactAvailability> {
     if (!this.client) {
       return { emailAvailable: false, phoneAvailable: false };
     }
@@ -221,8 +219,7 @@ export class ArxenaProvider implements ContactEnrichmentProvider {
       };
     } catch (error) {
       this.logger.error(
-        `Arxena availability check failed for ${linkedinUrl}`,
-        error as Error,
+        `Arxena availability check failed for ${linkedinUrl}: ${formatContactEnrichmentError(error)}`,
       );
       return { emailAvailable: false, phoneAvailable: false };
     }
@@ -233,7 +230,9 @@ export class ArxenaProvider implements ContactEnrichmentProvider {
     options?: ContactEnrichmentOptions,
   ): Promise<ContactResult> {
     if (!this.client) {
-      throw new Error('Arxena provider is not enabled (ES_ENDPOINT not configured)');
+      throw new Error(
+        'Arxena provider is not enabled (ES_ENDPOINT not configured)',
+      );
     }
 
     const { wantEmail = true, wantPhone = true } = options ?? {};
@@ -271,8 +270,7 @@ export class ArxenaProvider implements ContactEnrichmentProvider {
       };
     } catch (error) {
       this.logger.error(
-        `Arxena fetch failed for ${linkedinUrl}`,
-        error as Error,
+        `Arxena fetch failed for ${linkedinUrl}: ${formatContactEnrichmentError(error)}`,
       );
       throw error;
     }

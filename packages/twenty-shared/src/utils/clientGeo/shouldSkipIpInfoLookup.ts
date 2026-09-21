@@ -1,7 +1,8 @@
 import { ORG_CHART_VERIFIED_BOT_HEADER } from '@/constants/org-chart-guard.constant';
 
+// Matches Meta meta-externalagent, Googlebot, bingbot, bytespider, etc.
 const DECLARED_BOT_UA_PATTERN =
-  /bot|crawler|spider|scraper|bytespider|petalbot/i;
+  /bot|crawler|spider|scraper|bytespider|petalbot|facebookexternalhit|meta-externalagent|slurp|duckduckbot|yandex|baiduspider|semrush|ahrefs|mj12bot|dotbot/i;
 
 const readHeaderValue = (
   getHeader: (name: string) => string | string[] | null | undefined,
