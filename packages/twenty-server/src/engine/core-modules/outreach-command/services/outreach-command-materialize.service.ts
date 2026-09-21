@@ -15,13 +15,13 @@ import { isDefined } from 'twenty-shared/utils';
 
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { OutreachCacheRealtimeService } from 'src/engine/core-modules/outreach-command/services/outreach-cache-realtime.service';
+import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
 import {
   buildCandidateEventUpdate,
   computeAttentionReason,
   computeCoverageBucket,
   mapCandidateEventToOutreachActionTimestampsEvent,
   mapMessagingChannelToOutreachChannel,
-  normalizeLinkedinUrl,
   resolveCompanyIdFromCandidate,
   rollupOutreachFunnelStage,
   type OutreachCandidateEventKind,
@@ -283,40 +283,69 @@ export class OutreachCommandMaterializeService {
   async findCandidateIdByLinkedinUrl({
     linkedinUrl,
     apiToken,
+    linkedinProviderId,
   }: {
     linkedinUrl: string;
     apiToken: string;
+    linkedinProviderId?: string | null;
   }): Promise<string | null> {
-    const normalized = normalizeLinkedinUrl(linkedinUrl);
+    const slug = extractLinkedinProfileId(linkedinUrl);
+    const providerId = linkedinProviderId?.trim() || '';
 
-    if (!normalized) {
+    if (!slug && !providerId) {
       return null;
     }
 
     try {
-      const slug = normalized.split('/').pop() ?? normalized;
+      const encodedSlug = slug ? encodeURIComponent(slug) : '';
+      const orFilters: Array<Record<string, unknown>> = [];
+
+      if (slug) {
+        orFilters.push({
+          people: {
+            linkedinLink: {
+              primaryLinkUrl: { ilike: `%${slug}%` },
+            },
+          },
+        });
+
+        // Existing rows may still store percent-encoded slugs
+        if (encodedSlug && encodedSlug !== slug) {
+          orFilters.push({
+            people: {
+              linkedinLink: {
+                primaryLinkUrl: { ilike: `%${encodedSlug}%` },
+              },
+            },
+          });
+        }
+      }
+
+      if (providerId) {
+        orFilters.push({
+          people: {
+            linkedinProfileId: { eq: providerId },
+          },
+        });
+      }
+
       const response = (await this.staticGraphQLService.executeGraphQL(
         `query Candidates($filter: CandidateFilterInput) {
-          candidates(first: 5, filter: $filter) {
+          candidates(first: 10, filter: $filter) {
             edges {
               node {
                 id
-                people { linkedinLink { primaryLinkUrl } }
+                people {
+                  linkedinProfileId
+                  linkedinLink { primaryLinkUrl }
+                }
               }
             }
           }
         }`,
         {
           filter: {
-            or: [
-              {
-                people: {
-                  linkedinLink: {
-                    primaryLinkUrl: { ilike: `%${slug}%` },
-                  },
-                },
-              },
-            ],
+            or: orFilters,
           },
         },
         apiToken,
@@ -328,21 +357,34 @@ export class OutreachCommandMaterializeService {
             edges?: Array<{
               node: {
                 id: string;
-                people?: { linkedinLink?: { primaryLinkUrl?: string } };
+                people?: {
+                  linkedinProfileId?: string | null;
+                  linkedinLink?: { primaryLinkUrl?: string };
+                };
               };
             }>;
           }
         )?.edges ?? [];
 
       const match = edges.find((edge) => {
-        const personUrl = normalizeLinkedinUrl(
+        const personProviderId = edge.node.people?.linkedinProfileId?.trim();
+
+        if (providerId && personProviderId === providerId) {
+          return true;
+        }
+
+        if (!slug) {
+          return false;
+        }
+
+        const personSlug = extractLinkedinProfileId(
           edge.node.people?.linkedinLink?.primaryLinkUrl,
         );
 
-        return personUrl.includes(slug) || normalized.includes(personUrl);
+        return personSlug === slug;
       });
 
-      return match?.node.id ?? edges[0]?.node.id ?? null;
+      return match?.node.id ?? null;
     } catch (error) {
       this.logger.warn(
         `GTM LinkedIn candidate lookup failed: ${
@@ -359,19 +401,26 @@ export class OutreachCommandMaterializeService {
     event,
     apiToken,
     messagingChannel,
+    linkedinProviderId,
   }: {
     linkedinUrl: string;
     event: OutreachCandidateEventKind;
     apiToken: string;
     messagingChannel?: string | null;
-  }): Promise<void> {
+    linkedinProviderId?: string | null;
+  }): Promise<boolean> {
     const candidateId = await this.findCandidateIdByLinkedinUrl({
       linkedinUrl,
       apiToken,
+      linkedinProviderId,
     });
 
     if (!candidateId) {
-      return;
+      this.logger.warn(
+        `No candidate for ${event}: linkedinUrl=${linkedinUrl} slug=${extractLinkedinProfileId(linkedinUrl) || '(none)'} providerId=${linkedinProviderId?.trim() || '(none)'}`,
+      );
+
+      return false;
     }
 
     await this.applyCandidateEvent({
@@ -380,6 +429,8 @@ export class OutreachCommandMaterializeService {
       apiToken,
       messagingChannel,
     });
+
+    return true;
   }
 
   async recomputeCompanyRollup({

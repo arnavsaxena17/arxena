@@ -16,12 +16,15 @@ import { TestAiAgentDTO } from 'src/engine/core-modules/workflow/dtos/test-ai-ag
 import { TestAiAgentInput } from 'src/engine/core-modules/workflow/dtos/test-ai-agent.input';
 import { TestHttpRequestInput } from 'src/engine/core-modules/workflow/dtos/test-http-request.input';
 import { TestHttpRequestDTO } from 'src/engine/core-modules/workflow/dtos/test-http-request.dto';
+import { TestWorkflowAiFilteringDTO } from 'src/engine/core-modules/workflow/dtos/test-workflow-ai-filtering.dto';
+import { TestWorkflowAiFilteringInput } from 'src/engine/core-modules/workflow/dtos/test-workflow-ai-filtering.input';
 import { TestWorkflowFormNotifyInput } from 'src/engine/core-modules/workflow/dtos/test-workflow-form-notify.input';
 import { TestWorkflowFormNotifyDTO } from 'src/engine/core-modules/workflow/dtos/test-workflow-form-notify.dto';
 import { TestWorkflowSendActionDTO } from 'src/engine/core-modules/workflow/dtos/test-workflow-send-action.dto';
 import { TestWorkflowSendActionInput } from 'src/engine/core-modules/workflow/dtos/test-workflow-send-action.input';
 import { WorkflowFormNotifyTestService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-notify-test.service';
 import { WorkflowAiAgentTestService } from 'src/engine/core-modules/workflow/services/workflow-ai-agent-test.service';
+import { WorkflowAiFilteringTestService } from 'src/engine/core-modules/workflow/services/workflow-ai-filtering-test.service';
 import { WorkflowSendActionTestService } from 'src/engine/core-modules/workflow/services/workflow-send-action-test.service';
 import { UpdateWorkflowRunStepInput } from 'src/engine/core-modules/workflow/dtos/update-workflow-run-step.input';
 import { UpdateWorkflowVersionStepInput } from 'src/engine/core-modules/workflow/dtos/update-workflow-version-step.input';
@@ -63,6 +66,7 @@ export class WorkflowVersionStepResolver {
     private readonly connectedAccountMetadataService: ConnectedAccountMetadataService,
     private readonly workflowFormNotifyTestService: WorkflowFormNotifyTestService,
     private readonly workflowAiAgentTestService: WorkflowAiAgentTestService,
+    private readonly workflowAiFilteringTestService: WorkflowAiFilteringTestService,
     private readonly workflowSendActionTestService: WorkflowSendActionTestService,
   ) {}
 
@@ -199,6 +203,21 @@ export class WorkflowVersionStepResolver {
       candidateId: input.candidateId,
       workflowVersionId: input.workflowVersionId,
       stepId: input.stepId,
+    });
+  }
+
+  @Mutation(() => TestWorkflowAiFilteringDTO)
+  async testWorkflowAiFiltering(
+    @Args('input') input: TestWorkflowAiFilteringInput,
+  ): Promise<TestWorkflowAiFilteringDTO> {
+    return this.workflowAiFilteringTestService.test({
+      prompt: input.prompt,
+      selectedModel: input.selectedModel,
+      name: input.name,
+      selectedMetadataFields: input.selectedMetadataFields,
+      includeResume: input.includeResume,
+      fields: input.fields,
+      candidates: input.candidates,
     });
   }
 

@@ -13,6 +13,7 @@ import { WorkflowVersionStepResolver } from 'src/engine/core-modules/workflow/re
 import { WorkflowVersionResolver } from 'src/engine/core-modules/workflow/resolvers/workflow-version.resolver';
 import { WorkflowAiAgentTestContextService } from 'src/engine/core-modules/workflow/services/workflow-ai-agent-test-context.service';
 import { WorkflowAiAgentTestService } from 'src/engine/core-modules/workflow/services/workflow-ai-agent-test.service';
+import { WorkflowAiFilteringTestService } from 'src/engine/core-modules/workflow/services/workflow-ai-filtering-test.service';
 import { WorkflowSendActionTestService } from 'src/engine/core-modules/workflow/services/workflow-send-action-test.service';
 import { WorkflowVersionCoreModule } from 'src/engine/core-modules/workflow/workflow-version-core.module';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -28,6 +29,7 @@ import { WorkflowCommonModule } from 'src/modules/workflow/common/workflow-commo
 import { WorkflowBuilderModule } from 'src/modules/workflow/workflow-builder/workflow-builder.module';
 import { CodeStepBuildModule } from 'src/modules/workflow/workflow-builder/workflow-version-step/code-step/code-step-build.module';
 import { WorkflowVersionModule } from 'src/modules/workflow/workflow-builder/workflow-version/workflow-version.module';
+import { AiFilteringActionModule } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/ai-filtering-action.module';
 import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.module';
 import { WorkflowRunnerModule } from 'src/modules/workflow/workflow-runner/workflow-runner.module';
 import { WorkflowTriggerModule } from 'src/modules/workflow/workflow-trigger/workflow-trigger.module';
@@ -41,6 +43,7 @@ import { WorkflowTriggerModule } from 'src/modules/workflow/workflow-trigger/wor
       UserWorkspaceEntity,
     ]),
     AiAgentExecutionModule,
+    AiFilteringActionModule,
     WorkflowTriggerModule,
     WorkflowBuilderModule,
     WorkflowCommonModule,
@@ -66,6 +69,7 @@ import { WorkflowTriggerModule } from 'src/modules/workflow/workflow-trigger/wor
     WorkflowVersionResolver,
     WorkflowAiAgentTestService,
     WorkflowAiAgentTestContextService,
+    WorkflowAiFilteringTestService,
     WorkflowSendActionTestService,
     provideWorkspaceScopedRepository(AgentEntity),
   ],

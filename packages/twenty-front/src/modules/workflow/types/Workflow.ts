@@ -1,4 +1,49 @@
-import type { BulkRecordsAvailability, GlobalAvailability, SingleRecordAvailability, workflowAiAgentActionSchema, workflowCodeActionSchema, workflowCommentOnLinkedinPostActionSchema, workflowCreateCalendarEventActionSchema, workflowCreateRecordActionSchema, workflowCronTriggerSchema, workflowDatabaseEventTriggerSchema, workflowDelayActionSchema, workflowDeleteRecordActionSchema, workflowDraftEmailActionSchema, workflowEmptyActionSchema, workflowFetchLinkedinActivityActionSchema, workflowFilterActionSchema, workflowFindRecordsActionSchema, workflowFollowLinkedinProfileActionSchema, workflowFormActionSchema, workflowHttpRequestActionSchema, workflowIfElseActionSchema, workflowIteratorActionSchema, workflowLikeLinkedinPostActionSchema, workflowLogicFunctionActionSchema, workflowManualTriggerSchema, workflowPickRecordActionSchema, workflowRunSchema, workflowRunStateSchema, workflowRunStatusSchema, workflowRunStepStatusSchema, workflowSendEmailActionSchema, workflowSendLinkedinConnectionRequestActionSchema, workflowSendLinkedinInmailActionSchema, workflowSendLinkedinMessageActionSchema, workflowSendLinkedinVoiceNoteActionSchema, workflowSendWhatsappMessageActionSchema, workflowTriggerSchema, workflowUpdateRecordActionSchema, workflowUpsertRecordActionSchema, workflowViewLinkedinProfileActionSchema, workflowWebhookTriggerSchema } from 'twenty-shared/workflow';
+import type {
+  BulkRecordsAvailability,
+  GlobalAvailability,
+  SingleRecordAvailability,
+  workflowAiAgentActionSchema,
+  workflowAiFilteringActionSchema,
+  workflowCodeActionSchema,
+  workflowCommentOnLinkedinPostActionSchema,
+  workflowCreateCalendarEventActionSchema,
+  workflowCreateRecordActionSchema,
+  workflowCronTriggerSchema,
+  workflowDatabaseEventTriggerSchema,
+  workflowDelayActionSchema,
+  workflowDeleteRecordActionSchema,
+  workflowDraftEmailActionSchema,
+  workflowEmptyActionSchema,
+  workflowFetchLinkedinActivityActionSchema,
+  workflowFilterActionSchema,
+  workflowFindRecordsActionSchema,
+  workflowFollowLinkedinProfileActionSchema,
+  workflowFormActionSchema,
+  workflowGetLocalBusinessDetailsActionSchema,
+  workflowHttpRequestActionSchema,
+  workflowIfElseActionSchema,
+  workflowIteratorActionSchema,
+  workflowLikeLinkedinPostActionSchema,
+  workflowLogicFunctionActionSchema,
+  workflowManualTriggerSchema,
+  workflowPickRecordActionSchema,
+  workflowRunSchema,
+  workflowRunStateSchema,
+  workflowRunStatusSchema,
+  workflowRunStepStatusSchema,
+  workflowSearchLocalBusinessesActionSchema,
+  workflowSendEmailActionSchema,
+  workflowSendLinkedinConnectionRequestActionSchema,
+  workflowSendLinkedinInmailActionSchema,
+  workflowSendLinkedinMessageActionSchema,
+  workflowSendLinkedinVoiceNoteActionSchema,
+  workflowSendWhatsappMessageActionSchema,
+  workflowTriggerSchema,
+  workflowUpdateRecordActionSchema,
+  workflowUpsertRecordActionSchema,
+  workflowViewLinkedinProfileActionSchema,
+  workflowWebhookTriggerSchema,
+} from 'twenty-shared/workflow';
 import { type z } from 'zod';
 
 export type WorkflowCodeAction = z.infer<typeof workflowCodeActionSchema>;
@@ -69,10 +114,19 @@ export type WorkflowLikeLinkedinPostAction = z.infer<
 export type WorkflowSendWhatsappMessageAction = z.infer<
   typeof workflowSendWhatsappMessageActionSchema
 >;
+export type WorkflowSearchLocalBusinessesAction = z.infer<
+  typeof workflowSearchLocalBusinessesActionSchema
+>;
+export type WorkflowGetLocalBusinessDetailsAction = z.infer<
+  typeof workflowGetLocalBusinessDetailsActionSchema
+>;
 export type WorkflowIteratorAction = z.infer<
   typeof workflowIteratorActionSchema
 >;
 export type WorkflowAiAgentAction = z.infer<typeof workflowAiAgentActionSchema>;
+export type WorkflowAiFilteringAction = z.infer<
+  typeof workflowAiFilteringActionSchema
+>;
 export type WorkflowEmptyAction = z.infer<typeof workflowEmptyActionSchema>;
 
 export type WorkflowAction =
@@ -101,7 +155,10 @@ export type WorkflowAction =
   | WorkflowFollowLinkedinProfileAction
   | WorkflowLikeLinkedinPostAction
   | WorkflowSendWhatsappMessageAction
+  | WorkflowSearchLocalBusinessesAction
+  | WorkflowGetLocalBusinessDetailsAction
   | WorkflowAiAgentAction
+  | WorkflowAiFilteringAction
   | WorkflowIteratorAction
   | WorkflowDelayAction
   | WorkflowEmptyAction;

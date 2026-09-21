@@ -28,6 +28,8 @@ import { type WorkflowLikeLinkedinPostActionSettings } from 'src/modules/workflo
 import { type WorkflowSendWhatsappMessageActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-whatsapp-message-action-settings.type';
 import { type WorkflowSendLinkedinVoiceNoteActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-linkedin-voice-note-action-settings.type';
 import { type WorkflowViewLinkedinProfileActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-view-linkedin-profile-action-settings.type';
+import { type WorkflowSearchLocalBusinessesActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/local-business-data/types/workflow-search-local-businesses-action-settings.type';
+import { type WorkflowGetLocalBusinessDetailsActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/local-business-data/types/workflow-get-local-business-details-action-settings.type';
 
 export type BaseWorkflowActionSettings = {
   outputSchema: OutputSchema;
@@ -70,6 +72,8 @@ export type WorkflowActionSettings =
   | WorkflowFollowLinkedinProfileActionSettings
   | WorkflowLikeLinkedinPostActionSettings
   | WorkflowSendWhatsappMessageActionSettings
+  | WorkflowSearchLocalBusinessesActionSettings
+  | WorkflowGetLocalBusinessDetailsActionSettings
   | WorkflowAiAgentActionSettings
   | WorkflowDelayActionSettings
   | WorkflowIteratorActionSettings;

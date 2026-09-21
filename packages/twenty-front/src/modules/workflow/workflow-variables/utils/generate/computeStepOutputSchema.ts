@@ -22,6 +22,7 @@ import { DatabaseEventAction } from '~/generated-metadata/graphql';
 
 const PERSISTED_OUTPUT_SCHEMA_TYPES = [
   'AI_AGENT',
+  'AI_FILTERING',
   'CODE',
   'HTTP_REQUEST',
   'LOGIC_FUNCTION',
@@ -295,7 +296,9 @@ export const computeStepOutputSchema = ({
     case 'VIEW_LINKEDIN_PROFILE':
     case 'FOLLOW_LINKEDIN_PROFILE':
     case 'LIKE_LINKEDIN_POST':
-    case 'SEND_WHATSAPP_MESSAGE': {
+    case 'SEND_WHATSAPP_MESSAGE':
+    case 'SEARCH_LOCAL_BUSINESSES':
+    case 'GET_LOCAL_BUSINESS_DETAILS': {
       return {
         success: {
           isLeaf: true,

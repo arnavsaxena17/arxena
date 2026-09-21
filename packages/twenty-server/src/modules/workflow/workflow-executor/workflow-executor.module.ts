@@ -7,6 +7,7 @@ import { MetricsModule } from 'src/engine/core-modules/metrics/metrics.module';
 import { WorkflowCommonModule } from 'src/modules/workflow/common/workflow-common.module';
 import { WorkflowActionFactory } from 'src/modules/workflow/workflow-executor/factories/workflow-action.factory';
 import { AiAgentActionModule } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-agent/ai-agent-action.module';
+import { AiFilteringActionModule } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/ai-filtering-action.module';
 import { CodeActionModule } from 'src/modules/workflow/workflow-executor/workflow-actions/code/code-action.module';
 import { CreateCalendarEventActionModule } from 'src/modules/workflow/workflow-executor/workflow-actions/create-calendar-event/create-calendar-event-action.module';
 import { DelayActionModule } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/delay-action.module';
@@ -20,6 +21,7 @@ import { LogicFunctionActionModule } from 'src/modules/workflow/workflow-executo
 import { MailSenderActionModule } from 'src/modules/workflow/workflow-executor/workflow-actions/mail-sender/mail-sender-action.module';
 import { RecordCRUDActionModule } from 'src/modules/workflow/workflow-executor/workflow-actions/record-crud/record-crud-action.module';
 import { UnipileMessagingActionModule } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/unipile-messaging-action.module';
+import { LocalBusinessDataActionModule } from 'src/modules/workflow/workflow-executor/workflow-actions/local-business-data/local-business-data-action.module';
 import { WorkflowExecutorWorkspaceService } from 'src/modules/workflow/workflow-executor/workspace-services/workflow-executor.workspace-service';
 import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.module';
 
@@ -38,12 +40,14 @@ import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow
     IfElseActionModule,
     IteratorActionModule,
     AiAgentActionModule,
+    AiFilteringActionModule,
     EmptyActionModule,
     FeatureFlagModule,
     HttpRequestActionModule,
     MailSenderActionModule,
     CreateCalendarEventActionModule,
     UnipileMessagingActionModule,
+    LocalBusinessDataActionModule,
     MetricsModule,
   ],
   providers: [WorkflowExecutorWorkspaceService, WorkflowActionFactory],

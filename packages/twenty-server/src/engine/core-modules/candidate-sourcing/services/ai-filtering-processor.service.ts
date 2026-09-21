@@ -7,10 +7,20 @@ import {
   hasMeaningfulCandidateFieldValue,
 } from 'twenty-shared';
 
+import { JEV_MODEL_ID } from 'src/engine/metadata-modules/ai/ai-evaluation/constants/jev.const';
+import { JevEvaluationService } from 'src/engine/metadata-modules/ai/ai-evaluation/services/jev-evaluation.service';
+import { isJevModelId } from 'src/engine/metadata-modules/ai/ai-evaluation/utils/is-jev-model-id.util';
+import {
+  canUseJevForFilterFields,
+  mapFilterFieldsToJevQuestions,
+} from 'src/engine/metadata-modules/ai/ai-evaluation/utils/map-decision-schema-to-jev-questions.util';
+import { mapJevAnswersToRecord } from 'src/engine/metadata-modules/ai/ai-evaluation/utils/map-jev-answers-to-record.util';
+
 export interface AiFilterField {
   name: string;
   type: string;
   description?: string;
+  enumValues?: string[];
 }
 
 export interface AiFilterConfig {
@@ -25,12 +35,14 @@ export interface AiFilterConfig {
 
 // Mapping from frontend model values to actual OpenAI model names
 const MODEL_MAPPING: Record<string, string> = {
-  'gpt35turbo': 'gpt-3.5-turbo',
-  'gpt51chatlatest': 'gpt-4o-mini',
-  'gpt54mini': 'gpt-5.4-mini',
-  'gpt4o': 'gpt-4o',
-  'gpt4omini': 'gpt-4o-mini',
-  'gpt4ominisearchpreview': 'gpt-4o-mini-search-preview',
+  gpt35turbo: 'gpt-3.5-turbo',
+  gpt51chatlatest: 'gpt-4o-mini',
+  gpt54mini: 'gpt-5.4-mini',
+  gpt4o: 'gpt-4o',
+  gpt4omini: 'gpt-4o-mini',
+  gpt4ominisearchpreview: 'gpt-4o-mini-search-preview',
+  jev: JEV_MODEL_ID,
+  'typesafe-ai/jev': JEV_MODEL_ID,
 };
 
 export interface CandidateData {
@@ -48,7 +60,10 @@ export class AiFilteringProcessorService {
   private openaiClient: OpenAI;
   private semaphore: Sema;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private readonly jevEvaluationService: JevEvaluationService,
+  ) {
     // Initialize semaphore with 10 concurrent requests
     this.semaphore = new Sema(10);
   }
@@ -57,7 +72,8 @@ export class AiFilteringProcessorService {
    * Maps frontend model values to actual OpenAI model names
    */
   private mapModelName(frontendModel: string): string {
-    const mappedModel = MODEL_MAPPING[frontendModel] || frontendModel || 'gpt-4o-mini';
+    const mappedModel =
+      MODEL_MAPPING[frontendModel] || frontendModel || 'gpt-4o-mini';
 
     if (frontendModel && !MODEL_MAPPING[frontendModel]) {
     } else if (frontendModel && MODEL_MAPPING[frontendModel]) {
@@ -78,7 +94,11 @@ export class AiFilteringProcessorService {
     candidates: CandidateData[],
     aiFilters: AiFilterConfig[],
     openaiApiKey: string,
-    progressCallback?: (progress: number, current: number, total: number) => void | Promise<void>
+    progressCallback?: (
+      progress: number,
+      current: number,
+      total: number,
+    ) => void | Promise<void>,
   ): Promise<AiFilterResult[]> {
     this.initializeOpenAI(openaiApiKey);
 
@@ -86,7 +106,9 @@ export class AiFilteringProcessorService {
     const totalOperations = candidates.length * aiFilters.length;
     let currentOperation = 0;
 
-    console.log(`Processing ${aiFilters.length} AI filters for ${candidates.length} candidates with parallel requests`);
+    console.log(
+      `Processing ${aiFilters.length} AI filters for ${candidates.length} candidates with parallel requests`,
+    );
 
     // Create all tasks upfront for parallel processing
     const allTasks: Array<{
@@ -100,7 +122,7 @@ export class AiFilteringProcessorService {
         allTasks.push({
           candidate,
           aiFilter,
-          taskId: `${candidate.id}-${aiFilter.modelName}`
+          taskId: `${candidate.id}-${aiFilter.modelName}`,
         });
       }
     }
@@ -108,21 +130,29 @@ export class AiFilteringProcessorService {
     // Process all tasks in parallel with semaphore controlling concurrency
     const taskPromises = allTasks.map(async (task) => {
       await this.semaphore.acquire();
-      console.log("processing tasks for candidate name::%s", task.candidate.name);
+      console.log(
+        'processing tasks for candidate name::%s',
+        task.candidate.name,
+      );
       try {
-        const filterData = await this.processSingleAiFilter(task.candidate, task.aiFilter);
+        const filterData = await this.processSingleAiFilter(
+          task.candidate,
+          task.aiFilter,
+        );
         currentOperation++;
 
         // Report progress periodically
         if (progressCallback && currentOperation % 5 === 0) {
-          const progress = Math.round((currentOperation / totalOperations) * 100);
+          const progress = Math.round(
+            (currentOperation / totalOperations) * 100,
+          );
           await progressCallback(progress, currentOperation, totalOperations);
         }
 
         return {
           candidateId: task.candidate.id,
           filterName: task.aiFilter.modelName,
-          data: filterData
+          data: filterData,
         };
       } catch (error) {
         console.error(`Error processing task ${task.taskId}:`, error);
@@ -130,7 +160,7 @@ export class AiFilteringProcessorService {
         return {
           candidateId: task.candidate.id,
           filterName: task.aiFilter.modelName,
-          data: {}
+          data: {},
         };
       } finally {
         this.semaphore.release();
@@ -142,10 +172,15 @@ export class AiFilteringProcessorService {
 
     // Merge results by candidate
     for (const taskResult of taskResults) {
-      let existingResult = results.find(r => r.candidateId === taskResult.candidateId);
+      let existingResult = results.find(
+        (r) => r.candidateId === taskResult.candidateId,
+      );
 
       if (!existingResult) {
-        existingResult = { candidateId: taskResult.candidateId, enrichedData: {} };
+        existingResult = {
+          candidateId: taskResult.candidateId,
+          enrichedData: {},
+        };
         results.push(existingResult);
       }
 
@@ -193,14 +228,33 @@ export class AiFilteringProcessorService {
 
   private async processSingleAiFilter(
     candidate: CandidateData,
-    aiFilter: AiFilterConfig
+    aiFilter: AiFilterConfig,
   ): Promise<Record<string, any>> {
     try {
       const userInput = this.buildUserInput(candidate, aiFilter);
 
       if (!userInput.trim()) {
-        console.warn(`No input data for candidate ${candidate.id} with AI filter ${aiFilter.modelName}`);
+        console.warn(
+          `No input data for candidate ${candidate.id} with AI filter ${aiFilter.modelName}`,
+        );
         return {};
+      }
+
+      if (isJevModelId(aiFilter.selectedModel)) {
+        if (!canUseJevForFilterFields(aiFilter.fields)) {
+          console.warn(
+            `Jev selected for filter ${aiFilter.modelName} but fields are not all boolean/enum; falling back to gpt-4o-mini`,
+          );
+
+          return this.getOpenAIResponse(
+            aiFilter.prompt,
+            userInput,
+            'gpt4omini',
+            aiFilter.fields,
+          );
+        }
+
+        return this.getJevResponse(aiFilter.prompt, userInput, aiFilter.fields);
       }
 
       // Get response from OpenAI
@@ -208,37 +262,63 @@ export class AiFilteringProcessorService {
         aiFilter.prompt,
         userInput,
         aiFilter.selectedModel,
-        aiFilter.fields
+        aiFilter.fields,
       );
 
       return response;
     } catch (error) {
-      console.error(`Error processing AI filter for candidate ${candidate.id}:`, error);
+      console.error(
+        `Error processing AI filter for candidate ${candidate.id}:`,
+        error,
+      );
       return {};
     }
+  }
+
+  private async getJevResponse(
+    systemPrompt: string,
+    userInput: string,
+    expectedFields: AiFilterField[],
+  ): Promise<Record<string, any>> {
+    const questions = mapFilterFieldsToJevQuestions(
+      expectedFields,
+      systemPrompt,
+    );
+    const evaluationResult = await this.jevEvaluationService.evaluate({
+      state: {
+        instructions: systemPrompt,
+        candidate: userInput,
+      },
+      questions,
+    });
+
+    return mapJevAnswersToRecord(evaluationResult.answers);
   }
 
   private async getOpenAIResponse(
     systemPrompt: string,
     userInput: string,
     model: string,
-    expectedFields: AiFilterField[]
+    expectedFields: AiFilterField[],
   ): Promise<Record<string, any>> {
-    const fieldDescriptions = expectedFields.map(f =>
-      `"${f.name}": ${f.type}${f.description ? ` (${f.description})` : ''}`
-    ).join(', ');
+    const fieldDescriptions = expectedFields
+      .map(
+        (f) =>
+          `"${f.name}": ${f.type}${f.description ? ` (${f.description})` : ''}`,
+      )
+      .join(', ');
 
     const messages = [
       {
         role: 'system' as const,
-        content: `${systemPrompt}\n\nReturn the response in JSON format with the following fields: {${fieldDescriptions}}. Make sure all field names match exactly.`
+        content: `${systemPrompt}\n\nReturn the response in JSON format with the following fields: {${fieldDescriptions}}. Make sure all field names match exactly.`,
       },
       {
         role: 'user' as const,
-        content: userInput
-      }
+        content: userInput,
+      },
     ];
-    console.log("messages for getOpenAIResponse: ", messages);
+    console.log('messages for getOpenAIResponse: ', messages);
 
     const maxRetries = 3;
     let lastError: any;
@@ -274,7 +354,9 @@ export class AiFilteringProcessorService {
               const altKeys = [
                 field.name.toLowerCase(),
                 field.name.replace(/([A-Z])/g, '_$1').toLowerCase(),
-                field.name.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
+                field.name.replace(/_([a-z])/g, (_, letter) =>
+                  letter.toUpperCase(),
+                ),
               ];
 
               for (const altKey of altKeys) {
@@ -289,14 +371,21 @@ export class AiFilteringProcessorService {
               switch (field.type.toLowerCase()) {
                 case 'number':
                   const numValue = parseFloat(String(value));
-                  validatedResponse[field.name] = isNaN(numValue) ? null : numValue;
+                  validatedResponse[field.name] = isNaN(numValue)
+                    ? null
+                    : numValue;
                   break;
                 case 'boolean':
                   if (typeof value === 'string') {
-                    validatedResponse[field.name] = value.toLowerCase() === 'true' || value.toLowerCase() === 'yes';
+                    validatedResponse[field.name] =
+                      value.toLowerCase() === 'true' ||
+                      value.toLowerCase() === 'yes';
                   } else {
                     validatedResponse[field.name] = Boolean(value);
                   }
+                  break;
+                case 'enum':
+                  validatedResponse[field.name] = String(value || '');
                   break;
                 case 'text':
                 case 'string':
@@ -322,7 +411,10 @@ export class AiFilteringProcessorService {
 
           return validatedResponse;
         } catch (parseError) {
-          console.error(`Error parsing OpenAI response (attempt ${attempt}):`, parseError);
+          console.error(
+            `Error parsing OpenAI response (attempt ${attempt}):`,
+            parseError,
+          );
           console.error('Raw response:', responseText);
           lastError = parseError;
           continue;
@@ -333,18 +425,23 @@ export class AiFilteringProcessorService {
 
         // Wait before retrying (exponential backoff)
         if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+          await new Promise((resolve) =>
+            setTimeout(resolve, Math.pow(2, attempt) * 1000),
+          );
         }
       }
     }
 
-    console.error(`Failed to get valid response after ${maxRetries} attempts. Last error:`, lastError);
+    console.error(
+      `Failed to get valid response after ${maxRetries} attempts. Last error:`,
+      lastError,
+    );
     return {};
   }
 
   async computeTokensForAiFilters(
     candidates: CandidateData[],
-    aiFilters: AiFilterConfig[]
+    aiFilters: AiFilterConfig[],
   ): Promise<{
     totalInputTokens: number;
     totalOutputTokens: number;
@@ -360,8 +457,10 @@ export class AiFilteringProcessorService {
       for (const candidate of candidates) {
         const userInput = this.buildUserInput(candidate, aiFilter);
 
-        const inputTokens = Math.ceil((aiFilter.prompt.length + userInput.length) / 4);
-        const outputTokens = Math.ceil(aiFilter.fields.length * 50 / 4); // Estimate 50 chars per field
+        const inputTokens = Math.ceil(
+          (aiFilter.prompt.length + userInput.length) / 4,
+        );
+        const outputTokens = Math.ceil((aiFilter.fields.length * 50) / 4); // Estimate 50 chars per field
 
         totalInputTokens += inputTokens;
         totalOutputTokens += outputTokens;
@@ -380,7 +479,7 @@ export class AiFilteringProcessorService {
       totalInputTokens,
       totalOutputTokens,
       estimatedCost,
-      totalCandidates
+      totalCandidates,
     };
   }
 }

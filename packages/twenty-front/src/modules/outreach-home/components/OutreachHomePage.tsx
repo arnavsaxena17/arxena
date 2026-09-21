@@ -42,6 +42,7 @@ import {
   stringifyIcpSpec,
 } from '@/outreach-home/utils/outreach-effective-icp.util';
 import { regenerateOutreachWorkspaceProfile } from '@/outreach-home/utils/outreach-workspace-profile-regenerate';
+import { syncOutreachSenderIcpFromWorkspace } from '@/outreach-home/utils/outreach-sender-profile-api';
 import { useGetResourceCreditUsage } from '@/settings/billing/hooks/useGetResourceCreditUsage';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
@@ -388,6 +389,21 @@ const OutreachHomePageContent = () => {
           );
         }
 
+        try {
+          await syncOutreachSenderIcpFromWorkspace({
+            accessToken: tokenPair?.accessOrWorkspaceAgnosticToken?.token,
+            icpSpec: parsedIcp,
+          });
+        } catch (syncError) {
+          enqueueErrorSnackBar({
+            message:
+              syncError instanceof Error
+                ? syncError.message
+                : 'ICP saved on workspace, but sender profile sync failed.',
+          });
+          return;
+        }
+
         enqueueSuccessSnackBar({ message: 'ICP saved' });
         return;
       }
@@ -401,6 +417,22 @@ const OutreachHomePageContent = () => {
             patch: { icpSpec: parsedIcp },
           }),
         });
+
+        try {
+          await syncOutreachSenderIcpFromWorkspace({
+            accessToken: tokenPair?.accessOrWorkspaceAgnosticToken?.token,
+            icpSpec: parsedIcp,
+          });
+        } catch (syncError) {
+          enqueueErrorSnackBar({
+            message:
+              syncError instanceof Error
+                ? syncError.message
+                : 'Project ICP saved, but sender profile sync failed.',
+          });
+          return;
+        }
+
         enqueueSuccessSnackBar({ message: 'ICP saved (this project)' });
         return;
       }

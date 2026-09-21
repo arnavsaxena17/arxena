@@ -164,6 +164,14 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
       'Find and highlight people or teams on an org chart; answer who-owns and structure questions from stamped taxonomy nodes',
     icon: 'IconSitemap',
   }),
+  'local-business-search': createStandardSkillBuilder({
+    skillName: 'local-business-search',
+    name: 'local-business-search',
+    label: 'Local Business Search',
+    description:
+      'Search Google Maps local businesses / POIs (hotels, plumbers, restaurants); optional emails and social contacts',
+    icon: 'IconMapSearch',
+  }),
   pptx: createStandardSkillBuilder({
     skillName: 'pptx',
     name: 'pptx',

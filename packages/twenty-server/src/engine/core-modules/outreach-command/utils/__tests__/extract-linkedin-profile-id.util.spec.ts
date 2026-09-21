@@ -1,4 +1,7 @@
-import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
+import {
+  canonicalizeLinkedinProfileUrl,
+  extractLinkedinProfileId,
+} from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
 
 describe('extractLinkedinProfileId', () => {
   it('extracts public identifier from a profile URL', () => {
@@ -8,9 +11,9 @@ describe('extractLinkedinProfileId', () => {
   });
 
   it('extracts from a URL without www', () => {
-    expect(
-      extractLinkedinProfileId('https://linkedin.com/in/muizesmail'),
-    ).toBe('muizesmail');
+    expect(extractLinkedinProfileId('https://linkedin.com/in/muizesmail')).toBe(
+      'muizesmail',
+    );
   });
 
   it('extracts from a scheme-less profile URL', () => {
@@ -74,5 +77,25 @@ describe('extractLinkedinProfileId', () => {
         'https://www.linkedin.com/sales/lead/ACwAABcd123,NAME_SEARCH',
       ),
     ).toBe('ACwAABcd123');
+  });
+
+  it('decodes percent-encoded Unicode slugs to NFC', () => {
+    expect(
+      extractLinkedinProfileId('https://linkedin.com/in/%D9%90%D9%90amz'),
+    ).toBe('ِِamz');
+    expect(extractLinkedinProfileId('https://linkedin.com/in/ِِamz/')).toBe(
+      'ِِamz',
+    );
+  });
+
+  it('canonicalizes LinkedIn profile URLs to decoded form', () => {
+    expect(
+      canonicalizeLinkedinProfileUrl(
+        'https://www.linkedin.com/in/%D9%90%D9%90amz/',
+      ),
+    ).toBe('https://linkedin.com/in/ِِamz');
+    expect(canonicalizeLinkedinProfileUrl('satyanadella')).toBe(
+      'https://linkedin.com/in/satyanadella',
+    );
   });
 });

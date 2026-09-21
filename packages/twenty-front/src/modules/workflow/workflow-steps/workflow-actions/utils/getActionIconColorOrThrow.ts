@@ -22,6 +22,8 @@ export const getActionIconColorOrThrow = (
     case 'FOLLOW_LINKEDIN_PROFILE':
     case 'LIKE_LINKEDIN_POST':
     case 'SEND_WHATSAPP_MESSAGE':
+    case 'SEARCH_LOCAL_BUSINESSES':
+    case 'GET_LOCAL_BUSINESS_DETAILS':
       return themeCssVariables.color.red;
     case 'CREATE_RECORD':
     case 'UPDATE_RECORD':
@@ -39,6 +41,7 @@ export const getActionIconColorOrThrow = (
     case 'DELAY':
       return themeCssVariables.color.green12;
     case 'AI_AGENT':
+    case 'AI_FILTERING':
       return themeCssVariables.color.pink;
     default:
       assertUnreachable(actionType, `Unsupported action type: ${actionType}`);

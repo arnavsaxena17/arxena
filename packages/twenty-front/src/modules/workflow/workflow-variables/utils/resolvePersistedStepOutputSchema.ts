@@ -41,5 +41,28 @@ export const resolvePersistedStepOutputSchema = ({
     return AI_AGENT_DEFAULT_OUTPUT_SCHEMA;
   }
 
+  if (stepType === 'AI_FILTERING') {
+    return {
+      success: {
+        isLeaf: true,
+        type: 'boolean',
+        label: 'Success',
+        value: null,
+      },
+      total: {
+        isLeaf: true,
+        type: 'number',
+        label: 'Total',
+        value: null,
+      },
+      candidates: {
+        isLeaf: true,
+        type: 'array',
+        label: 'Candidates',
+        value: null,
+      },
+    };
+  }
+
   return {};
 };

@@ -1,3 +1,8 @@
+import {
+  canonicalizeLinkedinProfileUrl,
+  extractLinkedinProfileId,
+} from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
+
 import { type UnipileNewRelationWebhook } from '../types/unipile-webhook.types';
 
 /**
@@ -23,43 +28,16 @@ export type ResolvedAcceptedRelation = {
   publicIdentifier: string;
 };
 
-export const normalizeLinkedinProfileUrl = (
-  value?: string | null,
-): string => {
-  const trimmed = value?.trim() ?? '';
-
-  if (!trimmed) {
-    return '';
-  }
-
-  if (/^https?:\/\//i.test(trimmed) || /linkedin\.com\//i.test(trimmed)) {
-    return trimmed.replace(/www\.linkedin\.com/i, 'linkedin.com');
-  }
-
-  const slug = trimmed.replace(/^@/, '').replace(/^\/+|\/+$/g, '');
-
-  if (!slug) {
-    return '';
-  }
-
-  return `https://linkedin.com/in/${slug}`;
-};
-
-const slugFromLinkedinUrl = (url: string): string => {
-  const match = /linkedin\.com\/(?:mwlite\/)?in\/([^/?#]+)/i.exec(url);
-
-  return match?.[1]
-    ? decodeURIComponent(match[1]).replace(/\/+$/, '')
-    : '';
-};
+export const normalizeLinkedinProfileUrl = (value?: string | null): string =>
+  canonicalizeLinkedinProfileUrl(value);
 
 export const resolveAcceptedRelationIdentity = (
   payload: UnipileNewRelationWebhook,
 ): ResolvedAcceptedRelation | null => {
   const publicIdentifier = (
     payload.user_public_identifier?.trim() ||
-    slugFromLinkedinUrl(payload.user_profile_url ?? '') ||
-    slugFromLinkedinUrl(payload.relation?.profile_url ?? '')
+    extractLinkedinProfileId(payload.user_profile_url) ||
+    extractLinkedinProfileId(payload.relation?.profile_url)
   ).replace(/^@/, '');
 
   const profileUrl =

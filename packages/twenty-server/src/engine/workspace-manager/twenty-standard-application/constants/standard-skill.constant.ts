@@ -57,6 +57,9 @@ export const STANDARD_SKILL = {
   'org-structure-insights': {
     universalIdentifier: '20202020-e6f8-4c9a-b2d1-7a4e0c3f5b28',
   },
+  'local-business-search': {
+    universalIdentifier: '20202020-7d2a-4f6b-9c1e-3a8b5e0d4f92',
+  },
 } as const satisfies Record<
   string,
   {

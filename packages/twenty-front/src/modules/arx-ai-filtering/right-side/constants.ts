@@ -1,27 +1,33 @@
 export const AVAILABLE_MODELS = [
   {
-    color: "green",
-    label: "GPT 3.5 Turbo",
+    color: 'green',
+    label: 'GPT 3.5 Turbo',
     position: 0,
-    value: "gpt35turbo"
+    value: 'gpt35turbo',
   },
   {
-    color: "turquoise",
-    label: "GPT-4o",
+    color: 'turquoise',
+    label: 'GPT-4o',
     position: 1,
-    value: "gpt4o"
+    value: 'gpt4o',
   },
   {
-    color: "turquoise",
-    label: "gpt-4o-mini",
+    color: 'turquoise',
+    label: 'gpt-4o-mini',
     position: 1,
-    value: "gpt4omini"
+    value: 'gpt4omini',
   },
   {
-    color: "turquoise",
-    label: "gpt-4o-mini-search-preview",
+    color: 'turquoise',
+    label: 'gpt-4o-mini-search-preview',
     position: 1,
-    value: "gpt4ominisearchpreview"
+    value: 'gpt4ominisearchpreview',
+  },
+  {
+    color: 'orange',
+    label: 'TypeSafe Jev (decision model)',
+    position: 2,
+    value: 'typesafe-ai/jev',
   },
 ];
 
@@ -37,7 +43,7 @@ export const DEFAULT_FIELD = {
   type: 'text' as const,
   description: '',
   enumValues: [],
-  required: false
+  required: false,
 };
 
 export const DEFAULT_ENRICHMENT = {

@@ -36,7 +36,7 @@ describe('unipile-new-relation.util', () => {
     expect(resolveAcceptedRelationIdentity(officialPayload)).toEqual({
       name: 'Satya Nadella',
       providerId: 'ACoAAAEkwwAB9KEc2TrQgOLEQ-vzRyZeCDyc6DQ',
-      profileUrl: 'https://linkedin.com/in/satyanadella/',
+      profileUrl: 'https://linkedin.com/in/satyanadella',
       publicIdentifier: 'satyanadella',
     });
   });
@@ -64,5 +64,26 @@ describe('unipile-new-relation.util', () => {
     expect(normalizeLinkedinProfileUrl('satyanadella')).toBe(
       'https://linkedin.com/in/satyanadella',
     );
+  });
+
+  it('decodes percent-encoded non-Latin slugs for matching', () => {
+    expect(
+      normalizeLinkedinProfileUrl('https://linkedin.com/in/%D9%90%D9%90amz'),
+    ).toBe('https://linkedin.com/in/ِِamz');
+    expect(
+      resolveAcceptedRelationIdentity({
+        event: 'new_relation',
+        account_id: 'acct-1',
+        account_type: 'LINKEDIN',
+        user_full_name: 'Abdullah Alzahrani',
+        user_provider_id: 'ACoAAAxBNhIBDROdsgQD6wLjvcKGI5SRXs9_7bo',
+        user_public_identifier: 'ِِamz',
+        user_profile_url: 'https://www.linkedin.com/in/%D9%90%D9%90amz/',
+      }),
+    ).toMatchObject({
+      profileUrl: 'https://linkedin.com/in/ِِamz',
+      publicIdentifier: 'ِِamz',
+      providerId: 'ACoAAAxBNhIBDROdsgQD6wLjvcKGI5SRXs9_7bo',
+    });
   });
 });

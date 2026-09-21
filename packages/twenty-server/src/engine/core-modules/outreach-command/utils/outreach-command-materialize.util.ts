@@ -4,6 +4,8 @@ import {
   type OutreachActionTimestampsEventKind,
 } from 'twenty-shared/arx';
 
+import { canonicalizeLinkedinProfileUrl } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
+
 export type OutreachCoverageBucket = 'ZERO' | 'ONE_TWO' | 'THREE_PLUS';
 
 export type OutreachFunnelStage =
@@ -116,9 +118,9 @@ export const candidateStageImpliesConnectionRequestSent = (
 ): boolean =>
   Boolean(
     stage &&
-      OUTREACH_STAGES_THAT_IMPLY_CONNECTION_REQUEST_SENT.includes(
-        stage as OutreachSequenceStage,
-      ),
+    OUTREACH_STAGES_THAT_IMPLY_CONNECTION_REQUEST_SENT.includes(
+      stage as OutreachSequenceStage,
+    ),
   );
 
 export const candidateStageImpliesOutbound = (
@@ -126,9 +128,9 @@ export const candidateStageImpliesOutbound = (
 ): boolean =>
   Boolean(
     stage &&
-      OUTREACH_STAGES_THAT_IMPLY_OUTBOUND.includes(
-        stage as OutreachSequenceStage,
-      ),
+    OUTREACH_STAGES_THAT_IMPLY_OUTBOUND.includes(
+      stage as OutreachSequenceStage,
+    ),
   );
 
 export const COVERED_PEOPLE_REACHED_THRESHOLD = 3;
@@ -172,10 +174,7 @@ export const computeCoverageBucket = (
   return 'THREE_PLUS';
 };
 
-export {
-  computeDaysBetween,
-  computeTimeBucket,
-} from 'twenty-shared/arx';
+export { computeDaysBetween, computeTimeBucket } from 'twenty-shared/arx';
 
 export const mapCandidateEventToOutreachActionTimestampsEvent = (
   event: OutreachCandidateEventKind,
@@ -490,9 +489,21 @@ export const computeAttentionReason = ({
   return 'NONE';
 };
 
-export const normalizeLinkedinUrl = (url: string | null | undefined): string => {
+export const normalizeLinkedinUrl = (
+  url: string | null | undefined,
+): string => {
   if (!url) {
     return '';
+  }
+
+  const canonical = canonicalizeLinkedinProfileUrl(url);
+
+  if (canonical) {
+    return canonical
+      .replace(/^https?:\/\//i, '')
+      .replace(/^www\./i, '')
+      .replace(/\/$/, '')
+      .toLowerCase();
   }
 
   return url

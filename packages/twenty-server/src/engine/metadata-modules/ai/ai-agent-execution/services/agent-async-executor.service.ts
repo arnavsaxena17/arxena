@@ -48,6 +48,13 @@ import {
 } from 'src/engine/metadata-modules/ai/ai-billing/utils/extract-cache-creation-tokens.util';
 import { mergeLanguageModelUsage } from 'src/engine/metadata-modules/ai/ai-billing/utils/merge-language-model-usage.util';
 import { getCallLevelProviderOptions } from 'src/engine/metadata-modules/ai/ai-chat/utils/provider-options.util';
+import { JevEvaluationService } from 'src/engine/metadata-modules/ai/ai-evaluation/services/jev-evaluation.service';
+import { isJevModelId } from 'src/engine/metadata-modules/ai/ai-evaluation/utils/is-jev-model-id.util';
+import {
+  isDecisionOnlyAgentSchema,
+  mapAgentSchemaToJevQuestions,
+} from 'src/engine/metadata-modules/ai/ai-evaluation/utils/map-decision-schema-to-jev-questions.util';
+import { mapJevAnswersToRecord } from 'src/engine/metadata-modules/ai/ai-evaluation/utils/map-jev-answers-to-record.util';
 import { AI_TELEMETRY_CONFIG } from 'src/engine/metadata-modules/ai/ai-models/constants/ai-telemetry.const';
 import { AiModelConfigService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-config.service';
 import { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-registry.service';
@@ -92,6 +99,7 @@ export class AgentAsyncExecutorService {
     private readonly nativeToolBinder: NativeToolBinderService,
     private readonly aiBillingService: AiBillingService,
     private readonly metricsService: MetricsService,
+    private readonly jevEvaluationService: JevEvaluationService,
     @InjectWorkspaceScopedRepository(RoleTargetEntity)
     private readonly roleTargetRepository: WorkspaceScopedRepository<RoleTargetEntity>,
     @InjectRepository(WorkspaceEntity)
@@ -136,7 +144,9 @@ export class AgentAsyncExecutorService {
     let executionSteps: StepResult<ToolSet>[] = [];
 
     try {
-      if (agent) {
+      const usesJevStructuredOutput = isJevModelId(agent?.modelId);
+
+      if (agent && !usesJevStructuredOutput) {
         const workspace = await this.workspaceRepository.findOneBy({
           id: agent.workspaceId,
         });
@@ -151,11 +161,17 @@ export class AgentAsyncExecutorService {
 
       const registeredModel =
         await this.aiModelRegistryService.resolveModelForAgentInWorkspace(
-          agent,
+          usesJevStructuredOutput
+            ? { modelId: AUTO_SELECT_SMART_MODEL_ID }
+            : agent,
           workspaceId,
         );
 
+      // Bill tools/chat against the resolved chat model; Jev is evaluation-only.
       resolvedModelId = registeredModel.modelId;
+      const outputModelId = usesJevStructuredOutput
+        ? (agent?.modelId ?? this.jevEvaluationService.getDefaultModelId())
+        : registeredModel.modelId;
 
       await this.aiBillingService.assertHasAvailableCreditsOrThrow(
         workspaceId,
@@ -357,28 +373,57 @@ export class AgentAsyncExecutorService {
       let result: object = { response: textResponse.text };
 
       if (agentSchema) {
-        const structuredResult = await generateText({
-          system: getWorkflowOutputGeneratorPrompt(hasTools),
-          model: registeredModel.model,
-          prompt: `Based on the following execution results, generate the structured output according to the schema:
+        if (usesJevStructuredOutput) {
+          if (!isDecisionOnlyAgentSchema(agentSchema)) {
+            throw new AiException(
+              'TypeSafe Jev only supports boolean/number agent response schemas. Remove string fields or use a chat model.',
+              AiExceptionCode.AGENT_EXECUTION_FAILED,
+            );
+          }
+
+          if (!this.jevEvaluationService.isConfigured()) {
+            throw new AiException(
+              'AI_GATEWAY_API_KEY is required to run agents with TypeSafe Jev.',
+              AiExceptionCode.AGENT_EXECUTION_FAILED,
+            );
+          }
+
+          const evaluationResult = await this.jevEvaluationService.evaluate({
+            state: {
+              executionResults: textResponse.text,
+              userPrompt,
+            },
+            questions: mapAgentSchemaToJevQuestions(
+              agentSchema,
+              getWorkflowOutputGeneratorPrompt(hasTools),
+            ),
+          });
+
+          result = mapJevAnswersToRecord(evaluationResult.answers);
+        } else {
+          const structuredResult = await generateText({
+            system: getWorkflowOutputGeneratorPrompt(hasTools),
+            model: registeredModel.model,
+            prompt: `Based on the following execution results, generate the structured output according to the schema:
 
                  Execution Results: ${textResponse.text}
 
                  Please generate the structured output based on the execution results and context above.`,
-          output: Output.object({ schema: jsonSchema(agentSchema) }),
-          maxOutputTokens: modelConfig.maxOutputTokens,
-          providerOptions: getCallLevelProviderOptions({
-            sdkPackage: registeredModel.sdkPackage,
-            providerOptions:
-              this.aiModelConfigService.getReasoningProviderOptions(
-                registeredModel,
-              ),
-            promptCacheKey: agent?.id,
-          }),
-          experimental_telemetry: AI_TELEMETRY_CONFIG,
-          onStepFinish: async (step) => {
-            const { hasNoMoreAvailableCredits: stepHasNoMoreAvailableCredits } =
-              await this.aiBillingService.decrementAndCheckAvailableCredits(
+            output: Output.object({ schema: jsonSchema(agentSchema) }),
+            maxOutputTokens: modelConfig.maxOutputTokens,
+            providerOptions: getCallLevelProviderOptions({
+              sdkPackage: registeredModel.sdkPackage,
+              providerOptions:
+                this.aiModelConfigService.getReasoningProviderOptions(
+                  registeredModel,
+                ),
+              promptCacheKey: agent?.id,
+            }),
+            experimental_telemetry: AI_TELEMETRY_CONFIG,
+            onStepFinish: async (step) => {
+              const {
+                hasNoMoreAvailableCredits: stepHasNoMoreAvailableCredits,
+              } = await this.aiBillingService.decrementAndCheckAvailableCredits(
                 registeredModel.modelId,
                 {
                   usage: step.usage,
@@ -389,26 +434,27 @@ export class AgentAsyncExecutorService {
                 workspaceId,
               );
 
-            if (stepHasNoMoreAvailableCredits) {
-              hasNoMoreAvailableCredits = true;
-            }
-          },
-        });
+              if (stepHasNoMoreAvailableCredits) {
+                hasNoMoreAvailableCredits = true;
+              }
+            },
+          });
 
-        accumulatedUsage = mergeLanguageModelUsage(
-          textResponse.usage,
-          structuredResult.usage,
-        );
-        executionSteps = [...textResponse.steps, ...structuredResult.steps];
-
-        if (structuredResult.output == null) {
-          throw new AiException(
-            'Failed to generate structured output from execution results',
-            AiExceptionCode.AGENT_EXECUTION_FAILED,
+          accumulatedUsage = mergeLanguageModelUsage(
+            textResponse.usage,
+            structuredResult.usage,
           );
-        }
+          executionSteps = [...textResponse.steps, ...structuredResult.steps];
 
-        result = structuredResult.output as object;
+          if (structuredResult.output == null) {
+            throw new AiException(
+              'Failed to generate structured output from execution results',
+              AiExceptionCode.AGENT_EXECUTION_FAILED,
+            );
+          }
+
+          result = structuredResult.output as object;
+        }
       }
 
       const tokenCostInDollars = this.aiBillingService.calculateCost(
@@ -429,7 +475,7 @@ export class AgentAsyncExecutorService {
         nativeWebSearchCallCount,
         hasNoMoreAvailableCredits,
         steps: executionSteps,
-        modelId: resolvedModelId,
+        modelId: outputModelId,
         totalCostInDollars,
         creditsUsedMicro,
       };

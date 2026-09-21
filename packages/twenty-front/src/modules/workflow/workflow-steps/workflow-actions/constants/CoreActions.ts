@@ -14,6 +14,8 @@ import { VIEW_LINKEDIN_PROFILE_ACTION } from '@/workflow/workflow-steps/workflow
 import { FOLLOW_LINKEDIN_PROFILE_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/FollowLinkedinProfileAction';
 import { LIKE_LINKEDIN_POST_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/LikeLinkedinPostAction';
 import { SEND_WHATSAPP_MESSAGE_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/SendWhatsappMessageAction';
+import { SEARCH_LOCAL_BUSINESSES_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/SearchLocalBusinessesAction';
+import { GET_LOCAL_BUSINESS_DETAILS_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/GetLocalBusinessDetailsAction';
 
 export const CORE_ACTIONS: Array<{
   defaultLabel: string;
@@ -34,6 +36,8 @@ export const CORE_ACTIONS: Array<{
     | 'FOLLOW_LINKEDIN_PROFILE'
     | 'LIKE_LINKEDIN_POST'
     | 'SEND_WHATSAPP_MESSAGE'
+    | 'SEARCH_LOCAL_BUSINESSES'
+    | 'GET_LOCAL_BUSINESS_DETAILS'
   >;
   icon: string;
 }> = [
@@ -52,4 +56,6 @@ export const CORE_ACTIONS: Array<{
   FOLLOW_LINKEDIN_PROFILE_ACTION,
   LIKE_LINKEDIN_POST_ACTION,
   SEND_WHATSAPP_MESSAGE_ACTION,
+  SEARCH_LOCAL_BUSINESSES_ACTION,
+  GET_LOCAL_BUSINESS_DETAILS_ACTION,
 ];

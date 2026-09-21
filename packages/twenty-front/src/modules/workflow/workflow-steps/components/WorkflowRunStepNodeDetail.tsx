@@ -5,6 +5,7 @@ import {
 } from '@/workflow/types/Workflow';
 import { getStepDefinitionOrThrow } from '@/workflow/utils/getStepDefinitionOrThrow';
 import { WorkflowEditActionAiAgent } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowEditActionAiAgent';
+import { WorkflowEditActionAiFiltering } from '@/workflow/workflow-steps/workflow-actions/ai-filtering-action/components/WorkflowEditActionAiFiltering';
 import { WorkflowActionCode } from '@/workflow/workflow-steps/workflow-actions/code-action/components/WorkflowActionCode';
 import { WorkflowEditActionCreateCalendarEvent } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionCreateCalendarEvent';
 import { WorkflowEditActionCreateRecord } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionCreateRecord';
@@ -32,6 +33,8 @@ import { WorkflowEditActionLikeLinkedinPost } from '@/workflow/workflow-steps/wo
 import { WorkflowEditActionSendLinkedinVoiceNote } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionSendLinkedinVoiceNote';
 import { WorkflowEditActionViewLinkedinProfile } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionViewLinkedinProfile';
 import { WorkflowEditActionSendWhatsappMessage } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionSendWhatsappMessage';
+import { WorkflowEditActionSearchLocalBusinesses } from '@/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionSearchLocalBusinesses';
+import { WorkflowEditActionGetLocalBusinessDetails } from '@/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionGetLocalBusinessDetails';
 import { WorkflowEditTriggerCronForm } from '@/workflow/workflow-trigger/components/WorkflowEditTriggerCronForm';
 import { WorkflowEditTriggerDatabaseEventForm } from '@/workflow/workflow-trigger/components/WorkflowEditTriggerDatabaseEventForm';
 import { WorkflowEditTriggerManual } from '@/workflow/workflow-trigger/components/WorkflowEditTriggerManual';
@@ -369,9 +372,42 @@ export const WorkflowRunStepNodeDetail = ({
             />
           );
         }
+        case 'SEARCH_LOCAL_BUSINESSES': {
+          return (
+            <WorkflowEditActionSearchLocalBusinesses
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={{
+                readonly: true,
+              }}
+            />
+          );
+        }
+        case 'GET_LOCAL_BUSINESS_DETAILS': {
+          return (
+            <WorkflowEditActionGetLocalBusinessDetails
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={{
+                readonly: true,
+              }}
+            />
+          );
+        }
         case 'AI_AGENT': {
           return (
             <WorkflowEditActionAiAgent
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={{
+                readonly: true,
+              }}
+            />
+          );
+        }
+        case 'AI_FILTERING': {
+          return (
+            <WorkflowEditActionAiFiltering
               key={stepId}
               action={stepDefinition.definition}
               actionOptions={{

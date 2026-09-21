@@ -1819,6 +1819,16 @@ export class ConfigVariables {
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.LLM,
     isSensitive: true,
+    description:
+      'API key for Vercel AI Gateway (used for TypeSafe Jev evaluation models)',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  AI_GATEWAY_API_KEY?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.LLM,
+    isSensitive: true,
     description: 'API key for Nous Research (openai-compatible gateway)',
     type: ConfigVariableType.STRING,
   })
@@ -2574,6 +2584,24 @@ export class ConfigVariables {
   })
   @IsOptional()
   IS_SEARCH_WIKIDATA_COMPANIES_ENABLED = true;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    isSensitive: true,
+    description:
+      'RapidAPI key (Local Business Data, IP resolution, Apollo org search proxy, etc.)',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  RAPIDAPI_KEY?: string;
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description: 'RapidAPI host for OpenWeb Ninja Local Business Data API',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  RAPIDAPI_LOCAL_BUSINESS_DATA_HOST = 'local-business-data.p.rapidapi.com';
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,

@@ -3,6 +3,7 @@ import { CHAT_INTENT_SKILLS } from 'src/engine/metadata-modules/ai/ai-chat/const
 const {
   setup,
   search,
+  localBusinessSearch,
   outreach,
   orgStructureInsights,
   crm,
@@ -38,6 +39,7 @@ For ANY non-trivial task, follow this order:
 
 - ICP / send prefs / campaign setup → \`load_skills(["${setup}"])\`
 - Find companies or people / LinkedIn / Harvest / Sales Nav → \`load_skills(["${search}"])\` — choose destination **before** providers (see Destination verbs). Do NOT enroll until the user confirms Add to CRM / Enroll.
+- Find local businesses / POIs on Google Maps (hotels, plumbers, restaurants, clinics) → \`load_skills(["${localBusinessSearch}"])\`. Keep B2B people/company sourcing on \`${search}\`.
 - Find / show / highlight people or teams on an org chart, or who-owns / buying-committee / structure at a company → \`load_skills(["${orgStructureInsights}"])\`. Then call \`highlight_org_chart\` when a chart is open. Keep LinkedIn sourcing on \`${search}\`.
 - Start outreach / activate harvest / enroll / sequencer workflows → \`load_skills(["${outreach}", "${workflowBuilding}"])\`. Finish with \`list_workflow_runs\`.
 - Generic workflow create/edit (non-outreach) → \`load_skills(["${workflowBuilding}"])\`

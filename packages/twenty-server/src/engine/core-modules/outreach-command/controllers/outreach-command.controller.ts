@@ -852,6 +852,45 @@ export class OutreachCommandController {
     });
   }
 
+  @Post('sender-profile/sync-icp')
+  async syncSenderProfileIcpFromWorkspace(
+    @Body()
+    body: {
+      workspaceMemberId?: string;
+      icpSpec?: string | { targetTitles?: string[]; locations?: string[] };
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    if (!isDefined(body?.icpSpec)) {
+      throw new HttpException('icpSpec is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const { workspaceId, workspaceMemberId } =
+      await this.resolveSenderProfileAuthContext(body, request);
+
+    try {
+      return await this.outreachSenderProfileService.syncSenderIcpFromWorkspaceIcpSpec(
+        {
+          workspaceId,
+          workspaceMemberId,
+          icpSpec: body.icpSpec,
+        },
+      );
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      this.logger.error('Failed to sync sender ICP from workspace', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Failed to sync sender ICP from workspace',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Post('projects/:projectId/pause')
   async pauseProjectOutreach(
     @Param('projectId') projectId: string,

@@ -54,8 +54,11 @@ describe('getActionIconColorOrThrow', () => {
     });
   });
 
-  it('returns pink for AI_AGENT', () => {
+  it('returns pink for AI_AGENT and AI_FILTERING', () => {
     expect(getActionIconColorOrThrow('AI_AGENT')).toBe(
+      themeCssVariables.color.pink,
+    );
+    expect(getActionIconColorOrThrow('AI_FILTERING')).toBe(
       themeCssVariables.color.pink,
     );
   });

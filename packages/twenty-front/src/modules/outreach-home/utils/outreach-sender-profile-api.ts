@@ -315,6 +315,38 @@ export const saveOutreachSenderProfile = async (input: {
   };
 };
 
+export const syncOutreachSenderIcpFromWorkspace = async (input: {
+  accessToken: string | undefined;
+  icpSpec: string | { targetTitles: string[]; locations: string[] };
+}): Promise<{ outreachSenderProfile: Record<string, unknown> }> => {
+  const accessToken = requireAccessToken(input.accessToken);
+  const baseUrl = requireBaseUrl();
+
+  const response = await fetch(
+    `${baseUrl}/outreach-command/sender-profile/sync-icp`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        icpSpec: input.icpSpec,
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      await readErrorMessage(response, 'Failed to sync sender ICP.'),
+    );
+  }
+
+  return (await response.json()) as {
+    outreachSenderProfile: Record<string, unknown>;
+  };
+};
+
 export const extractOutreachSenderCollateral = async (input: {
   accessToken: string | undefined;
   fileName: string;

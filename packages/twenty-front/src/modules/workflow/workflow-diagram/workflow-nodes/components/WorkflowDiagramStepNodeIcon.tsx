@@ -46,7 +46,9 @@ export const WorkflowDiagramStepNodeIcon = ({
         case 'VIEW_LINKEDIN_PROFILE':
         case 'FOLLOW_LINKEDIN_PROFILE':
         case 'LIKE_LINKEDIN_POST':
-        case 'SEND_WHATSAPP_MESSAGE': {
+        case 'SEND_WHATSAPP_MESSAGE':
+        case 'SEARCH_LOCAL_BUSINESSES':
+        case 'GET_LOCAL_BUSINESS_DETAILS': {
           return (
             <Icon
               size={theme.icon.size.md}
@@ -65,7 +67,8 @@ export const WorkflowDiagramStepNodeIcon = ({
         case 'FORM': {
           return <Icon size={theme.icon.size.md} color={theme.color.orange} />;
         }
-        case 'AI_AGENT': {
+        case 'AI_AGENT':
+        case 'AI_FILTERING': {
           return <Icon size={theme.icon.size.md} color={theme.color.pink} />;
         }
         case 'EMPTY':

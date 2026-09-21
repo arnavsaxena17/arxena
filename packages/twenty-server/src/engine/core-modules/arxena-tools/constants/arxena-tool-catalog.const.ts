@@ -598,6 +598,33 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
       'Search people with naturalLanguage (e.g. "CEO at StayVista") or explicit std filters. Use for GTM prospecting workflows.',
   },
   {
+    name: 'search_local_businesses',
+    pack: 'prospecting',
+    label: 'Search Local Businesses',
+    description:
+      'Search Google Maps local businesses / POIs by query (hotels, plumbers, restaurants, etc.).',
+  },
+  {
+    name: 'search_local_businesses_nearby',
+    pack: 'prospecting',
+    label: 'Search Local Businesses Nearby',
+    description: 'Search Google Maps businesses near a lat/lng coordinate.',
+  },
+  {
+    name: 'get_local_business_details',
+    pack: 'prospecting',
+    label: 'Get Local Business Details',
+    description:
+      'Fetch full business details (optional emails/socials) by business id(s).',
+  },
+  {
+    name: 'autocomplete_local_businesses',
+    pack: 'prospecting',
+    label: 'Autocomplete Local Businesses',
+    description:
+      'Google Maps place/business/query autocomplete for local-business search.',
+  },
+  {
     name: 'list_people_data_sources',
     pack: 'prospecting',
     label: 'List People Data Sources',

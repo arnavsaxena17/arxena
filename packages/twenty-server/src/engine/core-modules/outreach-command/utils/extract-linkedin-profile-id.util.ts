@@ -11,6 +11,18 @@ const LINKEDIN_OBJECT_KEYS = [
   'profileUrl',
 ] as const;
 
+const safeDecodeUriComponent = (value: string): string => {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+};
+
+// Decode percent-encoding and NFC so %D9%90%D9%90amz and ِِamz compare equal
+const canonicalizeLinkedinIdentitySegment = (value: string): string =>
+  safeDecodeUriComponent(value).replace(/\/+$/, '').normalize('NFC');
+
 const extractLinkedinProfileIdFromString = (value: string): string => {
   const trimmed = value.trim();
 
@@ -21,13 +33,13 @@ const extractLinkedinProfileIdFromString = (value: string): string => {
   const inMatch = LINKEDIN_IN_PATH.exec(trimmed);
 
   if (inMatch?.[1]) {
-    return decodeURIComponent(inMatch[1]).replace(/\/+$/, '');
+    return canonicalizeLinkedinIdentitySegment(inMatch[1]);
   }
 
   const salesMatch = LINKEDIN_SALES_LEAD_PATH.exec(trimmed);
 
   if (salesMatch?.[1]) {
-    return decodeURIComponent(salesMatch[1]).replace(/\/+$/, '');
+    return canonicalizeLinkedinIdentitySegment(salesMatch[1]);
   }
 
   if (
@@ -39,7 +51,28 @@ const extractLinkedinProfileIdFromString = (value: string): string => {
     return '';
   }
 
-  return trimmed.replace(/^@/, '').replace(/\/+$/, '');
+  return canonicalizeLinkedinIdentitySegment(trimmed.replace(/^@/, ''));
+};
+
+// Store / match as https://linkedin.com/in/{decoded NFC slug} (never percent-encoded)
+export const canonicalizeLinkedinProfileUrl = (
+  url: string | null | undefined,
+): string => {
+  const trimmed = url?.trim() ?? '';
+
+  if (!trimmed) {
+    return '';
+  }
+
+  const slug = extractLinkedinProfileIdFromString(trimmed);
+
+  if (!slug) {
+    return trimmed
+      .replace(/www\.linkedin\.com/i, 'linkedin.com')
+      .replace(/^http:\/\//i, 'https://');
+  }
+
+  return `https://linkedin.com/in/${slug}`;
 };
 
 const collectLinkedinIdentityCandidates = (
@@ -62,7 +95,10 @@ const collectLinkedinIdentityCandidates = (
       (trimmed.startsWith('[') && trimmed.endsWith(']'))
     ) {
       try {
-        return collectLinkedinIdentityCandidates(JSON.parse(trimmed), depth + 1);
+        return collectLinkedinIdentityCandidates(
+          JSON.parse(trimmed),
+          depth + 1,
+        );
       } catch {
         return [trimmed];
       }

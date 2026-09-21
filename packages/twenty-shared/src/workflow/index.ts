@@ -29,6 +29,11 @@ export type {
 export { computeWorkflowLayout } from './layout/utils/compute-workflow-layout.util';
 export { workflowAiAgentActionSchema } from './schemas/ai-agent-action-schema';
 export { workflowAiAgentActionSettingsSchema } from './schemas/ai-agent-action-settings-schema';
+export { workflowAiFilteringActionSchema } from './schemas/ai-filtering-action-schema';
+export {
+  workflowAiFilteringFieldSchema,
+  workflowAiFilteringActionSettingsSchema,
+} from './schemas/ai-filtering-action-settings-schema';
 export { baseTriggerSchema } from './schemas/base-trigger-schema';
 export { baseWorkflowActionSchema } from './schemas/base-workflow-action-schema';
 export {
@@ -65,6 +70,8 @@ export {
   workflowFormNotifyOnPendingSchema,
   workflowFormActionSettingsSchema,
 } from './schemas/form-action-settings-schema';
+export { workflowGetLocalBusinessDetailsActionSchema } from './schemas/get-local-business-details-action-schema';
+export { workflowGetLocalBusinessDetailsActionSettingsSchema } from './schemas/get-local-business-details-action-settings-schema';
 export { workflowHttpRequestActionSchema } from './schemas/http-request-action-schema';
 export { workflowHttpRequestActionSettingsSchema } from './schemas/http-request-action-settings-schema';
 export { workflowIfElseActionSchema } from './schemas/if-else-action-schema';
@@ -88,6 +95,8 @@ export {
   workflowPickRecordStrategySchema,
   workflowPickRecordActionSettingsSchema,
 } from './schemas/pick-record-action-settings-schema';
+export { workflowSearchLocalBusinessesActionSchema } from './schemas/search-local-businesses-action-schema';
+export { workflowSearchLocalBusinessesActionSettingsSchema } from './schemas/search-local-businesses-action-settings-schema';
 export { workflowSendEmailActionSchema } from './schemas/send-email-action-schema';
 export type { WorkflowEmailFiles } from './schemas/send-email-action-settings-schema';
 export {
@@ -152,6 +161,13 @@ export type {
   AiAgentStepLogDetails,
   AiToolCallLog,
 } from './types/WorkflowRunStepLog';
+export type { AiFilteringFieldLike } from './utils/ai-filtering-output-schema.util';
+export {
+  aiFilteringFieldsToAgentResponseSchema,
+  aiFilteringFieldsToOutputSchema,
+  WORKFLOW_AI_FILTERING_SAMPLE_CANDIDATES,
+  WORKFLOW_AI_FILTERING_SAMPLE_OUTPUT,
+} from './utils/ai-filtering-output-schema.util';
 export { canObjectBeManagedByAutomation } from './utils/canObjectBeManagedByAutomation';
 export { extractRawVariableNamePart } from './utils/extractRawVariableNameParts';
 export { getFunctionInputFromInputSchema } from './utils/getFunctionInputFromInputSchema';

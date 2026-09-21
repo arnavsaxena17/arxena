@@ -1,8 +1,10 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+
 import { isNonEmptyString } from '@sniptt/guards';
 import { type LanguageModel } from 'ai';
 import { isDefined } from 'twenty-shared/utils';
-import { type ObjectLiteral } from 'typeorm';
+import { type ObjectLiteral, type Repository } from 'typeorm';
 import { v4 } from 'uuid';
 
 import { buildCreatedByFromSystem } from 'src/engine/core-modules/actor/utils/build-created-by-from-system.util';
@@ -21,7 +23,20 @@ import {
 } from 'src/engine/core-modules/outreach-command/schemas/outreach-sender-profile-llm.schema';
 import { type OutreachSenderProfile } from 'src/engine/core-modules/outreach-command/types/outreach-sender-profile.type';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
+import {
+  applyIcpSpecToSenderProfile,
+  buildSenderProfileSeedFromWorkspace,
+  icpSpecFromSenderIcp,
+  mergeSenderProfileSeedOntoExisting,
+} from 'src/engine/core-modules/outreach-command/utils/outreach-sender-icp-sync.util';
+import {
+  normalizeIcpSpec,
+  parseIcpSpec,
+  stringifyIcpSpec,
+  type IcpSpec,
+} from 'src/engine/core-modules/outreach-command/utils/outreach-icp-spec.util';
 import { formatLinkedinProfileAsResumeText } from 'src/engine/core-modules/org-chart-outreach/prompts/mom-test-question-generator.prompt';
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import {
   AiSdkExecutionService,
   runGenerateObject,
@@ -44,6 +59,21 @@ type WorkspaceMemberArxRecord = ObjectLiteral & {
   linkedinUnipileAccountId?: string | null;
   linkedinProfile?: Record<string, unknown> | null;
   outreachSenderProfile?: OutreachSenderProfile | null;
+};
+
+export type StampSenderProfileFromWorkspaceBootstrapInput = {
+  workspaceId: string;
+  workspaceMemberId?: string;
+  userEmail?: string | null;
+  userFirstName?: string | null;
+  userLastName?: string | null;
+  companyName?: string | null;
+  companyDomain?: string | null;
+  industry?: string | null;
+  summary?: string | null;
+  hq?: string | null;
+  icpSpec: IcpSpec;
+  force?: boolean;
 };
 
 type BuildAndSaveSenderProfileInput = {
@@ -94,6 +124,8 @@ export class OutreachSenderProfileService {
   constructor(
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
+    @InjectRepository(WorkspaceEntity)
+    private readonly workspaceRepository: Repository<WorkspaceEntity>,
     @Optional()
     private readonly aiModelRegistryService?: AiModelRegistryService,
     @Optional()
@@ -365,7 +397,14 @@ export class OutreachSenderProfileService {
     input: DraftSenderProfileInput,
   ): Promise<void> {
     try {
-      const result = await this.draftSenderProfile(input);
+      const result = await this.draftSenderProfileWithRetry(input);
+      const senderProfile = result.draft as OutreachSenderProfile;
+
+      await this.saveSenderProfile({
+        workspaceId: input.workspaceId,
+        workspaceMemberId: input.workspaceMemberId,
+        senderProfile,
+      });
 
       await this.cache.set(
         this.draftJobCacheKey(draftJobId),
@@ -403,14 +442,39 @@ export class OutreachSenderProfileService {
     }
   }
 
+  private async draftSenderProfileWithRetry(
+    input: DraftSenderProfileInput,
+  ): Promise<DraftSenderProfileResult> {
+    try {
+      return await this.draftSenderProfile(input);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const isEmptyResponse =
+        message.includes('No object generated') ||
+        message.includes('did not return a response');
+
+      if (!isEmptyResponse) {
+        throw error;
+      }
+
+      this.logger.warn(
+        `Sender profile draft empty response for member ${input.workspaceMemberId}; retrying once`,
+      );
+
+      return await this.draftSenderProfile(input);
+    }
+  }
+
   async saveSenderProfile({
     workspaceId,
     workspaceMemberId,
     senderProfile,
+    skipWorkspaceIcpSync = false,
   }: {
     workspaceId: string;
     workspaceMemberId: string;
     senderProfile: OutreachSenderProfile;
+    skipWorkspaceIcpSync?: boolean;
   }): Promise<{
     profileId: string;
     outreachSenderProfile: OutreachSenderProfile;
@@ -446,6 +510,13 @@ export class OutreachSenderProfileService {
           },
         );
 
+        if (!skipWorkspaceIcpSync) {
+          await this.syncWorkspaceIcpFromSenderProfile({
+            workspaceId,
+            senderProfile,
+          });
+        }
+
         this.logger.log(
           `Saved outreachSenderProfile for member ${workspaceMemberId}`,
         );
@@ -457,6 +528,173 @@ export class OutreachSenderProfileService {
       },
       authContext,
     );
+  }
+
+  async syncWorkspaceIcpFromSenderProfile({
+    workspaceId,
+    senderProfile,
+  }: {
+    workspaceId: string;
+    senderProfile: OutreachSenderProfile;
+  }): Promise<IcpSpec> {
+    const nextIcpSpec = icpSpecFromSenderIcp(senderProfile.icp);
+
+    await this.workspaceRepository.update(
+      { id: workspaceId },
+      { icpSpec: stringifyIcpSpec(nextIcpSpec) },
+    );
+
+    return nextIcpSpec;
+  }
+
+  async syncSenderIcpFromWorkspaceIcpSpec({
+    workspaceId,
+    workspaceMemberId,
+    icpSpec,
+    fillEmptyOnly = false,
+  }: {
+    workspaceId: string;
+    workspaceMemberId: string;
+    icpSpec: IcpSpec | string;
+    fillEmptyOnly?: boolean;
+  }): Promise<{
+    profileId: string;
+    outreachSenderProfile: OutreachSenderProfile;
+  }> {
+    const normalizedIcpSpec =
+      typeof icpSpec === 'string'
+        ? parseIcpSpec(icpSpec)
+        : normalizeIcpSpec(icpSpec);
+
+    const existing = await this.getExistingSenderProfile({
+      workspaceId,
+      workspaceMemberId,
+    });
+
+    const baseProfile =
+      existing.outreachSenderProfile ??
+      buildSenderProfileSeedFromWorkspace({
+        member: {
+          id: workspaceMemberId,
+        },
+        icpSpec: normalizedIcpSpec,
+      });
+
+    const nextProfile = applyIcpSpecToSenderProfile(
+      baseProfile,
+      normalizedIcpSpec,
+      { fillEmptyOnly },
+    );
+
+    return this.saveSenderProfile({
+      workspaceId,
+      workspaceMemberId,
+      senderProfile: nextProfile,
+      skipWorkspaceIcpSync: true,
+    });
+  }
+
+  async stampSenderProfileFromWorkspaceBootstrap(
+    input: StampSenderProfileFromWorkspaceBootstrapInput,
+  ): Promise<OutreachSenderProfile | null> {
+    const member = await this.resolveBootstrapWorkspaceMember(input);
+
+    if (!isDefined(member?.id)) {
+      this.logger.warn(
+        `Skipping sender profile stamp for workspace ${input.workspaceId}: no workspace member`,
+      );
+
+      return null;
+    }
+
+    const seed = buildSenderProfileSeedFromWorkspace({
+      member,
+      companyName: input.companyName,
+      companyDomain: input.companyDomain,
+      industry: input.industry,
+      summary: input.summary,
+      hq: input.hq,
+      icpSpec: input.icpSpec,
+    });
+
+    const force = input.force === true;
+    const existingProfile = member.outreachSenderProfile ?? null;
+
+    if (isDefined(existingProfile) && !force) {
+      const filled = applyIcpSpecToSenderProfile(
+        {
+          ...existingProfile,
+          identity: {
+            ...existingProfile.identity,
+            company: existingProfile.identity.company ?? seed.identity.company,
+            company_short:
+              existingProfile.identity.company_short ??
+              seed.identity.company_short,
+            website: existingProfile.identity.website ?? seed.identity.website,
+          },
+          offer: {
+            ...existingProfile.offer,
+            one_sentence:
+              existingProfile.offer.one_sentence ?? seed.offer.one_sentence,
+          },
+          icp: {
+            ...existingProfile.icp,
+            target_company_profile:
+              existingProfile.icp.target_company_profile ??
+              seed.icp.target_company_profile,
+          },
+        },
+        input.icpSpec,
+        { fillEmptyOnly: true },
+      );
+
+      const saved = await this.saveSenderProfile({
+        workspaceId: input.workspaceId,
+        workspaceMemberId: member.id,
+        senderProfile: filled,
+        skipWorkspaceIcpSync: true,
+      });
+
+      return saved.outreachSenderProfile;
+    }
+
+    let nextProfile = isDefined(existingProfile)
+      ? mergeSenderProfileSeedOntoExisting(existingProfile, seed, {
+          force: true,
+        })
+      : seed;
+
+    const linkedinProfileText = this.buildLinkedinProfileText(member);
+
+    if (isNonEmptyString(linkedinProfileText)) {
+      try {
+        const drafted = await this.draftSenderProfileWithRetry({
+          workspaceId: input.workspaceId,
+          workspaceMemberId: member.id,
+          linkedinProfileText,
+        });
+
+        nextProfile = applyIcpSpecToSenderProfile(
+          drafted.draft as OutreachSenderProfile,
+          input.icpSpec,
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Sender profile LLM stamp failed for member ${member.id}; using seed: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    }
+
+    const saved = await this.saveSenderProfile({
+      workspaceId: input.workspaceId,
+      workspaceMemberId: member.id,
+      senderProfile: nextProfile,
+      skipWorkspaceIcpSync: true,
+    });
+
+    return saved.outreachSenderProfile;
   }
 
   async updateSenderLinkedinUrl({
@@ -592,6 +830,83 @@ export class OutreachSenderProfileService {
     } catch (error) {
       this.logger.warn(
         `Failed to resolve AI model for sender profile draft: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+
+      return null;
+    }
+  }
+
+  private async resolveBootstrapWorkspaceMember(input: {
+    workspaceId: string;
+    workspaceMemberId?: string;
+    userEmail?: string | null;
+    userFirstName?: string | null;
+    userLastName?: string | null;
+  }): Promise<WorkspaceMemberArxRecord | null> {
+    if (isNonEmptyString(input.workspaceMemberId)) {
+      return this.findWorkspaceMember(
+        input.workspaceId,
+        input.workspaceMemberId,
+      );
+    }
+
+    const authContext = buildSystemAuthContext(input.workspaceId);
+
+    try {
+      return await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+        async () => {
+          const repository =
+            await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberArxRecord>(
+              input.workspaceId,
+              'workspaceMember',
+              { shouldBypassPermissionChecks: true },
+            );
+
+          const members = await repository.find({
+            take: 20,
+            order: { createdAt: 'ASC' },
+          });
+
+          if (members.length === 0) {
+            return null;
+          }
+
+          const userEmail = input.userEmail?.trim().toLowerCase() ?? '';
+
+          if (isNonEmptyString(userEmail)) {
+            const byEmail = members.find(
+              (member) => member.userEmail?.trim().toLowerCase() === userEmail,
+            );
+
+            if (byEmail) {
+              return byEmail;
+            }
+          }
+
+          const firstName = input.userFirstName?.trim().toLowerCase() ?? '';
+          const lastName = input.userLastName?.trim().toLowerCase() ?? '';
+
+          const byName = members.find((member) => {
+            const memberFirst =
+              member.name?.firstName?.trim().toLowerCase() ?? '';
+            const memberLast =
+              member.name?.lastName?.trim().toLowerCase() ?? '';
+
+            return (
+              (!isNonEmptyString(firstName) || memberFirst === firstName) &&
+              (!isNonEmptyString(lastName) || memberLast === lastName)
+            );
+          });
+
+          return byName ?? members[0] ?? null;
+        },
+        authContext,
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Failed to resolve bootstrap workspace member for ${input.workspaceId}: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );

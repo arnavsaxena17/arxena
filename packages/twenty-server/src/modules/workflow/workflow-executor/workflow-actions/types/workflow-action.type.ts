@@ -1,6 +1,7 @@
 import { WorkflowActionType } from 'twenty-shared/workflow';
 
 import { type WorkflowAiAgentActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-agent/types/workflow-ai-agent-action-settings.type';
+import { type WorkflowAiFilteringActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/types/workflow-ai-filtering-action-settings.type';
 import { type WorkflowCodeActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/code/types/workflow-code-action-settings.type';
 import { type WorkflowCreateCalendarEventActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/create-calendar-event/types/workflow-create-calendar-event-action-settings.type';
 import { type WorkflowDelayActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/types/workflow-delay-action-settings.type';
@@ -30,6 +31,8 @@ import { type WorkflowLikeLinkedinPostActionSettings } from 'src/modules/workflo
 import { type WorkflowSendLinkedinVoiceNoteActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-linkedin-voice-note-action-settings.type';
 import { type WorkflowSendWhatsappMessageActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-whatsapp-message-action-settings.type';
 import { type WorkflowViewLinkedinProfileActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-view-linkedin-profile-action-settings.type';
+import { type WorkflowSearchLocalBusinessesActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/local-business-data/types/workflow-search-local-businesses-action-settings.type';
+import { type WorkflowGetLocalBusinessDetailsActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/local-business-data/types/workflow-get-local-business-details-action-settings.type';
 
 type BaseWorkflowAction = {
   id: string;
@@ -169,9 +172,24 @@ export type WorkflowSendWhatsappMessageAction = BaseWorkflowAction & {
   settings: WorkflowSendWhatsappMessageActionSettings;
 };
 
+export type WorkflowSearchLocalBusinessesAction = BaseWorkflowAction & {
+  type: WorkflowActionType.SEARCH_LOCAL_BUSINESSES;
+  settings: WorkflowSearchLocalBusinessesActionSettings;
+};
+
+export type WorkflowGetLocalBusinessDetailsAction = BaseWorkflowAction & {
+  type: WorkflowActionType.GET_LOCAL_BUSINESS_DETAILS;
+  settings: WorkflowGetLocalBusinessDetailsActionSettings;
+};
+
 export type WorkflowAiAgentAction = BaseWorkflowAction & {
   type: WorkflowActionType.AI_AGENT;
   settings: WorkflowAiAgentActionSettings;
+};
+
+export type WorkflowAiFilteringAction = BaseWorkflowAction & {
+  type: WorkflowActionType.AI_FILTERING;
+  settings: WorkflowAiFilteringActionSettings;
 };
 
 export type WorkflowIteratorAction = BaseWorkflowAction & {
@@ -214,7 +232,10 @@ export type WorkflowAction =
   | WorkflowFollowLinkedinProfileAction
   | WorkflowLikeLinkedinPostAction
   | WorkflowSendWhatsappMessageAction
+  | WorkflowSearchLocalBusinessesAction
+  | WorkflowGetLocalBusinessDetailsAction
   | WorkflowAiAgentAction
+  | WorkflowAiFilteringAction
   | WorkflowIteratorAction
   | WorkflowEmptyAction
   | WorkflowDelayAction;

@@ -8,6 +8,7 @@ import {
 import { isDefined, isValidVariable } from 'twenty-shared/utils';
 import {
   BaseOutputSchemaV2,
+  aiFilteringFieldsToOutputSchema,
   buildManualTriggerMetadataNode,
   BulkRecordsAvailability,
   extractRawVariableNamePart,
@@ -143,6 +144,18 @@ export class WorkflowSchemaWorkspaceService {
           agentId: step.settings.input.agentId,
           workspaceId,
         });
+      }
+      case WorkflowActionType.AI_FILTERING: {
+        if (
+          isDefined(step.settings.outputSchema) &&
+          Object.keys(step.settings.outputSchema).length > 0
+        ) {
+          return step.settings.outputSchema;
+        }
+
+        const fields = step.settings.input.fields ?? [];
+
+        return aiFilteringFieldsToOutputSchema(fields);
       }
       case WorkflowTriggerType.WEBHOOK:
       case WorkflowActionType.CODE:

@@ -7,6 +7,7 @@ import {
   WorkflowStepExecutorExceptionCode,
 } from 'src/modules/workflow/workflow-executor/exceptions/workflow-step-executor.exception';
 import { AiAgentWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-agent/ai-agent.workflow-action';
+import { AiFilteringWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/ai-filtering.workflow-action';
 import { CodeWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/code/code.workflow-action';
 import { DelayWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/delay.workflow-action';
 import { EmptyWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/empty/empty.workflow-action';
@@ -35,6 +36,8 @@ import { LikeLinkedinPostWorkflowAction } from 'src/modules/workflow/workflow-ex
 import { SendWhatsappMessageWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/send-whatsapp-message.workflow-action';
 import { SendLinkedinVoiceNoteWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/send-linkedin-voice-note.workflow-action';
 import { ViewLinkedinProfileWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/view-linkedin-profile.workflow-action';
+import { SearchLocalBusinessesWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/local-business-data/search-local-businesses.workflow-action';
+import { GetLocalBusinessDetailsWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/local-business-data/get-local-business-details.workflow-action';
 import { WorkflowActionType } from 'twenty-shared/workflow';
 
 @Injectable()
@@ -66,7 +69,10 @@ export class WorkflowActionFactory {
     private readonly followLinkedinProfileWorkflowAction: FollowLinkedinProfileWorkflowAction,
     private readonly likeLinkedinPostWorkflowAction: LikeLinkedinPostWorkflowAction,
     private readonly sendWhatsappMessageWorkflowAction: SendWhatsappMessageWorkflowAction,
+    private readonly searchLocalBusinessesWorkflowAction: SearchLocalBusinessesWorkflowAction,
+    private readonly getLocalBusinessDetailsWorkflowAction: GetLocalBusinessDetailsWorkflowAction,
     private readonly aiAgentWorkflowAction: AiAgentWorkflowAction,
+    private readonly aiFilteringWorkflowAction: AiFilteringWorkflowAction,
     private readonly emptyWorkflowAction: EmptyWorkflowAction,
     private readonly delayWorkflowAction: DelayWorkflowAction,
   ) {}
@@ -125,8 +131,14 @@ export class WorkflowActionFactory {
         return this.likeLinkedinPostWorkflowAction;
       case WorkflowActionType.SEND_WHATSAPP_MESSAGE:
         return this.sendWhatsappMessageWorkflowAction;
+      case WorkflowActionType.SEARCH_LOCAL_BUSINESSES:
+        return this.searchLocalBusinessesWorkflowAction;
+      case WorkflowActionType.GET_LOCAL_BUSINESS_DETAILS:
+        return this.getLocalBusinessDetailsWorkflowAction;
       case WorkflowActionType.AI_AGENT:
         return this.aiAgentWorkflowAction;
+      case WorkflowActionType.AI_FILTERING:
+        return this.aiFilteringWorkflowAction;
       case WorkflowActionType.EMPTY:
         return this.emptyWorkflowAction;
       case WorkflowActionType.DELAY:

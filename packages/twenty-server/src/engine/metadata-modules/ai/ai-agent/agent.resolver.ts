@@ -11,6 +11,7 @@ import { SettingsPermissionGuard } from 'src/engine/guards/settings-permission.g
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 import { fromFlatAgentWithRoleIdToAgentDto } from 'src/engine/metadata-modules/flat-agent/utils/from-agent-entity-to-agent-dto.util';
 import { WorkspaceMigrationGraphqlApiExceptionInterceptor } from 'src/engine/workspace-manager/workspace-migration/interceptors/workspace-migration-graphql-api-exception.interceptor';
+import { isJevModelId } from 'src/engine/metadata-modules/ai/ai-evaluation/utils/is-jev-model-id.util';
 import { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-registry.service';
 
 import { AgentService } from './agent.service';
@@ -62,7 +63,7 @@ export class AgentResolver {
     @Args('input') input: CreateAgentInput,
     @AuthWorkspace() workspace: WorkspaceEntity,
   ): Promise<AgentDTO> {
-    if (isNonEmptyString(input.modelId)) {
+    if (isNonEmptyString(input.modelId) && !isJevModelId(input.modelId)) {
       this.aiModelRegistryService.validateModelAvailability(
         input.modelId,
         workspace,
@@ -83,7 +84,7 @@ export class AgentResolver {
     @Args('input') input: UpdateAgentInput,
     @AuthWorkspace() workspace: WorkspaceEntity,
   ): Promise<AgentDTO> {
-    if (isNonEmptyString(input.modelId)) {
+    if (isNonEmptyString(input.modelId) && !isJevModelId(input.modelId)) {
       this.aiModelRegistryService.validateModelAvailability(
         input.modelId,
         workspace,

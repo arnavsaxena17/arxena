@@ -79,17 +79,18 @@ describe('UnipileWebhookService.processNewRelationWebhook', () => {
       workspaceQueryService.findWorkspaceIdByLinkedinUnipileAccountId,
     ).toHaveBeenCalledWith('BD4e0PSwT6eA5PMo_1KB0w');
     expect(applyEventByLinkedinUrl).toHaveBeenCalledWith({
-      linkedinUrl: 'https://linkedin.com/in/haneen-al-saleh/',
+      linkedinUrl: 'https://linkedin.com/in/haneen-al-saleh',
       event: 'connection_accepted',
       apiToken: 'tok',
       messagingChannel: 'LINKEDIN_CONNECT',
+      linkedinProviderId: 'ACoAABeSIkcBt5l1f6zReQIymNO1mMgGt6Cpt3c',
     });
     expect(receiveIncoming).toHaveBeenCalledTimes(1);
     expect(receiveIncoming.mock.calls[0][0]).toMatchObject({
       account_id: 'BD4e0PSwT6eA5PMo_1KB0w',
       message: "Yes, I'm keen",
       sender: {
-        attendee_profile_url: 'https://linkedin.com/in/haneen-al-saleh/',
+        attendee_profile_url: 'https://linkedin.com/in/haneen-al-saleh',
       },
     });
   });

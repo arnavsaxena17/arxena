@@ -76,6 +76,7 @@ import { OutreachCommandModule } from 'src/engine/core-modules/outreach-command/
 import { PeopleApiModule } from 'src/engine/core-modules/people-api/people-api.module';
 import { CompanyApiModule } from 'src/engine/core-modules/company-api/company-api.module';
 import { JobsApiModule } from 'src/engine/core-modules/jobs-api/jobs-api.module';
+import { LocalBusinessDataModule } from 'src/engine/core-modules/local-business-data/local-business-data.module';
 import { PostsApiModule } from 'src/engine/core-modules/posts-api/posts-api.module';
 import { PrivacyConsentModule } from 'src/engine/core-modules/privacy-consent/privacy-consent.module';
 import { PublicDomainModule } from 'src/engine/core-modules/public-domain/public-domain.module';
@@ -103,6 +104,7 @@ import { WorkspaceInvitationModule } from 'src/engine/core-modules/workspace-inv
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module';
 import { WorkspaceModule } from 'src/engine/core-modules/workspace/workspace.module';
 import { AiBillingModule } from 'src/engine/metadata-modules/ai/ai-billing/ai-billing.module';
+import { AiEvaluationModule } from 'src/engine/metadata-modules/ai/ai-evaluation/ai-evaluation.module';
 import { AiModelsModule } from 'src/engine/metadata-modules/ai/ai-models/ai-models.module';
 import { PageLayoutModule } from 'src/engine/metadata-modules/page-layout/page-layout.module';
 import { PermissionsGraphqlApiExceptionFilter } from 'src/engine/metadata-modules/permissions/utils/permissions-graphql-api-exception.filter';
@@ -194,6 +196,7 @@ import { FileModule } from './file/file.module';
     }),
     CacheStorageModule,
     AiModelsModule,
+    AiEvaluationModule,
     AiBillingModule,
     LogicFunctionModule.forRoot(),
     CodeInterpreterModule.forRoot(),
@@ -228,6 +231,7 @@ import { FileModule } from './file/file.module';
     PeopleApiModule,
     CompanyApiModule,
     JobsApiModule,
+    LocalBusinessDataModule,
     PostsApiModule,
     OutreachCommandModule,
     ArxChatAgentModule,

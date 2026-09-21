@@ -104,7 +104,13 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     JwtModule,
     forwardRef(() => OutreachCommandModule),
   ],
-  controllers: [CandidateSourcingController, AiFilteringProgressController, FileUploadController, UploadProgressController, ResumeUploadController],
+  controllers: [
+    CandidateSourcingController,
+    AiFilteringProgressController,
+    FileUploadController,
+    UploadProgressController,
+    ResumeUploadController,
+  ],
   providers: [
     GoogleSheetsService,
     // JobService,
@@ -166,6 +172,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     CandidateDataService,
     ProcessCandidatesService,
     ProcessAiFiltersService,
+    AiFilteringProcessorService,
     DataSourceTransformerFactoryService,
     DataProcessingUtils,
     JDParserService,

@@ -14,6 +14,7 @@ import {
 import { OutreachCompanyEnrichmentCollectorService } from 'src/engine/core-modules/outreach-command/services/outreach-company-enrichment-collector.service';
 import { OutreachCompanyProfileSummarizerService } from 'src/engine/core-modules/outreach-command/services/outreach-company-profile-summarizer.service';
 import { IcpBootstrapSummarizerService } from 'src/engine/core-modules/outreach-command/services/outreach-icp-bootstrap-summarizer.service';
+import { OutreachSenderProfileService } from 'src/engine/core-modules/outreach-command/services/outreach-sender-profile.service';
 import { stringifyIcpSpec } from 'src/engine/core-modules/outreach-command/utils/outreach-icp-spec.util';
 import { buildOutreachWorkspaceProfileDraftFromDomain } from 'src/engine/core-modules/outreach-command/utils/outreach-workspace-profile-draft.util';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
@@ -57,6 +58,7 @@ export class OutreachWorkspaceProfileProvisioningService {
     private readonly companyEnrichmentCollector: OutreachCompanyEnrichmentCollectorService,
     private readonly companyProfileSummarizer: OutreachCompanyProfileSummarizerService,
     private readonly icpBootstrapSummarizer: IcpBootstrapSummarizerService,
+    private readonly outreachSenderProfileService: OutreachSenderProfileService,
     @Optional()
     private readonly linkedInSearchService?: LinkedInSearchService,
     @Optional()
@@ -217,6 +219,30 @@ export class OutreachWorkspaceProfileProvisioningService {
         companyName: draft.companyName,
         linkedInAccountId: enrichmentSources.linkedInAccountId,
       });
+
+      try {
+        await this.outreachSenderProfileService.stampSenderProfileFromWorkspaceBootstrap(
+          {
+            workspaceId,
+            userEmail: workEmail,
+            userFirstName,
+            userLastName,
+            companyName: draft.companyName,
+            companyDomain: draft.companyDomain,
+            industry: draft.industry,
+            summary: draft.summary,
+            hq: draft.hq,
+            icpSpec: draft.icpSpec,
+            force,
+          },
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Sender profile stamp skipped for workspace ${workspaceId}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
     } catch (error) {
       this.logger.error(
         `bootstrapWorkspaceProfile failed for workspace ${workspaceId}`,

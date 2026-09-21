@@ -132,6 +132,49 @@ export const OutreachSetupSenderProfileSection = () => {
     }
   }, 600);
 
+  const persistDraftEdits = useDebouncedCallback(
+    async (nextDraftJson: string) => {
+      if (!accessToken || !isNonEmptyString(nextDraftJson.trim())) {
+        return;
+      }
+
+      let senderProfile: Record<string, unknown>;
+
+      try {
+        senderProfile = JSON.parse(nextDraftJson) as Record<string, unknown>;
+      } catch {
+        return;
+      }
+
+      try {
+        const saved = await saveOutreachSenderProfile({
+          accessToken,
+          senderProfile,
+          senderNotes,
+          collateralText,
+          linkedinProfileText,
+        });
+
+        setSavedSummary(
+          summarizeOutreachSenderProfile(saved.outreachSenderProfile),
+        );
+      } catch (error) {
+        enqueueErrorSnackBar({
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Failed to save sender profile edits.',
+        });
+      }
+    },
+    500,
+  );
+
+  const handleDraftJsonChange = (nextDraftJson: string) => {
+    setDraftJson(nextDraftJson);
+    void persistDraftEdits(nextDraftJson);
+  };
+
   useEffect(() => {
     let cancelled = false;
 
@@ -232,9 +275,10 @@ export const OutreachSetupSenderProfileSection = () => {
       });
       setDraftJson(JSON.stringify(result.draft, null, 2));
       setLinkedinProfileText(result.linkedinProfileText);
+      setSavedSummary(summarizeOutreachSenderProfile(result.draft));
       setIsJsonOpen(false);
       enqueueSuccessSnackBar({
-        message: 'Sender profile draft ready — review before saving.',
+        message: 'Sender profile draft saved to your seat.',
       });
     } catch (error) {
       enqueueErrorSnackBar({
@@ -467,14 +511,14 @@ export const OutreachSetupSenderProfileSection = () => {
           </StyledActions>
           {isNonEmptyString(draftJson) && (
             <StyledFieldStack>
-              <StyledFieldLabel>Review draft before save</StyledFieldLabel>
+              <StyledFieldLabel>Sender profile</StyledFieldLabel>
               <StyledMuted>
-                Edit fields below. Use Edit as JSON only if you need a raw
-                override.
+                Edits save to your seat automatically. Use Edit as JSON only if
+                you need a raw override.
               </StyledMuted>
               <OutreachSenderProfileDraftEditor
                 draftJson={draftJson}
-                onChange={setDraftJson}
+                onChange={handleDraftJsonChange}
                 disabled={isSaving || isDrafting}
               />
               <StyledJsonToggle
@@ -489,7 +533,7 @@ export const OutreachSetupSenderProfileSection = () => {
                   minRows={10}
                   maxRows={24}
                   value={draftJson}
-                  onChange={setDraftJson}
+                  onChange={handleDraftJsonChange}
                 />
               )}
             </StyledFieldStack>

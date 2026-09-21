@@ -15,6 +15,7 @@ export const getActionIcon = (actionType: WorkflowActionType) => {
     case 'PICK_RECORD':
       return RECORD_ACTIONS.find((item) => item.type === actionType)?.icon;
     case 'AI_AGENT':
+    case 'AI_FILTERING':
       return AI_ACTIONS.find((item) => item.type === actionType)?.icon;
     case 'CODE':
     case 'HTTP_REQUEST':
@@ -31,6 +32,8 @@ export const getActionIcon = (actionType: WorkflowActionType) => {
     case 'FOLLOW_LINKEDIN_PROFILE':
     case 'LIKE_LINKEDIN_POST':
     case 'SEND_WHATSAPP_MESSAGE':
+    case 'SEARCH_LOCAL_BUSINESSES':
+    case 'GET_LOCAL_BUSINESS_DETAILS':
       return CORE_ACTIONS.find((item) => item.type === actionType)?.icon;
     case 'LOGIC_FUNCTION':
       return 'IconFunction';

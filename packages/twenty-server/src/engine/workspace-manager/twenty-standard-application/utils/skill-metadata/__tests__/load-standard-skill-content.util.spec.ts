@@ -31,10 +31,22 @@ describe('loadStandardSkillContent', () => {
     expect(content).toContain('Canvas search');
   });
 
+  it('loads local-business-search from a single markdown file', () => {
+    const content = loadStandardSkillContent('local-business-search');
+
+    expect(content).toContain('# Local Business Search');
+    expect(content).toContain('search_local_businesses');
+    expect(content).toContain('get_local_business_details');
+  });
+
   it('preserves Apollo marker comments for runtime filtering', () => {
     const content = loadStandardSkillContent('search');
 
-    expect(content).toContain('<!-- search-apollo-companies-provider-row:start -->');
-    expect(content).toContain('<!-- search-apollo-people-source-section:start -->');
+    expect(content).toContain(
+      '<!-- search-apollo-companies-provider-row:start -->',
+    );
+    expect(content).toContain(
+      '<!-- search-apollo-people-source-section:start -->',
+    );
   });
 });

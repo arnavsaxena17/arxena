@@ -732,6 +732,45 @@ export class WorkflowVersionStepOperationsWorkspaceService {
           },
         };
       }
+      case WorkflowActionType.SEARCH_LOCAL_BUSINESSES: {
+        return {
+          builtStep: {
+            ...baseStep,
+            name: 'Search Local Businesses',
+            type: WorkflowActionType.SEARCH_LOCAL_BUSINESSES,
+            settings: {
+              ...BASE_STEP_DEFINITION,
+              input: {
+                query: '',
+                limit: 20,
+                language: 'en',
+                region: 'us',
+                extractEmailsAndContacts: false,
+                mode: 'search',
+              },
+            },
+          },
+        };
+      }
+      case WorkflowActionType.GET_LOCAL_BUSINESS_DETAILS: {
+        return {
+          builtStep: {
+            ...baseStep,
+            name: 'Get Local Business Details',
+            type: WorkflowActionType.GET_LOCAL_BUSINESS_DETAILS,
+            settings: {
+              ...BASE_STEP_DEFINITION,
+              input: {
+                businessIds: [],
+                extractEmailsAndContacts: true,
+                extractShareLink: false,
+                language: 'en',
+                region: 'us',
+              },
+            },
+          },
+        };
+      }
       case WorkflowActionType.AI_AGENT: {
         const newAgent = await this.agentService.createOneAgent(
           {
@@ -757,6 +796,77 @@ export class WorkflowVersionStepOperationsWorkspaceService {
               input: {
                 agentId: newAgent.id,
                 prompt: '',
+              },
+            },
+          },
+        };
+      }
+      case WorkflowActionType.AI_FILTERING: {
+        return {
+          builtStep: {
+            ...baseStep,
+            name: 'AI Filtering',
+            type: WorkflowActionType.AI_FILTERING,
+            settings: {
+              ...BASE_STEP_DEFINITION,
+              input: {
+                candidates: '',
+                name: '',
+                prompt: '',
+                selectedModel: 'typesafe-ai/jev',
+                selectedMetadataFields: [
+                  'name',
+                  'title',
+                  'company',
+                  'location',
+                ],
+                includeResume: false,
+                fields: [
+                  {
+                    name: 'isSeniorGtm',
+                    type: 'boolean',
+                    description: 'Senior GTM decision maker',
+                  },
+                  {
+                    name: 'fitBand',
+                    type: 'enum',
+                    description: 'Overall fit',
+                    enumValues: ['strong', 'maybe', 'no'],
+                  },
+                ],
+                filterDescription: '',
+              },
+              outputSchema: {
+                success: {
+                  isLeaf: true,
+                  type: 'boolean',
+                  label: 'Success',
+                  value: null,
+                },
+                total: {
+                  isLeaf: true,
+                  type: 'number',
+                  label: 'Total',
+                  value: null,
+                },
+                candidates: {
+                  isLeaf: true,
+                  type: 'array',
+                  label: 'Candidates',
+                  value: null,
+                },
+                isSeniorGtm: {
+                  isLeaf: true,
+                  type: 'boolean',
+                  label: 'isSeniorGtm',
+                  value: null,
+                },
+                fitBand: {
+                  isLeaf: true,
+                  type: 'string',
+                  label: 'fitBand',
+                  value: null,
+                },
               },
             },
           },

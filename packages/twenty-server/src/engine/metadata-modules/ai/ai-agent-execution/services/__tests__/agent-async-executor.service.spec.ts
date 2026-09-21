@@ -11,6 +11,7 @@ import { AgentAsyncExecutorService } from 'src/engine/metadata-modules/ai/ai-age
 import { type AgentEntity } from 'src/engine/metadata-modules/ai/ai-agent/entities/agent.entity';
 import { NATIVE_WEB_SEARCH_COST_PER_CALL_DOLLARS } from 'src/engine/metadata-modules/ai/ai-billing/constants/native-web-search-cost-per-call-dollars';
 import { AiBillingService } from 'src/engine/metadata-modules/ai/ai-billing/services/ai-billing.service';
+import { JevEvaluationService } from 'src/engine/metadata-modules/ai/ai-evaluation/services/jev-evaluation.service';
 import { AiModelConfigService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-config.service';
 import { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-registry.service';
 import { NativeToolBinderService } from 'src/engine/metadata-modules/ai/ai-models/services/native-tool-binder.service';
@@ -123,6 +124,16 @@ describe('AgentAsyncExecutorService — workflow agent role-scoped tool resoluti
           provide: MetricsService,
           useValue: {
             incrementCounterForEvent: jest.fn(),
+            recordHistogram: jest.fn(),
+            incrementCounterBy: jest.fn(),
+          },
+        },
+        {
+          provide: JevEvaluationService,
+          useValue: {
+            isConfigured: jest.fn().mockReturnValue(false),
+            getDefaultModelId: jest.fn().mockReturnValue('typesafe-ai/jev'),
+            evaluate: jest.fn(),
           },
         },
         {

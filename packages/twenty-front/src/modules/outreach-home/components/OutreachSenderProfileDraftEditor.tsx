@@ -464,7 +464,8 @@ export const OutreachSenderProfileDraftEditor = ({
       <StyledSection>
         <StyledSectionTitle>ICP (sender)</StyledSectionTitle>
         <StyledMuted>
-          Who you typically sell to — separate from the project ICP card below.
+          Who you typically sell to — synced with workspace Target titles /
+          Locations.
         </StyledMuted>
         <ChipFieldInput
           draftJson={draftJson}
