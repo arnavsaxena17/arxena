@@ -2991,6 +2991,15 @@ export class ConfigVariables {
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Apify actor id for Crunchbase companies scrape (curious_coder/crunchbase-scraper)',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  APIFY_CRUNCHBASE_COMPANIES_ACTOR_ID = 'BBfgvSNWcySEk1jQO';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
     description: 'Org-chart public access guard mode (off | log | enforce)',
     type: ConfigVariableType.STRING,
   })

@@ -180,6 +180,8 @@ export const graphQLToUpdateOneWorkspaceMemberArx = `mutation UpdateOneWorkspace
       linkedinCountry
       linkedinCookiesLastSyncedAt
       linkedinCookiesValidatedAt
+      crunchbaseCookies
+      crunchbaseCookiesLastSyncedAt
       lastLinkedinConnectAt
       lastLinkedinMessageAt
       chromeExtensionId
@@ -197,6 +199,14 @@ export const graphQLToUpdateWorkspaceMemberLinkedinCookieTokens = `mutation Upda
     linkedinCountry
     linkedinCookiesLastSyncedAt
     linkedinCookiesValidatedAt
+  }
+}`;
+
+export const graphQLToUpdateWorkspaceMemberCrunchbaseCookies = `mutation UpdateWorkspaceMemberCrunchbaseCookies($idToUpdate: UUID!, $input: WorkspaceMemberUpdateInput!) {
+  updateWorkspaceMember(id: $idToUpdate, data: $input) {
+    id
+    crunchbaseCookies
+    crunchbaseCookiesLastSyncedAt
   }
 }`;
 

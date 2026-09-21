@@ -6,6 +6,8 @@ export const OUTREACH_VISIT_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME =
   'visit-linkedin-profile';
 export const OUTREACH_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME = 'search-people';
 export const OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME = 'search-companies';
+export const OUTREACH_SEARCH_CRUNCHBASE_COMPANIES_LOGIC_FUNCTION_NAME =
+  'search-crunchbase-companies';
 export const OUTREACH_SEARCH_JOBS_LOGIC_FUNCTION_NAME = 'search-jobs';
 export const OUTREACH_SEARCH_POSTS_LOGIC_FUNCTION_NAME = 'search-posts';
 export const OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME =
@@ -212,6 +214,22 @@ export const OUTREACH_SEARCH_COMPANIES_SAMPLE_OUTPUT = {
       website: 'acme.com',
       linkedinUrl: 'https://www.linkedin.com/company/acme',
       industry: 'Software',
+    },
+  ],
+};
+
+export const OUTREACH_SEARCH_CRUNCHBASE_COMPANIES_SAMPLE_OUTPUT = {
+  success: true,
+  total: 1,
+  dataSource: 'crunchbase',
+  error: '',
+  companies: [
+    {
+      id: 'afd2f898-e292-f910-7350-60d2a033e795',
+      name: 'Ather Energy',
+      website: 'http://www.atherenergy.com',
+      linkedinUrl: 'http://www.linkedin.com/company/ather-energy',
+      industry: 'Automotive',
     },
   ],
 };
@@ -467,6 +485,7 @@ export const OUTREACH_NATIVE_LOGIC_FUNCTION_NAMES = new Set([
   OUTREACH_VISIT_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
+  OUTREACH_SEARCH_CRUNCHBASE_COMPANIES_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_POSTS_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME,
@@ -494,6 +513,8 @@ const SAMPLE_OUTPUT_BY_NAME: Record<string, Record<string, unknown>> = {
     OUTREACH_SEARCH_PEOPLE_SAMPLE_OUTPUT,
   [OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME]:
     OUTREACH_SEARCH_COMPANIES_SAMPLE_OUTPUT,
+  [OUTREACH_SEARCH_CRUNCHBASE_COMPANIES_LOGIC_FUNCTION_NAME]:
+    OUTREACH_SEARCH_CRUNCHBASE_COMPANIES_SAMPLE_OUTPUT,
   [OUTREACH_SEARCH_JOBS_LOGIC_FUNCTION_NAME]:
     OUTREACH_SEARCH_JOBS_SAMPLE_OUTPUT,
   [OUTREACH_SEARCH_POSTS_LOGIC_FUNCTION_NAME]:

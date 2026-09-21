@@ -1088,6 +1088,8 @@ export const findWorkspaceMembersForArx = `query FindManyWorkspaceMembersForArx(
         linkedinCountry
         linkedinCookiesLastSyncedAt
         linkedinCookiesValidatedAt
+        crunchbaseCookies
+        crunchbaseCookiesLastSyncedAt
         lastLinkedinConnectAt
         lastLinkedinMessageAt
         chromeExtensionId

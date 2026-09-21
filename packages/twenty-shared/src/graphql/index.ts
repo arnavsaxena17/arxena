@@ -20,6 +20,7 @@ export {
   graphqlToCreateOnePrompt,
   graphQLToUpdateOneWorkspaceMemberArx,
   graphQLToUpdateWorkspaceMemberLinkedinCookieTokens,
+  graphQLToUpdateWorkspaceMemberCrunchbaseCookies,
   CreateManyCandidates,
   CreateOneCompany,
   CreateOneObjectMetadataItem,

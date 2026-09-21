@@ -10,6 +10,7 @@ import {
   OUTREACH_VISIT_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
+  OUTREACH_SEARCH_CRUNCHBASE_COMPANIES_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
@@ -31,6 +32,7 @@ import {
   OUTREACH_VISIT_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
   OUTREACH_FETCH_USER_COMMENTS_SAMPLE_OUTPUT,
   OUTREACH_SEARCH_COMPANIES_SAMPLE_OUTPUT,
+  OUTREACH_SEARCH_CRUNCHBASE_COMPANIES_SAMPLE_OUTPUT,
   OUTREACH_SEARCH_JOBS_SAMPLE_OUTPUT,
   OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT,
   OUTREACH_SEARCH_PEOPLE_SAMPLE_OUTPUT,
@@ -144,6 +146,10 @@ export const getOutreachLogicFunctionIds = (workspaceId: string) => ({
   ),
   searchCompaniesId: uuidv5(
     `${workspaceId}:search-companies`,
+    OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  searchCrunchbaseCompaniesId: uuidv5(
+    `${workspaceId}:search-crunchbase-companies`,
     OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
   ),
   searchJobsId: uuidv5(
@@ -624,6 +630,66 @@ export const getOutreachLogicFunctionDefinitions = (
           },
         ],
         sampleOutput: OUTREACH_SEARCH_COMPANIES_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.searchCrunchbaseCompaniesId,
+      name: OUTREACH_SEARCH_CRUNCHBASE_COMPANIES_LOGIC_FUNCTION_NAME,
+      description:
+        'Search companies via Apify Crunchbase scraper. Pass searchUrl (Crunchbase discover URL). Cookies from paste or workspaceMember.crunchbaseCookies. Pipe companies[] into upsert-companies with projectId.',
+      sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
+        OUTREACH_SEARCH_CRUNCHBASE_COMPANIES_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Search Crunchbase companies',
+        icon: 'IconBrandCrunchbase',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              searchUrl: {
+                type: 'string',
+                label: 'Crunchbase search URL',
+              },
+              cookie: {
+                type: 'string',
+                label: 'Cookies (JSON array, optional)',
+              },
+              workspaceMemberId: OUTREACH_WORKSPACE_MEMBER_RECORD_INPUT,
+              cursor: { type: 'string', label: 'Cursor' },
+              minDelay: { type: 'number', label: 'Min delay (seconds)' },
+              maxDelay: { type: 'number', label: 'Max delay (seconds)' },
+              projectId: { type: 'string', label: 'Project ID' },
+              limit: { type: 'number', label: 'Limit' },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              total: { type: 'number', label: 'Total' },
+              dataSource: { type: 'string', label: 'Data source' },
+              error: { type: 'string', label: 'Error' },
+              companies: {
+                type: 'array',
+                label: 'Companies',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string', label: 'ID' },
+                    name: { type: 'string', label: 'Name' },
+                    website: { type: 'string', label: 'Website' },
+                    linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
+                    industry: { type: 'string', label: 'Industry' },
+                  },
+                },
+              },
+            },
+          },
+        ],
+        sampleOutput: OUTREACH_SEARCH_CRUNCHBASE_COMPANIES_SAMPLE_OUTPUT,
       },
     },
     {

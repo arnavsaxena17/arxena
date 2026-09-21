@@ -11,6 +11,7 @@ import {
 import {
   extractWorkspaceMemberFromApolloData,
   isDefined,
+  parseBrowserExtensionCookieArray,
   parseWorkspaceMemberLinkedinProfile,
   workspaceMemberFilterById,
   type WorkspaceMembersApolloData,
@@ -19,6 +20,7 @@ import {
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
 import { SettingsTextInput } from '@/ui/input/components/SettingsTextInput';
+import { TextArea } from '@/ui/input/components/TextArea';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { logError } from '~/utils/logError';
@@ -27,6 +29,11 @@ const StyledFields = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[3]};
+`;
+
+const StyledHint = styled.span`
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
 `;
 
 const FIND_MEMBER_ARX = gql`
@@ -58,6 +65,18 @@ const emptyForm = (): MemberArxFormState => ({
   whatsappUnipileAccountId: '',
   chromeExtensionId: '',
 });
+
+const formatCrunchbaseCookiesJson = (value: unknown): string => {
+  if (!isDefined(value)) {
+    return '';
+  }
+
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return '';
+  }
+};
 
 const linkedinProfileIdFromMember = (linkedinProfile: unknown): string => {
   const stored = parseWorkspaceMemberLinkedinProfile(linkedinProfile);
@@ -105,6 +124,12 @@ export const SettingsMemberArxProfileFields = ({
 
   const [form, setForm] = useState<MemberArxFormState>(emptyForm);
   const [linkedinProfileId, setLinkedinProfileId] = useState('');
+  const [crunchbaseCookiesJson, setCrunchbaseCookiesJson] = useState('');
+  const [crunchbaseCookiesLastSyncedAt, setCrunchbaseCookiesLastSyncedAt] =
+    useState<string | null>(null);
+  const [crunchbaseCookiesError, setCrunchbaseCookiesError] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     if (!isDefined(member)) {
@@ -120,6 +145,15 @@ export const SettingsMemberArxProfileFields = ({
       chromeExtensionId: member.chromeExtensionId ?? '',
     });
     setLinkedinProfileId(linkedinProfileIdFromMember(member.linkedinProfile));
+    setCrunchbaseCookiesJson(
+      formatCrunchbaseCookiesJson(member.crunchbaseCookies),
+    );
+    setCrunchbaseCookiesLastSyncedAt(
+      member.crunchbaseCookiesLastSyncedAt != null
+        ? String(member.crunchbaseCookiesLastSyncedAt)
+        : null,
+    );
+    setCrunchbaseCookiesError(null);
   }, [member?.id, data]);
 
   const persist = useCallback(
@@ -149,7 +183,75 @@ export const SettingsMemberArxProfileFields = ({
     [updateMemberArx, workspaceMemberId],
   );
 
+  const persistCrunchbaseCookies = useCallback(
+    async (rawJson: string) => {
+      if (!isDefined(workspaceMemberId)) {
+        return;
+      }
+
+      const trimmed = rawJson.trim();
+
+      if (trimmed.length === 0) {
+        setCrunchbaseCookiesError(null);
+        try {
+          await updateMemberArx({
+            variables: {
+              idToUpdate: workspaceMemberId,
+              input: {
+                crunchbaseCookies: null,
+              },
+            },
+          });
+        } catch (error) {
+          logError(error);
+        }
+
+        return;
+      }
+
+      let parsed: unknown;
+
+      try {
+        parsed = JSON.parse(trimmed);
+      } catch {
+        setCrunchbaseCookiesError(t`Invalid JSON`);
+
+        return;
+      }
+
+      const cookies = parseBrowserExtensionCookieArray(parsed);
+
+      if (cookies === null) {
+        setCrunchbaseCookiesError(
+          t`Must be a JSON array of Crunchbase cookie objects`,
+        );
+
+        return;
+      }
+
+      setCrunchbaseCookiesError(null);
+
+      try {
+        await updateMemberArx({
+          variables: {
+            idToUpdate: workspaceMemberId,
+            input: {
+              crunchbaseCookies: cookies,
+            },
+          },
+        });
+      } catch (error) {
+        logError(error);
+      }
+    },
+    [t, updateMemberArx, workspaceMemberId],
+  );
+
   const debouncedPersist = useDebouncedCallback(persist, 600);
+  const debouncedPersistCrunchbaseCookies = useDebouncedCallback(
+    persistCrunchbaseCookies,
+    600,
+  );
 
   const updateField = <K extends keyof MemberArxFormState>(
     key: K,
@@ -161,6 +263,11 @@ export const SettingsMemberArxProfileFields = ({
 
       return next;
     });
+  };
+
+  const updateCrunchbaseCookiesJson = (value: string) => {
+    setCrunchbaseCookiesJson(value);
+    void debouncedPersistCrunchbaseCookies(value);
   };
 
   if (!isDefined(workspaceMemberId)) {
@@ -224,6 +331,23 @@ export const SettingsMemberArxProfileFields = ({
         onChange={(value) => updateField('chromeExtensionId', value)}
         fullWidth
       />
+      <TextArea
+        textAreaId="member-arx-crunchbase-cookies"
+        label={t`Crunchbase cookies (JSON)`}
+        value={crunchbaseCookiesJson}
+        onChange={updateCrunchbaseCookiesJson}
+        minRows={6}
+        maxRows={16}
+        placeholder={t`Paste Chrome cookie export JSON array`}
+      />
+      {isDefined(crunchbaseCookiesError) && (
+        <StyledHint>{crunchbaseCookiesError}</StyledHint>
+      )}
+      {isDefined(crunchbaseCookiesLastSyncedAt) && (
+        <StyledHint>
+          {t`Last synced from extension:`} {crunchbaseCookiesLastSyncedAt}
+        </StyledHint>
+      )}
     </StyledFields>
   );
 };

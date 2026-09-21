@@ -398,6 +398,30 @@ const getAllFieldsData = (
     {
       objectName: 'workspaceMember',
       field: {
+        description:
+          'Raw Crunchbase browser cookies (Chrome extension export JSON array)',
+        icon: 'IconCookie',
+        label: 'Crunchbase Cookies',
+        name: 'crunchbaseCookies',
+        objectMetadataId: objectsNameIdMap.workspaceMember,
+        type: 'RAW_JSON',
+      },
+    },
+    {
+      objectName: 'workspaceMember',
+      field: {
+        description:
+          'When Crunchbase cookies were last synced from the extension',
+        icon: 'IconClock',
+        label: 'Crunchbase Cookies Last Synced At',
+        name: 'crunchbaseCookiesLastSyncedAt',
+        objectMetadataId: objectsNameIdMap.workspaceMember,
+        type: 'DATE_TIME',
+      },
+    },
+    {
+      objectName: 'workspaceMember',
+      field: {
         description: 'Unipile account ID for WhatsApp',
         icon: 'IconPhone',
         label: 'WhatsApp Unipile Account ID',

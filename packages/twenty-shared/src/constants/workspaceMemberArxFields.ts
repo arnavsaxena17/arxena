@@ -14,6 +14,8 @@ export const WORKSPACE_MEMBER_ARX_FIELD_NAMES = {
   linkedinIp: 'linkedinIp',
   linkedinCountry: 'linkedinCountry',
   linkedinCookiesValidatedAt: 'linkedinCookiesValidatedAt',
+  crunchbaseCookies: 'crunchbaseCookies',
+  crunchbaseCookiesLastSyncedAt: 'crunchbaseCookiesLastSyncedAt',
   whatsappUnipileAccountId: 'whatsappUnipileAccountId',
   keepLinkedinConnected: 'keepLinkedinConnected',
   linkedinProfile: 'linkedinProfile',

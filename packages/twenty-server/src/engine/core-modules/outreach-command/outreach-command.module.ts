@@ -1,6 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { ApifyModule } from 'src/engine/core-modules/apify/apify.module';
 import { AccountRateLimitModule } from 'src/engine/core-modules/account-rate-limit/account-rate-limit.module';
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { UnipilePoolModule } from 'src/engine/core-modules/arx-chat/unipile-pool.module';
@@ -26,6 +27,7 @@ import { OutreachUnipilePacingService } from 'src/engine/core-modules/outreach-c
 import { SearchPeopleForCompanyService } from 'src/engine/core-modules/outreach-command/services/search-people-for-company.service';
 import { SearchPeopleService } from 'src/engine/core-modules/outreach-command/services/search-people.service';
 import { SearchCompaniesService } from 'src/engine/core-modules/outreach-command/services/search-companies.service';
+import { SearchCrunchbaseCompaniesService } from 'src/engine/core-modules/outreach-command/services/search-crunchbase-companies.service';
 import { SearchJobsService } from 'src/engine/core-modules/outreach-command/services/search-jobs.service';
 import { SearchPostsService } from 'src/engine/core-modules/outreach-command/services/search-posts.service';
 import { UploadProfilesService } from 'src/engine/core-modules/outreach-command/services/upload-profiles.service';
@@ -99,6 +101,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     UnipilePoolModule,
     EnvironmentModule,
     FeatureFlagModule,
+    ApifyModule,
     WikidataModule,
     ApiKeyModule,
     forwardRef(() => PeopleApiModule),
@@ -158,6 +161,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     SearchPeopleForCompanyService,
     SearchPeopleService,
     SearchCompaniesService,
+    SearchCrunchbaseCompaniesService,
     SearchJobsService,
     SearchPostsService,
     LinkedinProviderIdStoreService,

@@ -27,6 +27,7 @@ import { WorkspaceSchemaBuilderModule } from 'src/engine/api/graphql/workspace-s
 import { ArxDeliveryEndpoint } from 'src/engine/core-modules/arx-chat/controllers/arx-delivery.controller';
 import { CandidateEngagementController } from 'src/engine/core-modules/arx-chat/controllers/candidate-engagement.controller';
 import { LinkedinUnipileController } from 'src/engine/core-modules/arx-chat/controllers/linkedin-unipile.controller';
+import { CrunchbaseCookiesController } from 'src/engine/core-modules/arx-chat/controllers/crunchbase-cookies.controller';
 import { UnipileWebhookController } from 'src/engine/core-modules/arx-chat/controllers/unipile-webhook.controller';
 import { VideoInterviewProcessController } from 'src/engine/core-modules/arx-chat/controllers/video-interview-process-controller';
 import { VoiceCallController } from 'src/engine/core-modules/arx-chat/controllers/voice-call.controller';
@@ -125,7 +126,6 @@ const conditionalImports = isWorker
   ? [ExtSockWhatsappWhitelistProcessingService, WhatsappMessageProcessor]
   : [];
 
-
 @Module({
   imports: [
     AccountRateLimitModule,
@@ -180,6 +180,7 @@ const conditionalImports = isWorker
     VoiceCallController,
     ExtSockWhatsappController,
     LinkedinUnipileController,
+    CrunchbaseCookiesController,
     WhatsappUnipileController,
     CandidateEngagementController,
     UnipileWebhookController,

@@ -146,4 +146,37 @@ describe('CompanySearchHitTransformer', () => {
       },
     ]);
   });
+
+  it('maps Crunchbase organization rows', () => {
+    expect(
+      transformer.fromCrunchbaseItems([
+        {
+          uuid: 'afd2f898-e292-f910-7350-60d2a033e795',
+          name: 'Ather Energy',
+          identifier: {
+            permalink: 'ather-energy',
+            uuid: 'afd2f898-e292-f910-7350-60d2a033e795',
+            value: 'Ather Energy',
+          },
+          website: { value: 'http://www.atherenergy.com' },
+          linkedin: {
+            value: 'http://www.linkedin.com/company/ather-energy',
+          },
+          categories: [
+            { value: 'Automotive' },
+            { value: 'Electric Vehicle' },
+          ],
+        },
+        { type: 'organization', name: '' },
+      ]),
+    ).toEqual([
+      {
+        id: 'afd2f898-e292-f910-7350-60d2a033e795',
+        name: 'Ather Energy',
+        website: 'http://www.atherenergy.com',
+        linkedinUrl: 'http://www.linkedin.com/company/ather-energy',
+        industry: 'Automotive',
+      },
+    ]);
+  });
 });

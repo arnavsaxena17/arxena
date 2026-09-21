@@ -120,6 +120,8 @@ import { ResyncOutreachSequencerAutomatedTriggerCommand } from 'src/database/com
 import { UnpinBulkForceStopWorkflowRunsCommandMenuItemCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000129-unpin-bulk-force-stop-workflow-runs-command-menu-item.command';
 import { BackfillPersonJobTitleCompanyFromCandidateCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000130-backfill-person-job-title-company-from-candidate.command';
 import { BackfillPersonJobCompanyFromCandidateExperienceCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000131-backfill-person-job-company-from-candidate-experience.command';
+import { SyncWorkspaceMemberCrunchbaseCookiesFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000132-sync-workspace-member-crunchbase-cookies-fields.command';
+import { EnsureSearchCrunchbaseCompaniesLogicFunctionCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000133-ensure-search-crunchbase-companies-logic-function.command';
 import { SetOutreachExtractSignalsDeepseekCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000106-set-outreach-extract-signals-deepseek.command';
 import { DropChatMessageObjWithTimeStampCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000099-drop-chat-message-obj-with-time-stamp.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
@@ -277,6 +279,8 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     UnpinBulkForceStopWorkflowRunsCommandMenuItemCommand,
     BackfillPersonJobTitleCompanyFromCandidateCommand,
     BackfillPersonJobCompanyFromCandidateExperienceCommand,
+    SyncWorkspaceMemberCrunchbaseCookiesFieldsCommand,
+    EnsureSearchCrunchbaseCompaniesLogicFunctionCommand,
     MigrateOtherFieldsService,
     DropCandidateFieldObjectsCommand,
   ],

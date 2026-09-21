@@ -512,6 +512,7 @@ export {
 export { getViewLayoutFromViewType } from './views/getViewLayoutFromViewType';
 export { isWidgetViewType } from './views/isWidgetViewType';
 export type {
+  BrowserExtensionCookie,
   WorkspaceMemberLinkedinCookieTokens,
   WorkspaceMemberArxGraphqlNode,
   WorkspaceMembersConnection,
@@ -530,6 +531,8 @@ export {
   workspaceMemberDisplayName,
   parseWorkspaceMemberUnipileFields,
   parseWorkspaceMemberLinkedinCookieTokensFromGraphql,
+  parseBrowserExtensionCookieArray,
+  parseWorkspaceMemberCrunchbaseCookies,
   workspaceMemberUnipileAccountFieldName,
 } from './workspaceMemberArxGraphql';
 export type { WorkspaceMemberLinkedinProfileStorage } from './workspaceMemberLinkedinProfile';

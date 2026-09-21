@@ -4,6 +4,7 @@ import {
   OUTREACH_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
   OUTREACH_VISIT_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
+  OUTREACH_SEARCH_CRUNCHBASE_COMPANIES_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
@@ -83,6 +84,22 @@ export const main = async (params: {
   industry?: string;
   location?: string;
   url?: string;
+  projectId?: string;
+  limit?: number;
+}) => {
+  return params;
+};
+`;
+
+const SEARCH_CRUNCHBASE_COMPANIES_HANDLER = `// Native GTM action: SearchCrunchbaseCompaniesService (Apify).
+// Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
+export const main = async (params: {
+  searchUrl?: string;
+  cookie?: unknown;
+  workspaceMemberId?: string;
+  cursor?: string;
+  minDelay?: number;
+  maxDelay?: number;
   projectId?: string;
   limit?: number;
 }) => {
@@ -268,6 +285,8 @@ const NATIVE_HANDLERS: Record<string, string> = {
     VISIT_LINKEDIN_PROFILE_HANDLER,
   [OUTREACH_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME]: SEARCH_PEOPLE_HANDLER,
   [OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME]: SEARCH_COMPANIES_HANDLER,
+  [OUTREACH_SEARCH_CRUNCHBASE_COMPANIES_LOGIC_FUNCTION_NAME]:
+    SEARCH_CRUNCHBASE_COMPANIES_HANDLER,
   [OUTREACH_SEARCH_JOBS_LOGIC_FUNCTION_NAME]: SEARCH_JOBS_HANDLER,
   [OUTREACH_SEARCH_POSTS_LOGIC_FUNCTION_NAME]: SEARCH_POSTS_HANDLER,
   [OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME]:

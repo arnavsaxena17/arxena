@@ -8,6 +8,7 @@ import {
   OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME,
   OUTREACH_NATIVE_LOGIC_FUNCTION_NAMES,
   OUTREACH_SEARCH_COMPANIES_LOGIC_FUNCTION_NAME,
+  OUTREACH_SEARCH_CRUNCHBASE_COMPANIES_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_JOBS_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_PEOPLE_LOGIC_FUNCTION_NAME,
@@ -32,6 +33,7 @@ import { FetchLinkedinProfileService } from 'src/engine/core-modules/outreach-co
 import { VisitLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/visit-linkedin-profile.service';
 import { FetchUserCommentsService } from 'src/engine/core-modules/outreach-command/services/fetch-user-comments.service';
 import { SearchCompaniesService } from 'src/engine/core-modules/outreach-command/services/search-companies.service';
+import { SearchCrunchbaseCompaniesService } from 'src/engine/core-modules/outreach-command/services/search-crunchbase-companies.service';
 import { SearchJobsService } from 'src/engine/core-modules/outreach-command/services/search-jobs.service';
 import { SearchPeopleForCompanyService } from 'src/engine/core-modules/outreach-command/services/search-people-for-company.service';
 import { SearchPeopleService } from 'src/engine/core-modules/outreach-command/services/search-people.service';
@@ -58,6 +60,7 @@ export class OutreachLogicFunctionNativeExecutor
     private readonly fetchCompanyDetailsService: FetchCompanyDetailsService,
     private readonly searchPeopleService: SearchPeopleService,
     private readonly searchCompaniesService: SearchCompaniesService,
+    private readonly searchCrunchbaseCompaniesService: SearchCrunchbaseCompaniesService,
     private readonly searchJobsService: SearchJobsService,
     private readonly searchPostsService: SearchPostsService,
     private readonly uploadProfilesService: UploadProfilesService,
@@ -137,6 +140,24 @@ export class OutreachLogicFunctionNativeExecutor
       return this.searchCompaniesService.execute({
         workspaceId,
         input: payload,
+      });
+    }
+
+    if (name === OUTREACH_SEARCH_CRUNCHBASE_COMPANIES_LOGIC_FUNCTION_NAME) {
+      return this.searchCrunchbaseCompaniesService.execute({
+        workspaceId,
+        input: payload as {
+          searchUrl?: string;
+          'search.url'?: string;
+          url?: string;
+          cookie?: unknown;
+          workspaceMemberId?: string;
+          cursor?: string;
+          minDelay?: number;
+          maxDelay?: number;
+          projectId?: string;
+          limit?: number;
+        },
       });
     }
 

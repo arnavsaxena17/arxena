@@ -302,9 +302,9 @@ export const CandidateOutreachJourneyTab = ({
               </StyledActions>
             </>
           ) : null}
-          {primaryRun?.upcomingSteps ? (
+          {/* {primaryRun?.upcomingSteps ? (
             <StyledMuted>Up next: {primaryRun.upcomingSteps}</StyledMuted>
-          ) : null}
+          ) : null} */}
         </StyledCard>
       </StyledSection>
 

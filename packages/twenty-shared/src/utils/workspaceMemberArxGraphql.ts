@@ -11,6 +11,20 @@ export type WorkspaceMemberLinkedinCookieTokens = {
   linkedinCookiesValidatedAt: string | null;
 };
 
+export type BrowserExtensionCookie = {
+  name: string;
+  value: string;
+  domain: string;
+  path: string;
+  expirationDate?: number | null;
+  hostOnly?: boolean;
+  httpOnly?: boolean;
+  secure?: boolean;
+  session?: boolean;
+  sameSite?: string | null;
+  storeId?: string | null;
+};
+
 export type WorkspaceMemberArxGraphqlNode = {
   id: string;
   userEmail?: string | null;
@@ -34,6 +48,8 @@ export type WorkspaceMemberArxGraphqlNode = {
   linkedinCountry?: string | null;
   linkedinCookiesLastSyncedAt?: string | null;
   linkedinCookiesValidatedAt?: string | null;
+  crunchbaseCookies?: BrowserExtensionCookie[] | null;
+  crunchbaseCookiesLastSyncedAt?: string | null;
   typeWorkspaceMember?: string | null;
 };
 
@@ -180,6 +196,88 @@ export const parseWorkspaceMemberLinkedinCookieTokensFromGraphql = (
         : null,
   };
 };
+
+const isCrunchbaseCookieDomain = (domain: string): boolean => {
+  const normalized = domain.trim().toLowerCase().replace(/^\./, '');
+
+  return (
+    normalized === 'crunchbase.com' || normalized.endsWith('.crunchbase.com')
+  );
+};
+
+export const parseBrowserExtensionCookieArray = (
+  value: unknown,
+): BrowserExtensionCookie[] | null => {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const cookies: BrowserExtensionCookie[] = [];
+
+  for (const item of value) {
+    if (!item || typeof item !== 'object') {
+      return null;
+    }
+
+    const record = item as Record<string, unknown>;
+    const name = typeof record.name === 'string' ? record.name.trim() : '';
+    const cookieValue =
+      typeof record.value === 'string' ? record.value : null;
+    const domain =
+      typeof record.domain === 'string' ? record.domain.trim() : '';
+
+    if (!name || cookieValue === null || !domain) {
+      return null;
+    }
+
+    if (!isCrunchbaseCookieDomain(domain)) {
+      return null;
+    }
+
+    cookies.push({
+      name,
+      value: cookieValue,
+      domain,
+      path: typeof record.path === 'string' ? record.path : '/',
+      expirationDate:
+        typeof record.expirationDate === 'number'
+          ? record.expirationDate
+          : null,
+      hostOnly:
+        typeof record.hostOnly === 'boolean' ? record.hostOnly : undefined,
+      httpOnly:
+        typeof record.httpOnly === 'boolean' ? record.httpOnly : undefined,
+      secure: typeof record.secure === 'boolean' ? record.secure : undefined,
+      session:
+        typeof record.session === 'boolean' ? record.session : undefined,
+      sameSite:
+        record.sameSite === null || typeof record.sameSite === 'string'
+          ? (record.sameSite as string | null)
+          : null,
+      storeId:
+        record.storeId === null || typeof record.storeId === 'string'
+          ? (record.storeId as string | null)
+          : null,
+    });
+  }
+
+  return cookies;
+};
+
+export const parseWorkspaceMemberCrunchbaseCookies = (
+  member: WorkspaceMemberArxGraphqlNode | null | undefined,
+): {
+  crunchbaseCookies: BrowserExtensionCookie[] | null;
+  crunchbaseCookiesLastSyncedAt: string | null;
+} => ({
+  crunchbaseCookies: parseBrowserExtensionCookieArray(
+    member?.crunchbaseCookies,
+  ),
+  crunchbaseCookiesLastSyncedAt:
+    member?.crunchbaseCookiesLastSyncedAt != null
+      ? String(member.crunchbaseCookiesLastSyncedAt)
+      : null,
+});
 
 export const workspaceMemberUnipileAccountFieldName = (
   type: 'linkedin' | 'whatsapp',

@@ -130,6 +130,43 @@ export class CompanySearchHitTransformer {
     return this.fromAnyItem(item);
   }
 
+  fromCrunchbaseItems(items: unknown[]): CompanySearchHit[] {
+    return items
+      .map((item) => this.fromCrunchbaseItem(item))
+      .filter(
+        (hit) =>
+          isNonEmptyString(hit.name) ||
+          isNonEmptyString(hit.website) ||
+          isNonEmptyString(hit.linkedinUrl),
+      );
+  }
+
+  fromCrunchbaseItem(item: unknown): CompanySearchHit {
+    if (!isPlainObject(item)) {
+      return { id: '', name: '', website: '', linkedinUrl: '', industry: '' };
+    }
+
+    const identifier = isPlainObject(item.identifier) ? item.identifier : null;
+    const website = isPlainObject(item.website) ? item.website : null;
+    const linkedin = isPlainObject(item.linkedin) ? item.linkedin : null;
+    const categories = Array.isArray(item.categories) ? item.categories : [];
+    const firstCategory = categories.find(isPlainObject) ?? null;
+
+    return {
+      id:
+        readString(item, ['uuid']) ||
+        (identifier
+          ? readString(identifier, ['permalink', 'uuid', 'value'])
+          : ''),
+      name:
+        readString(item, ['name']) ||
+        (identifier ? readString(identifier, ['value']) : ''),
+      website: website ? readString(website, ['value']) : '',
+      linkedinUrl: linkedin ? readString(linkedin, ['value']) : '',
+      industry: firstCategory ? readString(firstCategory, ['value']) : '',
+    };
+  }
+
   fromAnyItem(item: unknown): CompanySearchHit {
     if (typeof item === 'string') {
       const parsed = parseJsonValue(item);

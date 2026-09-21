@@ -1,5 +1,10 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'crypto';
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  randomBytes,
+} from 'crypto';
 
 import {
   extractLinkedinSlugFromUrl,
@@ -9,13 +14,17 @@ import {
   findWorkspaceMembersForArx,
   graphQLToUpdateOneWorkspaceMemberArx,
   graphQLToUpdateWorkspaceMemberLinkedinCookieTokens,
+  graphQLToUpdateWorkspaceMemberCrunchbaseCookies,
   mergeWorkspaceMemberLinkedinProfile,
+  parseBrowserExtensionCookieArray,
+  parseWorkspaceMemberCrunchbaseCookies,
   parseWorkspaceMemberLinkedinCookieTokensFromGraphql,
   parseWorkspaceMemberLinkedinProfile,
   parseWorkspaceMemberUnipileFields,
   WORKSPACE_MEMBER_ARX_FIELD_NAMES,
   workspaceMemberFilterById,
   workspaceMemberUnipileAccountFieldName,
+  type BrowserExtensionCookie,
   type WorkspaceMemberLinkedinCookieTokens,
   type WorkspaceMemberLinkedinProfileStorage,
   type WorkspaceMemberArxGraphqlNode,
@@ -38,9 +47,7 @@ export const WORKSPACE_MEMBER_MISSING_FOR_AUTH_TOKEN_MESSAGE =
 
 @Injectable()
 export class WorkspaceMemberUnipileService {
-  private readonly logger = new Logger(
-    WorkspaceMemberUnipileService.name,
-  );
+  private readonly logger = new Logger(WorkspaceMemberUnipileService.name);
   private readonly encryptedTokenPrefix = 'enc:v1:';
 
   constructor(
@@ -98,10 +105,7 @@ export class WorkspaceMemberUnipileService {
   }
 
   private decryptLinkedinCookieToken(value: string | null): string | null {
-    if (
-      value == null ||
-      !value.startsWith(this.encryptedTokenPrefix)
-    ) {
+    if (value == null || !value.startsWith(this.encryptedTokenPrefix)) {
       return value;
     }
 
@@ -144,7 +148,9 @@ export class WorkspaceMemberUnipileService {
     workspaceMemberId: string,
     authToken: string,
   ): Promise<WorkspaceMemberArxGraphqlNode | null> {
-    this.logger.log(`Finding profile node by workspace member id: ${workspaceMemberId}`);
+    this.logger.log(
+      `Finding profile node by workspace member id: ${workspaceMemberId}`,
+    );
     const response = await this.staticGraphQLService.executeGraphQL(
       findWorkspaceMembersForArx,
       workspaceMemberFilterById(workspaceMemberId),
@@ -157,7 +163,9 @@ export class WorkspaceMemberUnipileService {
     workspaceMemberId: string,
     authToken: string,
   ): Promise<WorkspaceMemberArxGraphqlNode | null> {
-    this.logger.log(`Finding profile cookie node by workspace member id: ${workspaceMemberId}`);
+    this.logger.log(
+      `Finding profile cookie node by workspace member id: ${workspaceMemberId}`,
+    );
     const response = await this.staticGraphQLService.executeGraphQL(
       findWorkspaceMemberLinkedinCookies,
       workspaceMemberFilterById(workspaceMemberId),
@@ -175,7 +183,9 @@ export class WorkspaceMemberUnipileService {
       workspaceMemberId,
       authToken,
     );
-    this.logger.log(`Existing profile id in REQUIRE PROFILE ID FOR MEMBER: ${JSON.stringify(existing, null, 2)}`);
+    this.logger.log(
+      `Existing profile id in REQUIRE PROFILE ID FOR MEMBER: ${JSON.stringify(existing, null, 2)}`,
+    );
     if (existing?.id) {
       return existing.id;
     }
@@ -207,36 +217,49 @@ export class WorkspaceMemberUnipileService {
       authToken,
     );
 
-    this.logger.log(`Profile id in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${profileId}`);
+    this.logger.log(
+      `Profile id in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${profileId}`,
+    );
 
     const input: Record<string, string> = {};
 
     if (tokens.linkedinLiAtToken !== undefined) {
       input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.linkedinLiAtToken] =
         this.toDbLinkedinCookieToken(tokens.linkedinLiAtToken);
-      this.logger.log(`Linkedin li at token in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.linkedinLiAtToken]}`);
+      this.logger.log(
+        `Linkedin li at token in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.linkedinLiAtToken]}`,
+      );
     }
 
     if (tokens.linkedinLiAToken !== undefined) {
       input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.linkedinLiAToken] =
         this.toDbLinkedinCookieToken(tokens.linkedinLiAToken);
-      this.logger.log(`Linkedin li a token in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.linkedinLiAToken]}`);
+      this.logger.log(
+        `Linkedin li a token in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.linkedinLiAToken]}`,
+      );
     }
 
     if (tokens.linkedinUserAgent !== undefined) {
       input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.linkedinUserAgent] =
         tokens.linkedinUserAgent ?? '';
-      this.logger.log(`Linkedin user agent in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.linkedinUserAgent]}`);
+      this.logger.log(
+        `Linkedin user agent in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.linkedinUserAgent]}`,
+      );
     }
 
     if (tokens.linkedinIp !== undefined) {
       input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.linkedinIp] =
         tokens.linkedinIp ?? '';
-      this.logger.log(`Linkedin ip in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.linkedinIp]}`);
+      this.logger.log(
+        `Linkedin ip in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.linkedinIp]}`,
+      );
     }
 
     let linkedinCountryToPersist = tokens.linkedinCountry;
-    if (tokens.linkedinIp !== undefined && tokens.linkedinCountry === undefined) {
+    if (
+      tokens.linkedinIp !== undefined &&
+      tokens.linkedinCountry === undefined
+    ) {
       linkedinCountryToPersist = tokens.linkedinIp
         ? ((await lookupCountryByIp(tokens.linkedinIp)) ?? null)
         : null;
@@ -248,30 +271,40 @@ export class WorkspaceMemberUnipileService {
         : null;
       input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.linkedinCountry] =
         normalizedCountry ?? '';
-      this.logger.log(`Linkedin country in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.linkedinCountry]}`);
+      this.logger.log(
+        `Linkedin country in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.linkedinCountry]}`,
+      );
     }
 
     if (options?.touchLastSyncedAt) {
       input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.linkedinCookiesLastSyncedAt] =
         new Date().toISOString();
-      this.logger.log(`Linkedin cookies last synced at in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.linkedinCookiesLastSyncedAt]}`);
+      this.logger.log(
+        `Linkedin cookies last synced at in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.linkedinCookiesLastSyncedAt]}`,
+      );
     }
 
     if (options?.touchLastValidatedAt) {
       input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.linkedinCookiesValidatedAt] =
         new Date().toISOString();
-      this.logger.log(`Linkedin cookies validated at in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.linkedinCookiesValidatedAt]}`);
+      this.logger.log(
+        `Linkedin cookies validated at in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.linkedinCookiesValidatedAt]}`,
+      );
     }
 
     if (Object.keys(input).length === 0) {
-      this.logger.log(`No input in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS`);
+      this.logger.log(
+        `No input in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS`,
+      );
       return;
     }
 
     this.logger.log(
       `[updateLinkedinCookieTokens] Updating workspaceMemberId=${workspaceMemberId} fields=${Object.keys(input).join(', ')}`,
     );
-    this.logger.log(`Updating workspace member id fields in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${Object.keys(input).join(', ')}`);
+    this.logger.log(
+      `Updating workspace member id fields in UPDATE WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${Object.keys(input).join(', ')}`,
+    );
     await this.staticGraphQLService.executeGraphQL(
       graphQLToUpdateWorkspaceMemberLinkedinCookieTokens,
       {
@@ -285,6 +318,95 @@ export class WorkspaceMemberUnipileService {
     );
   }
 
+  async updateWorkspaceMemberCrunchbaseCookies(
+    authToken: string,
+    workspaceMemberId: string,
+    cookies: BrowserExtensionCookie[],
+    options?: {
+      touchLastSyncedAt?: boolean;
+    },
+  ): Promise<{
+    crunchbaseCookies: BrowserExtensionCookie[];
+    crunchbaseCookiesLastSyncedAt: string | null;
+    cookiesChanged: boolean;
+  }> {
+    const profileId = await this.requireMemberExistsForAuth(
+      workspaceMemberId,
+      authToken,
+    );
+
+    const existing = await this.findMemberNodeById(
+      workspaceMemberId,
+      authToken,
+    );
+    const previousCookies = parseBrowserExtensionCookieArray(
+      existing?.crunchbaseCookies,
+    );
+    const cookiesChanged =
+      JSON.stringify(previousCookies ?? []) !== JSON.stringify(cookies);
+
+    const lastSyncedAt = options?.touchLastSyncedAt
+      ? new Date().toISOString()
+      : existing?.crunchbaseCookiesLastSyncedAt != null
+        ? String(existing.crunchbaseCookiesLastSyncedAt)
+        : null;
+
+    const input: Record<string, unknown> = {
+      [WORKSPACE_MEMBER_ARX_FIELD_NAMES.crunchbaseCookies]: cookies,
+    };
+
+    if (options?.touchLastSyncedAt) {
+      input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.crunchbaseCookiesLastSyncedAt] =
+        lastSyncedAt;
+    }
+
+    this.logger.log(
+      `[updateCrunchbaseCookies] Updating workspaceMemberId=${workspaceMemberId} cookieCount=${cookies.length} cookiesChanged=${cookiesChanged}`,
+    );
+
+    await this.staticGraphQLService.executeGraphQL(
+      graphQLToUpdateWorkspaceMemberCrunchbaseCookies,
+      {
+        idToUpdate: profileId,
+        input,
+      },
+      authToken,
+    );
+
+    return {
+      crunchbaseCookies: cookies,
+      crunchbaseCookiesLastSyncedAt: lastSyncedAt,
+      cookiesChanged,
+    };
+  }
+
+  async getWorkspaceMemberCrunchbaseCookies(
+    authToken: string,
+    workspaceMemberId: string,
+  ): Promise<{
+    crunchbaseCookies: BrowserExtensionCookie[] | null;
+    crunchbaseCookiesLastSyncedAt: string | null;
+  }> {
+    try {
+      const profile = await this.findMemberNodeById(
+        workspaceMemberId,
+        authToken,
+      );
+
+      return parseWorkspaceMemberCrunchbaseCookies(profile);
+    } catch (error) {
+      this.logger.warn(
+        `Failed to load Crunchbase cookies for workspace member ${workspaceMemberId}:`,
+        error,
+      );
+
+      return {
+        crunchbaseCookies: null,
+        crunchbaseCookiesLastSyncedAt: null,
+      };
+    }
+  }
+
   async getWorkspaceMemberLinkedinCookieTokens(
     authToken: string,
     workspaceMemberId: string,
@@ -295,11 +417,14 @@ export class WorkspaceMemberUnipileService {
         authToken,
       );
 
-      const tokens = parseWorkspaceMemberLinkedinCookieTokensFromGraphql(profile, {
-        decryptToken: (value) => this.fromDbLinkedinCookieToken(value),
-        normalizeCountry: (value) =>
-          normalizeLinkedinConnectionCountry(value) ?? null,
-      });
+      const tokens = parseWorkspaceMemberLinkedinCookieTokensFromGraphql(
+        profile,
+        {
+          decryptToken: (value) => this.fromDbLinkedinCookieToken(value),
+          normalizeCountry: (value) =>
+            normalizeLinkedinConnectionCountry(value) ?? null,
+        },
+      );
       return tokens;
     } catch (error) {
       this.logger.warn(
@@ -315,9 +440,15 @@ export class WorkspaceMemberUnipileService {
     authToken: string,
     workspaceMemberId: string,
   ): Promise<void> {
-    this.logger.log(`Clearing workspace member linkedin cookie tokens for workspace member id: ${workspaceMemberId}`);
-    this.logger.log(`Auth token in CLEAR WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${authToken}`);
-    this.logger.log(`Updating workspace member linkedin cookie tokens in CLEAR WORKSPACE MEMBER LINKEDIN COOKIE TOKENS`);
+    this.logger.log(
+      `Clearing workspace member linkedin cookie tokens for workspace member id: ${workspaceMemberId}`,
+    );
+    this.logger.log(
+      `Auth token in CLEAR WORKSPACE MEMBER LINKEDIN COOKIE TOKENS: ${authToken}`,
+    );
+    this.logger.log(
+      `Updating workspace member linkedin cookie tokens in CLEAR WORKSPACE MEMBER LINKEDIN COOKIE TOKENS`,
+    );
     await this.updateWorkspaceMemberLinkedinCookieTokens(
       authToken,
       workspaceMemberId,
@@ -342,29 +473,45 @@ export class WorkspaceMemberUnipileService {
     authToken: string,
   ): Promise<WorkspaceMemberLinkedinProfileStorage | null> {
     try {
-      this.logger.log(`Getting workspace member linkedin profile for workspace member id: ${workspaceMemberId}`);
-      this.logger.log(`Auth token in GET WORKSPACE MEMBER LINKEDIN PROFILE: ${authToken}`);
-      this.logger.log(`Executing graphql to find workspace member linkedin profile in GET WORKSPACE MEMBER LINKEDIN PROFILE`);
+      this.logger.log(
+        `Getting workspace member linkedin profile for workspace member id: ${workspaceMemberId}`,
+      );
+      this.logger.log(
+        `Auth token in GET WORKSPACE MEMBER LINKEDIN PROFILE: ${authToken}`,
+      );
+      this.logger.log(
+        `Executing graphql to find workspace member linkedin profile in GET WORKSPACE MEMBER LINKEDIN PROFILE`,
+      );
       const response = await this.staticGraphQLService.executeGraphQL(
         findWorkspaceMemberLinkedinProfile,
         workspaceMemberFilterById(workspaceMemberId),
         authToken,
       );
-      this.logger.log(`Response in GET WORKSPACE MEMBER LINKEDIN PROFILE: ${JSON.stringify(response, null, 2)}`);
+      this.logger.log(
+        `Response in GET WORKSPACE MEMBER LINKEDIN PROFILE: ${JSON.stringify(response, null, 2)}`,
+      );
       const profile = extractWorkspaceMemberNode(response);
-      this.logger.log(`Profile in GET WORKSPACE MEMBER LINKEDIN PROFILE: ${JSON.stringify(profile, null, 2)}`);
+      this.logger.log(
+        `Profile in GET WORKSPACE MEMBER LINKEDIN PROFILE: ${JSON.stringify(profile, null, 2)}`,
+      );
       if (!profile?.id) {
         return null;
       }
-      this.logger.log(`Profile id in GET WORKSPACE MEMBER LINKEDIN PROFILE: ${profile.id}`);
+      this.logger.log(
+        `Profile id in GET WORKSPACE MEMBER LINKEDIN PROFILE: ${profile.id}`,
+      );
       return parseWorkspaceMemberLinkedinProfile(profile.linkedinProfile);
     } catch (error) {
       this.logger.warn(
         `Failed to load LinkedIn profile for workspace member ${workspaceMemberId}:`,
         error,
       );
-      this.logger.log(`Failed to load LinkedIn profile for workspace member ${workspaceMemberId} in GET WORKSPACE MEMBER LINKEDIN PROFILE`);
-      this.logger.log(`Error in GET WORKSPACE MEMBER LINKEDIN PROFILE: ${JSON.stringify(error, null, 2)}`);
+      this.logger.log(
+        `Failed to load LinkedIn profile for workspace member ${workspaceMemberId} in GET WORKSPACE MEMBER LINKEDIN PROFILE`,
+      );
+      this.logger.log(
+        `Error in GET WORKSPACE MEMBER LINKEDIN PROFILE: ${JSON.stringify(error, null, 2)}`,
+      );
       return null;
     }
   }
@@ -374,28 +521,42 @@ export class WorkspaceMemberUnipileService {
     authToken: string,
     patch: WorkspaceMemberLinkedinProfileStorage,
   ): Promise<void> {
-    this.logger.log(`Saving workspace member linkedin profile for workspace member id: ${workspaceMemberId}`);
-    this.logger.log(`Auth token in SAVE WORKSPACE MEMBER LINKEDIN PROFILE: ${authToken}`);
-    this.logger.log(`Patch in SAVE WORKSPACE MEMBER LINKEDIN PROFILE: ${JSON.stringify(patch, null, 2)}`);
-    this.logger.log(`Executing graphql to save workspace member linkedin profile in SAVE WORKSPACE MEMBER LINKEDIN PROFILE`);
+    this.logger.log(
+      `Saving workspace member linkedin profile for workspace member id: ${workspaceMemberId}`,
+    );
+    this.logger.log(
+      `Auth token in SAVE WORKSPACE MEMBER LINKEDIN PROFILE: ${authToken}`,
+    );
+    this.logger.log(
+      `Patch in SAVE WORKSPACE MEMBER LINKEDIN PROFILE: ${JSON.stringify(patch, null, 2)}`,
+    );
+    this.logger.log(
+      `Executing graphql to save workspace member linkedin profile in SAVE WORKSPACE MEMBER LINKEDIN PROFILE`,
+    );
     try {
       const profile = await this.findMemberNodeById(
         workspaceMemberId,
         authToken,
       );
-      this.logger.log(`Profile in SAVE WORKSPACE MEMBER LINKEDIN PROFILE: ${JSON.stringify(profile, null, 2)}`);
+      this.logger.log(
+        `Profile in SAVE WORKSPACE MEMBER LINKEDIN PROFILE: ${JSON.stringify(profile, null, 2)}`,
+      );
       if (!profile?.id) {
         this.logger.warn(
           `No workspace member for ${workspaceMemberId}, cannot save linkedinProfile`,
         );
         return;
       }
-      this.logger.log(`Profile id in SAVE WORKSPACE MEMBER LINKEDIN PROFILE: ${profile.id}`);
+      this.logger.log(
+        `Profile id in SAVE WORKSPACE MEMBER LINKEDIN PROFILE: ${profile.id}`,
+      );
       const existing = parseWorkspaceMemberLinkedinProfile(
         profile.linkedinProfile,
       );
       const merged = mergeWorkspaceMemberLinkedinProfile(existing, patch);
-      this.logger.log(`Merged in SAVE WORKSPACE MEMBER LINKEDIN PROFILE: ${JSON.stringify(merged, null, 2)}`);
+      this.logger.log(
+        `Merged in SAVE WORKSPACE MEMBER LINKEDIN PROFILE: ${JSON.stringify(merged, null, 2)}`,
+      );
       await this.staticGraphQLService.executeGraphQL(
         graphQLToUpdateOneWorkspaceMemberArx,
         {
@@ -406,7 +567,9 @@ export class WorkspaceMemberUnipileService {
         },
         authToken,
       );
-      this.logger.log(`Saved linkedinProfile for workspace member ${workspaceMemberId} in SAVE WORKSPACE MEMBER LINKEDIN PROFILE`);
+      this.logger.log(
+        `Saved linkedinProfile for workspace member ${workspaceMemberId} in SAVE WORKSPACE MEMBER LINKEDIN PROFILE`,
+      );
       this.logger.log(
         `Saved linkedinProfile for workspace member ${workspaceMemberId}`,
       );
@@ -415,8 +578,12 @@ export class WorkspaceMemberUnipileService {
         `Failed to save linkedinProfile for workspace member ${workspaceMemberId}:`,
         error,
       );
-      this.logger.log(`Failed to save linkedinProfile for workspace member ${workspaceMemberId} in SAVE WORKSPACE MEMBER LINKEDIN PROFILE`);
-      this.logger.log(`Error in SAVE WORKSPACE MEMBER LINKEDIN PROFILE: ${JSON.stringify(error, null, 2)}`);
+      this.logger.log(
+        `Failed to save linkedinProfile for workspace member ${workspaceMemberId} in SAVE WORKSPACE MEMBER LINKEDIN PROFILE`,
+      );
+      this.logger.log(
+        `Error in SAVE WORKSPACE MEMBER LINKEDIN PROFILE: ${JSON.stringify(error, null, 2)}`,
+      );
     }
   }
 
@@ -429,15 +596,21 @@ export class WorkspaceMemberUnipileService {
         workspaceMemberId,
         authToken,
       );
-      this.logger.log(`Parsing workspace member unipile fields in GET WORKSPACE MEMBER PROFILE UNIPILE FIELDS`);
+      this.logger.log(
+        `Parsing workspace member unipile fields in GET WORKSPACE MEMBER PROFILE UNIPILE FIELDS`,
+      );
       return parseWorkspaceMemberUnipileFields(profile);
     } catch (error) {
       this.logger.warn(
         `Failed to load Unipile profile fields for workspace member ${workspaceMemberId}:`,
         error,
       );
-      this.logger.log(`Failed to load Unipile profile fields for workspace member ${workspaceMemberId} in GET WORKSPACE MEMBER PROFILE UNIPILE FIELDS`);
-      this.logger.log(`Error in GET WORKSPACE MEMBER PROFILE UNIPILE FIELDS: ${JSON.stringify(error, null, 2)}`);
+      this.logger.log(
+        `Failed to load Unipile profile fields for workspace member ${workspaceMemberId} in GET WORKSPACE MEMBER PROFILE UNIPILE FIELDS`,
+      );
+      this.logger.log(
+        `Error in GET WORKSPACE MEMBER PROFILE UNIPILE FIELDS: ${JSON.stringify(error, null, 2)}`,
+      );
       return null;
     }
   }
@@ -449,32 +622,46 @@ export class WorkspaceMemberUnipileService {
     type: UnipileAccountType,
   ): Promise<string | null> {
     const fieldName = workspaceMemberUnipileAccountFieldName(type);
-    this.logger.log(`Field name in GET WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${fieldName}`);
+    this.logger.log(
+      `Field name in GET WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${fieldName}`,
+    );
     try {
       if (!workspaceMemberId) {
         return null;
       }
-      this.logger.log(`Workspace member id in GET WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${workspaceMemberId}`);
+      this.logger.log(
+        `Workspace member id in GET WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${workspaceMemberId}`,
+      );
       const profile = await this.findMemberNodeById(
         workspaceMemberId,
         authToken,
       );
-      this.logger.log(`Profile in GET WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${JSON.stringify(profile, null, 2)}`);
+      this.logger.log(
+        `Profile in GET WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${JSON.stringify(profile, null, 2)}`,
+      );
       const profileAccountId = profile?.[fieldName];
-      this.logger.log(`Profile account id in GET WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${profileAccountId}`);
+      this.logger.log(
+        `Profile account id in GET WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${profileAccountId}`,
+      );
 
       if (profileAccountId && String(profileAccountId).trim()) {
         return String(profileAccountId).trim();
       }
-      this.logger.log(`Profile account id not found in GET WORKSPACE MEMBER UNIPILE ACCOUNT ID`);
+      this.logger.log(
+        `Profile account id not found in GET WORKSPACE MEMBER UNIPILE ACCOUNT ID`,
+      );
       return null;
     } catch (error) {
       this.logger.warn(
         `Failed to get ${fieldName} for workspace member ${workspaceMemberId}:`,
         error,
       );
-      this.logger.log(`Failed to get ${fieldName} for workspace member ${workspaceMemberId} in GET WORKSPACE MEMBER UNIPILE ACCOUNT ID`);
-      this.logger.log(`Error in GET WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${JSON.stringify(error, null, 2)}`);
+      this.logger.log(
+        `Failed to get ${fieldName} for workspace member ${workspaceMemberId} in GET WORKSPACE MEMBER UNIPILE ACCOUNT ID`,
+      );
+      this.logger.log(
+        `Error in GET WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${JSON.stringify(error, null, 2)}`,
+      );
       return null;
     }
   }
@@ -486,22 +673,30 @@ export class WorkspaceMemberUnipileService {
     workspaceMemberId: string,
     authToken: string,
   ): Promise<boolean> {
-    this.logger.log(`Getting keep linkedin connected for workspace member ${workspaceMemberId}`);
+    this.logger.log(
+      `Getting keep linkedin connected for workspace member ${workspaceMemberId}`,
+    );
     this.logger.log(`Auth token in GET KEEP LINKEDIN CONNECTED: ${authToken}`);
     try {
       const profile = await this.findMemberNodeById(
         workspaceMemberId,
         authToken,
       );
-      this.logger.log(`Profile in GET KEEP LINKEDIN CONNECTED: ${JSON.stringify(profile, null, 2)}`);
+      this.logger.log(
+        `Profile in GET KEEP LINKEDIN CONNECTED: ${JSON.stringify(profile, null, 2)}`,
+      );
       return Boolean(profile?.keepLinkedinConnected);
     } catch (error) {
       this.logger.warn(
         `Failed to get keep linkedin connected for workspace member ${workspaceMemberId}:`,
         error,
       );
-      this.logger.log(`Failed to get keep linkedin connected for workspace member ${workspaceMemberId} in GET KEEP LINKEDIN CONNECTED`);
-      this.logger.log(`Error in GET KEEP LINKEDIN CONNECTED: ${JSON.stringify(error, null, 2)}`);
+      this.logger.log(
+        `Failed to get keep linkedin connected for workspace member ${workspaceMemberId} in GET KEEP LINKEDIN CONNECTED`,
+      );
+      this.logger.log(
+        `Error in GET KEEP LINKEDIN CONNECTED: ${JSON.stringify(error, null, 2)}`,
+      );
       return false;
     }
   }
@@ -516,39 +711,59 @@ export class WorkspaceMemberUnipileService {
     type: UnipileAccountType,
     accountId: string,
   ): Promise<void> {
-    this.logger.log(`Updating workspace member unipile account id for workspace member ${workspaceMemberId}`);
-    this.logger.log(`Auth token in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${authToken}`);
-    this.logger.log(`Type in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${type}`);
-    this.logger.log(`Account id in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${accountId}`);
+    this.logger.log(
+      `Updating workspace member unipile account id for workspace member ${workspaceMemberId}`,
+    );
+    this.logger.log(
+      `Auth token in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${authToken}`,
+    );
+    this.logger.log(
+      `Type in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${type}`,
+    );
+    this.logger.log(
+      `Account id in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${accountId}`,
+    );
     const fieldName = workspaceMemberUnipileAccountFieldName(type);
-    this.logger.log(`Field name in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${fieldName}`);
+    this.logger.log(
+      `Field name in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${fieldName}`,
+    );
     if (!accountId?.trim()) {
       this.logger.warn(
         `Refusing to write empty ${fieldName} for workspace member ${workspaceMemberId} — accountId was "${accountId}"`,
       );
-      this.logger.log(`Refusing to write empty ${fieldName} for workspace member ${workspaceMemberId} — accountId was "${accountId}" in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID`);
+      this.logger.log(
+        `Refusing to write empty ${fieldName} for workspace member ${workspaceMemberId} — accountId was "${accountId}" in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID`,
+      );
       return;
     }
 
     const trimmedAccountId = accountId.trim();
-    this.logger.log(`Trimmed account id in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${trimmedAccountId}`);
+    this.logger.log(
+      `Trimmed account id in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${trimmedAccountId}`,
+    );
     try {
       const profile = await this.findMemberNodeById(
         workspaceMemberId,
         authToken,
       );
-      this.logger.log(`Profile in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${JSON.stringify(profile, null, 2)}`);
+      this.logger.log(
+        `Profile in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${JSON.stringify(profile, null, 2)}`,
+      );
       if (!profile?.id) {
         this.logger.warn(
           `No workspace member found for ${workspaceMemberId}, cannot update ${fieldName}`,
         );
 
-        this.logger.log(`No workspace member found for ${workspaceMemberId}, cannot update ${fieldName} in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID`);
+        this.logger.log(
+          `No workspace member found for ${workspaceMemberId}, cannot update ${fieldName} in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID`,
+        );
         return;
       }
 
       const existingValue = profile[fieldName];
-      this.logger.log(`Existing value in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${JSON.stringify(existingValue, null, 2)}`);
+      this.logger.log(
+        `Existing value in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${JSON.stringify(existingValue, null, 2)}`,
+      );
       const profileAlreadyHasAccountId =
         Boolean(existingValue?.trim()) &&
         existingValue.trim() === trimmedAccountId;
@@ -576,21 +791,29 @@ export class WorkspaceMemberUnipileService {
       try {
         const workspaceId =
           await this.workspaceQueryService.getWorkspaceIdFromToken(authToken);
-        this.logger.log(`Workspace id in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${workspaceId}`);
+        this.logger.log(
+          `Workspace id in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${workspaceId}`,
+        );
         await this.workspaceQueryService.upsertUnipileMemberAccountMapping(
           workspaceMemberId,
           workspaceId,
           trimmedAccountId,
           type === 'linkedin' ? 'LINKEDIN' : 'WHATSAPP',
         );
-        this.logger.log(`Unipile member account mapping upserted in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID`);
+        this.logger.log(
+          `Unipile member account mapping upserted in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID`,
+        );
       } catch (mappingError) {
         this.logger.warn(
           `Failed to sync metadata.unipile_accounts for ${workspaceMemberId}:`,
           mappingError,
         );
-        this.logger.log(`Failed to sync metadata.unipile_accounts for ${workspaceMemberId} in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID`);
-        this.logger.log(`Error in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${JSON.stringify(mappingError, null, 2)}`);
+        this.logger.log(
+          `Failed to sync metadata.unipile_accounts for ${workspaceMemberId} in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID`,
+        );
+        this.logger.log(
+          `Error in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${JSON.stringify(mappingError, null, 2)}`,
+        );
       }
 
       this.logger.log(
@@ -601,8 +824,12 @@ export class WorkspaceMemberUnipileService {
         `Failed to update ${fieldName} for workspace member ${workspaceMemberId}:`,
         error,
       );
-      this.logger.log(`Failed to update ${fieldName} for workspace member ${workspaceMemberId} in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID`);
-      this.logger.log(`Error in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${JSON.stringify(error, null, 2)}`);
+      this.logger.log(
+        `Failed to update ${fieldName} for workspace member ${workspaceMemberId} in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID`,
+      );
+      this.logger.log(
+        `Error in UPDATE WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${JSON.stringify(error, null, 2)}`,
+      );
       throw error;
     }
   }
@@ -618,18 +845,30 @@ export class WorkspaceMemberUnipileService {
     accountId: string,
     accountPayload: unknown,
   ): Promise<void> {
-    this.logger.log(`Applying unipile account to workspace member for workspace member ${workspaceMemberId}`);
-    this.logger.log(`Auth token in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${authToken}`);
-    this.logger.log(`Type in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${type}`);
-    this.logger.log(`Account id in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${accountId}`);
-    this.logger.log(`Account payload in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${JSON.stringify(accountPayload, null, 2)}`);
+    this.logger.log(
+      `Applying unipile account to workspace member for workspace member ${workspaceMemberId}`,
+    );
+    this.logger.log(
+      `Auth token in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${authToken}`,
+    );
+    this.logger.log(
+      `Type in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${type}`,
+    );
+    this.logger.log(
+      `Account id in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${accountId}`,
+    );
+    this.logger.log(
+      `Account payload in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE: ${JSON.stringify(accountPayload, null, 2)}`,
+    );
     await this.updateWorkspaceMemberUnipileAccountId(
       workspaceMemberId,
       authToken,
       type,
       accountId,
     );
-    this.logger.log(`Syncing contact fields from unipile account payload in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE`);
+    this.logger.log(
+      `Syncing contact fields from unipile account payload in APPLY UNIPILE ACCOUNT TO WORKSPACE MEMBER PROFILE`,
+    );
     await this.syncContactFieldsFromUnipileAccountPayload(
       workspaceMemberId,
       authToken,
@@ -706,10 +945,18 @@ export class WorkspaceMemberUnipileService {
     type: UnipileAccountType,
     accountPayload: unknown,
   ): Promise<void> {
-    this.logger.log(`Syncing contact fields from unipile account payload for workspace member ${workspaceMemberId}`);
-    this.logger.log(`Auth token in SYNC CONTACT FIELDS FROM UNIPILE ACCOUNT PAYLOAD: ${authToken}`);
-    this.logger.log(`Type in SYNC CONTACT FIELDS FROM UNIPILE ACCOUNT PAYLOAD: ${type}`);
-    this.logger.log(`Account payload in SYNC CONTACT FIELDS FROM UNIPILE ACCOUNT PAYLOAD: ${JSON.stringify(accountPayload, null, 2)}`);
+    this.logger.log(
+      `Syncing contact fields from unipile account payload for workspace member ${workspaceMemberId}`,
+    );
+    this.logger.log(
+      `Auth token in SYNC CONTACT FIELDS FROM UNIPILE ACCOUNT PAYLOAD: ${authToken}`,
+    );
+    this.logger.log(
+      `Type in SYNC CONTACT FIELDS FROM UNIPILE ACCOUNT PAYLOAD: ${type}`,
+    );
+    this.logger.log(
+      `Account payload in SYNC CONTACT FIELDS FROM UNIPILE ACCOUNT PAYLOAD: ${JSON.stringify(accountPayload, null, 2)}`,
+    );
     const linkedinUrl =
       type === 'linkedin'
         ? extractLinkedinProfileUrlFromUnipileAccount(accountPayload)
@@ -728,17 +975,23 @@ export class WorkspaceMemberUnipileService {
         workspaceMemberId,
         authToken,
       );
-      this.logger.log(`Profile in SYNC CONTACT FIELDS FROM UNIPILE ACCOUNT PAYLOAD: ${JSON.stringify(profile, null, 2)}`);
+      this.logger.log(
+        `Profile in SYNC CONTACT FIELDS FROM UNIPILE ACCOUNT PAYLOAD: ${JSON.stringify(profile, null, 2)}`,
+      );
       if (!profile?.id) {
         this.logger.warn(
           `No workspace member found for ${workspaceMemberId}, cannot sync contact fields`,
         );
-        this.logger.log(`No workspace member found for ${workspaceMemberId}, cannot sync contact fields in SYNC CONTACT FIELDS FROM UNIPILE ACCOUNT PAYLOAD`);
+        this.logger.log(
+          `No workspace member found for ${workspaceMemberId}, cannot sync contact fields in SYNC CONTACT FIELDS FROM UNIPILE ACCOUNT PAYLOAD`,
+        );
         return;
       }
 
       const input: Record<string, string> = {};
-      this.logger.log(`Input in SYNC CONTACT FIELDS FROM UNIPILE ACCOUNT PAYLOAD: ${JSON.stringify(input, null, 2)}`);
+      this.logger.log(
+        `Input in SYNC CONTACT FIELDS FROM UNIPILE ACCOUNT PAYLOAD: ${JSON.stringify(input, null, 2)}`,
+      );
       if (linkedinUrl) {
         input[WORKSPACE_MEMBER_ARX_FIELD_NAMES.linkedinUrl] = linkedinUrl;
       }
@@ -754,7 +1007,9 @@ export class WorkspaceMemberUnipileService {
         },
         authToken,
       );
-      this.logger.log(`Synced workspace member contact fields for ${workspaceMemberId} in SYNC CONTACT FIELDS FROM UNIPILE ACCOUNT PAYLOAD`);
+      this.logger.log(
+        `Synced workspace member contact fields for ${workspaceMemberId} in SYNC CONTACT FIELDS FROM UNIPILE ACCOUNT PAYLOAD`,
+      );
       this.logger.log(
         `Synced workspace member contact fields for ${workspaceMemberId}`,
       );
@@ -763,8 +1018,12 @@ export class WorkspaceMemberUnipileService {
         `Failed to sync contact fields for workspace member ${workspaceMemberId}:`,
         error,
       );
-      this.logger.log(`Failed to sync contact fields for workspace member ${workspaceMemberId} in SYNC CONTACT FIELDS FROM UNIPILE ACCOUNT PAYLOAD`);
-      this.logger.log(`Error in SYNC CONTACT FIELDS FROM UNIPILE ACCOUNT PAYLOAD: ${JSON.stringify(error, null, 2)}`);
+      this.logger.log(
+        `Failed to sync contact fields for workspace member ${workspaceMemberId} in SYNC CONTACT FIELDS FROM UNIPILE ACCOUNT PAYLOAD`,
+      );
+      this.logger.log(
+        `Error in SYNC CONTACT FIELDS FROM UNIPILE ACCOUNT PAYLOAD: ${JSON.stringify(error, null, 2)}`,
+      );
     }
   }
 
@@ -842,22 +1101,30 @@ export class WorkspaceMemberUnipileService {
     type: UnipileAccountType,
   ): Promise<void> {
     const fieldName = workspaceMemberUnipileAccountFieldName(type);
-    this.logger.log(`Field name in CLEAR WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${fieldName}`);
+    this.logger.log(
+      `Field name in CLEAR WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${fieldName}`,
+    );
     try {
       const profile = await this.findMemberNodeById(
         workspaceMemberId,
         authToken,
       );
-      this.logger.log(`Profile in CLEAR WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${JSON.stringify(profile, null, 2)}`);
+      this.logger.log(
+        `Profile in CLEAR WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${JSON.stringify(profile, null, 2)}`,
+      );
       if (!profile?.id) {
         return;
       }
-      this.logger.log(`Previous account id in CLEAR WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${JSON.stringify(profile[fieldName], null, 2)}`);
+      this.logger.log(
+        `Previous account id in CLEAR WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${JSON.stringify(profile[fieldName], null, 2)}`,
+      );
       const previousAccountId = profile[fieldName];
       if (!previousAccountId?.trim()) {
         return;
       }
-      this.logger.log(`Previous account id in CLEAR WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${previousAccountId.trim()}`);
+      this.logger.log(
+        `Previous account id in CLEAR WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${previousAccountId.trim()}`,
+      );
       this.logger.log(
         `Clearing ${fieldName} from workspace member workspaceMemberId=${workspaceMemberId} previousAccountId=${previousAccountId.trim()}`,
       );
@@ -869,7 +1136,9 @@ export class WorkspaceMemberUnipileService {
         },
         authToken,
       );
-      this.logger.log(`Update response in CLEAR WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${JSON.stringify(updateResponse, null, 2)}`);
+      this.logger.log(
+        `Update response in CLEAR WORKSPACE MEMBER UNIPILE ACCOUNT ID: ${JSON.stringify(updateResponse, null, 2)}`,
+      );
       const graphqlErrors = updateResponse?.data?.errors as
         | Array<{ message?: string }>
         | undefined;
@@ -885,7 +1154,9 @@ export class WorkspaceMemberUnipileService {
         workspaceMemberId,
         type === 'linkedin' ? 'LINKEDIN' : 'WHATSAPP',
       );
-      this.logger.log(`Unipile member account mapping deleted in CLEAR WORKSPACE MEMBER UNIPILE ACCOUNT ID`);
+      this.logger.log(
+        `Unipile member account mapping deleted in CLEAR WORKSPACE MEMBER UNIPILE ACCOUNT ID`,
+      );
       this.logger.log(
         `Cleared ${fieldName} and Unipile member account mapping for workspaceMemberId=${workspaceMemberId}${previousAccountId ? ` accountId=${previousAccountId}` : ''}`,
       );
