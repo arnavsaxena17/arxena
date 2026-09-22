@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { isDefined, resolveInput } from 'twenty-shared/utils';
+import { type WorkflowRunStepLog } from 'twenty-shared/workflow';
 
 import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/interfaces/workflow-action.interface';
 
@@ -17,8 +18,8 @@ import { MessageQueueService } from 'src/engine/core-modules/message-queue/servi
 import { LogicFunctionExecutorService } from 'src/engine/core-modules/logic-function/logic-function-executor/logic-function-executor.service';
 import { NativeLogicFunctionRegistry } from 'src/engine/core-modules/logic-function/logic-function-executor/native-logic-function.registry';
 import { maybeWithLlmFormattedText } from 'src/engine/core-modules/outreach-command/utils/with-llm-formatted-text.util';
-import { findFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps.util';
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
+import { findFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps.util';
 import {
   WorkflowStepExecutorException,
   WorkflowStepExecutorExceptionCode,
@@ -29,13 +30,21 @@ import { deferWorkflowForAccountRateLimit } from 'src/modules/workflow/workflow-
 import { findStepOrThrow } from 'src/modules/workflow/workflow-executor/utils/find-step-or-throw.util';
 import { isWorkflowLogicFunctionAction } from 'src/modules/workflow/workflow-executor/workflow-actions/logic-function/guards/is-workflow-logic-function-action.guard';
 import { WorkflowLogicFunctionActionInput } from 'src/modules/workflow/workflow-executor/workflow-actions/logic-function/types/workflow-logic-function-action-input.type';
+import {
+  buildLogicFunctionStepLogFromExecutorResult,
+  buildLogicFunctionStepLogFromNativeResult,
+} from 'src/modules/workflow/workflow-executor/workflow-actions/logic-function/utils/build-logic-function-step-log.util';
+import { WorkflowRunStepLogWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run-step-log.workspace-service';
 
 @Injectable()
 export class LogicFunctionWorkflowAction implements WorkflowAction {
+  private readonly logger = new Logger(LogicFunctionWorkflowAction.name);
+
   constructor(
     private readonly logicFunctionExecutorService: LogicFunctionExecutorService,
     private readonly flatEntityMapsCacheService: WorkspaceManyOrAllFlatEntityMapsCacheService,
     private readonly nativeLogicFunctionRegistry: NativeLogicFunctionRegistry,
+    private readonly workflowRunStepLogService: WorkflowRunStepLogWorkspaceService,
     @InjectMessageQueue(MessageQueue.delayedJobsQueue)
     private readonly delayedQueue: MessageQueueService,
   ) {}
@@ -100,6 +109,8 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
       `${runInfo.workflowRunId}:${currentStepId}`,
       async () => {
         if (nativeHandler) {
+          const startedAtMs = Date.now();
+
           try {
             const nativeResult = await nativeHandler.execute({
               name: logicFunction.name,
@@ -108,6 +119,8 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
               workflowRunId: runInfo.workflowRunId,
               stepId: currentStepId,
             });
+
+            const durationMs = Date.now() - startedAtMs;
 
             const isNativeFailure =
               nativeResult &&
@@ -131,6 +144,18 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
                   parseWaitMsFromAccountRateLimitMessage(nativeErrorMessage);
 
                 if (isDefined(waitMs) && waitMs > 0) {
+                  await this.persistStepLog({
+                    workflowRunId: runInfo.workflowRunId,
+                    workspaceId,
+                    stepId: currentStepId,
+                    stepLog: buildLogicFunctionStepLogFromNativeResult({
+                      logicFunctionName: logicFunction.name,
+                      durationMs,
+                      errorMessage: nativeErrorMessage,
+                      pending: true,
+                    }),
+                  });
+
                   return this.deferForLinkedinRateLimit({
                     waitMs,
                     currentStepId,
@@ -144,6 +169,17 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
                 }
               }
 
+              await this.persistStepLog({
+                workflowRunId: runInfo.workflowRunId,
+                workspaceId,
+                stepId: currentStepId,
+                stepLog: buildLogicFunctionStepLogFromNativeResult({
+                  logicFunctionName: logicFunction.name,
+                  durationMs,
+                  errorMessage: nativeErrorMessage,
+                }),
+              });
+
               return { error: nativeErrorMessage };
             }
 
@@ -152,6 +188,17 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
               typeof nativeResult === 'object' &&
               'pending' in nativeResult &&
               (nativeResult as { pending?: unknown }).pending === true;
+
+            await this.persistStepLog({
+              workflowRunId: runInfo.workflowRunId,
+              workspaceId,
+              stepId: currentStepId,
+              stepLog: buildLogicFunctionStepLogFromNativeResult({
+                logicFunctionName: logicFunction.name,
+                durationMs,
+                pending: isPending === true,
+              }),
+            });
 
             if (isPending) {
               return {
@@ -170,7 +217,21 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
               ),
             };
           } catch (error) {
+            const durationMs = Date.now() - startedAtMs;
+
             if (isAccountRateLimitDeferredError(error) && error.waitMs > 0) {
+              await this.persistStepLog({
+                workflowRunId: runInfo.workflowRunId,
+                workspaceId,
+                stepId: currentStepId,
+                stepLog: buildLogicFunctionStepLogFromNativeResult({
+                  logicFunctionName: logicFunction.name,
+                  durationMs,
+                  errorMessage: error.message,
+                  pending: true,
+                }),
+              });
+
               return this.deferForLinkedinRateLimit({
                 waitMs: error.waitMs,
                 currentStepId,
@@ -179,6 +240,20 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
                 method: error.method,
               });
             }
+
+            await this.persistStepLog({
+              workflowRunId: runInfo.workflowRunId,
+              workspaceId,
+              stepId: currentStepId,
+              stepLog: buildLogicFunctionStepLogFromNativeResult({
+                logicFunctionName: logicFunction.name,
+                durationMs,
+                errorMessage:
+                  error instanceof Error
+                    ? error.message
+                    : `Native logic function ${logicFunction.name} failed`,
+              }),
+            });
 
             throw error;
           }
@@ -189,6 +264,16 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
             logicFunctionId: workflowActionInput.logicFunctionId,
             workspaceId,
             payload: workflowActionInput.logicFunctionInput,
+          });
+
+          await this.persistStepLog({
+            workflowRunId: runInfo.workflowRunId,
+            workspaceId,
+            stepId: currentStepId,
+            stepLog: buildLogicFunctionStepLogFromExecutorResult({
+              logicFunctionName: logicFunction.name,
+              result,
+            }),
           });
 
           if (result.error) {
@@ -215,6 +300,18 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
           return { result: result.data || {} };
         } catch (error) {
           if (isAccountRateLimitDeferredError(error) && error.waitMs > 0) {
+            await this.persistStepLog({
+              workflowRunId: runInfo.workflowRunId,
+              workspaceId,
+              stepId: currentStepId,
+              stepLog: buildLogicFunctionStepLogFromNativeResult({
+                logicFunctionName: logicFunction.name,
+                durationMs: 0,
+                errorMessage: error.message,
+                pending: true,
+              }),
+            });
+
             return this.deferForLinkedinRateLimit({
               waitMs: error.waitMs,
               currentStepId,
@@ -251,5 +348,32 @@ export class LogicFunctionWorkflowAction implements WorkflowAction {
       workflowRunId,
       method,
     });
+  }
+
+  private async persistStepLog({
+    workflowRunId,
+    workspaceId,
+    stepId,
+    stepLog,
+  }: {
+    workflowRunId: string;
+    workspaceId: string;
+    stepId: string;
+    stepLog: WorkflowRunStepLog;
+  }): Promise<void> {
+    try {
+      await this.workflowRunStepLogService.setStepLog({
+        workflowRunId,
+        workspaceId,
+        stepId,
+        stepLog,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Failed to persist step log for workflowRun=${workflowRunId} step=${stepId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 }

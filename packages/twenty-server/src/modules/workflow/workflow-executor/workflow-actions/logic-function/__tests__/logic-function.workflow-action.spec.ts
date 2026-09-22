@@ -11,6 +11,7 @@ import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadat
 import { RESUME_DELAYED_WORKFLOW_JOB_NAME } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/contants/resume-delayed-workflow-job-name';
 import { LogicFunctionWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/logic-function/logic-function.workflow-action';
 import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
+import { WorkflowRunStepLogWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run-step-log.workspace-service';
 
 const buildLogicFunctionStep = (): WorkflowAction =>
   ({
@@ -35,10 +36,12 @@ describe('LogicFunctionWorkflowAction', () => {
   let action: LogicFunctionWorkflowAction;
   let delayedQueueAdd: jest.Mock;
   let nativeExecute: jest.Mock;
+  let setStepLog: jest.Mock;
 
   beforeEach(async () => {
     delayedQueueAdd = jest.fn().mockResolvedValue(undefined);
     nativeExecute = jest.fn();
+    setStepLog = jest.fn().mockResolvedValue(undefined);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -72,6 +75,10 @@ describe('LogicFunctionWorkflowAction', () => {
               execute: nativeExecute,
             }),
           },
+        },
+        {
+          provide: WorkflowRunStepLogWorkspaceService,
+          useValue: { setStepLog },
         },
         {
           provide: getQueueToken(MessageQueue.delayedJobsQueue),
@@ -139,5 +146,60 @@ describe('LogicFunctionWorkflowAction', () => {
 
     expect(output).toEqual({ error: 'location is not defined' });
     expect(output.result).toBeUndefined();
+    expect(setStepLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workflowRunId: 'run-1',
+        workspaceId: 'workspace-1',
+        stepId: 'step-1',
+        stepLog: expect.objectContaining({
+          details: expect.objectContaining({
+            type: 'CODE',
+            status: 'ERROR',
+            error: expect.objectContaining({
+              message: 'location is not defined',
+            }),
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('persists a success step log when a native handler succeeds', async () => {
+    nativeExecute.mockResolvedValue({
+      success: true,
+      total: 2,
+      people: [{ id: 'p1' }, { id: 'p2' }],
+    });
+
+    const output = await action.execute({
+      currentStepId: 'step-1',
+      steps: [buildLogicFunctionStep()],
+      context: {},
+      runInfo: { workspaceId: 'workspace-1', workflowRunId: 'run-1' },
+    });
+
+    expect(output.error).toBeUndefined();
+    expect(output.result).toEqual(
+      expect.objectContaining({
+        success: true,
+        total: 2,
+      }),
+    );
+    expect(setStepLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        stepLog: expect.objectContaining({
+          details: expect.objectContaining({
+            type: 'CODE',
+            status: 'SUCCESS',
+          }),
+          entries: expect.arrayContaining([
+            expect.objectContaining({
+              level: 'info',
+              message: expect.stringContaining('completed successfully'),
+            }),
+          ]),
+        }),
+      }),
+    );
   });
 });

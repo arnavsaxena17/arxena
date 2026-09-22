@@ -15,6 +15,11 @@ import { WorkflowRunStepLogsCodeDetail } from '@/workflow/workflow-run/observabi
 import { WorkflowRunStepLogsEmailDetail } from '@/workflow/workflow-run/observability/WorkflowRunStepLogsEmailDetail';
 import { WorkflowRunStepLogsEntries } from '@/workflow/workflow-run/observability/WorkflowRunStepLogsEntries';
 import { WorkflowRunStepLogsHttpRequestDetail } from '@/workflow/workflow-run/observability/WorkflowRunStepLogsHttpRequestDetail';
+import {
+  canShowWorkflowRunStepLogsStatusFallback,
+  WorkflowRunStepLogsStatusFallback,
+} from '@/workflow/workflow-run/observability/WorkflowRunStepLogsStatusFallback';
+import { useWorkflowRunStepInfo } from '@/workflow/workflow-steps/hooks/useWorkflowRunStepInfo';
 import { getIsDescendantOfIterator } from '@/workflow/workflow-steps/utils/getIsDescendantOfIterator';
 import { useCopyToClipboard } from '~/hooks/useCopyToClipboard';
 
@@ -52,10 +57,19 @@ export const WorkflowRunStepLogsDetail = ({ stepId }: { stepId: string }) => {
 
   const workflowRunId = useWorkflowRunIdOrThrow();
   const flow = useFlowOrThrow();
+  const stepInfo = useWorkflowRunStepInfo({ stepId });
 
   const rawStepLog = useWorkflowRunStepLog({ workflowRunId, stepId });
 
   if (!isDefined(rawStepLog)) {
+    if (canShowWorkflowRunStepLogsStatusFallback(stepInfo)) {
+      return (
+        <StyledRoot>
+          <WorkflowRunStepLogsStatusFallback stepInfo={stepInfo} />
+        </StyledRoot>
+      );
+    }
+
     return (
       <StyledRoot>
         <StyledEmptyState>
