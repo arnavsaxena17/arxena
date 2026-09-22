@@ -65,6 +65,7 @@ const toEphemeralPerson = (person: {
   id?: string;
   name: string;
   title?: string;
+  headline?: string;
   companyId?: string;
   companyName?: string;
   linkedinUrl?: string;
@@ -82,6 +83,9 @@ const toEphemeralPerson = (person: {
   }),
   name: person.name.trim(),
   title: person.title ?? '',
+  ...(isNonEmptyString(person.headline?.trim())
+    ? { headline: person.headline!.trim() }
+    : {}),
   companyId: person.companyId ?? '',
   companyName: person.companyName ?? '',
   linkedinUrl: person.linkedinUrl?.trim() ?? '',

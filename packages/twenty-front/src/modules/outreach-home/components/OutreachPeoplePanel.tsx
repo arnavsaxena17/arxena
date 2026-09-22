@@ -197,7 +197,8 @@ const mapOutreachPersonToDataTableRow = (
     firstName: nameParts[0] ?? '',
     lastName: nameParts.slice(1).join(' '),
     jobTitle: person.title,
-    headline: person.title,
+    // LinkedIn headline ≠ job title; only show when we actually have it
+    headline: person.headline ?? '',
     company: person.companyName,
     jobCompanyName: person.companyName,
     location: person.locationName ?? '',

@@ -66,7 +66,10 @@ export type OutreachCompanyRow = {
 export type OutreachPersonRow = {
   id: string;
   name: string;
+  /** Current role from experience / current_positions (company-matched when scoped). */
   title: string;
+  /** LinkedIn profile headline — distinct from title. */
+  headline?: string;
   companyId: string;
   companyName: string;
   linkedinUrl: string;

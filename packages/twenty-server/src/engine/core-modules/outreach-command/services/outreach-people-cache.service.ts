@@ -12,6 +12,7 @@ export type OutreachEphemeralPerson = {
   id: string;
   name: string;
   title: string;
+  headline?: string;
   companyId: string;
   companyName: string;
   linkedinUrl: string;

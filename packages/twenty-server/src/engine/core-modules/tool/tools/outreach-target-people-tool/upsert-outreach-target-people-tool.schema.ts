@@ -11,7 +11,15 @@ export const OutreachEphemeralPersonInputZodSchema = z.object({
   title: z
     .string()
     .default('')
-    .describe('Job title / headline (e.g. "CEO & Managing Director")'),
+    .describe(
+      'Current job title from experience/current_positions (e.g. "Managing Director"), not the LinkedIn headline',
+    ),
+  headline: z
+    .string()
+    .default('')
+    .describe(
+      'LinkedIn profile headline when known (distinct from title; e.g. "Leading sustainable transport…")',
+    ),
   companyId: z
     .string()
     .default('')
