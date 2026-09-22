@@ -248,25 +248,43 @@ export class WorkflowRunnerWorkspaceService {
       const steps = workflowRun.state.flow.steps;
 
       if (workflowHasRunningSteps({ stepInfos, steps })) {
-        const stoppedIteratorStepInfos = setAllIteratorsStepInfosAsStopped({
-          stepInfos,
-          steps,
-        });
-
-        const mergedStepInfos = {
-          ...stepInfos,
-          ...stoppedIteratorStepInfos,
-        };
-
         await this.workflowRunWorkspaceService.updateWorkflowRun({
           workflowRunId,
           workspaceId,
-          partialUpdate: {
-            status: WorkflowRunStatus.STOPPING,
-            state: {
-              ...workflowRun.state,
-              stepInfos: mergedStepInfos,
-            },
+          mutate: (current) => {
+            if (!isDefined(current.state)) {
+              return null;
+            }
+
+            const currentStepInfos = current.state.stepInfos;
+            const currentSteps = current.state.flow.steps;
+
+            if (
+              !workflowHasRunningSteps({
+                stepInfos: currentStepInfos,
+                steps: currentSteps,
+              })
+            ) {
+              return null;
+            }
+
+            const stoppedIteratorStepInfos = setAllIteratorsStepInfosAsStopped({
+              stepInfos: currentStepInfos,
+              steps: currentSteps,
+            });
+
+            return {
+              partialUpdate: {
+                status: WorkflowRunStatus.STOPPING,
+                state: {
+                  ...current.state,
+                  stepInfos: {
+                    ...currentStepInfos,
+                    ...stoppedIteratorStepInfos,
+                  },
+                },
+              },
+            };
           },
         });
         newStatus = WorkflowRunStatus.STOPPING;
@@ -315,26 +333,62 @@ export class WorkflowRunnerWorkspaceService {
       );
     }
 
-    const steps = workflowRun.state.flow.steps;
+    const previousEndedAt = workflowRun.endedAt;
+    const previousState = workflowRun.state;
+    let stepIdsToRun: string[] = [];
 
-    const { stepInfosToUpdate, stepIdsToRetry } = buildRetryStepInfos({
-      steps,
-      stepInfos: workflowRun.state.stepInfos,
+    await this.workflowRunWorkspaceService.updateWorkflowRun({
+      workflowRunId,
+      workspaceId,
+      mutate: (current) => {
+        if (current.status !== WorkflowRunStatus.FAILED) {
+          return null;
+        }
+
+        if (!isDefined(current.state)) {
+          throw new WorkflowRunException(
+            'Cannot retry a workflow run without state',
+            WorkflowRunExceptionCode.WORKFLOW_RUN_INVALID,
+          );
+        }
+
+        const steps = current.state.flow.steps;
+        const { stepInfosToUpdate, stepIdsToRetry } = buildRetryStepInfos({
+          steps,
+          stepInfos: current.state.stepInfos,
+        });
+
+        const mergedStepInfos = {
+          ...current.state.stepInfos,
+          ...stepInfosToUpdate,
+        };
+
+        const runnableStepIds = getRunnableStepIds({
+          steps,
+          stepInfos: mergedStepInfos,
+        });
+
+        stepIdsToRun = Array.from(
+          new Set([...stepIdsToRetry, ...runnableStepIds]),
+        );
+
+        if (stepIdsToRun.length === 0) {
+          return null;
+        }
+
+        return {
+          partialUpdate: {
+            status: WorkflowRunStatus.RUNNING,
+            endedAt: null,
+            state: {
+              ...current.state,
+              stepInfos: mergedStepInfos,
+              workflowRunError: undefined,
+            },
+          },
+        };
+      },
     });
-
-    const mergedStepInfos = {
-      ...workflowRun.state.stepInfos,
-      ...stepInfosToUpdate,
-    };
-
-    const runnableStepIds = getRunnableStepIds({
-      steps,
-      stepInfos: mergedStepInfos,
-    });
-
-    const stepIdsToRun = Array.from(
-      new Set([...stepIdsToRetry, ...runnableStepIds]),
-    );
 
     if (stepIdsToRun.length === 0) {
       return {
@@ -342,20 +396,6 @@ export class WorkflowRunnerWorkspaceService {
         status: workflowRun.status,
       };
     }
-
-    await this.workflowRunWorkspaceService.updateWorkflowRun({
-      workflowRunId,
-      workspaceId,
-      partialUpdate: {
-        status: WorkflowRunStatus.RUNNING,
-        endedAt: null,
-        state: {
-          ...workflowRun.state,
-          stepInfos: mergedStepInfos,
-          workflowRunError: undefined,
-        },
-      },
-    });
 
     try {
       await this.messageQueueService.add<RunWorkflowJobData>(
@@ -373,11 +413,13 @@ export class WorkflowRunnerWorkspaceService {
       await this.workflowRunWorkspaceService.updateWorkflowRun({
         workflowRunId,
         workspaceId,
-        partialUpdate: {
-          status: WorkflowRunStatus.FAILED,
-          endedAt: workflowRun.endedAt,
-          state: workflowRun.state,
-        },
+        mutate: () => ({
+          partialUpdate: {
+            status: WorkflowRunStatus.FAILED,
+            endedAt: previousEndedAt,
+            state: previousState,
+          },
+        }),
       });
 
       throw error;

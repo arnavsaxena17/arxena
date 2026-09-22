@@ -77,6 +77,7 @@ export class WorkflowRunWorkspaceEntity extends BaseWorkspaceEntity {
   createdBy: ActorMetadata;
   updatedBy: ActorMetadata;
   state: WorkflowRunState;
+  stateVersion: number;
   stepLogs: WorkflowRunStepLogs | null;
   position: number;
   searchVector: string;

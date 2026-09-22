@@ -478,6 +478,27 @@ export const buildWorkflowRunStandardFlatFieldMetadatas = ({
     twentyStandardApplicationId,
     now,
   }),
+  stateVersion: createStandardFieldFlatMetadata({
+    objectName,
+    workspaceId,
+    context: {
+      fieldName: 'stateVersion',
+      type: FieldMetadataType.NUMBER,
+      label: i18nLabel(msg`State version`),
+      description: i18nLabel(
+        msg`Optimistic concurrency version for workflow run state updates`,
+      ),
+      icon: 'IconHash',
+      isSystem: true,
+      isNullable: false,
+      isUIEditable: false,
+      defaultValue: 0,
+    },
+    standardObjectMetadataRelatedEntityIds,
+    dependencyFlatEntityMaps,
+    twentyStandardApplicationId,
+    now,
+  }),
   position: createStandardFieldFlatMetadata({
     objectName,
     workspaceId,

@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 
 import { WorkspaceIteratorModule } from 'src/database/commands/command-runners/workspace-iterator.module';
-import { CacheLockModule } from 'src/engine/core-modules/cache-lock/cache-lock.module';
 import { FeatureFlagModule } from 'src/engine/core-modules/feature-flag/feature-flag.module';
 import { MetricsModule } from 'src/engine/core-modules/metrics/metrics.module';
 import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-command/outreach-cache-realtime.module';
@@ -15,7 +14,6 @@ import { WorkflowRunWorkspaceService } from 'src/modules/workflow/workflow-runne
   imports: [
     WorkflowCommonModule,
     RecordPositionModule,
-    CacheLockModule,
     MetricsModule,
     WorkspaceIteratorModule,
     FeatureFlagModule,

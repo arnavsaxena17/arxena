@@ -126,10 +126,10 @@ export class OutreachWorkflowRunFlowSyncService {
             workflowVersionId: targetVersionId,
           });
 
-        if (
-          !isDefined(workflowVersion.trigger) ||
-          !isDefined(workflowVersion.steps)
-        ) {
+        const nextTrigger = workflowVersion.trigger;
+        const nextSteps = workflowVersion.steps;
+
+        if (!isDefined(nextTrigger) || !isDefined(nextSteps)) {
           this.logger.warn(
             `Skipping flow sync for run ${workflowRunId}: target version ${targetVersionId} has no trigger or steps`,
           );
@@ -137,18 +137,32 @@ export class OutreachWorkflowRunFlowSyncService {
           return { synced: false, workflowRunId };
         }
 
-        const mergeResult = mergeWorkflowRunFlowFromVersion({
+        let mergeResult = mergeWorkflowRunFlowFromVersion({
           currentState: workflowRun.state,
-          nextTrigger: workflowVersion.trigger,
-          nextSteps: workflowVersion.steps,
+          nextTrigger,
+          nextSteps,
         });
 
         await this.workflowRunWorkspaceService.updateWorkflowRun({
           workflowRunId,
           workspaceId,
-          partialUpdate: {
-            workflowVersionId: targetVersionId,
-            state: mergeResult.state,
+          mutate: (current) => {
+            if (!isDefined(current.state)) {
+              return null;
+            }
+
+            mergeResult = mergeWorkflowRunFlowFromVersion({
+              currentState: current.state,
+              nextTrigger,
+              nextSteps,
+            });
+
+            return {
+              partialUpdate: {
+                workflowVersionId: targetVersionId,
+                state: mergeResult.state,
+              },
+            };
           },
         });
 
@@ -235,13 +249,14 @@ export class OutreachWorkflowRunFlowSyncService {
           return { synced: false, workflowRunId };
         }
 
+        const nextTrigger = workflowVersion.trigger;
+        const nextSteps = workflowVersion.steps;
+
         const hasStaleChangedStep = changedStepIds.some((stepId) => {
           const runStep = workflowRun.state?.flow?.steps?.find(
             (step) => step.id === stepId,
           );
-          const versionStep = workflowVersion.steps?.find(
-            (step) => step.id === stepId,
-          );
+          const versionStep = nextSteps.find((step) => step.id === stepId);
 
           if (!isDefined(runStep) || !isDefined(versionStep)) {
             return false;
@@ -261,10 +276,32 @@ export class OutreachWorkflowRunFlowSyncService {
           return { synced: false, workflowRunId };
         }
 
-        const mergeResult = mergeWorkflowRunFlowFromVersion({
+        let mergeResult = mergeWorkflowRunFlowFromVersion({
           currentState: workflowRun.state,
-          nextTrigger: workflowVersion.trigger,
-          nextSteps: workflowVersion.steps,
+          nextTrigger,
+          nextSteps,
+        });
+
+        await this.workflowRunWorkspaceService.updateWorkflowRun({
+          workflowRunId,
+          workspaceId,
+          mutate: (current) => {
+            if (!isDefined(current.state)) {
+              return null;
+            }
+
+            mergeResult = mergeWorkflowRunFlowFromVersion({
+              currentState: current.state,
+              nextTrigger,
+              nextSteps,
+            });
+
+            return {
+              partialUpdate: {
+                state: mergeResult.state,
+              },
+            };
+          },
         });
 
         const changedStepWasReset = changedStepIds.some((stepId) =>
@@ -277,14 +314,6 @@ export class OutreachWorkflowRunFlowSyncService {
             return stepInfo?.status === StepStatus.NOT_STARTED;
           },
         );
-
-        await this.workflowRunWorkspaceService.updateWorkflowRun({
-          workflowRunId,
-          workspaceId,
-          partialUpdate: {
-            state: mergeResult.state,
-          },
-        });
 
         this.logger.log(
           `Synced live content for run ${workflowRunId}` +

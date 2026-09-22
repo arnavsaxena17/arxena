@@ -2636,6 +2636,9 @@ export const STANDARD_OBJECTS = {
       upcomingSteps: {
         universalIdentifier: '20202020-91a2-4b7c-8e3d-f1a0b6c4d8e8',
       },
+      stateVersion: {
+        universalIdentifier: '20202020-91a2-4b7c-8e3d-f1a0b6c4d910',
+      },
       timelineActivities: {
         universalIdentifier: getSystemRelationFieldUniversalIdentifier({
           applicationUniversalIdentifier:

@@ -11,6 +11,7 @@ export enum WorkflowRunExceptionCode {
   INVALID_INPUT = 'INVALID_INPUT',
   WORKFLOW_RUN_LIMIT_REACHED = 'WORKFLOW_RUN_LIMIT_REACHED',
   WORKFLOW_RUN_INVALID = 'WORKFLOW_RUN_INVALID',
+  WORKFLOW_RUN_STATE_CONFLICT = 'WORKFLOW_RUN_STATE_CONFLICT',
 }
 
 const getWorkflowRunExceptionUserFriendlyMessage = (
@@ -29,6 +30,8 @@ const getWorkflowRunExceptionUserFriendlyMessage = (
       return msg`Workflow run limit reached.`;
     case WorkflowRunExceptionCode.WORKFLOW_RUN_INVALID:
       return msg`Invalid workflow run.`;
+    case WorkflowRunExceptionCode.WORKFLOW_RUN_STATE_CONFLICT:
+      return msg`Workflow run state could not be updated due to a concurrent change.`;
     default:
       assertUnreachable(code);
   }
