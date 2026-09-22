@@ -296,6 +296,7 @@ export {
   ORG_CHART_COMPANY_ALIAS_GROUPS,
   normalizeOrgChartCompanySlug,
   extractOrgChartLinkedInCompanySlug,
+  isRejectedOrgChartCompanySlug,
   resolveOrgChartCompanyAliasGroup,
   resolveOrgChartCanonicalCompanyId,
   collectOrgChartCompanyIdsForLookup,

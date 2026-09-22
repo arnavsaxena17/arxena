@@ -1,10 +1,11 @@
 import {
-    buildCanonicalOrgChartPath,
-    buildOrgChartS3LookupPlan,
-    collectOrgChartCompanyIdsForLookup,
-    resolveOrgChartCanonicalCompanyId,
-    resolveOrgChartCompanyAliasGroup,
-    shouldRedirectOrgChartCompanySlug,
+  buildCanonicalOrgChartPath,
+  buildOrgChartS3LookupPlan,
+  collectOrgChartCompanyIdsForLookup,
+  isRejectedOrgChartCompanySlug,
+  resolveOrgChartCanonicalCompanyId,
+  resolveOrgChartCompanyAliasGroup,
+  shouldRedirectOrgChartCompanySlug,
 } from './orgChartCompanyAliases';
 
 describe('orgChartCompanyAliases', () => {
@@ -15,7 +16,9 @@ describe('orgChartCompanyAliases', () => {
   });
 
   it('resolves vista_rooms underscore form', () => {
-    expect(resolveOrgChartCanonicalCompanyId('vista_rooms')).toBe('vista-rooms');
+    expect(resolveOrgChartCanonicalCompanyId('vista_rooms')).toBe(
+      'vista-rooms',
+    );
   });
 
   it('collects canonical and aliases for lookup', () => {
@@ -34,7 +37,9 @@ describe('orgChartCompanyAliases', () => {
   });
 
   it('returns single id for unknown companies', () => {
-    expect(collectOrgChartCompanyIdsForLookup('acme-corp')).toEqual(['acme-corp']);
+    expect(collectOrgChartCompanyIdsForLookup('acme-corp')).toEqual([
+      'acme-corp',
+    ]);
     expect(buildOrgChartS3LookupPlan('acme-corp')).toEqual([
       { companyId: 'acme-corp' },
     ]);
@@ -49,6 +54,20 @@ describe('orgChartCompanyAliases', () => {
         'https://www.linkedin.com/company/Mary-Kay-Inc/',
       ),
     ).toContain('mary-kay-inc');
+  });
+
+  it('rejects LinkedIn host and company-URL slugs on public org-chart routes', () => {
+    expect(isRejectedOrgChartCompanySlug('linkedin.com')).toBe(true);
+    expect(isRejectedOrgChartCompanySlug('www.linkedin.com')).toBe(true);
+    expect(
+      isRejectedOrgChartCompanySlug(
+        'linkedin.com/company/norfolk-and-suffolk-nhs-foundation-trust',
+      ),
+    ).toBe(true);
+    expect(isRejectedOrgChartCompanySlug('linkedin')).toBe(false);
+    expect(
+      isRejectedOrgChartCompanySlug('norfolk-and-suffolk-nhs-foundation-trust'),
+    ).toBe(false);
   });
 
   it('redirects meta to facebook canonical path', () => {

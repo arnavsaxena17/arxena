@@ -864,7 +864,10 @@ const processBackendUpdate = async (
           ? rowData.outreachProjectId
           : undefined;
 
-      if (newValue === true) {
+      // Checkbox renderer may pass boolean or string; coerce before branching.
+      const isFlagEnabled = newValue === true || newValue === 'true';
+
+      if (isFlagEnabled) {
         const endpoint =
           prop === 'startOutreach'
             ? `${REACT_APP_SERVER_BASE_URL}/outreach-command/candidates/start-outreach`
@@ -889,10 +892,17 @@ const processBackendUpdate = async (
         // Start clears stop; stop clears start — keep sibling cell in sync.
         const siblingProp =
           prop === 'startOutreach' ? 'stopOutreach' : 'startOutreach';
-        updateTableState(rowData, siblingProp, false, setTableState, tableRef.current?.hotInstance);
+        updateTableState(
+          rowData,
+          siblingProp,
+          false,
+          setTableState,
+          tableRef.current?.hotInstance,
+        );
         return;
       }
 
+      // Clearing a flag writes into candidateFlags via update-candidate-field
       const response = await fetch(
         `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field`,
         {

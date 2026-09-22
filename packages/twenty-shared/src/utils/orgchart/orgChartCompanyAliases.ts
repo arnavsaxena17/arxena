@@ -75,6 +75,33 @@ export const extractOrgChartLinkedInCompanySlug = (
   }
 };
 
+/**
+ * True when the caller sent a LinkedIn host/URL as the org-chart company slug
+ * (e.g. linkedin.com, linkedin.com/company/acme). Those are not catalog ids —
+ * the real LinkedIn Inc slug is `linkedin`, and company pages must use their
+ * own slug. Reject instead of looking up or rewriting.
+ */
+export const isRejectedOrgChartCompanySlug = (companyId: string): boolean => {
+  const trimmed = companyId.trim();
+  if (!trimmed) {
+    return false;
+  }
+
+  if (extractOrgChartLinkedInCompanySlug(trimmed)) {
+    return true;
+  }
+
+  const withoutQuery = trimmed.split(/[?#]/)[0] ?? trimmed;
+  const withoutProtocol = withoutQuery.replace(/^https?:\/\//i, '');
+  const host = withoutProtocol
+    .replace(/^www\./i, '')
+    .split('/')[0]
+    ?.trim()
+    .toLowerCase();
+
+  return host === 'linkedin.com';
+};
+
 const slugKey = (raw: string): string => normalizeOrgChartCompanySlug(raw);
 
 const buildAliasIndex = (): Map<string, OrgChartCompanyAliasGroup> => {
@@ -111,7 +138,9 @@ export const resolveOrgChartCompanyAliasGroup = (
 };
 
 /** Canonical slug for URLs/API, or the normalized input when no alias group exists. */
-export const resolveOrgChartCanonicalCompanyId = (companyId: string): string => {
+export const resolveOrgChartCanonicalCompanyId = (
+  companyId: string,
+): string => {
   const linkedInSlug = extractOrgChartLinkedInCompanySlug(companyId);
   const group = resolveOrgChartCompanyAliasGroup(linkedInSlug ?? companyId);
   if (group) {
@@ -120,7 +149,9 @@ export const resolveOrgChartCanonicalCompanyId = (companyId: string): string => 
   if (linkedInSlug) {
     return linkedInSlug;
   }
-  return normalizeOrgChartCompanySlug(companyId) || companyId.trim().toLowerCase();
+  return (
+    normalizeOrgChartCompanySlug(companyId) || companyId.trim().toLowerCase()
+  );
 };
 
 /** Company IDs to query (canonical first, then aliases). */
@@ -201,7 +232,9 @@ export const buildOrgChartS3LookupPlan = (
 };
 
 /** True when the URL slug should 308/redirect to the canonical company id. */
-export const shouldRedirectOrgChartCompanySlug = (companyId: string): boolean => {
+export const shouldRedirectOrgChartCompanySlug = (
+  companyId: string,
+): boolean => {
   const normalized = normalizeOrgChartCompanySlug(companyId);
   if (!normalized) {
     return false;

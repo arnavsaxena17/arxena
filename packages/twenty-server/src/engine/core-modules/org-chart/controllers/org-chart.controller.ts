@@ -18,6 +18,7 @@ import { Request, Response } from 'express';
 import {
   isLikelyBrowserLogoRequest,
   isLikelyBrowserRequest,
+  isRejectedOrgChartCompanySlug,
 } from 'twenty-shared';
 import { v4 as uuidV4 } from 'uuid';
 
@@ -2325,6 +2326,15 @@ export class OrgChartController {
       throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
     }
     const normalizedCompanyId = this.normalizeCompanyId(companyId);
+
+    // Callers sometimes send LinkedIn host/URL paths as the company slug
+    // (linkedin.com, linkedin.com/company/…). Reject — do not catalog-lookup.
+    if (
+      isRejectedOrgChartCompanySlug(normalizedCompanyId) ||
+      normalizedCompanyId.includes('/')
+    ) {
+      throw new HttpException('Invalid company ID', HttpStatus.BAD_REQUEST);
+    }
 
     if (normalizedCompanyId === 'sample-company') {
       const result = await this.buildSampleCompanyOrgChart({

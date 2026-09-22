@@ -155,11 +155,12 @@ describe('GTM outreach workflow graphs', () => {
     );
     const steps = (candidateSequencer?.steps ?? []) as GraphStep[];
     const byName = (name: string) => steps.find((step) => step.name === name);
+    const byId = (stepId: string) => steps.find((step) => step.id === stepId);
     const branchNext = (stepName: string, branchIndex: number) =>
       byName(stepName)?.settings?.input?.branches?.[branchIndex]?.nextStepIds ??
       [];
 
-    expect(byName('Load Candidate')?.nextStepIds).toEqual([
+    expect(byId(OUTREACH_SEQUENCER_STEP_IDS.queuedFind)?.nextStepIds).toEqual([
       byName('Load Person')?.id,
     ]);
     expect(byName('Load Person')?.nextStepIds).toEqual([
@@ -172,6 +173,11 @@ describe('GTM outreach workflow graphs', () => {
         }
       )?.input?.objectName,
     ).toBe('person');
+
+    // Route load sits before member / stage router (not the QUEUED branch find).
+    expect(byId(OUTREACH_SEQUENCER_STEP_IDS.routeFind)?.nextStepIds).toEqual([
+      byName('Load workspace member')?.id,
+    ]);
 
     const qualifyFetch = byName('Fetch LinkedIn profile (qualify)') as {
       settings?: {
@@ -235,9 +241,9 @@ describe('GTM outreach workflow graphs', () => {
       'segment',
     ]);
 
-    expect(byName('Load Candidate')?.nextStepIds).not.toContain(
-      byName('Send LinkedIn connection')?.id,
-    );
+    expect(
+      byId(OUTREACH_SEQUENCER_STEP_IDS.queuedFind)?.nextStepIds,
+    ).not.toContain(byName('Send LinkedIn connection')?.id);
 
     expect(byName('Approve connection note')?.nextStepIds).toEqual([
       byName('Connection not yet sent?')?.id,
@@ -424,22 +430,36 @@ describe('GTM outreach workflow graphs', () => {
 
     // Router must be IF_ELSE — a leading FILTER would skip-cascade the whole run.
     const router = byName('Route by outreach stage');
+    const routeFind = steps.find(
+      (step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.routeFind,
+    );
 
     expect(router?.type).toBe('IF_ELSE');
-    expect(trigger.nextStepIds).toEqual([byName('Load workspace member')?.id]);
+    expect(trigger.nextStepIds).toEqual([
+      OUTREACH_SEQUENCER_STEP_IDS.routeFind,
+    ]);
+    expect(routeFind?.name).toBe('Load Candidate');
+    expect(routeFind?.type).toBe('FIND_RECORDS');
+    expect(routeFind?.nextStepIds).toEqual([
+      byName('Load workspace member')?.id,
+    ]);
     expect(byName('Load workspace member')?.nextStepIds).toEqual([router?.id]);
     expect(byName('Load workspace member profile')).toBeUndefined();
 
     const branches = router?.settings?.input?.branches ?? [];
 
     expect(branches).toHaveLength(5);
-    expect(branches[0]?.nextStepIds).toEqual([byName('Load Candidate')?.id]);
+    expect(branches[0]?.nextStepIds).toEqual([
+      OUTREACH_SEQUENCER_STEP_IDS.queuedFind,
+    ]);
     expect(branches[4]?.filterGroupId).toBeUndefined();
     expect(branches[4]?.nextStepIds).toEqual([]);
 
     const stageFilters = (
       router?.settings as {
-        input: { stepFilters: Array<{ value: string }> };
+        input: {
+          stepFilters: Array<{ value: string; stepOutputKey: string }>;
+        };
       }
     ).input.stepFilters;
 
@@ -449,6 +469,18 @@ describe('GTM outreach workflow graphs', () => {
       JSON.stringify(['REPLIED']),
       JSON.stringify(['MEETING_BOOKED']),
     ]);
+    expect(
+      stageFilters.every((filter) =>
+        filter.stepOutputKey.includes(
+          `${OUTREACH_SEQUENCER_STEP_IDS.routeFind}.first.outreachSequenceStage`,
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      stageFilters.some((filter) =>
+        filter.stepOutputKey.includes('trigger.properties.after'),
+      ),
+    ).toBe(false);
 
     // Single hoisted member step — no-company path only exists when dedupe is on.
     expect(byName('Load workspace member (no company)')).toBeUndefined();

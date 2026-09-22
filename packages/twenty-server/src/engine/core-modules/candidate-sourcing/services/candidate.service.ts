@@ -2234,11 +2234,13 @@ export class CandidateService {
         console.log('value is null or undefined, returning');
         formattedValue = null;
       }
-      if (
-        formattedValue?.toLowerCase() === 'true' ||
-        formattedValue?.toLowerCase() === 'false'
-      ) {
-        formattedValue = formattedValue?.toLowerCase() === 'true';
+      // Datatable checkbox toggles send real booleans; only coerce string "true"/"false"
+      if (typeof formattedValue === 'string') {
+        const lowerCasedValue = formattedValue.toLowerCase();
+
+        if (lowerCasedValue === 'true' || lowerCasedValue === 'false') {
+          formattedValue = lowerCasedValue === 'true';
+        }
       }
 
       const snakeCaseFieldName = toSnakeCaseKey(fieldName);

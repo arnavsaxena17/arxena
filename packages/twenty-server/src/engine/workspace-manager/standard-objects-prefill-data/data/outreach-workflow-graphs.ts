@@ -212,6 +212,9 @@ const IDS = {
   sendReplyEmail: '51a10026-aaaa-4fcb-a7d8-17a7736ed045',
   sendReplyWhatsapp: '51a10027-aaaa-4fcb-a7d8-17a7736ed045',
   meetingCreate: '4ef266df-bb2b-4457-b542-3fd9cc528e34',
+  // Fresh FIND before the stage router so IF_ELSE reads first.outreachSequenceStage
+  // (works in test runs that pick a candidate without a database-event `after` shape).
+  routeFind: '60a10007-aaaa-4fcb-a7d8-17a7736ed045',
   stageRouter: '60a10000-aaaa-4fcb-a7d8-17a7736ed045',
   stageBranchAccepted: '60a10001-aaaa-4fcb-a7d8-17a7736ed045',
   stageBranchReplied: '60a10002-aaaa-4fcb-a7d8-17a7736ed045',
@@ -2190,12 +2193,17 @@ export const buildCandidateSequencerGraph = (
     checkDeduplicationPerCompany,
   } = resolved;
 
+  const stageStepOutputKey = gtmWfFindField(
+    IDS.routeFind,
+    'outreachSequenceStage',
+  );
+
   const stageBranches = [
     {
       id: IDS.stageBranchQueued,
       filterGroupId: IDS.stageGroupQueued,
       filterId: IDS.stageFilterQueued,
-      stepOutputKey: gtmWfTriggerAfter('outreachSequenceStage'),
+      stepOutputKey: stageStepOutputKey,
       value: 'QUEUED',
       nextStepIds: [IDS.queuedFind],
     },
@@ -2203,7 +2211,7 @@ export const buildCandidateSequencerGraph = (
       id: IDS.stageBranchAccepted,
       filterGroupId: IDS.stageGroupAccepted,
       filterId: IDS.stageFilterAccepted,
-      stepOutputKey: gtmWfTriggerAfter('outreachSequenceStage'),
+      stepOutputKey: stageStepOutputKey,
       value: 'CONNECTION_ACCEPTED',
       nextStepIds: [IDS.acceptFind],
     },
@@ -2211,7 +2219,7 @@ export const buildCandidateSequencerGraph = (
       id: IDS.stageBranchReplied,
       filterGroupId: IDS.stageGroupReplied,
       filterId: IDS.stageFilterReplied,
-      stepOutputKey: gtmWfTriggerAfter('outreachSequenceStage'),
+      stepOutputKey: stageStepOutputKey,
       value: 'REPLIED',
       nextStepIds: [IDS.repliedFind],
     },
@@ -2221,7 +2229,7 @@ export const buildCandidateSequencerGraph = (
             id: IDS.stageBranchMeetingBooked,
             filterGroupId: IDS.stageGroupMeetingBooked,
             filterId: IDS.stageFilterMeetingBooked,
-            stepOutputKey: gtmWfTriggerAfter('outreachSequenceStage'),
+            stepOutputKey: stageStepOutputKey,
             value: 'MEETING_BOOKED',
             nextStepIds: [IDS.meetingBookedFind],
           },
@@ -2234,6 +2242,9 @@ export const buildCandidateSequencerGraph = (
   ];
 
   const steps = [
+    candidateFind(IDS.routeFind, 'Load Candidate', [
+      OUTREACH_WF_MEMBER_STEP_ID,
+    ]),
     gtmWfMemberStep([IDS.stageRouter]),
     gtmWfMultiIfElseStep({
       id: IDS.stageRouter,
@@ -2266,7 +2277,7 @@ export const buildCandidateSequencerGraph = (
       filter: gtmWfEntryStageTriggerFilter({
         includeMeetingBooked: meetingFollowUpEnabled,
       }),
-      nextStepIds: [OUTREACH_WF_MEMBER_STEP_ID],
+      nextStepIds: [IDS.routeFind],
     }),
     steps,
   };
@@ -2417,8 +2428,10 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
   //   FAILED_ENRICH / WAITING_REPLY / FAILED_NO_REPLY stamps.
   // - The router is IF_ELSE, not FILTER. A FILTER first would skip-cascade the whole
   //   run and kill the accepted / replied branches.
-  // - Workspace member loads once above the router, so the branches share no
-  //   downstream step ids and no IF_ELSE join can be cascade-skipped.
+  // - Candidate loads once above the router so stage routing reads
+  //   first.outreachSequenceStage (not trigger.properties.after), then workspace
+  //   member loads once so branches share no downstream step ids and no IF_ELSE
+  //   join can be cascade-skipped.
   // - QUEUED re-entry: connectionNotSentIf gates Send LinkedIn connection on
   //   empty outreachAnalytics.connectionSentAt (see queuedBranchSteps).
   // - CONNECTION_ACCEPTED: hasInboundIf stamps REPLIED when fetch-linkedin-messages
