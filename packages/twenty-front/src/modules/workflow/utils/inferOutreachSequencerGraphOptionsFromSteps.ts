@@ -6,6 +6,7 @@ export const OUTREACH_SEQUENCER_INFERENCE_STEP_IDS = {
   sendReplyWhatsapp: '51a10027-aaaa-4fcb-a7d8-17a7736ed045',
   meetingBookedFind: 'c7a10020-aaaa-4fcb-a7d8-17a7736ed045',
   hasCompanyIf: 'c7a10001-aaaa-4fcb-a7d8-17a7736ed045',
+  qualifyDraft: 'c7a1000c-aaaa-4fcb-a7d8-17a7736ed045',
 } as const;
 
 export type OutreachSequencerGraphOptions = {
@@ -14,6 +15,7 @@ export type OutreachSequencerGraphOptions = {
   whatsappEnabled: boolean;
   meetingFollowUpEnabled: boolean;
   checkDeduplicationPerCompany: boolean;
+  qualifyProspectEnabled: boolean;
 };
 
 export const inferOutreachSequencerGraphOptionsFromSteps = (
@@ -41,6 +43,9 @@ export const inferOutreachSequencerGraphOptionsFromSteps = (
     ),
     checkDeduplicationPerCompany: stepIds.has(
       OUTREACH_SEQUENCER_INFERENCE_STEP_IDS.hasCompanyIf,
+    ),
+    qualifyProspectEnabled: stepIds.has(
+      OUTREACH_SEQUENCER_INFERENCE_STEP_IDS.qualifyDraft,
     ),
   };
 };

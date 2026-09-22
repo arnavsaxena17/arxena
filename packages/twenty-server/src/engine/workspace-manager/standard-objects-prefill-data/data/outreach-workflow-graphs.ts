@@ -285,6 +285,7 @@ export type OutreachSequencerGraphOptions = {
   whatsappEnabled: boolean;
   meetingFollowUpEnabled: boolean;
   checkDeduplicationPerCompany: boolean;
+  qualifyProspectEnabled: boolean;
 };
 
 export const DEFAULT_OUTREACH_SEQUENCER_GRAPH_OPTIONS: OutreachSequencerGraphOptions =
@@ -294,6 +295,7 @@ export const DEFAULT_OUTREACH_SEQUENCER_GRAPH_OPTIONS: OutreachSequencerGraphOpt
     whatsappEnabled: true,
     meetingFollowUpEnabled: true,
     checkDeduplicationPerCompany: false,
+    qualifyProspectEnabled: true,
   };
 
 const resolveOutreachSequencerGraphOptions = (
@@ -332,6 +334,7 @@ export const inferOutreachSequencerGraphOptionsFromSteps = (
     whatsappEnabled: stepIds.has(IDS.sendReplyWhatsapp),
     meetingFollowUpEnabled: stepIds.has(IDS.meetingBookedFind),
     checkDeduplicationPerCompany: stepIds.has(IDS.hasCompanyIf),
+    qualifyProspectEnabled: stepIds.has(IDS.qualifyDraft),
   };
 };
 
@@ -1430,11 +1433,13 @@ const queuedBranchSteps = ({
   useLlmConnectionNote,
   humanInTheLoop,
   checkDeduplicationPerCompany,
+  qualifyProspectEnabled,
 }: {
   hoistedMember: boolean;
   useLlmConnectionNote: boolean;
   humanInTheLoop: boolean;
   checkDeduplicationPerCompany: boolean;
+  qualifyProspectEnabled: boolean;
 }) => {
   const companyConnectEntryId = useLlmConnectionNote
     ? IDS.draftConnectNote
@@ -1442,6 +1447,10 @@ const queuedBranchSteps = ({
   const noCompanyConnectEntryId = useLlmConnectionNote
     ? IDS.draftConnectNoteNoCompany
     : IDS.connectionNotSentNoCompanyIf;
+  // Same destination Qualify go? uses on true — fetch jumps here when qualify is off.
+  const postQualifyEntryId = checkDeduplicationPerCompany
+    ? IDS.hasCompanyIf
+    : companyConnectEntryId;
   const connectMessage = !useLlmConnectionNote
     ? ''
     : hitlOrDraftMessage({
@@ -1485,7 +1494,9 @@ const queuedBranchSteps = ({
         ]),
     gtmWfLogicFunctionStep({
       id: IDS.queuedFetchProfile,
-      name: 'Fetch LinkedIn profile (qualify)',
+      name: qualifyProspectEnabled
+        ? 'Fetch LinkedIn profile (qualify)'
+        : 'Fetch LinkedIn profile',
       logicFunctionId: '__LF_fetch-linkedin-profile__',
       logicFunctionInput: {
         linkedinUrl: gtmWfFindField(
@@ -1500,71 +1511,75 @@ const queuedBranchSteps = ({
         workspaceMemberId: gtmWfMemberId(),
       },
       sampleOutput: OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
-      nextStepIds: [IDS.qualifyDraft],
-    }),
-    gtmWfAiAgentStep({
-      id: IDS.qualifyDraft,
-      name: 'Qualify prospect',
-      prompt: buildOutreachQualifyProspectPrompt({
-        senderJson: senderJson(),
-        profile: [
-          `About: {{${IDS.queuedFetchProfile}.about}}`,
-          `Skills: {{${IDS.queuedFetchProfile}.skills}}`,
-        ].join('\n'),
-        posts: '',
-        crm: [
-          `Name: ${gtmWfFindField(IDS.queuedFind, 'name')}`,
-          `Title: ${gtmWfFindField(IDS.queuedPersonFind, OUTREACH_WF_FIELD.jobTitlePath)}`,
-        ].join('\n'),
-      }),
-      agentId: OUTREACH_WF_AGENT_QUALIFY,
-      outputSchema: OUTREACH_WF_AI_QUALIFY_OUTPUT,
-      nextStepIds: [IDS.stampEnrich],
-    }),
-    gtmWfUpdateRecordStep({
-      id: IDS.stampEnrich,
-      name: 'Stamp prospect enrichment',
-      objectRecordId: gtmWfFindId(IDS.queuedFind),
-      objectRecord: {
-        outreachProspectEnrichment: {
-          go: `{{${IDS.qualifyDraft}.go}}`,
-          score: `{{${IDS.qualifyDraft}.score}}`,
-          segment: `{{${IDS.qualifyDraft}.segment}}`,
-          reason: `{{${IDS.qualifyDraft}.reason}}`,
-          first_name: `{{${IDS.qualifyDraft}.first_name}}`,
-          honorific: `{{${IDS.qualifyDraft}.honorific}}`,
-          company_short: `{{${IDS.qualifyDraft}.company_short}}`,
-          industry_phrase: `{{${IDS.qualifyDraft}.industry_phrase}}`,
-          hooks: `{{${IDS.qualifyDraft}.hooks}}`,
-          likely_systems: `{{${IDS.qualifyDraft}.likely_systems}}`,
-          matching_problem_statement: `{{${IDS.qualifyDraft}.matching_problem_statement}}`,
-          referral_source: `{{${IDS.qualifyDraft}.referral_source}}`,
-        },
-      },
-      nextStepIds: [IDS.qualifyGoIf],
-    }),
-    gtmWfIfElseStep({
-      id: IDS.qualifyGoIf,
-      name: 'Qualify go?',
-      stepOutputKey: `{{${IDS.qualifyDraft}.go}}`,
-      value: 'true',
-      type: 'TEXT',
-      operand: 'CONTAINS',
-      // When company dedupe is off, skip has-company / sibling checks and go
-      // straight to the single connection-note path.
-      ifNextStepIds: [
-        checkDeduplicationPerCompany ? IDS.hasCompanyIf : companyConnectEntryId,
+      nextStepIds: [
+        qualifyProspectEnabled ? IDS.qualifyDraft : postQualifyEntryId,
       ],
-      elseNextStepIds: [IDS.markSkippedQualify],
     }),
-    gtmWfUpdateRecordStep({
-      id: IDS.markSkippedQualify,
-      name: 'Mark DEFERRED — skipped qualify',
-      objectRecordId: gtmWfFindId(IDS.queuedFind),
-      objectRecord: {
-        outreachSequenceStage: 'DEFERRED',
-      },
-    }),
+    ...(qualifyProspectEnabled
+      ? [
+          gtmWfAiAgentStep({
+            id: IDS.qualifyDraft,
+            name: 'Qualify prospect',
+            prompt: buildOutreachQualifyProspectPrompt({
+              senderJson: senderJson(),
+              profile: [
+                `About: {{${IDS.queuedFetchProfile}.about}}`,
+                `Skills: {{${IDS.queuedFetchProfile}.skills}}`,
+              ].join('\n'),
+              posts: '',
+              crm: [
+                `Name: ${gtmWfFindField(IDS.queuedFind, 'name')}`,
+                `Title: ${gtmWfFindField(IDS.queuedPersonFind, OUTREACH_WF_FIELD.jobTitlePath)}`,
+              ].join('\n'),
+            }),
+            agentId: OUTREACH_WF_AGENT_QUALIFY,
+            outputSchema: OUTREACH_WF_AI_QUALIFY_OUTPUT,
+            nextStepIds: [IDS.stampEnrich],
+          }),
+          gtmWfUpdateRecordStep({
+            id: IDS.stampEnrich,
+            name: 'Stamp prospect enrichment',
+            objectRecordId: gtmWfFindId(IDS.queuedFind),
+            objectRecord: {
+              outreachProspectEnrichment: {
+                go: `{{${IDS.qualifyDraft}.go}}`,
+                score: `{{${IDS.qualifyDraft}.score}}`,
+                segment: `{{${IDS.qualifyDraft}.segment}}`,
+                reason: `{{${IDS.qualifyDraft}.reason}}`,
+                first_name: `{{${IDS.qualifyDraft}.first_name}}`,
+                honorific: `{{${IDS.qualifyDraft}.honorific}}`,
+                company_short: `{{${IDS.qualifyDraft}.company_short}}`,
+                industry_phrase: `{{${IDS.qualifyDraft}.industry_phrase}}`,
+                hooks: `{{${IDS.qualifyDraft}.hooks}}`,
+                likely_systems: `{{${IDS.qualifyDraft}.likely_systems}}`,
+                matching_problem_statement: `{{${IDS.qualifyDraft}.matching_problem_statement}}`,
+                referral_source: `{{${IDS.qualifyDraft}.referral_source}}`,
+              },
+            },
+            nextStepIds: [IDS.qualifyGoIf],
+          }),
+          gtmWfIfElseStep({
+            id: IDS.qualifyGoIf,
+            name: 'Qualify go?',
+            stepOutputKey: `{{${IDS.qualifyDraft}.go}}`,
+            value: 'true',
+            type: 'TEXT',
+            operand: 'CONTAINS',
+            // When company dedupe is off, skip has-company / sibling checks and go
+            // straight to the single connection-note path.
+            ifNextStepIds: [postQualifyEntryId],
+            elseNextStepIds: [IDS.markSkippedQualify],
+          }),
+          gtmWfUpdateRecordStep({
+            id: IDS.markSkippedQualify,
+            name: 'Mark DEFERRED — skipped qualify',
+            objectRecordId: gtmWfFindId(IDS.queuedFind),
+            objectRecord: {
+              outreachSequenceStage: 'DEFERRED',
+            },
+          }),
+        ]
+      : []),
     ...(checkDeduplicationPerCompany
       ? [
           gtmWfIfElseStep({
@@ -2191,6 +2206,7 @@ export const buildCandidateSequencerGraph = (
     whatsappEnabled,
     meetingFollowUpEnabled,
     checkDeduplicationPerCompany,
+    qualifyProspectEnabled,
   } = resolved;
 
   const stageStepOutputKey = gtmWfFindField(
@@ -2256,6 +2272,7 @@ export const buildCandidateSequencerGraph = (
       useLlmConnectionNote,
       humanInTheLoop,
       checkDeduplicationPerCompany,
+      qualifyProspectEnabled,
     }),
     ...acceptedBranchSteps({ humanInTheLoop }),
     ...repliedBranchSteps({

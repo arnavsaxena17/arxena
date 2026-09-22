@@ -223,6 +223,20 @@ export const EditOutreachSequencerOptionsModal = ({
           </StyledOptionHelp>
         </StyledOptionText>
       </StyledOptionRow>
+      <StyledOptionRow>
+        <Checkbox
+          checked={options.qualifyProspectEnabled}
+          onCheckedChange={(value) =>
+            setOption('qualifyProspectEnabled', value)
+          }
+        />
+        <StyledOptionText>
+          <StyledOptionLabel>{t`Qualify prospect`}</StyledOptionLabel>
+          <StyledOptionHelp>
+            {t`When off, remove Qualify prospect, stamp enrichment, and go/no-go — Fetch LinkedIn profile goes straight to the connection path.`}
+          </StyledOptionHelp>
+        </StyledOptionText>
+      </StyledOptionRow>
       <StyledButtonRow>
         <Button
           title={t`Apply`}

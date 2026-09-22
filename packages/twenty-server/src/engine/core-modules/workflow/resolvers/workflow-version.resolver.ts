@@ -62,6 +62,7 @@ export class WorkflowVersionResolver {
       whatsappEnabled,
       meetingFollowUpEnabled,
       checkDeduplicationPerCompany,
+      qualifyProspectEnabled,
     }: ApplyOutreachSequencerGraphOptionsInput,
   ): Promise<WorkflowVersionDTO> {
     return this.workflowVersionWorkspaceService.applyOutreachSequencerGraphOptions(
@@ -74,6 +75,7 @@ export class WorkflowVersionResolver {
           whatsappEnabled,
           meetingFollowUpEnabled,
           checkDeduplicationPerCompany,
+          qualifyProspectEnabled,
         },
       },
     );

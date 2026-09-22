@@ -51,10 +51,9 @@ export type ProcessedDataItem = {
 };
 
 // Union type for all candidate data sources
-export type CandidateDataItem = (
-  | ProcessedDataItem
-  | CandidateTableRow
-) & { [key: string]: any };
+export type CandidateDataItem = (ProcessedDataItem | CandidateTableRow) & {
+  [key: string]: any;
+};
 
 const StyledSelectedRow = styled.tr`
   &.selected-row td {
@@ -234,11 +233,11 @@ const RECRUITING_COLUMNS_HIDDEN_ON_OUTREACH = [
   'stopChat',
 ];
 
-// Default People grid: Stage + Intent + Next + full message transcript.
-// Workflow internals stay in journey drawer / filters, not as peer columns.
+// Default People grid: Stage + Intent + Run Status + Next + transcript.
 const OUTREACH_HOME_ALWAYS_SHOW_COLUMNS = [
   'outreachSequenceStage',
   'outreachConversationStage',
+  'workflowRunStatus',
   'nextStep',
   'startOutreach',
   'stopOutreach',
@@ -248,7 +247,6 @@ const OUTREACH_HOME_ALWAYS_SHOW_COLUMNS = [
 ];
 
 const OUTREACH_HOME_HIDDEN_COLUMNS = [
-  'workflowRunStatus',
   'needsApproval',
   'nextRetry',
   'nextFollowUp',
@@ -258,7 +256,7 @@ const OUTREACH_HOME_HIDDEN_COLUMNS = [
   'lastOutboundAt',
 ];
 
-// Same as Outreach People: Stage + Next on the grid, run status in the drawer.
+// Project candidate table: keep run status off the grid (journey drawer).
 const PROJECT_TABLE_HIDDEN_COLUMNS = ['workflowRunStatus'];
 
 // Function to check if a column has all empty or 'N/A' values
@@ -1160,13 +1158,13 @@ export const TableColumns = ({
     'candConversationStatus',
     'outreachSequenceStage',
     'outreachConversationStage',
+    'workflowRunStatus',
     'nextStep',
     'startOutreach',
     'stopOutreach',
     'messagesExchanged',
     'lastMessage',
     'lastInboundAt',
-    'workflowRunStatus',
     'nextRetry',
     'needsApproval',
     'replyAfterTouch',

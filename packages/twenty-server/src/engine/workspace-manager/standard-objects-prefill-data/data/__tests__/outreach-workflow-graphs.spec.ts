@@ -847,6 +847,7 @@ describe('GTM outreach workflow graphs', () => {
       whatsappEnabled: true,
       meetingFollowUpEnabled: true,
       checkDeduplicationPerCompany: false,
+      qualifyProspectEnabled: true,
     });
     expect(
       inferOutreachSequencerGraphOptionsFromSteps(
@@ -865,7 +866,35 @@ describe('GTM outreach workflow graphs', () => {
       whatsappEnabled: false,
       meetingFollowUpEnabled: false,
       checkDeduplicationPerCompany: false,
+      qualifyProspectEnabled: true,
     });
+  });
+
+  it('skips qualify go/no-go when qualify prospect is off', () => {
+    const graph = buildCandidateSequencerGraph({
+      qualifyProspectEnabled: false,
+      useLlmConnectionNote: false,
+    });
+    const steps = graph.steps as GraphStep[];
+    const byName = (name: string) => steps.find((step) => step.name === name);
+    const stepIds = new Set(steps.map((step) => step.id));
+
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.qualifyDraft)).toBe(false);
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.stampEnrich)).toBe(false);
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.qualifyGoIf)).toBe(false);
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.markSkippedQualify)).toBe(
+      false,
+    );
+    expect(byName('Qualify prospect')).toBeUndefined();
+    expect(byName('Stamp prospect enrichment')).toBeUndefined();
+    expect(byName('Qualify go?')).toBeUndefined();
+    expect(byName('Fetch LinkedIn profile')?.nextStepIds).toEqual([
+      OUTREACH_SEQUENCER_STEP_IDS.connectionNotSentIf,
+    ]);
+    expect(
+      inferOutreachSequencerGraphOptionsFromSteps(steps, graph.trigger)
+        .qualifyProspectEnabled,
+    ).toBe(false);
   });
 
   it('always builds automated candidate.upserted trigger gated by candidateFlags.startOutreach', () => {

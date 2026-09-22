@@ -40,4 +40,11 @@ export class ApplyOutreachSequencerGraphOptionsInput {
     nullable: false,
   })
   checkDeduplicationPerCompany: boolean;
+
+  @Field(() => Boolean, {
+    description:
+      'When true, run Qualify prospect AI go/no-go before connection; when false, Fetch LinkedIn profile goes straight to the connection path',
+    nullable: false,
+  })
+  qualifyProspectEnabled: boolean;
 }
