@@ -20,6 +20,12 @@ export const OutreachEphemeralPersonInputZodSchema = z.object({
     .describe(
       'LinkedIn profile headline when known (distinct from title; e.g. "Leading sustainable transport…")',
     ),
+  summary: z
+    .string()
+    .default('')
+    .describe(
+      'LinkedIn About / summary when known (distinct from headline and title)',
+    ),
   companyId: z
     .string()
     .default('')

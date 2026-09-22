@@ -36,6 +36,7 @@ export type SearchPeopleProfile = {
   lastName: string;
   title: string;
   headline: string;
+  summary: string;
   company: string;
   companyName: string;
   location: string;
@@ -317,6 +318,11 @@ export const mapSearchPeopleProfile = (
     extractCandidateJobTitle(flattened, titleOptions) ??
     readString(flattened, ['title', 'jobTitle']);
   const headline = readString(flattened, ['headline', 'linkedinHeadline']);
+  const summary = readString(flattened, [
+    'summary',
+    'linkedinSummary',
+    'about',
+  ]);
   const companyName =
     extractCandidateCompanyName(flattened, titleOptions) ??
     readString(flattened, ['companyName', 'company', 'org', 'jobCompanyName']);
@@ -356,6 +362,7 @@ export const mapSearchPeopleProfile = (
     lastName,
     title,
     headline,
+    summary,
     company: companyName,
     companyName,
     location: readString(item, ['location', 'locationName']),

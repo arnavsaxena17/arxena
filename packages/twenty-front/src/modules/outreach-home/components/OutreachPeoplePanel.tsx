@@ -199,6 +199,8 @@ const mapOutreachPersonToDataTableRow = (
     jobTitle: person.title,
     // LinkedIn headline ≠ job title; only show when we actually have it
     headline: person.headline ?? '',
+    // LinkedIn About section — distinct from headline and title
+    summary: person.summary ?? '',
     company: person.companyName,
     jobCompanyName: person.companyName,
     location: person.locationName ?? '',

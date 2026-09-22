@@ -66,6 +66,7 @@ const toEphemeralPerson = (person: {
   name: string;
   title?: string;
   headline?: string;
+  summary?: string;
   companyId?: string;
   companyName?: string;
   linkedinUrl?: string;
@@ -85,6 +86,9 @@ const toEphemeralPerson = (person: {
   title: person.title ?? '',
   ...(isNonEmptyString(person.headline?.trim())
     ? { headline: person.headline!.trim() }
+    : {}),
+  ...(isNonEmptyString(person.summary?.trim())
+    ? { summary: person.summary!.trim() }
     : {}),
   companyId: person.companyId ?? '',
   companyName: person.companyName ?? '',
@@ -190,7 +194,9 @@ Prefer mode=merge. Pass projectId from the outreachCommand browsing context.`;
   }
 }
 
-const dedupePeople = (people: OutreachEphemeralPerson[]): OutreachEphemeralPerson[] => {
+const dedupePeople = (
+  people: OutreachEphemeralPerson[],
+): OutreachEphemeralPerson[] => {
   const byKey = new Map<string, OutreachEphemeralPerson>();
 
   for (const person of people) {

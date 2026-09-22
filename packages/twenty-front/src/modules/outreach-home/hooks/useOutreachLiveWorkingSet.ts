@@ -460,6 +460,8 @@ export const useOutreachLiveWorkingSet = () => {
           companyId: person.companyId || '',
           companyName: person.companyName || '',
           title: person.title || '',
+          headline: person.headline || '',
+          summary: person.summary || '',
           linkedinUrl: person.linkedinUrl || '',
           candidateId: undefined,
         }));

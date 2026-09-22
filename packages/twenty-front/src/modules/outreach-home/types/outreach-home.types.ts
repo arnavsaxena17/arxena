@@ -70,6 +70,8 @@ export type OutreachPersonRow = {
   title: string;
   /** LinkedIn profile headline — distinct from title. */
   headline?: string;
+  /** LinkedIn About / summary — distinct from headline and title. */
+  summary?: string;
   companyId: string;
   companyName: string;
   linkedinUrl: string;

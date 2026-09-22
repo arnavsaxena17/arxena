@@ -54,6 +54,7 @@ export type SearchPeopleForCompanyPerson = {
   lastName: string;
   title: string;
   headline: string;
+  summary: string;
   company: string;
   companyName: string;
   location: string;
@@ -387,6 +388,7 @@ export class SearchPeopleForCompanyService {
           row.headline?.trim() ||
           row.linkedinHeadline?.trim() ||
           mapped.headline,
+        summary: row.linkedinSummary?.trim() || mapped.summary,
         company,
         companyName: company,
         location:
