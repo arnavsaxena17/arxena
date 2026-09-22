@@ -21,6 +21,26 @@ type WorkspaceMemberSenderRow = ObjectLiteral & {
   outreachSenderProfile?: unknown;
 };
 
+// Upgrade-only: rewrite stored slim `prose` key to `brief` before normalize.
+const withBriefInsteadOfProse = (value: unknown): unknown => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return value;
+  }
+
+  const record = { ...(value as Record<string, unknown>) };
+
+  if (
+    typeof record.prose === 'string' &&
+    !(typeof record.brief === 'string' && isNonEmptyString(record.brief.trim()))
+  ) {
+    record.brief = record.prose;
+  }
+
+  delete record.prose;
+
+  return record;
+};
+
 // Fold fat nested sender profiles (+ workspace icpSpec) into slim
 // { targetTitles, locations, brief } on each workspace member.
 @RegisteredWorkspaceCommand('2.25.0', 1785600000134)
@@ -87,7 +107,7 @@ export class SlimOutreachSenderProfileCommand extends ProvisionedWorkspaceComman
 
         let next = hasFatShape
           ? flattenFatOutreachSenderProfile(raw)
-          : normalizeOutreachSenderProfile(raw);
+          : normalizeOutreachSenderProfile(withBriefInsteadOfProse(raw));
 
         if (
           next.targetTitles.length === 0 &&

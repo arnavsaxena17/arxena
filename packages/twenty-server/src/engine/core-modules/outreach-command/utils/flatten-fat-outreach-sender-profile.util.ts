@@ -56,22 +56,12 @@ export const flattenFatOutreachSenderProfile = (
     return { targetTitles: [], locations: [], brief: '' };
   }
 
-  // Already-slim blob (brief, or legacy prose key before upgrade rewrite).
-  if (
-    (typeof record.brief === 'string' || typeof record.prose === 'string') &&
-    !('identity' in record)
-  ) {
-    const brief =
-      typeof record.brief === 'string'
-        ? record.brief.trim()
-        : typeof record.prose === 'string'
-          ? record.prose.trim()
-          : '';
-
+  // Already-slim blob — only brief (upgrade rewrites legacy prose key).
+  if (typeof record.brief === 'string' && !('identity' in record)) {
     return {
       targetTitles: toStringList(record.targetTitles),
       locations: toStringList(record.locations),
-      brief,
+      brief: record.brief.trim(),
     };
   }
 

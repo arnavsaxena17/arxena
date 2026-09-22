@@ -990,6 +990,34 @@ export const getOutreachLogicFunctionDefinitions = (
                   },
                 },
               },
+              companies: {
+                type: 'array',
+                label: 'Companies',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string', label: 'ID' },
+                    name: { type: 'string', label: 'Name' },
+                    website: { type: 'string', label: 'Website' },
+                    linkedinUrl: { type: 'string', label: 'LinkedIn URL' },
+                    industry: { type: 'string', label: 'Industry' },
+                    description: { type: 'string', label: 'Description' },
+                    tagline: { type: 'string', label: 'Tagline' },
+                    employeeCount: {
+                      type: 'number',
+                      label: 'Employee count',
+                    },
+                    followersCount: {
+                      type: 'number',
+                      label: 'Followers count',
+                    },
+                    publicIdentifier: {
+                      type: 'string',
+                      label: 'Public identifier',
+                    },
+                  },
+                },
+              },
             },
           },
         ],

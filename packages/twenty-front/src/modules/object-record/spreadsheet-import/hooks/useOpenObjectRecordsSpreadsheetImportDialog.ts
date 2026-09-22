@@ -7,6 +7,7 @@ import { useBuildSpreadsheetImportFields } from '@/object-record/spreadsheet-imp
 import { buildRecordFromImportedStructuredRow } from '@/object-record/spreadsheet-import/utils/buildRecordFromImportedStructuredRow';
 import { spreadsheetImportFilterAvailableFieldMetadataItems } from '@/object-record/spreadsheet-import/utils/spreadsheetImportFilterAvailableFieldMetadataItems';
 import { spreadsheetImportGetUnicityTableHook } from '@/object-record/spreadsheet-import/utils/spreadsheetImportGetUnicityTableHook';
+import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { SPREADSHEET_IMPORT_CREATE_RECORDS_BATCH_SIZE } from '@/spreadsheet-import/constants/SpreadsheetImportCreateRecordsBatchSize';
 import { useOpenSpreadsheetImportDialog } from '@/spreadsheet-import/hooks/useOpenSpreadsheetImportDialog';
 import { spreadsheetImportCreatedRecordsProgressState } from '@/spreadsheet-import/states/spreadsheetImportCreatedRecordsProgressState';
@@ -14,6 +15,15 @@ import { type SpreadsheetImportDialogOptions } from '@/spreadsheet-import/types'
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { useIcons } from 'twenty-ui/icon';
+
+export type OpenObjectRecordsSpreadsheetImportDialogOptions = Omit<
+  SpreadsheetImportDialogOptions,
+  'fields' | 'isOpen' | 'onClose'
+> & {
+  onRecordsCreated?: (
+    records: ObjectRecord[],
+  ) => void | Promise<void>;
+};
 
 export const useOpenObjectRecordsSpreadsheetImportDialog = (
   objectNameSingular: string,
@@ -49,11 +59,10 @@ export const useOpenObjectRecordsSpreadsheetImportDialog = (
   });
 
   const openObjectRecordsSpreadsheetImportDialog = (
-    options?: Omit<
-      SpreadsheetImportDialogOptions,
-      'fields' | 'isOpen' | 'onClose'
-    >,
+    options?: OpenObjectRecordsSpreadsheetImportDialogOptions,
   ) => {
+    const { onRecordsCreated, ...dialogOptions } = options ?? {};
+
     const availableFieldMetadataItemsToImport =
       spreadsheetImportFilterAvailableFieldMetadataItems(
         objectMetadataItem.updatableFields,
@@ -83,7 +92,7 @@ export const useOpenObjectRecordsSpreadsheetImportDialog = (
     }
 
     openSpreadsheetImportDialog({
-      ...options,
+      ...dialogOptions,
       enableUploadProgressSseWhileOpen: objectNameSingular === 'candidate',
       onSubmit: async (data) => {
         const createInputs = data.validStructuredRows.map((record) => {
@@ -98,10 +107,13 @@ export const useOpenObjectRecordsSpreadsheetImportDialog = (
         });
 
         try {
-          await batchCreateManyRecords({
+          const createdRecords = await batchCreateManyRecords({
             recordsToCreate: createInputs,
             upsert: true,
           });
+
+          await onRecordsCreated?.(createdRecords);
+
           await apolloCoreClient.refetchQueries({
             updateCache: (cache) => {
               cache.evict({ fieldName: objectMetadataItem.namePlural });

@@ -5,7 +5,7 @@ import {
   OUTREACH_CONVERSATION_STAGES,
 } from 'twenty-shared/arx';
 import { Loader } from 'twenty-ui/feedback';
-import { Button } from 'twenty-ui/input';
+import { Button, type SelectOption } from 'twenty-ui/input';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { OUTREACH_JOURNEY_TIMELINE_STAGES } from '@/outreach-home/constants/outreach-journey-stages';
@@ -16,12 +16,14 @@ import {
   resolveOutreachNextRetryLabel,
   resolveOutreachPendingStepLabel,
 } from '@/outreach-home/utils/resolveOutreachJourneyLabels';
+import { Select } from '@/ui/input/components/Select';
 
 const StyledContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${themeCssVariables.spacing[4]};
+  gap: ${themeCssVariables.spacing[5]};
   padding: ${themeCssVariables.spacing[3]};
+  padding-bottom: ${themeCssVariables.spacing[8]};
 `;
 
 const StyledSection = styled.section`
@@ -32,8 +34,10 @@ const StyledSection = styled.section`
 
 const StyledSectionTitle = styled.h3`
   color: ${themeCssVariables.font.color.primary};
+  font-family: ${themeCssVariables.font.family};
   font-size: ${themeCssVariables.font.size.sm};
   font-weight: ${themeCssVariables.font.weight.semiBold};
+  letter-spacing: -0.01em;
   margin: 0;
 `;
 
@@ -56,33 +60,66 @@ const StyledTimelineItem = styled.li<{ isActive: boolean }>`
     isActive
       ? themeCssVariables.font.color.primary
       : themeCssVariables.font.color.tertiary};
+  font-family: ${themeCssVariables.font.family};
   font-size: ${themeCssVariables.font.size.sm};
-  padding-left: ${themeCssVariables.spacing[2]};
+  font-weight: ${({ isActive }) =>
+    isActive
+      ? themeCssVariables.font.weight.medium
+      : themeCssVariables.font.weight.regular};
+  padding: ${themeCssVariables.spacing[1]} 0 ${themeCssVariables.spacing[1]}
+    ${themeCssVariables.spacing[2]};
 `;
 
 const StyledCard = styled.div`
   background: ${themeCssVariables.background.secondary};
   border: 1px solid ${themeCssVariables.border.color.medium};
-  border-radius: ${themeCssVariables.border.radius.sm};
+  border-radius: ${themeCssVariables.border.radius.md};
   display: flex;
   flex-direction: column;
-  gap: ${themeCssVariables.spacing[2]};
+  gap: ${themeCssVariables.spacing[3]};
   padding: ${themeCssVariables.spacing[3]};
+`;
+
+const StyledStepPrimary = styled.p`
+  color: ${themeCssVariables.font.color.primary};
+  font-family: ${themeCssVariables.font.family};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
+  line-height: 1.4;
+  margin: 0;
 `;
 
 const StyledMuted = styled.p`
   color: ${themeCssVariables.font.color.tertiary};
+  font-family: ${themeCssVariables.font.family};
   font-size: ${themeCssVariables.font.size.sm};
+  line-height: 1.45;
   margin: 0;
 `;
 
+const StyledMetaRow = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[1]};
+`;
+
 const StyledTextArea = styled.textarea`
-  font-family: inherit;
+  background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.primary};
+  font-family: ${themeCssVariables.font.family};
   font-size: ${themeCssVariables.font.size.sm};
+  line-height: 1.45;
   min-height: 96px;
+  outline: none;
   padding: ${themeCssVariables.spacing[2]};
   resize: vertical;
   width: 100%;
+
+  &:focus {
+    border-color: ${themeCssVariables.color.blue};
+  }
 `;
 
 const StyledActions = styled.div`
@@ -91,16 +128,48 @@ const StyledActions = styled.div`
   gap: ${themeCssVariables.spacing[2]};
 `;
 
-const StyledSnoozeRow = styled.div`
+const StyledFieldStack = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[1]};
+`;
+
+const StyledFieldLabel = styled.span`
+  color: ${themeCssVariables.font.color.secondary};
+  font-family: ${themeCssVariables.font.family};
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.medium};
+`;
+
+const StyledFieldRow = styled.div`
   align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: ${themeCssVariables.spacing[2]};
 `;
 
-const StyledSelect = styled.select`
+const StyledDateTimeInput = styled.input`
+  background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  box-sizing: border-box;
+  color: ${themeCssVariables.font.color.primary};
+  flex: 1;
+  font-family: ${themeCssVariables.font.family};
   font-size: ${themeCssVariables.font.size.sm};
-  padding: ${themeCssVariables.spacing[1]};
+  min-width: 180px;
+  outline: none;
+  padding: ${themeCssVariables.spacing[2]};
+
+  &:focus {
+    border-color: ${themeCssVariables.color.blue};
+  }
+`;
+
+const StyledDivider = styled.div`
+  background: ${themeCssVariables.border.color.light};
+  height: 1px;
+  width: 100%;
 `;
 
 type CandidateOutreachJourneyTabProps = {
@@ -193,6 +262,18 @@ export const CandidateOutreachJourneyTab = ({
     });
   }, [primaryRun]);
 
+  const conversationStageOptions: SelectOption<string>[] = useMemo(
+    () =>
+      OUTREACH_CONVERSATION_STAGES.map((stage) => ({
+        label: OUTREACH_CONVERSATION_STAGE_LABELS[stage],
+        value: stage,
+      })),
+    [],
+  );
+
+  const selectedConversationStage =
+    conversationStage ?? journey?.outreachConversationStage ?? 'NONE';
+
   if (isLoading && !journey) {
     return (
       <StyledContainer>
@@ -213,6 +294,10 @@ export const CandidateOutreachJourneyTab = ({
   }
 
   const draftValue = editedDraft || primaryRun?.draftPreview || '';
+  const workflowName =
+    primaryRun?.workflowName ??
+    journey.lastFailedRun?.workflowName ??
+    'No active run';
 
   const activeTimelineStage = resolveOutreachJourneyTimelineStageId({
     outreachSequenceStage: journey.outreachSequenceStage,
@@ -234,23 +319,24 @@ export const CandidateOutreachJourneyTab = ({
             </StyledTimelineItem>
           ))}
         </StyledTimeline>
-        <StyledMuted>Current: {stageLabel}</StyledMuted>
-        {journey.outreachResumeAt ? (
-          <StyledMuted>
-            Next follow-up {new Date(journey.outreachResumeAt).toLocaleString()}
-          </StyledMuted>
-        ) : null}
+        <StyledMetaRow>
+          <StyledMuted>Current: {stageLabel}</StyledMuted>
+          {journey.outreachResumeAt ? (
+            <StyledMuted>
+              Next follow-up{' '}
+              {new Date(journey.outreachResumeAt).toLocaleString()}
+            </StyledMuted>
+          ) : null}
+        </StyledMetaRow>
       </StyledSection>
 
       <StyledSection>
         <StyledSectionTitle>Active step</StyledSectionTitle>
         <StyledCard>
-          <StyledMuted>
-            {primaryRun?.workflowName ??
-              journey.lastFailedRun?.workflowName ??
-              'No active run'}
-          </StyledMuted>
-          <strong>{pendingStepLabel}</strong>
+          <StyledMetaRow>
+            <StyledMuted>{workflowName}</StyledMuted>
+            <StyledStepPrimary>{pendingStepLabel}</StyledStepPrimary>
+          </StyledMetaRow>
           {!primaryRun && journey.lastFailedRun?.errorMessage ? (
             <StyledMuted>{journey.lastFailedRun.errorMessage}</StyledMuted>
           ) : null}
@@ -269,6 +355,7 @@ export const CandidateOutreachJourneyTab = ({
               <StyledActions>
                 <Button
                   title="Approve & send"
+                  size="small"
                   disabled={isActionLoading || !primaryRun.pendingFormStepId}
                   onClick={() => {
                     if (!primaryRun.pendingFormStepId) {
@@ -284,6 +371,7 @@ export const CandidateOutreachJourneyTab = ({
                 />
                 <Button
                   title="Reject"
+                  size="small"
                   variant="secondary"
                   disabled={isActionLoading || !primaryRun.pendingFormStepId}
                   onClick={() => {
@@ -302,118 +390,145 @@ export const CandidateOutreachJourneyTab = ({
               </StyledActions>
             </>
           ) : null}
-          {/* {primaryRun?.upcomingSteps ? (
-            <StyledMuted>Up next: {primaryRun.upcomingSteps}</StyledMuted>
-          ) : null} */}
         </StyledCard>
       </StyledSection>
 
       <StyledSection>
         <StyledSectionTitle>Controls</StyledSectionTitle>
-        <StyledActions>
-          {journey.outreachPaused ? (
-            <Button
-              title="Resume journey"
-              disabled={isActionLoading}
-              onClick={onResume}
+        <StyledCard>
+          <StyledFieldStack>
+            <StyledFieldLabel>Journey</StyledFieldLabel>
+            <StyledActions>
+              {journey.outreachPaused ? (
+                <Button
+                  title="Resume journey"
+                  size="small"
+                  disabled={isActionLoading}
+                  onClick={onResume}
+                />
+              ) : (
+                <Button
+                  title="Pause journey"
+                  size="small"
+                  variant="secondary"
+                  disabled={isActionLoading}
+                  onClick={onPause}
+                />
+              )}
+              <Button
+                title="Stop outreach"
+                size="small"
+                variant="secondary"
+                accent="danger"
+                onClick={onStop}
+              />
+              {primaryRun?.currentStepKind === 'DELAY' &&
+              primaryRun.pendingStepId ? (
+                <Button
+                  title="Send now"
+                  size="small"
+                  variant="secondary"
+                  disabled={isActionLoading}
+                  onClick={() => {
+                    if (!primaryRun.pendingStepId) {
+                      return;
+                    }
+
+                    onSkipDelay(
+                      primaryRun.workflowRunId,
+                      primaryRun.pendingStepId,
+                    );
+                  }}
+                />
+              ) : null}
+            </StyledActions>
+          </StyledFieldStack>
+
+          <StyledDivider />
+
+          <StyledFieldStack>
+            <Select
+              dropdownId="candidate-outreach-journey-conversation-stage"
+              label="Conversation stage"
+              fullWidth
+              selectSizeVariant="small"
+              options={conversationStageOptions}
+              value={selectedConversationStage}
+              onChange={(value) => setConversationStage(value)}
             />
-          ) : (
-            <Button
-              title="Pause journey"
-              variant="secondary"
-              disabled={isActionLoading}
-              onClick={onPause}
-            />
-          )}
-          <Button title="Stop outreach" variant="secondary" onClick={onStop} />
-          {primaryRun?.currentStepKind === 'DELAY' &&
-          primaryRun.pendingStepId ? (
-            <Button
-              title="Send now"
-              variant="secondary"
-              disabled={isActionLoading}
-              onClick={() => {
-                if (!primaryRun.pendingStepId) {
-                  return;
+            <StyledFieldRow>
+              <Button
+                title="Save stage"
+                size="small"
+                variant="secondary"
+                disabled={isActionLoading}
+                onClick={() =>
+                  onUpdateOperatorControls({
+                    outreachConversationStage: selectedConversationStage,
+                  })
                 }
+              />
+            </StyledFieldRow>
+          </StyledFieldStack>
 
-                onSkipDelay(primaryRun.workflowRunId, primaryRun.pendingStepId);
-              }}
+          <StyledDivider />
+
+          <StyledFieldStack>
+            <StyledFieldLabel>Follow-up / snooze</StyledFieldLabel>
+            <StyledDateTimeInput
+              type="datetime-local"
+              value={snoozeDate}
+              onChange={(event) => setSnoozeDate(event.target.value)}
             />
-          ) : null}
-        </StyledActions>
-        <StyledSnoozeRow>
-          <StyledSelect
-            value={
-              conversationStage ?? journey.outreachConversationStage ?? 'NONE'
-            }
-            onChange={(event) => setConversationStage(event.target.value)}
-          >
-            {OUTREACH_CONVERSATION_STAGES.map((stage) => (
-              <option key={stage} value={stage}>
-                {OUTREACH_CONVERSATION_STAGE_LABELS[stage]}
-              </option>
-            ))}
-          </StyledSelect>
-          <Button
-            title="Save stage"
-            variant="secondary"
-            disabled={isActionLoading}
-            onClick={() =>
-              onUpdateOperatorControls({
-                outreachConversationStage:
-                  conversationStage ??
-                  journey.outreachConversationStage ??
-                  'NONE',
-              })
-            }
-          />
-        </StyledSnoozeRow>
-        <StyledSnoozeRow>
-          <input
-            type="datetime-local"
-            value={snoozeDate}
-            onChange={(event) => setSnoozeDate(event.target.value)}
-          />
-          <Button
-            title="Set next follow-up"
-            variant="secondary"
-            disabled={isActionLoading || !snoozeDate}
-            onClick={() => {
-              if (!snoozeDate) {
-                return;
-              }
+            <StyledFieldRow>
+              <Button
+                title="Set next follow-up"
+                size="small"
+                variant="secondary"
+                disabled={isActionLoading || !snoozeDate}
+                onClick={() => {
+                  if (!snoozeDate) {
+                    return;
+                  }
 
-              onUpdateOperatorControls({
-                resumeAt: new Date(snoozeDate).toISOString(),
-              });
-            }}
-          />
-          <Button
-            title="Snooze until"
-            variant="secondary"
-            disabled={isActionLoading || !snoozeDate}
-            onClick={() => {
-              if (!snoozeDate) {
-                return;
-              }
+                  onUpdateOperatorControls({
+                    resumeAt: new Date(snoozeDate).toISOString(),
+                  });
+                }}
+              />
+              <Button
+                title="Snooze until"
+                size="small"
+                variant="secondary"
+                disabled={isActionLoading || !snoozeDate}
+                onClick={() => {
+                  if (!snoozeDate) {
+                    return;
+                  }
 
-              onSnooze(new Date(snoozeDate).toISOString());
-            }}
-          />
-        </StyledSnoozeRow>
-        <StyledActions>
-          <Button
-            title="Mark not interested"
-            variant="secondary"
-            disabled={isActionLoading}
-            onClick={() =>
-              onUpdateOperatorControls({
-                outreachConversationStage: 'NOT_INTERESTED',
-              })
-            }
-          />
-        </StyledActions>
+                  onSnooze(new Date(snoozeDate).toISOString());
+                }}
+              />
+            </StyledFieldRow>
+          </StyledFieldStack>
+
+          <StyledDivider />
+
+          <StyledActions>
+            <Button
+              title="Mark not interested"
+              size="small"
+              variant="secondary"
+              accent="danger"
+              disabled={isActionLoading}
+              onClick={() =>
+                onUpdateOperatorControls({
+                  outreachConversationStage: 'NOT_INTERESTED',
+                })
+              }
+            />
+          </StyledActions>
+        </StyledCard>
       </StyledSection>
     </StyledContainer>
   );

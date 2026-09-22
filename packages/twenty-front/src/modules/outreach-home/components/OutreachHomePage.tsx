@@ -38,6 +38,7 @@ import {
   type OutreachSendMode,
 } from '@/outreach-home/types/outreach-home.types';
 import { useGetResourceCreditUsage } from '@/settings/billing/hooks/useGetResourceCreditUsage';
+import { SpreadsheetImportProvider } from '@/spreadsheet-import/provider/components/SpreadsheetImportProvider';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { PageBody } from '@/ui/layout/page/components/PageBody';
 import { PageContainer } from '@/ui/layout/page/components/PageContainer';
@@ -139,6 +140,8 @@ const OutreachHomePageContent = () => {
     peopleTableInstanceId,
     refreshPeopleWorkingSet,
     refreshCompaniesWorkingSet,
+    appendPeople,
+    appendCompanies,
   } = useOutreachLiveWorkingSet();
   const isSetupTab = activeTab === 'setup';
   const { openAskAiPageWithPreprompt } = useOpenAskAiPageWithPreprompt();
@@ -537,75 +540,79 @@ const OutreachHomePageContent = () => {
         <WorkflowRunRateLimitSnackBarEffect workflowRunId={workflowRunId} />
       )}
       <PageBody>
-        <StyledMain>
-          <OutreachMainTabs
-            activeTab={activeTab}
-            companyCount={companies.length}
-            peopleCount={people.length}
-            onChange={setActiveTab}
-          />
-          {loading ? (
-            <StyledLoading>
-              <Loader />
-              Loading GTM project…
-            </StyledLoading>
-          ) : !activeProjectId ? (
-            <StyledEmpty>
-              Preparing a GTM project… If this persists, use Menu → Add New
-              Project.
-            </StyledEmpty>
-          ) : activeTab === 'people' ? (
-            <StyledToolbarTabContent>
-              <OutreachPeoplePanel
-                people={people}
-                companies={companies}
-                projectId={activeProjectId}
-                selectedCompanyId={selectedCompanyId}
-                selectedPersonId={selectedPersonId}
-                onSelectPersonId={setSelectedPersonId}
-                tableInstanceId={peopleTableInstanceId}
-                isLoading={peopleLoading}
-                onRefresh={refreshPeopleWorkingSet}
-              />
-            </StyledToolbarTabContent>
-          ) : activeTab === 'companies' ? (
-            <StyledToolbarTabContent>
-              <OutreachCompaniesPanel
-                companies={companies}
-                selectedCompanyId={selectedCompanyId}
-                onSelectCompanyId={setSelectedCompanyId}
-                isLoading={companiesLoading}
-                onRefresh={refreshCompaniesWorkingSet}
-              />
-            </StyledToolbarTabContent>
-          ) : (
-            <StyledContent>
-              {isSetupTab && (
-                <StyledSetupWrap>
-                  <OutreachSetupPanel
-                    workspaceCompany={workspaceCompany}
-                    hasWorkspaceCompany={hasWorkspaceCompany}
-                    hasProject={isDefined(activeProjectId)}
-                    sendTimezone={projectSettings.sendTimezone}
-                    sendWindowStart={projectSettings.sendWindowStart}
-                    sendWindowEnd={projectSettings.sendWindowEnd}
-                    sendWindowDays={projectSettings.sendWindowDays}
-                    isSavingSendSchedule={isSavingSendSchedule}
-                    onSaveSendSchedule={handleSaveSendSchedule}
-                    outreachSendMode={projectSettings.outreachSendMode}
-                    maxPersonasPerCompany={
-                      projectSettings.maxPersonasPerCompany
-                    }
-                    isSavingOutreachPolicy={isSavingOutreachPolicy}
-                    onSaveOutreachPolicy={handleSaveOutreachPolicy}
-                    onFindCompanies={handleFindCompanies}
-                    onFindPeople={handleFindPeople}
-                  />
-                </StyledSetupWrap>
-              )}
-            </StyledContent>
-          )}
-        </StyledMain>
+        <SpreadsheetImportProvider>
+          <StyledMain>
+            <OutreachMainTabs
+              activeTab={activeTab}
+              companyCount={companies.length}
+              peopleCount={people.length}
+              onChange={setActiveTab}
+            />
+            {loading ? (
+              <StyledLoading>
+                <Loader />
+                Loading GTM project…
+              </StyledLoading>
+            ) : !activeProjectId ? (
+              <StyledEmpty>
+                Preparing a GTM project… If this persists, use Menu → Add New
+                Project.
+              </StyledEmpty>
+            ) : activeTab === 'people' ? (
+              <StyledToolbarTabContent>
+                <OutreachPeoplePanel
+                  people={people}
+                  companies={companies}
+                  projectId={activeProjectId}
+                  selectedCompanyId={selectedCompanyId}
+                  selectedPersonId={selectedPersonId}
+                  onSelectPersonId={setSelectedPersonId}
+                  tableInstanceId={peopleTableInstanceId}
+                  isLoading={peopleLoading}
+                  onRefresh={refreshPeopleWorkingSet}
+                  appendPeople={appendPeople}
+                />
+              </StyledToolbarTabContent>
+            ) : activeTab === 'companies' ? (
+              <StyledToolbarTabContent>
+                <OutreachCompaniesPanel
+                  companies={companies}
+                  selectedCompanyId={selectedCompanyId}
+                  onSelectCompanyId={setSelectedCompanyId}
+                  isLoading={companiesLoading}
+                  onRefresh={refreshCompaniesWorkingSet}
+                  appendCompanies={appendCompanies}
+                />
+              </StyledToolbarTabContent>
+            ) : (
+              <StyledContent>
+                {isSetupTab && (
+                  <StyledSetupWrap>
+                    <OutreachSetupPanel
+                      workspaceCompany={workspaceCompany}
+                      hasWorkspaceCompany={hasWorkspaceCompany}
+                      hasProject={isDefined(activeProjectId)}
+                      sendTimezone={projectSettings.sendTimezone}
+                      sendWindowStart={projectSettings.sendWindowStart}
+                      sendWindowEnd={projectSettings.sendWindowEnd}
+                      sendWindowDays={projectSettings.sendWindowDays}
+                      isSavingSendSchedule={isSavingSendSchedule}
+                      onSaveSendSchedule={handleSaveSendSchedule}
+                      outreachSendMode={projectSettings.outreachSendMode}
+                      maxPersonasPerCompany={
+                        projectSettings.maxPersonasPerCompany
+                      }
+                      isSavingOutreachPolicy={isSavingOutreachPolicy}
+                      onSaveOutreachPolicy={handleSaveOutreachPolicy}
+                      onFindCompanies={handleFindCompanies}
+                      onFindPeople={handleFindPeople}
+                    />
+                  </StyledSetupWrap>
+                )}
+              </StyledContent>
+            )}
+          </StyledMain>
+        </SpreadsheetImportProvider>
       </PageBody>
       <ArxDownloadModal
         isOpen={isDownloadModalOpen}

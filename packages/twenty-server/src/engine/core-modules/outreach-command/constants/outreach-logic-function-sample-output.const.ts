@@ -308,22 +308,25 @@ export const OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT =
     ],
   });
 
+const OUTREACH_FETCH_COMPANY_DETAILS_SAMPLE_COMPANY = {
+  id: '123',
+  name: 'Acme',
+  website: 'acme.com',
+  linkedinUrl: 'https://www.linkedin.com/company/acme',
+  industry: 'Software',
+  description: 'B2B software',
+  tagline: 'Build faster',
+  employeeCount: 200,
+  followersCount: 1000,
+  publicIdentifier: 'acme',
+};
+
 export const OUTREACH_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT = {
   success: true,
   dataSource: 'unipile',
   error: '',
-  company: {
-    id: '123',
-    name: 'Acme',
-    website: 'acme.com',
-    linkedinUrl: 'https://www.linkedin.com/company/acme',
-    industry: 'Software',
-    description: 'B2B software',
-    tagline: 'Build faster',
-    employeeCount: 200,
-    followersCount: 1000,
-    publicIdentifier: 'acme',
-  },
+  company: OUTREACH_FETCH_COMPANY_DETAILS_SAMPLE_COMPANY,
+  companies: [OUTREACH_FETCH_COMPANY_DETAILS_SAMPLE_COMPANY],
 };
 
 export const OUTREACH_UPLOAD_PROFILES_SAMPLE_OUTPUT = {

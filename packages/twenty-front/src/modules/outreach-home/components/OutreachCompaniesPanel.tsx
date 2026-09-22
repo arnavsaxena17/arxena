@@ -7,11 +7,13 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { ProjectTopBar } from '@/candidate-table/components/ProjectTopBar';
 import { TableContainer } from '@/candidate-table/components/styled';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
+import { useOpenObjectRecordsSpreadsheetImportDialog } from '@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog';
 import {
-    OutreachDetailsTable,
-    type OutreachTableData,
+  OutreachDetailsTable,
+  type OutreachTableData,
 } from '@/outreach-home/components/OutreachDetailsTable';
 import { type OutreachCompanyRow } from '@/outreach-home/types/outreach-home.types';
+import { mapCrmCompanyRecordsToOutreachCompanyRows } from '@/outreach-home/utils/map-crm-record-to-outreach-row.util';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 
@@ -84,6 +86,7 @@ type OutreachCompaniesPanelProps = {
   onSelectCompanyId: (companyId: string | null) => void;
   isLoading?: boolean;
   onRefresh?: () => Promise<void>;
+  appendCompanies?: (companiesToAdd: OutreachCompanyRow[]) => Promise<void>;
 };
 
 export const OutreachCompaniesPanel = ({
@@ -92,6 +95,7 @@ export const OutreachCompaniesPanel = ({
   onSelectCompanyId,
   isLoading = false,
   onRefresh,
+  appendCompanies,
 }: OutreachCompaniesPanelProps) => {
   const setChatSearchQuery = useSetAtomState(chatSearchQueryState);
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
@@ -99,6 +103,25 @@ export const OutreachCompaniesPanel = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>([]);
+
+  const { openObjectRecordsSpreadsheetImportDialog } =
+    useOpenObjectRecordsSpreadsheetImportDialog('company');
+
+  const handleImportCompanies = useCallback(() => {
+    openObjectRecordsSpreadsheetImportDialog({
+      onRecordsCreated: async (createdRecords) => {
+        const mappedCompanies =
+          mapCrmCompanyRecordsToOutreachCompanyRows(createdRecords);
+
+        if (mappedCompanies.length === 0) {
+          return;
+        }
+
+        await appendCompanies?.(mappedCompanies);
+        await onRefresh?.();
+      },
+    });
+  }, [appendCompanies, onRefresh, openObjectRecordsSpreadsheetImportDialog]);
 
   useEffect(() => {
     setChatSearchQuery('');
@@ -199,12 +222,7 @@ export const OutreachCompaniesPanel = ({
     } finally {
       setIsRefreshing(false);
     }
-  }, [
-    enqueueErrorSnackBar,
-    enqueueSuccessSnackBar,
-    isRefreshing,
-    onRefresh,
-  ]);
+  }, [enqueueErrorSnackBar, enqueueSuccessSnackBar, isRefreshing, onRefresh]);
 
   const handleClearFilters = useCallback(() => {
     setStatusFilter('all');
@@ -273,7 +291,9 @@ export const OutreachCompaniesPanel = ({
         showJobStatusToggle={false}
         showFilterChips={false}
         showRedirectToObject={false}
-        showImportCandidates={false}
+        showImportCandidates={true}
+        importButtonTitle="Import Companies"
+        handleImportCandidates={handleImportCompanies}
         showStatistics={false}
         showAddJob={false}
         showEnrichment={false}
@@ -286,9 +306,9 @@ export const OutreachCompaniesPanel = ({
       {companies.length === 0 ? (
         <StyledEmpty>
           No target companies in this project yet. Use Setup → Find companies
-          (Ask AI) to discover accounts from your ICP search blurb. They stay
-          on the Companies tab until you enroll people, which creates Company
-          and Person records (plus enrollment) under this Project.
+          (Ask AI) to discover accounts from your ICP search blurb. They stay on
+          the Companies tab until you enroll people, which creates Company and
+          Person records (plus enrollment) under this Project.
         </StyledEmpty>
       ) : filteredCompanies.length === 0 ? (
         <StyledEmpty>

@@ -20,21 +20,6 @@ describe('normalizeOutreachSenderProfile', () => {
     });
   });
 
-  it('maps legacy prose key to brief', () => {
-    expect(
-      normalizeOutreachSenderProfile({
-        targetTitles: ['CFO'],
-        locations: ['India'],
-        prose: 'Legacy',
-      }),
-    ).toEqual({
-      targetTitles: ['CFO'],
-      locations: ['India'],
-      brief: 'Legacy',
-      collateralFiles: [],
-    });
-  });
-
   it('flattens fat profiles', () => {
     const slim = flattenFatOutreachSenderProfile({
       identity: { full_name: 'Jane', title: 'CEO', company: 'Acme' },

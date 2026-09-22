@@ -18,21 +18,6 @@ const toStringList = (value: unknown): string[] => {
   ];
 };
 
-// Accepts stored `brief`, or legacy slim key `prose` until upgrade rewrites rows.
-export const readOutreachSenderBrief = (
-  record: Record<string, unknown>,
-): string => {
-  if (typeof record.brief === 'string') {
-    return record.brief.trim();
-  }
-
-  if (typeof record.prose === 'string') {
-    return record.prose.trim();
-  }
-
-  return '';
-};
-
 export const EMPTY_OUTREACH_SENDER_PROFILE: OutreachSenderProfile = {
   targetTitles: [],
   locations: [],
@@ -87,7 +72,7 @@ export const normalizeOutreachSenderProfile = (
   return {
     targetTitles: toStringList(record.targetTitles),
     locations: toStringList(record.locations),
-    brief: readOutreachSenderBrief(record),
+    brief: typeof record.brief === 'string' ? record.brief.trim() : '',
     collateralFiles,
   };
 };

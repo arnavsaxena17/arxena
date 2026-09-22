@@ -311,19 +311,13 @@ export const formatOutreachSenderForLlm = (value: unknown): string => {
   // Slim member profile: brief + discovery chips.
   if (
     typeof record.brief === 'string' ||
-    typeof record.prose === 'string' ||
     Array.isArray(record.targetTitles) ||
     (Array.isArray(record.locations) && !('identity' in record))
   ) {
-    const brief =
+    const lines = [
       typeof record.brief === 'string' && isNonEmptyString(record.brief.trim())
         ? record.brief.trim()
-        : typeof record.prose === 'string' &&
-            isNonEmptyString(record.prose.trim())
-          ? record.prose.trim()
-          : '';
-    const lines = [
-      brief,
+        : '',
       ...listLine('Target titles', record.targetTitles),
       ...listLine('Locations', record.locations),
     ].filter(isNonEmptyString);

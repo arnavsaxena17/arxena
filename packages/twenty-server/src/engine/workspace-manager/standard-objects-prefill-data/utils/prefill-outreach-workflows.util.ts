@@ -1,6 +1,10 @@
 import { FieldActorSource } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
-import { AUTO_SELECT_SMART_MODEL_ID } from 'twenty-shared/constants';
+import {
+  AUTO_SELECT_SMART_MODEL_ID,
+  PermissionFlagType,
+  SystemPermissionFlag,
+} from 'twenty-shared/constants';
 import { type EntityManager } from 'typeorm';
 import { v5 } from 'uuid';
 
@@ -173,6 +177,35 @@ export const getOutreachReplyAgentRoleIds = (workspaceId: string) => ({
   ),
   roleTargetUniversalIdentifier: v5(
     `gtmOutreachRoleTargetUniversal:reply:${workspaceId}`,
+    OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
+  ),
+});
+
+export const getOutreachLinkedinMessageAgentRoleIds = (
+  workspaceId: string,
+) => ({
+  roleId: v5(
+    `gtmOutreachRole:linkedinSendFiles:${workspaceId}`,
+    OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
+  ),
+  roleUniversalIdentifier: v5(
+    `gtmOutreachRoleUniversal:linkedinSendFiles:${workspaceId}`,
+    OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
+  ),
+  rolePermissionFlagId: v5(
+    `gtmOutreachRolePermissionFlag:linkedinSendFiles:${workspaceId}`,
+    OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
+  ),
+  rolePermissionFlagUniversalIdentifier: v5(
+    `gtmOutreachRolePermissionFlagUniversal:linkedinSendFiles:${workspaceId}`,
+    OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
+  ),
+  roleTargetId: v5(
+    `gtmOutreachRoleTarget:linkedinMessage:${workspaceId}`,
+    OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
+  ),
+  roleTargetUniversalIdentifier: v5(
+    `gtmOutreachRoleTargetUniversal:linkedinMessage:${workspaceId}`,
     OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
   ),
 });
@@ -613,6 +646,220 @@ const upsertReplyAgentCandidateRole = async ({
   }
 };
 
+// Workflow agents only get ACTION tools when a role is assigned. Grant SEND_FILES
+// so the LinkedIn message agent can call send_files with sender collateral.
+const upsertLinkedinMessageAgentSendFilesRole = async ({
+  entityManager,
+  workspaceId,
+  applicationId,
+  linkedinMessageAgentId,
+}: {
+  entityManager: EntityManager;
+  workspaceId: string;
+  applicationId: string;
+  linkedinMessageAgentId: string;
+}) => {
+  const roleIds = getOutreachLinkedinMessageAgentRoleIds(workspaceId);
+  const roleLabel = 'GTM LinkedIn Send Files';
+
+  const existingRoles = (await entityManager.query(
+    `
+      SELECT id FROM core.role
+      WHERE "workspaceId" = $1
+        AND (
+          "universalIdentifier" = $2
+          OR label = $3
+        )
+      LIMIT 1
+    `,
+    [workspaceId, roleIds.roleUniversalIdentifier, roleLabel],
+  )) as Array<{ id: string }>;
+
+  const roleId = existingRoles[0]?.id ?? roleIds.roleId;
+
+  if (existingRoles[0]?.id) {
+    await entityManager.query(
+      `
+        UPDATE core.role
+        SET label = $2,
+            description = $3,
+            "canBeAssignedToAgents" = true,
+            "canBeAssignedToUsers" = false,
+            "canBeAssignedToApiKeys" = false,
+            "canReadAllObjectRecords" = false,
+            "canUpdateAllObjectRecords" = false,
+            "canSoftDeleteAllObjectRecords" = false,
+            "canDestroyAllObjectRecords" = false,
+            "canAccessAllTools" = false,
+            "canUpdateAllSettings" = false
+        WHERE id = $1
+      `,
+      [
+        roleId,
+        roleLabel,
+        'Send Files for gtm-outreach-linkedin-message workflow agent',
+      ],
+    );
+  } else {
+    await entityManager.query(
+      `
+        INSERT INTO core.role (
+          id, label, description, icon,
+          "canUpdateAllSettings", "canAccessAllTools",
+          "canReadAllObjectRecords", "canUpdateAllObjectRecords",
+          "canSoftDeleteAllObjectRecords", "canDestroyAllObjectRecords",
+          "isEditable", "canBeAssignedToUsers", "canBeAssignedToAgents",
+          "canBeAssignedToApiKeys", "workspaceId", "universalIdentifier",
+          "applicationId"
+        )
+        VALUES (
+          $1, $2, $3, $4,
+          false, false,
+          false, false,
+          false, false,
+          true, false, true,
+          false, $5, $6,
+          $7
+        )
+      `,
+      [
+        roleId,
+        roleLabel,
+        'Send Files for gtm-outreach-linkedin-message workflow agent',
+        'IconFileUpload',
+        workspaceId,
+        roleIds.roleUniversalIdentifier,
+        applicationId,
+      ],
+    );
+  }
+
+  const permissionFlags = (await entityManager.query(
+    `
+      SELECT id FROM core."permissionFlag"
+      WHERE "workspaceId" = $1 AND key = $2
+      LIMIT 1
+    `,
+    [workspaceId, PermissionFlagType.SEND_FILES_TOOL],
+  )) as Array<{ id: string }>;
+
+  let permissionFlagId = permissionFlags[0]?.id;
+
+  if (!isDefined(permissionFlagId)) {
+    const inserted = (await entityManager.query(
+      `
+        INSERT INTO core."permissionFlag" (
+          id, key, label, description, icon, "permissionType",
+          "workspaceId", "universalIdentifier", "applicationId"
+        )
+        VALUES (
+          gen_random_uuid(), $1, $2, $3, $4, 'tool',
+          $5, $6, $7
+        )
+        ON CONFLICT DO NOTHING
+        RETURNING id
+      `,
+      [
+        PermissionFlagType.SEND_FILES_TOOL,
+        'Send Files',
+        'Send uploaded files via LinkedIn, email, or WhatsApp',
+        'IconFileUpload',
+        workspaceId,
+        SystemPermissionFlag.SEND_FILES_TOOL,
+        applicationId,
+      ],
+    )) as Array<{ id: string }>;
+
+    permissionFlagId = inserted[0]?.id;
+
+    if (!isDefined(permissionFlagId)) {
+      const retry = (await entityManager.query(
+        `
+          SELECT id FROM core."permissionFlag"
+          WHERE "workspaceId" = $1 AND key = $2
+          LIMIT 1
+        `,
+        [workspaceId, PermissionFlagType.SEND_FILES_TOOL],
+      )) as Array<{ id: string }>;
+
+      permissionFlagId = retry[0]?.id;
+    }
+  }
+
+  if (isDefined(permissionFlagId)) {
+    const existingRolePermissionFlags = (await entityManager.query(
+      `
+        SELECT id FROM core."rolePermissionFlag"
+        WHERE "roleId" = $1 AND "permissionFlagId" = $2
+        LIMIT 1
+      `,
+      [roleId, permissionFlagId],
+    )) as Array<{ id: string }>;
+
+    if (!existingRolePermissionFlags[0]?.id) {
+      await entityManager.query(
+        `
+          INSERT INTO core."rolePermissionFlag" (
+            id, "roleId", "permissionFlagId",
+            "workspaceId", "universalIdentifier", "applicationId"
+          )
+          VALUES ($1, $2, $3, $4, $5, $6)
+          ON CONFLICT DO NOTHING
+        `,
+        [
+          roleIds.rolePermissionFlagId,
+          roleId,
+          permissionFlagId,
+          workspaceId,
+          roleIds.rolePermissionFlagUniversalIdentifier,
+          applicationId,
+        ],
+      );
+    }
+  }
+
+  const existingRoleTargets = (await entityManager.query(
+    `
+      SELECT id FROM core."roleTarget"
+      WHERE "workspaceId" = $1 AND "agentId" = $2
+      LIMIT 1
+    `,
+    [workspaceId, linkedinMessageAgentId],
+  )) as Array<{ id: string }>;
+
+  if (existingRoleTargets[0]?.id) {
+    await entityManager.query(
+      `
+        UPDATE core."roleTarget"
+        SET "roleId" = $2
+        WHERE id = $1
+      `,
+      [existingRoleTargets[0].id, roleId],
+    );
+  } else {
+    await entityManager.query(
+      `
+        INSERT INTO core."roleTarget" (
+          id, "roleId", "agentId", "userWorkspaceId", "apiKeyId",
+          "workspaceId", "universalIdentifier", "applicationId"
+        )
+        VALUES (
+          $1, $2, $3, NULL, NULL,
+          $4, $5, $6
+        )
+      `,
+      [
+        roleIds.roleTargetId,
+        roleId,
+        linkedinMessageAgentId,
+        workspaceId,
+        roleIds.roleTargetUniversalIdentifier,
+        applicationId,
+      ],
+    );
+  }
+};
+
 const resolveWorkspaceTableName = async ({
   entityManager,
   schemaName,
@@ -798,6 +1045,13 @@ export const prefillOutreachWorkflows = async ({
     workspaceId,
     applicationId,
     replyAgentId: agentIds.reply,
+  });
+
+  await upsertLinkedinMessageAgentSendFilesRole({
+    entityManager,
+    workspaceId,
+    applicationId,
+    linkedinMessageAgentId: agentIds.linkedinMessage,
   });
 
   const candidateIdFieldId = await loadFieldMetadataId({

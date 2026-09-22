@@ -121,6 +121,24 @@ const dedupeCompaniesById = (
   return result;
 };
 
+const dedupePeopleById = (
+  people: OutreachPersonRow[],
+): OutreachPersonRow[] => {
+  const seen = new Set<string>();
+  const result: OutreachPersonRow[] = [];
+
+  for (const person of people) {
+    if (seen.has(person.id)) {
+      continue;
+    }
+
+    seen.add(person.id);
+    result.push(person);
+  }
+
+  return result;
+};
+
 const normalizePersonLinkedinKey = (linkedinUrl: string): string =>
   linkedinUrl
     .trim()
@@ -515,6 +533,15 @@ export const useOutreachLiveWorkingSet = () => {
       }
     },
     [accessToken, activeProjectId],
+  );
+
+  const appendPeople = useCallback(
+    async (peopleToAdd: OutreachPersonRow[]) => {
+      const next = dedupePeopleById([...ephemeralPeople, ...peopleToAdd]);
+
+      await setPeople(next);
+    },
+    [ephemeralPeople, setPeople],
   );
 
   // Paginated REST fetch — same source as candidate table (no 100-record cap).
@@ -933,6 +960,7 @@ export const useOutreachLiveWorkingSet = () => {
     setCompanies,
     appendCompanies,
     setPeople,
+    appendPeople,
     refreshPeopleWorkingSet,
     refreshCompaniesWorkingSet,
     parsedIcp,

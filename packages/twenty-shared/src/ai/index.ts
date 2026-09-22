@@ -55,17 +55,17 @@ export type {
 export type { ExtendedUIMessagePart } from './types/ExtendedUIMessagePart';
 export type { HighlightOrgChartToolOutput } from './types/HighlightOrgChartToolOutput';
 export type { ModelConfiguration } from './types/model-configuration.type';
+export type { NavigateAppToolOutput } from './types/NavigateAppToolOutput';
 export type {
-  AgentToolConfigs,
   SendFilesChannel,
   SendFilesFileSource,
   SendFilesToolConfig,
+  AgentToolConfigs,
 } from './types/SendFilesToolConfig';
 export {
   SEND_FILES_CHANNELS,
   SEND_FILES_FILE_SOURCES,
 } from './types/SendFilesToolConfig';
-export type { NavigateAppToolOutput } from './types/NavigateAppToolOutput';
 export {
   getObjectDatabaseCrudToolAccess,
   canExposeDatabaseCrudReadTools,

@@ -105,6 +105,12 @@ describe('PermissionsService', () => {
         expect(
           service.checkRolePermissions(
             roleWithAllTools as RoleEntity,
+            PermissionFlagType.SEND_FILES_TOOL,
+          ),
+        ).toBe(true);
+        expect(
+          service.checkRolePermissions(
+            roleWithAllTools as RoleEntity,
             PermissionFlagType.IMPORT_CSV,
           ),
         ).toBe(true);

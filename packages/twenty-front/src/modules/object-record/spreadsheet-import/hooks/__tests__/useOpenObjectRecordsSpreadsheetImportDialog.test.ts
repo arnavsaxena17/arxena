@@ -171,4 +171,70 @@ describe('useOpenObjectRecordsSpreadsheetImportDialog', () => {
     expect(recordToCreate).toHaveProperty('idealCustomerProfile', true);
     expect(recordToCreate).toHaveProperty('employees', 0);
   });
+
+  it('should call onRecordsCreated with created records after submit', async () => {
+    const createdRecords = [
+      {
+        id: COMPANY_ID,
+        name: 'Example Company',
+        employees: 0,
+        idealCustomerProfile: true,
+        __typename: 'Company',
+      },
+    ];
+    mockBatchCreateManyRecords.mockResolvedValueOnce(createdRecords);
+
+    const onRecordsCreated = jest.fn().mockResolvedValue(undefined);
+
+    const { result } = renderHook(
+      () => {
+        const { openObjectRecordsSpreadsheetImportDialog } =
+          useOpenObjectRecordsSpreadsheetImportDialog(
+            CoreObjectNameSingular.Company,
+          );
+        return {
+          openObjectRecordsSpreadsheetImportDialog,
+        };
+      },
+      { wrapper: Wrapper },
+    );
+
+    await act(async () => {
+      result.current.openObjectRecordsSpreadsheetImportDialog({
+        onRecordsCreated,
+      });
+    });
+
+    const spreadsheetImportDialog = jotaiStore.get(
+      spreadsheetImportDialogState.atom,
+    );
+
+    const submitData = {
+      validStructuredRows: [
+        {
+          id: COMPANY_ID,
+          name: 'Example Company',
+          idealCustomerProfile: true,
+          employees: '0',
+        },
+      ],
+      invalidStructuredRows: [],
+      allStructuredRows: [
+        {
+          id: COMPANY_ID,
+          name: 'Example Company',
+          __index: 'cbc3985f-dde9-46d1-bae2-c124141700ac',
+          idealCustomerProfile: true,
+          employees: '0',
+        },
+      ],
+    };
+
+    await act(async () => {
+      await spreadsheetImportDialog.options?.onSubmit(submitData, fakeCsv());
+    });
+
+    expect(onRecordsCreated).toHaveBeenCalledTimes(1);
+    expect(onRecordsCreated).toHaveBeenCalledWith(createdRecords);
+  });
 });

@@ -14,19 +14,6 @@ export const EMPTY_SENDER_PROFILE_DRAFT: OutreachSenderProfileDraft = {
   brief: '',
 };
 
-const readDraftBrief = (record: Record<string, unknown>): string => {
-  if (typeof record.brief === 'string') {
-    return record.brief;
-  }
-
-  // Legacy slim key until stored drafts are rewritten.
-  if (typeof record.prose === 'string') {
-    return record.prose;
-  }
-
-  return '';
-};
-
 export const parseSenderProfileDraft = (
   draftJson: string,
 ): OutreachSenderProfileDraft | null => {
@@ -69,14 +56,14 @@ export const normalizeSenderProfileDraft = (
     return {
       targetTitles: toStringList(icp.target_roles ?? record.targetTitles),
       locations: toStringList(icp.geography ?? record.locations),
-      brief: readDraftBrief(record),
+      brief: typeof record.brief === 'string' ? record.brief : '',
     };
   }
 
   return {
     targetTitles: toStringList(record.targetTitles),
     locations: toStringList(record.locations),
-    brief: readDraftBrief(record),
+    brief: typeof record.brief === 'string' ? record.brief : '',
   };
 };
 

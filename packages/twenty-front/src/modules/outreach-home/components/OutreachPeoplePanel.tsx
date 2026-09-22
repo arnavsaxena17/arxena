@@ -34,6 +34,7 @@ import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTabl
 import { tableStateAtom } from '@/candidate-table/states/states';
 import { ContextStoreComponentInstanceContext } from '@/context-store/states/contexts/ContextStoreComponentInstanceContext';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
+import { useOpenObjectRecordsSpreadsheetImportDialog } from '@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog';
 import { OutreachSafeDashboardPath } from '@/outreach-home/components/OutreachSafeDashboardPath';
 import { useAddOutreachRecordsToCrm } from '@/outreach-home/hooks/useAddOutreachRecordsToCrm';
 import { useOutreachEnroll } from '@/outreach-home/hooks/useOutreachEnroll';
@@ -44,6 +45,7 @@ import {
   type OutreachCompanyRow,
   type OutreachPersonRow,
 } from '@/outreach-home/types/outreach-home.types';
+import { mapCrmPersonRecordsToOutreachPersonRows } from '@/outreach-home/utils/map-crm-record-to-outreach-row.util';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
@@ -291,6 +293,7 @@ type OutreachPeoplePanelProps = {
   tableInstanceId: string;
   isLoading?: boolean;
   onRefresh?: () => Promise<void>;
+  appendPeople?: (peopleToAdd: OutreachPersonRow[]) => Promise<void>;
 };
 
 export const OutreachPeoplePanel = ({
@@ -303,6 +306,7 @@ export const OutreachPeoplePanel = ({
   tableInstanceId,
   isLoading = false,
   onRefresh,
+  appendPeople,
 }: OutreachPeoplePanelProps) => {
   const dataTableRef = useRef<{
     removeFilter: (columnIndex: number) => void;
@@ -331,6 +335,25 @@ export const OutreachPeoplePanel = ({
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
   const [stageFilter, setStageFilter] =
     useState<OutreachPeopleQueueFilter>('all');
+
+  const { openObjectRecordsSpreadsheetImportDialog } =
+    useOpenObjectRecordsSpreadsheetImportDialog('person');
+
+  const handleImportPeople = useCallback(() => {
+    openObjectRecordsSpreadsheetImportDialog({
+      onRecordsCreated: async (createdRecords) => {
+        const mappedPeople =
+          mapCrmPersonRecordsToOutreachPersonRows(createdRecords);
+
+        if (mappedPeople.length === 0) {
+          return;
+        }
+
+        await appendPeople?.(mappedPeople);
+        await onRefresh?.();
+      },
+    });
+  }, [appendPeople, onRefresh, openObjectRecordsSpreadsheetImportDialog]);
 
   const stageCounts = useMemo(() => {
     if (isJourneySummaryLoading || !isDefined(journeySummary)) {
@@ -758,7 +781,9 @@ export const OutreachPeoplePanel = ({
         onRemoveFilter={handleRemoveFilter}
         onClearAllFilters={handleClearAllColumnFilters}
         showRedirectToObject={false}
-        showImportCandidates={false}
+        showImportCandidates={true}
+        importButtonTitle="Import People"
+        handleImportCandidates={handleImportPeople}
         showStatistics={false}
         showAddJob={false}
         showEnrichment={false}

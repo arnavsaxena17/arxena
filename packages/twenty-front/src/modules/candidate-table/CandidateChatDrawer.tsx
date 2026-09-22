@@ -63,20 +63,28 @@ const AttachmentPanel = lazy(() => import('./AttachmentPanel'));
 
 const StyledContainer = styled.div`
   display: flex;
+  flex: 1;
   flex-direction: column;
   height: 100%;
-  overflow-y: auto;
+  min-height: 0;
+  overflow: hidden;
+`;
+
+const StyledHeaderSlot = styled.div`
+  flex-shrink: 0;
 `;
 
 const TabContainer = styled.div`
+  flex-shrink: 0;
   padding: 0 ${themeCssVariables.spacing[2]};
 `;
 
 const TabContent = styled.div`
   display: flex;
-  flex: 1; /* Adjusted to make room for message input */
+  flex: 1;
   flex-direction: column;
-  height: calc(100% - 120px);
+  min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
 `;
 
@@ -204,12 +212,10 @@ const DateLabel = styled.span`
 const MessageInputContainer = styled.div`
   background-color: ${(props) => themeCssVariables.background.primary};
   border-top: 1px solid ${(props) => themeCssVariables.border.color.light};
-  bottom: 0;
   box-sizing: border-box;
+  flex-shrink: 0;
   padding: ${(props) => themeCssVariables.spacing[2]};
-  position: sticky;
   width: 100%;
-  z-index: 1;
 `;
 
 const MessageInputTabContainer = styled.div`
@@ -1334,13 +1340,15 @@ export const CandidateChatDrawer = React.memo(() => {
 
   return (
     <StyledContainer>
-      <CandidateInfoHeader
-        candidateData={candidateData}
-        outreachStageLabel={outreachHeaderLabels.outreachStageLabel}
-        outreachNextStepLabel={outreachHeaderLabels.outreachNextStepLabel}
-        outreachNextRetryLabel={outreachHeaderLabels.outreachNextRetryLabel}
-        pendingChannel={outreachHeaderLabels.pendingChannel}
-      />
+      <StyledHeaderSlot>
+        <CandidateInfoHeader
+          candidateData={candidateData}
+          outreachStageLabel={outreachHeaderLabels.outreachStageLabel}
+          outreachNextStepLabel={outreachHeaderLabels.outreachNextStepLabel}
+          outreachNextRetryLabel={outreachHeaderLabels.outreachNextRetryLabel}
+          pendingChannel={outreachHeaderLabels.pendingChannel}
+        />
+      </StyledHeaderSlot>
       <TabContainer>
         <TabList
           componentInstanceId={tabListId}

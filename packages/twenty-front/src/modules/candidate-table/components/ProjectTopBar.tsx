@@ -68,6 +68,7 @@ type ProjectTopBarProps = {
   handleRedirectToObject?: () => void;
   showImportCandidates?: boolean;
   handleImportCandidates?: () => void;
+  importButtonTitle?: string;
   showStatistics?: boolean;
   handleStatistics?: () => void;
   handleBulkMessage?: () => void;
@@ -457,6 +458,7 @@ export const ProjectTopBar = memo(
     handleRedirectToObject,
     showImportCandidates = true,
     handleImportCandidates,
+    importButtonTitle = 'Import Candidates',
     showStatistics = true,
     handleStatistics,
     handleBulkMessage,
@@ -639,6 +641,14 @@ export const ProjectTopBar = memo(
               />
             )}
 
+            {showImportCandidates && handleImportCandidates && (
+              <TooltipIconButton
+                title={importButtonTitle}
+                Icon={IconFileImport}
+                onClick={handleImportCandidates}
+              />
+            )}
+
             {isProjectPage && (
               <>
                 {showRedirectToObject && handleRedirectToObject && (
@@ -646,13 +656,6 @@ export const ProjectTopBar = memo(
                     title="View Project Object"
                     Icon={IconExternalLink}
                     onClick={handleRedirectToObject}
-                  />
-                )}
-                {showImportCandidates && handleImportCandidates && (
-                  <TooltipIconButton
-                    title="Import Candidates"
-                    Icon={IconFileImport}
-                    onClick={handleImportCandidates}
                   />
                 )}
                 {showStatistics && handleStatistics && (

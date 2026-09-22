@@ -29,6 +29,34 @@ export type FetchCompanyDetailsInput = {
   accountId?: string;
 };
 
+type FetchCompanyDetailsResult = {
+  success: boolean;
+  company: CompanyDetailsRecord;
+  companies: CompanyDetailsRecord[];
+  dataSource: string;
+  error?: string;
+};
+
+// Mirror fetch-linkedin-profile people[] — pipe into upsert-companies.
+const withCompaniesArray = (result: {
+  success: boolean;
+  company: CompanyDetailsRecord;
+  dataSource: string;
+  error?: string;
+}): FetchCompanyDetailsResult => {
+  const { company } = result;
+  const hasIdentity =
+    isNonEmptyString(company.id) ||
+    isNonEmptyString(company.name) ||
+    isNonEmptyString(company.linkedinUrl) ||
+    isNonEmptyString(company.website);
+
+  return {
+    ...result,
+    companies: hasIdentity ? [company] : [],
+  };
+};
+
 @Injectable()
 export class FetchCompanyDetailsService {
   private readonly logger = new Logger(FetchCompanyDetailsService.name);
@@ -45,12 +73,7 @@ export class FetchCompanyDetailsService {
   }: {
     workspaceId: string;
     input: FetchCompanyDetailsInput;
-  }): Promise<{
-    success: boolean;
-    company: CompanyDetailsRecord;
-    dataSource: string;
-    error?: string;
-  }> {
+  }): Promise<FetchCompanyDetailsResult> {
     const linkedinUrl = input.linkedinUrl?.trim() ?? '';
     const companyName = input.companyName?.trim() ?? '';
     const website = input.website?.trim() ?? '';
@@ -65,10 +88,10 @@ export class FetchCompanyDetailsService {
       !isNonEmptyString(companyName) &&
       !isNonEmptyString(website)
     ) {
-      return {
+      return withCompaniesArray({
         ...empty,
         error: 'companyName, website, or linkedinUrl is required',
-      };
+      });
     }
 
     try {
@@ -94,10 +117,10 @@ export class FetchCompanyDetailsService {
 
       this.logger.error('fetch-company-details failed', error);
 
-      return {
+      return withCompaniesArray({
         ...empty,
         error: error instanceof Error ? error.message : String(error),
-      };
+      });
     }
   }
 
@@ -107,12 +130,7 @@ export class FetchCompanyDetailsService {
   }: {
     linkedinUrl: string;
     accountId: string;
-  }): Promise<{
-    success: boolean;
-    company: CompanyDetailsRecord;
-    dataSource: string;
-    error?: string;
-  }> {
+  }): Promise<FetchCompanyDetailsResult> {
     const empty = {
       success: false as const,
       company: emptyCompanyDetails(),
@@ -120,20 +138,20 @@ export class FetchCompanyDetailsService {
     };
 
     if (!isNonEmptyString(accountId)) {
-      return {
+      return withCompaniesArray({
         ...empty,
         error: 'No LinkedIn Unipile account on workspace member profile',
-      };
+      });
     }
 
     const slug =
       this.unipileCompanyService.extractPublicIdentifier(linkedinUrl);
 
     if (!isNonEmptyString(slug)) {
-      return {
+      return withCompaniesArray({
         ...empty,
         error: 'Could not parse LinkedIn company URL',
-      };
+      });
     }
 
     const profile = await this.unipileCompanyService.getCompanyProfile(
@@ -142,13 +160,13 @@ export class FetchCompanyDetailsService {
     );
 
     if (!profile) {
-      return {
+      return withCompaniesArray({
         ...empty,
         error: 'Unipile returned no company profile',
-      };
+      });
     }
 
-    return {
+    return withCompaniesArray({
       success: true,
       company: mapUnipileCompanyProfileToDetails(profile, {
         linkedinUrl,
@@ -156,7 +174,7 @@ export class FetchCompanyDetailsService {
       }),
       dataSource: 'unipile',
       error: '',
-    };
+    });
   }
 
   private async fetchBySearch({
@@ -169,12 +187,7 @@ export class FetchCompanyDetailsService {
     companyName: string;
     website: string;
     accountId: string;
-  }): Promise<{
-    success: boolean;
-    company: CompanyDetailsRecord;
-    dataSource: string;
-    error?: string;
-  }> {
+  }): Promise<FetchCompanyDetailsResult> {
     const search = (await this.searchCompaniesService.execute({
       workspaceId,
       input: {
@@ -196,12 +209,12 @@ export class FetchCompanyDetailsService {
     };
 
     if (search.success === false || !search.companies?.[0]) {
-      return {
+      return withCompaniesArray({
         success: false,
         company: emptyCompanyDetails(),
         dataSource: search.dataSource ?? 'auto',
         error: search.error || 'No company found',
-      };
+      });
     }
 
     const hit = mapSearchHitToCompanyDetails(search.companies[0]);
@@ -216,21 +229,21 @@ export class FetchCompanyDetailsService {
       );
 
       if (profile) {
-        return {
+        return withCompaniesArray({
           success: true,
           company: mapUnipileCompanyProfileToDetails(profile, hit),
           dataSource: 'unipile',
           error: '',
-        };
+        });
       }
     }
 
-    return {
+    return withCompaniesArray({
       success: true,
       company: hit,
       dataSource: search.dataSource ?? 'auto',
       error: '',
-    };
+    });
   }
 
   private async resolveAccountId(
