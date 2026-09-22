@@ -218,10 +218,15 @@ const mapOutreachPersonToDataTableRow = (
     lastInboundAt: person.lastInboundAt ?? '',
     lastOutboundAt: person.lastOutboundAt ?? '',
     nextFollowUp: person.outreachResumeAt ?? '',
+    // Flat columns for Handsontable; values come from Candidate.candidateFlags
+    startOutreach: person.candidateFlags?.startOutreach === true,
+    stopOutreach: person.candidateFlags?.stopOutreach === true,
     candidateFlags: {
       engagementStatus: Boolean(person.stage),
       startChat: false,
       stopChat: false,
+      startOutreach: person.candidateFlags?.startOutreach === true,
+      stopOutreach: person.candidateFlags?.stopOutreach === true,
     },
     chatMessages: { edges: [] },
     emailMessages: { edges: [] },

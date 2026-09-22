@@ -85,6 +85,11 @@ export type OutreachPersonRow = {
   doNotContact?: boolean;
   pendingChannel?: string;
   candidateId?: string;
+  /** From Candidate.candidateFlags — not Person fields. */
+  candidateFlags?: {
+    startOutreach?: boolean;
+    stopOutreach?: boolean;
+  };
   experimentVariant?: 'A' | 'B' | null;
   nextStepLabel?: string;
   nextRetryAt?: string | null;

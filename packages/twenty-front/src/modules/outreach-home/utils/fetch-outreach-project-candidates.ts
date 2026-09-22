@@ -1,6 +1,8 @@
 import { isNonEmptyString } from '@sniptt/guards';
 import axios from 'axios';
 import {
+  type CandidateFlags,
+  getCandidateFlag,
   parseOutreachAnalytics,
   resolveOutreachLastInboundAt,
   resolveOutreachLastOutboundAt,
@@ -22,6 +24,7 @@ export type OutreachProjectCandidateRecord = {
   linkedinFollowUpCount?: number | null;
   outreachAnalytics?: unknown;
   experimentVariant?: string | null;
+  candidateFlags?: CandidateFlags | null;
   peopleId?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
@@ -84,6 +87,14 @@ export const formatReplyAfterTouch = (
 
   return '';
 };
+
+export const resolveCandidateStartOutreach = (
+  candidate: Pick<OutreachProjectCandidateRecord, 'candidateFlags'>,
+): boolean => getCandidateFlag(candidate, 'startOutreach');
+
+export const resolveCandidateStopOutreach = (
+  candidate: Pick<OutreachProjectCandidateRecord, 'candidateFlags'>,
+): boolean => getCandidateFlag(candidate, 'stopOutreach');
 
 export const fetchOutreachProjectCandidates = async (
   projectId: string,

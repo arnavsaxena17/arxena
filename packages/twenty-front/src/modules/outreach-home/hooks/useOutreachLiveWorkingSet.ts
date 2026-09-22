@@ -58,6 +58,8 @@ import {
   resolveCandidateLastInboundAt,
   resolveCandidateLastOutboundAt,
   resolveCandidateOutreachResumeAt,
+  resolveCandidateStartOutreach,
+  resolveCandidateStopOutreach,
   type OutreachProjectCandidateRecord,
 } from '@/outreach-home/utils/fetch-outreach-project-candidates';
 import { isOutreachProject } from '@/outreach-home/utils/is-outreach-project';
@@ -121,9 +123,7 @@ const dedupeCompaniesById = (
   return result;
 };
 
-const dedupePeopleById = (
-  people: OutreachPersonRow[],
-): OutreachPersonRow[] => {
+const dedupePeopleById = (people: OutreachPersonRow[]): OutreachPersonRow[] => {
   const seen = new Set<string>();
   const result: OutreachPersonRow[] = [];
 
@@ -175,7 +175,7 @@ const outreachPersonSignature = (people: OutreachPersonRow[]): string =>
   people
     .map(
       (person) =>
-        `${person.id}:${person.stage}:${person.candidateId ?? ''}:${person.name}:${person.title}:${person.companyName}:${person.experimentVariant ?? ''}:${person.recruiterStatus ?? ''}:${person.candConversationStatus ?? ''}:${person.workflowRunStatus ?? ''}:${person.messagesExchanged?.length ?? 0}:${person.outreachConversationStage ?? ''}:${person.needsApproval ? '1' : '0'}:${person.nextStepLabel ?? ''}:${person.nextRetryAt ?? ''}:${person.outreachResumeAt ?? ''}:${person.createdAt ?? ''}:${person.updatedAt ?? ''}`,
+        `${person.id}:${person.stage}:${person.candidateId ?? ''}:${person.name}:${person.title}:${person.companyName}:${person.experimentVariant ?? ''}:${person.recruiterStatus ?? ''}:${person.candConversationStatus ?? ''}:${person.workflowRunStatus ?? ''}:${person.messagesExchanged?.length ?? 0}:${person.outreachConversationStage ?? ''}:${person.needsApproval ? '1' : '0'}:${person.nextStepLabel ?? ''}:${person.nextRetryAt ?? ''}:${person.outreachResumeAt ?? ''}:${person.candidateFlags?.startOutreach ? '1' : '0'}:${person.candidateFlags?.stopOutreach ? '1' : '0'}:${person.createdAt ?? ''}:${person.updatedAt ?? ''}`,
     )
     .join('|');
 
@@ -816,6 +816,10 @@ export const useOutreachLiveWorkingSet = () => {
           pendingChannel: candidate.pendingChannel ?? undefined,
           linkedinFollowUpCount: followUpCount,
           outreachResumeAt,
+          candidateFlags: {
+            startOutreach: resolveCandidateStartOutreach(candidate),
+            stopOutreach: resolveCandidateStopOutreach(candidate),
+          },
           nextStepLabel,
           nextRetryAt,
           needsApproval: runSummary?.needsApproval ?? false,

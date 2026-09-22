@@ -182,6 +182,8 @@ const COLUMN_TITLE_OVERRIDES: Record<string, string> = {
   nextStep: 'Next',
   nextRetry: 'Next retry',
   needsApproval: 'Needs approval',
+  startOutreach: 'Start outreach',
+  stopOutreach: 'Stop outreach',
   createdAt: 'Date Added',
   updatedAt: 'Last Modified',
 };
@@ -238,6 +240,8 @@ const OUTREACH_HOME_ALWAYS_SHOW_COLUMNS = [
   'outreachSequenceStage',
   'outreachConversationStage',
   'nextStep',
+  'startOutreach',
+  'stopOutreach',
   'messagesExchanged',
   'createdAt',
   'updatedAt',
@@ -1157,6 +1161,8 @@ export const TableColumns = ({
     'outreachSequenceStage',
     'outreachConversationStage',
     'nextStep',
+    'startOutreach',
+    'stopOutreach',
     'messagesExchanged',
     'lastMessage',
     'lastInboundAt',
@@ -1194,6 +1200,8 @@ export const TableColumns = ({
       const isNextFollowUpField = column === 'nextFollowUp';
       const isNextRetryField = column === 'nextRetry';
       const isNeedsApprovalField = column === 'needsApproval';
+      const isOutreachFlagField =
+        column === 'startOutreach' || column === 'stopOutreach';
       const isOutreachDateField =
         column === 'lastInboundAt' ||
         column === 'lastOutboundAt' ||
@@ -1213,7 +1221,9 @@ export const TableColumns = ({
                 ? 260
                 : column === 'lastMessage'
                   ? 200
-                  : 150,
+                  : isOutreachFlagField
+                    ? 110
+                    : 150,
         renderer: isLabeledStatusField
           ? statusRenderer
           : isMessagingChannelField
@@ -1224,9 +1234,11 @@ export const TableColumns = ({
                 ? nextFollowUpRenderer
                 : isNeedsApprovalField
                   ? needsApprovalRenderer
-                  : isOutreachDateField
-                    ? dateRenderer
-                    : simpleRenderer,
+                  : isOutreachFlagField
+                    ? booleanToggleRenderer
+                    : isOutreachDateField
+                      ? dateRenderer
+                      : simpleRenderer,
         type:
           isRecruiterStatusField ||
           isMessagingChannelField ||

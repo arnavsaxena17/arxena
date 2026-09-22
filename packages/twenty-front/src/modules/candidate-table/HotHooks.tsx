@@ -600,6 +600,8 @@ const DIRECT_TABLE_FIELDS = new Set([
   'jobCompanyName',
   'updatedAt',
   'stopChat',
+  'startOutreach',
+  'stopOutreach',
   'source',
   'messagingChannel',
   'resdexNaukriUrl',
@@ -832,6 +834,85 @@ const processBackendUpdate = async (
           resolveOutreachConversationStageValue(newValue),
         accessToken: latestToken,
       });
+      return;
+    }
+
+    // Outreach home rows use peopleId as row.id; prefer enrolled candidateId.
+    if (prop === 'startOutreach' || prop === 'stopOutreach') {
+      const enrolledCandidateId =
+        typeof rowData.candidateId === 'string' && isUUID(rowData.candidateId)
+          ? rowData.candidateId
+          : typeof rowData.isOutreachHomeRow === 'boolean' &&
+              rowData.isOutreachHomeRow === true
+            ? undefined
+            : candidateId;
+
+      if (!enrolledCandidateId || !isUUID(enrolledCandidateId)) {
+        revertTableState(
+          rowData,
+          prop,
+          oldValue,
+          tableRef.current?.hotInstance,
+          setTableState,
+        );
+        return;
+      }
+
+      const projectId =
+        typeof rowData.outreachProjectId === 'string' &&
+        rowData.outreachProjectId.length > 0
+          ? rowData.outreachProjectId
+          : undefined;
+
+      if (newValue === true) {
+        const endpoint =
+          prop === 'startOutreach'
+            ? `${REACT_APP_SERVER_BASE_URL}/outreach-command/candidates/start-outreach`
+            : `${REACT_APP_SERVER_BASE_URL}/outreach-command/candidates/stop-outreach`;
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${latestToken}`,
+          },
+          body: JSON.stringify({
+            candidateIds: [enrolledCandidateId],
+            ...(projectId ? { projectId } : {}),
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+
+        // Start clears stop; stop clears start — keep sibling cell in sync.
+        const siblingProp =
+          prop === 'startOutreach' ? 'stopOutreach' : 'startOutreach';
+        updateTableState(rowData, siblingProp, false, setTableState, tableRef.current?.hotInstance);
+        return;
+      }
+
+      const response = await fetch(
+        `${REACT_APP_SERVER_BASE_URL}/candidate-sourcing/update-candidate-field`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${latestToken}`,
+          },
+          body: JSON.stringify({
+            candidateId: enrolledCandidateId,
+            fieldName: prop,
+            value: false,
+            personId: rowData.personId,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
       return;
     }
 
