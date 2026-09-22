@@ -106,15 +106,24 @@ export async function GET(
       !contentType.includes('application/json') ||
       !text.trim().startsWith('{')
     ) {
-      console.error('Org chart proxy: upstream returned non-JSON', {
-        url,
-        status: response.status,
-        contentType,
-        bodyPreview: text.slice(0, 100),
-        userAgent: effectiveUserAgent ?? '(none)',
-        referer: referer ?? '(none)',
-        clientIp: clientIp ?? '(none)',
-      });
+      // Expected client/crawler 4xx (e.g. Invalid company ID) — skip PM2 noise;
+      // access logs cover request volume
+      const isExpectedClientError =
+        response.status >= 400 && response.status < 500;
+      if (
+        !isExpectedClientError ||
+        process.env.LOG_ORG_CHART_REQUESTS === '1'
+      ) {
+        console.error('Org chart proxy: upstream returned non-JSON', {
+          url,
+          status: response.status,
+          contentType,
+          bodyPreview: text.slice(0, 100),
+          userAgent: effectiveUserAgent ?? '(none)',
+          referer: referer ?? '(none)',
+          clientIp: clientIp ?? '(none)',
+        });
+      }
       return NextResponse.json(
         {
           status: 'error',

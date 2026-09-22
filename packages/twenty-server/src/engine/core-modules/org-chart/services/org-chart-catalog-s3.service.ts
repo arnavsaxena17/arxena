@@ -99,7 +99,8 @@ export class OrgChartCatalogS3Service implements OnModuleInit {
         return null;
       }
       const parsed = JSON.parse(body) as OrgChartCatalogDocument;
-      this.logger.log(
+      // Per-request hit/miss stays out of PM2; use access logs for volume
+      this.logger.debug(
         `Org chart catalog S3 hit companyId=${input.companyId} key=${key}`,
       );
       return parsed;
@@ -117,7 +118,7 @@ export class OrgChartCatalogS3Service implements OnModuleInit {
           (error as { $metadata?: { httpStatusCode?: number } }).$metadata
             ?.httpStatusCode === 404)
       ) {
-        this.logger.log(
+        this.logger.debug(
           `Org chart catalog S3 miss companyId=${input.companyId} key=${key}`,
         );
         return null;
@@ -152,7 +153,7 @@ export class OrgChartCatalogS3Service implements OnModuleInit {
           ContentType: 'application/json',
         }),
       );
-      this.logger.log(
+      this.logger.debug(
         `Org chart catalog S3 write-through companyId=${input.companyId} key=${key}`,
       );
     } catch (error) {

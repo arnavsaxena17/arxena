@@ -48,16 +48,25 @@ export class WebSocketService {
 
       // Listen for acknowledgments
       socket.on('notification_received', (data) => {
-        console.log("data in notification_received::", data);
-        console.log("data in notification_received socket.id::", socket.id);
-        console.log("data in notification_received socket.handshake.query::", socket.handshake.query);
-        console.log("data in notification_received socket.handshake.query.userId::", socket.handshake.query.userId);
+        console.log('data in notification_received::', data);
+        console.log('data in notification_received socket.id::', socket.id);
+        console.log(
+          'data in notification_received socket.handshake.query::',
+          socket.handshake.query,
+        );
+        console.log(
+          'data in notification_received socket.handshake.query.userId::',
+          socket.handshake.query.userId,
+        );
         const userId = socket.handshake.query.userId;
-        console.log("userId::", userId);
+        console.log('userId::', userId);
         if (userId) {
           const key = `notification_received_${userId}`;
           const listener = this.acknowledgmentListeners.get(key);
-          console.log("acknowledgmentListeners::", this.acknowledgmentListeners);
+          console.log(
+            'acknowledgmentListeners::',
+            this.acknowledgmentListeners,
+          );
           // console.log("listener::", listener);
           if (listener) {
             listener(data);
@@ -104,7 +113,11 @@ export class WebSocketService {
     });
   }
 
-  emitConnectionState(state: { state: WAConnectionState; qr: string | null; isConnected: boolean }) {
+  emitConnectionState(state: {
+    state: WAConnectionState;
+    qr: string | null;
+    isConnected: boolean;
+  }) {
     if (!this.server) {
       console.error('WebSocket server not initialized for emitConnectionState');
       return;
@@ -162,7 +175,9 @@ export class WebSocketService {
     try {
       const channel = `${WEBSOCKET_USER_CHANNEL_PREFIX}${userId}`;
       const message: WebSocketUserRedisPayload = { event, data };
-      await this.redisClientService.getClient().publish(channel, JSON.stringify(message));
+      await this.redisClientService
+        .getClient()
+        .publish(channel, JSON.stringify(message));
       console.log(
         `Published websocket user event "${event}" to Redis for user ${userId}`,
       );
@@ -173,7 +188,6 @@ export class WebSocketService {
 
   sendToRoom(room: string, event: string, data: any) {
     if (!this.server) {
-      console.error('WebSocket server not initialized');
       return;
     }
     this.server.to(room).emit(event, {
@@ -185,7 +199,9 @@ export class WebSocketService {
 
   getActiveConnections(): number {
     const count = this.server?.sockets?.sockets?.size || 0;
-    const connectedSockets = Array.from(this.server?.sockets?.sockets?.keys() || []);
+    const connectedSockets = Array.from(
+      this.server?.sockets?.sockets?.keys() || [],
+    );
     // console.log('Active socket connections:', {
     //   count,
     //   socketIds: connectedSockets
@@ -194,17 +210,23 @@ export class WebSocketService {
   }
 
   // Add method to wait for acknowledgment
-  async waitForAcknowledgment(userId: string, timeout: number = 5000): Promise<boolean> {
+  async waitForAcknowledgment(
+    userId: string,
+    timeout: number = 5000,
+  ): Promise<boolean> {
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         this.acknowledgmentListeners.delete(`notification_received_${userId}`);
         reject(new Error('Acknowledgment timeout'));
       }, timeout);
 
-      this.acknowledgmentListeners.set(`notification_received_${userId}`, () => {
-        clearTimeout(timeoutId);
-        resolve(true);
-      });
+      this.acknowledgmentListeners.set(
+        `notification_received_${userId}`,
+        () => {
+          clearTimeout(timeoutId);
+          resolve(true);
+        },
+      );
     });
   }
 

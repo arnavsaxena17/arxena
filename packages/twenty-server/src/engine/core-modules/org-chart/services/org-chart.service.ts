@@ -803,7 +803,7 @@ export class OrgChartService {
           });
 
         if (catalogDocument) {
-          this.logger.log(
+          this.logger.debug(
             `Serving org chart from catalog S3 for companyId=${companyId} via=${catalogCompanyId}`,
           );
           return {
@@ -821,7 +821,8 @@ export class OrgChartService {
         orgChartEsTransportError = esOutcome.esTransportError === true;
 
         if (esOutcome.document) {
-          this.logger.log(
+          // Catalog miss → ES is less common; still debug so crawlers don't flood PM2
+          this.logger.debug(
             `Serving org chart from ES (catalog miss) companyId=${companyId} via=${esCompanyId}`,
           );
           void this.orgChartCatalogS3Service.putCatalogDocument({
