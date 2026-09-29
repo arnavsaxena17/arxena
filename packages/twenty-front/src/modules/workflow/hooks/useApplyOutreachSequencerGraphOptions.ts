@@ -10,6 +10,11 @@ export type ApplyOutreachSequencerGraphOptionsInput = {
   meetingFollowUpEnabled: boolean;
   checkDeduplicationPerCompany: boolean;
   qualifyProspectEnabled: boolean;
+  commentBeforeConnect: boolean;
+  commentRounds: number;
+  inboundInviteWaitDays: number;
+  inmailEnabled: boolean;
+  testMode: boolean;
 };
 
 export const useApplyOutreachSequencerGraphOptions = () => {

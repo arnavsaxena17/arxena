@@ -6,6 +6,7 @@ export type WorkflowFetchLinkedinActivityActionInput = {
   postsLimit?: number;
   includeUserComments?: boolean;
   userCommentsLimit?: number;
+  excludePostSocialIds?: string[];
   // Resolved at runtime from the workspace member profile
   unipileAccountId?: string;
 };

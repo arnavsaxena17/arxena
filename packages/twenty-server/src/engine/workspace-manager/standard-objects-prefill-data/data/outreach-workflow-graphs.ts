@@ -4,8 +4,10 @@ import {
   buildOutreachConnectionNotePrompt,
   buildOutreachCreateReferralCandidatePrompt,
   buildOutreachFallbackEmailPrompt,
+  buildOutreachFallbackInmailPrompt,
   buildOutreachFirstMessagePrompt,
   buildOutreachInboundSignalExtractionPrompt,
+  buildOutreachLinkedinPostCommentPrompt,
   buildOutreachMeetingBookedDetailsTemplate,
   buildOutreachMeetingReminderPrompt,
   buildOutreachNoShowPingPrompt,
@@ -27,17 +29,22 @@ import {
   OUTREACH_UPLOAD_PROFILES_SAMPLE_OUTPUT,
   OUTREACH_UPSERT_COMPANIES_SAMPLE_OUTPUT,
   OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT,
+  OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_SAMPLE_OUTPUT,
+  OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_SAMPLE_OUTPUT,
+  OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_SAMPLE_OUTPUT,
 } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-sample-output.const';
 import {
   OUTREACH_WF_AGENT_EMAIL,
   OUTREACH_WF_AGENT_EXTRACT,
   OUTREACH_WF_AGENT_LINKEDIN,
   OUTREACH_WF_AGENT_QUALIFY,
+  OUTREACH_WF_AGENT_LOCAL_PLACE,
   OUTREACH_WF_AGENT_REPLY,
   OUTREACH_WF_AI_EMAIL_OUTPUT,
   OUTREACH_WF_AI_EXTRACT_OUTPUT,
   OUTREACH_WF_AI_MESSAGE_OUTPUT,
   OUTREACH_WF_AI_QUALIFY_OUTPUT,
+  OUTREACH_WF_AI_LOCAL_PLACE_OUTPUT,
   OUTREACH_WF_AI_REPLY_OUTPUT,
   OUTREACH_WF_FIELD,
   OUTREACH_WF_HARVEST_PROJECT_ID,
@@ -48,6 +55,12 @@ import {
   gtmWfAiAgentStep,
   gtmWfDatabaseEventTrigger,
   gtmWfDelayStep,
+  gtmWfRandomDelayStep,
+  gtmWfViewLinkedinProfileStep,
+  gtmWfFetchLinkedinActivityStep,
+  gtmWfCommentOnLinkedinPostStep,
+  gtmWfAcceptLinkedinReceivedInvitationStep,
+  gtmWfSendLinkedinInmailStep,
   gtmWfEntryStageTriggerFilter,
   gtmWfFilterStep,
   gtmWfFindField,
@@ -81,12 +94,23 @@ const IDS = {
   fetchAndSaveUpload: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
   webhookSearchPeople: '12e8080d-8fe4-4f9c-9f6f-ca61c6f1ddba',
   webhookUploadProfiles: '137cf204-1cb1-4579-964c-2ed0a1abb687',
+  localBizParams: 'b2c3d4e5-f6a7-4b8c-8d0e-1f2a3b4c5d6e',
+  localBizPlan: 'c3d4e5f6-a7b8-4c9d-8e1f-2a3b4c5d6e7f',
+  localBizConfirm: 'd4e5f6a7-b8c9-4d0e-8f2a-3b4c5d6e7f80',
+  localBizConfirmIf: 'e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091',
+  localBizFetch: 'f6a7b8c9-d0e1-4f2a-8b4c-5d6e7f8091a2',
+  localPlacesParams: 'a7b8c9d0-e1f2-4a3b-8c4d-5e6f708192a3',
+  localPlacesPreviewAgent: 'b8c9d0e1-f2a3-4b4c-8d5e-6f708192a3b4',
+  localPlacesConfirm: 'c9d0e1f2-a3b4-4c5d-8e6f-708192a3b4c5',
+  localPlacesConfirmIf: 'd0e1f2a3-b4c5-4d6e-8f70-8192a3b4c5d6',
+  localPlacesClassifyUpsert: 'e1f2a3b4-c5d6-4e7f-8071-92a3b4c5d6e7',
   searchCompanies: '6f42bcf3-9860-461e-9a90-26a513320895',
   upsertCompanies: '12ed9ad9-6f51-42d3-a038-ff4f2cabd15c',
   acceptFilter: 'cf89ad04-1bfd-4fcf-82d1-05fe1e364bc8',
   acceptFind: '0191a76e-bf48-417c-b2e2-7ce97e49edf3',
   fetchMessages: '8d620ee9-c194-4503-8e3d-8a8ba060e94b',
   fetchProfile: '4a2b0979-c2c2-4d04-9c8f-6ea2a9399cf8',
+  fetchPostsAccept: '4a2b0979-c2c2-4d04-9c8f-6ea2a9399cf9',
   draftFirst: '4582ca2b-2b80-4c4f-a802-7a923b296322',
   approveFirst: '4d4e9ac8-ecdd-4174-af3e-43b31971079b',
   sendFirst: 'ff764394-35a1-485c-ba86-595e1ef82171',
@@ -126,6 +150,10 @@ const IDS = {
   waitAccept: '67f433aa-9f97-4b87-aa9e-792d23839323',
   reloadAfterWait: '69577635-4f2f-4596-8828-441c8484ad38',
   stillSent: 'a63c1a7d-b384-4a9e-9c78-dc95c0e6bc01',
+  draftInmail: 'c7a10300-aaaa-4fcb-a7d8-17a7736ed045',
+  approveInmail: 'c7a10301-aaaa-4fcb-a7d8-17a7736ed045',
+  sendInmail: 'c7a10302-aaaa-4fcb-a7d8-17a7736ed045',
+  markInmailSent: 'c7a10303-aaaa-4fcb-a7d8-17a7736ed045',
   enrich: '1491491c-71c3-4ebd-9dfa-a3ee77b63e7c',
   enrichIf: '40a8ee6c-aaaa-45b7-8f8a-59342d23308f',
   draftEmail: '40a8ee6b-5ca1-45b7-8f8a-59342d23308f',
@@ -140,6 +168,8 @@ const IDS = {
   calendar: '99a3378a-c6d4-43c4-bbf2-b703d4fdce09',
   extractSignals: '51a10028-aaaa-4fcb-a7d8-17a7736ed045',
   validateSignals: '51a10029-aaaa-4fcb-a7d8-17a7736ed045',
+  fetchProfileReply: '51a10053-aaaa-4fcb-a7d8-17a7736ed045',
+  fetchPostsReply: '51a1002e-aaaa-4fcb-a7d8-17a7736ed045',
   draftReply: '55833274-116e-4522-98b3-316eac214fab',
   approveReply: 'c83e4113-c3b9-4207-8baf-e311be592bf3',
   sendReply: '47575b73-a4ae-444f-95c4-3847e850ae87',
@@ -236,6 +266,25 @@ const IDS = {
   approveConnectNote: 'c7a10011-aaaa-4fcb-a7d8-17a7736ed045',
   draftConnectNoteNoCompany: 'c7a10012-aaaa-4fcb-a7d8-17a7736ed045',
   approveConnectNoteNoCompany: 'c7a10013-aaaa-4fcb-a7d8-17a7736ed045',
+  // Comment-before-connect warm-up (Edit Workflow option)
+  viewBeforeComment: 'c7a10100-aaaa-4fcb-a7d8-17a7736ed045',
+  delayAfterView: 'c7a10101-aaaa-4fcb-a7d8-17a7736ed045',
+  fetchActivity1: 'c7a10102-aaaa-4fcb-a7d8-17a7736ed045',
+  hasPost1If: 'c7a10103-aaaa-4fcb-a7d8-17a7736ed045',
+  draftComment1: 'c7a10104-aaaa-4fcb-a7d8-17a7736ed045',
+  approveComment1: 'c7a10105-aaaa-4fcb-a7d8-17a7736ed045',
+  sendComment1: 'c7a10106-aaaa-4fcb-a7d8-17a7736ed045',
+  stampCommented: 'c7a10107-aaaa-4fcb-a7d8-17a7736ed045',
+  delayBetweenCommentRounds: 'c7a10108-aaaa-4fcb-a7d8-17a7736ed045',
+  fetchActivity2: 'c7a10109-aaaa-4fcb-a7d8-17a7736ed045',
+  hasPost2If: 'c7a1010a-aaaa-4fcb-a7d8-17a7736ed045',
+  draftComment2: 'c7a1010b-aaaa-4fcb-a7d8-17a7736ed045',
+  approveComment2: 'c7a1010c-aaaa-4fcb-a7d8-17a7736ed045',
+  sendComment2: 'c7a1010d-aaaa-4fcb-a7d8-17a7736ed045',
+  waitInboundInvite: 'c7a1010e-aaaa-4fcb-a7d8-17a7736ed045',
+  acceptInboundInvite: 'c7a1010f-aaaa-4fcb-a7d8-17a7736ed045',
+  inboundAcceptedIf: 'c7a10110-aaaa-4fcb-a7d8-17a7736ed045',
+  markInboundAccepted: 'c7a10111-aaaa-4fcb-a7d8-17a7736ed045',
   // QUEUED re-entry: skip Send LinkedIn connection if already stamped
   connectionNotSentIf: 'c7a10014-aaaa-4fcb-a7d8-17a7736ed045',
   connectionNotSentNoCompanyIf: 'c7a10015-aaaa-4fcb-a7d8-17a7736ed045',
@@ -286,6 +335,14 @@ export type OutreachSequencerGraphOptions = {
   meetingFollowUpEnabled: boolean;
   checkDeduplicationPerCompany: boolean;
   qualifyProspectEnabled: boolean;
+  // View profile → random 1–2h → comment → wait for inbound invite → else connect.
+  commentBeforeConnect: boolean;
+  commentRounds: 1 | 2;
+  inboundInviteWaitDays: number;
+  // After connection wait: draft+send SN InMail before enrich/email fallback.
+  inmailEnabled: boolean;
+  // Collapses every DELAY step from days → 1 minute for rapid testing.
+  testMode: boolean;
 };
 
 export const DEFAULT_OUTREACH_SEQUENCER_GRAPH_OPTIONS: OutreachSequencerGraphOptions =
@@ -296,14 +353,33 @@ export const DEFAULT_OUTREACH_SEQUENCER_GRAPH_OPTIONS: OutreachSequencerGraphOpt
     meetingFollowUpEnabled: true,
     checkDeduplicationPerCompany: false,
     qualifyProspectEnabled: true,
+    commentBeforeConnect: false,
+    commentRounds: 1,
+    inboundInviteWaitDays: 3,
+    inmailEnabled: false,
+    testMode: false,
   };
 
 const resolveOutreachSequencerGraphOptions = (
   options?: Partial<OutreachSequencerGraphOptions>,
-): OutreachSequencerGraphOptions => ({
-  ...DEFAULT_OUTREACH_SEQUENCER_GRAPH_OPTIONS,
-  ...options,
-});
+): OutreachSequencerGraphOptions => {
+  const merged = {
+    ...DEFAULT_OUTREACH_SEQUENCER_GRAPH_OPTIONS,
+    ...options,
+  };
+  const commentRounds = merged.commentRounds === 2 ? 2 : 1;
+  const inboundInviteWaitDays =
+    typeof merged.inboundInviteWaitDays === 'number' &&
+    merged.inboundInviteWaitDays > 0
+      ? Math.min(30, Math.floor(merged.inboundInviteWaitDays))
+      : DEFAULT_OUTREACH_SEQUENCER_GRAPH_OPTIONS.inboundInviteWaitDays;
+
+  return {
+    ...merged,
+    commentRounds,
+    inboundInviteWaitDays,
+  };
+};
 
 // HITL uses approve.editedBody; automated sends the draft message directly.
 const hitlOrDraftMessage = ({
@@ -318,7 +394,23 @@ const hitlOrDraftMessage = ({
   humanInTheLoop ? `{{${approveId}.editedBody}}` : `{{${draftId}.message}}`;
 
 export const inferOutreachSequencerGraphOptionsFromSteps = (
-  steps: Array<{ id?: string; type?: string }> | null | undefined,
+  steps:
+    | Array<{
+        id?: string;
+        type?: string;
+        settings?: {
+          input?: {
+            duration?: {
+              days?: number;
+              hours?: number;
+              minutes?: number;
+              seconds?: number;
+            };
+          };
+        };
+      }>
+    | null
+    | undefined,
   _trigger?: { type?: string } | null,
 ): OutreachSequencerGraphOptions => {
   const stepIds = new Set(
@@ -326,6 +418,13 @@ export const inferOutreachSequencerGraphOptionsFromSteps = (
       .map((step) => step.id)
       .filter((stepId): stepId is string => typeof stepId === 'string'),
   );
+  // waitAccept is always present; 1-minute duration means testMode was applied.
+  const waitAcceptStep = (steps ?? []).find(
+    (step) => step.id === IDS.waitAccept,
+  );
+  const waitAcceptDuration = waitAcceptStep?.settings?.input?.duration;
+  const testMode =
+    waitAcceptDuration?.minutes === 1 && (waitAcceptDuration.days ?? 0) === 0;
 
   return {
     useLlmConnectionNote: stepIds.has(IDS.draftConnectNote),
@@ -335,6 +434,18 @@ export const inferOutreachSequencerGraphOptionsFromSteps = (
     meetingFollowUpEnabled: stepIds.has(IDS.meetingBookedFind),
     checkDeduplicationPerCompany: stepIds.has(IDS.hasCompanyIf),
     qualifyProspectEnabled: stepIds.has(IDS.qualifyDraft),
+    commentBeforeConnect: stepIds.has(IDS.viewBeforeComment),
+    commentRounds: stepIds.has(IDS.fetchActivity2) ? 2 : 1,
+    inboundInviteWaitDays: (() => {
+      const waitStep = (steps ?? []).find(
+        (step) => step.id === IDS.waitInboundInvite,
+      );
+      const days = waitStep?.settings?.input?.duration?.days;
+
+      return typeof days === 'number' && days > 0 ? days : 3;
+    })(),
+    inmailEnabled: stepIds.has(IDS.sendInmail),
+    testMode,
   };
 };
 
@@ -426,8 +537,11 @@ const linkedinDraftPrompt = (
   buildOutreachFirstMessagePrompt({
     senderJson: senderJson(),
     prospectEnrichmentJson: prospectEnrichment(findId),
+    // Accepted-branch fetch; FU steps hydrate this by chip reference when needed.
+    prospectProfileText: `{{${IDS.fetchProfile}.text}}`,
+    prospectPostsText: `{{${IDS.fetchPostsAccept}.text}}`,
     chatHistory: `{{${IDS.fetchMessages}.text}}`,
-    calendarSlots: `{{${IDS.acceptCalendar}.slots}}`,
+    calendarSlots: `{{${IDS.acceptCalendar}.text}}`,
     kind,
   });
 
@@ -444,6 +558,7 @@ const followUpSteps = ({
   nextFindId,
   isLast,
   humanInTheLoop,
+  testMode,
 }: {
   n: 1 | 2 | 3;
   findId: string;
@@ -457,6 +572,7 @@ const followUpSteps = ({
   nextFindId?: string;
   isLast: boolean;
   humanInTheLoop: boolean;
+  testMode: boolean;
 }) => [
   candidateFind(findId, `Reload candidate before follow-up ${n}`, [
     personFindId,
@@ -526,6 +642,7 @@ const followUpSteps = ({
           id: waitId,
           name: `Wait 7 days before follow-up ${n + 1}`,
           days: 7,
+          testMode,
           nextStepIds: [nextFindId],
         }),
       ]
@@ -538,8 +655,10 @@ const followUpSteps = ({
 // stamp REPLIED and stop so candidate.upserted re-enters the replied branch.
 const acceptedBranchSteps = ({
   humanInTheLoop,
+  testMode,
 }: {
   humanInTheLoop: boolean;
+  testMode: boolean;
 }) => [
   candidateFind(IDS.acceptFind, 'Load Candidate', [IDS.acceptPersonFind]),
   personFind(IDS.acceptPersonFind, 'Load Person', IDS.acceptFind, [
@@ -599,10 +718,25 @@ const acceptedBranchSteps = ({
     logicFunctionId: '__LF_get-calendar-availability__',
     logicFunctionInput: {
       days: 5,
-      slotMinutes: 20,
+      slotMinutes: 30,
       workspaceMemberId: gtmWfMemberId(),
     },
     sampleOutput: OUTREACH_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
+    nextStepIds: [IDS.fetchPostsAccept],
+  }),
+  gtmWfFetchLinkedinActivityStep({
+    id: IDS.fetchPostsAccept,
+    name: 'Fetch LinkedIn posts (before opener)',
+    candidateId: gtmWfFindId(IDS.acceptFind),
+    linkedinProfileId: gtmWfFindField(
+      IDS.acceptPersonFind,
+      OUTREACH_WF_FIELD.linkedinProfileIdPath,
+    ),
+    linkedinUrl: gtmWfFindField(
+      IDS.acceptPersonFind,
+      OUTREACH_WF_FIELD.linkedinLinkUrlPath,
+    ),
+    postsLimit: 5,
     nextStepIds: [IDS.draftFirst],
   }),
   gtmWfAiAgentStep({
@@ -652,6 +786,7 @@ const acceptedBranchSteps = ({
     id: IDS.waitFu1,
     name: 'Wait 7 days before follow-up',
     days: 7,
+    testMode,
     nextStepIds: [IDS.reloadFu1],
   }),
   ...followUpSteps({
@@ -667,6 +802,7 @@ const acceptedBranchSteps = ({
     nextFindId: IDS.reloadFu2,
     isLast: false,
     humanInTheLoop,
+    testMode,
   }),
   ...followUpSteps({
     n: 2,
@@ -681,6 +817,7 @@ const acceptedBranchSteps = ({
     nextFindId: IDS.reloadFu3,
     isLast: false,
     humanInTheLoop,
+    testMode,
   }),
   ...followUpSteps({
     n: 3,
@@ -693,6 +830,7 @@ const acceptedBranchSteps = ({
     stampId: IDS.stampFu3,
     isLast: true,
     humanInTheLoop,
+    testMode,
   }),
 ];
 
@@ -701,10 +839,12 @@ const repliedBranchSteps = ({
   humanInTheLoop,
   whatsappEnabled,
   meetingFollowUpEnabled,
+  testMode,
 }: {
   humanInTheLoop: boolean;
   whatsappEnabled: boolean;
   meetingFollowUpEnabled: boolean;
+  testMode: boolean;
 }) => {
   const replyBody = hitlOrDraftMessage({
     draftId: IDS.draftReply,
@@ -757,7 +897,7 @@ const repliedBranchSteps = ({
       logicFunctionId: '__LF_get-calendar-availability__',
       logicFunctionInput: {
         days: 5,
-        slotMinutes: 20,
+        slotMinutes: 30,
         workspaceMemberId: gtmWfMemberId(),
       },
       sampleOutput: OUTREACH_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
@@ -799,6 +939,40 @@ const repliedBranchSteps = ({
       },
       sampleOutput: OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT,
       // Reply agent stamps preferred channel / email via candidate CRUD tools.
+      nextStepIds: [IDS.fetchProfileReply],
+    }),
+    gtmWfLogicFunctionStep({
+      id: IDS.fetchProfileReply,
+      name: 'Fetch LinkedIn profile (reply)',
+      logicFunctionId: '__LF_fetch-linkedin-profile__',
+      logicFunctionInput: {
+        linkedinUrl: gtmWfFindField(
+          IDS.repliedPersonFind,
+          OUTREACH_WF_FIELD.linkedinLinkUrlPath,
+        ),
+        linkedinProfileId: gtmWfFindField(
+          IDS.repliedPersonFind,
+          OUTREACH_WF_FIELD.linkedinProfileIdPath,
+        ),
+        candidateId: gtmWfFindId(IDS.repliedFind),
+        workspaceMemberId: gtmWfMemberId(),
+      },
+      sampleOutput: OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
+      nextStepIds: [IDS.fetchPostsReply],
+    }),
+    gtmWfFetchLinkedinActivityStep({
+      id: IDS.fetchPostsReply,
+      name: 'Fetch LinkedIn posts (before reply)',
+      candidateId: gtmWfFindId(IDS.repliedFind),
+      linkedinProfileId: gtmWfFindField(
+        IDS.repliedPersonFind,
+        OUTREACH_WF_FIELD.linkedinProfileIdPath,
+      ),
+      linkedinUrl: gtmWfFindField(
+        IDS.repliedPersonFind,
+        OUTREACH_WF_FIELD.linkedinLinkUrlPath,
+      ),
+      postsLimit: 5,
       nextStepIds: [IDS.draftReply],
     }),
     gtmWfAiAgentStep({
@@ -824,7 +998,9 @@ const repliedBranchSteps = ({
         shouldNotRespond: `{{${IDS.validateSignals}.shouldNotRespond}}`,
         candidateId: gtmWfFindId(IDS.repliedFind),
         senderJson: senderJson(),
-        prospectEnrichmentJson: prospectEnrichment(IDS.repliedFind),
+        prospectEnrichmentJson: `{{${IDS.fetchProfileReply}.outreachProspectEnrichment}}`,
+        prospectProfileText: `{{${IDS.fetchProfileReply}.text}}`,
+        prospectPostsText: `{{${IDS.fetchPostsReply}.text}}`,
       }),
       agentId: OUTREACH_WF_AGENT_REPLY,
       outputSchema: OUTREACH_WF_AI_REPLY_OUTPUT,
@@ -1110,12 +1286,15 @@ const repliedBranchSteps = ({
       nextStepIds: [IDS.waitAfterInbound],
     }),
     // Post-reply silence cadence: they replied once, we answered, then quiet.
-    // FU1 at +5d, FU2 at +7d more, then park. A new inbound restamps REPLIED and
-    // aborts these filters. Opt-out (#DONTRESPOND#) skips this path entirely.
+    // FU1 at +5d, FU2 at +7d more, then park. A new REPLIED / CONNECTION_ACCEPTED
+    // sequencer run stops older open sibling runs (server hook) so prior waits
+    // cannot re-arm after WAITING_REPLY is restamped. Still WAITING_REPLY remains
+    // a belt-and-suspenders abort if stage left that value. Opt-out skips this path.
     gtmWfDelayStep({
       id: IDS.waitAfterInbound,
       name: 'Wait 5 days after our reply',
       days: 5,
+      testMode,
       nextStepIds: [IDS.reloadAfterInboundWait],
     }),
     candidateFind(IDS.reloadAfterInboundWait, 'Reload after post-reply wait', [
@@ -1143,7 +1322,7 @@ const repliedBranchSteps = ({
       logicFunctionId: '__LF_get-calendar-availability__',
       logicFunctionInput: {
         days: 5,
-        slotMinutes: 20,
+        slotMinutes: 30,
         workspaceMemberId: gtmWfMemberId(),
       },
       sampleOutput: OUTREACH_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
@@ -1156,7 +1335,7 @@ const repliedBranchSteps = ({
         senderJson: senderJson(),
         prospectEnrichmentJson: prospectEnrichment(IDS.reloadAfterInboundWait),
         chatHistory: `{{${IDS.findChats}.text}}`,
-        calendarSlots: `{{${IDS.postReplyCalendar}.slots}}`,
+        calendarSlots: `{{${IDS.postReplyCalendar}.text}}`,
         kind: 'fu1',
       }),
       agentId: OUTREACH_WF_AGENT_LINKEDIN,
@@ -1254,6 +1433,7 @@ const repliedBranchSteps = ({
       id: IDS.waitPostReplyFu2,
       name: 'Wait 7 days before post-reply FU2',
       days: 7,
+      testMode,
       nextStepIds: [IDS.reloadPostReplyFu2],
     }),
     candidateFind(IDS.reloadPostReplyFu2, 'Reload before post-reply FU2', [
@@ -1281,7 +1461,7 @@ const repliedBranchSteps = ({
       logicFunctionId: '__LF_get-calendar-availability__',
       logicFunctionInput: {
         days: 5,
-        slotMinutes: 20,
+        slotMinutes: 30,
         workspaceMemberId: gtmWfMemberId(),
       },
       sampleOutput: OUTREACH_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
@@ -1294,7 +1474,7 @@ const repliedBranchSteps = ({
         senderJson: senderJson(),
         prospectEnrichmentJson: prospectEnrichment(IDS.reloadPostReplyFu2),
         chatHistory: `{{${IDS.findChats}.text}}`,
-        calendarSlots: `{{${IDS.postReplyCalendar2}.slots}}`,
+        calendarSlots: `{{${IDS.postReplyCalendar2}.text}}`,
         kind: 'fu2',
       }),
       agentId: OUTREACH_WF_AGENT_LINKEDIN,
@@ -1393,6 +1573,7 @@ const repliedBranchSteps = ({
       id: IDS.waitPostReplyPark,
       name: 'Wait 7 days before parking post-reply',
       days: 7,
+      testMode,
       nextStepIds: [IDS.reloadPostReplyPark],
     }),
     candidateFind(IDS.reloadPostReplyPark, 'Reload before park post-reply', [
@@ -1434,12 +1615,22 @@ const queuedBranchSteps = ({
   humanInTheLoop,
   checkDeduplicationPerCompany,
   qualifyProspectEnabled,
+  commentBeforeConnect,
+  commentRounds,
+  inboundInviteWaitDays,
+  inmailEnabled,
+  testMode,
 }: {
   hoistedMember: boolean;
   useLlmConnectionNote: boolean;
   humanInTheLoop: boolean;
   checkDeduplicationPerCompany: boolean;
   qualifyProspectEnabled: boolean;
+  commentBeforeConnect: boolean;
+  commentRounds: 1 | 2;
+  inboundInviteWaitDays: number;
+  inmailEnabled: boolean;
+  testMode: boolean;
 }) => {
   const companyConnectEntryId = useLlmConnectionNote
     ? IDS.draftConnectNote
@@ -1447,10 +1638,15 @@ const queuedBranchSteps = ({
   const noCompanyConnectEntryId = useLlmConnectionNote
     ? IDS.draftConnectNoteNoCompany
     : IDS.connectionNotSentNoCompanyIf;
+  // Warm-up joins the single (company) connection path after inbound wait timeout.
+  const connectAfterWarmupId = companyConnectEntryId;
+  const warmUpEntryId = commentBeforeConnect
+    ? IDS.viewBeforeComment
+    : companyConnectEntryId;
   // Same destination Qualify go? uses on true — fetch jumps here when qualify is off.
   const postQualifyEntryId = checkDeduplicationPerCompany
     ? IDS.hasCompanyIf
-    : companyConnectEntryId;
+    : warmUpEntryId;
   const connectMessage = !useLlmConnectionNote
     ? ''
     : hitlOrDraftMessage({
@@ -1465,6 +1661,19 @@ const queuedBranchSteps = ({
         approveId: IDS.approveConnectNoteNoCompany,
         humanInTheLoop,
       });
+
+  const candidateId = gtmWfFindId(IDS.queuedFind);
+  const linkedinProfileId = gtmWfFindField(
+    IDS.queuedPersonFind,
+    OUTREACH_WF_FIELD.linkedinProfileIdPath,
+  );
+  const linkedinUrl = gtmWfFindField(
+    IDS.queuedPersonFind,
+    OUTREACH_WF_FIELD.linkedinLinkUrlPath,
+  );
+
+  const afterComment1Id =
+    commentRounds === 2 ? IDS.delayBetweenCommentRounds : IDS.waitInboundInvite;
 
   return [
     candidateFind(IDS.queuedFind, 'Load Candidate', [IDS.queuedPersonFind]),
@@ -1499,15 +1708,9 @@ const queuedBranchSteps = ({
         : 'Fetch LinkedIn profile',
       logicFunctionId: '__LF_fetch-linkedin-profile__',
       logicFunctionInput: {
-        linkedinUrl: gtmWfFindField(
-          IDS.queuedPersonFind,
-          OUTREACH_WF_FIELD.linkedinLinkUrlPath,
-        ),
-        linkedinProfileId: gtmWfFindField(
-          IDS.queuedPersonFind,
-          OUTREACH_WF_FIELD.linkedinProfileIdPath,
-        ),
-        candidateId: gtmWfFindId(IDS.queuedFind),
+        linkedinUrl,
+        linkedinProfileId,
+        candidateId,
         workspaceMemberId: gtmWfMemberId(),
       },
       sampleOutput: OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
@@ -1522,10 +1725,7 @@ const queuedBranchSteps = ({
             name: 'Qualify prospect',
             prompt: buildOutreachQualifyProspectPrompt({
               senderJson: senderJson(),
-              profile: [
-                `About: {{${IDS.queuedFetchProfile}.about}}`,
-                `Skills: {{${IDS.queuedFetchProfile}.skills}}`,
-              ].join('\n'),
+              profile: `{{${IDS.queuedFetchProfile}.text}}`,
               posts: '',
               crm: [
                 `Name: ${gtmWfFindField(IDS.queuedFind, 'name')}`,
@@ -1539,7 +1739,7 @@ const queuedBranchSteps = ({
           gtmWfUpdateRecordStep({
             id: IDS.stampEnrich,
             name: 'Stamp prospect enrichment',
-            objectRecordId: gtmWfFindId(IDS.queuedFind),
+            objectRecordId: candidateId,
             objectRecord: {
               outreachProspectEnrichment: {
                 go: `{{${IDS.qualifyDraft}.go}}`,
@@ -1565,15 +1765,13 @@ const queuedBranchSteps = ({
             value: 'true',
             type: 'TEXT',
             operand: 'CONTAINS',
-            // When company dedupe is off, skip has-company / sibling checks and go
-            // straight to the single connection-note path.
             ifNextStepIds: [postQualifyEntryId],
             elseNextStepIds: [IDS.markSkippedQualify],
           }),
           gtmWfUpdateRecordStep({
             id: IDS.markSkippedQualify,
             name: 'Mark DEFERRED — skipped qualify',
-            objectRecordId: gtmWfFindId(IDS.queuedFind),
+            objectRecordId: candidateId,
             objectRecord: {
               outreachSequenceStage: 'DEFERRED',
             },
@@ -1593,10 +1791,8 @@ const queuedBranchSteps = ({
             type: 'TEXT',
             operand: 'IS_NOT_EMPTY',
             ifNextStepIds: [IDS.findContacted],
-            // Own draft path — must not share draftConnectNote with company path, or
-            // IF_ELSE skip kills the later join from earlierQueuedIf.
             elseNextStepIds: hoistedMember
-              ? [noCompanyConnectEntryId]
+              ? [commentBeforeConnect ? warmUpEntryId : noCompanyConnectEntryId]
               : [OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID],
           }),
           gtmWfFindRecordsStep({
@@ -1654,14 +1850,12 @@ const queuedBranchSteps = ({
             type: 'TEXT',
             operand: 'IS_NOT_EMPTY',
             ifNextStepIds: [IDS.markDeferredEarlierQueued],
-            elseNextStepIds: [companyConnectEntryId],
+            elseNextStepIds: [warmUpEntryId],
           }),
-          // Unique DEFERRED terminals — shared id would be cascade-skipped when the
-          // other IF_ELSE's unused branch is pruned.
           gtmWfUpdateRecordStep({
             id: IDS.markDeferredContacted,
             name: 'Mark DEFERRED — company already contacted',
-            objectRecordId: gtmWfFindId(IDS.queuedFind),
+            objectRecordId: candidateId,
             objectRecord: {
               outreachSequenceStage: 'DEFERRED',
             },
@@ -1669,10 +1863,210 @@ const queuedBranchSteps = ({
           gtmWfUpdateRecordStep({
             id: IDS.markDeferredEarlierQueued,
             name: 'Mark DEFERRED — earlier QUEUED sibling',
-            objectRecordId: gtmWfFindId(IDS.queuedFind),
+            objectRecordId: candidateId,
             objectRecord: {
               outreachSequenceStage: 'DEFERRED',
             },
+          }),
+        ]
+      : []),
+    ...(commentBeforeConnect
+      ? [
+          gtmWfViewLinkedinProfileStep({
+            id: IDS.viewBeforeComment,
+            name: 'View LinkedIn profile',
+            candidateId,
+            linkedinProfileId,
+            linkedinUrl,
+            nextStepIds: [IDS.delayAfterView],
+          }),
+          gtmWfRandomDelayStep({
+            id: IDS.delayAfterView,
+            name: 'Wait 1–2 hours after profile view',
+            minHours: 1,
+            maxHours: 2,
+            testMode,
+            nextStepIds: [IDS.fetchActivity1],
+          }),
+          gtmWfFetchLinkedinActivityStep({
+            id: IDS.fetchActivity1,
+            name: 'Fetch LinkedIn posts',
+            candidateId,
+            linkedinProfileId,
+            linkedinUrl,
+            postsLimit: commentRounds === 2 ? 10 : 5,
+            nextStepIds: [IDS.hasPost1If],
+          }),
+          gtmWfIfElseStep({
+            id: IDS.hasPost1If,
+            name: 'Has commentable post?',
+            stepOutputKey: `{{${IDS.fetchActivity1}.mostRecentPost.socialId}}`,
+            value: '',
+            type: 'TEXT',
+            operand: 'IS_NOT_EMPTY',
+            ifNextStepIds: [IDS.draftComment1],
+            elseNextStepIds: [connectAfterWarmupId],
+          }),
+          gtmWfAiAgentStep({
+            id: IDS.draftComment1,
+            name: 'Draft LinkedIn comment',
+            prompt: buildOutreachLinkedinPostCommentPrompt({
+              senderJson: senderJson(),
+              prospectEnrichmentJson: prospectEnrichment(IDS.queuedFind),
+              postText: `{{${IDS.fetchActivity1}.mostRecentPost.text}}`,
+            }),
+            agentId: OUTREACH_WF_AGENT_LINKEDIN,
+            outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
+            nextStepIds: [
+              humanInTheLoop ? IDS.approveComment1 : IDS.sendComment1,
+            ],
+          }),
+          ...(humanInTheLoop
+            ? [
+                gtmWfFormStep({
+                  id: IDS.approveComment1,
+                  name: 'Approve LinkedIn comment',
+                  editedBodyValue: `{{${IDS.draftComment1}.message}}`,
+                  contextTemplate:
+                    OUTREACH_HITL_CONTEXT_TEMPLATES.linkedInConnectionNote,
+                  detailsTemplate: gtmWfFormDetailsTemplate({
+                    findId: IDS.queuedFind,
+                    personFindId: IDS.queuedPersonFind,
+                    draftStepId: IDS.draftComment1,
+                  }),
+                  nextStepIds: [IDS.sendComment1],
+                }),
+              ]
+            : []),
+          gtmWfCommentOnLinkedinPostStep({
+            id: IDS.sendComment1,
+            name: 'Comment on LinkedIn post',
+            candidateId,
+            linkedinProfileId,
+            linkedinUrl,
+            postId: `{{${IDS.fetchActivity1}.mostRecentPost.socialId}}`,
+            text: hitlOrDraftMessage({
+              draftId: IDS.draftComment1,
+              approveId: IDS.approveComment1,
+              humanInTheLoop,
+            }),
+            nextStepIds: [IDS.stampCommented],
+          }),
+          gtmWfUpdateRecordStep({
+            id: IDS.stampCommented,
+            name: 'Mark COMMENTED',
+            objectRecordId: candidateId,
+            objectRecord: { outreachSequenceStage: 'COMMENTED' },
+            nextStepIds: [afterComment1Id],
+          }),
+          ...(commentRounds === 2
+            ? [
+                gtmWfDelayStep({
+                  id: IDS.delayBetweenCommentRounds,
+                  name: 'Wait 1 day before second comment',
+                  days: 1,
+                  testMode,
+                  nextStepIds: [IDS.fetchActivity2],
+                }),
+                gtmWfFetchLinkedinActivityStep({
+                  id: IDS.fetchActivity2,
+                  name: 'Fetch LinkedIn posts (exclude first)',
+                  candidateId,
+                  linkedinProfileId,
+                  linkedinUrl,
+                  postsLimit: 10,
+                  excludePostSocialIds: [
+                    `{{${IDS.fetchActivity1}.mostRecentPost.socialId}}`,
+                  ],
+                  nextStepIds: [IDS.hasPost2If],
+                }),
+                gtmWfIfElseStep({
+                  id: IDS.hasPost2If,
+                  name: 'Has second commentable post?',
+                  stepOutputKey: `{{${IDS.fetchActivity2}.mostRecentPost.socialId}}`,
+                  value: '',
+                  type: 'TEXT',
+                  operand: 'IS_NOT_EMPTY',
+                  ifNextStepIds: [IDS.draftComment2],
+                  elseNextStepIds: [IDS.waitInboundInvite],
+                }),
+                gtmWfAiAgentStep({
+                  id: IDS.draftComment2,
+                  name: 'Draft second LinkedIn comment',
+                  prompt: buildOutreachLinkedinPostCommentPrompt({
+                    senderJson: senderJson(),
+                    prospectEnrichmentJson: prospectEnrichment(IDS.queuedFind),
+                    postText: `{{${IDS.fetchActivity2}.mostRecentPost.text}}`,
+                  }),
+                  agentId: OUTREACH_WF_AGENT_LINKEDIN,
+                  outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
+                  nextStepIds: [
+                    humanInTheLoop ? IDS.approveComment2 : IDS.sendComment2,
+                  ],
+                }),
+                ...(humanInTheLoop
+                  ? [
+                      gtmWfFormStep({
+                        id: IDS.approveComment2,
+                        name: 'Approve second LinkedIn comment',
+                        editedBodyValue: `{{${IDS.draftComment2}.message}}`,
+                        contextTemplate:
+                          OUTREACH_HITL_CONTEXT_TEMPLATES.linkedInConnectionNote,
+                        detailsTemplate: gtmWfFormDetailsTemplate({
+                          findId: IDS.queuedFind,
+                          personFindId: IDS.queuedPersonFind,
+                          draftStepId: IDS.draftComment2,
+                        }),
+                        nextStepIds: [IDS.sendComment2],
+                      }),
+                    ]
+                  : []),
+                gtmWfCommentOnLinkedinPostStep({
+                  id: IDS.sendComment2,
+                  name: 'Comment on second LinkedIn post',
+                  candidateId,
+                  linkedinProfileId,
+                  linkedinUrl,
+                  postId: `{{${IDS.fetchActivity2}.mostRecentPost.socialId}}`,
+                  text: hitlOrDraftMessage({
+                    draftId: IDS.draftComment2,
+                    approveId: IDS.approveComment2,
+                    humanInTheLoop,
+                  }),
+                  nextStepIds: [IDS.waitInboundInvite],
+                }),
+              ]
+            : []),
+          gtmWfDelayStep({
+            id: IDS.waitInboundInvite,
+            name: `Wait ${inboundInviteWaitDays} days for inbound invite`,
+            days: inboundInviteWaitDays,
+            testMode,
+            nextStepIds: [IDS.acceptInboundInvite],
+          }),
+          gtmWfAcceptLinkedinReceivedInvitationStep({
+            id: IDS.acceptInboundInvite,
+            name: 'Accept inbound LinkedIn invite if present',
+            candidateId,
+            linkedinProfileId,
+            linkedinUrl,
+            nextStepIds: [IDS.inboundAcceptedIf],
+          }),
+          gtmWfIfElseStep({
+            id: IDS.inboundAcceptedIf,
+            name: 'Inbound invite accepted?',
+            stepOutputKey: `{{${IDS.acceptInboundInvite}.accepted}}`,
+            value: 'true',
+            type: 'BOOLEAN',
+            operand: 'IS',
+            ifNextStepIds: [IDS.markInboundAccepted],
+            elseNextStepIds: [connectAfterWarmupId],
+          }),
+          gtmWfUpdateRecordStep({
+            id: IDS.markInboundAccepted,
+            name: 'Mark CONNECTION_ACCEPTED (inbound)',
+            objectRecordId: candidateId,
+            objectRecord: { outreachSequenceStage: 'CONNECTION_ACCEPTED' },
           }),
         ]
       : []),
@@ -1687,6 +2081,7 @@ const queuedBranchSteps = ({
               // (or default {}). Do not chip qualifyDraft.* (AI_AGENT predecessors
               // are not hydrated by AI agent Test).
               prospectEnrichmentJson: prospectEnrichment(IDS.queuedFind),
+              prospectProfileText: `{{${IDS.queuedFetchProfile}.text}}`,
             }),
             agentId: OUTREACH_WF_AGENT_LINKEDIN,
             outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
@@ -1719,6 +2114,7 @@ const queuedBranchSteps = ({
                   prompt: buildOutreachConnectionNotePrompt({
                     senderJson: senderJson(),
                     prospectEnrichmentJson: prospectEnrichment(IDS.queuedFind),
+                    prospectProfileText: `{{${IDS.queuedFetchProfile}.text}}`,
                   }),
                   agentId: OUTREACH_WF_AGENT_LINKEDIN,
                   outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
@@ -1848,6 +2244,7 @@ const queuedBranchSteps = ({
       id: IDS.waitAccept,
       name: 'Wait 3 days for accept',
       days: 3,
+      testMode,
       nextStepIds: [IDS.reloadAfterWait],
     }),
     candidateFind(IDS.reloadAfterWait, 'Reload candidate after wait', [
@@ -1867,8 +2264,70 @@ const queuedBranchSteps = ({
         'outreachSequenceStage',
       ),
       value: 'CONNECTION_SENT',
-      nextStepIds: [IDS.enrich],
+      nextStepIds: [inmailEnabled ? IDS.draftInmail : IDS.enrich],
     }),
+    ...(inmailEnabled
+      ? [
+          gtmWfAiAgentStep({
+            id: IDS.draftInmail,
+            name: 'Draft InMail',
+            prompt: buildOutreachFallbackInmailPrompt({
+              name: gtmWfFindField(IDS.reloadAfterWait, 'name'),
+              title: gtmWfFindField(
+                IDS.reloadAfterWaitPersonFind,
+                OUTREACH_WF_FIELD.jobTitlePath,
+              ),
+            }),
+            agentId: OUTREACH_WF_AGENT_EMAIL,
+            outputSchema: OUTREACH_WF_AI_EMAIL_OUTPUT,
+            nextStepIds: [humanInTheLoop ? IDS.approveInmail : IDS.sendInmail],
+          }),
+          ...(humanInTheLoop
+            ? [
+                gtmWfFormStep({
+                  id: IDS.approveInmail,
+                  name: 'Approve / edit InMail',
+                  editedBodyValue: `{{${IDS.draftInmail}.message}}`,
+                  contextTemplate:
+                    OUTREACH_HITL_CONTEXT_TEMPLATES.fallbackInmail,
+                  detailsTemplate: gtmWfFormDetailsTemplate({
+                    findId: IDS.reloadAfterWait,
+                    personFindId: IDS.reloadAfterWaitPersonFind,
+                    draftStepId: IDS.draftInmail,
+                  }),
+                  nextStepIds: [IDS.sendInmail],
+                }),
+              ]
+            : []),
+          gtmWfSendLinkedinInmailStep({
+            id: IDS.sendInmail,
+            name: 'Send LinkedIn InMail',
+            subject: `{{${IDS.draftInmail}.subject}}`,
+            body: hitlOrDraftMessage({
+              draftId: IDS.draftInmail,
+              approveId: IDS.approveInmail,
+              humanInTheLoop,
+            }),
+            candidateId: gtmWfFindId(IDS.reloadAfterWait),
+            linkedinProfileId: gtmWfFindField(
+              IDS.reloadAfterWaitPersonFind,
+              OUTREACH_WF_FIELD.linkedinProfileIdPath,
+            ),
+            linkedinUrl: gtmWfFindField(
+              IDS.reloadAfterWaitPersonFind,
+              OUTREACH_WF_FIELD.linkedinLinkUrlPath,
+            ),
+            nextStepIds: [IDS.markInmailSent],
+          }),
+          gtmWfUpdateRecordStep({
+            id: IDS.markInmailSent,
+            name: 'Mark INMAIL_SENT',
+            objectRecordId: gtmWfFindId(IDS.reloadAfterWait),
+            objectRecord: { outreachSequenceStage: 'INMAIL_SENT' },
+            nextStepIds: [IDS.enrich],
+          }),
+        ]
+      : []),
     gtmWfLogicFunctionStep({
       id: IDS.enrich,
       name: 'Enrich email',
@@ -1993,8 +2452,10 @@ const queuedBranchSteps = ({
 // MEETING_BOOKED entry: day-before reminder, no-show ping, reschedule, then stall.
 const meetingBookedBranchSteps = ({
   humanInTheLoop,
+  testMode,
 }: {
   humanInTheLoop: boolean;
+  testMode: boolean;
 }) => [
   candidateFind(IDS.meetingBookedFind, 'Load Candidate (meeting booked)', [
     IDS.meetingBookedPersonFind,
@@ -2009,6 +2470,7 @@ const meetingBookedBranchSteps = ({
     id: IDS.reminderDelay,
     name: 'Wait 1 day before reminder',
     days: 1,
+    testMode,
     nextStepIds: [IDS.draftReminder],
   }),
   gtmWfAiAgentStep({
@@ -2061,6 +2523,7 @@ const meetingBookedBranchSteps = ({
     id: IDS.waitToMeeting,
     name: 'Wait 1 day after meeting',
     days: 1,
+    testMode,
     nextStepIds: [IDS.draftNoShow],
   }),
   gtmWfAiAgentStep({
@@ -2113,6 +2576,7 @@ const meetingBookedBranchSteps = ({
     id: IDS.waitNextDay,
     name: 'Wait 1 day before reschedule',
     days: 1,
+    testMode,
     nextStepIds: [IDS.draftReschedule],
   }),
   gtmWfAiAgentStep({
@@ -2207,6 +2671,11 @@ export const buildCandidateSequencerGraph = (
     meetingFollowUpEnabled,
     checkDeduplicationPerCompany,
     qualifyProspectEnabled,
+    commentBeforeConnect,
+    commentRounds,
+    inboundInviteWaitDays,
+    inmailEnabled,
+    testMode,
   } = resolved;
 
   const stageStepOutputKey = gtmWfFindField(
@@ -2273,15 +2742,21 @@ export const buildCandidateSequencerGraph = (
       humanInTheLoop,
       checkDeduplicationPerCompany,
       qualifyProspectEnabled,
+      commentBeforeConnect,
+      commentRounds,
+      inboundInviteWaitDays,
+      inmailEnabled,
+      testMode,
     }),
-    ...acceptedBranchSteps({ humanInTheLoop }),
+    ...acceptedBranchSteps({ humanInTheLoop, testMode }),
     ...repliedBranchSteps({
       humanInTheLoop,
       whatsappEnabled,
       meetingFollowUpEnabled,
+      testMode,
     }),
     ...(meetingFollowUpEnabled
-      ? meetingBookedBranchSteps({ humanInTheLoop })
+      ? meetingBookedBranchSteps({ humanInTheLoop, testMode })
       : []),
   ];
 
@@ -2347,6 +2822,216 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
         logicFunctionId: '__LF_upload-profiles__',
         logicFunctionInput: {},
         sampleOutput: OUTREACH_UPLOAD_PROFILES_SAMPLE_OUTPUT,
+      }),
+    ],
+  },
+  {
+    name: 'Fetch & Save Local Businesses',
+    trigger: gtmWfManualTrigger({
+      name: 'Launch city Maps scrape',
+      icon: 'IconMapSearch',
+      nextStepIds: [IDS.localBizParams],
+    }),
+    steps: [
+      gtmWfFormStep({
+        id: IDS.localBizParams,
+        name: 'City scrape parameters',
+        approveLabel: 'Plan coverage',
+        contextTemplate:
+          'Bright Data Google Maps city scrape — set city, keywords, and Project, then plan coverage + cost.',
+        detailsTemplate:
+          'Example: city=mumbai, keywords=qsr,fast food,restaurant. Sample uses a few paid Bright Data calls.',
+        extraFields: [
+          {
+            id: `${IDS.localBizParams.slice(0, 8)}-0000-4000-8000-00000000c101`,
+            name: 'city',
+            type: 'TEXT',
+            label: 'City',
+            value: 'mumbai',
+          },
+          {
+            id: `${IDS.localBizParams.slice(0, 8)}-0000-4000-8000-00000000c102`,
+            name: 'keywords',
+            type: 'TEXT',
+            label: 'Keywords (comma-separated)',
+            value: 'qsr,fast food,restaurant',
+          },
+          {
+            id: `${IDS.localBizParams.slice(0, 8)}-0000-4000-8000-00000000c103`,
+            name: 'projectId',
+            type: 'TEXT',
+            label: 'Project ID',
+            value: '',
+          },
+          {
+            id: `${IDS.localBizParams.slice(0, 8)}-0000-4000-8000-00000000c104`,
+            name: 'zoom_level',
+            type: 'NUMBER',
+            label: 'Zoom level',
+            value: 12,
+          },
+          {
+            id: `${IDS.localBizParams.slice(0, 8)}-0000-4000-8000-00000000c105`,
+            name: 'sample',
+            type: 'BOOLEAN',
+            label: 'Run paid sample for hit-rate',
+            value: true,
+          },
+        ],
+        nextStepIds: [IDS.localBizPlan],
+      }),
+      gtmWfLogicFunctionStep({
+        id: IDS.localBizPlan,
+        name: 'Plan city coverage',
+        logicFunctionId: '__LF_plan-local-business-city-coverage__',
+        logicFunctionInput: {
+          city: `{{${IDS.localBizParams}.city}}`,
+          keywords: `{{${IDS.localBizParams}.keywords}}`,
+          zoom_level: `{{${IDS.localBizParams}.zoom_level}}`,
+          sample: `{{${IDS.localBizParams}.sample}}`,
+        },
+        sampleOutput: OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_SAMPLE_OUTPUT,
+        nextStepIds: [IDS.localBizConfirm],
+      }),
+      gtmWfFormStep({
+        id: IDS.localBizConfirm,
+        name: 'Confirm budget',
+        approveLabel: 'Confirm full scrape',
+        contextTemplate: `Bright Data estimate: {{${IDS.localBizPlan}.estimatedMaxRecords}} records ≈ USD {{${IDS.localBizPlan}.estimatedUsdPayg}} PAYG. {{${IDS.localBizPlan}.pricingNote}}`,
+        detailsTemplate: `Cells={{${IDS.localBizPlan}.cellCount}} inputs={{${IDS.localBizPlan}.discoveryInputCount}} sampleHitRate={{${IDS.localBizPlan}.sampleHitRate}}. Set maxRecords hard stop, then approve.`,
+        extraFields: [
+          {
+            id: `${IDS.localBizConfirm.slice(0, 8)}-0000-4000-8000-00000000c201`,
+            name: 'maxRecords',
+            type: 'NUMBER',
+            label: 'Max records (hard stop)',
+            value: `{{${IDS.localBizPlan}.estimatedMaxRecords}}`,
+          },
+        ],
+        nextStepIds: [IDS.localBizConfirmIf],
+      }),
+      gtmWfIfElseStep({
+        id: IDS.localBizConfirmIf,
+        name: 'Budget confirmed?',
+        stepOutputKey: `{{${IDS.localBizConfirm}.approve}}`,
+        value: 'true',
+        type: 'BOOLEAN',
+        operand: 'IS',
+        ifNextStepIds: [IDS.localBizFetch],
+        elseNextStepIds: [],
+      }),
+      gtmWfLogicFunctionStep({
+        id: IDS.localBizFetch,
+        name: 'Fetch and upsert local businesses',
+        logicFunctionId: '__LF_fetch-and-upsert-local-businesses__',
+        logicFunctionInput: {
+          cells: `{{${IDS.localBizPlan}.cells}}`,
+          keywords: `{{${IDS.localBizPlan}.keywords}}`,
+          zoom_level: `{{${IDS.localBizPlan}.zoom_level}}`,
+          country: `{{${IDS.localBizPlan}.country}}`,
+          maxRecords: `{{${IDS.localBizConfirm}.maxRecords}}`,
+          projectId: `{{${IDS.localBizParams}.projectId}}`,
+        },
+        sampleOutput: OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_SAMPLE_OUTPUT,
+      }),
+    ],
+  },
+  {
+    name: 'Classify & Upsert Local Places',
+    trigger: gtmWfManualTrigger({
+      name: 'Classify consolidated places',
+      icon: 'IconMapPin',
+      nextStepIds: [IDS.localPlacesParams],
+    }),
+    steps: [
+      gtmWfFormStep({
+        id: IDS.localPlacesParams,
+        name: 'Classify parameters',
+        approveLabel: 'Preview classifier',
+        contextTemplate:
+          'Classify unique Google Maps place names with gpt-4o-mini (AI Agent), keep multi-outlet brands, upsert Companies. Does not re-fetch Bright Data — pass consolidated places JSON path.',
+        detailsTemplate:
+          'Default minOutlets=7. maxCompanies blank = all unique names. Preview runs one AI Agent classify before bulk.',
+        extraFields: [
+          {
+            id: `${IDS.localPlacesParams.slice(0, 8)}-0000-4000-8000-00000000p101`,
+            name: 'placesFilePath',
+            type: 'TEXT',
+            label: 'Places JSON file path',
+            value: '',
+          },
+          {
+            id: `${IDS.localPlacesParams.slice(0, 8)}-0000-4000-8000-00000000p102`,
+            name: 'projectId',
+            type: 'TEXT',
+            label: 'Project ID',
+            value: '',
+          },
+          {
+            id: `${IDS.localPlacesParams.slice(0, 8)}-0000-4000-8000-00000000p103`,
+            name: 'minOutlets',
+            type: 'NUMBER',
+            label: 'Min outlets',
+            value: 7,
+          },
+          {
+            id: `${IDS.localPlacesParams.slice(0, 8)}-0000-4000-8000-00000000p104`,
+            name: 'maxCompanies',
+            type: 'NUMBER',
+            label: 'Max companies (0 = all)',
+            value: 0,
+          },
+          {
+            id: `${IDS.localPlacesParams.slice(0, 8)}-0000-4000-8000-00000000p105`,
+            name: 'previewCompanyName',
+            type: 'TEXT',
+            label: 'Preview company name (AI Agent)',
+            value: '',
+          },
+        ],
+        nextStepIds: [IDS.localPlacesPreviewAgent],
+      }),
+      gtmWfAiAgentStep({
+        id: IDS.localPlacesPreviewAgent,
+        name: 'Preview place classify (gpt-4o-mini)',
+        prompt: `Classify this company / place name for multi-outlet brand screening.
+
+Company name: {{${IDS.localPlacesParams}.previewCompanyName}}
+
+Return JSON with companyName, isMultiOutlet, numberOutlets, confidence, reasoning.`,
+        agentId: OUTREACH_WF_AGENT_LOCAL_PLACE,
+        outputSchema: OUTREACH_WF_AI_LOCAL_PLACE_OUTPUT,
+        nextStepIds: [IDS.localPlacesConfirm],
+      }),
+      gtmWfFormStep({
+        id: IDS.localPlacesConfirm,
+        name: 'Confirm bulk classify + upsert',
+        approveLabel: 'Run bulk classify and upsert',
+        contextTemplate: `Preview: {{${IDS.localPlacesPreviewAgent}.companyName}} isMultiOutlet={{${IDS.localPlacesPreviewAgent}.isMultiOutlet}} outlets={{${IDS.localPlacesPreviewAgent}.numberOutlets}} confidence={{${IDS.localPlacesPreviewAgent}.confidence}}.`,
+        detailsTemplate: `Bulk will read {{${IDS.localPlacesParams}.placesFilePath}}, classify each unique name with gpt-4o-mini, keep isMultiOutlet && outlets≥{{${IDS.localPlacesParams}.minOutlets}}, upsert into project {{${IDS.localPlacesParams}.projectId}}.`,
+        nextStepIds: [IDS.localPlacesConfirmIf],
+      }),
+      gtmWfIfElseStep({
+        id: IDS.localPlacesConfirmIf,
+        name: 'Bulk approved?',
+        stepOutputKey: `{{${IDS.localPlacesConfirm}.approve}}`,
+        value: 'true',
+        type: 'BOOLEAN',
+        operand: 'IS',
+        ifNextStepIds: [IDS.localPlacesClassifyUpsert],
+        elseNextStepIds: [],
+      }),
+      gtmWfLogicFunctionStep({
+        id: IDS.localPlacesClassifyUpsert,
+        name: 'Classify and upsert local places',
+        logicFunctionId: '__LF_classify-and-upsert-local-places__',
+        logicFunctionInput: {
+          placesFilePath: `{{${IDS.localPlacesParams}.placesFilePath}}`,
+          projectId: `{{${IDS.localPlacesParams}.projectId}}`,
+          minOutlets: `{{${IDS.localPlacesParams}.minOutlets}}`,
+          maxCompanies: `{{${IDS.localPlacesParams}.maxCompanies}}`,
+        },
+        sampleOutput: OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_SAMPLE_OUTPUT,
       }),
     ],
   },
@@ -2453,6 +3138,9 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
   //   empty outreachAnalytics.connectionSentAt (see queuedBranchSteps).
   // - CONNECTION_ACCEPTED: hasInboundIf stamps REPLIED when fetch-linkedin-messages
   //   already has an inbound turn, so the run stops and upsert re-enters replied.
+  // - Sibling cancel: creating a Candidate Sequencer run on CONNECTION_ACCEPTED /
+  //   REPLIED stops older open runs for the same candidate+workflow (accept wait,
+  //   accepted FU waits, prior post-reply waits).
   //
   // Legacy Stage B/C display names stay in OUTREACH_WORKFLOW_NAMES_TO_DEACTIVATE
   // so existing workspaces deactivate those graphs; they are not seeded here.

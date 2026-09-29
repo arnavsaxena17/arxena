@@ -13,7 +13,7 @@ import {
 } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/types/send-linkedin-connection-request-tool-input.type';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
 import { candidateStageImpliesConnectionRequestSent } from 'src/engine/core-modules/outreach-command/utils/outreach-command-materialize.util';
-import { OUTREACH_MOCK_UNIPILE_CONNECTION_RESPONSE_ID } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/utils/is-outreach-mock-unipile-enabled.util';
+import { buildOutreachMockUnipileConnectionResponseId } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/utils/is-outreach-mock-unipile-enabled.util';
 import {
   createLinkedinUnipileMessagingServiceForTools,
   getUnipileToolErrorMessage,
@@ -108,7 +108,7 @@ export class SendLinkedinConnectionRequestTool implements Tool {
               unipileAccountId,
               linkedinProfileId,
               message,
-              response: { id: OUTREACH_MOCK_UNIPILE_CONNECTION_RESPONSE_ID },
+              response: { id: buildOutreachMockUnipileConnectionResponseId() },
             },
           }),
         );

@@ -4,7 +4,11 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { escapeForIlike, isDefined } from 'twenty-shared/utils';
 import { ILike, type ObjectLiteral } from 'typeorm';
 
-import { isValidLinkedInProviderId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-attendee-id.util';
+import {
+  isClassicLinkedInProviderId,
+  isSalesNavigatorLinkedInProviderId,
+  isValidLinkedInProviderId,
+} from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-attendee-id.util';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
@@ -18,6 +22,7 @@ type CandidateLinkedinRecord = ObjectLiteral & {
 type PersonLinkedinRecord = ObjectLiteral & {
   id: string;
   linkedinProfileId?: string | null;
+  salesNavigatorProviderId?: string | null;
   linkedinLink?: { primaryLinkUrl?: string | null } | null;
   linkedinLinkPrimaryLinkUrl?: string | null;
 };
@@ -66,15 +71,73 @@ export class LinkedinProviderIdStoreService {
 
     return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
       async () => {
-        const candidateRepository = await this.globalWorkspaceOrmManager
-          .getRepository<CandidateLinkedinRecord>(workspaceId, 'candidate', {
-            shouldBypassPermissionChecks: true,
-          });
+        const candidateRepository =
+          await this.globalWorkspaceOrmManager.getRepository<CandidateLinkedinRecord>(
+            workspaceId,
+            'candidate',
+            {
+              shouldBypassPermissionChecks: true,
+            },
+          );
 
         return this.lookupCandidate(candidateRepository, {
           workspaceId,
           candidateId,
           identifier,
+        });
+      },
+      authContext,
+    );
+  }
+
+  async findCandidateBySalesNavigatorProviderId({
+    workspaceId,
+    salesNavigatorProviderId,
+  }: {
+    workspaceId: string;
+    salesNavigatorProviderId: string;
+  }): Promise<CandidateLinkedinRecord | null> {
+    const trimmed = salesNavigatorProviderId.trim();
+
+    if (
+      !isNonEmptyString(workspaceId) ||
+      !isSalesNavigatorLinkedInProviderId(trimmed)
+    ) {
+      return null;
+    }
+
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const personRepository = await this.tryGetPersonRepository(workspaceId);
+
+        if (
+          !isDefined(personRepository) ||
+          !repositoryHasColumn(personRepository, 'salesNavigatorProviderId')
+        ) {
+          return null;
+        }
+
+        const person = await personRepository.findOne({
+          where: { salesNavigatorProviderId: trimmed },
+        });
+
+        if (!isDefined(person)) {
+          return null;
+        }
+
+        const candidateRepository =
+          await this.globalWorkspaceOrmManager.getRepository<CandidateLinkedinRecord>(
+            workspaceId,
+            'candidate',
+            {
+              shouldBypassPermissionChecks: true,
+            },
+          );
+
+        return candidateRepository.findOne({
+          where: { peopleId: person.id },
         });
       },
       authContext,
@@ -107,10 +170,14 @@ export class LinkedinProviderIdStoreService {
         let personId = '';
 
         if (isNonEmptyString(candidateId)) {
-          const candidateRepository = await this.globalWorkspaceOrmManager
-            .getRepository<CandidateLinkedinRecord>(workspaceId, 'candidate', {
-              shouldBypassPermissionChecks: true,
-            });
+          const candidateRepository =
+            await this.globalWorkspaceOrmManager.getRepository<CandidateLinkedinRecord>(
+              workspaceId,
+              'candidate',
+              {
+                shouldBypassPermissionChecks: true,
+              },
+            );
           const candidate = await candidateRepository.findOne({
             where: { id: candidateId },
           });
@@ -123,8 +190,67 @@ export class LinkedinProviderIdStoreService {
           identifier,
         });
 
-        return isValidLinkedInProviderId(person?.linkedinProfileId)
+        return isClassicLinkedInProviderId(person?.linkedinProfileId)
           ? (person?.linkedinProfileId?.trim() ?? '')
+          : '';
+      },
+      authContext,
+    );
+  }
+
+  async readStoredSalesNavigatorProviderId({
+    workspaceId,
+    candidateId,
+    identifier,
+  }: {
+    workspaceId?: string;
+    candidateId?: string;
+    identifier?: string;
+  }): Promise<string> {
+    if (!isNonEmptyString(workspaceId)) {
+      return '';
+    }
+
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const personRepository = await this.tryGetPersonRepository(workspaceId);
+
+        if (
+          !isDefined(personRepository) ||
+          !repositoryHasColumn(personRepository, 'salesNavigatorProviderId')
+        ) {
+          return '';
+        }
+
+        let personId = '';
+
+        if (isNonEmptyString(candidateId)) {
+          const candidateRepository =
+            await this.globalWorkspaceOrmManager.getRepository<CandidateLinkedinRecord>(
+              workspaceId,
+              'candidate',
+              {
+                shouldBypassPermissionChecks: true,
+              },
+            );
+          const candidate = await candidateRepository.findOne({
+            where: { id: candidateId },
+          });
+
+          personId = candidate?.peopleId?.trim() ?? '';
+        }
+
+        const person = await this.lookupPerson(personRepository, {
+          personId,
+          identifier,
+        });
+
+        return isSalesNavigatorLinkedInProviderId(
+          person?.salesNavigatorProviderId,
+        )
+          ? (person?.salesNavigatorProviderId?.trim() ?? '')
           : '';
       },
       authContext,
@@ -144,9 +270,10 @@ export class LinkedinProviderIdStoreService {
   }): Promise<void> {
     const trimmedProviderId = providerId.trim();
 
+    // Never write ACw onto classic linkedinProfileId.
     if (
       !isNonEmptyString(workspaceId) ||
-      !isValidLinkedInProviderId(trimmedProviderId)
+      !isClassicLinkedInProviderId(trimmedProviderId)
     ) {
       return;
     }
@@ -170,8 +297,8 @@ export class LinkedinProviderIdStoreService {
           let personId = '';
 
           if (isNonEmptyString(candidateId)) {
-            const candidateRepository = await this.globalWorkspaceOrmManager
-              .getRepository<CandidateLinkedinRecord>(
+            const candidateRepository =
+              await this.globalWorkspaceOrmManager.getRepository<CandidateLinkedinRecord>(
                 workspaceId,
                 'candidate',
                 { shouldBypassPermissionChecks: true },
@@ -208,6 +335,85 @@ export class LinkedinProviderIdStoreService {
     }
   }
 
+  async saveSalesNavigatorProviderId({
+    workspaceId,
+    candidateId,
+    identifier,
+    salesNavigatorProviderId,
+  }: {
+    workspaceId?: string;
+    candidateId?: string;
+    identifier?: string;
+    salesNavigatorProviderId: string;
+  }): Promise<void> {
+    const trimmedProviderId = salesNavigatorProviderId.trim();
+
+    if (
+      !isNonEmptyString(workspaceId) ||
+      !isSalesNavigatorLinkedInProviderId(trimmedProviderId)
+    ) {
+      return;
+    }
+
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    try {
+      await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+        async () => {
+          const personRepository =
+            await this.tryGetPersonRepository(workspaceId);
+
+          if (!isDefined(personRepository)) {
+            return;
+          }
+
+          if (
+            !repositoryHasColumn(personRepository, 'salesNavigatorProviderId')
+          ) {
+            return;
+          }
+
+          let personId = '';
+
+          if (isNonEmptyString(candidateId)) {
+            const candidateRepository =
+              await this.globalWorkspaceOrmManager.getRepository<CandidateLinkedinRecord>(
+                workspaceId,
+                'candidate',
+                { shouldBypassPermissionChecks: true },
+              );
+            const candidate = await candidateRepository.findOne({
+              where: { id: candidateId },
+            });
+
+            personId = candidate?.peopleId?.trim() ?? '';
+          }
+
+          const person = await this.lookupPerson(personRepository, {
+            personId,
+            identifier,
+          });
+
+          if (
+            isDefined(person) &&
+            person.salesNavigatorProviderId !== trimmedProviderId
+          ) {
+            await personRepository.update(person.id, {
+              salesNavigatorProviderId: trimmedProviderId,
+            });
+          }
+        },
+        authContext,
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Failed to persist Sales Navigator provider id ${trimmedProviderId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
   async resolveForSend({
     workspaceId,
     candidateId,
@@ -221,12 +427,24 @@ export class LinkedinProviderIdStoreService {
   }): Promise<string> {
     const trimmedIdentifier = identifier.trim();
 
-    if (isValidLinkedInProviderId(trimmedIdentifier)) {
+    if (isClassicLinkedInProviderId(trimmedIdentifier)) {
       await this.saveProviderId({
         workspaceId,
         candidateId,
         identifier: trimmedIdentifier,
         providerId: trimmedIdentifier,
+      });
+
+      return trimmedIdentifier;
+    }
+
+    // SN ids are valid Unipile attendees but must not replace classic ACo.
+    if (isSalesNavigatorLinkedInProviderId(trimmedIdentifier)) {
+      await this.saveSalesNavigatorProviderId({
+        workspaceId,
+        candidateId,
+        identifier: trimmedIdentifier,
+        salesNavigatorProviderId: trimmedIdentifier,
       });
 
       return trimmedIdentifier;
@@ -238,18 +456,25 @@ export class LinkedinProviderIdStoreService {
       identifier: trimmedIdentifier,
     });
 
-    if (isValidLinkedInProviderId(stored)) {
+    if (isClassicLinkedInProviderId(stored)) {
       return stored;
     }
 
     const fetched = (await fetchProviderId()).trim();
 
-    if (isValidLinkedInProviderId(fetched)) {
+    if (isClassicLinkedInProviderId(fetched)) {
       await this.saveProviderId({
         workspaceId,
         candidateId,
         identifier: trimmedIdentifier,
         providerId: fetched,
+      });
+    } else if (isSalesNavigatorLinkedInProviderId(fetched)) {
+      await this.saveSalesNavigatorProviderId({
+        workspaceId,
+        candidateId,
+        identifier: trimmedIdentifier,
+        salesNavigatorProviderId: fetched,
       });
     }
 
@@ -316,6 +541,29 @@ export class LinkedinProviderIdStoreService {
 
     if (!isNonEmptyString(slug)) {
       return null;
+    }
+
+    if (isValidLinkedInProviderId(slug)) {
+      const byProviderId = await repository.findOne({
+        where: { linkedinProfileId: slug },
+      });
+
+      if (isDefined(byProviderId)) {
+        return byProviderId;
+      }
+
+      if (
+        isSalesNavigatorLinkedInProviderId(slug) &&
+        repositoryHasColumn(repository, 'salesNavigatorProviderId')
+      ) {
+        const bySn = await repository.findOne({
+          where: { salesNavigatorProviderId: slug },
+        });
+
+        if (isDefined(bySn)) {
+          return bySn;
+        }
+      }
     }
 
     const byProfileId = await repository.findOne({
@@ -391,4 +639,4 @@ export class LinkedinProviderIdStoreService {
       return null;
     }
   }
-};
+}

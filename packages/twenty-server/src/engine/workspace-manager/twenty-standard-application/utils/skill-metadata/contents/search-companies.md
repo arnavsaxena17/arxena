@@ -16,8 +16,9 @@
 | **Wikidata** | `search_wikidata_companies` | Enrich a known domain/URL with structured facts (HQ, industry, employees, CEO) | Public Wikidata API (no key) |
 <!-- search-wikidata-companies-provider-row:end -->
 <!-- search-companies-index-provider-row:start -->
-| **Internal index** | `search_companies_index` | Dedupe against companies already in the workspace | Elasticsearch index |
+| **Internal index** | `search_companies_index` | Free-text company search across ES indices | Elasticsearch index |
 <!-- search-companies-index-provider-row:end -->
+| **Raw → std name** | `resolve_company_from_raw_name` | Standardize a messy employer string to one best company profile (`std_company_data_scores`) | Elasticsearch (`ES_ENDPOINT`) |
 
 ### learn_tools (companies)
 
@@ -31,6 +32,7 @@ learn_tools({
     "search_linkedin_companies",
 <!-- search-companies-index-learn-tools-line:start -->
     "search_companies_index",
+    "resolve_company_from_raw_name",
 <!-- search-companies-index-learn-tools-line:end -->
 <!-- search-wikidata-companies-learn-tools-line:start -->
     "search_wikidata_companies",

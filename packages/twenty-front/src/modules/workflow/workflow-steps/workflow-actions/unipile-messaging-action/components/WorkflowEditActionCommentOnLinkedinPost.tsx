@@ -11,6 +11,8 @@ import { CoreObjectNameSingular } from 'twenty-shared/types';
 
 type FormData = {
   workspaceMemberId: string;
+  linkedinProfileId: string;
+  linkedinUrl: string;
   postId: string;
   text: string;
   commentId: string;
@@ -35,6 +37,8 @@ export const WorkflowEditActionCommentOnLinkedinPost = ({
   const { formData, handleFieldChange, saveAction } = useUnipileMessagingForm({
     initialFormData: {
       workspaceMemberId: action.settings.input.workspaceMemberId,
+      linkedinProfileId: action.settings.input.linkedinProfileId ?? '',
+      linkedinUrl: action.settings.input.linkedinUrl ?? '',
       postId: action.settings.input.postId,
       text: action.settings.input.text,
       commentId: action.settings.input.commentId ?? '',
@@ -75,6 +79,22 @@ export const WorkflowEditActionCommentOnLinkedinPost = ({
           }
           objectNameSingulars={[CoreObjectNameSingular.WorkspaceMember]}
           disabled={actionOptions.readonly}
+          VariablePicker={WorkflowVariablePicker}
+        />
+        <FormTextFieldInput
+          label={t`LinkedIn profile ID`}
+          placeholder={t`muizesmail, ACoAA…, or https://linkedin.com/in/muizesmail`}
+          readonly={actionOptions.readonly}
+          defaultValue={formData.linkedinProfileId}
+          onChange={(value) => handleFieldChange('linkedinProfileId', value)}
+          VariablePicker={WorkflowVariablePicker}
+        />
+        <FormTextFieldInput
+          label={t`LinkedIn URL`}
+          placeholder={t`Optional. Person/Candidate LinkedIn URL if profile ID is empty`}
+          readonly={actionOptions.readonly}
+          defaultValue={formData.linkedinUrl}
+          onChange={(value) => handleFieldChange('linkedinUrl', value)}
           VariablePicker={WorkflowVariablePicker}
         />
         <FormTextFieldInput

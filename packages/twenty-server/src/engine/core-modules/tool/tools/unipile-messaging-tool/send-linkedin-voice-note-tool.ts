@@ -12,7 +12,7 @@ import {
   SendLinkedinVoiceNoteToolInputZodSchema,
   type SendLinkedinVoiceNoteToolInput,
 } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/types/send-linkedin-voice-note-tool-input.type';
-import { OUTREACH_MOCK_UNIPILE_VOICE_NOTE_RESPONSE_ID } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/utils/is-outreach-mock-unipile-enabled.util';
+import { buildOutreachMockUnipileVoiceNoteResponseId } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/utils/is-outreach-mock-unipile-enabled.util';
 import { loadUnipileChatAttachments } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/utils/load-unipile-chat-attachments.util';
 import {
   createLinkedinUnipileMessagingServiceForTools,
@@ -84,7 +84,7 @@ export class SendLinkedinVoiceNoteTool implements Tool {
             unipileAccountId,
             linkedinProfileId,
             body,
-            response: { id: OUTREACH_MOCK_UNIPILE_VOICE_NOTE_RESPONSE_ID },
+            response: { id: buildOutreachMockUnipileVoiceNoteResponseId() },
           },
         };
       }

@@ -8,7 +8,12 @@ import { Loader } from 'twenty-ui/feedback';
 import { Button, type SelectOption } from 'twenty-ui/input';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
-import { OUTREACH_JOURNEY_TIMELINE_STAGES } from '@/outreach-home/constants/outreach-journey-stages';
+import {
+  getOutreachJourneyTimelineStages,
+  shouldIncludeCommentedWarmupInJourneyTimeline,
+  shouldIncludeInmailSentInJourneyTimeline,
+} from '@/outreach-home/constants/outreach-journey-stages';
+import { outreachContextState } from '@/outreach-home/states/outreachContextState';
 import { type CandidateOutreachJourney } from '@/outreach-home/types/outreach-journey.types';
 import {
   resolveOutreachJourneyStageLabel,
@@ -17,6 +22,9 @@ import {
   resolveOutreachPendingStepLabel,
 } from '@/outreach-home/utils/resolveOutreachJourneyLabels';
 import { Select } from '@/ui/input/components/Select';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { useWorkflowWithCurrentVersion } from '@/workflow/hooks/useWorkflowWithCurrentVersion';
+import { inferOutreachSequencerGraphOptionsFromSteps } from '@/workflow/utils/inferOutreachSequencerGraphOptionsFromSteps';
 
 const StyledContainer = styled.div`
   display: flex;
@@ -210,6 +218,44 @@ export const CandidateOutreachJourneyTab = ({
   const [conversationStage, setConversationStage] = useState<string | null>(
     null,
   );
+  const outreachContext = useAtomStateValue(outreachContextState);
+  const sequencerWorkflow = useWorkflowWithCurrentVersion(
+    outreachContext.outreachWorkflowId ?? undefined,
+  );
+  const commentBeforeConnect = useMemo(() => {
+    const steps = sequencerWorkflow?.currentVersion?.steps ?? null;
+
+    return inferOutreachSequencerGraphOptionsFromSteps(steps)
+      .commentBeforeConnect;
+  }, [sequencerWorkflow?.currentVersion?.steps]);
+
+  const inmailEnabled = useMemo(() => {
+    const steps = sequencerWorkflow?.currentVersion?.steps ?? null;
+
+    return inferOutreachSequencerGraphOptionsFromSteps(steps).inmailEnabled;
+  }, [sequencerWorkflow?.currentVersion?.steps]);
+
+  const timelineStages = useMemo(
+    () =>
+      getOutreachJourneyTimelineStages({
+        includeCommentedWarmup: shouldIncludeCommentedWarmupInJourneyTimeline({
+          commentBeforeConnect,
+          outreachSequenceStage: journey?.outreachSequenceStage,
+          stageHistory: journey?.stageHistory,
+        }),
+        includeInmailSent: shouldIncludeInmailSentInJourneyTimeline({
+          inmailEnabled,
+          outreachSequenceStage: journey?.outreachSequenceStage,
+          stageHistory: journey?.stageHistory,
+        }),
+      }),
+    [
+      commentBeforeConnect,
+      inmailEnabled,
+      journey?.outreachSequenceStage,
+      journey?.stageHistory,
+    ],
+  );
 
   const primaryRun = journey?.activeRuns[0] ?? null;
   const hasFormPending = primaryRun?.currentStepKind === 'FORM';
@@ -310,7 +356,7 @@ export const CandidateOutreachJourneyTab = ({
       <StyledSection>
         <StyledSectionTitle>Stage timeline</StyledSectionTitle>
         <StyledTimeline>
-          {OUTREACH_JOURNEY_TIMELINE_STAGES.map((timelineStage) => (
+          {timelineStages.map((timelineStage) => (
             <StyledTimelineItem
               key={timelineStage.id}
               isActive={timelineStage.id === activeTimelineStage}

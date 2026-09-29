@@ -63,7 +63,7 @@ First-class workflow steps (not LFs):
 | `FOLLOW_LINKEDIN_PROFILE` | Follow via Unipile magic route (resolves ACo… provider_id). |
 | `SEND_LINKEDIN_VOICE_NOTE` | Outbound voice note (exactly one audio file, prefer `.m4a`). Workflow step only for sequenced voice. |
 
-Recipe (warm before connect): `VIEW_LINKEDIN_PROFILE` → `FETCH_LINKEDIN_ACTIVITY` → optional IF posts exist → `LIKE_LINKEDIN_POST` → `COMMENT_ON_LINKEDIN_POST` → `DELAY` (e.g. 5 days) → `SEND_LINKEDIN_CONNECTION_REQUEST`.
+Recipe (warm before connect via Edit Workflow `commentBeforeConnect`): `VIEW_LINKEDIN_PROFILE` → `DELAY` random 1–2h → `FETCH_LINKEDIN_ACTIVITY` → AI draft comment → `COMMENT_ON_LINKEDIN_POST` → optional second round excluding prior `socialId` → `DELAY` inbound wait → `ACCEPT_LINKEDIN_RECEIVED_INVITATION` → if accepted stamp `CONNECTION_ACCEPTED`, else `SEND_LINKEDIN_CONNECTION_REQUEST`.
 
 vs LFs / Ask AI MCP: keyword post search is LF `search-posts` / MCP `search_linkedin_posts`; comments **by** a user is LF `fetch-user-comments` / MCP `linkedin_unipile_get_user_comments`. Per-user posts in chat: MCP `linkedin_unipile_get_user_posts` / `linkedin_unipile_get_profile_overview`. Posting a comment is the workflow step only (no chat MCP write).
 

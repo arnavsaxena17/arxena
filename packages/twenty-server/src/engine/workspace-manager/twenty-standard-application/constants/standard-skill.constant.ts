@@ -60,6 +60,9 @@ export const STANDARD_SKILL = {
   'local-business-search': {
     universalIdentifier: '20202020-7d2a-4f6b-9c1e-3a8b5e0d4f92',
   },
+  'resolve-company-name': {
+    universalIdentifier: '20202020-8e3c-4a1b-9d5f-6b2e0c7a4d81',
+  },
 } as const satisfies Record<
   string,
   {

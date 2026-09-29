@@ -12,6 +12,7 @@ import { AdminResolver } from 'src/engine/api/graphql/graphql-config/decorators/
 import { AdminPanelArxService } from 'src/engine/core-modules/admin-panel/services/admin-panel-arx.service';
 import { AddAdminPublishedOrgChartAliasInput } from 'src/engine/core-modules/admin-panel/dtos/add-admin-published-org-chart-alias.input';
 import { AdminConnectMemberLinkedinUnipileOutput } from 'src/engine/core-modules/admin-panel/dtos/admin-connect-member-linkedin-unipile.output';
+import { AdminRequestMemberLinkedinCookieFetchOutput } from 'src/engine/core-modules/admin-panel/dtos/admin-request-member-linkedin-cookie-fetch.output';
 import { AdminGrantOrgChartToWorkspaceInput } from 'src/engine/core-modules/admin-panel/dtos/admin-grant-org-chart-to-workspace.input';
 import {
   AdminGrantOrgChartToWorkspaceOutput,
@@ -113,6 +114,18 @@ export class AdminPanelArxResolver {
     @Args('workspaceMemberId') workspaceMemberId: string,
   ): Promise<AdminValidateMemberLinkedinStoredCookiesOutput> {
     return this.adminPanelArxService.validateMemberLinkedinStoredCookies(
+      workspaceId,
+      workspaceMemberId,
+    );
+  }
+
+  @UseGuards(AdminPanelGuard)
+  @Mutation(() => AdminRequestMemberLinkedinCookieFetchOutput)
+  async adminRequestMemberLinkedinCookieFetch(
+    @Args('workspaceId') workspaceId: string,
+    @Args('workspaceMemberId') workspaceMemberId: string,
+  ): Promise<AdminRequestMemberLinkedinCookieFetchOutput> {
+    return this.adminPanelArxService.requestMemberLinkedinCookieFetch(
       workspaceId,
       workspaceMemberId,
     );

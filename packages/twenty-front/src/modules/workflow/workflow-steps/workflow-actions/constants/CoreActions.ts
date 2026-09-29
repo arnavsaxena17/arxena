@@ -13,9 +13,11 @@ import { SEND_LINKEDIN_VOICE_NOTE_ACTION } from '@/workflow/workflow-steps/workf
 import { VIEW_LINKEDIN_PROFILE_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/ViewLinkedinProfileAction';
 import { FOLLOW_LINKEDIN_PROFILE_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/FollowLinkedinProfileAction';
 import { LIKE_LINKEDIN_POST_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/LikeLinkedinPostAction';
+import { ACCEPT_LINKEDIN_RECEIVED_INVITATION_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/AcceptLinkedinReceivedInvitationAction';
 import { SEND_WHATSAPP_MESSAGE_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/SendWhatsappMessageAction';
 import { SEARCH_LOCAL_BUSINESSES_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/SearchLocalBusinessesAction';
 import { GET_LOCAL_BUSINESS_DETAILS_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/GetLocalBusinessDetailsAction';
+import { RESOLVE_COMPANY_FROM_RAW_NAME_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/ResolveCompanyFromRawNameAction';
 
 export const CORE_ACTIONS: Array<{
   defaultLabel: string;
@@ -35,9 +37,11 @@ export const CORE_ACTIONS: Array<{
     | 'VIEW_LINKEDIN_PROFILE'
     | 'FOLLOW_LINKEDIN_PROFILE'
     | 'LIKE_LINKEDIN_POST'
+    | 'ACCEPT_LINKEDIN_RECEIVED_INVITATION'
     | 'SEND_WHATSAPP_MESSAGE'
     | 'SEARCH_LOCAL_BUSINESSES'
     | 'GET_LOCAL_BUSINESS_DETAILS'
+    | 'RESOLVE_COMPANY_FROM_RAW_NAME'
   >;
   icon: string;
 }> = [
@@ -55,7 +59,9 @@ export const CORE_ACTIONS: Array<{
   VIEW_LINKEDIN_PROFILE_ACTION,
   FOLLOW_LINKEDIN_PROFILE_ACTION,
   LIKE_LINKEDIN_POST_ACTION,
+  ACCEPT_LINKEDIN_RECEIVED_INVITATION_ACTION,
   SEND_WHATSAPP_MESSAGE_ACTION,
   SEARCH_LOCAL_BUSINESSES_ACTION,
   GET_LOCAL_BUSINESS_DETAILS_ACTION,
+  RESOLVE_COMPANY_FROM_RAW_NAME_ACTION,
 ];

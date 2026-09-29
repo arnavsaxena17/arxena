@@ -30,6 +30,8 @@ const LF_TOKEN_TO_ID_KEY = {
   '__LF_fetch-linkedin-messages__': 'fetchLinkedinMessagesId',
   '__LF_fetch-linkedin-profile__': 'fetchLinkedinProfileId',
   '__LF_validate-inbound-signals__': 'validateInboundSignalsId',
+  '__LF_plan-local-business-city-coverage__': 'planLocalBusinessCityCoverageId',
+  '__LF_fetch-and-upsert-local-businesses__': 'fetchAndUpsertLocalBusinessesId',
 } as const;
 
 export const substituteOutreachWorkflowTokens = (
@@ -62,6 +64,7 @@ export const buildSubstitutedCandidateSequencerGraph = ({
   workspaceId: string;
   fieldMetadataIds: {
     candidateId: string;
+    personId: string;
     outreachSequenceStage: string;
     candidateFlags: string;
     jobCompanyName: string;
@@ -87,6 +90,7 @@ export const buildSubstitutedCandidateSequencerGraph = ({
     [OUTREACH_WF_AGENT_QUALIFY]: agentIds.qualifyProspect,
     [OUTREACH_WF_HARVEST_PROJECT_ID]: harvestProjectId,
     [OUTREACH_WF_FIELD.candidateId]: fieldMetadataIds.candidateId,
+    [OUTREACH_WF_FIELD.personId]: fieldMetadataIds.personId,
     [OUTREACH_WF_FIELD.outreachSequenceStage]:
       fieldMetadataIds.outreachSequenceStage,
     [OUTREACH_WF_FIELD.candidateFlags]: fieldMetadataIds.candidateFlags,

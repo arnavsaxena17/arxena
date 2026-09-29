@@ -11,5 +11,6 @@ export const workflowFetchLinkedinActivityActionSettingsSchema =
       postsLimit: z.number().optional().default(10),
       includeUserComments: z.boolean().optional().default(true),
       userCommentsLimit: z.number().optional().default(10),
+      excludePostSocialIds: z.array(z.string()).optional().default([]),
     }),
   });

@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
+import { isDefined } from 'twenty-shared/utils';
 
 import { OutreachMockLifecycleService } from 'src/engine/core-modules/outreach-command/services/outreach-mock-lifecycle.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -157,6 +158,7 @@ export class OutreachMockController {
   async resetFromConnectionRequest(
     @Param('candidateId') candidateId: string,
     @Query('to') to: string | undefined,
+    @Body() body: { connectionNote?: string } | undefined,
     @Req() request: { headers?: { authorization?: string } },
   ) {
     const { apiToken, workspaceId } =
@@ -174,11 +176,21 @@ export class OutreachMockController {
       );
     }
 
+    const connectionNote = body?.connectionNote;
+
+    if (isDefined(connectionNote) && typeof connectionNote !== 'string') {
+      throw new HttpException(
+        'connectionNote must be a string',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     return this.outreachMockLifecycleService.resetFromConnectionRequest({
       workspaceId,
       candidateId,
       apiToken,
       to: resetTarget,
+      connectionNote,
     });
   }
 

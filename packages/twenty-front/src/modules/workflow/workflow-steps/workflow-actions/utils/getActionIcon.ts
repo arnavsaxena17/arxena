@@ -31,9 +31,11 @@ export const getActionIcon = (actionType: WorkflowActionType) => {
     case 'VIEW_LINKEDIN_PROFILE':
     case 'FOLLOW_LINKEDIN_PROFILE':
     case 'LIKE_LINKEDIN_POST':
+    case 'ACCEPT_LINKEDIN_RECEIVED_INVITATION':
     case 'SEND_WHATSAPP_MESSAGE':
     case 'SEARCH_LOCAL_BUSINESSES':
     case 'GET_LOCAL_BUSINESS_DETAILS':
+    case 'RESOLVE_COMPANY_FROM_RAW_NAME':
       return CORE_ACTIONS.find((item) => item.type === actionType)?.icon;
     case 'LOGIC_FUNCTION':
       return 'IconFunction';

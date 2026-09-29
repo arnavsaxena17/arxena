@@ -311,6 +311,7 @@ export {
   IconPinnedOff,
   IconPlayerPause,
   IconPlayerPlay,
+  IconPlayerSkipForward,
   IconPlayerStop,
   IconPlaylistAdd,
   IconPlaystationSquare,

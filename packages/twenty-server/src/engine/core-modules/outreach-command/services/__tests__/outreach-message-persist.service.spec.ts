@@ -419,6 +419,76 @@ describe('OutreachMessagePersistService.persistInboundFlush', () => {
 
     expect(messageRepository.save).not.toHaveBeenCalled();
   });
+
+  it('skips empty body by default', async () => {
+    messageRepository.find.mockResolvedValue([]);
+
+    await service.appendOutbound({
+      workspaceId: 'ws-1',
+      channel: 'LINKEDIN',
+      body: '   ',
+      candidateId: 'cand-1',
+      materializeOutbound: false,
+    });
+
+    expect(messageRepository.save).not.toHaveBeenCalled();
+    expect(messageRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('ensures a LINKEDIN chatMessage row for blank connection notes', async () => {
+    messageRepository.find.mockResolvedValue([]);
+
+    await service.appendOutbound({
+      workspaceId: 'ws-1',
+      channel: 'LINKEDIN',
+      body: '',
+      candidateId: 'cand-1',
+      materializeOutbound: false,
+      allowEmptyBody: true,
+    });
+
+    expect(messageRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channel: 'LINKEDIN',
+        typeOfMessage: 'linkedin',
+        candidateId: 'cand-1',
+        message: '',
+        messageObj: [],
+      }),
+    );
+    expect(applyCandidateEvent).not.toHaveBeenCalled();
+  });
+
+  it('does not wipe an existing transcript when ensuring a blank connect row', async () => {
+    messageRepository.find.mockResolvedValue([
+      {
+        id: 'linkedin-row',
+        candidateId: 'cand-1',
+        channel: 'LINKEDIN',
+        typeOfMessage: 'linkedin',
+        message: 'Earlier note',
+        messageObj: [{ role: 'assistant', content: 'Earlier note' }],
+      },
+    ]);
+
+    await service.appendOutbound({
+      workspaceId: 'ws-1',
+      channel: 'LINKEDIN',
+      body: '',
+      candidateId: 'cand-1',
+      materializeOutbound: false,
+      allowEmptyBody: true,
+    });
+
+    expect(messageRepository.save).not.toHaveBeenCalled();
+    expect(messageRepository.update).toHaveBeenCalledWith(
+      'linkedin-row',
+      expect.objectContaining({
+        message: 'Earlier note',
+        messageObj: [{ role: 'assistant', content: 'Earlier note' }],
+      }),
+    );
+  });
 });
 
 describe('OutreachMessagePersistService.findOutreachCandidateForInboundEmail', () => {

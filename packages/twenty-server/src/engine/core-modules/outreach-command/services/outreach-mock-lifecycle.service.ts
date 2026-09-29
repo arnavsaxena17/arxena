@@ -23,6 +23,13 @@ import {
 
 export type OutreachMockResetTarget = 'CONNECTION_SENT' | 'QUEUED';
 
+// Same shape as the seeded connection-note sample. Reply steps read this turn.
+const OUTREACH_MOCK_DEFAULT_CONNECTION_NOTE =
+  'Hi, thanks for connecting here. Good to e-meet you.';
+
+// Same ceiling as truncateLinkedinConnectionRequestMessage on the send tool.
+const OUTREACH_MOCK_CONNECTION_NOTE_MAX_LENGTH = 300;
+
 export type OutreachMockHitlDecision = 'approve' | 'reject' | 'edit';
 
 @Injectable()
@@ -216,15 +223,19 @@ export class OutreachMockLifecycleService {
     candidateId,
     apiToken,
     to = 'CONNECTION_SENT',
+    connectionNote,
   }: {
     workspaceId: string;
     candidateId: string;
     apiToken: string;
     to?: OutreachMockResetTarget;
+    // Omit for the canned note. "" persists a blank connect row (no turn).
+    connectionNote?: string;
   }): Promise<{
     ok: true;
     candidateId: string;
     outreachSequenceStage: OutreachMockResetTarget;
+    connectionNote: string;
   }> {
     await this.inboundReplyWindowService.clearInboundWindow(
       workspaceId,
@@ -253,13 +264,53 @@ export class OutreachMockLifecycleService {
       apiToken,
     );
 
-    this.logger.log(`OUTREACH_MOCK: reset candidate ${candidateId} to ${to}`);
+    const persistedConnectionNote =
+      to === 'CONNECTION_SENT'
+        ? this.resolveConnectionNote(connectionNote)
+        : '';
+
+    if (to === 'CONNECTION_SENT') {
+      // Stage-only reset leaves the reply agent with Transcript: (none).
+      await this.gtmOutreachMessagePersistService.appendOutbound({
+        workspaceId,
+        channel: 'LINKEDIN',
+        body: persistedConnectionNote,
+        candidateId,
+        externalMessageId: `mock-connect-${candidateId}-${Date.now()}`,
+        materializeOutbound: false,
+        allowEmptyBody: true,
+      });
+
+      await this.materializeService.applyCandidateEvent({
+        candidateId,
+        event: 'connection_sent',
+        apiToken,
+        messagingChannel: 'LINKEDIN_CONNECT',
+        outboundMessageKind: 'CONNECT_NOTE',
+      });
+    }
+
+    this.logger.log(
+      `OUTREACH_MOCK: reset ${candidateId} to ${to} noteChars=${persistedConnectionNote.length}`,
+    );
 
     return {
       ok: true,
       candidateId,
       outreachSequenceStage: to,
+      connectionNote: persistedConnectionNote,
     };
+  }
+
+  // Undefined uses the canned note. A blank string stays blank.
+  resolveConnectionNote(connectionNote: string | undefined): string {
+    if (!isDefined(connectionNote)) {
+      return OUTREACH_MOCK_DEFAULT_CONNECTION_NOTE;
+    }
+
+    return connectionNote
+      .trim()
+      .slice(0, OUTREACH_MOCK_CONNECTION_NOTE_MAX_LENGTH);
   }
 
   resolveResetTarget(to: string | undefined): OutreachMockResetTarget {

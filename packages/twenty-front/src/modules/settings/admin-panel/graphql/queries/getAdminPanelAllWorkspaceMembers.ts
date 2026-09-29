@@ -29,6 +29,9 @@ export const GET_ADMIN_PANEL_ALL_WORKSPACE_MEMBERS = gql`
         typeWorkspaceMember
         chromeExtensionId
         extensionInstalled
+        extensionLastSeenAt
+        extensionUninstalledAt
+        linkedinCookieFetchPendingUntil
         linkedinCookiesStored
         linkedinLiAStored
         linkedinCookiesLastSyncedAt

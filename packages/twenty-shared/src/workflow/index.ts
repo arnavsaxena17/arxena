@@ -27,6 +27,8 @@ export type {
   WorkflowLayoutOptions,
 } from './layout/utils/compute-workflow-layout.util';
 export { computeWorkflowLayout } from './layout/utils/compute-workflow-layout.util';
+export { workflowAcceptLinkedinReceivedInvitationActionSchema } from './schemas/accept-linkedin-received-invitation-action-schema';
+export { workflowAcceptLinkedinReceivedInvitationActionSettingsSchema } from './schemas/accept-linkedin-received-invitation-action-settings-schema';
 export { workflowAiAgentActionSchema } from './schemas/ai-agent-action-schema';
 export { workflowAiAgentActionSettingsSchema } from './schemas/ai-agent-action-settings-schema';
 export { workflowAiFilteringActionSchema } from './schemas/ai-filtering-action-schema';
@@ -95,6 +97,8 @@ export {
   workflowPickRecordStrategySchema,
   workflowPickRecordActionSettingsSchema,
 } from './schemas/pick-record-action-settings-schema';
+export { workflowResolveCompanyFromRawNameActionSchema } from './schemas/resolve-company-from-raw-name-action-schema';
+export { workflowResolveCompanyFromRawNameActionSettingsSchema } from './schemas/resolve-company-from-raw-name-action-settings-schema';
 export { workflowSearchLocalBusinessesActionSchema } from './schemas/search-local-businesses-action-schema';
 export { workflowSearchLocalBusinessesActionSettingsSchema } from './schemas/search-local-businesses-action-settings-schema';
 export { workflowSendEmailActionSchema } from './schemas/send-email-action-schema';

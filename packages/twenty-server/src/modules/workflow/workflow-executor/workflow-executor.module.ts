@@ -22,6 +22,7 @@ import { MailSenderActionModule } from 'src/modules/workflow/workflow-executor/w
 import { RecordCRUDActionModule } from 'src/modules/workflow/workflow-executor/workflow-actions/record-crud/record-crud-action.module';
 import { UnipileMessagingActionModule } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/unipile-messaging-action.module';
 import { LocalBusinessDataActionModule } from 'src/modules/workflow/workflow-executor/workflow-actions/local-business-data/local-business-data-action.module';
+import { CompanyNameResolverActionModule } from 'src/modules/workflow/workflow-executor/workflow-actions/company-name-resolver/company-name-resolver-action.module';
 import { WorkflowExecutorWorkspaceService } from 'src/modules/workflow/workflow-executor/workspace-services/workflow-executor.workspace-service';
 import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.module';
 
@@ -48,6 +49,7 @@ import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow
     CreateCalendarEventActionModule,
     UnipileMessagingActionModule,
     LocalBusinessDataActionModule,
+    CompanyNameResolverActionModule,
     MetricsModule,
   ],
   providers: [WorkflowExecutorWorkspaceService, WorkflowActionFactory],

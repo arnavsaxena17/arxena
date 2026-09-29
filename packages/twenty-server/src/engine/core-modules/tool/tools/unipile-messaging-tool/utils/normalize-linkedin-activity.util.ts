@@ -61,11 +61,42 @@ export const normalizeLinkedinActivityUserComments = (
     .slice(0, limit);
 };
 
+export const filterLinkedinActivityPostsExcludingSocialIds = (
+  posts: NormalizedLinkedinActivityPost[],
+  excludePostSocialIds: readonly string[] | null | undefined,
+): NormalizedLinkedinActivityPost[] => {
+  if (!excludePostSocialIds || excludePostSocialIds.length === 0) {
+    return posts;
+  }
+
+  const excluded = new Set(
+    excludePostSocialIds
+      .map((socialId) => socialId.trim())
+      .filter(isNonEmptyString),
+  );
+
+  if (excluded.size === 0) {
+    return posts;
+  }
+
+  return posts.filter(
+    (post) => !isNonEmptyString(post.socialId) || !excluded.has(post.socialId),
+  );
+};
+
 // Prefer newest original post; fall back to newest of any post, then first item.
 export const pickMostRecentLinkedinActivityPost = (
   posts: NormalizedLinkedinActivityPost[],
+  options?: {
+    excludePostSocialIds?: readonly string[] | null;
+  },
 ): NormalizedLinkedinActivityPost | null => {
-  if (posts.length === 0) {
+  const eligiblePosts = filterLinkedinActivityPostsExcludingSocialIds(
+    posts,
+    options?.excludePostSocialIds,
+  );
+
+  if (eligiblePosts.length === 0) {
     return null;
   }
 
@@ -85,11 +116,11 @@ export const pickMostRecentLinkedinActivityPost = (
     return rightRank - leftRank;
   };
 
-  const originals = posts.filter((post) => post.isRepost !== true);
-  const pool = originals.length > 0 ? originals : posts;
+  const originals = eligiblePosts.filter((post) => post.isRepost !== true);
+  const pool = originals.length > 0 ? originals : eligiblePosts;
   const sorted = [...pool].sort(byDatetimeDescending);
 
-  return sorted[0] ?? posts[0] ?? null;
+  return sorted[0] ?? eligiblePosts[0] ?? null;
 };
 
 export const hasCommentableSocialId = (

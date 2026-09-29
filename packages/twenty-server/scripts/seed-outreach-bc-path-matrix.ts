@@ -403,6 +403,8 @@ Drive checklist (mocks):
            POST /outreach-mock/candidates/:id/generated-reply  { "text": "…", "channel"?: "LINKEDIN"|"WHATSAPP"|"EMAIL" }
   HITL:    POST /outreach-mock/candidates/:id/hitl   { "decision": "approve"|"reject"|"edit", "editedBody"?: "…" }
            aliases: yes | no | change
+  Reset:   POST /outreach-mock/candidates/:id/reset?to=CONNECTION_SENT|QUEUED
+           { "connectionNote"?: "…" }  omit = canned note; "" = blank connect row
 
 HITL matrix:
   C-accept-silent-fu        → hitl decision=approve (default draft goes out)

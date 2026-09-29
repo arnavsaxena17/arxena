@@ -10,16 +10,18 @@
 
 import {
   formatOutreachProspectEnrichmentForLlm,
+  formatOutreachProspectPostsForLlm,
+  formatOutreachProspectProfileForLlm,
   formatOutreachSenderForLlm,
   formatOutreachSlotsForLlm,
   formatOutreachTranscriptForLlm,
 } from 'src/engine/core-modules/outreach-command/utils/format-outreach-llm-context.util';
+import { LOCAL_PLACE_CLASSIFIER_SYSTEM_PROMPT } from 'src/engine/core-modules/outreach-command/prompts/local-place-classifier.prompt';
 
 export const OUTREACH_DONT_RESPOND_SENTINEL = '#DONTRESPOND#';
 
 export const OUTREACH_NO_CHANNEL_SWITCH = 'NONE';
 
-// Shared cadence rule fragments (first-message + post-reply builders).
 export const OUTREACH_CADENCE_NO_SLOTS_RULE =
   'Never paste clock times, dates, or calendar slots.';
 
@@ -35,6 +37,61 @@ export const OUTREACH_CADENCE_SOFT_ASK_WALKTHROUGH_THIS_WEEK_OR_NEXT =
 export const OUTREACH_CADENCE_FU2_CLOSE =
   'Close with "Either way, happy to stay in touch here."';
 
+export const OUTREACH_CADENCE_IGNORE_CALENDAR_LABEL =
+  'calendar (ignore — do not use)';
+
+export const OUTREACH_CADENCE_DO_NOT_CONTINUE_THREAD =
+  'Write only this cadence message. Do not answer inbound scheduling, Sunday/slot questions, or continue a reply thread — draft reply owns that.';
+
+export const OUTREACH_CADENCE_TRIGGER_PRIORITY =
+  'Pick ONE trigger from prospect inputs, priority: (1) a recent prospect_posts item, (2) hooks with post/activity source, (3) other hooks, (4) a concrete fact from prospect_profile (role change, company, recent experience), (5) matching_problem as their problem language, (6) shared background / referral_source, (7) career-path observation. Never invent triggers, customers, or metrics.';
+
+export const OUTREACH_CADENCE_NO_FLATTERY =
+  'Never open with flattery ("Impressed by your profile", "Love your work"). Refer to the specific fact instead. No links or decks unless the user prompt explicitly asks to share one.';
+
+export const OUTREACH_VOICE_AND_NEVER_USE = [
+  'VOICE — write the way a sharp person messages from their phone:',
+  '- Short, direct sentences. Mix in a longer one occasionally.',
+  "- Use contractions where natural: don't, it's, you'll, we've.",
+  '- Connect with: and, but, so, which means, because. Not: furthermore, moreover, in conclusion.',
+  '- Concrete nouns and verbs. No abstract corporate-speak.',
+  '- Sentence fragments are fine. They work.',
+  '- One specific detail beats two generic claims.',
+  '- No symmetrical paragraph structure. Real messages are slightly uneven.',
+  '- Do not dramatize, exaggerate, or try to impress or sell. Be natural.',
+  '  No nestled, breathtaking, unforgettable, must-see, testament,',
+  '  or "the future looks bright". Keep the fact.',
+
+  '',
+  'NEVER USE:',
+  '- Filler openers: "I hope", "I wanted to reach out", "I came across your profile".',
+  '- Throat-clearing: "In today\'s landscape", "As someone who…", "It was great to…".',
+  '- Chatbot residue: "Great question", "Certainly", "Happy to help".',
+  '- Contrast frames: "not X, but Y", "it\'s not just X, it\'s Y". State the point.',
+  '- A last line that only repeats the point.',
+  '- Banned words: leverage, utilize, facilitate, robust, seamless, pivotal, paramount,',
+  '  comprehensive, nuanced, holistic, synergy, transformative, foster, navigate, embark,',
+  '  resonate, underscore, streamline, cutting-edge, innovative, game-changer, empower, harness.',
+  '- Closing clichés: "Looking forward to hearing from you", "Feel free to reach out".',
+  '- Em dashes. Use a comma, period, or restructure instead.',
+  '- Passive voice. Make someone do something.',
+].join('\n');
+
+// Output contract for the rewrite. Style lives in OUTREACH_VOICE_AND_NEVER_USE.
+// Unattended nodes cannot show a critique or ask for a missing fact.
+export const OUTREACH_HUMANIZER_RULES = [
+  'Apply the voice rules above to the message wording only.',
+  'Do not ask for a missing fact or add a question this task did not already require.',
+  'Stay inside the length cap already stated in this prompt.',
+  'Same output shape this prompt already requires.',
+  'Do not show a critique or a second draft.',
+].join('\n');
+
+export const OUTREACH_HUMANIZER_DONT_RESPOND_RULE = [
+  `If message is "${OUTREACH_DONT_RESPOND_SENTINEL}", return that exact string.`,
+  'Do not rewrite it. Leave every other JSON field as this prompt already requires.',
+].join(' ');
+
 export const OUTREACH_QUALIFY_HOOKS_CONTRACT =
   'hooks is an array of at most 3 { "text", "source" } objects';
 
@@ -47,8 +104,12 @@ export const OUTREACH_FALLBACK_EMAIL_CORE =
 // --- core.agent system prompts (upserted by prefillOutreachWorkflows) ---
 // Keep these to role + output contract. Field-level rules live in the per-step user prompts.
 
-export const OUTREACH_SEEDED_AGENT_LINKEDIN_MESSAGE_SYSTEM_PROMPT =
-  'You draft short LinkedIn messages for GTM outreach. Return JSON { "message": "<body>" } only. If the user prompt asks to share a deck or presentation, call send_files with channel linkedin after drafting (files come from sender collateral / agent config).';
+export const OUTREACH_SEEDED_AGENT_LINKEDIN_MESSAGE_SYSTEM_PROMPT = [
+  'You draft short LinkedIn messages for GTM outreach. On cold cadence, earn a reply — do not pitch hard.',
+  'Return JSON { "message": "<body>" } only.',
+  'Call send_files with channel linkedin only when the user prompt explicitly asks to share a deck or presentation',
+  '(files come from sender collateral / agent config).',
+].join(' ');
 
 export const OUTREACH_SEEDED_AGENT_FALLBACK_EMAIL_SYSTEM_PROMPT = [
   OUTREACH_FALLBACK_EMAIL_CORE,
@@ -80,6 +141,7 @@ export const OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS = {
   reply: OUTREACH_SEEDED_AGENT_REPLY_SYSTEM_PROMPT,
   extractSignals: OUTREACH_SEEDED_AGENT_EXTRACT_SIGNALS_SYSTEM_PROMPT,
   qualifyProspect: OUTREACH_QUALIFY_PROSPECT_SYSTEM_PROMPT,
+  localPlaceClassifier: LOCAL_PLACE_CLASSIFIER_SYSTEM_PROMPT,
 } as const;
 
 // Candidate membership fields vs Person identity for reply-agent CRUD tool calls.
@@ -104,24 +166,7 @@ export const buildOutreachSharedSenderContextPrompt = (
     'Never invent facts about the prospect — use only the inputs. Output only the message text',
     'unless the prompt asks for JSON.',
     '',
-    'VOICE — write the way a sharp person messages from their phone:',
-    '- Short, direct sentences. Mix in a longer one occasionally.',
-    "- Use contractions where natural: don't, it's, you'll, we've.",
-    '- Connect with: and, but, so, which means, because. Not: furthermore, moreover, in conclusion.',
-    '- Concrete nouns and verbs. No abstract corporate-speak.',
-    '- Sentence fragments are fine. They work.',
-    '- One specific detail beats two generic claims.',
-    '- No symmetrical paragraph structure. Real messages are slightly uneven.',
-    '',
-    'NEVER USE:',
-    '- Filler openers: "I hope", "I wanted to reach out", "I came across your profile".',
-    '- Throat-clearing: "In today\'s landscape", "As someone who…", "It was great to…".',
-    '- Banned words: leverage, utilize, facilitate, robust, seamless, pivotal, paramount,',
-    '  comprehensive, nuanced, holistic, synergy, transformative, foster, navigate, embark,',
-    '  resonate, underscore, streamline, cutting-edge, innovative, game-changer, empower, harness.',
-    '- Closing clichés: "Looking forward to hearing from you", "Feel free to reach out".',
-    '- Em dashes. Use a comma, period, or restructure instead.',
-    '- Passive voice. Make someone do something.',
+    OUTREACH_VOICE_AND_NEVER_USE,
     '',
     `SENDER_JSON: ${formatOutreachSenderForLlm(senderJson) || '(none)'}`,
   ].join('\n');
@@ -141,12 +186,13 @@ export const buildOutreachQualifyProspectPrompt = ({
     buildOutreachSharedSenderContextPrompt(senderJson),
     '',
     'Decide whether to contact this person for the sender offer and extract hooks.',
-    `profile: ${profile.trim() || '(empty)'}`,
-    `posts: ${(posts ?? '').trim() || '(empty)'}`,
+    // Prefer full fetch-linkedin-profile {{step.text}} (human-readable).
+    `prospect_profile: ${formatOutreachProspectProfileForLlm(profile) || '(none)'}`,
+    `posts: ${(posts ?? '').trim() || '(none)'}`,
     `crm: ${(crm ?? '').trim() || '(empty)'}`,
     'SCORING 0–5 vs sender targetTitles / locations and brief ICP. Role match + company match → 4–5. Clear exclude signals in brief → 0–2 go=false.',
     'Retired/ex-/advisor/independent director/consultant → go=false.',
-    'HOOKS at most 3: business fact, pain-related post, shared background.',
+    'HOOKS at most 3: business fact, pain-related post, shared background. Prefer facts from prospect_profile.',
     `Return JSON only: ${OUTREACH_QUALIFY_JSON_KEYS}`,
     `${OUTREACH_QUALIFY_HOOKS_CONTRACT}. honorific and referral_source may be null.`,
   ].join('\n');
@@ -154,58 +200,123 @@ export const buildOutreachQualifyProspectPrompt = ({
 export const buildOutreachConnectionNotePrompt = ({
   senderJson,
   prospectEnrichmentJson,
+  prospectProfileText,
 }: {
   senderJson: string;
   prospectEnrichmentJson: string;
+  prospectProfileText?: string;
 }): string =>
   [
-    buildOutreachSharedSenderContextPrompt(senderJson),
+    'You draft a linkedin connection request message on behalf of the sender described below.',
+    'Try to gain attention in first 3 seconds which should motivate them to accept the connection without over dramatisation.',
+    'Do not be intrusive in the first message. A simple message is better than a complex message.',
+    'Simple Sample Message :',
+    'Hi <name>,',
+    'Thanks for connecting here. Good to e-meet you.',
+    'Regards, <name>',
+
+    'Never invent facts.',
+    'Rules: one ask per message; never two questions. No bullet lists in LinkedIn/WhatsApp.',
+    'Never invent facts about the prospect — use only the inputs. Output only the message text',
+    'unless the prompt asks for JSON.',
+    '',
+    OUTREACH_VOICE_AND_NEVER_USE,
+    '',
+    `SENDER_JSON: ${formatOutreachSenderForLlm(senderJson) || '(none)'}`,
     '',
     'Write a LinkedIn connection note. Hard limit 280 characters.',
     'No links, no product name, no pitch.',
     `prospect: ${formatOutreachProspectEnrichmentForLlm(prospectEnrichmentJson) || '(none)'}`,
+    `prospect_profile: ${formatOutreachProspectProfileForLlm(prospectProfileText) || '(none)'}`,
     'VARIANT A (cold): S1 hook from hooks[0]; S2 credibility.one_liner; S3 "Would be glad to connect."',
     'VARIANT B (referral_source set): open with referral, then as A, close "Look forward to connecting here."',
     'Output the note only.',
+    '',
+    OUTREACH_HUMANIZER_RULES,
+  ].join('\n');
+
+export const buildOutreachLinkedinPostCommentPrompt = ({
+  senderJson,
+  prospectEnrichmentJson,
+  postText,
+}: {
+  senderJson: string;
+  prospectEnrichmentJson: string;
+  postText: string;
+}): string =>
+  [
+    buildOutreachSharedSenderContextPrompt(senderJson),
+    '',
+    'Write a short LinkedIn comment on the prospect post below.',
+    '1–3 sentences. Specific to the post. No links, no hard pitch, no ask to connect.',
+    'Sound like a peer, not a marketer.',
+    `prospect: ${formatOutreachProspectEnrichmentForLlm(prospectEnrichmentJson) || '(none)'}`,
+    `post: ${postText || '(empty)'}`,
+    'Output the comment text only.',
   ].join('\n');
 
 export const buildOutreachFirstMessagePrompt = ({
   senderJson,
   prospectEnrichmentJson,
+  prospectProfileText,
+  prospectPostsText,
   chatHistory,
   calendarSlots,
   kind,
 }: {
   senderJson: string;
   prospectEnrichmentJson: string;
+  prospectProfileText?: string;
+  prospectPostsText?: string;
   chatHistory?: string;
   calendarSlots?: string;
   kind: 'opener' | 'fu1' | 'fu2' | 'fu3';
 }): string => {
   const kindRules = {
     opener: [
-      'Write the first message (T1). 70–100 words, four short paragraphs, one ask.',
-      'P1 thanks for connecting. P2 problem in their business terms from matching_problem_statement + hooks.',
-      'P3 offer.one_sentence + operator_line half-sentence max.',
-      `P4 soft ask only: ${OUTREACH_CADENCE_SOFT_ASK_THIS_WEEK_OR_NEXT}`,
-      `${OUTREACH_CADENCE_NO_SLOTS_RULE} in T1–T3.`,
+      'Write the first message after connection accepted (T1).',
+      'Ask type: curiosity question only — not time, not a call, not a meeting.',
+      '35–50 words. Thanks for connecting + one specific observation from the trigger.',
+      'Then one open question about how they handle the problem that trigger creates (their world, not our offer).',
+      'No product name, no offer.one_sentence, no pitch, no links, no deck.',
+      'matching_problem may shape problem language only — never paste the offer.',
+      OUTREACH_CADENCE_TRIGGER_PRIORITY,
+      OUTREACH_CADENCE_NO_FLATTERY,
+      OUTREACH_CADENCE_NO_SLOTS_RULE,
+      OUTREACH_CADENCE_DO_NOT_CONTINUE_THREAD,
     ].join(' '),
     fu1: [
-      'Second message (T2). 40–60 words. New angle, not a repeat of T1.',
-      'Use hooks[1] if available. Add ONE proof_point closest to their industry.',
-      'End with a low-friction soft ask (Worth N minutes this week or next? or send a short note first).',
+      'Second cold message (T2), sent if no reply. Ask type: interest CTA only — not minutes, not a call.',
+      '50–70 words. Natural bridge — never "following up" / "circling back" / "bumping this".',
+      'One insight tied to a different hook than T1, or deepen matching_problem.',
+      'Optional: ONE proof_point from sender that fits their industry — never invent customers or numbers.',
+      'Close with low-commitment interest only ("worth a look?" / "happy to share how").',
+      OUTREACH_CADENCE_TRIGGER_PRIORITY,
+      OUTREACH_CADENCE_NO_FLATTERY,
       OUTREACH_CADENCE_NO_SLOTS_RULE,
+      OUTREACH_CADENCE_DO_NOT_CONTINUE_THREAD,
     ].join(' '),
     fu2: [
-      'Third message (T3). ≤40 words, unhurried.',
-      'Ask ONE non-yes/no qualifying question about who owns the process.',
-      OUTREACH_CADENCE_FU2_CLOSE,
+      'Third cold message (T3), sent if no reply. Ask type: one primary meeting ask.',
+      '40–60 words. One line on why a short chat helps THEM (not us).',
+      'Primary ask: ~15 minutes this week or next, or a quick async note if they prefer.',
+      'Then a statement out/referral (not a second question):',
+      '"If this isn\'t on your plate, point me to whoever owns it."',
+      'Do not re-explain the offer. No breakup close. No pasted slots.',
+      OUTREACH_CADENCE_TRIGGER_PRIORITY,
+      OUTREACH_CADENCE_NO_FLATTERY,
       OUTREACH_CADENCE_NO_SLOTS_RULE,
+      OUTREACH_CADENCE_DO_NOT_CONTINUE_THREAD,
     ].join(' '),
     fu3: [
-      'Final short cadence message. ≤40 words.',
-      'One qualifying question; no pressure. Happy to stay in touch.',
+      'Final cold cadence message (T4). Ask type: zero asks — no question, no meeting ask, no guilt.',
+      '25–40 words. Acknowledge you do not want to clutter their inbox; leave the door open briefly.',
+      'End with a specific good-wish tied to a real hook or profile fact.',
+      OUTREACH_CADENCE_FU2_CLOSE,
+      OUTREACH_CADENCE_TRIGGER_PRIORITY,
+      OUTREACH_CADENCE_NO_FLATTERY,
       OUTREACH_CADENCE_NO_SLOTS_RULE,
+      OUTREACH_CADENCE_DO_NOT_CONTINUE_THREAD,
     ].join(' '),
   }[kind];
 
@@ -214,22 +325,28 @@ export const buildOutreachFirstMessagePrompt = ({
     '',
     kindRules,
     `prospect: ${formatOutreachProspectEnrichmentForLlm(prospectEnrichmentJson) || '(none)'}`,
+    `prospect_profile: ${formatOutreachProspectProfileForLlm(prospectProfileText) || '(none)'}`,
+    `prospect_posts: ${formatOutreachProspectPostsForLlm(prospectPostsText) || '(none)'}`,
     `chat_history: ${formatOutreachTranscriptForLlm(chatHistory ?? '') || '(none)'}`,
-    // Calendar may be injected by the graph; outbound cadence must not use it yet.
-    `calendar: ${formatOutreachSlotsForLlm(calendarSlots ?? '') || '(none)'}`,
+    // Graph may inject slots; cold cadence must never use them.
+    `${OUTREACH_CADENCE_IGNORE_CALENDAR_LABEL}: ${formatOutreachSlotsForLlm(calendarSlots ?? '') || '(none)'}`,
     'Return JSON only: { "message": "<body>" }',
+    '',
+    OUTREACH_HUMANIZER_RULES,
   ].join('\n');
 };
 
 export const buildOutreachPostReplyFollowUpPrompt = ({
   senderJson,
   prospectEnrichmentJson,
+  prospectProfileText,
   chatHistory,
   calendarSlots,
   kind,
 }: {
   senderJson: string;
   prospectEnrichmentJson: string;
+  prospectProfileText?: string;
   chatHistory?: string;
   calendarSlots?: string;
   kind: 'fu1' | 'fu2';
@@ -238,16 +355,19 @@ export const buildOutreachPostReplyFollowUpPrompt = ({
     kind === 'fu1'
       ? [
           'They replied once; we answered; they went silent.',
-          'Write a short follow-up (40–60 words). New angle, not a repeat of our last message.',
+          'Write a short follow-up (40–60 words). New angle — do not re-pitch the opener or repeat our last message.',
           `One soft ask: ${OUTREACH_CADENCE_SOFT_ASK_WALKTHROUGH_THIS_WEEK_OR_NEXT},`,
-          'or ask if a 2-page note would help first (only if collateral exists).',
-          OUTREACH_CADENCE_NO_SLOTS_RULE,
+          'or ask if a short note would help first (only if collateral exists).',
           'No pressure, no "circling back" / "just following up".',
+          OUTREACH_CADENCE_NO_FLATTERY,
+          OUTREACH_CADENCE_NO_SLOTS_RULE,
         ].join(' ')
       : [
           'Final follow-up after they went silent post-reply. ≤40 words, unhurried.',
-          'Ask ONE non-yes/no qualifying question about who owns the process at their company.',
+          'Ask ONE non-yes/no qualifying question about who owns the process at their company,',
+          'or use a statement referral out: "If this isn\'t on your plate, point me to whoever owns it."',
           OUTREACH_CADENCE_FU2_CLOSE,
+          OUTREACH_CADENCE_NO_FLATTERY,
           OUTREACH_CADENCE_NO_SLOTS_RULE,
         ].join(' ');
 
@@ -256,8 +376,9 @@ export const buildOutreachPostReplyFollowUpPrompt = ({
     '',
     kindRules,
     `prospect: ${formatOutreachProspectEnrichmentForLlm(prospectEnrichmentJson) || '(none)'}`,
+    `prospect_profile: ${formatOutreachProspectProfileForLlm(prospectProfileText) || '(none)'}`,
     `chat_history: ${formatOutreachTranscriptForLlm(chatHistory ?? '') || '(none)'}`,
-    `calendar: ${formatOutreachSlotsForLlm(calendarSlots ?? '') || '(none)'}`,
+    `${OUTREACH_CADENCE_IGNORE_CALENDAR_LABEL}: ${formatOutreachSlotsForLlm(calendarSlots ?? '') || '(none)'}`,
     'Return JSON only: { "message": "<body>" }',
   ].join('\n');
 };
@@ -321,6 +442,8 @@ export const buildOutreachSalesChatDraftPrompt = ({
   candidateId,
   senderJson,
   prospectEnrichmentJson,
+  prospectProfileText,
+  prospectPostsText,
 }: {
   name: string;
   title: string;
@@ -336,11 +459,15 @@ export const buildOutreachSalesChatDraftPrompt = ({
   candidateId?: string;
   senderJson?: string;
   prospectEnrichmentJson?: string;
+  prospectProfileText?: string;
+  prospectPostsText?: string;
 }): string =>
   [
     'You drive a sales outreach conversation on LinkedIn / WhatsApp / email.',
     'Goal: book a short intro using the sender meeting defaults.',
     'Draft the next outbound message. Do not re-classify and do not invent contacts or slots.',
+    'This step owns the scheduling ladder. Cold cadence (T1–T4) is separate — never restart with a',
+    'T1-style observation pitch once they have already replied.',
     candidateId?.trim()
       ? [
           'CANDIDATE TOOL CALLS (before drafting) — use only validated inputs below:',
@@ -358,18 +485,23 @@ export const buildOutreachSalesChatDraftPrompt = ({
     prospectEnrichmentJson?.trim()
       ? `PROSPECT_ENRICHMENT: ${formatOutreachProspectEnrichmentForLlm(prospectEnrichmentJson) || '(none)'}`
       : '',
+    `prospect_profile: ${formatOutreachProspectProfileForLlm(prospectProfileText) || '(none)'}`,
+    `prospect_posts: ${formatOutreachProspectPostsForLlm(prospectPostsText) || '(none)'}`,
+    OUTREACH_VOICE_AND_NEVER_USE,
     'Answer offer questions using ONLY sender.offer.faq / works_with / implementation_time /',
     'pilot_offer / pricing_line / data_security_line. If unsupported, say you will confirm and',
     'come back — do not invent.',
     `If "Asked to stop" below is true, set message to "${OUTREACH_DONT_RESPOND_SENTINEL}" exactly and leave every other field empty.`,
     'Do not invent product claims they did not ask about.',
-    'Be short, conversational, and to the point. Neutral tone. Plain text, no markdown.',
+    'Be short, conversational, and to the point. Plain text, no markdown.',
+    'LinkedIn replies: usually ≤60 words unless answering a concrete question. One ask only.',
+    'Use PROSPECT_ENRICHMENT hooks, prospect_profile, and prospect_posts only for light personalization — never invent.',
     'The transcript may span several rounds. Read the full thread, not only the last line.',
     `If they asked to stop or unsubscribe, set message to "${OUTREACH_DONT_RESPOND_SENTINEL}" exactly.`,
     'If they said they will discuss internally / revert / keep you posted, send a short ack or',
     `use "${OUTREACH_DONT_RESPOND_SENTINEL}" - do not pitch or offer new slots.`,
     'If they asked to pause / later / traveling, thank them, confirm you will pause, do not pitch.',
-    'Wrong person: ask once who looks after the function; do not rebut.',
+    'Wrong person: ask once who looks after the function; make declining easy; do not rebut.',
     'Write the reply for the injected reply channel. Keep it native to that channel.',
     'Scheduling ladder (HITL will approve before send — draft as if that gate exists):',
     '- Soft ask until they name a time window or duration ("this week", "next week",',
@@ -410,6 +542,8 @@ export const buildOutreachSalesChatDraftPrompt = ({
     `Name: ${name}`,
     `Title: ${title}`,
     `Transcript: ${formatOutreachTranscriptForLlm(transcript) || '(none)'}`,
+    OUTREACH_HUMANIZER_RULES,
+    OUTREACH_HUMANIZER_DONT_RESPOND_RULE,
     'Return JSON: {',
     '  "message": "<reply on the injected reply channel>",',
     '  "emailSubject": "<subject when emailing details, else empty string>",',
@@ -491,6 +625,21 @@ export const buildOutreachFallbackEmailPrompt = ({
     'Return JSON only: { "subject": "<subject>", "message": "<body>" }',
   ].join('\n');
 
+export const buildOutreachFallbackInmailPrompt = ({
+  name,
+  title,
+}: {
+  name: string;
+  title: string;
+}): string =>
+  [
+    'Write a short LinkedIn Sales Navigator InMail. Connection was not accepted; this is the next touch before email.',
+    `Name: ${name}`,
+    `Title: ${title}`,
+    'Keep body ≤120 words. One clear ask. No attachments.',
+    'Return JSON only: { "subject": "<subject>", "message": "<body>" }',
+  ].join('\n');
+
 export const buildOutreachMeetingReminderPrompt = ({
   senderJson,
   name,
@@ -504,6 +653,8 @@ export const buildOutreachMeetingReminderPrompt = ({
     'Write a short LinkedIn meeting reminder (≤30 words).',
     `Name: ${name}`,
     'Remind them of the walkthrough. One ask only. Return JSON: { "message": "<body>" }',
+    '',
+    OUTREACH_HUMANIZER_RULES,
   ].join('\n');
 
 export const buildOutreachNoShowPingPrompt = ({
@@ -519,6 +670,8 @@ export const buildOutreachNoShowPingPrompt = ({
     'Write a short LinkedIn no-show ping (≤40 words). Polite, one ask to reschedule.',
     `Name: ${name}`,
     'Return JSON: { "message": "<body>" }',
+    '',
+    OUTREACH_HUMANIZER_RULES,
   ].join('\n');
 
 export const buildOutreachRescheduleOfferPrompt = ({
@@ -534,6 +687,8 @@ export const buildOutreachRescheduleOfferPrompt = ({
     'Write a short LinkedIn reschedule offer (≤40 words). Offer to pick a new time.',
     `Name: ${name}`,
     'Return JSON: { "message": "<body>" }',
+    '',
+    OUTREACH_HUMANIZER_RULES,
   ].join('\n');
 
 export const OUTREACH_MEETING_BOOKED_HITL_CONTEXT =

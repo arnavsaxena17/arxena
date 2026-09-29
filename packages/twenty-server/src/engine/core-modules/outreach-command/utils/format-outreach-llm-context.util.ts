@@ -333,6 +333,202 @@ export const formatOutreachSenderForLlm = (value: unknown): string => {
   return '';
 };
 
+// Full LinkedIn profile for drafting / qualify (from fetch-linkedin-profile.result).
+export const formatOutreachProspectProfileForLlm = (value: unknown): string => {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+
+    if (!isNonEmptyString(trimmed) || isUnresolvedWorkflowTemplate(trimmed)) {
+      return trimmed;
+    }
+
+    if (trimmed === '{}' || trimmed === 'null' || trimmed === '(none)') {
+      return '';
+    }
+
+    // Already humanized (starts with a name / Headline line).
+    if (
+      !trimmed.startsWith('{') &&
+      !trimmed.startsWith('[') &&
+      (trimmed.includes('\n') || !trimmed.includes('"success"'))
+    ) {
+      return trimmed;
+    }
+
+    const parsed = tryParseJson(trimmed);
+
+    if (!isDefined(parsed)) {
+      return trimmed;
+    }
+
+    return formatOutreachProspectProfileForLlm(parsed);
+  }
+
+  const record = asRecord(value);
+
+  if (!isDefined(record)) {
+    return '';
+  }
+
+  if (typeof record.text === 'string' && isNonEmptyString(record.text.trim())) {
+    const nested = record.text.trim();
+
+    // Avoid recursion on pretty-JSON text from older withLlmFormattedText.
+    if (nested.startsWith('{') || nested.startsWith('[')) {
+      return formatOutreachProspectProfileForLlm(tryParseJson(nested) ?? nested);
+    }
+
+    if (!nested.includes('"success"') && !nested.includes('"linkedinProfileId"')) {
+      return nested;
+    }
+
+    return formatOutreachProspectProfileForLlm(tryParseJson(nested) ?? '');
+  }
+
+  const firstName =
+    typeof record.firstName === 'string' ? record.firstName.trim() : '';
+  const lastName =
+    typeof record.lastName === 'string' ? record.lastName.trim() : '';
+  const name = [firstName, lastName].filter(isNonEmptyString).join(' ');
+  const headline =
+    typeof record.headline === 'string' ? record.headline.trim() : '';
+  const about = typeof record.about === 'string' ? record.about.trim() : '';
+  const location =
+    typeof record.location === 'string' ? record.location.trim() : '';
+  const linkedinUrl =
+    typeof record.linkedinUrl === 'string' ? record.linkedinUrl.trim() : '';
+
+  const experienceLines = Array.isArray(record.experience)
+    ? record.experience.flatMap((item) => {
+        const experience = asRecord(item);
+
+        if (!isDefined(experience)) {
+          return [];
+        }
+
+        const position =
+          typeof experience.position === 'string'
+            ? experience.position.trim()
+            : '';
+        const company =
+          typeof experience.company === 'string'
+            ? experience.company.trim()
+            : '';
+        const start =
+          typeof experience.start === 'string' ? experience.start.trim() : '';
+        const end =
+          typeof experience.end === 'string' && isNonEmptyString(experience.end.trim())
+            ? experience.end.trim()
+            : 'Present';
+        const role = [position, company].filter(isNonEmptyString).join(' @ ');
+
+        if (!isNonEmptyString(role)) {
+          return [];
+        }
+
+        const dates =
+          isNonEmptyString(start) || end !== 'Present'
+            ? ` (${start || '?'} – ${end})`
+            : '';
+
+        return [`- ${role}${dates}`];
+      })
+    : [];
+
+  const skills = Array.isArray(record.skills)
+    ? record.skills
+        .map((skill) => {
+          if (typeof skill === 'string') {
+            return skill.trim();
+          }
+
+          const skillRecord = asRecord(skill);
+
+          return typeof skillRecord?.name === 'string'
+            ? skillRecord.name.trim()
+            : '';
+        })
+        .filter(isNonEmptyString)
+    : [];
+
+  const lines = [
+    name,
+    headline,
+    ...listLine('Location', location),
+    ...listLine('About', about),
+    ...(experienceLines.length > 0
+      ? ['Experience:', ...experienceLines]
+      : []),
+    ...(skills.length > 0 ? [`Skills: ${skills.join(', ')}`] : []),
+    ...listLine('LinkedIn', linkedinUrl),
+  ].filter(isNonEmptyString);
+
+  return lines.join('\n');
+};
+
+// Recent LinkedIn posts for drafting / qualify (from FETCH_LINKEDIN_ACTIVITY.result).
+export const formatOutreachProspectPostsForLlm = (value: unknown): string => {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+
+    if (!isNonEmptyString(trimmed) || isUnresolvedWorkflowTemplate(trimmed)) {
+      return trimmed;
+    }
+
+    if (trimmed === '[]' || trimmed === '{}' || trimmed === 'null') {
+      return '';
+    }
+
+    const parsed = tryParseJson(trimmed);
+
+    if (!isDefined(parsed)) {
+      return trimmed;
+    }
+
+    return formatOutreachProspectPostsForLlm(parsed);
+  }
+
+  const record = asRecord(value);
+
+  if (isDefined(record)) {
+    if (typeof record.text === 'string' && isNonEmptyString(record.text.trim())) {
+      return record.text.trim();
+    }
+
+    if (Array.isArray(record.posts)) {
+      return formatOutreachProspectPostsForLlm(record.posts);
+    }
+  }
+
+  if (!Array.isArray(value) || value.length === 0) {
+    return '';
+  }
+
+  const lines = value.flatMap((item, index) => {
+    const post = asRecord(item);
+
+    if (!isDefined(post)) {
+      return [];
+    }
+
+    const text = typeof post.text === 'string' ? post.text.trim() : '';
+
+    if (!isNonEmptyString(text)) {
+      return [];
+    }
+
+    const when =
+      typeof post.parsedDatetime === 'string' &&
+      isNonEmptyString(post.parsedDatetime.trim())
+        ? ` (${post.parsedDatetime.trim()})`
+        : '';
+
+    return [`- (${index})${when} ${text}`];
+  });
+
+  return lines.join('\n');
+};
+
 export const formatOutreachProspectEnrichmentForLlm = (
   value: unknown,
 ): string => {
@@ -428,36 +624,71 @@ export const rewriteOutreachResolvedPromptSections = (
   if (
     !prompt.includes('SENDER_JSON') &&
     !prompt.includes('PROSPECT_ENRICHMENT') &&
+    !prompt.includes('prospect_posts:') &&
+    !prompt.includes('prospect_profile:') &&
     !prompt.includes('0-based index into Available slots') &&
     !prompt.includes('Available slots (only source of times)') &&
     !prompt.includes('chat_history:') &&
     !prompt.includes('Transcript:') &&
-    !prompt.includes('calendar:')
+    !prompt.includes('calendar:') &&
+    !prompt.includes('calendar (ignore')
   ) {
     return prompt;
   }
+
+  const withNoneFallback =
+    (format: (raw: string) => string) =>
+    (raw: string): string =>
+      format(raw) || '(none)';
 
   const sectionFormatters: Array<{
     prefix: string;
     format: (raw: string) => string;
   }> = [
-    { prefix: 'Transcript: ', format: formatOutreachTranscriptForLlm },
-    { prefix: 'chat_history: ', format: formatOutreachTranscriptForLlm },
+    {
+      prefix: 'Transcript: ',
+      format: withNoneFallback(formatOutreachTranscriptForLlm),
+    },
+    {
+      prefix: 'chat_history: ',
+      format: withNoneFallback(formatOutreachTranscriptForLlm),
+    },
     {
       prefix: 'Available slots (index order): ',
-      format: formatOutreachSlotsForLlm,
+      format: withNoneFallback(formatOutreachSlotsForLlm),
     },
     {
       prefix: 'Available slots (only source of times): ',
-      format: formatOutreachSlotsForLlm,
+      format: withNoneFallback(formatOutreachSlotsForLlm),
     },
-    { prefix: 'calendar: ', format: formatOutreachSlotsForLlm },
-    { prefix: 'SENDER_JSON: ', format: formatOutreachSenderForLlm },
+    {
+      prefix: 'calendar (ignore — do not use): ',
+      format: withNoneFallback(formatOutreachSlotsForLlm),
+    },
+    {
+      prefix: 'calendar: ',
+      format: withNoneFallback(formatOutreachSlotsForLlm),
+    },
+    {
+      prefix: 'SENDER_JSON: ',
+      format: withNoneFallback(formatOutreachSenderForLlm),
+    },
     {
       prefix: 'PROSPECT_ENRICHMENT: ',
-      format: formatOutreachProspectEnrichmentForLlm,
+      format: withNoneFallback(formatOutreachProspectEnrichmentForLlm),
     },
-    { prefix: 'prospect: ', format: formatOutreachProspectEnrichmentForLlm },
+    {
+      prefix: 'prospect: ',
+      format: withNoneFallback(formatOutreachProspectEnrichmentForLlm),
+    },
+    {
+      prefix: 'prospect_profile: ',
+      format: withNoneFallback(formatOutreachProspectProfileForLlm),
+    },
+    {
+      prefix: 'prospect_posts: ',
+      format: withNoneFallback(formatOutreachProspectPostsForLlm),
+    },
   ];
 
   let result = prompt;
@@ -497,12 +728,14 @@ const extractSectionValue = (
 ): { raw: string; end: number } | null => {
   let index = startIndex;
 
-  while (index < text.length && (text[index] === ' ' || text[index] === '\n')) {
+  // Only skip spaces on the same line. Skipping newlines used to pull the next
+  // labeled section (e.g. chat_history) into an empty prospect_posts value.
+  while (index < text.length && text[index] === ' ') {
     index += 1;
   }
 
-  if (index >= text.length) {
-    return { raw: '', end: startIndex };
+  if (index >= text.length || text[index] === '\n') {
+    return { raw: '', end: index };
   }
 
   const opener = text[index];

@@ -591,6 +591,7 @@ export class WorkflowVersionWorkspaceService {
           workspaceId,
           fieldMetadataIds: {
             candidateId: resolveFieldId('candidate', ['id']),
+            personId: resolveFieldId('person', ['id']),
             outreachSequenceStage: resolveFieldId('candidate', [
               'outreachSequenceStage',
             ]),

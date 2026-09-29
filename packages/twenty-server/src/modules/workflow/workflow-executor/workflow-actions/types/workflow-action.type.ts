@@ -28,10 +28,12 @@ import { type WorkflowFetchLinkedinActivityActionSettings } from 'src/modules/wo
 import { type WorkflowCommentOnLinkedinPostActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-comment-on-linkedin-post-action-settings.type';
 import { type WorkflowFollowLinkedinProfileActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-follow-linkedin-profile-action-settings.type';
 import { type WorkflowLikeLinkedinPostActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-like-linkedin-post-action-settings.type';
+import { type WorkflowAcceptLinkedinReceivedInvitationActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-accept-linkedin-received-invitation-action-settings.type';
 import { type WorkflowSendLinkedinVoiceNoteActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-linkedin-voice-note-action-settings.type';
 import { type WorkflowSendWhatsappMessageActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-whatsapp-message-action-settings.type';
 import { type WorkflowViewLinkedinProfileActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-view-linkedin-profile-action-settings.type';
 import { type WorkflowSearchLocalBusinessesActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/local-business-data/types/workflow-search-local-businesses-action-settings.type';
+import { type WorkflowResolveCompanyFromRawNameActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/company-name-resolver/types/workflow-resolve-company-from-raw-name-action-settings.type';
 import { type WorkflowGetLocalBusinessDetailsActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/local-business-data/types/workflow-get-local-business-details-action-settings.type';
 
 type BaseWorkflowAction = {
@@ -167,6 +169,11 @@ export type WorkflowLikeLinkedinPostAction = BaseWorkflowAction & {
   settings: WorkflowLikeLinkedinPostActionSettings;
 };
 
+export type WorkflowAcceptLinkedinReceivedInvitationAction = BaseWorkflowAction & {
+  type: WorkflowActionType.ACCEPT_LINKEDIN_RECEIVED_INVITATION;
+  settings: WorkflowAcceptLinkedinReceivedInvitationActionSettings;
+};
+
 export type WorkflowSendWhatsappMessageAction = BaseWorkflowAction & {
   type: WorkflowActionType.SEND_WHATSAPP_MESSAGE;
   settings: WorkflowSendWhatsappMessageActionSettings;
@@ -180,6 +187,11 @@ export type WorkflowSearchLocalBusinessesAction = BaseWorkflowAction & {
 export type WorkflowGetLocalBusinessDetailsAction = BaseWorkflowAction & {
   type: WorkflowActionType.GET_LOCAL_BUSINESS_DETAILS;
   settings: WorkflowGetLocalBusinessDetailsActionSettings;
+};
+
+export type WorkflowResolveCompanyFromRawNameAction = BaseWorkflowAction & {
+  type: WorkflowActionType.RESOLVE_COMPANY_FROM_RAW_NAME;
+  settings: WorkflowResolveCompanyFromRawNameActionSettings;
 };
 
 export type WorkflowAiAgentAction = BaseWorkflowAction & {
@@ -231,9 +243,11 @@ export type WorkflowAction =
   | WorkflowViewLinkedinProfileAction
   | WorkflowFollowLinkedinProfileAction
   | WorkflowLikeLinkedinPostAction
+  | WorkflowAcceptLinkedinReceivedInvitationAction
   | WorkflowSendWhatsappMessageAction
   | WorkflowSearchLocalBusinessesAction
   | WorkflowGetLocalBusinessDetailsAction
+  | WorkflowResolveCompanyFromRawNameAction
   | WorkflowAiAgentAction
   | WorkflowAiFilteringAction
   | WorkflowIteratorAction

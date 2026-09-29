@@ -12,7 +12,7 @@ import {
   type SendLinkedinMessageToolInput,
 } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/types/send-linkedin-message-tool-input.type';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
-import { OUTREACH_MOCK_UNIPILE_MESSAGE_RESPONSE_ID } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/utils/is-outreach-mock-unipile-enabled.util';
+import { buildOutreachMockUnipileMessageResponseId } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/utils/is-outreach-mock-unipile-enabled.util';
 import { loadUnipileChatAttachments } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/utils/load-unipile-chat-attachments.util';
 import {
   createLinkedinUnipileMessagingServiceForTools,
@@ -85,7 +85,7 @@ export class SendLinkedinMessageTool implements Tool {
             linkedinProfileId,
             body,
             attachmentCount: 0,
-            response: { id: OUTREACH_MOCK_UNIPILE_MESSAGE_RESPONSE_ID },
+            response: { id: buildOutreachMockUnipileMessageResponseId() },
           },
         };
       }
@@ -101,7 +101,10 @@ export class SendLinkedinMessageTool implements Tool {
         candidateId: input.candidateId,
         identifier: linkedinProfileId,
         fetchProviderId: () =>
-          messagingService.resolveProviderId(unipileAccountId, linkedinProfileId),
+          messagingService.resolveProviderId(
+            unipileAccountId,
+            linkedinProfileId,
+          ),
       });
       const result = await messagingService.sendMessage(
         unipileAccountId,

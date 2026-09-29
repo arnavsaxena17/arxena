@@ -678,6 +678,27 @@ export class WorkflowVersionStepOperationsWorkspaceService {
           },
         };
       }
+      case WorkflowActionType.ACCEPT_LINKEDIN_RECEIVED_INVITATION: {
+        return {
+          builtStep: {
+            ...baseStep,
+            name: 'Accept LinkedIn Received Invitation',
+            type: WorkflowActionType.ACCEPT_LINKEDIN_RECEIVED_INVITATION,
+            settings: {
+              ...BASE_STEP_DEFINITION,
+              input: {
+                workspaceMemberId: '',
+                linkedinProfileId: '',
+                linkedinPublicIdentifier: '',
+                providerId: '',
+                linkedinUrl: '',
+                candidateId: '',
+                limit: 50,
+              },
+            },
+          },
+        };
+      }
       case WorkflowActionType.FOLLOW_LINKEDIN_PROFILE: {
         return {
           builtStep: {
@@ -766,6 +787,22 @@ export class WorkflowVersionStepOperationsWorkspaceService {
                 extractShareLink: false,
                 language: 'en',
                 region: 'us',
+              },
+            },
+          },
+        };
+      }
+      case WorkflowActionType.RESOLVE_COMPANY_FROM_RAW_NAME: {
+        return {
+          builtStep: {
+            ...baseStep,
+            name: 'Resolve Company From Raw Name',
+            type: WorkflowActionType.RESOLVE_COMPANY_FROM_RAW_NAME,
+            settings: {
+              ...BASE_STEP_DEFINITION,
+              input: {
+                companyName: '',
+                companyNames: [],
               },
             },
           },

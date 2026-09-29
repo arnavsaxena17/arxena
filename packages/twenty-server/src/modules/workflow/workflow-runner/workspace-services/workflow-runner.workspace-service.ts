@@ -11,6 +11,7 @@ import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queu
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { MetricsService } from 'src/engine/core-modules/metrics/metrics.service';
 import { MetricsKeys } from 'src/engine/core-modules/metrics/types/metrics-keys.type';
+import { OutreachSequencerSiblingRunCancelService } from 'src/engine/core-modules/outreach-command/services/outreach-sequencer-sibling-run-cancel.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import {
@@ -55,6 +56,7 @@ export class WorkflowRunnerWorkspaceService {
 
     private readonly workflowThrottlingWorkspaceService: WorkflowThrottlingWorkspaceService,
     private readonly metricsService: MetricsService,
+    private readonly outreachSequencerSiblingRunCancelService: OutreachSequencerSiblingRunCancelService,
   ) {}
 
   async run({
@@ -530,6 +532,13 @@ export class WorkflowRunnerWorkspaceService {
         workspaceId,
       });
 
+    await this.outreachSequencerSiblingRunCancelService.cancelOlderSiblingRunsForNewSequencerRun(
+      {
+        workspaceId,
+        workflowRunId,
+      },
+    );
+
     await this.messageQueueService.add<RunWorkflowJobData>(
       RunWorkflowJob.name,
       {
@@ -564,6 +573,13 @@ export class WorkflowRunnerWorkspaceService {
         triggerPayload: payload,
         workspaceId,
       });
+
+    await this.outreachSequencerSiblingRunCancelService.cancelOlderSiblingRunsForNewSequencerRun(
+      {
+        workspaceId,
+        workflowRunId,
+      },
+    );
 
     await this.workflowThrottlingWorkspaceService.increaseWorkflowRunNotStartedCount(
       workspaceId,

@@ -105,6 +105,9 @@ export class OutreachMessagePersistService {
     chatId,
     materializeOutbound = true,
     workflowRunId,
+    // Blank LinkedIn connect notes still need a LINKEDIN chatMessage row so
+    // later fetch/inbound merge has a channel home.
+    allowEmptyBody = false,
   }: {
     workspaceId: string;
     channel: OutreachTranscriptChannel;
@@ -117,6 +120,7 @@ export class OutreachMessagePersistService {
     chatId?: string | null;
     materializeOutbound?: boolean;
     workflowRunId?: string | null;
+    allowEmptyBody?: boolean;
   }): Promise<void> {
     if (isNonEmptyString(workflowRunId)) {
       const isSequencerWorkflow = await this.isOutreachSequencerWorkflowRun({
@@ -130,8 +134,9 @@ export class OutreachMessagePersistService {
     }
 
     const text = body.trim();
+    const hasBody = isNonEmptyString(text);
 
-    if (!isNonEmptyString(text)) {
+    if (!hasBody && !allowEmptyBody) {
       return;
     }
 
@@ -155,20 +160,22 @@ export class OutreachMessagePersistService {
       workspaceId,
       candidateId: resolvedCandidateId,
       channel,
-      turns: [
-        {
-          role: 'assistant',
-          content: text,
-          id: externalMessageId ?? undefined,
-          timestamp: new Date().toISOString(),
-        },
-      ],
+      turns: hasBody
+        ? [
+            {
+              role: 'assistant',
+              content: text,
+              id: externalMessageId ?? undefined,
+              timestamp: new Date().toISOString(),
+            },
+          ]
+        : [],
       chatId,
-      latestExternalMessageId: externalMessageId,
+      latestExternalMessageId: hasBody ? externalMessageId : undefined,
       typeOfMessage: channelTypeOfMessage(channel, false),
     });
 
-    if (!materializeOutbound) {
+    if (!materializeOutbound || !hasBody) {
       return;
     }
 

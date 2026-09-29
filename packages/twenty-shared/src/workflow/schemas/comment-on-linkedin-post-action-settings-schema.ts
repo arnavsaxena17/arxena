@@ -7,6 +7,8 @@ export const workflowCommentOnLinkedinPostActionSettingsSchema =
       workspaceMemberId: z.string(),
       postId: z.string(),
       text: z.string(),
+      linkedinProfileId: z.string().optional().default(''),
+      linkedinUrl: z.string().optional().default(''),
       candidateId: z.string().optional(),
       commentId: z.string().optional().default(''),
     }),

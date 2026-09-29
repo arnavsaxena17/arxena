@@ -1,13 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
-  WebSocketGateway as NestWebSocketGateway,
+  ConnectedSocket,
   OnGatewayConnection,
   OnGatewayDisconnect,
   OnGatewayInit,
+  SubscribeMessage,
+  WebSocketGateway as NestWebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
+
+type LinkedinCookieFetchHooks = {
+  onConnected: (workspaceMemberId: string) => void;
+  onCookiesFetched: (workspaceMemberId: string) => void;
+};
 
 @NestWebSocketGateway({
   cors: {
@@ -24,6 +31,7 @@ export class ExtensionSocketGateway
   @WebSocketServer() server: Server;
   private readonly logger = new Logger(ExtensionSocketGateway.name);
   private connectedClients: Map<string, Set<string>> = new Map(); // workspaceMemberId -> Set of socketIds
+  private linkedinCookieFetchHooks: LinkedinCookieFetchHooks | null = null;
 
   constructor(private readonly accessTokenService: AccessTokenService) {}
 
@@ -49,7 +57,10 @@ export class ExtensionSocketGateway
   }
 
   private removeClientFromWorkspaceMember(socketId: string): string | null {
-    for (const [workspaceMemberId, clients] of this.connectedClients.entries()) {
+    for (const [
+      workspaceMemberId,
+      clients,
+    ] of this.connectedClients.entries()) {
       if (clients.has(socketId)) {
         clients.delete(socketId);
         this.logger.log(
@@ -71,7 +82,9 @@ export class ExtensionSocketGateway
 
       if (!token || typeof token !== 'string') {
         this.logger.error('Invalid or missing token');
-        client.emit('connection_error', { message: 'Invalid or missing token' });
+        client.emit('connection_error', {
+          message: 'Invalid or missing token',
+        });
         client.disconnect();
         return;
       }
@@ -93,7 +106,7 @@ export class ExtensionSocketGateway
       // Validate JWT token
       try {
         const authContext = await this.accessTokenService.validateToken(token);
-        
+
         // Verify that the userId from query matches the workspaceMemberId from token
         if (authContext.workspaceMemberId !== userId) {
           this.logger.error(
@@ -105,6 +118,9 @@ export class ExtensionSocketGateway
           client.disconnect();
           return;
         }
+
+        (client.data as { workspaceMemberId?: string }).workspaceMemberId =
+          userId;
 
         // Add to tracking
         this.addClientToWorkspaceMember(userId, client.id);
@@ -123,6 +139,7 @@ export class ExtensionSocketGateway
         this.logger.log(
           `Extension client ${client.id} connected and joined room: ${extensionRoom}`,
         );
+        this.linkedinCookieFetchHooks?.onConnected(userId);
       } catch (error) {
         this.logger.error('Token validation failed:', error);
         client.emit('connection_error', {
@@ -162,5 +179,42 @@ export class ExtensionSocketGateway
 
   getExtensionRoomForUser(workspaceMemberId: string): string {
     return this.getExtensionRoom(workspaceMemberId);
+  }
+
+  registerLinkedinCookieFetchHooks(hooks: LinkedinCookieFetchHooks): void {
+    this.linkedinCookieFetchHooks = hooks;
+  }
+
+  async emitToWorkspaceMember(
+    workspaceMemberId: string,
+    eventName: string,
+    payload: unknown,
+  ): Promise<boolean> {
+    if (!this.server) {
+      return false;
+    }
+
+    const room = this.getExtensionRoom(workspaceMemberId);
+    const sockets = await this.server.in(room).fetchSockets();
+
+    if (sockets.length === 0) {
+      return false;
+    }
+
+    this.server.to(room).emit(eventName, payload);
+
+    return true;
+  }
+
+  @SubscribeMessage('linkedin_cookies_fetched')
+  handleLinkedinCookiesFetched(@ConnectedSocket() client: Socket): void {
+    const workspaceMemberId = (client.data as { workspaceMemberId?: string })
+      .workspaceMemberId;
+
+    if (typeof workspaceMemberId !== 'string' || !workspaceMemberId) {
+      return;
+    }
+
+    this.linkedinCookieFetchHooks?.onCookiesFetched(workspaceMemberId);
   }
 }

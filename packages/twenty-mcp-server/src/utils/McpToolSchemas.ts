@@ -4,7 +4,12 @@
  * and to type tool handlers.
  */
 
-export type McpInputFieldType = 'string' | 'number' | 'boolean' | 'object';
+export type McpInputFieldType =
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | 'object'
+  | 'array';
 
 export type McpInputFieldDescriptor = {
   key: string;
@@ -272,7 +277,8 @@ export const POST_CANDIDATES_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[
     {
       key: 'data',
       type: 'object',
-      description: 'Array of candidate profile objects (PersonCandidateDraft shape)',
+      description:
+        'Array of candidate profile objects (PersonCandidateDraft shape)',
       required: true,
     },
     {
@@ -996,6 +1002,24 @@ export const SEARCH_COMPANIES_INDEX_INPUT_DESCRIPTOR: readonly McpInputFieldDesc
       key: 'offset',
       type: 'number',
       description: 'Pagination offset',
+      required: false,
+    },
+  ] as const;
+
+/** Descriptor for resolve_company_from_raw_name (std_company_data_scores CompanyCollector parity). */
+export const RESOLVE_COMPANY_FROM_RAW_NAME_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
+  [
+    {
+      key: 'companyName',
+      type: 'string',
+      description: 'Single raw / messy company name to standardize',
+      required: false,
+    },
+    {
+      key: 'companyNames',
+      type: 'array',
+      description:
+        'Batch of raw company names to resolve (max 50). Prefer over repeating single calls.',
       required: false,
     },
   ] as const;

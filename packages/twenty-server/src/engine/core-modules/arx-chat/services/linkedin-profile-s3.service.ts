@@ -11,12 +11,19 @@ export type LinkedinProfileS3Envelope<T> = {
   profile: T;
 };
 
-/** Durable S3 cache for LinkedIn user/company profile JSON keyed by public identifier (90-day freshness). */
+export type LinkedinPostsS3Envelope<T> = {
+  fetchedAt: string;
+  posts: T;
+};
+
+// Durable S3 cache for LinkedIn user/company profile JSON keyed by public
+// identifier. Objects are not lifecycle-expired; default max age is infinite so
+// any stored profile remains a Unipile fallback.
 @Injectable()
 export class LinkedinProfileS3Service {
   private readonly logger = new Logger(LinkedinProfileS3Service.name);
 
-  static readonly DEFAULT_MAX_AGE_MS = 90 * 24 * 60 * 60 * 1000;
+  static readonly DEFAULT_MAX_AGE_MS = Number.POSITIVE_INFINITY;
 
   constructor(private readonly fileStorageService: FileStorageService) {}
 
@@ -38,10 +45,7 @@ export class LinkedinProfileS3Service {
     return `${LINKEDIN_PROFILES_S3_FOLDER}/companies/${this.normalizeSegment(publicIdentifier)}`;
   }
 
-  private isFresh(
-    fetchedAt: string | undefined,
-    maxAgeMs: number,
-  ): boolean {
+  private isFresh(fetchedAt: string | undefined, maxAgeMs: number): boolean {
     if (!fetchedAt?.trim()) {
       return false;
     }
@@ -102,6 +106,31 @@ export class LinkedinProfileS3Service {
     );
   }
 
+  async getLinkedinUserPosts<T>(
+    publicIdentifier: string,
+    maxAgeMs = LinkedinProfileS3Service.DEFAULT_MAX_AGE_MS,
+  ): Promise<T | null> {
+    const envelope = await this.readPostsEnvelope<T>(
+      this.buildUserFolder(publicIdentifier),
+      `user posts publicIdentifier=${publicIdentifier}`,
+    );
+    if (!envelope || !this.isFresh(envelope.fetchedAt, maxAgeMs)) {
+      return null;
+    }
+    return envelope.posts;
+  }
+
+  async saveLinkedinUserPosts<T>(
+    publicIdentifier: string,
+    posts: T,
+  ): Promise<void> {
+    await this.writePostsEnvelope(
+      this.buildUserFolder(publicIdentifier),
+      posts,
+      `user posts publicIdentifier=${publicIdentifier}`,
+    );
+  }
+
   private async readEnvelope<T>(
     folder: string,
     logContext: string,
@@ -151,6 +180,60 @@ export class LinkedinProfileS3Service {
     } catch (error) {
       this.logger.error(
         `Failed to save LinkedIn profile to S3 (${logContext}, folder=${folder})`,
+        error,
+      );
+    }
+  }
+
+  private async readPostsEnvelope<T>(
+    folder: string,
+    logContext: string,
+  ): Promise<LinkedinPostsS3Envelope<T> | null> {
+    try {
+      const stream = await this.fileStorageService.read({
+        folderPath: folder,
+        filename: 'posts.json',
+      });
+      const content = await this.streamToString(stream);
+      const parsed = JSON.parse(content) as LinkedinPostsS3Envelope<T>;
+      if (parsed?.posts === undefined || parsed?.posts === null) {
+        return null;
+      }
+      this.logger.log(
+        `LinkedIn posts S3 cache HIT (${logContext}, folder=${folder})`,
+      );
+      return parsed;
+    } catch (error) {
+      this.logger.log(
+        `LinkedIn posts S3 cache MISS (${logContext}, folder=${folder}): ${(error as Error).message}`,
+      );
+      return null;
+    }
+  }
+
+  private async writePostsEnvelope<T>(
+    folder: string,
+    posts: T,
+    logContext: string,
+  ): Promise<void> {
+    const envelope: LinkedinPostsS3Envelope<T> = {
+      fetchedAt: new Date().toISOString(),
+      posts,
+    };
+
+    try {
+      await this.fileStorageService.write({
+        file: Buffer.from(JSON.stringify(envelope)),
+        name: 'posts.json',
+        folder,
+        mimeType: 'application/json',
+      });
+      this.logger.log(
+        `Saved LinkedIn posts to S3 (${logContext}, folder=${folder}/posts.json)`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to save LinkedIn posts to S3 (${logContext}, folder=${folder})`,
         error,
       );
     }

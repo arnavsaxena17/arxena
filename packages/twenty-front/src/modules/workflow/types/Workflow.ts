@@ -24,6 +24,7 @@ import type {
   workflowIfElseActionSchema,
   workflowIteratorActionSchema,
   workflowLikeLinkedinPostActionSchema,
+  workflowAcceptLinkedinReceivedInvitationActionSchema,
   workflowLogicFunctionActionSchema,
   workflowManualTriggerSchema,
   workflowPickRecordActionSchema,
@@ -32,6 +33,7 @@ import type {
   workflowRunStatusSchema,
   workflowRunStepStatusSchema,
   workflowSearchLocalBusinessesActionSchema,
+  workflowResolveCompanyFromRawNameActionSchema,
   workflowSendEmailActionSchema,
   workflowSendLinkedinConnectionRequestActionSchema,
   workflowSendLinkedinInmailActionSchema,
@@ -105,6 +107,9 @@ export type WorkflowSendLinkedinVoiceNoteAction = z.infer<
 export type WorkflowViewLinkedinProfileAction = z.infer<
   typeof workflowViewLinkedinProfileActionSchema
 >;
+export type WorkflowAcceptLinkedinReceivedInvitationAction = z.infer<
+  typeof workflowAcceptLinkedinReceivedInvitationActionSchema
+>;
 export type WorkflowFollowLinkedinProfileAction = z.infer<
   typeof workflowFollowLinkedinProfileActionSchema
 >;
@@ -119,6 +124,9 @@ export type WorkflowSearchLocalBusinessesAction = z.infer<
 >;
 export type WorkflowGetLocalBusinessDetailsAction = z.infer<
   typeof workflowGetLocalBusinessDetailsActionSchema
+>;
+export type WorkflowResolveCompanyFromRawNameAction = z.infer<
+  typeof workflowResolveCompanyFromRawNameActionSchema
 >;
 export type WorkflowIteratorAction = z.infer<
   typeof workflowIteratorActionSchema
@@ -152,11 +160,13 @@ export type WorkflowAction =
   | WorkflowCommentOnLinkedinPostAction
   | WorkflowSendLinkedinVoiceNoteAction
   | WorkflowViewLinkedinProfileAction
+  | WorkflowAcceptLinkedinReceivedInvitationAction
   | WorkflowFollowLinkedinProfileAction
   | WorkflowLikeLinkedinPostAction
   | WorkflowSendWhatsappMessageAction
   | WorkflowSearchLocalBusinessesAction
   | WorkflowGetLocalBusinessDetailsAction
+  | WorkflowResolveCompanyFromRawNameAction
   | WorkflowAiAgentAction
   | WorkflowAiFilteringAction
   | WorkflowIteratorAction

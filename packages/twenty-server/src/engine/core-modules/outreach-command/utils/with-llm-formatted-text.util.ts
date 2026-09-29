@@ -6,12 +6,12 @@ import {
   OUTREACH_SEARCH_POSTS_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-names.const';
 import {
+  formatOutreachProspectProfileForLlm,
   formatOutreachSlotsForLlm,
   formatOutreachTranscriptForLlm,
 } from 'src/engine/core-modules/outreach-command/utils/format-outreach-llm-context.util';
 
 const LLM_FORMATTED_JSON_TEXT_LOGIC_FUNCTION_NAMES = new Set([
-  OUTREACH_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_USER_COMMENTS_LOGIC_FUNCTION_NAME,
   OUTREACH_SEARCH_POSTS_LOGIC_FUNCTION_NAME,
 ]);
@@ -23,6 +23,13 @@ export const withLlmFormattedText = <T extends object>(
 ): T & { text: string } => ({
   ...result,
   text: JSON.stringify(result, null, 2),
+});
+
+export const withLlmFormattedProfileText = <T extends object>(
+  result: T,
+): T & { text: string } => ({
+  ...result,
+  text: formatOutreachProspectProfileForLlm(result) || '(none)',
 });
 
 export const withLlmFormattedSlotsText = <T extends { slots?: unknown }>(
@@ -54,6 +61,12 @@ export const maybeWithLlmFormattedText = (
     logicFunctionName === OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME
   ) {
     return withLlmFormattedTranscriptText(result);
+  }
+
+  if (
+    logicFunctionName === OUTREACH_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME
+  ) {
+    return withLlmFormattedProfileText(result);
   }
 
   if (!LLM_FORMATTED_JSON_TEXT_LOGIC_FUNCTION_NAMES.has(logicFunctionName)) {

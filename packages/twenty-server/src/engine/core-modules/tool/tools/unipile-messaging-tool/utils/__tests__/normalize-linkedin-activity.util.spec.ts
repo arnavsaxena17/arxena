@@ -1,4 +1,5 @@
 import {
+  filterLinkedinActivityPostsExcludingSocialIds,
   normalizeLinkedinActivityPosts,
   normalizeLinkedinActivityUserComments,
   pickMostRecentLinkedinActivityPost,
@@ -43,6 +44,49 @@ describe('normalizeLinkedinActivity', () => {
         text: 'Recent original',
       }),
     );
+  });
+
+  it('excludes social ids when picking most recent post', () => {
+    const posts = normalizeLinkedinActivityPosts(
+      {
+        items: [
+          {
+            social_id: 'urn:li:activity:recent',
+            text: 'Recent original',
+            parsed_datetime: '2025-05-01T00:00:00.000Z',
+            is_repost: false,
+          },
+          {
+            social_id: 'urn:li:activity:older',
+            text: 'Older original',
+            parsed_datetime: '2025-01-01T00:00:00.000Z',
+            is_repost: false,
+          },
+        ],
+      },
+      10,
+    );
+
+    expect(
+      filterLinkedinActivityPostsExcludingSocialIds(posts, [
+        'urn:li:activity:recent',
+      ]),
+    ).toHaveLength(1);
+
+    expect(
+      pickMostRecentLinkedinActivityPost(posts, {
+        excludePostSocialIds: ['urn:li:activity:recent'],
+      })?.socialId,
+    ).toBe('urn:li:activity:older');
+
+    expect(
+      pickMostRecentLinkedinActivityPost(posts, {
+        excludePostSocialIds: [
+          'urn:li:activity:recent',
+          'urn:li:activity:older',
+        ],
+      }),
+    ).toBeNull();
   });
 
   it('falls back to repost when no originals exist', () => {

@@ -330,8 +330,7 @@ describe('FetchLinkedinMessagesService', () => {
     ).toBe(false);
   });
 
-  // temporary: mock gate bypassed for fetch messages — restore when re-enabling
-  it.skip('reads chatMessage transcript when IS_OUTREACH_MOCK_UNIPILE_ENABLED', async () => {
+  it('reads chatMessage transcript when IS_OUTREACH_MOCK_UNIPILE_ENABLED', async () => {
     featureFlagService.isFeatureEnabled.mockImplementation(
       async (key: FeatureFlagKey) =>
         key === FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
@@ -379,6 +378,64 @@ describe('FetchLinkedinMessagesService', () => {
     expect(
       linkedinUnipileRequestService.makeUnipileRequest,
     ).not.toHaveBeenCalled();
+  });
+
+  it('returns empty success in mock mode when transcript has no turns', async () => {
+    featureFlagService.isFeatureEnabled.mockImplementation(
+      async (key: FeatureFlagKey) =>
+        key === FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
+    );
+    gtmOutreachMessagePersistService.readLinkedinTranscriptMessages.mockResolvedValue(
+      {
+        candidateId: 'cand-1',
+        chatId: '',
+        messages: [],
+      },
+    );
+
+    await expect(
+      service.execute({
+        workspaceId: 'ws-1',
+        input: {
+          candidateId: 'cand-1',
+          linkedinProfileId: VALID_PROVIDER_ID,
+        },
+      }),
+    ).resolves.toMatchObject({
+      success: true,
+      total: 0,
+      messages: [],
+      hasInboundReply: false,
+      error: '',
+    });
+    expect(
+      linkedinUnipileRequestService.makeUnipileRequest,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('returns empty success when Unipile reports attendee not found', async () => {
+    globalWorkspaceOrmManager.executeInWorkspaceContext.mockResolvedValue({
+      accountId: 'acc-1',
+      identifier: VALID_PROVIDER_ID,
+    });
+    linkedinUnipileRequestService.makeUnipileRequest.mockRejectedValue(
+      new Error('The requested resource were not found.\nAttendee not found'),
+    );
+
+    await expect(
+      service.execute({
+        workspaceId: 'ws-1',
+        input: { linkedinProfileId: VALID_PROVIDER_ID },
+      }),
+    ).resolves.toMatchObject({
+      success: true,
+      chatId: '',
+      attendeeId: VALID_PROVIDER_ID,
+      total: 0,
+      messages: [],
+      hasInboundReply: false,
+      error: '',
+    });
   });
 
   it('returns local chatMessage transcript without calling Unipile', async () => {

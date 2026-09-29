@@ -22,13 +22,10 @@ describe('LinkedinProfileS3Service', () => {
     console.log('LinkedinProfileS3Service: S3 miss returns null');
   });
 
-  it('returns profile when S3 envelope is fresh', async () => {
-    const profile = { public_identifier: 'arnavsaxena', first_name: 'Arnav' };
-    const envelope = {
-      fetchedAt: new Date().toISOString(),
-      profile,
-    };
-
+  const mockEnvelopeStream = (envelope: {
+    fetchedAt: string;
+    profile: Record<string, unknown>;
+  }) => {
     fileStorageService.read.mockResolvedValue({
       on: jest.fn((event: string, handler: (chunk?: Buffer) => void) => {
         if (event === 'data') {
@@ -39,25 +36,58 @@ describe('LinkedinProfileS3Service', () => {
         }
       }),
     });
+  };
+
+  it('returns profile when S3 envelope is fresh', async () => {
+    const profile = { public_identifier: 'arnavsaxena', first_name: 'Arnav' };
+
+    mockEnvelopeStream({
+      fetchedAt: new Date().toISOString(),
+      profile,
+    });
 
     const result = await service.getLinkedinUserProfile('arnavsaxena');
 
     expect(result).toEqual(profile);
-    console.log('LinkedinProfileS3Service: fresh S3 hit returns profile');
   });
 
-  it('writes profile envelope to linkedin-profiles/users folder', async () => {
-    const profile = { public_identifier: 'arnavsaxena' };
+  it('returns profile older than one year by default (no S3 age expiry)', async () => {
+    const profile = { public_identifier: 'arnavsaxena', first_name: 'Arnav' };
+    const twoYearsAgo = new Date(
+      Date.now() - 2 * 365 * 24 * 60 * 60 * 1000,
+    ).toISOString();
 
-    await service.saveLinkedinUserProfile('arnavsaxena', profile);
+    mockEnvelopeStream({ fetchedAt: twoYearsAgo, profile });
+
+    await expect(
+      service.getLinkedinUserProfile('arnavsaxena'),
+    ).resolves.toEqual(profile);
+  });
+
+  it('honors an explicit maxAgeMs when callers want freshness', async () => {
+    const profile = { public_identifier: 'arnavsaxena', first_name: 'Arnav' };
+    const twoYearsAgo = new Date(
+      Date.now() - 2 * 365 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+
+    mockEnvelopeStream({ fetchedAt: twoYearsAgo, profile });
+
+    await expect(
+      service.getLinkedinUserProfile('arnavsaxena', 365 * 24 * 60 * 60 * 1000),
+    ).resolves.toBeNull();
+  });
+
+  it('writes posts envelope to linkedin-profiles/users folder', async () => {
+    const posts = { items: [{ id: '1', text: 'hello' }] };
+
+    await service.saveLinkedinUserPosts('arnavsaxena', posts);
 
     expect(fileStorageService.write).toHaveBeenCalledWith(
       expect.objectContaining({
         folder: 'linkedin-profiles/users/arnavsaxena',
-        name: 'profile.json',
+        name: 'posts.json',
         mimeType: 'application/json',
       }),
     );
-    console.log('LinkedinProfileS3Service: save writes to linkedin-profiles/users');
   });
 });

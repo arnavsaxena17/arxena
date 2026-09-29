@@ -35,8 +35,17 @@ describe('loadStandardSkillContent', () => {
     const content = loadStandardSkillContent('local-business-search');
 
     expect(content).toContain('# Local Business Search');
-    expect(content).toContain('search_local_businesses');
-    expect(content).toContain('get_local_business_details');
+    expect(content).toContain('Fetch & Save Local Businesses');
+    expect(content).toContain('plan-local-business-city-coverage');
+    expect(content).toContain('fetch-and-upsert-local-businesses');
+  });
+
+  it('loads resolve-company-name from a single markdown file', () => {
+    const content = loadStandardSkillContent('resolve-company-name');
+
+    expect(content).toContain('# Resolve Company Name');
+    expect(content).toContain('resolve_company_from_raw_name');
+    expect(content).toContain('std_company_data_scores');
   });
 
   it('preserves Apollo marker comments for runtime filtering', () => {

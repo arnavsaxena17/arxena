@@ -391,6 +391,18 @@ export const getOutreachCommandFieldsData = (
   {
     objectName: 'person',
     field: {
+      description:
+        'Sales Navigator provider id (ACwAA…) for InMail send and SN inbox webhook match. Distinct from classic linkedinProfileId.',
+      icon: 'IconId',
+      label: 'Sales Navigator Provider Id',
+      name: 'salesNavigatorProviderId',
+      objectMetadataId: objectsNameIdMap.person,
+      type: 'TEXT',
+    },
+  },
+  {
+    objectName: 'person',
+    field: {
       description: 'Global do-not-contact — blocks all outreach projects',
       icon: 'IconBan',
       label: 'Do Not Contact',

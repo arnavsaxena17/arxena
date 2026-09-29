@@ -1,3 +1,5 @@
+import { SettingsOptionCardContentCounter } from '@/settings/components/SettingsOptions/SettingsOptionCardContentCounter';
+import { SettingsOptionCardContentToggle } from '@/settings/components/SettingsOptions/SettingsOptionCardContentToggle';
 import { ModalStatefulWrapper } from '@/ui/layout/modal/components/ModalStatefulWrapper';
 import { useModal } from '@/ui/layout/modal/hooks/useModal';
 import { isModalOpenedComponentState } from '@/ui/layout/modal/states/isModalOpenedComponentState';
@@ -12,56 +14,103 @@ import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
 import { useState } from 'react';
 import { isDefined } from 'twenty-shared/utils';
-import { Button, Checkbox } from 'twenty-ui/input';
-import { Section, SectionAlignment, SectionFontColor } from 'twenty-ui/layout';
-import { H1Title, H1TitleFontColor } from 'twenty-ui/typography';
+import {
+  IconBrandWhatsapp,
+  IconBuildingSkyscraper,
+  IconCalendarEvent,
+  IconClock,
+  IconFilter,
+  IconMail,
+  IconMessageCircle,
+  IconRepeat,
+  IconSparkles,
+  IconTestPipe,
+  IconUser,
+} from 'twenty-ui/icon';
+import { Button } from 'twenty-ui/input';
+import { Card } from 'twenty-ui/surfaces';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { H1Title, H1TitleFontColor, H2Title } from 'twenty-ui/typography';
 
 type EditOutreachSequencerOptionsModalProps = {
   workflowId: string;
-  steps: Array<{ id?: string }> | null | undefined;
+  steps:
+    | Array<{
+        id?: string;
+        settings?: {
+          input?: {
+            duration?: {
+              days?: number;
+              hours?: number;
+              minutes?: number;
+              seconds?: number;
+            };
+          };
+        };
+      }>
+    | null
+    | undefined;
   trigger?: { type?: string } | null;
   onDismiss?: () => void;
 };
 
-const StyledCenteredTitle = styled.div`
-  text-align: center;
-`;
-
-const StyledSectionContainer = styled.div`
-  margin-bottom: ${themeCssVariables.spacing[4]};
-`;
-
-const StyledOptionRow = styled.label`
-  align-items: flex-start;
-  cursor: pointer;
-  display: flex;
-  gap: ${themeCssVariables.spacing[2]};
-  margin-bottom: ${themeCssVariables.spacing[3]};
-`;
-
-const StyledOptionText = styled.div`
+const StyledRoot = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${themeCssVariables.spacing[1]};
+  gap: ${themeCssVariables.spacing[4]};
+  max-height: calc(90dvh - ${themeCssVariables.spacing[12]});
+  min-height: 0;
 `;
 
-const StyledOptionLabel = styled.span`
-  color: ${themeCssVariables.font.color.primary};
-  font-size: ${themeCssVariables.font.size.md};
-  font-weight: ${themeCssVariables.font.weight.medium};
+const StyledHeader = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: ${themeCssVariables.spacing[3]};
 `;
 
-const StyledOptionHelp = styled.span`
-  color: ${themeCssVariables.font.color.tertiary};
+const StyledCallout = styled.p`
+  background: ${themeCssVariables.background.transparent.lighter};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.secondary};
   font-size: ${themeCssVariables.font.size.sm};
+  line-height: ${themeCssVariables.text.lineHeight.lg};
+  margin: 0;
+  padding: ${themeCssVariables.spacing[3]};
 `;
 
-const StyledButtonRow = styled.div`
+const StyledScrollArea = styled.div`
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[5]};
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: ${themeCssVariables.spacing[1]};
+`;
+
+const StyledSection = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[2]};
-  margin-top: ${themeCssVariables.spacing[4]};
+`;
+
+const StyledNestedOptions = styled.div`
+  border-left: 2px solid ${themeCssVariables.border.color.medium};
+  display: flex;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[2]};
+  margin-left: ${themeCssVariables.spacing[2]};
+  padding-left: ${themeCssVariables.spacing[3]};
+`;
+
+const StyledFooter = styled.div`
+  border-top: 1px solid ${themeCssVariables.border.color.light};
+  display: flex;
+  flex-shrink: 0;
+  gap: ${themeCssVariables.spacing[2]};
+  padding-top: ${themeCssVariables.spacing[4]};
 `;
 
 export const EditOutreachSequencerOptionsModal = ({
@@ -133,130 +182,210 @@ export const EditOutreachSequencerOptionsModal = ({
   return (
     <ModalStatefulWrapper
       modalInstanceId={EDIT_OUTREACH_SEQUENCER_OPTIONS_MODAL_ID}
-      size="medium"
+      size="large"
       padding="medium"
       isClosable
       onClose={handleClose}
       renderInDocumentBody
+      autoHeight
     >
-      <StyledCenteredTitle>
-        <H1Title
-          title={t`Edit Workflow`}
-          fontColor={H1TitleFontColor.Primary}
-        />
-      </StyledCenteredTitle>
-      <StyledSectionContainer>
-        <Section
-          alignment={SectionAlignment.Left}
-          fontColor={SectionFontColor.Secondary}
-        >
-          {t`Applying rebuilds the Candidate Sequencer draft from the outreach template and discards hand-edits on the draft. Activate when ready. Start Outreach on candidates or people to ignite; replies continue automatically until Stop Outreach.`}
-        </Section>
-      </StyledSectionContainer>
-      <StyledOptionRow>
-        <Checkbox
-          checked={options.useLlmConnectionNote}
-          onCheckedChange={(value) => setOption('useLlmConnectionNote', value)}
-        />
-        <StyledOptionText>
-          <StyledOptionLabel>
-            {t`LLM-generated connection note`}
-          </StyledOptionLabel>
-          <StyledOptionHelp>
-            {t`When off, send a blank connection request with no draft/approve nodes.`}
-          </StyledOptionHelp>
-        </StyledOptionText>
-      </StyledOptionRow>
-      <StyledOptionRow>
-        <Checkbox
-          checked={options.humanInTheLoop}
-          onCheckedChange={(value) => setOption('humanInTheLoop', value)}
-        />
-        <StyledOptionText>
-          <StyledOptionLabel>{t`Human in the loop`}</StyledOptionLabel>
-          <StyledOptionHelp>
-            {t`When off (automated), remove approve steps and send drafted messages directly.`}
-          </StyledOptionHelp>
-        </StyledOptionText>
-      </StyledOptionRow>
-      <StyledOptionRow>
-        <Checkbox
-          checked={options.whatsappEnabled}
-          onCheckedChange={(value) => setOption('whatsappEnabled', value)}
-        />
-        <StyledOptionText>
-          <StyledOptionLabel>{t`WhatsApp messaging`}</StyledOptionLabel>
-          <StyledOptionHelp>
-            {t`When off, replies and follow-ups only use email and LinkedIn.`}
-          </StyledOptionHelp>
-        </StyledOptionText>
-      </StyledOptionRow>
-      <StyledOptionRow>
-        <Checkbox
-          checked={options.meetingFollowUpEnabled}
-          onCheckedChange={(value) =>
-            setOption('meetingFollowUpEnabled', value)
-          }
-        />
-        <StyledOptionText>
-          <StyledOptionLabel>
-            {t`Meeting-booked follow-up cadence`}
-          </StyledOptionLabel>
-          <StyledOptionHelp>
-            {t`When off, skip the meeting reminder / no-show / reschedule tree.`}
-          </StyledOptionHelp>
-        </StyledOptionText>
-      </StyledOptionRow>
-      <StyledOptionRow>
-        <Checkbox
-          checked={options.checkDeduplicationPerCompany}
-          onCheckedChange={(value) =>
-            setOption('checkDeduplicationPerCompany', value)
-          }
-        />
-        <StyledOptionText>
-          <StyledOptionLabel>
-            {t`Check deduplication per company`}
-          </StyledOptionLabel>
-          <StyledOptionHelp>
-            {t`When on, defer prospects whose company already has someone contacted or an earlier QUEUED sibling. Off by default — qualify goes straight to the connection note.`}
-          </StyledOptionHelp>
-        </StyledOptionText>
-      </StyledOptionRow>
-      <StyledOptionRow>
-        <Checkbox
-          checked={options.qualifyProspectEnabled}
-          onCheckedChange={(value) =>
-            setOption('qualifyProspectEnabled', value)
-          }
-        />
-        <StyledOptionText>
-          <StyledOptionLabel>{t`Qualify prospect`}</StyledOptionLabel>
-          <StyledOptionHelp>
-            {t`When off, remove Qualify prospect, stamp enrichment, and go/no-go — Fetch LinkedIn profile goes straight to the connection path.`}
-          </StyledOptionHelp>
-        </StyledOptionText>
-      </StyledOptionRow>
-      <StyledButtonRow>
-        <Button
-          title={t`Apply`}
-          variant="primary"
-          accent="blue"
-          fullWidth
-          justify="center"
-          onClick={handleApply}
-          disabled={isSubmitting}
-          isLoading={isSubmitting}
-        />
-        <Button
-          title={t`Cancel`}
-          variant="secondary"
-          fullWidth
-          justify="center"
-          onClick={handleClose}
-          disabled={isSubmitting}
-        />
-      </StyledButtonRow>
+      <StyledRoot>
+        <StyledHeader>
+          <H1Title
+            title={t`Edit Workflow`}
+            fontColor={H1TitleFontColor.Primary}
+          />
+          <StyledCallout>
+            {t`Apply rebuilds the Candidate Sequencer draft from the outreach template and discards hand-edits. Activate when ready. Start Outreach to ignite; replies continue until Stop Outreach.`}
+          </StyledCallout>
+        </StyledHeader>
+
+        <StyledScrollArea>
+          <StyledSection>
+            <H2Title title={t`Messaging & review`} />
+            <Card
+              rounded
+              backgroundColor={themeCssVariables.background.secondary}
+            >
+              <SettingsOptionCardContentToggle
+                Icon={IconSparkles}
+                title={t`LLM-generated connection note`}
+                description={t`Off: blank connection request with no draft/approve nodes.`}
+                checked={options.useLlmConnectionNote}
+                onChange={(value) => setOption('useLlmConnectionNote', value)}
+                toggleCentered={false}
+                divider
+                disabled={isSubmitting}
+              />
+              <SettingsOptionCardContentToggle
+                Icon={IconUser}
+                title={t`Human in the loop`}
+                description={t`Off: remove approve steps and send drafted messages directly.`}
+                checked={options.humanInTheLoop}
+                onChange={(value) => setOption('humanInTheLoop', value)}
+                toggleCentered={false}
+                divider
+                disabled={isSubmitting}
+              />
+              <SettingsOptionCardContentToggle
+                Icon={IconBrandWhatsapp}
+                title={t`WhatsApp messaging`}
+                description={t`Off: replies and follow-ups only use email and LinkedIn.`}
+                checked={options.whatsappEnabled}
+                onChange={(value) => setOption('whatsappEnabled', value)}
+                toggleCentered={false}
+                divider
+                disabled={isSubmitting}
+              />
+              <SettingsOptionCardContentToggle
+                Icon={IconMail}
+                title={t`Sales Navigator InMail before email`}
+                description={t`On: after the connection wait, draft and send InMail before enriching email.`}
+                checked={options.inmailEnabled}
+                onChange={(value) => setOption('inmailEnabled', value)}
+                toggleCentered={false}
+                divider
+                disabled={isSubmitting}
+              />
+              <SettingsOptionCardContentToggle
+                Icon={IconCalendarEvent}
+                title={t`Meeting-booked follow-up cadence`}
+                description={t`Off: skip the meeting reminder / no-show / reschedule tree.`}
+                checked={options.meetingFollowUpEnabled}
+                onChange={(value) => setOption('meetingFollowUpEnabled', value)}
+                toggleCentered={false}
+                disabled={isSubmitting}
+              />
+            </Card>
+          </StyledSection>
+
+          <StyledSection>
+            <H2Title title={t`Prospect filters`} />
+            <Card
+              rounded
+              backgroundColor={themeCssVariables.background.secondary}
+            >
+              <SettingsOptionCardContentToggle
+                Icon={IconBuildingSkyscraper}
+                title={t`Check deduplication per company`}
+                description={t`On: defer prospects whose company already has someone contacted or an earlier QUEUED sibling.`}
+                checked={options.checkDeduplicationPerCompany}
+                onChange={(value) =>
+                  setOption('checkDeduplicationPerCompany', value)
+                }
+                toggleCentered={false}
+                divider
+                disabled={isSubmitting}
+              />
+              <SettingsOptionCardContentToggle
+                Icon={IconFilter}
+                title={t`Qualify prospect`}
+                description={t`Off: skip qualify, enrichment stamp, and go/no-go — profile fetch goes straight to connect.`}
+                checked={options.qualifyProspectEnabled}
+                onChange={(value) => setOption('qualifyProspectEnabled', value)}
+                toggleCentered={false}
+                disabled={isSubmitting}
+              />
+            </Card>
+          </StyledSection>
+
+          <StyledSection>
+            <H2Title title={t`Pre-connect engagement`} />
+            <Card
+              rounded
+              backgroundColor={themeCssVariables.background.secondary}
+            >
+              <SettingsOptionCardContentToggle
+                Icon={IconMessageCircle}
+                title={t`Comment before connect`}
+                description={t`View profile, wait, comment on posts, wait for inbound invite, then connect if none arrives.`}
+                checked={options.commentBeforeConnect}
+                onChange={(value) => setOption('commentBeforeConnect', value)}
+                toggleCentered={false}
+                disabled={isSubmitting}
+              />
+            </Card>
+            {options.commentBeforeConnect && (
+              <StyledNestedOptions>
+                <Card
+                  rounded
+                  backgroundColor={themeCssVariables.background.secondary}
+                >
+                  <SettingsOptionCardContentToggle
+                    Icon={IconRepeat}
+                    title={t`Two comment rounds`}
+                    description={t`On: comment on a second distinct post after a 1-day wait.`}
+                    checked={options.commentRounds === 2}
+                    onChange={(value) =>
+                      setOptions((previousOptions) => ({
+                        ...previousOptions,
+                        commentRounds: value ? 2 : 1,
+                      }))
+                    }
+                    toggleCentered={false}
+                    divider
+                    disabled={isSubmitting}
+                  />
+                  <SettingsOptionCardContentCounter
+                    Icon={IconClock}
+                    title={t`Inbound invite wait (days)`}
+                    description={t`Days to wait for an inbound invite before sending outbound connect.`}
+                    value={options.inboundInviteWaitDays}
+                    onChange={(nextValue) =>
+                      setOptions((previousOptions) => ({
+                        ...previousOptions,
+                        inboundInviteWaitDays: nextValue,
+                      }))
+                    }
+                    minValue={1}
+                    maxValue={30}
+                    disabled={isSubmitting}
+                  />
+                </Card>
+              </StyledNestedOptions>
+            )}
+          </StyledSection>
+
+          <StyledSection>
+            <H2Title title={t`Testing`} />
+            <Card
+              rounded
+              backgroundColor={themeCssVariables.background.secondary}
+            >
+              <SettingsOptionCardContentToggle
+                Icon={IconTestPipe}
+                title={t`Test mode`}
+                description={t`On: every wait (3–7 days) becomes 1 minute for rapid branch testing.`}
+                checked={options.testMode}
+                onChange={(value) => setOption('testMode', value)}
+                toggleCentered={false}
+                disabled={isSubmitting}
+              />
+            </Card>
+          </StyledSection>
+        </StyledScrollArea>
+
+        <StyledFooter>
+          <Button
+            title={t`Cancel`}
+            variant="secondary"
+            fullWidth
+            justify="center"
+            onClick={handleClose}
+            disabled={isSubmitting}
+          />
+          <Button
+            title={t`Apply`}
+            variant="primary"
+            accent="blue"
+            fullWidth
+            justify="center"
+            onClick={handleApply}
+            disabled={isSubmitting}
+            isLoading={isSubmitting}
+          />
+        </StyledFooter>
+      </StyledRoot>
     </ModalStatefulWrapper>
   );
 };

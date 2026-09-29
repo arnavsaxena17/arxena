@@ -127,6 +127,16 @@ import { SeedSendFilesAgentToolConfigCommand } from 'src/database/commands/upgra
 import { SyncFetchCompanyDetailsCompaniesArrayCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000137-sync-fetch-company-details-companies-array.command';
 import { ResyncOutreachSequencerRouteLoadCandidateCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000138-resync-outreach-sequencer-route-load-candidate.command';
 import { AddWorkflowRunStateVersionCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000139-add-workflow-run-state-version.command';
+import { EnsureLocalBusinessCityCoverageLogicFunctionsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000140-ensure-local-business-city-coverage-logic-functions.command';
+import { SeedFetchAndSaveLocalBusinessesWorkflowCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000141-seed-fetch-and-save-local-businesses-workflow.command';
+import { SyncResolveCompanyNameSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000142-sync-resolve-company-name-skill-content.command';
+import { EnsureClassifyAndUpsertLocalPlacesLogicFunctionCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000143-ensure-classify-and-upsert-local-places-logic-function.command';
+import { SeedClassifyAndUpsertLocalPlacesWorkflowCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000144-seed-classify-and-upsert-local-places-workflow.command';
+import { ResyncClassifyAndUpsertLocalPlacesCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000145-resync-classify-and-upsert-local-places.command';
+import { SetOutreachCalendarSlotsToThirtyMinutesCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000146-set-outreach-calendar-slots-to-thirty-minutes.command';
+import { ResyncOutreachReplyProfileFetchCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000147-resync-outreach-reply-profile-fetch.command';
+import { StampProspectEnrichmentOnLinkedinProfileFetchCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000148-stamp-prospect-enrichment-on-linkedin-profile-fetch.command';
+import { SyncWorkspaceMemberExtensionPresenceFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000149-sync-workspace-member-extension-presence-fields.command';
 import { SetOutreachExtractSignalsDeepseekCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000106-set-outreach-extract-signals-deepseek.command';
 import { DropChatMessageObjWithTimeStampCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000099-drop-chat-message-obj-with-time-stamp.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
@@ -289,6 +299,16 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     SyncFetchCompanyDetailsCompaniesArrayCommand,
     ResyncOutreachSequencerRouteLoadCandidateCommand,
     AddWorkflowRunStateVersionCommand,
+    EnsureLocalBusinessCityCoverageLogicFunctionsCommand,
+    SeedFetchAndSaveLocalBusinessesWorkflowCommand,
+    SyncResolveCompanyNameSkillContentCommand,
+    EnsureClassifyAndUpsertLocalPlacesLogicFunctionCommand,
+    SeedClassifyAndUpsertLocalPlacesWorkflowCommand,
+    ResyncClassifyAndUpsertLocalPlacesCommand,
+    SetOutreachCalendarSlotsToThirtyMinutesCommand,
+    ResyncOutreachReplyProfileFetchCommand,
+    StampProspectEnrichmentOnLinkedinProfileFetchCommand,
+    SyncWorkspaceMemberExtensionPresenceFieldsCommand,
     SyncWorkspaceMemberCrunchbaseCookiesFieldsCommand,
     EnsureSearchCrunchbaseCompaniesLogicFunctionCommand,
     MigrateOtherFieldsService,

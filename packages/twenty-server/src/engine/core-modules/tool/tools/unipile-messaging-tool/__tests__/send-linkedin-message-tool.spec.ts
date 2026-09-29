@@ -6,7 +6,7 @@ import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/service
 import { FileService } from 'src/engine/core-modules/file/services/file.service';
 import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/outreach-command/services/linkedin-provider-id.store';
 import { SendLinkedinMessageTool } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/send-linkedin-message-tool';
-import { OUTREACH_MOCK_UNIPILE_MESSAGE_RESPONSE_ID } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/utils/is-outreach-mock-unipile-enabled.util';
+import { OUTREACH_MOCK_UNIPILE_MESSAGE_RESPONSE_ID_PREFIX } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/utils/is-outreach-mock-unipile-enabled.util';
 import { createLinkedinUnipileMessagingServiceForTools } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/utils/unipile-messaging-tool.util';
 import { loadUnipileChatAttachments } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/utils/load-unipile-chat-attachments.util';
 
@@ -107,22 +107,28 @@ describe('SendLinkedinMessageTool', () => {
       FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
       'ws-1',
     );
-    expect(result).toEqual({
-      success: true,
-      message: 'LinkedIn message sent successfully',
-      result: {
+    expect(result.success).toBe(true);
+    expect(result.message).toBe('LinkedIn message sent successfully');
+    expect(result.result).toEqual(
+      expect.objectContaining({
         mock: true,
         unipileAccountId: 'acc-1',
         linkedinProfileId: 'jane-doe',
         body: 'Hello',
         attachmentCount: 0,
-        response: { id: OUTREACH_MOCK_UNIPILE_MESSAGE_RESPONSE_ID },
-      },
-    });
+        response: {
+          id: expect.stringMatching(
+            new RegExp(`^${OUTREACH_MOCK_UNIPILE_MESSAGE_RESPONSE_ID_PREFIX}-`),
+          ),
+        },
+      }),
+    );
     expect(sendMessage).not.toHaveBeenCalled();
     expect(resolveForSend).not.toHaveBeenCalled();
     expect(loadUnipileChatAttachments).not.toHaveBeenCalled();
-    expect(createLinkedinUnipileMessagingServiceForTools).not.toHaveBeenCalled();
+    expect(
+      createLinkedinUnipileMessagingServiceForTools,
+    ).not.toHaveBeenCalled();
   });
 
   it('still requires unipileAccountId when mock flag is on', async () => {

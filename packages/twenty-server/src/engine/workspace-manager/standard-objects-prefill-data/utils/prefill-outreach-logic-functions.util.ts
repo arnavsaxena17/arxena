@@ -24,6 +24,9 @@ import {
   OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME,
+  OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_LOGIC_FUNCTION_NAME,
+  OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-names.const';
 import {
   OUTREACH_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT,
@@ -46,6 +49,9 @@ import {
   OUTREACH_DETECT_FAKE_PROFILES_SAMPLE_OUTPUT,
   OUTREACH_FILTER_PROFILES_SAMPLE_OUTPUT,
   OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT,
+  OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_SAMPLE_OUTPUT,
+  OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_SAMPLE_OUTPUT,
+  OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_SAMPLE_OUTPUT,
 } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-sample-output.const';
 import { type PrefilledWorkflowCodeStepLogicFunctionDefinition } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-workflow-code-step-logic-functions.util';
 
@@ -208,6 +214,18 @@ export const getOutreachLogicFunctionIds = (workspaceId: string) => ({
     `${workspaceId}:validate-inbound-signals`,
     OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
   ),
+  planLocalBusinessCityCoverageId: uuidv5(
+    `${workspaceId}:plan-local-business-city-coverage`,
+    OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  fetchAndUpsertLocalBusinessesId: uuidv5(
+    `${workspaceId}:fetch-and-upsert-local-businesses`,
+    OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  classifyAndUpsertLocalPlacesId: uuidv5(
+    `${workspaceId}:classify-and-upsert-local-places`,
+    OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
 });
 
 export const getOutreachLogicFunctionDefinitions = (
@@ -296,7 +314,7 @@ export const getOutreachLogicFunctionDefinitions = (
       id: ids.fetchLinkedinProfileId,
       name: OUTREACH_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
       description:
-        'Fetch a LinkedIn profile via Unipile for AI_AGENT drafting. Pass linkedinUrl or linkedinProfileId plus workspaceMemberId.',
+        'Fetch a LinkedIn profile via Unipile for AI_AGENT drafting. Pass linkedinUrl or linkedinProfileId plus workspaceMemberId. When candidateId is set, stamps outreachProspectEnrichment from the profile unless Qualify already wrote go/score.',
       sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
         OUTREACH_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
       ),
@@ -378,6 +396,10 @@ export const getOutreachLogicFunctionDefinitions = (
                 items: { type: 'object', label: 'Activity event' },
               },
               snapshot: { type: 'string', label: 'Snapshot' },
+              outreachProspectEnrichment: {
+                type: 'object',
+                label: 'Outreach prospect enrichment',
+              },
               people: {
                 type: 'array',
                 label: 'People',
@@ -1292,6 +1314,10 @@ export const getOutreachLogicFunctionDefinitions = (
                   },
                 },
               },
+              text: {
+                type: 'string',
+                label: 'Slots text (LLM)',
+              },
             },
           },
         ],
@@ -1461,6 +1487,173 @@ export const getOutreachLogicFunctionDefinitions = (
           },
         ],
         sampleOutput: OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.planLocalBusinessCityCoverageId,
+      name: OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_LOGIC_FUNCTION_NAME,
+      description:
+        'Plan a Bright Data Google Maps city grid (discover_by=location). Pass city (e.g. mumbai) or bbox, keywords[], optional sample:true for a live cost sample. Returns cells, estimatedMaxRecords, estimatedUsdPayg.',
+      sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
+        OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Plan local business city coverage',
+        icon: 'IconMapSearch',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              city: { type: 'string', label: 'City' },
+              keywords: { type: 'array', label: 'Keywords' },
+              gridSpacingDeg: { type: 'number', label: 'Grid spacing (deg)' },
+              zoom_level: { type: 'number', label: 'Zoom level' },
+              country: { type: 'string', label: 'Country' },
+              minLat: { type: 'number', label: 'Min lat' },
+              maxLat: { type: 'number', label: 'Max lat' },
+              minLng: { type: 'number', label: 'Min lng' },
+              maxLng: { type: 'number', label: 'Max lng' },
+              sample: { type: 'boolean', label: 'Run sample' },
+              expectedHitsPerCell: {
+                type: 'number',
+                label: 'Expected hits per cell',
+              },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              city: { type: 'string', label: 'City' },
+              country: { type: 'string', label: 'Country' },
+              keywords: { type: 'array', label: 'Keywords' },
+              zoom_level: { type: 'number', label: 'Zoom level' },
+              gridSpacingDeg: { type: 'number', label: 'Grid spacing' },
+              cells: { type: 'array', label: 'Cells' },
+              cellCount: { type: 'number', label: 'Cell count' },
+              discoveryInputCount: {
+                type: 'number',
+                label: 'Discovery input count',
+              },
+              estimatedMaxRecords: {
+                type: 'number',
+                label: 'Estimated max records',
+              },
+              estimatedUsdPayg: {
+                type: 'number',
+                label: 'Estimated USD PAYG',
+              },
+              pricingNote: { type: 'string', label: 'Pricing note' },
+              sampleHitRate: { type: 'number', label: 'Sample hit rate' },
+              sampleRecordsReturned: {
+                type: 'number',
+                label: 'Sample records returned',
+              },
+              sampleCreditsUsed: {
+                type: 'number',
+                label: 'Sample credits used',
+              },
+              error: { type: 'string', label: 'Error' },
+            },
+          },
+        ],
+        sampleOutput: OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.fetchAndUpsertLocalBusinessesId,
+      name: OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_LOGIC_FUNCTION_NAME,
+      description:
+        'Fetch Google Maps places via Bright Data discover_by=location over a lat/lng grid × keywords, dedupe by place_id, upsert Companies. Requires projectId and maxRecords hard stop.',
+      sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
+        OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Fetch and upsert local businesses',
+        icon: 'IconBuildingStore',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              projectId: OUTREACH_PROJECT_RECORD_INPUT,
+              cells: { type: 'array', label: 'Grid cells' },
+              keywords: { type: 'array', label: 'Keywords' },
+              zoom_level: { type: 'number', label: 'Zoom level' },
+              country: { type: 'string', label: 'Country' },
+              maxRecords: { type: 'number', label: 'Max records' },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              grossRecords: { type: 'number', label: 'Gross records' },
+              uniquePlaces: { type: 'number', label: 'Unique places' },
+              created: { type: 'number', label: 'Created' },
+              updated: { type: 'number', label: 'Updated' },
+              skipped: { type: 'number', label: 'Skipped' },
+              companyIds: { type: 'array', label: 'Company IDs' },
+              projectId: { type: 'string', label: 'Project ID' },
+              stoppedEarly: { type: 'boolean', label: 'Stopped early' },
+              error: { type: 'string', label: 'Error' },
+            },
+          },
+        ],
+        sampleOutput: OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.classifyAndUpsertLocalPlacesId,
+      name: OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME,
+      description:
+        'Classify unique Google Maps place names with gpt-4o-mini (isMultiOutlet, numberOutlets, confidence), keep multi-outlet brands (default ≥7 outlets), upsert Companies. Pass places JSON array or placesFilePath — no Bright Data re-fetch.',
+      sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
+        OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Classify and upsert local places',
+        icon: 'IconMapPin',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              projectId: OUTREACH_PROJECT_RECORD_INPUT,
+              placesFilePath: {
+                type: 'string',
+                label: 'Places JSON file path',
+              },
+              places: { type: 'array', label: 'Places array' },
+              minOutlets: { type: 'number', label: 'Min outlets' },
+              maxCompanies: { type: 'number', label: 'Max companies' },
+              modelId: { type: 'string', label: 'Model id' },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              uniqueNames: { type: 'number', label: 'Unique names' },
+              classified: { type: 'number', label: 'Classified' },
+              qualifying: { type: 'number', label: 'Qualifying places' },
+              created: { type: 'number', label: 'Created' },
+              updated: { type: 'number', label: 'Updated' },
+              skipped: { type: 'number', label: 'Skipped' },
+              companyIds: { type: 'array', label: 'Company IDs' },
+              qualifyingCompanies: {
+                type: 'array',
+                label: 'Qualifying companies',
+              },
+              error: { type: 'string', label: 'Error' },
+            },
+          },
+        ],
+        sampleOutput: OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_SAMPLE_OUTPUT,
       },
     },
   ];

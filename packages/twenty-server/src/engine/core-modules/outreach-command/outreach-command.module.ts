@@ -6,6 +6,7 @@ import { AccountRateLimitModule } from 'src/engine/core-modules/account-rate-lim
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { UnipilePoolModule } from 'src/engine/core-modules/arx-chat/unipile-pool.module';
 import { ApiKeyModule } from 'src/engine/core-modules/api-key/api-key.module';
+import { BrightDataModule } from 'src/engine/core-modules/bright-data/bright-data.module';
 import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
 import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
 import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
@@ -17,6 +18,8 @@ import { OutreachInboundEmailListener } from 'src/engine/core-modules/outreach-c
 import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/outreach-command/services/linkedin-provider-id.store';
 import { OutreachWorkspaceProfileBootstrapJob } from 'src/engine/core-modules/outreach-command/jobs/outreach-workspace-profile-bootstrap.job';
 import { EnsureOutreachProjectService } from 'src/engine/core-modules/outreach-command/services/ensure-outreach-project.service';
+import { FetchAndUpsertLocalBusinessesService } from 'src/engine/core-modules/outreach-command/services/fetch-and-upsert-local-businesses.service';
+import { ClassifyAndUpsertLocalPlacesService } from 'src/engine/core-modules/outreach-command/services/classify-and-upsert-local-places.service';
 import { FetchCompanyDetailsService } from 'src/engine/core-modules/outreach-command/services/fetch-company-details.service';
 import { FetchLinkedinMessagesService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-messages.service';
 import { FetchLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-profile.service';
@@ -24,6 +27,7 @@ import { VisitLinkedinProfileService } from 'src/engine/core-modules/outreach-co
 import { FetchUserCommentsService } from 'src/engine/core-modules/outreach-command/services/fetch-user-comments.service';
 import { OutreachLogicFunctionNativeExecutor } from 'src/engine/core-modules/outreach-command/services/outreach-logic-function-native.executor';
 import { OutreachUnipilePacingService } from 'src/engine/core-modules/outreach-command/services/outreach-unipile-pacing.service';
+import { PlanLocalBusinessCityCoverageService } from 'src/engine/core-modules/outreach-command/services/plan-local-business-city-coverage.service';
 import { SearchPeopleForCompanyService } from 'src/engine/core-modules/outreach-command/services/search-people-for-company.service';
 import { SearchPeopleService } from 'src/engine/core-modules/outreach-command/services/search-people.service';
 import { SearchCompaniesService } from 'src/engine/core-modules/outreach-command/services/search-companies.service';
@@ -115,6 +119,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     WorkflowCommonModule,
     WorkflowRunModule,
     OutreachCacheRealtimeModule,
+    BrightDataModule,
   ],
   controllers: [OutreachCommandController, OutreachMockController],
   providers: [
@@ -177,6 +182,9 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     GetCalendarAvailabilityService,
     OutreachFakeProfileDetectorService,
     OutreachFilterProfilesService,
+    PlanLocalBusinessCityCoverageService,
+    FetchAndUpsertLocalBusinessesService,
+    ClassifyAndUpsertLocalPlacesService,
     OutreachMessagePersistService,
     OutreachLogicFunctionNativeExecutor,
     OutreachUnipilePacingService,
@@ -216,6 +224,9 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     GetCalendarAvailabilityService,
     OutreachFakeProfileDetectorService,
     OutreachFilterProfilesService,
+    PlanLocalBusinessCityCoverageService,
+    FetchAndUpsertLocalBusinessesService,
+    ClassifyAndUpsertLocalPlacesService,
     OutreachMessagePersistService,
     OutreachLogicFunctionNativeExecutor,
     OutreachUnipilePacingService,

@@ -8,8 +8,10 @@ import { DataSource, IsNull, type Repository } from 'typeorm';
 import { AdminPanelWorkspaceMemberArx } from 'src/engine/core-modules/admin-panel/dtos/admin-panel-workspace-member-arx.output';
 import { AdminPanelWorkspaceMemberRow } from 'src/engine/core-modules/admin-panel/dtos/admin-panel-workspace-member-row.output';
 import { AdminConnectMemberLinkedinUnipileOutput } from 'src/engine/core-modules/admin-panel/dtos/admin-connect-member-linkedin-unipile.output';
+import { AdminRequestMemberLinkedinCookieFetchOutput } from 'src/engine/core-modules/admin-panel/dtos/admin-request-member-linkedin-cookie-fetch.output';
 import { AdminValidateMemberLinkedinStoredCookiesOutput } from 'src/engine/core-modules/admin-panel/dtos/admin-validate-member-linkedin-stored-cookies.output';
 import { LinkedinStoredCookieValidationService } from 'src/engine/core-modules/arx-chat/services/linkedin-stored-cookie-validation.service';
+import { ExtensionLinkedinCookieFetchService } from 'src/engine/core-modules/extension-bridge/extension-linkedin-cookie-fetch.service';
 import {
   AuthException,
   AuthExceptionCode,
@@ -79,6 +81,9 @@ const emptyWorkspaceMemberArx = (
   typeWorkspaceMember: null,
   chromeExtensionId: null,
   extensionInstalled: false,
+  extensionLastSeenAt: null,
+  extensionUninstalledAt: null,
+  linkedinCookieFetchPendingUntil: null,
   linkedinCookiesStored: false,
   linkedinLiAStored: false,
   linkedinCookiesLastSyncedAt: null,
@@ -95,6 +100,7 @@ export class AdminPanelArxService {
   constructor(
     private readonly accessTokenService: AccessTokenService,
     private readonly linkedinStoredCookieValidationService: LinkedinStoredCookieValidationService,
+    private readonly extensionLinkedinCookieFetchService: ExtensionLinkedinCookieFetchService,
     @InjectRepository(WorkspaceEntity)
     private readonly workspaceRepository: Repository<WorkspaceEntity>,
     @InjectDataSource()
@@ -144,6 +150,27 @@ export class AdminPanelArxService {
           workspaceMemberArx,
         });
       }
+    }
+
+    const workspaceMemberIds = rows.flatMap((row) =>
+      row.workspaceMemberArx?.workspaceMemberId
+        ? [row.workspaceMemberArx.workspaceMemberId]
+        : [],
+    );
+    const pendingDeadlines =
+      await this.extensionLinkedinCookieFetchService.getPendingDeadlines(
+        workspaceMemberIds,
+      );
+
+    for (const row of rows) {
+      const workspaceMemberId = row.workspaceMemberArx?.workspaceMemberId;
+
+      if (!workspaceMemberId || !row.workspaceMemberArx) {
+        continue;
+      }
+
+      row.workspaceMemberArx.linkedinCookieFetchPendingUntil =
+        pendingDeadlines.get(workspaceMemberId) ?? null;
     }
 
     return rows;
@@ -203,6 +230,9 @@ export class AdminPanelArxService {
       typeWorkspaceMember: pickStringFromRow(row, 'typeWorkspaceMember'),
       chromeExtensionId: pickStringFromRow(row, 'chromeExtensionId'),
       extensionInstalled: hasNonEmptyStringRowValue(row, 'chromeExtensionId'),
+      extensionLastSeenAt: pickStringFromRow(row, 'extensionLastSeenAt'),
+      extensionUninstalledAt: pickStringFromRow(row, 'extensionUninstalledAt'),
+      linkedinCookieFetchPendingUntil: null,
       linkedinCookiesStored: hasNonEmptyStringRowValue(
         row,
         'linkedinLiAtToken',
@@ -403,6 +433,41 @@ export class AdminPanelArxService {
     );
 
     return keepLinkedinConnected;
+  }
+
+  async requestMemberLinkedinCookieFetch(
+    workspaceId: string,
+    workspaceMemberId: string,
+  ): Promise<AdminRequestMemberLinkedinCookieFetchOutput> {
+    const workspace = await this.workspaceRepository.findOne({
+      where: { id: workspaceId, deletedAt: IsNull() },
+    });
+
+    assertIsDefinedOrThrow(
+      workspace,
+      new AuthException('Workspace not found', AuthExceptionCode.INVALID_INPUT),
+    );
+
+    const schema = this.resolveSchemaName(
+      workspaceId,
+      workspace.databaseSchema,
+    );
+    const memberRows = await this.coreDataSource.query(
+      `SELECT id FROM ${schema}."workspaceMember" WHERE id = $1 LIMIT 1`,
+      [workspaceMemberId],
+    );
+
+    if (!memberRows?.length) {
+      throw new AuthException(
+        'Workspace member not found',
+        AuthExceptionCode.INVALID_INPUT,
+      );
+    }
+
+    return this.extensionLinkedinCookieFetchService.requestFetch(
+      workspaceId,
+      workspaceMemberId,
+    );
   }
 
   async connectMemberLinkedinUnipile(

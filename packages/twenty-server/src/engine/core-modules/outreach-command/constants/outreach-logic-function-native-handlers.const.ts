@@ -19,7 +19,11 @@ import {
   OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME,
+  OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_LOGIC_FUNCTION_NAME,
+  OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-names.const';
+
 
 const SEARCH_PEOPLE_FOR_COMPANY_HANDLER = `// Native GTM action: SearchPeopleForCompanyService.
 // Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
@@ -276,6 +280,53 @@ export const main = async (params: {
 };
 `;
 
+const PLAN_LOCAL_BUSINESS_CITY_COVERAGE_HANDLER = `// Native GTM action: PlanLocalBusinessCityCoverageService.
+// Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
+export const main = async (params: {
+  city?: string;
+  keywords?: string[] | string;
+  gridSpacingDeg?: number;
+  zoom_level?: number;
+  country?: string;
+  minLat?: number;
+  maxLat?: number;
+  minLng?: number;
+  maxLng?: number;
+  sample?: boolean;
+  expectedHitsPerCell?: number;
+}) => {
+  return params;
+};
+`;
+
+const FETCH_AND_UPSERT_LOCAL_BUSINESSES_HANDLER = `// Native GTM action: FetchAndUpsertLocalBusinessesService.
+// Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
+export const main = async (params: {
+  cells?: Array<{ lat: number; lng: number }>;
+  keywords?: string[] | string;
+  zoom_level?: number;
+  country?: string;
+  maxRecords?: number;
+  projectId?: string;
+}) => {
+  return params;
+};
+`;
+
+const CLASSIFY_AND_UPSERT_LOCAL_PLACES_HANDLER = `// Native GTM action: ClassifyAndUpsertLocalPlacesService (gpt-4o-mini per company name).
+// Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
+export const main = async (params: {
+  places?: unknown[];
+  placesFilePath?: string;
+  projectId?: string;
+  minOutlets?: number;
+  modelId?: string;
+  maxCompanies?: number;
+}) => {
+  return params;
+};
+`;
+
 const NATIVE_HANDLERS: Record<string, string> = {
   [OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME]:
     SEARCH_PEOPLE_FOR_COMPANY_HANDLER,
@@ -307,6 +358,12 @@ const NATIVE_HANDLERS: Record<string, string> = {
   [OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME]: FILTER_PROFILES_HANDLER,
   [OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME]:
     VALIDATE_INBOUND_SIGNALS_HANDLER,
+  [OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_LOGIC_FUNCTION_NAME]:
+    PLAN_LOCAL_BUSINESS_CITY_COVERAGE_HANDLER,
+  [OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_LOGIC_FUNCTION_NAME]:
+    FETCH_AND_UPSERT_LOCAL_BUSINESSES_HANDLER,
+  [OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME]:
+    CLASSIFY_AND_UPSERT_LOCAL_PLACES_HANDLER,
 };
 
 export const getOutreachNativeLogicFunctionHandler = (name: string): string => {

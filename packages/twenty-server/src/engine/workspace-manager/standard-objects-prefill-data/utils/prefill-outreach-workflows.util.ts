@@ -1,32 +1,41 @@
 import { FieldActorSource } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
+
 import {
   AUTO_SELECT_SMART_MODEL_ID,
   PermissionFlagType,
   SystemPermissionFlag,
 } from 'twenty-shared/constants';
+
 import { type EntityManager } from 'typeorm';
 import { v5 } from 'uuid';
 
+import { LOCAL_PLACE_CLASSIFIER_MODEL_ID } from 'src/engine/core-modules/outreach-command/prompts/local-place-classifier.prompt';
 import { OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS } from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
+
 import {
   OUTREACH_SEEDED_EXTRACT_SIGNALS_SCHEMA,
   OUTREACH_SEEDED_FALLBACK_EMAIL_SCHEMA,
   OUTREACH_SEEDED_LINKEDIN_MESSAGE_SCHEMA,
   OUTREACH_SEEDED_QUALIFY_PROSPECT_SCHEMA,
+  OUTREACH_SEEDED_LOCAL_PLACE_CLASSIFIER_SCHEMA,
   OUTREACH_SEEDED_REPLY_SCHEMA,
 } from 'src/engine/core-modules/outreach-command/prompts/outreach-seeded-agent-schemas';
+
 import { getOutreachLogicFunctionIds } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-logic-functions.util';
 import { OUTREACH_WORKFLOW_GRAPH_TEMPLATES } from 'src/engine/workspace-manager/standard-objects-prefill-data/data/outreach-workflow-graphs';
+
 import {
   OUTREACH_WORKFLOW_NAMES_TO_DEACTIVATE,
   SEEDED_OUTREACH_WORKFLOW,
 } from 'src/engine/workspace-manager/standard-objects-prefill-data/constants/seeded-outreach-workflow-names.const';
+
 import {
   OUTREACH_WF_AGENT_EMAIL,
   OUTREACH_WF_AGENT_EXTRACT,
   OUTREACH_WF_AGENT_LINKEDIN,
   OUTREACH_WF_AGENT_QUALIFY,
+  OUTREACH_WF_AGENT_LOCAL_PLACE,
   OUTREACH_WF_AGENT_REPLY,
   OUTREACH_WF_FIELD,
   OUTREACH_WF_HARVEST_PROJECT_ID,
@@ -84,6 +93,11 @@ const LF_TOKEN_TO_ID_KEY = {
   '__LF_fetch-linkedin-messages__': 'fetchLinkedinMessagesId',
   '__LF_fetch-linkedin-profile__': 'fetchLinkedinProfileId',
   '__LF_validate-inbound-signals__': 'validateInboundSignalsId',
+  '__LF_plan-local-business-city-coverage__':
+    'planLocalBusinessCityCoverageId',
+  '__LF_fetch-and-upsert-local-businesses__':
+    'fetchAndUpsertLocalBusinessesId',
+  '__LF_classify-and-upsert-local-places__': 'classifyAndUpsertLocalPlacesId',
 } as const;
 
 export const getOutreachWorkflowPrefillIds = (workspaceId: string) => {
@@ -150,6 +164,10 @@ export const getOutreachAgentIds = (workspaceId: string) => ({
   ),
   qualifyProspect: v5(
     `gtmOutreachAgent:qualifyProspect:${workspaceId}`,
+    OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
+  ),
+  localPlaceClassifier: v5(
+    `gtmOutreachAgent:localPlaceClassifier:${workspaceId}`,
     OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
   ),
 });
@@ -359,6 +377,22 @@ const upsertAgents = async ({
       },
       universalIdentifier: v5(
         `gtmOutreachAgentUniversal:qualifyProspect:${workspaceId}`,
+        OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
+      ),
+    },
+    {
+      key: 'localPlaceClassifier' as const,
+      id: agentIds.localPlaceClassifier,
+      name: 'gtm-local-place-classifier',
+      label: 'Local place classifier',
+      modelId: LOCAL_PLACE_CLASSIFIER_MODEL_ID,
+      prompt: OUTREACH_SEEDED_AGENT_SYSTEM_PROMPTS.localPlaceClassifier,
+      responseFormat: {
+        type: 'json',
+        schema: OUTREACH_SEEDED_LOCAL_PLACE_CLASSIFIER_SCHEMA,
+      },
+      universalIdentifier: v5(
+        `gtmOutreachAgentUniversal:localPlaceClassifier:${workspaceId}`,
         OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
       ),
     },
@@ -1122,6 +1156,7 @@ export const prefillOutreachWorkflows = async ({
     [OUTREACH_WF_AGENT_REPLY]: agentIds.reply,
     [OUTREACH_WF_AGENT_EXTRACT]: agentIds.extractSignals,
     [OUTREACH_WF_AGENT_QUALIFY]: agentIds.qualifyProspect,
+    [OUTREACH_WF_AGENT_LOCAL_PLACE]: agentIds.localPlaceClassifier,
     [OUTREACH_WF_HARVEST_PROJECT_ID]: harvestProjectId,
     [OUTREACH_WF_FIELD.candidateId]: candidateIdFieldId,
     [OUTREACH_WF_FIELD.personId]: personIdFieldId,
@@ -1206,26 +1241,31 @@ export const prefillOutreachWorkflows = async ({
     const steps = substituteTokens(graph.steps, replacements);
     const position = index + 3;
 
-    // Only rewrite DRAFT versions. ACTIVE/ARCHIVED stay put so cutover can
-    // still find a DRAFT and sync workflowAutomatedTrigger from it.
+    // replaceExistingDrafts rewrites live DRAFT + ACTIVE graphs. ARCHIVED stays
+    // put. If every DRAFT is soft-deleted, revive the stable draft id (insert
+    // orIgnore used to no-op on that collision and leave ACTIVE stale).
     if (existingVersions.length > 0 && replaceExistingDrafts) {
       const draftVersions = existingVersions.filter(
         (version) => version.status === 'DRAFT',
       );
+      const activeVersions = existingVersions.filter(
+        (version) => version.status === 'ACTIVE',
+      );
       const existingWorkflow = existingVersions[0];
 
-      if (draftVersions.length > 0) {
-        for (const version of draftVersions) {
-          versionRows.push({
-            _update: true,
-            id: version.workflowVersionId,
-            trigger: JSON.stringify(trigger),
-            steps: JSON.stringify(steps),
-            coreWorkflowVersionId: version.coreWorkflowVersionId,
-            workflowId: version.workflowId,
-            coreWorkflowId: version.coreWorkflowId,
-            name: graph.name,
-          });
+      for (const version of [...draftVersions, ...activeVersions]) {
+        versionRows.push({
+          _update: true,
+          id: version.workflowVersionId,
+          trigger: JSON.stringify(trigger),
+          steps: JSON.stringify(steps),
+          coreWorkflowVersionId: version.coreWorkflowVersionId,
+          workflowId: version.workflowId,
+          coreWorkflowId: version.coreWorkflowId,
+          name: graph.name,
+        });
+
+        if (isDefined(version.coreWorkflowVersionId)) {
           coreVersionRows.push({
             _update: true,
             id: version.coreWorkflowVersionId,
@@ -1233,43 +1273,47 @@ export const prefillOutreachWorkflows = async ({
             steps,
           });
         }
-
-        return;
       }
 
-      const draftWorkflowVersionId = v5(
-        `gtmOutreachWorkflowVersionDraft:${slug}:${workspaceId}`,
-        OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
-      );
-      const draftCoreWorkflowVersionId = v5(
-        `gtmOutreachCoreWorkflowVersionDraft:${slug}:${workspaceId}`,
-        OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
-      );
-
-      versionRows.push({
-        id: draftWorkflowVersionId,
-        name: 'v1',
-        trigger: JSON.stringify(trigger),
-        steps: JSON.stringify(steps),
-        status: 'DRAFT',
-        position,
-        workflowId: existingWorkflow.workflowId,
-        coreWorkflowVersionId: draftCoreWorkflowVersionId,
-      });
-
-      coreVersionRows.push({
-        id: draftCoreWorkflowVersionId,
-        workspaceId,
-        universalIdentifier: v5(
-          `gtmOutreachWorkflowVersionDraftUniversal:${slug}:${workspaceId}`,
+      if (draftVersions.length === 0) {
+        const draftWorkflowVersionId = v5(
+          `gtmOutreachWorkflowVersionDraft:${slug}:${workspaceId}`,
           OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
-        ),
-        applicationId,
-        triggers: [trigger],
-        steps,
-        status: 'DRAFT',
-        workflowId: existingWorkflow.coreWorkflowId,
-      });
+        );
+        const draftCoreWorkflowVersionId = v5(
+          `gtmOutreachCoreWorkflowVersionDraft:${slug}:${workspaceId}`,
+          OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
+        );
+
+        versionRows.push({
+          _revive: true,
+          id: draftWorkflowVersionId,
+          name: 'v1',
+          graphName: graph.name,
+          trigger: JSON.stringify(trigger),
+          steps: JSON.stringify(steps),
+          status: 'DRAFT',
+          position,
+          workflowId: existingWorkflow.workflowId,
+          coreWorkflowId: existingWorkflow.coreWorkflowId,
+          coreWorkflowVersionId: draftCoreWorkflowVersionId,
+        });
+
+        coreVersionRows.push({
+          _revive: true,
+          id: draftCoreWorkflowVersionId,
+          workspaceId,
+          universalIdentifier: v5(
+            `gtmOutreachWorkflowVersionDraftUniversal:${slug}:${workspaceId}`,
+            OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
+          ),
+          applicationId,
+          triggers: [trigger],
+          steps,
+          status: 'DRAFT',
+          workflowId: existingWorkflow.coreWorkflowId,
+        });
+      }
 
       return;
     }
@@ -1351,11 +1395,102 @@ export const prefillOutreachWorkflows = async ({
     );
   }
 
-  const insertVersions = versionRows.filter((item) => !item._update);
-  const insertCoreVersions = coreVersionRows.filter((item) => !item._update);
+  // Soft-deleted stable draft ids: undelete + rewrite. Insert only if missing.
+  for (const row of versionRows.filter((item) => item._revive)) {
+    const updated = (await entityManager.query(
+      `
+        UPDATE ${schemaName}."workflowVersion"
+        SET trigger = $2::jsonb,
+            steps = $3::jsonb,
+            status = 'DRAFT',
+            "deletedAt" = NULL,
+            "updatedAt" = NOW(),
+            "coreWorkflowVersionId" = $4
+        WHERE id = $1
+        RETURNING id
+      `,
+      [row.id, row.trigger, row.steps, row.coreWorkflowVersionId],
+    )) as Array<{ id: string }>;
 
-  for (const row of versionRows.filter((item) => item._update)) {
-    if (typeof row.name !== 'string' || typeof row.workflowId !== 'string') {
+    if (updated.length === 0) {
+      versionRows.push({
+        id: row.id,
+        name: row.name,
+        trigger: row.trigger,
+        steps: row.steps,
+        status: 'DRAFT',
+        position: row.position,
+        workflowId: row.workflowId,
+        coreWorkflowVersionId: row.coreWorkflowVersionId,
+      });
+    } else if (typeof row.workflowId === 'string') {
+      await entityManager.query(
+        `
+          UPDATE ${schemaName}.workflow
+          SET statuses = (
+            SELECT ARRAY(
+              SELECT DISTINCT status::text
+              FROM unnest(
+                COALESCE(statuses, '{}'::${schemaName}.workflow_statuses_enum[])
+                  || ARRAY['DRAFT']::${schemaName}.workflow_statuses_enum[]
+              ) AS status
+            )
+          )::${schemaName}.workflow_statuses_enum[],
+          "updatedAt" = NOW()
+          WHERE id = $1
+        `,
+        [row.workflowId],
+      );
+    }
+  }
+
+  for (const row of coreVersionRows.filter((item) => item._revive)) {
+    const updated = (await entityManager.query(
+      `
+        UPDATE core."workflowVersion"
+        SET triggers = $2::jsonb,
+            steps = $3::jsonb,
+            status = 'DRAFT'
+        WHERE id = $1
+        RETURNING id
+      `,
+      [row.id, JSON.stringify(row.triggers), JSON.stringify(row.steps)],
+    )) as Array<{ id: string }>;
+
+    if (updated.length === 0) {
+      coreVersionRows.push({
+        id: row.id,
+        workspaceId: row.workspaceId,
+        universalIdentifier: row.universalIdentifier,
+        applicationId: row.applicationId,
+        triggers: row.triggers,
+        steps: row.steps,
+        status: 'DRAFT',
+        workflowId: row.workflowId,
+      });
+    }
+  }
+
+  const insertVersions = versionRows.filter(
+    (item) => !item._update && !item._revive,
+  );
+  const insertCoreVersions = coreVersionRows.filter(
+    (item) => !item._update && !item._revive,
+  );
+
+  for (const row of versionRows.filter(
+    (item) => item._update === true || item._revive === true,
+  )) {
+    // _update rows store graph.name in `name`; _revive stores version label
+    // 'v1' in `name` and graph.name in `graphName`.
+    const workflowName =
+      typeof row.graphName === 'string'
+        ? row.graphName
+        : row._update === true && typeof row.name === 'string'
+          ? row.name
+          : null;
+
+    if (workflowName === null || typeof row.workflowId !== 'string') {
       continue;
     }
 
@@ -1365,7 +1500,7 @@ export const prefillOutreachWorkflows = async ({
         SET name = $2, "updatedAt" = NOW()
         WHERE id = $1
       `,
-      [row.workflowId, row.name],
+      [row.workflowId, workflowName],
     );
 
     if (typeof row.coreWorkflowId === 'string') {
@@ -1375,7 +1510,7 @@ export const prefillOutreachWorkflows = async ({
           SET name = $2
           WHERE id = $1
         `,
-        [row.coreWorkflowId, row.name],
+        [row.coreWorkflowId, workflowName],
       );
     }
   }

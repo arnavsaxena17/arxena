@@ -1,81 +1,37 @@
-# Local Business Search
+# Local Business Search (Bright Data city scrape)
 
-Use this skill for **Google Maps / local POI / brick-and-mortar** business lookup — plumbers, hotels, restaurants, clinics, gyms, etc.
+Use this skill for **city-wide Google Maps / local POI coverage** — e.g. all locations matching keywords in Mumbai — via the seeded **Fetch & Save Local Businesses** workflow (Bright Data PAYG `discover_by=location`).
 
-Prefer the `search` skill for B2B company/people prospecting (Apollo, LinkedIn, Harvest). Prefer CRM **GeoMap / Google Places** address autocomplete for form address fields — not this skill.
+Prefer the `search` skill for B2B company/people prospecting (Apollo, LinkedIn, Harvest). Prefer CRM GeoMap address autocomplete for form fields — not this skill.
 
-## Credits
+## City coverage (preferred)
 
-OpenWeb Ninja Local Business Data charges **per business (or review/photo) returned**, not per HTTP request. Setting `extractEmailsAndContacts: true` costs **extra** for each business whose website is scraped.
+Single-point Maps lookups cannot cover a whole city. Run the seeded workflow:
 
-Keep `limit` small (e.g. 5–20) unless the user asks for more.
+1. Open **Fetch & Save Local Businesses**
+2. Form: `city` (e.g. `mumbai`), comma-separated `keywords`, **Project ID**, zoom (default 12), optional paid sample
+3. Review estimate (`estimatedMaxRecords`, `estimatedUsdPayg` at ~$0.0015/record)
+4. Confirm with `maxRecords` hard stop
+5. Companies upsert into the Project (deduped by Google `place_id`)
 
-## Tools
+Native logic functions (workflow / Test):
 
-1. `learn_tools` with:
-   - `search_local_businesses`
-   - `search_local_businesses_nearby`
-   - `get_local_business_details`
-   - `autocomplete_local_businesses`
-2. `execute_tool` with a JSON **object** for `arguments`.
+- `plan-local-business-city-coverage` — builds lat/lng grid + cost estimate (optional `sample: true`)
+- `fetch-and-upsert-local-businesses` — Bright Data discover over grid×keywords → dedupe → upsert Companies (`projectId` + `maxRecords` required)
+- `classify-and-upsert-local-places` — classify unique place names (multi-outlet filter) from consolidated places JSON and upsert Companies (no Bright Data re-fetch). Seeded workflow: **Classify & Upsert Local Places**.
 
-### search_local_businesses
+## Pricing
 
-Default Google Maps search.
+Bright Data Google Maps Scraper PAYG: **~$1.50 per 1,000 successful records** (~$0.0015/record). Free tier includes 5k records/mo. Budget on **gross** deliveries (grid overlap still bills); unique `place_id` count is lower after dedupe.
 
-```json
-{
-  "query": "Hotels in San Francisco, USA",
-  "limit": 10,
-  "language": "en",
-  "region": "us",
-  "extractEmailsAndContacts": false
-}
-```
+Example city scrape upper bound (~160 cells × 3 keywords × ~20 hits): ≤~9,600 records ≈ **~$14** PAYG.
 
-Optional: `lat`, `lng`, `zoom`, `verified`, `businessStatus`, `subtypes`.
+## Do not
 
-### search_local_businesses_nearby
-
-Requires `query`, `lat`, `lng`.
-
-```json
-{
-  "query": "coffee shops",
-  "lat": 37.7749,
-  "lng": -122.4194,
-  "limit": 10
-}
-```
-
-### get_local_business_details
-
-Pass up to 20 `businessIds` (`business_id`, `google_id`, or `place_id` from a prior search).
-
-```json
-{
-  "businessIds": ["0x8085808b287f3b3b:0xa49802f84f7ddb35"],
-  "extractEmailsAndContacts": true
-}
-```
-
-### autocomplete_local_businesses
-
-Query suggestions while typing a local search.
-
-```json
-{
-  "query": "Hilton San Fran"
-}
-```
+- Invent RapidAPI / OpenWeb Ninja city-grid tools for this use case
+- Promise full-city coverage from a single Maps search call
+- Skip the budget confirm step for large scrapes
 
 ## Persistence
 
-This skill is **return-only**. Do not invent upsert tools.
-
-- User wants CRM Company/Person records → load `data-manipulation` (or use workflow `CREATE_RECORD` / `UPSERT_RECORD`).
-- User wants Find / Enroll / Harvest → load `search` / `outreach` after clarifying destination verbs.
-
-## Response style
-
-Summarize name, address, phone, website, rating, and `place_link`. Mention when contacts were requested and whether emails/socials came back.
+Workflow upserts **Company** records onto a Project. For Ask AI one-shot answers without CRM write, describe the estimate and ask the user to run the workflow.

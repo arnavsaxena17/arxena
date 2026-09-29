@@ -112,6 +112,11 @@ export abstract class UnipileMessagingWorkflowActionBase<
     return null;
   }
 
+  // Blank connection notes still need a LINKEDIN chatMessage row.
+  protected shouldPersistEmptyOutbound(): boolean {
+    return false;
+  }
+
   protected getMaterializeEvent(): OutreachCandidateEventKind | null {
     return null;
   }
@@ -242,6 +247,7 @@ export abstract class UnipileMessagingWorkflowActionBase<
             // Prefer explicit getMaterializeEvent path (stamps message kinds).
             materializeOutbound: !isDefined(materializeEvent),
             workflowRunId: runInfo.workflowRunId,
+            allowEmptyBody: this.shouldPersistEmptyOutbound(),
           });
         } catch (error) {
           this.logger.warn(

@@ -25,6 +25,7 @@ import { AdminPanelUserLookupService } from 'src/engine/core-modules/admin-panel
 import { AdminPanelVersionService } from 'src/engine/core-modules/admin-panel/services/admin-panel-version.service';
 import { ApplicationRegistrationModule } from 'src/engine/core-modules/application/application-registration/application-registration.module';
 import { ArxChatAgentModule } from 'src/engine/core-modules/arx-chat/arx-chat-agent.module';
+import { ExtensionBridgeModule } from 'src/engine/core-modules/extension-bridge/extension-bridge.module';
 import { UnipilePoolModule } from 'src/engine/core-modules/arx-chat/unipile-pool.module';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
@@ -101,6 +102,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     forwardRef(() => OrgChartModule),
     forwardRef(() => UnipilePoolModule),
     forwardRef(() => ArxChatAgentModule),
+    ExtensionBridgeModule,
   ],
   providers: [
     AdminPanelResolver,

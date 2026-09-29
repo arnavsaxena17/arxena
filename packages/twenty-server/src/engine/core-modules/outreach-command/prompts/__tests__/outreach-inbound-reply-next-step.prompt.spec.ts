@@ -1,7 +1,15 @@
 import {
   OUTREACH_DONT_RESPOND_SENTINEL,
+  OUTREACH_HUMANIZER_DONT_RESPOND_RULE,
+  OUTREACH_HUMANIZER_RULES,
+  buildOutreachConnectionNotePrompt,
   buildOutreachFirstMessagePrompt,
   buildOutreachInboundSignalExtractionPrompt,
+  buildOutreachLinkedinPostCommentPrompt,
+  buildOutreachMeetingReminderPrompt,
+  buildOutreachNoShowPingPrompt,
+  buildOutreachPostReplyFollowUpPrompt,
+  buildOutreachRescheduleOfferPrompt,
   buildOutreachSalesChatDraftPrompt,
 } from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
 import { OUTREACH_AI_LEGACY_SAMPLE_TRANSCRIPT } from 'src/engine/core-modules/outreach-command/prompts/fixtures/transcripts/outreach-ai-naresh-transcripts';
@@ -71,6 +79,7 @@ describe('buildOutreachSalesChatDraftPrompt', () => {
     expect(bare).toContain('Referred person: (none)');
     expect(bare).toContain('Preferred channel to stamp: (none)');
     expect(bare).toContain('Asked to stop: false');
+    expect(bare).toContain('prospect_profile: (none)');
     expect(bare).not.toContain('CANDIDATE TOOL CALLS');
   });
 
@@ -111,6 +120,22 @@ describe('buildOutreachSalesChatDraftPrompt', () => {
     );
   });
 
+  it('should format the prospect profile for light personalization', () => {
+    const withProfile = buildOutreachSalesChatDraftPrompt({
+      name: 'Mohammad',
+      title: 'Director Of Operations',
+      transcript: '',
+      slots: '',
+      conversationStage: 'NONE',
+      prospectProfileText: '{"headline":"Director Of Operations"}',
+    });
+
+    expect(withProfile).toContain('prospect_profile: Director Of Operations');
+    expect(withProfile).toContain(
+      'Use PROSPECT_ENRICHMENT hooks, prospect_profile, and prospect_posts',
+    );
+  });
+
   it('should soft-ask until a window, and only close with Available slots later', () => {
     expect(prompt).toContain('Soft ask until they name a time window');
     expect(prompt).toContain('ask which few times inside');
@@ -120,21 +145,69 @@ describe('buildOutreachSalesChatDraftPrompt', () => {
     expect(prompt).toContain(
       'FOLLOW_UP_MEETING with no confirmed time: they named a window',
     );
+    expect(prompt).toContain('sometime this week or next');
+    expect(prompt).toContain('never restart with a');
+    expect(prompt).toContain('T1-style observation pitch');
   });
 
-  it('should soft-ask on openers and never instruct concrete calendar windows', () => {
+  it('should earn a reply on openers without a meeting soft-ask', () => {
     const opener = buildOutreachFirstMessagePrompt({
       senderJson: '{}',
       prospectEnrichmentJson: '{}',
+      prospectProfileText: '{"headline":"CFO"}',
       kind: 'opener',
       calendarSlots:
         '[{"startsAt":"2024-11-25T15:00:00.000Z","endsAt":"2024-11-25T15:30:00.000Z"}]',
     });
 
-    expect(opener).toContain('soft ask only');
-    expect(opener).toContain('sometime this week or next');
-    expect(opener).toContain('Never paste clock times');
+    expect(opener).toContain('curiosity question only');
+    expect(opener).toContain('not a meeting');
+    expect(opener).toContain('35–50 words');
+    expect(opener).toContain('calendar (ignore — do not use)');
+    expect(opener).toContain('Do not answer inbound scheduling');
+    expect(opener).toContain('prospect_profile: CFO');
+    expect(opener).toContain('prospect_posts: (none)');
+    expect(opener).toContain(
+      'calendar (ignore — do not use): (0) Mon, Nov 25 · 8:30–9:00 PM IST',
+    );
+    expect(opener).not.toContain('sometime this week or next');
+    expect(opener).not.toContain('soft ask only');
     expect(opener).not.toContain('two concrete windows from calendar');
+  });
+
+  it('should escalate cold cadence ask types without contradicting T1', () => {
+    const fu1 = buildOutreachFirstMessagePrompt({
+      senderJson: '{}',
+      prospectEnrichmentJson: '{}',
+      kind: 'fu1',
+    });
+    const fu2 = buildOutreachFirstMessagePrompt({
+      senderJson: '{}',
+      prospectEnrichmentJson: '{}',
+      kind: 'fu2',
+    });
+    const fu3 = buildOutreachFirstMessagePrompt({
+      senderJson: '{}',
+      prospectEnrichmentJson: '{}',
+      kind: 'fu3',
+    });
+
+    expect(fu1).toContain('interest CTA only');
+    expect(fu1).not.toContain('sometime this week or next');
+    expect(fu1).not.toContain(
+      'Close with "Either way, happy to stay in touch here."',
+    );
+
+    expect(fu2).toContain('one primary meeting ask');
+    expect(fu2).toContain('point me to whoever owns it');
+    expect(fu2).not.toContain(
+      'Close with "Either way, happy to stay in touch here."',
+    );
+
+    expect(fu3).toContain('zero asks');
+    expect(fu3).toContain(
+      'Close with "Either way, happy to stay in touch here."',
+    );
   });
 
   it('should inject the full multi-round transcript and conversation stage', () => {
@@ -192,5 +265,89 @@ describe('buildOutreachInboundSignalExtractionPrompt', () => {
   it('should default the channel switch to NONE', () => {
     expect(prompt).toContain('"requestedChannelSwitch"');
     expect(prompt).toContain('NONE unless they explicitly asked to move');
+  });
+});
+
+describe('outreach humanizer rules', () => {
+  it('should humanize the listed draft prompts', () => {
+    const connectionNote = buildOutreachConnectionNotePrompt({
+      senderJson: '{}',
+      prospectEnrichmentJson: '{}',
+    });
+    const opener = buildOutreachFirstMessagePrompt({
+      senderJson: '{}',
+      prospectEnrichmentJson: '{}',
+      kind: 'opener',
+    });
+    const followUp = buildOutreachFirstMessagePrompt({
+      senderJson: '{}',
+      prospectEnrichmentJson: '{}',
+      kind: 'fu2',
+    });
+    const reminder = buildOutreachMeetingReminderPrompt({
+      senderJson: '{}',
+      name: 'Naresh',
+    });
+    const noShow = buildOutreachNoShowPingPrompt({
+      senderJson: '{}',
+      name: 'Naresh',
+    });
+    const reschedule = buildOutreachRescheduleOfferPrompt({
+      senderJson: '{}',
+      name: 'Naresh',
+    });
+
+    for (const prompt of [
+      connectionNote,
+      opener,
+      followUp,
+      reminder,
+      noShow,
+      reschedule,
+    ]) {
+      expect(prompt).toContain(OUTREACH_HUMANIZER_RULES);
+      expect(prompt).not.toContain(OUTREACH_HUMANIZER_DONT_RESPOND_RULE);
+    }
+
+    expect(connectionNote).toContain('Hard limit 280 characters.');
+    expect(connectionNote).toContain('not X, but Y');
+    expect(connectionNote.split('Em dashes').length - 1).toBe(1);
+    expect(opener).toContain('35–50 words');
+    expect(followUp).toContain('40–60 words');
+  });
+
+  it('should leave the do-not-respond sentinel unchanged on sales reply', () => {
+    const prompt = buildOutreachSalesChatDraftPrompt({
+      name: 'Naresh',
+      title: 'Founder',
+      transcript: TRANSCRIPT,
+      slots: '',
+      conversationStage: 'NOT_INTERESTED',
+      shouldNotRespond: 'true',
+    });
+
+    expect(prompt).toContain(OUTREACH_HUMANIZER_RULES);
+    expect(prompt).toContain(OUTREACH_HUMANIZER_DONT_RESPOND_RULE);
+    expect(prompt).toContain(
+      `If message is "${OUTREACH_DONT_RESPOND_SENTINEL}", return that exact string.`,
+    );
+    expect(prompt).toContain('message wording only');
+    expect(prompt.split('Em dashes').length - 1).toBe(1);
+  });
+
+  it('should not humanize comments or post-reply follow-ups', () => {
+    const comment = buildOutreachLinkedinPostCommentPrompt({
+      senderJson: '{}',
+      prospectEnrichmentJson: '{}',
+      postText: 'We shipped a new plant.',
+    });
+    const postReply = buildOutreachPostReplyFollowUpPrompt({
+      senderJson: '{}',
+      prospectEnrichmentJson: '{}',
+      kind: 'fu1',
+    });
+
+    expect(comment).not.toContain(OUTREACH_HUMANIZER_RULES);
+    expect(postReply).not.toContain(OUTREACH_HUMANIZER_RULES);
   });
 });

@@ -1,0 +1,38 @@
+# Reject LinkedIn host/URL mistaken for an org-chart company slug.
+# Real LinkedIn Inc chart is /org-chart/linkedin; company pages use their own slug
+# (e.g. /org-chart/deloitte-canada). Paths like /org-chart/linkedin.com/... or
+# /api/org-chart/linkedin.com?... only produce upstream 400 "Invalid company ID"
+# and burn website + server work (see isRejectedOrgChartCompanySlug).
+#
+# Preferred: CloudFront Function on arxena.com (EBBO9OCCU9TPA) viewer-request
+# for /org-chart* and /api/* — see
+#   scripts/aws/cloudfront-arxena-reject-linkedin-org-chart.js
+# Origin nginx below is a belt-and-suspenders fallback only.
+#
+# Insert these location blocks BEFORE catch-all proxy locations in:
+#   - website vhost (arxena.com / www.arxena.com) → twenty-website
+#   - app vhost (app.arxena.com) → twenty-server :3000
+#
+# Deploy:
+#   merge into /etc/nginx/sites-enabled (website + app vhosts), then
+#   sudo nginx -t && sudo systemctl reload nginx
+
+location ^~ /org-chart/linkedin.com {
+    default_type application/json;
+    return 400 '{"message":"Invalid company ID"}';
+}
+
+location ^~ /org-chart/www.linkedin.com {
+    default_type application/json;
+    return 400 '{"message":"Invalid company ID"}';
+}
+
+location ^~ /api/org-chart/linkedin.com {
+    default_type application/json;
+    return 400 '{"message":"Invalid company ID"}';
+}
+
+location ^~ /api/org-chart/www.linkedin.com {
+    default_type application/json;
+    return 400 '{"message":"Invalid company ID"}';
+}

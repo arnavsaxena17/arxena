@@ -62,4 +62,37 @@ describe('maybeWithLlmFormattedText', () => {
       text: '(0) Thu, Jan 1 · 5:30–6:00 AM IST',
     });
   });
+
+  it('formats fetch-linkedin-profile as human-readable prose', () => {
+    const result = maybeWithLlmFormattedText('fetch-linkedin-profile', {
+      success: true,
+      firstName: 'Mohammad',
+      lastName: 'Abdelghaffar',
+      headline: 'Director Of Operations - Saudi Paper Group',
+      about: '27 years in tissue making',
+      location: 'Eastern, Saudi Arabia',
+      experience: [
+        {
+          company: 'Saudi Paper Group',
+          position: 'Director Of Operations',
+          start: '10/1/2019',
+          end: '',
+        },
+      ],
+      skills: ['Engineering', 'Change Management'],
+      linkedinUrl: 'https://www.linkedin.com/in/mohammad',
+    });
+
+    expect(result).toMatchObject({
+      success: true,
+      firstName: 'Mohammad',
+    });
+    expect((result as { text: string }).text).toContain(
+      'Mohammad Abdelghaffar',
+    );
+    expect((result as { text: string }).text).toContain(
+      'Director Of Operations @ Saudi Paper Group',
+    );
+    expect((result as { text: string }).text).not.toContain('"success"');
+  });
 });

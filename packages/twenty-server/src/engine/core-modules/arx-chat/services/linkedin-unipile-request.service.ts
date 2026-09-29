@@ -15,6 +15,7 @@ import {
   workspaceMemberLinkedinProfileMatchesAccountId,
   type UnipileAccountOwnerProfile,
 } from 'twenty-shared';
+import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 
 import { withAcquiredAccountRateLimit } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
@@ -1079,12 +1080,37 @@ export class LinkedinUnipileRequestService {
       cursor?: string;
       isCompany?: boolean;
       cleanupContext?: LinkedinUnipileAccountCleanupContext;
+      // Extra Redis/S3 keys (e.g. public slug alongside provider id).
+      cacheIdentifiers?: string[];
+      bypassCache?: boolean;
     },
   ): Promise<Record<string, unknown> | null> {
     const trimmedAccountId = accountId.trim();
     const trimmedIdentifier = identifier.trim();
     if (!trimmedAccountId || !trimmedIdentifier) {
       return null;
+    }
+
+    const cacheKeys = [trimmedIdentifier, ...(options?.cacheIdentifiers ?? [])]
+      .map((key) => key.trim())
+      .filter(isNonEmptyString);
+    const uniqueCacheKeys = [...new Set(cacheKeys)];
+    const shouldBypassCache =
+      options?.bypassCache === true ||
+      isDefined(options?.cursor) ||
+      options?.isCompany === true;
+
+    if (!shouldBypassCache && this.linkedinProfileCacheService) {
+      for (const cacheKey of uniqueCacheKeys) {
+        const cachedPosts =
+          await this.linkedinProfileCacheService.getLinkedinUserPosts<
+            Record<string, unknown>
+          >(cacheKey);
+        if (cachedPosts) {
+          this.logger.log(`fetchLinkedinUserPosts cache HIT for ${cacheKey}`);
+          return cachedPosts;
+        }
+      }
     }
 
     const queryParams = new URLSearchParams({
@@ -1101,7 +1127,7 @@ export class LinkedinUnipileRequestService {
     }
 
     try {
-      return (await withAcquiredAccountRateLimit(
+      const postsPayload = (await withAcquiredAccountRateLimit(
         {
           provider: 'linkedin',
           accountId: trimmedAccountId,
@@ -1119,6 +1145,23 @@ export class LinkedinUnipileRequestService {
             },
           ),
       )) as Record<string, unknown>;
+
+      if (
+        postsPayload &&
+        this.linkedinProfileCacheService &&
+        !shouldBypassCache
+      ) {
+        await Promise.all(
+          uniqueCacheKeys.map((cacheKey) =>
+            this.linkedinProfileCacheService?.saveLinkedinUserPosts(
+              cacheKey,
+              postsPayload,
+            ),
+          ),
+        );
+      }
+
+      return postsPayload;
     } catch (err) {
       if (isAccountRateLimitDeferredError(err)) {
         throw err;
@@ -1482,6 +1525,100 @@ export class LinkedinUnipileRequestService {
             ? { ...options.cleanupContext, accountId: trimmedAccountId }
             : undefined,
         }),
+    )) as Record<string, unknown>;
+  }
+
+  /**
+   * GET /api/v1/users/invite/received — pending inbound LinkedIn invitations.
+   */
+  async fetchLinkedinInvitationsReceived(
+    accountId: string,
+    options?: {
+      limit?: number;
+      cursor?: string;
+      cleanupContext?: LinkedinUnipileAccountCleanupContext;
+    },
+  ): Promise<Record<string, unknown>> {
+    const trimmedAccountId = accountId.trim();
+    if (!trimmedAccountId) {
+      throw new HttpException('account_id is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const queryParams = new URLSearchParams({
+      account_id: trimmedAccountId,
+    });
+    if (options?.limit !== undefined) {
+      queryParams.append('limit', String(options.limit));
+    }
+    if (options?.cursor?.trim()) {
+      queryParams.append('cursor', options.cursor.trim());
+    }
+
+    return (await withAcquiredAccountRateLimit(
+      {
+        provider: 'linkedin',
+        accountId: trimmedAccountId,
+        method: 'endpoint',
+      },
+      () =>
+        this.makeUnipileRequest(
+          `/api/v1/users/invite/received?${queryParams}`,
+          'GET',
+          undefined,
+          {
+            linkedinAccountCleanup: options?.cleanupContext
+              ? { ...options.cleanupContext, accountId: trimmedAccountId }
+              : undefined,
+          },
+        ),
+    )) as Record<string, unknown>;
+  }
+
+  /**
+   * POST /api/v1/users/invite/received/{invitation_id} — accept or decline.
+   * `shared_secret` is required for LinkedIn (from the list-received payload).
+   */
+  async handleLinkedinInvitationReceived(
+    accountId: string,
+    invitationId: string,
+    sharedSecret: string,
+    action: 'accept' | 'decline',
+    options?: {
+      cleanupContext?: LinkedinUnipileAccountCleanupContext;
+    },
+  ): Promise<Record<string, unknown>> {
+    const trimmedAccountId = accountId.trim();
+    const trimmedInvitationId = invitationId.trim();
+    const trimmedSharedSecret = sharedSecret.trim();
+    if (!trimmedAccountId || !trimmedInvitationId || !trimmedSharedSecret) {
+      throw new HttpException(
+        'accountId, invitationId, and sharedSecret are required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return (await withAcquiredAccountRateLimit(
+      {
+        provider: 'linkedin',
+        accountId: trimmedAccountId,
+        method: 'endpoint',
+      },
+      () =>
+        this.makeUnipileRequest(
+          `/api/v1/users/invite/received/${encodeURIComponent(trimmedInvitationId)}`,
+          'POST',
+          {
+            provider: 'LINKEDIN',
+            shared_secret: trimmedSharedSecret,
+            account_id: trimmedAccountId,
+            action,
+          },
+          {
+            linkedinAccountCleanup: options?.cleanupContext
+              ? { ...options.cleanupContext, accountId: trimmedAccountId }
+              : undefined,
+          },
+        ),
     )) as Record<string, unknown>;
   }
 

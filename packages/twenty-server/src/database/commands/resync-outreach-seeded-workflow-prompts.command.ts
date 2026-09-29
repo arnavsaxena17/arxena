@@ -15,7 +15,7 @@ import { prefillOutreachWorkflows } from 'src/engine/workspace-manager/standard-
 @Command({
   name: 'outreach:resync-seeded-workflow-prompts',
   description:
-    'Re-upsert seeded outreach agent system prompts and replace DRAFT workflow graphs so AI-agent node prompts match outreach.prompts.ts',
+    'Re-upsert seeded outreach agent system prompts and replace DRAFT + ACTIVE workflow graphs so topology and AI-agent prompts match the current templates',
 })
 export class ResyncOutreachSeededWorkflowPromptsCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(

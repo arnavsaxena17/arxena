@@ -72,6 +72,66 @@ describe('chat-message-turns.util', () => {
     ]);
   });
 
+  // Same mock Unipile response id across sends would drop the second outbound.
+  it('keeps distinct contents when turn ids differ', () => {
+    expect(
+      mergeChatTurns(
+        [
+          {
+            role: 'assistant',
+            content: 'Opener',
+            id: 'mock-linkedin-message-1',
+          },
+        ],
+        [
+          {
+            role: 'assistant',
+            content: 'Thursday works — noon?',
+            id: 'mock-linkedin-message-2',
+          },
+        ],
+      ),
+    ).toEqual([
+      {
+        role: 'assistant',
+        content: 'Opener',
+        id: 'mock-linkedin-message-1',
+      },
+      {
+        role: 'assistant',
+        content: 'Thursday works — noon?',
+        id: 'mock-linkedin-message-2',
+      },
+    ]);
+  });
+
+  it('drops a later outbound that reuses an earlier turn id', () => {
+    expect(
+      mergeChatTurns(
+        [
+          {
+            role: 'assistant',
+            content: 'Opener',
+            id: 'mock-linkedin-message',
+          },
+        ],
+        [
+          {
+            role: 'assistant',
+            content: 'Thursday works — noon?',
+            id: 'mock-linkedin-message',
+          },
+        ],
+      ),
+    ).toEqual([
+      {
+        role: 'assistant',
+        content: 'Opener',
+        id: 'mock-linkedin-message',
+      },
+    ]);
+  });
+
   it('treats the same role and content as a duplicate even when only one side has an id', () => {
     expect(
       mergeChatTurns(

@@ -9,6 +9,7 @@ import { FileModule } from 'src/engine/core-modules/file/file.module';
 import { OutreachCommandModule } from 'src/engine/core-modules/outreach-command/outreach-command.module';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { LocalBusinessDataModule } from 'src/engine/core-modules/local-business-data/local-business-data.module';
+import { OrgChartModule } from 'src/engine/core-modules/org-chart/org-chart.module';
 import { SecureHttpClientModule } from 'src/engine/core-modules/secure-http-client/secure-http-client.module';
 import { CreateCalendarEventTool } from 'src/engine/core-modules/tool/tools/calendar-tool/create-calendar-event-tool';
 import { CodeInterpreterTool } from 'src/engine/core-modules/tool/tools/code-interpreter-tool/code-interpreter-tool';
@@ -20,6 +21,7 @@ import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/too
 import { HttpTool } from 'src/engine/core-modules/tool/tools/http-tool/http-tool';
 import { GetLocalBusinessDetailsTool } from 'src/engine/core-modules/tool/tools/local-business-data-tool/get-local-business-details-tool';
 import { SearchLocalBusinessesTool } from 'src/engine/core-modules/tool/tools/local-business-data-tool/search-local-businesses-tool';
+import { ResolveCompanyFromRawNameTool } from 'src/engine/core-modules/tool/tools/company-name-resolver-tool/resolve-company-from-raw-name-tool';
 import { NavigateAppTool } from 'src/engine/core-modules/tool/tools/navigate-tool/navigate-app-tool';
 import { HighlightOrgChartTool } from 'src/engine/core-modules/tool/tools/highlight-org-chart-tool/highlight-org-chart-tool';
 import { ExtractJsonPathsTool } from 'src/engine/core-modules/tool/tools/output-navigation-tool/extract-json-paths-tool';
@@ -36,6 +38,7 @@ import { SendLinkedinMessageTool } from 'src/engine/core-modules/tool/tools/unip
 import { SendLinkedinVoiceNoteTool } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/send-linkedin-voice-note-tool';
 import { SendWhatsappMessageTool } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/send-whatsapp-message-tool';
 import { ViewLinkedinProfileTool } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/view-linkedin-profile-tool';
+import { AcceptLinkedinReceivedInvitationTool } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/accept-linkedin-received-invitation-tool';
 import { ToolOutputSpillService } from 'src/engine/core-modules/tool/services/tool-output-spill.service';
 import { WorkspaceManyOrAllFlatEntityMapsCacheModule } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.module';
 import { ConnectedAccountEntity } from 'src/engine/metadata-modules/connected-account/entities/connected-account.entity';
@@ -63,6 +66,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     WorkspaceManyOrAllFlatEntityMapsCacheModule,
     UnipilePoolModule,
     LocalBusinessDataModule,
+    OrgChartModule,
     // WorkflowRunner → executor actions → ToolModule → OutreachCommand (cycle)
     forwardRef(() => OutreachCommandModule),
   ],
@@ -80,9 +84,11 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     ViewLinkedinProfileTool,
     FollowLinkedinProfileTool,
     LikeLinkedinPostTool,
+    AcceptLinkedinReceivedInvitationTool,
     SendWhatsappMessageTool,
     SearchLocalBusinessesTool,
     GetLocalBusinessDetailsTool,
+    ResolveCompanyFromRawNameTool,
     EmailComposerService,
     SearchHelpCenterTool,
     CodeInterpreterTool,
@@ -110,9 +116,11 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     ViewLinkedinProfileTool,
     FollowLinkedinProfileTool,
     LikeLinkedinPostTool,
+    AcceptLinkedinReceivedInvitationTool,
     SendWhatsappMessageTool,
     SearchLocalBusinessesTool,
     GetLocalBusinessDetailsTool,
+    ResolveCompanyFromRawNameTool,
     EmailComposerService,
     SearchHelpCenterTool,
     CodeInterpreterTool,

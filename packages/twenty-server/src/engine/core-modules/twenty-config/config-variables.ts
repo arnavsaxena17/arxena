@@ -2916,7 +2916,7 @@ export class ConfigVariables {
     group: ConfigVariablesGroup.ARXENA,
     isSensitive: true,
     description:
-      'Bright Data API key (SERP, LinkedIn profile scrape, unlocker)',
+      'Bright Data API key (SERP, LinkedIn profile scrape, Google Maps places, unlocker)',
     type: ConfigVariableType.STRING,
   })
   @IsOptional()
@@ -2945,6 +2945,15 @@ export class ConfigVariables {
   })
   @IsOptional()
   BRIGHT_DATA_LINKEDIN_PROFILE_DATASET_ID = 'gd_l1viktl72bvl7bjuj0';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.ARXENA,
+    description:
+      'Bright Data Google Maps full information dataset id (discover_by=location)',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  BRIGHT_DATA_GOOGLE_MAPS_DATASET_ID = 'gd_m8ebnr0q2qlklc02fz';
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,

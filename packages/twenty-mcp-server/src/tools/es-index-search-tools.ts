@@ -1,6 +1,7 @@
 import {
     SEARCH_COMPANIES_INDEX_INPUT_DESCRIPTOR,
     SEARCH_PEOPLE_INDEX_INPUT_DESCRIPTOR,
+    RESOLVE_COMPANY_FROM_RAW_NAME_INPUT_DESCRIPTOR,
 } from '../utils/McpToolSchemas';
 
 import { callRestAPI, callRestAPIGet } from '../api/rest-client';
@@ -107,6 +108,43 @@ export const esIndexSearchTools: McpTool[] = [
           industry: args.industry,
           limit: args.limit,
           offset: args.offset,
+        },
+      );
+    },
+  },
+  {
+    definition: {
+      name: 'resolve_company_from_raw_name',
+      title: 'Resolve company from raw name',
+      description:
+        'Resolve a messy / raw company name to a standardized company profile from the std_company_data_scores Elasticsearch index (CompanyCollector-style bool query). Returns cleaned query, resolved name/id/website/LinkedIn URL/count_org, and edit distance. Prefer over search_companies_index when the input is a noisy employer string and you need one best match.',
+      annotations: { readOnlyHint: true },
+      inputSchema: descriptorToInputSchema(
+        RESOLVE_COMPANY_FROM_RAW_NAME_INPUT_DESCRIPTOR,
+      ),
+    },
+    handler: async (args, config) => {
+      const companyName =
+        typeof args.companyName === 'string' ? args.companyName.trim() : '';
+      const companyNames = Array.isArray(args.companyNames)
+        ? args.companyNames.filter(
+            (name): name is string =>
+              typeof name === 'string' && name.trim().length > 0,
+          )
+        : [];
+
+      if (!companyName && companyNames.length === 0) {
+        throw new Error('companyName or companyNames is required.');
+      }
+
+      return callRestAPI(
+        config.baseUrl,
+        config.apiToken,
+        'elasticsearch-search',
+        'resolve-company-name',
+        {
+          companyName: companyName || undefined,
+          companyNames: companyNames.length > 0 ? companyNames : undefined,
         },
       );
     },

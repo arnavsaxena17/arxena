@@ -1,7 +1,9 @@
+import { FormArrayFieldInput } from '@/object-record/record-field/ui/form-types/components/FormArrayFieldInput';
 import { FormBooleanFieldInput } from '@/object-record/record-field/ui/form-types/components/FormBooleanFieldInput';
 import { FormNumberFieldInput } from '@/object-record/record-field/ui/form-types/components/FormNumberFieldInput';
 import { FormSingleRecordPicker } from '@/object-record/record-field/ui/form-types/components/FormSingleRecordPicker';
 import { FormTextFieldInput } from '@/object-record/record-field/ui/form-types/components/FormTextFieldInput';
+import { type FieldArrayValue } from '@/object-record/record-field/ui/types/FieldMetadata';
 import { type WorkflowFetchLinkedinActivityAction } from '@/workflow/types/Workflow';
 import { WorkflowStepBody } from '@/workflow/workflow-steps/components/WorkflowStepBody';
 import { WorkflowStepFooter } from '@/workflow/workflow-steps/components/WorkflowStepFooter';
@@ -18,6 +20,7 @@ type FormData = {
   postsLimit: number;
   includeUserComments: boolean;
   userCommentsLimit: number;
+  excludePostSocialIds: FieldArrayValue;
 };
 
 type WorkflowEditActionFetchLinkedinActivityProps = {
@@ -44,6 +47,7 @@ export const WorkflowEditActionFetchLinkedinActivity = ({
       postsLimit: action.settings.input.postsLimit ?? 10,
       includeUserComments: action.settings.input.includeUserComments !== false,
       userCommentsLimit: action.settings.input.userCommentsLimit ?? 10,
+      excludePostSocialIds: action.settings.input.excludePostSocialIds ?? [],
     },
     readonly: actionOptions.readonly === true,
     onSave: (nextFormData: FormData) => {
@@ -58,6 +62,11 @@ export const WorkflowEditActionFetchLinkedinActivity = ({
           input: {
             ...action.settings.input,
             ...nextFormData,
+            excludePostSocialIds: Array.isArray(
+              nextFormData.excludePostSocialIds,
+            )
+              ? nextFormData.excludePostSocialIds
+              : [],
           },
         },
       });
@@ -108,6 +117,19 @@ export const WorkflowEditActionFetchLinkedinActivity = ({
             handleFieldChange(
               'postsLimit',
               typeof value === 'number' ? value : 10,
+            )
+          }
+          VariablePicker={WorkflowVariablePicker}
+        />
+        <FormArrayFieldInput
+          label={t`Exclude post social IDs`}
+          placeholder={t`Optional. Skip these social_ids when picking mostRecentPost`}
+          readonly={actionOptions.readonly}
+          defaultValue={formData.excludePostSocialIds}
+          onChange={(value) =>
+            handleFieldChange(
+              'excludePostSocialIds',
+              Array.isArray(value) ? value : [],
             )
           }
           VariablePicker={WorkflowVariablePicker}

@@ -13,7 +13,9 @@ import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 
 import { EsCompaniesSearchDto } from '../dto/es-companies-search.dto';
 import { EsPeopleSearchDto } from '../dto/es-people-search.dto';
+import { EsResolveCompanyNameDto } from '../dto/es-resolve-company-name.dto';
 import { CompaniesEsService } from '../services/companies-es.service';
+import { CompanyNameResolverService } from '../services/company-name-resolver.service';
 import { OrgChartEsService } from '../services/org-chart-es.service';
 import { PeopleEsService } from '../services/people-es.service';
 
@@ -25,6 +27,7 @@ export class ElasticsearchSearchController {
   constructor(
     private readonly peopleEsService: PeopleEsService,
     private readonly companiesEsService: CompaniesEsService,
+    private readonly companyNameResolverService: CompanyNameResolverService,
     private readonly orgChartEsService: OrgChartEsService,
   ) {}
 
@@ -43,7 +46,11 @@ export class ElasticsearchSearchController {
           fallbackIndex: this.companiesEsService.getFallbackIndexName(),
           legacyIndex: this.companiesEsService.getLegacyIndexName(),
         },
-        orgCharts: {
+        companyNameResolver: {
+          enabled: this.companyNameResolverService.isEnabled(),
+          index: this.companyNameResolverService.getIndexName(),
+        },
+        orgcharts: {
           enabled: this.orgChartEsService.isEnabled(),
           index: this.orgChartEsService.getIndexName(),
         },
@@ -121,6 +128,54 @@ export class ElasticsearchSearchController {
       this.logger.error('Companies ES search failed', error);
       throw new HttpException(
         error instanceof Error ? error.message : 'Companies search failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('resolve-company-name')
+  async resolveCompanyName(@Body() body: EsResolveCompanyNameDto) {
+    if (!this.companyNameResolverService.isEnabled()) {
+      throw new HttpException(
+        'Company name resolver is not configured (set ES_ENDPOINT)',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
+    const companyNames = [
+      ...(Array.isArray(body.companyNames) ? body.companyNames : []),
+      ...(typeof body.companyName === 'string' ? [body.companyName] : []),
+    ]
+      .map((name) => name.trim())
+      .filter((name) => name.length > 0);
+
+    if (companyNames.length === 0) {
+      throw new HttpException(
+        'companyName or companyNames is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      const results =
+        companyNames.length === 1
+          ? [
+              await this.companyNameResolverService.resolveFromRawCompanyName(
+                companyNames[0],
+              ),
+            ]
+          : await this.companyNameResolverService.resolveMany(companyNames);
+
+      return {
+        status: 'ok',
+        index: this.companyNameResolverService.getIndexName(),
+        count: results.length,
+        results,
+      };
+    } catch (error) {
+      this.logger.error('Company name resolve failed', error);
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Company name resolve failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

@@ -10,6 +10,7 @@ export const CHAT_INTENT_SKILLS = {
   setup: 'setup',
   search: 'search',
   localBusinessSearch: 'local-business-search',
+  resolveCompanyName: 'resolve-company-name',
   outreach: 'outreach',
   orgStructureInsights: 'org-structure-insights',
   crm: 'data-manipulation',

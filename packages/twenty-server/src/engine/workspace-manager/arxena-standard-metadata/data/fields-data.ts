@@ -339,6 +339,30 @@ const getAllFieldsData = (
       objectName: 'workspaceMember',
       field: {
         description:
+          'When the Chrome extension last sent a heartbeat while Chrome was open',
+        icon: 'IconClock',
+        label: 'Extension Last Seen At',
+        name: 'extensionLastSeenAt',
+        objectMetadataId: objectsNameIdMap.workspaceMember,
+        type: 'DATE_TIME',
+      },
+    },
+    {
+      objectName: 'workspaceMember',
+      field: {
+        description:
+          'When Chrome opened the uninstall URL after the extension was removed',
+        icon: 'IconTrash',
+        label: 'Extension Uninstalled At',
+        name: 'extensionUninstalledAt',
+        objectMetadataId: objectsNameIdMap.workspaceMember,
+        type: 'DATE_TIME',
+      },
+    },
+    {
+      objectName: 'workspaceMember',
+      field: {
+        description:
           'Latest LinkedIn Recruiter li_a cookie captured from the extension',
         icon: 'IconCookie',
         label: 'LinkedIn li_a Token',

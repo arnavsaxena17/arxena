@@ -298,7 +298,8 @@ export const computeStepOutputSchema = ({
     case 'LIKE_LINKEDIN_POST':
     case 'SEND_WHATSAPP_MESSAGE':
     case 'SEARCH_LOCAL_BUSINESSES':
-    case 'GET_LOCAL_BUSINESS_DETAILS': {
+    case 'GET_LOCAL_BUSINESS_DETAILS':
+    case 'RESOLVE_COMPANY_FROM_RAW_NAME': {
       return {
         success: {
           isLeaf: true,
@@ -315,61 +316,100 @@ export const computeStepOutputSchema = ({
       };
     }
 
-    case 'FETCH_LINKEDIN_ACTIVITY': {
+    // Flat keys match getWorkflowRunContext(step.result) for IF_ELSE wiring.
+    case 'ACCEPT_LINKEDIN_RECEIVED_INVITATION': {
       return {
-        success: {
+        matched: {
           isLeaf: true,
           type: FieldMetadataType.BOOLEAN,
-          label: 'Success',
-          value: true,
+          label: 'Matched',
+          value: false,
         },
-        message: {
+        accepted: {
+          isLeaf: true,
+          type: FieldMetadataType.BOOLEAN,
+          label: 'Accepted',
+          value: false,
+        },
+        invitationId: {
           isLeaf: true,
           type: FieldMetadataType.TEXT,
-          label: 'Message',
+          label: 'Invitation ID',
           value: '',
         },
-        result: {
-          isLeaf: false,
-          label: 'Result',
-          value: {
-            mostRecentPost: {
-              isLeaf: false,
-              label: 'Most Recent Post',
-              value: {
-                socialId: {
-                  isLeaf: true,
-                  type: FieldMetadataType.TEXT,
-                  label: 'Social ID',
-                  value: '',
-                },
-                text: {
-                  isLeaf: true,
-                  type: FieldMetadataType.TEXT,
-                  label: 'Text',
-                  value: '',
-                },
-                id: {
-                  isLeaf: true,
-                  type: FieldMetadataType.TEXT,
-                  label: 'ID',
-                  value: '',
-                },
-              },
-            },
-            postsCount: {
-              isLeaf: true,
-              type: FieldMetadataType.NUMBER,
-              label: 'Posts Count',
-              value: 0,
-            },
-            userCommentsCount: {
-              isLeaf: true,
-              type: FieldMetadataType.NUMBER,
-              label: 'User Comments Count',
-              value: 0,
-            },
+        invitationsScanned: {
+          isLeaf: true,
+          type: FieldMetadataType.NUMBER,
+          label: 'Invitations Scanned',
+          value: 0,
+        },
+      };
+    }
+
+    case 'FETCH_LINKEDIN_ACTIVITY': {
+      const mostRecentPostSchema = {
+        isLeaf: false,
+        label: 'Most Recent Post',
+        value: {
+          socialId: {
+            isLeaf: true,
+            type: FieldMetadataType.TEXT,
+            label: 'Social ID',
+            value: '',
           },
+          text: {
+            isLeaf: true,
+            type: FieldMetadataType.TEXT,
+            label: 'Text',
+            value: '',
+          },
+          id: {
+            isLeaf: true,
+            type: FieldMetadataType.TEXT,
+            label: 'ID',
+            value: '',
+          },
+          isRepost: {
+            isLeaf: true,
+            type: FieldMetadataType.BOOLEAN,
+            label: 'Is Repost',
+            value: false,
+          },
+          parsedDatetime: {
+            isLeaf: true,
+            type: FieldMetadataType.TEXT,
+            label: 'Parsed Datetime',
+            value: '',
+          },
+          shareUrl: {
+            isLeaf: true,
+            type: FieldMetadataType.TEXT,
+            label: 'Share URL',
+            value: '',
+          },
+        },
+      };
+
+      return {
+        // LLM-formatted list — chips like {{stepId.text}} / prospect_posts
+        text: {
+          isLeaf: true,
+          type: FieldMetadataType.TEXT,
+          label: 'Posts Text (LLM)',
+          value: '',
+        },
+        mostRecentPost: mostRecentPostSchema,
+        postsCount: {
+          isLeaf: true,
+          type: FieldMetadataType.NUMBER,
+          label: 'Posts Count',
+          value: 0,
+        },
+        userCommentsCount: {
+          isLeaf: true,
+          type: FieldMetadataType.NUMBER,
+          label: 'User Comments Count',
+          value: 0,
         },
       };
     }

@@ -18,6 +18,7 @@ import {
   type LinkedinMessagingApi,
 } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-attendee-id.util';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
+import { isUnipileAttendeeNotFoundError } from 'src/engine/core-modules/outreach-command/utils/is-unipile-attendee-not-found-error.util';
 import { summarizeFetchedLinkedinMessages } from 'src/engine/core-modules/outreach-command/utils/summarize-fetched-linkedin-messages.util';
 import { OutreachMessagePersistService } from 'src/engine/core-modules/outreach-command/services/outreach-message-persist.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
@@ -126,12 +127,11 @@ export class FetchLinkedinMessagesService {
     inboundCount: number;
     error?: string;
   }> {
-    // temporary: `&& false` forces real Unipile; send/connect stay mock-gated
     const isOutreachMockEnabled =
-      (await this.featureFlagService.isFeatureEnabled(
+      await this.featureFlagService.isFeatureEnabled(
         FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
         workspaceId,
-      )) && false;
+      );
 
     if (isOutreachMockEnabled) {
       const identifier =
@@ -319,6 +319,8 @@ export class FetchLinkedinMessagesService {
       };
     }
 
+    let resolvedAttendeeId = '';
+
     try {
       const linkedinApi =
         input.linkedinApi === 'sales_navigator' ||
@@ -353,6 +355,8 @@ export class FetchLinkedinMessagesService {
           error: 'Could not resolve LinkedIn attendee id',
         };
       }
+
+      resolvedAttendeeId = attendeeId;
 
       if (isValidLinkedInProviderId(attendeeId)) {
         await this.linkedinProviderIdStore.saveProviderId({
@@ -404,6 +408,25 @@ export class FetchLinkedinMessagesService {
     } catch (error) {
       if (isAccountRateLimitDeferredError(error)) {
         throw error;
+      }
+
+      // No chat yet after connect/accept — empty inbox, do not fail the step.
+      if (isUnipileAttendeeNotFoundError(error)) {
+        this.logger.warn(
+          `fetch-linkedin-messages: attendee not found for ${
+            resolved.identifier
+          }; returning empty transcript`,
+        );
+
+        return {
+          success: true,
+          chatId: '',
+          attendeeId: resolvedAttendeeId || resolved.identifier,
+          total: 0,
+          messages: [],
+          ...summarizeFetchedLinkedinMessages([]),
+          error: '',
+        };
       }
 
       this.logger.error('fetch-linkedin-messages failed', error);

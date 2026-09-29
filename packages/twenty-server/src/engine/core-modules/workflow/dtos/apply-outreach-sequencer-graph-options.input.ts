@@ -47,4 +47,39 @@ export class ApplyOutreachSequencerGraphOptionsInput {
     nullable: false,
   })
   qualifyProspectEnabled: boolean;
+
+  @Field(() => Boolean, {
+    description:
+      'When true, view profile, comment on posts, wait for inbound invite, then connect if none',
+    nullable: false,
+  })
+  commentBeforeConnect: boolean;
+
+  @Field(() => Number, {
+    description:
+      'Number of comment rounds when commentBeforeConnect is on (1 or 2)',
+    nullable: false,
+  })
+  commentRounds: number;
+
+  @Field(() => Number, {
+    description:
+      'Days to wait for an inbound invite after commenting before sending outbound connect',
+    nullable: false,
+  })
+  inboundInviteWaitDays: number;
+
+  @Field(() => Boolean, {
+    description:
+      'When true, after connection wait send Sales Navigator InMail before email enrich/fallback',
+    nullable: false,
+  })
+  inmailEnabled: boolean;
+
+  @Field(() => Boolean, {
+    description:
+      'When true, collapse every DELAY wait from days to 1 minute for rapid testing',
+    nullable: false,
+  })
+  testMode: boolean;
 }

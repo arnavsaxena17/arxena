@@ -27,9 +27,11 @@ import { workflowSendLinkedinVoiceNoteActionSchema } from './send-linkedin-voice
 import { workflowSendWhatsappMessageActionSchema } from './send-whatsapp-message-action-schema';
 import { workflowSearchLocalBusinessesActionSchema } from './search-local-businesses-action-schema';
 import { workflowGetLocalBusinessDetailsActionSchema } from './get-local-business-details-action-schema';
+import { workflowResolveCompanyFromRawNameActionSchema } from './resolve-company-from-raw-name-action-schema';
 import { workflowUpdateRecordActionSchema } from './update-record-action-schema';
 import { workflowUpsertRecordActionSchema } from './upsert-record-action-schema';
 import { workflowViewLinkedinProfileActionSchema } from './view-linkedin-profile-action-schema';
+import { workflowAcceptLinkedinReceivedInvitationActionSchema } from './accept-linkedin-received-invitation-action-schema';
 import { workflowDelayActionSchema } from './workflow-delay-action-schema';
 
 export const workflowActionSchema = z.discriminatedUnion('type', [
@@ -55,9 +57,11 @@ export const workflowActionSchema = z.discriminatedUnion('type', [
   workflowViewLinkedinProfileActionSchema,
   workflowFollowLinkedinProfileActionSchema,
   workflowLikeLinkedinPostActionSchema,
+  workflowAcceptLinkedinReceivedInvitationActionSchema,
   workflowSendWhatsappMessageActionSchema,
   workflowSearchLocalBusinessesActionSchema,
   workflowGetLocalBusinessDetailsActionSchema,
+  workflowResolveCompanyFromRawNameActionSchema,
   workflowAiAgentActionSchema,
   workflowAiFilteringActionSchema,
   workflowFilterActionSchema,

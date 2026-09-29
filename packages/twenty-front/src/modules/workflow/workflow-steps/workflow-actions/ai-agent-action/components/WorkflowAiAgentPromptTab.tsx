@@ -13,13 +13,15 @@ import { WorkflowAiAgentSendFilesConfig } from '@/workflow/workflow-steps/workfl
 import { WorkflowOutputSchemaBuilder } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowOutputSchemaBuilder';
 import { workflowAiAgentActionAgentState } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/states/workflowAiAgentActionAgentState';
 import { WorkflowVariablePicker } from '@/workflow/workflow-variables/components/WorkflowVariablePicker';
-import { useMutation } from '@apollo/client/react';
+import { useMutation, useQuery } from '@apollo/client/react';
 import { t } from '@lingui/core/macro';
 import { useEffect, useState } from 'react';
 import type { AgentResponseSchema, ModelConfiguration } from 'twenty-shared/ai';
 import { isDefined } from 'twenty-shared/utils';
 import { useDebouncedCallback } from 'use-debounce';
 import {
+  GetRolesDocument,
+  PermissionFlagType,
   UpdateOneAgentDocument,
   type UpdateOneAgentMutationVariables,
 } from '~/generated-metadata/graphql';
@@ -69,6 +71,7 @@ export const WorkflowAiAgentPromptTab = ({
     extraModelIds: ['openrouter/deepseek/deepseek-v4-flash-0731'],
   });
   const [updateAgent] = useMutation(UpdateOneAgentDocument);
+  const { data: rolesData } = useQuery(GetRolesDocument);
 
   const [outputSchemaFields, setOutputSchemaFields] = useState<
     OutputSchemaField[]
@@ -77,6 +80,15 @@ export const WorkflowAiAgentPromptTab = ({
       workflowAiAgentActionAgent?.responseFormat?.schema,
     ),
   );
+
+  const agentRole = rolesData?.getRoles.find(
+    (role) => role.id === workflowAiAgentActionAgent?.roleId,
+  );
+  const hasSendFilesPermission =
+    agentRole?.permissionFlags?.some(
+      (permissionFlag) =>
+        permissionFlag.flag === PermissionFlagType.SEND_FILES_TOOL,
+    ) === true;
 
   // Agent is fetched asynchronously; useState only runs on mount, so re-hydrate
   // once the agent (and its responseFormat) lands — otherwise first open shows
@@ -205,13 +217,15 @@ export const WorkflowAiAgentPromptTab = ({
         disabled={readonly}
       />
 
-      <WorkflowAiAgentSendFilesConfig
-        agent={agent}
-        readonly={readonly}
-        onAgentUpdate={(nextAgent) => {
-          setWorkflowAiAgentActionAgent(nextAgent);
-        }}
-      />
+      {hasSendFilesPermission && (
+        <WorkflowAiAgentSendFilesConfig
+          agent={agent}
+          readonly={readonly}
+          onAgentUpdate={(nextAgent) => {
+            setWorkflowAiAgentActionAgent(nextAgent);
+          }}
+        />
+      )}
 
       <WorkflowOutputSchemaBuilder
         fields={outputSchemaFields}

@@ -181,8 +181,8 @@ describe('OutreachMockLifecycleService', () => {
     );
   });
 
-  it('resetFromConnectionRequest clears messages and resets stage', async () => {
-    await service.resetFromConnectionRequest({
+  it('resetFromConnectionRequest clears messages, stamps connection_sent, and persists the canned note', async () => {
+    const result = await service.resetFromConnectionRequest({
       workspaceId: 'ws-1',
       candidateId: 'cand-1',
       apiToken: 'token',
@@ -210,6 +210,86 @@ describe('OutreachMockLifecycleService', () => {
       },
       'token',
     );
+    expect(appendOutbound).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        candidateId: 'cand-1',
+        channel: 'LINKEDIN',
+        body: 'Hi, thanks for connecting here. Good to e-meet you.',
+        materializeOutbound: false,
+        allowEmptyBody: true,
+        externalMessageId: expect.stringMatching(/^mock-connect-cand-1-/),
+      }),
+    );
+    expect(applyCandidateEvent).toHaveBeenCalledWith({
+      candidateId: 'cand-1',
+      event: 'connection_sent',
+      apiToken: 'token',
+      messagingChannel: 'LINKEDIN_CONNECT',
+      outboundMessageKind: 'CONNECT_NOTE',
+    });
+    expect(result.connectionNote).toBe(
+      'Hi, thanks for connecting here. Good to e-meet you.',
+    );
+  });
+
+  it('resetFromConnectionRequest uses a custom note and truncates past 300 characters', async () => {
+    const longNote = 'a'.repeat(320);
+
+    const result = await service.resetFromConnectionRequest({
+      workspaceId: 'ws-1',
+      candidateId: 'cand-1',
+      apiToken: 'token',
+      to: 'CONNECTION_SENT',
+      connectionNote: longNote,
+    });
+
+    expect(result.connectionNote).toHaveLength(300);
+    expect(appendOutbound).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: 'a'.repeat(300),
+      }),
+    );
+  });
+
+  it('resetFromConnectionRequest persists a blank connect row when the note is empty', async () => {
+    const result = await service.resetFromConnectionRequest({
+      workspaceId: 'ws-1',
+      candidateId: 'cand-1',
+      apiToken: 'token',
+      to: 'CONNECTION_SENT',
+      connectionNote: '   ',
+    });
+
+    expect(appendOutbound).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: '',
+        allowEmptyBody: true,
+      }),
+    );
+    expect(applyCandidateEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'connection_sent' }),
+    );
+    expect(result.connectionNote).toBe('');
+  });
+
+  it('resetFromConnectionRequest to QUEUED does not attach a connection note', async () => {
+    const result = await service.resetFromConnectionRequest({
+      workspaceId: 'ws-1',
+      candidateId: 'cand-1',
+      apiToken: 'token',
+      to: 'QUEUED',
+      connectionNote: 'Should be ignored',
+    });
+
+    expect(appendOutbound).not.toHaveBeenCalled();
+    expect(applyCandidateEvent).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      ok: true,
+      candidateId: 'cand-1',
+      outreachSequenceStage: 'QUEUED',
+      connectionNote: '',
+    });
   });
 
   it('resolveResetTarget maps query values', () => {

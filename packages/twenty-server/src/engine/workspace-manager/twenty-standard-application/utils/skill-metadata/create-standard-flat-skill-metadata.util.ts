@@ -169,8 +169,16 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     name: 'local-business-search',
     label: 'Local Business Search',
     description:
-      'Search Google Maps local businesses / POIs (hotels, plumbers, restaurants); optional emails and social contacts',
+      'City-wide Google Maps POI scrape via Bright Data (Fetch & Save Local Businesses workflow); plan cost then upsert Companies',
     icon: 'IconMapSearch',
+  }),
+  'resolve-company-name': createStandardSkillBuilder({
+    skillName: 'resolve-company-name',
+    name: 'resolve-company-name',
+    label: 'Resolve Company Name',
+    description:
+      'Standardize a raw / messy company name against std_company_data_scores (CompanyCollector-style ES resolve)',
+    icon: 'IconBuilding',
   }),
   pptx: createStandardSkillBuilder({
     skillName: 'pptx',

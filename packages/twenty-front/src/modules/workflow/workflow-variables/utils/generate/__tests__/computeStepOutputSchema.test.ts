@@ -489,6 +489,47 @@ describe('computeStepOutputSchema', () => {
     });
   });
 
+  describe('FETCH_LINKEDIN_ACTIVITY step', () => {
+    it('should expose flat mostRecentPost fields for variable pickers', () => {
+      const result = computeStepOutputSchema({
+        step: { type: 'FETCH_LINKEDIN_ACTIVITY', settings: {} } as any,
+        objectMetadataItems: [],
+      });
+
+      expect(result).toMatchObject({
+        text: { isLeaf: true, label: 'Posts Text (LLM)' },
+        mostRecentPost: {
+          isLeaf: false,
+          label: 'Most Recent Post',
+          value: {
+            socialId: { isLeaf: true, label: 'Social ID' },
+            isRepost: { isLeaf: true, label: 'Is Repost' },
+          },
+        },
+        postsCount: { isLeaf: true, label: 'Posts Count' },
+      });
+      expect(result).not.toHaveProperty('result');
+    });
+  });
+
+  describe('ACCEPT_LINKEDIN_RECEIVED_INVITATION step', () => {
+    it('should expose accepted/matched for IF_ELSE variable pickers', () => {
+      const result = computeStepOutputSchema({
+        step: {
+          type: 'ACCEPT_LINKEDIN_RECEIVED_INVITATION',
+          settings: {},
+        } as any,
+        objectMetadataItems: [],
+      });
+
+      expect(result).toMatchObject({
+        accepted: { isLeaf: true, label: 'Accepted' },
+        matched: { isLeaf: true, label: 'Matched' },
+      });
+      expect(result).not.toHaveProperty('success');
+    });
+  });
+
   describe('Empty output schema steps', () => {
     it.each(['FILTER', 'DELAY', 'EMPTY'])(
       'should return empty object for %s step type',

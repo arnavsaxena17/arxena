@@ -47,6 +47,18 @@ export const SEEDED_OUTREACH_WORKFLOW = {
     role: 'Sequencer B+C' as const,
     trigger: 'candidate.upserted',
   },
+  fetchAndSaveLocalBusinesses: {
+    name: 'Fetch & Save Local Businesses',
+    slug: 'fetchAndSaveLocalBusinesses',
+    role: 'Manual city Maps scrape' as const,
+    trigger: 'MANUAL',
+  },
+  classifyAndUpsertLocalPlaces: {
+    name: 'Classify & Upsert Local Places',
+    slug: 'classifyAndUpsertLocalPlaces',
+    role: 'Manual place filter + company upsert' as const,
+    trigger: 'MANUAL',
+  },
 } as const;
 
 // Obsolete graphs removed during workspace upgrade (not seeded for new workspaces).
@@ -64,6 +76,8 @@ export const OUTREACH_WORKFLOW_NAMES_TO_DEACTIVATE = [
   // Replaced by Candidate Sequencer
   'Outreach — Per Enrolled Candidate',
   'Outreach — Enrolled Person Updated',
+  // Renamed to Classify & Upsert Local Places
+  'Classify & Upsert QSR Chains',
 ] as const;
 
 export type SeededOutreachWorkflowKey = keyof typeof SEEDED_OUTREACH_WORKFLOW;

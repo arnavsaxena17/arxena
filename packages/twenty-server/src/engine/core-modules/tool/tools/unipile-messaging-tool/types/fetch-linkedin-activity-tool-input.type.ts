@@ -44,6 +44,13 @@ export const FetchLinkedinActivityToolInputZodSchema = z.object({
     .optional()
     .default(10)
     .describe('Max user comments to return when includeUserComments is true'),
+  excludePostSocialIds: z
+    .array(z.string())
+    .optional()
+    .default([])
+    .describe(
+      'Omit these post social_ids when picking mostRecentPost (e.g. already commented)',
+    ),
 });
 
 export type FetchLinkedinActivityToolInput = z.infer<

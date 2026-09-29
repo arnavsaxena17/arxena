@@ -1,6 +1,8 @@
 import {
   buildFindRecordsLlmText,
   formatOutreachProspectEnrichmentForLlm,
+  formatOutreachProspectPostsForLlm,
+  formatOutreachProspectProfileForLlm,
   formatOutreachSenderForLlm,
   formatOutreachSlotsForLlm,
   formatOutreachTranscriptForLlm,
@@ -169,5 +171,90 @@ describe('rewriteOutreachResolvedPromptSections', () => {
       'calendar: (0) Tue, Sep 15 · 11:00–11:20 AM IST',
     );
     expect(rewritten).not.toContain('"isSender"');
+  });
+
+  it('keeps empty prospect_posts as (none) without swallowing chat_history', () => {
+    const rewritten = rewriteOutreachResolvedPromptSections(
+      [
+        'prospect_posts: ',
+        'chat_history: us: Thanks for connecting',
+        'calendar (ignore — do not use): [{"startsAt":"2026-09-25T08:30:00.000Z","endsAt":"2026-09-25T08:50:00.000Z"}]',
+      ].join('\n'),
+    );
+
+    expect(rewritten).toContain('prospect_posts: (none)');
+    expect(rewritten).toContain('chat_history: us: Thanks for connecting');
+    expect(rewritten).toContain(
+      'calendar (ignore — do not use): (0) Fri, Sep 25 · 2:00–2:20 PM IST',
+    );
+    expect(rewritten).not.toContain('prospect_posts: chat_history:');
+    expect(rewritten).not.toContain('"startsAt"');
+  });
+
+  it('rewrites prospect_profile JSON into readable prose', () => {
+    const rewritten = rewriteOutreachResolvedPromptSections(
+      'prospect_profile: {"success":true,"firstName":"Mohammad","lastName":"Abdelghaffar","headline":"Director Of Operations","about":"27 years in tissue"}',
+    );
+
+    expect(rewritten).toContain('prospect_profile: Mohammad Abdelghaffar');
+    expect(rewritten).toContain('Director Of Operations');
+    expect(rewritten).not.toContain('"success"');
+  });
+});
+
+describe('formatOutreachProspectProfileForLlm', () => {
+  it('formats profile fields without raw snapshot JSON', () => {
+    const formatted = formatOutreachProspectProfileForLlm({
+      firstName: 'Mohammad',
+      lastName: 'Abdelghaffar',
+      headline: 'Director Of Operations - Saudi Paper Group',
+      about: '27 years experience',
+      location: 'Eastern, Saudi Arabia',
+      experience: [
+        {
+          position: 'Director Of Operations',
+          company: 'Saudi Paper Group',
+          start: '10/1/2019',
+          end: '',
+        },
+      ],
+      skills: ['Engineering'],
+      snapshot: '{"huge":true}',
+    });
+
+    expect(formatted).toContain('Mohammad Abdelghaffar');
+    expect(formatted).toContain(
+      '- Director Of Operations @ Saudi Paper Group (10/1/2019 – Present)',
+    );
+    expect(formatted).not.toContain('snapshot');
+    expect(formatted).not.toContain('"huge"');
+  });
+});
+
+describe('formatOutreachProspectPostsForLlm', () => {
+  it('renders indexed post texts with optional timestamps', () => {
+    expect(
+      formatOutreachProspectPostsForLlm([
+        {
+          text: 'We closed books in 3 days.',
+          parsedDatetime: '2026-09-01T10:00:00.000Z',
+        },
+        { text: 'Hiring a FP&A lead.' },
+      ]),
+    ).toBe(
+      [
+        '- (0) (2026-09-01T10:00:00.000Z) We closed books in 3 days.',
+        '- (1) Hiring a FP&A lead.',
+      ].join('\n'),
+    );
+  });
+
+  it('prefers result.text when present', () => {
+    expect(
+      formatOutreachProspectPostsForLlm({
+        text: '- (0) Already formatted',
+        posts: [{ text: 'ignored' }],
+      }),
+    ).toBe('- (0) Already formatted');
   });
 });

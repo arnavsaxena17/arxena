@@ -1,5 +1,7 @@
 import {
-  OUTREACH_JOURNEY_TIMELINE_STAGES,
+  OUTREACH_JOURNEY_COMMENTED_TIMELINE_STAGE,
+  OUTREACH_JOURNEY_INMAIL_SENT_TIMELINE_STAGE,
+  OUTREACH_JOURNEY_TIMELINE_BASE_STAGES,
   type OutreachJourneyTimelineStageId,
 } from '@/outreach-home/constants/outreach-journey-stages';
 import {
@@ -64,12 +66,20 @@ const resolveNormalizedPendingReason = ({
   return undefined;
 };
 
-const timelineLabelById = Object.fromEntries(
-  OUTREACH_JOURNEY_TIMELINE_STAGES.map((timelineStage) => [
+const timelineLabelById = Object.fromEntries([
+  ...OUTREACH_JOURNEY_TIMELINE_BASE_STAGES.map((timelineStage) => [
     timelineStage.id,
     timelineStage.label,
   ]),
-) as Record<OutreachJourneyTimelineStageId, string>;
+  [
+    OUTREACH_JOURNEY_COMMENTED_TIMELINE_STAGE.id,
+    OUTREACH_JOURNEY_COMMENTED_TIMELINE_STAGE.label,
+  ],
+  [
+    OUTREACH_JOURNEY_INMAIL_SENT_TIMELINE_STAGE.id,
+    OUTREACH_JOURNEY_INMAIL_SENT_TIMELINE_STAGE.label,
+  ],
+]) as Record<OutreachJourneyTimelineStageId, string>;
 
 const isKnownTimelineStageId = (
   stageId: string,
@@ -119,16 +129,21 @@ export function resolveOutreachJourneyTimelineStageId({
     return 'REPLIED';
   }
 
-  if (
-    stage === 'EMAIL_SENT' ||
-    stage === 'INMAIL_SENT' ||
-    stage === 'WHATSAPP_SENT'
-  ) {
+  if (stage === 'INMAIL_SENT') {
+    return OUTREACH_JOURNEY_INMAIL_SENT_TIMELINE_STAGE.id;
+  }
+
+  if (stage === 'EMAIL_SENT' || stage === 'WHATSAPP_SENT') {
     return 'EMAIL_SENT';
   }
 
   if (stage === 'QUEUED') {
     return 'QUEUED';
+  }
+
+  // Comment-before-connect warm-up (between QUEUED and CONNECTION_SENT).
+  if (stage === 'COMMENTED' || stage === 'PROFILE_CHECKED') {
+    return 'COMMENTED';
   }
 
   if (stage === 'CONNECTION_SENT') {

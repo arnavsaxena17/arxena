@@ -14,6 +14,7 @@ import { outreachQualifyProspectLlmSchema } from 'src/engine/core-modules/outrea
 import { FetchLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-profile.service';
 import { OutreachSenderProfileService } from 'src/engine/core-modules/outreach-command/services/outreach-sender-profile.service';
 import { buildOutreachProspectEnrichment } from 'src/engine/core-modules/outreach-command/utils/build-outreach-prospect-enrichment.util';
+import { withLlmFormattedProfileText } from 'src/engine/core-modules/outreach-command/utils/with-llm-formatted-text.util';
 import {
   AiSdkExecutionService,
   runGenerateObject,
@@ -204,10 +205,7 @@ export class QualifyProspectService {
 
     const userPrompt = buildOutreachQualifyProspectPrompt({
       senderJson,
-      profile: [
-        `About: ${profileResult.about ?? ''}`,
-        `Skills: ${(profileResult.skills ?? []).join(', ')}`,
-      ].join('\n'),
+      profile: withLlmFormattedProfileText(profileResult).text,
       posts: '',
       crm: [
         `Name: ${candidate.name ?? ''}`,

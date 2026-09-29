@@ -8,6 +8,10 @@ import { type ObjectLiteral } from 'typeorm';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
 import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/outreach-command/services/linkedin-provider-id.store';
+import {
+  buildOutreachProspectEnrichmentFromLinkedinProfile,
+  isQualifyOwnedProspectEnrichment,
+} from 'src/engine/core-modules/outreach-command/utils/build-outreach-prospect-enrichment.util';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
 import { isValidLinkedInProviderId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-attendee-id.util';
 import { mapUnipileLinkedinProfile } from 'src/engine/core-modules/outreach-command/utils/map-unipile-linkedin-profile.util';
@@ -27,6 +31,17 @@ type WorkspaceMemberArxRecord = ObjectLiteral & {
 type CandidateRecord = ObjectLiteral & {
   id: string;
   peopleId?: string | null;
+  outreachProspectEnrichment?: Record<string, unknown> | null;
+};
+
+type LinkedinProfileEnrichmentSource = {
+  firstName: string;
+  headline: string;
+  experience: Array<{
+    company: string;
+    position: string;
+    end: string;
+  }>;
 };
 
 type PersonIdentityRecord = ObjectLiteral & {
@@ -85,6 +100,7 @@ export class FetchLinkedinProfileService {
     recruitingActivity?: unknown[];
     snapshot: string;
     people: Array<Record<string, unknown>>;
+    outreachProspectEnrichment: Record<string, unknown> | null;
     error: string;
   }> {
     // temporary: `&& false` forces real Unipile; send/connect stay mock-gated
@@ -113,11 +129,16 @@ export class FetchLinkedinProfileService {
           current_positions: mapped.experience,
         });
 
-        return {
-          ...mapped,
-          people: person ? [person] : [],
-          error: '',
-        };
+        return this.withStampedEnrichment({
+          workspaceId,
+          candidateId: input.candidateId,
+          profile: mapped,
+          result: {
+            ...mapped,
+            people: person ? [person] : [],
+            error: '',
+          },
+        });
       }
 
       const linkedinUrl = isNonEmptyString(input.linkedinUrl)
@@ -148,11 +169,16 @@ export class FetchLinkedinProfileService {
       };
       const person = toUploadProfilesPerson(mapped);
 
-      return {
-        ...mapped,
-        people: person ? [person] : [],
-        error: '',
-      };
+      return this.withStampedEnrichment({
+        workspaceId,
+        candidateId: input.candidateId,
+        profile: mapped,
+        result: {
+          ...mapped,
+          people: person ? [person] : [],
+          error: '',
+        },
+      });
     }
 
     const authContext = buildSystemAuthContext(workspaceId);
@@ -274,10 +300,87 @@ export class FetchLinkedinProfileService {
 
     const person = toUploadProfilesPerson(mapped);
 
+    return this.withStampedEnrichment({
+      workspaceId,
+      candidateId: input.candidateId,
+      profile: mapped,
+      result: {
+        ...mapped,
+        people: person ? [person] : [],
+      },
+    });
+  }
+
+  // Writes profile facts onto the candidate unless Qualify already stamped go/score.
+  private async withStampedEnrichment<TResult extends object>({
+    workspaceId,
+    candidateId,
+    profile,
+    result,
+  }: {
+    workspaceId: string;
+    candidateId?: string;
+    profile: LinkedinProfileEnrichmentSource;
+    result: TResult;
+  }): Promise<
+    TResult & { outreachProspectEnrichment: Record<string, unknown> | null }
+  > {
+    const outreachProspectEnrichment = await this.stampProspectEnrichment({
+      workspaceId,
+      candidateId,
+      profile,
+    });
+
     return {
-      ...mapped,
-      people: person ? [person] : [],
+      ...result,
+      outreachProspectEnrichment,
     };
+  }
+
+  private async stampProspectEnrichment({
+    workspaceId,
+    candidateId,
+    profile,
+  }: {
+    workspaceId: string;
+    candidateId?: string;
+    profile: LinkedinProfileEnrichmentSource;
+  }): Promise<Record<string, unknown> | null> {
+    const trimmedCandidateId = candidateId?.trim() ?? '';
+
+    if (!isNonEmptyString(trimmedCandidateId)) {
+      return null;
+    }
+
+    const profileEnrichment =
+      buildOutreachProspectEnrichmentFromLinkedinProfile(profile);
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const candidateRepository =
+          await this.globalWorkspaceOrmManager.getRepository<CandidateRecord>(
+            workspaceId,
+            'candidate',
+            { shouldBypassPermissionChecks: true },
+          );
+        const candidate = await candidateRepository.findOne({
+          where: { id: trimmedCandidateId },
+        });
+        const existing = candidate?.outreachProspectEnrichment;
+
+        if (isQualifyOwnedProspectEnrichment(existing)) {
+          return existing ?? null;
+        }
+
+        await candidateRepository.update(trimmedCandidateId, {
+          outreachProspectEnrichment: profileEnrichment,
+        });
+
+        return profileEnrichment;
+      },
+      authContext,
+    );
   }
 }
 
@@ -302,5 +405,6 @@ const emptyProfile = (linkedinProfileId: string) => ({
   skills: [] as string[],
   snapshot: '',
   people: [] as Array<Record<string, unknown>>,
+  outreachProspectEnrichment: null,
   error: '',
 });

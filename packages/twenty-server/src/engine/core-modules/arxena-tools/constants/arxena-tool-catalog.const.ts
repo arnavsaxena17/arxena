@@ -262,6 +262,13 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
       'Search Companies Index (prospecting pack). Use for GTM prospecting workflows.',
   },
   {
+    name: 'resolve_company_from_raw_name',
+    pack: 'prospecting',
+    label: 'Resolve Company From Raw Name',
+    description:
+      'Resolve a messy / raw company name to a standardized company profile from std_company_data_scores (name, id, website, LinkedIn URL, headcount).',
+  },
+  {
     name: 'search_wikidata_companies',
     pack: 'prospecting',
     label: 'Search Wikidata Companies',

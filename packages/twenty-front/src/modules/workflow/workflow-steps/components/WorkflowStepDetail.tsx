@@ -31,8 +31,10 @@ import { WorkflowEditActionFollowLinkedinProfile } from '@/workflow/workflow-ste
 import { WorkflowEditActionLikeLinkedinPost } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionLikeLinkedinPost';
 import { WorkflowEditActionSendLinkedinVoiceNote } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionSendLinkedinVoiceNote';
 import { WorkflowEditActionViewLinkedinProfile } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionViewLinkedinProfile';
+import { WorkflowEditActionAcceptLinkedinReceivedInvitation } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionAcceptLinkedinReceivedInvitation';
 import { WorkflowEditActionSendWhatsappMessage } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionSendWhatsappMessage';
 import { WorkflowEditActionSearchLocalBusinesses } from '@/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionSearchLocalBusinesses';
+import { WorkflowEditActionResolveCompanyFromRawName } from '@/workflow/workflow-steps/workflow-actions/company-name-resolver-action/components/WorkflowEditActionResolveCompanyFromRawName';
 import { WorkflowEditActionGetLocalBusinessDetails } from '@/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionGetLocalBusinessDetails';
 import { WorkflowEditTriggerCronForm } from '@/workflow/workflow-trigger/components/WorkflowEditTriggerCronForm';
 import { WorkflowEditTriggerDatabaseEventForm } from '@/workflow/workflow-trigger/components/WorkflowEditTriggerDatabaseEventForm';
@@ -320,6 +322,15 @@ export const WorkflowStepDetail = ({
             />
           );
         }
+        case 'ACCEPT_LINKEDIN_RECEIVED_INVITATION': {
+          return (
+            <WorkflowEditActionAcceptLinkedinReceivedInvitation
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={props}
+            />
+          );
+        }
         case 'SEND_WHATSAPP_MESSAGE': {
           return (
             <WorkflowEditActionSendWhatsappMessage
@@ -332,6 +343,15 @@ export const WorkflowStepDetail = ({
         case 'SEARCH_LOCAL_BUSINESSES': {
           return (
             <WorkflowEditActionSearchLocalBusinesses
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={props}
+            />
+          );
+        }
+        case 'RESOLVE_COMPANY_FROM_RAW_NAME': {
+          return (
+            <WorkflowEditActionResolveCompanyFromRawName
               key={stepId}
               action={stepDefinition.definition}
               actionOptions={props}

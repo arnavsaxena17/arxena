@@ -45,6 +45,15 @@ export class AdminPanelWorkspaceMemberArx {
   @Field(() => Boolean, { nullable: true })
   extensionInstalled?: boolean | null;
 
+  @Field(() => String, { nullable: true })
+  extensionLastSeenAt?: string | null;
+
+  @Field(() => String, { nullable: true })
+  extensionUninstalledAt?: string | null;
+
+  @Field(() => String, { nullable: true })
+  linkedinCookieFetchPendingUntil?: string | null;
+
   @Field(() => Boolean, { nullable: true })
   linkedinCookiesStored?: boolean | null;
 

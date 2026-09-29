@@ -51,6 +51,9 @@ export class FetchLinkedinActivityTool implements Tool {
     const postsLimit = input.postsLimit ?? 10;
     const includeUserComments = input.includeUserComments !== false;
     const userCommentsLimit = input.userCommentsLimit ?? 10;
+    const excludePostSocialIds = Array.isArray(input.excludePostSocialIds)
+      ? input.excludePostSocialIds
+      : [];
 
     if (!isNonEmptyString(unipileAccountId)) {
       return {
@@ -77,15 +80,29 @@ export class FetchLinkedinActivityTool implements Tool {
         )) && false;
 
       if (isMockUnipileEnabled) {
-        const mockPost = {
-          id: 'mock-post-1',
-          socialId: 'urn:li:activity:mock-1',
-          text: 'Mock LinkedIn post for outreach testing.',
-          parsedDatetime: new Date().toISOString(),
-          shareUrl:
-            'https://www.linkedin.com/feed/update/urn:li:activity:mock-1',
-          isRepost: false,
-        };
+        const mockPosts = [
+          {
+            id: 'mock-post-1',
+            socialId: 'urn:li:activity:mock-1',
+            text: 'Mock LinkedIn post for outreach testing.',
+            parsedDatetime: new Date().toISOString(),
+            shareUrl:
+              'https://www.linkedin.com/feed/update/urn:li:activity:mock-1',
+            isRepost: false,
+          },
+          {
+            id: 'mock-post-2',
+            socialId: 'urn:li:activity:mock-2',
+            text: 'Second mock LinkedIn post for distinct-comment rounds.',
+            parsedDatetime: new Date(Date.now() - 86_400_000).toISOString(),
+            shareUrl:
+              'https://www.linkedin.com/feed/update/urn:li:activity:mock-2',
+            isRepost: false,
+          },
+        ];
+        const mostRecentPost = pickMostRecentLinkedinActivityPost(mockPosts, {
+          excludePostSocialIds,
+        });
 
         return {
           success: true,
@@ -94,10 +111,10 @@ export class FetchLinkedinActivityTool implements Tool {
             mock: true,
             unipileAccountId,
             linkedinProfileId,
-            posts: [mockPost],
-            mostRecentPost: mockPost,
+            posts: mockPosts,
+            mostRecentPost,
             userComments: includeUserComments ? [] : [],
-            postsCount: 1,
+            postsCount: mockPosts.length,
             userCommentsCount: 0,
           },
         };
@@ -119,11 +136,16 @@ export class FetchLinkedinActivityTool implements Tool {
         await this.linkedinUnipileRequestService.fetchLinkedinUserPosts(
           unipileAccountId,
           providerId,
-          { limit: postsLimit },
+          {
+            limit: postsLimit,
+            cacheIdentifiers: [linkedinProfileId],
+          },
         );
 
       const posts = normalizeLinkedinActivityPosts(postsPayload, postsLimit);
-      const mostRecentPost = pickMostRecentLinkedinActivityPost(posts);
+      const mostRecentPost = pickMostRecentLinkedinActivityPost(posts, {
+        excludePostSocialIds,
+      });
 
       let userComments: ReturnType<
         typeof normalizeLinkedinActivityUserComments

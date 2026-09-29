@@ -8,7 +8,7 @@ import {
   graphQlToFetchChatMessages,
   graphqlToUpdateChatMessage,
   Project,
-  WhatsAppBusinessAccount
+  WhatsAppBusinessAccount,
 } from 'twenty-shared';
 import { EntityManager } from 'typeorm';
 import { UnipileMessageWebhook } from '../../types/unipile-webhook.types';
@@ -18,6 +18,8 @@ import { FilterCandidates } from 'src/engine/core-modules/arx-chat/services/cand
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { buildIncomingAttachmentChatReply } from 'src/engine/core-modules/arx-chat/utils/unipile-attachment-message.util';
 import { OutreachCommandMaterializeService } from 'src/engine/core-modules/outreach-command/services/outreach-command-materialize.service';
+import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/outreach-command/services/linkedin-provider-id.store';
+import { shouldMatchLinkedinWebhookBySalesNavigatorProviderId } from 'src/engine/core-modules/arx-chat/utils/should-match-linkedin-webhook-by-sales-navigator-provider-id.util';
 import { OutreachInboundReplyWindowService } from 'src/engine/core-modules/outreach-command/jobs/outreach-inbound-reply-window.job';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
@@ -41,12 +43,13 @@ export class IncomingWhatsappMessages {
   constructor(
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly staticGraphQLService: StaticGraphQLService,
-    @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly engagedCandidateMessageQueueService?: MessageQueueService,
+    @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue)
+    private readonly engagedCandidateMessageQueueService?: MessageQueueService,
     private readonly whatsappMediaStorageService?: WhatsappMediaStorageService,
     private readonly gtmInboundReplyWindowService?: OutreachInboundReplyWindowService,
     private readonly _gtmCommandMaterializeService?: OutreachCommandMaterializeService,
-    ) {
-  }
+    private readonly linkedinProviderIdStore?: LinkedinProviderIdStoreService,
+  ) {}
 
   async queueCandidateForEngagement(
     candidateId: string,
@@ -56,7 +59,8 @@ export class IncomingWhatsappMessages {
     slidingWindowDelayMinutes?: number,
   ): Promise<void> {
     // Use the dedicated EngagedCandidateQueueService for better separation of concerns
-    const { EngagedCandidateQueueService } = await import('../candidate-engagement/engaged-candidate-queue.service');
+    const { EngagedCandidateQueueService } =
+      await import('../candidate-engagement/engaged-candidate-queue.service');
 
     const queueService = new EngagedCandidateQueueService(
       this.workspaceQueryService,
@@ -73,12 +77,14 @@ export class IncomingWhatsappMessages {
     );
   }
 
-
   async receiveIncomingMessages(
     requestBody: BaileysIncomingMessage,
     apiToken: string,
   ) {
-    console.log('This is requestBody in receiveIncomingMessages::', requestBody);
+    console.log(
+      'This is requestBody in receiveIncomingMessages::',
+      requestBody,
+    );
     let savedMessage;
 
     if (requestBody.message == '') {
@@ -102,17 +108,19 @@ export class IncomingWhatsappMessages {
     );
 
     // Use the new queue service to get candidate information and check for duplicates
-    const { EngagedCandidateQueueService } = await import('../candidate-engagement/engaged-candidate-queue.service');
+    const { EngagedCandidateQueueService } =
+      await import('../candidate-engagement/engaged-candidate-queue.service');
     const queueService = new EngagedCandidateQueueService(
       this.workspaceQueryService,
       this.staticGraphQLService,
       this.engagedCandidateMessageQueueService,
     );
 
-    const { candidateProfileData, candidateJob, isDuplicate } = await queueService.getCandidateInformationWithDuplicateCheck(
-      whatsappIncomingMessage,
-      apiToken
-    );
+    const { candidateProfileData, candidateJob, isDuplicate } =
+      await queueService.getCandidateInformationWithDuplicateCheck(
+        whatsappIncomingMessage,
+        apiToken,
+      );
 
     if (isDuplicate) {
       console.log('Message already exists in database, skipping processing');
@@ -154,7 +162,10 @@ export class IncomingWhatsappMessages {
       messages: [{ role: 'assistant', content: requestBody.message }],
       messageType: 'messageFromSelf',
     };
-    console.log("whatsappIncomingMessage with message from self :::", requestBody.message);
+    console.log(
+      'whatsappIncomingMessage with message from self :::',
+      requestBody.message,
+    );
     const chatReply = requestBody.message;
 
     console.log(
@@ -162,17 +173,19 @@ export class IncomingWhatsappMessages {
     );
 
     // Use the new queue service to get candidate information and check for duplicates
-    const { EngagedCandidateQueueService } = await import('../candidate-engagement/engaged-candidate-queue.service');
+    const { EngagedCandidateQueueService } =
+      await import('../candidate-engagement/engaged-candidate-queue.service');
     const queueService = new EngagedCandidateQueueService(
       this.workspaceQueryService,
       this.staticGraphQLService,
       this.engagedCandidateMessageQueueService,
     );
 
-    const { candidateProfileData, candidateJob, isDuplicate } = await queueService.getCandidateInformationWithDuplicateCheck(
-      whatsappIncomingMessage,
-      apiToken
-    );
+    const { candidateProfileData, candidateJob, isDuplicate } =
+      await queueService.getCandidateInformationWithDuplicateCheck(
+        whatsappIncomingMessage,
+        apiToken,
+      );
 
     console.log(
       'This is the SELF message., we have to update the database that this message has been received::',
@@ -181,7 +194,9 @@ export class IncomingWhatsappMessages {
 
     if (candidateProfileData != emptyCandidateProfileObj) {
       if (isDuplicate) {
-        console.log('Message already exists in database (including inverted sender/recipient), skipping processing');
+        console.log(
+          'Message already exists in database (including inverted sender/recipient), skipping processing',
+        );
         return;
       }
 
@@ -198,8 +213,7 @@ export class IncomingWhatsappMessages {
         candidateJob,
         apiToken,
       );
-
-      } else {
+    } else {
       console.log(
         'Message has been received from a candidate however the candidate is not in the database',
       );
@@ -211,17 +225,12 @@ export class IncomingWhatsappMessages {
   ) {
     console.log('Received LinkedIn Unipile message:', payload);
 
-    const {
-      message,
-      sender,
-      account_info,
-      message_id,
-      timestamp,
-      chat_id
-    } = payload;
+    const { message, sender, account_info, message_id, timestamp, chat_id } =
+      payload;
 
     // Get API token for this LinkedIn message
-    const apiTokenResult = await this.getApiKeyToUseFromLinkedinMessageReceived(payload);
+    const apiTokenResult =
+      await this.getApiKeyToUseFromLinkedinMessageReceived(payload);
 
     if (apiTokenResult === null) {
       console.log('NO API KEY FOUND FOR THIS LINKEDIN MESSAGE');
@@ -231,8 +240,14 @@ export class IncomingWhatsappMessages {
     const apiToken = apiTokenResult.token;
     const workspaceId = apiTokenResult.workspaceId;
 
-    console.log('This is the apiToken to use in receiving LinkedIn messages:', apiToken);
-    console.log('This is the workspaceId to use in receiving LinkedIn messages:', workspaceId);
+    console.log(
+      'This is the apiToken to use in receiving LinkedIn messages:',
+      apiToken,
+    );
+    console.log(
+      'This is the workspaceId to use in receiving LinkedIn messages:',
+      workspaceId,
+    );
 
     const isFromConnectedUser =
       payload.is_sender === true ||
@@ -260,8 +275,9 @@ export class IncomingWhatsappMessages {
 
     // Find the recipient's profile URL from the attendees array
     // If no recipient found in attendees, it means the message is from external contact to connected user
-    const recipient = payload.attendees.find(attendee =>
-      attendee.attendee_provider_id !== sender.attendee_provider_id
+    const recipient = payload.attendees.find(
+      (attendee) =>
+        attendee.attendee_provider_id !== sender.attendee_provider_id,
     );
 
     let linkedinUrlTo = '';
@@ -270,17 +286,21 @@ export class IncomingWhatsappMessages {
     } else {
       // Message is from external contact to connected user
       // We need to construct the LinkedIn URL for the connected user
-      linkedinUrlTo = account_info?.user_id ? `https://linkedin.com/in/${account_info.user_id}` : '';
+      linkedinUrlTo = account_info?.user_id
+        ? `https://linkedin.com/in/${account_info.user_id}`
+        : '';
     }
 
     // Self messages must use messageFromSelf so candidate lookup uses phoneNumberTo (recipient)
     const linkedinIncomingMessage: chatMessageType = {
       phoneNumberFrom: linkedinUrlFrom,
       phoneNumberTo: linkedinUrlTo,
-      messages: [{
-        role: isFromConnectedUser ? 'assistant' : 'user',
-        content: message
-      }],
+      messages: [
+        {
+          role: isFromConnectedUser ? 'assistant' : 'user',
+          content: message,
+        },
+      ],
       messageType: isFromConnectedUser ? 'messageFromSelf' : 'linkedin',
     };
 
@@ -289,21 +309,75 @@ export class IncomingWhatsappMessages {
     console.log('Processing LinkedIn message for candidate identification');
 
     // Use the new queue service to get candidate information and check for duplicates
-    const { EngagedCandidateQueueService } = await import('../candidate-engagement/engaged-candidate-queue.service');
+    const { EngagedCandidateQueueService } =
+      await import('../candidate-engagement/engaged-candidate-queue.service');
     const queueService = new EngagedCandidateQueueService(
       this.workspaceQueryService,
       this.staticGraphQLService,
       this.engagedCandidateMessageQueueService,
     );
 
-    const { candidateProfileData, candidateJob, isDuplicate } = await queueService.getCandidateInformationWithDuplicateCheck(
-      linkedinIncomingMessage,
-      apiToken
-    );
+    // SN InMail replies carry ACw attendee ids — match stored salesNavigatorProviderId first.
+    let candidateProfileData = emptyCandidateProfileObj;
+    let candidateJob: Project = emptyCandidateProfileObj.project;
+    let isDuplicate = false;
+
+    if (
+      shouldMatchLinkedinWebhookBySalesNavigatorProviderId({
+        feature: account_info?.feature,
+        attendeeProviderId: sender.attendee_provider_id,
+      }) &&
+      this.linkedinProviderIdStore
+    ) {
+      const snCandidate =
+        await this.linkedinProviderIdStore.findCandidateBySalesNavigatorProviderId(
+          {
+            workspaceId,
+            salesNavigatorProviderId: sender.attendee_provider_id,
+          },
+        );
+
+      if (snCandidate?.id) {
+        const byId = await new FilterCandidates(
+          this.workspaceQueryService,
+          this.staticGraphQLService,
+        ).getCandidateDetailsById(snCandidate.id, apiToken);
+
+        if (byId && byId !== emptyCandidateProfileObj) {
+          candidateProfileData = byId;
+          candidateJob = byId.project;
+          isDuplicate = await queueService.checkMessageDuplicateForCandidate(
+            candidateProfileData,
+            candidateJob,
+            message ?? '',
+            linkedinUrlFrom,
+            linkedinUrlTo,
+            apiToken,
+          );
+          console.log(
+            `Matched Sales Navigator InMail reply via ACw ${sender.attendee_provider_id} → candidate ${snCandidate.id}`,
+          );
+        }
+      }
+    }
+
+    if (candidateProfileData === emptyCandidateProfileObj) {
+      const resolved =
+        await queueService.getCandidateInformationWithDuplicateCheck(
+          linkedinIncomingMessage,
+          apiToken,
+        );
+
+      candidateProfileData = resolved.candidateProfileData;
+      candidateJob = resolved.candidateJob;
+      isDuplicate = resolved.isDuplicate;
+    }
 
     if (candidateProfileData != emptyCandidateProfileObj) {
       if (isDuplicate) {
-        console.log('LinkedIn message already exists in database, skipping processing');
+        console.log(
+          'LinkedIn message already exists in database, skipping processing',
+        );
         return;
       }
 
@@ -339,20 +413,18 @@ export class IncomingWhatsappMessages {
 
     console.log('Received WhatsApp Unipile message:', payload);
 
-    const {
-      message,
-      sender,
-      account_info,
-      message_id,
-      timestamp,
-      chat_id
-    } = payload;
+    const { message, sender, account_info, message_id, timestamp, chat_id } =
+      payload;
 
     // Get API token for this WhatsApp message
-    const apiTokenResult = await this.getApiKeyToUseFromWhatsappUnipileMessageReceived(payload);
+    const apiTokenResult =
+      await this.getApiKeyToUseFromWhatsappUnipileMessageReceived(payload);
 
     if (apiTokenResult === null) {
-      console.log('NO API KEY FOUND FOR THIS WHATSAPP UNIPILE MESSAGE:', message);
+      console.log(
+        'NO API KEY FOUND FOR THIS WHATSAPP UNIPILE MESSAGE:',
+        message,
+      );
       return;
     }
 
@@ -371,20 +443,28 @@ export class IncomingWhatsappMessages {
      */
     const isFromConnectedUser = payload.is_sender === true;
 
-    console.log('WhatsApp Unipile message from connected user:', isFromConnectedUser);
+    console.log(
+      'WhatsApp Unipile message from connected user:',
+      isFromConnectedUser,
+    );
     console.log('Message content:', message);
     console.log('Sender:', sender.attendee_name);
     console.log('Account info user_id:', account_info?.user_id);
     console.log('Sender attendee_provider_id:', sender.attendee_provider_id);
 
     // Helper to consistently extract a WhatsApp phone number from Unipile attendee objects
-    const extractWhatsappPhoneNumber = (attendee: typeof sender | (typeof payload.attendees)[number] | undefined): string => {
+    const extractWhatsappPhoneNumber = (
+      attendee: typeof sender | (typeof payload.attendees)[number] | undefined,
+    ): string => {
       if (!attendee) {
         return '';
       }
 
       // 1. Prefer explicit phone_number from attendee_specifics if present
-      if (attendee.attendee_specifics && typeof attendee.attendee_specifics === 'object') {
+      if (
+        attendee.attendee_specifics &&
+        typeof attendee.attendee_specifics === 'object'
+      ) {
         const phoneSpecific = attendee.attendee_specifics.phone_number;
         if (phoneSpecific) {
           return phoneSpecific.replace(/[^\d+]/g, '').replace(/\+/g, '');
@@ -402,7 +482,9 @@ export class IncomingWhatsappMessages {
 
       // 3. Fallback to attendee_provider_id / name, stripping non-digits
       if (attendee.attendee_provider_id) {
-        return attendee.attendee_provider_id.replace(/[^\d+]/g, '').replace(/\+/g, '');
+        return attendee.attendee_provider_id
+          .replace(/[^\d+]/g, '')
+          .replace(/\+/g, '');
       }
 
       if (attendee.attendee_name) {
@@ -416,8 +498,9 @@ export class IncomingWhatsappMessages {
     const phoneNumberFrom = extractWhatsappPhoneNumber(sender);
 
     // Find the recipient's phone number from the attendees array
-    const recipient = payload.attendees.find(attendee =>
-      attendee.attendee_provider_id !== sender.attendee_provider_id
+    const recipient = payload.attendees.find(
+      (attendee) =>
+        attendee.attendee_provider_id !== sender.attendee_provider_id,
     );
 
     // For self messages, provider_chat_id is the candidate chat JID (e.g. 919819185599@s.whatsapp.net)
@@ -429,21 +512,28 @@ export class IncomingWhatsappMessages {
     const phoneNumberTo =
       extractWhatsappPhoneNumber(recipient) ||
       (isFromConnectedUser ? providerChatPhone : '') ||
-      (account_info?.user_id ? String(account_info.user_id).replace(/[^\d+]/g, '') : '');
+      (account_info?.user_id
+        ? String(account_info.user_id).replace(/[^\d+]/g, '')
+        : '');
 
     // Self messages must use messageFromSelf so candidate lookup uses phoneNumberTo (recipient),
     // not phoneNumberFrom (connected account). Stored as assistant/botMessage for the candidate.
     const whatsappIncomingMessage: chatMessageType = {
       phoneNumberFrom: phoneNumberFrom,
       phoneNumberTo: phoneNumberTo,
-      messages: [{
-        role: isFromConnectedUser ? 'assistant' : 'user',
-        content: message
-      }],
+      messages: [
+        {
+          role: isFromConnectedUser ? 'assistant' : 'user',
+          content: message,
+        },
+      ],
       messageType: isFromConnectedUser ? 'messageFromSelf' : 'whatsapp-unipile',
     };
 
-    console.log('Final WhatsApp phone from (phoneNumberFrom):', phoneNumberFrom);
+    console.log(
+      'Final WhatsApp phone from (phoneNumberFrom):',
+      phoneNumberFrom,
+    );
     console.log('Final WhatsApp phone to (phoneNumberTo):', phoneNumberTo);
 
     // Use the new queue service to get candidate information and check for duplicates
@@ -453,14 +543,17 @@ export class IncomingWhatsappMessages {
       this.engagedCandidateMessageQueueService,
     );
 
-    const { candidateProfileData, candidateJob, isDuplicate } = await queueService.getCandidateInformationWithDuplicateCheck(
-      whatsappIncomingMessage,
-      apiToken
-    );
+    const { candidateProfileData, candidateJob, isDuplicate } =
+      await queueService.getCandidateInformationWithDuplicateCheck(
+        whatsappIncomingMessage,
+        apiToken,
+      );
 
     if (candidateProfileData != emptyCandidateProfileObj) {
       if (isDuplicate) {
-        console.log('WhatsApp Unipile message already exists in database, skipping processing');
+        console.log(
+          'WhatsApp Unipile message already exists in database, skipping processing',
+        );
         return;
       }
 
@@ -476,7 +569,9 @@ export class IncomingWhatsappMessages {
           whatsappDeliveryStatus: 'delivered',
           phoneNumberFrom: phoneNumberFrom,
           externalMessageId: message_id,
-          messageType: isFromConnectedUser ? 'messageFromSelf' : 'whatsapp-unipile',
+          messageType: isFromConnectedUser
+            ? 'messageFromSelf'
+            : 'whatsapp-unipile',
           isFromMe: isFromConnectedUser,
         },
         candidateProfileData,
@@ -484,7 +579,9 @@ export class IncomingWhatsappMessages {
         apiToken,
       );
     } else {
-      console.log('WhatsApp Unipile message received from contact not in database');
+      console.log(
+        'WhatsApp Unipile message received from contact not in database',
+      );
     }
   }
 
@@ -502,7 +599,11 @@ export class IncomingWhatsappMessages {
       const chatMessageVariable = {
         externalMessageId: messageId,
       };
-      const response = await this.staticGraphQLService.executeGraphQL(graphqlToFetchChatMessageByExternalMessageId, chatMessageVariable, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFetchChatMessageByExternalMessageId,
+        chatMessageVariable,
+        apiToken,
+      );
 
       console.log('Response from fetchChatMessageById:', response?.data);
 
@@ -641,7 +742,12 @@ export class IncomingWhatsappMessages {
       recentMessageQuery,
     );
 
-    const recentMessage = await this.workspaceQueryService.executeWorkspaceRawQuery(recentMessageQuery, [], workspaceId);
+    const recentMessage =
+      await this.workspaceQueryService.executeWorkspaceRawQuery(
+        recentMessageQuery,
+        [],
+        workspaceId,
+      );
 
     console.log('recentMessage for LinkedIn::', recentMessage);
 
@@ -701,7 +807,11 @@ export class IncomingWhatsappMessages {
 
     console.log('Person query for LinkedIn contact::', personQuery);
 
-    const person = await this.workspaceQueryService.executeWorkspaceRawQuery(personQuery, [], workspaceId);
+    const person = await this.workspaceQueryService.executeWorkspaceRawQuery(
+      personQuery,
+      [],
+      workspaceId,
+    );
 
     if (person.length === 0) {
       console.log(
@@ -759,19 +869,29 @@ export class IncomingWhatsappMessages {
     messageData?: any,
     transactionManager?: EntityManager,
   ): Promise<ApiTokenResult | null> {
-
-    console.log("Going to get api token to use from phone number message received");
+    console.log(
+      'Going to get api token to use from phone number message received',
+    );
     const changeValue = requestBody?.entry?.[0]?.changes?.[0]?.value;
     let incomingSenderIdentifierId =
       changeValue?.messages?.[0]?.from ||
       changeValue?.statuses?.[0]?.recipient_id;
 
-    console.log("This is the incomingSenderIdentifierId::", incomingSenderIdentifierId);
+    console.log(
+      'This is the incomingSenderIdentifierId::',
+      incomingSenderIdentifierId,
+    );
     const incomingRecipientIdentifierId =
       changeValue?.metadata?.phone_number_id;
-    console.log("This is the incomingRecipientIdentifierId::", incomingRecipientIdentifierId);
+    console.log(
+      'This is the incomingRecipientIdentifierId::',
+      incomingRecipientIdentifierId,
+    );
     // const waId = requestBody?.entry[0]?.changes[0]?.value?.contacts?.[0]?.wa_id;
-    console.log("This is the requestBody in api key to use from phone number message received::", requestBody);
+    console.log(
+      'This is the requestBody in api key to use from phone number message received::',
+      requestBody,
+    );
 
     console.log(
       'This is the phone number to use and search:',
@@ -787,8 +907,10 @@ export class IncomingWhatsappMessages {
     }
 
     // Extract WhatsApp message ID for duplicate detection
-    const externalMessageId = requestBody?.entry[0]?.changes[0]?.value?.messages?.[0]?.id;
-    const messageBody = requestBody?.entry[0]?.changes[0]?.value?.messages?.[0]?.text?.body;
+    const externalMessageId =
+      requestBody?.entry[0]?.changes[0]?.value?.messages?.[0]?.id;
+    const messageBody =
+      requestBody?.entry[0]?.changes[0]?.value?.messages?.[0]?.text?.body;
 
     const results =
       await this.workspaceQueryService.executeQueryAcrossWorkspaces(
@@ -800,8 +922,7 @@ export class IncomingWhatsappMessages {
             await this.workspaceQueryService.getWorkspaceKeys(workspaceId);
           const recipientNeedle =
             incomingRecipientIdentifierId?.toLowerCase() ?? '';
-          const senderNeedle =
-            incomingSenderIdentifierId?.toLowerCase() ?? '';
+          const senderNeedle = incomingSenderIdentifierId?.toLowerCase() ?? '';
 
           const matchesRecipient =
             recipientNeedle.length > 0 &&
@@ -829,9 +950,7 @@ export class IncomingWhatsappMessages {
             !matchesWhatsappWebRecipient &&
             !matchesWhatsappWebSender
           ) {
-            console.log(
-              'Workspace length is 0 for whatsapp web phone number',
-            );
+            console.log('Workspace length is 0 for whatsapp web phone number');
             return null;
           }
 
@@ -869,27 +988,39 @@ export class IncomingWhatsappMessages {
             ORDER BY "updatedAt" DESC
             LIMIT 1`;
           }
-          console.log("Recent message query and message data::", recentMessageQuery, messageData);
+          console.log(
+            'Recent message query and message data::',
+            recentMessageQuery,
+            messageData,
+          );
 
           const recentMessage =
-            await this.workspaceQueryService.executeWorkspaceRawQuery(recentMessageQuery, [], workspaceId);
+            await this.workspaceQueryService.executeWorkspaceRawQuery(
+              recentMessageQuery,
+              [],
+              workspaceId,
+            );
 
           console.log('recentMessage::', recentMessage);
 
           // Check if current message matches any recent message
           if (recentMessage.length > 0 && messageData) {
-            const isMessageDuplicate = recentMessage.some(msg => {
+            const isMessageDuplicate = recentMessage.some((msg) => {
               const messageMatches = msg.message === messageData?.body;
-              const senderMatches = msg.phoneFrom === messageData?.from?.replace('@c.us', '') ||
-                                  msg.phoneTo === messageData?.from?.replace('@c.us', '');
-              const recipientMatches = msg.phoneFrom === messageData?.to?.replace('@c.us', '') ||
-                                     msg.phoneTo === messageData?.to?.replace('@c.us', '');
+              const senderMatches =
+                msg.phoneFrom === messageData?.from?.replace('@c.us', '') ||
+                msg.phoneTo === messageData?.from?.replace('@c.us', '');
+              const recipientMatches =
+                msg.phoneFrom === messageData?.to?.replace('@c.us', '') ||
+                msg.phoneTo === messageData?.to?.replace('@c.us', '');
 
               return messageMatches && senderMatches && recipientMatches;
             });
 
             if (isMessageDuplicate) {
-              console.log('Message already exists in database, skipping processing');
+              console.log(
+                'Message already exists in database, skipping processing',
+              );
               return null;
             }
           }
@@ -918,7 +1049,12 @@ export class IncomingWhatsappMessages {
             personQuery = `SELECT * FROM ${dataSourceSchema}.person WHERE "person"."linkedinLinkPrimaryLinkUrl" ILIKE '%${incomingSenderIdentifierId}%'`;
           }
 
-          const person = await this.workspaceQueryService.executeWorkspaceRawQuery(personQuery, [], workspaceId);
+          const person =
+            await this.workspaceQueryService.executeWorkspaceRawQuery(
+              personQuery,
+              [],
+              workspaceId,
+            );
 
           if (person.length > 0) {
             const apiKeys = await this.workspaceQueryService.getApiKeys(
@@ -969,16 +1105,20 @@ export class IncomingWhatsappMessages {
   async getApiKeyToUseFromWhatsappUnipileMessageReceived(
     payload: UnipileMessageWebhook,
   ): Promise<ApiTokenResult | null> {
-
     const { sender, message, account_id } = payload;
 
     // Reuse the same phone extraction logic as receiveIncomingMessageFromWhatsappUnipile
-    const extractWhatsappPhoneNumber = (attendee: typeof sender | (typeof payload.attendees)[number] | undefined): string => {
+    const extractWhatsappPhoneNumber = (
+      attendee: typeof sender | (typeof payload.attendees)[number] | undefined,
+    ): string => {
       if (!attendee) {
         return '';
       }
 
-      if (attendee.attendee_specifics && typeof attendee.attendee_specifics === 'object') {
+      if (
+        attendee.attendee_specifics &&
+        typeof attendee.attendee_specifics === 'object'
+      ) {
         const phoneSpecific = attendee.attendee_specifics.phone_number;
         if (phoneSpecific) {
           return phoneSpecific.replace(/[^\d+]/g, '');
@@ -1051,12 +1191,12 @@ export class IncomingWhatsappMessages {
       return null;
     }
 
-    const normalizedPhoneNumber = incomingSenderIdentifierId.replace(
-      /[^\d+]/g,
-      '',
-    ).replace(/\+/g, '');
-    const normalizedRecipientPhoneNumber =
-      incomingRecipientIdentifierId.replace(/[^\d+]/g, '').replace(/\+/g, '');
+    const normalizedPhoneNumber = incomingSenderIdentifierId
+      .replace(/[^\d+]/g, '')
+      .replace(/\+/g, '');
+    const normalizedRecipientPhoneNumber = incomingRecipientIdentifierId
+      .replace(/[^\d+]/g, '')
+      .replace(/\+/g, '');
 
     // Match stored 10-digit phones (e.g. 9136465636) when Unipile sends
     // country-code form (e.g. 919136465636). Same as Facebook/Baileys paths.
@@ -1077,8 +1217,12 @@ export class IncomingWhatsappMessages {
       ORDER BY "updatedAt" DESC
       LIMIT 1`;
 
-    const recentMessage = await this.workspaceQueryService.executeWorkspaceRawQuery(recentMessageQuery, [], workspaceId);
-
+    const recentMessage =
+      await this.workspaceQueryService.executeWorkspaceRawQuery(
+        recentMessageQuery,
+        [],
+        workspaceId,
+      );
 
     if (recentMessage.length === 0) {
       console.log(
@@ -1089,7 +1233,10 @@ export class IncomingWhatsappMessages {
       return null;
     }
 
-    const phoneDigitsMatch = (stored: string | null | undefined, candidate: string) => {
+    const phoneDigitsMatch = (
+      stored: string | null | undefined,
+      candidate: string,
+    ) => {
       if (!stored || !candidate) {
         return false;
       }
@@ -1121,7 +1268,11 @@ export class IncomingWhatsappMessages {
 
     const personQuery = `SELECT * FROM ${dataSourceSchema}.person WHERE "person"."phonesPrimaryPhoneNumber" ILIKE '%${phoneNumberForLookup}%'`;
 
-    const person = await this.workspaceQueryService.executeWorkspaceRawQuery(personQuery, [], workspaceId);
+    const person = await this.workspaceQueryService.executeWorkspaceRawQuery(
+      personQuery,
+      [],
+      workspaceId,
+    );
 
     if (person.length === 0) {
       console.log(
@@ -1158,7 +1309,10 @@ export class IncomingWhatsappMessages {
       );
 
     if (!apiKeyToken) {
-      console.log('Failed to generate API key token for workspace:', workspaceId);
+      console.log(
+        'Failed to generate API key token for workspace:',
+        workspaceId,
+      );
 
       return null;
     }
@@ -1197,7 +1351,10 @@ export class IncomingWhatsappMessages {
     // to check if the incoming message is the status of the message
     // have to use system API Key and get the status updates of all the workspaces where the phone number resides. Then get the api keys of the workspaces and then update the messages
     const apiTokenResult =
-      await this.getApiKeyToUseFromPhoneNumberMessageReceived(requestBody, messageData);
+      await this.getApiKeyToUseFromPhoneNumberMessageReceived(
+        requestBody,
+        messageData,
+      );
 
     if (apiTokenResult === null) {
       console.log('NO API KEY FOUND FOR THIS PHONE NUMBER FUCK!!!!');
@@ -1241,7 +1398,11 @@ export class IncomingWhatsappMessages {
         query: graphQlToFetchChatMessages,
         variables: variables,
       });
-      const response = await this.staticGraphQLService.executeGraphQL(graphQlToFetchChatMessages, variables, apiToken);
+      const response = await this.staticGraphQLService.executeGraphQL(
+        graphQlToFetchChatMessages,
+        variables,
+        apiToken,
+      );
 
       console.log(
         '-----------------This is the response from the query to find the message by WAMID::-------------------',
@@ -1282,7 +1443,12 @@ export class IncomingWhatsappMessages {
         input: { whatsappDeliveryStatus: messageStatus },
       };
 
-      const responseOfDeliveryStatus = await this.staticGraphQLService.executeGraphQL(graphqlToUpdateChatMessage, variablesToUpdateDeliveryStatus, apiToken);
+      const responseOfDeliveryStatus =
+        await this.staticGraphQLService.executeGraphQL(
+          graphqlToUpdateChatMessage,
+          variablesToUpdateDeliveryStatus,
+          apiToken,
+        );
       // console.log("This is the response of the delivery status update::", responseOfDeliveryStatus);
 
       console.log(
@@ -1321,7 +1487,8 @@ export class IncomingWhatsappMessages {
 
         if (externalMessageId && messageBody) {
           // Check if this message already exists in the current workspace
-          const dataSourceSchema = this.workspaceQueryService.getDataSourceSchema(workspaceId);
+          const dataSourceSchema =
+            this.workspaceQueryService.getDataSourceSchema(workspaceId);
           const duplicateCheckQuery = `SELECT id FROM ${dataSourceSchema}."_chatMessage"
             WHERE "externalMessageId" = $1 AND "message" = $2 LIMIT 1`;
 
@@ -1334,11 +1501,17 @@ export class IncomingWhatsappMessages {
               );
 
             if (duplicateResult.length > 0) {
-              console.log('Message already exists in current workspace, skipping processing. Message ID:', externalMessageId);
+              console.log(
+                'Message already exists in current workspace, skipping processing. Message ID:',
+                externalMessageId,
+              );
               return;
             }
           } catch (error) {
-            console.log('Error checking for duplicates, continuing with processing:', error);
+            console.log(
+              'Error checking for duplicates, continuing with processing:',
+              error,
+            );
           }
         }
         // if (userMessageBody.reaction){
@@ -1447,15 +1620,23 @@ export class IncomingWhatsappMessages {
             messages: [{ role: 'user', content: chatReply || '' }],
             messageType: 'string',
           };
-          console.log( 'We will first go and get the candiate who sent us the message', );
+          console.log(
+            'We will first go and get the candiate who sent us the message',
+          );
           const candidateProfileData = await new FilterCandidates(
             this.workspaceQueryService,
             this.staticGraphQLService,
           ).getCandidateInformation(whatsappIncomingMessage, apiToken);
           const candidateJob: Project = candidateProfileData.project;
 
-          console.log( 'This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::', chatReply, );
-          console.log( 'This is the candiate who has sent us candidateProfileData::', candidateProfileData, );
+          console.log(
+            'This is the candiate who has sent us the message., we have to update the database that this message has been recemivged::',
+            chatReply,
+          );
+          console.log(
+            'This is the candiate who has sent us candidateProfileData::',
+            candidateProfileData,
+          );
           const replyObject = {
             chatReply: chatReply,
             whatsappDeliveryStatus: 'receivedFromCandidate',
@@ -1472,7 +1653,10 @@ export class IncomingWhatsappMessages {
               apiToken,
             );
 
-          console.log( 'Graphqlreqsponse after message update', responseAfterMessageUpdate, );
+          console.log(
+            'Graphqlreqsponse after message update',
+            responseAfterMessageUpdate,
+          );
         } else if (
           requestBody?.entry[0]?.changes[0]?.value?.messages[0].type ===
           'document'
@@ -1614,7 +1798,10 @@ export class IncomingWhatsappMessages {
     apiToken: string,
     shouldQueue: boolean = true,
   ) {
-    console.log("This is the replyObject in createAndUpdate Incoming CandidateChatMessage::", replyObject);
+    console.log(
+      'This is the replyObject in createAndUpdate Incoming CandidateChatMessage::',
+      replyObject,
+    );
 
     try {
       const isOutreachCandidate = this.isOutreachCandidate(
@@ -1641,8 +1828,7 @@ export class IncomingWhatsappMessages {
           await this.gtmInboundReplyWindowService?.schedule({
             workspaceId,
             candidateId: candidateProfileDataNodeObj.id,
-            delayMinutes:
-              candidateJob?.engagementProcessingDelayMinutes ?? 2,
+            delayMinutes: candidateJob?.engagementProcessingDelayMinutes ?? 2,
             apiToken,
             kind: isOutreachCandidate ? 'outreach' : 'recruiter',
             channel,
@@ -1672,26 +1858,37 @@ export class IncomingWhatsappMessages {
         }
       }
 
-      const { EngagedCandidateQueueService } = await import('../candidate-engagement/engaged-candidate-queue.service');
+      const { EngagedCandidateQueueService } =
+        await import('../candidate-engagement/engaged-candidate-queue.service');
 
       const queueService = new EngagedCandidateQueueService(
         this.workspaceQueryService,
         this.staticGraphQLService,
         this.engagedCandidateMessageQueueService,
       );
-      console.log("Adding to queue service to process engagement operations");
-      const whatappUpdateMessageObj = await queueService.processEngagementOperations(
-        replyObject,
-        candidateProfileDataNodeObj,
-        candidateJob,
-        apiToken,
-      );
+      console.log('Adding to queue service to process engagement operations');
+      const whatappUpdateMessageObj =
+        await queueService.processEngagementOperations(
+          replyObject,
+          candidateProfileDataNodeObj,
+          candidateJob,
+          apiToken,
+        );
 
-      if (whatappUpdateMessageObj && shouldQueue && !replyObject.isFromMe && candidateProfileDataNodeObj?.id && !isOutreachCandidate) {
+      if (
+        whatappUpdateMessageObj &&
+        shouldQueue &&
+        !replyObject.isFromMe &&
+        candidateProfileDataNodeObj?.id &&
+        !isOutreachCandidate
+      ) {
         try {
-          const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+          const workspaceId =
+            await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
           if (workspaceId) {
-            console.log(`🔄 QUEUEING CANDIDATE FOR ENGAGEMENT: ${candidateProfileDataNodeObj.id} (incoming message)`);
+            console.log(
+              `🔄 QUEUEING CANDIDATE FOR ENGAGEMENT: ${candidateProfileDataNodeObj.id} (incoming message)`,
+            );
             await this.queueCandidateForEngagement(
               candidateProfileDataNodeObj.id,
               workspaceId,
@@ -1706,9 +1903,11 @@ export class IncomingWhatsappMessages {
       }
 
       return whatappUpdateMessageObj;
-
     } catch (error) {
-      console.error('Error in createAndUpdateIncomingCandidateChatMessage:', error);
+      console.error(
+        'Error in createAndUpdateIncomingCandidateChatMessage:',
+        error,
+      );
       throw error;
     }
   }
@@ -1754,7 +1953,7 @@ export class IncomingWhatsappMessages {
 
     return Boolean(
       (Boolean(candidate?.projectId) && projectIsOutreach) ||
-        gtmStages.has(stage),
+      gtmStages.has(stage),
     );
   }
 }

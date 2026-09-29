@@ -1,5 +1,6 @@
 import { useApolloAdminClient } from '@/settings/admin-panel/apollo/hooks/useApolloAdminClient';
 import { ADMIN_CONNECT_MEMBER_LINKEDIN_UNIPILE } from '@/settings/admin-panel/graphql/mutations/adminConnectMemberLinkedinUnipile';
+import { ADMIN_REQUEST_MEMBER_LINKEDIN_COOKIE_FETCH } from '@/settings/admin-panel/graphql/mutations/adminRequestMemberLinkedinCookieFetch';
 import { ADMIN_SET_MEMBER_KEEP_LINKEDIN_CONNECTED } from '@/settings/admin-panel/graphql/mutations/adminSetMemberKeepLinkedinConnected';
 import { ADMIN_VALIDATE_MEMBER_LINKEDIN_STORED_COOKIES } from '@/settings/admin-panel/graphql/mutations/adminValidateMemberLinkedinStoredCookies';
 import { GET_ADMIN_PANEL_ALL_WORKSPACE_MEMBERS } from '@/settings/admin-panel/graphql/queries/getAdminPanelAllWorkspaceMembers';
@@ -34,6 +35,9 @@ type WorkspaceMemberArxRow = {
   typeWorkspaceMember?: string | null;
   chromeExtensionId?: string | null;
   extensionInstalled?: boolean | null;
+  extensionLastSeenAt?: string | null;
+  extensionUninstalledAt?: string | null;
+  linkedinCookieFetchPendingUntil?: string | null;
   linkedinCookiesStored?: boolean | null;
   linkedinLiAStored?: boolean | null;
   linkedinCookiesLastSyncedAt?: string | null;
@@ -101,6 +105,39 @@ type ConnectLinkedinUnipileResult = {
 
 type SetKeepLinkedinConnectedResult = {
   adminSetMemberKeepLinkedinConnected: boolean;
+};
+
+type RequestLinkedinCookieFetchResult = {
+  adminRequestMemberLinkedinCookieFetch: {
+    status: 'dispatched' | 'waiting';
+    deadlineAt: string;
+  };
+};
+
+const EXTENSION_QUIET_AFTER_MS = 15 * 60 * 1000;
+
+const extensionPresenceStatus = (
+  lastSeenAt: string | null | undefined,
+  uninstalledAt: string | null | undefined,
+): 'Live' | 'Uninstalled' | 'Quiet' | null => {
+  const lastSeenMs = lastSeenAt ? Date.parse(lastSeenAt) : Number.NaN;
+  const uninstalledMs = uninstalledAt ? Date.parse(uninstalledAt) : Number.NaN;
+  const hasLastSeen = Number.isFinite(lastSeenMs);
+  const hasUninstalled = Number.isFinite(uninstalledMs);
+
+  if (hasUninstalled && (!hasLastSeen || uninstalledMs >= lastSeenMs)) {
+    return 'Uninstalled';
+  }
+
+  if (hasLastSeen && Date.now() - lastSeenMs < EXTENSION_QUIET_AFTER_MS) {
+    return 'Live';
+  }
+
+  if (hasLastSeen || hasUninstalled) {
+    return 'Quiet';
+  }
+
+  return null;
 };
 
 const StyledTableScroll = styled.div`
@@ -266,10 +303,11 @@ const TABLE_GRID = [
   '160px', // LinkedIn
   '160px', // Job / company
   '180px', // Type / Unipile
-  '120px', // Extension
+  '170px', // Extension
   '100px', // Cookies
   '130px', // Last synced
   '130px', // Last validated
+  '110px', // Fetch cookies
   '100px', // Test cookies
   '140px', // Connect Unipile
 ].join(' ');
@@ -442,6 +480,9 @@ export const SettingsAdminUsers = () => {
   const [updatingKeepLinkedinKey, setUpdatingKeepLinkedinKey] = useState<
     string | null
   >(null);
+  const [fetchingCookiesKey, setFetchingCookiesKey] = useState<string | null>(
+    null,
+  );
 
   const { data, loading, error, refetch } =
     useQuery<AdminPanelAllWorkspaceMembersData>(
@@ -465,6 +506,12 @@ export const SettingsAdminUsers = () => {
   const [setKeepLinkedinConnected] =
     useMutation<SetKeepLinkedinConnectedResult>(
       ADMIN_SET_MEMBER_KEEP_LINKEDIN_CONNECTED,
+      { client: apolloAdminClient },
+    );
+
+  const [requestLinkedinCookieFetch] =
+    useMutation<RequestLinkedinCookieFetchResult>(
+      ADMIN_REQUEST_MEMBER_LINKEDIN_COOKIE_FETCH,
       { client: apolloAdminClient },
     );
 
@@ -594,6 +641,53 @@ export const SettingsAdminUsers = () => {
       });
     } finally {
       setConnectingKey(null);
+    }
+  };
+
+  const handleFetchCookies = async (
+    workspaceId: string,
+    workspaceMemberId: string,
+  ) => {
+    const rowKey = `${workspaceId}-${workspaceMemberId}`;
+    setFetchingCookiesKey(rowKey);
+
+    try {
+      const { data: resultData } = await requestLinkedinCookieFetch({
+        variables: { workspaceId, workspaceMemberId },
+      });
+      const result = resultData?.adminRequestMemberLinkedinCookieFetch;
+
+      if (!result) {
+        enqueueErrorSnackBar({
+          message: t`No response from cookie fetch`,
+        });
+        return;
+      }
+
+      if (result.status === 'dispatched') {
+        enqueueSuccessSnackBar({
+          message: t`LinkedIn cookie fetch sent to the extension.`,
+          options: { duration: 8000 },
+        });
+      } else {
+        const deadlineLabel = formatDt(result.deadlineAt);
+        enqueueWarningSnackBar({
+          message: t`Extension is offline. Cookie fetch will retry until ${deadlineLabel}.`,
+          options: { duration: 8000 },
+        });
+      }
+      await refetch();
+    } catch (mutationError) {
+      const message =
+        mutationError instanceof Error
+          ? mutationError.message
+          : t`Cookie fetch failed`;
+      enqueueErrorSnackBar({
+        message,
+        options: { duration: 8000 },
+      });
+    } finally {
+      setFetchingCookiesKey(null);
     }
   };
 
@@ -730,6 +824,9 @@ export const SettingsAdminUsers = () => {
                     <Trans>Last validated</Trans>
                   </StyledTableHeader>
                   <StyledTableHeader>
+                    <Trans>Fetch cookies</Trans>
+                  </StyledTableHeader>
+                  <StyledTableHeader>
                     <Trans>Test cookies</Trans>
                   </StyledTableHeader>
                   <StyledTableHeader>
@@ -777,6 +874,12 @@ export const SettingsAdminUsers = () => {
                   const isUpdatingKeepLinkedin =
                     validateKey != null &&
                     updatingKeepLinkedinKey === validateKey;
+                  const isFetchingCookies =
+                    validateKey != null && fetchingCookiesKey === validateKey;
+                  const presenceStatus = extensionPresenceStatus(
+                    workspaceMemberArx?.extensionLastSeenAt,
+                    workspaceMemberArx?.extensionUninstalledAt,
+                  );
 
                   const workspaceMemberArxJson = workspaceMemberArx
                     ? JSON.stringify(workspaceMemberArx, null, 2)
@@ -964,10 +1067,28 @@ export const SettingsAdminUsers = () => {
                       <StyledTableCell>
                         <StyledCellStack>
                           <PlainLine
-                            primary={yesNo(
-                              workspaceMemberArx?.extensionInstalled,
+                            primary={formatDt(
+                              workspaceMemberArx?.extensionLastSeenAt,
+                            )}
+                            secondary={
+                              presenceStatus ??
+                              yesNo(workspaceMemberArx?.extensionInstalled)
+                            }
+                            title={formatDt(
+                              workspaceMemberArx?.extensionLastSeenAt,
                             )}
                           />
+                          {workspaceMemberArx?.extensionUninstalledAt ? (
+                            <PlainLine
+                              primary={formatDt(
+                                workspaceMemberArx.extensionUninstalledAt,
+                              )}
+                              secondary={t`Uninstalled`}
+                              title={formatDt(
+                                workspaceMemberArx.extensionUninstalledAt,
+                              )}
+                            />
+                          ) : null}
                           {workspaceMemberArx?.chromeExtensionId ? (
                             <CopyableLine
                               value={workspaceMemberArx.chromeExtensionId}
@@ -1010,6 +1131,38 @@ export const SettingsAdminUsers = () => {
                           )}
                         />
                       </StyledTableCell>
+                      <StyledActionCell>
+                        <Button
+                          variant="secondary"
+                          size="small"
+                          title={isFetchingCookies ? t`Fetching…` : t`Fetch`}
+                          ariaLabel={t`Fetch LinkedIn cookies from the member's Chrome extension.`}
+                          disabled={
+                            !workspaceMemberArx?.workspaceMemberId ||
+                            isFetchingCookies
+                          }
+                          onClick={() => {
+                            if (!workspaceMemberArx?.workspaceMemberId) {
+                              return;
+                            }
+                            void handleFetchCookies(
+                              row.workspaceId,
+                              workspaceMemberArx.workspaceMemberId,
+                            );
+                          }}
+                        />
+                        {workspaceMemberArx?.linkedinCookieFetchPendingUntil ? (
+                          <PlainLine
+                            primary={formatDt(
+                              workspaceMemberArx.linkedinCookieFetchPendingUntil,
+                            )}
+                            secondary={t`Waiting`}
+                            title={formatDt(
+                              workspaceMemberArx.linkedinCookieFetchPendingUntil,
+                            )}
+                          />
+                        ) : null}
+                      </StyledActionCell>
                       <StyledActionCell>
                         <Button
                           variant="secondary"

@@ -186,6 +186,7 @@ export class LinkedinUnipileMessagingService {
     videoMessage?: any,
     subject?: string,
     isInMail?: boolean,
+    linkedinApi: 'classic' | 'sales_navigator' | 'recruiter' = 'classic',
   ): Promise<any> {
     // Convert all attendee IDs to proper provider_ids if needed
     const convertedAttendeesIds: string[] = [];
@@ -219,9 +220,9 @@ export class LinkedinUnipileMessagingService {
       formData.append('subject', subject);
     }
 
-    // Add LinkedIn InMail specific parameters
+    // InMail: sales_navigator lands replies in the SN mailbox (ACw attendees).
     if (isInMail) {
-      formData.append('linkedin[api]', 'classic');
+      formData.append('linkedin[api]', linkedinApi);
       formData.append('linkedin[inmail]', 'true');
     }
 

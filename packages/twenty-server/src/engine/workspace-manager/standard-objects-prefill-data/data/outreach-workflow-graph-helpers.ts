@@ -17,6 +17,7 @@ export const OUTREACH_WF_AGENT_EMAIL = '__AGENT_fallback_email__';
 export const OUTREACH_WF_AGENT_REPLY = '__AGENT_reply__';
 export const OUTREACH_WF_AGENT_EXTRACT = '__AGENT_extract_signals__';
 export const OUTREACH_WF_AGENT_QUALIFY = '__AGENT_qualify_prospect__';
+export const OUTREACH_WF_AGENT_LOCAL_PLACE = '__AGENT_local_place_classifier__';
 
 export const OUTREACH_WF_HARVEST_PROJECT_ID = '__PROJECT_OUTREACH_HARVEST__';
 
@@ -225,6 +226,39 @@ export const OUTREACH_WF_AI_QUALIFY_OUTPUT = {
     isLeaf: true,
     type: 'string',
     label: 'referral_source',
+    value: '',
+  },
+};
+
+export const OUTREACH_WF_AI_LOCAL_PLACE_OUTPUT = {
+  companyName: {
+    isLeaf: true,
+    type: 'string',
+    label: 'companyName',
+    value: '',
+  },
+  isMultiOutlet: {
+    isLeaf: true,
+    type: 'boolean',
+    label: 'isMultiOutlet',
+    value: false,
+  },
+  numberOutlets: {
+    isLeaf: true,
+    type: 'number',
+    label: 'numberOutlets',
+    value: 0,
+  },
+  confidence: {
+    isLeaf: true,
+    type: 'number',
+    label: 'confidence',
+    value: 0,
+  },
+  reasoning: {
+    isLeaf: true,
+    type: 'string',
+    label: 'reasoning',
     value: '',
   },
 };
@@ -760,29 +794,384 @@ export const gtmWfFormStep = ({
   );
 };
 
+// Production waits use `days`; testMode collapses every wait to 1 minute for
+// rapid branch/step testing via Edit Workflow.
 export const gtmWfDelayStep = ({
   id,
   name,
   days,
   nextStepIds,
+  testMode = false,
 }: {
   id: string;
   name: string;
   days: number;
+  nextStepIds?: string[];
+  testMode?: boolean;
+}): StepBase =>
+  withNext(
+    {
+      id,
+      name: testMode ? name.replace(/Wait \d+ days?/, 'Wait 1 minute') : name,
+      type: 'DELAY',
+      valid: true,
+      settings: {
+        input: {
+          duration: testMode
+            ? { days: 0, hours: 0, minutes: 1, seconds: 0 }
+            : { days, hours: 0, minutes: 0, seconds: 0 },
+          delayType: 'DURATION',
+        },
+        outputSchema: {},
+        errorHandlingOptions: OUTREACH_WF_ERROR_HANDLING,
+      },
+    },
+    nextStepIds,
+  );
+
+export const gtmWfRandomDelayStep = ({
+  id,
+  name,
+  minHours,
+  maxHours,
+  nextStepIds,
+  testMode = false,
+}: {
+  id: string;
+  name: string;
+  minHours: number;
+  maxHours: number;
+  nextStepIds?: string[];
+  testMode?: boolean;
+}): StepBase =>
+  withNext(
+    {
+      id,
+      name: testMode ? `${name} (1 minute)` : name,
+      type: 'DELAY',
+      valid: true,
+      settings: {
+        input: testMode
+          ? {
+              delayType: 'DURATION',
+              duration: { days: 0, hours: 0, minutes: 1, seconds: 0 },
+            }
+          : {
+              delayType: 'RANDOM_DURATION',
+              minDuration: {
+                days: 0,
+                hours: minHours,
+                minutes: 0,
+                seconds: 0,
+              },
+              maxDuration: {
+                days: 0,
+                hours: maxHours,
+                minutes: 0,
+                seconds: 0,
+              },
+            },
+        outputSchema: {},
+        errorHandlingOptions: OUTREACH_WF_ERROR_HANDLING,
+      },
+    },
+    nextStepIds,
+  );
+
+export const gtmWfViewLinkedinProfileStep = ({
+  id,
+  name,
+  candidateId,
+  linkedinProfileId,
+  linkedinUrl,
+  nextStepIds,
+}: {
+  id: string;
+  name: string;
+  candidateId: string;
+  linkedinProfileId: string;
+  linkedinUrl?: string;
   nextStepIds?: string[];
 }): StepBase =>
   withNext(
     {
       id,
       name,
-      type: 'DELAY',
+      type: 'VIEW_LINKEDIN_PROFILE',
       valid: true,
       settings: {
         input: {
-          duration: { days, hours: 0, minutes: 0, seconds: 0 },
-          delayType: 'DURATION',
+          workspaceMemberId: gtmWfMemberId(),
+          candidateId,
+          linkedinProfileId,
+          ...(linkedinUrl ? { linkedinUrl } : {}),
         },
         outputSchema: {},
+        errorHandlingOptions: OUTREACH_WF_ERROR_HANDLING,
+      },
+    },
+    nextStepIds,
+  );
+
+// Flat keys match getWorkflowRunContext(step.result) for variable refs.
+const OUTREACH_WF_FETCH_LINKEDIN_ACTIVITY_OUTPUT_SCHEMA = {
+  text: {
+    isLeaf: true,
+    type: 'string',
+    label: 'Posts Text (LLM)',
+    value: '',
+  },
+  mostRecentPost: {
+    isLeaf: false,
+    label: 'Most Recent Post',
+    value: {
+      socialId: { isLeaf: true, type: 'string', label: 'Social ID', value: '' },
+      text: { isLeaf: true, type: 'string', label: 'Text', value: '' },
+      id: { isLeaf: true, type: 'string', label: 'ID', value: '' },
+      isRepost: {
+        isLeaf: true,
+        type: 'boolean',
+        label: 'Is Repost',
+        value: false,
+      },
+      parsedDatetime: {
+        isLeaf: true,
+        type: 'string',
+        label: 'Parsed Datetime',
+        value: '',
+      },
+      shareUrl: { isLeaf: true, type: 'string', label: 'Share URL', value: '' },
+    },
+  },
+  postsCount: {
+    isLeaf: true,
+    type: 'number',
+    label: 'Posts Count',
+    value: 0,
+  },
+  userCommentsCount: {
+    isLeaf: true,
+    type: 'number',
+    label: 'User Comments Count',
+    value: 0,
+  },
+} as const;
+
+export const gtmWfFetchLinkedinActivityStep = ({
+  id,
+  name,
+  candidateId,
+  linkedinProfileId,
+  linkedinUrl,
+  postsLimit = 10,
+  excludePostSocialIds,
+  nextStepIds,
+}: {
+  id: string;
+  name: string;
+  candidateId: string;
+  linkedinProfileId: string;
+  linkedinUrl?: string;
+  postsLimit?: number;
+  excludePostSocialIds?: string[];
+  nextStepIds?: string[];
+}): StepBase =>
+  withNext(
+    {
+      id,
+      name,
+      type: 'FETCH_LINKEDIN_ACTIVITY',
+      valid: true,
+      settings: {
+        input: {
+          workspaceMemberId: gtmWfMemberId(),
+          candidateId,
+          linkedinProfileId,
+          ...(linkedinUrl ? { linkedinUrl } : {}),
+          postsLimit,
+          includeUserComments: false,
+          ...(excludePostSocialIds && excludePostSocialIds.length > 0
+            ? { excludePostSocialIds }
+            : {}),
+        },
+        outputSchema: OUTREACH_WF_FETCH_LINKEDIN_ACTIVITY_OUTPUT_SCHEMA,
+        errorHandlingOptions: OUTREACH_WF_ERROR_HANDLING,
+      },
+    },
+    nextStepIds,
+  );
+
+export const gtmWfCommentOnLinkedinPostStep = ({
+  id,
+  name,
+  candidateId,
+  linkedinProfileId,
+  linkedinUrl,
+  postId,
+  text,
+  nextStepIds,
+}: {
+  id: string;
+  name: string;
+  candidateId: string;
+  linkedinProfileId: string;
+  linkedinUrl?: string;
+  postId: string;
+  text: string;
+  nextStepIds?: string[];
+}): StepBase =>
+  withNext(
+    {
+      id,
+      name,
+      type: 'COMMENT_ON_LINKEDIN_POST',
+      valid: true,
+      settings: {
+        input: {
+          workspaceMemberId: gtmWfMemberId(),
+          candidateId,
+          linkedinProfileId,
+          ...(linkedinUrl ? { linkedinUrl } : {}),
+          postId,
+          text,
+        },
+        outputSchema: {},
+        errorHandlingOptions: OUTREACH_WF_ERROR_HANDLING,
+      },
+    },
+    nextStepIds,
+  );
+
+// Flat keys match getWorkflowRunContext(step.result) for IF_ELSE on .accepted.
+const OUTREACH_WF_ACCEPT_LINKEDIN_RECEIVED_INVITATION_OUTPUT_SCHEMA = {
+  matched: {
+    isLeaf: true,
+    type: 'boolean',
+    label: 'Matched',
+    value: false,
+  },
+  accepted: {
+    isLeaf: true,
+    type: 'boolean',
+    label: 'Accepted',
+    value: false,
+  },
+  invitationId: {
+    isLeaf: true,
+    type: 'string',
+    label: 'Invitation ID',
+    value: '',
+  },
+  invitationsScanned: {
+    isLeaf: true,
+    type: 'number',
+    label: 'Invitations Scanned',
+    value: 0,
+  },
+} as const;
+
+export const gtmWfAcceptLinkedinReceivedInvitationStep = ({
+  id,
+  name,
+  candidateId,
+  linkedinProfileId,
+  linkedinUrl,
+  nextStepIds,
+}: {
+  id: string;
+  name: string;
+  candidateId: string;
+  linkedinProfileId: string;
+  linkedinUrl?: string;
+  nextStepIds?: string[];
+}): StepBase =>
+  withNext(
+    {
+      id,
+      name,
+      type: 'ACCEPT_LINKEDIN_RECEIVED_INVITATION',
+      valid: true,
+      settings: {
+        input: {
+          workspaceMemberId: gtmWfMemberId(),
+          candidateId,
+          linkedinProfileId,
+          ...(linkedinUrl ? { linkedinUrl } : {}),
+        },
+        outputSchema:
+          OUTREACH_WF_ACCEPT_LINKEDIN_RECEIVED_INVITATION_OUTPUT_SCHEMA,
+        errorHandlingOptions: OUTREACH_WF_ERROR_HANDLING,
+      },
+    },
+    nextStepIds,
+  );
+
+export const gtmWfSendLinkedinInmailStep = ({
+  id,
+  name,
+  subject,
+  body,
+  candidateId,
+  linkedinProfileId,
+  linkedinUrl,
+  nextStepIds,
+}: {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+  candidateId: string;
+  linkedinProfileId: string;
+  linkedinUrl?: string;
+  nextStepIds?: string[];
+}): StepBase =>
+  withNext(
+    {
+      id,
+      name,
+      type: 'SEND_LINKEDIN_INMAIL',
+      valid: true,
+      settings: {
+        input: {
+          subject,
+          body,
+          candidateId,
+          linkedinProfileId,
+          ...(linkedinUrl ? { linkedinUrl } : {}),
+          workspaceMemberId: gtmWfMemberId(),
+        },
+        outputSchema: {
+          success: {
+            isLeaf: true,
+            type: 'boolean',
+            label: 'Success',
+            value: true,
+          },
+          message: {
+            isLeaf: true,
+            type: 'string',
+            label: 'Message',
+            value: '',
+          },
+          result: {
+            isLeaf: false,
+            label: 'Result',
+            value: {
+              linkedinProfileId: {
+                isLeaf: true,
+                type: 'string',
+                label: 'LinkedIn Profile Id',
+                value: '',
+              },
+              salesNavigatorProviderId: {
+                isLeaf: true,
+                type: 'string',
+                label: 'Sales Navigator Provider Id',
+                value: '',
+              },
+            },
+          },
+        },
         errorHandlingOptions: OUTREACH_WF_ERROR_HANDLING,
       },
     },

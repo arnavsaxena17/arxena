@@ -32,6 +32,7 @@ import {
 } from '../utils/unipile-new-relation.util';
 import { UnipileAccountPoolService } from './unipile-account-pool.service';
 import { OutreachCommandMaterializeService } from 'src/engine/core-modules/outreach-command/services/outreach-command-materialize.service';
+import { LinkedinProviderIdStoreService } from 'src/engine/core-modules/outreach-command/services/linkedin-provider-id.store';
 import { OutreachInboundReplyWindowService } from 'src/engine/core-modules/outreach-command/jobs/outreach-inbound-reply-window.job';
 import { IncomingWhatsappMessages } from './whatsapp-api/incoming-messages';
 import { WorkspaceMemberUnipileService } from './workspace-member-unipile.service';
@@ -49,6 +50,7 @@ export class UnipileWebhookService {
     private readonly unipileAttachmentStorageService: UnipileAttachmentStorageService,
     private readonly gtmCommandMaterializeService: OutreachCommandMaterializeService,
     private readonly gtmInboundReplyWindowService: OutreachInboundReplyWindowService,
+    private readonly linkedinProviderIdStore: LinkedinProviderIdStoreService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue)
     private readonly messageQueueService?: MessageQueueService,
     @InjectMessageQueue(MessageQueue.unipileWebhookQueue)
@@ -731,6 +733,7 @@ export class UnipileWebhookService {
         undefined,
         this.gtmInboundReplyWindowService,
         this.gtmCommandMaterializeService,
+        this.linkedinProviderIdStore,
       );
 
       if (account_type === 'WHATSAPP') {
@@ -952,6 +955,7 @@ export class UnipileWebhookService {
       undefined,
       this.gtmInboundReplyWindowService,
       this.gtmCommandMaterializeService,
+      this.linkedinProviderIdStore,
     );
 
     return await incomingMessagesService.getApiKeyToUseFromLinkedinMessageReceived(
@@ -972,6 +976,7 @@ export class UnipileWebhookService {
       undefined,
       this.gtmInboundReplyWindowService,
       this.gtmCommandMaterializeService,
+      this.linkedinProviderIdStore,
     );
 
     return await incomingMessagesService.getApiKeyToUseFromWhatsappUnipileMessageReceived(
@@ -1267,6 +1272,7 @@ export class UnipileWebhookService {
         undefined,
         this.gtmInboundReplyWindowService,
         this.gtmCommandMaterializeService,
+        this.linkedinProviderIdStore,
       );
       await incomingMessagesService.receiveIncomingMessageFromLinkedinUnipile(
         syntheticMessagePayload,

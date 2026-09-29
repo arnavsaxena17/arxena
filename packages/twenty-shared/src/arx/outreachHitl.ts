@@ -7,6 +7,7 @@ export const OUTREACH_HITL_CONTEXT_TEMPLATES = {
   postReplyFollowUp1: 'Review post-reply follow-up 1',
   postReplyFollowUp2Last: 'Review post-reply follow-up 2 (last)',
   linkedInConnectionNote: 'Review LinkedIn connection note',
+  fallbackInmail: 'Review Sales Navigator InMail',
   fallbackEmail: 'Review fallback email',
   meetingReminder: 'Review meeting reminder',
   noShowPing: 'Review no-show ping',

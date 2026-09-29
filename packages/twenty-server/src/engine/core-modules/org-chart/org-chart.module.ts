@@ -34,6 +34,7 @@ import { ElasticsearchSearchController } from './controllers/elasticsearch-searc
 import { OrgChartController } from './controllers/org-chart.controller';
 import { ArxenaBackendService } from './services/arxena-backend.service';
 import { CompaniesEsService } from './services/companies-es.service';
+import { CompanyNameResolverService } from './services/company-name-resolver.service';
 import { CompanyLogoService } from './services/company-logo.service';
 import { ContactOutPeopleSearchService } from './services/contactout-people-search.service';
 import { ContactOutPersonOrgMovementService } from './services/contactout-person-org-movement.service';
@@ -106,6 +107,7 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     ArxenaBackendService,
     OrgChartEsService,
     CompaniesEsService,
+    CompanyNameResolverService,
     PeopleEsService,
     PdlAutocompleteService,
     PdlPersonOrgMovementService,
@@ -148,6 +150,7 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     PersonOrgMovementService,
     OrgChartSuperImposeAutocompleteService,
     CompaniesEsService,
+    CompanyNameResolverService,
     PeopleEsService,
     OrgChartEsService,
     ImageProxyService,

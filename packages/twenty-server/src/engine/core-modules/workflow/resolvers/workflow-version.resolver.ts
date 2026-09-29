@@ -63,6 +63,11 @@ export class WorkflowVersionResolver {
       meetingFollowUpEnabled,
       checkDeduplicationPerCompany,
       qualifyProspectEnabled,
+      commentBeforeConnect,
+      commentRounds,
+      inboundInviteWaitDays,
+      inmailEnabled,
+      testMode,
     }: ApplyOutreachSequencerGraphOptionsInput,
   ): Promise<WorkflowVersionDTO> {
     return this.workflowVersionWorkspaceService.applyOutreachSequencerGraphOptions(
@@ -76,6 +81,11 @@ export class WorkflowVersionResolver {
           meetingFollowUpEnabled,
           checkDeduplicationPerCompany,
           qualifyProspectEnabled,
+          commentBeforeConnect,
+          commentRounds: commentRounds === 2 ? 2 : 1,
+          inboundInviteWaitDays,
+          inmailEnabled,
+          testMode,
         },
       },
     );

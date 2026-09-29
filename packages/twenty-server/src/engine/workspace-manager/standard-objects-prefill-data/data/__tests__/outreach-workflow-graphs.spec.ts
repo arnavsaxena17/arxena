@@ -23,6 +23,12 @@ type GraphStep = {
     input?: {
       branches?: Array<{ filterGroupId?: string; nextStepIds?: string[] }>;
       fieldsToUpdate?: string[];
+      duration?: {
+        days?: number;
+        hours?: number;
+        minutes?: number;
+        seconds?: number;
+      };
       filter?: {
         recordFilters?: Array<{
           operand?: string;
@@ -39,8 +45,8 @@ const getTrigger = (
 ) => graph.trigger as DatabaseEventTrigger;
 
 describe('GTM outreach workflow graphs', () => {
-  it('seeds five outreach workflow templates', () => {
-    expect(OUTREACH_WORKFLOW_GRAPH_TEMPLATES).toHaveLength(5);
+  it('seeds six outreach workflow templates', () => {
+    expect(OUTREACH_WORKFLOW_GRAPH_TEMPLATES).toHaveLength(6);
   });
 
   // GraphQL UUID scalar uses uuid.validate — placeholder-looking IDs with
@@ -512,6 +518,13 @@ describe('GTM outreach workflow graphs', () => {
     expect(byName('Draft connection note')).toBeDefined();
     expect(byName('Draft first LinkedIn message')).toBeDefined();
     expect(byName('Get calendar availability (opener)')).toBeDefined();
+    expect(byName('Fetch LinkedIn posts (before opener)')).toBeDefined();
+    expect(byName('Get calendar availability (opener)')?.nextStepIds).toEqual([
+      byName('Fetch LinkedIn posts (before opener)')?.id,
+    ]);
+    expect(byName('Fetch LinkedIn posts (before opener)')?.nextStepIds).toEqual(
+      [byName('Draft first LinkedIn message')?.id],
+    );
     expect(byName('Fetch LinkedIn messages')?.nextStepIds).toEqual([
       byName('Prior inbound reply in history?')?.id,
     ]);
@@ -563,6 +576,12 @@ describe('GTM outreach workflow graphs', () => {
     expect(byName('Mark MEETING_BOOKED')).toBeDefined();
 
     expect(byName('Validate inbound signals')?.nextStepIds).toEqual([
+      byName('Fetch LinkedIn profile (reply)')?.id,
+    ]);
+    expect(byName('Fetch LinkedIn profile (reply)')?.nextStepIds).toEqual([
+      byName('Fetch LinkedIn posts (before reply)')?.id,
+    ]);
+    expect(byName('Fetch LinkedIn posts (before reply)')?.nextStepIds).toEqual([
       byName('Draft sales reply')?.id,
     ]);
 
@@ -579,6 +598,17 @@ describe('GTM outreach workflow graphs', () => {
     );
     expect(draftSalesReply.settings?.input?.prompt).toContain(
       'update_one_person',
+    );
+    expect(draftSalesReply.settings?.input?.prompt).toContain(
+      'prospect_posts:',
+    );
+    expect(draftSalesReply.settings?.input?.prompt).toContain(
+      'prospect_profile: {{' +
+        `${OUTREACH_SEQUENCER_STEP_IDS.fetchProfileReply}.text}}`,
+    );
+    expect(draftSalesReply.settings?.input?.prompt).toContain(
+      'PROSPECT_ENRICHMENT: {{' +
+        `${OUTREACH_SEQUENCER_STEP_IDS.fetchProfileReply}.outreachProspectEnrichment}}`,
     );
     expect(
       Object.keys(draftSalesReply.settings?.outputSchema ?? {}).sort(),
@@ -848,6 +878,11 @@ describe('GTM outreach workflow graphs', () => {
       meetingFollowUpEnabled: true,
       checkDeduplicationPerCompany: false,
       qualifyProspectEnabled: true,
+      commentBeforeConnect: false,
+      commentRounds: 1,
+      inboundInviteWaitDays: 3,
+      inmailEnabled: false,
+      testMode: false,
     });
     expect(
       inferOutreachSequencerGraphOptionsFromSteps(
@@ -867,7 +902,165 @@ describe('GTM outreach workflow graphs', () => {
       meetingFollowUpEnabled: false,
       checkDeduplicationPerCompany: false,
       qualifyProspectEnabled: true,
+      commentBeforeConnect: false,
+      commentRounds: 1,
+      inboundInviteWaitDays: 3,
+      inmailEnabled: false,
+      testMode: false,
     });
+  });
+
+  it('builds comment-before-connect warm-up with distinct post fetch on round 2', () => {
+    const graph = buildCandidateSequencerGraph({
+      commentBeforeConnect: true,
+      commentRounds: 2,
+      inboundInviteWaitDays: 5,
+      humanInTheLoop: false,
+    });
+    const stepIds = new Set(
+      (graph.steps as GraphStep[]).map((step) => step.id),
+    );
+
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.viewBeforeComment)).toBe(
+      true,
+    );
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.acceptInboundInvite)).toBe(
+      true,
+    );
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.fetchActivity2)).toBe(true);
+
+    const fetchRound2 = (graph.steps as GraphStep[]).find(
+      (step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.fetchActivity2,
+    );
+    expect(
+      (fetchRound2?.settings?.input as { excludePostSocialIds?: string[] })
+        ?.excludePostSocialIds?.[0],
+    ).toContain('mostRecentPost.socialId');
+
+    const acceptInbound = (graph.steps as GraphStep[]).find(
+      (step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.acceptInboundInvite,
+    );
+    expect(acceptInbound?.settings?.outputSchema).toMatchObject({
+      accepted: { isLeaf: true },
+      matched: { isLeaf: true },
+    });
+
+    const inboundAcceptedIf = (graph.steps as GraphStep[]).find(
+      (step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.inboundAcceptedIf,
+    );
+    const inboundFilter = (
+      inboundAcceptedIf?.settings?.input as {
+        stepFilters?: Array<{
+          type?: string;
+          operand?: string;
+          stepOutputKey?: string;
+        }>;
+      }
+    )?.stepFilters?.[0];
+    expect(inboundFilter).toMatchObject({
+      type: 'BOOLEAN',
+      operand: 'IS',
+    });
+    expect(inboundFilter?.stepOutputKey).toContain('.accepted');
+
+    expect(
+      inferOutreachSequencerGraphOptionsFromSteps(
+        graph.steps as GraphStep[],
+        graph.trigger,
+      ),
+    ).toMatchObject({
+      commentBeforeConnect: true,
+      commentRounds: 2,
+      inboundInviteWaitDays: 5,
+    });
+  });
+
+  it('collapses every DELAY wait to 1 minute in test mode', () => {
+    const production = buildCandidateSequencerGraph();
+    const testModeGraph = buildCandidateSequencerGraph({ testMode: true });
+    const productionDelays = (production.steps as GraphStep[]).filter(
+      (step) => step.type === 'DELAY',
+    );
+    const testModeDelays = (testModeGraph.steps as GraphStep[]).filter(
+      (step) => step.type === 'DELAY',
+    );
+
+    expect(productionDelays).toHaveLength(10);
+    expect(testModeDelays).toHaveLength(10);
+
+    for (const delayStep of productionDelays) {
+      expect(delayStep.settings?.input?.duration).toMatchObject({
+        hours: 0,
+        minutes: 0,
+        seconds: 0,
+      });
+      expect(delayStep.settings?.input?.duration?.days).toBeGreaterThan(0);
+      expect(delayStep.name).toMatch(/Wait \d+ days?/);
+    }
+
+    for (const delayStep of testModeDelays) {
+      expect(delayStep.settings?.input?.duration).toEqual({
+        days: 0,
+        hours: 0,
+        minutes: 1,
+        seconds: 0,
+      });
+      expect(delayStep.name).toMatch(/^Wait 1 minute/);
+    }
+
+    expect(
+      inferOutreachSequencerGraphOptionsFromSteps(
+        testModeGraph.steps as GraphStep[],
+        testModeGraph.trigger,
+      ).testMode,
+    ).toBe(true);
+  });
+
+  it('inserts InMail before enrich when inmailEnabled is on', () => {
+    const graph = buildCandidateSequencerGraph({
+      inmailEnabled: true,
+      humanInTheLoop: true,
+    });
+    const steps = graph.steps as GraphStep[];
+    const stepIds = new Set(steps.map((step) => step.id));
+
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.sendInmail)).toBe(true);
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.draftInmail)).toBe(true);
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.markInmailSent)).toBe(true);
+
+    const stillSent = steps.find(
+      (step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.stillSent,
+    );
+    const markInmail = steps.find(
+      (step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.markInmailSent,
+    );
+
+    expect(stillSent?.nextStepIds).toEqual([
+      OUTREACH_SEQUENCER_STEP_IDS.draftInmail,
+    ]);
+    expect(markInmail?.nextStepIds).toEqual([
+      OUTREACH_SEQUENCER_STEP_IDS.enrich,
+    ]);
+    expect(
+      inferOutreachSequencerGraphOptionsFromSteps(steps, graph.trigger)
+        .inmailEnabled,
+    ).toBe(true);
+  });
+
+  it('omits InMail steps when inmailEnabled is off', () => {
+    const graph = buildCandidateSequencerGraph({ inmailEnabled: false });
+    const steps = graph.steps as GraphStep[];
+    const stepIds = new Set(steps.map((step) => step.id));
+
+    expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.sendInmail)).toBe(false);
+
+    const stillSent = steps.find(
+      (step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.stillSent,
+    );
+
+    expect(stillSent?.nextStepIds).toEqual([
+      OUTREACH_SEQUENCER_STEP_IDS.enrich,
+    ]);
   });
 
   it('skips qualify go/no-go when qualify prospect is off', () => {

@@ -54,6 +54,11 @@ export class SendLinkedinConnectionRequestWorkflowAction extends UnipileMessagin
     return 'LINKEDIN' as const;
   }
 
+  // Blank connects (useLlmConnectionNote off) still need a channel row.
+  protected override shouldPersistEmptyOutbound() {
+    return true;
+  }
+
   protected override getMaterializeEvent() {
     return 'connection_sent' as const;
   }

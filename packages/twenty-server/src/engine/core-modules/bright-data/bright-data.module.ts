@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { BrightDataGoogleMapsPlacesService } from './services/bright-data-google-maps-places.service';
 import { BrightDataLinkedinProfileScrapeService } from './services/bright-data-linkedin-profile-scrape.service';
 import { BrightDataLinkedinPeopleSearchService } from './services/bright-data-linkedin-people-search.service';
 import { BrightDataResidentialProxyService } from './services/bright-data-residential-proxy.service';
@@ -13,6 +14,7 @@ import { BrightDataUnlockerService } from './services/bright-data-unlocker.servi
     BrightDataUnlockerService,
     BrightDataLinkedinPeopleSearchService,
     BrightDataLinkedinProfileScrapeService,
+    BrightDataGoogleMapsPlacesService,
   ],
   exports: [
     BrightDataResidentialProxyService,
@@ -20,6 +22,7 @@ import { BrightDataUnlockerService } from './services/bright-data-unlocker.servi
     BrightDataUnlockerService,
     BrightDataLinkedinPeopleSearchService,
     BrightDataLinkedinProfileScrapeService,
+    BrightDataGoogleMapsPlacesService,
   ],
 })
 export class BrightDataModule {}

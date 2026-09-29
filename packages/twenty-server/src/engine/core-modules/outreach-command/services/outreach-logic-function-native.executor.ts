@@ -22,16 +22,22 @@ import {
   OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME,
+  OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_LOGIC_FUNCTION_NAME,
+  OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-names.const';
 import {
   validateOutreachInboundSignals,
   type OutreachInboundSignalsInput,
 } from 'src/engine/core-modules/outreach-command/utils/validate-outreach-inbound-signals.util';
+import { FetchAndUpsertLocalBusinessesService } from 'src/engine/core-modules/outreach-command/services/fetch-and-upsert-local-businesses.service';
+import { ClassifyAndUpsertLocalPlacesService } from 'src/engine/core-modules/outreach-command/services/classify-and-upsert-local-places.service';
 import { FetchCompanyDetailsService } from 'src/engine/core-modules/outreach-command/services/fetch-company-details.service';
 import { FetchLinkedinMessagesService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-messages.service';
 import { FetchLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-profile.service';
 import { VisitLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/visit-linkedin-profile.service';
 import { FetchUserCommentsService } from 'src/engine/core-modules/outreach-command/services/fetch-user-comments.service';
+import { PlanLocalBusinessCityCoverageService } from 'src/engine/core-modules/outreach-command/services/plan-local-business-city-coverage.service';
 import { SearchCompaniesService } from 'src/engine/core-modules/outreach-command/services/search-companies.service';
 import { SearchCrunchbaseCompaniesService } from 'src/engine/core-modules/outreach-command/services/search-crunchbase-companies.service';
 import { SearchJobsService } from 'src/engine/core-modules/outreach-command/services/search-jobs.service';
@@ -69,6 +75,9 @@ export class OutreachLogicFunctionNativeExecutor
     private readonly getCalendarAvailabilityService: GetCalendarAvailabilityService,
     private readonly gtmFakeProfileDetectorService: OutreachFakeProfileDetectorService,
     private readonly gtmFilterProfilesService: OutreachFilterProfilesService,
+    private readonly planLocalBusinessCityCoverageService: PlanLocalBusinessCityCoverageService,
+    private readonly fetchAndUpsertLocalBusinessesService: FetchAndUpsertLocalBusinessesService,
+    private readonly classifyAndUpsertLocalPlacesService: ClassifyAndUpsertLocalPlacesService,
     private readonly nativeLogicFunctionRegistry: NativeLogicFunctionRegistry,
   ) {}
 
@@ -332,6 +341,57 @@ export class OutreachLogicFunctionNativeExecutor
       return validateOutreachInboundSignals(
         payload as OutreachInboundSignalsInput,
       );
+    }
+
+    if (name === OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_LOGIC_FUNCTION_NAME) {
+      return this.planLocalBusinessCityCoverageService.execute({
+        workspaceId,
+        input: payload as {
+          city?: string;
+          keywords?: unknown;
+          gridSpacingDeg?: number;
+          zoom_level?: number;
+          zoomLevel?: number;
+          country?: string;
+          minLat?: number;
+          maxLat?: number;
+          minLng?: number;
+          maxLng?: number;
+          sample?: boolean | string;
+          expectedHitsPerCell?: number;
+        },
+      });
+    }
+
+    if (
+      name === OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_LOGIC_FUNCTION_NAME
+    ) {
+      return this.fetchAndUpsertLocalBusinessesService.execute({
+        workspaceId,
+        input: payload as {
+          cells?: Array<{ lat: number; lng: number }>;
+          keywords?: unknown;
+          zoom_level?: number;
+          zoomLevel?: number;
+          country?: string;
+          maxRecords?: number;
+          projectId?: string;
+        },
+      });
+    }
+
+    if (name === OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME) {
+      return this.classifyAndUpsertLocalPlacesService.execute({
+        workspaceId,
+        input: payload as {
+          places?: unknown;
+          placesFilePath?: string;
+          projectId?: string;
+          minOutlets?: number;
+          modelId?: string;
+          maxCompanies?: number;
+        },
+      });
     }
 
     return {};

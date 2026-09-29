@@ -3,8 +3,9 @@ import { WorkflowRunRateLimitSnackBarEffect } from '@/workflow/components/Workfl
 import { useWorkflowRun } from '@/workflow/hooks/useWorkflowRun';
 import { WorkflowRunDiagramCanvas } from '@/workflow/workflow-diagram/components/WorkflowRunDiagramCanvas';
 import { workflowDiagramStatusComponentState } from '@/workflow/workflow-diagram/states/workflowDiagramStatusComponentState';
+import { isNonEmptyString } from '@sniptt/guards';
 import { styled } from '@linaria/react';
-import { isDefined, isNonEmptyString } from 'twenty-shared/utils';
+import { isDefined } from 'twenty-shared/utils';
 import { StepStatus } from 'twenty-shared/workflow';
 import { IconAlertTriangle } from 'twenty-ui/icon';
 import { themeCssVariables } from 'twenty-ui/theme-constants';

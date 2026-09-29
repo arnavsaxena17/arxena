@@ -97,4 +97,110 @@ describe('FetchLinkedinProfileService', () => {
     });
     expect(linkedinProviderIdStore.saveProviderId).not.toHaveBeenCalled();
   });
+
+  it('stamps profile facts onto outreachProspectEnrichment', async () => {
+    const update = jest.fn().mockResolvedValue(undefined);
+    const findOne = jest
+      .fn()
+      .mockResolvedValue({ outreachProspectEnrichment: null });
+    let workspaceContextCalls = 0;
+
+    globalWorkspaceOrmManager.executeInWorkspaceContext.mockImplementation(
+      async (callback: () => Promise<unknown>) => {
+        workspaceContextCalls += 1;
+
+        if (workspaceContextCalls === 1) {
+          return {
+            accountId: 'acc-1',
+            identifier: 'jane-doe',
+            workspaceMemberId: 'member-1',
+          };
+        }
+
+        return callback();
+      },
+    );
+    globalWorkspaceOrmManager.getRepository.mockResolvedValue({
+      findOne,
+      update,
+    });
+    linkedinUnipileRequestService.fetchLinkedinUserProfile.mockResolvedValue({
+      provider_id: VALID_PROVIDER_ID,
+      first_name: 'Jane',
+      last_name: 'Doe',
+      headline: 'CFO at Acme',
+      experience: [
+        {
+          company: 'Acme',
+          position: 'CFO',
+          end: '',
+        },
+      ],
+    });
+
+    const result = await service.execute({
+      workspaceId: 'ws-1',
+      input: { candidateId: 'cand-1', linkedinProfileId: 'jane-doe' },
+    });
+
+    expect(update).toHaveBeenCalledWith('cand-1', {
+      outreachProspectEnrichment: {
+        first_name: 'Jane',
+        company_short: 'Acme',
+        hooks: [
+          { text: 'CFO at Acme', source: 'profile' },
+          { text: 'CFO @ Acme', source: 'profile' },
+        ],
+      },
+    });
+    expect(result.outreachProspectEnrichment).toEqual({
+      first_name: 'Jane',
+      company_short: 'Acme',
+      hooks: [
+        { text: 'CFO at Acme', source: 'profile' },
+        { text: 'CFO @ Acme', source: 'profile' },
+      ],
+    });
+  });
+
+  it('keeps a qualify stamp when the profile is fetched again', async () => {
+    const qualifyStamp = { go: true, score: 4, hooks: [] };
+    const update = jest.fn().mockResolvedValue(undefined);
+    const findOne = jest.fn().mockResolvedValue({
+      outreachProspectEnrichment: qualifyStamp,
+    });
+    let workspaceContextCalls = 0;
+
+    globalWorkspaceOrmManager.executeInWorkspaceContext.mockImplementation(
+      async (callback: () => Promise<unknown>) => {
+        workspaceContextCalls += 1;
+
+        if (workspaceContextCalls === 1) {
+          return {
+            accountId: 'acc-1',
+            identifier: 'jane-doe',
+            workspaceMemberId: 'member-1',
+          };
+        }
+
+        return callback();
+      },
+    );
+    globalWorkspaceOrmManager.getRepository.mockResolvedValue({
+      findOne,
+      update,
+    });
+    linkedinUnipileRequestService.fetchLinkedinUserProfile.mockResolvedValue({
+      provider_id: VALID_PROVIDER_ID,
+      first_name: 'Jane',
+    });
+
+    const result = await service.execute({
+      workspaceId: 'ws-1',
+      input: { candidateId: 'cand-1', linkedinProfileId: 'jane-doe' },
+    });
+
+    expect(update).not.toHaveBeenCalled();
+    expect(result.outreachProspectEnrichment).toEqual(qualifyStamp);
+  });
 });

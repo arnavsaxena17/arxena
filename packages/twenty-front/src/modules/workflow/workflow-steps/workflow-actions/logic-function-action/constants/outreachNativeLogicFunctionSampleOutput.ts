@@ -28,6 +28,12 @@ export const OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME =
 export const OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME = 'filter-profiles';
 export const OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME =
   'validate-inbound-signals';
+export const OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_LOGIC_FUNCTION_NAME =
+  'plan-local-business-city-coverage';
+export const OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_LOGIC_FUNCTION_NAME =
+  'fetch-and-upsert-local-businesses';
+export const OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME =
+  'classify-and-upsert-local-places';
 
 const withLlmFormattedText = <T extends object>(
   result: T,
@@ -482,6 +488,64 @@ export const OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT =
     shouldNotRespond: false,
   });
 
+export const OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_SAMPLE_OUTPUT =
+  withLlmFormattedText({
+    success: true,
+    city: 'mumbai',
+    country: 'IN',
+    keywords: ['qsr', 'fast food', 'restaurant'],
+    zoom_level: 12,
+    gridSpacingDeg: 0.025,
+    cells: [{ lat: 19.076, lng: 72.8777 }],
+    cellCount: 160,
+    discoveryInputCount: 480,
+    estimatedMaxRecords: 9600,
+    estimatedUsdPayg: 14.4,
+    pricingNote:
+      'Bright Data Maps PAYG ~$0.0015/record ($1.50/1K). Budget uses gross delivered records before place_id dedupe.',
+    sampleHitRate: 18,
+    sampleRecordsReturned: 90,
+    sampleCreditsUsed: 90,
+    error: '',
+  });
+
+export const OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_SAMPLE_OUTPUT =
+  withLlmFormattedText({
+    success: true,
+    grossRecords: 120,
+    uniquePlaces: 95,
+    created: 80,
+    updated: 10,
+    skipped: 5,
+    companyIds: ['company-id'],
+    projectId: 'project-id',
+    stoppedEarly: false,
+    error: '',
+  });
+
+export const OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_SAMPLE_OUTPUT =
+  withLlmFormattedText({
+    success: true,
+    uniqueNames: 100,
+    classified: 100,
+    qualifying: 12,
+    created: 10,
+    updated: 2,
+    skipped: 0,
+    companyIds: ['company-id'],
+    classifications: [],
+    qualifyingCompanies: [
+      {
+        companyName: 'Example Brand',
+        isMultiOutlet: true,
+        numberOutlets: 40000,
+        confidence: 0.95,
+        reasoning: 'Global multi-outlet brand',
+      },
+    ],
+    error: '',
+  });
+
 export const OUTREACH_NATIVE_LOGIC_FUNCTION_NAMES = new Set([
   OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_LINKEDIN_PROFILE_LOGIC_FUNCTION_NAME,
@@ -503,6 +567,9 @@ export const OUTREACH_NATIVE_LOGIC_FUNCTION_NAMES = new Set([
   OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME,
+  OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_LOGIC_FUNCTION_NAME,
+  OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_LOGIC_FUNCTION_NAME,
+  OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME,
 ]);
 
 const SAMPLE_OUTPUT_BY_NAME: Record<string, Record<string, unknown>> = {
@@ -546,6 +613,12 @@ const SAMPLE_OUTPUT_BY_NAME: Record<string, Record<string, unknown>> = {
     OUTREACH_FILTER_PROFILES_SAMPLE_OUTPUT,
   [OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME]:
     OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT,
+  [OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_LOGIC_FUNCTION_NAME]:
+    OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_SAMPLE_OUTPUT,
+  [OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_LOGIC_FUNCTION_NAME]:
+    OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_SAMPLE_OUTPUT,
+  [OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME]:
+    OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_SAMPLE_OUTPUT,
 };
 
 export const isNativeOutreachLogicFunction = (name?: string | null): boolean =>

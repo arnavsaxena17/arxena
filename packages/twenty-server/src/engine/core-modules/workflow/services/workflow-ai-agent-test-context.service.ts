@@ -44,7 +44,9 @@ import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspac
 import { WorkflowCommonWorkspaceService } from 'src/modules/workflow/common/workspace-services/workflow-common.workspace-service';
 import { isWorkflowLogicFunctionAction } from 'src/modules/workflow/workflow-executor/workflow-actions/logic-function/guards/is-workflow-logic-function-action.guard';
 import { isWorkflowFindRecordsAction } from 'src/modules/workflow/workflow-executor/workflow-actions/record-crud/guards/is-workflow-find-records-action.guard';
+import { isWorkflowFetchLinkedinActivityAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/guards/is-workflow-fetch-linkedin-activity-action.guard';
 import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
+import { formatOutreachProspectPostsForLlm } from 'src/engine/core-modules/outreach-command/utils/format-outreach-llm-context.util';
 
 const CANDIDATE_OBJECT_NAME = 'candidate';
 const PERSON_OBJECT_NAME = 'person';
@@ -248,7 +250,61 @@ export class WorkflowAiAgentTestContextService {
       });
     }
 
+    if (isWorkflowFetchLinkedinActivityAction(step)) {
+      return this.executeFetchLinkedinActivityPredecessor({
+        workspaceId,
+        candidateId,
+      });
+    }
+
     return undefined;
+  }
+
+  // Test uses cached person.linkedinPosts when present (live FETCH stamps them).
+  private async executeFetchLinkedinActivityPredecessor({
+    workspaceId,
+    candidateId,
+  }: {
+    workspaceId: string;
+    candidateId: string;
+  }): Promise<unknown> {
+    const candidate = (await this.findRecordById({
+      workspaceId,
+      objectName: CANDIDATE_OBJECT_NAME,
+      recordId: candidateId,
+    })) as CandidateWithPeopleId | null;
+    const peopleId = candidate?.peopleId?.trim() ?? '';
+
+    if (!isNonEmptyString(peopleId)) {
+      return {
+        posts: [],
+        postsCount: 0,
+        mostRecentPost: null,
+        text: '',
+      };
+    }
+
+    const person = (await this.findRecordById({
+      workspaceId,
+      objectName: PERSON_OBJECT_NAME,
+      recordId: peopleId,
+    })) as (RecordWithId & { linkedinPosts?: unknown }) | null;
+    const linkedinPosts =
+      person?.linkedinPosts &&
+      typeof person.linkedinPosts === 'object' &&
+      person.linkedinPosts !== null
+        ? (person.linkedinPosts as Record<string, unknown>)
+        : null;
+    const posts = Array.isArray(linkedinPosts?.posts)
+      ? linkedinPosts.posts
+      : [];
+
+    return {
+      posts,
+      postsCount: posts.length,
+      mostRecentPost: linkedinPosts?.mostRecentPost ?? null,
+      text: formatOutreachProspectPostsForLlm(posts),
+    };
   }
 
   private async executeFindRecordsPredecessor({

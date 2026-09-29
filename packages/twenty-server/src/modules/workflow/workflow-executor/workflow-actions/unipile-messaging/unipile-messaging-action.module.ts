@@ -12,6 +12,7 @@ import { SendLinkedinMessageWorkflowAction } from 'src/modules/workflow/workflow
 import { SendLinkedinVoiceNoteWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/send-linkedin-voice-note.workflow-action';
 import { SendWhatsappMessageWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/send-whatsapp-message.workflow-action';
 import { ViewLinkedinProfileWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/view-linkedin-profile.workflow-action';
+import { AcceptLinkedinReceivedInvitationWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/accept-linkedin-received-invitation.workflow-action';
 import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.module';
 
 @Module({
@@ -26,6 +27,7 @@ import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow
     ViewLinkedinProfileWorkflowAction,
     FollowLinkedinProfileWorkflowAction,
     LikeLinkedinPostWorkflowAction,
+    AcceptLinkedinReceivedInvitationWorkflowAction,
     SendWhatsappMessageWorkflowAction,
   ],
   exports: [
@@ -38,6 +40,7 @@ import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow
     ViewLinkedinProfileWorkflowAction,
     FollowLinkedinProfileWorkflowAction,
     LikeLinkedinPostWorkflowAction,
+    AcceptLinkedinReceivedInvitationWorkflowAction,
     SendWhatsappMessageWorkflowAction,
   ],
 })

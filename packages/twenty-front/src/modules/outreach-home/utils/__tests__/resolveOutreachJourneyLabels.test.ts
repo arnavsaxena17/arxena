@@ -147,6 +147,26 @@ describe('resolveOutreachJourneyLabels', () => {
     ).toBe('MEETING_BOOKED');
   });
 
+  it('should map comment-before-connect CRM stages to COMMENTED on the timeline', () => {
+    expect(
+      resolveOutreachJourneyTimelineStageId({
+        outreachSequenceStage: 'COMMENTED',
+      }),
+    ).toBe('COMMENTED');
+
+    expect(
+      resolveOutreachJourneyTimelineStageId({
+        outreachSequenceStage: 'PROFILE_CHECKED',
+      }),
+    ).toBe('COMMENTED');
+
+    expect(
+      resolveOutreachJourneyStageLabel({
+        outreachSequenceStage: 'COMMENTED',
+      }),
+    ).toBe('Commented');
+  });
+
   it('should replace generic Human in the Loop FORM names with Needs approval', () => {
     expect(
       resolveOutreachPendingStepLabel({
