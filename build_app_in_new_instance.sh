@@ -67,6 +67,9 @@ SSH_KEY_PATH="${SSH_KEY_PATH:-$HOME/.ssh/arxmukti-key.pem}"
 SSH_OPTS=(-o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=30 -o ServerAliveCountMax=6)
 REMOTE_BUILD_EXIT_GRACE_SECONDS="${REMOTE_BUILD_EXIT_GRACE_SECONDS:-90}"
 COMMAND_PROD_TIMEOUT_SECONDS="${COMMAND_PROD_TIMEOUT_SECONDS:-2700}"
+# not-run until run_production_upgrade records success, failed, or skipped.
+PROD_UPGRADE_STATUS="not-run"
+PROD_UPGRADE_LOG=""
 EC2_IMAGE_ID="${EC2_IMAGE_ID:-ami-0cb194b5ec6f48d24}" # arm64 builder w/ canvas deps
 EC2_INSTANCE_TYPE="${EC2_INSTANCE_TYPE:-t4g.xlarge}"
 EC2_KEY_NAME="${EC2_KEY_NAME:-arxmukti-key}"
@@ -283,14 +286,34 @@ run_prod_server_command() {
   fi
 }
 
+# Pull the workspace failure lines out of a Nest upgrade log for the final summary.
+summarize_production_upgrade_failure() {
+  local upgrade_log="$1"
+  [ -f "$upgrade_log" ] || return 0
+  sed -E 's/\x1B\[[0-9;]*[mK]//g' "$upgrade_log" \
+    | grep -E 'Error in workspace |Upgrade summary:|Upgrade failed:|upgrade exited non-zero' \
+    | sed -E \
+      -e 's/^.*Error in workspace /Error in workspace /' \
+      -e 's/^.*Upgrade summary:/Upgrade summary:/' \
+      -e 's/^.*Upgrade failed:/Upgrade failed:/' \
+      -e 's/^.*ERROR: /ERROR: /' \
+    | awk '!seen[$0]++' \
+    | tail -n 8 \
+    | while IFS= read -r line; do
+        printf '   %s\n' "$line"
+      done
+}
+
 run_production_upgrade() {
   if [ "${SKIP_PROD_UPGRADE:-0}" = "1" ]; then
+    PROD_UPGRADE_STATUS="skipped"
     echo "SKIP_PROD_UPGRADE=1 — skipping yarn command:prod upgrade"
     return 0
   fi
 
   mkdir -p "$BUILD_LOG_DIR"
   local upgrade_log="$BUILD_LOG_DIR/prod_upgrade.latest.log"
+  PROD_UPGRADE_LOG="$upgrade_log"
   # Status file: pipe to tee would otherwise lose upgrade_ok in a subshell.
   local upgrade_status_file
   upgrade_status_file="$(mktemp)"
@@ -319,10 +342,12 @@ run_production_upgrade() {
   rm -f "$upgrade_status_file"
 
   if [ "$upgrade_ok" != "1" ]; then
+    PROD_UPGRADE_STATUS="failed"
     echo "Production upgrade failed. See $upgrade_log"
     echo "Refusing TWENTY_SERVER process cutover so new code is not served on an unmigrated schema."
     return 1
   fi
+  PROD_UPGRADE_STATUS="success"
   return 0
 }
 
@@ -1518,6 +1543,14 @@ echo "Final required build summary before shutdown:"
 for build_name in TWENTY_SERVER TWENTY_FRONT TWENTY_ORGCHART TWENTY_SHARED TWENTY_CLIENT_SDK TWENTY_WEBSITE TWENTY_MCP_SERVER TWENTY_DOCS; do
   echo " - ${build_name}: build=$(get_build_status "$build_name"), files=$(get_deploy_status "$build_name")"
 done
+echo "Production upgrade: ${PROD_UPGRADE_STATUS}"
+if [ "$PROD_UPGRADE_STATUS" = "failed" ]; then
+  echo " - twenty-server was not restarted"
+  if [ -n "$PROD_UPGRADE_LOG" ]; then
+    echo " - log: $PROD_UPGRADE_LOG"
+    summarize_production_upgrade_failure "$PROD_UPGRADE_LOG"
+  fi
+fi
 
 if [ "$REMOTE_BUILD_EXIT_CODE" -ne 0 ]; then
   echo "Remote build script exited with code $REMOTE_BUILD_EXIT_CODE."
