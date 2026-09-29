@@ -1,11 +1,30 @@
-import { Body, Controller, Headers, Post, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Header,
+  Headers,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+
+import { type FlatWorkspace } from 'src/engine/core-modules/workspace/types/flat-workspace.type';
+import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
+import { AuthWorkspaceMemberId } from 'src/engine/decorators/auth/auth-workspace-member-id.decorator';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+
 import { ExtensionBridgeService } from './extension-bridge.service';
+import { ExtensionPresenceService } from './extension-presence.service';
 
 @Controller('extension-bridge')
 @UseGuards(JwtAuthGuard)
 export class ExtensionBridgeController {
-  constructor(private readonly extensionBridgeService: ExtensionBridgeService) {}
+  constructor(
+    private readonly extensionBridgeService: ExtensionBridgeService,
+    private readonly extensionPresenceService: ExtensionPresenceService,
+  ) {}
 
   private extractToken(headers: Headers): string {
     const authHeader = headers['authorization'] || headers['Authorization'];
@@ -43,7 +62,10 @@ export class ExtensionBridgeController {
     @Body() payload: { current_table_id?: string },
   ): Promise<{ success: boolean }> {
     const token = this.extractToken(headers);
-    await this.extensionBridgeService.resdexFetchAndSendProfiles(token, payload);
+    await this.extensionBridgeService.resdexFetchAndSendProfiles(
+      token,
+      payload,
+    );
     return { success: true };
   }
 
@@ -156,10 +178,7 @@ export class ExtensionBridgeController {
     @Body() payload: any,
   ): Promise<{ success: boolean }> {
     const token = this.extractToken(headers);
-    await this.extensionBridgeService.linkedinGetUnreadMessages(
-      token,
-      payload,
-    );
+    await this.extensionBridgeService.linkedinGetUnreadMessages(token, payload);
     return { success: true };
   }
 
@@ -177,7 +196,8 @@ export class ExtensionBridgeController {
   @Post('whatsapp-send-message')
   async whatsappSendMessage(
     @Headers() headers: Headers,
-    @Body() payload: {
+    @Body()
+    payload: {
       phoneNumber: string;
       message: string;
       twentyMessageId: string;
@@ -191,7 +211,8 @@ export class ExtensionBridgeController {
   @Post('whatsapp-send-attachment')
   async whatsappSendAttachment(
     @Headers() headers: Headers,
-    @Body() payload: {
+    @Body()
+    payload: {
       phoneNumber: string;
       attachments: any[];
       caption?: string;
@@ -200,5 +221,40 @@ export class ExtensionBridgeController {
     const token = this.extractToken(headers);
     await this.extensionBridgeService.whatsappSendAttachment(token, payload);
     return { success: true };
+  }
+
+  @Post('heartbeat')
+  async heartbeat(
+    @AuthWorkspace() workspace: FlatWorkspace,
+    @AuthWorkspaceMemberId() workspaceMemberId: string | undefined,
+  ): Promise<{ ok: boolean; uninstallUrl: string | null }> {
+    if (!workspaceMemberId) {
+      throw new BadRequestException('Missing workspace member');
+    }
+
+    return this.extensionPresenceService.recordHeartbeat(
+      workspace.id,
+      workspaceMemberId,
+    );
+  }
+}
+
+// Chrome opens the uninstall URL with no session, only the signed token.
+@Controller('extension-bridge')
+export class ExtensionBridgeUninstallController {
+  constructor(
+    private readonly extensionPresenceService: ExtensionPresenceService,
+  ) {}
+
+  @Get('uninstalled')
+  @Header('Content-Type', 'text/html; charset=utf-8')
+  async uninstalled(@Query('token') token?: string): Promise<string> {
+    const recorded = await this.extensionPresenceService.recordUninstall(token);
+
+    if (!recorded) {
+      return '<!doctype html><title>Arxena</title><p>Could not record the extension uninstall.</p>';
+    }
+
+    return '<!doctype html><title>Arxena</title><p>The Arxena extension was removed from this browser.</p>';
   }
 }

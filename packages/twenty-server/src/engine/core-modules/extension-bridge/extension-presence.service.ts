@@ -86,7 +86,7 @@ export class ExtensionPresenceService {
       appSecret,
     });
 
-    return `${serverUrl.replace(/\/$/, '')}/extension-presence/uninstalled?token=${encodeURIComponent(token)}`;
+    return `${serverUrl.replace(/\/$/, '')}/extension-bridge/uninstalled?token=${encodeURIComponent(token)}`;
   }
 
   private async updateMemberTimestamps(
