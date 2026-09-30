@@ -272,19 +272,37 @@ export const buildOutreachFirstMessagePrompt = ({
   calendarSlots?: string;
   kind: 'opener' | 'fu1' | 'fu2' | 'fu3';
 }): string => {
+  // Copied from the local Candidate Sequencer "Draft first LinkedIn message" step.
+  if (kind === 'opener') {
+    return [
+      'You draft outbound messages on behalf of the sender described below.',
+      `The prospect has just accepted the senders' connection request with the text: ${chatHistory ?? '(none)'}`,
+      '',
+      'How to :',
+      "Read the prospects' profile & prospects' posts and what the sender currently does. Come up with/ Invent one simple genuine reason why the sender's work is directly relevant to something the prospect has mentioned in their profile or a recent post.",
+      '',
+      'Rules :',
+      'Keep it short, less than 3 sentences.',
+      '',
+      'Example Structure :',
+      'Something like Hi ABC, I noticed your post / noticed on your profile that you are doing X which ties in with our work in Y and would benefit you in Z. Would you be open for a quick demo sometime coming Thursday or Friday?',
+      '',
+      `Sender Profile:${senderJson}`,
+      '',
+      `Prospect: ${prospectEnrichmentJson}`,
+      '',
+      `Prospect Profile: ${prospectProfileText ?? '(none)'}`,
+      '',
+      `Prospect Posts: ${prospectPostsText ?? '(none)'}`,
+      '',
+      `Chat History: ${chatHistory ?? '(none)'}`,
+      '',
+      '',
+      'Return JSON only: { "message": "<body>" }',
+    ].join('\n');
+  }
+
   const kindRules = {
-    opener: [
-      'Write the first message after connection accepted (T1).',
-      'Ask type: curiosity question only — not time, not a call, not a meeting.',
-      '35–50 words. Thanks for connecting + one specific observation from the trigger.',
-      'Then one open question about how they handle the problem that trigger creates (their world, not our offer).',
-      'No product name, no offer.one_sentence, no pitch, no links, no deck.',
-      'matching_problem may shape problem language only — never paste the offer.',
-      OUTREACH_CADENCE_TRIGGER_PRIORITY,
-      OUTREACH_CADENCE_NO_FLATTERY,
-      OUTREACH_CADENCE_NO_SLOTS_RULE,
-      OUTREACH_CADENCE_DO_NOT_CONTINUE_THREAD,
-    ].join(' '),
     fu1: [
       'Second cold message (T2), sent if no reply. Ask type: interest CTA only — not minutes, not a call.',
       '50–70 words. Natural bridge — never "following up" / "circling back" / "bumping this".',

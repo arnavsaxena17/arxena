@@ -535,7 +535,11 @@ const linkedinDraftPrompt = (
   kind: 'opener' | 'fu1' | 'fu2' | 'fu3',
 ) =>
   buildOutreachFirstMessagePrompt({
-    senderJson: senderJson(),
+    // Opener uses the member find's text dump, matching the local draft prompt.
+    senderJson:
+      kind === 'opener'
+        ? `{{${OUTREACH_WF_MEMBER_STEP_ID}.text}}`
+        : senderJson(),
     prospectEnrichmentJson: prospectEnrichment(findId),
     // Accepted-branch fetch; FU steps hydrate this by chip reference when needed.
     prospectProfileText: `{{${IDS.fetchProfile}.text}}`,
@@ -1519,7 +1523,7 @@ const repliedBranchSteps = ({
               id: IDS.postReplyFu2WhatsappBranch,
               filterGroupId: IDS.postReplyFu2WhatsappGroup,
               filterId: IDS.postReplyFu2WhatsappFilter,
-              nextStepIds: [IDS.sendPostReplyFu2Linkedin],
+              nextStepIds: [IDS.sendPostReplyFu2Whatsapp],
             },
           }
         : {}),

@@ -119,6 +119,15 @@ export const buildCompanyApiOpenApiDocument = (
           website: { type: 'string' },
           linkedinUrl: { type: 'string' },
           industry: { type: 'string' },
+          country: { type: 'string' },
+          region: { type: 'string' },
+          locality: { type: 'string' },
+          size: {
+            type: 'string',
+            description: 'Employee-range bucket from the free company dataset.',
+            example: '11-50',
+          },
+          founded: { type: 'string' },
         },
         example: {
           id: 'acme',
@@ -143,7 +152,25 @@ export const buildCompanyApiOpenApiDocument = (
           keywords: { type: 'string' },
           companyName: { type: 'string', example: 'Acme' },
           website: { type: 'string' },
-          industry: { type: 'string' },
+          industry: {
+            type: 'string',
+            description:
+              'Exact free-company-dataset industry label, lowercase. Example: restaurants.',
+            example: 'restaurants',
+          },
+          country: {
+            type: 'string',
+            description: 'Country, lowercase. Example: india.',
+            example: 'india',
+          },
+          region: { type: 'string', example: 'maharashtra' },
+          locality: { type: 'string', example: 'mumbai' },
+          size: {
+            type: 'string',
+            description:
+              'Employee-range bucket: 1-10, 11-50, 51-200, 201-500, 501-1000, 1001-5000, 5001-10000, 10001+.',
+            example: '11-50',
+          },
           location: { type: 'string' },
           url: {
             type: 'string',
@@ -159,6 +186,7 @@ export const buildCompanyApiOpenApiDocument = (
             example: false,
           },
           limit: { type: 'number', minimum: 1, maximum: 100, default: 20 },
+          offset: { type: 'number', minimum: 0, maximum: 9900, default: 0 },
         },
         example: {
           companyName: 'Acme',

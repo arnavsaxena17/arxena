@@ -162,10 +162,7 @@ describe('CompanySearchHitTransformer', () => {
           linkedin: {
             value: 'http://www.linkedin.com/company/ather-energy',
           },
-          categories: [
-            { value: 'Automotive' },
-            { value: 'Electric Vehicle' },
-          ],
+          categories: [{ value: 'Automotive' }, { value: 'Electric Vehicle' }],
         },
         { type: 'organization', name: '' },
       ]),
@@ -178,5 +175,32 @@ describe('CompanySearchHitTransformer', () => {
         industry: 'Automotive',
       },
     ]);
+  });
+
+  it('maps free company dataset location and employee size', () => {
+    expect(
+      transformer.fromIndexItem({
+        id: 'abc',
+        name: 'bawarchi',
+        industry: 'restaurants',
+        country: 'india',
+        region: 'telangana',
+        locality: 'hyderabad',
+        size: '11-50',
+        founded: '1969',
+        linkedin_url: 'linkedin.com/company/bawarchi',
+      }),
+    ).toEqual({
+      id: 'abc',
+      name: 'bawarchi',
+      website: '',
+      linkedinUrl: 'linkedin.com/company/bawarchi',
+      industry: 'restaurants',
+      country: 'india',
+      region: 'telangana',
+      locality: 'hyderabad',
+      size: '11-50',
+      founded: '1969',
+    });
   });
 });

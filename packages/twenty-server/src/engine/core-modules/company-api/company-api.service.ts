@@ -104,7 +104,12 @@ export class CompanyApiService {
         companyName: body.companyName,
         website: body.website,
         industry: body.industry,
+        country: body.country,
+        region: body.region,
+        locality: body.locality,
+        employeeSize: body.size,
         limit,
+        offset: body.offset,
       });
 
       return {
@@ -171,8 +176,8 @@ export class CompanyApiService {
           options?.stopAtKnown ??
           Boolean(
             extractSalesNavigatorAccountListId(searchUrl) &&
-              isUnipileAccountListV2Enabled(body.useV2) &&
-              options?.isKnownHit,
+            isUnipileAccountListV2Enabled(body.useV2) &&
+            options?.isKnownHit,
           ),
       });
 
@@ -392,8 +397,12 @@ export class CompanyApiService {
             : this.linkedInSearchService.searchCompaniesSalesNavigator(
                 {
                   keywords: input.keywords || undefined,
-                  ...(locationId ? { location: { include: [locationId] } } : {}),
-                  ...(industryId ? { industry: { include: [industryId] } } : {}),
+                  ...(locationId
+                    ? { location: { include: [locationId] } }
+                    : {}),
+                  ...(industryId
+                    ? { industry: { include: [industryId] } }
+                    : {}),
                 },
                 input.accountId,
                 { limit },
@@ -513,7 +522,8 @@ export class CompanyApiService {
     }
 
     const total =
-      typeof firstPaging?.total_count === 'number' && firstPaging.total_count > 0
+      typeof firstPaging?.total_count === 'number' &&
+      firstPaging.total_count > 0
         ? firstPaging.total_count
         : collected.length;
 
@@ -604,4 +614,3 @@ export class CompanyApiService {
     return resolved.industry?.include?.[0]?.trim() || trimmed;
   }
 }
-

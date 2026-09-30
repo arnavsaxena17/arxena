@@ -47,6 +47,23 @@ export class CompanySearchDto {
 
   @IsOptional()
   @IsString()
+  country?: string;
+
+  @IsOptional()
+  @IsString()
+  region?: string;
+
+  @IsOptional()
+  @IsString()
+  locality?: string;
+
+  // Employee-range bucket on free_company_dataset, e.g. "1-10" or "11-50"
+  @IsOptional()
+  @IsString()
+  size?: string;
+
+  @IsOptional()
+  @IsString()
   location?: string;
 
   @IsOptional()
@@ -76,4 +93,10 @@ export class CompanySearchDto {
   @Min(1)
   @Max(100)
   limit?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(9900)
+  offset?: number;
 }

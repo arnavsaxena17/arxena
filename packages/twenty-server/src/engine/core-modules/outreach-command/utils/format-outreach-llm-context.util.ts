@@ -308,6 +308,14 @@ export const formatOutreachSenderForLlm = (value: unknown): string => {
     return '';
   }
 
+  // Workspace member row, or a find-records `first` record.
+  if (
+    'outreachSenderProfile' in record &&
+    isDefined(record.outreachSenderProfile)
+  ) {
+    return formatOutreachSenderForLlm(record.outreachSenderProfile);
+  }
+
   // Slim member profile: brief + discovery chips.
   if (
     typeof record.brief === 'string' ||
@@ -328,6 +336,13 @@ export const formatOutreachSenderForLlm = (value: unknown): string => {
   // Legacy fat JSON still in flight during upgrade.
   if ('identity' in record || 'offer' in record) {
     return formatOutreachSenderForLlm(flattenFatOutreachSenderProfile(record));
+  }
+
+  // Find Records result: { first, all, totalCount }.
+  const firstRecord = asRecord(record.first);
+
+  if (isDefined(firstRecord) && ('all' in record || 'totalCount' in record)) {
+    return formatOutreachSenderForLlm(firstRecord);
   }
 
   return '';
@@ -375,10 +390,15 @@ export const formatOutreachProspectProfileForLlm = (value: unknown): string => {
 
     // Avoid recursion on pretty-JSON text from older withLlmFormattedText.
     if (nested.startsWith('{') || nested.startsWith('[')) {
-      return formatOutreachProspectProfileForLlm(tryParseJson(nested) ?? nested);
+      return formatOutreachProspectProfileForLlm(
+        tryParseJson(nested) ?? nested,
+      );
     }
 
-    if (!nested.includes('"success"') && !nested.includes('"linkedinProfileId"')) {
+    if (
+      !nested.includes('"success"') &&
+      !nested.includes('"linkedinProfileId"')
+    ) {
       return nested;
     }
 
@@ -417,7 +437,8 @@ export const formatOutreachProspectProfileForLlm = (value: unknown): string => {
         const start =
           typeof experience.start === 'string' ? experience.start.trim() : '';
         const end =
-          typeof experience.end === 'string' && isNonEmptyString(experience.end.trim())
+          typeof experience.end === 'string' &&
+          isNonEmptyString(experience.end.trim())
             ? experience.end.trim()
             : 'Present';
         const role = [position, company].filter(isNonEmptyString).join(' @ ');
@@ -456,9 +477,7 @@ export const formatOutreachProspectProfileForLlm = (value: unknown): string => {
     headline,
     ...listLine('Location', location),
     ...listLine('About', about),
-    ...(experienceLines.length > 0
-      ? ['Experience:', ...experienceLines]
-      : []),
+    ...(experienceLines.length > 0 ? ['Experience:', ...experienceLines] : []),
     ...(skills.length > 0 ? [`Skills: ${skills.join(', ')}`] : []),
     ...listLine('LinkedIn', linkedinUrl),
   ].filter(isNonEmptyString);
@@ -491,7 +510,10 @@ export const formatOutreachProspectPostsForLlm = (value: unknown): string => {
   const record = asRecord(value);
 
   if (isDefined(record)) {
-    if (typeof record.text === 'string' && isNonEmptyString(record.text.trim())) {
+    if (
+      typeof record.text === 'string' &&
+      isNonEmptyString(record.text.trim())
+    ) {
       return record.text.trim();
     }
 
@@ -563,6 +585,21 @@ export const formatOutreachProspectEnrichmentForLlm = (
   }
 
   if (
+    'outreachProspectEnrichment' in record &&
+    isDefined(record.outreachProspectEnrichment)
+  ) {
+    return formatOutreachProspectEnrichmentForLlm(
+      record.outreachProspectEnrichment,
+    );
+  }
+
+  const firstRecord = asRecord(record.first);
+
+  if (isDefined(firstRecord) && ('all' in record || 'totalCount' in record)) {
+    return formatOutreachProspectEnrichmentForLlm(firstRecord);
+  }
+
+  if (
     typeof record.score === 'undefined' &&
     typeof record.hooks === 'undefined'
   ) {
@@ -624,6 +661,8 @@ export const rewriteOutreachResolvedPromptSections = (
   if (
     !prompt.includes('SENDER_JSON') &&
     !prompt.includes('PROSPECT_ENRICHMENT') &&
+    !prompt.includes('Prospect:') &&
+    !prompt.includes('prospect:') &&
     !prompt.includes('prospect_posts:') &&
     !prompt.includes('prospect_profile:') &&
     !prompt.includes('0-based index into Available slots') &&
@@ -670,8 +709,11 @@ export const rewriteOutreachResolvedPromptSections = (
       format: withNoneFallback(formatOutreachSlotsForLlm),
     },
     {
-      prefix: 'SENDER_JSON: ',
-      format: withNoneFallback(formatOutreachSenderForLlm),
+      // Optional space: prompts are often `SENDER_JSON:{{step.text}}`.
+      // The leading space in the replacement keeps `SENDER_JSON: <brief>`.
+      prefix: 'SENDER_JSON:',
+      format: (raw: string) =>
+        ` ${withNoneFallback(formatOutreachSenderForLlm)(raw)}`,
     },
     {
       prefix: 'PROSPECT_ENRICHMENT: ',
@@ -680,6 +722,22 @@ export const rewriteOutreachResolvedPromptSections = (
     {
       prefix: 'prospect: ',
       format: withNoneFallback(formatOutreachProspectEnrichmentForLlm),
+    },
+    {
+      // Prompts label this section `Prospect:`; the formatter also starts
+      // with that word, so drop the duplicate.
+      prefix: 'Prospect:',
+      format: (raw: string) => {
+        const formatted = withNoneFallback(
+          formatOutreachProspectEnrichmentForLlm,
+        )(raw);
+
+        if (formatted.startsWith('Prospect:')) {
+          return formatted.slice('Prospect:'.length);
+        }
+
+        return ` ${formatted}`;
+      },
     },
     {
       prefix: 'prospect_profile: ',
@@ -826,6 +884,16 @@ export const buildFindRecordsLlmText = (records: unknown[]): string => {
     if (isNonEmptyString(transcript)) {
       return transcript;
     }
+  }
+
+  const looksLikeSenderProfiles = records.some((record) => {
+    const row = asRecord(record);
+
+    return isDefined(row) && 'outreachSenderProfile' in row;
+  });
+
+  if (looksLikeSenderProfiles) {
+    return formatOutreachSenderForLlm(structuredResult) || '(none)';
   }
 
   return JSON.stringify(structuredResult, null, 2);

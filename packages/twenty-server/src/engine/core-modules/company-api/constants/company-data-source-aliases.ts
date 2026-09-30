@@ -27,7 +27,8 @@ export const COMPANY_DATA_SOURCE_CATEGORIES: CompanyDataSourceCategory[] = [
   {
     alias: 'index',
     label: 'Index',
-    description: 'Search Arxena Elasticsearch company indices.',
+    description:
+      'Search the free company dataset in Elasticsearch (country, industry, employee size, name, website).',
   },
   {
     alias: 'harvest',

@@ -50,7 +50,9 @@ describe('CompanyApiService', () => {
       id: value,
       title: value,
     })),
-    resolveParameterIds: jest.fn(async (params: { industry?: { include?: string[] } }) => params),
+    resolveParameterIds: jest.fn(
+      async (params: { industry?: { include?: string[] } }) => params,
+    ),
   };
 
   const service = new CompanyApiService(
@@ -65,6 +67,36 @@ describe('CompanyApiService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('passes free company dataset filters to the index', async () => {
+    companySearchDataSourceResolver.resolve.mockResolvedValue({
+      dataSource: 'index',
+    });
+    companiesEsService.searchCompanies.mockResolvedValue({
+      total: 848,
+      items: [],
+    });
+
+    await service.searchCompanies(
+      {
+        dataSource: 'index',
+        industry: 'restaurants',
+        country: 'india',
+        size: '11-50',
+        limit: 100,
+      },
+      'token',
+    );
+
+    expect(companiesEsService.searchCompanies).toHaveBeenCalledWith(
+      expect.objectContaining({
+        industry: 'restaurants',
+        country: 'india',
+        employeeSize: '11-50',
+        limit: 100,
+      }),
+    );
   });
 
   it('searches the companies index', async () => {
@@ -326,9 +358,7 @@ describe('CompanyApiService', () => {
     linkedInSearchService.searchCompaniesSalesNavigator.mockResolvedValue(
       page(0, 2, 'cursor-1'),
     );
-    linkedInSearchService.searchWithCursor.mockResolvedValue(
-      page(2, 2, null),
-    );
+    linkedInSearchService.searchWithCursor.mockResolvedValue(page(2, 2, null));
 
     const result = await service.searchCompanies(
       { companyName: 'Acme', limit: 3 },

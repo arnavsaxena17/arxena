@@ -28,6 +28,10 @@ export type CompaniesEsSearchOptions = {
   companyId?: string;
   website?: string;
   industry?: string;
+  country?: string;
+  region?: string;
+  locality?: string;
+  employeeSize?: string;
   limit?: number;
   offset?: number;
 };
@@ -70,7 +74,8 @@ export class CompaniesEsService {
     this.companiesSearchIndex = this.environmentService.get(
       'COMPANIES_SCORES_ES_INDEX',
     );
-    this.companiesLegacyIndex = this.environmentService.get('COMPANIES_ES_INDEX');
+    this.companiesLegacyIndex =
+      this.environmentService.get('COMPANIES_ES_INDEX');
 
     if (typeof endpoint === 'string' && endpoint.length > 0) {
       this.client = new Client({ node: endpoint });
@@ -140,6 +145,10 @@ export class CompaniesEsService {
       companyId,
       website,
       industry,
+      country,
+      region,
+      locality,
+      employeeSize,
       limit,
       offset,
     } = options;
@@ -154,9 +163,8 @@ export class CompaniesEsService {
 
     const normalizedWebsite = website?.trim();
     if (normalizedWebsite) {
-      const websiteVariants = buildCompanyWebsiteLookupVariants(
-        normalizedWebsite,
-      );
+      const websiteVariants =
+        buildCompanyWebsiteLookupVariants(normalizedWebsite);
       const termsValues =
         websiteVariants.length > 0 ? websiteVariants : [normalizedWebsite];
 
@@ -188,23 +196,39 @@ export class CompaniesEsService {
       });
     }
 
-    const normalizedIndustry = industry?.trim();
+    const normalizedIndustry = industry?.trim().toLowerCase();
     if (normalizedIndustry) {
-      mustClauses.push({ match: { industry: normalizedIndustry } });
+      // Keyword labels ("restaurants", "food & beverages") need an exact term.
+      // Match covers a text industry field on the scores fallback index.
+      mustClauses.push({
+        bool: {
+          should: [
+            { term: { industry: normalizedIndustry } },
+            { match: { industry: normalizedIndustry } },
+          ],
+          minimum_should_match: 1,
+        },
+      });
     }
+
+    const addKeywordTerm = (field: string, value: string | undefined) => {
+      const normalizedValue = value?.trim().toLowerCase();
+      if (normalizedValue) {
+        mustClauses.push({ term: { [field]: normalizedValue } });
+      }
+    };
+
+    addKeywordTerm('country', country);
+    addKeywordTerm('region', region);
+    addKeywordTerm('locality', locality);
+    addKeywordTerm('size', employeeSize);
 
     const normalizedQuery = query?.trim();
     if (normalizedQuery) {
       shouldClauses.push({
         multi_match: {
           query: normalizedQuery,
-          fields: [
-            'name^4',
-            'id^3',
-            'website^2',
-            'linkedin_url^2',
-            'industry',
-          ],
+          fields: ['name^4', 'id^3', 'website^2', 'linkedin_url^2', 'industry'],
           type: 'best_fields',
           operator: 'and',
         },

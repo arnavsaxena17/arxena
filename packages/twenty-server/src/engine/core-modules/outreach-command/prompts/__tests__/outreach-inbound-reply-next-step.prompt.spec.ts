@@ -150,29 +150,34 @@ describe('buildOutreachSalesChatDraftPrompt', () => {
     expect(prompt).toContain('T1-style observation pitch');
   });
 
-  it('should earn a reply on openers without a meeting soft-ask', () => {
+  it('should seed the local first LinkedIn message prompt', () => {
     const opener = buildOutreachFirstMessagePrompt({
-      senderJson: '{}',
-      prospectEnrichmentJson: '{}',
-      prospectProfileText: '{"headline":"CFO"}',
+      senderJson: '{{member.text}}',
+      prospectEnrichmentJson: '{{find.first.outreachProspectEnrichment}}',
+      prospectProfileText: '{{profile.text}}',
+      prospectPostsText: '{{posts.text}}',
+      chatHistory: '{{messages.text}}',
       kind: 'opener',
-      calendarSlots:
-        '[{"startsAt":"2024-11-25T15:00:00.000Z","endsAt":"2024-11-25T15:30:00.000Z"}]',
     });
 
-    expect(opener).toContain('curiosity question only');
-    expect(opener).toContain('not a meeting');
-    expect(opener).toContain('35–50 words');
-    expect(opener).toContain('calendar (ignore — do not use)');
-    expect(opener).toContain('Do not answer inbound scheduling');
-    expect(opener).toContain('prospect_profile: CFO');
-    expect(opener).toContain('prospect_posts: (none)');
     expect(opener).toContain(
-      'calendar (ignore — do not use): (0) Mon, Nov 25 · 8:30–9:00 PM IST',
+      "The prospect has just accepted the senders' connection request with the text: {{messages.text}}",
     );
-    expect(opener).not.toContain('sometime this week or next');
-    expect(opener).not.toContain('soft ask only');
-    expect(opener).not.toContain('two concrete windows from calendar');
+    expect(opener).toContain('Keep it short, less than 3 sentences.');
+    expect(opener).toContain(
+      'Would you be open for a quick demo sometime this week or the next?',
+    );
+    expect(opener).toContain('Sender Profile:{{member.text}}');
+    expect(opener).toContain(
+      'Prospect: {{find.first.outreachProspectEnrichment}}',
+    );
+    expect(opener).toContain('Prospect Profile: {{profile.text}}');
+    expect(opener).toContain('Prospect Posts: {{posts.text}}');
+    expect(opener).toContain('Chat History: {{messages.text}}');
+    expect(opener).toContain('Return JSON only: { "message": "<body>" }');
+    expect(opener).not.toContain('curiosity question only');
+    expect(opener).not.toContain('calendar (ignore — do not use)');
+    expect(opener).not.toContain(OUTREACH_HUMANIZER_RULES);
   });
 
   it('should escalate cold cadence ask types without contradicting T1', () => {
@@ -299,7 +304,6 @@ describe('outreach humanizer rules', () => {
 
     for (const prompt of [
       connectionNote,
-      opener,
       followUp,
       reminder,
       noShow,
@@ -312,7 +316,8 @@ describe('outreach humanizer rules', () => {
     expect(connectionNote).toContain('Hard limit 280 characters.');
     expect(connectionNote).toContain('not X, but Y');
     expect(connectionNote.split('Em dashes').length - 1).toBe(1);
-    expect(opener).toContain('35–50 words');
+    expect(opener).toContain('less than 3 sentences');
+    expect(opener).not.toContain(OUTREACH_HUMANIZER_RULES);
     expect(followUp).toContain('40–60 words');
   });
 

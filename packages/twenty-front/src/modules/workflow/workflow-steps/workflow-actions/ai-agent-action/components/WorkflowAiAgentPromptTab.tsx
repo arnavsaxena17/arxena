@@ -34,6 +34,7 @@ type WorkflowAiAgentPromptTabProps = {
   onPromptBlur?: () => void;
   onActionUpdate?: (action: WorkflowAiAgentAction) => void;
   modelSelectDropdownId?: string;
+  promptResizable?: boolean;
 };
 
 const EMPTY_AGENT_RESPONSE_SCHEMA: AgentResponseSchema = {
@@ -61,6 +62,7 @@ export const WorkflowAiAgentPromptTab = ({
   onPromptBlur,
   onActionUpdate,
   modelSelectDropdownId = 'select-agent-model',
+  promptResizable = false,
 }: WorkflowAiAgentPromptTabProps) => {
   const [workflowAiAgentActionAgent, setWorkflowAiAgentActionAgent] =
     useAtomState(workflowAiAgentActionAgentState);
@@ -161,6 +163,7 @@ export const WorkflowAiAgentPromptTab = ({
         onChange={onPromptChange}
         onBlur={onPromptBlur}
         readonly={readonly}
+        resizable={promptResizable}
       />
     );
   }
@@ -208,6 +211,7 @@ export const WorkflowAiAgentPromptTab = ({
         onChange={onPromptChange}
         onBlur={onPromptBlur}
         readonly={readonly}
+        resizable={promptResizable}
       />
 
       <SettingsAgentModelCapabilities

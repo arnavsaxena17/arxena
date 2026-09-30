@@ -84,6 +84,7 @@ export const WorkflowAiAgentTestTab = ({
         onPromptChange={onPromptChange}
         onPromptBlur={onPromptBlur}
         onActionUpdate={onActionUpdate}
+        promptResizable
       />
       <AiAgentExecutionResult
         aiAgentTestData={aiAgentTestData}

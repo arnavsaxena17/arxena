@@ -10,6 +10,7 @@ type FormFieldInputInnerContainerProps = {
   hoverable?: boolean;
   multiline?: boolean;
   readonly?: boolean;
+  fillHeight?: boolean;
   preventFocusStackUpdate?: boolean;
   formFieldInputInstanceId: string;
 };
@@ -32,7 +33,10 @@ const StyledFormFieldInputInnerContainer = styled.div<
     multiline || !hasRightElement ? themeCssVariables.border.radius.md : '0'};
   box-sizing: border-box;
   display: flex;
+  flex: ${({ fillHeight }) => (fillHeight === true ? '1 1 auto' : 'initial')};
+  height: ${({ fillHeight }) => (fillHeight === true ? '100%' : 'auto')};
   justify-content: space-between;
+  min-height: ${({ fillHeight }) => (fillHeight === true ? '0' : 'auto')};
   overflow-x: auto;
   overflow-y: ${({ multiline }) => (multiline ? 'auto' : 'hidden')};
   scrollbar-width: none;
@@ -62,6 +66,7 @@ export const FormFieldInputInnerContainer = forwardRef(
       hoverable,
       multiline,
       readonly,
+      fillHeight,
       preventFocusStackUpdate = false,
       onClick,
       formFieldInputInstanceId,
@@ -107,6 +112,7 @@ export const FormFieldInputInnerContainer = forwardRef(
         hoverable={hoverable}
         multiline={multiline}
         readonly={readonly}
+        fillHeight={fillHeight}
         onFocus={handleFocus}
         onBlur={handleBlur}
         onClick={onClick}

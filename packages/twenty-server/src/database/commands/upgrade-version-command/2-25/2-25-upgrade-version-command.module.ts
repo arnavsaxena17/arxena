@@ -137,6 +137,8 @@ import { SetOutreachCalendarSlotsToThirtyMinutesCommand } from 'src/database/com
 import { ResyncOutreachReplyProfileFetchCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000147-resync-outreach-reply-profile-fetch.command';
 import { StampProspectEnrichmentOnLinkedinProfileFetchCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000148-stamp-prospect-enrichment-on-linkedin-profile-fetch.command';
 import { SyncWorkspaceMemberExtensionPresenceFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000149-sync-workspace-member-extension-presence-fields.command';
+import { SeedOutreachFirstLinkedinMessagePromptCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000150-seed-outreach-first-linkedin-message-prompt.command';
+import { ResyncOutreachPostReplyFu2WhatsappEdgeCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000151-resync-outreach-post-reply-fu2-whatsapp-edge.command';
 import { SetOutreachExtractSignalsDeepseekCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000106-set-outreach-extract-signals-deepseek.command';
 import { DropChatMessageObjWithTimeStampCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000099-drop-chat-message-obj-with-time-stamp.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
@@ -309,6 +311,8 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     ResyncOutreachReplyProfileFetchCommand,
     StampProspectEnrichmentOnLinkedinProfileFetchCommand,
     SyncWorkspaceMemberExtensionPresenceFieldsCommand,
+    SeedOutreachFirstLinkedinMessagePromptCommand,
+    ResyncOutreachPostReplyFu2WhatsappEdgeCommand,
     SyncWorkspaceMemberCrunchbaseCookiesFieldsCommand,
     EnsureSearchCrunchbaseCompaniesLogicFunctionCommand,
     MigrateOtherFieldsService,

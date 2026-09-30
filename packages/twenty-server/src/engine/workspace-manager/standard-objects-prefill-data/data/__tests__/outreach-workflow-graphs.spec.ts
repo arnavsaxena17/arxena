@@ -36,6 +36,7 @@ type GraphStep = {
           label?: string;
         }>;
       };
+      prompt?: string;
     };
   };
 };
@@ -517,6 +518,12 @@ describe('GTM outreach workflow graphs', () => {
     expect(byName('Qualify prospect')).toBeDefined();
     expect(byName('Draft connection note')).toBeDefined();
     expect(byName('Draft first LinkedIn message')).toBeDefined();
+    expect(
+      byName('Draft first LinkedIn message')?.settings?.input?.prompt,
+    ).toContain('less than 3 sentences');
+    expect(
+      byName('Draft first LinkedIn message')?.settings?.input?.prompt,
+    ).toContain('{{b8e1d001-4a11-4c11-8c11-000000000001.text}}');
     expect(byName('Get calendar availability (opener)')).toBeDefined();
     expect(byName('Fetch LinkedIn posts (before opener)')).toBeDefined();
     expect(byName('Get calendar availability (opener)')?.nextStepIds).toEqual([
@@ -803,7 +810,38 @@ describe('GTM outreach workflow graphs', () => {
     expect(
       stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.sendPostReplyFu1Whatsapp),
     ).toBe(false);
+    expect(
+      stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.sendPostReplyFu2Whatsapp),
+    ).toBe(false);
     expect(stepIds.has(OUTREACH_SEQUENCER_STEP_IDS.sendReply)).toBe(true);
+  });
+
+  it('routes post-reply follow-ups to the matching channel send step', () => {
+    const graph = buildCandidateSequencerGraph();
+    const steps = graph.steps as GraphStep[];
+    const byName = (name: string) => steps.find((step) => step.name === name);
+    const branchNext = (stepName: string, branchIndex: number) =>
+      byName(stepName)?.settings?.input?.branches?.[branchIndex]?.nextStepIds ??
+      [];
+
+    expect(branchNext('Send post-reply FU1 on preferred channel', 0)).toEqual([
+      OUTREACH_SEQUENCER_STEP_IDS.sendPostReplyFu1Email,
+    ]);
+    expect(branchNext('Send post-reply FU1 on preferred channel', 1)).toEqual([
+      OUTREACH_SEQUENCER_STEP_IDS.sendPostReplyFu1Whatsapp,
+    ]);
+    expect(branchNext('Send post-reply FU1 on preferred channel', 2)).toEqual([
+      OUTREACH_SEQUENCER_STEP_IDS.sendPostReplyFu1Linkedin,
+    ]);
+    expect(branchNext('Send post-reply FU2 on preferred channel', 0)).toEqual([
+      OUTREACH_SEQUENCER_STEP_IDS.sendPostReplyFu2Email,
+    ]);
+    expect(branchNext('Send post-reply FU2 on preferred channel', 1)).toEqual([
+      OUTREACH_SEQUENCER_STEP_IDS.sendPostReplyFu2Whatsapp,
+    ]);
+    expect(branchNext('Send post-reply FU2 on preferred channel', 2)).toEqual([
+      OUTREACH_SEQUENCER_STEP_IDS.sendPostReplyFu2Linkedin,
+    ]);
   });
 
   it('omits meeting follow-up tree when meeting follow-up is off', () => {

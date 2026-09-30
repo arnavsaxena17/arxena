@@ -126,6 +126,11 @@ export class CompanySearchHitTransformer {
     website?: string;
     linkedin_url?: string;
     industry?: string;
+    country?: string;
+    region?: string;
+    locality?: string;
+    size?: string;
+    founded?: string;
   }): CompanySearchHit {
     return this.fromAnyItem(item);
   }
@@ -188,6 +193,12 @@ export class CompanySearchHitTransformer {
       return { id: '', name: '', website: '', linkedinUrl: '', industry: '' };
     }
 
+    const country = readString(item, ['country']);
+    const region = readString(item, ['region']);
+    const locality = readString(item, ['locality']);
+    const employeeSize = readString(item, ['size']);
+    const founded = readString(item, ['founded']);
+
     return {
       id: readString(item, ['id', 'universalName', 'universal_name']),
       name: readString(item, ['name', 'display_name', 'companyName']),
@@ -196,6 +207,11 @@ export class CompanySearchHitTransformer {
         readWebsites(item),
       linkedinUrl: readLinkedinUrl(item),
       industry: readString(item, ['industry']),
+      ...(country ? { country } : {}),
+      ...(region ? { region } : {}),
+      ...(locality ? { locality } : {}),
+      ...(employeeSize ? { size: employeeSize } : {}),
+      ...(founded ? { founded } : {}),
     };
   }
 

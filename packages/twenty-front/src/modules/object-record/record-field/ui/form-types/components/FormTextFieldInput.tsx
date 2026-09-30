@@ -1,7 +1,10 @@
 import { t } from '@lingui/core/macro';
 import { FormFieldInputContainer } from '@/object-record/record-field/ui/form-types/components/FormFieldInputContainer';
 import { FormFieldInputInnerContainer } from '@/object-record/record-field/ui/form-types/components/FormFieldInputInnerContainer';
-import { FormFieldInputRowContainer } from '@/object-record/record-field/ui/form-types/components/FormFieldInputRowContainer';
+import {
+  FormFieldInputRowContainer,
+  LINE_HEIGHT,
+} from '@/object-record/record-field/ui/form-types/components/FormFieldInputRowContainer';
 import { TextVariableEditor } from '@/object-record/record-field/ui/form-types/components/TextVariableEditor';
 import { useTextVariableEditor } from '@/object-record/record-field/ui/form-types/hooks/useTextVariableEditor';
 import { type VariablePickerComponent } from '@/object-record/record-field/ui/form-types/types/VariablePickerComponent';
@@ -10,6 +13,7 @@ import { InputLabel } from '@/ui/input/components/InputLabel';
 import { parseEditorContent } from '@/workflow/workflow-variables/utils/parseEditorContent';
 import { useId } from 'react';
 import { isDefined } from 'twenty-shared/utils';
+import { ResizeHandle, useResizeHandle } from 'twenty-ui/layout';
 
 type FormTextFieldInputProps = {
   label?: string;
@@ -21,8 +25,13 @@ type FormTextFieldInputProps = {
   multiline?: boolean;
   readonly?: boolean;
   placeholder?: string;
+  resizable?: boolean;
   VariablePicker?: VariablePickerComponent;
 };
+
+const RESIZABLE_INPUT_MIN_HEIGHT = 3 * LINE_HEIGHT;
+const RESIZABLE_INPUT_DEFAULT_HEIGHT = 5 * LINE_HEIGHT;
+const RESIZABLE_INPUT_MAX_HEIGHT = 640;
 
 export const FormTextFieldInput = ({
   label,
@@ -34,9 +43,20 @@ export const FormTextFieldInput = ({
   onBlur,
   multiline,
   readonly,
+  resizable = false,
   VariablePicker,
 }: FormTextFieldInputProps) => {
   const instanceId = useId();
+  const {
+    size: resizableHeight,
+    handleResizeStart,
+    handleResizeMove,
+    handleResizeEnd,
+  } = useResizeHandle({
+    initialSize: RESIZABLE_INPUT_DEFAULT_HEIGHT,
+    minSize: RESIZABLE_INPUT_MIN_HEIGHT,
+    maxSize: RESIZABLE_INPUT_MAX_HEIGHT,
+  });
 
   const editor = useTextVariableEditor({
     placeholder: placeholder ?? t`Enter text`,
@@ -69,11 +89,15 @@ export const FormTextFieldInput = ({
     <FormFieldInputContainer>
       {label ? <InputLabel>{label}</InputLabel> : null}
 
-      <FormFieldInputRowContainer multiline={multiline}>
+      <FormFieldInputRowContainer
+        multiline={multiline}
+        height={resizable ? resizableHeight : undefined}
+      >
         <FormFieldInputInnerContainer
           formFieldInputInstanceId={instanceId}
           hasRightElement={isDefined(VariablePicker) && !readonly}
           multiline={multiline}
+          fillHeight={resizable}
           onBlur={onBlur}
         >
           <TextVariableEditor
@@ -91,6 +115,13 @@ export const FormTextFieldInput = ({
           />
         ) : null}
       </FormFieldInputRowContainer>
+      {resizable ? (
+        <ResizeHandle
+          onPointerDown={handleResizeStart}
+          onPointerMove={handleResizeMove}
+          onPointerUp={handleResizeEnd}
+        />
+      ) : null}
       {hint && <InputHint>{hint}</InputHint>}
       {error && <InputHint danger>{error}</InputHint>}
     </FormFieldInputContainer>

@@ -104,6 +104,46 @@ describe('formatOutreachSenderForLlm', () => {
     expect(formatted).toContain('Locations: India');
     expect(formatted).not.toContain('"product_name"');
   });
+
+  it('unwraps outreachSenderProfile off a workspace member row', () => {
+    const formatted = formatOutreachSenderForLlm({
+      name: { firstName: 'Arnav', lastName: 'Saxena' },
+      phoneNumber: '+910000000000',
+      linkedinLiAtToken: 'secret',
+      outreachSenderProfile: {
+        brief: 'Naresh Lahoti\nFounder',
+        locations: ['India'],
+        targetTitles: ['CFO'],
+        collateralFiles: [],
+      },
+    });
+
+    expect(formatted).toContain('Naresh Lahoti');
+    expect(formatted).toContain('Target titles: CFO');
+    expect(formatted).toContain('Locations: India');
+    expect(formatted).not.toContain('linkedinLiAtToken');
+    expect(formatted).not.toContain('+910000000000');
+  });
+
+  it('unwraps a find-records envelope to the first sender profile', () => {
+    const formatted = formatOutreachSenderForLlm({
+      first: {
+        linkedinUnipileAccountId: 'secret-account',
+        outreachSenderProfile: {
+          brief: 'Sender brief',
+          targetTitles: ['CFO'],
+          locations: ['India'],
+        },
+      },
+      all: [],
+      totalCount: 1,
+    });
+
+    expect(formatted).toContain('Sender brief');
+    expect(formatted).toContain('Target titles: CFO');
+    expect(formatted).not.toContain('secret-account');
+    expect(formatted).not.toContain('totalCount');
+  });
 });
 
 describe('formatOutreachProspectEnrichmentForLlm', () => {
@@ -140,6 +180,26 @@ describe('buildFindRecordsLlmText', () => {
       ]),
     ).toBe('us: Hi there');
   });
+
+  it('formats workspace member rows from outreachSenderProfile', () => {
+    const text = buildFindRecordsLlmText([
+      {
+        id: 'member-1',
+        phoneNumber: '+910000000000',
+        outreachSenderProfile: {
+          brief: 'Naresh Lahoti',
+          targetTitles: ['CFO'],
+          locations: ['India'],
+        },
+      },
+    ]);
+
+    expect(text).toContain('Naresh Lahoti');
+    expect(text).toContain('Target titles: CFO');
+    expect(text).toContain('Locations: India');
+    expect(text).not.toContain('phoneNumber');
+    expect(text).not.toContain('"first"');
+  });
 });
 
 describe('rewriteOutreachResolvedPromptSections', () => {
@@ -154,6 +214,35 @@ describe('rewriteOutreachResolvedPromptSections', () => {
     expect(rewritten).toContain('Sender: Naresh');
     expect(rewritten).toContain('(0) Sun, Nov 10 · 2:30–3:00 PM IST');
     expect(rewritten).not.toContain('"targetTitles"');
+  });
+
+  it('rewrites a SENDER_JSON find-records dump with no space after the colon', () => {
+    const rewritten = rewriteOutreachResolvedPromptSections(
+      'SENDER_JSON:{"first":{"outreachSenderProfile":{"brief":"Naresh","targetTitles":["CFO"],"locations":["India"]},"linkedinLiAtToken":"secret"},"all":[],"totalCount":1}',
+    );
+
+    expect(rewritten).toContain('Naresh');
+    expect(rewritten).toContain('Target titles: CFO');
+    expect(rewritten).toContain('Locations: India');
+    expect(rewritten).not.toContain('linkedinLiAtToken');
+    expect(rewritten).not.toContain('"first"');
+  });
+
+  it('rewrites a Prospect enrichment object', () => {
+    const rewritten = rewriteOutreachResolvedPromptSections(
+      [
+        'Prospect: {"hooks":[{"text":"Director Of Operations - Saudi Paper Group","source":"profile"}],"first_name":"Mohammad","company_short":"Saudi Paper Group"}',
+        'Prospect Profile: Mohammad Abdelghaffar',
+      ].join('\n'),
+    );
+
+    expect(rewritten).toContain('Prospect: Mohammad · Saudi Paper Group');
+    expect(rewritten).toContain(
+      '- (0) Director Of Operations - Saudi Paper Group [profile]',
+    );
+    expect(rewritten).toContain('Prospect Profile: Mohammad Abdelghaffar');
+    expect(rewritten).not.toContain('"hooks"');
+    expect(rewritten).not.toContain('Prospect: Prospect:');
   });
 
   it('rewrites chat_history Unipile dumps into us/them turns', () => {

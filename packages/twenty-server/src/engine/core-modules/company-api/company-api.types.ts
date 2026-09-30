@@ -7,6 +7,11 @@ export type CompanySearchHit = {
   website: string;
   linkedinUrl: string;
   industry: string;
+  country?: string;
+  region?: string;
+  locality?: string;
+  size?: string;
+  founded?: string;
 };
 
 export type CompanySearchResponse = {
