@@ -85,6 +85,42 @@ const formatCost = (dollars: number): string => {
 const formatTokenCount = (tokens: number): string =>
   formatNumber(tokens, { abbreviate: true, decimals: 1 });
 
+type OutputValidationField = NonNullable<
+  AiAgentStepLogDetails['outputValidation']
+>['fields'][number];
+
+const formatOutputValidationField = (field: OutputValidationField): string => {
+  if (field.skipped) {
+    return 'empty, skipped';
+  }
+
+  const checkDetails = isDefined(field.checkResults)
+    ? field.checkResults.map((checkResult) => {
+        const score = isDefined(checkResult.noul)
+          ? checkResult.noul.toFixed(2)
+          : 'n/a';
+
+        return `${checkResult.label} ${score}`;
+      })
+    : [
+        isDefined(field.operatorNote)
+          ? `operator note ${field.operatorNote.toFixed(2)}`
+          : undefined,
+        isDefined(field.unresolvedPlaceholder)
+          ? `placeholder ${field.unresolvedPlaceholder.toFixed(2)}`
+          : undefined,
+      ].filter(isDefined);
+  const details = [
+    ...checkDetails,
+    field.codeFailure ? `token ${field.codeFailure}` : undefined,
+  ].filter(isDefined);
+
+  const verdict = field.cleared ? 'cleared' : 'not cleared';
+  const detailText = details.length > 0 ? ` (${details.join(', ')})` : '';
+
+  return `${verdict}${detailText}`;
+};
+
 export const WorkflowRunStepLogsAiAgentDetail = ({
   details,
 }: {
@@ -99,6 +135,7 @@ export const WorkflowRunStepLogsAiAgentDetail = ({
     toolCalls,
     nativeWebSearchCallCount,
     durationMs,
+    outputValidation,
   } = details;
 
   const usageRows = [
@@ -179,6 +216,28 @@ export const WorkflowRunStepLogsAiAgentDetail = ({
           </StyledMetric>
         </StyledMetricsRow>
       </StyledSummaryCard>
+
+      {isDefined(outputValidation) && (
+        <StyledSection>
+          <StyledSectionTitle>
+            {outputValidation.cleared
+              ? t`Jev cleared this draft`
+              : t`Jev did not clear this draft`}
+          </StyledSectionTitle>
+          <StyledUsageGrid>
+            <StyledUsageLabel>{t`Drafts`}</StyledUsageLabel>
+            <StyledUsageValue>{outputValidation.attempts}</StyledUsageValue>
+            {outputValidation.fields.map((field) => (
+              <Fragment key={field.fieldKey}>
+                <StyledUsageLabel>{field.fieldKey}</StyledUsageLabel>
+                <StyledUsageValue>
+                  {formatOutputValidationField(field)}
+                </StyledUsageValue>
+              </Fragment>
+            ))}
+          </StyledUsageGrid>
+        </StyledSection>
+      )}
 
       {usageRows.length > 0 && (
         <StyledSection>

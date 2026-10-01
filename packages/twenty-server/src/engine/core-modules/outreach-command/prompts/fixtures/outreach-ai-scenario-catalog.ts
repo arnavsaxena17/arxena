@@ -21,6 +21,8 @@ const emptyExtract = {
   referralName: '',
   referralEmail: '',
   referralPhone: '',
+  prospectPhone: '',
+  sendWhatsappReply: false,
   shouldNotRespond: false,
 };
 
@@ -104,7 +106,7 @@ export const OUTREACH_AI_SCENARIO_CATALOG: OutreachAiScenario[] = [
       },
       validate: {
         prospectEmail: 'gaurav.zatakia@flomattress.com',
-        replyChannel: 'EMAIL',
+        replyChannel: 'LINKEDIN',
       },
     },
   },
@@ -129,7 +131,7 @@ export const OUTREACH_AI_SCENARIO_CATALOG: OutreachAiScenario[] = [
       },
       validate: {
         prospectEmail: 'kamallath@gmail.com',
-        replyChannel: 'WHATSAPP',
+        replyChannel: 'LINKEDIN',
       },
     },
   },
@@ -312,8 +314,9 @@ export const OUTREACH_AI_SCENARIO_CATALOG: OutreachAiScenario[] = [
       transcript: OUTREACH_AI_TRANSCRIPTS.gauravEmail.transcript,
       slots: slotsJson,
       conversationStage: 'INTENT',
-      replyChannel: 'EMAIL',
+      replyChannel: 'LINKEDIN',
       prospectEmail: 'gaurav.zatakia@flomattress.com',
+      emailTo: 'gaurav.zatakia@flomattress.com',
       senderJson,
       prospectEnrichmentJson: enrichmentJson,
     },

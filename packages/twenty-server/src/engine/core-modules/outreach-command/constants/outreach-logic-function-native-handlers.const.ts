@@ -24,7 +24,6 @@ import {
   OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-names.const';
 
-
 const SEARCH_PEOPLE_FOR_COMPANY_HANDLER = `// Native GTM action: SearchPeopleForCompanyService.
 // Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
 export const main = async (params: {
@@ -274,7 +273,11 @@ export const main = async (params: {
   referralName?: string;
   referralEmail?: string;
   referralPhone?: string;
+  prospectPhone?: string;
+  sendWhatsappReply?: boolean;
   shouldNotRespond?: boolean;
+  personPrimaryPhone?: string;
+  personPrimaryEmail?: string;
 }) => {
   return params;
 };

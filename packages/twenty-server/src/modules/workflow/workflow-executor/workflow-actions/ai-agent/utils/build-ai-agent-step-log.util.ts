@@ -5,13 +5,16 @@ import {
 
 import { type AgentExecutionResult } from 'src/engine/metadata-modules/ai/ai-agent-execution/types/agent-execution-result.type';
 import { mapAiStepsToToolCallLogs } from 'src/engine/metadata-modules/ai/ai-agent-execution/utils/map-ai-steps-to-tool-call-logs.util';
+import { type AiAgentOutputValidationReport } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-agent/utils/ai-agent-output-validation.util';
 
 export const buildAiAgentStepLog = ({
   executionResult,
   durationMs,
+  outputValidation,
 }: {
   executionResult: AgentExecutionResult;
   durationMs: number;
+  outputValidation?: AiAgentOutputValidationReport;
 }): WorkflowRunStepLog | null => {
   if (!executionResult.modelId) {
     return null;
@@ -42,6 +45,7 @@ export const buildAiAgentStepLog = ({
     nativeWebSearchCallCount: executionResult.nativeWebSearchCallCount,
     toolCalls,
     durationMs,
+    ...(outputValidation ? { outputValidation } : {}),
   };
 
   return {

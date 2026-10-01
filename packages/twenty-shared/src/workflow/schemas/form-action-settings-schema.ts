@@ -40,4 +40,6 @@ export const workflowFormActionSettingsSchema =
       }),
     ),
     notifyOnPending: workflowFormNotifyOnPendingSchema.optional(),
+    // No submits approve=false and the graph continues. Absent means No stops the run.
+    rejectContinues: z.boolean().optional(),
   });

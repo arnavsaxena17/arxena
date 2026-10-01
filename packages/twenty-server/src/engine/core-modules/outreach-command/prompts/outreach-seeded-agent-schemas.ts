@@ -22,23 +22,27 @@ export const OUTREACH_SEEDED_FALLBACK_EMAIL_SCHEMA = {
 export const OUTREACH_SEEDED_REPLY_SCHEMA = {
   type: 'object' as const,
   properties: {
-    message: {
+    linkedinMessage: {
       type: 'string' as const,
       description:
-        'Reply body. Use #DONTRESPOND# exactly when nothing should be sent.',
+        'LinkedIn body. Empty when LinkedIn is not sent. #DONTRESPOND# when nothing should be sent.',
     },
     emailSubject: {
       type: 'string' as const,
-      description: 'Subject when emailing details or a referral, else empty',
+      description: 'Subject when Email to is set, else empty',
     },
     emailBody: {
       type: 'string' as const,
-      description: 'Body for the details email to the prospect, else empty',
+      description: 'Email body when Email to is set, else empty',
     },
     referralMessage: {
       type: 'string' as const,
       description:
         'Intro message to the referred person (email or WhatsApp), else empty',
+    },
+    whatsappMessage: {
+      type: 'string' as const,
+      description: 'WhatsApp body when WhatsApp to is set, else empty',
     },
     referralCandidateId: {
       type: 'string' as const,
@@ -47,10 +51,11 @@ export const OUTREACH_SEEDED_REPLY_SCHEMA = {
     },
   },
   required: [
-    'message',
+    'linkedinMessage',
     'emailSubject',
     'emailBody',
     'referralMessage',
+    'whatsappMessage',
     'referralCandidateId',
   ],
   additionalProperties: false as const,
@@ -89,6 +94,16 @@ export const OUTREACH_SEEDED_EXTRACT_SIGNALS_SCHEMA = {
       description:
         'WhatsApp/phone of that person as written in the thread, else empty',
     },
+    prospectPhone: {
+      type: 'string' as const,
+      description:
+        "The recipient's own phone, copied from the thread, else empty",
+    },
+    sendWhatsappReply: {
+      type: 'boolean' as const,
+      description:
+        'True only to also WhatsApp them while the LinkedIn reply still goes out',
+    },
     shouldNotRespond: {
       type: 'boolean' as const,
       description: 'True only for opt-out: stop, unsubscribe, never contact me',
@@ -101,6 +116,8 @@ export const OUTREACH_SEEDED_EXTRACT_SIGNALS_SCHEMA = {
     'referralName',
     'referralEmail',
     'referralPhone',
+    'prospectPhone',
+    'sendWhatsappReply',
     'shouldNotRespond',
   ],
   additionalProperties: false as const,

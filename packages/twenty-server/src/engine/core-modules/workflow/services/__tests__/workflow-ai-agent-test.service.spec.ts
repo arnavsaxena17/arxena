@@ -60,6 +60,7 @@ describe('WorkflowAiAgentTestService', () => {
       agentAsyncExecutorService as unknown as AgentAsyncExecutorService,
       agentRepository as unknown as WorkspaceScopedRepository<AgentEntity>,
       workflowAiAgentTestContextService as never,
+      { runWithRetries: jest.fn() } as never,
     );
   });
 

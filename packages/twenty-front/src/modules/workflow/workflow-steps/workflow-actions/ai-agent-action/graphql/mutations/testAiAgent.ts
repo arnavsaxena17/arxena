@@ -8,6 +8,7 @@ export const TEST_AI_AGENT = gql`
       result
       error
       durationMs
+      outputValidation
     }
   }
 `;

@@ -41,10 +41,11 @@ describe('buildOutreachSalesChatDraftPrompt', () => {
   });
 
   it('should ask for copy only and never for times, channel, or contacts', () => {
-    expect(prompt).toContain('"message"');
+    expect(prompt).toContain('"linkedinMessage"');
     expect(prompt).toContain('"emailSubject"');
     expect(prompt).toContain('"emailBody"');
     expect(prompt).toContain('"referralMessage"');
+    expect(prompt).toContain('"whatsappMessage"');
     expect(prompt).toContain('"referralCandidateId"');
     expect(prompt).not.toContain('"startsAt"');
     expect(prompt).not.toContain('"endsAt"');
@@ -63,6 +64,9 @@ describe('buildOutreachSalesChatDraftPrompt', () => {
     expect(prompt).toContain(
       'Prospect email for details: gaurav.zatakia@flomattress.com',
     );
+    expect(prompt).toContain('WhatsApp to: (none)');
+    expect(prompt).toContain('Email to: (none)');
+    expect(prompt).toContain('was already sent');
   });
 
   it('should mark unset facts as absent rather than leaving them blank', () => {
@@ -78,6 +82,8 @@ describe('buildOutreachSalesChatDraftPrompt', () => {
     expect(bare).toContain('Confirmed meeting time: (none)');
     expect(bare).toContain('Referred person: (none)');
     expect(bare).toContain('Preferred channel to stamp: (none)');
+    expect(bare).toContain('WhatsApp to: (none)');
+    expect(bare).toContain('Email to: (none)');
     expect(bare).toContain('Asked to stop: false');
     expect(bare).toContain('prospect_profile: (none)');
     expect(bare).not.toContain('CANDIDATE TOOL CALLS');
@@ -116,7 +122,7 @@ describe('buildOutreachSalesChatDraftPrompt', () => {
 
     expect(optedOut).toContain('Asked to stop: true');
     expect(optedOut).toContain(
-      `If "Asked to stop" below is true, set message to "${OUTREACH_DONT_RESPOND_SENTINEL}"`,
+      `If "Asked to stop" below is true, set linkedinMessage to "${OUTREACH_DONT_RESPOND_SENTINEL}"`,
     );
   });
 
@@ -163,10 +169,14 @@ describe('buildOutreachSalesChatDraftPrompt', () => {
     expect(opener).toContain(
       "The prospect has just accepted the senders' connection request with the text: {{messages.text}}",
     );
-    expect(opener).toContain('Keep it short, less than 3 sentences.');
     expect(opener).toContain(
-      'Would you be open for a quick demo sometime this week or the next?',
+      'Happy to walk you through how this would look for you.',
     );
+    expect(opener).toContain('I noticed in your post that');
+    expect(opener).toContain(
+      'Would you be open to a quick chat coming Thursday or Friday?',
+    );
+    expect(opener).toContain("sit inside the sender's current offer");
     expect(opener).toContain('Sender Profile:{{member.text}}');
     expect(opener).toContain(
       'Prospect: {{find.first.outreachProspectEnrichment}}',
@@ -269,7 +279,9 @@ describe('buildOutreachInboundSignalExtractionPrompt', () => {
 
   it('should default the channel switch to NONE', () => {
     expect(prompt).toContain('"requestedChannelSwitch"');
-    expect(prompt).toContain('NONE unless they explicitly asked to move');
+    expect(prompt).toContain('NONE unless they explicitly asked to receive');
+    expect(prompt).toContain('"sendWhatsappReply"');
+    expect(prompt).toContain('"prospectPhone"');
   });
 });
 
@@ -316,7 +328,9 @@ describe('outreach humanizer rules', () => {
     expect(connectionNote).toContain('Hard limit 280 characters.');
     expect(connectionNote).toContain('not X, but Y');
     expect(connectionNote.split('Em dashes').length - 1).toBe(1);
-    expect(opener).toContain('less than 3 sentences');
+    expect(opener).toContain(
+      'Would you be open to a quick chat coming Thursday or Friday?',
+    );
     expect(opener).not.toContain(OUTREACH_HUMANIZER_RULES);
     expect(followUp).toContain('40–60 words');
   });
@@ -334,7 +348,7 @@ describe('outreach humanizer rules', () => {
     expect(prompt).toContain(OUTREACH_HUMANIZER_RULES);
     expect(prompt).toContain(OUTREACH_HUMANIZER_DONT_RESPOND_RULE);
     expect(prompt).toContain(
-      `If message is "${OUTREACH_DONT_RESPOND_SENTINEL}", return that exact string.`,
+      `If linkedinMessage is "${OUTREACH_DONT_RESPOND_SENTINEL}", return that exact string.`,
     );
     expect(prompt).toContain('message wording only');
     expect(prompt.split('Em dashes').length - 1).toBe(1);

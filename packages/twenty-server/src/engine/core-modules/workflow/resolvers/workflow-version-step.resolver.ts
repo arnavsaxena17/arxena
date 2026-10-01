@@ -203,6 +203,7 @@ export class WorkflowVersionStepResolver {
       candidateId: input.candidateId,
       workflowVersionId: input.workflowVersionId,
       stepId: input.stepId,
+      outputValidation: input.outputValidation,
     });
   }
 

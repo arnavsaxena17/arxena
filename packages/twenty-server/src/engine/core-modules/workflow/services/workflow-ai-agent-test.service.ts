@@ -15,6 +15,8 @@ import { buildWorkflowAgentSystemPrompt } from 'src/engine/metadata-modules/ai/a
 import { AgentEntity } from 'src/engine/metadata-modules/ai/ai-agent/entities/agent.entity';
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
 import { WorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/workspace-scoped-repository';
+import { AiAgentOutputValidationService } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-agent/services/ai-agent-output-validation.service';
+import { formatOutputValidationError } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-agent/utils/ai-agent-output-validation.util';
 
 @Injectable()
 export class WorkflowAiAgentTestService {
@@ -25,6 +27,7 @@ export class WorkflowAiAgentTestService {
     @InjectWorkspaceScopedRepository(AgentEntity)
     private readonly agentRepository: WorkspaceScopedRepository<AgentEntity>,
     private readonly workflowAiAgentTestContextService: WorkflowAiAgentTestContextService,
+    private readonly aiAgentOutputValidationService: AiAgentOutputValidationService,
   ) {}
 
   async test({
@@ -34,6 +37,7 @@ export class WorkflowAiAgentTestService {
     candidateId,
     workflowVersionId,
     stepId,
+    outputValidation,
   }: {
     workspaceId: string;
     agentId: string;
@@ -41,6 +45,17 @@ export class WorkflowAiAgentTestService {
     candidateId?: string;
     workflowVersionId?: string;
     stepId?: string;
+    outputValidation?: {
+      enabled: boolean;
+      fieldKeys: string[];
+      checks?: Array<{
+        id: string;
+        label: string;
+        instructions: string;
+        invalidWhen: string;
+        validWhen: string;
+      }>;
+    };
   }): Promise<TestAiAgentDTO> {
     const startedAtMs = Date.now();
 
@@ -89,17 +104,29 @@ export class WorkflowAiAgentTestService {
           })
         : undefined;
 
-      const executionResult = await this.agentAsyncExecutorService.executeAgent(
-        {
+      const executeAgent = (promptForAttempt: string) =>
+        this.agentAsyncExecutorService.executeAgent({
           agent,
-          userPrompt,
+          userPrompt: promptForAttempt,
           actorContext,
           authContext,
           workspaceId,
           userWorkspaceId,
           operationType: UsageOperationType.AI_WORKFLOW_TOKEN,
-        },
-      );
+        });
+      const shouldValidate =
+        outputValidation?.enabled === true &&
+        outputValidation.fieldKeys.length > 0;
+      const validatedRun = shouldValidate
+        ? await this.aiAgentOutputValidationService.runWithRetries({
+            userPrompt,
+            fieldKeys: outputValidation.fieldKeys,
+            checks: outputValidation.checks,
+            execute: executeAgent,
+          })
+        : undefined;
+      const executionResult =
+        validatedRun?.executionResult ?? (await executeAgent(userPrompt));
 
       const durationMs = Date.now() - startedAtMs;
 
@@ -116,6 +143,20 @@ export class WorkflowAiAgentTestService {
           result: null,
           error: 'AI agent stopped: no more available credits.',
           durationMs,
+          outputValidation: validatedRun?.report,
+        };
+      }
+
+      if (validatedRun && validatedRun.report.cleared === false) {
+        const message = formatOutputValidationError(validatedRun.report);
+
+        return {
+          success: false,
+          message,
+          result: executionResult.result,
+          error: message,
+          durationMs,
+          outputValidation: validatedRun.report,
         };
       }
 
@@ -125,6 +166,7 @@ export class WorkflowAiAgentTestService {
         result: executionResult.result,
         error: undefined,
         durationMs,
+        outputValidation: validatedRun?.report,
       };
     } catch (error) {
       const message =

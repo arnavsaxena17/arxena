@@ -25,6 +25,8 @@ export type OutreachAiExtractExpectation = {
   referralName: string;
   referralEmail: string;
   referralPhone: string;
+  prospectPhone: string;
+  sendWhatsappReply: boolean;
   shouldNotRespond: boolean;
 };
 
@@ -54,6 +56,8 @@ export type OutreachAiScenarioInputs = {
   referralName?: string;
   prospectEmail?: string;
   shouldNotRespond?: string;
+  whatsappTo?: string;
+  emailTo?: string;
   kind?: 'opener' | 'fu1' | 'fu2' | 'fu3';
 };
 

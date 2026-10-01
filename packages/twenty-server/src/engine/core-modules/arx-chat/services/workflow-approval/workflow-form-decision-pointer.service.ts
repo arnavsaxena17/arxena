@@ -144,6 +144,7 @@ export class WorkflowFormDecisionPointerService {
     fields: FormFieldMetadata[];
     stepStatus: string | undefined;
     contextText: string;
+    rejectContinues: boolean;
   }> {
     const testSession = await this.getFormNotifyTestSession(
       parts.workflowRunId,
@@ -161,6 +162,7 @@ export class WorkflowFormDecisionPointerService {
             ? StepStatus.SUCCESS
             : StepStatus.PENDING,
         contextText: testSession.contextText,
+        rejectContinues: false,
       };
     }
 
@@ -188,6 +190,7 @@ export class WorkflowFormDecisionPointerService {
       fields,
       stepStatus: stepInfo?.status,
       contextText: step.name || 'Workflow form',
+      rejectContinues: step.settings?.rejectContinues === true,
     };
   }
 

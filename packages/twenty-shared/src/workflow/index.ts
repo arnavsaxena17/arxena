@@ -30,7 +30,13 @@ export { computeWorkflowLayout } from './layout/utils/compute-workflow-layout.ut
 export { workflowAcceptLinkedinReceivedInvitationActionSchema } from './schemas/accept-linkedin-received-invitation-action-schema';
 export { workflowAcceptLinkedinReceivedInvitationActionSettingsSchema } from './schemas/accept-linkedin-received-invitation-action-settings-schema';
 export { workflowAiAgentActionSchema } from './schemas/ai-agent-action-schema';
-export { workflowAiAgentActionSettingsSchema } from './schemas/ai-agent-action-settings-schema';
+export {
+  DEFAULT_AI_AGENT_OUTPUT_VALIDATION_CHECKS,
+  workflowAiAgentOutputValidationCheckSchema,
+  workflowAiAgentOutputValidationSchema,
+  workflowAiAgentActionSettingsSchema,
+} from './schemas/ai-agent-action-settings-schema';
+export type { WorkflowAiAgentOutputValidationCheck } from './schemas/ai-agent-action-settings-schema';
 export { workflowAiFilteringActionSchema } from './schemas/ai-filtering-action-schema';
 export {
   workflowAiFilteringFieldSchema,

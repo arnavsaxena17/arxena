@@ -31,4 +31,11 @@ export class TestAiAgentDTO {
     nullable: true,
   })
   durationMs?: number;
+
+  @Field(() => graphqlTypeJson, {
+    description:
+      'Jev field checks from the last draft attempt, when output validation is enabled',
+    nullable: true,
+  })
+  outputValidation?: object | null;
 }

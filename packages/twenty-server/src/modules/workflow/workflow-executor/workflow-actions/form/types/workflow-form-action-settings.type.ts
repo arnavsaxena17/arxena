@@ -30,4 +30,6 @@ export type WorkflowFormNotifyOnPending = {
 export type WorkflowFormActionSettings = BaseWorkflowActionSettings & {
   input: FormFieldMetadata[];
   notifyOnPending?: WorkflowFormNotifyOnPending;
+  // No submits approve=false and the graph continues. Absent means No stops the run.
+  rejectContinues?: boolean;
 };

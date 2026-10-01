@@ -33,6 +33,7 @@ import {
 import { parseOutreachResumeAtFromHint } from 'src/engine/core-modules/outreach-command/utils/parse-outreach-resume-at.util';
 import { filterOutreachPauseResumeWorkflowRuns } from 'src/engine/core-modules/outreach-command/utils/resolve-outreach-pause-resume-workflow-ids.util';
 import { buildFailedRunSummaryFields } from 'src/engine/core-modules/outreach-command/utils/extract-workflow-run-failed-step.util';
+import { workflowFormRejectContinues } from 'src/modules/workflow/workflow-executor/workflow-actions/form/utils/workflow-form-reject-continues.util';
 import {
   buildWorkflowRunStepDeferralClearPatch,
   normalizeWorkflowRunStepDeferralFields,
@@ -186,10 +187,12 @@ export class OutreachCandidateJourneyService {
 
         for (const run of activeRuns) {
           try {
-            await this.outreachWorkflowRunRepairService.repairStaleFormAfterSend({
-              workspaceId,
-              workflowRunId: run.id,
-            });
+            await this.outreachWorkflowRunRepairService.repairStaleFormAfterSend(
+              {
+                workspaceId,
+                workflowRunId: run.id,
+              },
+            );
           } catch (error) {
             this.logger.warn(
               `Failed stale FORM-after-send repair for run ${run.id}: ${
@@ -549,10 +552,12 @@ export class OutreachCandidateJourneyService {
           }
 
           try {
-            await this.outreachWorkflowRunRepairService.repairStaleFormAfterSend({
-              workspaceId,
-              workflowRunId: run.id,
-            });
+            await this.outreachWorkflowRunRepairService.repairStaleFormAfterSend(
+              {
+                workspaceId,
+                workflowRunId: run.id,
+              },
+            );
           } catch (error) {
             this.logger.warn(
               `Failed stale FORM-after-send repair for run ${run.id}: ${
@@ -883,11 +888,24 @@ export class OutreachCandidateJourneyService {
 
         const responseRecord = response as Record<string, unknown>;
         const approveValue = responseRecord.approve;
-        const isRejected =
-          approveValue === false || approveValue === 'false';
+        const isRejected = approveValue === false || approveValue === 'false';
 
-        // Reject must not resume into SEND_* — seeded graphs wire FORM→SEND
-        // without an IF_ELSE on approve (WhatsApp yes/no/edit pattern).
+        // Reply-branch forms set rejectContinues so No skips that send only.
+        // Every other form still stops the run (FORM→SEND has no approve gate).
+        if (isRejected === true && workflowFormRejectContinues(step)) {
+          await this.getWorkflowRunnerWorkspaceService().submitFormStep({
+            workspaceId,
+            workflowRunId,
+            stepId,
+            response: {
+              ...responseRecord,
+              approve: false,
+            },
+          });
+
+          return { ok: true, decision: 'reject' };
+        }
+
         if (isRejected === true) {
           await this.workflowRunWorkspaceService.updateWorkflowRunStepInfo({
             stepId,
@@ -969,11 +987,14 @@ export class OutreachCandidateJourneyService {
       candidateId,
     });
 
-    const pendingRun = journey?.activeRuns.find(
-      (run) => isNonEmptyString(run.pendingFormStepId),
+    const pendingRun = journey?.activeRuns.find((run) =>
+      isNonEmptyString(run.pendingFormStepId),
     );
 
-    if (!isDefined(pendingRun) || !isNonEmptyString(pendingRun.pendingFormStepId)) {
+    if (
+      !isDefined(pendingRun) ||
+      !isNonEmptyString(pendingRun.pendingFormStepId)
+    ) {
       throw new Error('No pending HITL FORM for candidate');
     }
 
@@ -981,7 +1002,7 @@ export class OutreachCandidateJourneyService {
     const resolvedEditedBody =
       decision === 'edit'
         ? (editedBody?.trim() ?? '')
-        : (editedBody?.trim() || draftPreview);
+        : editedBody?.trim() || draftPreview;
 
     if (decision === 'edit' && !isNonEmptyString(resolvedEditedBody)) {
       throw new Error('editedBody is required for decision=edit');

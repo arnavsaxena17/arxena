@@ -200,6 +200,7 @@ export const WorkflowEditActionAiAgent = ({
         candidateId,
         workflowVersionId: workflowVisualizerWorkflowVersionId,
         stepId: action.id,
+        outputValidation: action.settings.input.outputValidation,
       });
 
       return;
@@ -219,6 +220,7 @@ export const WorkflowEditActionAiAgent = ({
     await testAiAgent({
       agentId,
       prompt: resolvedPrompt,
+      outputValidation: action.settings.input.outputValidation,
     });
   };
 

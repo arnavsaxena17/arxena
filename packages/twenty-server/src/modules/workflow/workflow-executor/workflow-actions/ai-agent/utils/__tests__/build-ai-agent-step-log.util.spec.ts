@@ -68,7 +68,46 @@ describe('buildAiAgentStepLog', () => {
     });
     expect(stepLog.details.nativeWebSearchCallCount).toBe(2);
     expect(stepLog.details.toolCalls).toHaveLength(1);
+    expect(stepLog.details.outputValidation).toBeUndefined();
     expect(stepLog.entries).toEqual([]);
+  });
+
+  it('records whether Jev cleared the draft', () => {
+    const stepLog = buildAiAgentStepLog({
+      executionResult: baseExecutionResult,
+      durationMs: 1234,
+      outputValidation: {
+        attempts: 2,
+        cleared: false,
+        fields: [
+          {
+            fieldKey: 'message',
+            skipped: false,
+            operatorNote: 0.8,
+            unresolvedPlaceholder: 0.1,
+            cleared: false,
+          },
+        ],
+      },
+    });
+
+    if (stepLog === null || stepLog.details.type !== 'AI_AGENT') {
+      throw new Error('Expected AI_AGENT details');
+    }
+
+    expect(stepLog.details.outputValidation).toEqual({
+      attempts: 2,
+      cleared: false,
+      fields: [
+        {
+          fieldKey: 'message',
+          skipped: false,
+          operatorNote: 0.8,
+          unresolvedPlaceholder: 0.1,
+          cleared: false,
+        },
+      ],
+    });
   });
 
   it('falls back to zero usage / cost when the agent did not report them', () => {

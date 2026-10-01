@@ -1,7 +1,7 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { generateText } from 'ai';
+import { generateText, NoObjectGeneratedError } from 'ai';
 
 import { BillingUsageService } from 'src/engine/core-modules/billing/services/billing-usage.service';
 import { MetricsService } from 'src/engine/core-modules/metrics/metrics.service';
@@ -289,6 +289,104 @@ describe('AgentAsyncExecutorService — workflow agent role-scoped tool resoluti
       expect(result.creditsUsedMicro).toBe(
         Math.round((0.01 + expectedSearchCost) * 1_000_000),
       );
+    });
+  });
+
+  describe('structured output parse retry', () => {
+    const baseUsage = {
+      inputTokens: 10,
+      outputTokens: 5,
+      totalTokens: 15,
+      inputTokenDetails: {
+        noCacheTokens: 10,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+      },
+      outputTokenDetails: { textTokens: 5, reasoningTokens: 0 },
+    };
+
+    const buildJsonAgent = (): AgentEntity =>
+      ({
+        ...buildAgent(),
+        responseFormat: {
+          type: 'json',
+          schema: {
+            type: 'object',
+            properties: {
+              shouldNotRespond: { type: 'boolean' },
+            },
+          },
+        },
+      }) as AgentEntity;
+
+    const parseError = () =>
+      new NoObjectGeneratedError({
+        message: 'No object generated: could not parse the response.',
+        response: {
+          id: 'response-1',
+          timestamp: new Date('2026-09-30T09:30:00.000Z'),
+          modelId: 'openai/gpt-4.1',
+        },
+        usage: baseUsage,
+        finishReason: 'stop',
+      });
+
+    const textResult = {
+      text: 'inbound signals',
+      steps: [],
+      usage: baseUsage,
+    } as unknown as Awaited<ReturnType<typeof generateText>>;
+
+    it('retries once when structured output cannot be parsed', async () => {
+      generateTextMock
+        .mockResolvedValueOnce(textResult)
+        .mockRejectedValueOnce(parseError())
+        .mockResolvedValueOnce({
+          ...textResult,
+          output: { shouldNotRespond: false },
+        } as unknown as Awaited<ReturnType<typeof generateText>>);
+
+      const result = await service.executeAgent({
+        agent: buildJsonAgent(),
+        userPrompt: 'extract signals',
+        workspaceId,
+      });
+
+      expect(generateTextMock).toHaveBeenCalledTimes(3);
+      expect(result.result).toEqual({ shouldNotRespond: false });
+    });
+
+    it('fails after a second unparseable structured output', async () => {
+      generateTextMock
+        .mockResolvedValueOnce(textResult)
+        .mockRejectedValueOnce(parseError())
+        .mockRejectedValueOnce(parseError());
+
+      await expect(
+        service.executeAgent({
+          agent: buildJsonAgent(),
+          userPrompt: 'extract signals',
+          workspaceId,
+        }),
+      ).rejects.toThrow('No object generated: could not parse the response.');
+
+      expect(generateTextMock).toHaveBeenCalledTimes(3);
+    });
+
+    it('does not retry structured output failures that are not parse errors', async () => {
+      generateTextMock
+        .mockResolvedValueOnce(textResult)
+        .mockRejectedValueOnce(new Error('model unavailable'));
+
+      await expect(
+        service.executeAgent({
+          agent: buildJsonAgent(),
+          userPrompt: 'extract signals',
+          workspaceId,
+        }),
+      ).rejects.toThrow('model unavailable');
+
+      expect(generateTextMock).toHaveBeenCalledTimes(2);
     });
   });
 });

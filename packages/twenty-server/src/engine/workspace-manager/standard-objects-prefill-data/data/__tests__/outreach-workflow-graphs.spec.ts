@@ -22,6 +22,7 @@ type GraphStep = {
   settings?: {
     input?: {
       branches?: Array<{ filterGroupId?: string; nextStepIds?: string[] }>;
+      stepFilters?: Array<{ stepOutputKey?: string }>;
       fieldsToUpdate?: string[];
       duration?: {
         days?: number;
@@ -520,7 +521,7 @@ describe('GTM outreach workflow graphs', () => {
     expect(byName('Draft first LinkedIn message')).toBeDefined();
     expect(
       byName('Draft first LinkedIn message')?.settings?.input?.prompt,
-    ).toContain('less than 3 sentences');
+    ).toContain('Would you be open to a quick chat coming Thursday or Friday?');
     expect(
       byName('Draft first LinkedIn message')?.settings?.input?.prompt,
     ).toContain('{{b8e1d001-4a11-4c11-8c11-000000000001.text}}');
@@ -591,6 +592,107 @@ describe('GTM outreach workflow graphs', () => {
     expect(byName('Fetch LinkedIn posts (before reply)')?.nextStepIds).toEqual([
       byName('Draft sales reply')?.id,
     ]);
+    expect(byName('Draft sales reply')?.nextStepIds).toEqual([
+      byName('Skip send if #DONTRESPOND#')?.id,
+    ]);
+    expect(
+      (
+        byName('LinkedIn reply?')?.settings as {
+          input: { branches: Array<{ nextStepIds: string[] }> };
+        }
+      ).input.branches[0].nextStepIds,
+    ).toEqual([byName('Approve LinkedIn reply')?.id]);
+    expect(
+      (
+        byName('LinkedIn reply?')?.settings as {
+          input: { branches: Array<{ nextStepIds: string[] }> };
+        }
+      ).input.branches[1].nextStepIds,
+    ).toEqual([byName('WhatsApp reply?')?.id]);
+    expect(
+      (
+        byName('WhatsApp reply?')?.settings as {
+          input: { branches: Array<{ nextStepIds: string[] }> };
+        }
+      ).input.branches[0].nextStepIds,
+    ).toEqual([byName('WhatsApp destination?')?.id]);
+    expect(
+      (
+        byName('Email reply?')?.settings as {
+          input: { branches: Array<{ nextStepIds: string[] }> };
+        }
+      ).input.branches[1].nextStepIds,
+    ).toEqual([byName('Referred someone else?')?.id]);
+    expect(
+      (
+        byName('Approve email reply')?.settings as {
+          rejectContinues?: boolean;
+        }
+      )?.rejectContinues,
+    ).toBe(true);
+    expect(
+      (
+        byName('Approve LinkedIn reply')?.settings as {
+          rejectContinues?: boolean;
+        }
+      )?.rejectContinues,
+    ).toBe(true);
+    expect(
+      (
+        byName('Approve referral intro')?.settings as {
+          rejectContinues?: boolean;
+        }
+      )?.rejectContinues,
+    ).toBe(true);
+    expect(
+      (
+        byName('Send email reply')?.settings as {
+          input?: { body?: string; recipients?: { to?: string } };
+        }
+      )?.input?.body,
+    ).toBe(
+      `{{${OUTREACH_SEQUENCER_STEP_IDS.approveProspectEmail}.editedBody}}`,
+    );
+    expect(
+      (
+        byName('Send email reply')?.settings as {
+          input?: { recipients?: { to?: string } };
+        }
+      )?.input?.recipients?.to,
+    ).toBe(`{{${OUTREACH_SEQUENCER_STEP_IDS.validateSignals}.emailTo}}`);
+    expect(byName('Send LinkedIn reply')?.nextStepIds).toEqual([
+      byName('WhatsApp reply?')?.id,
+    ]);
+    expect(byName('Send WhatsApp reply')?.nextStepIds).toEqual([
+      byName('Email reply?')?.id,
+    ]);
+    expect(byName('Send email reply')?.nextStepIds).toEqual([
+      byName('Referred someone else?')?.id,
+    ]);
+    expect(byName('Reply on last inbound channel')).toBeUndefined();
+    expect(byName('Also send WhatsApp?')).toBeUndefined();
+    expect(byName('Content goes on WhatsApp?')).toBeUndefined();
+    expect(
+      (
+        byName('LinkedIn reply approved?')?.settings as {
+          input?: { branches?: Array<{ nextStepIds: string[] }> };
+        }
+      )?.input?.branches?.[1]?.nextStepIds,
+    ).toEqual([byName('WhatsApp reply?')?.id]);
+    expect(
+      (
+        byName('Approve WhatsApp reply')?.settings as {
+          rejectContinues?: boolean;
+        }
+      )?.rejectContinues,
+    ).toBe(true);
+    expect(
+      (
+        byName('Email referred person')?.settings as {
+          input?: { body?: string };
+        }
+      )?.input?.body,
+    ).toBe(`{{${OUTREACH_SEQUENCER_STEP_IDS.approveReferral}.editedBody}}`);
 
     const draftSalesReply = byName('Draft sales reply') as {
       settings?: {
@@ -622,9 +724,10 @@ describe('GTM outreach workflow graphs', () => {
     ).toEqual([
       'emailBody',
       'emailSubject',
-      'message',
+      'linkedinMessage',
       'referralCandidateId',
       'referralMessage',
+      'whatsappMessage',
     ]);
 
     const qualifyProspect = byName('Qualify prospect') as {
@@ -824,24 +927,28 @@ describe('GTM outreach workflow graphs', () => {
       byName(stepName)?.settings?.input?.branches?.[branchIndex]?.nextStepIds ??
       [];
 
-    expect(branchNext('Send post-reply FU1 on preferred channel', 0)).toEqual([
+    expect(branchNext('Send post-reply FU1 on inbound channel', 0)).toEqual([
       OUTREACH_SEQUENCER_STEP_IDS.sendPostReplyFu1Email,
     ]);
-    expect(branchNext('Send post-reply FU1 on preferred channel', 1)).toEqual([
+    expect(branchNext('Send post-reply FU1 on inbound channel', 1)).toEqual([
       OUTREACH_SEQUENCER_STEP_IDS.sendPostReplyFu1Whatsapp,
     ]);
-    expect(branchNext('Send post-reply FU1 on preferred channel', 2)).toEqual([
+    expect(branchNext('Send post-reply FU1 on inbound channel', 2)).toEqual([
       OUTREACH_SEQUENCER_STEP_IDS.sendPostReplyFu1Linkedin,
     ]);
-    expect(branchNext('Send post-reply FU2 on preferred channel', 0)).toEqual([
+    expect(branchNext('Send post-reply FU2 on inbound channel', 0)).toEqual([
       OUTREACH_SEQUENCER_STEP_IDS.sendPostReplyFu2Email,
     ]);
-    expect(branchNext('Send post-reply FU2 on preferred channel', 1)).toEqual([
+    expect(branchNext('Send post-reply FU2 on inbound channel', 1)).toEqual([
       OUTREACH_SEQUENCER_STEP_IDS.sendPostReplyFu2Whatsapp,
     ]);
-    expect(branchNext('Send post-reply FU2 on preferred channel', 2)).toEqual([
+    expect(branchNext('Send post-reply FU2 on inbound channel', 2)).toEqual([
       OUTREACH_SEQUENCER_STEP_IDS.sendPostReplyFu2Linkedin,
     ]);
+    expect(
+      byName('Send post-reply FU1 on inbound channel')?.settings?.input
+        ?.stepFilters?.[0]?.stepOutputKey,
+    ).toBe(`{{${OUTREACH_SEQUENCER_STEP_IDS.validateSignals}.replyChannel}}`);
   });
 
   it('omits meeting follow-up tree when meeting follow-up is off', () => {
@@ -1172,5 +1279,64 @@ describe('GTM outreach workflow graphs', () => {
           stepFilter.value === 'false',
       ),
     ).toBe(true);
+  });
+
+  it('enables Jev output validation on draft copy nodes', () => {
+    const graph = buildCandidateSequencerGraph({
+      useLlmConnectionNote: true,
+      checkDeduplicationPerCompany: true,
+      commentBeforeConnect: true,
+      commentRounds: 2,
+      inmailEnabled: true,
+      meetingFollowUpEnabled: true,
+    });
+    const byName = (name: string) =>
+      (graph.steps as GraphStep[]).find((step) => step.name === name);
+    const fieldKeys = (name: string) =>
+      (
+        byName(name)?.settings?.input as
+          | { outputValidation?: { enabled?: boolean; fieldKeys?: string[] } }
+          | undefined
+      )?.outputValidation?.fieldKeys;
+
+    const messageNodes = [
+      'Draft first LinkedIn message',
+      'Draft LinkedIn follow-up 1',
+      'Draft LinkedIn follow-up 2',
+      'Draft LinkedIn follow-up 3',
+      'Draft post-reply follow-up 1',
+      'Draft post-reply follow-up 2',
+      'Draft LinkedIn comment',
+      'Draft second LinkedIn comment',
+      'Draft connection note',
+      'Draft connection note (no company)',
+      'Draft meeting reminder',
+      'Draft no-show ping',
+      'Draft reschedule offer',
+    ];
+
+    for (const name of messageNodes) {
+      expect(fieldKeys(name)).toEqual(['message']);
+    }
+
+    expect(fieldKeys('Draft InMail')).toEqual(['subject', 'message']);
+    expect(fieldKeys('Draft fallback email')).toEqual(['subject', 'message']);
+    expect(fieldKeys('Draft sales reply')).toEqual([
+      'linkedinMessage',
+      'emailSubject',
+      'emailBody',
+      'referralMessage',
+      'whatsappMessage',
+    ]);
+
+    for (const name of [
+      'Extract inbound signals',
+      'Qualify prospect',
+      'Create referred candidate',
+      'Mark MEETING_BOOKED',
+      'Mark WAITING_REPLY',
+    ]) {
+      expect(fieldKeys(name)).toBeUndefined();
+    }
   });
 });

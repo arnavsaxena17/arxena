@@ -1412,7 +1412,7 @@ export const getOutreachLogicFunctionDefinitions = (
       id: ids.validateInboundSignalsId,
       name: OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME,
       description:
-        'Ground the inbound signal extraction agent before the graph acts on it. Resolves acceptedSlotIndex against the injected calendar slots, blanks any referral or prospect contact that does not appear in the transcript, and normalises replyChannel as explicit switch → sticky preferredChannel → last inbound → LINKEDIN. No LLM call.',
+        'Ground the inbound signal extraction agent before the graph acts on it. Resolves acceptedSlotIndex against the injected calendar slots, blanks any referral or prospect contact that does not appear in the transcript, and keeps replyChannel on the last inbound channel. No LLM call.',
       sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
         OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME,
       ),
@@ -1455,9 +1455,22 @@ export const getOutreachLogicFunctionDefinitions = (
               referralName: { type: 'string', label: 'Referral name' },
               referralEmail: { type: 'string', label: 'Referral email' },
               referralPhone: { type: 'string', label: 'Referral phone' },
+              prospectPhone: { type: 'string', label: 'Prospect phone' },
+              sendWhatsappReply: {
+                type: 'boolean',
+                label: 'Also send WhatsApp',
+              },
               shouldNotRespond: {
                 type: 'boolean',
                 label: 'Should not respond',
+              },
+              personPrimaryPhone: {
+                type: 'string',
+                label: 'Person primary phone',
+              },
+              personPrimaryEmail: {
+                type: 'string',
+                label: 'Person primary email',
               },
             },
           },
@@ -1478,6 +1491,13 @@ export const getOutreachLogicFunctionDefinitions = (
               referralName: { type: 'string', label: 'Referral name' },
               referralEmail: { type: 'string', label: 'Referral email' },
               referralPhone: { type: 'string', label: 'Referral phone' },
+              prospectPhone: { type: 'string', label: 'Prospect phone' },
+              sendWhatsappReply: {
+                type: 'boolean',
+                label: 'Also send WhatsApp',
+              },
+              whatsappTo: { type: 'string', label: 'WhatsApp to' },
+              emailTo: { type: 'string', label: 'Email to' },
               hasReferral: { type: 'boolean', label: 'Has referral' },
               shouldNotRespond: {
                 type: 'boolean',

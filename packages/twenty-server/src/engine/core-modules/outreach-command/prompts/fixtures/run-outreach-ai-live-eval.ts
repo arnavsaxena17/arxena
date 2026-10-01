@@ -127,6 +127,8 @@ export const buildOutreachAiScenarioPrompt = (
         referralName: inputs.referralName,
         prospectEmail: inputs.prospectEmail,
         shouldNotRespond: inputs.shouldNotRespond,
+        whatsappTo: inputs.whatsappTo,
+        emailTo: inputs.emailTo,
         senderJson: inputs.senderJson,
         prospectEnrichmentJson: inputs.prospectEnrichmentJson,
       });
@@ -318,6 +320,8 @@ const scoreScenario = ({
       referralName: actual.referralName,
       referralEmail: actual.referralEmail,
       referralPhone: actual.referralPhone,
+      prospectPhone: actual.prospectPhone,
+      sendWhatsappReply: actual.sendWhatsappReply,
       shouldNotRespond: actual.shouldNotRespond,
     });
 
@@ -345,9 +349,9 @@ const scoreScenario = ({
   if (scenario.expected.draft) {
     diffs.push(
       ...assertSoftText({
-        text: String(actual.message ?? ''),
+        text: String(actual.linkedinMessage ?? ''),
         expectation: scenario.expected.draft,
-        label: 'draft.message',
+        label: 'draft.linkedinMessage',
       }),
     );
 

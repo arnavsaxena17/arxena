@@ -3,6 +3,7 @@ import { useAtomFamilyStateValue } from '@/ui/utilities/state/jotai/hooks/useAto
 import { useSetAtomFamilyState } from '@/ui/utilities/state/jotai/hooks/useSetAtomFamilyState';
 import { TEST_AI_AGENT } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/graphql/mutations/testAiAgent';
 import { aiAgentTestDataFamilyState } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/states/aiAgentTestDataFamilyState';
+import { type AiAgentOutputValidationReport } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/types/AiAgentTestData';
 import { useMutation } from '@apollo/client/react';
 import { t } from '@lingui/core/macro';
 import { isObject, isString } from '@sniptt/guards';
@@ -15,6 +16,7 @@ type TestAiAgentResponse = {
   result?: unknown;
   error?: string | null;
   durationMs?: number | null;
+  outputValidation?: AiAgentOutputValidationReport | null;
 };
 
 type TestAiAgentMutationResult = {
@@ -55,12 +57,24 @@ export const useTestAiAgent = (actionId: string) => {
     candidateId,
     workflowVersionId,
     stepId,
+    outputValidation,
   }: {
     agentId: string;
     prompt: string;
     candidateId?: string;
     workflowVersionId?: string;
     stepId?: string;
+    outputValidation?: {
+      enabled: boolean;
+      fieldKeys: string[];
+      checks?: Array<{
+        id: string;
+        label: string;
+        instructions: string;
+        invalidWhen: string;
+        validWhen: string;
+      }>;
+    };
   }) => {
     setIsTesting(true);
     const startTime = Date.now();
@@ -74,6 +88,7 @@ export const useTestAiAgent = (actionId: string) => {
             ...(isDefined(candidateId) ? { candidateId } : {}),
             ...(isDefined(workflowVersionId) ? { workflowVersionId } : {}),
             ...(isDefined(stepId) ? { stepId } : {}),
+            ...(isDefined(outputValidation) ? { outputValidation } : {}),
           },
         },
       });
@@ -86,6 +101,9 @@ export const useTestAiAgent = (actionId: string) => {
       }
 
       const durationMs = response.durationMs ?? duration;
+      const validationReport = isDefined(response.outputValidation)
+        ? response.outputValidation
+        : undefined;
 
       if (response.success === true) {
         const resultData = isString(response.result)
@@ -99,15 +117,25 @@ export const useTestAiAgent = (actionId: string) => {
             data: resultData,
             duration: durationMs,
             error: undefined,
+            outputValidation: validationReport,
           },
           language,
         }));
       } else {
-        throw new Error(
-          isString(response.error)
-            ? response.error
-            : response.message || t`AI agent test failed`,
-        );
+        const errorMessage = isString(response.error)
+          ? response.error
+          : response.message || t`AI agent test failed`;
+
+        setAiAgentTestData((prev) => ({
+          ...prev,
+          output: {
+            data: undefined,
+            duration: durationMs,
+            error: errorMessage,
+            outputValidation: validationReport,
+          },
+          language: 'plaintext',
+        }));
       }
     } catch (error) {
       const duration = Date.now() - startTime;

@@ -5,6 +5,7 @@ import {
   generateText,
   jsonSchema,
   type LanguageModelUsage,
+  NoObjectGeneratedError,
   Output,
   stepCountIs,
   type StepResult,
@@ -69,6 +70,10 @@ import { RoleTargetEntity } from 'src/engine/metadata-modules/role-target/role-t
 import { type RolePermissionConfig } from 'src/engine/twenty-orm/types/role-permission-config';
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
 import { WorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/workspace-scoped-repository';
+
+// One extra structured-output attempt. A parse miss is sampling noise;
+// the tool loop has already run and must not run again.
+const STRUCTURED_OUTPUT_PARSE_RETRY_LIMIT = 1;
 
 const EMPTY_USAGE: LanguageModelUsage = {
   inputTokens: 0,
@@ -402,48 +407,98 @@ export class AgentAsyncExecutorService {
 
           result = mapJevAnswersToRecord(evaluationResult.answers);
         } else {
-          const structuredResult = await generateText({
-            system: getWorkflowOutputGeneratorPrompt(hasTools),
-            model: registeredModel.model,
-            prompt: `Based on the following execution results, generate the structured output according to the schema:
+          const structuredOutputPrompt = `Based on the following execution results, generate the structured output according to the schema:
 
                  Execution Results: ${textResponse.text}
 
-                 Please generate the structured output based on the execution results and context above.`,
-            output: Output.object({ schema: jsonSchema(agentSchema) }),
-            maxOutputTokens: modelConfig.maxOutputTokens,
-            providerOptions: getCallLevelProviderOptions({
-              sdkPackage: registeredModel.sdkPackage,
-              providerOptions:
-                this.aiModelConfigService.getReasoningProviderOptions(
-                  registeredModel,
-                ),
-              promptCacheKey: agent?.id,
-            }),
-            experimental_telemetry: AI_TELEMETRY_CONFIG,
-            onStepFinish: async (step) => {
-              const {
-                hasNoMoreAvailableCredits: stepHasNoMoreAvailableCredits,
-              } = await this.aiBillingService.decrementAndCheckAvailableCredits(
-                registeredModel.modelId,
-                {
-                  usage: step.usage,
-                  cacheCreationTokens: extractCacheCreationTokens(
-                    step.providerMetadata,
-                  ),
-                },
-                workspaceId,
-              );
-
-              if (stepHasNoMoreAvailableCredits) {
-                hasNoMoreAvailableCredits = true;
-              }
-            },
+                 Please generate the structured output based on the execution results and context above.`;
+          const structuredProviderOptions = getCallLevelProviderOptions({
+            sdkPackage: registeredModel.sdkPackage,
+            providerOptions:
+              this.aiModelConfigService.getReasoningProviderOptions(
+                registeredModel,
+              ),
+            promptCacheKey: agent?.id,
           });
+
+          let structuredResult:
+            | Awaited<ReturnType<typeof generateText>>
+            | undefined;
+          let failedStructuredUsage = EMPTY_USAGE;
+
+          for (
+            let attempt = 0;
+            attempt <= STRUCTURED_OUTPUT_PARSE_RETRY_LIMIT;
+            attempt++
+          ) {
+            try {
+              structuredResult = await generateText({
+                system: getWorkflowOutputGeneratorPrompt(hasTools),
+                model: registeredModel.model,
+                prompt: structuredOutputPrompt,
+                output: Output.object({ schema: jsonSchema(agentSchema) }),
+                maxOutputTokens: modelConfig.maxOutputTokens,
+                providerOptions: structuredProviderOptions,
+                experimental_telemetry: AI_TELEMETRY_CONFIG,
+                onStepFinish: async (step) => {
+                  const {
+                    hasNoMoreAvailableCredits: stepHasNoMoreAvailableCredits,
+                  } =
+                    await this.aiBillingService.decrementAndCheckAvailableCredits(
+                      registeredModel.modelId,
+                      {
+                        usage: step.usage,
+                        cacheCreationTokens: extractCacheCreationTokens(
+                          step.providerMetadata,
+                        ),
+                      },
+                      workspaceId,
+                    );
+
+                  if (stepHasNoMoreAvailableCredits) {
+                    hasNoMoreAvailableCredits = true;
+                  }
+                },
+              });
+              break;
+            } catch (error) {
+              if (NoObjectGeneratedError.isInstance(error)) {
+                if (isDefined(error.usage)) {
+                  failedStructuredUsage = mergeLanguageModelUsage(
+                    failedStructuredUsage,
+                    error.usage,
+                  );
+                }
+
+                if (attempt < STRUCTURED_OUTPUT_PARSE_RETRY_LIMIT) {
+                  this.logger.warn(
+                    `Structured output could not be parsed for agent ${agent?.id ?? 'n/a'}; retrying`,
+                  );
+                  continue;
+                }
+              }
+
+              accumulatedUsage = mergeLanguageModelUsage(
+                textResponse.usage,
+                failedStructuredUsage,
+              );
+              throw error;
+            }
+          }
+
+          if (!isDefined(structuredResult)) {
+            throw new AiException(
+              'Failed to generate structured output from execution results',
+              AiExceptionCode.AGENT_EXECUTION_FAILED,
+            );
+          }
 
           accumulatedUsage = mergeLanguageModelUsage(
             textResponse.usage,
-            structuredResult.usage,
+            mergeLanguageModelUsage(
+              failedStructuredUsage,
+              structuredResult.usage,
+            ),
           );
           executionSteps = [...textResponse.steps, ...structuredResult.steps];
 

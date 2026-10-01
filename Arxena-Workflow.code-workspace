@@ -1,0 +1,13 @@
+{
+    "folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../arxena-site"
+		},
+		{
+			"path": "../arx-crx"
+		}
+	]
+}

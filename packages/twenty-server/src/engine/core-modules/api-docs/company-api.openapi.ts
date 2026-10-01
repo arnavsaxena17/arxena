@@ -66,7 +66,7 @@ export const buildCompanyApiOpenApiDocument = (
         operationId: 'searchCompanies',
         summary: 'Search companies',
         description:
-          'Search companies. Omit `dataSource` or pass `auto` to resolve Unipile first, then Harvest, then the companies index. Pass `url` for a LinkedIn Sales Navigator account list, company search, or people search URL.',
+          'Search companies. Omit `dataSource` or pass `auto` to resolve Unipile first, then Harvest, then the companies index. Pass `dataSource: index` with `country`, `region`, `locality`, `industry`, and `size` to query the free company dataset. Pass `url` for a LinkedIn Sales Navigator account list, company search, or people search URL.',
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,

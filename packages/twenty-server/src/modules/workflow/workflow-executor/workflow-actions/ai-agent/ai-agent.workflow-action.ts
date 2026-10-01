@@ -20,6 +20,11 @@ import { WorkflowExecutionContextService } from 'src/modules/workflow/workflow-e
 import { type WorkflowActionInput } from 'src/modules/workflow/workflow-executor/types/workflow-action-input';
 import { type WorkflowActionOutput } from 'src/modules/workflow/workflow-executor/types/workflow-action-output.type';
 import { findStepOrThrow } from 'src/modules/workflow/workflow-executor/utils/find-step-or-throw.util';
+import { AiAgentOutputValidationService } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-agent/services/ai-agent-output-validation.service';
+import {
+  type AiAgentOutputValidationReport,
+  formatOutputValidationError,
+} from 'src/modules/workflow/workflow-executor/workflow-actions/ai-agent/utils/ai-agent-output-validation.util';
 import { buildAiAgentStepLog } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-agent/utils/build-ai-agent-step-log.util';
 import { WorkflowRunStepLogWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run-step-log.workspace-service';
 
@@ -33,6 +38,7 @@ export class AiAgentWorkflowAction implements WorkflowAction {
     private readonly aiAgentExecutionService: AgentAsyncExecutorService,
     private readonly workflowExecutionContextService: WorkflowExecutionContextService,
     private readonly workflowRunStepLogService: WorkflowRunStepLogWorkspaceService,
+    private readonly aiAgentOutputValidationService: AiAgentOutputValidationService,
     @InjectWorkspaceScopedRepository(AgentEntity)
     private readonly agentRepository: WorkspaceScopedRepository<AgentEntity>,
   ) {}
@@ -99,18 +105,33 @@ export class AiAgentWorkflowAction implements WorkflowAction {
     this.logger.log(`[AI_AGENT_RUN] prompt ${logContext}\n${userPrompt}`);
 
     const startedAtMs = Date.now();
+    const outputValidation = step.settings.input.outputValidation;
+    const executeAgent = (promptForAttempt: string) =>
+      this.aiAgentExecutionService.executeAgent({
+        agent,
+        userPrompt: promptForAttempt,
+        actorContext: executionContext.isActingOnBehalfOfUser
+          ? executionContext.initiator
+          : undefined,
+        authContext: executionContext.authContext,
+        workspaceId,
+        userWorkspaceId,
+        operationType: UsageOperationType.AI_WORKFLOW_TOKEN,
+      });
 
-    const executionResult = await this.aiAgentExecutionService.executeAgent({
-      agent,
-      userPrompt,
-      actorContext: executionContext.isActingOnBehalfOfUser
-        ? executionContext.initiator
-        : undefined,
-      authContext: executionContext.authContext,
-      workspaceId,
-      userWorkspaceId,
-      operationType: UsageOperationType.AI_WORKFLOW_TOKEN,
-    });
+    const shouldValidate =
+      outputValidation?.enabled === true &&
+      outputValidation.fieldKeys.length > 0;
+    const validatedRun = shouldValidate
+      ? await this.aiAgentOutputValidationService.runWithRetries({
+          userPrompt,
+          fieldKeys: outputValidation.fieldKeys,
+          checks: outputValidation.checks,
+          execute: executeAgent,
+        })
+      : undefined;
+    const executionResult =
+      validatedRun?.executionResult ?? (await executeAgent(userPrompt));
 
     const durationMs = Date.now() - startedAtMs;
 
@@ -126,11 +147,18 @@ export class AiAgentWorkflowAction implements WorkflowAction {
       stepId: currentStepId,
       executionResult,
       durationMs,
+      outputValidation: validatedRun?.report,
     });
 
     if (executionResult.hasNoMoreAvailableCredits) {
       return {
         error: 'AI agent stopped: no more available credits.',
+      };
+    }
+
+    if (validatedRun && validatedRun.report.cleared === false) {
+      return {
+        error: formatOutputValidationError(validatedRun.report),
       };
     }
 
@@ -145,14 +173,20 @@ export class AiAgentWorkflowAction implements WorkflowAction {
     stepId,
     executionResult,
     durationMs,
+    outputValidation,
   }: {
     workflowRunId: string;
     workspaceId: string;
     stepId: string;
     executionResult: AgentExecutionResult;
     durationMs: number;
+    outputValidation?: AiAgentOutputValidationReport;
   }): Promise<void> {
-    const stepLog = buildAiAgentStepLog({ executionResult, durationMs });
+    const stepLog = buildAiAgentStepLog({
+      executionResult,
+      durationMs,
+      outputValidation,
+    });
 
     if (!stepLog) {
       return;

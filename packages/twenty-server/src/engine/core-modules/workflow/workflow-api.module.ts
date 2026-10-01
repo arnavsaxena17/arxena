@@ -29,6 +29,7 @@ import { WorkflowCommonModule } from 'src/modules/workflow/common/workflow-commo
 import { WorkflowBuilderModule } from 'src/modules/workflow/workflow-builder/workflow-builder.module';
 import { CodeStepBuildModule } from 'src/modules/workflow/workflow-builder/workflow-version-step/code-step/code-step-build.module';
 import { WorkflowVersionModule } from 'src/modules/workflow/workflow-builder/workflow-version/workflow-version.module';
+import { AiAgentOutputValidationModule } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-agent/ai-agent-output-validation.module';
 import { AiFilteringActionModule } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/ai-filtering-action.module';
 import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.module';
 import { WorkflowRunnerModule } from 'src/modules/workflow/workflow-runner/workflow-runner.module';
@@ -43,6 +44,7 @@ import { WorkflowTriggerModule } from 'src/modules/workflow/workflow-trigger/wor
       UserWorkspaceEntity,
     ]),
     AiAgentExecutionModule,
+    AiAgentOutputValidationModule,
     AiFilteringActionModule,
     WorkflowTriggerModule,
     WorkflowBuilderModule,

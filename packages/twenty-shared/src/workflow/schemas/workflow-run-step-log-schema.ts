@@ -16,6 +16,25 @@ const aiToolCallLogSchema = z.object({
   state: z.enum(['started', 'success', 'error', 'awaiting-approval']),
 });
 
+const aiAgentOutputValidationFieldSchema = z.object({
+  fieldKey: z.string(),
+  skipped: z.boolean(),
+  codeFailure: z.string().optional(),
+  operatorNote: z.number().optional(),
+  unresolvedPlaceholder: z.number().optional(),
+  checkResults: z
+    .array(
+      z.object({
+        id: z.string(),
+        label: z.string(),
+        noul: z.number().optional(),
+        failed: z.boolean(),
+      }),
+    )
+    .optional(),
+  cleared: z.boolean(),
+});
+
 const aiAgentStepLogDetailsSchema = z.object({
   type: z.literal('AI_AGENT'),
   modelId: z.string(),
@@ -34,6 +53,13 @@ const aiAgentStepLogDetailsSchema = z.object({
   nativeWebSearchCallCount: z.number(),
   toolCalls: z.array(aiToolCallLogSchema),
   durationMs: z.number(),
+  outputValidation: z
+    .object({
+      attempts: z.number(),
+      cleared: z.boolean(),
+      fields: z.array(aiAgentOutputValidationFieldSchema),
+    })
+    .optional(),
 });
 
 const codeStepLogDetailsSchema = z.object({

@@ -140,26 +140,34 @@ describe('validateOutreachInboundSignals', () => {
 
       expect(result.replyChannel).toBe('WHATSAPP');
       expect(result.preferredChannelToStamp).toBe('');
+      expect(result.whatsappTo).toBe('');
+      expect(result.emailTo).toBe('');
     });
 
-    it('honours an explicit switch and stamps sticky preference', () => {
+    it('keeps the acknowledgement on LinkedIn when they ask for email', () => {
       const result = validateOutreachInboundSignals({
+        transcript: 'Please email me at gaurav.z@flomattress.com',
         lastInboundChannel: 'LINKEDIN',
         requestedChannelSwitch: 'EMAIL',
+        prospectEmail: 'gaurav.z@flomattress.com',
       });
 
-      expect(result.replyChannel).toBe('EMAIL');
+      expect(result.replyChannel).toBe('LINKEDIN');
+      expect(result.prospectEmail).toBe('gaurav.z@flomattress.com');
+      expect(result.sendWhatsappReply).toBe(false);
       expect(result.preferredChannelToStamp).toBe('EMAIL');
+      expect(result.emailTo).toBe('gaurav.z@flomattress.com');
+      expect(result.whatsappTo).toBe('');
     });
 
-    it('uses sticky preferred channel over last inbound', () => {
+    it('keeps the acknowledgement on the inbound channel when a sticky preference exists', () => {
       const result = validateOutreachInboundSignals({
         lastInboundChannel: 'LINKEDIN',
         preferredChannel: 'EMAIL',
         requestedChannelSwitch: 'NONE',
       });
 
-      expect(result.replyChannel).toBe('EMAIL');
+      expect(result.replyChannel).toBe('LINKEDIN');
       expect(result.preferredChannelToStamp).toBe('');
     });
 
@@ -184,6 +192,114 @@ describe('validateOutreachInboundSignals', () => {
     });
   });
 
+  describe('WhatsApp alongside LinkedIn', () => {
+    it('allows both when they reply on LinkedIn with their own number', () => {
+      const result = validateOutreachInboundSignals({
+        transcript: 'Here is my number 966512345678',
+        lastInboundChannel: 'LINKEDIN',
+        prospectPhone: '966512345678',
+        sendWhatsappReply: true,
+        preferredChannel: 'EMAIL',
+      });
+
+      expect(result.sendWhatsappReply).toBe(true);
+      expect(result.prospectPhone).toBe('966512345678');
+      expect(result.replyChannel).toBe('LINKEDIN');
+    });
+
+    it('drops the flag when the number is not in the thread', () => {
+      const result = validateOutreachInboundSignals({
+        transcript: 'Happy to chat on LinkedIn',
+        lastInboundChannel: 'LINKEDIN',
+        prospectPhone: '966512345678',
+        sendWhatsappReply: true,
+      });
+
+      expect(result.prospectPhone).toBe('');
+      expect(result.sendWhatsappReply).toBe(false);
+    });
+
+    it('sends the content on WhatsApp and keeps the acknowledgement on LinkedIn', () => {
+      const result = validateOutreachInboundSignals({
+        transcript:
+          'Send me a message. My email is abc@xyz.com and my phone is +1 415 555 0134',
+        lastInboundChannel: 'LINKEDIN',
+        prospectEmail: 'abc@xyz.com',
+        prospectPhone: '+1 415 555 0134',
+        requestedChannelSwitch: 'NONE',
+      });
+
+      expect(result.replyChannel).toBe('LINKEDIN');
+      expect(result.prospectEmail).toBe('abc@xyz.com');
+      expect(result.prospectPhone).toBe('+1 415 555 0134');
+      expect(result.sendWhatsappReply).toBe(true);
+      expect(result.preferredChannelToStamp).toBe('WHATSAPP');
+      expect(result.whatsappTo).toBe('+1 415 555 0134');
+      expect(result.emailTo).toBe('');
+    });
+
+    it('sends WhatsApp content when they ask to move to WhatsApp', () => {
+      const result = validateOutreachInboundSignals({
+        transcript: 'WhatsApp me on 966512345678',
+        lastInboundChannel: 'LINKEDIN',
+        prospectPhone: '966512345678',
+        requestedChannelSwitch: 'WHATSAPP',
+      });
+
+      expect(result.sendWhatsappReply).toBe(true);
+      expect(result.replyChannel).toBe('LINKEDIN');
+      expect(result.preferredChannelToStamp).toBe('WHATSAPP');
+    });
+
+    it('treats a number that matches the referral as the other person', () => {
+      const result = validateOutreachInboundSignals({
+        transcript: 'Talk to Sara on 966512345678',
+        lastInboundChannel: 'LINKEDIN',
+        prospectPhone: '+966 512 345 678',
+        referralPhone: '966512345678',
+        sendWhatsappReply: true,
+      });
+
+      expect(result.prospectPhone).toBe('');
+      expect(result.referralPhone).toBe('966512345678');
+      expect(result.sendWhatsappReply).toBe(false);
+      expect(result.whatsappTo).toBe('');
+    });
+
+    it('uses the person phone when the inbound channel is WhatsApp', () => {
+      const result = validateOutreachInboundSignals({
+        lastInboundChannel: 'WHATSAPP',
+        personPrimaryPhone: '+1 415 555 0100',
+      });
+
+      expect(result.replyChannel).toBe('WHATSAPP');
+      expect(result.whatsappTo).toBe('+1 415 555 0100');
+    });
+
+    it('falls back to a grounded prospect phone when WhatsApp inbound has no CRM number', () => {
+      const result = validateOutreachInboundSignals({
+        transcript: 'This is my WhatsApp 966512345678',
+        lastInboundChannel: 'WHATSAPP',
+        prospectPhone: '966512345678',
+      });
+
+      expect(result.whatsappTo).toBe('966512345678');
+    });
+  });
+
+  describe('email destination', () => {
+    it('uses the person email when the inbound channel is email', () => {
+      const result = validateOutreachInboundSignals({
+        lastInboundChannel: 'EMAIL',
+        personPrimaryEmail: 'ada@acme.com',
+      });
+
+      expect(result.replyChannel).toBe('EMAIL');
+      expect(result.emailTo).toBe('ada@acme.com');
+      expect(result.whatsappTo).toBe('');
+    });
+  });
+
   it('coerces a stringified opt-out flag', () => {
     expect(
       validateOutreachInboundSignals({ shouldNotRespond: 'true' })
@@ -197,17 +313,21 @@ describe('validateOutreachInboundSignals', () => {
 
   it('returns every key so downstream templates always resolve', () => {
     expect(Object.keys(validateOutreachInboundSignals({})).sort()).toEqual([
+      'emailTo',
       'endsAt',
       'hasReferral',
       'preferredChannelToStamp',
       'prospectEmail',
+      'prospectPhone',
       'referralEmail',
       'referralName',
       'referralPhone',
       'replyChannel',
+      'sendWhatsappReply',
       'shouldNotRespond',
       'startsAt',
       'success',
+      'whatsappTo',
     ]);
   });
 });

@@ -30,6 +30,8 @@ import { WORKFLOW_DIAGRAM_NODE_DEFAULT_SOURCE_HANDLE_ID } from '@/workflow/workf
 import { WORKFLOW_DIAGRAM_NODE_DEFAULT_TARGET_HANDLE_ID } from '@/workflow/workflow-diagram/workflow-nodes/constants/WorkflowDiagramNodeDefaultTargetHandleId';
 import { workflowInsertStepIdsComponentState } from '@/workflow/workflow-steps/states/workflowInsertStepIdsComponentState';
 import { styled } from '@linaria/react';
+import { useLingui } from '@lingui/react/macro';
+import { flushSync } from 'react-dom';
 import {
   Background,
   ReactFlow,
@@ -92,6 +94,23 @@ const StyledStatusTagContainer = styled.div`
   padding: ${themeCssVariables.spacing[4]};
   position: absolute;
   top: 0;
+`;
+
+const StyledPdfExportOverlay = styled.div`
+  inset: 0;
+  position: absolute;
+  z-index: 20;
+`;
+
+const StyledPdfExportStatus = styled.div`
+  background: ${themeCssVariables.background.primary};
+  border-radius: ${themeCssVariables.border.radius.md};
+  box-shadow: ${themeCssVariables.boxShadow.strong};
+  left: 50%;
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
+  position: absolute;
+  top: ${themeCssVariables.spacing[4]};
+  transform: translateX(-50%);
 `;
 
 const StyledTagRow = styled.div`
@@ -181,7 +200,11 @@ export const WorkflowDiagramCanvasBase = ({
   }) => void;
   showAddNodeInContextMenu?: boolean;
 }) => {
+  const { t } = useLingui();
   const { theme, colorScheme } = useContext(ThemeContext);
+  const [pdfExportProgress, setPdfExportProgress] = useState<
+    { pageNumber: number; pageCount: number } | undefined
+  >(undefined);
   const store = useStore();
   const reactflow = useReactFlow();
 
@@ -376,6 +399,47 @@ export const WorkflowDiagramCanvasBase = ({
       resetVerticalPosition: true,
     });
   }, [handleSetFlowViewportOnChange]);
+
+  const handleDownloadWorkflowDiagramPdf = useCallback(
+    async (fileName: string) => {
+      const diagramElement = containerRef.current;
+      const viewportElement = diagramElement?.querySelector(
+        '.react-flow__viewport',
+      );
+
+      if (
+        !isDefined(diagramElement) ||
+        !(viewportElement instanceof HTMLElement)
+      ) {
+        throw new Error('Workflow diagram viewport was not found');
+      }
+
+      const { downloadWorkflowDiagramPdf } =
+        await import('@/workflow/workflow-diagram/utils/downloadWorkflowDiagramPdf');
+
+      flushSync(() => {
+        setPdfExportProgress({ pageNumber: 1, pageCount: 1 });
+      });
+
+      try {
+        return await downloadWorkflowDiagramPdf({
+          diagramElement,
+          viewportElement,
+          nodesBounds: reactflow.getNodesBounds(reactflow.getNodes()),
+          backgroundColor: theme.background.primary,
+          fileName,
+          onProgress: (pageNumber, pageCount) => {
+            flushSync(() => {
+              setPdfExportProgress({ pageNumber, pageCount });
+            });
+          },
+        });
+      } finally {
+        setPdfExportProgress(undefined);
+      }
+    },
+    [reactflow, theme.background.primary],
+  );
 
   useEffect(() => {
     handleSetFlowViewportOnChange({
@@ -691,7 +755,16 @@ export const WorkflowDiagramCanvasBase = ({
         <WorkflowDiagramRightClickCommandMenu
           showAddNode={showAddNodeInContextMenu}
           onCenter={centerWorkflowDiagram}
+          onDownloadPdf={handleDownloadWorkflowDiagramPdf}
         />
+      )}
+
+      {isDefined(pdfExportProgress) && (
+        <StyledPdfExportOverlay>
+          <StyledPdfExportStatus>
+            {t`Preparing PDF… ${pdfExportProgress.pageNumber}/${pdfExportProgress.pageCount}`}
+          </StyledPdfExportStatus>
+        </StyledPdfExportOverlay>
       )}
 
       <StyledStatusTagContainer data-testid={tagContainerTestId}>

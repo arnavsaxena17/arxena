@@ -4,6 +4,9 @@ export const OUTREACH_HITL_CONTEXT_TEMPLATES = {
   linkedInFollowUp: (followUpIndex: number) =>
     `Review LinkedIn follow-up ${followUpIndex}`,
   inboundSalesReply: 'Review inbound sales reply',
+  inboundDetailsEmail: 'Review details email',
+  inboundWhatsappReply: 'Review WhatsApp reply',
+  inboundReferralIntro: 'Review referral intro',
   postReplyFollowUp1: 'Review post-reply follow-up 1',
   postReplyFollowUp2Last: 'Review post-reply follow-up 2 (last)',
   linkedInConnectionNote: 'Review LinkedIn connection note',

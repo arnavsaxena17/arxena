@@ -11,12 +11,14 @@ import { UserRoleModule } from 'src/engine/metadata-modules/user-role/user-role.
 import { WorkflowExecutionContextService } from 'src/modules/workflow/workflow-executor/services/workflow-execution-context.service';
 import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.module';
 
+import { AiAgentOutputValidationModule } from './ai-agent-output-validation.module';
 import { AiAgentWorkflowAction } from './ai-agent.workflow-action';
 
 @Module({
   imports: [
     ApplicationModule,
     AiAgentExecutionModule,
+    AiAgentOutputValidationModule,
     TypeOrmModule.forFeature([AgentEntity]),
     WorkflowRunModule,
     UserWorkspaceModule,

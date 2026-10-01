@@ -1,17 +1,26 @@
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
+import { useWorkflowVersion } from '@/workflow/hooks/useWorkflowVersion';
+import { workflowVisualizerWorkflowVersionIdComponentState } from '@/workflow/states/workflowVisualizerWorkflowVersionIdComponentState';
 import { useCloseRightClickMenu } from '@/workflow/workflow-diagram/hooks/useCloseRightClickMenu';
 import { useStartNodeCreation } from '@/workflow/workflow-diagram/hooks/useStartNodeCreation';
 import { useWorkflowDiagramScreenToFlowPosition } from '@/workflow/workflow-diagram/hooks/useWorkflowDiagramScreenToFlowPosition';
 import { workflowDiagramRightClickMenuPositionState } from '@/workflow/workflow-diagram/states/workflowDiagramRightClickMenuPositionState';
+import { getWorkflowDiagramPdfFileName } from '@/workflow/workflow-diagram/utils/workflowDiagramPdfExport';
 import { useTidyUp } from '@/workflow/workflow-version/hooks/useTidyUp';
 import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
 import { useRef } from 'react';
 import { isDefined } from 'twenty-shared/utils';
-import { IconFocusCentered, IconPlus, IconReorder } from 'twenty-ui/icon';
+import {
+  IconDownload,
+  IconFocusCentered,
+  IconPlus,
+  IconReorder,
+} from 'twenty-ui/icon';
 import { MenuItem } from 'twenty-ui/navigation';
-import { WorkflowDiagramRightClickCommandMenuClickOutsideEffect } from './WorkflowDiagramRightClickCommandMenuClickOutsideEffect';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { WorkflowDiagramRightClickCommandMenuClickOutsideEffect } from './WorkflowDiagramRightClickCommandMenuClickOutsideEffect';
 
 const StyledContainer = styled.div<{ x: number; y: number }>`
   background: ${themeCssVariables.background.primary};
@@ -31,11 +40,14 @@ const StyledContainer = styled.div<{ x: number; y: number }>`
 export const WorkflowDiagramRightClickCommandMenu = ({
   showAddNode = true,
   onCenter,
+  onDownloadPdf,
 }: {
   showAddNode?: boolean;
   onCenter: () => void;
+  onDownloadPdf: (fileName: string) => Promise<'downloaded' | 'empty'>;
 }) => {
   const { t } = useLingui();
+  const { enqueueErrorSnackBar } = useSnackBar();
   const rightClickCommandMenuRef = useRef<HTMLDivElement>(null);
 
   const { workflowDiagramScreenToFlowPosition } =
@@ -47,6 +59,13 @@ export const WorkflowDiagramRightClickCommandMenu = ({
 
   const workflowDiagramRightClickMenuPosition = useAtomComponentStateValue(
     workflowDiagramRightClickMenuPositionState,
+  );
+
+  const workflowVisualizerWorkflowVersionId = useAtomComponentStateValue(
+    workflowVisualizerWorkflowVersionIdComponentState,
+  );
+  const workflowVersion = useWorkflowVersion(
+    workflowVisualizerWorkflowVersionId,
   );
 
   const { tidyUp, tidyUpLocally } = useTidyUp();
@@ -63,6 +82,26 @@ export const WorkflowDiagramRightClickCommandMenu = ({
   const handleCenterWorkflowDiagram = () => {
     onCenter();
     closeRightClickMenu();
+  };
+
+  const handleDownloadWorkflowDiagramPdf = async () => {
+    closeRightClickMenu();
+
+    try {
+      const downloadResult = await onDownloadPdf(
+        getWorkflowDiagramPdfFileName(workflowVersion?.workflow?.name),
+      );
+
+      if (downloadResult === 'empty') {
+        enqueueErrorSnackBar({
+          message: t`This workflow has nothing to export`,
+        });
+      }
+    } catch {
+      enqueueErrorSnackBar({
+        message: t`Failed to download the workflow PDF`,
+      });
+    }
   };
 
   const addNode = () => {
@@ -99,6 +138,13 @@ export const WorkflowDiagramRightClickCommandMenu = ({
           text={t`Center`}
           LeftIcon={IconFocusCentered}
           onClick={handleCenterWorkflowDiagram}
+        />
+        <MenuItem
+          text={t`Download PDF`}
+          LeftIcon={IconDownload}
+          onClick={() => {
+            void handleDownloadWorkflowDiagramPdf();
+          }}
         />
       </StyledContainer>
       <WorkflowDiagramRightClickCommandMenuClickOutsideEffect

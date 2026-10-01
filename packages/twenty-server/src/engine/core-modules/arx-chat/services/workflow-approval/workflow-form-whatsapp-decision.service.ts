@@ -97,9 +97,7 @@ export class WorkflowFormWhatsappDecisionService {
       const textField = fields.find(
         (field) => field.type.toUpperCase() === 'TEXT',
       );
-      const textValue = textField
-        ? formResponse[textField.name]
-        : undefined;
+      const textValue = textField ? formResponse[textField.name] : undefined;
       const hasText =
         typeof textValue === 'string'
           ? textValue.trim().length > 0
@@ -132,7 +130,7 @@ export class WorkflowFormWhatsappDecisionService {
       throw new Error('Invalid decision pointer');
     }
 
-    const { fields, stepStatus } =
+    const { fields, stepStatus, rejectContinues } =
       await this.workflowFormDecisionPointerService.getPendingFormFields(parts);
 
     if (
@@ -186,7 +184,26 @@ export class WorkflowFormWhatsappDecisionService {
       approveValue === false ||
       approveValue === 'false';
 
-    // Reject must not resume into SEND_* when FORM→SEND has no IF_ELSE gate.
+    // Default No stops the run: most forms wire FORM→SEND with no approve gate.
+    // rejectContinues forms submit approve=false so the graph can skip that send.
+    if (isRejected === true && rejectContinues === true) {
+      await this.getWorkflowRunner().submitFormStep({
+        workspaceId: parts.workspaceId,
+        workflowRunId: parts.workflowRunId,
+        stepId: parts.stepId,
+        response: {
+          ...formResponse,
+          approve: false,
+        },
+      });
+
+      this.logger.log(
+        `Workflow form rejected and continued for run ${parts.workflowRunId} step ${parts.stepId}`,
+      );
+
+      return { status: 'ok' };
+    }
+
     if (isRejected === true) {
       await this.getWorkflowRunWorkspaceService().updateWorkflowRunStepInfo({
         stepId: parts.stepId,

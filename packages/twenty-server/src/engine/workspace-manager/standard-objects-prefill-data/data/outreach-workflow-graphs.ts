@@ -46,6 +46,7 @@ import {
   OUTREACH_WF_AI_QUALIFY_OUTPUT,
   OUTREACH_WF_AI_LOCAL_PLACE_OUTPUT,
   OUTREACH_WF_AI_REPLY_OUTPUT,
+  OUTREACH_WF_REPLY_OUTPUT_VALIDATION,
   OUTREACH_WF_FIELD,
   OUTREACH_WF_HARVEST_PROJECT_ID,
   OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID,
@@ -216,8 +217,8 @@ const IDS = {
   stillWaitingParkFilter: '51a10051-aaaa-4fcb-a7d8-17a7736ed045',
   hasMeetingTimeIf: '51a1000d-aaaa-4fcb-a7d8-17a7736ed045',
   skipDontRespondIf: '51a1000e-aaaa-4fcb-a7d8-17a7736ed045',
-  hasProspectEmailIf: '51a1000f-aaaa-4fcb-a7d8-17a7736ed045',
-  sendProspectEmail: '51a10010-aaaa-4fcb-a7d8-17a7736ed045',
+  hasLinkedinBodyIf: '51a1000f-aaaa-4fcb-a7d8-17a7736ed045',
+  hasEmailToIf: '51a10010-aaaa-4fcb-a7d8-17a7736ed045',
   hasReferralIf: '51a10011-aaaa-4fcb-a7d8-17a7736ed045',
   referralEmailBranch: '51a10012-aaaa-4fcb-a7d8-17a7736ed045',
   referralPhoneBranch: '51a10013-aaaa-4fcb-a7d8-17a7736ed045',
@@ -231,16 +232,19 @@ const IDS = {
   sendReferralEmail: '51a1001b-aaaa-4fcb-a7d8-17a7736ed045',
   hasReferralPhoneSendIf: '51a1001c-aaaa-4fcb-a7d8-17a7736ed045',
   sendReferralWhatsapp: '51a1001d-aaaa-4fcb-a7d8-17a7736ed045',
-  routeReplyChannelIf: '51a1001e-aaaa-4fcb-a7d8-17a7736ed045',
-  replyEmailBranch: '51a1001f-aaaa-4fcb-a7d8-17a7736ed045',
-  replyWhatsappBranch: '51a10020-aaaa-4fcb-a7d8-17a7736ed045',
-  replyLinkedinBranch: '51a10021-aaaa-4fcb-a7d8-17a7736ed045',
-  replyEmailGroup: '51a10022-aaaa-4fcb-a7d8-17a7736ed045',
-  replyEmailFilter: '51a10023-aaaa-4fcb-a7d8-17a7736ed045',
-  replyWhatsappGroup: '51a10024-aaaa-4fcb-a7d8-17a7736ed045',
-  replyWhatsappFilter: '51a10025-aaaa-4fcb-a7d8-17a7736ed045',
+  hasEmailBodyIf: '51a1001e-aaaa-4fcb-a7d8-17a7736ed045',
   sendReplyEmail: '51a10026-aaaa-4fcb-a7d8-17a7736ed045',
   sendReplyWhatsapp: '51a10027-aaaa-4fcb-a7d8-17a7736ed045',
+  // One approve form per non-empty channel body. No skips only that send.
+  approveProspectEmail: '51a10054-aaaa-4fcb-a7d8-17a7736ed045',
+  prospectEmailApprovedIf: '51a10055-aaaa-4fcb-a7d8-17a7736ed045',
+  replyApprovedIf: '51a10056-aaaa-4fcb-a7d8-17a7736ed045',
+  approveReferral: '51a10057-aaaa-4fcb-a7d8-17a7736ed045',
+  referralApprovedIf: '51a10058-aaaa-4fcb-a7d8-17a7736ed045',
+  hasWhatsappToIf: '51a10059-aaaa-4fcb-a7d8-17a7736ed045',
+  approveWhatsappReply: '51a1005a-aaaa-4fcb-a7d8-17a7736ed045',
+  whatsappReplyApprovedIf: '51a1005b-aaaa-4fcb-a7d8-17a7736ed045',
+  hasWhatsappBodyIf: '51a1005d-aaaa-4fcb-a7d8-17a7736ed045',
   meetingCreate: '4ef266df-bb2b-4457-b542-3fd9cc528e34',
   // Fresh FIND before the stage router so IF_ELSE reads first.outreachSequenceStage
   // (works in test runs that pick a candidate without a database-event `after` shape).
@@ -386,12 +390,16 @@ const hitlOrDraftMessage = ({
   draftId,
   approveId,
   humanInTheLoop,
+  draftField = 'message',
 }: {
   draftId: string;
   approveId: string;
   humanInTheLoop: boolean;
+  draftField?: string;
 }) =>
-  humanInTheLoop ? `{{${approveId}.editedBody}}` : `{{${draftId}.message}}`;
+  humanInTheLoop
+    ? `{{${approveId}.editedBody}}`
+    : `{{${draftId}.${draftField}}}`;
 
 export const inferOutreachSequencerGraphOptionsFromSteps = (
   steps:
@@ -838,7 +846,7 @@ const acceptedBranchSteps = ({
   }),
 ];
 
-// REPLIED entry: sales closer, channel routing, referral fan-out, meeting invite.
+// REPLIED entry: one body per channel, then referral, meeting, inbound follow-ups.
 const repliedBranchSteps = ({
   humanInTheLoop,
   whatsappEnabled,
@@ -850,11 +858,43 @@ const repliedBranchSteps = ({
   meetingFollowUpEnabled: boolean;
   testMode: boolean;
 }) => {
-  const replyBody = hitlOrDraftMessage({
+  const linkedinBody = hitlOrDraftMessage({
     draftId: IDS.draftReply,
     approveId: IDS.approveReply,
     humanInTheLoop,
+    draftField: 'linkedinMessage',
   });
+  const whatsappBody = hitlOrDraftMessage({
+    draftId: IDS.draftReply,
+    approveId: IDS.approveWhatsappReply,
+    humanInTheLoop,
+    draftField: 'whatsappMessage',
+  });
+  const emailBody = hitlOrDraftMessage({
+    draftId: IDS.draftReply,
+    approveId: IDS.approveProspectEmail,
+    humanInTheLoop,
+    draftField: 'emailBody',
+  });
+  const referralBody = humanInTheLoop
+    ? `{{${IDS.approveReferral}.editedBody}}`
+    : `{{${IDS.draftReply}.referralMessage}}`;
+  const afterLinkedinStepId = whatsappEnabled
+    ? IDS.hasWhatsappBodyIf
+    : IDS.hasEmailBodyIf;
+  const linkedinEntryStepId = humanInTheLoop ? IDS.approveReply : IDS.sendReply;
+  const whatsappEntryStepId = humanInTheLoop
+    ? IDS.approveWhatsappReply
+    : IDS.sendReplyWhatsapp;
+  const emailEntryStepId = humanInTheLoop
+    ? IDS.approveProspectEmail
+    : IDS.sendReplyEmail;
+  const afterReferralEmailStepId = whatsappEnabled
+    ? IDS.hasReferralPhoneSendIf
+    : IDS.hasMeetingTimeIf;
+  const referralSendEntryStepId = humanInTheLoop
+    ? IDS.approveReferral
+    : IDS.hasReferralEmailSendIf;
   const postReplyFu1Body = hitlOrDraftMessage({
     draftId: IDS.draftPostReplyFu1,
     approveId: IDS.approvePostReplyFu1,
@@ -939,7 +979,17 @@ const repliedBranchSteps = ({
         referralName: `{{${IDS.extractSignals}.referralName}}`,
         referralEmail: `{{${IDS.extractSignals}.referralEmail}}`,
         referralPhone: `{{${IDS.extractSignals}.referralPhone}}`,
+        prospectPhone: `{{${IDS.extractSignals}.prospectPhone}}`,
+        sendWhatsappReply: `{{${IDS.extractSignals}.sendWhatsappReply}}`,
         shouldNotRespond: `{{${IDS.extractSignals}.shouldNotRespond}}`,
+        personPrimaryPhone: gtmWfFindField(
+          IDS.repliedPersonFind,
+          OUTREACH_WF_FIELD.phonesPrimaryPath,
+        ),
+        personPrimaryEmail: gtmWfFindField(
+          IDS.repliedPersonFind,
+          OUTREACH_WF_FIELD.emailsPrimaryPath,
+        ),
       },
       sampleOutput: OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT,
       // Reply agent stamps preferred channel / email via candidate CRUD tools.
@@ -1000,6 +1050,8 @@ const repliedBranchSteps = ({
         prospectEmail: `{{${IDS.validateSignals}.prospectEmail}}`,
         preferredChannelToStamp: `{{${IDS.validateSignals}.preferredChannelToStamp}}`,
         shouldNotRespond: `{{${IDS.validateSignals}.shouldNotRespond}}`,
+        whatsappTo: `{{${IDS.validateSignals}.whatsappTo}}`,
+        emailTo: `{{${IDS.validateSignals}.emailTo}}`,
         candidateId: gtmWfFindId(IDS.repliedFind),
         senderJson: senderJson(),
         prospectEnrichmentJson: `{{${IDS.fetchProfileReply}.outreachProspectEnrichment}}`,
@@ -1008,21 +1060,43 @@ const repliedBranchSteps = ({
       }),
       agentId: OUTREACH_WF_AGENT_REPLY,
       outputSchema: OUTREACH_WF_AI_REPLY_OUTPUT,
-      nextStepIds: [humanInTheLoop ? IDS.approveReply : IDS.skipDontRespondIf],
+      outputValidation: OUTREACH_WF_REPLY_OUTPUT_VALIDATION,
+      nextStepIds: [IDS.skipDontRespondIf],
     }),
-    // HITL is WhatsApp-approvable only: approve + editedBody. Classification and
-    // secondary copy stay on validateSignals / draftReply for branch reads.
+    gtmWfIfElseStep({
+      id: IDS.skipDontRespondIf,
+      name: 'Skip send if #DONTRESPOND#',
+      stepOutputKey: `{{${IDS.draftReply}.linkedinMessage}}`,
+      value: OUTREACH_DONT_RESPOND_SENTINEL,
+      type: 'TEXT',
+      operand: 'CONTAINS',
+      // Opt-out: park immediately — do not enter post-reply follow-up cadence.
+      ifNextStepIds: [IDS.stampFailedDontRespond],
+      elseNextStepIds: [IDS.hasLinkedinBodyIf],
+    }),
+    // Empty body skips that channel. Later channels still run.
+    gtmWfIfElseStep({
+      id: IDS.hasLinkedinBodyIf,
+      name: 'LinkedIn reply?',
+      stepOutputKey: `{{${IDS.draftReply}.linkedinMessage}}`,
+      value: '',
+      type: 'TEXT',
+      operand: 'IS_NOT_EMPTY',
+      ifNextStepIds: [linkedinEntryStepId],
+      elseNextStepIds: [afterLinkedinStepId],
+    }),
     ...(humanInTheLoop
       ? [
           gtmWfFormStep({
             id: IDS.approveReply,
-            name: 'Approve / edit reply',
-            editedBodyValue: `{{${IDS.draftReply}.message}}`,
+            name: 'Approve LinkedIn reply',
+            editedBodyValue: `{{${IDS.draftReply}.linkedinMessage}}`,
             contextTemplate: OUTREACH_HITL_CONTEXT_TEMPLATES.inboundSalesReply,
             detailsTemplate: gtmWfFormDetailsTemplate({
               findId: IDS.repliedFind,
               personFindId: IDS.repliedPersonFind,
               draftStepId: IDS.draftReply,
+              draftField: 'linkedinMessage',
               extra: [
                 buildOutreachMeetingBookedDetailsTemplate({
                   name: gtmWfFindField(IDS.repliedFind, 'name'),
@@ -1033,84 +1107,25 @@ const repliedBranchSteps = ({
                 `Referral: {{${IDS.validateSignals}.referralName}}`,
               ],
             }),
-            nextStepIds: [IDS.skipDontRespondIf],
+            rejectContinues: true,
+            nextStepIds: [IDS.replyApprovedIf],
           }),
-        ]
-      : []),
-    gtmWfIfElseStep({
-      id: IDS.skipDontRespondIf,
-      name: 'Skip send if #DONTRESPOND#',
-      stepOutputKey: replyBody,
-      value: OUTREACH_DONT_RESPOND_SENTINEL,
-      type: 'TEXT',
-      operand: 'CONTAINS',
-      // Opt-out: park immediately — do not enter post-reply follow-up cadence.
-      ifNextStepIds: [IDS.stampFailedDontRespond],
-      elseNextStepIds: [IDS.routeReplyChannelIf],
-    }),
-    gtmWfPreferredChannelRouterStep({
-      id: IDS.routeReplyChannelIf,
-      name: 'Reply on last inbound channel',
-      channelStepOutputKey: `{{${IDS.validateSignals}.replyChannel}}`,
-      emailBranch: {
-        id: IDS.replyEmailBranch,
-        filterGroupId: IDS.replyEmailGroup,
-        filterId: IDS.replyEmailFilter,
-        nextStepIds: [IDS.sendReplyEmail],
-      },
-      ...(whatsappEnabled
-        ? {
-            whatsappBranch: {
-              id: IDS.replyWhatsappBranch,
-              filterGroupId: IDS.replyWhatsappGroup,
-              filterId: IDS.replyWhatsappFilter,
-              nextStepIds: [IDS.sendReplyWhatsapp],
-            },
-          }
-        : {}),
-      linkedinBranch: {
-        id: IDS.replyLinkedinBranch,
-        nextStepIds: [IDS.sendReply],
-      },
-    }),
-    gtmWfSendEmailStep({
-      id: IDS.sendReplyEmail,
-      name: 'Send reply by email',
-      to: gtmWfFindField(
-        IDS.repliedPersonFind,
-        OUTREACH_WF_FIELD.emailsPrimaryPath,
-      ),
-      subject: `{{${IDS.draftReply}.emailSubject}}`,
-      body: replyBody,
-      nextStepIds: [
-        IDS.hasProspectEmailIf,
-        IDS.hasReferralIf,
-        IDS.hasMeetingTimeIf,
-      ],
-    }),
-    ...(whatsappEnabled
-      ? [
-          gtmWfSendWhatsappMessageStep({
-            id: IDS.sendReplyWhatsapp,
-            name: 'Send reply on WhatsApp',
-            phone: gtmWfFindField(
-              IDS.repliedPersonFind,
-              OUTREACH_WF_FIELD.phonesPrimaryPath,
-            ),
-            body: replyBody,
-            candidateId: gtmWfFindId(IDS.repliedFind),
-            nextStepIds: [
-              IDS.hasProspectEmailIf,
-              IDS.hasReferralIf,
-              IDS.hasMeetingTimeIf,
-            ],
+          gtmWfIfElseStep({
+            id: IDS.replyApprovedIf,
+            name: 'LinkedIn reply approved?',
+            stepOutputKey: `{{${IDS.approveReply}.approve}}`,
+            value: 'true',
+            type: 'BOOLEAN',
+            operand: 'IS',
+            ifNextStepIds: [IDS.sendReply],
+            elseNextStepIds: [afterLinkedinStepId],
           }),
         ]
       : []),
     gtmWfSendLinkedInMessageStep({
       id: IDS.sendReply,
-      name: 'Send reply on LinkedIn',
-      body: replyBody,
+      name: 'Send LinkedIn reply',
+      body: linkedinBody,
       candidateId: gtmWfFindId(IDS.repliedFind),
       linkedinProfileId: gtmWfFindField(
         IDS.repliedPersonFind,
@@ -1120,28 +1135,126 @@ const repliedBranchSteps = ({
         IDS.repliedPersonFind,
         OUTREACH_WF_FIELD.linkedinLinkUrlPath,
       ),
-      nextStepIds: [
-        IDS.hasProspectEmailIf,
-        IDS.hasReferralIf,
-        IDS.hasMeetingTimeIf,
-      ],
+      nextStepIds: [afterLinkedinStepId],
     }),
+    ...(whatsappEnabled
+      ? [
+          gtmWfIfElseStep({
+            id: IDS.hasWhatsappBodyIf,
+            name: 'WhatsApp reply?',
+            stepOutputKey: `{{${IDS.draftReply}.whatsappMessage}}`,
+            value: '',
+            type: 'TEXT',
+            operand: 'IS_NOT_EMPTY',
+            ifNextStepIds: [IDS.hasWhatsappToIf],
+            elseNextStepIds: [IDS.hasEmailBodyIf],
+          }),
+          gtmWfIfElseStep({
+            id: IDS.hasWhatsappToIf,
+            name: 'WhatsApp destination?',
+            stepOutputKey: `{{${IDS.validateSignals}.whatsappTo}}`,
+            value: '',
+            type: 'TEXT',
+            operand: 'IS_NOT_EMPTY',
+            ifNextStepIds: [whatsappEntryStepId],
+            elseNextStepIds: [IDS.hasEmailBodyIf],
+          }),
+          ...(humanInTheLoop
+            ? [
+                gtmWfFormStep({
+                  id: IDS.approveWhatsappReply,
+                  name: 'Approve WhatsApp reply',
+                  editedBodyValue: `{{${IDS.draftReply}.whatsappMessage}}`,
+                  contextTemplate:
+                    OUTREACH_HITL_CONTEXT_TEMPLATES.inboundWhatsappReply,
+                  detailsTemplate: gtmWfFormDetailsTemplate({
+                    findId: IDS.repliedFind,
+                    personFindId: IDS.repliedPersonFind,
+                    extra: [`WhatsApp: {{${IDS.validateSignals}.whatsappTo}}`],
+                  }),
+                  rejectContinues: true,
+                  nextStepIds: [IDS.whatsappReplyApprovedIf],
+                }),
+                gtmWfIfElseStep({
+                  id: IDS.whatsappReplyApprovedIf,
+                  name: 'WhatsApp reply approved?',
+                  stepOutputKey: `{{${IDS.approveWhatsappReply}.approve}}`,
+                  value: 'true',
+                  type: 'BOOLEAN',
+                  operand: 'IS',
+                  ifNextStepIds: [IDS.sendReplyWhatsapp],
+                  elseNextStepIds: [IDS.hasEmailBodyIf],
+                }),
+              ]
+            : []),
+          gtmWfSendWhatsappMessageStep({
+            id: IDS.sendReplyWhatsapp,
+            name: 'Send WhatsApp reply',
+            phone: `{{${IDS.validateSignals}.whatsappTo}}`,
+            body: whatsappBody,
+            candidateId: gtmWfFindId(IDS.repliedFind),
+            nextStepIds: [IDS.hasEmailBodyIf],
+          }),
+        ]
+      : []),
     gtmWfIfElseStep({
-      id: IDS.hasProspectEmailIf,
-      name: 'Send details by email?',
-      stepOutputKey: `{{${IDS.validateSignals}.prospectEmail}}`,
+      id: IDS.hasEmailBodyIf,
+      name: 'Email reply?',
+      stepOutputKey: `{{${IDS.draftReply}.emailBody}}`,
       value: '',
       type: 'TEXT',
       operand: 'IS_NOT_EMPTY',
-      ifNextStepIds: [IDS.sendProspectEmail],
-      elseNextStepIds: [],
+      ifNextStepIds: [IDS.hasEmailToIf],
+      elseNextStepIds: [IDS.hasReferralIf],
     }),
+    gtmWfIfElseStep({
+      id: IDS.hasEmailToIf,
+      name: 'Email destination?',
+      stepOutputKey: `{{${IDS.validateSignals}.emailTo}}`,
+      value: '',
+      type: 'TEXT',
+      operand: 'IS_NOT_EMPTY',
+      ifNextStepIds: [emailEntryStepId],
+      elseNextStepIds: [IDS.hasReferralIf],
+    }),
+    ...(humanInTheLoop
+      ? [
+          gtmWfFormStep({
+            id: IDS.approveProspectEmail,
+            name: 'Approve email reply',
+            editedBodyValue: `{{${IDS.draftReply}.emailBody}}`,
+            contextTemplate:
+              OUTREACH_HITL_CONTEXT_TEMPLATES.inboundDetailsEmail,
+            detailsTemplate: gtmWfFormDetailsTemplate({
+              findId: IDS.repliedFind,
+              personFindId: IDS.repliedPersonFind,
+              extra: [
+                `To: {{${IDS.validateSignals}.emailTo}}`,
+                `Subject: {{${IDS.draftReply}.emailSubject}}`,
+              ],
+            }),
+            rejectContinues: true,
+            nextStepIds: [IDS.prospectEmailApprovedIf],
+          }),
+          gtmWfIfElseStep({
+            id: IDS.prospectEmailApprovedIf,
+            name: 'Email reply approved?',
+            stepOutputKey: `{{${IDS.approveProspectEmail}.approve}}`,
+            value: 'true',
+            type: 'BOOLEAN',
+            operand: 'IS',
+            ifNextStepIds: [IDS.sendReplyEmail],
+            elseNextStepIds: [IDS.hasReferralIf],
+          }),
+        ]
+      : []),
     gtmWfSendEmailStep({
-      id: IDS.sendProspectEmail,
-      name: 'Email details to prospect',
-      to: `{{${IDS.validateSignals}.prospectEmail}}`,
+      id: IDS.sendReplyEmail,
+      name: 'Send email reply',
+      to: `{{${IDS.validateSignals}.emailTo}}`,
       subject: `{{${IDS.draftReply}.emailSubject}}`,
-      body: `{{${IDS.draftReply}.emailBody}}`,
+      body: emailBody,
+      nextStepIds: [IDS.hasReferralIf],
     }),
     gtmWfMultiIfElseStep({
       id: IDS.hasReferralIf,
@@ -1169,7 +1282,7 @@ const repliedBranchSteps = ({
         },
         {
           id: IDS.referralElseBranch,
-          nextStepIds: [],
+          nextStepIds: [IDS.hasMeetingTimeIf],
         },
       ],
     }),
@@ -1188,10 +1301,40 @@ const repliedBranchSteps = ({
       }),
       agentId: OUTREACH_WF_AGENT_REPLY,
       outputSchema: OUTREACH_WF_AI_REPLY_OUTPUT,
-      nextStepIds: whatsappEnabled
-        ? [IDS.hasReferralEmailSendIf, IDS.hasReferralPhoneSendIf]
-        : [IDS.hasReferralEmailSendIf],
+      nextStepIds: [referralSendEntryStepId],
     }),
+    ...(humanInTheLoop
+      ? [
+          gtmWfFormStep({
+            id: IDS.approveReferral,
+            name: 'Approve referral intro',
+            editedBodyValue: `{{${IDS.draftReply}.referralMessage}}`,
+            contextTemplate:
+              OUTREACH_HITL_CONTEXT_TEMPLATES.inboundReferralIntro,
+            detailsTemplate: gtmWfFormDetailsTemplate({
+              findId: IDS.repliedFind,
+              personFindId: IDS.repliedPersonFind,
+              extra: [
+                `Referral: {{${IDS.validateSignals}.referralName}}`,
+                `Email: {{${IDS.validateSignals}.referralEmail}}`,
+                `Phone: {{${IDS.validateSignals}.referralPhone}}`,
+              ],
+            }),
+            rejectContinues: true,
+            nextStepIds: [IDS.referralApprovedIf],
+          }),
+          gtmWfIfElseStep({
+            id: IDS.referralApprovedIf,
+            name: 'Referral intro approved?',
+            stepOutputKey: `{{${IDS.approveReferral}.approve}}`,
+            value: 'true',
+            type: 'BOOLEAN',
+            operand: 'IS',
+            ifNextStepIds: [IDS.hasReferralEmailSendIf],
+            elseNextStepIds: [IDS.hasMeetingTimeIf],
+          }),
+        ]
+      : []),
     gtmWfIfElseStep({
       id: IDS.hasReferralEmailSendIf,
       name: 'Referral has email?',
@@ -1200,14 +1343,15 @@ const repliedBranchSteps = ({
       type: 'TEXT',
       operand: 'IS_NOT_EMPTY',
       ifNextStepIds: [IDS.sendReferralEmail],
-      elseNextStepIds: [],
+      elseNextStepIds: [afterReferralEmailStepId],
     }),
     gtmWfSendEmailStep({
       id: IDS.sendReferralEmail,
       name: 'Email referred person',
       to: `{{${IDS.validateSignals}.referralEmail}}`,
       subject: `{{${IDS.draftReply}.emailSubject}}`,
-      body: `{{${IDS.draftReply}.referralMessage}}`,
+      body: referralBody,
+      nextStepIds: [afterReferralEmailStepId],
     }),
     ...(whatsappEnabled
       ? [
@@ -1219,14 +1363,15 @@ const repliedBranchSteps = ({
             type: 'TEXT',
             operand: 'IS_NOT_EMPTY',
             ifNextStepIds: [IDS.sendReferralWhatsapp],
-            elseNextStepIds: [],
+            elseNextStepIds: [IDS.hasMeetingTimeIf],
           }),
           gtmWfSendWhatsappMessageStep({
             id: IDS.sendReferralWhatsapp,
             name: 'WhatsApp referred person',
             phone: `{{${IDS.validateSignals}.referralPhone}}`,
-            body: `{{${IDS.draftReply}.referralMessage}}`,
+            body: referralBody,
             candidateId: `{{${IDS.createReferral}.referralCandidateId}}`,
+            nextStepIds: [IDS.hasMeetingTimeIf],
           }),
         ]
       : []),
@@ -1366,11 +1511,8 @@ const repliedBranchSteps = ({
       : []),
     gtmWfPreferredChannelRouterStep({
       id: IDS.routePostReplyFu1,
-      name: 'Send post-reply FU1 on preferred channel',
-      channelStepOutputKey: gtmWfFindField(
-        IDS.reloadAfterInboundWaitPersonFind,
-        OUTREACH_WF_FIELD.outreachPreferredChannelPath,
-      ),
+      name: 'Send post-reply FU1 on inbound channel',
+      channelStepOutputKey: `{{${IDS.validateSignals}.replyChannel}}`,
       emailBranch: {
         id: IDS.postReplyFu1EmailBranch,
         filterGroupId: IDS.postReplyFu1EmailGroup,
@@ -1506,11 +1648,8 @@ const repliedBranchSteps = ({
       : []),
     gtmWfPreferredChannelRouterStep({
       id: IDS.routePostReplyFu2,
-      name: 'Send post-reply FU2 on preferred channel',
-      channelStepOutputKey: gtmWfFindField(
-        IDS.reloadPostReplyFu2PersonFind,
-        OUTREACH_WF_FIELD.outreachPreferredChannelPath,
-      ),
+      name: 'Send post-reply FU2 on inbound channel',
+      channelStepOutputKey: `{{${IDS.validateSignals}.replyChannel}}`,
       emailBranch: {
         id: IDS.postReplyFu2EmailBranch,
         filterGroupId: IDS.postReplyFu2EmailGroup,

@@ -484,6 +484,10 @@ export const OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT =
     referralName: 'Priya Nair',
     referralEmail: 'priya.nair@acme.com',
     referralPhone: '',
+    prospectPhone: '',
+    sendWhatsappReply: false,
+    whatsappTo: '',
+    emailTo: '',
     hasReferral: true,
     shouldNotRespond: false,
   });

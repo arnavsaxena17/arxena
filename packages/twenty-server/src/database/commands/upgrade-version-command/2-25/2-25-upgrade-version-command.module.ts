@@ -139,6 +139,12 @@ import { StampProspectEnrichmentOnLinkedinProfileFetchCommand } from 'src/databa
 import { SyncWorkspaceMemberExtensionPresenceFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000149-sync-workspace-member-extension-presence-fields.command';
 import { SeedOutreachFirstLinkedinMessagePromptCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000150-seed-outreach-first-linkedin-message-prompt.command';
 import { ResyncOutreachPostReplyFu2WhatsappEdgeCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000151-resync-outreach-post-reply-fu2-whatsapp-edge.command';
+import { ResyncOutreachPerSendHitlCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000152-resync-outreach-per-send-hitl.command';
+import { ResyncOutreachWhatsappAlongsideLinkedinCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000153-resync-outreach-whatsapp-alongside-linkedin.command';
+import { ResyncOutreachWhatsappReplyOnceCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000154-resync-outreach-whatsapp-reply-once.command';
+import { ResyncOutreachAckOnInboundChannelCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000155-resync-outreach-ack-on-inbound-channel.command';
+import { ResyncOutreachSequentialChannelSendsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000156-resync-outreach-sequential-channel-sends.command';
+import { ResyncOutreachJevOutputValidationCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000157-resync-outreach-jev-output-validation.command';
 import { SetOutreachExtractSignalsDeepseekCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000106-set-outreach-extract-signals-deepseek.command';
 import { DropChatMessageObjWithTimeStampCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000099-drop-chat-message-obj-with-time-stamp.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
@@ -313,6 +319,12 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     SyncWorkspaceMemberExtensionPresenceFieldsCommand,
     SeedOutreachFirstLinkedinMessagePromptCommand,
     ResyncOutreachPostReplyFu2WhatsappEdgeCommand,
+    ResyncOutreachPerSendHitlCommand,
+    ResyncOutreachWhatsappAlongsideLinkedinCommand,
+    ResyncOutreachWhatsappReplyOnceCommand,
+    ResyncOutreachAckOnInboundChannelCommand,
+    ResyncOutreachSequentialChannelSendsCommand,
+    ResyncOutreachJevOutputValidationCommand,
     SyncWorkspaceMemberCrunchbaseCookiesFieldsCommand,
     EnsureSearchCrunchbaseCompaniesLogicFunctionCommand,
     MigrateOtherFieldsService,

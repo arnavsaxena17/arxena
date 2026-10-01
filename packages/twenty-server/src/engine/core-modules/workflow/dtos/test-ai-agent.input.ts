@@ -1,8 +1,59 @@
 import { Field, InputType } from '@nestjs/graphql';
 
-import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsBoolean,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  ValidateNested,
+} from 'class-validator';
 
 import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/scalars';
+
+@InputType()
+export class TestAiAgentOutputValidationCheckInput {
+  @IsString()
+  @Field(() => String)
+  id: string;
+
+  @IsString()
+  @Field(() => String)
+  label: string;
+
+  @IsString()
+  @Field(() => String)
+  instructions: string;
+
+  @IsString()
+  @Field(() => String)
+  invalidWhen: string;
+
+  @IsString()
+  @Field(() => String)
+  validWhen: string;
+}
+
+@InputType()
+export class TestAiAgentOutputValidationInput {
+  @IsBoolean()
+  @Field(() => Boolean)
+  enabled: boolean;
+
+  @IsArray()
+  @IsString({ each: true })
+  @Field(() => [String])
+  fieldKeys: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => TestAiAgentOutputValidationCheckInput)
+  @Field(() => [TestAiAgentOutputValidationCheckInput], { nullable: true })
+  checks?: TestAiAgentOutputValidationCheckInput[];
+}
 
 @InputType()
 export class TestAiAgentInput {
@@ -44,4 +95,14 @@ export class TestAiAgentInput {
     nullable: true,
   })
   stepId?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => TestAiAgentOutputValidationInput)
+  @Field(() => TestAiAgentOutputValidationInput, {
+    description:
+      'Jev checks to run on the structured output before it is returned',
+    nullable: true,
+  })
+  outputValidation?: TestAiAgentOutputValidationInput;
 }

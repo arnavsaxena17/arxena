@@ -61,6 +61,27 @@ export const OUTREACH_WF_AI_MESSAGE_OUTPUT = {
   },
 };
 
+export const OUTREACH_WF_MESSAGE_OUTPUT_VALIDATION = {
+  enabled: true,
+  fieldKeys: ['message'],
+} as const;
+
+export const OUTREACH_WF_EMAIL_OUTPUT_VALIDATION = {
+  enabled: true,
+  fieldKeys: ['subject', 'message'],
+} as const;
+
+export const OUTREACH_WF_REPLY_OUTPUT_VALIDATION = {
+  enabled: true,
+  fieldKeys: [
+    'linkedinMessage',
+    'emailSubject',
+    'emailBody',
+    'referralMessage',
+    'whatsappMessage',
+  ],
+} as const;
+
 export const OUTREACH_WF_AI_EMAIL_OUTPUT = {
   subject: {
     isLeaf: true,
@@ -78,10 +99,10 @@ export const OUTREACH_WF_AI_EMAIL_OUTPUT = {
 
 // Copy only. Times, channel and contacts come from the validated signals step.
 export const OUTREACH_WF_AI_REPLY_OUTPUT = {
-  message: {
+  linkedinMessage: {
     isLeaf: true,
     type: 'string',
-    label: 'message',
+    label: 'linkedinMessage',
     value: '',
   },
   emailSubject: {
@@ -100,6 +121,12 @@ export const OUTREACH_WF_AI_REPLY_OUTPUT = {
     isLeaf: true,
     type: 'string',
     label: 'referralMessage',
+    value: '',
+  },
+  whatsappMessage: {
+    isLeaf: true,
+    type: 'string',
+    label: 'whatsappMessage',
     value: '',
   },
   referralCandidateId: {
@@ -146,6 +173,18 @@ export const OUTREACH_WF_AI_EXTRACT_OUTPUT = {
     type: 'string',
     label: 'referralPhone',
     value: '',
+  },
+  prospectPhone: {
+    isLeaf: true,
+    type: 'string',
+    label: 'prospectPhone',
+    value: '',
+  },
+  sendWhatsappReply: {
+    isLeaf: true,
+    type: 'boolean',
+    label: 'sendWhatsappReply',
+    value: false,
   },
   shouldNotRespond: {
     isLeaf: true,
@@ -298,18 +337,20 @@ export const gtmWfFormDetailsTemplate = ({
   findId,
   personFindId,
   draftStepId,
+  draftField = 'message',
   extra,
 }: {
   findId: string;
   personFindId: string;
   draftStepId?: string;
+  draftField?: string;
   extra?: string[];
 }): string =>
   [
     `Contact: ${gtmWfFindField(findId, 'name')}`,
     `Title: ${gtmWfFindField(personFindId, OUTREACH_WF_FIELD.jobTitlePath)}`,
     `Company: ${gtmWfFindField(personFindId, OUTREACH_WF_FIELD.jobCompanyNamePath)}`,
-    ...(draftStepId ? [`Draft: {{${draftStepId}.message}}`] : []),
+    ...(draftStepId ? [`Draft: {{${draftStepId}.${draftField}}}`] : []),
     ...(extra ?? []),
   ].join(' | ');
 
@@ -700,6 +741,7 @@ export const gtmWfAiAgentStep = ({
   prompt,
   agentId,
   outputSchema,
+  outputValidation,
   nextStepIds,
 }: {
   id: string;
@@ -707,22 +749,43 @@ export const gtmWfAiAgentStep = ({
   prompt: string;
   agentId: string;
   outputSchema: Record<string, unknown>;
+  outputValidation?: {
+    enabled: true;
+    fieldKeys: readonly string[];
+  };
   nextStepIds?: string[];
-}): StepBase =>
-  withNext(
+}): StepBase => {
+  const resolvedOutputValidation =
+    outputValidation ??
+    // Message and email schemas are only used by sendable drafts.
+    // The reply schema is shared with stamp steps, so those pass validation in.
+    (outputSchema === OUTREACH_WF_AI_MESSAGE_OUTPUT
+      ? OUTREACH_WF_MESSAGE_OUTPUT_VALIDATION
+      : outputSchema === OUTREACH_WF_AI_EMAIL_OUTPUT
+        ? OUTREACH_WF_EMAIL_OUTPUT_VALIDATION
+        : undefined);
+
+  return withNext(
     {
       id,
       name,
       type: 'AI_AGENT',
       valid: true,
       settings: {
-        input: { prompt, agentId },
+        input: {
+          prompt,
+          agentId,
+          ...(isDefined(resolvedOutputValidation)
+            ? { outputValidation: resolvedOutputValidation }
+            : {}),
+        },
         outputSchema,
         errorHandlingOptions: OUTREACH_WF_ERROR_HANDLING,
       },
     },
     nextStepIds,
   );
+};
 
 export const gtmWfFormStep = ({
   id,
@@ -732,6 +795,7 @@ export const gtmWfFormStep = ({
   detailsTemplate,
   approveLabel = 'Approve send',
   extraFields = [],
+  rejectContinues = false,
   nextStepIds,
 }: {
   id: string;
@@ -741,6 +805,8 @@ export const gtmWfFormStep = ({
   detailsTemplate: string;
   approveLabel?: string;
   extraFields?: Array<Record<string, unknown>>;
+  // No resumes the run so a later IF can skip this send. Other forms still stop.
+  rejectContinues?: boolean;
   nextStepIds?: string[];
 }): StepBase => {
   const approveFieldId = `${id.slice(0, 8)}-0000-4000-8000-00000000c001`;
@@ -777,6 +843,7 @@ export const gtmWfFormStep = ({
       settings: {
         input,
         outputSchema: {},
+        ...(rejectContinues ? { rejectContinues: true } : {}),
         notifyOnPending: {
           channels: ['WHATSAPP_OFFICIAL'],
           contextTemplate,

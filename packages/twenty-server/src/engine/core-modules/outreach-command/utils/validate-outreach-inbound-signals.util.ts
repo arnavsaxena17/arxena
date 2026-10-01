@@ -24,7 +24,11 @@ export type OutreachInboundSignalsInput = {
   referralName?: unknown;
   referralEmail?: unknown;
   referralPhone?: unknown;
+  prospectPhone?: unknown;
+  sendWhatsappReply?: unknown;
   shouldNotRespond?: unknown;
+  personPrimaryPhone?: unknown;
+  personPrimaryEmail?: unknown;
 };
 
 export type OutreachValidatedInboundSignals = {
@@ -37,6 +41,10 @@ export type OutreachValidatedInboundSignals = {
   referralName: string;
   referralEmail: string;
   referralPhone: string;
+  prospectPhone: string;
+  sendWhatsappReply: boolean;
+  whatsappTo: string;
+  emailTo: string;
   hasReferral: boolean;
   shouldNotRespond: boolean;
 };
@@ -197,16 +205,49 @@ export const validateOutreachInboundSignals = (
   });
 
   const explicitSwitch = asChannel(input.requestedChannelSwitch);
-  const stickyPreferred = asChannel(input.preferredChannel);
   const lastInbound = asChannel(input.lastInboundChannel);
   const prospectEmail = groundEmail({
     email: asTrimmedString(input.prospectEmail),
     transcript,
   });
-  const replyChannel = explicitSwitch ?? stickyPreferred ?? lastInbound ?? 'LINKEDIN';
-  // Asking for details by email also sticks future outbounds on EMAIL.
-  const preferredChannelToStamp =
-    explicitSwitch ?? (prospectEmail !== '' ? 'EMAIL' : '');
+  const groundedProspectPhone = groundPhone({
+    phone: asTrimmedString(input.prospectPhone),
+    transcript,
+  });
+  // Their number, not the person they referred. Same digits means it is a referral.
+  const prospectPhone =
+    digitsOf(groundedProspectPhone) !== '' &&
+    digitsOf(groundedProspectPhone) === digitsOf(referralPhone)
+      ? ''
+      : groundedProspectPhone;
+  // Content goes to WhatsApp when they gave their own number on LinkedIn
+  // and did not ask for that content by email. The model flag is not enough:
+  // a grounded phone is what makes the send real.
+  const sendWhatsappReply =
+    lastInbound === 'LINKEDIN' &&
+    prospectPhone !== '' &&
+    explicitSwitch !== 'EMAIL';
+  // The acknowledgement stays where this message arrived. Email or WhatsApp
+  // they asked for is a separate content send, not a second copy of the ack.
+  const replyChannel = lastInbound ?? 'LINKEDIN';
+  const preferredChannelToStamp = sendWhatsappReply
+    ? 'WHATSAPP'
+    : (explicitSwitch ?? (prospectEmail !== '' ? 'EMAIL' : ''));
+  const personPrimaryPhone = asTrimmedString(input.personPrimaryPhone);
+  const personPrimaryEmail = asTrimmedString(input.personPrimaryEmail);
+  // Resolved destinations. Empty means that channel send does not run.
+  // CRM primary is the address we already have when they wrote on that channel.
+  const whatsappTo =
+    replyChannel === 'WHATSAPP'
+      ? personPrimaryPhone || prospectPhone
+      : sendWhatsappReply
+        ? prospectPhone
+        : '';
+  const emailTo = sendWhatsappReply
+    ? ''
+    : replyChannel === 'EMAIL'
+      ? personPrimaryEmail || prospectEmail
+      : prospectEmail;
 
   return {
     success: true,
@@ -218,6 +259,10 @@ export const validateOutreachInboundSignals = (
     referralName,
     referralEmail,
     referralPhone,
+    prospectPhone,
+    sendWhatsappReply,
+    whatsappTo,
+    emailTo,
     // A grounded contact is what makes a referral actionable; recipients often
     // share a number without repeating the person's name.
     hasReferral: referralEmail !== '' || referralPhone !== '',

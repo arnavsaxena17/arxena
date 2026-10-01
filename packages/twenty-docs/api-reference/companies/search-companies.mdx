@@ -6,7 +6,9 @@ openapi: 'openapi/company-api.json POST /company-api/companies/search'
 
 Pass `companyName`, `keywords`, `query`, `website`, `industry`, `location`, or a LinkedIn `url` (Sales Navigator account list, company search, or people search). Omit `dataSource` or pass `auto` to resolve LinkedIn Unipile automatically (Sales Navigator seat first), then Harvest, then the companies index. Pin `index`, `unipile`, `pool`, `recruiter`, or `harvest` when you do not want that auto-resolve. Account-list URLs also accept `useV2`; Unipile v2 browse always returns newest-added first.
 
-Each hit is a standard company record: `id`, `name`, `website`, `linkedinUrl`, `industry`.
+Pin `dataSource` to `index` to search the free company dataset. Exact filters are lowercase: `country` (`india`), `region`, `locality`, and `industry` (`restaurants`). `size` is an employee-range bucket: `1-10`, `11-50`, `51-200`, `201-500`, `501-1000`, `1001-5000`, `5001-10000`, or `10001+`. `limit` is at most 100. Use `offset` (up to 9900) to page.
+
+Each hit is a standard company record: `id`, `name`, `website`, `linkedinUrl`, `industry`. Index hits also include `country`, `region`, `locality`, `size`, and `founded` when those fields exist.
 
 ```bash
 curl --request POST \
@@ -17,5 +19,21 @@ curl --request POST \
     "companyName": "Acme",
     "dataSource": "auto",
     "limit": 10
+  }'
+```
+
+Free company dataset example (India restaurants with 11–50 employees):
+
+```bash
+curl --request POST \
+  --url https://app.arxena.com/company-api/companies/search \
+  --header 'Authorization: Bearer YOUR_API_KEY_TOKEN' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "dataSource": "index",
+    "country": "india",
+    "industry": "restaurants",
+    "size": "11-50",
+    "limit": 100
   }'
 ```
