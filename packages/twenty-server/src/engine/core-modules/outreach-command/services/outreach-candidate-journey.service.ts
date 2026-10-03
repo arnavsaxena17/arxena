@@ -59,6 +59,7 @@ import { WorkflowRunWorkspaceService } from 'src/modules/workflow/workflow-runne
 import { WorkflowRunnerWorkspaceService } from 'src/modules/workflow/workflow-runner/workspace-services/workflow-runner.workspace-service';
 import { OutreachWorkflowRunFlowSyncService } from 'src/engine/core-modules/outreach-command/services/outreach-workflow-run-flow-sync.service';
 import { OutreachWorkflowRunRepairService } from 'src/engine/core-modules/outreach-command/services/outreach-workflow-run-repair.service';
+import { OutreachDecisionService } from 'src/engine/core-modules/outreach-command/services/outreach-decision.service';
 import { OutreachProjectOutreachControlService } from 'src/engine/core-modules/outreach-command/services/outreach-project-outreach-control.service';
 import {
   cancelResumeDelayedWorkflowJobs,
@@ -145,6 +146,7 @@ export class OutreachCandidateJourneyService {
     private readonly outreachWorkflowRunFlowSyncService: OutreachWorkflowRunFlowSyncService,
     private readonly outreachWorkflowRunRepairService: OutreachWorkflowRunRepairService,
     private readonly outreachProjectOutreachControlService: OutreachProjectOutreachControlService,
+    private readonly outreachDecisionService: OutreachDecisionService,
     @InjectMessageQueue(MessageQueue.delayedJobsQueue)
     private readonly delayedQueue: MessageQueueService,
     @InjectMessageQueue(MessageQueue.workflowQueue)
@@ -925,6 +927,24 @@ export class OutreachCandidateJourneyService {
             workflowRunId,
           );
 
+          try {
+            await this.outreachDecisionService.closeFromFormSubmission({
+              workspaceId,
+              workflowRunId,
+              stepId,
+              response: {
+                ...responseRecord,
+                approve: false,
+              },
+            });
+          } catch (error) {
+            this.logger.warn(
+              `Failed to close decision for run ${workflowRunId} step ${stepId}: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            );
+          }
+
           return { ok: true, decision: 'reject' };
         }
 
@@ -954,6 +974,56 @@ export class OutreachCandidateJourneyService {
       },
       authContext,
     );
+  }
+
+  async resolveDecision({
+    workspaceId,
+    decisionId,
+    resolution,
+    editedBody,
+  }: {
+    workspaceId: string;
+    decisionId: string;
+    resolution: 'APPROVED' | 'EDITED' | 'REJECTED';
+    editedBody?: string;
+  }): Promise<{ ok: boolean; decision: 'approve' | 'reject' }> {
+    const decision = await this.outreachDecisionService.findOpenById({
+      workspaceId,
+      decisionId,
+    });
+
+    if (!isDefined(decision)) {
+      throw new Error('Decision is not open');
+    }
+
+    if (
+      !isNonEmptyString(decision.projectId) ||
+      !isNonEmptyString(decision.candidateId) ||
+      !isNonEmptyString(decision.workflowRunId) ||
+      !isNonEmptyString(decision.stepId)
+    ) {
+      throw new Error('Decision is missing its workflow step');
+    }
+
+    const submittedBody = (editedBody ?? decision.draftBody ?? '').trim();
+
+    if (resolution !== 'REJECTED' && !isNonEmptyString(submittedBody)) {
+      throw new Error(
+        'editedBody is required when approving a FORM (edited copy must go out)',
+      );
+    }
+
+    return this.approveFormStep({
+      workspaceId,
+      projectId: decision.projectId,
+      candidateId: decision.candidateId,
+      workflowRunId: decision.workflowRunId,
+      stepId: decision.stepId,
+      response:
+        resolution === 'REJECTED'
+          ? { approve: false }
+          : { approve: true, editedBody: submittedBody },
+    });
   }
 
   // Resolve the pending FORM for a candidate and apply WhatsApp-style

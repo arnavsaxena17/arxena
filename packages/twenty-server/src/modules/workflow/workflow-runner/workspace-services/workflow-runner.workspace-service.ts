@@ -11,6 +11,7 @@ import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queu
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { MetricsService } from 'src/engine/core-modules/metrics/metrics.service';
 import { MetricsKeys } from 'src/engine/core-modules/metrics/types/metrics-keys.type';
+import { OutreachDecisionService } from 'src/engine/core-modules/outreach-command/services/outreach-decision.service';
 import { OutreachSequencerSiblingRunCancelService } from 'src/engine/core-modules/outreach-command/services/outreach-sequencer-sibling-run-cancel.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
@@ -57,6 +58,7 @@ export class WorkflowRunnerWorkspaceService {
     private readonly workflowThrottlingWorkspaceService: WorkflowThrottlingWorkspaceService,
     private readonly metricsService: MetricsService,
     private readonly outreachSequencerSiblingRunCancelService: OutreachSequencerSiblingRunCancelService,
+    private readonly outreachDecisionService: OutreachDecisionService,
   ) {}
 
   async run({
@@ -206,6 +208,21 @@ export class WorkflowRunnerWorkspaceService {
       workspaceId,
       workflowRunId,
     });
+
+    try {
+      await this.outreachDecisionService.closeFromFormSubmission({
+        workspaceId,
+        workflowRunId,
+        stepId,
+        response: enrichedResponse,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Failed to close decision for run ${workflowRunId} step ${stepId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
 
     await this.resume({
       workspaceId,

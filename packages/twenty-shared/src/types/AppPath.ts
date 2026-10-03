@@ -45,6 +45,7 @@ export enum AppPath {
   Search = 'search',
   Assistant = 'assistant',
   OutreachHome = 'outreach-home',
+  OutreachToday = 'outreach-today',
   ClientCandidateSearch = 'candidate-search',
   VideoInterview = 'video-interview',
   VideoInterviewReview = 'video-interview-review',

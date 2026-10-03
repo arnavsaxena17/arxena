@@ -1,7 +1,11 @@
 import { useLocation } from 'react-router-dom';
 import { AppPath } from 'twenty-shared/types';
 import { getAppPath } from 'twenty-shared/utils';
-import { IconLayoutDashboard, IconTargetArrow } from 'twenty-ui/icon';
+import {
+  IconCheckbox,
+  IconLayoutDashboard,
+  IconTargetArrow,
+} from 'twenty-ui/icon';
 
 import { OutreachSafeDashboardPath } from '@/outreach-home/components/OutreachSafeDashboardPath';
 import { NavigationDrawerItem } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
@@ -29,9 +33,13 @@ const OutreachHomeNavigationDrawerItemView = ({
 
   // AppPath.OutreachHome is relative (`outreach-home`); prefix `/` so Link is absolute.
   const shellPath = `/${getAppPath(AppPath.OutreachHome)}`;
+  const todayPath = `/${getAppPath(AppPath.OutreachToday)}`;
   const isShellActive =
     location.pathname === shellPath ||
     location.pathname.startsWith(`${shellPath}/`);
+  const isTodayActive =
+    location.pathname === todayPath ||
+    location.pathname.startsWith(`${todayPath}/`);
   const isDashboardActive =
     location.pathname === dashboardPath ||
     location.pathname.startsWith(`${dashboardPath}/`);
@@ -39,6 +47,12 @@ const OutreachHomeNavigationDrawerItemView = ({
   return (
     <NavigationDrawerSection>
       <NavigationDrawerSectionTitle label="Outreach" />
+      <NavigationDrawerItem
+        label="Today"
+        to={todayPath}
+        Icon={IconCheckbox}
+        active={isTodayActive}
+      />
       <NavigationDrawerItem
         label="Outreach"
         to={shellPath}

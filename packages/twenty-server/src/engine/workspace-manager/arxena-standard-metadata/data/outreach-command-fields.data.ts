@@ -459,8 +459,7 @@ export const getOutreachCommandFieldsData = (
   {
     objectName: 'person',
     field: {
-      description:
-        'Cached LinkedIn profile JSON from Unipile (identity cache)',
+      description: 'Cached LinkedIn profile JSON from Unipile (identity cache)',
       icon: 'IconBrandLinkedin',
       label: 'LinkedIn Profile',
       name: 'linkedinProfile',
@@ -619,6 +618,153 @@ export const getOutreachCommandFieldsData = (
       objectMetadataId: objectsNameIdMap.calendarEvent,
       type: 'SELECT',
       options: OUTREACH_MEETING_OUTCOME_OPTIONS,
+    },
+  },
+
+  // Decision — one pending FORM step
+  {
+    objectName: 'decision',
+    field: {
+      description: 'Sentence shown on Today',
+      icon: 'IconAbc',
+      label: 'Title',
+      name: 'title',
+      objectMetadataId: objectsNameIdMap.decision,
+      type: 'TEXT',
+    },
+  },
+  {
+    objectName: 'decision',
+    field: {
+      description: 'What the user should do',
+      icon: 'IconBulb',
+      label: 'Recommendation',
+      name: 'recommendation',
+      objectMetadataId: objectsNameIdMap.decision,
+      type: 'TEXT',
+    },
+  },
+  {
+    objectName: 'decision',
+    field: {
+      description: 'Workflow step name that opened this approval',
+      icon: 'IconInfoCircle',
+      label: 'Reason',
+      name: 'reason',
+      objectMetadataId: objectsNameIdMap.decision,
+      type: 'TEXT',
+    },
+  },
+  {
+    objectName: 'decision',
+    field: {
+      description: 'Which kind of approval this FORM step is',
+      icon: 'IconCategory',
+      label: 'Kind',
+      name: 'kind',
+      objectMetadataId: objectsNameIdMap.decision,
+      type: 'SELECT',
+      options: [
+        selectOption('CONNECTION_NOTE', 'Connection note', 'blue', 0),
+        selectOption('COMMENT_DRAFT', 'Comment draft', 'turquoise', 1),
+        selectOption('MESSAGE_DRAFT', 'Message draft', 'sky', 2),
+        selectOption('REPLY_DRAFT', 'Reply draft', 'orange', 3),
+        selectOption('MEETING_ACTION', 'Meeting action', 'green', 4),
+      ],
+    },
+  },
+  {
+    objectName: 'decision',
+    field: {
+      description: 'Needs you now, or a batch approval',
+      icon: 'IconFlag',
+      label: 'Urgency',
+      name: 'urgency',
+      objectMetadataId: objectsNameIdMap.decision,
+      type: 'SELECT',
+      options: [
+        selectOption('NOW', 'Now', 'red', 0),
+        selectOption('APPROVE', 'Approve', 'orange', 1),
+      ],
+    },
+  },
+  {
+    objectName: 'decision',
+    field: {
+      description: 'Whether the approval is still waiting',
+      icon: 'IconCircleDot',
+      label: 'Status',
+      name: 'status',
+      objectMetadataId: objectsNameIdMap.decision,
+      type: 'SELECT',
+      options: [
+        selectOption('OPEN', 'Open', 'orange', 0),
+        selectOption('DONE', 'Done', 'green', 1),
+        selectOption('DISMISSED', 'Dismissed', 'gray', 2),
+        selectOption('CANCELLED', 'Cancelled', 'red', 3),
+      ],
+      defaultValue: "'OPEN'",
+    },
+  },
+  {
+    objectName: 'decision',
+    field: {
+      description: 'How the open approval was closed',
+      icon: 'IconCheck',
+      label: 'Resolution',
+      name: 'resolution',
+      objectMetadataId: objectsNameIdMap.decision,
+      type: 'SELECT',
+      options: [
+        selectOption('APPROVED', 'Approved', 'green', 0),
+        selectOption('EDITED', 'Edited', 'blue', 1),
+        selectOption('REJECTED', 'Rejected', 'red', 2),
+      ],
+    },
+  },
+  {
+    objectName: 'decision',
+    field: {
+      description: 'Idempotency key workflowRunId:stepId',
+      icon: 'IconKey',
+      isUnique: true,
+      label: 'Source Key',
+      name: 'sourceKey',
+      objectMetadataId: objectsNameIdMap.decision,
+      type: 'TEXT',
+    },
+  },
+  {
+    objectName: 'decision',
+    field: {
+      description: 'Pending FORM step id on the workflow run',
+      icon: 'IconHash',
+      label: 'Step Id',
+      name: 'stepId',
+      objectMetadataId: objectsNameIdMap.decision,
+      type: 'TEXT',
+    },
+  },
+  {
+    objectName: 'decision',
+    field: {
+      description: 'Draft body shown for approval',
+      icon: 'IconNotes',
+      label: 'Draft Body',
+      name: 'draftBody',
+      objectMetadataId: objectsNameIdMap.decision,
+      type: 'TEXT',
+    },
+  },
+  {
+    objectName: 'decision',
+    field: {
+      description: 'Body the user sent, when it differed from the draft',
+      icon: 'IconPencil',
+      label: 'Edited Body',
+      name: 'editedBody',
+      objectMetadataId: objectsNameIdMap.decision,
+      type: 'TEXT',
     },
   },
 ];

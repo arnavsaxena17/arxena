@@ -9,6 +9,8 @@ import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/inte
 import { ApprovalNotifierService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/approval-notifier.service';
 import { WorkflowFormDecisionPointerService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-decision-pointer.service';
 import { resolveWorkflowFormRegistryEntry } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-template.registry';
+import { OutreachDecisionService } from 'src/engine/core-modules/outreach-command/services/outreach-decision.service';
+import { draftBodyFromFormFields } from 'src/engine/core-modules/outreach-command/utils/outreach-decision-kind.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import { resolveNotifyOnPendingRecipients } from 'src/modules/workflow/workflow-executor/workflow-actions/form/utils/resolve-notify-on-pending-recipients.util';
@@ -49,6 +51,7 @@ export class FormWorkflowAction implements WorkflowAction {
     private readonly workflowFormDecisionPointerService: WorkflowFormDecisionPointerService,
     private readonly approvalNotifierService: ApprovalNotifierService,
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
+    private readonly outreachDecisionService: OutreachDecisionService,
   ) {}
 
   async execute({
@@ -124,6 +127,27 @@ export class FormWorkflowAction implements WorkflowAction {
           error instanceof Error ? error.message : String(error)
         }`,
       );
+    }
+
+    const candidateId = this.extractCandidateId(context);
+
+    if (isNonEmptyString(candidateId)) {
+      try {
+        await this.outreachDecisionService.upsertFromPendingForm({
+          workspaceId: runInfo.workspaceId,
+          workflowRunId: runInfo.workflowRunId,
+          stepId: currentStepId,
+          stepName: step.name,
+          candidateId,
+          draftBody: draftBodyFromFormFields(formSnapshot),
+        });
+      } catch (error) {
+        this.logger.warn(
+          `Failed to upsert decision for run ${runInfo.workflowRunId}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
     }
 
     if (settings.notifyOnPending) {

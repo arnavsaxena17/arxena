@@ -26,6 +26,7 @@ High-level waves already reflected in the working tree (unstaged + port commits)
 
 | Wave | What landed | Where to look |
 | --- | --- | --- |
+| Outreach Today inbox | `decision` object (one row per pending sequencer FORM step). Form park upserts it; `submitFormStep` and the reject-and-stop path close it. `/outreach-today` groups reply/meeting drafts vs batched approvals. Candidate drawer shows the same open row. Sync with `workspace:sync-arxena-standard`. | `outreach-decision.service.ts`, `form.workflow-action.ts`, `OutreachTodayPage.tsx`, `OutreachNeedsYouCard.tsx` |
 | Outreach sequencer options unresolved token | `applyOutreachSequencerGraphOptions` threw `Unresolved GTM outreach workflow token` on every call: `buildSubstitutedCandidateSequencerGraph` never registered `OUTREACH_WF_FIELD.personId`, yet the Candidate Sequencer graph's `personFind` emits `__FIELD_person.id__`. The prefill sibling already substituted it, so only the Edit Workflow path was broken. Added `personId` to the replacement map + caller `resolveFieldId('person', ['id'])`, with a regression spec. | `build-substituted-candidate-sequencer-graph.util.ts`, `workflow-version.workspace-service.ts` |
 | Disable `g` hotkeys while typing (ARX + HOT) | Handsontable filter/cell editors push focus stack; `TextInput` matches `TextArea`; shared `useDisableConflictingHotkeysWhileFocused` / `WhileActive`; wired into ProjectTopBar search, orgchart/outreach/JD/video-interview raw inputs + custom modals. | `DataTable.tsx`, `TextInput.tsx`, `SettingsTextInput.tsx`, `useDisableConflictingHotkeysWhile*.ts`, orgchart/outreach/candidate-table/arx-jd-upload/video-interview |
 | Org chart search `g` hotkey | Company autocomplete + title query push focus stack with `enableGlobalHotkeysConflictingWithKeyboard: false` so page `g`… go-to sequences do not `preventDefault` while typing. | `OrgChartCompanySearchWrapper.tsx`, `OrgChartTitleQueryBar.tsx` |
@@ -855,7 +856,7 @@ These files **already existed** on upstream and were edited on `port/arxena-modu
 
 | File | Status | Why |
 | --- | --- | --- |
-| `packages/twenty-shared/src/types/AppPath.ts` | committed · intent (+ working) | `Projects` / `Project` / org-chart / assistant paths; `ExtensionInstallOnboarding` |
+| `packages/twenty-shared/src/types/AppPath.ts` | committed · intent (+ working) | `Projects` / `Project` / org-chart / assistant paths; `ExtensionInstallOnboarding`; `OutreachToday` |
 | `packages/twenty-shared/src/types/SettingsPath.ts` | committed · intent (+ working) | Accounts Unipile / LinkedIn / WhatsApp / Contacts / Website paths |
 | `packages/twenty-shared/src/types/index.ts` | committed · intent | Re-export ported types |
 | `packages/twenty-shared/src/constants/index.ts` | committed · intent | Re-export Arxena constants |
@@ -865,7 +866,7 @@ These files **already existed** on upstream and were edited on `port/arxena-modu
 
 | File | Status | Why |
 | --- | --- | --- |
-| `packages/twenty-front/src/modules/app/hooks/useCreateWorkspaceAppRouter.tsx` | working · intent | Lazy routes for Projects / ProjectPage / org-chart via `OrgChartRoute` / ARX pages; `ExtensionInstallOnboarding` |
+| `packages/twenty-front/src/modules/app/hooks/useCreateWorkspaceAppRouter.tsx` | working · intent | Lazy routes for Projects / ProjectPage / org-chart via `OrgChartRoute` / ARX pages; `ExtensionInstallOnboarding`; `OutreachToday` |
 
 ### 9.2 Working-tree intentional wiring (upstream files, still uncommitted)
 
@@ -875,7 +876,9 @@ Edit these carefully on rebase — product integration points.
 | --- | --- | --- |
 | `packages/twenty-server/src/modules/workflow/workflow-runner/workflow-run/workflow-run.workspace-service.ts` | working · format | `candidate.projectsId` → `projectId` FK rename sweep |
 | `packages/twenty-server/src/modules/workflow/workflow-trigger/jobs/workflow-trigger.job.ts` | working · format | `candidate.projectsId` → `projectId` FK rename sweep |
-| `packages/twenty-server/src/modules/workflow/workflow-executor/workflow-actions/form/form.workflow-action.ts` | working · format | `candidate.projectsId` → `projectId` FK rename sweep |
+| `packages/twenty-server/src/modules/workflow/workflow-executor/workflow-actions/form/form.workflow-action.ts` | working · intent | `candidate.projectsId` → `projectId` FK rename sweep; pending candidate FORM upserts a `decision` row |
+| `packages/twenty-server/src/modules/workflow/workflow-runner/workspace-services/workflow-runner.workspace-service.ts` | working · intent | `submitFormStep` closes the matching `decision` row |
+| `packages/twenty-server/src/modules/workflow/workflow-runner/workflow-runner.module.ts` | working · intent | Imports `OutreachDecisionModule` so form completion can close decisions |
 | `packages/twenty-server/src/modules/workflow/workflow-executor/workflow-actions/delay/jobs/resume-delayed-workflow.job.ts` | working · format | `candidate.projectsId` → `projectId` FK rename sweep |
 | `packages/twenty-server/src/engine/core-modules/onboarding/enums/onboarding-status.enum.ts` | working · intent | `EXTENSION_INSTALL` status |
 | `packages/twenty-server/src/engine/core-modules/onboarding/onboarding.service.ts` | working · intent | `ONBOARDING_EXTENSION_INSTALL_PENDING` before sync-email |

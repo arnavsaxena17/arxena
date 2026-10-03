@@ -6,6 +6,7 @@ import { WorkflowActionType } from 'twenty-shared/workflow';
 
 import { ApprovalNotifierService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/approval-notifier.service';
 import { WorkflowFormDecisionPointerService } from 'src/engine/core-modules/arx-chat/services/workflow-approval/workflow-form-decision-pointer.service';
+import { OutreachDecisionService } from 'src/engine/core-modules/outreach-command/services/outreach-decision.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { FormWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/form/form.workflow-action';
 import { type WorkflowFormAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
@@ -56,12 +57,18 @@ describe('FormWorkflowAction', () => {
   let action: FormWorkflowAction;
   let mockNotify: jest.Mock;
   let mockPersistResolvedFormFields: jest.Mock;
+  let mockUpsertFromPendingForm: jest.Mock;
+  let getRepository: jest.Mock;
 
   beforeEach(async () => {
     mockNotify = jest.fn().mockResolvedValue({
       results: [{ channel: 'WHATSAPP_OFFICIAL', status: 'sent_flow' }],
     });
     mockPersistResolvedFormFields = jest.fn().mockResolvedValue(undefined);
+    mockUpsertFromPendingForm = jest.fn().mockResolvedValue(undefined);
+    getRepository = jest.fn().mockResolvedValue({
+      findOne: jest.fn().mockResolvedValue(null),
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -83,10 +90,12 @@ describe('FormWorkflowAction', () => {
             executeInWorkspaceContext: jest.fn(async (fn: () => unknown) =>
               fn(),
             ),
-            getRepository: jest.fn().mockResolvedValue({
-              findOne: jest.fn().mockResolvedValue(null),
-            }),
+            getRepository,
           },
+        },
+        {
+          provide: OutreachDecisionService,
+          useValue: { upsertFromPendingForm: mockUpsertFromPendingForm },
         },
       ],
     }).compile();
@@ -155,5 +164,50 @@ describe('FormWorkflowAction', () => {
         ]),
       }),
     );
+  });
+
+  it('upserts a decision when a candidate form parks', async () => {
+    await action.execute({
+      currentStepId: 'form-step',
+      steps: [buildFormStep()],
+      context: {
+        candidateId: 'candidate-1',
+        [draftStepId]: { message: 'Hi Anish — great to connect.' },
+      },
+      runInfo: { workspaceId: 'workspace-1', workflowRunId: 'run-1' },
+    });
+
+    expect(mockUpsertFromPendingForm).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1',
+      workflowRunId: 'run-1',
+      stepId: 'form-step',
+      stepName: 'Approve / edit first message',
+      candidateId: 'candidate-1',
+      draftBody: 'Hi Anish — great to connect.',
+    });
+  });
+
+  it('does not upsert a decision when the project auto-sends', async () => {
+    getRepository.mockImplementation(
+      async (_workspaceId: string, objectName: string) => ({
+        findOne: jest
+          .fn()
+          .mockResolvedValue(
+            objectName === 'candidate'
+              ? { id: 'candidate-1', projectId: 'project-1' }
+              : { id: 'project-1', outreachSendMode: 'AUTO' },
+          ),
+      }),
+    );
+
+    const result = await action.execute({
+      currentStepId: 'form-step',
+      steps: [buildFormStep()],
+      context: { candidateId: 'candidate-1' },
+      runInfo: { workspaceId: 'workspace-1', workflowRunId: 'run-1' },
+    });
+
+    expect(result.pendingEvent).toBeUndefined();
+    expect(mockUpsertFromPendingForm).not.toHaveBeenCalled();
   });
 });

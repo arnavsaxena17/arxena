@@ -19,6 +19,7 @@ import {
   unreadMessagesCountsState,
 } from '@/candidate-table/states/states';
 import { useCandidateOutreachJourney } from '@/outreach-home/hooks/useCandidateOutreachJourney';
+import { OutreachNeedsYouCard } from '@/outreach-today/components/OutreachNeedsYouCard';
 import { useStopOutreach } from '@/outreach-home/hooks/useStopOutreach';
 import { outreachContextState } from '@/outreach-home/states/outreachContextState';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -548,6 +549,7 @@ export const CandidateChatDrawer = React.memo(() => {
     journey: outreachJourney,
     isLoading: isOutreachJourneyLoading,
     isActionLoading: isOutreachActionLoading,
+    refetch: refetchOutreachJourney,
     pauseJourney,
     resumeJourney,
     snoozeJourney,
@@ -1349,6 +1351,14 @@ export const CandidateChatDrawer = React.memo(() => {
           pendingChannel={outreachHeaderLabels.pendingChannel}
         />
       </StyledHeaderSlot>
+      {enrolledCandidateId ? (
+        <OutreachNeedsYouCard
+          candidateId={enrolledCandidateId}
+          onResolved={() => {
+            void refetchOutreachJourney();
+          }}
+        />
+      ) : null}
       <TabContainer>
         <TabList
           componentInstanceId={tabListId}

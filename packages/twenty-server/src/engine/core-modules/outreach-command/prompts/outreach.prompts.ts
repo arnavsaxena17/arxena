@@ -64,7 +64,6 @@ export const OUTREACH_VOICE_AND_NEVER_USE = [
 
   '',
   'NEVER USE:',
-  '- Filler openers: "I hope", "I wanted to reach out", "I came across your profile".',
   '- Throat-clearing: "In today\'s landscape", "As someone who…", "It was great to…".',
   '- Chatbot residue: "Great question", "Certainly", "Happy to help".',
   '- Contrast frames: "not X, but Y", "it\'s not just X, it\'s Y". State the point.',
@@ -544,6 +543,7 @@ export const buildOutreachSalesChatDraftPrompt = ({
     'WhatsApp to is non-empty. Fill emailSubject and emailBody only when Email to is',
     'non-empty. When a second channel carries the content, the inbound body only says you',
     'will send it and does not include the content. Never put the content in the acknowledgement.',
+
     'Scheduling ladder (HITL will approve before send — draft as if that gate exists):',
     '- Soft ask until they name a time window or duration ("this week", "next week",',
     `  "Monday second half"). Soft ask shape: ${OUTREACH_CADENCE_SOFT_ASK_THIS_WEEK_OR_NEXT}`,
@@ -569,6 +569,7 @@ export const buildOutreachSalesChatDraftPrompt = ({
     '  wrote on the other channel.',
     '- When only the inbound destination is set, that channel body is the full reply and the',
     '  other bodies stay empty.',
+
     'Stage playbooks:',
     '- INTENT / ACKNOWLEDGEMENT: acknowledge interest / answer the question; soft ask only.',
     '  No Available slots.',
@@ -579,6 +580,7 @@ export const buildOutreachSalesChatDraftPrompt = ({
     '- MEETING_BOOKED: confirm the injected time in prose (≤40 words).',
     '- SNOOZED: thank, confirm pause, no pitch.',
     `- NOT_INTERESTED: linkedinMessage "${OUTREACH_DONT_RESPOND_SENTINEL}".`,
+
     `Available slots (only source of times): ${formatOutreachSlotsForLlm(slots) || '(none)'}`,
     `Conversation stage: ${conversationStage}`,
     `Reply channel: ${replyChannel?.trim() || 'LINKEDIN'}`,
@@ -592,8 +594,10 @@ export const buildOutreachSalesChatDraftPrompt = ({
     `Name: ${name}`,
     `Title: ${title}`,
     `Transcript: ${formatOutreachTranscriptForLlm(transcript) || '(none)'}`,
+
     OUTREACH_HUMANIZER_RULES,
     OUTREACH_HUMANIZER_DONT_RESPOND_RULE,
+
     'Return JSON: {',
     '  "linkedinMessage": "<LinkedIn body, or #DONTRESPOND#, else empty>",',
     '  "emailSubject": "<subject when Email to is set, else empty string>",',

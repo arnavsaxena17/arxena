@@ -57,6 +57,12 @@ const OutreachHomePage = lazy(() =>
   })),
 );
 
+const OutreachTodayPage = lazy(() =>
+  import('@/outreach-today/components/OutreachTodayPage').then((module) => ({
+    default: module.OutreachTodayPage,
+  })),
+);
+
 const ClientCandidateSearchPage = lazy(() =>
   import('@/candidate-search/Search').then((module) => ({
     default: module.Search,
@@ -325,6 +331,16 @@ const createWorkspaceAppRouter = (
                   <LazyRoute>
                     <Suspense fallback={null}>
                       <OutreachHomePage />
+                    </Suspense>
+                  </LazyRoute>
+                }
+              />
+              <Route
+                path={AppPath.OutreachToday}
+                element={
+                  <LazyRoute>
+                    <Suspense fallback={null}>
+                      <OutreachTodayPage />
                     </Suspense>
                   </LazyRoute>
                 }

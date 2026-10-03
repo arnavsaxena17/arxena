@@ -12,6 +12,7 @@ import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourc
 import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
 import { FeatureFlagModule } from 'src/engine/core-modules/feature-flag/feature-flag.module';
 import { OutreachCommandController } from 'src/engine/core-modules/outreach-command/controllers/outreach-command.controller';
+import { OutreachDecisionModule } from 'src/engine/core-modules/outreach-command/outreach-decision.module';
 import { OutreachMockController } from 'src/engine/core-modules/outreach-command/controllers/outreach-mock.controller';
 import { OutreachInboundReplyWindowService } from 'src/engine/core-modules/outreach-command/jobs/outreach-inbound-reply-window.job';
 import { OutreachInboundEmailListener } from 'src/engine/core-modules/outreach-command/listeners/outreach-inbound-email.listener';
@@ -118,6 +119,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     GoogleCalendarModule,
     WorkflowCommonModule,
     WorkflowRunModule,
+    OutreachDecisionModule,
     OutreachCacheRealtimeModule,
     BrightDataModule,
   ],

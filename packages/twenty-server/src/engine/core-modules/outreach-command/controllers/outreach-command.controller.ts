@@ -37,6 +37,7 @@ import { type OutreachSenderProfile } from 'src/engine/core-modules/outreach-com
 import { extractOutreachSenderCollateralText } from 'src/engine/core-modules/outreach-command/utils/extract-outreach-sender-collateral-text.util';
 import { OutreachProjectOutreachControlService } from 'src/engine/core-modules/outreach-command/services/outreach-project-outreach-control.service';
 import { OutreachCandidateJourneyService } from 'src/engine/core-modules/outreach-command/services/outreach-candidate-journey.service';
+import { OutreachDecisionService } from 'src/engine/core-modules/outreach-command/services/outreach-decision.service';
 import { QualifyProspectService } from 'src/engine/core-modules/outreach-command/services/qualify-prospect.service';
 import { LinkedinSelectionFetchService } from 'src/engine/core-modules/outreach-command/services/linkedin-selection-fetch.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -61,6 +62,7 @@ export class OutreachCommandController {
     private readonly outreachFilterProfilesService: OutreachFilterProfilesService,
     private readonly outreachProjectOutreachControlService: OutreachProjectOutreachControlService,
     private readonly outreachCandidateJourneyService: OutreachCandidateJourneyService,
+    private readonly outreachDecisionService: OutreachDecisionService,
     private readonly qualifyProspectService: QualifyProspectService,
     private readonly linkedinSelectionFetchService: LinkedinSelectionFetchService,
   ) {}
@@ -1308,6 +1310,60 @@ export class OutreachCommandController {
     );
   }
 
+  @Get('decisions')
+  async listDecisions(
+    @Query('status') status: string | undefined,
+    @Query('candidateId') candidateId: string | undefined,
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    if (isDefined(status) && status !== 'OPEN') {
+      throw new HttpException(
+        'Only status=OPEN is supported',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return this.withWorkspaceAuth(request, (workspaceId) =>
+      this.outreachDecisionService.listOpen({
+        workspaceId,
+        candidateId,
+      }),
+    );
+  }
+
+  @Post('decisions/:decisionId/resolve')
+  async resolveDecision(
+    @Param('decisionId') decisionId: string,
+    @Body()
+    body: {
+      resolution?: 'APPROVED' | 'EDITED' | 'REJECTED';
+      editedBody?: string;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const resolution = body?.resolution;
+
+    if (
+      resolution !== 'APPROVED' &&
+      resolution !== 'EDITED' &&
+      resolution !== 'REJECTED'
+    ) {
+      throw new HttpException(
+        'resolution must be APPROVED, EDITED, or REJECTED',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return this.withWorkspaceAuth(request, (workspaceId) =>
+      this.outreachCandidateJourneyService.resolveDecision({
+        workspaceId,
+        decisionId,
+        resolution,
+        editedBody: body.editedBody,
+      }),
+    );
+  }
+
   @Post('projects/:projectId/candidates/:candidateId/approve-form')
   async approveCandidateFormStep(
     @Param('projectId') projectId: string,
@@ -1337,6 +1393,36 @@ export class OutreachCommandController {
         response: body.response,
       }),
     );
+  }
+
+  private async withWorkspaceAuth<T>(
+    request: { headers?: { authorization?: string } },
+    handler: (workspaceId: string) => Promise<T>,
+  ): Promise<T> {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    try {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+      return await handler(workspaceId);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      this.logger.error('Outreach decision request failed', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Outreach decision request failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   private async withOutreachAuth<T>(

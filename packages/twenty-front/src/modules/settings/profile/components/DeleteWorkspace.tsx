@@ -25,9 +25,13 @@ export const DeleteWorkspace = () => {
   const { redirectToDefaultDomain } = useRedirectToDefaultDomain();
 
   const deleteWorkspace = async () => {
-    await deleteCurrentWorkspace();
-    await signOut();
-    redirectToDefaultDomain();
+    try {
+      await deleteCurrentWorkspace();
+    } finally {
+      // Leave even when the mutation response fails after the server delete.
+      signOut();
+      redirectToDefaultDomain();
+    }
   };
 
   return (

@@ -51,6 +51,17 @@ const allObjects: ArxenaObjectDefinition[] = [
   },
   {
     object: {
+      description:
+        'One pending outreach approval, identified by a workflow run step',
+      icon: 'IconCheckbox',
+      labelPlural: 'Today items',
+      labelSingular: 'Today item',
+      nameSingular: 'decision',
+      namePlural: 'decisions',
+    },
+  },
+  {
+    object: {
       description: '',
       icon: 'IconUserSearch',
       labelPlural: 'Screenings',
