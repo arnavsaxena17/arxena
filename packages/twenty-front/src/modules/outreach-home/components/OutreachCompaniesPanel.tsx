@@ -1,84 +1,187 @@
 import { styled } from '@linaria/react';
+import { isNonEmptyString } from '@sniptt/guards';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { isDefined } from 'twenty-shared/utils';
+import { getLogoUrlFromDomainName } from 'twenty-shared/utils';
 import { Loader } from 'twenty-ui/feedback';
+import {
+  IconBuildingSkyscraper,
+  IconTag,
+  IconFileImport,
+  IconFilterOff,
+  IconLink,
+  IconRefresh,
+  IconStatusChange,
+  IconTarget,
+  IconTargetArrow,
+  IconUsers,
+} from 'twenty-ui/icon';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
-import { ProjectTopBar } from '@/candidate-table/components/ProjectTopBar';
-import { TableContainer } from '@/candidate-table/components/styled';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { useOpenObjectRecordsSpreadsheetImportDialog } from '@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog';
 import {
-  OutreachDetailsTable,
-  type OutreachTableData,
-} from '@/outreach-home/components/OutreachDetailsTable';
+  OutreachRecordTable,
+  type OutreachRecordTableColumn,
+} from '@/outreach-home/components/record-table/OutreachRecordTable';
+import {
+  OutreachLinkCell,
+  OutreachRecordChipCell,
+  OutreachTagCell,
+  OutreachTextCell,
+} from '@/outreach-home/components/record-table/OutreachRecordTableCells';
+import { type OutreachRecordCard } from '@/outreach-home/components/record-table/OutreachRecordCardList';
+import { OutreachTableEmptyState } from '@/outreach-home/components/record-table/OutreachTableEmptyState';
+import {
+  OutreachViewBar,
+  OutreachViewBarIconAction,
+  OutreachViewBarPill,
+} from '@/outreach-home/components/record-table/OutreachViewBar';
 import { type OutreachCompanyRow } from '@/outreach-home/types/outreach-home.types';
 import { mapCrmCompanyRecordsToOutreachCompanyRows } from '@/outreach-home/utils/map-crm-record-to-outreach-row.util';
+import {
+  getFreeTextTagColor,
+  getIcpFitTagColor,
+} from '@/outreach-home/utils/outreachTagColors';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const StyledPanel = styled.div`
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  position: relative;
-`;
-
-const StyledEmpty = styled.div`
-  color: ${themeCssVariables.font.color.tertiary};
-  font-size: ${themeCssVariables.font.size.sm};
-  line-height: 1.5;
-  padding: ${themeCssVariables.spacing[4]};
-`;
-
-const StyledLoading = styled.div`
-  align-items: center;
-  color: ${themeCssVariables.font.color.secondary};
-  display: flex;
-  flex-direction: column;
-  gap: ${themeCssVariables.spacing[2]};
-  justify-content: center;
-  min-height: 240px;
-  padding: ${themeCssVariables.spacing[6]};
-`;
-
-const StyledStatusFilters = styled.div`
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${themeCssVariables.spacing[1]};
-  min-width: 0;
-`;
-
-const StyledStatusChip = styled.button<{ isActive: boolean }>`
-  background: ${({ isActive }) =>
-    isActive
-      ? themeCssVariables.background.quaternary
-      : themeCssVariables.background.secondary};
-  border: 1px solid ${themeCssVariables.border.color.light};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  color: ${themeCssVariables.font.color.secondary};
-  cursor: pointer;
-  font-size: ${themeCssVariables.font.size.xs};
-  height: 24px;
-  padding: ${`${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[2]}`};
-  white-space: nowrap;
-
-  &:hover {
-    border-color: ${themeCssVariables.border.color.medium};
-    color: ${themeCssVariables.font.color.primary};
-  }
-`;
-
-const StyledTableFill = styled.div`
   display: flex;
   flex: 1;
   flex-direction: column;
   min-height: 0;
-  overflow: auto;
-  padding: ${themeCssVariables.spacing[2]};
 `;
+
+const StyledLoading = styled.div`
+  align-items: center;
+  color: ${themeCssVariables.font.color.tertiary};
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[2]};
+  justify-content: center;
+  min-height: 240px;
+`;
+
+const COMPANY_COLUMNS: OutreachRecordTableColumn<OutreachCompanyRow>[] = [
+  {
+    id: 'name',
+    label: 'Name',
+    Icon: IconBuildingSkyscraper,
+    width: 220,
+    sortValue: (company) => company.name,
+    render: (company) => (
+      <OutreachRecordChipCell
+        name={company.name}
+        avatarType="squared"
+        avatarUrl={getLogoUrlFromDomainName(
+          company.domain,
+          REACT_APP_SERVER_BASE_URL,
+        )}
+      />
+    ),
+  },
+  {
+    id: 'domain',
+    label: 'Domain',
+    Icon: IconLink,
+    width: 180,
+    sortValue: (company) => company.domain,
+    render: (company) => <OutreachLinkCell url={company.domain} />,
+  },
+  {
+    id: 'industry',
+    label: 'Industry',
+    Icon: IconTag,
+    width: 200,
+    sortValue: (company) => company.industry,
+    render: (company) => <OutreachTextCell value={company.industry} />,
+  },
+  {
+    id: 'employees',
+    label: 'Employees',
+    Icon: IconUsers,
+    width: 120,
+    sortValue: (company) => {
+      const employeeCount = Number.parseInt(company.employees, 10);
+
+      return Number.isFinite(employeeCount) ? employeeCount : company.employees;
+    },
+    render: (company) => <OutreachTextCell value={company.employees} />,
+  },
+  {
+    id: 'segment',
+    label: 'Segment',
+    Icon: IconTarget,
+    width: 170,
+    sortValue: (company) => company.segment,
+    render: (company) => <OutreachTextCell value={company.segment} />,
+  },
+  {
+    id: 'icpFit',
+    label: 'ICP fit',
+    Icon: IconTargetArrow,
+    width: 140,
+    sortValue: (company) => company.icpFit,
+    render: (company) =>
+      isNonEmptyString(company.icpFit) ? (
+        <OutreachTagCell
+          label={company.icpFit}
+          color={getIcpFitTagColor(company.icpFit)}
+        />
+      ) : null,
+  },
+  {
+    id: 'status',
+    label: 'Status',
+    Icon: IconStatusChange,
+    width: 150,
+    sortValue: (company) => company.status,
+    render: (company) =>
+      isNonEmptyString(company.status) ? (
+        <OutreachTagCell
+          label={company.status}
+          color={getFreeTextTagColor(company.status)}
+        />
+      ) : null,
+  },
+];
+
+const getCompanyMobileCard = (
+  company: OutreachCompanyRow,
+): OutreachRecordCard => ({
+  title: company.name,
+  avatarType: 'squared',
+  avatarUrl: getLogoUrlFromDomainName(
+    company.domain,
+    REACT_APP_SERVER_BASE_URL,
+  ),
+  subtitle: [
+    company.industry,
+    isNonEmptyString(company.employees) ? `${company.employees} employees` : '',
+  ]
+    .filter((part) => isNonEmptyString(part))
+    .join(' · '),
+  status: isNonEmptyString(company.status) ? (
+    <OutreachTagCell
+      label={company.status}
+      color={getFreeTextTagColor(company.status)}
+    />
+  ) : undefined,
+  footer:
+    isNonEmptyString(company.icpFit) || isNonEmptyString(company.domain) ? (
+      <>
+        {isNonEmptyString(company.icpFit) && (
+          <OutreachTagCell
+            label={`ICP fit: ${company.icpFit}`}
+            color={getIcpFitTagColor(company.icpFit)}
+          />
+        )}
+        <OutreachTextCell value={company.domain} isMuted />
+      </>
+    ) : undefined,
+});
 
 type OutreachCompaniesPanelProps = {
   companies: OutreachCompanyRow[];
@@ -132,16 +235,16 @@ export const OutreachCompaniesPanel = ({
     };
   }, [setChatSearchQuery]);
 
-  const statusOptions = useMemo(() => {
-    const statuses = new Set<string>();
+  const statusCounts = useMemo(() => {
+    const counts = new Map<string, number>();
 
     for (const company of companies) {
-      if (isDefined(company.status) && company.status.trim().length > 0) {
-        statuses.add(company.status);
+      if (isNonEmptyString(company.status?.trim())) {
+        counts.set(company.status, (counts.get(company.status) ?? 0) + 1);
       }
     }
 
-    return Array.from(statuses).sort((left, right) =>
+    return [...counts.entries()].sort(([left], [right]) =>
       left.localeCompare(right),
     );
   }, [companies]);
@@ -158,53 +261,31 @@ export const OutreachCompaniesPanel = ({
         return true;
       }
 
-      const haystack =
-        `${company.name} ${company.domain} ${company.industry} ${company.segment} ${company.icpFit} ${company.status}`.toLowerCase();
-
-      return haystack.includes(normalizedQuery);
+      return `${company.name} ${company.domain} ${company.industry} ${company.segment} ${company.icpFit} ${company.status}`
+        .toLowerCase()
+        .includes(normalizedQuery);
     });
   }, [companies, searchQuery, statusFilter]);
 
-  const tableData: OutreachTableData = useMemo(
-    () => ({
-      tableType: 'data',
-      label: 'Target companies (ephemeral)',
-      columns: [
-        'name',
-        'domain',
-        'industry',
-        'employees',
-        'segment',
-        'icpFit',
-        'status',
-      ],
-      rows: filteredCompanies,
-    }),
-    [filteredCompanies],
-  );
-
-  const primarySelectedIndex = filteredCompanies.findIndex(
-    (company) => company.id === selectedCompanyId,
-  );
-
-  const handleToggleCompany = useCallback(
-    (rowIndex: number) => {
-      const company = filteredCompanies[rowIndex];
-
-      if (!company) {
-        return;
-      }
-
-      onSelectCompanyId(company.id);
-      setSelectedCompanyIds((previous) => {
-        if (previous.includes(company.id)) {
-          return previous.filter((companyId) => companyId !== company.id);
-        }
-
-        return [...previous, company.id];
-      });
+  // Clicking a company scopes the People tab to it; clicking again clears it
+  const handleRowClick = useCallback(
+    (company: OutreachCompanyRow) => {
+      onSelectCompanyId(company.id === selectedCompanyId ? null : company.id);
     },
-    [filteredCompanies, onSelectCompanyId],
+    [onSelectCompanyId, selectedCompanyId],
+  );
+
+  const handleSelectedRowIdsChange = useCallback(
+    (rowIds: string[]) => {
+      setSelectedCompanyIds(rowIds);
+
+      if (rowIds.length === 1) {
+        onSelectCompanyId(rowIds[0]);
+      } else if (rowIds.length === 0) {
+        onSelectCompanyId(null);
+      }
+    },
+    [onSelectCompanyId],
   );
 
   const handleRefresh = useCallback(async () => {
@@ -224,47 +305,18 @@ export const OutreachCompaniesPanel = ({
     }
   }, [enqueueErrorSnackBar, enqueueSuccessSnackBar, isRefreshing, onRefresh]);
 
-  const handleClearFilters = useCallback(() => {
+  const hasActiveFilter =
+    statusFilter !== 'all' ||
+    searchQuery.trim().length > 0 ||
+    selectedCompanyIds.length > 0;
+
+  const handleClearFilters = () => {
     setStatusFilter('all');
     setSearchQuery('');
     setChatSearchQuery('');
     setSelectedCompanyIds([]);
     onSelectCompanyId(null);
-  }, [onSelectCompanyId, setChatSearchQuery]);
-
-  const statusFilterChips = (
-    <StyledStatusFilters>
-      <StyledStatusChip
-        type="button"
-        isActive={statusFilter === 'all'}
-        onClick={() => setStatusFilter('all')}
-      >
-        All statuses
-      </StyledStatusChip>
-      {statusOptions.map((status) => (
-        <StyledStatusChip
-          key={status}
-          type="button"
-          isActive={statusFilter === status}
-          onClick={() => setStatusFilter(status)}
-        >
-          {status}
-        </StyledStatusChip>
-      ))}
-      {selectedCompanyIds.length > 0 && (
-        <StyledStatusChip
-          type="button"
-          isActive={false}
-          onClick={() => {
-            setSelectedCompanyIds([]);
-            onSelectCompanyId(null);
-          }}
-        >
-          {selectedCompanyIds.length} selected · Clear
-        </StyledStatusChip>
-      )}
-    </StyledStatusFilters>
-  );
+  };
 
   if (isLoading && companies.length === 0) {
     return (
@@ -275,58 +327,82 @@ export const OutreachCompaniesPanel = ({
     );
   }
 
-  return (
-    <StyledPanel>
-      <ProjectTopBar
-        showSearch={true}
-        searchPlaceholder="Search companies..."
-        onSearch={setSearchQuery}
-        showRefetch={true}
-        onRefresh={() => {
+  const pills = (
+    <>
+      <OutreachViewBarPill
+        label="All"
+        count={companies.length}
+        isActive={statusFilter === 'all'}
+        onClick={() => setStatusFilter('all')}
+      />
+      {statusCounts.map(([status, count]) => (
+        <OutreachViewBarPill
+          key={status}
+          label={status}
+          count={count}
+          isActive={statusFilter === status}
+          onClick={() => setStatusFilter(status)}
+        />
+      ))}
+    </>
+  );
+
+  const actions = (
+    <>
+      {hasActiveFilter && (
+        <OutreachViewBarIconAction
+          title="Clear filters and selection"
+          Icon={IconFilterOff}
+          onClick={handleClearFilters}
+        />
+      )}
+      <OutreachViewBarIconAction
+        title={isRefreshing ? 'Refreshing…' : 'Refresh'}
+        Icon={IconRefresh}
+        disabled={isRefreshing}
+        onClick={() => {
           void handleRefresh();
         }}
-        isRefreshing={isRefreshing}
-        showClearAll={true}
-        onClearAll={handleClearFilters}
-        showJobStatusToggle={false}
-        showFilterChips={false}
-        showRedirectToObject={false}
-        showImportCandidates={true}
-        importButtonTitle="Import Companies"
-        handleImportCandidates={handleImportCompanies}
-        showStatistics={false}
-        showAddJob={false}
-        showEnrichment={false}
-        showSorting={false}
-        showValidateJobData={false}
-        showBatchActions={false}
-        centerComponent={statusFilterChips}
       />
+      <OutreachViewBarIconAction
+        title="Import companies"
+        Icon={IconFileImport}
+        onClick={handleImportCompanies}
+      />
+    </>
+  );
 
+  return (
+    <StyledPanel>
+      <OutreachViewBar
+        pills={pills}
+        searchValue={searchQuery}
+        searchPlaceholder="Search companies"
+        onSearchChange={setSearchQuery}
+        actions={actions}
+      />
       {companies.length === 0 ? (
-        <StyledEmpty>
-          No target companies in this project yet. Use Setup → Find companies
-          (Ask AI) to discover accounts from your ICP search blurb. They stay on
-          the Companies tab until you enroll people, which creates Company and
-          Person records (plus enrollment) under this Project.
-        </StyledEmpty>
+        <OutreachTableEmptyState
+          title="No target companies yet"
+          description="Use Setup → Find companies (Ask AI) to discover accounts from your ICP. They stay here until you enroll people, which creates the CRM Company and Person records."
+        />
       ) : filteredCompanies.length === 0 ? (
-        <StyledEmpty>
-          No companies match the current search or status filter.
-        </StyledEmpty>
+        <OutreachTableEmptyState
+          title="No companies match"
+          description="Try another status filter or search term."
+          onClearFilters={handleClearFilters}
+        />
       ) : (
-        <TableContainer>
-          <StyledTableFill>
-            <OutreachDetailsTable
-              data={tableData}
-              maxHeight={720}
-              selectedRowIndex={
-                primarySelectedIndex >= 0 ? primarySelectedIndex : undefined
-              }
-              onSelectRow={handleToggleCompany}
-            />
-          </StyledTableFill>
-        </TableContainer>
+        <OutreachRecordTable
+          rows={filteredCompanies}
+          columns={COMPANY_COLUMNS}
+          getRowId={(company) => company.id}
+          selectedRowIds={selectedCompanyIds}
+          activeRowId={selectedCompanyId}
+          onSelectedRowIdsChange={handleSelectedRowIdsChange}
+          onRowClick={handleRowClick}
+          getMobileCard={getCompanyMobileCard}
+        />
       )}
     </StyledPanel>
   );

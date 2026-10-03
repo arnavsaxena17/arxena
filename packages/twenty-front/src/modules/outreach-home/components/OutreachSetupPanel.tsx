@@ -9,7 +9,8 @@ import {
   type SendWindowWeekday,
 } from 'twenty-shared/arx';
 import { getValidTimeZoneOrUndefined } from 'twenty-shared/utils';
-import { IconInfoCircle } from 'twenty-ui/icon';
+import { Tag } from 'twenty-ui/data-display';
+import { IconClock, IconInfoCircle, IconSearch } from 'twenty-ui/icon';
 import { Button, type SelectOption } from 'twenty-ui/input';
 import { AppTooltip, TooltipDelay } from 'twenty-ui/surfaces';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
@@ -77,13 +78,16 @@ const OUTREACH_SEND_MODE_OPTIONS: SelectOption<OutreachSendMode>[] = [
   { label: 'Send automatically', value: 'AUTO' },
 ];
 
+// Twenty settings-page layout: centered 760px column, sections 32px apart
 const StyledPanel = styled.div`
+  box-sizing: border-box;
   display: flex;
   flex: 1;
   flex-direction: column;
   margin: 0 auto;
-  max-width: 720px;
+  max-width: 760px;
   min-height: 100%;
+  padding: ${themeCssVariables.spacing[6]} ${themeCssVariables.spacing[8]} 0;
   width: 100%;
 `;
 
@@ -91,15 +95,8 @@ const StyledSections = styled.div`
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: ${themeCssVariables.spacing[4]};
-`;
-
-const StyledBadge = styled.span`
-  border: 1px solid ${themeCssVariables.border.color.medium};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  color: ${themeCssVariables.font.color.secondary};
-  font-size: ${themeCssVariables.font.size.xs};
-  padding: 2px ${themeCssVariables.spacing[1]};
+  gap: ${themeCssVariables.spacing[8]};
+  padding-bottom: ${themeCssVariables.spacing[8]};
 `;
 
 const StyledMetaRow = styled.div`
@@ -111,21 +108,22 @@ const StyledMetaRow = styled.div`
 
 const StyledSellerName = styled.span`
   color: ${themeCssVariables.font.color.primary};
-  font-size: ${themeCssVariables.font.size.sm};
+  font-size: ${themeCssVariables.font.size.md};
   font-weight: ${themeCssVariables.font.weight.medium};
 `;
 
 const StyledBody = styled.p`
   color: ${themeCssVariables.font.color.secondary};
-  font-size: ${themeCssVariables.font.size.sm};
-  line-height: 1.5;
+  font-size: ${themeCssVariables.font.size.md};
+  line-height: ${themeCssVariables.text.lineHeight.lg};
   margin: 0;
 `;
 
+// Matches the Twenty InputLabel
 const StyledFieldLabel = styled.span`
-  color: ${themeCssVariables.font.color.secondary};
+  color: ${themeCssVariables.font.color.light};
   font-size: ${themeCssVariables.font.size.xs};
-  font-weight: ${themeCssVariables.font.weight.medium};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
 `;
 
 const StyledFieldLabelRow = styled.div`
@@ -142,8 +140,8 @@ const StyledFieldLabelInfoAnchor = styled.span`
 `;
 
 const StyledMuted = styled.span`
-  color: ${themeCssVariables.font.color.light};
-  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.md};
 `;
 
 const StyledJsonToggle = styled.button`
@@ -151,26 +149,31 @@ const StyledJsonToggle = styled.button`
   appearance: none;
   background: none;
   border: none;
-  color: ${themeCssVariables.font.color.secondary};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.tertiary};
   cursor: pointer;
-  font-size: ${themeCssVariables.font.size.xs};
+  font-family: inherit;
+  font-size: ${themeCssVariables.font.size.md};
   font-weight: ${themeCssVariables.font.weight.medium};
-  padding: 0;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  padding: 0 ${themeCssVariables.spacing[1]};
+
+  &:hover {
+    background: ${themeCssVariables.background.transparent.light};
+    color: ${themeCssVariables.font.color.secondary};
+  }
 `;
 
 const StyledStickyBar = styled.div`
   align-items: center;
   background: ${themeCssVariables.background.primary};
-  border-top: 1px solid ${themeCssVariables.border.color.medium};
+  border-top: 1px solid ${themeCssVariables.border.color.light};
   bottom: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: ${themeCssVariables.spacing[3]};
+  gap: ${themeCssVariables.spacing[2]};
   justify-content: space-between;
   margin-top: auto;
-  padding: ${themeCssVariables.spacing[3]} 0 ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[3]} 0;
   position: sticky;
   z-index: 1;
 `;
@@ -222,12 +225,14 @@ const StyledTimeSeparator = styled.span`
 `;
 
 const StyledScheduleSummary = styled.div`
-  background: ${themeCssVariables.background.transparent.light};
-  border: 1px solid ${themeCssVariables.border.color.medium};
-  border-radius: ${themeCssVariables.border.radius.sm};
+  align-items: center;
+  background: ${themeCssVariables.background.transparent.lighter};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.md};
   color: ${themeCssVariables.font.color.secondary};
-  font-size: ${themeCssVariables.font.size.sm};
-  line-height: 1.5;
+  display: flex;
+  font-size: ${themeCssVariables.font.size.md};
+  gap: ${themeCssVariables.spacing[2]};
   padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
 `;
 
@@ -500,7 +505,7 @@ export const OutreachSetupPanel = ({
                 : ''}
             </StyledSellerName>
             {sellerChips.map((chip) => (
-              <StyledBadge key={chip}>{chip}</StyledBadge>
+              <Tag key={chip} color="gray" text={chip} weight="regular" />
             ))}
           </StyledMetaRow>
           {isNonEmptyString(summary) && (
@@ -637,7 +642,10 @@ export const OutreachSetupPanel = ({
               </StyledTimeWindowRow>
             </StyledFieldStack>
 
-            <StyledScheduleSummary>{scheduleSummary}</StyledScheduleSummary>
+            <StyledScheduleSummary>
+              <IconClock size={16} />
+              {scheduleSummary}
+            </StyledScheduleSummary>
           </StyledScheduleSection>
           {isNonEmptyString(sendScheduleError) && (
             <StyledMuted>{sendScheduleError}</StyledMuted>
@@ -659,13 +667,16 @@ export const OutreachSetupPanel = ({
         </StyledFooterActions>
         <StyledFooterActions>
           <Button
+            Icon={IconSearch}
             title="Find companies"
             variant="primary"
+            accent="blue"
             size="small"
             onClick={onFindCompanies}
             disabled={!hasProject}
           />
           <Button
+            Icon={IconSearch}
             title="Find people"
             variant="secondary"
             size="small"

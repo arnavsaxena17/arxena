@@ -2,6 +2,7 @@ import { styled } from '@linaria/react';
 import { isNonEmptyString } from '@sniptt/guards';
 import { useEffect, useState } from 'react';
 import { type WorkflowEmailFiles } from 'twenty-shared/workflow';
+import { Tag } from 'twenty-ui/data-display';
 import { Button } from 'twenty-ui/input';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useDebouncedCallback } from 'use-debounce';
@@ -31,8 +32,8 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 
 const StyledMuted = styled.p`
   color: ${themeCssVariables.font.color.tertiary};
-  font-size: ${themeCssVariables.font.size.sm};
-  line-height: 1.45;
+  font-size: ${themeCssVariables.font.size.md};
+  line-height: ${themeCssVariables.text.lineHeight.lg};
   margin: 0;
 `;
 
@@ -42,10 +43,11 @@ const StyledFieldStack = styled.div`
   gap: ${themeCssVariables.spacing[1]};
 `;
 
+// Matches the Twenty InputLabel
 const StyledFieldLabel = styled.span`
-  color: ${themeCssVariables.font.color.secondary};
+  color: ${themeCssVariables.font.color.light};
   font-size: ${themeCssVariables.font.size.xs};
-  font-weight: ${themeCssVariables.font.weight.medium};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
 `;
 
 const StyledActions = styled.div`
@@ -54,26 +56,23 @@ const StyledActions = styled.div`
   gap: ${themeCssVariables.spacing[2]};
 `;
 
-const StyledBadge = styled.span`
-  border: 1px solid ${themeCssVariables.border.color.medium};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  color: ${themeCssVariables.font.color.secondary};
-  font-size: ${themeCssVariables.font.size.xs};
-  padding: 2px ${themeCssVariables.spacing[1]};
-`;
-
 const StyledJsonToggle = styled.button`
   align-self: flex-start;
   appearance: none;
   background: none;
   border: none;
-  color: ${themeCssVariables.font.color.secondary};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.tertiary};
   cursor: pointer;
-  font-size: ${themeCssVariables.font.size.xs};
+  font-family: inherit;
+  font-size: ${themeCssVariables.font.size.md};
   font-weight: ${themeCssVariables.font.weight.medium};
-  padding: 0;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  padding: 0 ${themeCssVariables.spacing[1]};
+
+  &:hover {
+    background: ${themeCssVariables.background.transparent.light};
+    color: ${themeCssVariables.font.color.secondary};
+  }
 `;
 
 const readCollateralFilesFromProfile = (
@@ -444,9 +443,11 @@ export const OutreachSetupSenderProfileSection = () => {
       title="Sender profile"
       description="Voice, offer, and ICP for outbound messages on your seat. Fetch your LinkedIn profile, then review the draft before saving."
       headerAdornment={
-        <StyledBadge>
-          {savedSummary ? `Saved · ${savedSummary}` : 'Not saved yet'}
-        </StyledBadge>
+        <Tag
+          color={savedSummary ? 'green' : 'gray'}
+          text={savedSummary ? `Saved · ${savedSummary}` : 'Not saved yet'}
+          weight="regular"
+        />
       }
     >
       {isLoadingSeed ? (

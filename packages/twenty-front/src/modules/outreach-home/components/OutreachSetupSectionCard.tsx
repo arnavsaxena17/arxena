@@ -1,14 +1,11 @@
 import { styled } from '@linaria/react';
 import { type ReactNode } from 'react';
-import { Card, CardContent } from 'twenty-ui/surfaces';
+import { Section } from 'twenty-ui/layout';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { H2Title } from 'twenty-ui/typography';
 
-const StyledCardInner = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${themeCssVariables.spacing[3]};
-`;
+// Twenty settings-page section: H2Title header with the controls flowing
+// underneath (no surrounding card), separated by the page gap.
 
 const StyledHeaderRow = styled.div`
   align-items: flex-start;
@@ -26,6 +23,12 @@ const StyledHeaderAction = styled.div`
   flex-shrink: 0;
 `;
 
+const StyledContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[4]};
+`;
+
 type OutreachSetupSectionCardProps = {
   title: string;
   description?: string;
@@ -41,23 +44,19 @@ export const OutreachSetupSectionCard = ({
   headerAction,
   children,
 }: OutreachSetupSectionCardProps) => (
-  <Card rounded fullWidth>
-    <CardContent>
-      <StyledCardInner>
-        <StyledHeaderRow>
-          <StyledHeaderMain>
-            <H2Title
-              title={title}
-              description={description}
-              adornment={headerAdornment}
-            />
-          </StyledHeaderMain>
-          {headerAction !== undefined && headerAction !== null && (
-            <StyledHeaderAction>{headerAction}</StyledHeaderAction>
-          )}
-        </StyledHeaderRow>
-        {children}
-      </StyledCardInner>
-    </CardContent>
-  </Card>
+  <Section>
+    <StyledHeaderRow>
+      <StyledHeaderMain>
+        <H2Title
+          title={title}
+          description={description}
+          adornment={headerAdornment}
+        />
+      </StyledHeaderMain>
+      {headerAction !== undefined && headerAction !== null && (
+        <StyledHeaderAction>{headerAction}</StyledHeaderAction>
+      )}
+    </StyledHeaderRow>
+    <StyledContent>{children}</StyledContent>
+  </Section>
 );

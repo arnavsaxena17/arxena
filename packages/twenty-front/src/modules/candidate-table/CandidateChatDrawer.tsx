@@ -1,11 +1,19 @@
 import { currentProjectIdState } from '@/arx-ai-filtering/states/arxEnrichModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
+import { CandidateDrawerActivityTab } from '@/candidate-table/components/candidate-drawer/CandidateDrawerActivityTab';
+import { CandidateDrawerContextTab } from '@/candidate-table/components/candidate-drawer/CandidateDrawerContextTab';
+import { CandidateDrawerConversationTab } from '@/candidate-table/components/candidate-drawer/CandidateDrawerConversationTab';
+import { CandidateDrawerHeader } from '@/candidate-table/components/candidate-drawer/CandidateDrawerHeader';
+import { CandidateDrawerNeedsYouCard } from '@/candidate-table/components/candidate-drawer/CandidateDrawerNeedsYouCard';
+import { useCandidateDrawerRecord } from '@/candidate-table/hooks/useCandidateDrawerRecord';
 import {
-  CandidateOutreachJourneyTab,
-  resolveJourneyHeaderLabels,
-} from '@/candidate-table/CandidateOutreachJourneyTab';
-import { CandidateWorkflowRunsTab } from '@/candidate-table/CandidateWorkflowRunsTab';
+  buildCandidateDrawerStatusLine,
+  resolveCandidateDrawerNextStep,
+  resolveCandidateDrawerStageLabel,
+} from '@/candidate-table/utils/candidateDrawerStatus';
+import { useOpenAskAiPageWithPreprompt } from '@/ai/hooks/useOpenAskAiPageWithPreprompt';
+import { AppPath } from 'twenty-shared/types';
 import {
   findSelectedTableRow,
   isUUID,
@@ -19,7 +27,10 @@ import {
   unreadMessagesCountsState,
 } from '@/candidate-table/states/states';
 import { useCandidateOutreachJourney } from '@/outreach-home/hooks/useCandidateOutreachJourney';
-import { OutreachNeedsYouCard } from '@/outreach-today/components/OutreachNeedsYouCard';
+import { useStartOutreachSequencerOnCandidates } from '@/outreach-home/hooks/useStartOutreachSequencerOnCandidates';
+import { OUTREACH_PROJECT_ID_QUERY_PARAM } from '@/outreach-home/constants/outreach-command.constants';
+import { useOutreachDecisions } from '@/outreach-today/hooks/useOutreachDecisions';
+import { preferredOpenDecision } from '@/outreach-today/utils/group-outreach-decisions.util';
 import { useStopOutreach } from '@/outreach-home/hooks/useStopOutreach';
 import { outreachContextState } from '@/outreach-home/states/outreachContextState';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -30,8 +41,8 @@ import { useAtomState } from '@/ui/utilities/state/jotai/hooks/useAtomState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { styled } from '@linaria/react';
+import { isNonEmptyString } from '@sniptt/guards';
 import axios from 'axios';
-import dayjs from 'dayjs';
 import React, {
   lazy,
   Suspense,
@@ -44,24 +55,27 @@ import React, {
 import type { ChatMessages, MessageNode } from 'twenty-shared/arx';
 import { graphqlToFetchAllCandidateDataWithFieldValues } from 'twenty-shared/graphql';
 import {
-  IconArrowsSplit2,
-  IconFileText,
+  IconAlertTriangle,
   IconMessage,
+  IconSend,
   IconSettingsAutomation,
-  IconTimelineEvent,
+  IconSparkles,
   IconUser,
 } from 'twenty-ui/icon';
+import { Button, LightButton } from 'twenty-ui/input';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
+
+import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
+import { Select } from '@/ui/input/components/Select';
 
 import { CANDIDATE_CONVERSATION_STATUS_LABELS } from '@/candidate-table/constants/candidate-status-labels';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
-import { CandidateInfoHeader } from './CandidateInfoHeader';
-import { CandidateProfileTab } from './CandidateProfileTab';
-import { CandidateWarmPathTab } from './CandidateWarmPathTab';
 import { useTemplates } from './hooks/useTemplates';
 
 const AttachmentPanel = lazy(() => import('./AttachmentPanel'));
 
+// Twenty record side panel layout: summary, fields and sticky tabs scroll
+// together; only the chat composer stays pinned to the bottom.
 const StyledContainer = styled.div`
   display: flex;
   flex: 1;
@@ -71,16 +85,7 @@ const StyledContainer = styled.div`
   overflow: hidden;
 `;
 
-const StyledHeaderSlot = styled.div`
-  flex-shrink: 0;
-`;
-
-const TabContainer = styled.div`
-  flex-shrink: 0;
-  padding: 0 ${themeCssVariables.spacing[2]};
-`;
-
-const TabContent = styled.div`
+const StyledScrollArea = styled.div`
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -89,330 +94,151 @@ const TabContent = styled.div`
   overflow-y: auto;
 `;
 
+const StyledHeaderSlot = styled.div`
+  flex-shrink: 0;
+`;
+
+const StyledTabContainer = styled.div`
+  background: ${themeCssVariables.background.primary};
+  flex-shrink: 0;
+  padding: 0 ${themeCssVariables.spacing[2]};
+  position: sticky;
+  top: 0;
+  z-index: 2;
+`;
+
+const StyledTabContent = styled.div`
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+`;
+
+const StyledTabPlaceholder = styled.div`
+  color: ${themeCssVariables.font.color.tertiary};
+  padding: ${themeCssVariables.spacing[4]};
+`;
+
 // Module scope: defining styled() inside render remounts AttachmentPanel children
 // every drawer re-render and leaves the PDF viewer blank.
 const StyledInlineAttachmentContainer = styled.div<{ isOpen: boolean }>`
   background-color: ${themeCssVariables.background.secondary};
-  height: 100%;
+  height: calc(100vh - 140px);
   overflow-y: auto;
   position: relative;
   width: 100%;
 `;
 
-const ChatView = styled.div`
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  height: 100%; /* Add extra padding at bottom to prevent overlap with input */
-  overflow-y: auto;
-  padding: 20px;
-  padding-bottom: 40px;
-`;
-
-const DateSeparator = styled.div`
-  color: ${(props) => themeCssVariables.font.color.secondary};
-  font-size: ${(props) => themeCssVariables.font.size.sm};
-  margin: 16px 0;
-  text-align: center;
-`;
-
-const MessageContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
-const MessageBubble = styled.div<{ isSent: boolean; deliveryFailed?: boolean }>`
-  background-color: ${(props) => {
-    if (props.deliveryFailed && props.isSent) {
-      return '#1e40af';
-    }
-    return props.isSent
-      ? themeCssVariables.color.blue
-      : themeCssVariables.background.tertiary;
-  }};
-  border: ${(props) =>
-    props.deliveryFailed ? `2px solid ${themeCssVariables.color.red}` : 'none'};
-  border-bottom-left-radius: ${(props) => (props.isSent ? '16px' : '4px')};
-  border-bottom-right-radius: ${(props) => (props.isSent ? '4px' : '16px')};
-  border-radius: 16px;
-  box-sizing: border-box;
-  color: ${(props) =>
-    props.isSent ? 'white' : themeCssVariables.font.color.primary};
-  font-size: 14px;
-  line-height: 1.5;
-  margin: ${(props) => (props.isSent ? '8px 8px 8px auto' : '8px')};
-  max-width: 70%;
-  padding: 12px 16px;
-  position: relative;
-
-  white-space: pre-wrap;
-  word-break: break-word;
-`;
-
-const MessageStatus = styled.div<{ isSent: boolean }>`
+const StyledChatNotice = styled.div<{ tone: 'info' | 'warning' }>`
   align-items: center;
-  color: ${(props) => themeCssVariables.font.color.light};
+  background: ${themeCssVariables.background.transparent.lighter};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.md};
+  color: ${themeCssVariables.font.color.secondary};
   display: flex;
-  font-size: 11px;
-  gap: 4px;
-  justify-content: ${(props) => (props.isSent ? 'flex-end' : 'flex-start')};
-  margin-top: 4px;
-  text-align: ${(props) => (props.isSent ? 'right' : 'left')};
-`;
+  gap: ${themeCssVariables.spacing[2]};
+  margin: ${themeCssVariables.spacing[2]} 0;
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
 
-const StatusIcon = styled.span<{ status: string }>`
-  align-items: center;
-  display: inline-flex;
-  height: 16px;
-  justify-content: center;
-  width: 16px;
-
-  &::before {
-    background-color: ${(props) => {
-      switch (props.status) {
-        case 'sent':
-          return '#9CA3AF';
-        case 'delivered':
-          return '#10B981';
-        case 'read':
-          return '#3B82F6';
-        case 'failed':
-          return '#EF4444';
-        default:
-          return '#9CA3AF';
-      }
-    }};
-    border-radius: 50%;
-    content: '';
-    height: 8px;
-    width: 8px;
+  & > svg {
+    color: ${({ tone }) =>
+      tone === 'warning'
+        ? themeCssVariables.color.orange
+        : themeCssVariables.color.blue};
+    flex-shrink: 0;
   }
 `;
 
-const MessageTime = styled.div<{ isSent: boolean }>`
-  color: ${(props) => themeCssVariables.font.color.light};
-  font-size: 11px;
-  margin-top: 4px;
-  text-align: ${(props) => (props.isSent ? 'right' : 'left')};
-`;
-
-const MessageGroup = styled.div`
-  margin: 8px 0;
-`;
-
-const DateLabel = styled.span`
-  background-color: ${(props) => themeCssVariables.background.primary};
-  color: ${(props) => themeCssVariables.font.color.light};
-  font-size: 12px;
-  padding: 0 12px;
-  position: relative;
-  z-index: 1;
-`;
-
-// Message input styles
-const MessageInputContainer = styled.div`
-  background-color: ${(props) => themeCssVariables.background.primary};
-  border-top: 1px solid ${(props) => themeCssVariables.border.color.light};
-  box-sizing: border-box;
-  flex-shrink: 0;
-  padding: ${(props) => themeCssVariables.spacing[2]};
-  width: 100%;
-`;
-
-const MessageInputTabContainer = styled.div`
-  border-bottom: 1px solid ${(props) => themeCssVariables.border.color.light};
+const StyledMessageInputContainer = styled.div`
+  background-color: ${themeCssVariables.background.primary};
+  border-top: 1px solid ${themeCssVariables.border.color.light};
   box-sizing: border-box;
   display: flex;
-  margin-bottom: ${(props) => themeCssVariables.spacing[2]};
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: ${themeCssVariables.spacing[2]};
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]}
+    ${themeCssVariables.spacing[3]};
   width: 100%;
 `;
 
-const MessageInputTab = styled.div<{ isActive: boolean }>`
-  border-bottom: 2px solid
-    ${(props) =>
-      props.isActive ? themeCssVariables.font.color.primary : 'transparent'};
-  color: ${(props) =>
-    props.isActive
-      ? themeCssVariables.font.color.primary
-      : themeCssVariables.font.color.tertiary};
-  cursor: pointer;
-  font-weight: ${(props) => (props.isActive ? 'bold' : 'normal')};
-  padding: ${(props) => themeCssVariables.spacing[1]}
-    ${(props) => themeCssVariables.spacing[2]};
+const StyledMessageInputTabContainer = styled.div`
+  align-items: center;
+  display: flex;
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
-const InputWrapper = styled.div`
+const StyledComposerSpacer = styled.div`
+  flex: 1;
+`;
+
+const StyledInputWrapper = styled.div`
   align-items: center;
   box-sizing: border-box;
   display: flex;
-  gap: ${(props) => themeCssVariables.spacing[2]};
+  gap: ${themeCssVariables.spacing[2]};
   width: 100%;
 `;
 
 const StyledChatInput = styled.input`
-  background-color: ${(props) =>
-    props.disabled
-      ? themeCssVariables.background.secondary
-      : themeCssVariables.background.primary};
-  border: 1px solid ${(props) => themeCssVariables.border.color.medium};
-  border-radius: ${(props) => themeCssVariables.border.radius.md};
+  background-color: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
   box-sizing: border-box;
-  color: ${(props) =>
-    props.disabled
-      ? themeCssVariables.font.color.tertiary
-      : themeCssVariables.font.color.primary};
-  cursor: ${(props) => (props.disabled ? 'not-allowed' : 'text')};
+  color: ${themeCssVariables.font.color.primary};
   flex: 1;
-  font-size: ${(props) =>
-    themeCssVariables.font.size.md}; /* Prevents input from overflowing */
+  font-family: inherit;
+  font-size: ${themeCssVariables.font.size.md};
+  height: 32px;
   min-width: 0;
   outline: none;
-  padding: ${(props) => themeCssVariables.spacing[2]};
+  padding: 0 ${themeCssVariables.spacing[2]};
+
+  &::placeholder {
+    color: ${themeCssVariables.font.color.light};
+  }
 
   &:focus:not(:disabled) {
-    border-color: ${(props) => themeCssVariables.font.color.primary};
+    border-color: ${themeCssVariables.color.blue};
+    box-shadow: 0 0 0 3px ${themeCssVariables.accent.tertiary};
+  }
+
+  &:disabled {
+    background-color: ${themeCssVariables.background.secondary};
+    color: ${themeCssVariables.font.color.tertiary};
+    cursor: not-allowed;
   }
 `;
 
-const StyledButton = styled.button`
-  background-color: ${(props) =>
-    props.disabled
-      ? themeCssVariables.color.gray
-      : themeCssVariables.color.blue8};
-  border: none;
-  border-radius: ${(props) => themeCssVariables.border.radius.md};
-  color: ${(props) =>
-    props.disabled ? themeCssVariables.font.color.tertiary : 'white'};
-  cursor: ${(props) => (props.disabled ? 'not-allowed' : 'pointer')};
-  font-weight: 500;
-  opacity: ${(props) => (props.disabled ? 0.6 : 1)};
-  padding: ${(props) => themeCssVariables.spacing[2]}
-    ${(props) => themeCssVariables.spacing[3]};
-  transition: all 0.2s ease;
-  white-space: nowrap;
-
-  &:hover:not(:disabled) {
-    background-color: ${(props) => themeCssVariables.color.gray};
-    color: black;
-  }
-`;
-
-const TemplateContainer = styled.div`
+const StyledTemplateContainer = styled.div`
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: ${(props) => themeCssVariables.spacing[2]};
+  gap: ${themeCssVariables.spacing[2]};
   width: 100%;
 `;
 
-const TemplateSelect = styled.select`
-  background-color: ${(props) =>
-    props.disabled
-      ? themeCssVariables.background.secondary
-      : themeCssVariables.background.primary};
-  border: 1px solid ${(props) => themeCssVariables.border.color.medium};
-  border-radius: ${(props) => themeCssVariables.border.radius.md};
+const StyledTemplatePreview = styled.div`
+  background-color: ${themeCssVariables.background.transparent.lighter};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.md};
   box-sizing: border-box;
-  color: ${(props) =>
-    props.disabled
-      ? themeCssVariables.font.color.tertiary
-      : themeCssVariables.font.color.primary};
-  cursor: ${(props) => (props.disabled ? 'not-allowed' : 'pointer')};
-  font-size: ${(props) => themeCssVariables.font.size.md};
-  outline: none;
-  padding: ${(props) => themeCssVariables.spacing[2]};
-  width: 100%;
-
-  &:focus:not(:disabled) {
-    border-color: ${(props) => themeCssVariables.font.color.primary};
-  }
-`;
-
-const TemplatePreview = styled.div`
-  background-color: ${(props) => themeCssVariables.background.secondary};
-  border: 1px solid ${(props) => themeCssVariables.border.color.light};
-  border-radius: ${(props) => themeCssVariables.border.radius.md};
-  box-sizing: border-box;
-  color: ${(props) => themeCssVariables.font.color.secondary};
-  font-size: ${(props) => themeCssVariables.font.size.sm};
-  min-height: 80px;
-  padding: ${(props) => themeCssVariables.spacing[2]};
+  color: ${themeCssVariables.font.color.secondary};
+  line-height: ${themeCssVariables.text.lineHeight.lg};
+  min-height: 64px;
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
+  white-space: pre-wrap;
   width: 100%;
 `;
 
-const ChatStatusBar = styled.div`
-  background-color: ${(props) => themeCssVariables.background.secondary};
-  border-left: 3px solid ${(props) => themeCssVariables.color.blue8};
-  border-radius: ${(props) => themeCssVariables.border.radius.sm};
-  color: ${(props) => themeCssVariables.font.color.secondary};
-  font-size: ${(props) => themeCssVariables.font.size.sm};
-  margin-bottom: ${(props) => themeCssVariables.spacing[1]};
-  padding: ${(props) => themeCssVariables.spacing[1]}
-    ${(props) => themeCssVariables.spacing[2]};
-`;
-
-const DoNotRespondBanner = styled.div`
-  align-items: center;
-  background-color: ${(props) => themeCssVariables.background.tertiary};
-  border-left: 3px solid ${(props) => themeCssVariables.color.orange};
-  border-radius: ${(props) => themeCssVariables.border.radius.sm};
-  color: ${(props) => themeCssVariables.font.color.primary};
+const StyledTemplateActions = styled.div`
   display: flex;
-  font-size: ${(props) => themeCssVariables.font.size.sm};
-  gap: ${(props) => themeCssVariables.spacing[1]};
-  margin-bottom: ${(props) => themeCssVariables.spacing[1]};
-  padding: ${(props) => themeCssVariables.spacing[1]}
-    ${(props) => themeCssVariables.spacing[2]};
-`;
-
-const DoNotRespondBubble = styled.div`
-  background-color: ${(props) => themeCssVariables.background.tertiary};
-  border: 1px dashed ${(props) => themeCssVariables.border.color.medium};
-  border-bottom-right-radius: 4px;
-  border-radius: 16px;
-  color: ${(props) => themeCssVariables.font.color.tertiary};
-  font-size: 13px;
-  font-style: italic;
-  margin: 8px 8px 8px auto;
-  max-width: 70%;
-  padding: 10px 14px;
+  justify-content: flex-end;
 `;
 
 function isDoNotRespondMessage(content: string | undefined): boolean {
   if (!content || typeof content !== 'string') return false;
   return content.includes('#DONTRESPOND#') || content.includes('DONTRESPOND');
 }
-
-const formatDate = (date: string) => {
-  const messageDate = dayjs(date);
-  const today = dayjs();
-
-  if (messageDate.isSame(today, 'day')) {
-    return 'Today';
-  } else if (messageDate.isSame(today.subtract(1, 'day'), 'day')) {
-    return 'Yesterday';
-  } else {
-    return messageDate.format('DD MMM YYYY');
-  }
-};
-
-const formatTime = (date: string) => {
-  return dayjs(date).format('HH:mm');
-};
-
-const groupMessagesByDate = (messages: MessageNode[]) => {
-  const groups: { [key: string]: MessageNode[] } = {};
-
-  messages.forEach((message) => {
-    const date = formatDate(message.createdAt);
-    if (!groups[date]) {
-      groups[date] = [];
-    }
-    groups[date].push(message);
-  });
-
-  return groups;
-};
 
 type CandidateData = {
   id: string;
@@ -432,6 +258,7 @@ type CandidateData = {
 
 export const CandidateChatDrawer = React.memo(() => {
   const [tokenPair] = useAtomState(tokenPairState);
+  const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
   const [candidateData, setCandidateData] = useAtomState(candidateDataState);
   const tableState = useAtomStateValue(tableStateAtom);
   const processedData = useAtomStateValue(processedDataSelector);
@@ -453,7 +280,6 @@ export const CandidateChatDrawer = React.memo(() => {
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const fetchMessagesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasMarkedAsReadRef = useRef<string | null>(null);
-  const prevConversationStatusRef = useRef<string | null>(null);
 
   // Use the templates hook
   const {
@@ -469,39 +295,11 @@ export const CandidateChatDrawer = React.memo(() => {
     tabListId,
   );
 
-  // Memoize tabs array to prevent recreation on every render
   const tabs = useMemo(
     () => [
-      {
-        id: 'journey',
-        title: 'Journey',
-        Icon: IconTimelineEvent,
-      },
-      {
-        id: 'workflow-runs',
-        title: 'Workflow runs',
-        Icon: IconSettingsAutomation,
-      },
-      {
-        id: 'chat',
-        title: 'Chat',
-        Icon: IconMessage,
-      },
-      {
-        id: 'profile',
-        title: 'Profile',
-        Icon: IconUser,
-      },
-      {
-        id: 'warm-path',
-        title: 'Warm path',
-        Icon: IconArrowsSplit2,
-      },
-      {
-        id: 'cv',
-        title: 'CV',
-        Icon: IconFileText,
-      },
+      { id: 'conversation', title: 'Conversation', Icon: IconMessage },
+      { id: 'context', title: 'Context', Icon: IconUser },
+      { id: 'activity', title: 'Activity', Icon: IconSettingsAutomation },
     ],
     [],
   );
@@ -564,24 +362,113 @@ export const CandidateChatDrawer = React.memo(() => {
 
   const { stopOutreachForCandidates } = useStopOutreach();
 
-  const outreachHeaderLabels = useMemo(
-    () => resolveJourneyHeaderLabels(outreachJourney),
-    [outreachJourney],
-  );
+  const { isStarting: isRetryingRun, startSequencerOnCandidateIds } =
+    useStartOutreachSequencerOnCandidates();
+  const { openAskAiPageWithPreprompt } = useOpenAskAiPageWithPreprompt();
 
-  // Get personId from the selected table row first (GTM people rows), then candidateData
-  const personId = useMemo(() => {
-    return (
-      chatLookupIds.personId ||
-      candidateData?.peopleId ||
-      candidateData?.personId ||
-      null
-    );
-  }, [
-    candidateData?.peopleId,
-    candidateData?.personId,
-    chatLookupIds.personId,
-  ]);
+  const {
+    decisions: openDecisions,
+    resolvingId: resolvingDecisionId,
+    resolve: resolveDecision,
+  } = useOutreachDecisions({
+    candidateId: enrolledCandidateId,
+    enabled: isUUID(enrolledCandidateId ?? ''),
+  });
+  const openDecision = preferredOpenDecision(openDecisions);
+  const [wasDecisionJustResolved, setWasDecisionJustResolved] = useState(false);
+
+  const record = useCandidateDrawerRecord(candidateData);
+
+  const primaryRun = outreachJourney?.activeRuns[0] ?? null;
+  const pendingFormDraft =
+    primaryRun?.currentStepKind === 'FORM' &&
+    primaryRun.pendingFormStepId !== null
+      ? {
+          title: primaryRun.currentStepName ?? 'Draft waiting for approval',
+          body: primaryRun.draftPreview ?? '',
+        }
+      : null;
+  const hasOpenDecision = openDecision !== null || pendingFormDraft !== null;
+
+  const statusLine = buildCandidateDrawerStatusLine({
+    journey: outreachJourney,
+    hasOpenDecision,
+  });
+
+  const policy =
+    outreachJourney !== null && isNonEmptyString(outreachContext.projectId)
+      ? {
+          isDraftApprovalOn: outreachContext.outreachSendMode === 'APPROVAL',
+          settingsPath: `/${AppPath.OutreachHome}?${OUTREACH_PROJECT_ID_QUERY_PARAM}=${outreachContext.projectId}&tab=setup`,
+        }
+      : null;
+
+  const handleStopOutreach = () => {
+    if (enrolledCandidateId !== null) {
+      void stopOutreachForCandidates([enrolledCandidateId], outreachProjectId);
+    }
+  };
+
+  const handleApproveNeedsYou = async (editedBody: string | null) => {
+    if (openDecision !== null) {
+      const didResolve = await resolveDecision({
+        decisionId: openDecision.id,
+        resolution: editedBody !== null ? 'EDITED' : 'APPROVED',
+        ...(editedBody !== null ? { editedBody } : {}),
+      });
+
+      if (didResolve) {
+        setWasDecisionJustResolved(true);
+        void refetchOutreachJourney();
+      }
+
+      return;
+    }
+
+    if (primaryRun?.pendingFormStepId) {
+      await approveFormStep({
+        workflowRunId: primaryRun.workflowRunId,
+        stepId: primaryRun.pendingFormStepId,
+        editedBody: editedBody ?? primaryRun.draftPreview ?? '',
+      });
+      setWasDecisionJustResolved(true);
+    }
+  };
+
+  const handleRejectNeedsYou = async () => {
+    if (openDecision !== null) {
+      const didResolve = await resolveDecision({
+        decisionId: openDecision.id,
+        resolution: 'REJECTED',
+      });
+
+      if (didResolve) {
+        setWasDecisionJustResolved(true);
+        void refetchOutreachJourney();
+      }
+
+      return;
+    }
+
+    if (primaryRun?.pendingFormStepId) {
+      await approveFormStep({
+        workflowRunId: primaryRun.workflowRunId,
+        stepId: primaryRun.pendingFormStepId,
+        editedBody: primaryRun.draftPreview ?? '',
+        approve: false,
+      });
+      setWasDecisionJustResolved(true);
+    }
+  };
+
+  const handleRetryRun = async () => {
+    if (enrolledCandidateId === null) {
+      return;
+    }
+
+    await startSequencerOnCandidateIds([enrolledCandidateId]);
+    await refetchOutreachJourney();
+  };
 
   // Message input tabs
   const [activeMessageTab, setActiveMessageTab] = useState<
@@ -599,14 +486,14 @@ export const CandidateChatDrawer = React.memo(() => {
 
   // Scroll to bottom when messages change or when loading completes
   useEffect(() => {
-    if (!isChatLoading && activeTabId === 'chat') {
+    if (!isChatLoading && activeTabId === 'conversation') {
       scrollToBottom();
     }
   }, [messageHistory, isChatLoading, activeTabId, scrollToBottom]);
 
   // Also scroll to bottom when switching to chat tab
   useEffect(() => {
-    if (activeTabId === 'chat' && !isChatLoading) {
+    if (activeTabId === 'conversation' && !isChatLoading) {
       scrollToBottom();
     }
   }, [activeTabId, isChatLoading, scrollToBottom]);
@@ -879,27 +766,38 @@ export const CandidateChatDrawer = React.memo(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCandidateId, chatLookupIds.candidateId, chatLookupIds.personId]); // Only depend on selectedCandidateId - callbacks are stable via useCallback
 
-  // Set default active tab
+  // Older sessions stored the previous six tab ids; fold them into the
+  // Conversation / Context / Activity tabs.
   useEffect(() => {
-    if (!activeTabId) {
-      // Check if we have a default tab in localStorage
-      const defaultTab = localStorage.getItem('candidate-chat-default-tab');
-      if (
-        defaultTab &&
-        (defaultTab === 'chat' ||
-          defaultTab === 'profile' ||
-          defaultTab === 'warm-path' ||
-          defaultTab === 'cv' ||
-          defaultTab === 'journey')
-      ) {
-        setActiveTabId(defaultTab);
-        // Clear the stored value after using it
-        localStorage.removeItem('candidate-chat-default-tab');
-      } else {
-        setActiveTabId('chat');
+    const legacyTabMap: Record<string, string> = {
+      journey: 'conversation',
+      chat: 'conversation',
+      conversation: 'conversation',
+      profile: 'context',
+      'warm-path': 'context',
+      cv: 'context',
+      context: 'context',
+      'workflow-runs': 'activity',
+      activity: 'activity',
+    };
+
+    if (isNonEmptyString(activeTabId) && activeTabId in legacyTabMap) {
+      if (legacyTabMap[activeTabId] !== activeTabId) {
+        setActiveTabId(legacyTabMap[activeTabId]);
       }
+
+      return;
     }
+
+    const storedTab = localStorage.getItem('candidate-chat-default-tab');
+    localStorage.removeItem('candidate-chat-default-tab');
+    setActiveTabId(legacyTabMap[storedTab ?? ''] ?? 'conversation');
   }, [activeTabId, setActiveTabId]);
+
+  // Reset the "decision recorded" note when switching person
+  useEffect(() => {
+    setWasDecisionJustResolved(false);
+  }, [selectedCandidateId]);
 
   // Add effect to mark messages as read when drawer opens
   useEffect(() => {
@@ -1146,17 +1044,6 @@ export const CandidateChatDrawer = React.memo(() => {
       ] || candidateData.candConversationStatus
     : null;
 
-  const conversationStatusChanged =
-    conversationStatusLabel &&
-    prevConversationStatusRef.current !== null &&
-    prevConversationStatusRef.current !== candidateData?.candConversationStatus;
-
-  useEffect(() => {
-    if (candidateData?.candConversationStatus != null) {
-      prevConversationStatusRef.current = candidateData.candConversationStatus;
-    }
-  }, [candidateData?.candConversationStatus]);
-
   const hasLatestDoNotRespond = useMemo(() => {
     if (!messageHistory.length) return false;
     const sorted = [...messageHistory].sort(
@@ -1166,92 +1053,21 @@ export const CandidateChatDrawer = React.memo(() => {
     return latestBot ? isDoNotRespondMessage(latestBot.message) : false;
   }, [messageHistory]);
 
-  const renderChatTab = () => (
-    <ChatView ref={chatContainerRef}>
-      {conversationStatusLabel && (
-        <ChatStatusBar>
-          {conversationStatusChanged ? (
-            <>Status updated: {conversationStatusLabel}</>
-          ) : (
-            <>Conversation status: {conversationStatusLabel}</>
-          )}
-        </ChatStatusBar>
-      )}
-      {isChatLoading ? (
-        <div>Loading chat history... for {selectedCandidateId}</div>
-      ) : chatError ? (
-        <div>{chatError}</div>
-      ) : messageHistory.length === 0 ? (
-        <div
-          id="candidate-chat-no-messages"
-          data-candidate-id={selectedCandidateId}
-          data-person-id={personId}
-        >
-          No chat messages found for {candidateName}
-        </div>
-      ) : (
-        <MessageContainer>
-          {Object.entries(groupMessagesByDate(messageHistory)).map(
-            ([date, messages]) => (
-              <React.Fragment key={date}>
-                <DateSeparator>
-                  <DateLabel>{date}</DateLabel>
-                </DateSeparator>
-                {messages.map((message) => {
-                  const isSent = message.name === 'botMessage';
-                  const status = message.whatsappDeliveryStatus || 'sent';
-                  const isDoNotRespond =
-                    isSent && isDoNotRespondMessage(message.message);
-                  const deliveryFailed = isSent && status === 'failed';
-                  return (
-                    <MessageGroup key={message.id}>
-                      {isDoNotRespond ? (
-                        <DoNotRespondBubble>
-                          AI chose not to respond
-                        </DoNotRespondBubble>
-                      ) : (
-                        <MessageBubble
-                          isSent={isSent}
-                          deliveryFailed={deliveryFailed}
-                        >
-                          {message.message}
-                        </MessageBubble>
-                      )}
-                      <MessageStatus isSent={isSent}>
-                        <StatusIcon status={status} />
-                        {formatTime(message.createdAt)}
-                        {isSent && !isDoNotRespond && (
-                          <span>
-                            {status === 'sent' && 'Sent'}
-                            {status === 'delivered' && 'Delivered'}
-                            {status === 'read' && 'Read'}
-                            {status === 'failed' && 'Failed'}
-                          </span>
-                        )}
-                      </MessageStatus>
-                    </MessageGroup>
-                  );
-                })}
-              </React.Fragment>
-            ),
-          )}
-        </MessageContainer>
-      )}
-    </ChatView>
-  );
+  const senderDisplayName =
+    [
+      currentWorkspaceMember?.name?.firstName,
+      currentWorkspaceMember?.name?.lastName,
+    ]
+      .filter(Boolean)
+      .join(' ') || 'You';
 
-  const renderWarmPathTab = () => (
-    <CandidateWarmPathTab
-      candidateData={candidateData}
-      isActive={activeTabId === 'warm-path'}
-    />
-  );
-
-  const renderCVTab = () => (
-    <Suspense fallback={<div style={{ padding: 16 }}>Loading CV...</div>}>
+  const renderCv = () => (
+    <Suspense
+      fallback={<StyledTabPlaceholder>Loading CV…</StyledTabPlaceholder>}
+    >
       <AttachmentPanel
         isOpen={true}
-        onClose={() => setActiveTabId('chat')}
+        onClose={() => setActiveTabId('context')}
         candidateId={selectedCandidateId || ''}
         candidateName={candidateName}
         PanelContainer={StyledInlineAttachmentContainer}
@@ -1259,42 +1075,46 @@ export const CandidateChatDrawer = React.memo(() => {
     </Suspense>
   );
 
-  const renderProfileTab = () => (
-    <CandidateProfileTab
-      candidateData={candidateData}
-      isLoading={isCandidateDataLoading}
-    />
-  );
+  const handleDraftWithAgent = () => {
+    openAskAiPageWithPreprompt({
+      text: `Draft a reply to ${candidateName}${record.fields?.companyName ? ` at ${record.fields.companyName}` : ''}, based on our conversation so far.`,
+    });
+  };
 
   const renderMessageInput = () => (
-    <MessageInputContainer>
+    <StyledMessageInputContainer>
       {hasLatestDoNotRespond && (
-        <DoNotRespondBanner>
-          <span>Last response: AI chose not to respond to this message.</span>
-        </DoNotRespondBanner>
+        <StyledChatNotice tone="warning">
+          <IconAlertTriangle size={16} />
+          Last response: AI chose not to respond to this message.
+        </StyledChatNotice>
       )}
-      <MessageInputTabContainer>
-        <MessageInputTab
-          isActive={activeMessageTab === 'direct'}
+      <StyledMessageInputTabContainer>
+        <LightButton
+          title="Direct message"
+          active={activeMessageTab === 'direct'}
           onClick={() => setActiveMessageTab('direct')}
-        >
-          Direct Message
-        </MessageInputTab>
-        <MessageInputTab
-          isActive={activeMessageTab === 'template'}
+        />
+        <LightButton
+          title="Template"
+          active={activeMessageTab === 'template'}
           onClick={() => setActiveMessageTab('template')}
-        >
-          Template Message
-        </MessageInputTab>
-      </MessageInputTabContainer>
+        />
+        <StyledComposerSpacer />
+        <LightButton
+          Icon={IconSparkles}
+          title="Draft with agent"
+          onClick={handleDraftWithAgent}
+        />
+      </StyledMessageInputTabContainer>
 
       {activeMessageTab === 'direct' ? (
-        <InputWrapper>
+        <StyledInputWrapper>
           <StyledChatInput
             ref={inputRef}
             type="text"
             placeholder={
-              isSendingMessage ? 'Sending message...' : 'Type your message'
+              isSendingMessage ? 'Sending message…' : 'Write a message'
             }
             disabled={isSendingMessage}
             onKeyDown={(e) => {
@@ -1304,123 +1124,151 @@ export const CandidateChatDrawer = React.memo(() => {
               }
             }}
           />
-          <StyledButton onClick={handleSubmit} disabled={isSendingMessage}>
-            {isSendingMessage ? 'Sending...' : 'Send'}
-          </StyledButton>
-        </InputWrapper>
-      ) : (
-        <TemplateContainer>
-          <TemplateSelect
-            value={selectedTemplate}
-            onChange={(e) => setSelectedTemplate(e.target.value)}
+          <Button
+            Icon={IconSend}
+            title={isSendingMessage ? 'Sending…' : 'Send'}
+            variant="primary"
+            accent="blue"
+            size="small"
+            onClick={handleSubmit}
             disabled={isSendingMessage}
-          >
-            <option value="" disabled>
-              Select a template
-            </option>
-            {templates.map((template) => (
-              <option key={template} value={template}>
-                {template}
-              </option>
-            ))}
-          </TemplateSelect>
-          <TemplatePreview>
+          />
+        </StyledInputWrapper>
+      ) : (
+        <StyledTemplateContainer>
+          <Select<string>
+            dropdownId="candidate-chat-template-select"
+            value={selectedTemplate}
+            emptyOption={{ label: 'Select a template', value: '' }}
+            options={templates.map((template) => ({
+              label: template,
+              value: template,
+            }))}
+            onChange={setSelectedTemplate}
+            disabled={isSendingMessage}
+            selectSizeVariant="small"
+            fullWidth
+            withSearchInput
+            needIconCheck={false}
+          />
+          <StyledTemplatePreview>
             {isLoadingTemplates
-              ? 'Loading templates...'
+              ? 'Loading templates…'
               : getTemplatePreview(selectedTemplate)}
-          </TemplatePreview>
-          <StyledButton
-            onClick={() => handleTemplateSend(selectedTemplate)}
-            disabled={!selectedTemplate || isSendingMessage}
-          >
-            {isSendingMessage ? 'Sending...' : 'Send Template'}
-          </StyledButton>
-        </TemplateContainer>
+          </StyledTemplatePreview>
+          <StyledTemplateActions>
+            <Button
+              Icon={IconSend}
+              title={isSendingMessage ? 'Sending…' : 'Send template'}
+              variant="primary"
+              accent="blue"
+              size="small"
+              onClick={() => handleTemplateSend(selectedTemplate)}
+              disabled={!selectedTemplate || isSendingMessage}
+            />
+          </StyledTemplateActions>
+        </StyledTemplateContainer>
       )}
-    </MessageInputContainer>
+    </StyledMessageInputContainer>
   );
 
   return (
     <StyledContainer>
-      <StyledHeaderSlot>
-        <CandidateInfoHeader
-          candidateData={candidateData}
-          outreachStageLabel={outreachHeaderLabels.outreachStageLabel}
-          outreachNextStepLabel={outreachHeaderLabels.outreachNextStepLabel}
-          outreachNextRetryLabel={outreachHeaderLabels.outreachNextRetryLabel}
-          pendingChannel={outreachHeaderLabels.pendingChannel}
-        />
-      </StyledHeaderSlot>
-      {enrolledCandidateId ? (
-        <OutreachNeedsYouCard
-          candidateId={enrolledCandidateId}
-          onResolved={() => {
-            void refetchOutreachJourney();
-          }}
-        />
-      ) : null}
-      <TabContainer>
-        <TabList
-          componentInstanceId={tabListId}
-          tabs={tabs}
-          behaveAsLinks={false}
-          isInSidePanel={true}
-        />
-      </TabContainer>
-      <TabContent>
-        {!selectedCandidateId ? (
-          <div style={{ padding: '20px' }}>No candidate selected</div>
-        ) : (
-          <>
-            {activeTabId === 'journey' && enrolledCandidateId ? (
-              <CandidateOutreachJourneyTab
-                journey={outreachJourney}
-                isLoading={isOutreachJourneyLoading}
-                isActionLoading={isOutreachActionLoading}
-                onPause={() => void pauseJourney()}
-                onResume={() => void resumeJourney()}
-                onStop={() =>
-                  void stopOutreachForCandidates(
-                    [enrolledCandidateId],
-                    outreachProjectId,
-                  )
-                }
-                onSnooze={(resumeAt) => void snoozeJourney(resumeAt)}
-                onUpdateOperatorControls={(input) =>
-                  void updateOperatorControls(input)
-                }
-                onSkipDelay={(workflowRunId, stepId) =>
-                  void skipDelayStep(workflowRunId, stepId)
-                }
-                onApproveForm={(input) => void approveFormStep(input)}
-              />
-            ) : null}
-            {activeTabId === 'journey' && !enrolledCandidateId ? (
-              <div style={{ padding: '20px' }}>
-                Enroll this person in outreach to manage their journey.
-              </div>
-            ) : null}
-            {activeTabId === 'workflow-runs' && enrolledCandidateId ? (
-              <CandidateWorkflowRunsTab
-                activeRuns={outreachJourney?.activeRuns ?? []}
-                failedRuns={outreachJourney?.failedRuns ?? []}
-                lastFailedRun={outreachJourney?.lastFailedRun ?? null}
-                isLoading={isOutreachJourneyLoading}
-              />
-            ) : null}
-            {activeTabId === 'workflow-runs' && !enrolledCandidateId ? (
-              <div style={{ padding: '20px' }}>
-                Enroll this person in outreach to see their workflow runs.
-              </div>
-            ) : null}
-            {activeTabId === 'chat' && renderChatTab()}
-            {activeTabId === 'profile' && renderProfileTab()}
-            {activeTabId === 'warm-path' && renderWarmPathTab()}
-            {activeTabId === 'cv' && renderCVTab()}
-          </>
+      <StyledScrollArea ref={chatContainerRef}>
+        <StyledHeaderSlot>
+          <CandidateDrawerHeader
+            record={record}
+            journey={outreachJourney}
+            stageLabel={resolveCandidateDrawerStageLabel(outreachJourney)}
+            statusLine={statusLine}
+            isJourneyActionLoading={isOutreachActionLoading}
+            canSendNextStepNow={
+              primaryRun?.currentStepKind === 'DELAY' &&
+              isNonEmptyString(primaryRun.pendingStepId)
+            }
+            policy={policy}
+            onPauseJourney={() => void pauseJourney()}
+            onResumeJourney={() => void resumeJourney()}
+            onFollowUpOn={(resumeAt) => void snoozeJourney(resumeAt)}
+            onSendNextStepNow={() => {
+              if (primaryRun?.pendingStepId) {
+                void skipDelayStep(
+                  primaryRun.workflowRunId,
+                  primaryRun.pendingStepId,
+                );
+              }
+            }}
+            onUpdateConversationStage={(outreachConversationStage) =>
+              void updateOperatorControls({ outreachConversationStage })
+            }
+            onStopOutreach={handleStopOutreach}
+          />
+        </StyledHeaderSlot>
+        {enrolledCandidateId !== null && (
+          <CandidateDrawerNeedsYouCard
+            key={openDecision?.id ?? primaryRun?.pendingFormStepId ?? 'none'}
+            decision={openDecision}
+            moreDecisionCount={Math.max(0, openDecisions.length - 1)}
+            pendingDraft={openDecision === null ? pendingFormDraft : null}
+            isBusy={
+              isOutreachActionLoading ||
+              (openDecision !== null && resolvingDecisionId === openDecision.id)
+            }
+            wasJustResolved={wasDecisionJustResolved}
+            onApprove={(editedBody) => void handleApproveNeedsYou(editedBody)}
+            onReject={() => void handleRejectNeedsYou()}
+            onStopOutreach={handleStopOutreach}
+          />
         )}
-      </TabContent>
-      {selectedCandidateId && activeTabId === 'chat' && renderMessageInput()}
+        <StyledTabContainer>
+          <TabList
+            componentInstanceId={tabListId}
+            tabs={tabs}
+            behaveAsLinks={false}
+            isInSidePanel={true}
+          />
+        </StyledTabContainer>
+        <StyledTabContent>
+          {!selectedCandidateId ? (
+            <StyledTabPlaceholder>No candidate selected</StyledTabPlaceholder>
+          ) : (
+            <>
+              {activeTabId === 'conversation' && (
+                <CandidateDrawerConversationTab
+                  messages={messageHistory}
+                  journey={outreachJourney}
+                  nextStep={resolveCandidateDrawerNextStep(outreachJourney)}
+                  hasOpenDecision={hasOpenDecision}
+                  candidateName={candidateName}
+                  senderName={senderDisplayName}
+                  recruitingStatusLabel={conversationStatusLabel ?? null}
+                  isLoading={isChatLoading}
+                  error={chatError}
+                />
+              )}
+              {activeTabId === 'context' && (
+                <CandidateDrawerContextTab
+                  record={record}
+                  selectedTableRow={selectedTableRow}
+                  isCandidateDataLoading={isCandidateDataLoading}
+                  renderCv={renderCv}
+                />
+              )}
+              {activeTabId === 'activity' && (
+                <CandidateDrawerActivityTab
+                  journey={outreachJourney}
+                  isLoading={isOutreachJourneyLoading}
+                  isRetrying={isRetryingRun}
+                  onRetry={() => void handleRetryRun()}
+                />
+              )}
+            </>
+          )}
+        </StyledTabContent>
+      </StyledScrollArea>
+      {selectedCandidateId &&
+        activeTabId === 'conversation' &&
+        renderMessageInput()}
     </StyledContainer>
   );
 });

@@ -1,41 +1,47 @@
 import { styled } from '@linaria/react';
 import {
-  Suspense,
-  lazy,
   useCallback,
   useEffect,
-  useId,
   useLayoutEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
-import { Link } from 'react-router-dom';
 import { isDefined } from 'twenty-shared/utils';
 import { Loader } from 'twenty-ui/feedback';
 import {
-  type IconComponent,
   IconArrowUp,
   IconDatabase,
+  IconFileImport,
+  IconFilterOff,
   IconPlayerPlay,
   IconPlayerStop,
+  IconRefresh,
   IconUserPlus,
 } from 'twenty-ui/icon';
-import { IconButton } from 'twenty-ui/input';
-import { AppTooltip, TooltipDelay } from 'twenty-ui/surfaces';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { searchResultsState } from '@/candidate-search/states/searchResultsState';
-import { ProjectTopBar } from '@/candidate-table/components/ProjectTopBar';
-import { TableContainer } from '@/candidate-table/components/styled';
 import { HotTableActionMenu } from '@/candidate-table/HotTableActionMenu';
+import { useOpenCandidateChatDrawer } from '@/candidate-table/hooks/useOpenCandidateChatDrawer';
 import { chatSearchQueryState } from '@/candidate-table/states/chatSearchQueryState';
 import { dataTableRefreshFunctionState } from '@/candidate-table/states/dataTableRefreshFunctionState';
 import { tableStateAtom } from '@/candidate-table/states/states';
 import { ContextStoreComponentInstanceContext } from '@/context-store/states/contexts/ContextStoreComponentInstanceContext';
+import { contextStoreNumberOfSelectedRecordsComponentState } from '@/context-store/states/contextStoreNumberOfSelectedRecordsComponentState';
 import { contextStoreTargetedRecordsRuleComponentState } from '@/context-store/states/contextStoreTargetedRecordsRuleComponentState';
 import { useOpenObjectRecordsSpreadsheetImportDialog } from '@/object-record/spreadsheet-import/hooks/useOpenObjectRecordsSpreadsheetImportDialog';
-import { OutreachSafeDashboardPath } from '@/outreach-home/components/OutreachSafeDashboardPath';
+import {
+  getOutreachPeopleTableColumns,
+  getOutreachPersonMobileCard,
+} from '@/outreach-home/components/record-table/getOutreachPeopleTableColumns';
+import { OutreachRecordTable } from '@/outreach-home/components/record-table/OutreachRecordTable';
+import {
+  OutreachViewBar,
+  OutreachViewBarDivider,
+  OutreachViewBarIconAction,
+  OutreachViewBarPill,
+} from '@/outreach-home/components/record-table/OutreachViewBar';
+import { OutreachTableEmptyState } from '@/outreach-home/components/record-table/OutreachTableEmptyState';
 import { useAddOutreachRecordsToCrm } from '@/outreach-home/hooks/useAddOutreachRecordsToCrm';
 import { useOutreachEnroll } from '@/outreach-home/hooks/useOutreachEnroll';
 import { useOutreachProjectJourneySummary } from '@/outreach-home/hooks/useOutreachProjectJourneySummary';
@@ -46,250 +52,34 @@ import {
   type OutreachPersonRow,
 } from '@/outreach-home/types/outreach-home.types';
 import { mapCrmPersonRecordsToOutreachPersonRows } from '@/outreach-home/utils/map-crm-record-to-outreach-row.util';
+import { mapOutreachPersonToTableRow } from '@/outreach-home/utils/mapOutreachPersonToTableRow';
+import {
+  matchesOutreachPeopleQueueFilter,
+  OUTREACH_PEOPLE_QUEUE_FILTERS,
+  type OutreachPeopleQueueFilter,
+} from '@/outreach-home/utils/outreachPeopleQueueFilter';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
+import { useSetAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useSetAtomComponentState';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
-
-const DataTable = lazy(() =>
-  import('@/candidate-table/DataTable').then((module) => ({
-    default: module.DataTable,
-  })),
-);
 
 const StyledPanel = styled.div`
   display: flex;
+  flex: 1;
   flex-direction: column;
-  height: 100%;
   min-height: 0;
-  position: relative;
-`;
-
-const StyledEmpty = styled.div`
-  color: ${themeCssVariables.font.color.tertiary};
-  font-size: ${themeCssVariables.font.size.sm};
-  line-height: 1.5;
-  padding: ${themeCssVariables.spacing[4]};
 `;
 
 const StyledLoading = styled.div`
   align-items: center;
-  color: ${themeCssVariables.font.color.secondary};
+  color: ${themeCssVariables.font.color.tertiary};
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[2]};
   justify-content: center;
   min-height: 240px;
-  padding: ${themeCssVariables.spacing[6]};
 `;
-
-const StyledStageFilters = styled.div`
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${themeCssVariables.spacing[1]};
-  min-width: 0;
-`;
-
-const StyledStageChip = styled.button<{ isActive: boolean }>`
-  background: ${({ isActive }) =>
-    isActive
-      ? themeCssVariables.background.quaternary
-      : themeCssVariables.background.secondary};
-  border: 1px solid ${themeCssVariables.border.color.light};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  color: ${themeCssVariables.font.color.secondary};
-  cursor: pointer;
-  font-size: ${themeCssVariables.font.size.xs};
-  height: 24px;
-  padding: ${`${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[2]}`};
-  white-space: nowrap;
-
-  &:hover {
-    border-color: ${themeCssVariables.border.color.medium};
-    color: ${themeCssVariables.font.color.primary};
-  }
-`;
-
-const StyledDashboardLink = styled(Link)`
-  color: ${themeCssVariables.color.blue};
-  font-size: ${themeCssVariables.font.size.xs};
-  padding: ${`${themeCssVariables.spacing[0.5]} ${themeCssVariables.spacing[1]}`};
-  text-decoration: none;
-  white-space: nowrap;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
-const StyledActionIcons = styled.div`
-  align-items: center;
-  display: flex;
-  gap: ${themeCssVariables.spacing[1]};
-`;
-
-const StyledTooltipAnchor = styled.div`
-  display: inline-block;
-  position: relative;
-`;
-
-const StyledBottomActionMenu = styled.div`
-  background-color: ${themeCssVariables.background.primary};
-  bottom: 0;
-  left: 0;
-  position: fixed;
-  width: 100%;
-  z-index: 1000;
-`;
-
-const PEOPLE_QUEUE_CHIPS = [
-  { id: 'QUEUED', label: 'To send' },
-  { id: 'CONNECTION_SENT', label: 'Connect sent' },
-  { id: 'awaiting_reply', label: 'Awaiting reply' },
-  { id: 'needs_approval', label: 'Needs approval' },
-  { id: 'workflow_failed', label: 'Workflow failed' },
-  { id: 'intent', label: 'Intent' },
-  { id: 'follow_up_due', label: 'Follow-up due' },
-  { id: 'meeting_booked', label: 'Meeting booked' },
-  { id: 'not_interested', label: 'Not interested' },
-  { id: 'snoozed', label: 'Snoozed' },
-  { id: 'STOPPED', label: 'Stopped' },
-] as const;
-
-type OutreachPeopleQueueFilter =
-  | (typeof PEOPLE_QUEUE_CHIPS)[number]['id']
-  | 'all';
-
-const FOLLOW_UP_DUE_MS = 7 * 24 * 60 * 60 * 1000;
-
-const formatChipLabel = (label: string, count: number | null): string =>
-  isDefined(count) ? `${label} (${count})` : label;
-
-const isFollowUpDue = (resumeAt: string | null | undefined): boolean => {
-  if (!isDefined(resumeAt)) {
-    return false;
-  }
-
-  const resumeMs = new Date(resumeAt).getTime();
-
-  return Number.isFinite(resumeMs) && resumeMs <= Date.now() + FOLLOW_UP_DUE_MS;
-};
-
-const mapOutreachPersonToDataTableRow = (
-  person: OutreachPersonRow,
-  projectId: string | null | undefined,
-): Record<string, unknown> => {
-  const nameParts = person.name.trim().split(/\s+/);
-  const linkedinUrl = person.linkedinUrl.startsWith('http')
-    ? person.linkedinUrl
-    : person.linkedinUrl
-      ? `https://${person.linkedinUrl}`
-      : '';
-
-  return {
-    id: person.id,
-    tempId: person.id,
-    __isFetched: true,
-    isOutreachHomeRow: true,
-    outreachProjectId: projectId ?? '',
-    fullName: person.name,
-    name: person.name,
-    firstName: nameParts[0] ?? '',
-    lastName: nameParts.slice(1).join(' '),
-    jobTitle: person.title,
-    // LinkedIn headline ≠ job title; only show when we actually have it
-    headline: person.headline ?? '',
-    // LinkedIn About section — distinct from headline and title
-    summary: person.summary ?? '',
-    company: person.companyName,
-    jobCompanyName: person.companyName,
-    location: person.locationName ?? '',
-    locationName: person.locationName ?? '',
-    linkedinUrl: linkedinUrl
-      ? { primaryLinkUrl: linkedinUrl }
-      : { primaryLinkUrl: '' },
-    phoneNumber: { primaryPhoneNumber: '' },
-    email: { primaryEmail: person.email || '' },
-    outreachSequenceStage: person.stage,
-    outreachConversationStage: person.outreachConversationStage ?? 'NONE',
-    workflowRunStatus: person.workflowRunStatus ?? '',
-    nextStep: person.nextStepLabel ?? '',
-    nextRetry: person.nextRetryAt ?? '',
-    needsApproval: person.needsApproval === true,
-    replyAfterTouch: person.replyAfterTouch ?? '',
-    lastMessage: person.lastInboundCopy ?? '',
-    lastInboundAt: person.lastInboundAt ?? '',
-    lastOutboundAt: person.lastOutboundAt ?? '',
-    nextFollowUp: person.outreachResumeAt ?? '',
-    // Flat columns for Handsontable; values come from Candidate.candidateFlags
-    startOutreach: person.candidateFlags?.startOutreach === true,
-    stopOutreach: person.candidateFlags?.stopOutreach === true,
-    candidateFlags: {
-      engagementStatus: Boolean(person.stage),
-      startChat: false,
-      stopChat: false,
-      startOutreach: person.candidateFlags?.startOutreach === true,
-      stopOutreach: person.candidateFlags?.stopOutreach === true,
-    },
-    chatMessages: { edges: [] },
-    emailMessages: { edges: [] },
-    otherFields: {
-      warmPath: person.warmPath,
-      companyId: person.companyId,
-      candidateId: person.candidateId,
-      openOutreachJourneyTab: true,
-      pendingChannel: person.pendingChannel ?? '',
-      ...(person.experimentVariant
-        ? { experimentVariant: person.experimentVariant }
-        : {}),
-    },
-    uniqueStringKey: person.id,
-    peopleId: person.id,
-    personId: person.id,
-    candidateId: person.candidateId,
-    updatedAt: person.updatedAt ?? '',
-    createdAt: person.createdAt ?? '',
-    messagesExchanged: person.messagesExchanged ?? '',
-  };
-};
-
-const TooltipIconButton = ({
-  title,
-  Icon,
-  onClick,
-  disabled,
-}: {
-  title: string;
-  Icon: IconComponent;
-  onClick?: () => void;
-  disabled?: boolean;
-}) => {
-  const tooltipId = `outreach-people-action-${useId().replace(/:/g, '')}`;
-
-  return (
-    <>
-      <StyledTooltipAnchor id={tooltipId}>
-        <IconButton
-          Icon={Icon}
-          variant="secondary"
-          size="small"
-          accent="default"
-          ariaLabel={title}
-          onClick={onClick}
-          disabled={disabled}
-        />
-      </StyledTooltipAnchor>
-      <AppTooltip
-        anchorSelect={`#${tooltipId}`}
-        content={title}
-        place="top"
-        delay={TooltipDelay.shortDelay}
-        noArrow={false}
-        positionStrategy="fixed"
-      />
-    </>
-  );
-};
 
 type OutreachPeoplePanelProps = {
   people: OutreachPersonRow[];
@@ -316,19 +106,17 @@ export const OutreachPeoplePanel = ({
   onRefresh,
   appendPeople,
 }: OutreachPeoplePanelProps) => {
-  const dataTableRef = useRef<{
-    removeFilter: (columnIndex: number) => void;
-    clearAllFilters: () => void;
-  }>(null);
   const setSearchResults = useSetAtomState(searchResultsState);
   const setTableStateAtom = useSetAtomState(tableStateAtom);
   const setChatSearchQuery = useSetAtomState(chatSearchQueryState);
   const setDataTableRefreshFunction = useSetAtomState(
     dataTableRefreshFunctionState,
   );
-  const [isTableDataReady, setIsTableDataReady] = useState(false);
+  const openCandidateChatDrawer = useOpenCandidateChatDrawer();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [stageFilter, setStageFilter] =
+    useState<OutreachPeopleQueueFilter>('all');
   const { isPersisting, addPeopleToCrm } = useAddOutreachRecordsToCrm();
   const { enrollSelectedPeople, promoteDeferredCandidate } =
     useOutreachEnroll();
@@ -341,11 +129,56 @@ export const OutreachPeoplePanel = ({
     refetch: refetchJourneySummary,
   } = useOutreachProjectJourneySummary(projectId);
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
-  const [stageFilter, setStageFilter] =
-    useState<OutreachPeopleQueueFilter>('all');
-
   const { openObjectRecordsSpreadsheetImportDialog } =
     useOpenObjectRecordsSpreadsheetImportDialog('person');
+
+  // Selection lives in the table-scoped context store so the bottom action
+  // bar and Cmd+K record actions keep working exactly as with the old grid.
+  const contextStoreTargetedRecordsRule = useAtomComponentStateValue(
+    contextStoreTargetedRecordsRuleComponentState,
+    tableInstanceId,
+  );
+  const setContextStoreTargetedRecordsRule = useSetAtomComponentState(
+    contextStoreTargetedRecordsRuleComponentState,
+    tableInstanceId,
+  );
+  const setContextStoreNumberOfSelectedRecords = useSetAtomComponentState(
+    contextStoreNumberOfSelectedRecordsComponentState,
+    tableInstanceId,
+  );
+
+  const selectedRowIds = useMemo(
+    () =>
+      contextStoreTargetedRecordsRule.mode === 'selection'
+        ? contextStoreTargetedRecordsRule.selectedRecordIds
+        : [],
+    [contextStoreTargetedRecordsRule],
+  );
+
+  const handleSelectedRowIdsChange = useCallback(
+    (rowIds: string[]) => {
+      setContextStoreTargetedRecordsRule({
+        mode: 'selection',
+        selectedRecordIds: rowIds,
+      });
+      setContextStoreNumberOfSelectedRecords(rowIds.length);
+      setTableStateAtom((previous) => ({
+        ...previous,
+        selectedRowIds: rowIds,
+      }));
+
+      if (rowIds.length > 0 && rowIds[0] !== selectedPersonId) {
+        onSelectPersonId(rowIds[0]);
+      }
+    },
+    [
+      onSelectPersonId,
+      selectedPersonId,
+      setContextStoreNumberOfSelectedRecords,
+      setContextStoreTargetedRecordsRule,
+      setTableStateAtom,
+    ],
+  );
 
   const handleImportPeople = useCallback(() => {
     openObjectRecordsSpreadsheetImportDialog({
@@ -363,41 +196,41 @@ export const OutreachPeoplePanel = ({
     });
   }, [appendPeople, onRefresh, openObjectRecordsSpreadsheetImportDialog]);
 
-  const stageCounts = useMemo(() => {
-    if (isJourneySummaryLoading || !isDefined(journeySummary)) {
-      return null;
-    }
-
-    const byStage = journeySummary.byStage;
-    const byConversation = journeySummary.byConversationStage ?? {};
-
-    return {
-      all: journeySummary.totalEnrolled,
-      QUEUED: byStage.QUEUED ?? 0,
-      CONNECTION_SENT: byStage.CONNECTION_SENT ?? 0,
-      awaiting_reply:
-        (byStage.CONNECTION_ACCEPTED ?? 0) + (byStage.WAITING_REPLY ?? 0),
-      needs_approval: journeySummary.needsApproval,
-      workflow_failed: journeySummary.workflowFailed ?? 0,
-      intent: byConversation.INTENT ?? 0,
-      follow_up_due: journeySummary.dueThisWeek,
-      meeting_booked: byConversation.MEETING_BOOKED ?? 0,
-      not_interested: byConversation.NOT_INTERESTED ?? 0,
-      snoozed: journeySummary.snoozed,
-      STOPPED: byStage.STOPPED ?? 0,
-      dueThisWeek: journeySummary.dueThisWeek,
-    };
-  }, [isJourneySummaryLoading, journeySummary]);
-
   const getQueueCount = useCallback(
     (filterId: OutreachPeopleQueueFilter): number | null => {
-      if (!isDefined(stageCounts) || filterId === 'all') {
-        return stageCounts?.all ?? null;
+      if (isJourneySummaryLoading || !isDefined(journeySummary)) {
+        return null;
       }
 
-      return stageCounts[filterId] ?? 0;
+      const byStage = journeySummary.byStage;
+      const byConversation = journeySummary.byConversationStage ?? {};
+
+      switch (filterId) {
+        case 'all':
+          return journeySummary.totalEnrolled;
+        case 'awaiting_reply':
+          return (
+            (byStage.CONNECTION_ACCEPTED ?? 0) + (byStage.WAITING_REPLY ?? 0)
+          );
+        case 'needs_approval':
+          return journeySummary.needsApproval;
+        case 'workflow_failed':
+          return journeySummary.workflowFailed ?? 0;
+        case 'intent':
+          return byConversation.INTENT ?? 0;
+        case 'follow_up_due':
+          return journeySummary.dueThisWeek;
+        case 'meeting_booked':
+          return byConversation.MEETING_BOOKED ?? 0;
+        case 'not_interested':
+          return byConversation.NOT_INTERESTED ?? 0;
+        case 'snoozed':
+          return journeySummary.snoozed;
+        default:
+          return byStage[filterId] ?? 0;
+      }
     },
-    [stageCounts],
+    [isJourneySummaryLoading, journeySummary],
   );
 
   useEffect(() => {
@@ -430,45 +263,7 @@ export const OutreachPeoplePanel = ({
         return false;
       }
 
-      if (stageFilter === 'needs_approval') {
-        if (person.needsApproval !== true) {
-          return false;
-        }
-      } else if (stageFilter === 'workflow_failed') {
-        if (person.workflowRunStatus !== 'FAILED') {
-          return false;
-        }
-      } else if (stageFilter === 'awaiting_reply') {
-        if (
-          person.stage !== 'CONNECTION_ACCEPTED' &&
-          person.stage !== 'FOLLOW_UP_1' &&
-          person.stage !== 'FOLLOW_UP_2' &&
-          person.stage !== 'FOLLOW_UP_3' &&
-          person.stage !== 'WAITING_REPLY'
-        ) {
-          return false;
-        }
-      } else if (stageFilter === 'intent') {
-        if (person.outreachConversationStage !== 'INTENT') {
-          return false;
-        }
-      } else if (stageFilter === 'follow_up_due') {
-        if (!isFollowUpDue(person.outreachResumeAt)) {
-          return false;
-        }
-      } else if (stageFilter === 'meeting_booked') {
-        if (person.outreachConversationStage !== 'MEETING_BOOKED') {
-          return false;
-        }
-      } else if (stageFilter === 'not_interested') {
-        if (person.outreachConversationStage !== 'NOT_INTERESTED') {
-          return false;
-        }
-      } else if (stageFilter === 'snoozed') {
-        if (person.outreachConversationStage !== 'SNOOZED') {
-          return false;
-        }
-      } else if (stageFilter !== 'all' && person.stage !== stageFilter) {
+      if (!matchesOutreachPeopleQueueFilter(person, stageFilter)) {
         return false;
       }
 
@@ -476,87 +271,26 @@ export const OutreachPeoplePanel = ({
         return true;
       }
 
-      const haystack =
-        `${person.name} ${person.title} ${person.companyName}`.toLowerCase();
-
-      return haystack.includes(normalizedQuery);
+      return `${person.name} ${person.title} ${person.companyName} ${person.locationName ?? ''}`
+        .toLowerCase()
+        .includes(normalizedQuery);
     });
   }, [people, searchQuery, selectedCompanyId, stageFilter]);
 
-  const tableRows = useMemo(
-    () =>
+  // The candidate drawer and Cmd+K actions resolve the selected row from
+  // searchResultsState, so keep it mirrored to the visible working set.
+  useLayoutEffect(() => {
+    setSearchResults(
       filteredPeople.map((person) =>
-        mapOutreachPersonToDataTableRow(person, projectId),
-      ),
-    [filteredPeople, projectId],
-  );
-
-  useLayoutEffect(() => {
-    setIsTableDataReady(false);
-  }, [tableInstanceId]);
-
-  useLayoutEffect(() => {
-    if (tableRows.length === 0) {
-      setSearchResults((previous) => (previous.length === 0 ? previous : []));
-      setTableStateAtom((previous) => ({
-        ...previous,
-        rawData: [],
-        isLoading: false,
-      }));
-      setIsTableDataReady(true);
-
-      return;
-    }
-
-    // Must compare Stage/Next (and related) fields — ID-only equality left
-    // Handsontable stuck on stale journey labels after refresh/live refetch.
-    setSearchResults((previous) => {
-      if (
-        previous.length === tableRows.length &&
-        previous.every((row, index) => {
-          const nextRow = tableRows[index];
-
-          if (!isDefined(nextRow)) {
-            return false;
-          }
-
-          return (
-            (row.tempId || row.id) === nextRow.id &&
-            row.outreachSequenceStage === nextRow.outreachSequenceStage &&
-            row.nextStep === nextRow.nextStep &&
-            row.nextRetry === nextRow.nextRetry &&
-            row.outreachConversationStage ===
-              nextRow.outreachConversationStage &&
-            row.workflowRunStatus === nextRow.workflowRunStatus &&
-            row.needsApproval === nextRow.needsApproval &&
-            row.messagesExchanged === nextRow.messagesExchanged &&
-            row.lastInboundAt === nextRow.lastInboundAt &&
-            row.lastOutboundAt === nextRow.lastOutboundAt &&
-            row.nextFollowUp === nextRow.nextFollowUp &&
-            row.createdAt === nextRow.createdAt &&
-            row.updatedAt === nextRow.updatedAt
-          );
-        })
-      ) {
-        return previous;
-      }
-
-      return tableRows as never[];
-    });
-
-    setTableStateAtom((previous) => {
-      if (previous.rawData.length === 0 && previous.isLoading === false) {
-        return previous;
-      }
-
-      return {
-        ...previous,
-        rawData: [],
-        isLoading: false,
-      };
-    });
-    setIsTableDataReady(true);
-  }, [setSearchResults, setTableStateAtom, tableRows]);
+        mapOutreachPersonToTableRow(person, projectId),
+      ) as never[],
+    );
+    setTableStateAtom((previous) =>
+      previous.rawData.length === 0 && previous.isLoading === false
+        ? previous
+        : { ...previous, rawData: [], isLoading: false },
+    );
+  }, [filteredPeople, projectId, setSearchResults, setTableStateAtom]);
 
   useEffect(() => {
     return () => {
@@ -564,50 +298,27 @@ export const OutreachPeoplePanel = ({
     };
   }, [setSearchResults]);
 
-  const contextStoreTargetedRecordsRule = useAtomComponentStateValue(
-    contextStoreTargetedRecordsRuleComponentState,
-    tableInstanceId,
-  );
-
-  useEffect(() => {
-    if (contextStoreTargetedRecordsRule.mode !== 'selection') {
-      return;
-    }
-
-    const nextId = contextStoreTargetedRecordsRule.selectedRecordIds[0];
-
-    if (nextId && nextId !== selectedPersonId) {
-      onSelectPersonId(nextId);
-    }
-  }, [onSelectPersonId, selectedPersonId, contextStoreTargetedRecordsRule]);
-
   const selectedPeople = useMemo(() => {
-    if (contextStoreTargetedRecordsRule.mode === 'selection') {
-      const selectedIds = new Set(
-        contextStoreTargetedRecordsRule.selectedRecordIds,
-      );
+    if (selectedRowIds.length > 0) {
+      const selectedIdSet = new Set(selectedRowIds);
 
-      if (selectedIds.size > 0) {
-        return filteredPeople.filter((person) => selectedIds.has(person.id));
-      }
+      return filteredPeople.filter((person) => selectedIdSet.has(person.id));
     }
 
-    if (selectedPersonId) {
+    if (isDefined(selectedPersonId)) {
       return filteredPeople.filter((person) => person.id === selectedPersonId);
     }
 
     return [];
-  }, [filteredPeople, selectedPersonId, contextStoreTargetedRecordsRule]);
+  }, [filteredPeople, selectedPersonId, selectedRowIds]);
 
   const deferredCandidateId = selectedPeople.find(
     (person) => person.stage === 'DEFERRED' && isDefined(person.candidateId),
   )?.candidateId;
 
-  const stoppableCandidateIds = selectedPeople
+  const selectedCandidateIds = selectedPeople
     .map((person) => person.candidateId)
     .filter((candidateId): candidateId is string => isDefined(candidateId));
-
-  const startableCandidateIds = stoppableCandidateIds;
 
   const handleRefresh = useCallback(async () => {
     if (isRefreshing) {
@@ -650,117 +361,39 @@ export const OutreachPeoplePanel = ({
     };
   }, [onRefresh, refetchJourneySummary, setDataTableRefreshFunction]);
 
-  const handleClearFilters = useCallback(() => {
+  const handleOpenPerson = useCallback(
+    (person: OutreachPersonRow) => {
+      onSelectPersonId(person.id);
+      localStorage.setItem('candidate-chat-default-tab', 'journey');
+      openCandidateChatDrawer({
+        candidateId: person.id,
+        displayName: person.name,
+        seedRow: mapOutreachPersonToTableRow(person, projectId),
+      });
+    },
+    [onSelectPersonId, openCandidateChatDrawer, projectId],
+  );
+
+  const columns = useMemo(
+    () =>
+      getOutreachPeopleTableColumns({
+        companiesByWorkingSetId,
+        onOpenPerson: handleOpenPerson,
+      }),
+    [companiesByWorkingSetId, handleOpenPerson],
+  );
+
+  const hasActiveFilter =
+    stageFilter !== 'all' || searchQuery.trim().length > 0;
+
+  const handleClearFilters = () => {
     setStageFilter('all');
     setSearchQuery('');
     setChatSearchQuery('');
-    dataTableRef.current?.clearAllFilters();
-  }, [setChatSearchQuery]);
+  };
 
-  const handleRemoveFilter = useCallback((columnIndex: number) => {
-    dataTableRef.current?.removeFilter(columnIndex);
-  }, []);
-
-  const handleClearAllColumnFilters = useCallback(() => {
-    dataTableRef.current?.clearAllFilters();
-  }, []);
-
-  const stageFilterChips = (
-    <StyledStageFilters>
-      <StyledStageChip
-        type="button"
-        isActive={stageFilter === 'all'}
-        onClick={() => setStageFilter('all')}
-      >
-        {formatChipLabel('All stages', getQueueCount('all'))}
-      </StyledStageChip>
-      {/* showing only the chips with count > 0 */}
-      {PEOPLE_QUEUE_CHIPS.filter(
-        (chip) => (getQueueCount(chip.id) ?? 0) > 0,
-      ).map((chip) => (
-        <StyledStageChip
-          key={chip.id}
-          type="button"
-          isActive={stageFilter === chip.id}
-          onClick={() => setStageFilter(chip.id)}
-        >
-          {formatChipLabel(chip.label, getQueueCount(chip.id))}
-        </StyledStageChip>
-      ))}
-      {/* <OutreachSafeDashboardPath>
-        {(dashboardPath) =>
-          isDefined(dashboardPath) ? (
-            <StyledDashboardLink to={dashboardPath}>
-              Open Outreach dashboard
-            </StyledDashboardLink>
-          ) : null
-        }
-      </OutreachSafeDashboardPath> */}
-    </StyledStageFilters>
-  );
-
-  const outreachActionIcons = (
-    <StyledActionIcons>
-      <TooltipIconButton
-        title={
-          selectedPeople.length > 0
-            ? `Add selected to CRM (${selectedPeople.length})`
-            : 'Add selected to CRM'
-        }
-        Icon={IconDatabase}
-        disabled={selectedPeople.length === 0 || isPersisting}
-        onClick={() =>
-          addPeopleToCrm({
-            people: selectedPeople,
-            companiesByWorkingSetId,
-          })
-        }
-      />
-      <TooltipIconButton
-        title={
-          selectedPeople.length > 0
-            ? `Enroll in outreach (${selectedPeople.length})`
-            : 'Enroll in outreach'
-        }
-        Icon={IconUserPlus}
-        disabled={selectedPeople.length === 0 || isPersisting}
-        onClick={() =>
-          enrollSelectedPeople(selectedPeople, companiesByWorkingSetId)
-        }
-      />
-      <TooltipIconButton
-        title={
-          startableCandidateIds.length > 0
-            ? `Start outreach (${startableCandidateIds.length})`
-            : 'Start outreach'
-        }
-        Icon={IconPlayerPlay}
-        disabled={startableCandidateIds.length === 0 || isStarting}
-        onClick={() => {
-          void startSequencerOnCandidateIds(startableCandidateIds);
-        }}
-      />
-      <TooltipIconButton
-        title={
-          stoppableCandidateIds.length > 0
-            ? `Stop outreach (${stoppableCandidateIds.length})`
-            : 'Stop outreach'
-        }
-        Icon={IconPlayerStop}
-        disabled={stoppableCandidateIds.length === 0 || isStopping}
-        onClick={() => {
-          void stopOutreachForCandidates(stoppableCandidateIds);
-        }}
-      />
-      {isDefined(deferredCandidateId) && (
-        <TooltipIconButton
-          title="Promote deferred"
-          Icon={IconArrowUp}
-          onClick={() => promoteDeferredCandidate(deferredCandidateId)}
-        />
-      )}
-    </StyledActionIcons>
-  );
+  const withCount = (label: string, count: number) =>
+    count > 0 ? `${label} (${count})` : label;
 
   if (isLoading && people.length === 0) {
     return (
@@ -771,65 +404,129 @@ export const OutreachPeoplePanel = ({
     );
   }
 
-  return (
-    <StyledPanel>
-      <ProjectTopBar
-        showSearch={true}
-        searchPlaceholder="Search people..."
-        onSearch={setSearchQuery}
-        showRefetch={true}
-        onRefresh={() => {
+  const pills = (
+    <>
+      <OutreachViewBarPill
+        label="All"
+        count={getQueueCount('all') ?? people.length}
+        isActive={stageFilter === 'all'}
+        onClick={() => setStageFilter('all')}
+      />
+      {OUTREACH_PEOPLE_QUEUE_FILTERS.filter(
+        (filter) =>
+          (getQueueCount(filter.id) ?? 0) > 0 || stageFilter === filter.id,
+      ).map((filter) => (
+        <OutreachViewBarPill
+          key={filter.id}
+          label={filter.label}
+          count={getQueueCount(filter.id)}
+          isActive={stageFilter === filter.id}
+          onClick={() => setStageFilter(filter.id)}
+        />
+      ))}
+    </>
+  );
+
+  const actions = (
+    <>
+      {hasActiveFilter && (
+        <OutreachViewBarIconAction
+          title="Clear filters"
+          Icon={IconFilterOff}
+          onClick={handleClearFilters}
+        />
+      )}
+      <OutreachViewBarIconAction
+        title={isRefreshing ? 'Refreshing…' : 'Refresh'}
+        Icon={IconRefresh}
+        disabled={isRefreshing}
+        onClick={() => {
           void handleRefresh();
         }}
-        isRefreshing={isRefreshing}
-        showClearAll={true}
-        onClearAll={handleClearFilters}
-        showJobStatusToggle={false}
-        showFilterChips={true}
-        onRemoveFilter={handleRemoveFilter}
-        onClearAllFilters={handleClearAllColumnFilters}
-        showRedirectToObject={false}
-        showImportCandidates={true}
-        importButtonTitle="Import People"
-        handleImportCandidates={handleImportPeople}
-        showStatistics={false}
-        showAddJob={false}
-        showEnrichment={false}
-        showSorting={false}
-        showValidateJobData={false}
-        showBatchActions={false}
-        centerComponent={stageFilterChips}
-        rightComponent={outreachActionIcons}
       />
+      <OutreachViewBarIconAction
+        title="Import people"
+        Icon={IconFileImport}
+        onClick={handleImportPeople}
+      />
+      <OutreachViewBarDivider />
+      <OutreachViewBarIconAction
+        title={withCount('Add selected to CRM', selectedPeople.length)}
+        Icon={IconDatabase}
+        disabled={selectedPeople.length === 0 || isPersisting}
+        onClick={() =>
+          addPeopleToCrm({ people: selectedPeople, companiesByWorkingSetId })
+        }
+      />
+      <OutreachViewBarIconAction
+        title={withCount('Enroll in outreach', selectedPeople.length)}
+        Icon={IconUserPlus}
+        disabled={selectedPeople.length === 0 || isPersisting}
+        onClick={() =>
+          enrollSelectedPeople(selectedPeople, companiesByWorkingSetId)
+        }
+      />
+      <OutreachViewBarIconAction
+        title={withCount('Start outreach', selectedCandidateIds.length)}
+        Icon={IconPlayerPlay}
+        disabled={selectedCandidateIds.length === 0 || isStarting}
+        onClick={() => {
+          void startSequencerOnCandidateIds(selectedCandidateIds);
+        }}
+      />
+      <OutreachViewBarIconAction
+        title={withCount('Stop outreach', selectedCandidateIds.length)}
+        Icon={IconPlayerStop}
+        disabled={selectedCandidateIds.length === 0 || isStopping}
+        onClick={() => {
+          void stopOutreachForCandidates(selectedCandidateIds);
+        }}
+      />
+      {isDefined(deferredCandidateId) && (
+        <OutreachViewBarIconAction
+          title="Promote deferred"
+          Icon={IconArrowUp}
+          onClick={() => promoteDeferredCandidate(deferredCandidateId)}
+        />
+      )}
+    </>
+  );
 
+  return (
+    <StyledPanel>
+      <OutreachViewBar
+        pills={pills}
+        searchValue={searchQuery}
+        searchPlaceholder="Search people"
+        onSearchChange={setSearchQuery}
+        actions={actions}
+      />
       {people.length === 0 ? (
-        <StyledEmpty>
-          No target people in this project yet. Use Setup → Find people (Ask AI)
-          to discover target roles from your ICP at companies on this project.
-          They stay on the People tab until you Add to CRM or Enroll, which
-          creates Company and Person records (plus enrollment) under this
-          Project.
-        </StyledEmpty>
+        <OutreachTableEmptyState
+          title="No target people yet"
+          description="Use Setup → Find people (Ask AI) to discover target roles at companies on this project. They stay here until you Add to CRM or Enroll."
+        />
       ) : filteredPeople.length === 0 ? (
-        <StyledEmpty>
-          No people match the current search or stage filter.
-        </StyledEmpty>
+        <OutreachTableEmptyState
+          title="No people match"
+          description="Try another stage filter or search term."
+          onClearFilters={handleClearFilters}
+        />
       ) : (
         <ContextStoreComponentInstanceContext.Provider
           value={{ instanceId: tableInstanceId }}
         >
-          <TableContainer>
-            {isTableDataReady ? (
-              <Suspense fallback={<Loader />}>
-                <DataTable ref={dataTableRef} projectId={tableInstanceId} />
-              </Suspense>
-            ) : (
-              <Loader />
-            )}
-          </TableContainer>
-          <StyledBottomActionMenu>
-            <HotTableActionMenu tableId={tableInstanceId} />
-          </StyledBottomActionMenu>
+          <OutreachRecordTable
+            rows={filteredPeople}
+            columns={columns}
+            getRowId={(person) => person.id}
+            selectedRowIds={selectedRowIds}
+            activeRowId={selectedPersonId}
+            onSelectedRowIdsChange={handleSelectedRowIdsChange}
+            onRowClick={handleOpenPerson}
+            getMobileCard={getOutreachPersonMobileCard}
+          />
+          <HotTableActionMenu tableId={tableInstanceId} />
         </ContextStoreComponentInstanceContext.Provider>
       )}
     </StyledPanel>

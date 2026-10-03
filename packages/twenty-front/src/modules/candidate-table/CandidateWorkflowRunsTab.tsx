@@ -86,6 +86,7 @@ type CandidateWorkflowRunsTabProps = {
   failedRuns?: CandidateOutreachJourneyActiveRun[];
   lastFailedRun?: CandidateOutreachJourneyActiveRun | null;
   isLoading: boolean;
+  hideFailureBanner?: boolean;
 };
 
 export const CandidateWorkflowRunsTab = ({
@@ -93,16 +94,14 @@ export const CandidateWorkflowRunsTab = ({
   failedRuns = [],
   lastFailedRun = null,
   isLoading,
+  hideFailureBanner = false,
 }: CandidateWorkflowRunsTabProps) => {
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
 
   const selectableRuns = useMemo(() => {
-    const failedRunIds = new Set(
-      failedRuns.map((run) => run.workflowRunId),
-    );
+    const failedRunIds = new Set(failedRuns.map((run) => run.workflowRunId));
     const legacyFailedRuns =
-      isDefined(lastFailedRun) &&
-      !failedRunIds.has(lastFailedRun.workflowRunId)
+      isDefined(lastFailedRun) && !failedRunIds.has(lastFailedRun.workflowRunId)
         ? [lastFailedRun]
         : [];
 
@@ -167,12 +166,10 @@ export const CandidateWorkflowRunsTab = ({
             withSearchInput={selectableRuns.length > 5}
           />
         ) : (
-          <StyledMuted>
-            {formatWorkflowRunOptionLabel(selectedRun)}
-          </StyledMuted>
+          <StyledMuted>{formatWorkflowRunOptionLabel(selectedRun)}</StyledMuted>
         )}
       </StyledHeader>
-      {isFailedRun ? (
+      {isFailedRun && !hideFailureBanner ? (
         <StyledFailureBanner>
           <StyledSectionTitle>Failed run</StyledSectionTitle>
           <StyledMuted>{selectedRun.workflowName}</StyledMuted>

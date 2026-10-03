@@ -61,10 +61,8 @@ const StyledContent = styled.div`
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: ${themeCssVariables.spacing[4]};
   min-height: 0;
   overflow: auto;
-  padding: ${themeCssVariables.spacing[4]};
 `;
 
 const StyledToolbarTabContent = styled.div`
@@ -84,7 +82,7 @@ const StyledSetupWrap = styled.div`
 
 const StyledLoading = styled.div`
   align-items: center;
-  color: ${themeCssVariables.font.color.secondary};
+  color: ${themeCssVariables.font.color.tertiary};
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -95,10 +93,11 @@ const StyledLoading = styled.div`
 `;
 
 const StyledEmpty = styled.div`
-  color: ${themeCssVariables.font.color.secondary};
-  font-size: ${themeCssVariables.font.size.sm};
-  line-height: 1.5;
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.md};
+  line-height: ${themeCssVariables.text.lineHeight.lg};
   padding: ${themeCssVariables.spacing[6]};
+  text-align: center;
 `;
 
 type OutreachSetupPersistTarget = 'workspace' | 'project';

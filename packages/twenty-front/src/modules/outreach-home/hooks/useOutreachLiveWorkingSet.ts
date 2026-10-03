@@ -197,6 +197,9 @@ const mergeEphemeralAndCrmPeople = (
   return [...byKey.values()];
 };
 
+const isOutreachMainTab = (value: string | null): value is OutreachMainTab =>
+  value === 'companies' || value === 'people' || value === 'setup';
+
 export const useOutreachLiveWorkingSet = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const projectIdFromQuery = searchParams.get(OUTREACH_PROJECT_ID_QUERY_PARAM);
@@ -219,7 +222,17 @@ export const useOutreachLiveWorkingSet = () => {
       account.provider === ConnectedAccountProvider.IMAP_SMTP_CALDAV,
   );
 
-  const [activeTab, setActiveTab] = useState<OutreachMainTab>('people');
+  // `?tab=setup` deep-links from the candidate drawer's Campaign settings link
+  const tabFromQuery = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState<OutreachMainTab>(() =>
+    isOutreachMainTab(tabFromQuery) ? tabFromQuery : 'people',
+  );
+
+  useEffect(() => {
+    if (isOutreachMainTab(tabFromQuery)) {
+      setActiveTab(tabFromQuery);
+    }
+  }, [tabFromQuery]);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(
     null,
   );
