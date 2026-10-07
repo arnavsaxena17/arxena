@@ -1,6 +1,6 @@
 import {
-    extractLinkedinProfileUrlFromOrgChartCandidateRow,
-    extractProfilePictureUrlFromOrgChartCandidateRow,
+  extractLinkedinProfileUrlFromOrgChartCandidateRow,
+  extractProfilePictureUrlFromOrgChartCandidateRow,
 } from './orgchart-candidate-linkedin-url.util';
 
 /**
@@ -40,9 +40,7 @@ export function normalizePersonForPythonOrgChartBuild(
     str(partial.linkedin_url) ||
     str(partial.std_linkedin_url);
   const id =
-    str(partial.id) ||
-    str(partial.org_node_id) ||
-    `${fullName}|${companyId}`;
+    str(partial.id) || str(partial.org_node_id) || `${fullName}|${companyId}`;
 
   const country =
     str(partial.country) ||

@@ -35,6 +35,7 @@ import { WorkflowEditActionViewLinkedinProfile } from '@/workflow/workflow-steps
 import { WorkflowEditActionAcceptLinkedinReceivedInvitation } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionAcceptLinkedinReceivedInvitation';
 import { WorkflowEditActionSendWhatsappMessage } from '@/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionSendWhatsappMessage';
 import { WorkflowEditActionSearchLocalBusinesses } from '@/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionSearchLocalBusinesses';
+import { WorkflowEditActionSearchBrightDataBusiness } from '@/workflow/workflow-steps/workflow-actions/bright-data-business-search-action/components/WorkflowEditActionSearchBrightDataBusiness';
 import { WorkflowEditActionResolveCompanyFromRawName } from '@/workflow/workflow-steps/workflow-actions/company-name-resolver-action/components/WorkflowEditActionResolveCompanyFromRawName';
 import { WorkflowEditActionGetLocalBusinessDetails } from '@/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionGetLocalBusinessDetails';
 import { WorkflowEditTriggerCronForm } from '@/workflow/workflow-trigger/components/WorkflowEditTriggerCronForm';
@@ -388,6 +389,18 @@ export const WorkflowRunStepNodeDetail = ({
         case 'SEARCH_LOCAL_BUSINESSES': {
           return (
             <WorkflowEditActionSearchLocalBusinesses
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={{
+                readonly: true,
+              }}
+            />
+          );
+        }
+        case 'SEARCH_BRIGHT_DATA_COMPANIES':
+        case 'SEARCH_BRIGHT_DATA_PEOPLE': {
+          return (
+            <WorkflowEditActionSearchBrightDataBusiness
               key={stepId}
               action={stepDefinition.definition}
               actionOptions={{

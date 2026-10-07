@@ -105,6 +105,15 @@ export {
 } from './schemas/pick-record-action-settings-schema';
 export { workflowResolveCompanyFromRawNameActionSchema } from './schemas/resolve-company-from-raw-name-action-schema';
 export { workflowResolveCompanyFromRawNameActionSettingsSchema } from './schemas/resolve-company-from-raw-name-action-settings-schema';
+export {
+  workflowSearchBrightDataCompaniesActionSchema,
+  workflowSearchBrightDataPeopleActionSchema,
+} from './schemas/search-bright-data-business-action-schema';
+export {
+  workflowSearchBrightDataBusinessActionInputSchema,
+  workflowSearchBrightDataCompaniesActionSettingsSchema,
+  workflowSearchBrightDataPeopleActionSettingsSchema,
+} from './schemas/search-bright-data-business-action-settings-schema';
 export { workflowSearchLocalBusinessesActionSchema } from './schemas/search-local-businesses-action-schema';
 export { workflowSearchLocalBusinessesActionSettingsSchema } from './schemas/search-local-businesses-action-settings-schema';
 export { workflowSendEmailActionSchema } from './schemas/send-email-action-schema';

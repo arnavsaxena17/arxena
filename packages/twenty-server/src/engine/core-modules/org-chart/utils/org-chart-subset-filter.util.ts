@@ -1,10 +1,10 @@
 import {
-    filterOrgChartNodeDataArray,
-    hasMeaningfulOrgChartCountryFilter,
-    hasMeaningfulOrgChartFunctionRootFilter,
-    processOrgChartToNodeData,
-    type OrgChartData,
-    type OrgChartNodeData,
+  filterOrgChartNodeDataArray,
+  hasMeaningfulOrgChartCountryFilter,
+  hasMeaningfulOrgChartFunctionRootFilter,
+  processOrgChartToNodeData,
+  type OrgChartData,
+  type OrgChartNodeData,
 } from 'twenty-shared';
 
 export type OrgChartPayloadSubsetOptions = {
@@ -91,7 +91,11 @@ const patchListOrgChartsEntry = (
   options: OrgChartPayloadSubsetOptions,
 ): void => {
   const list = payload.list_orgcharts;
-  if (!Array.isArray(list) || list.length === 0 || typeof list[0] !== 'string') {
+  if (
+    !Array.isArray(list) ||
+    list.length === 0 ||
+    typeof list[0] !== 'string'
+  ) {
     return;
   }
 

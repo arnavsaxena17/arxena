@@ -10,6 +10,8 @@ export const SEARCH_EXA_APP_TOOL_NAME = 'app_exa_web_search';
 export const SEARCH_SERP_TOOL_NAME = 'google_serp_search';
 export const SEARCH_COMPANIES_INDEX_TOOL_NAME = 'search_companies_index';
 export const SEARCH_WIKIDATA_COMPANIES_TOOL_NAME = 'search_wikidata_companies';
+export const SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME =
+  'search_bright_data_business';
 
 export type SearchToolsConfig = {
   isSearchApolloPeopleEnabled: boolean;
@@ -20,6 +22,7 @@ export type SearchToolsConfig = {
   isSearchSerpEnabled: boolean;
   isSearchCompaniesIndexEnabled: boolean;
   isSearchWikidataCompaniesEnabled: boolean;
+  isSearchBrightDataEnabled: boolean;
 };
 
 /** @deprecated Use SearchToolsConfig */
@@ -45,6 +48,8 @@ export const resolveSearchToolsConfig = (
     twentyConfigService.get('IS_SEARCH_COMPANIES_INDEX_ENABLED') !== false,
   isSearchWikidataCompaniesEnabled:
     twentyConfigService.get('IS_SEARCH_WIKIDATA_COMPANIES_ENABLED') !== false,
+  isSearchBrightDataEnabled:
+    twentyConfigService.get('IS_SEARCH_BRIGHT_DATA_ENABLED') !== false,
 });
 
 /** @deprecated Use resolveSearchToolsConfig */
@@ -85,6 +90,10 @@ export const getDisabledSearchToolNames = (
 
   if (!config.isSearchWikidataCompaniesEnabled) {
     disabledToolNames.push(SEARCH_WIKIDATA_COMPANIES_TOOL_NAME);
+  }
+
+  if (!config.isSearchBrightDataEnabled) {
+    disabledToolNames.push(SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME);
   }
 
   return disabledToolNames;
@@ -132,6 +141,10 @@ const buildSearchSkillProviderSummary = (config: SearchToolsConfig): string => {
 
   if (config.isSearchExaEnabled) {
     providers.push('Exa');
+  }
+
+  if (config.isSearchBrightDataEnabled) {
+    providers.push('Bright Data');
   }
 
   if (providers.length === 1) {
@@ -194,6 +207,33 @@ export const filterSearchSkillContent = (
     filteredContent = stripMarkedSection(
       filteredContent,
       'search-wikidata-companies-source-section',
+    );
+  }
+
+  if (!config.isSearchBrightDataEnabled) {
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-bright-data-companies-provider-row',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-bright-data-companies-learn-tools-line',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-bright-data-companies-source-section',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-bright-data-people-provider-row',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-bright-data-people-learn-tools-line',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-bright-data-people-source-section',
     );
   }
 

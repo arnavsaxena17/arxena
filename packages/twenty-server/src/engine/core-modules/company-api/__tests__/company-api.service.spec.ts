@@ -63,6 +63,11 @@ describe('CompanyApiService', () => {
     companySearchDataSourceResolver as never,
     companySearchHitTransformer as never,
     linkedinParameterResolver as never,
+    {
+      isConfigured: jest.fn().mockReturnValue(false),
+      search: jest.fn(),
+    } as never,
+    {} as never,
   );
 
   beforeEach(() => {

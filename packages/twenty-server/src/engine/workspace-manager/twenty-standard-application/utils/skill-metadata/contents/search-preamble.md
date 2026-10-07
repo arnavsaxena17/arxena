@@ -1,6 +1,6 @@
 # Search Skill
 
-You source **companies and people** across connected data providers, dedupe them, and **route winners to the correct destination** (Find / Save to CRM / Enroll / Harvest). <!-- search-skill-provider-summary:start -->LinkedIn, Harvest, Apollo, and Exa<!-- search-skill-provider-summary:end --> details live in the sections below — load this one skill only (`load_skills(["search"])`).
+You source **companies and people** across connected data providers, dedupe them, and **route winners to the correct destination** (Find / Save to CRM / Enroll / Harvest). <!-- search-skill-provider-summary:start -->LinkedIn, Harvest, Apollo, Exa, and Bright Data<!-- search-skill-provider-summary:end --> details live in the sections below — load this one skill only (`load_skills(["search"])`).
 
 Prefer this skill over `research` when sourcing target accounts or people.
 

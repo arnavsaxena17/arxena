@@ -1,5 +1,8 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
+import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
+import { BrightDataLudicrousSearchService } from 'src/engine/core-modules/bright-data-ludicrous/services/bright-data-ludicrous-search.service';
+import { mapBrightDataPersonToSearchItem } from 'src/engine/core-modules/bright-data/utils/bright-data-business-search.util';
 import { ApolloIoRestService } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
 import { TitleTaxonomyRemoteService } from 'src/engine/core-modules/candidate-search/services/title-taxonomy-remote.service';
 import { ContactOutPeopleSearchService } from 'src/engine/core-modules/org-chart/services/contactout-people-search.service';
@@ -100,6 +103,8 @@ export class PeopleApiService {
     private readonly peopleLocationScopeResolver: PeopleLocationScopeResolver,
     private readonly peopleNaturalLanguageParserService: PeopleNaturalLanguageParserService,
     private readonly peopleSearchDataSourceResolver: PeopleSearchDataSourceResolver,
+    private readonly brightDataBusinessSearchService: BrightDataBusinessSearchService,
+    private readonly brightDataLudicrousSearchService: BrightDataLudicrousSearchService,
   ) {}
 
   getDataSourcesStatus(): DataSourcesStatusResponse {
@@ -114,6 +119,7 @@ export class PeopleApiService {
       harvest: this.harvestLinkedinService.isConfigured(),
       unipile: unipileConfigured,
       pool: unipileConfigured,
+      bright_data: this.brightDataBusinessSearchService.isConfigured(),
     };
 
     return {
@@ -499,6 +505,11 @@ export class PeopleApiService {
       dataSource: resolvedSource.dataSource,
       accountId: resolvedSource.accountId ?? body.accountId,
     };
+
+    if (resolvedSource.dataSource === 'bright_data') {
+      return this.searchPeopleFromBrightData(sourcedBody, options);
+    }
+
     const companyScope = await this.peopleCompanyScopeResolver.resolve({
       companyName: sourcedBody.companyName,
       companyId: sourcedBody.companyId,
@@ -575,6 +586,66 @@ export class PeopleApiService {
       this.mergeCompanyScopeIntoResult(result, companyScope),
       locationScope,
     );
+  }
+
+  private async searchPeopleFromBrightData(
+    body: PeopleSearchDto,
+    options?: { workspaceId?: string },
+  ): Promise<PeopleSearchResponse> {
+    const query = (body.naturalLanguage ?? body.query ?? '').trim();
+
+    if (!query) {
+      throw new HttpException(
+        'Bright Data people search requires naturalLanguage or query',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (!this.brightDataBusinessSearchService.isConfigured()) {
+      throw new HttpException(
+        'Bright Data is not configured',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
+    const requestedMode = body.mode ?? 'ludicrous';
+
+    if (requestedMode === 'ludicrous' && options?.workspaceId) {
+      const { summary, result } =
+        await this.brightDataLudicrousSearchService.searchNaturalLanguage({
+          workspaceId: options.workspaceId,
+          entity: 'people',
+          rawQuery: query,
+          maxBudgetUsd: body.maxBudgetUsd ?? 1,
+          targetCount: body.limit,
+        });
+
+      return {
+        status: 'ok',
+        dataSource: 'bright_data',
+        total: summary.estimatedUniqueRecords,
+        items: result.documents.map((document) =>
+          mapBrightDataPersonToSearchItem(document),
+        ),
+      };
+    }
+
+    // Ludicrous needs a workspace to bill, so anonymous callers get instant
+    const result = await this.brightDataBusinessSearchService.search({
+      entity: 'people',
+      mode: requestedMode === 'ludicrous' ? 'instant' : requestedMode,
+      query: query.slice(0, 200),
+      limit: body.limit,
+    });
+
+    return {
+      status: 'ok',
+      dataSource: 'bright_data',
+      total: result.matched,
+      items: result.documents.map((document) =>
+        mapBrightDataPersonToSearchItem(document),
+      ),
+    };
   }
 
   private async dispatchPeopleSearch(
@@ -894,11 +965,15 @@ export class PeopleApiService {
     };
 
     if (stdFunction || stdFunctionRoot) {
-      const filtered = await this.filterCandidatesByTaxonomy(people, {
-        stdFunction,
-        stdFunctionRoot,
-        stdGrade,
-      }, { name: companyName || null, slug: null, id: null });
+      const filtered = await this.filterCandidatesByTaxonomy(
+        people,
+        {
+          stdFunction,
+          stdFunctionRoot,
+          stdGrade,
+        },
+        { name: companyName || null, slug: null, id: null },
+      );
 
       return {
         status: 'ok',

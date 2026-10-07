@@ -33,6 +33,10 @@ import { type WorkflowSendLinkedinVoiceNoteActionSettings } from 'src/modules/wo
 import { type WorkflowSendWhatsappMessageActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-whatsapp-message-action-settings.type';
 import { type WorkflowViewLinkedinProfileActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-view-linkedin-profile-action-settings.type';
 import { type WorkflowSearchLocalBusinessesActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/local-business-data/types/workflow-search-local-businesses-action-settings.type';
+import {
+  type WorkflowSearchBrightDataCompaniesActionSettings,
+  type WorkflowSearchBrightDataPeopleActionSettings,
+} from 'src/modules/workflow/workflow-executor/workflow-actions/bright-data-business-search/types/workflow-search-bright-data-business-action-settings.type';
 import { type WorkflowResolveCompanyFromRawNameActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/company-name-resolver/types/workflow-resolve-company-from-raw-name-action-settings.type';
 import { type WorkflowGetLocalBusinessDetailsActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/local-business-data/types/workflow-get-local-business-details-action-settings.type';
 
@@ -184,6 +188,16 @@ export type WorkflowSearchLocalBusinessesAction = BaseWorkflowAction & {
   settings: WorkflowSearchLocalBusinessesActionSettings;
 };
 
+export type WorkflowSearchBrightDataCompaniesAction = BaseWorkflowAction & {
+  type: WorkflowActionType.SEARCH_BRIGHT_DATA_COMPANIES;
+  settings: WorkflowSearchBrightDataCompaniesActionSettings;
+};
+
+export type WorkflowSearchBrightDataPeopleAction = BaseWorkflowAction & {
+  type: WorkflowActionType.SEARCH_BRIGHT_DATA_PEOPLE;
+  settings: WorkflowSearchBrightDataPeopleActionSettings;
+};
+
 export type WorkflowGetLocalBusinessDetailsAction = BaseWorkflowAction & {
   type: WorkflowActionType.GET_LOCAL_BUSINESS_DETAILS;
   settings: WorkflowGetLocalBusinessDetailsActionSettings;
@@ -246,6 +260,8 @@ export type WorkflowAction =
   | WorkflowAcceptLinkedinReceivedInvitationAction
   | WorkflowSendWhatsappMessageAction
   | WorkflowSearchLocalBusinessesAction
+  | WorkflowSearchBrightDataCompaniesAction
+  | WorkflowSearchBrightDataPeopleAction
   | WorkflowGetLocalBusinessDetailsAction
   | WorkflowResolveCompanyFromRawNameAction
   | WorkflowAiAgentAction

@@ -313,6 +313,7 @@ export class PeopleApiController {
       return await this.peopleApiService.searchPeople(
         body,
         this.getAuthToken(request) ?? undefined,
+        { workspaceId: request.workspace?.id },
       );
     } catch (error) {
       if (error instanceof HttpException) {

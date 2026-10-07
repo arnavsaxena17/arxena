@@ -8,6 +8,8 @@ import { FileEntity } from 'src/engine/core-modules/file/entities/file.entity';
 import { FileModule } from 'src/engine/core-modules/file/file.module';
 import { OutreachCommandModule } from 'src/engine/core-modules/outreach-command/outreach-command.module';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
+import { BrightDataModule } from 'src/engine/core-modules/bright-data/bright-data.module';
+import { BrightDataLudicrousModule } from 'src/engine/core-modules/bright-data-ludicrous/bright-data-ludicrous.module';
 import { LocalBusinessDataModule } from 'src/engine/core-modules/local-business-data/local-business-data.module';
 import { OrgChartModule } from 'src/engine/core-modules/org-chart/org-chart.module';
 import { SecureHttpClientModule } from 'src/engine/core-modules/secure-http-client/secure-http-client.module';
@@ -20,6 +22,7 @@ import { UpsertOutreachTargetCompaniesTool } from 'src/engine/core-modules/tool/
 import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
 import { HttpTool } from 'src/engine/core-modules/tool/tools/http-tool/http-tool';
 import { GetLocalBusinessDetailsTool } from 'src/engine/core-modules/tool/tools/local-business-data-tool/get-local-business-details-tool';
+import { SearchBrightDataBusinessTool } from 'src/engine/core-modules/tool/tools/bright-data-business-search-tool/search-bright-data-business-tool';
 import { SearchLocalBusinessesTool } from 'src/engine/core-modules/tool/tools/local-business-data-tool/search-local-businesses-tool';
 import { ResolveCompanyFromRawNameTool } from 'src/engine/core-modules/tool/tools/company-name-resolver-tool/resolve-company-from-raw-name-tool';
 import { NavigateAppTool } from 'src/engine/core-modules/tool/tools/navigate-tool/navigate-app-tool';
@@ -65,6 +68,8 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     NavigationMenuItemModule,
     WorkspaceManyOrAllFlatEntityMapsCacheModule,
     UnipilePoolModule,
+    forwardRef(() => BrightDataModule),
+    forwardRef(() => BrightDataLudicrousModule),
     LocalBusinessDataModule,
     OrgChartModule,
     // WorkflowRunner → executor actions → ToolModule → OutreachCommand (cycle)
@@ -87,6 +92,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     AcceptLinkedinReceivedInvitationTool,
     SendWhatsappMessageTool,
     SearchLocalBusinessesTool,
+    SearchBrightDataBusinessTool,
     GetLocalBusinessDetailsTool,
     ResolveCompanyFromRawNameTool,
     EmailComposerService,
@@ -119,6 +125,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     AcceptLinkedinReceivedInvitationTool,
     SendWhatsappMessageTool,
     SearchLocalBusinessesTool,
+    SearchBrightDataBusinessTool,
     GetLocalBusinessDetailsTool,
     ResolveCompanyFromRawNameTool,
     EmailComposerService,

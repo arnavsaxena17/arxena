@@ -854,6 +854,12 @@ export const useOutreachLiveWorkingSet = () => {
           replyAfterTouch: formatReplyAfterTouch(candidate),
           createdAt: candidate.createdAt ?? null,
           updatedAt: candidate.updatedAt ?? null,
+          otherFields: candidate.otherFields,
+          jobSpecificFields: candidate.jobSpecificFields,
+          outreachAnalytics: candidate.outreachAnalytics,
+          outreachProspectEnrichment: candidate.outreachProspectEnrichment,
+          linkedinProfile: candidate.people?.linkedinProfile,
+          linkedinPosts: candidate.people?.linkedinPosts,
         };
       }),
     [journeySummary?.byCandidateId, outboundSenderFirstName, projectCandidates],

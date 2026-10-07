@@ -1,7 +1,4 @@
-import {
-    isIpv4InCidr,
-    normalizeIpOrCidr,
-} from '../org-chart-ip-cidr.util';
+import { isIpv4InCidr, normalizeIpOrCidr } from '../org-chart-ip-cidr.util';
 
 describe('org-chart-ip-cidr.util', () => {
   it('normalizeIpOrCidr accepts IPv4', () => {

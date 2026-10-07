@@ -30,7 +30,9 @@ export const normalizeLinkedinCompanyUrl = (
     return null;
   }
 
-  const slug = extractLinkedinCompanySlugFromUrl(trimmed) ?? trimmed.replace(/^\/+|\/+$/g, '');
+  const slug =
+    extractLinkedinCompanySlugFromUrl(trimmed) ??
+    trimmed.replace(/^\/+|\/+$/g, '');
   if (!slug) {
     return null;
   }
@@ -138,7 +140,11 @@ export type SuperImposeCompanyProfileFacet = {
   linkedinCompanyId: string | null;
   companyName?: string;
   employeeCount?: number;
-  resolvedVia: 'company_profile' | 'primary_parameter' | 'slug_fallback' | 'failed';
+  resolvedVia:
+    | 'company_profile'
+    | 'primary_parameter'
+    | 'slug_fallback'
+    | 'failed';
   error?: string;
 };
 

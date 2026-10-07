@@ -64,8 +64,7 @@ export function mergeOrgChartCompanyTenureOntoOrgChartData(
     const list = Array.isArray(rawCandidates) ? rawCandidates : null;
 
     for (let i = 0; i < MAX_SLOT_INDEX; i += 1) {
-      const linkedInSlot =
-        out[`linkedin_url_${i}`] ?? out[`url_${i}`];
+      const linkedInSlot = out[`linkedin_url_${i}`] ?? out[`url_${i}`];
       const cand = list?.[i];
       const candObj =
         cand && typeof cand === 'object'
@@ -74,9 +73,9 @@ export function mergeOrgChartCompanyTenureOntoOrgChartData(
       const urlForLookup =
         typeof linkedInSlot === 'string' && linkedInSlot.trim().length > 0
           ? linkedInSlot
-          : candObj?.std_linkedin_url ??
+          : (candObj?.std_linkedin_url ??
             candObj?.linkedin_url ??
-            candObj?.linkedinUrl;
+            candObj?.linkedinUrl);
       const pidRaw = candObj?.id;
       const pid =
         typeof pidRaw === 'string' || typeof pidRaw === 'number'

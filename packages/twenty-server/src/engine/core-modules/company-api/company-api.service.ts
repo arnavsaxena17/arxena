@@ -1,6 +1,9 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { getLinkedInUnipileSearchPageLimit } from 'twenty-shared';
 
+import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
+import { BrightDataLudicrousSearchService } from 'src/engine/core-modules/bright-data-ludicrous/services/bright-data-ludicrous-search.service';
+import { mapBrightDataCompanyToSearchHit } from 'src/engine/core-modules/bright-data/utils/bright-data-business-search.util';
 import { LinkedinParameterResolver } from 'src/engine/core-modules/candidate-search/utils/linkedin-parameter-resolver.util';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import type { LinkedInSearchResponse } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
@@ -29,6 +32,7 @@ import { CompanySearchHitTransformer } from './services/company-search-hit.trans
 import { identityKeysForHit } from './utils/company-identity.util';
 
 export type SearchCompaniesOptions = {
+  workspaceId?: string;
   isKnownHit?: (hit: CompanySearchHit) => boolean;
   stopAtKnown?: boolean;
 };
@@ -45,6 +49,8 @@ export class CompanyApiService {
     private readonly companySearchDataSourceResolver: CompanySearchDataSourceResolver,
     private readonly companySearchHitTransformer: CompanySearchHitTransformer,
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
+    private readonly brightDataBusinessSearchService: BrightDataBusinessSearchService,
+    private readonly brightDataLudicrousSearchService: BrightDataLudicrousSearchService,
   ) {}
 
   getDataSourcesStatus(): CompanyDataSourcesStatusResponse {
@@ -57,6 +63,7 @@ export class CompanyApiService {
       unipile: unipileConfigured,
       pool: unipileConfigured,
       recruiter: unipileConfigured,
+      bright_data: this.brightDataBusinessSearchService.isConfigured(),
     };
 
     return {
@@ -70,6 +77,67 @@ export class CompanyApiService {
     };
   }
 
+  private async searchCompaniesFromBrightData(
+    body: CompanySearchDto,
+    options?: SearchCompaniesOptions,
+  ): Promise<CompanySearchResponse> {
+    const query = body.query?.trim() ?? '';
+
+    if (!query) {
+      throw new HttpException(
+        'Bright Data company search requires query',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (!this.brightDataBusinessSearchService.isConfigured()) {
+      throw new HttpException(
+        'Bright Data is not configured',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
+    const requestedMode = body.mode ?? 'ludicrous';
+
+    if (requestedMode === 'ludicrous' && options?.workspaceId) {
+      const { summary, result } =
+        await this.brightDataLudicrousSearchService.searchNaturalLanguage({
+          workspaceId: options.workspaceId,
+          entity: 'company',
+          rawQuery: query,
+          maxBudgetUsd: body.maxBudgetUsd ?? 1,
+          targetCount: body.limit,
+        });
+
+      return {
+        status: 'ok',
+        dataSource: 'bright_data',
+        total: summary.estimatedUniqueRecords,
+        items: result.documents.map((document) =>
+          mapBrightDataCompanyToSearchHit(document),
+        ),
+      };
+    }
+
+    // Ludicrous needs a workspace to bill, so anonymous callers get instant
+    const result = await this.brightDataBusinessSearchService.search({
+      entity: 'company',
+      mode: requestedMode === 'ludicrous' ? 'instant' : requestedMode,
+      query: query.slice(0, 200),
+      limit: body.limit,
+      offset: body.offset,
+    });
+
+    return {
+      status: 'ok',
+      dataSource: 'bright_data',
+      total: result.matched,
+      items: result.documents.map((document) =>
+        mapBrightDataCompanyToSearchHit(document),
+      ),
+    };
+  }
+
   async searchCompanies(
     body: CompanySearchDto,
     apiToken?: string,
@@ -80,6 +148,11 @@ export class CompanyApiService {
       accountId: body.accountId,
       apiToken,
     });
+
+    if (resolved.dataSource === 'bright_data') {
+      return this.searchCompaniesFromBrightData(body, options);
+    }
+
     const limit = Math.max(1, Math.min(100, body.limit ?? 20));
     const searchUrl = this.resolveLinkedInSearchUrl(body);
     const keywords =

@@ -12,10 +12,10 @@ Seeded graphs ship as **DRAFT**. Triggers are CRON / `company.created` / `candid
 
 | Seeded name | Trigger | Role |
 | --- | --- | --- |
-| `Harvest — LinkedIn Companies` | CRON | Harvest |
-| `Company Created → ICP People Search` | `company.created` | Enroll-on-company (search + upload-profiles) |
-| `Outreach — Fetch & Save People Profiles` | MANUAL | Manual enroll via upload-profiles |
-| `Search and Upload People Profiles` | WEBHOOK | Search-people then upload-profiles (POST body: `projectId` + search fields) |
+| `Find companies` | WEBHOOK | Search companies → AI company-fit filter → upsert kept |
+| `Find people by company` | WEBHOOK | One company: search people → AI keep filter → upload kept |
+| `Add people` | MANUAL | Manual enroll via upload-profiles |
+| `Find people by search` | WEBHOOK | Search-people → AI keep filter → upload-profiles (POST body: `projectId` + search fields) |
 | `Outreach — Candidate Sequencer` | `candidate.upserted` (+ entry stages + `candidateFlags.startOutreach`) | Sequencer (QUEUED / accepted / replied / meeting) |
 
 **Ignite path:**
@@ -73,8 +73,8 @@ Do **not** add a workflow whose only job is “mark connection accepted” — U
 | --- | --- | --- |
 | **Harvest** | `CRON` `HOURS` | Native `search-companies` `{ query, keywords, limit }` → native `upsert-companies` `{ projectId, companies: "{{searchUuid.companies}}" }` (CRM + `projectIds`). Seed Project **Harvest**. Do **not** `upsert_outreach_target_companies`. Skip rows already tagged to this project. |
 | **Workflow 1** (company people search) | `company.created` | LOGIC_FUNCTION `search-people-for-company` → LOGIC_FUNCTION `upload-profiles`. Optional FORM between only if the user wants to approve enroll. |
-| **Fetch & Save** (`Outreach — Fetch & Save People Profiles`) | MANUAL | Native `upload-profiles` for ad-hoc enroll from the workflow launcher (org-chart / People tab paths may still use HTTP `upload-profiles` directly). |
-| **Search and Upload** (`Search and Upload People Profiles`) | WEBHOOK POST | Native `search-people` → `upload-profiles`. Body: `projectId` (required for enroll) plus search fields (`naturalLanguage`, `searchUrl`, `companyName`, `website`, `companyId`, `jobTitle`, `country`, `limit`). Activate then POST the workflow webhook URL. |
+| **Fetch & Save** (`Add people`) | MANUAL | Native `upload-profiles` for ad-hoc enroll from the workflow launcher (org-chart / People tab paths may still use HTTP `upload-profiles` directly). |
+| **Search and Upload** (`Find people by search`) | WEBHOOK POST | Native `search-people` → `upload-profiles`. Body: `projectId` (required for enroll) plus search fields (`naturalLanguage`, `searchUrl`, `companyName`, `website`, `companyId`, `jobTitle`, `country`, `limit`). Activate then POST the workflow webhook URL. |
 | **Workflow U** (manual HTTP) | HTTP Ask AI / org-chart / GTM Home `upload-profiles` | Same enroll path; GTM projects get `QUEUED` + `linkedinProfileId` — not a seeded workflow. |
 | **Candidate Sequencer** (`Outreach — Candidate Sequencer`) | `candidate.upserted` + entry-stage allowlist | Routes QUEUED / CONNECTION_ACCEPTED / REPLIED / MEETING_BOOKED. QUEUED: qualify → connection note → gate on empty `outreachAnalytics.connectionSentAt` → `SEND_LINKEDIN_CONNECTION_REQUEST`. Accepted / replied / meeting branches match the former Stage C recipes. Do **not** DELAY-poll accept. Do not add NEGOTIATING / DEFERRED as separate sequence branches. |
 | **Stage C inbound classify** | silence-window flush (not a workflow) | LinkedIn + WhatsApp Unipile webhooks and inbound CRM email (`messageChannelMessageAssociation` INCOMING) all buffer into the same silence window. Flush writes `chatMessage` with `channel` `LINKEDIN` / `WHATSAPP` / `EMAIL` (do not merge email/WhatsApp into the LinkedIn row). LLM classifies the **recipient burst** → stamps cadence + conversation stage. Cadence: `unsubscribe`→`STOPPED` (no send); every other intent→`REPLIED` (fires Candidate Sequencer replied branch). Conversation: `unsubscribe`→`NOT_INTERESTED`, `not_now`→`SNOOZED`, `interested`→`INTENT`, `times_proposed`→`FOLLOW_UP_MEETING`, `book`→`MEETING_BOOKED`, `question`→`ACKNOWLEDGEMENT`. Keyword fallback if the model fails. Do **not** trigger on `chatMessage.created` / `updated`. |
@@ -183,3 +183,25 @@ Allowed days come from `sendWindowDays` (default **Tue–Thu**). Outside the win
 | US East | `America/New_York` | 08:00–10:00 | United States (East) |
 
 Configure under Outreach → Setup → **Send schedule**. Do not mix India + US people in one Project if you care about local morning delivery.
+
+## Run workflows (`run_workflow`)
+
+Start a seeded workflow by name with `run_workflow({ workflow, payload })`. The tool validates the payload, starts the run the same way the webhook does, and returns `workflowRunId`. Never call the public webhook URL with the HTTP tool.
+
+| Workflow | Payload |
+| --- | --- |
+| `Find companies` | `{ projectId, limit?, query?, keywords?, industry?, location?, url? }` |
+| `Find people by company` | `{ projectId, companyId, limit? }` — one company per call |
+| `Find people by search` | `{ projectId, limit?, ...LinkedIn people-search parameters }` |
+
+These three existing graphs now start from a webhook (no more CRON / company.created) and have the AI filtering step already in them (search → filter → save only the kept records); never add or edit steps to run them. Seeded workflows start as drafts: `activate_workflow_version` once, then run. The filter prompt is on the AI filtering step ("Company fit" / "Keep people"); change it with `update_workflow_version_step` when the ICP changes.
+
+The AI filtering step ("Company fit filter", "Keep people filter") outputs `kept`, `rejected` (each with a `reason`) and `failed` (the model gave no usable answer: re-run, do not treat as rejected). Its `selectedModel` is set per step; the company filter uses `gpt4o` and the people filter `gpt4omini` because small models misread headcount bands. Change the model or prompt with `update_workflow_version_step`; the answer contract (`keep`/`fit` boolean, `confidence` strong|borderline, optional `reason`) is the same for every model. The workspace ICP (titles, locations) is appended to the prompt at run time.
+
+Rules:
+
+- One company per `Find people by company` call; confirm before enrolling people.
+- Resolve LinkedIn facet ids (location, industry, company) with `search_linkedin_parameters` first; never invent them.
+- Follow the run with `get_workflow_run`. A rate-limited run resumes on its own: never resend or retry it, and say it is waiting, not failed.
+- A repeated call for a company that already has an active run is skipped and returns the existing run id.
+- `stop_workflow_run` and `retry_workflow_run` exist; use them only when the user asks or the run failed.

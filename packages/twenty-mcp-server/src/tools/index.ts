@@ -11,6 +11,7 @@ import { linkedinSearchTools } from './linkedin-search-tools';
 import { orgChartTools } from './org-chart-tools';
 import { peopleApiTools } from './people-api-tools';
 import { localBusinessDataTools } from './local-business-data-tools';
+import { brightDataBusinessSearchTools } from './bright-data-business-search-tools';
 import { pendingActionsTools } from './pending-actions-tools';
 import { personTools } from './person-tools';
 import { resolveSurfaceTools } from './meta-tools';
@@ -28,6 +29,7 @@ export const publicTools: McpTool[] = [
   ...orgChartTools,
   ...peopleApiTools,
   ...localBusinessDataTools,
+  ...brightDataBusinessSearchTools,
   ...esIndexSearchTools,
   ...candidateSearchTools,
   ...linkedinSearchTools,

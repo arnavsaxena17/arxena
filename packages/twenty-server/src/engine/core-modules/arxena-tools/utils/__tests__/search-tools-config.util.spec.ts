@@ -12,6 +12,7 @@ import {
   SEARCH_PEOPLE_INDEX_TOOL_NAME,
   SEARCH_SERP_TOOL_NAME,
   SEARCH_WIKIDATA_COMPANIES_TOOL_NAME,
+  SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME,
 } from 'src/engine/core-modules/arxena-tools/utils/search-tools-config.util';
 import { type TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 
@@ -23,7 +24,8 @@ type SearchToolsConfigKey =
   | 'IS_SEARCH_EXA_ENABLED'
   | 'IS_SEARCH_SERP_ENABLED'
   | 'IS_SEARCH_COMPANIES_INDEX_ENABLED'
-  | 'IS_SEARCH_WIKIDATA_COMPANIES_ENABLED';
+  | 'IS_SEARCH_WIKIDATA_COMPANIES_ENABLED'
+  | 'IS_SEARCH_BRIGHT_DATA_ENABLED';
 
 const buildConfigService = (
   values: Partial<Record<SearchToolsConfigKey, boolean>>,
@@ -43,6 +45,9 @@ describe('search-tools-config.util', () => {
     expect(isSearchToolEnabled(SEARCH_COMPANIES_INDEX_TOOL_NAME, config)).toBe(
       true,
     );
+    expect(
+      isSearchToolEnabled(SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME, config),
+    ).toBe(true);
   });
 
   it('disables search tools when env flags are false', () => {
@@ -56,6 +61,7 @@ describe('search-tools-config.util', () => {
         IS_SEARCH_SERP_ENABLED: false,
         IS_SEARCH_COMPANIES_INDEX_ENABLED: false,
         IS_SEARCH_WIKIDATA_COMPANIES_ENABLED: false,
+        IS_SEARCH_BRIGHT_DATA_ENABLED: false,
       }),
     );
 
@@ -69,6 +75,7 @@ describe('search-tools-config.util', () => {
       SEARCH_SERP_TOOL_NAME,
       SEARCH_COMPANIES_INDEX_TOOL_NAME,
       SEARCH_WIKIDATA_COMPANIES_TOOL_NAME,
+      SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME,
     ]);
   });
 
@@ -79,6 +86,7 @@ describe('search-tools-config.util', () => {
       '<!-- search-companies-index-provider-row:start -->| companies index |<!-- search-companies-index-provider-row:end -->',
       '<!-- search-wikidata-companies-source-section:start -->## Wikidata<!-- search-wikidata-companies-source-section:end -->',
       '<!-- search-exa-people-source-section:start -->## Exa people<!-- search-exa-people-source-section:end -->',
+      '<!-- search-bright-data-companies-source-section:start -->## Bright Data companies<!-- search-bright-data-companies-source-section:end -->',
       '<!-- search-people-index-learn-tools-line:start -->  "search_people_index",<!-- search-people-index-learn-tools-line:end -->',
       '<!-- search-find-candidate-internal-learn-tools-line:start -->  "find_candidate_in_arxena_internal"<!-- search-find-candidate-internal-learn-tools-line:end -->',
     ].join('\n');
@@ -93,6 +101,7 @@ describe('search-tools-config.util', () => {
           IS_SEARCH_EXA_ENABLED: false,
           IS_SEARCH_PEOPLE_INDEX_ENABLED: false,
           IS_SEARCH_FIND_CANDIDATE_INTERNAL_ENABLED: false,
+          IS_SEARCH_BRIGHT_DATA_ENABLED: false,
         }),
       ),
     );
@@ -101,6 +110,7 @@ describe('search-tools-config.util', () => {
     expect(filtered).not.toContain('companies index');
     expect(filtered).not.toContain('Wikidata');
     expect(filtered).not.toContain('Exa people');
+    expect(filtered).not.toContain('Bright Data companies');
     expect(filtered).not.toContain('search_people_index');
     expect(filtered).not.toContain('find_candidate_in_arxena_internal');
     expect(filtered).toContain('LinkedIn, Harvest, and Apollo intro');

@@ -297,6 +297,54 @@ export const computeStepOutputSchema = ({
     case 'FOLLOW_LINKEDIN_PROFILE':
     case 'LIKE_LINKEDIN_POST':
     case 'SEND_WHATSAPP_MESSAGE':
+    case 'SEARCH_BRIGHT_DATA_COMPANIES':
+    case 'SEARCH_BRIGHT_DATA_PEOPLE': {
+      return {
+        count: {
+          isLeaf: true,
+          type: FieldMetadataType.NUMBER,
+          label: 'Count',
+          value: 0,
+        },
+        matched: {
+          isLeaf: true,
+          type: FieldMetadataType.NUMBER,
+          label: 'Matched',
+          value: 0,
+        },
+        reqId: {
+          isLeaf: true,
+          type: FieldMetadataType.TEXT,
+          label: 'Request ID',
+          value: '',
+        },
+        ephemeralWritten: {
+          isLeaf: true,
+          type: FieldMetadataType.NUMBER,
+          label: 'Written to tab',
+          value: 0,
+        },
+        spentUsd: {
+          isLeaf: true,
+          type: FieldMetadataType.NUMBER,
+          label: 'Spent (USD)',
+          value: 0,
+        },
+        mode: {
+          isLeaf: true,
+          type: FieldMetadataType.TEXT,
+          label: 'Mode',
+          value: '',
+        },
+        query: {
+          isLeaf: true,
+          type: FieldMetadataType.TEXT,
+          label: 'Query',
+          value: '',
+        },
+      };
+    }
+
     case 'SEARCH_LOCAL_BUSINESSES':
     case 'GET_LOCAL_BUSINESS_DETAILS':
     case 'RESOLVE_COMPANY_FROM_RAW_NAME': {

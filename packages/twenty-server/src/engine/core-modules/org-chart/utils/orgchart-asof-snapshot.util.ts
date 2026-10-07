@@ -67,7 +67,9 @@ const experienceRowMatchesTargetCompany = (input: {
   if (!input.targetLinkedinKey) {
     return false;
   }
-  const expKey = normalizeLinkedinCompanyUrlKey(input.experienceCompanyLinkedin);
+  const expKey = normalizeLinkedinCompanyUrlKey(
+    input.experienceCompanyLinkedin,
+  );
   return expKey !== null && expKey === input.targetLinkedinKey;
 };
 
@@ -84,10 +86,17 @@ const monthFromContactOut = (
   return monthKey(Math.floor(y), mm);
 };
 
-const monthFromApify = (datePart: unknown, fallbackMonth: number): string | null => {
+const monthFromApify = (
+  datePart: unknown,
+  fallbackMonth: number,
+): string | null => {
   if (!datePart || typeof datePart !== 'object') return null;
   const dp = datePart as { year?: unknown; month?: unknown; text?: unknown };
-  if (typeof dp.year !== 'number' || !Number.isFinite(dp.year) || dp.year <= 1900) {
+  if (
+    typeof dp.year !== 'number' ||
+    !Number.isFinite(dp.year) ||
+    dp.year <= 1900
+  ) {
     return null;
   }
   const rawMonth = typeof dp.month === 'string' ? dp.month : null;
@@ -110,7 +119,10 @@ const monthFromApify = (datePart: unknown, fallbackMonth: number): string | null
   return monthKey(Math.floor(dp.year), mm);
 };
 
-function clampEndToStart(endMonth: string | null, startMonth: string): string | null {
+function clampEndToStart(
+  endMonth: string | null,
+  startMonth: string,
+): string | null {
   if (!endMonth) return null;
   return cmpMonth(endMonth, startMonth) < 0 ? startMonth : endMonth;
 }
@@ -135,7 +147,11 @@ export function deriveIntervalsForCandidateAtCompany(input: {
     row.org_contactout_profile !== null
       ? (row.org_contactout_profile as { experience?: unknown }).experience
       : undefined);
-  if (Array.isArray(coExRaw) && coExRaw.length > 0 && typeof coExRaw[0] === 'object') {
+  if (
+    Array.isArray(coExRaw) &&
+    coExRaw.length > 0 &&
+    typeof coExRaw[0] === 'object'
+  ) {
     const out: Interval[] = [];
     for (const r of coExRaw as Array<Record<string, unknown>>) {
       if (
@@ -148,7 +164,11 @@ export function deriveIntervalsForCandidateAtCompany(input: {
       ) {
         continue;
       }
-      const start = monthFromContactOut(r.start_date_year, r.start_date_month, 1);
+      const start = monthFromContactOut(
+        r.start_date_year,
+        r.start_date_month,
+        1,
+      );
       if (!start) continue;
       const end =
         r.is_current === true
@@ -168,7 +188,9 @@ export function deriveIntervalsForCandidateAtCompany(input: {
   // Apify: `org_apify_experience` is an array; fall back to `org_apify` (full profile).
   const apifyExRaw =
     row.org_apify_experience ??
-    (row.org_apify && typeof row.org_apify === 'object' && row.org_apify !== null
+    (row.org_apify &&
+    typeof row.org_apify === 'object' &&
+    row.org_apify !== null
       ? (row.org_apify as { experience?: unknown }).experience
       : undefined);
   if (Array.isArray(apifyExRaw) && apifyExRaw.length > 0) {
@@ -195,7 +217,8 @@ export function deriveIntervalsForCandidateAtCompany(input: {
       out.push({
         startMonth: start,
         endMonth: clampEndToStart(end, start),
-        title: typeof eRaw.position === 'string' ? eRaw.position.trim() : undefined,
+        title:
+          typeof eRaw.position === 'string' ? eRaw.position.trim() : undefined,
       });
     }
     if (out.length > 0) {
@@ -238,7 +261,8 @@ export function deriveIntervalsForCandidateAtCompany(input: {
       out.push({
         startMonth: start,
         endMonth: clampEndToStart(end, start),
-        title: typeof eRaw.position === 'string' ? eRaw.position.trim() : undefined,
+        title:
+          typeof eRaw.position === 'string' ? eRaw.position.trim() : undefined,
       });
     }
     if (out.length > 0) {
@@ -249,7 +273,10 @@ export function deriveIntervalsForCandidateAtCompany(input: {
   return [];
 }
 
-export function isActiveInMonth(intervals: Interval[], asOfMonth: string): boolean {
+export function isActiveInMonth(
+  intervals: Interval[],
+  asOfMonth: string,
+): boolean {
   for (const it of intervals) {
     if (cmpMonth(it.startMonth, asOfMonth) > 0) {
       continue;
@@ -262,7 +289,10 @@ export function isActiveInMonth(intervals: Interval[], asOfMonth: string): boole
   return false;
 }
 
-export function pickTitleAtMonth(intervals: Interval[], asOfMonth: string): string | null {
+export function pickTitleAtMonth(
+  intervals: Interval[],
+  asOfMonth: string,
+): string | null {
   // Prefer the interval that actually covers the month, picking the latest start.
   let best: Interval | null = null;
   for (const it of intervals) {
@@ -323,8 +353,9 @@ export function pickTitleForEntireCompanyFromIntervals(
     return title ? title : null;
   }
 
-  const ended = intervals.filter((it): it is Interval & { endMonth: string } =>
-    typeof it.endMonth === 'string',
+  const ended = intervals.filter(
+    (it): it is Interval & { endMonth: string } =>
+      typeof it.endMonth === 'string',
   );
   if (ended.length === 0) return null;
 
@@ -333,7 +364,10 @@ export function pickTitleForEntireCompanyFromIntervals(
     const endCmp = cmpMonth(it.endMonth, bestEnded.endMonth);
     if (endCmp > 0) {
       bestEnded = it;
-    } else if (endCmp === 0 && cmpMonth(it.startMonth, bestEnded.startMonth) > 0) {
+    } else if (
+      endCmp === 0 &&
+      cmpMonth(it.startMonth, bestEnded.startMonth) > 0
+    ) {
       bestEnded = it;
     }
   }
@@ -435,4 +469,3 @@ export function applyAsOfSnapshotToCandidates(input: {
 
   return out;
 }
-

@@ -1,7 +1,7 @@
 import {
-    isOrgPublishForeverTtl,
-    resolveOrgChartPublishCacheTtlMs,
-    toOrgChartCacheTtlMs,
+  isOrgPublishForeverTtl,
+  resolveOrgChartPublishCacheTtlMs,
+  toOrgChartCacheTtlMs,
 } from '../org-chart-cache-ttl.util';
 
 describe('org-chart-cache-ttl.util', () => {

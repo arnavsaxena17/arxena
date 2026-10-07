@@ -3,27 +3,27 @@
  */
 export const SEEDED_OUTREACH_WORKFLOW = {
   harvest: {
-    name: 'Harvest — LinkedIn Companies',
+    name: 'Find companies',
     slug: 'harvest',
-    role: 'Harvest' as const,
-    trigger: 'CRON',
+    role: 'Webhook company search + AI fit filter' as const,
+    trigger: 'WEBHOOK',
   },
   companySearch: {
-    name: 'Company Created → ICP People Search',
+    name: 'Find people by company',
     slug: 'companySearch',
-    role: 'Enroll-on-company' as const,
-    trigger: 'company.created',
+    role: 'Webhook people search for one company + AI keep filter' as const,
+    trigger: 'WEBHOOK',
   },
   fetchAndSaveProfiles: {
-    name: 'Outreach — Fetch & Save People Profiles',
+    name: 'Add people',
     slug: 'fetchAndSaveProfiles',
     role: 'Manual enroll' as const,
     trigger: 'MANUAL',
   },
   searchAndUploadPeopleProfiles: {
-    name: 'Search and Upload People Profiles',
+    name: 'Find people by search',
     slug: 'searchAndUploadPeopleProfiles',
-    role: 'Webhook search+enroll' as const,
+    role: 'Webhook people search + AI keep filter' as const,
     trigger: 'WEBHOOK',
   },
   perCandidate: {

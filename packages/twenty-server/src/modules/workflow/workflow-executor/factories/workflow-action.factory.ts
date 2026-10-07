@@ -38,6 +38,10 @@ import { SendLinkedinVoiceNoteWorkflowAction } from 'src/modules/workflow/workfl
 import { ViewLinkedinProfileWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/view-linkedin-profile.workflow-action';
 import { AcceptLinkedinReceivedInvitationWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/accept-linkedin-received-invitation.workflow-action';
 import { SearchLocalBusinessesWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/local-business-data/search-local-businesses.workflow-action';
+import {
+  SearchBrightDataCompaniesWorkflowAction,
+  SearchBrightDataPeopleWorkflowAction,
+} from 'src/modules/workflow/workflow-executor/workflow-actions/bright-data-business-search/search-bright-data-business.workflow-action';
 import { GetLocalBusinessDetailsWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/local-business-data/get-local-business-details.workflow-action';
 import { ResolveCompanyFromRawNameWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/company-name-resolver/resolve-company-from-raw-name.workflow-action';
 import { WorkflowActionType } from 'twenty-shared/workflow';
@@ -73,6 +77,8 @@ export class WorkflowActionFactory {
     private readonly acceptLinkedinReceivedInvitationWorkflowAction: AcceptLinkedinReceivedInvitationWorkflowAction,
     private readonly sendWhatsappMessageWorkflowAction: SendWhatsappMessageWorkflowAction,
     private readonly searchLocalBusinessesWorkflowAction: SearchLocalBusinessesWorkflowAction,
+    private readonly searchBrightDataCompaniesWorkflowAction: SearchBrightDataCompaniesWorkflowAction,
+    private readonly searchBrightDataPeopleWorkflowAction: SearchBrightDataPeopleWorkflowAction,
     private readonly getLocalBusinessDetailsWorkflowAction: GetLocalBusinessDetailsWorkflowAction,
     private readonly resolveCompanyFromRawNameWorkflowAction: ResolveCompanyFromRawNameWorkflowAction,
     private readonly aiAgentWorkflowAction: AiAgentWorkflowAction,
@@ -139,6 +145,10 @@ export class WorkflowActionFactory {
         return this.sendWhatsappMessageWorkflowAction;
       case WorkflowActionType.SEARCH_LOCAL_BUSINESSES:
         return this.searchLocalBusinessesWorkflowAction;
+      case WorkflowActionType.SEARCH_BRIGHT_DATA_COMPANIES:
+        return this.searchBrightDataCompaniesWorkflowAction;
+      case WorkflowActionType.SEARCH_BRIGHT_DATA_PEOPLE:
+        return this.searchBrightDataPeopleWorkflowAction;
       case WorkflowActionType.GET_LOCAL_BUSINESS_DETAILS:
         return this.getLocalBusinessDetailsWorkflowAction;
       case WorkflowActionType.RESOLVE_COMPANY_FROM_RAW_NAME:

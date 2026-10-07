@@ -1,23 +1,26 @@
 import {
-    deriveIntervalsForCandidateAtCompany,
-    isActiveInMonth,
-    pickTitleAtMonth,
+  deriveIntervalsForCandidateAtCompany,
+  isActiveInMonth,
+  pickTitleAtMonth,
 } from './orgchart-asof-snapshot.util';
 import {
-    extractLinkedinProfileUrlFromOrgChartCandidateRow,
-    extractProfilePictureUrlFromOrgChartCandidateRow,
+  extractLinkedinProfileUrlFromOrgChartCandidateRow,
+  extractProfilePictureUrlFromOrgChartCandidateRow,
 } from './orgchart-candidate-linkedin-url.util';
 
 type MonthKey = `${number}-${string}`;
 type WindowKey = '1m' | '3m' | '6m' | '1y';
 
 const isMonthKey = (s: string): s is MonthKey =>
-  /^\d{4}-\d{2}$/.test(s) && Number(s.slice(5, 7)) >= 1 && Number(s.slice(5, 7)) <= 12;
+  /^\d{4}-\d{2}$/.test(s) &&
+  Number(s.slice(5, 7)) >= 1 &&
+  Number(s.slice(5, 7)) <= 12;
 
 const monthKey = (y: number, m: number): MonthKey =>
   `${y}-${String(m).padStart(2, '0')}` as MonthKey;
 
-const cmpMonth = (a: MonthKey, b: MonthKey): number => (a < b ? -1 : a > b ? 1 : 0);
+const cmpMonth = (a: MonthKey, b: MonthKey): number =>
+  a < b ? -1 : a > b ? 1 : 0;
 
 const addMonths = (m: MonthKey, delta: number): MonthKey => {
   const y = Number(m.slice(0, 4));
@@ -27,8 +30,11 @@ const addMonths = (m: MonthKey, delta: number): MonthKey => {
   return monthKey(d.getUTCFullYear(), d.getUTCMonth() + 1);
 };
 
-const isMonthInRange = (m: MonthKey | undefined, start: MonthKey, end: MonthKey): boolean =>
-  !!m && cmpMonth(m, start) >= 0 && cmpMonth(m, end) <= 0;
+const isMonthInRange = (
+  m: MonthKey | undefined,
+  start: MonthKey,
+  end: MonthKey,
+): boolean => !!m && cmpMonth(m, start) >= 0 && cmpMonth(m, end) <= 0;
 
 const currentUtcMonth = (): MonthKey => {
   const d = new Date();
@@ -80,28 +86,43 @@ const normalizeFunctionRoot = (s: unknown): string => {
   return trimmed ? trimmed.toLowerCase() : 'unclassified';
 };
 
-const readString = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
+const readString = (value: unknown): string =>
+  typeof value === 'string' ? value.trim() : '';
 
 const inferFunctionRootFromText = (value: string): string | null => {
   const text = value.trim().toLowerCase();
   if (!text) return null;
 
-  if (/\b(hr|human resources|talent|people ops|recruit(ing|ment)?)\b/u.test(text)) {
+  if (
+    /\b(hr|human resources|talent|people ops|recruit(ing|ment)?)\b/u.test(text)
+  ) {
     return 'human resources';
   }
-  if (/\b(marketing|brand|demand gen|growth|content|communications?|pr)\b/u.test(text)) {
+  if (
+    /\b(marketing|brand|demand gen|growth|content|communications?|pr)\b/u.test(
+      text,
+    )
+  ) {
     return 'marketing';
   }
   if (/\b(product( management| owner| strategy)?|pm)\b/u.test(text)) {
     return 'product';
   }
-  if (/\b(engineer|engineering|developer|software|platform|devops|sre|architect)\b/u.test(text)) {
+  if (
+    /\b(engineer|engineering|developer|software|platform|devops|sre|architect)\b/u.test(
+      text,
+    )
+  ) {
     return 'engineering';
   }
-  if (/\b(sales|account executive|business development|revenue)\b/u.test(text)) {
+  if (
+    /\b(sales|account executive|business development|revenue)\b/u.test(text)
+  ) {
     return 'sales';
   }
-  if (/\b(finance|financial|accounting|controller|fp&a|treasury)\b/u.test(text)) {
+  if (
+    /\b(finance|financial|accounting|controller|fp&a|treasury)\b/u.test(text)
+  ) {
     return 'finance';
   }
   if (/\b(legal|counsel|compliance)\b/u.test(text)) {
@@ -145,7 +166,9 @@ const resolveFunctionRoot = (
 
   for (const value of directValues) {
     if (Array.isArray(value)) {
-      const first = value.find((v) => typeof v === 'string' && v.trim().length > 0);
+      const first = value.find(
+        (v) => typeof v === 'string' && v.trim().length > 0,
+      );
       const normalized = normalizeFunctionRoot(first);
       if (normalized && normalized !== 'unclassified') return normalized;
       continue;
@@ -229,7 +252,9 @@ export function computeTimelineMetricsFromCandidates(input: {
     }
   }
 
-  const buildWindow = (deltaMonths: number): { startMonth: MonthKey; endMonth: MonthKey } => ({
+  const buildWindow = (
+    deltaMonths: number,
+  ): { startMonth: MonthKey; endMonth: MonthKey } => ({
     startMonth: addMonths(asOfMonth, -deltaMonths),
     endMonth: asOfMonth,
   });
@@ -304,16 +329,20 @@ export function computeTimelineMetricsFromCandidates(input: {
         companyLinkedinUrl: input.companyLinkedinUrl,
       });
       if (intervals.length === 0) continue;
-      if (isActiveInMonth(intervals as any, w.range.startMonth)) headcountStart += 1;
-      if (isActiveInMonth(intervals as any, w.range.endMonth)) headcountEnd += 1;
+      if (isActiveInMonth(intervals as any, w.range.startMonth))
+        headcountStart += 1;
+      if (isActiveInMonth(intervals as any, w.range.endMonth))
+        headcountEnd += 1;
     }
     const averageHeadcount = (headcountStart + headcountEnd) / 2;
     w.rates = {
       headcountStart,
       headcountEnd,
       averageHeadcount,
-      hiringRatePct: averageHeadcount > 0 ? (w.joined.total / averageHeadcount) * 100 : null,
-      attritionRatePct: averageHeadcount > 0 ? (w.left.total / averageHeadcount) * 100 : null,
+      hiringRatePct:
+        averageHeadcount > 0 ? (w.joined.total / averageHeadcount) * 100 : null,
+      attritionRatePct:
+        averageHeadcount > 0 ? (w.left.total / averageHeadcount) * 100 : null,
     };
   }
 
@@ -344,10 +373,13 @@ export function computeTimelineProfilesFromCandidates(input: {
   const asOfRaw = (input.asOfMonth ?? '').trim();
   const asOfMonth: MonthKey = isMonthKey(asOfRaw) ? asOfRaw : currentUtcMonth();
   const window: WindowKey = input.window ?? '1m';
-  const monthsBack = window === '1m' ? 1 : window === '3m' ? 3 : window === '6m' ? 6 : 12;
+  const monthsBack =
+    window === '1m' ? 1 : window === '3m' ? 3 : window === '6m' ? 6 : 12;
   const windowStart = addMonths(asOfMonth, -monthsBack);
   const limit =
-    typeof input.limit === 'number' && Number.isFinite(input.limit) && input.limit > 0
+    typeof input.limit === 'number' &&
+    Number.isFinite(input.limit) &&
+    input.limit > 0
       ? Math.min(500, Math.floor(input.limit))
       : 100;
   const out: TimelineProfileItem[] = [];
@@ -359,7 +391,8 @@ export function computeTimelineProfilesFromCandidates(input: {
     });
     if (intervals.length === 0) continue;
 
-    const titleAtAsOf = pickTitleAtMonth(intervals as any, asOfMonth) ?? undefined;
+    const titleAtAsOf =
+      pickTitleAtMonth(intervals as any, asOfMonth) ?? undefined;
     const fullName =
       typeof row.full_name === 'string'
         ? row.full_name
@@ -409,7 +442,7 @@ export function computeTimelineProfilesFromCandidates(input: {
 
     if (!include) continue;
     const titleAtEvent = eventMonth
-      ? pickTitleAtMonth(intervals as any, eventMonth) ?? undefined
+      ? (pickTitleAtMonth(intervals as any, eventMonth) ?? undefined)
       : titleAtAsOf;
     const fnRoot = resolveFunctionRoot(row, titleAtEvent);
     out.push({
@@ -431,4 +464,3 @@ export function computeTimelineProfilesFromCandidates(input: {
     profiles: out.slice(0, limit),
   };
 }
-

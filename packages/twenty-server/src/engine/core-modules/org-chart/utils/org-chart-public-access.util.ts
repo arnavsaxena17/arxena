@@ -1,8 +1,8 @@
 import { Request } from 'express';
 
 import {
-    isLikelyBrowserRequest,
-    ORG_CHART_VERIFIED_BOT_HEADER,
+  isLikelyBrowserRequest,
+  ORG_CHART_VERIFIED_BOT_HEADER,
 } from 'twenty-shared';
 
 export type OrgChartGuardMode = 'log_only' | 'enforce';

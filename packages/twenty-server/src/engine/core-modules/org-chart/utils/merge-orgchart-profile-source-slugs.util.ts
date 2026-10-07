@@ -245,9 +245,7 @@ export function mergeContactAvailabilityOntoOrgChartData(
       if (typeof rawUrl !== 'string' || rawUrl.length === 0) {
         continue;
       }
-      const slot = urlToContact.get(
-        normalizeOrgChartLinkedinUrlKey(rawUrl),
-      );
+      const slot = urlToContact.get(normalizeOrgChartLinkedinUrlKey(rawUrl));
       if (!slot) {
         continue;
       }
@@ -435,7 +433,10 @@ export function applyApolloOnlyNodeLockState(
       const urlKey = `linkedin_url_${i}`;
       const rawUrl = nodeRecord[urlKey];
       const hasUrl = typeof rawUrl === 'string' && rawUrl.trim().length > 0;
-      if (hasUrl || orgChartIndexShowsPersonWithEmptyOrMissingUrl(nodeRecord, i)) {
+      if (
+        hasUrl ||
+        orgChartIndexShowsPersonWithEmptyOrMissingUrl(nodeRecord, i)
+      ) {
         slotKeys.push({ dsKey: `ds_${i}` as const });
       }
     }
@@ -443,7 +444,9 @@ export function applyApolloOnlyNodeLockState(
   };
 
   const outNodes = nodes.map((node) => {
-    const slotKeys = collectPersonSlotKeysForNode(node as Record<string, unknown>);
+    const slotKeys = collectPersonSlotKeysForNode(
+      node as Record<string, unknown>,
+    );
     if (slotKeys.length === 0) {
       return node;
     }

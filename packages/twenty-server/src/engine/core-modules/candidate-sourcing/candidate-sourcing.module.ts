@@ -27,6 +27,7 @@ import { AiFiltersQueueProcessor } from 'src/engine/core-modules/candidate-sourc
 import { ProcessAiFiltersService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-ai-filters.service';
 import { CandidateQueueProcessor } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.job';
 import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
+import { AiFilterEngineService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filter-engine/ai-filter-engine.service';
 import { AiFilteringProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filtering-processor.service';
 import { AiFilteringProgressPubSubService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filtering-progress-pubsub.service';
 import { AiFilteringService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filtering.service';
@@ -125,6 +126,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     FilterDescriptionProcessorService,
     AiFilteringService,
     AiFilteringProcessorService,
+    AiFilterEngineService,
     AiFilteringProgressPubSubService,
     UploadProgressPubSubService,
     OrgChartProgressRedisService,
@@ -173,6 +175,7 @@ import { DataProcessingUtils } from './utils/data-processing.utils';
     ProcessCandidatesService,
     ProcessAiFiltersService,
     AiFilteringProcessorService,
+    AiFilterEngineService,
     DataSourceTransformerFactoryService,
     DataProcessingUtils,
     JDParserService,

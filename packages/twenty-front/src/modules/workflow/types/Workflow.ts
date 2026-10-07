@@ -33,6 +33,8 @@ import type {
   workflowRunStatusSchema,
   workflowRunStepStatusSchema,
   workflowSearchLocalBusinessesActionSchema,
+  workflowSearchBrightDataCompaniesActionSchema,
+  workflowSearchBrightDataPeopleActionSchema,
   workflowResolveCompanyFromRawNameActionSchema,
   workflowSendEmailActionSchema,
   workflowSendLinkedinConnectionRequestActionSchema,
@@ -122,6 +124,12 @@ export type WorkflowSendWhatsappMessageAction = z.infer<
 export type WorkflowSearchLocalBusinessesAction = z.infer<
   typeof workflowSearchLocalBusinessesActionSchema
 >;
+export type WorkflowSearchBrightDataCompaniesAction = z.infer<
+  typeof workflowSearchBrightDataCompaniesActionSchema
+>;
+export type WorkflowSearchBrightDataPeopleAction = z.infer<
+  typeof workflowSearchBrightDataPeopleActionSchema
+>;
 export type WorkflowGetLocalBusinessDetailsAction = z.infer<
   typeof workflowGetLocalBusinessDetailsActionSchema
 >;
@@ -165,6 +173,8 @@ export type WorkflowAction =
   | WorkflowLikeLinkedinPostAction
   | WorkflowSendWhatsappMessageAction
   | WorkflowSearchLocalBusinessesAction
+  | WorkflowSearchBrightDataCompaniesAction
+  | WorkflowSearchBrightDataPeopleAction
   | WorkflowGetLocalBusinessDetailsAction
   | WorkflowResolveCompanyFromRawNameAction
   | WorkflowAiAgentAction

@@ -31,7 +31,26 @@ export interface AiFilterConfig {
   selectedMetadataFields: string[];
   embeddingsModel?: boolean;
   includeResume?: boolean;
+  concurrency?: number;
 }
+
+export const DEFAULT_AI_FILTERING_CONCURRENCY = 50;
+
+const resolveConcurrency = (requested?: number): number => {
+  const fromEnv = Number(process.env.AI_FILTERING_CONCURRENCY);
+  const candidate = requested ?? (fromEnv > 0 ? fromEnv : undefined);
+
+  return Number.isFinite(candidate) && (candidate as number) >= 1
+    ? Math.min(Math.floor(candidate as number), 200)
+    : DEFAULT_AI_FILTERING_CONCURRENCY;
+};
+
+const isRateLimitError = (error: unknown): boolean => {
+  const status = (error as { status?: number } | null)?.status;
+  const message = error instanceof Error ? error.message : '';
+
+  return status === 429 || /rate limit|429/i.test(message);
+};
 
 // Mapping from frontend model values to actual OpenAI model names
 const MODEL_MAPPING: Record<string, string> = {
@@ -58,15 +77,11 @@ export interface AiFilterResult {
 @Injectable()
 export class AiFilteringProcessorService {
   private openaiClient: OpenAI;
-  private semaphore: Sema;
 
   constructor(
     private configService: ConfigService,
     private readonly jevEvaluationService: JevEvaluationService,
-  ) {
-    // Initialize semaphore with 10 concurrent requests
-    this.semaphore = new Sema(10);
-  }
+  ) {}
 
   /**
    * Maps frontend model values to actual OpenAI model names
@@ -102,6 +117,16 @@ export class AiFilteringProcessorService {
   ): Promise<AiFilterResult[]> {
     this.initializeOpenAI(openaiApiKey);
 
+    // One semaphore per call so concurrent runs do not share a global cap.
+    const semaphore = new Sema(
+      resolveConcurrency(
+        Math.max(
+          0,
+          ...aiFilters.map((aiFilter) => aiFilter.concurrency ?? 0),
+        ) || undefined,
+      ),
+    );
+
     const results: AiFilterResult[] = [];
     const totalOperations = candidates.length * aiFilters.length;
     let currentOperation = 0;
@@ -129,7 +154,7 @@ export class AiFilteringProcessorService {
 
     // Process all tasks in parallel with semaphore controlling concurrency
     const taskPromises = allTasks.map(async (task) => {
-      await this.semaphore.acquire();
+      await semaphore.acquire();
       console.log(
         'processing tasks for candidate name::%s',
         task.candidate.name,
@@ -163,7 +188,7 @@ export class AiFilteringProcessorService {
           data: {},
         };
       } finally {
-        this.semaphore.release();
+        semaphore.release();
       }
     });
 
@@ -241,9 +266,12 @@ export class AiFilteringProcessorService {
       }
 
       if (isJevModelId(aiFilter.selectedModel)) {
-        if (!canUseJevForFilterFields(aiFilter.fields)) {
+        if (
+          !this.jevEvaluationService.isConfigured() ||
+          !canUseJevForFilterFields(aiFilter.fields)
+        ) {
           console.warn(
-            `Jev selected for filter ${aiFilter.modelName} but fields are not all boolean/enum; falling back to gpt-4o-mini`,
+            `Jev selected for filter ${aiFilter.modelName} but it is not configured or fields are not all boolean/enum; falling back to gpt-4o-mini`,
           );
 
           return this.getOpenAIResponse(
@@ -320,7 +348,7 @@ export class AiFilteringProcessorService {
     ];
     console.log('messages for getOpenAIResponse: ', messages);
 
-    const maxRetries = 3;
+    const maxRetries = 4;
     let lastError: any;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -423,10 +451,13 @@ export class AiFilteringProcessorService {
         console.error(`Error calling OpenAI (attempt ${attempt}):`, error);
         lastError = error;
 
-        // Wait before retrying (exponential backoff)
+        // Wait before retrying (exponential backoff, longer on rate limits)
         if (attempt < maxRetries) {
+          const baseDelayMs = isRateLimitError(error) ? 5000 : 1000;
+          const jitterMs = Math.floor(Math.random() * 500);
+
           await new Promise((resolve) =>
-            setTimeout(resolve, Math.pow(2, attempt) * 1000),
+            setTimeout(resolve, Math.pow(2, attempt) * baseDelayMs + jitterMs),
           );
         }
       }

@@ -26,6 +26,12 @@ import {
   type PeopleNaturalLanguageParserService,
 } from '../services/people-natural-language-parser.service';
 
+const createBrightDataBusinessSearchService = () =>
+  ({
+    isConfigured: jest.fn().mockReturnValue(false),
+    search: jest.fn(),
+  }) as never;
+
 const createPassthroughCompanyScopeResolver = (): PeopleCompanyScopeResolver =>
   ({
     resolve: jest.fn(
@@ -160,6 +166,8 @@ describe('PeopleApiService.searchPeople naturalLanguage (legacy jobTitle path)',
     createPassthroughLocationScopeResolver(),
     createNaturalLanguageParser(),
     createIndexDataSourceResolver(),
+    createBrightDataBusinessSearchService(),
+    {} as never,
   );
 
   beforeEach(() => {
@@ -269,6 +277,8 @@ describe('PeopleApiService.searchPeople naturalLanguage (legacy jobTitle path)',
       createPassthroughLocationScopeResolver(),
       createNaturalLanguageParser(),
       createIndexDataSourceResolver(),
+      createBrightDataBusinessSearchService(),
+    {} as never,
     );
 
     const result = await scopedService.searchPeople({
@@ -358,6 +368,8 @@ describe('PeopleApiService.searchPeople naturalLanguage', () => {
     createPassthroughLocationScopeResolver(),
     peopleNaturalLanguageParser,
     createIndexDataSourceResolver(),
+    createBrightDataBusinessSearchService(),
+    {} as never,
   );
 
   beforeEach(() => {
@@ -628,6 +640,8 @@ describe('PeopleApiService.searchPeopleByTaxonomy', () => {
     createPassthroughLocationScopeResolver(),
     createNaturalLanguageParser(),
     createIndexDataSourceResolver(),
+    createBrightDataBusinessSearchService(),
+    {} as never,
   );
 
   beforeEach(() => {
@@ -1102,6 +1116,8 @@ describe('PeopleApiService.searchPeople taxonomy filters', () => {
     createPassthroughLocationScopeResolver(),
     createNaturalLanguageParser(),
     createIndexDataSourceResolver(),
+    createBrightDataBusinessSearchService(),
+    {} as never,
   );
 
   beforeEach(() => {
@@ -1212,6 +1228,8 @@ describe('PeopleApiService.searchPeople searchUrl', () => {
     createPassthroughLocationScopeResolver(),
     createNaturalLanguageParser(),
     createIndexDataSourceResolver(),
+    createBrightDataBusinessSearchService(),
+    {} as never,
   );
 
   it('runs LinkedIn sourcing from a people search URL without company or title', async () => {
@@ -1274,6 +1292,8 @@ describe('PeopleApiService.getManualBooleanQueries', () => {
     createPassthroughLocationScopeResolver(),
     createNaturalLanguageParser(),
     createIndexDataSourceResolver(),
+    createBrightDataBusinessSearchService(),
+    {} as never,
   );
 
   beforeEach(() => {
@@ -1363,6 +1383,8 @@ describe('PeopleApiService taxonomy LLM and slice', () => {
     createPassthroughLocationScopeResolver(),
     createNaturalLanguageParser(),
     createIndexDataSourceResolver(),
+    createBrightDataBusinessSearchService(),
+    {} as never,
   );
 
   beforeEach(() => {

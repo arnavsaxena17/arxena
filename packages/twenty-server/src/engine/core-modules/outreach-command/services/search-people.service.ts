@@ -18,6 +18,8 @@ export type SearchPeopleInput = {
   locations?: string[];
   country?: string;
   limit?: number;
+  dataSource?: 'unipile' | 'harvest' | 'bright_data';
+  mode?: 'ludicrous' | 'smart' | 'instant';
 };
 
 @Injectable()
@@ -37,18 +39,23 @@ export class SearchPeopleService {
     workspaceId: string;
     input: SearchPeopleInput;
   }): Promise<object> {
-    let dataSource: 'unipile' | 'harvest' = 'harvest';
+    let dataSource: 'unipile' | 'harvest' | 'bright_data' =
+      input.dataSource === 'bright_data' ? 'bright_data' : 'harvest';
 
     try {
       const apiToken =
         await this.gtmWorkspaceAuthTokenService.resolveApiKeyToken(workspaceId);
       const defaultAccount =
-        await this.unipileSearchAccountResolver.resolveDefaultWorkspaceAccount(
-          workspaceId,
-        );
+        input.dataSource === 'bright_data'
+          ? undefined
+          : await this.unipileSearchAccountResolver.resolveDefaultWorkspaceAccount(
+              workspaceId,
+            );
 
       const accountId = defaultAccount?.accountId;
-      dataSource = accountId ? 'unipile' : 'harvest';
+      if (input.dataSource !== 'bright_data') {
+        dataSource = accountId ? 'unipile' : 'harvest';
+      }
       const limit = Math.min(
         Math.max(1, input.limit ?? 10),
         PEOPLE_SEARCH_MAX_LIMIT,
@@ -65,6 +72,7 @@ export class SearchPeopleService {
           country: input.country,
           dataSource,
           accountId,
+          mode: input.mode,
           limit,
         },
         apiToken ?? undefined,
@@ -78,8 +86,7 @@ export class SearchPeopleService {
           source: search.dataSource,
           companyId: linkedinCompanyId,
           companyIds: search.query?.company?.ids,
-          companyName:
-            search.query?.company?.name ?? input.companyName,
+          companyName: search.query?.company?.name ?? input.companyName,
           companySlug: search.query?.company?.slug,
         });
 

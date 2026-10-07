@@ -38,8 +38,9 @@ describe('mergeOrgChartUnipileProfileFieldsOntoOrgChartData', () => {
       new Map(),
     );
 
-    const candidates = (out.orgchart as Array<{ candidates: Array<Record<string, unknown>> }>)[0]
-      .candidates;
+    const candidates = (
+      out.orgchart as Array<{ candidates: Array<Record<string, unknown>> }>
+    )[0].candidates;
     expect(candidates[0].network_distance).toBe('DISTANCE_2');
     expect(candidates[0].premium).toBe(true);
     expect(candidates[0].shared_connections_count).toBe(12);

@@ -12,7 +12,10 @@ import { type WorkflowActionOutput } from 'src/modules/workflow/workflow-executo
 import { findStepOrThrow } from 'src/modules/workflow/workflow-executor/utils/find-step-or-throw.util';
 import { isWorkflowAiFilteringAction } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/guards/is-workflow-ai-filtering-action.guard';
 import { type WorkflowAiFilteringActionInput } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/types/workflow-ai-filtering-action-input.type';
-import { WorkflowAiFilteringService } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/workflow-ai-filtering.service';
+import {
+  EMPTY_AI_FILTERING_RESULT,
+  WorkflowAiFilteringService,
+} from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/workflow-ai-filtering.service';
 
 @Injectable()
 export class AiFilteringWorkflowAction implements WorkflowAction {
@@ -42,6 +45,12 @@ export class AiFilteringWorkflowAction implements WorkflowAction {
       step.settings.input,
       context,
     ) as WorkflowAiFilteringActionInput;
+
+    if (
+      !this.workflowAiFilteringService.hasCandidates(resolvedInput.candidates)
+    ) {
+      return { result: EMPTY_AI_FILTERING_RESULT };
+    }
 
     const enqueueResult = await this.workflowAiFilteringService.enqueue({
       workspaceId: runInfo.workspaceId,

@@ -11,8 +11,9 @@ export const levenshteinDistance = (left: string, right: string): number => {
     return left.length;
   }
 
-  const previousRow = Array.from({ length: right.length + 1 }, (_, index) =>
-    index,
+  const previousRow = Array.from(
+    { length: right.length + 1 },
+    (_, index) => index,
   );
   const currentRow = new Array<number>(right.length + 1);
 

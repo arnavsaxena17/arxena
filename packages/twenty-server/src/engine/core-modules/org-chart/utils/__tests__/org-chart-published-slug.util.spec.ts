@@ -1,6 +1,6 @@
 import {
-    buildDefaultPublishSlug,
-    validatePublishSlug,
+  buildDefaultPublishSlug,
+  validatePublishSlug,
 } from '../org-chart-published-slug.util';
 
 describe('org-chart-published-slug.util', () => {

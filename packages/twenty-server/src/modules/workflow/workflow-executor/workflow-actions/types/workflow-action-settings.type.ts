@@ -30,6 +30,10 @@ import { type WorkflowSendWhatsappMessageActionSettings } from 'src/modules/work
 import { type WorkflowSendLinkedinVoiceNoteActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-send-linkedin-voice-note-action-settings.type';
 import { type WorkflowViewLinkedinProfileActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/types/workflow-view-linkedin-profile-action-settings.type';
 import { type WorkflowSearchLocalBusinessesActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/local-business-data/types/workflow-search-local-businesses-action-settings.type';
+import {
+  type WorkflowSearchBrightDataCompaniesActionSettings,
+  type WorkflowSearchBrightDataPeopleActionSettings,
+} from 'src/modules/workflow/workflow-executor/workflow-actions/bright-data-business-search/types/workflow-search-bright-data-business-action-settings.type';
 import { type WorkflowResolveCompanyFromRawNameActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/company-name-resolver/types/workflow-resolve-company-from-raw-name-action-settings.type';
 import { type WorkflowGetLocalBusinessDetailsActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/local-business-data/types/workflow-get-local-business-details-action-settings.type';
 
@@ -76,6 +80,8 @@ export type WorkflowActionSettings =
   | WorkflowAcceptLinkedinReceivedInvitationActionSettings
   | WorkflowSendWhatsappMessageActionSettings
   | WorkflowSearchLocalBusinessesActionSettings
+  | WorkflowSearchBrightDataCompaniesActionSettings
+  | WorkflowSearchBrightDataPeopleActionSettings
   | WorkflowGetLocalBusinessDetailsActionSettings
   | WorkflowResolveCompanyFromRawNameActionSettings
   | WorkflowAiAgentActionSettings

@@ -25,7 +25,12 @@ export const parseIpv4Cidr = (
   }
   const [ipPart, prefixPart] = trimmed.split('/');
   const prefix = Number(prefixPart);
-  if (!isIpv4(ipPart) || !Number.isInteger(prefix) || prefix < 0 || prefix > 32) {
+  if (
+    !isIpv4(ipPart) ||
+    !Number.isInteger(prefix) ||
+    prefix < 0 ||
+    prefix > 32
+  ) {
     return null;
   }
   const mask = prefix === 0 ? 0 : (~0 << (32 - prefix)) >>> 0;

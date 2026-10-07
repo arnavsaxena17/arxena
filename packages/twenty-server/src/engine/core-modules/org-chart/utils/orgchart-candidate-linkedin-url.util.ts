@@ -49,12 +49,7 @@ export const extractProfilePictureUrlFromOrgChartCandidateRow = (
     const v = raw[k];
     if (typeof v === 'string') {
       const t = v.trim();
-      if (
-        t &&
-        !/^null$/iu.test(t) &&
-        !/^undefined$/iu.test(t) &&
-        t !== '0'
-      ) {
+      if (t && !/^null$/iu.test(t) && !/^undefined$/iu.test(t) && t !== '0') {
         return t;
       }
     }

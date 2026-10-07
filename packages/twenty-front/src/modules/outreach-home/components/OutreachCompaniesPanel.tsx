@@ -36,6 +36,7 @@ import {
   OutreachViewBarIconAction,
   OutreachViewBarPill,
 } from '@/outreach-home/components/record-table/OutreachViewBar';
+import { useOutreachTablePresentation } from '@/outreach-home/hooks/useOutreachTablePresentation';
 import { type OutreachCompanyRow } from '@/outreach-home/types/outreach-home.types';
 import { mapCrmCompanyRecordsToOutreachCompanyRows } from '@/outreach-home/utils/map-crm-record-to-outreach-row.util';
 import {
@@ -185,6 +186,7 @@ const getCompanyMobileCard = (
 
 type OutreachCompaniesPanelProps = {
   companies: OutreachCompanyRow[];
+  projectId: string | null | undefined;
   selectedCompanyId: string | null;
   onSelectCompanyId: (companyId: string | null) => void;
   isLoading?: boolean;
@@ -194,6 +196,7 @@ type OutreachCompaniesPanelProps = {
 
 export const OutreachCompaniesPanel = ({
   companies,
+  projectId,
   selectedCompanyId,
   onSelectCompanyId,
   isLoading = false,
@@ -206,6 +209,13 @@ export const OutreachCompaniesPanel = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>([]);
+  const {
+    columnLayout,
+    persistLayout,
+    columnFilters,
+    persistFilters,
+    clearColumnFilters,
+  } = useOutreachTablePresentation(projectId, 'companies');
 
   const { openObjectRecordsSpreadsheetImportDialog } =
     useOpenObjectRecordsSpreadsheetImportDialog('company');
@@ -311,6 +321,7 @@ export const OutreachCompaniesPanel = ({
     selectedCompanyIds.length > 0;
 
   const handleClearFilters = () => {
+    clearColumnFilters();
     setStatusFilter('all');
     setSearchQuery('');
     setChatSearchQuery('');
@@ -402,6 +413,10 @@ export const OutreachCompaniesPanel = ({
           onSelectedRowIdsChange={handleSelectedRowIdsChange}
           onRowClick={handleRowClick}
           getMobileCard={getCompanyMobileCard}
+          columnLayout={columnLayout}
+          onColumnLayoutChange={persistLayout}
+          columnFilters={columnFilters}
+          onColumnFiltersChange={persistFilters}
         />
       )}
     </StyledPanel>

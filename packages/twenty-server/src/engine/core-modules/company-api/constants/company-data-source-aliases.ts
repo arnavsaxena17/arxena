@@ -4,7 +4,8 @@ export type CompanyDataSourceAlias =
   | 'harvest'
   | 'unipile'
   | 'pool'
-  | 'recruiter';
+  | 'recruiter'
+  | 'bright_data';
 
 export type CompanyResolvedDataSourceAlias = Exclude<
   CompanyDataSourceAlias,
@@ -52,5 +53,11 @@ export const COMPANY_DATA_SOURCE_CATEGORIES: CompanyDataSourceCategory[] = [
     label: 'Recruiter',
     description:
       'Company search on a Recruiter-connected Unipile account (classic/premium company search; Unipile has no Recruiter companies category).',
+  },
+  {
+    alias: 'bright_data',
+    label: 'Bright Data',
+    description:
+      'Bright Data Business Search with a raw natural-language query. Not used by auto.',
   },
 ];

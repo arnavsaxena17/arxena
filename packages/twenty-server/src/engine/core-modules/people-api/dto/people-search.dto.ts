@@ -78,6 +78,20 @@ export class PeopleSearchDto {
   naturalLanguage?: string;
 
   @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
+  @IsIn(['ludicrous', 'smart', 'instant'])
+  mode?: 'ludicrous' | 'smart' | 'instant';
+
+  // Ludicrous only: spend cap in USD for this query (max 10, default 1)
+  @IsOptional()
+  @IsNumber()
+  @Min(0.01)
+  @Max(10)
+  maxBudgetUsd?: number;
+
+  @IsOptional()
   @IsString()
   query?: string;
 

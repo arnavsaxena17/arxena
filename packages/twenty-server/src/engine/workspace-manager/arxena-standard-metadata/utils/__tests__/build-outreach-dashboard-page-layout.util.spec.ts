@@ -17,127 +17,71 @@ describe('buildOutreachDashboardPageLayout', () => {
     );
   });
 
-  it('includes overview KPIs for companies, people, connection requests, and stages', () => {
+  it('has a single Overview tab with the eight result widgets in order', () => {
     const layout = buildOutreachDashboardPageLayout();
-    const overview = layout.tabs?.find((tab) => tab.title === 'Overview');
 
-    expect(overview).toBeDefined();
+    expect(layout.tabs?.map((tab) => tab.title)).toEqual(['Overview']);
 
-    const titles = (overview?.widgets ?? []).map((widget) => widget.title);
-
-    expect(titles).toEqual(
-      expect.arrayContaining([
-        'Target companies',
-        'People enrolled',
-        'Connection requests sent',
-        'Meetings booked',
-        'Funnel: Added → Opportunity',
-        'Candidates by outreach sequence stage',
-        'Companies added (weekly)',
-        'First contacts (weekly)',
-      ]),
+    const titles = (layout.tabs?.[0]?.widgets ?? []).map(
+      (widget) => widget.title,
     );
 
-    const connectionRequests = overview?.widgets?.find(
-      (widget) => widget.title === 'Connection requests sent',
-    );
-    const companiesAdded = overview?.widgets?.find(
-      (widget) => widget.title === 'Companies added (weekly)',
-    );
-    const firstContacts = overview?.widgets?.find(
-      (widget) => widget.title === 'First contacts (weekly)',
-    );
-
-    expect(connectionRequests?.configuration).toMatchObject({
-      configurationType: 'AGGREGATE_CHART',
-      aggregateOperation: 'COUNT_NOT_EMPTY',
-      aggregateSubFieldName: 'firstOutboundAt',
-    });
-    expect(companiesAdded?.configuration).toMatchObject({
-      configurationType: 'LINE_CHART',
-      aggregateOperation: 'COUNT_NOT_EMPTY',
-      displayDataLabel: true,
-    });
-    expect(firstContacts?.configuration).toMatchObject({
-      configurationType: 'LINE_CHART',
-      aggregateOperation: 'COUNT_NOT_EMPTY',
-      aggregateSubFieldName: 'firstContactAt',
-      primaryAxisGroupBySubFieldName: 'firstContactAt',
-      displayDataLabel: true,
-    });
+    expect(titles).toEqual([
+      'People contacted',
+      'Connections accepted',
+      'Replies',
+      'Meetings booked',
+      'People contacted per week',
+      'Replies per week',
+      'Where people are now',
+      'What got replies',
+    ]);
   });
 
-  it('uses outreachAnalytics JSON paths on Speed tab widgets', () => {
-    const layout = buildOutreachDashboardPageLayout();
-    const speed = layout.tabs?.find((tab) => tab.title === 'Speed');
-
-    expect(speed).toBeDefined();
-
-    const timeToFirstContact = speed?.widgets?.find(
-      (widget) => widget.title === 'Time to first contact',
+  it('counts funnel milestones from candidate outreachAnalytics timestamps', () => {
+    const widgets = buildOutreachDashboardPageLayout().tabs?.[0]?.widgets ?? [];
+    const milestoneByTitle = Object.fromEntries(
+      widgets
+        .filter(
+          (widget) =>
+            widget.configuration.configurationType === 'AGGREGATE_CHART',
+        )
+        .map((widget) => [
+          widget.title,
+          (widget.configuration as { aggregateSubFieldName?: string })
+            .aggregateSubFieldName,
+        ]),
     );
-    const avgDaysToFirstContact = speed?.widgets?.find(
-      (widget) => widget.title === 'Avg days → first contact',
-    );
 
-    expect(timeToFirstContact?.configuration).toMatchObject({
-      configurationType: 'BAR_CHART',
-      primaryAxisGroupBySubFieldName: 'timeToFirstContactBucket',
+    expect(milestoneByTitle).toEqual({
+      'People contacted': 'firstOutboundAt',
+      'Connections accepted': 'connectionAcceptedAt',
+      Replies: 'firstReplyAt',
+      'Meetings booked': 'meetingBookedAt',
     });
-    expect(avgDaysToFirstContact?.configuration).toMatchObject({
-      configurationType: 'AGGREGATE_CHART',
-      aggregateOperation: 'AVG',
-      aggregateSubFieldName: 'daysToFirstContact',
-    });
-  });
 
-  it('keeps widget titles unique within each tab', () => {
-    const layout = buildOutreachDashboardPageLayout();
-
-    for (const tab of layout.tabs ?? []) {
-      const titles = (tab.widgets ?? []).map((widget) => widget.title);
-
-      expect(new Set(titles).size).toBe(titles.length);
+    for (const widget of widgets) {
+      expect(widget.configuration).toMatchObject(
+        widget.configuration.configurationType === 'AGGREGATE_CHART'
+          ? { aggregateOperation: 'COUNT_NOT_EMPTY' }
+          : { omitNullValues: true },
+      );
     }
   });
 
-  it('includes workflow control tab with run KPIs and record tables', () => {
-    const layout = buildOutreachDashboardPageLayout();
-    const workflowControl = layout.tabs?.find(
-      (tab) => tab.title === 'Workflow control',
+  it('puts every widget on Candidate so the project and variant filters apply', () => {
+    const widgets = buildOutreachDashboardPageLayout().tabs?.[0]?.widgets ?? [];
+    const objectIds = new Set(
+      widgets.map((widget) => widget.objectUniversalIdentifier),
     );
 
-    expect(workflowControl).toBeDefined();
+    expect(objectIds.size).toBe(1);
+  });
 
-    const titles = (workflowControl?.widgets ?? []).map((widget) => widget.title);
+  it('keeps widget titles unique', () => {
+    const widgets = buildOutreachDashboardPageLayout().tabs?.[0]?.widgets ?? [];
+    const titles = widgets.map((widget) => widget.title);
 
-    expect(titles).toEqual(
-      expect.arrayContaining([
-        'Active runs',
-        'Awaiting approval',
-        'In delay',
-        'Failed runs',
-        'Enrich failed',
-        'Stage C candidates by branch',
-        'Active runs by step kind',
-        'Active runs by current step',
-        'HITL approval queue',
-        'Active candidate workflow runs',
-        'Failed workflow runs',
-        'Stage C candidates',
-      ]),
-    );
-
-    const hitlTable = workflowControl?.widgets?.find(
-      (widget) => widget.title === 'HITL approval queue',
-    );
-
-    expect(hitlTable).toMatchObject({
-      type: 'RECORD_TABLE',
-      configuration: {
-        configurationType: 'RECORD_TABLE',
-        recordLimit: 50,
-      },
-    });
+    expect(new Set(titles).size).toBe(titles.length);
   });
 });

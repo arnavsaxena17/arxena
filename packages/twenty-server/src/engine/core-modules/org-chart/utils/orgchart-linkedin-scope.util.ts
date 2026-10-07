@@ -95,7 +95,8 @@ export const computeOrgChartLinkedInSearchPlan = (input: {
 } => {
   const pageSize =
     input.pageSize ?? getLinkedInUnipileSearchPageLimit(input.searchType);
-  const maxCandidates = input.maxCandidates ?? getOrgChartLinkedInMaxCandidates();
+  const maxCandidates =
+    input.maxCandidates ?? getOrgChartLinkedInMaxCandidates();
   const strategiesToRun = Math.max(1, input.strategiesToRun);
   const totalCount = Math.max(0, input.totalCountFromApi);
   const hasScope = hasOrgChartLinkedInSubsetScopeFilter(
@@ -135,10 +136,15 @@ export const sleepMs = (ms: number): Promise<void> =>
   });
 
 export const randomOrgChartLinkedInPageDelayMs = (): number => {
-  const minRaw = Number(process.env.ORGCHART_LINKEDIN_PAGE_DELAY_MS_MIN ?? '2000');
-  const maxRaw = Number(process.env.ORGCHART_LINKEDIN_PAGE_DELAY_MS_MAX ?? '3000');
+  const minRaw = Number(
+    process.env.ORGCHART_LINKEDIN_PAGE_DELAY_MS_MIN ?? '2000',
+  );
+  const maxRaw = Number(
+    process.env.ORGCHART_LINKEDIN_PAGE_DELAY_MS_MAX ?? '3000',
+  );
   const min = Number.isFinite(minRaw) && minRaw >= 0 ? minRaw : 2000;
-  const max = Number.isFinite(maxRaw) && maxRaw >= min ? maxRaw : Math.max(min, 3000);
+  const max =
+    Number.isFinite(maxRaw) && maxRaw >= min ? maxRaw : Math.max(min, 3000);
 
   return min + Math.floor(Math.random() * (max - min + 1));
 };

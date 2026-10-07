@@ -34,6 +34,7 @@ import {
   getOutreachPeopleTableColumns,
   getOutreachPersonMobileCard,
 } from '@/outreach-home/components/record-table/getOutreachPeopleTableColumns';
+import { appendOutreachRawJsonColumns } from '@/outreach-home/components/record-table/appendOutreachRawJsonColumns';
 import { OutreachRecordTable } from '@/outreach-home/components/record-table/OutreachRecordTable';
 import {
   OutreachViewBar,
@@ -43,6 +44,7 @@ import {
 } from '@/outreach-home/components/record-table/OutreachViewBar';
 import { OutreachTableEmptyState } from '@/outreach-home/components/record-table/OutreachTableEmptyState';
 import { useAddOutreachRecordsToCrm } from '@/outreach-home/hooks/useAddOutreachRecordsToCrm';
+import { useOutreachTablePresentation } from '@/outreach-home/hooks/useOutreachTablePresentation';
 import { useOutreachEnroll } from '@/outreach-home/hooks/useOutreachEnroll';
 import { useOutreachProjectJourneySummary } from '@/outreach-home/hooks/useOutreachProjectJourneySummary';
 import { useStartOutreachSequencerOnCandidates } from '@/outreach-home/hooks/useStartOutreachSequencerOnCandidates';
@@ -118,6 +120,13 @@ export const OutreachPeoplePanel = ({
   const [stageFilter, setStageFilter] =
     useState<OutreachPeopleQueueFilter>('all');
   const { isPersisting, addPeopleToCrm } = useAddOutreachRecordsToCrm();
+  const {
+    columnLayout,
+    persistLayout,
+    columnFilters,
+    persistFilters,
+    clearColumnFilters,
+  } = useOutreachTablePresentation(projectId, 'people');
   const { enrollSelectedPeople, promoteDeferredCandidate } =
     useOutreachEnroll();
   const { isStopping, stopOutreachForCandidates } = useStopOutreach();
@@ -376,11 +385,15 @@ export const OutreachPeoplePanel = ({
 
   const columns = useMemo(
     () =>
-      getOutreachPeopleTableColumns({
-        companiesByWorkingSetId,
-        onOpenPerson: handleOpenPerson,
-      }),
-    [companiesByWorkingSetId, handleOpenPerson],
+      appendOutreachRawJsonColumns(
+        getOutreachPeopleTableColumns({
+          companiesByWorkingSetId,
+          onOpenPerson: handleOpenPerson,
+        }),
+        people,
+        columnLayout,
+      ),
+    [columnLayout, companiesByWorkingSetId, handleOpenPerson, people],
   );
 
   const hasActiveFilter =
@@ -390,6 +403,7 @@ export const OutreachPeoplePanel = ({
     setStageFilter('all');
     setSearchQuery('');
     setChatSearchQuery('');
+    clearColumnFilters();
   };
 
   const withCount = (label: string, count: number) =>
@@ -525,6 +539,10 @@ export const OutreachPeoplePanel = ({
             onSelectedRowIdsChange={handleSelectedRowIdsChange}
             onRowClick={handleOpenPerson}
             getMobileCard={getOutreachPersonMobileCard}
+            columnLayout={columnLayout}
+            onColumnLayoutChange={persistLayout}
+            columnFilters={columnFilters}
+            onColumnFiltersChange={persistFilters}
           />
           <HotTableActionMenu tableId={tableInstanceId} />
         </ContextStoreComponentInstanceContext.Provider>

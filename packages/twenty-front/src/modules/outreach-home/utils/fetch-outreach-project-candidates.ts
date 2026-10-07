@@ -23,6 +23,9 @@ export type OutreachProjectCandidateRecord = {
   pendingChannel?: string | null;
   linkedinFollowUpCount?: number | null;
   outreachAnalytics?: unknown;
+  otherFields?: unknown;
+  jobSpecificFields?: unknown;
+  outreachProspectEnrichment?: unknown;
   experimentVariant?: string | null;
   candidateFlags?: CandidateFlags | null;
   peopleId?: string | null;
@@ -38,6 +41,8 @@ export type OutreachProjectCandidateRecord = {
       primaryLinkUrl?: string;
       primaryLinkLabel?: string;
     } | null;
+    linkedinProfile?: unknown;
+    linkedinPosts?: unknown;
   } | null;
   chatMessages?: {
     edges?: Array<{

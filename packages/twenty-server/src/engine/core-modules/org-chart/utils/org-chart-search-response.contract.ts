@@ -21,7 +21,9 @@ const ORGCHART_SEARCH_TYPES = new Set([
 
 function expectPlainObject(value: unknown): Record<string, unknown> {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error('org-chart search response must be a non-null plain object');
+    throw new Error(
+      'org-chart search response must be a non-null plain object',
+    );
   }
   return value as Record<string, unknown>;
 }
@@ -50,7 +52,10 @@ function requireBoolean(obj: Record<string, unknown>, key: string): boolean {
   return v;
 }
 
-function requireStringArray(obj: Record<string, unknown>, key: string): string[] {
+function requireStringArray(
+  obj: Record<string, unknown>,
+  key: string,
+): string[] {
   const v = obj[key];
   if (!Array.isArray(v)) {
     throw new Error(`org-chart search response: expected array "${key}"`);
@@ -85,7 +90,9 @@ function assertOrgChartPayloadWhenPresent(orgChart: unknown): void {
     return;
   }
   if (typeof orgChart !== 'object' || Array.isArray(orgChart)) {
-    throw new Error('org-chart search response: orgChart must be an object when present');
+    throw new Error(
+      'org-chart search response: orgChart must be an object when present',
+    );
   }
   const o = orgChart as Record<string, unknown>;
   const raw = o.orgchart;
@@ -134,9 +141,7 @@ export function assertOrgChartSearchUnipileSuccessResponse(
 
   const mode = requireString(o, 'mode');
   if (!ORGCHART_SEARCH_MODES.has(mode)) {
-    throw new Error(
-      `org-chart search response: unexpected mode "${mode}"`,
-    );
+    throw new Error(`org-chart search response: unexpected mode "${mode}"`);
   }
 
   const searchType = requireString(o, 'searchType');

@@ -1,6 +1,6 @@
 import {
-    applyOrgChartPayloadSubsetFilter,
-    isOrgChartPayloadSubsetRequest,
+  applyOrgChartPayloadSubsetFilter,
+  isOrgChartPayloadSubsetRequest,
 } from './org-chart-subset-filter.util';
 
 describe('org-chart-subset-filter.util', () => {
@@ -56,7 +56,9 @@ describe('org-chart-subset-filter.util', () => {
     const filtered = applyOrgChartPayloadSubsetFilter(basePayload, {
       functionRoot: 'technology',
     });
-    const nodes = JSON.parse(String(filtered.orgchart)) as Array<{ key: number }>;
+    const nodes = JSON.parse(String(filtered.orgchart)) as Array<{
+      key: number;
+    }>;
     console.log(
       `technology subset keys=${nodes.map((node) => node.key).join(',')}`,
     );
@@ -69,7 +71,9 @@ describe('org-chart-subset-filter.util', () => {
     const filtered = applyOrgChartPayloadSubsetFilter(basePayload, {
       country: 'India',
     });
-    const nodes = JSON.parse(String(filtered.orgchart)) as Array<{ key: number }>;
+    const nodes = JSON.parse(String(filtered.orgchart)) as Array<{
+      key: number;
+    }>;
     console.log(`India subset keys=${nodes.map((node) => node.key).join(',')}`);
     expect(filtered.country).toBe('India');
     expect(nodes.map((node) => node.key).sort()).toEqual([1, 2]);

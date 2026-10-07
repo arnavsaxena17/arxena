@@ -1,11 +1,11 @@
 import {
-    buildCompanyWebsiteLookupVariants,
-    collectDomainLookupCandidates,
-    extractCompanyNameStemFromDomain,
-    extractRootCompanyDomain,
-    isUsableOrgChartEsDocument,
-    isUsableOrgChartResolveCompanyId,
-    normalizeBareCompanyDomain,
+  buildCompanyWebsiteLookupVariants,
+  collectDomainLookupCandidates,
+  extractCompanyNameStemFromDomain,
+  extractRootCompanyDomain,
+  isUsableOrgChartEsDocument,
+  isUsableOrgChartResolveCompanyId,
+  normalizeBareCompanyDomain,
 } from './org-chart-resolve-domain.util';
 
 describe('org-chart-resolve-domain.util', () => {
@@ -18,7 +18,9 @@ describe('org-chart-resolve-domain.util', () => {
   });
 
   it('buildCompanyWebsiteLookupVariants includes common stored forms', () => {
-    console.log('buildCompanyWebsiteLookupVariants includes common stored forms');
+    console.log(
+      'buildCompanyWebsiteLookupVariants includes common stored forms',
+    );
     const variants = buildCompanyWebsiteLookupVariants('arxena.com');
     expect(variants).toContain('arxena.com');
     expect(variants).toContain('www.arxena.com');
@@ -27,7 +29,9 @@ describe('org-chart-resolve-domain.util', () => {
 
   it('extractRootCompanyDomain strips subdomains', () => {
     console.log('extractRootCompanyDomain strips subdomains');
-    expect(extractRootCompanyDomain('dashboard.unipile.com')).toBe('unipile.com');
+    expect(extractRootCompanyDomain('dashboard.unipile.com')).toBe(
+      'unipile.com',
+    );
     expect(extractRootCompanyDomain('arxena.com')).toBe('arxena.com');
   });
 

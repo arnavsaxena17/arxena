@@ -25,7 +25,10 @@ export const normalizeBareCompanyDomain = (
   try {
     const withProtocol = raw.startsWith('http') ? raw : `https://${raw}`;
     const { hostname } = new URL(withProtocol);
-    const bare = hostname.replace(/^www\./iu, '').trim().toLowerCase();
+    const bare = hostname
+      .replace(/^www\./iu, '')
+      .trim()
+      .toLowerCase();
     return bare.length > 0 ? bare : undefined;
   } catch {
     const trimmed = raw
@@ -40,7 +43,10 @@ export const normalizeBareCompanyDomain = (
 
 /** `dashboard.unipile.com` → `unipile.com`; `arxena.com` stays as-is. */
 export const extractRootCompanyDomain = (bareDomain: string): string => {
-  const bare = bareDomain.replace(/^www\./iu, '').trim().toLowerCase();
+  const bare = bareDomain
+    .replace(/^www\./iu, '')
+    .trim()
+    .toLowerCase();
   const parts = bare.split('.').filter(Boolean);
   if (parts.length <= 2) {
     return bare;
@@ -74,7 +80,10 @@ export const extractCompanyNameStemFromDomain = (
 
 /** Domains to query in ES, most specific first. */
 export const collectDomainLookupCandidates = (bareDomain: string): string[] => {
-  const bare = bareDomain.replace(/^www\./iu, '').trim().toLowerCase();
+  const bare = bareDomain
+    .replace(/^www\./iu, '')
+    .trim()
+    .toLowerCase();
   if (!bare) {
     return [];
   }
@@ -98,7 +107,10 @@ export const collectDomainLookupCandidates = (bareDomain: string): string[] => {
 export const buildCompanyWebsiteLookupVariants = (
   bareDomain: string,
 ): string[] => {
-  const bare = bareDomain.replace(/^www\./iu, '').trim().toLowerCase();
+  const bare = bareDomain
+    .replace(/^www\./iu, '')
+    .trim()
+    .toLowerCase();
   if (!bare) {
     return [];
   }

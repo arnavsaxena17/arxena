@@ -15,6 +15,7 @@ describe('people-data-source-aliases', () => {
       'harvest',
       'unipile',
       'pool',
+      'bright_data',
     ]);
     for (const category of PEOPLE_DATA_SOURCE_CATEGORIES) {
       expect(category.label.toLowerCase()).not.toContain('people data labs');

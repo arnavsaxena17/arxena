@@ -26,6 +26,10 @@ import { workflowSendLinkedinMessageActionSchema } from './send-linkedin-message
 import { workflowSendLinkedinVoiceNoteActionSchema } from './send-linkedin-voice-note-action-schema';
 import { workflowSendWhatsappMessageActionSchema } from './send-whatsapp-message-action-schema';
 import { workflowSearchLocalBusinessesActionSchema } from './search-local-businesses-action-schema';
+import {
+  workflowSearchBrightDataCompaniesActionSchema,
+  workflowSearchBrightDataPeopleActionSchema,
+} from './search-bright-data-business-action-schema';
 import { workflowGetLocalBusinessDetailsActionSchema } from './get-local-business-details-action-schema';
 import { workflowResolveCompanyFromRawNameActionSchema } from './resolve-company-from-raw-name-action-schema';
 import { workflowUpdateRecordActionSchema } from './update-record-action-schema';
@@ -60,6 +64,8 @@ export const workflowActionSchema = z.discriminatedUnion('type', [
   workflowAcceptLinkedinReceivedInvitationActionSchema,
   workflowSendWhatsappMessageActionSchema,
   workflowSearchLocalBusinessesActionSchema,
+  workflowSearchBrightDataCompaniesActionSchema,
+  workflowSearchBrightDataPeopleActionSchema,
   workflowGetLocalBusinessDetailsActionSchema,
   workflowResolveCompanyFromRawNameActionSchema,
   workflowAiAgentActionSchema,

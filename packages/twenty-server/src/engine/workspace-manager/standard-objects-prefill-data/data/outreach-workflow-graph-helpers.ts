@@ -787,6 +787,80 @@ export const gtmWfAiAgentStep = ({
   );
 };
 
+export type GtmWfAiFilterField = {
+  name: string;
+  type: 'boolean' | 'enum' | 'text';
+  description: string;
+  enumValues?: string[];
+  // Best-effort enrichment (e.g. a reason). Models that cannot answer it, like
+  // jev, still run the filter.
+  optional?: boolean;
+};
+
+// AI_FILTERING step. The filter prompt and fields live on the step so they are
+// editable on the canvas. Output is { candidates, kept, rejected } and
+// downstream steps read {{stepId.kept}}. Fields stay boolean/enum so the jev
+// model (default) can answer them without a text-model fallback.
+export const gtmWfAiFilteringStep = ({
+  id,
+  name,
+  candidates,
+  filterName,
+  prompt,
+  fields,
+  keepField,
+  subject,
+  selectedModel,
+  selectedMetadataFields,
+  nextStepIds,
+}: {
+  id: string;
+  name: string;
+  candidates: string;
+  filterName: string;
+  prompt: string;
+  fields: GtmWfAiFilterField[];
+  keepField: string;
+  subject: 'person' | 'company';
+  // Chosen from the golden-set eval, not defaulted: see ai-filter-eval.live.spec.ts.
+  selectedModel: string;
+  selectedMetadataFields: string[];
+  nextStepIds?: string[];
+}): StepBase =>
+  withNext(
+    {
+      id,
+      name,
+      type: 'AI_FILTERING',
+      valid: true,
+      settings: {
+        input: {
+          candidates,
+          name: filterName,
+          prompt,
+          selectedModel,
+          selectedMetadataFields,
+          includeResume: false,
+          fields,
+          keepField,
+          subject,
+          batchSize: 10,
+          concurrency: 20,
+        },
+        outputSchema: getOutputSchemaFromValue({
+          success: true,
+          total: 1,
+          candidates: [],
+          kept: [],
+          rejected: [],
+          failed: [],
+        }),
+        errorHandlingOptions: OUTREACH_WF_ERROR_HANDLING,
+      },
+    },
+    nextStepIds,
+  );
+
 export const gtmWfFormStep = ({
   id,
   name,

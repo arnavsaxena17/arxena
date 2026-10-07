@@ -51,7 +51,9 @@ export const buildOrgChartCandidateDedupeKey = (
   // Important: after normalization for the Python builder, rows often use `full_name` + `job_title`.
   const rawFullName = row.full_name ?? row.name;
   const fullName = normalizeStringForDedupe(rawFullName);
-  const firstNameFromFullName = fullName ? fullName.split(/\s+/)[0] ?? '' : '';
+  const firstNameFromFullName = fullName
+    ? (fullName.split(/\s+/)[0] ?? '')
+    : '';
   const firstName =
     normalizeStringForDedupe(row.first_name) ||
     normalizeStringForDedupe(row.firstName) ||
@@ -110,7 +112,9 @@ export const mergeOrgChartCandidateRow = (
       primary[key] !== undefined &&
       primary[key] !== null &&
       primary[key] !== '' &&
-      (incoming[key] === undefined || incoming[key] === null || incoming[key] === '')
+      (incoming[key] === undefined ||
+        incoming[key] === null ||
+        incoming[key] === '')
     ) {
       merged[key] = primary[key];
     }
@@ -136,7 +140,9 @@ export const mergeOrgChartCandidateRow = (
   ] as const;
   for (const key of preferIncomingIfMissing) {
     if (
-      (primary[key] === undefined || primary[key] === null || primary[key] === '') &&
+      (primary[key] === undefined ||
+        primary[key] === null ||
+        primary[key] === '') &&
       incoming[key] !== undefined &&
       incoming[key] !== null &&
       incoming[key] !== ''
@@ -180,4 +186,3 @@ export const dedupeAndMergeOrgChartCandidates = (
   }
   return [...byKey.values(), ...passthrough];
 };
-

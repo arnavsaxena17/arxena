@@ -100,10 +100,13 @@ export const filterOrgChartCandidatesByNodeStdLabels = (
       stdFunction: s.stdFunction?.trim(),
       stdGrade: s.stdGrade?.trim(),
     }))
-    .filter((s) => (s.stdFunction?.length ?? 0) > 0 || (s.stdGrade?.length ?? 0) > 0);
+    .filter(
+      (s) => (s.stdFunction?.length ?? 0) > 0 || (s.stdGrade?.length ?? 0) > 0,
+    );
 
   const legacyPair: OrgChartNodeStdScope[] =
-    (args.stdFunction?.trim() || args.stdGrade?.trim()) && fromArray.length === 0
+    (args.stdFunction?.trim() || args.stdGrade?.trim()) &&
+    fromArray.length === 0
       ? [
           {
             stdFunction: args.stdFunction?.trim(),

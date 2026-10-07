@@ -6,7 +6,8 @@ export type PeopleDataSourceAlias =
   | 'contactout'
   | 'harvest'
   | 'unipile'
-  | 'pool';
+  | 'pool'
+  | 'bright_data';
 
 export type PeopleResolvedDataSourceAlias = Exclude<
   PeopleDataSourceAlias,
@@ -92,6 +93,14 @@ export const PEOPLE_DATA_SOURCE_CATEGORIES: PeopleDataSourceCategory[] = [
       'LinkedIn Sales Navigator people search via the shared Unipile Sales Navigator pool.',
     supportsStdFunctionFilter: true,
     supportsStdGradeFilter: true,
+  },
+  {
+    alias: 'bright_data',
+    label: 'Bright Data',
+    description:
+      'Bright Data Business Search with a raw natural-language query. Not used by auto.',
+    supportsStdFunctionFilter: false,
+    supportsStdGradeFilter: false,
   },
 ];
 

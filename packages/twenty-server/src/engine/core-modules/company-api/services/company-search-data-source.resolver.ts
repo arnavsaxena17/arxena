@@ -81,7 +81,11 @@ export class CompanySearchDataSourceResolver {
   ): Promise<ResolvedCompanySearchDataSource> {
     const dataSource = input.dataSource as CompanyResolvedDataSourceAlias;
 
-    if (dataSource === 'index' || dataSource === 'harvest') {
+    if (
+      dataSource === 'index' ||
+      dataSource === 'harvest' ||
+      dataSource === 'bright_data'
+    ) {
       return { dataSource };
     }
 

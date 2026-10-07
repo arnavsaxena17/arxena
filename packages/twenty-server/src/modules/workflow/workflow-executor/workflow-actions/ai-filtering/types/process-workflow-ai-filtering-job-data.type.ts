@@ -1,3 +1,5 @@
+import { type WorkflowAiFilteringField } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/types/workflow-ai-filtering-action-input.type';
+
 export type ProcessWorkflowAiFilteringJobData = {
   workspaceId: string;
   workflowRunId: string;
@@ -10,11 +12,11 @@ export type ProcessWorkflowAiFilteringJobData = {
     selectedModel: string;
     selectedMetadataFields: string[];
     includeResume?: boolean;
-    fields: Array<{
-      name: string;
-      type: string;
-      description?: string;
-      enumValues?: string[];
-    }>;
+    keepField?: string;
+    concurrency?: number;
+    batchSize?: number;
+    subject?: 'person' | 'company' | 'record';
+    context?: string;
+    fields: WorkflowAiFilteringField[];
   };
 };

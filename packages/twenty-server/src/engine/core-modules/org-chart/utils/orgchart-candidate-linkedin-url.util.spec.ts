@@ -1,6 +1,6 @@
 import {
-    extractLinkedinProfileUrlFromOrgChartCandidateRow,
-    extractProfilePictureUrlFromOrgChartCandidateRow,
+  extractLinkedinProfileUrlFromOrgChartCandidateRow,
+  extractProfilePictureUrlFromOrgChartCandidateRow,
 } from './orgchart-candidate-linkedin-url.util';
 
 describe('extractLinkedinProfileUrlFromOrgChartCandidateRow', () => {

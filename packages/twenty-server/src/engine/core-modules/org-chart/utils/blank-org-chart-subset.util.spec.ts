@@ -2,10 +2,10 @@ import { readFileSync } from 'fs';
 import * as path from 'path';
 
 import {
-    applyBlankOrgChartSizeForExpectedHeadcount,
-    applyBlankOrgChartSubsetFilter,
-    expectedEmployeeCountToMaxBlankNodes,
-    isBlankSubsetRequest,
+  applyBlankOrgChartSizeForExpectedHeadcount,
+  applyBlankOrgChartSubsetFilter,
+  expectedEmployeeCountToMaxBlankNodes,
+  isBlankSubsetRequest,
 } from './blank-org-chart-subset.util';
 
 type BlankNodeRow = { key: number; parent: number | string };
@@ -182,7 +182,9 @@ describe('blank-org-chart-subset.util', () => {
     expect(directFunctionRoots).not.toContain('education');
     expect(
       direct.some((n) =>
-        String(n.headline ?? '').toLowerCase().includes('teacher leadership'),
+        String(n.headline ?? '')
+          .toLowerCase()
+          .includes('teacher leadership'),
       ),
     ).toBe(false);
   });
@@ -202,12 +204,15 @@ describe('blank-org-chart-subset.util', () => {
       .filter(
         (node) =>
           node.std_grade === 'mid' ||
-          String(node.headline ?? '').toUpperCase().includes('MANAGERS'),
+          String(node.headline ?? '')
+            .toUpperCase()
+            .includes('MANAGERS'),
       )
-      .map((node) =>
-        `${String(node.std_function_root ?? '').toLowerCase()}/${String(
-          node.std_function ?? '',
-        ).toLowerCase()}:${String(node.headline ?? '')}`,
+      .map(
+        (node) =>
+          `${String(node.std_function_root ?? '').toLowerCase()}/${String(
+            node.std_function ?? '',
+          ).toLowerCase()}:${String(node.headline ?? '')}`,
       );
 
     console.log(`blank manager nodes: ${managerHeadlines.join(' | ')}`);
@@ -216,7 +221,9 @@ describe('blank-org-chart-subset.util', () => {
       next.some(
         (node) =>
           (node.std_grade === 'mid' ||
-            String(node.headline ?? '').toUpperCase().includes('MANAGERS')) &&
+            String(node.headline ?? '')
+              .toUpperCase()
+              .includes('MANAGERS')) &&
           matcher(node),
       );
 
@@ -229,22 +236,27 @@ describe('blank-org-chart-subset.util', () => {
     ).toBe(true);
     expect(
       hasManagerFor(
-        (node) => String(node.std_function_root ?? '').toLowerCase() === 'finance',
+        (node) =>
+          String(node.std_function_root ?? '').toLowerCase() === 'finance',
       ),
     ).toBe(true);
     expect(
       hasManagerFor(
-        (node) => String(node.std_function_root ?? '').toLowerCase() === 'sales',
+        (node) =>
+          String(node.std_function_root ?? '').toLowerCase() === 'sales',
       ),
     ).toBe(true);
     expect(
       hasManagerFor((node) =>
-        String(node.std_function ?? '').toLowerCase().includes('manufacturing'),
+        String(node.std_function ?? '')
+          .toLowerCase()
+          .includes('manufacturing'),
       ),
     ).toBe(true);
     expect(
       hasManagerFor(
-        (node) => String(node.std_function_root ?? '').toLowerCase() === 'technology',
+        (node) =>
+          String(node.std_function_root ?? '').toLowerCase() === 'technology',
       ),
     ).toBe(true);
   });

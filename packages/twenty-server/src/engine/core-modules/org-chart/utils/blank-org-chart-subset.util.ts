@@ -30,7 +30,11 @@ export function isBlankSubsetRequest(
 }
 
 function normalizeFunctionToken(value: string): string {
-  return value.trim().toLowerCase().replace(/\s+/g, ' ').replace(/assist$/u, '');
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .replace(/assist$/u, '');
 }
 
 function normalizeParentKey(p: unknown): number | string {
@@ -40,7 +44,9 @@ function normalizeParentKey(p: unknown): number | string {
   return typeof p === 'number' ? p : Number(p);
 }
 
-function buildChildrenMap(nodes: OrgChartNode[]): Map<number | string, number[]> {
+function buildChildrenMap(
+  nodes: OrgChartNode[],
+): Map<number | string, number[]> {
   const children = new Map<number | string, number[]>();
 
   for (const n of nodes) {
@@ -295,7 +301,10 @@ function pickDepth2ChildrenForBlankTemplate(
 ): number[] {
   const parentNode = byKey.get(parentKey);
   if (!parentNode) {
-    return childKeys.slice().sort((a, b) => a - b).slice(0, maxCount);
+    return childKeys
+      .slice()
+      .sort((a, b) => a - b)
+      .slice(0, maxCount);
   }
 
   const parentFunctionRoot = getNodeFunctionRootToken(parentNode);
@@ -305,7 +314,10 @@ function pickDepth2ChildrenForBlankTemplate(
     ) || parentFunctionRoot === 'engineering';
 
   if (!shouldPreferManagers) {
-    return childKeys.slice().sort((a, b) => a - b).slice(0, maxCount);
+    return childKeys
+      .slice()
+      .sort((a, b) => a - b)
+      .slice(0, maxCount);
   }
 
   const managers = childKeys.filter((key) => {
@@ -317,10 +329,7 @@ function pickDepth2ChildrenForBlankTemplate(
     return node ? !isBlankTemplateManagerNode(node) : false;
   });
   const seed = hashBlankTemplateSeed(parentFunctionRoot, parentKey);
-  const managerPickCount = Math.min(
-    managers.length,
-    1 + (seed % 2),
-  );
+  const managerPickCount = Math.min(managers.length, 1 + (seed % 2));
   const pickedManagers = pickDeterministicSubset(
     managers,
     managerPickCount,
@@ -410,19 +419,13 @@ function addManufacturingManagerChains(
       );
 
       for (const managerKey of pickedManagers) {
-        if (
-          maxTotalNodes !== undefined &&
-          keep.size + 1 > maxTotalNodes
-        ) {
+        if (maxTotalNodes !== undefined && keep.size + 1 > maxTotalNodes) {
           return;
         }
 
         keep.add(managerKey);
         for (const teamKey of children.get(managerKey) ?? []) {
-          if (
-            maxTotalNodes !== undefined &&
-            keep.size + 1 > maxTotalNodes
-          ) {
+          if (maxTotalNodes !== undefined && keep.size + 1 > maxTotalNodes) {
             return;
           }
           keep.add(teamKey);
@@ -442,7 +445,8 @@ function extendKeepSetWithRandomManagerChains(
   const maxManagersPerFunctionRoot = options.maxManagersPerFunctionRoot ?? 2;
   const maxTotalNodes = options.maxTotalNodes;
   const root = sourceNodes.find(
-    (node) => node.parent === '' || node.parent === null || node.parent === undefined,
+    (node) =>
+      node.parent === '' || node.parent === null || node.parent === undefined,
   );
   const rootKey = root?.key;
 
@@ -502,10 +506,7 @@ function extendKeepSetWithRandomManagerChains(
       );
 
       for (const managerKey of pickedManagers) {
-        if (
-          maxTotalNodes !== undefined &&
-          keep.size + 1 > maxTotalNodes
-        ) {
+        if (maxTotalNodes !== undefined && keep.size + 1 > maxTotalNodes) {
           return;
         }
 
@@ -513,10 +514,7 @@ function extendKeepSetWithRandomManagerChains(
         addedForFunction += 1;
 
         for (const teamKey of children.get(managerKey) ?? []) {
-          if (
-            maxTotalNodes !== undefined &&
-            keep.size + 1 > maxTotalNodes
-          ) {
+          if (maxTotalNodes !== undefined && keep.size + 1 > maxTotalNodes) {
             return;
           }
           keep.add(teamKey);
@@ -803,8 +801,7 @@ export function applyBlankOrgChartSubsetFilter(
   const hasCountrySubset = countryLower.length > 0 && countryLower !== 'global';
   const frRaw = options.functionRoot?.trim() ?? '';
   const frLower = frRaw.toLowerCase();
-  const hasFunctionSubset =
-    frLower.length > 0 && frLower !== 'fullcompany';
+  const hasFunctionSubset = frLower.length > 0 && frLower !== 'fullcompany';
 
   const orgchartRaw = parsed.orgchart;
   const nodes = parseOrgChartArray(orgchartRaw);

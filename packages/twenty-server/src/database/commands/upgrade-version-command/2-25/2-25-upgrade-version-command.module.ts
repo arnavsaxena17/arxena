@@ -82,6 +82,8 @@ import { FoldCandidateFlagsIntoJsonCommand } from 'src/database/commands/upgrade
 import { ReBackfillOutreachCompanyRollupsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000085-re-backfill-outreach-company-rollups.command';
 import { MoveCandidateEnrichmentToArxenaStandardCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000086-move-candidate-enrichment-to-arxena-standard.command';
 import { SyncSearchSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000087-sync-search-skill-content.command';
+import { SyncSearchSkillBrightDataCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000162-sync-search-skill-bright-data.command';
+import { SyncSearchSkillBrightDataLudicrousCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000163-sync-search-skill-bright-data-ludicrous.command';
 import { SyncOrgStructureInsightsSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000091-sync-org-structure-insights-skill-content.command';
 import { EnsureUniqueCompanyLinkedinIdCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000092-ensure-unique-company-linkedin-id.command';
 import { ResyncOutreachWorkflowGraphsWithOnwardsAliasCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000093-resync-outreach-workflow-graphs-with-onwards-alias.command';
@@ -145,6 +147,10 @@ import { ResyncOutreachWhatsappReplyOnceCommand } from 'src/database/commands/up
 import { ResyncOutreachAckOnInboundChannelCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000155-resync-outreach-ack-on-inbound-channel.command';
 import { ResyncOutreachSequentialChannelSendsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000156-resync-outreach-sequential-channel-sends.command';
 import { ResyncOutreachJevOutputValidationCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000157-resync-outreach-jev-output-validation.command';
+import { SyncOutreachRunWorkflowSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000159-sync-outreach-run-workflow-skill-content.command';
+import { AddAiFilterToFindWorkflowsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000160-add-ai-filter-to-find-workflows.command';
+import { AddOutreachTableLayoutCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000161-add-outreach-table-layout.command';
+import { SimplifyOutreachDashboardCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000158-simplify-outreach-dashboard.command';
 import { SetOutreachExtractSignalsDeepseekCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000106-set-outreach-extract-signals-deepseek.command';
 import { DropChatMessageObjWithTimeStampCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000099-drop-chat-message-obj-with-time-stamp.command';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
@@ -325,6 +331,12 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     ResyncOutreachAckOnInboundChannelCommand,
     ResyncOutreachSequentialChannelSendsCommand,
     ResyncOutreachJevOutputValidationCommand,
+    SimplifyOutreachDashboardCommand,
+    SyncOutreachRunWorkflowSkillContentCommand,
+    AddAiFilterToFindWorkflowsCommand,
+    AddOutreachTableLayoutCommand,
+    SyncSearchSkillBrightDataCommand,
+    SyncSearchSkillBrightDataLudicrousCommand,
     SyncWorkspaceMemberCrunchbaseCookiesFieldsCommand,
     EnsureSearchCrunchbaseCompaniesLogicFunctionCommand,
     MigrateOtherFieldsService,

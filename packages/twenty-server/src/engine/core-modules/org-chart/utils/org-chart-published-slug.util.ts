@@ -1,13 +1,13 @@
 export {
-    ORG_PUBLISHED_RESERVED_SLUGS,
-    ORG_PUBLISHED_SLUG_MAX_LENGTH,
-    ORG_PUBLISHED_SLUG_MIN_LENGTH,
-    ORG_PUBLISHED_SLUG_PATTERN,
-    buildDefaultPublishSlug,
-    normalizePublishSlug,
-    resolveBrandPublishSlug,
-    validatePublishSlug,
-    type PublishSlugValidationResult
+  ORG_PUBLISHED_RESERVED_SLUGS,
+  ORG_PUBLISHED_SLUG_MAX_LENGTH,
+  ORG_PUBLISHED_SLUG_MIN_LENGTH,
+  ORG_PUBLISHED_SLUG_PATTERN,
+  buildDefaultPublishSlug,
+  normalizePublishSlug,
+  resolveBrandPublishSlug,
+  validatePublishSlug,
+  type PublishSlugValidationResult,
 } from 'twenty-shared';
 
 export const orgPublishedSlugCacheKey = (slug: string): string =>

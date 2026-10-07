@@ -49,6 +49,8 @@ export const WorkflowDiagramStepNodeIcon = ({
         case 'ACCEPT_LINKEDIN_RECEIVED_INVITATION':
         case 'SEND_WHATSAPP_MESSAGE':
         case 'SEARCH_LOCAL_BUSINESSES':
+        case 'SEARCH_BRIGHT_DATA_COMPANIES':
+        case 'SEARCH_BRIGHT_DATA_PEOPLE':
         case 'GET_LOCAL_BUSINESS_DETAILS':
         case 'RESOLVE_COMPANY_FROM_RAW_NAME': {
           return (

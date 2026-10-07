@@ -37,6 +37,7 @@ export type SearchCompaniesInput = {
   url?: string;
   useV2?: boolean;
   dataSource?: string;
+  mode?: 'ludicrous' | 'smart' | 'instant';
   accountId?: string;
   projectId?: string;
   limit?: number;
@@ -60,10 +61,13 @@ export class SearchCompaniesService {
     workspaceId: string;
     input: SearchCompaniesInput;
   }): Promise<object> {
+    const useBrightData = input.dataSource === 'bright_data';
+
     try {
-      const apiToken =
-        await this.gtmWorkspaceAuthTokenService.resolveOrMint(workspaceId);
-      if (!isNonEmptyString(apiToken)) {
+      const apiToken = useBrightData
+        ? undefined
+        : await this.gtmWorkspaceAuthTokenService.resolveOrMint(workspaceId);
+      if (!useBrightData && !isNonEmptyString(apiToken)) {
         return {
           success: false,
           total: 0,
@@ -73,10 +77,11 @@ export class SearchCompaniesService {
         };
       }
 
-      const defaultAccount =
-        await this.unipileSearchAccountResolver.resolveDefaultWorkspaceAccount(
-          workspaceId,
-        );
+      const defaultAccount = useBrightData
+        ? undefined
+        : await this.unipileSearchAccountResolver.resolveDefaultWorkspaceAccount(
+            workspaceId,
+          );
       const projectId = input.projectId?.trim() ?? '';
       const knownKeys = isNonEmptyString(projectId)
         ? await this.loadHarvestedIdentityKeys(workspaceId, projectId)
@@ -98,17 +103,18 @@ export class SearchCompaniesService {
           location: input.location,
           url: input.url,
           useV2: true,
-          dataSource: 'auto',
+          dataSource: useBrightData ? 'bright_data' : 'auto',
+          mode: input.mode,
           accountId: defaultAccount?.accountId,
           limit: Math.min(Math.max(1, input.limit ?? 10), 100),
         },
         apiToken,
-        knownKeys.size > 0
-          ? {
-              isKnownHit,
-              stopAtKnown: isV2AccountList,
-            }
-          : undefined,
+        {
+          workspaceId,
+          ...(knownKeys.size > 0
+            ? { isKnownHit, stopAtKnown: isV2AccountList }
+            : {}),
+        },
       );
 
       return {

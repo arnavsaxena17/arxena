@@ -3,6 +3,8 @@ import { Module, forwardRef } from '@nestjs/common';
 import { UnipilePoolModule } from 'src/engine/core-modules/arx-chat/unipile-pool.module';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
+import { BrightDataLudicrousModule } from 'src/engine/core-modules/bright-data-ludicrous/bright-data-ludicrous.module';
+import { BrightDataModule } from 'src/engine/core-modules/bright-data/bright-data.module';
 import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
 import { SerpCompanySearchModule } from 'src/engine/core-modules/linkedin-company-search/linkedin-company-search.module';
 import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
@@ -25,6 +27,8 @@ import { PeopleSearchDataSourceResolver } from './services/people-search-data-so
 @Module({
   imports: [
     forwardRef(() => OrgChartModule),
+    BrightDataModule,
+    forwardRef(() => BrightDataLudicrousModule),
     SerpCompanySearchModule,
     forwardRef(() => CandidateSearchModule),
     forwardRef(() => LinkedInSearchModule),

@@ -109,6 +109,12 @@ export type OutreachPersonRow = {
   replyAfterTouch?: string;
   createdAt?: string | null;
   updatedAt?: string | null;
+  otherFields?: unknown;
+  jobSpecificFields?: unknown;
+  outreachAnalytics?: unknown;
+  outreachProspectEnrichment?: unknown;
+  linkedinProfile?: unknown;
+  linkedinPosts?: unknown;
 };
 
 export type OutreachProjectOption = {

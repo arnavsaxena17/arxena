@@ -47,8 +47,8 @@ const getTrigger = (
 ) => graph.trigger as DatabaseEventTrigger;
 
 describe('GTM outreach workflow graphs', () => {
-  it('seeds six outreach workflow templates', () => {
-    expect(OUTREACH_WORKFLOW_GRAPH_TEMPLATES).toHaveLength(6);
+  it('seeds seven outreach workflow templates', () => {
+    expect(OUTREACH_WORKFLOW_GRAPH_TEMPLATES).toHaveLength(7);
   });
 
   // GraphQL UUID scalar uses uuid.validate — placeholder-looking IDs with
@@ -73,18 +73,19 @@ describe('GTM outreach workflow graphs', () => {
     }
   });
 
-  it('keeps upload-profiles on Company Created → ICP People Search', () => {
+  it('keeps upload-profiles on Find people by company', () => {
     const companySearch = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.find(
-      (graph) => graph.name === 'Company Created → ICP People Search',
+      (graph) => graph.name === 'Find people by company',
     );
     const steps = (companySearch?.steps ?? []) as GraphStep[];
 
-    expect(steps.some((step) => step.name === 'Upload profiles')).toBe(true);
+    expect(steps.some((step) => step.name === 'Upload kept people')).toBe(true);
+    expect(steps.some((step) => step.type === 'AI_FILTERING')).toBe(true);
   });
 
   it('seeds Fetch & Save as a manual upload-profiles workflow', () => {
     const fetchAndSave = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.find(
-      (graph) => graph.name === 'Outreach — Fetch & Save People Profiles',
+      (graph) => graph.name === 'Add people',
     );
 
     expect(fetchAndSave).toBeDefined();
@@ -97,9 +98,9 @@ describe('GTM outreach workflow graphs', () => {
     expect(steps[0]?.type).toBe('LOGIC_FUNCTION');
   });
 
-  it('seeds Search and Upload People Profiles as webhook search → upload', () => {
+  it('seeds Find people by search as webhook search → upload', () => {
     const searchAndUpload = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.find(
-      (graph) => graph.name === 'Search and Upload People Profiles',
+      (graph) => graph.name === 'Find people by search',
     );
 
     expect(searchAndUpload).toBeDefined();
@@ -111,10 +112,12 @@ describe('GTM outreach workflow graphs', () => {
 
     const steps = (searchAndUpload?.steps ?? []) as GraphStep[];
 
-    expect(steps).toHaveLength(2);
+    expect(steps).toHaveLength(3);
     expect(steps[0]?.name).toBe('Search people');
-    expect(steps[1]?.name).toBe('Upload profiles');
+    expect(steps[1]?.type).toBe('AI_FILTERING');
+    expect(steps[2]?.name).toBe('Upload profiles');
     expect(steps[0]?.nextStepIds).toEqual([steps[1]?.id]);
+    expect(steps[1]?.nextStepIds).toEqual([steps[2]?.id]);
   });
 
   it('does not seed a candidate.updated workflow', () => {
@@ -127,9 +130,9 @@ describe('GTM outreach workflow graphs', () => {
     expect(updatedGraphs).toHaveLength(0);
   });
 
-  it('keeps harvest Search LinkedIn companies query and keywords blank', () => {
+  it('reads harvest query and keywords from the webhook payload', () => {
     const harvest = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.find(
-      (graph) => graph.name === 'Harvest — LinkedIn Companies',
+      (graph) => graph.name === 'Find companies',
     );
 
     const search = (
@@ -143,8 +146,12 @@ describe('GTM outreach workflow graphs', () => {
       }>
     ).find((step) => step.name === 'Search LinkedIn companies');
 
-    expect(search?.settings?.input?.logicFunctionInput?.query).toBe('');
-    expect(search?.settings?.input?.logicFunctionInput?.keywords).toBe('');
+    expect(search?.settings?.input?.logicFunctionInput?.query).toBe(
+      '{{trigger.query}}',
+    );
+    expect(search?.settings?.input?.logicFunctionInput?.keywords).toBe(
+      '{{trigger.keywords}}',
+    );
   });
 
   it('does not seed a candidate.created workflow', () => {
@@ -1339,4 +1346,68 @@ describe('GTM outreach workflow graphs', () => {
       expect(fieldKeys(name)).toBeUndefined();
     }
   });
+
+  it.each([
+    ['Find companies', 'Company fit filter', 'fit', 'company', 'gpt4o'],
+    [
+      'Find people by company',
+      'Keep people filter',
+      'keep',
+      'person',
+      'gpt4omini',
+    ],
+    [
+      'Find people by search',
+      'Keep people filter',
+      'keep',
+      'person',
+      'gpt4omini',
+    ],
+  ])(
+    'seeds %s as a webhook search → AI filter → save of the kept records',
+    (graphName, filterStepName, keepField, subject, selectedModel) => {
+      const graph = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.find(
+        (template) => template.name === graphName,
+      );
+      const steps = (graph?.steps ?? []) as Array<{
+        id: string;
+        name: string;
+        type: string;
+        settings: {
+          input: Record<string, unknown> & {
+            fields: Array<{ name: string; type: string; optional?: boolean }>;
+          };
+        };
+      }>;
+      const filterIndex = steps.findIndex(
+        (step) => step.type === 'AI_FILTERING',
+      );
+      const filter = steps[filterIndex];
+
+      expect((graph?.trigger as { type: string }).type).toBe('WEBHOOK');
+      expect(filter.name).toBe(filterStepName);
+      expect(filter.settings.input.keepField).toBe(keepField);
+      expect(filter.settings.input.subject).toBe(subject);
+      expect(filter.settings.input.selectedModel).toBe(selectedModel);
+      expect(filter.settings.input.batchSize).toBeGreaterThan(1);
+      expect(filter.settings.input.candidates).toMatch(
+        /^\{\{.+\.(companies|people)\}\}$/,
+      );
+      // jev-compatible contract: required fields boolean/enum, reason optional text.
+      expect(
+        filter.settings.input.fields.find((field) => field.name === 'reason'),
+      ).toMatchObject({ type: 'text', optional: true });
+      expect(
+        filter.settings.input.fields
+          .filter((field) => !field.optional)
+          .every((field) => ['boolean', 'enum'].includes(field.type)),
+      ).toBe(true);
+
+      const saveStep = steps[filterIndex + 1];
+
+      expect(JSON.stringify(saveStep.settings.input)).toContain(
+        `${filter.id}.kept`,
+      );
+    },
+  );
 });

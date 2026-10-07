@@ -1,6 +1,6 @@
 import {
-    normalizeCompanyId,
-    normalizeCompanyName,
+  normalizeCompanyId,
+  normalizeCompanyName,
 } from './orgchart-normalization.util';
 
 export const ORG_CHART_COMPANY_CACHE_KEY_PREFIX = 'company-orgchart';
@@ -25,7 +25,10 @@ export function buildCompanyOrgChartLogicalCacheKey(
 
   const normalizedSourceTag =
     typeof sourceTag === 'string'
-      ? sourceTag.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_')
+      ? sourceTag
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '_')
       : '';
 
   return [
@@ -52,7 +55,10 @@ export function buildCompanyOrgChartCandidateListLogicalCacheKey(
 
   const normalizedSourceTag =
     typeof sourceTag === 'string'
-      ? sourceTag.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_')
+      ? sourceTag
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '_')
       : '';
 
   return [

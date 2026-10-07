@@ -576,6 +576,7 @@ const OutreachHomePageContent = () => {
               <StyledToolbarTabContent>
                 <OutreachCompaniesPanel
                   companies={companies}
+                  projectId={activeProjectId}
                   selectedCompanyId={selectedCompanyId}
                   onSelectCompanyId={setSelectedCompanyId}
                   isLoading={companiesLoading}

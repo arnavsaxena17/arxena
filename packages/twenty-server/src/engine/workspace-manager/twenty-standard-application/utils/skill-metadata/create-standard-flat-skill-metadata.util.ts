@@ -153,7 +153,7 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     name: 'search',
     label: 'Search',
     description:
-      'Source companies and people (Apollo/LinkedIn/Harvest/Exa); Find → ephemeral tabs, Save/Enroll/Harvest per destination verbs',
+      'Source companies and people (Apollo/LinkedIn/Harvest/Exa/Bright Data); Find → ephemeral tabs, Save/Enroll/Harvest per destination verbs',
     icon: 'IconBuildingSkyscraper',
   }),
   'org-structure-insights': createStandardSkillBuilder({

@@ -84,7 +84,7 @@ export const buildResolveCompanyFromRawNameQuery = (
                 script_score: {
                   script: {
                     source:
-                      '(_score*0.9+0.1*Math.log(doc[\'count_org\'].value + 1));',
+                      "(_score*0.9+0.1*Math.log(doc['count_org'].value + 1));",
                   },
                 },
               },

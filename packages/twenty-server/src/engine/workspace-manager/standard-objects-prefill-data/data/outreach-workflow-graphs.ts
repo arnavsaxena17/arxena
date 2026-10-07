@@ -48,7 +48,6 @@ import {
   OUTREACH_WF_AI_REPLY_OUTPUT,
   OUTREACH_WF_REPLY_OUTPUT_VALIDATION,
   OUTREACH_WF_FIELD,
-  OUTREACH_WF_HARVEST_PROJECT_ID,
   OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID,
   OUTREACH_WF_MEMBER_STEP_ID,
   OUTREACH_WF_ERROR_HANDLING,
@@ -73,6 +72,7 @@ import {
   gtmWfMultiIfElseStep,
   gtmWfPreferredChannelRouterStep,
   OUTREACH_POST_REPLY_EMAIL_SUBJECT,
+  gtmWfAiFilteringStep,
   gtmWfLogicFunctionStep,
   gtmWfManualTrigger,
   gtmWfMemberEmail,
@@ -90,6 +90,9 @@ import {
 } from 'src/engine/workspace-manager/standard-objects-prefill-data/data/outreach-workflow-graph-helpers';
 
 const IDS = {
+  companyFilter: 'aa3b8b81-e876-43de-a06a-669963607292',
+  peopleByCompanyFilter: '240e7064-5cad-4ff5-b95c-07e60152996e',
+  searchFilter: '1b6c7c78-8ccb-4661-8f42-a42f472a0b43',
   searchPeople: '31ece1d2-e7d3-4af6-93e3-cfd08aacd81d',
   uploadProfiles: '046369f4-3fba-4fde-81bd-7a0a68ce73ce',
   fetchAndSaveUpload: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
@@ -2924,11 +2927,14 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
   steps: unknown[];
 }> = [
   {
-    name: 'Company Created → ICP People Search',
-    trigger: gtmWfDatabaseEventTrigger({
-      name: 'Company is Created',
-      eventName: 'company.created',
+    name: 'Find people by company',
+    // Webhook, not company.created: the Ask AI agent starts one run per approved
+    // company (run_workflow "Find people by company"), so companies that fail the
+    // fit filter never trigger a people search.
+    trigger: gtmWfWebhookTrigger({
+      name: 'Find people by company webhook',
       nextStepIds: [IDS.searchPeople],
+      expectedBody: { projectId: '', companyId: '', limit: 10 },
     }),
     steps: [
       gtmWfLogicFunctionStep({
@@ -2936,25 +2942,69 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
         name: 'Search people for company',
         logicFunctionId: '__LF_search-people-for-company__',
         logicFunctionInput: {
-          companyId: gtmWfTriggerAfter('id'),
+          companyId: gtmWfTriggerField('companyId'),
+          projectId: gtmWfTriggerField('projectId'),
+          limit: gtmWfTriggerField('limit'),
         },
         sampleOutput: OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT,
+        nextStepIds: [IDS.peopleByCompanyFilter],
+      }),
+      gtmWfAiFilteringStep({
+        id: IDS.peopleByCompanyFilter,
+        name: 'Keep people filter',
+        candidates: `{{${IDS.searchPeople}.people}}`,
+        filterName: 'Keep people',
+        prompt:
+          "Keep (keep=true) a person only when ALL hold: (1) they currently work at the company in the fields shown (a headline saying 'ex-', 'formerly' or 'open to work' means they do not); (2) their title and function make them a decision maker, budget holder or direct influencer for the sender's offer, at manager level or above; (3) their location matches the target locations when the campaign context lists any. Interns, students, assistants, administrators, recruiters of other firms and unrelated functions are false. When title and headline do not make the role clear, answer false with confidence borderline. Edit this text to describe the campaign's ideal contact.",
+        fields: [
+          {
+            name: 'keep',
+            type: 'boolean',
+            description: 'Contact this person',
+          },
+          {
+            name: 'confidence',
+            type: 'enum',
+            description:
+              'strong when the profile clearly settles it, borderline when it is thin',
+            enumValues: ['strong', 'borderline'],
+          },
+          {
+            name: 'reason',
+            type: 'text',
+            description: 'Why, citing the title or company shown',
+            optional: true,
+          },
+        ],
+        subject: 'person',
+        selectedModel: 'gpt4omini',
+        keepField: 'keep',
+        selectedMetadataFields: [
+          'name',
+          'title',
+          'headline',
+          'company',
+          'location',
+          'stdFunction',
+          'stdGrade',
+        ],
         nextStepIds: [IDS.uploadProfiles],
       }),
       gtmWfLogicFunctionStep({
         id: IDS.uploadProfiles,
-        name: 'Upload profiles',
+        name: 'Upload kept people',
         logicFunctionId: '__LF_upload-profiles__',
         logicFunctionInput: {
-          people: `{{${IDS.searchPeople}.people}}`,
-          projectId: `{{${IDS.searchPeople}.projectId}}`,
+          people: `{{${IDS.peopleByCompanyFilter}.kept}}`,
+          projectId: gtmWfTriggerField('projectId'),
+          companyId: gtmWfTriggerField('companyId'),
         },
         sampleOutput: OUTREACH_UPLOAD_PROFILES_SAMPLE_OUTPUT,
       }),
     ],
   },
   {
-    name: 'Outreach — Fetch & Save People Profiles',
+    name: 'Add people',
     trigger: gtmWfManualTrigger({
       nextStepIds: [IDS.fetchAndSaveUpload],
     }),
@@ -3179,7 +3229,7 @@ Return JSON with companyName, isMultiOutlet, numberOutlets, confidence, reasonin
     ],
   },
   {
-    name: 'Search and Upload People Profiles',
+    name: 'Find people by search',
     trigger: gtmWfWebhookTrigger({
       name: 'Search and upload webhook',
       nextStepIds: [IDS.webhookSearchPeople],
@@ -3211,6 +3261,47 @@ Return JSON with companyName, isMultiOutlet, numberOutlets, confidence, reasonin
           limit: gtmWfTriggerField('limit'),
         },
         sampleOutput: OUTREACH_SEARCH_PEOPLE_SAMPLE_OUTPUT,
+        nextStepIds: [IDS.searchFilter],
+      }),
+      gtmWfAiFilteringStep({
+        id: IDS.searchFilter,
+        name: 'Keep people filter',
+        candidates: `{{${IDS.webhookSearchPeople}.people}}`,
+        filterName: 'Keep people',
+        prompt:
+          "Keep (keep=true) a person only when ALL hold: (1) they currently work at the company in the fields shown (a headline saying 'ex-', 'formerly' or 'open to work' means they do not); (2) their title and function make them a decision maker, budget holder or direct influencer for the sender's offer, at manager level or above; (3) their location matches the target locations when the campaign context lists any. Interns, students, assistants, administrators, recruiters of other firms and unrelated functions are false. When title and headline do not make the role clear, answer false with confidence borderline. Edit this text to describe the campaign's ideal contact.",
+        fields: [
+          {
+            name: 'keep',
+            type: 'boolean',
+            description: 'Contact this person',
+          },
+          {
+            name: 'confidence',
+            type: 'enum',
+            description:
+              'strong when the profile clearly settles it, borderline when it is thin',
+            enumValues: ['strong', 'borderline'],
+          },
+          {
+            name: 'reason',
+            type: 'text',
+            description: 'Why, citing the title or company shown',
+            optional: true,
+          },
+        ],
+        subject: 'person',
+        selectedModel: 'gpt4omini',
+        keepField: 'keep',
+        selectedMetadataFields: [
+          'name',
+          'title',
+          'headline',
+          'company',
+          'location',
+          'stdFunction',
+          'stdGrade',
+        ],
         nextStepIds: [IDS.webhookUploadProfiles],
       }),
       gtmWfLogicFunctionStep({
@@ -3218,7 +3309,7 @@ Return JSON with companyName, isMultiOutlet, numberOutlets, confidence, reasonin
         name: 'Upload profiles',
         logicFunctionId: '__LF_upload-profiles__',
         logicFunctionInput: {
-          people: `{{${IDS.webhookSearchPeople}.people}}`,
+          people: `{{${IDS.searchFilter}.kept}}`,
           projectId: gtmWfTriggerField('projectId'),
           companyId: gtmWfTriggerField('companyId'),
         },
@@ -3227,38 +3318,89 @@ Return JSON with companyName, isMultiOutlet, numberOutlets, confidence, reasonin
     ],
   },
   {
-    name: 'Harvest — LinkedIn Companies',
-    trigger: {
-      name: 'Every few hours',
-      type: 'CRON',
-      position: { x: 0, y: 0 },
-      settings: {
-        type: 'HOURS',
-        schedule: { hour: 6, minute: 0 },
-        outputSchema: {},
-      },
+    name: 'Find companies',
+    // Webhook, not CRON: the Ask AI agent starts it with the campaign's project
+    // and search terms (run_workflow "Find companies"). Only companies that pass
+    // the fit filter are saved to the CRM.
+    trigger: gtmWfWebhookTrigger({
+      name: 'Find companies webhook',
       nextStepIds: [IDS.searchCompanies],
-    },
+      expectedBody: {
+        projectId: '',
+        limit: 25,
+        query: '',
+        keywords: '',
+        industry: '',
+        location: '',
+        url: '',
+      },
+    }),
     steps: [
       gtmWfLogicFunctionStep({
         id: IDS.searchCompanies,
         name: 'Search LinkedIn companies',
         logicFunctionId: '__LF_search-companies__',
         logicFunctionInput: {
-          limit: 15,
-          query: '',
-          keywords: '',
+          projectId: gtmWfTriggerField('projectId'),
+          limit: gtmWfTriggerField('limit'),
+          query: gtmWfTriggerField('query'),
+          keywords: gtmWfTriggerField('keywords'),
+          industry: gtmWfTriggerField('industry'),
+          location: gtmWfTriggerField('location'),
+          url: gtmWfTriggerField('url'),
         },
         sampleOutput: OUTREACH_SEARCH_COMPANIES_SAMPLE_OUTPUT,
+        nextStepIds: [IDS.companyFilter],
+      }),
+      gtmWfAiFilteringStep({
+        id: IDS.companyFilter,
+        name: 'Company fit filter',
+        candidates: `{{${IDS.searchCompanies}.companies}}`,
+        filterName: 'Company fit',
+        prompt:
+          "Keep (fit=true) a company only when ALL hold: (1) it is an operating business that could buy the sender's offer, not a school, fund, community page, individual or placeholder; (2) its industry and size, where shown, match the campaign's ideal customer; (3) its location, where shown, matches the target locations when the campaign context lists any. A keyword in the name alone (e.g. 'SaaS Capital') is not evidence of fit: rely on industry and size. When industry and size are missing and the name alone does not make the business clear, answer false with confidence borderline. Edit this text to describe the campaign's ideal customer.",
+        fields: [
+          {
+            name: 'fit',
+            type: 'boolean',
+            description: 'The company matches the campaign ideal customer',
+          },
+          {
+            name: 'confidence',
+            type: 'enum',
+            description:
+              'strong when the profile clearly settles it, borderline when it is thin',
+            enumValues: ['strong', 'borderline'],
+          },
+          {
+            name: 'reason',
+            type: 'text',
+            description: 'Why, citing the industry or size shown',
+            optional: true,
+          },
+        ],
+        subject: 'company',
+        selectedModel: 'gpt4o',
+        keepField: 'fit',
+        selectedMetadataFields: [
+          'name',
+          'industry',
+          'size',
+          'country',
+          'region',
+          'locality',
+          'founded',
+          'website',
+        ],
         nextStepIds: [IDS.upsertCompanies],
       }),
       gtmWfLogicFunctionStep({
         id: IDS.upsertCompanies,
-        name: 'Upsert companies to CRM',
+        name: 'Upsert fitting companies to CRM',
         logicFunctionId: '__LF_upsert-companies__',
         logicFunctionInput: {
-          companies: `{{${IDS.searchCompanies}.companies}}`,
-          projectId: OUTREACH_WF_HARVEST_PROJECT_ID,
+          companies: `{{${IDS.companyFilter}.kept}}`,
+          projectId: gtmWfTriggerField('projectId'),
         },
         sampleOutput: OUTREACH_UPSERT_COMPANIES_SAMPLE_OUTPUT,
       }),

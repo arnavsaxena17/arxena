@@ -1,7 +1,10 @@
 export const normalizeOrgChartFunctionRootFilter = (
   functionRoot?: string,
 ): string => {
-  return (functionRoot ?? '').trim().toLowerCase().replace(/[\s_-]+/g, '');
+  return (functionRoot ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '');
 };
 
 export const hasMeaningfulOrgChartFunctionRootFilter = (
@@ -88,8 +91,9 @@ export const filterOrgChartCandidatesByCountryAndFunctionRoot = (
 
   const normalizedFunctionRootRaw =
     typeof functionRootRaw === 'string' ? functionRootRaw.trim() : '';
-  const hasFunctionRootFilter =
-    hasMeaningfulOrgChartFunctionRootFilter(normalizedFunctionRootRaw);
+  const hasFunctionRootFilter = hasMeaningfulOrgChartFunctionRootFilter(
+    normalizedFunctionRootRaw,
+  );
 
   if (!hasCountryFilter && !hasFunctionRootFilter) {
     return items;

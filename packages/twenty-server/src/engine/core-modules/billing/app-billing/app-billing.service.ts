@@ -23,6 +23,7 @@ const USAGE_UNIT_BY_OPERATION_TYPE: Record<UsageOperationType, UsageUnit> = {
   [UsageOperationType.WEB_SEARCH]: UsageUnit.INVOCATION,
   [UsageOperationType.CALL_RECORDING]: UsageUnit.MINUTE,
   [UsageOperationType.EMAIL_SEND]: UsageUnit.INVOCATION,
+  [UsageOperationType.BRIGHT_DATA_SEARCH]: UsageUnit.INVOCATION,
 };
 
 // `workspaceId` + `applicationId` come from the application-access token,

@@ -753,6 +753,31 @@ export class WorkflowVersionStepOperationsWorkspaceService {
           },
         };
       }
+      case WorkflowActionType.SEARCH_BRIGHT_DATA_COMPANIES:
+      case WorkflowActionType.SEARCH_BRIGHT_DATA_PEOPLE: {
+        const isCompanies =
+          type === WorkflowActionType.SEARCH_BRIGHT_DATA_COMPANIES;
+
+        return {
+          builtStep: {
+            ...baseStep,
+            name: isCompanies
+              ? 'Search Bright Data Companies'
+              : 'Search Bright Data People',
+            type,
+            settings: {
+              ...BASE_STEP_DEFINITION,
+              input: {
+                query: '',
+                mode: 'ludicrous',
+                limit: 100,
+                maxBudgetUsd: 1,
+                view: 'full',
+              },
+            },
+          },
+        };
+      }
       case WorkflowActionType.SEARCH_LOCAL_BUSINESSES: {
         return {
           builtStep: {

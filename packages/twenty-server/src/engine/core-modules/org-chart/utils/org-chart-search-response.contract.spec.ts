@@ -104,14 +104,15 @@ describe('org-chart search response contract (POST /org-chart/search output shap
     expect(() =>
       assertOrgChartSearchUnipileSuccessResponse(apifyQueued),
     ).toThrow(/queued async/);
-    expect(() =>
-      assertOrgChartSearchQueuedResponse(apifyQueued),
-    ).not.toThrow();
+    expect(() => assertOrgChartSearchQueuedResponse(apifyQueued)).not.toThrow();
   });
 
   it('rejects Unipile success when success is not true', () => {
     expect(() =>
-      assertOrgChartSearchUnipileSuccessResponse({ ...minimalUnipileSuccess, success: false }),
+      assertOrgChartSearchUnipileSuccessResponse({
+        ...minimalUnipileSuccess,
+        success: false,
+      }),
     ).toThrow();
   });
 

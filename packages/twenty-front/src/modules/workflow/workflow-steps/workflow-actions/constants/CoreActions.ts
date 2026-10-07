@@ -16,6 +16,8 @@ import { LIKE_LINKEDIN_POST_ACTION } from '@/workflow/workflow-steps/workflow-ac
 import { ACCEPT_LINKEDIN_RECEIVED_INVITATION_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/AcceptLinkedinReceivedInvitationAction';
 import { SEND_WHATSAPP_MESSAGE_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/SendWhatsappMessageAction';
 import { SEARCH_LOCAL_BUSINESSES_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/SearchLocalBusinessesAction';
+import { SEARCH_BRIGHT_DATA_COMPANIES_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/SearchBrightDataCompaniesAction';
+import { SEARCH_BRIGHT_DATA_PEOPLE_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/SearchBrightDataPeopleAction';
 import { GET_LOCAL_BUSINESS_DETAILS_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/GetLocalBusinessDetailsAction';
 import { RESOLVE_COMPANY_FROM_RAW_NAME_ACTION } from '@/workflow/workflow-steps/workflow-actions/constants/actions/ResolveCompanyFromRawNameAction';
 
@@ -40,6 +42,8 @@ export const CORE_ACTIONS: Array<{
     | 'ACCEPT_LINKEDIN_RECEIVED_INVITATION'
     | 'SEND_WHATSAPP_MESSAGE'
     | 'SEARCH_LOCAL_BUSINESSES'
+    | 'SEARCH_BRIGHT_DATA_COMPANIES'
+    | 'SEARCH_BRIGHT_DATA_PEOPLE'
     | 'GET_LOCAL_BUSINESS_DETAILS'
     | 'RESOLVE_COMPANY_FROM_RAW_NAME'
   >;
@@ -62,6 +66,8 @@ export const CORE_ACTIONS: Array<{
   ACCEPT_LINKEDIN_RECEIVED_INVITATION_ACTION,
   SEND_WHATSAPP_MESSAGE_ACTION,
   SEARCH_LOCAL_BUSINESSES_ACTION,
+  SEARCH_BRIGHT_DATA_COMPANIES_ACTION,
+  SEARCH_BRIGHT_DATA_PEOPLE_ACTION,
   GET_LOCAL_BUSINESS_DETAILS_ACTION,
   RESOLVE_COMPANY_FROM_RAW_NAME_ACTION,
 ];

@@ -605,6 +605,13 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
       'Search people with naturalLanguage (e.g. "CEO at StayVista") or explicit std filters. Use for GTM prospecting workflows.',
   },
   {
+    name: 'search_bright_data_business',
+    pack: 'prospecting',
+    label: 'Search Bright Data Business',
+    description:
+      'Bright Data Business Search for companies or people from a raw natural-language request. Default mode ludicrous: first call returns a budget (planId, match counts per slice, expected accuracy, cost at $0.002 per record); call again with planId and maxBudgetUsd (max $10) after the user confirms. Modes smart and instant return immediately. Pass projectId to write the Outreach tab.',
+  },
+  {
     name: 'search_local_businesses',
     pack: 'prospecting',
     label: 'Search Local Businesses',

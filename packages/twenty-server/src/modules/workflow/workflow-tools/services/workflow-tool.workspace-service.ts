@@ -32,6 +32,9 @@ import { createGetWorkflowRunTool } from 'src/modules/workflow/workflow-tools/to
 import { createListLogicFunctionToolsTool } from 'src/modules/workflow/workflow-tools/tools/list-logic-function-tools.tool';
 import { createListWorkflowRunsTool } from 'src/modules/workflow/workflow-tools/tools/list-workflow-runs.tool';
 import { createListWorkflowsTool } from 'src/modules/workflow/workflow-tools/tools/list-workflows.tool';
+import { createRetryWorkflowRunTool } from 'src/modules/workflow/workflow-tools/tools/retry-workflow-run.tool';
+import { createRunWorkflowTool } from 'src/modules/workflow/workflow-tools/tools/run-workflow.tool';
+import { createStopWorkflowRunTool } from 'src/modules/workflow/workflow-tools/tools/stop-workflow-run.tool';
 import { createUpdateAgentTool } from 'src/modules/workflow/workflow-tools/tools/update-agent.tool';
 import { createUpdateLogicFunctionSourceTool } from 'src/modules/workflow/workflow-tools/tools/update-logic-function-source.tool';
 import { createUpdateWorkflowVersionPositionsTool } from 'src/modules/workflow/workflow-tools/tools/update-workflow-version-positions.tool';
@@ -163,6 +166,12 @@ export class WorkflowToolWorkspaceService {
       this.deps,
       context,
     );
+    const runWorkflow = createRunWorkflowTool(
+      this.deps,
+      contextWithPermissions,
+    );
+    const stopWorkflowRun = createStopWorkflowRunTool(this.deps, context);
+    const retryWorkflowRun = createRetryWorkflowRunTool(this.deps, context);
     const updateAgent = createUpdateAgentTool(this.deps, context);
     const validateWorkflow = createValidateWorkflowTool(this.deps, context);
 
@@ -187,6 +196,9 @@ export class WorkflowToolWorkspaceService {
       [getLogicFunctionSource.name]: getLogicFunctionSource,
       [updateLogicFunctionSource.name]: updateLogicFunctionSource,
       [listLogicFunctionTools.name]: listLogicFunctionTools,
+      [runWorkflow.name]: runWorkflow,
+      [stopWorkflowRun.name]: stopWorkflowRun,
+      [retryWorkflowRun.name]: retryWorkflowRun,
       [updateAgent.name]: updateAgent,
       [validateWorkflow.name]: validateWorkflow,
     };

@@ -31,7 +31,8 @@ describe('org-chart-public-access.util', () => {
   it('shouldDenyUnauthenticatedOrgChartAccess enforces for scraper-like clients', () => {
     process.env.ORG_CHART_GUARD_MODE = 'enforce';
     const req = buildRequest({
-      'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0',
+      'user-agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0',
     });
     expect(shouldDenyUnauthenticatedOrgChartAccess(req, false)).toBe(true);
   });

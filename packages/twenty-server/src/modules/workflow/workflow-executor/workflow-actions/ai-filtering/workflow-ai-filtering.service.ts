@@ -4,27 +4,48 @@ import { isDefined } from 'twenty-shared/utils';
 import { v4 } from 'uuid';
 
 import {
-  type AiFilterConfig,
-  type AiFilterField,
-  type CandidateData,
-  AiFilteringProcessorService,
-} from 'src/engine/core-modules/candidate-sourcing/services/ai-filtering-processor.service';
+  type FilterFieldSpec,
+  type FilterSpec,
+} from 'src/engine/core-modules/candidate-sourcing/services/ai-filter-engine/ai-filter-contract';
+import { AiFilterEngineService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filter-engine/ai-filter-engine.service';
+import { AiFilterContextService } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/ai-filter-context.service';
 import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decorators/message-queue.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
-import { type WorkflowAiFilteringResult } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/types/workflow-ai-filtering-result.type';
+import {
+  type WorkflowAiFilteringRecord,
+  type WorkflowAiFilteringResult,
+} from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/types/workflow-ai-filtering-result.type';
 import { type WorkflowAiFilteringActionInput } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/types/workflow-ai-filtering-action-input.type';
 import { AiFilteringWorkflowResumeService } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/ai-filtering-workflow-resume.service';
 import { type ProcessWorkflowAiFilteringJobData } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-filtering/types/process-workflow-ai-filtering-job-data.type';
 
 export type { WorkflowAiFilteringResult };
 
+const START_DELAY_MS = 2000;
 const PROCESS_WORKFLOW_AI_FILTERING_JOB_NAME = 'ProcessWorkflowAiFilteringJob';
 
 const asRecord = (value: unknown): Record<string, unknown> | null =>
   value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
+
+const toFieldType = (type: string): FilterFieldSpec['type'] => {
+  const normalized = type.toLowerCase();
+
+  return normalized === 'boolean' || normalized === 'enum'
+    ? normalized
+    : 'text';
+};
+
+export const EMPTY_AI_FILTERING_RESULT: WorkflowAiFilteringResult = {
+  success: true,
+  total: 0,
+  candidates: [],
+  kept: [],
+  rejected: [],
+  failed: [],
+};
 
 const normalizeCandidates = (input: unknown): Record<string, unknown>[] => {
   if (!Array.isArray(input)) {
@@ -36,21 +57,22 @@ const normalizeCandidates = (input: unknown): Record<string, unknown>[] => {
   return input.map((entry) => asRecord(entry)).filter(isDefined);
 };
 
-const resolveOpenAiApiKey = (): string =>
-  process.env.OPENAI_API_KEY?.trim() ||
-  process.env.OPENAI_KEY?.trim() ||
-  'sk-workflow-ai-filtering-placeholder';
-
 @Injectable()
 export class WorkflowAiFilteringService {
   private readonly logger = new Logger(WorkflowAiFilteringService.name);
 
   constructor(
-    private readonly aiFilteringProcessorService: AiFilteringProcessorService,
+    private readonly aiFilterEngineService: AiFilterEngineService,
     private readonly aiFilteringWorkflowResumeService: AiFilteringWorkflowResumeService,
     @InjectMessageQueue(MessageQueue.aiFilteringQueue)
     private readonly messageQueueService: MessageQueueService,
+    private readonly aiFilterContextService: AiFilterContextService,
   ) {}
+
+  // A search that found nothing is a normal outcome, not an error.
+  hasCandidates(candidates: unknown): boolean {
+    return normalizeCandidates(candidates).length > 0;
+  }
 
   async enqueue({
     workspaceId,
@@ -98,13 +120,21 @@ export class WorkflowAiFilteringService {
         selectedMetadataFields: input.selectedMetadataFields || [],
         includeResume: input.includeResume === true,
         fields: input.fields,
+        keepField: input.keepField,
+        concurrency: input.concurrency,
+        batchSize: input.batchSize,
+        subject: input.subject,
+        context: input.context,
       },
     };
 
     await this.messageQueueService.add<ProcessWorkflowAiFilteringJobData>(
       PROCESS_WORKFLOW_AI_FILTERING_JOB_NAME,
       jobData,
-      { retryLimit: 2 },
+      // The executor marks the step PENDING after enqueue returns; a job that
+      // finishes first would have its SUCCESS overwritten and the run would
+      // hang. Start the job after that write.
+      { retryLimit: 2, delay: START_DELAY_MS },
     );
 
     this.logger.log(
@@ -121,14 +151,9 @@ export class WorkflowAiFilteringService {
 
   async processAndBuildResult(input: {
     candidates: Record<string, unknown>[];
-    filter: {
-      name: string;
-      prompt: string;
-      selectedModel: string;
-      selectedMetadataFields: string[];
-      includeResume?: boolean;
-      fields: AiFilterField[];
-    };
+    filter: ProcessWorkflowAiFilteringJobData['filter'];
+    // Workspace facts resolved by the caller; appended to filter.context.
+    workspaceContext?: string;
   }): Promise<WorkflowAiFilteringResult> {
     const candidates = normalizeCandidates(input.candidates);
 
@@ -141,58 +166,100 @@ export class WorkflowAiFilteringService {
       };
     }
 
-    const candidateData: CandidateData[] = candidates.map(
-      (candidate, index) => {
-        const id =
-          typeof candidate.id === 'string' && candidate.id.trim()
-            ? candidate.id
-            : `row-${index}`;
-
-        return {
-          ...candidate,
-          id,
-        };
-      },
+    const records = candidates.map((candidate, index) => ({
+      ...candidate,
+      id:
+        typeof candidate.id === 'string' && candidate.id.trim()
+          ? candidate.id
+          : `row-${index}`,
+    }));
+    const fields: FilterFieldSpec[] = input.filter.fields.map((field) => ({
+      name: field.name,
+      type: toFieldType(field.type),
+      description: field.description,
+      enumValues: field.enumValues,
+      optional: field.optional,
+    }));
+    const keepField =
+      input.filter.keepField ??
+      fields.find((field) => field.type === 'boolean')?.name ??
+      fields[0]?.name;
+    const metadataFields = (input.filter.selectedMetadataFields ?? []).filter(
+      (field) => field !== 'resume',
     );
-
-    const selectedMetadataFields = (
-      input.filter.selectedMetadataFields || []
-    ).filter((field) => field !== 'resume');
-
-    const metadataFields =
-      selectedMetadataFields.length > 0
-        ? selectedMetadataFields
-        : ['name', 'title', 'company', 'location', 'headline'];
-
-    const aiFilterConfig: AiFilterConfig = {
-      modelName: input.filter.name || 'AiFiltering',
-      prompt: input.filter.prompt,
-      selectedModel: input.filter.selectedModel || 'typesafe-ai/jev',
-      fields: input.filter.fields,
-      selectedMetadataFields: metadataFields,
-      includeResume: input.filter.includeResume === true,
+    const spec: FilterSpec = {
+      name: input.filter.name || 'AiFiltering',
+      subject: input.filter.subject ?? 'record',
+      criteria: input.filter.prompt,
+      context: [input.filter.context, input.workspaceContext]
+        .filter((part): part is string => Boolean(part?.trim()))
+        .join('\n'),
+      fields,
+      keepField,
+      model: input.filter.selectedModel || 'typesafe-ai/jev',
+      metadataFields:
+        metadataFields.length > 0
+          ? metadataFields
+          : ['name', 'title', 'company', 'location', 'headline'],
+      batchSize: input.filter.batchSize,
+      concurrency: input.filter.concurrency,
     };
 
-    const filterResults =
-      await this.aiFilteringProcessorService.processAiFilters(
-        candidateData,
-        [aiFilterConfig],
-        resolveOpenAiApiKey(),
-      );
-
-    const enrichedById = new Map(
-      filterResults.map((result) => [result.candidateId, result.enrichedData]),
+    const { verdicts, stats } = await this.aiFilterEngineService.run(
+      records,
+      spec,
     );
 
-    const enrichedCandidates = candidateData.map((candidate) => ({
-      ...candidate,
-      aiFilter: enrichedById.get(candidate.id) ?? {},
-    }));
+    if (verdicts.every((verdict) => verdict.status === 'failed')) {
+      // The model never answered (provider down, missing key, bad config).
+      // Fail the step rather than report every record as rejected.
+      throw new Error(
+        `AI filter "${spec.name}" got no valid answer for any of ${records.length} records: ${verdicts[0]?.error ?? 'unknown error'}`,
+      );
+    }
+
+    const enriched: WorkflowAiFilteringRecord[] = [];
+    const kept: WorkflowAiFilteringRecord[] = [];
+    const rejected: Array<WorkflowAiFilteringRecord & { reason: string }> = [];
+    const failed: Array<WorkflowAiFilteringRecord & { error: string }> = [];
+
+    records.forEach((record, index) => {
+      const verdict = verdicts[index];
+      const withAnswers: WorkflowAiFilteringRecord = {
+        ...record,
+        aiFilter: verdict.answers,
+      };
+
+      enriched.push(withAnswers);
+
+      if (verdict.status === 'failed') {
+        failed.push({
+          ...withAnswers,
+          error: verdict.error ?? 'No answer from the filter model',
+        });
+      } else if (verdict.keep) {
+        kept.push(withAnswers);
+      } else {
+        rejected.push({
+          ...withAnswers,
+          reason: verdict.reason ?? `Did not meet "${keepField}"`,
+        });
+      }
+    });
 
     return {
       success: true,
-      total: enrichedCandidates.length,
-      candidates: enrichedCandidates,
+      total: enriched.length,
+      candidates: enriched,
+      kept,
+      rejected,
+      failed,
+      stats: {
+        ...stats,
+        kept: kept.length,
+        rejected: rejected.length,
+        failed: failed.length,
+      },
     };
   }
 
@@ -200,9 +267,14 @@ export class WorkflowAiFilteringService {
     jobData: ProcessWorkflowAiFilteringJobData,
   ): Promise<void> {
     try {
+      const workspaceContext =
+        await this.aiFilterContextService.resolveForWorkspace(
+          jobData.workspaceId,
+        );
       const result = await this.processAndBuildResult({
         candidates: jobData.candidates,
         filter: jobData.filter,
+        workspaceContext,
       });
 
       await this.aiFilteringWorkflowResumeService.finalizeSuccess({

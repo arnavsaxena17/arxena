@@ -80,7 +80,7 @@ describe('SearchCompaniesService', () => {
         useV2: true,
       }),
       'tok',
-      undefined,
+      { workspaceId: 'ws-1' },
     );
   });
 
@@ -153,7 +153,7 @@ describe('SearchCompaniesService', () => {
         useV2: true,
       }),
       'tok',
-      undefined,
+      { workspaceId: 'ws-1' },
     );
   });
 

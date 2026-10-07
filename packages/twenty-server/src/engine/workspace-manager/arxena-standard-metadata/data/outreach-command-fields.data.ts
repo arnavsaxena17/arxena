@@ -543,6 +543,18 @@ export const getOutreachCommandFieldsData = (
       type: 'RAW_JSON',
     },
   },
+  {
+    objectName: 'project',
+    field: {
+      description:
+        'People and companies table column width, order, and visibility for Outreach',
+      icon: 'IconTable',
+      label: 'Outreach Table Layout',
+      name: 'outreachTableLayout',
+      objectMetadataId: objectsNameIdMap.project,
+      type: 'RAW_JSON',
+    },
+  },
 
   // Opportunity — outreach attribution
   {

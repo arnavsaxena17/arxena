@@ -31,7 +31,9 @@ export const pickBestCompanyNameHit = (
   hits: CompanyNameResolverEsHit[],
 ): PickedCompanyNameHit | null => {
   const hitsWithName = hits.filter(
-    (hit): hit is CompanyNameResolverEsHit & {
+    (
+      hit,
+    ): hit is CompanyNameResolverEsHit & {
       _source: CompanyNameResolverHitSource & { name: string };
     } =>
       isDefined(hit._source) &&

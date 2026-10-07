@@ -2712,6 +2712,8 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
             }
           }
           otherFields
+          jobSpecificFields
+          outreachProspectEnrichment
           people {
             id
             name {
@@ -2731,6 +2733,8 @@ export const graphqlToFetchAllCandidateDataWithFieldValues = `
               primaryLinkUrl
               primaryLinkLabel
             }
+            linkedinProfile
+            linkedinPosts
             linkedinProfileId
             displayPicture {
               primaryLinkUrl

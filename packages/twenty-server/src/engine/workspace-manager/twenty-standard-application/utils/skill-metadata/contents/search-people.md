@@ -12,6 +12,9 @@
 <!-- search-exa-people-provider-row:start -->
 | **Exa** | `exa_web_search` | Web/AI search for hard-to-find people; `category: "people"` | `EXA_API_KEY` set |
 <!-- search-exa-people-provider-row:end -->
+<!-- search-bright-data-people-provider-row:start -->
+| **Bright Data** | `search_bright_data_business` (`entity: "people"`) | Plain-language people sets ("MD or CEO of QSR restaurants in India"), budgeted ludicrous mode by default ($0.002/record), not a pasted LinkedIn URL or a taxonomy filter | `BRIGHT_DATA_API_KEY` set |
+<!-- search-bright-data-people-provider-row:end -->
 <!-- search-people-index-provider-row:start -->
 | **Internal index** | `search_people_index` | Dedupe against people already in the workspace | Elasticsearch index |
 <!-- search-people-index-provider-row:end -->
@@ -33,6 +36,9 @@ learn_tools([
 <!-- search-exa-people-learn-tools-line:start -->
   "exa_web_search",
 <!-- search-exa-people-learn-tools-line:end -->
+<!-- search-bright-data-people-learn-tools-line:start -->
+  "search_bright_data_business",
+<!-- search-bright-data-people-learn-tools-line:end -->
   "upsert_outreach_target_people"
 ])
 
@@ -105,6 +111,51 @@ exa_web_search({
 ```
 
 <!-- search-exa-people-source-section:end -->
+<!-- search-bright-data-people-source-section:start -->
+### Source — Bright Data (`search_bright_data_business`)
+
+Plain-language people sets. Pass the user's sentence as `query`. Do not turn it into a taxonomy filter, and do not use this for a pasted LinkedIn URL. Requires `BRIGHT_DATA_API_KEY`; tell the user if it is missing.
+
+`entity`: `"people"`. `mode`: `"ludicrous"` (default), `"smart"` or `"instant"`.
+
+**Ludicrous (default) is budgeted. Always show the cost before fetching.** It bills **$0.002 per returned record**, capped at **$10 per query**. The server turns the request into several structured, non-overlapping queries (title synonyms, cities, size and funding buckets), then fetches slice by slice and drops slices whose results stop being relevant.
+
+1. **Estimate.** Call with the raw `query`, no `planId`, and **no `projectId`**. It spends a few cents sampling each slice and writes nothing. The result has `planId`, `shards` (per slice: `matched`, `fetchableRecords`, `samplePrecision`), `estimatedUniqueRecords`, `estimatedAccurateRecords`, `estimatedCostUsd`, `estimateCostUsd` and `budgetOptions` (records and dollars at several sizes).
+2. **Ask for a budget.** Show a short table of the slices with their counts, say how many unique records are reachable and the expected accuracy, and offer the `budgetOptions` ("250 records ≈ $0.50, 1,000 ≈ $2.00, all ≈ $X"). State the estimate itself already cost `estimateCostUsd`. If `message` warns that sampled accuracy is low, say so and offer to reword the request before spending more. Stop until the user picks a budget. If every slice matched 0, say so and offer a rewording instead.
+3. **Fetch.** After the user confirms, call again with the same `query`, the `planId`, `maxBudgetUsd` (their chosen budget, at most 10), `targetCount` (the number they asked for) and the `projectId`. The tool writes the People tab itself, so do not upsert those rows again. The estimate's sample rows are reused, so nothing is bought twice.
+4. **Report.** Use `count`, `spentUsd` and `shardReports` (per slice: fetched, kept, `stoppedReason`). Say which slices stopped early because relevance dropped, and what was spent against the budget.
+
+If the plan has expired the tool says so; run the estimate again. Never exceed a budget the user did not confirm.
+
+Boolean title strings ("(VP OR Head) AND Sales NOT assistant") are supported in the user's request for ludicrous: pass them as written in `query`. Do not strip the operators; they are compiled for the engine.
+
+```
+// 1. estimate
+search_bright_data_business({
+  "entity": "people",
+  "query": "MD or CEO of QSR restaurants in India"
+})
+
+// 3. after the user confirms $2
+search_bright_data_business({
+  "entity": "people",
+  "query": "MD or CEO of QSR restaurants in India",
+  "planId": "<planId from step 1>",
+  "maxBudgetUsd": 2,
+  "targetCount": 1000,
+  "projectId": "<from browsing context>"
+})
+```
+
+**Smart and instant** take a query up to 200 characters, return immediately and need no confirmation. Use them for quick previews or when the request is short. `smart` returns pages of 10 (max 100 results); `instant` pages of 100 (max 1000). Both also bill per returned record. Preview with `limit: 10` and no `projectId`, show the hits and `matched`, and only continue after the user approves the query:
+
+1. Write the preview rows with `execute_tool` `upsert_outreach_target_people` (`mode: "merge"`, the `previewRows` verbatim, plus `projectId`).
+2. If the target is above 10, call the same query again with `offset: 10`, `limit: target - 10` and the `projectId`; the tool writes the People tab itself.
+3. Ranking can shift between calls and the tab dedupes by id. If rows landed are below the target, fetch the shortfall at most twice, then report landed rows against `matched`.
+
+Without a `projectId` (not on Find), keep the estimate or preview and approval, then return the rows in chat instead of writing them.
+
+<!-- search-bright-data-people-source-section:end -->
 ### Outreach ephemeral save (default on /outreach-home)
 
 Follow **Ephemeral write contract** (preamble). Steps:

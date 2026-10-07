@@ -22,7 +22,9 @@ export const andMergeBooleanSearchClauses = (
     .join(' AND ');
 };
 
-export const wrapJobTitleAsOrClause = (jobTitle: string | null | undefined): string | undefined => {
+export const wrapJobTitleAsOrClause = (
+  jobTitle: string | null | undefined,
+): string | undefined => {
   const trimmed = jobTitle?.trim();
   if (!trimmed) {
     return undefined;

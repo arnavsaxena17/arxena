@@ -194,17 +194,66 @@ const TITLES = [
 ];
 
 const LOCATIONS = [
-  { text: 'San Francisco, California, United States', countryCode: 'US', country: 'United States', state: 'California', city: 'San Francisco' },
-  { text: 'New York, New York, United States', countryCode: 'US', country: 'United States', state: 'New York', city: 'New York' },
-  { text: 'London, England, United Kingdom', countryCode: 'GB', country: 'United Kingdom', state: 'England', city: 'London' },
-  { text: 'Berlin, Germany', countryCode: 'DE', country: 'Germany', state: 'Berlin', city: 'Berlin' },
-  { text: 'Mumbai, Maharashtra, India', countryCode: 'IN', country: 'India', state: 'Maharashtra', city: 'Mumbai' },
-  { text: 'Bengaluru, Karnataka, India', countryCode: 'IN', country: 'India', state: 'Karnataka', city: 'Bengaluru' },
-  { text: 'Singapore', countryCode: 'SG', country: 'Singapore', state: 'Singapore', city: 'Singapore' },
-  { text: 'Sydney, New South Wales, Australia', countryCode: 'AU', country: 'Australia', state: 'New South Wales', city: 'Sydney' },
+  {
+    text: 'San Francisco, California, United States',
+    countryCode: 'US',
+    country: 'United States',
+    state: 'California',
+    city: 'San Francisco',
+  },
+  {
+    text: 'New York, New York, United States',
+    countryCode: 'US',
+    country: 'United States',
+    state: 'New York',
+    city: 'New York',
+  },
+  {
+    text: 'London, England, United Kingdom',
+    countryCode: 'GB',
+    country: 'United Kingdom',
+    state: 'England',
+    city: 'London',
+  },
+  {
+    text: 'Berlin, Germany',
+    countryCode: 'DE',
+    country: 'Germany',
+    state: 'Berlin',
+    city: 'Berlin',
+  },
+  {
+    text: 'Mumbai, Maharashtra, India',
+    countryCode: 'IN',
+    country: 'India',
+    state: 'Maharashtra',
+    city: 'Mumbai',
+  },
+  {
+    text: 'Bengaluru, Karnataka, India',
+    countryCode: 'IN',
+    country: 'India',
+    state: 'Karnataka',
+    city: 'Bengaluru',
+  },
+  {
+    text: 'Singapore',
+    countryCode: 'SG',
+    country: 'Singapore',
+    state: 'Singapore',
+    city: 'Singapore',
+  },
+  {
+    text: 'Sydney, New South Wales, Australia',
+    countryCode: 'AU',
+    country: 'Australia',
+    state: 'New South Wales',
+    city: 'Sydney',
+  },
 ];
 
-const pick = <T,>(arr: T[], idx: number): T => arr[Math.abs(idx) % arr.length] as T;
+const pick = <T>(arr: T[], idx: number): T =>
+  arr[Math.abs(idx) % arr.length] as T;
 
 const clampInt = (n: number, min: number, max: number): number =>
   Math.max(min, Math.min(max, Math.floor(n)));
@@ -225,7 +274,11 @@ function seededVanity(i: number): string {
   return `sample-${i}-${(i * 2654435761) >>> 0}`.slice(0, 22);
 }
 
-function buildPersonName(i: number): { firstName: string; lastName: string; fullName: string } {
+function buildPersonName(i: number): {
+  firstName: string;
+  lastName: string;
+  fullName: string;
+} {
   const firstName = pick(FIRST_NAMES, i);
   const lastName = pick(LAST_NAMES, i * 7 + 3);
   return { firstName, lastName, fullName: `${firstName} ${lastName}`.trim() };
@@ -266,22 +319,25 @@ function buildApifyExperience(params: {
   endMonth?: number | null;
   isCurrent: boolean;
 }): ApifyExperienceEntry {
-  const end: ApifyDatePart =
-    params.isCurrent
-      ? { text: 'Present' }
-      : {
-          ...(params.endMonth ? { month: pick(Object.keys(MONTHS), params.endMonth - 1) } : {}),
-          ...(params.endYear ? { year: params.endYear } : {}),
-          text:
-            params.endYear && params.endMonth
-              ? `${String(pick(Object.keys(MONTHS), params.endMonth - 1)).slice(0, 3)} ${params.endYear}`
-              : params.endYear
-                ? String(params.endYear)
-                : null,
-        };
+  const end: ApifyDatePart = params.isCurrent
+    ? { text: 'Present' }
+    : {
+        ...(params.endMonth
+          ? { month: pick(Object.keys(MONTHS), params.endMonth - 1) }
+          : {}),
+        ...(params.endYear ? { year: params.endYear } : {}),
+        text:
+          params.endYear && params.endMonth
+            ? `${String(pick(Object.keys(MONTHS), params.endMonth - 1)).slice(0, 3)} ${params.endYear}`
+            : params.endYear
+              ? String(params.endYear)
+              : null,
+      };
 
   const start: ApifyDatePart = {
-    ...(params.startMonth ? { month: pick(Object.keys(MONTHS), params.startMonth - 1) } : {}),
+    ...(params.startMonth
+      ? { month: pick(Object.keys(MONTHS), params.startMonth - 1) }
+      : {}),
     year: params.startYear,
     text:
       params.startMonth && params.startYear
@@ -318,7 +374,9 @@ export function generateSampleContactOutPeopleSearchResponse(input: {
   const profiles: Record<string, ContactOutPeopleSearchProfile> = {};
 
   const now = new Date();
-  const nowIso = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 15)).toISOString();
+  const nowIso = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 15),
+  ).toISOString();
 
   for (let i = 0; i < total; i++) {
     const idx = seed + i;
@@ -336,7 +394,8 @@ export function generateSampleContactOutPeopleSearchResponse(input: {
     // - first 20: current, start between (nowYear-4) and (nowYear-3)
     // - next 70: current, start within last 3 years
     // - last 30: past, ended within last 3 years
-    const bucket = i < 20 ? 'early_current' : i < 90 ? 'recent_current' : 'past';
+    const bucket =
+      i < 20 ? 'early_current' : i < 90 ? 'recent_current' : 'past';
 
     const nowYear = now.getUTCFullYear();
     const joinYear =
@@ -370,7 +429,10 @@ export function generateSampleContactOutPeopleSearchResponse(input: {
     const previousExp: ContactOutDetailedExperience = buildCompanyExperience({
       companyName: pick(['Acme', 'Globex', 'Initech', 'Umbrella'], idx),
       companyLinkedinUrl: undefined,
-      domain: pick(['acme.com', 'globex.com', 'initech.com', 'umbrella.com'], idx),
+      domain: pick(
+        ['acme.com', 'globex.com', 'initech.com', 'umbrella.com'],
+        idx,
+      ),
       startYear: joinYear - 3,
       startMonth: ((joinMonth + 2) % 12) + 1,
       endYear: joinYear,
@@ -389,8 +451,14 @@ export function generateSampleContactOutPeopleSearchResponse(input: {
       industry: 'Computer Software',
       updated_at: nowIso.replace('T', ' ').slice(0, 19),
       profile_picture_url: `https://images.contactout.com/profiles/sample-${idx}`,
-      job_function: pick(['Engineering', 'Sales', 'Marketing', 'Design', 'Finance'], idx),
-      seniority: pick(['Entry', 'Senior', 'Manager', 'Director', 'Vice President'], idx),
+      job_function: pick(
+        ['Engineering', 'Sales', 'Marketing', 'Design', 'Finance'],
+        idx,
+      ),
+      seniority: pick(
+        ['Entry', 'Senior', 'Manager', 'Director', 'Vice President'],
+        idx,
+      ),
       experience: [companyExp, previousExp],
       education: [],
     };
@@ -416,10 +484,11 @@ export function generateSampleApifyCompanyProfileActorItems(input: {
   for (let i = 0; i < total; i++) {
     const idx = seed + i;
     const { firstName, lastName, fullName } = buildPersonName(idx);
-    const publicIdentifier = `sample-${firstName.toLowerCase()}-${lastName.toLowerCase()}-${idx}`.slice(
-      0,
-      40,
-    );
+    const publicIdentifier =
+      `sample-${firstName.toLowerCase()}-${lastName.toLowerCase()}-${idx}`.slice(
+        0,
+        40,
+      );
     const linkedinUrl = `https://www.linkedin.com/in/${publicIdentifier}`;
     const title = pick(TITLES, idx);
     const loc = pick(LOCATIONS, idx * 3);
@@ -427,7 +496,8 @@ export function generateSampleApifyCompanyProfileActorItems(input: {
     const now = new Date();
     const nowYear = now.getUTCFullYear();
 
-    const bucket = i < 20 ? 'early_current' : i < 90 ? 'recent_current' : 'past';
+    const bucket =
+      i < 20 ? 'early_current' : i < 90 ? 'recent_current' : 'past';
     const joinYear =
       bucket === 'early_current'
         ? nowYear - 4
@@ -496,7 +566,10 @@ export function generateSampleApifyCompanyProfileActorItems(input: {
       followerCount: 200 + (idx % 5000),
       about: `Sample profile for ${fullName}.`,
       photo: `https://media.licdn.com/dms/image/v2/sample/${idx}`,
-      profilePicture: { url: `https://media.licdn.com/dms/image/v2/sample/${idx}`, sizes: [] },
+      profilePicture: {
+        url: `https://media.licdn.com/dms/image/v2/sample/${idx}`,
+        sizes: [],
+      },
       currentPosition: isCurrent
         ? [
             {
@@ -504,7 +577,11 @@ export function generateSampleApifyCompanyProfileActorItems(input: {
               companyLinkedinUrl: input.linkedinCompanyUrl,
               companyId: 'sample_company_id',
               position: title,
-              startDate: { month: pick(Object.keys(MONTHS), joinMonth - 1), year: joinYear, text: isoMonth(joinYear, joinMonth) },
+              startDate: {
+                month: pick(Object.keys(MONTHS), joinMonth - 1),
+                year: joinYear,
+                text: isoMonth(joinYear, joinMonth),
+              },
               endDate: { text: 'Present' },
             },
           ]
@@ -525,9 +602,10 @@ export function generateSampleApifyCompanyProfileActorItems(input: {
   return items;
 }
 
-export function toApifyExperienceMonthKey(d: ApifyDatePart | null | undefined): MonthKey | null {
+export function toApifyExperienceMonthKey(
+  d: ApifyDatePart | null | undefined,
+): MonthKey | null {
   if (!d || !d.year) return null;
   const m = monthToNumber(d.month ?? null) ?? 1;
   return isoMonth(d.year, m);
 }
-
