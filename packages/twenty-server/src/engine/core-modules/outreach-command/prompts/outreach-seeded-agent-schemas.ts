@@ -108,6 +108,16 @@ export const OUTREACH_SEEDED_EXTRACT_SIGNALS_SCHEMA = {
       type: 'boolean' as const,
       description: 'True only for opt-out: stop, unsubscribe, never contact me',
     },
+    requestedStartsAt: {
+      type: 'string' as const,
+      description:
+        'ISO 8601 start they explicitly named (date AND time), resolved from Now/timezone, else empty',
+    },
+    followUpAt: {
+      type: 'string' as const,
+      description:
+        'ISO 8601 date they asked us to come back on ("next month", "after a few months"), else empty',
+    },
   },
   required: [
     'acceptedSlotIndex',
@@ -119,6 +129,8 @@ export const OUTREACH_SEEDED_EXTRACT_SIGNALS_SCHEMA = {
     'prospectPhone',
     'sendWhatsappReply',
     'shouldNotRespond',
+    'requestedStartsAt',
+    'followUpAt',
   ],
   additionalProperties: false as const,
 };

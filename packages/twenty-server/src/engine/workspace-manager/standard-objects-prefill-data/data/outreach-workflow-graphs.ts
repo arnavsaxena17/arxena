@@ -15,6 +15,7 @@ import {
   buildOutreachQualifyProspectPrompt,
   buildOutreachRescheduleOfferPrompt,
   buildOutreachSalesChatDraftPrompt,
+  buildOutreachSnoozeFollowUpPrompt,
   buildOutreachStampSequenceStagePrompt,
   OUTREACH_DONT_RESPOND_SENTINEL,
 } from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
@@ -29,6 +30,9 @@ import {
   OUTREACH_UPLOAD_PROFILES_SAMPLE_OUTPUT,
   OUTREACH_UPSERT_COMPANIES_SAMPLE_OUTPUT,
   OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT,
+  OUTREACH_GET_PROJECT_ATTACHMENTS_SAMPLE_OUTPUT,
+  OUTREACH_NOTIFY_MEMBER_SYSTEM_EMAIL_SAMPLE_OUTPUT,
+  OUTREACH_CREATE_REFERRAL_CANDIDATE_SAMPLE_OUTPUT,
   OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_SAMPLE_OUTPUT,
   OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_SAMPLE_OUTPUT,
   OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_SAMPLE_OUTPUT,
@@ -55,6 +59,7 @@ import {
   gtmWfAiAgentStep,
   gtmWfDatabaseEventTrigger,
   gtmWfDelayStep,
+  gtmWfDelayUntilStep,
   gtmWfRandomDelayStep,
   gtmWfViewLinkedinProfileStep,
   gtmWfFetchLinkedinActivityStep,
@@ -302,6 +307,20 @@ const IDS = {
   stampRepliedFromHistory: '51a1002c-aaaa-4fcb-a7d8-17a7736ed045',
   // REPLIED meeting stamp (channel/email stamps moved to reply agent tools)
   stampMeetingBooked: '51a1002d-aaaa-4fcb-a7d8-17a7736ed045',
+  // Prospect asked to speak later: wait until followUpAt, then follow up
+  loadAttachments: '5fa10001-aaaa-4fcb-a7d8-17a7736ed045',
+  hasFollowUpIf: '5fa10002-aaaa-4fcb-a7d8-17a7736ed045',
+  stampSnoozeWaiting: '5fa10003-aaaa-4fcb-a7d8-17a7736ed045',
+  waitUntilFollowUp: '5fa10004-aaaa-4fcb-a7d8-17a7736ed045',
+  reloadAfterSnooze: '5fa10005-aaaa-4fcb-a7d8-17a7736ed045',
+  reloadAfterSnoozePersonFind: '5fa10006-aaaa-4fcb-a7d8-17a7736ed045',
+  stillWaitingSnoozeFilter: '5fa10007-aaaa-4fcb-a7d8-17a7736ed045',
+  draftSnoozeFollowUp: '5fa10008-aaaa-4fcb-a7d8-17a7736ed045',
+  approveSnoozeFollowUp: '5fa10009-aaaa-4fcb-a7d8-17a7736ed045',
+  sendSnoozeFollowUp: '5fa1000a-aaaa-4fcb-a7d8-17a7736ed045',
+  // WhatsApp option off: tell the workspace member to reach out on the number
+  hasProspectPhoneNotifyIf: '5fa1000b-aaaa-4fcb-a7d8-17a7736ed045',
+  notifyMemberReachOut: '5fa1000c-aaaa-4fcb-a7d8-17a7736ed045',
   // MEETING_BOOKED Step 7
   meetingBookedFind: 'c7a10020-aaaa-4fcb-a7d8-17a7736ed045',
   reminderDelay: 'c7a10021-aaaa-4fcb-a7d8-17a7736ed045',
@@ -335,10 +354,58 @@ const IDS = {
 
 export const OUTREACH_SEQUENCER_STEP_IDS = IDS;
 
+// Connected mailbox: send the email. Otherwise a platform system email tells the
+// workspace member what to send, using the same drafted subject/body/attachments.
+const sendEmailOrNotifyMember = ({
+  emailConnected,
+  action,
+  prospectName,
+  prospectEmail,
+  files,
+  fileNames,
+  conversation,
+  ...emailStep
+}: {
+  emailConnected: boolean;
+  id: string;
+  name: string;
+  to: string;
+  subject: string;
+  body: string;
+  files?: string;
+  nextStepIds?: string[];
+  action: string;
+  prospectName: string;
+  prospectEmail: string;
+  fileNames?: string;
+  conversation?: string;
+}) =>
+  emailConnected
+    ? gtmWfSendEmailStep({ ...emailStep, files })
+    : gtmWfLogicFunctionStep({
+        id: emailStep.id,
+        name: `Notify member: ${action}`,
+        logicFunctionId: '__LF_notify-member-system-email__',
+        logicFunctionInput: {
+          memberEmail: gtmWfMemberEmail(),
+          prospectName,
+          action,
+          prospectEmail,
+          subject: emailStep.subject,
+          body: emailStep.body,
+          attachmentNames: fileNames ?? '',
+          conversation: conversation ?? '',
+        },
+        sampleOutput: OUTREACH_NOTIFY_MEMBER_SYSTEM_EMAIL_SAMPLE_OUTPUT,
+        nextStepIds: emailStep.nextStepIds,
+      });
+
 export type OutreachSequencerGraphOptions = {
   useLlmConnectionNote: boolean;
   humanInTheLoop: boolean;
   whatsappEnabled: boolean;
+  // Off: email sends become a system email telling the workspace member what to send.
+  emailConnected: boolean;
   meetingFollowUpEnabled: boolean;
   checkDeduplicationPerCompany: boolean;
   qualifyProspectEnabled: boolean;
@@ -356,7 +423,9 @@ export const DEFAULT_OUTREACH_SEQUENCER_GRAPH_OPTIONS: OutreachSequencerGraphOpt
   {
     useLlmConnectionNote: true,
     humanInTheLoop: true,
-    whatsappEnabled: true,
+    // Off by default: a shared phone number emails the workspace member instead.
+    whatsappEnabled: false,
+    emailConnected: false,
     meetingFollowUpEnabled: true,
     checkDeduplicationPerCompany: false,
     qualifyProspectEnabled: true,
@@ -442,6 +511,10 @@ export const inferOutreachSequencerGraphOptionsFromSteps = (
     humanInTheLoop:
       stepIds.has(IDS.approveFirst) || stepIds.has(IDS.approveReply),
     whatsappEnabled: stepIds.has(IDS.sendReplyWhatsapp),
+    // Disconnected email swaps SEND_EMAIL for a logic-function notice on the same id.
+    emailConnected:
+      (steps ?? []).find((step) => step.id === IDS.sendReplyEmail)?.type !==
+      'LOGIC_FUNCTION',
     meetingFollowUpEnabled: stepIds.has(IDS.meetingBookedFind),
     checkDeduplicationPerCompany: stepIds.has(IDS.hasCompanyIf),
     qualifyProspectEnabled: stepIds.has(IDS.qualifyDraft),
@@ -853,11 +926,13 @@ const acceptedBranchSteps = ({
 const repliedBranchSteps = ({
   humanInTheLoop,
   whatsappEnabled,
+  emailConnected,
   meetingFollowUpEnabled,
   testMode,
 }: {
   humanInTheLoop: boolean;
   whatsappEnabled: boolean;
+  emailConnected: boolean;
   meetingFollowUpEnabled: boolean;
   testMode: boolean;
 }) => {
@@ -884,7 +959,7 @@ const repliedBranchSteps = ({
     : `{{${IDS.draftReply}.referralMessage}}`;
   const afterLinkedinStepId = whatsappEnabled
     ? IDS.hasWhatsappBodyIf
-    : IDS.hasEmailBodyIf;
+    : IDS.hasProspectPhoneNotifyIf;
   const linkedinEntryStepId = humanInTheLoop ? IDS.approveReply : IDS.sendReply;
   const whatsappEntryStepId = humanInTheLoop
     ? IDS.approveWhatsappReply
@@ -957,6 +1032,9 @@ const repliedBranchSteps = ({
         transcript: `{{${IDS.findChats}.text}}`,
         lastChannel: `{{${IDS.findChats}.first.channel}}`,
         slots: `{{${IDS.calendar}.text}}`,
+        nowIso: `{{${IDS.calendar}.nowIso}}`,
+        nowLocal: `{{${IDS.calendar}.nowLocal}}`,
+        timeZone: `{{${IDS.calendar}.timeZone}}`,
       }),
       agentId: OUTREACH_WF_AGENT_EXTRACT,
       outputSchema: OUTREACH_WF_AI_EXTRACT_OUTPUT,
@@ -985,6 +1063,9 @@ const repliedBranchSteps = ({
         prospectPhone: `{{${IDS.extractSignals}.prospectPhone}}`,
         sendWhatsappReply: `{{${IDS.extractSignals}.sendWhatsappReply}}`,
         shouldNotRespond: `{{${IDS.extractSignals}.shouldNotRespond}}`,
+        requestedStartsAt: `{{${IDS.extractSignals}.requestedStartsAt}}`,
+        followUpAt: `{{${IDS.extractSignals}.followUpAt}}`,
+        nowIso: `{{${IDS.calendar}.nowIso}}`,
         personPrimaryPhone: gtmWfFindField(
           IDS.repliedPersonFind,
           OUTREACH_WF_FIELD.phonesPrimaryPath,
@@ -996,6 +1077,18 @@ const repliedBranchSteps = ({
       },
       sampleOutput: OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT,
       // Reply agent stamps preferred channel / email via candidate CRUD tools.
+      nextStepIds: [IDS.loadAttachments],
+    }),
+    // Project collateral the email reply can carry. Empty when none is uploaded.
+    gtmWfLogicFunctionStep({
+      id: IDS.loadAttachments,
+      name: 'Load project attachments',
+      logicFunctionId: '__LF_get-project-attachments__',
+      logicFunctionInput: {
+        projectId: gtmWfFindField(IDS.repliedFind, 'projectId'),
+        fileName: '',
+      },
+      sampleOutput: OUTREACH_GET_PROJECT_ATTACHMENTS_SAMPLE_OUTPUT,
       nextStepIds: [IDS.fetchProfileReply],
     }),
     gtmWfLogicFunctionStep({
@@ -1049,12 +1142,18 @@ const repliedBranchSteps = ({
         ),
         replyChannel: `{{${IDS.validateSignals}.replyChannel}}`,
         confirmedStartsAt: `{{${IDS.validateSignals}.startsAt}}`,
+        followUpAt: `{{${IDS.validateSignals}.followUpAt}}`,
+        attachmentFileName: `{{${IDS.loadAttachments}.fileNames}}`,
         referralName: `{{${IDS.validateSignals}.referralName}}`,
         prospectEmail: `{{${IDS.validateSignals}.prospectEmail}}`,
         preferredChannelToStamp: `{{${IDS.validateSignals}.preferredChannelToStamp}}`,
         shouldNotRespond: `{{${IDS.validateSignals}.shouldNotRespond}}`,
-        whatsappTo: `{{${IDS.validateSignals}.whatsappTo}}`,
+        // WhatsApp off: nothing is sent there, so the draft must not promise it.
+        whatsappTo: whatsappEnabled
+          ? `{{${IDS.validateSignals}.whatsappTo}}`
+          : '',
         emailTo: `{{${IDS.validateSignals}.emailTo}}`,
+        memberSendsEmail: emailConnected ? 'false' : 'true',
         candidateId: gtmWfFindId(IDS.repliedFind),
         senderJson: senderJson(),
         prospectEnrichmentJson: `{{${IDS.fetchProfileReply}.outreachProspectEnrichment}}`,
@@ -1140,6 +1239,36 @@ const repliedBranchSteps = ({
       ),
       nextStepIds: [afterLinkedinStepId],
     }),
+    ...(whatsappEnabled
+      ? []
+      : [
+          // No WhatsApp send: hand the number to the workspace member instead.
+          gtmWfIfElseStep({
+            id: IDS.hasProspectPhoneNotifyIf,
+            name: 'Prospect shared a phone number?',
+            stepOutputKey: `{{${IDS.validateSignals}.prospectPhone}}`,
+            value: '',
+            type: 'TEXT',
+            operand: 'IS_NOT_EMPTY',
+            ifNextStepIds: [IDS.notifyMemberReachOut],
+            elseNextStepIds: [IDS.hasEmailBodyIf],
+          }),
+          gtmWfLogicFunctionStep({
+            id: IDS.notifyMemberReachOut,
+            name: 'Email member: reach out on the number',
+            logicFunctionId: '__LF_notify-member-system-email__',
+            logicFunctionInput: {
+              memberEmail: gtmWfMemberEmail(),
+              prospectName: gtmWfFindField(IDS.repliedFind, 'name'),
+              action: `reach out on {{${IDS.validateSignals}.prospectPhone}} to agree a time for a short demo call`,
+              prospectPhone: `{{${IDS.validateSignals}.prospectPhone}}`,
+              body: 'WhatsApp sending is turned off for this workflow, so nothing was sent on that number.',
+              conversation: `{{${IDS.findChats}.text}}`,
+            },
+            sampleOutput: OUTREACH_NOTIFY_MEMBER_SYSTEM_EMAIL_SAMPLE_OUTPUT,
+            nextStepIds: [IDS.hasEmailBodyIf],
+          }),
+        ]),
     ...(whatsappEnabled
       ? [
           gtmWfIfElseStep({
@@ -1251,12 +1380,19 @@ const repliedBranchSteps = ({
           }),
         ]
       : []),
-    gtmWfSendEmailStep({
+    sendEmailOrNotifyMember({
+      emailConnected,
+      action: 'send the requested email',
+      prospectName: gtmWfFindField(IDS.repliedFind, 'name'),
+      prospectEmail: `{{${IDS.validateSignals}.emailTo}}`,
+      fileNames: `{{${IDS.loadAttachments}.fileNames}}`,
+      conversation: `{{${IDS.findChats}.text}}`,
       id: IDS.sendReplyEmail,
       name: 'Send email reply',
       to: `{{${IDS.validateSignals}.emailTo}}`,
       subject: `{{${IDS.draftReply}.emailSubject}}`,
       body: emailBody,
+      files: `{{${IDS.loadAttachments}.files}}`,
       nextStepIds: [IDS.hasReferralIf],
     }),
     gtmWfMultiIfElseStep({
@@ -1289,10 +1425,12 @@ const repliedBranchSteps = ({
         },
       ],
     }),
-    gtmWfAiAgentStep({
+    // Deterministic: the LLM agent skipped the person, email and note.
+    gtmWfLogicFunctionStep({
       id: IDS.createReferral,
       name: 'Create referred candidate',
-      prompt: buildOutreachCreateReferralCandidatePrompt({
+      logicFunctionId: '__LF_create-referral-candidate__',
+      logicFunctionInput: {
         referralName: `{{${IDS.validateSignals}.referralName}}`,
         referralEmail: `{{${IDS.validateSignals}.referralEmail}}`,
         referralPhone: `{{${IDS.validateSignals}.referralPhone}}`,
@@ -1301,9 +1439,10 @@ const repliedBranchSteps = ({
           OUTREACH_WF_FIELD.jobCompanyNamePath,
         ),
         projectId: gtmWfFindField(IDS.repliedFind, 'projectId'),
-      }),
-      agentId: OUTREACH_WF_AGENT_REPLY,
-      outputSchema: OUTREACH_WF_AI_REPLY_OUTPUT,
+        referrerName: gtmWfFindField(IDS.repliedFind, 'name'),
+        referrerCandidateId: gtmWfFindId(IDS.repliedFind),
+      },
+      sampleOutput: OUTREACH_CREATE_REFERRAL_CANDIDATE_SAMPLE_OUTPUT,
       nextStepIds: [referralSendEntryStepId],
     }),
     ...(humanInTheLoop
@@ -1348,7 +1487,12 @@ const repliedBranchSteps = ({
       ifNextStepIds: [IDS.sendReferralEmail],
       elseNextStepIds: [afterReferralEmailStepId],
     }),
-    gtmWfSendEmailStep({
+    sendEmailOrNotifyMember({
+      emailConnected,
+      action: 'send the intro email to the person they referred',
+      prospectName: gtmWfFindField(IDS.repliedFind, 'name'),
+      prospectEmail: `{{${IDS.validateSignals}.referralEmail}}`,
+      conversation: `{{${IDS.findChats}.text}}`,
       id: IDS.sendReferralEmail,
       name: 'Email referred person',
       to: `{{${IDS.validateSignals}.referralEmail}}`,
@@ -1386,7 +1530,108 @@ const repliedBranchSteps = ({
       type: 'TEXT',
       operand: 'IS_NOT_EMPTY',
       ifNextStepIds: [IDS.meetingCreate],
+      elseNextStepIds: [IDS.hasFollowUpIf],
+    }),
+    gtmWfIfElseStep({
+      id: IDS.hasFollowUpIf,
+      name: 'Asked to follow up later?',
+      stepOutputKey: `{{${IDS.validateSignals}.followUpAt}}`,
+      value: '',
+      type: 'TEXT',
+      operand: 'IS_NOT_EMPTY',
+      ifNextStepIds: [IDS.stampSnoozeWaiting],
       elseNextStepIds: [IDS.stampWaiting],
+    }),
+    // Same WAITING_REPLY stamp as the normal path, so a new inbound (REPLIED)
+    // fails the still-waiting guard below and sibling runs are stopped by the hook.
+    gtmWfAiAgentStep({
+      id: IDS.stampSnoozeWaiting,
+      name: 'Mark WAITING_REPLY (follow-up date set)',
+      prompt: buildOutreachStampSequenceStagePrompt({
+        candidateId: gtmWfFindId(IDS.repliedFind),
+        outreachSequenceStage: 'WAITING_REPLY',
+      }),
+      agentId: OUTREACH_WF_AGENT_REPLY,
+      outputSchema: OUTREACH_WF_AI_REPLY_OUTPUT,
+      nextStepIds: [IDS.waitUntilFollowUp],
+    }),
+    gtmWfDelayUntilStep({
+      id: IDS.waitUntilFollowUp,
+      name: 'Wait until the date they asked us to follow up',
+      scheduledDateTime: `{{${IDS.validateSignals}.followUpAt}}`,
+      testMode,
+      nextStepIds: [IDS.reloadAfterSnooze],
+    }),
+    candidateFind(IDS.reloadAfterSnooze, 'Reload after follow-up date', [
+      IDS.reloadAfterSnoozePersonFind,
+    ]),
+    personFind(
+      IDS.reloadAfterSnoozePersonFind,
+      'Load Person (follow-up date)',
+      IDS.reloadAfterSnooze,
+      [IDS.stillWaitingSnoozeFilter],
+    ),
+    gtmWfFilterStep({
+      id: IDS.stillWaitingSnoozeFilter,
+      name: 'Still WAITING_REPLY (follow-up date)',
+      stepOutputKey: gtmWfFindField(
+        IDS.reloadAfterSnooze,
+        'outreachSequenceStage',
+      ),
+      value: 'WAITING_REPLY',
+      nextStepIds: [IDS.draftSnoozeFollowUp],
+    }),
+    gtmWfAiAgentStep({
+      id: IDS.draftSnoozeFollowUp,
+      name: 'Draft follow-up (date they asked for)',
+      prompt: buildOutreachSnoozeFollowUpPrompt({
+        senderJson: senderJson(),
+        prospectEnrichmentJson: prospectEnrichment(IDS.reloadAfterSnooze),
+        chatHistory: `{{${IDS.findChats}.text}}`,
+        followUpAt: `{{${IDS.validateSignals}.followUpAt}}`,
+      }),
+      agentId: OUTREACH_WF_AGENT_LINKEDIN,
+      outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
+      nextStepIds: [
+        humanInTheLoop ? IDS.approveSnoozeFollowUp : IDS.sendSnoozeFollowUp,
+      ],
+    }),
+    ...(humanInTheLoop
+      ? [
+          gtmWfFormStep({
+            id: IDS.approveSnoozeFollowUp,
+            name: 'Approve follow-up (date they asked for)',
+            editedBodyValue: `{{${IDS.draftSnoozeFollowUp}.message}}`,
+            contextTemplate: OUTREACH_HITL_CONTEXT_TEMPLATES.postReplyFollowUp1,
+            detailsTemplate: gtmWfFormDetailsTemplate({
+              findId: IDS.reloadAfterSnooze,
+              personFindId: IDS.reloadAfterSnoozePersonFind,
+              draftStepId: IDS.draftSnoozeFollowUp,
+            }),
+            nextStepIds: [IDS.sendSnoozeFollowUp],
+          }),
+        ]
+      : []),
+    // Sent on LinkedIn: the thread the prospect asked us to come back on.
+    gtmWfSendLinkedInMessageStep({
+      id: IDS.sendSnoozeFollowUp,
+      name: 'Send follow-up on LinkedIn',
+      body: hitlOrDraftMessage({
+        draftId: IDS.draftSnoozeFollowUp,
+        approveId: IDS.approveSnoozeFollowUp,
+        humanInTheLoop,
+      }),
+      candidateId: gtmWfFindId(IDS.reloadAfterSnooze),
+      linkedinProfileId: gtmWfFindField(
+        IDS.reloadAfterSnoozePersonFind,
+        OUTREACH_WF_FIELD.linkedinProfileIdPath,
+      ),
+      linkedinUrl: gtmWfFindField(
+        IDS.reloadAfterSnoozePersonFind,
+        OUTREACH_WF_FIELD.linkedinLinkUrlPath,
+      ),
+      // Silence after this follow-up joins the normal post-reply cadence.
+      nextStepIds: [IDS.waitAfterInbound],
     }),
     {
       id: IDS.meetingCreate,
@@ -1537,7 +1782,14 @@ const repliedBranchSteps = ({
         nextStepIds: [IDS.sendPostReplyFu1Linkedin],
       },
     }),
-    gtmWfSendEmailStep({
+    sendEmailOrNotifyMember({
+      emailConnected,
+      action: 'send a follow-up email',
+      prospectName: gtmWfFindField(IDS.repliedFind, 'name'),
+      prospectEmail: gtmWfFindField(
+        IDS.reloadAfterInboundWaitPersonFind,
+        OUTREACH_WF_FIELD.emailsPrimaryPath,
+      ),
       id: IDS.sendPostReplyFu1Email,
       name: 'Send post-reply FU1 by email',
       to: gtmWfFindField(
@@ -1674,7 +1926,14 @@ const repliedBranchSteps = ({
         nextStepIds: [IDS.sendPostReplyFu2Linkedin],
       },
     }),
-    gtmWfSendEmailStep({
+    sendEmailOrNotifyMember({
+      emailConnected,
+      action: 'send a second follow-up email',
+      prospectName: gtmWfFindField(IDS.repliedFind, 'name'),
+      prospectEmail: gtmWfFindField(
+        IDS.reloadPostReplyFu2PersonFind,
+        OUTREACH_WF_FIELD.emailsPrimaryPath,
+      ),
       id: IDS.sendPostReplyFu2Email,
       name: 'Send post-reply FU2 by email',
       to: gtmWfFindField(
@@ -1756,6 +2015,7 @@ const repliedBranchSteps = ({
 // so both send-connection variants read the shared load and the duplicate
 // "no company" member step disappears.
 const queuedBranchSteps = ({
+  emailConnected,
   hoistedMember,
   useLlmConnectionNote,
   humanInTheLoop,
@@ -1767,6 +2027,7 @@ const queuedBranchSteps = ({
   inmailEnabled,
   testMode,
 }: {
+  emailConnected: boolean;
   hoistedMember: boolean;
   useLlmConnectionNote: boolean;
   humanInTheLoop: boolean;
@@ -2555,31 +2816,22 @@ const queuedBranchSteps = ({
       },
       nextStepIds: [IDS.sendEmail],
     },
-    {
+    sendEmailOrNotifyMember({
+      emailConnected,
+      action: 'send the first outreach email',
+      prospectName: gtmWfFindField(IDS.reloadAfterWait, 'name'),
+      prospectEmail: `{{${IDS.enrich}.email}}`,
       id: IDS.sendEmail,
       name: 'Send email',
-      type: 'SEND_EMAIL',
-      valid: true,
-      settings: {
-        input: {
-          body: hitlOrDraftMessage({
-            draftId: IDS.draftEmail,
-            approveId: IDS.approveEmail,
-            humanInTheLoop,
-          }),
-          subject: `{{${IDS.draftEmail}.subject}}`,
-          recipients: {
-            cc: '',
-            to: `{{${IDS.enrich}.email}}`,
-            bcc: '',
-          },
-          connectedAccountId: '',
-        },
-        outputSchema: {},
-        errorHandlingOptions: OUTREACH_WF_ERROR_HANDLING,
-      },
+      to: `{{${IDS.enrich}.email}}`,
+      subject: `{{${IDS.draftEmail}.subject}}`,
+      body: hitlOrDraftMessage({
+        draftId: IDS.draftEmail,
+        approveId: IDS.approveEmail,
+        humanInTheLoop,
+      }),
       nextStepIds: [IDS.markEmailSent],
-    },
+    }),
     gtmWfUpdateRecordStep({
       id: IDS.markEmailSent,
       name: 'Mark EMAIL_SENT',
@@ -2814,6 +3066,7 @@ export const buildCandidateSequencerGraph = (
     useLlmConnectionNote,
     humanInTheLoop,
     whatsappEnabled,
+    emailConnected,
     meetingFollowUpEnabled,
     checkDeduplicationPerCompany,
     qualifyProspectEnabled,
@@ -2883,6 +3136,7 @@ export const buildCandidateSequencerGraph = (
       branches: stageBranches,
     }),
     ...queuedBranchSteps({
+      emailConnected,
       hoistedMember: true,
       useLlmConnectionNote,
       humanInTheLoop,
@@ -2898,6 +3152,7 @@ export const buildCandidateSequencerGraph = (
     ...repliedBranchSteps({
       humanInTheLoop,
       whatsappEnabled,
+      emailConnected,
       meetingFollowUpEnabled,
       testMode,
     }),

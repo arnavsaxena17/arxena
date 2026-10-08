@@ -30,6 +30,9 @@ const LF_TOKEN_TO_ID_KEY = {
   '__LF_fetch-linkedin-messages__': 'fetchLinkedinMessagesId',
   '__LF_fetch-linkedin-profile__': 'fetchLinkedinProfileId',
   '__LF_validate-inbound-signals__': 'validateInboundSignalsId',
+  '__LF_get-project-attachments__': 'getProjectAttachmentsId',
+  '__LF_notify-member-system-email__': 'notifyMemberSystemEmailId',
+  '__LF_create-referral-candidate__': 'createReferralCandidateId',
   '__LF_plan-local-business-city-coverage__': 'planLocalBusinessCityCoverageId',
   '__LF_fetch-and-upsert-local-businesses__': 'fetchAndUpsertLocalBusinessesId',
 } as const;

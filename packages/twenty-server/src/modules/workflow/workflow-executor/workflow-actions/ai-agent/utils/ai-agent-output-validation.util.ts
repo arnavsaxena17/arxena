@@ -7,6 +7,10 @@ export const JEV_OUTPUT_DEFECT_THRESHOLD = 0.5;
 
 export const AI_AGENT_OUTPUT_VALIDATION_MAX_ATTEMPTS = 3;
 
+// Same marker the outreach reply prompts emit for "send nothing" (opt-out).
+// It is an instruction to the workflow, not copy to a prospect, so it is not judged.
+const DO_NOT_SEND_SENTINEL = '#DONTRESPOND#';
+
 export const JEV_DECISIONS_URL = 'https://openrouter.ai/api/alpha/decisions';
 
 export const JEV_OUTPUT_VALIDATION_MODEL_ID = 'typesafe/jev-1.13';
@@ -134,7 +138,11 @@ export const scanOutputFields = (
   for (const fieldKey of fieldKeys) {
     const text = readOutputFieldText(result, fieldKey);
 
-    if (text === undefined || text.trim() === '') {
+    if (
+      text === undefined ||
+      text.trim() === '' ||
+      text.trim() === DO_NOT_SEND_SENTINEL
+    ) {
       fields.push({
         fieldKey,
         skipped: true,

@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
 
+import { FeatureFlagKey } from 'twenty-shared/types';
+
+import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
+
 import { type WorkflowRunStepLog } from 'twenty-shared/workflow';
 
 import { SendWhatsappMessageTool } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/send-whatsapp-message-tool';
@@ -33,6 +37,7 @@ export class SendWhatsappMessageWorkflowAction extends UnipileMessagingWorkflowA
     @InjectMessageQueue(MessageQueue.delayedJobsQueue)
     delayedQueue: MessageQueueService,
     gtmOutreachMessagePersistService: OutreachMessagePersistService,
+    private readonly featureFlagService: FeatureFlagService,
   ) {
     super(
       SendWhatsappMessageWorkflowAction.name,
@@ -54,6 +59,17 @@ export class SendWhatsappMessageWorkflowAction extends UnipileMessagingWorkflowA
 
   protected getAccountType(): UnipileMessagingAccountType {
     return 'whatsapp';
+  }
+
+  protected override async resolveMissingUnipileAccountFallback(
+    workspaceId: string,
+  ): Promise<string | undefined> {
+    const isMockUnipileEnabled = await this.featureFlagService.isFeatureEnabled(
+      FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
+      workspaceId,
+    );
+
+    return isMockUnipileEnabled ? 'mock-whatsapp-account' : undefined;
   }
 
   protected assertStep(step: WorkflowAction): void {

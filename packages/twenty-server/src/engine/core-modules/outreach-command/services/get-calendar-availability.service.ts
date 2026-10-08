@@ -12,7 +12,29 @@ const USE_LIVE_GOOGLE_CALENDAR = true;
 const DEFAULT_AVAILABILITY_TIMEZONE = 'Asia/Kolkata';
 const DEFAULT_WINDOW_START_HOUR = 10;
 const DEFAULT_WINDOW_END_HOUR = 17;
-const DEFAULT_MAX_SLOTS = 12;
+const DEFAULT_MAX_SLOTS = 15;
+// Spread offers over several days so "next week" can be answered with a real window.
+const MAX_SLOTS_PER_DAY = 3;
+const MIN_MINUTES_BETWEEN_SLOTS = 120;
+
+const canAddSlotForDay = (
+  slots: CalendarSlot[],
+  cursor: moment.Moment,
+  timeZone: string,
+): boolean => {
+  const day = cursor.clone().tz(timeZone).format('YYYY-MM-DD');
+  const sameDay = slots.filter(
+    (slot) => moment.tz(slot.startsAt, timeZone).format('YYYY-MM-DD') === day,
+  );
+  const last = sameDay[sameDay.length - 1];
+
+  return (
+    sameDay.length < MAX_SLOTS_PER_DAY &&
+    (!last ||
+      cursor.diff(moment(last.startsAt), 'minutes') >=
+        MIN_MINUTES_BETWEEN_SLOTS)
+  );
+};
 
 export type GetCalendarAvailabilityInput = {
   workspaceMemberId?: string;
@@ -53,7 +75,8 @@ const buildDefaultAlwaysAvailableSlots = ({
     if (
       weekday <= 5 &&
       hour >= DEFAULT_WINDOW_START_HOUR &&
-      hour < DEFAULT_WINDOW_END_HOUR
+      hour < DEFAULT_WINDOW_END_HOUR &&
+      canAddSlotForDay(slots, cursor, DEFAULT_AVAILABILITY_TIMEZONE)
     ) {
       const slotEnd = cursor.clone().add(slotMinutes, 'minutes');
 
@@ -161,7 +184,12 @@ export class GetCalendarAvailabilityService {
         const hour = cursor.hour();
         const weekday = cursor.isoWeekday();
 
-        if (weekday <= 5 && hour >= 9 && hour < 17) {
+        if (
+          weekday <= 5 &&
+          hour >= 9 &&
+          hour < 17 &&
+          canAddSlotForDay(slots, cursor, DEFAULT_AVAILABILITY_TIMEZONE)
+        ) {
           const slotEnd = cursor.clone().add(slotMinutes, 'minutes');
           const overlaps = busy.some(
             (range) =>

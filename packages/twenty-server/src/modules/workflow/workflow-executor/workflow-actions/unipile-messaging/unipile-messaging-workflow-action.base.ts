@@ -104,6 +104,13 @@ export abstract class UnipileMessagingWorkflowActionBase<
 
   protected abstract getAccountType(): UnipileMessagingAccountType;
 
+  // Lets mock-Unipile workspaces send without a connected account.
+  protected async resolveMissingUnipileAccountFallback(
+    _workspaceId: string,
+  ): Promise<string | undefined> {
+    return undefined;
+  }
+
   protected getPacingChannel(): OutreachThrottleChannel | null {
     return null;
   }
@@ -447,6 +454,13 @@ export abstract class UnipileMessagingWorkflowActionBase<
             : (profile.whatsappUnipileAccountId?.trim() ?? '');
 
         if (!isNonEmptyString(unipileAccountId)) {
+          const fallbackAccountId =
+            await this.resolveMissingUnipileAccountFallback(workspaceId);
+
+          if (isNonEmptyString(fallbackAccountId)) {
+            return fallbackAccountId;
+          }
+
           throw new WorkflowStepExecutorException(
             `No ${accountType} Unipile account configured for workspace member '${workspaceMemberId}'`,
             WorkflowStepExecutorExceptionCode.INVALID_STEP_INPUT,

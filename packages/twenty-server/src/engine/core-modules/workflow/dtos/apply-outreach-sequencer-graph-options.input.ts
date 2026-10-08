@@ -29,6 +29,13 @@ export class ApplyOutreachSequencerGraphOptionsInput {
   whatsappEnabled: boolean;
 
   @Field(() => Boolean, {
+    description:
+      'Member email account is connected. When false, email sends become a system email to the workspace member',
+    nullable: false,
+  })
+  emailConnected: boolean;
+
+  @Field(() => Boolean, {
     description: 'Include MEETING_BOOKED follow-up cadence',
     nullable: false,
   })

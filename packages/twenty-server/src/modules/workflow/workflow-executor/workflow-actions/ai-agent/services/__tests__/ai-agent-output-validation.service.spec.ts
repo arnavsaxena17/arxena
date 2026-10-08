@@ -35,6 +35,20 @@ describe('AiAgentOutputValidationService', () => {
     ]);
   });
 
+  it('does not judge the do-not-send sentinel, it is a workflow instruction', async () => {
+    const fetchSpy = jest.spyOn(global, 'fetch');
+
+    const fields = await service.judgeDraft(
+      { linkedinMessage: '#DONTRESPOND#' },
+      ['linkedinMessage'],
+    );
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(fields).toEqual([
+      { fieldKey: 'linkedinMessage', skipped: true, cleared: true },
+    ]);
+  });
+
   it('rejects a template token without calling Jev', async () => {
     const fetchSpy = jest.spyOn(global, 'fetch');
 

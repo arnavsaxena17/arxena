@@ -39,6 +39,9 @@ import { UploadProfilesService } from 'src/engine/core-modules/outreach-command/
 import { UploadProfilesWorkflowResumeService } from 'src/engine/core-modules/outreach-command/services/upload-profiles-workflow-resume.service';
 import { UpsertCompaniesService } from 'src/engine/core-modules/outreach-command/services/upsert-companies.service';
 import { EnrichContactService } from 'src/engine/core-modules/outreach-command/services/enrich-contact.service';
+import { CreateReferralCandidateService } from 'src/engine/core-modules/outreach-command/services/create-referral-candidate.service';
+import { NotifyMemberSystemEmailService } from 'src/engine/core-modules/outreach-command/services/notify-member-system-email.service';
+import { GetProjectAttachmentsService } from 'src/engine/core-modules/outreach-command/services/get-project-attachments.service';
 import { GetCalendarAvailabilityService } from 'src/engine/core-modules/outreach-command/services/get-calendar-availability.service';
 import { OutreachFakeProfileDetectorService } from 'src/engine/core-modules/outreach-command/services/outreach-fake-profile-detector.service';
 import { OutreachFilterProfilesService } from 'src/engine/core-modules/outreach-command/services/outreach-filter-profiles.service';
@@ -182,6 +185,9 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     UpsertCompaniesService,
     EnrichContactService,
     GetCalendarAvailabilityService,
+    GetProjectAttachmentsService,
+    NotifyMemberSystemEmailService,
+    CreateReferralCandidateService,
     OutreachFakeProfileDetectorService,
     OutreachFilterProfilesService,
     PlanLocalBusinessCityCoverageService,
@@ -224,6 +230,9 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     UpsertCompaniesService,
     EnrichContactService,
     GetCalendarAvailabilityService,
+    GetProjectAttachmentsService,
+    NotifyMemberSystemEmailService,
+    CreateReferralCandidateService,
     OutreachFakeProfileDetectorService,
     OutreachFilterProfilesService,
     PlanLocalBusinessCityCoverageService,

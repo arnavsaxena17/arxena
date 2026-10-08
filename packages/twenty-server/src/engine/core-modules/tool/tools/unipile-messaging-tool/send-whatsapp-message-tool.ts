@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { FeatureFlagKey } from 'twenty-shared/types';
+
+import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
+import { buildOutreachMockUnipileMessageResponseId } from 'src/engine/core-modules/tool/tools/unipile-messaging-tool/utils/is-outreach-mock-unipile-enabled.util';
+
 import { isNonEmptyString } from '@sniptt/guards';
 
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
@@ -26,9 +31,11 @@ export class SendWhatsappMessageTool implements Tool {
     'Send a WhatsApp message via Unipile. Requires a Unipile WhatsApp account ID and recipient phone number.';
   inputSchema = SendWhatsappMessageToolInputZodSchema;
 
+  constructor(private readonly featureFlagService: FeatureFlagService) {}
+
   async execute(
     parameters: ToolInput,
-    _context: ToolExecutionContext,
+    context: ToolExecutionContext,
   ): Promise<ToolOutput> {
     const input = parameters as SendWhatsappMessageToolInput;
     const unipileAccountId = input.unipileAccountId?.trim() ?? '';
@@ -52,6 +59,30 @@ export class SendWhatsappMessageTool implements Tool {
     }
 
     try {
+      const isMockUnipileEnabled =
+        await this.featureFlagService.isFeatureEnabled(
+          FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
+          context.workspaceId,
+        );
+
+      if (isMockUnipileEnabled) {
+        this.logger.log(
+          `IS_OUTREACH_MOCK_UNIPILE_ENABLED: skipping Unipile WhatsApp send to ${phone}`,
+        );
+
+        return {
+          success: true,
+          message: 'WhatsApp message sent successfully',
+          result: {
+            mock: true,
+            unipileAccountId,
+            phone,
+            body,
+            response: { id: buildOutreachMockUnipileMessageResponseId() },
+          },
+        };
+      }
+
       const messagingService = createWhatsappUnipileMessagingServiceForTools();
       const attendeeId = buildWhatsappAttendeeIdFromPhone(phone);
       const result = await messagingService.sendMessage(

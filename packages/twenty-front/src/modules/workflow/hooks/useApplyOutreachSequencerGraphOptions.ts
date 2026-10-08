@@ -7,6 +7,7 @@ export type ApplyOutreachSequencerGraphOptionsInput = {
   useLlmConnectionNote: boolean;
   humanInTheLoop: boolean;
   whatsappEnabled: boolean;
+  emailConnected: boolean;
   meetingFollowUpEnabled: boolean;
   checkDeduplicationPerCompany: boolean;
   qualifyProspectEnabled: boolean;

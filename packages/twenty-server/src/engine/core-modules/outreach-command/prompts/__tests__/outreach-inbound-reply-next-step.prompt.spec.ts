@@ -142,10 +142,10 @@ describe('buildOutreachSalesChatDraftPrompt', () => {
     );
   });
 
-  it('should soft-ask until a window, and only close with Available slots later', () => {
-    expect(prompt).toContain('Soft ask until they name a time window');
-    expect(prompt).toContain('ask which few times inside');
-    expect(prompt).toContain('Close slots only when');
+  it('should soft-ask until a window, then propose one concrete range from Available slots', () => {
+    expect(prompt).toContain('Interested but no time named: soft ask only');
+    expect(prompt).toContain('propose ONE concrete range built from the');
+    expect(prompt).toContain('Available slots are the only source of times WE propose');
     expect(prompt).toContain('INTENT / ACKNOWLEDGEMENT: acknowledge');
     expect(prompt).toContain('No Available slots.');
     expect(prompt).toContain(
@@ -154,6 +154,20 @@ describe('buildOutreachSalesChatDraftPrompt', () => {
     expect(prompt).toContain('sometime this week or next');
     expect(prompt).toContain('never restart with a');
     expect(prompt).toContain('T1-style observation pitch');
+  });
+
+  it('should honour a time the prospect named, even outside our slots', () => {
+    expect(prompt).toContain('A time the PROSPECT named is different');
+    expect(prompt).toContain('sending a calendar invite');
+    expect(prompt).toContain('weekday, date and time');
+  });
+
+  it('should route follow-up-later, email, phone and referral replies', () => {
+    expect(prompt).toContain('Follow up on:');
+    expect(prompt).toContain('Attachment file:');
+    expect(prompt).toContain('never call send_files');
+    expect(prompt).toContain('ask for');
+    expect(prompt).toContain("the colleague's email or phone");
   });
 
   it('should seed the local first LinkedIn message prompt', () => {

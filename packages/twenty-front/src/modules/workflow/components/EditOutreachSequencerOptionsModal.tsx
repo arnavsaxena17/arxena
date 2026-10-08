@@ -239,6 +239,16 @@ export const EditOutreachSequencerOptionsModal = ({
               />
               <SettingsOptionCardContentToggle
                 Icon={IconMail}
+                title={t`Email account connected`}
+                description={t`Off: wherever an email would be sent, a system email asks the workspace member to send it instead.`}
+                checked={options.emailConnected}
+                onChange={(value) => setOption('emailConnected', value)}
+                toggleCentered={false}
+                divider
+                disabled={isSubmitting}
+              />
+              <SettingsOptionCardContentToggle
+                Icon={IconMail}
                 title={t`Sales Navigator InMail before email`}
                 description={t`On: after the connection wait, draft and send InMail before enriching email.`}
                 checked={options.inmailEnabled}

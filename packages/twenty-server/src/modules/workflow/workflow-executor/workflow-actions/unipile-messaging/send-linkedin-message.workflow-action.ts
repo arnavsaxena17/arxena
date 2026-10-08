@@ -68,7 +68,7 @@ export class SendLinkedinMessageWorkflowAction extends UnipileMessagingWorkflowA
         explicitKind:
           typeof (resolvedInput as { messageKind?: unknown }).messageKind ===
           'string'
-            ? ((resolvedInput as { messageKind: string }).messageKind)
+            ? (resolvedInput as { messageKind: string }).messageKind
             : null,
       }) ?? 'OPENER'
     );

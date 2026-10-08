@@ -15,8 +15,14 @@ import { ViewLinkedinProfileWorkflowAction } from 'src/modules/workflow/workflow
 import { AcceptLinkedinReceivedInvitationWorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/unipile-messaging/accept-linkedin-received-invitation.workflow-action';
 import { WorkflowRunModule } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.module';
 
+import { FeatureFlagModule } from 'src/engine/core-modules/feature-flag/feature-flag.module';
 @Module({
-  imports: [ToolModule, WorkflowRunModule, OutreachCommandModule],
+  imports: [
+    ToolModule,
+    WorkflowRunModule,
+    OutreachCommandModule,
+    FeatureFlagModule,
+  ],
   providers: [
     SendLinkedinConnectionRequestWorkflowAction,
     SendLinkedinInmailWorkflowAction,

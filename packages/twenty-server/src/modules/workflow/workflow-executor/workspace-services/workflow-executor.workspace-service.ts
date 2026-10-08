@@ -42,6 +42,7 @@ import { shouldSkipStepExecution } from 'src/modules/workflow/workflow-executor/
 import { workflowShouldFail } from 'src/modules/workflow/workflow-executor/utils/workflow-should-fail.util';
 import { workflowShouldKeepRunning } from 'src/modules/workflow/workflow-executor/utils/workflow-should-keep-running.util';
 import { buildWorkflowRunStepDeferralClearPatch } from 'src/engine/core-modules/outreach-command/utils/read-workflow-run-step-pending-fields.util';
+import { findParentSteps } from 'src/modules/workflow/workflow-executor/utils/find-parent-steps.util';
 import { isWorkflowIfElseAction } from 'src/modules/workflow/workflow-executor/workflow-actions/if-else/guards/is-workflow-if-else-action.guard';
 import { getNextStepIdsForIfElse } from 'src/modules/workflow/workflow-executor/workflow-actions/if-else/utils/get-next-step-ids-for-if-else.util';
 import { isWorkflowIteratorAction } from 'src/modules/workflow/workflow-executor/workflow-actions/iterator/guards/is-workflow-iterator-action.guard';
@@ -398,9 +399,7 @@ export class WorkflowExecutorWorkspaceService {
               waitMs: actionOutput.waitMs,
               scheduledAt: actionOutput.scheduledAt,
               pendingReason: actionOutput.pendingReason,
-              ...(actionOutput.method
-                ? { method: actionOutput.method }
-                : {}),
+              ...(actionOutput.method ? { method: actionOutput.method } : {}),
               result: {
                 ...(isDefined(actionOutput.result) &&
                 typeof actionOutput.result === 'object'
@@ -409,9 +408,7 @@ export class WorkflowExecutorWorkspaceService {
                 waitMs: actionOutput.waitMs,
                 scheduledAt: actionOutput.scheduledAt,
                 pendingReason: actionOutput.pendingReason,
-                ...(actionOutput.method
-                  ? { method: actionOutput.method }
-                  : {}),
+                ...(actionOutput.method ? { method: actionOutput.method } : {}),
               },
             }
           : buildWorkflowRunStepDeferralClearPatch()),
@@ -544,7 +541,16 @@ export class WorkflowExecutorWorkspaceService {
   }) {
     const stepInfos: Record<string, WorkflowRunStepInfo> = {};
 
-    for (const stepId of stepIdsToSkip) {
+    // A join step can still be reached through another parent, so it is only
+    // skipped once no parent can deliver it.
+    const skippableStepIds = await this.filterStepIdsNoParentCanDeliver({
+      stepIds: stepIdsToSkip,
+      steps,
+      workflowRunId,
+      workspaceId,
+    });
+
+    for (const stepId of skippableStepIds) {
       stepInfos[stepId] = { status: StepStatus.SKIPPED };
     }
 
@@ -562,7 +568,7 @@ export class WorkflowExecutorWorkspaceService {
     const cascadedStepIdsToSkip: string[] = [];
     const cascadedStepIdsToFailSafely: string[] = [];
 
-    for (const stepId of stepIdsToSkip) {
+    for (const stepId of skippableStepIds) {
       const step = steps.find((candidate) => candidate.id === stepId);
 
       if (!step) {
@@ -627,6 +633,83 @@ export class WorkflowExecutorWorkspaceService {
         executedStepsCount,
       });
     }
+  }
+
+  private async filterStepIdsNoParentCanDeliver({
+    stepIds,
+    steps,
+    workflowRunId,
+    workspaceId,
+  }: {
+    stepIds: string[];
+    steps: WorkflowAction[];
+    workflowRunId: string;
+    workspaceId: string;
+  }): Promise<string[]> {
+    if (stepIds.length === 0) {
+      return [];
+    }
+
+    const workflowRun =
+      await this.workflowRunWorkspaceService.getWorkflowRunOrFail({
+        workflowRunId,
+        workspaceId,
+      });
+    const stepInfos = workflowRun.state.stepInfos;
+
+    return stepIds.filter((stepId) => {
+      const step = steps.find((candidate) => candidate.id === stepId);
+
+      if (!step) {
+        return true;
+      }
+
+      return findParentSteps({ step, steps }).every(
+        (parentStep) =>
+          !this.parentCanDeliverToStep({
+            parentStep,
+            step,
+            parentStepInfo: stepInfos[parentStep.id],
+          }),
+      );
+    });
+  }
+
+  private parentCanDeliverToStep({
+    parentStep,
+    step,
+    parentStepInfo,
+  }: {
+    parentStep: WorkflowAction;
+    step: WorkflowAction;
+    parentStepInfo: WorkflowRunStepInfo | undefined;
+  }): boolean {
+    const parentStatus = parentStepInfo?.status;
+
+    if (
+      parentStatus === StepStatus.SKIPPED ||
+      parentStatus === StepStatus.STOPPED ||
+      parentStatus === StepStatus.FAILED_SAFELY ||
+      parentStatus === StepStatus.FAILED
+    ) {
+      return false;
+    }
+
+    // Not finished yet: it may still reach this step.
+    if (parentStatus !== StepStatus.SUCCESS) {
+      return true;
+    }
+
+    if (isWorkflowIfElseAction(parentStep)) {
+      const { nextStepIdsToExecute } = getNextStepIdsForIfElse({
+        executedStep: parentStep,
+        executedStepOutput: { result: parentStepInfo?.result },
+      });
+
+      return nextStepIdsToExecute?.includes(step.id) ?? false;
+    }
+
+    return true;
   }
 
   private async continueExecutionFromStepInAnotherJob({

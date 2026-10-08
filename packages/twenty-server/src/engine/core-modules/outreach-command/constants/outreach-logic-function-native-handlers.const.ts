@@ -15,6 +15,9 @@ import {
   OUTREACH_ENRICH_CONTACT_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_EMAIL_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_PHONE_LOGIC_FUNCTION_NAME,
+  OUTREACH_GET_PROJECT_ATTACHMENTS_LOGIC_FUNCTION_NAME,
+  OUTREACH_NOTIFY_MEMBER_SYSTEM_EMAIL_LOGIC_FUNCTION_NAME,
+  OUTREACH_CREATE_REFERRAL_CANDIDATE_LOGIC_FUNCTION_NAME,
   OUTREACH_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
   OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
@@ -278,7 +281,34 @@ export const main = async (params: {
   shouldNotRespond?: boolean;
   personPrimaryPhone?: string;
   personPrimaryEmail?: string;
+  requestedStartsAt?: string;
+  followUpAt?: string;
+  nowIso?: string;
 }) => {
+  return params;
+};
+`;
+
+const GET_PROJECT_ATTACHMENTS_HANDLER = `// Native GTM action: GetProjectAttachmentsService.
+// Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
+export const main = async (params: {
+  projectId?: string;
+  fileName?: string;
+}) => {
+  return params;
+};
+`;
+
+const NOTIFY_MEMBER_SYSTEM_EMAIL_HANDLER = `// Native GTM action: NotifyMemberSystemEmailService.
+// Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
+export const main = async (params: Record<string, string>) => {
+  return params;
+};
+`;
+
+const CREATE_REFERRAL_CANDIDATE_HANDLER = `// Native GTM action: CreateReferralCandidateService.
+// Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
+export const main = async (params: Record<string, string>) => {
   return params;
 };
 `;
@@ -354,6 +384,12 @@ const NATIVE_HANDLERS: Record<string, string> = {
   [OUTREACH_ENRICH_CONTACT_LOGIC_FUNCTION_NAME]: ENRICH_CONTACT_HANDLER,
   [OUTREACH_FETCH_EMAIL_LOGIC_FUNCTION_NAME]: FETCH_EMAIL_HANDLER,
   [OUTREACH_FETCH_PHONE_LOGIC_FUNCTION_NAME]: FETCH_PHONE_HANDLER,
+  [OUTREACH_GET_PROJECT_ATTACHMENTS_LOGIC_FUNCTION_NAME]:
+    GET_PROJECT_ATTACHMENTS_HANDLER,
+  [OUTREACH_NOTIFY_MEMBER_SYSTEM_EMAIL_LOGIC_FUNCTION_NAME]:
+    NOTIFY_MEMBER_SYSTEM_EMAIL_HANDLER,
+  [OUTREACH_CREATE_REFERRAL_CANDIDATE_LOGIC_FUNCTION_NAME]:
+    CREATE_REFERRAL_CANDIDATE_HANDLER,
   [OUTREACH_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME]:
     GET_CALENDAR_AVAILABILITY_HANDLER,
   [OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME]:

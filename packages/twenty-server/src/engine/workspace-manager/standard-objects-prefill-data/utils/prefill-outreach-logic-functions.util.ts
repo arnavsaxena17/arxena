@@ -20,6 +20,9 @@ import {
   OUTREACH_ENRICH_CONTACT_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_EMAIL_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_PHONE_LOGIC_FUNCTION_NAME,
+  OUTREACH_GET_PROJECT_ATTACHMENTS_LOGIC_FUNCTION_NAME,
+  OUTREACH_NOTIFY_MEMBER_SYSTEM_EMAIL_LOGIC_FUNCTION_NAME,
+  OUTREACH_CREATE_REFERRAL_CANDIDATE_LOGIC_FUNCTION_NAME,
   OUTREACH_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
   OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
@@ -45,6 +48,9 @@ import {
   OUTREACH_ENRICH_CONTACT_SAMPLE_OUTPUT,
   OUTREACH_FETCH_EMAIL_SAMPLE_OUTPUT,
   OUTREACH_FETCH_PHONE_SAMPLE_OUTPUT,
+  OUTREACH_GET_PROJECT_ATTACHMENTS_SAMPLE_OUTPUT,
+  OUTREACH_NOTIFY_MEMBER_SYSTEM_EMAIL_SAMPLE_OUTPUT,
+  OUTREACH_CREATE_REFERRAL_CANDIDATE_SAMPLE_OUTPUT,
   OUTREACH_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
   OUTREACH_DETECT_FAKE_PROFILES_SAMPLE_OUTPUT,
   OUTREACH_FILTER_PROFILES_SAMPLE_OUTPUT,
@@ -196,6 +202,18 @@ export const getOutreachLogicFunctionIds = (workspaceId: string) => ({
   ),
   fetchPhoneId: uuidv5(
     `${workspaceId}:fetch-phone`,
+    OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  getProjectAttachmentsId: uuidv5(
+    `${workspaceId}:get-project-attachments`,
+    OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  createReferralCandidateId: uuidv5(
+    `${workspaceId}:create-referral-candidate`,
+    OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  notifyMemberSystemEmailId: uuidv5(
+    `${workspaceId}:notify-member-system-email`,
     OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
   ),
   getCalendarAvailabilityId: uuidv5(
@@ -1277,6 +1295,127 @@ export const getOutreachLogicFunctionDefinitions = (
       },
     },
     {
+      id: ids.getProjectAttachmentsId,
+      name: OUTREACH_GET_PROJECT_ATTACHMENTS_LOGIC_FUNCTION_NAME,
+      description:
+        'List the project attachments (id + name) that can be attached to an email reply. Pass projectId and optional fileName substring.',
+      sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
+        OUTREACH_GET_PROJECT_ATTACHMENTS_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Get project attachments',
+        icon: 'IconPaperclip',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              projectId: { type: 'string', label: 'Project id' },
+              fileName: { type: 'string', label: 'File name contains' },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              files: { type: 'array', label: 'Files' },
+              fileNames: { type: 'string', label: 'File names' },
+              error: { type: 'string', label: 'Error' },
+            },
+          },
+        ],
+        sampleOutput: OUTREACH_GET_PROJECT_ATTACHMENTS_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.createReferralCandidateId,
+      name: OUTREACH_CREATE_REFERRAL_CANDIDATE_LOGIC_FUNCTION_NAME,
+      description:
+        'Create (or reuse) the person and candidate for someone a prospect referred us to, with a "Referred by" note.',
+      sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
+        OUTREACH_CREATE_REFERRAL_CANDIDATE_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Create referred candidate',
+        icon: 'IconUserPlus',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              referralName: { type: 'string', label: 'Referral name' },
+              referralEmail: { type: 'string', label: 'Referral email' },
+              referralPhone: { type: 'string', label: 'Referral phone' },
+              jobCompanyName: { type: 'string', label: 'Company' },
+              projectId: { type: 'string', label: 'Project id' },
+              referrerName: { type: 'string', label: 'Referrer name' },
+              referrerCandidateId: {
+                type: 'string',
+                label: 'Referrer candidate id',
+              },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              referralCandidateId: {
+                type: 'string',
+                label: 'Referral candidate id',
+              },
+              personId: { type: 'string', label: 'Person id' },
+              created: { type: 'boolean', label: 'Created' },
+              error: { type: 'string', label: 'Error' },
+            },
+          },
+        ],
+        sampleOutput: OUTREACH_CREATE_REFERRAL_CANDIDATE_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.notifyMemberSystemEmailId,
+      name: OUTREACH_NOTIFY_MEMBER_SYSTEM_EMAIL_LOGIC_FUNCTION_NAME,
+      description:
+        'Send a platform (system) email to the workspace member telling them what to send the prospect. Used when the member email account is not connected.',
+      sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
+        OUTREACH_NOTIFY_MEMBER_SYSTEM_EMAIL_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Notify member (system email)',
+        icon: 'IconMail',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              memberEmail: { type: 'string', label: 'Member email' },
+              prospectName: { type: 'string', label: 'Prospect name' },
+              action: { type: 'string', label: 'Action for the member' },
+              prospectEmail: { type: 'string', label: 'Prospect email' },
+              prospectPhone: { type: 'string', label: 'Prospect phone' },
+              subject: { type: 'string', label: 'Suggested subject' },
+              body: { type: 'string', label: 'Suggested message' },
+              attachmentNames: { type: 'string', label: 'Attachment names' },
+              conversation: { type: 'string', label: 'Conversation' },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              to: { type: 'string', label: 'To' },
+              subject: { type: 'string', label: 'Subject' },
+              error: { type: 'string', label: 'Error' },
+            },
+          },
+        ],
+        sampleOutput: OUTREACH_NOTIFY_MEMBER_SYSTEM_EMAIL_SAMPLE_OUTPUT,
+      },
+    },
+    {
       id: ids.getCalendarAvailabilityId,
       name: OUTREACH_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
       description:
@@ -1472,6 +1611,12 @@ export const getOutreachLogicFunctionDefinitions = (
                 type: 'string',
                 label: 'Person primary email',
               },
+              requestedStartsAt: {
+                type: 'string',
+                label: 'Start time named by prospect',
+              },
+              followUpAt: { type: 'string', label: 'Follow up at' },
+              nowIso: { type: 'string', label: 'Current time (server)' },
             },
           },
         ],
@@ -1503,6 +1648,11 @@ export const getOutreachLogicFunctionDefinitions = (
                 type: 'boolean',
                 label: 'Should not respond',
               },
+              startsAtIsExplicit: {
+                type: 'boolean',
+                label: 'Start time was named by the prospect',
+              },
+              followUpAt: { type: 'string', label: 'Follow up at' },
             },
           },
         ],

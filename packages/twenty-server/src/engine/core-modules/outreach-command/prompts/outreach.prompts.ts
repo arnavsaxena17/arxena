@@ -378,8 +378,10 @@ export const buildOutreachPostReplyFollowUpPrompt = ({
       ? [
           'They replied once; we answered; they went silent.',
           'Write a short follow-up (40–60 words). New angle — do not re-pitch the opener or repeat our last message.',
-          `One soft ask: ${OUTREACH_CADENCE_SOFT_ASK_WALKTHROUGH_THIS_WEEK_OR_NEXT},`,
-          'or ask if a short note would help first (only if collateral exists).',
+          'One ask: could they direct you to the right person in their company to work with you on',
+          'this (phrase it naturally, e.g. "Could you point me to the right person on your side to',
+          'work with me on this?"). If they already said they own it, use',
+          `${OUTREACH_CADENCE_SOFT_ASK_WALKTHROUGH_THIS_WEEK_OR_NEXT} instead.`,
           'No pressure, no "circling back" / "just following up".',
           OUTREACH_CADENCE_NO_FLATTERY,
           OUTREACH_CADENCE_NO_SLOTS_RULE,
@@ -405,14 +407,48 @@ export const buildOutreachPostReplyFollowUpPrompt = ({
   ].join('\n');
 };
 
+// Sent when the date a prospect asked us to come back on arrives. The thread
+// already has our acknowledgement, so this is the resumed conversation, not a cold opener.
+export const buildOutreachSnoozeFollowUpPrompt = ({
+  senderJson,
+  prospectEnrichmentJson,
+  chatHistory,
+  followUpAt,
+}: {
+  senderJson: string;
+  prospectEnrichmentJson: string;
+  chatHistory?: string;
+  followUpAt?: string;
+}): string =>
+  [
+    buildOutreachSharedSenderContextPrompt(senderJson),
+    '',
+    'The prospect asked us to get back to them around now, and we said we would.',
+    'Write the follow-up (40–60 words): reference that they asked us to circle back, no re-pitch of',
+    'the opener, and one soft ask to find a short time for a demo this week or next.',
+    'Do not name a clock time or invent availability. No "just following up". No flattery.',
+    OUTREACH_CADENCE_NO_SLOTS_RULE,
+    `agreed_follow_up_date: ${followUpAt?.trim() || '(unknown)'}`,
+    `prospect: ${formatOutreachProspectEnrichmentForLlm(prospectEnrichmentJson) || '(none)'}`,
+    `chat_history: ${formatOutreachTranscriptForLlm(chatHistory ?? '') || '(none)'}`,
+    OUTREACH_HUMANIZER_RULES,
+    'Return JSON only: { "message": "<body>" }',
+  ].join('\n');
+
 export const buildOutreachInboundSignalExtractionPrompt = ({
   transcript,
   slots,
   lastChannel,
+  nowIso,
+  nowLocal,
+  timeZone,
 }: {
   transcript: string;
   slots: string;
   lastChannel?: string;
+  nowIso?: string;
+  nowLocal?: string;
+  timeZone?: string;
 }): string =>
   [
     "You extract structured signals from the recipient's inbound reply in a sales thread.",
@@ -440,10 +476,27 @@ export const buildOutreachInboundSignalExtractionPrompt = ({
     '  their own number, and they did not ask for the content by email. The LinkedIn',
     '  message is only an acknowledgement. WhatsApp carries the content. Asking to move',
     '  to WhatsApp keeps this true. Asking to email the content sets it false.',
-    'shouldNotRespond: true only for opt-out — stop, unsubscribe, never contact me.',
+    'shouldNotRespond: true when they decline or opt out — stop, unsubscribe, never contact me,',
+    '  "no thanks", "not interested", "no, thank you". A polite decline is a stop: we do not',
+    '  reply and we do not chase. A wrong-person reply ("not me, ask X") is NOT a decline.',
+    'requestedStartsAt: ONLY when they named BOTH a date and a clock time for a call or meeting',
+    '  ("Thursday 10pm", "15 Oct at 4:30", "tomorrow 3pm"). Resolve it from Now and Timezone',
+    '  below into an ISO 8601 UTC instant (e.g. 2026-10-15T16:30:00.000Z). A weekday name means',
+    '  the NEXT such day after Now; "next Thursday" is the Thursday of next week. A clock time',
+    '  with no day, or a day/window with no clock time ("next week", "Saturday afternoon"),',
+    '  is "". Do not check it against Available slots — they chose it.',
+    'followUpAt: when they ask us to come back LATER with no meeting time ("next month", "next',
+    '  quarter", "after a few months", "after Diwali", "in 6 weeks"). Resolve to an ISO 8601 UTC',
+    '  instant at the START of the period they named: next month → the 3rd of next month; next',
+    "  quarter → the 10th of the next quarter's first month; a few months → 3 months from Now;",
+    '  "after <date>" → 2 days after it. Never earlier than 7 days from Now. "" when they named',
+    '  no period, or when requestedStartsAt is set.',
     'Use "" for any string you cannot copy from the transcript.',
     `Available slots (index order): ${formatOutreachSlotsForLlm(slots) || '(none)'}`,
     `Last inbound channel: ${lastChannel?.trim() || 'LINKEDIN'}`,
+    `Now: ${nowIso?.trim() || '(unknown)'}`,
+    `Now in their timezone (resolve "today", "tomorrow", weekdays from THIS date, not the UTC date): ${nowLocal?.trim() || '(unknown)'}`,
+    `Timezone: ${timeZone?.trim() || 'Asia/Kolkata'}`,
     `Transcript: ${formatOutreachTranscriptForLlm(transcript) || '(none)'}`,
     'Return JSON only: {',
     '  "acceptedSlotIndex": <integer, -1 when none>,',
@@ -453,8 +506,10 @@ export const buildOutreachInboundSignalExtractionPrompt = ({
     '  "referralEmail": "<referred person email or empty>",',
     '  "referralPhone": "<referred person WhatsApp/phone or empty>",',
     '  "prospectPhone": "<their own phone or empty>",',
-    '  "sendWhatsappReply": <true|false>',
-    '  "shouldNotRespond": <true|false>',
+    '  "sendWhatsappReply": <true|false>,',
+    '  "shouldNotRespond": <true|false>,',
+    '  "requestedStartsAt": "<ISO 8601 UTC start they named, or empty>",',
+    '  "followUpAt": "<ISO 8601 UTC date to come back on, or empty>"',
     '}',
   ].join('\n');
 
@@ -466,6 +521,9 @@ export const buildOutreachSalesChatDraftPrompt = ({
   conversationStage,
   replyChannel,
   confirmedStartsAt,
+  followUpAt,
+  attachmentFileName,
+  memberSendsEmail,
   referralName,
   prospectEmail,
   preferredChannelToStamp,
@@ -485,6 +543,9 @@ export const buildOutreachSalesChatDraftPrompt = ({
   conversationStage: string;
   replyChannel?: string;
   confirmedStartsAt?: string;
+  followUpAt?: string;
+  attachmentFileName?: string;
+  memberSendsEmail?: string;
   referralName?: string;
   prospectEmail?: string;
   preferredChannelToStamp?: string;
@@ -545,15 +606,43 @@ export const buildOutreachSalesChatDraftPrompt = ({
     'will send it and does not include the content. Never put the content in the acknowledgement.',
 
     'Scheduling ladder (HITL will approve before send — draft as if that gate exists):',
-    '- Soft ask until they name a time window or duration ("this week", "next week",',
-    `  "Monday second half"). Soft ask shape: ${OUTREACH_CADENCE_SOFT_ASK_THIS_WEEK_OR_NEXT}`,
+    '- Every reply moves toward a short demo/intro call. End with exactly one concrete next step.',
+    '- Interested but no time named: soft ask only, no Available slots.',
+    `  Soft ask shape: ${OUTREACH_CADENCE_SOFT_ASK_THIS_WEEK_OR_NEXT}`,
     `  ${OUTREACH_CADENCE_NO_AVAILABLE_SLOTS_AT_STAGE}`,
-    '- After they name a window/duration but not a clock time: ask which few times inside',
-    '  that window work for them. Still do not paste Available slots.',
-    '- Close slots only when they gave specific clock times, asked us to propose options,',
-    '  or otherwise advanced past a vague window. Then propose at most 2–3 of the Available',
-    '  slots in prose that fit their window. Never invent times from "tomorrow",',
-    '  "second half", or "next week" — Available slots are the only source of clock times.',
+    '- They agreed to a call or named a window ("call next week", "sometime Friday") but gave no',
+    '  clock time: say "let\'s set up a time" and propose ONE concrete range built from the',
+    '  Available slots that falls inside their window (e.g. "does sometime 12–3pm on Saturday',
+    '  work?"). Do not list every slot. If Available slots is (none), ask which times work.',
+    '  Never promise to "hold", "block" or "reserve" a slot - just ask if it works.',
+    '- They gave specific clock times, or asked us to propose options: offer at most 2–3 of the',
+    '  Available slots. Available slots are the only source of times WE propose — never invent',
+    '  one from "tomorrow" or "second half".',
+    '- A time the PROSPECT named is different: when Confirmed meeting time is set, it is their',
+    '  choice and may be outside Available slots. Confirm it with the weekday, date and time in',
+    '  their words ("Sure, Thursday 15 Oct at 10pm works - sending a calendar invite") and offer',
+    '  no alternatives.',
+    '- They asked to speak later ("next month", "after a few months"): when Follow up on is set,',
+    '  thank them, say you will reach out around that date (name the month/period, not a day',
+    '  count), and do not pitch, propose slots, congratulate or compliment them. Do not mention',
+    '  holidays, festivals or anything else they did not say.',
+    '- They asked to be emailed: acknowledge on this channel, put the detail in emailSubject /',
+    '  emailBody, and end the email with one soft ask to connect next week for a short demo.',
+    '  The email is a brief follow-through (≤90 words), not a cold re-pitch: thank them, say what',
+    '  is attached, one line of value, the ask. When Attachment file is set, name it in emailBody',
+    '  as attached (the workflow attaches it; never call send_files and never claim a file that',
+    '  is not listed).',
+    '- They gave a phone number or asked for a call/WhatsApp: when WhatsApp to is set, the',
+    '  LinkedIn body is a short ack and whatsappMessage asks what time suits them for the call.',
+    '  When WhatsApp to is empty, the LinkedIn body says you will have the right person call or',
+    '  text that number shortly and asks for a good time window; leave whatsappMessage empty.',
+    '- Wrong person / "reach out to my colleague": thank them, say you will do that, and ask for',
+    "  the colleague's email or phone. If Referred person has a name but the thread has no contact",
+    '  details yet, that ask IS the reply. Once contact details exist, referralMessage is the',
+    '  intro to the colleague and the reply to this recipient only thanks them.',
+    'When "Email is sent by a teammate" is true, no email goes out from this workflow: in the',
+    '  inbound reply say a teammate will email them shortly (never "I am sending it now"), and',
+    '  still write emailSubject/emailBody as the message the teammate will send.',
     'The injected facts below are already verified against the thread. Treat them as given:',
     '- A confirmed meeting time means the invite is already being created. Confirm it in prose',
     '  and do not offer alternatives.',
@@ -586,6 +675,9 @@ export const buildOutreachSalesChatDraftPrompt = ({
     `Reply channel: ${replyChannel?.trim() || 'LINKEDIN'}`,
     `Asked to stop: ${shouldNotRespond?.trim() || 'false'}`,
     `Confirmed meeting time: ${confirmedStartsAt?.trim() || '(none)'}`,
+    `Follow up on: ${followUpAt?.trim() || '(none)'}`,
+    `Attachment file: ${attachmentFileName?.trim() || '(none)'}`,
+    `Email is sent by a teammate, not automatically: ${memberSendsEmail?.trim() || 'false'}`,
     `Referred person: ${referralName?.trim() || '(none)'}`,
     `Prospect email for details: ${prospectEmail?.trim() || '(none)'}`,
     `Preferred channel to stamp: ${preferredChannelToStamp?.trim() || '(none)'}`,
@@ -617,12 +709,16 @@ export const buildOutreachCreateReferralCandidatePrompt = ({
   referralPhone,
   jobCompanyName,
   projectId,
+  referrerName,
+  referrerCandidateId,
 }: {
   referralName: string;
   referralEmail: string;
   referralPhone: string;
   jobCompanyName: string;
   projectId: string;
+  referrerName?: string;
+  referrerCandidateId?: string;
 }): string =>
   [
     'Create a referred prospect: create_one_person for identity, then create_one_candidate linked via peopleId.',
@@ -634,10 +730,17 @@ export const buildOutreachCreateReferralCandidatePrompt = ({
     `referralPhone: ${referralPhone.trim() || '(none)'}`,
     `jobCompanyName: ${jobCompanyName.trim() || '(none)'}`,
     `projectId: ${projectId.trim() || '(none)'}`,
+    `referrerName: ${referrerName?.trim() || '(none)'}`,
+    `referrerCandidateId: ${referrerCandidateId?.trim() || '(none)'}`,
     'If name is empty or both email and phone are empty: call no tools.',
     'Otherwise:',
+    '0) Dedupe first: find_many_people by emails.primaryEmail (or phones.primaryPhoneNumber when there is no email).',
+    '   If a person already exists, reuse their id and then find_many_candidates for that person in this project;',
+    '   if a candidate already exists in this project, return its id as referralCandidateId and create nothing.',
     '1) create_one_person with name, jobCompanyName, emails.primaryEmail / phones.primaryPhoneNumber when present',
     '2) create_one_candidate with name, projectId, peopleId from the person, outreachSequenceStage = EMAIL_SENT',
+    '3) When referrerName is not (none): create_one_note titled "Referred by <referrerName>" whose body names the',
+    '   referrer and referrerCandidateId, and link it to the new candidate with create_one_note_target.',
     'Return JSON: {',
     '  "linkedinMessage": "",',
     '  "emailSubject": "",',

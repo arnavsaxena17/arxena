@@ -385,9 +385,11 @@ describe('GTM outreach workflow graphs', () => {
   });
 
   it('merges QUEUED, CONNECTION_ACCEPTED and REPLIED into one candidate.upserted sequencer', () => {
-    const merged = OUTREACH_WORKFLOW_GRAPH_TEMPLATES.find(
-      (graph) => graph.name === 'Outreach — Candidate Sequencer',
-    );
+    // WhatsApp is off in the seeded default; this test covers the WhatsApp-on graph.
+    const merged = buildCandidateSequencerGraph({
+      whatsappEnabled: true,
+      emailConnected: true,
+    });
 
     expect(merged).toBeDefined();
 
@@ -584,13 +586,16 @@ describe('GTM outreach workflow graphs', () => {
     expect(byName('Draft sales reply')).toBeDefined();
     expect(byName('Stamp preferred channel')).toBeUndefined();
     expect(byName('Persist prospect email')).toBeUndefined();
-    expect(byName('Create referred candidate')?.type).toBe('AI_AGENT');
+    expect(byName('Create referred candidate')?.type).toBe('LOGIC_FUNCTION');
     expect(byName('Mark MEETING_BOOKED')?.type).toBe('AI_AGENT');
     expect(byName('Mark WAITING_REPLY')?.type).toBe('AI_AGENT');
     expect(byName('Draft meeting reminder')).toBeDefined();
     expect(byName('Mark MEETING_BOOKED')).toBeDefined();
 
     expect(byName('Validate inbound signals')?.nextStepIds).toEqual([
+      byName('Load project attachments')?.id,
+    ]);
+    expect(byName('Load project attachments')?.nextStepIds).toEqual([
       byName('Fetch LinkedIn profile (reply)')?.id,
     ]);
     expect(byName('Fetch LinkedIn profile (reply)')?.nextStepIds).toEqual([
@@ -927,7 +932,10 @@ describe('GTM outreach workflow graphs', () => {
   });
 
   it('routes post-reply follow-ups to the matching channel send step', () => {
-    const graph = buildCandidateSequencerGraph();
+    const graph = buildCandidateSequencerGraph({
+      whatsappEnabled: true,
+      emailConnected: true,
+    });
     const steps = graph.steps as GraphStep[];
     const byName = (name: string) => steps.find((step) => step.name === name);
     const branchNext = (stepName: string, branchIndex: number) =>
@@ -1026,7 +1034,8 @@ describe('GTM outreach workflow graphs', () => {
     ).toEqual({
       useLlmConnectionNote: true,
       humanInTheLoop: true,
-      whatsappEnabled: true,
+      whatsappEnabled: false,
+      emailConnected: false,
       meetingFollowUpEnabled: true,
       checkDeduplicationPerCompany: false,
       qualifyProspectEnabled: true,
@@ -1051,6 +1060,7 @@ describe('GTM outreach workflow graphs', () => {
       useLlmConnectionNote: false,
       humanInTheLoop: false,
       whatsappEnabled: false,
+      emailConnected: false,
       meetingFollowUpEnabled: false,
       checkDeduplicationPerCompany: false,
       qualifyProspectEnabled: true,
@@ -1130,11 +1140,15 @@ describe('GTM outreach workflow graphs', () => {
   it('collapses every DELAY wait to 1 minute in test mode', () => {
     const production = buildCandidateSequencerGraph();
     const testModeGraph = buildCandidateSequencerGraph({ testMode: true });
+    // The follow-up-date wait is a SCHEDULED_DATE delay with its own test below.
+    const isFixedDurationDelay = (step: GraphStep) =>
+      step.type === 'DELAY' &&
+      !step.name?.startsWith('Wait until the date they asked');
     const productionDelays = (production.steps as GraphStep[]).filter(
-      (step) => step.type === 'DELAY',
+      isFixedDurationDelay,
     );
     const testModeDelays = (testModeGraph.steps as GraphStep[]).filter(
-      (step) => step.type === 'DELAY',
+      isFixedDurationDelay,
     );
 
     expect(productionDelays).toHaveLength(10);
@@ -1166,6 +1180,61 @@ describe('GTM outreach workflow graphs', () => {
         testModeGraph.trigger,
       ).testMode,
     ).toBe(true);
+  });
+
+  it('stores email attachments as an array of variable references the UI schema accepts', () => {
+    const emailReply = (
+      buildCandidateSequencerGraph({ emailConnected: true })
+        .steps as GraphStep[]
+    ).find((step) => step.name === 'Send email reply');
+
+    expect(emailReply?.settings?.input).toMatchObject({
+      files: [expect.stringMatching(/^{{[^{}]+\.files}}$/)],
+    });
+  });
+
+  it('waits until followUpAt for a snooze, and 1 minute in test mode', () => {
+    const findWait = (steps: unknown) =>
+      (steps as GraphStep[]).find((step) =>
+        step.name?.startsWith('Wait until the date they asked'),
+      );
+    const production = findWait(buildCandidateSequencerGraph().steps);
+    const testMode = findWait(
+      buildCandidateSequencerGraph({ testMode: true }).steps,
+    );
+
+    expect(production?.settings?.input).toMatchObject({
+      delayType: 'SCHEDULED_DATE',
+    });
+    expect(JSON.stringify(production?.settings?.input)).toContain(
+      '.followUpAt}}',
+    );
+    expect(testMode?.settings?.input?.duration).toEqual({
+      days: 0,
+      hours: 0,
+      minutes: 1,
+      seconds: 0,
+    });
+  });
+
+  it('emails the workspace member instead of WhatsApp when WhatsApp is off', () => {
+    const names = (options?: { whatsappEnabled: boolean }) =>
+      (buildCandidateSequencerGraph(options).steps as GraphStep[]).map(
+        (step) => step.name,
+      );
+
+    expect(names({ whatsappEnabled: false })).toEqual(
+      expect.arrayContaining([
+        'Prospect shared a phone number?',
+        'Email member: reach out on the number',
+      ]),
+    );
+    expect(names({ whatsappEnabled: false })).not.toContain(
+      'Send WhatsApp reply',
+    );
+    expect(names({ whatsappEnabled: true })).not.toContain(
+      'Email member: reach out on the number',
+    );
   });
 
   it('inserts InMail before enrich when inmailEnabled is on', () => {
@@ -1410,4 +1479,54 @@ describe('GTM outreach workflow graphs', () => {
       );
     },
   );
+
+  it('replaces every email send with a system email to the member when email is not connected', () => {
+    const emailSendIds = [
+      OUTREACH_SEQUENCER_STEP_IDS.sendReplyEmail,
+      OUTREACH_SEQUENCER_STEP_IDS.sendReferralEmail,
+      OUTREACH_SEQUENCER_STEP_IDS.sendPostReplyFu1Email,
+      OUTREACH_SEQUENCER_STEP_IDS.sendPostReplyFu2Email,
+      OUTREACH_SEQUENCER_STEP_IDS.sendEmail,
+    ];
+    const typesFor = (emailConnected: boolean) => {
+      const steps = buildCandidateSequencerGraph({ emailConnected })
+        .steps as GraphStep[];
+
+      return {
+        steps,
+        types: emailSendIds.map(
+          (id) => steps.find((step) => step.id === id)?.type,
+        ),
+      };
+    };
+
+    expect(typesFor(true).types.every((type) => type === 'SEND_EMAIL')).toBe(
+      true,
+    );
+
+    const disconnected = typesFor(false);
+
+    expect(
+      disconnected.types.every((type) => type === 'LOGIC_FUNCTION'),
+    ).toBe(true);
+    expect(
+      disconnected.steps.filter((step) => step.type === 'SEND_EMAIL'),
+    ).toHaveLength(0);
+
+    const graph = buildCandidateSequencerGraph({ emailConnected: false });
+
+    expect(
+      inferOutreachSequencerGraphOptionsFromSteps(
+        graph.steps as GraphStep[],
+        graph.trigger,
+      ).emailConnected,
+    ).toBe(false);
+    expect(
+      inferOutreachSequencerGraphOptionsFromSteps(
+        buildCandidateSequencerGraph({ emailConnected: true })
+          .steps as GraphStep[],
+        graph.trigger,
+      ).emailConnected,
+    ).toBe(true);
+  });
 });

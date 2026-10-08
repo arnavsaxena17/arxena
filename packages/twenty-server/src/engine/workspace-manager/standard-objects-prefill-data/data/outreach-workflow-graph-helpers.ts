@@ -192,6 +192,18 @@ export const OUTREACH_WF_AI_EXTRACT_OUTPUT = {
     label: 'shouldNotRespond',
     value: false,
   },
+  requestedStartsAt: {
+    isLeaf: true,
+    type: 'string',
+    label: 'requestedStartsAt',
+    value: '',
+  },
+  followUpAt: {
+    isLeaf: true,
+    type: 'string',
+    label: 'followUpAt',
+    value: '',
+  },
 };
 
 export const OUTREACH_WF_AI_QUALIFY_OUTPUT = {
@@ -970,6 +982,41 @@ export const gtmWfDelayStep = ({
     nextStepIds,
   );
 
+// Waits until an ISO instant resolved at run time (e.g. a prospect-requested
+// follow-up date). testMode collapses it to 1 minute like every other wait.
+export const gtmWfDelayUntilStep = ({
+  id,
+  name,
+  scheduledDateTime,
+  nextStepIds,
+  testMode = false,
+}: {
+  id: string;
+  name: string;
+  scheduledDateTime: string;
+  nextStepIds?: string[];
+  testMode?: boolean;
+}): StepBase =>
+  withNext(
+    {
+      id,
+      name: testMode ? `${name} (test: 1 minute)` : name,
+      type: 'DELAY',
+      valid: true,
+      settings: {
+        input: testMode
+          ? {
+              duration: { days: 0, hours: 0, minutes: 1, seconds: 0 },
+              delayType: 'DURATION',
+            }
+          : { scheduledDateTime, delayType: 'SCHEDULED_DATE' },
+        outputSchema: {},
+        errorHandlingOptions: OUTREACH_WF_ERROR_HANDLING,
+      },
+    },
+    nextStepIds,
+  );
+
 export const gtmWfRandomDelayStep = ({
   id,
   name,
@@ -1397,6 +1444,7 @@ export const gtmWfSendEmailStep = ({
   to,
   subject,
   body,
+  files,
   nextStepIds,
 }: {
   id: string;
@@ -1404,6 +1452,8 @@ export const gtmWfSendEmailStep = ({
   to: string;
   subject: string;
   body: string;
+  // Template resolving to [{ id, name }] (e.g. the project attachments step).
+  files?: string;
   nextStepIds?: string[];
 }): StepBase =>
   withNext(
@@ -1418,6 +1468,8 @@ export const gtmWfSendEmailStep = ({
           subject,
           recipients: { cc: '', to, bcc: '' },
           connectedAccountId: '',
+          // The UI schema requires an array; a lone {{variable}} entry is flattened server-side.
+          ...(files ? { files: [files] } : {}),
         },
         outputSchema: {},
         errorHandlingOptions: OUTREACH_WF_ERROR_HANDLING,

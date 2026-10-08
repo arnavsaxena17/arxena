@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 
+import moment from 'moment-timezone';
 import {
   OUTREACH_FETCH_COMPANY_DETAILS_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_LINKEDIN_MESSAGES_LOGIC_FUNCTION_NAME,
@@ -18,6 +19,9 @@ import {
   OUTREACH_ENRICH_CONTACT_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_EMAIL_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_PHONE_LOGIC_FUNCTION_NAME,
+  OUTREACH_GET_PROJECT_ATTACHMENTS_LOGIC_FUNCTION_NAME,
+  OUTREACH_NOTIFY_MEMBER_SYSTEM_EMAIL_LOGIC_FUNCTION_NAME,
+  OUTREACH_CREATE_REFERRAL_CANDIDATE_LOGIC_FUNCTION_NAME,
   OUTREACH_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
   OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
@@ -26,6 +30,7 @@ import {
   OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_LOGIC_FUNCTION_NAME,
   OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-names.const';
+import { OUTREACH_CALENDAR_REFERENCE_TIMEZONE } from 'src/engine/core-modules/outreach-command/constants/outreach-calendar-reference-timezone.const';
 import {
   validateOutreachInboundSignals,
   type OutreachInboundSignalsInput,
@@ -47,6 +52,15 @@ import { SearchPostsService } from 'src/engine/core-modules/outreach-command/ser
 import { UploadProfilesService } from 'src/engine/core-modules/outreach-command/services/upload-profiles.service';
 import { UpsertCompaniesService } from 'src/engine/core-modules/outreach-command/services/upsert-companies.service';
 import { EnrichContactService } from 'src/engine/core-modules/outreach-command/services/enrich-contact.service';
+import {
+  CreateReferralCandidateService,
+  type CreateReferralCandidateInput,
+} from 'src/engine/core-modules/outreach-command/services/create-referral-candidate.service';
+import {
+  NotifyMemberSystemEmailService,
+  type NotifyMemberSystemEmailInput,
+} from 'src/engine/core-modules/outreach-command/services/notify-member-system-email.service';
+import { GetProjectAttachmentsService } from 'src/engine/core-modules/outreach-command/services/get-project-attachments.service';
 import { GetCalendarAvailabilityService } from 'src/engine/core-modules/outreach-command/services/get-calendar-availability.service';
 import { OutreachFakeProfileDetectorService } from 'src/engine/core-modules/outreach-command/services/outreach-fake-profile-detector.service';
 import { OutreachFilterProfilesService } from 'src/engine/core-modules/outreach-command/services/outreach-filter-profiles.service';
@@ -73,6 +87,9 @@ export class OutreachLogicFunctionNativeExecutor
     private readonly upsertCompaniesService: UpsertCompaniesService,
     private readonly enrichContactService: EnrichContactService,
     private readonly getCalendarAvailabilityService: GetCalendarAvailabilityService,
+    private readonly getProjectAttachmentsService: GetProjectAttachmentsService,
+    private readonly notifyMemberSystemEmailService: NotifyMemberSystemEmailService,
+    private readonly createReferralCandidateService: CreateReferralCandidateService,
     private readonly gtmFakeProfileDetectorService: OutreachFakeProfileDetectorService,
     private readonly gtmFilterProfilesService: OutreachFilterProfilesService,
     private readonly planLocalBusinessCityCoverageService: PlanLocalBusinessCityCoverageService,
@@ -301,13 +318,44 @@ export class OutreachLogicFunctionNativeExecutor
     }
 
     if (name === OUTREACH_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME) {
-      return this.getCalendarAvailabilityService.execute({
+      const availability = await this.getCalendarAvailabilityService.execute({
         workspaceId,
         input: payload as {
           workspaceMemberId?: string;
           days?: number;
           slotMinutes?: number;
         },
+      });
+
+      // The extractor resolves "next Thursday 10pm" / "next quarter" against this
+      // clock, so it must come from the server, not the model.
+      return {
+        ...availability,
+        nowIso: new Date().toISOString(),
+        nowLocal: moment()
+          .tz(OUTREACH_CALENDAR_REFERENCE_TIMEZONE)
+          .format('dddd, D MMM YYYY, h:mm A z'),
+        timeZone: OUTREACH_CALENDAR_REFERENCE_TIMEZONE,
+      };
+    }
+
+    if (name === OUTREACH_GET_PROJECT_ATTACHMENTS_LOGIC_FUNCTION_NAME) {
+      return this.getProjectAttachmentsService.execute({
+        workspaceId,
+        input: payload as { projectId?: string; fileName?: string },
+      });
+    }
+
+    if (name === OUTREACH_CREATE_REFERRAL_CANDIDATE_LOGIC_FUNCTION_NAME) {
+      return this.createReferralCandidateService.execute({
+        workspaceId,
+        input: payload as CreateReferralCandidateInput,
+      });
+    }
+
+    if (name === OUTREACH_NOTIFY_MEMBER_SYSTEM_EMAIL_LOGIC_FUNCTION_NAME) {
+      return this.notifyMemberSystemEmailService.execute({
+        input: payload as NotifyMemberSystemEmailInput,
       });
     }
 

@@ -21,6 +21,7 @@ import {
 import { type RunWorkflowJobData } from 'src/modules/workflow/workflow-runner/types/run-workflow-job-data.type';
 import { WorkflowRunWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.workspace-service';
 import { WorkflowTriggerType } from 'src/modules/workflow/workflow-trigger/types/workflow-trigger.type';
+import { workflowShouldKeepRunning } from 'src/modules/workflow/workflow-executor/utils/workflow-should-keep-running.util';
 
 @Processor({ queueName: MessageQueue.workflowQueue, scope: Scope.REQUEST })
 export class RunWorkflowJob {
@@ -210,6 +211,17 @@ export class RunWorkflowJob {
       isDefined(nextStepIdsToExecute) && nextStepIdsToExecute.length > 0;
 
     if (!hasStepsToSkipOrFailSafely && !hasStepsToExecute) {
+      // A leaf step finishing is not the end of the run while another branch is
+      // still pending (e.g. an approval form) or has runnable children.
+      if (
+        workflowShouldKeepRunning({
+          stepInfos: workflowRun.state?.stepInfos ?? {},
+          steps: workflowRun.state?.flow?.steps ?? [],
+        })
+      ) {
+        return;
+      }
+
       await this.workflowRunWorkspaceService.endWorkflowRun({
         workflowRunId,
         workspaceId,

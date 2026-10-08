@@ -48,6 +48,83 @@ describe('validateOutreachInboundSignals', () => {
     });
   });
 
+  describe('explicit meeting time', () => {
+    const NOW_IST = '2026-10-07T09:00:00.000Z';
+
+    it('uses a time the prospect named instead of our slots', () => {
+      const result = validateOutreachInboundSignals({
+        slots: SLOTS,
+        acceptedSlotIndex: -1,
+        requestedStartsAt: '2026-10-15T16:30:00.000Z',
+        nowIso: NOW_IST,
+      });
+
+      expect(result).toMatchObject({
+        startsAt: '2026-10-15T16:30:00.000Z',
+        endsAt: '2026-10-15T17:00:00.000Z',
+        startsAtIsExplicit: true,
+      });
+    });
+
+    it('prefers the explicit time over an accepted slot index', () => {
+      const result = validateOutreachInboundSignals({
+        slots: SLOTS,
+        acceptedSlotIndex: 0,
+        requestedStartsAt: '2026-10-15T16:30:00.000Z',
+        nowIso: NOW_IST,
+      });
+
+      expect(result.startsAt).toBe('2026-10-15T16:30:00.000Z');
+    });
+
+    it.each(['', 'next thursday', '2026-10-01T10:00:00.000Z', null])(
+      'ignores an unusable or past start (%p)',
+      (requestedStartsAt) => {
+        const result = validateOutreachInboundSignals({
+          requestedStartsAt,
+          nowIso: NOW_IST,
+        });
+
+        expect(result).toMatchObject({
+          startsAt: '',
+          startsAtIsExplicit: false,
+        });
+      },
+    );
+  });
+
+  describe('follow-up date', () => {
+    const NOW = '2026-10-07T09:00:00.000Z';
+
+    it('keeps a future date', () => {
+      expect(
+        validateOutreachInboundSignals({
+          followUpAt: '2026-11-03T04:30:00.000Z',
+          nowIso: NOW,
+        }).followUpAt,
+      ).toBe('2026-11-03T04:30:00.000Z');
+    });
+
+    it.each(['2026-10-01T00:00:00.000Z', '2028-01-01T00:00:00.000Z', 'soon'])(
+      'drops a past, too-distant or unparseable date (%p)',
+      (followUpAt) => {
+        expect(
+          validateOutreachInboundSignals({ followUpAt, nowIso: NOW }).followUpAt,
+        ).toBe('');
+      },
+    );
+
+    it('never schedules a comeback after an opt-out', () => {
+      expect(
+        validateOutreachInboundSignals({
+          followUpAt: '2026-11-03T04:30:00.000Z',
+          shouldNotRespond: true,
+          nowIso: NOW,
+        }).followUpAt,
+      ).toBe('');
+    });
+  });
+
   describe('contact grounding', () => {
     it('keeps a referral email quoted in the transcript', () => {
       const result = validateOutreachInboundSignals({
@@ -315,6 +392,7 @@ describe('validateOutreachInboundSignals', () => {
     expect(Object.keys(validateOutreachInboundSignals({})).sort()).toEqual([
       'emailTo',
       'endsAt',
+      'followUpAt',
       'hasReferral',
       'preferredChannelToStamp',
       'prospectEmail',
@@ -326,6 +404,7 @@ describe('validateOutreachInboundSignals', () => {
       'sendWhatsappReply',
       'shouldNotRespond',
       'startsAt',
+      'startsAtIsExplicit',
       'success',
       'whatsappTo',
     ]);

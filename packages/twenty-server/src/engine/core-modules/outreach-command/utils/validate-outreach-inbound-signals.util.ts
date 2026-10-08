@@ -29,6 +29,10 @@ export type OutreachInboundSignalsInput = {
   shouldNotRespond?: unknown;
   personPrimaryPhone?: unknown;
   personPrimaryEmail?: unknown;
+  requestedStartsAt?: unknown;
+  followUpAt?: unknown;
+  nowIso?: unknown;
+  slotMinutes?: unknown;
 };
 
 export type OutreachValidatedInboundSignals = {
@@ -47,6 +51,9 @@ export type OutreachValidatedInboundSignals = {
   emailTo: string;
   hasReferral: boolean;
   shouldNotRespond: boolean;
+  // True when startsAt came from a time the prospect named, not one of our slots.
+  startsAtIsExplicit: boolean;
+  followUpAt: string;
 };
 
 type CalendarSlot = { startsAt: string; endsAt: string };
@@ -120,6 +127,76 @@ const resolveSlot = ({
   return slots[index];
 };
 
+const DEFAULT_EXPLICIT_MEETING_MINUTES = 30;
+// A snooze past a year is almost certainly a mis-resolved date.
+const MAX_FOLLOW_UP_DAYS = 366;
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+const parseFutureIso = ({
+  value,
+  nowMs,
+}: {
+  value: unknown;
+  nowMs: number;
+}): number | undefined => {
+  const raw = asTrimmedString(value);
+
+  if (raw === '') {
+    return undefined;
+  }
+
+  const parsedMs = Date.parse(raw);
+
+  return Number.isFinite(parsedMs) && parsedMs > nowMs ? parsedMs : undefined;
+};
+
+// A time the prospect named outright wins over our own availability: they chose
+// it, so we do not check it against our calendar.
+const resolveExplicitStart = ({
+  requestedStartsAt,
+  nowMs,
+  slotMinutes,
+}: {
+  requestedStartsAt: unknown;
+  nowMs: number;
+  slotMinutes: unknown;
+}): CalendarSlot => {
+  const startMs = parseFutureIso({ value: requestedStartsAt, nowMs });
+
+  if (startMs === undefined) {
+    return { startsAt: '', endsAt: '' };
+  }
+
+  const minutes =
+    typeof slotMinutes === 'number' && slotMinutes >= 15
+      ? slotMinutes
+      : DEFAULT_EXPLICIT_MEETING_MINUTES;
+
+  return {
+    startsAt: new Date(startMs).toISOString(),
+    endsAt: new Date(startMs + minutes * 60 * 1000).toISOString(),
+  };
+};
+
+const resolveFollowUpAt = ({
+  followUpAt,
+  nowMs,
+}: {
+  followUpAt: unknown;
+  nowMs: number;
+}): string => {
+  const followUpMs = parseFutureIso({ value: followUpAt, nowMs });
+
+  if (
+    followUpMs === undefined ||
+    followUpMs - nowMs > MAX_FOLLOW_UP_DAYS * ONE_DAY_MS
+  ) {
+    return '';
+  }
+
+  return new Date(followUpMs).toISOString();
+};
+
 // Phone numbers are written with arbitrary separators, so both sides are
 // stripped down to digits before comparison.
 const stripPhoneSeparators = (value: string): string =>
@@ -186,10 +263,21 @@ export const validateOutreachInboundSignals = (
 ): OutreachValidatedInboundSignals => {
   const transcript = asTrimmedString(input.transcript);
   const slots = parseSlots(input.slots);
-  const { startsAt, endsAt } = resolveSlot({
-    acceptedSlotIndex: input.acceptedSlotIndex,
-    slots,
+  const parsedNowMs = Date.parse(asTrimmedString(input.nowIso));
+  const nowMs = Number.isFinite(parsedNowMs) ? parsedNowMs : Date.now();
+  const explicitStart = resolveExplicitStart({
+    requestedStartsAt: input.requestedStartsAt,
+    nowMs,
+    slotMinutes: input.slotMinutes,
   });
+  const startsAtIsExplicit = explicitStart.startsAt !== '';
+  const { startsAt, endsAt } = startsAtIsExplicit
+    ? explicitStart
+    : resolveSlot({
+        acceptedSlotIndex: input.acceptedSlotIndex,
+        slots,
+      });
+  const shouldNotRespond = asBoolean(input.shouldNotRespond);
 
   const referralEmail = groundEmail({
     email: asTrimmedString(input.referralEmail),
@@ -266,6 +354,11 @@ export const validateOutreachInboundSignals = (
     // A grounded contact is what makes a referral actionable; recipients often
     // share a number without repeating the person's name.
     hasReferral: referralEmail !== '' || referralPhone !== '',
-    shouldNotRespond: asBoolean(input.shouldNotRespond),
+    shouldNotRespond,
+    startsAtIsExplicit,
+    // An opt-out never schedules a comeback.
+    followUpAt: shouldNotRespond
+      ? ''
+      : resolveFollowUpAt({ followUpAt: input.followUpAt, nowMs }),
   };
 };
