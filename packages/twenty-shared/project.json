@@ -30,6 +30,8 @@
         "{projectRoot}/logic-function/dist",
         "{projectRoot}/metadata/package.json",
         "{projectRoot}/metadata/dist",
+        "{projectRoot}/outreach/package.json",
+        "{projectRoot}/outreach/dist",
         "{projectRoot}/testing/package.json",
         "{projectRoot}/testing/dist",
         "{projectRoot}/timeline/package.json",
@@ -70,13 +72,21 @@
     "generateBarrels": {
       "executor": "nx:run-commands",
       "cache": true,
-      "inputs": ["production", "{projectRoot}/scripts/generateBarrels.ts"],
+      "inputs": [
+        "production",
+        "{projectRoot}/scripts/generateBarrels.ts",
+        "{projectRoot}/scripts/generateOutreachSkills.ts",
+        "{projectRoot}/src/outreach/skills/*.md"
+      ],
       "outputs": [
         "{projectRoot}/src/index.ts",
         "{projectRoot}/src/*/index.ts",
+        "{projectRoot}/src/outreach/outreach-skill-markdown.generated.ts",
         "{projectRoot}/package.json"
       ],
-      "options": { "command": "tsx {projectRoot}/scripts/generateBarrels.ts" }
+      "options": {
+        "command": "tsx {projectRoot}/scripts/generateOutreachSkills.ts && tsx {projectRoot}/scripts/generateBarrels.ts"
+      }
     },
     "typecheck": {},
     "test": {},

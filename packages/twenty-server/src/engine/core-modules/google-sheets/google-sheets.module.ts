@@ -43,9 +43,11 @@ import { WorkspaceModificationsModule } from '../workspace-modifications/workspa
 import { WorkspaceEntity } from '../workspace/workspace.entity';
 import { GoogleSheetsDataController } from './google-sheet-data.controller';
 import { GoogleSheetsController } from './google-sheets.controller';
+import { MeteredLlmModule } from 'src/engine/core-modules/metered-llm/metered-llm.module';
 
 @Module({
   imports: [
+    MeteredLlmModule,
     WebSocketModule,
     EmailModule,
     EnvironmentModule,

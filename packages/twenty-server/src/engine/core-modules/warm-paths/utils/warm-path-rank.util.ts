@@ -33,7 +33,10 @@ const scoreHeadlineProminence = (
   }
 
   if (targetHeadline) {
-    const targetTokens = targetHeadline.toLowerCase().split(/\W+/).filter((t) => t.length > 3);
+    const targetTokens = targetHeadline
+      .toLowerCase()
+      .split(/\W+/)
+      .filter((t) => t.length > 3);
     const overlap = targetTokens.filter((t) => h.includes(t));
     if (overlap.length >= 2) {
       score += 15;
@@ -41,7 +44,12 @@ const scoreHeadlineProminence = (
     }
   }
 
-  if (h.includes('director') || h.includes('vp') || h.includes('head of') || h.includes('chief')) {
+  if (
+    h.includes('director') ||
+    h.includes('vp') ||
+    h.includes('head of') ||
+    h.includes('chief')
+  ) {
     score += 10;
     reasons.push('Senior role');
   }
@@ -77,12 +85,18 @@ export const sharedOverlapStrength = (
   return 'low';
 };
 
-export const clusterLabelFromHeadline = (headline: string | null): string | null => {
+export const clusterLabelFromHeadline = (
+  headline: string | null,
+): string | null => {
   const h = (headline ?? '').toLowerCase();
   if (h.includes('michael page') || h.includes('pagegroup')) {
     return 'Michael Page · talent / HR';
   }
-  if (h.includes('hr') || h.includes('human resources') || h.includes('people')) {
+  if (
+    h.includes('hr') ||
+    h.includes('human resources') ||
+    h.includes('people')
+  ) {
     return 'HR / people leadership';
   }
   if (h.includes('consultant')) {

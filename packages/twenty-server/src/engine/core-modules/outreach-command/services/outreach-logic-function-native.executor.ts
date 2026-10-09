@@ -26,6 +26,7 @@ import {
   OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME,
+  OUTREACH_SELECT_WORKSPACE_MEMBER_LOGIC_FUNCTION_NAME,
   OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_LOGIC_FUNCTION_NAME,
   OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME,
@@ -35,6 +36,7 @@ import {
   validateOutreachInboundSignals,
   type OutreachInboundSignalsInput,
 } from 'src/engine/core-modules/outreach-command/utils/validate-outreach-inbound-signals.util';
+import { OutreachMemberAssignmentService } from 'src/engine/core-modules/outreach-command/services/outreach-member-assignment.service';
 import { FetchAndUpsertLocalBusinessesService } from 'src/engine/core-modules/outreach-command/services/fetch-and-upsert-local-businesses.service';
 import { ClassifyAndUpsertLocalPlacesService } from 'src/engine/core-modules/outreach-command/services/classify-and-upsert-local-places.service';
 import { FetchCompanyDetailsService } from 'src/engine/core-modules/outreach-command/services/fetch-company-details.service';
@@ -95,6 +97,7 @@ export class OutreachLogicFunctionNativeExecutor
     private readonly planLocalBusinessCityCoverageService: PlanLocalBusinessCityCoverageService,
     private readonly fetchAndUpsertLocalBusinessesService: FetchAndUpsertLocalBusinessesService,
     private readonly classifyAndUpsertLocalPlacesService: ClassifyAndUpsertLocalPlacesService,
+    private readonly outreachMemberAssignmentService: OutreachMemberAssignmentService,
     private readonly nativeLogicFunctionRegistry: NativeLogicFunctionRegistry,
   ) {}
 
@@ -355,6 +358,7 @@ export class OutreachLogicFunctionNativeExecutor
 
     if (name === OUTREACH_NOTIFY_MEMBER_SYSTEM_EMAIL_LOGIC_FUNCTION_NAME) {
       return this.notifyMemberSystemEmailService.execute({
+        workspaceId,
         input: payload as NotifyMemberSystemEmailInput,
       });
     }
@@ -382,6 +386,13 @@ export class OutreachLogicFunctionNativeExecutor
           modelId?: string;
           onlyOnePersonPerCompany?: boolean | string;
         },
+      });
+    }
+
+    if (name === OUTREACH_SELECT_WORKSPACE_MEMBER_LOGIC_FUNCTION_NAME) {
+      return this.outreachMemberAssignmentService.selectForCandidate({
+        workspaceId,
+        candidateId: String((payload as { candidateId?: string }).candidateId ?? ''),
       });
     }
 

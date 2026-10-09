@@ -39,6 +39,10 @@ import {
   OUTREACH_WORKFLOW_SEQUENCER_NAME,
 } from '@/outreach-home/constants/outreach-command.constants';
 import { mapCrmStageToOutreachStage } from '@/outreach-home/constants/outreach-stages';
+import {
+  type OutreachAiColumnRunProgress,
+  type OutreachTableView,
+} from '@/outreach-home/constants/outreach-cache-realtime.constants';
 import { useOutreachCacheSocket } from '@/outreach-home/hooks/useOutreachCacheSocket';
 import { useOutreachProjectJourneySummary } from '@/outreach-home/hooks/useOutreachProjectJourneySummary';
 import {
@@ -62,9 +66,11 @@ import {
   resolveCandidateStopOutreach,
   type OutreachProjectCandidateRecord,
 } from '@/outreach-home/utils/fetch-outreach-project-candidates';
+import { fetchOutreachTableView } from '@/outreach-home/utils/outreach-table-view';
 import { isOutreachProject } from '@/outreach-home/utils/is-outreach-project';
 import {
   fetchOutreachCompaniesCache,
+  fetchOutreachProjectCompanies,
   persistOutreachCompaniesCache,
 } from '@/outreach-home/utils/outreach-companies-cache';
 import { resolveEffectiveIcp } from '@/outreach-home/utils/outreach-effective-icp.util';
@@ -175,7 +181,7 @@ const outreachPersonSignature = (people: OutreachPersonRow[]): string =>
   people
     .map(
       (person) =>
-        `${person.id}:${person.stage}:${person.candidateId ?? ''}:${person.name}:${person.title}:${person.companyName}:${person.experimentVariant ?? ''}:${person.recruiterStatus ?? ''}:${person.candConversationStatus ?? ''}:${person.workflowRunStatus ?? ''}:${person.messagesExchanged?.length ?? 0}:${person.outreachConversationStage ?? ''}:${person.needsApproval ? '1' : '0'}:${person.nextStepLabel ?? ''}:${person.nextRetryAt ?? ''}:${person.outreachResumeAt ?? ''}:${person.candidateFlags?.startOutreach ? '1' : '0'}:${person.candidateFlags?.stopOutreach ? '1' : '0'}:${person.createdAt ?? ''}:${person.updatedAt ?? ''}`,
+        `${person.id}:${person.stage}:${person.candidateId ?? ''}:${person.name}:${person.title}:${person.companyName}:${person.locationName ?? ''}:${person.linkedinUrl}:${JSON.stringify(person.otherFields ?? null)}:${person.experimentVariant ?? ''}:${person.recruiterStatus ?? ''}:${person.candConversationStatus ?? ''}:${person.workflowRunStatus ?? ''}:${person.messagesExchanged?.length ?? 0}:${person.outreachConversationStage ?? ''}:${person.needsApproval ? '1' : '0'}:${person.nextStepLabel ?? ''}:${person.nextRetryAt ?? ''}:${person.outreachResumeAt ?? ''}:${person.candidateFlags?.startOutreach ? '1' : '0'}:${person.candidateFlags?.stopOutreach ? '1' : '0'}:${person.createdAt ?? ''}:${person.updatedAt ?? ''}`,
     )
     .join('|');
 
@@ -421,9 +427,29 @@ export const useOutreachLiveWorkingSet = () => {
     };
   }, [accessToken, activeProjectId, refreshCompaniesCache]);
 
+  // CRM companies tagged to the project (company.projectIds); display-only,
+  // the ephemeral list above is the only one that is written back to Redis.
+  const [crmCompanies, setCrmCompanies] = useState<OutreachCompanyRow[]>([]);
+
+  const refreshCrmCompanies = useCallback(async () => {
+    if (!isDefined(activeProjectId) || !isDefined(accessToken)) {
+      setCrmCompanies([]);
+
+      return;
+    }
+
+    setCrmCompanies(
+      await fetchOutreachProjectCompanies(activeProjectId, accessToken),
+    );
+  }, [activeProjectId, accessToken]);
+
+  useEffect(() => {
+    void refreshCrmCompanies();
+  }, [refreshCrmCompanies]);
+
   const refreshCompaniesWorkingSet = useCallback(async () => {
-    await refreshCompaniesCache();
-  }, [refreshCompaniesCache]);
+    await Promise.all([refreshCompaniesCache(), refreshCrmCompanies()]);
+  }, [refreshCompaniesCache, refreshCrmCompanies]);
 
   // Ephemeral people from Redis (per projectId) — not CRM Candidates until enroll.
   useLayoutEffect(() => {
@@ -512,7 +538,8 @@ export const useOutreachLiveWorkingSet = () => {
 
   const handleCompaniesCacheSocketUpdate = useCallback(() => {
     void refreshCompaniesCache({ silent: true });
-  }, [refreshCompaniesCache]);
+    void refreshCrmCompanies();
+  }, [refreshCompaniesCache, refreshCrmCompanies]);
 
   const setCompanies = useCallback(
     async (companies: OutreachCompanyRow[]) => {
@@ -555,6 +582,21 @@ export const useOutreachLiveWorkingSet = () => {
       const next = dedupePeopleById([...ephemeralPeople, ...peopleToAdd]);
 
       await setPeople(next);
+    },
+    [ephemeralPeople, setPeople],
+  );
+
+  // Cell edits on rows that only live in the Redis cache (not CRM candidates yet)
+  const updateEphemeralPerson = useCallback(
+    async (
+      personId: string,
+      applyPatch: (person: OutreachPersonRow) => OutreachPersonRow,
+    ) => {
+      await setPeople(
+        ephemeralPeople.map((person) =>
+          person.id === personId ? applyPatch(person) : person,
+        ),
+      );
     },
     [ephemeralPeople, setPeople],
   );
@@ -633,13 +675,74 @@ export const useOutreachLiveWorkingSet = () => {
 
   const handleJourneySocketUpdate = useCallback(() => {
     void refreshEnrolledProgress({ silent: true });
-  }, [refreshEnrolledProgress]);
+    void refreshCrmCompanies();
+  }, [refreshEnrolledProgress, refreshCrmCompanies]);
+
+  const [aiColumnRun, setAiColumnRun] =
+    useState<OutreachAiColumnRunProgress | null>(null);
+
+  // Values land chunk by chunk (the server also sends a journey update per
+  // chunk); when the run ends, do a full refresh and fade the bar out.
+  const handleAiColumnProgress = useCallback(
+    (run: OutreachAiColumnRunProgress) => {
+      setAiColumnRun(run);
+
+      if (run.status === 'queued' || run.status === 'running') {
+        return;
+      }
+
+      void refreshPeopleWorkingSet();
+      void refreshCrmCompanies();
+      window.setTimeout(() => {
+        setAiColumnRun((current) =>
+          current?.runId === run.runId ? null : current,
+        );
+      }, 10000);
+    },
+    [refreshPeopleWorkingSet, refreshCrmCompanies],
+  );
+
+  const [aiTableViews, setAiTableViews] = useState<{
+    people: OutreachTableView | null;
+    companies: OutreachTableView | null;
+  }>({ people: null, companies: null });
+
+  // The filters and sort the agent applied are kept for the project: load them
+  // when the project opens, and take live updates from the socket.
+  useEffect(() => {
+    setAiTableViews({ people: null, companies: null });
+
+    if (!isNonEmptyString(activeProjectId) || !isNonEmptyString(accessToken)) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    void Promise.all([
+      fetchOutreachTableView(activeProjectId, 'people', accessToken),
+      fetchOutreachTableView(activeProjectId, 'companies', accessToken),
+    ]).then(([people, companies]) => {
+      if (!isCancelled) {
+        setAiTableViews({ people, companies });
+      }
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [activeProjectId, accessToken]);
+
+  const handleTableViewUpdated = useCallback((view: OutreachTableView) => {
+    setAiTableViews((previous) => ({ ...previous, [view.tab]: view }));
+  }, []);
 
   useOutreachCacheSocket({
     projectId: activeProjectId,
     onPeopleUpdated: handlePeopleCacheSocketUpdate,
     onCompaniesUpdated: handleCompaniesCacheSocketUpdate,
     onJourneyUpdated: handleJourneySocketUpdate,
+    onAiColumnProgress: handleAiColumnProgress,
+    onTableViewUpdated: handleTableViewUpdated,
   });
 
   const createOutreachProject = useCallback(async () => {
@@ -770,7 +873,28 @@ export const useOutreachLiveWorkingSet = () => {
     setActiveProjectId,
   ]);
 
-  const companies = ephemeralCompanies;
+  // CRM companies first; an ephemeral company that is already a CRM company
+  // (same id, domain or name) is shown once.
+  const companies = useMemo(() => {
+    const identity = (company: OutreachCompanyRow): string =>
+      company.domain
+        ? `domain:${company.domain
+            .toLowerCase()
+            .replace(/^https?:\/\//, '')
+            .replace(/^www\./, '')
+            .replace(/\/.*$/, '')}`
+        : `name:${company.name.toLowerCase().trim()}`;
+    const seenIds = new Set(crmCompanies.map((company) => company.id));
+    const seenKeys = new Set(crmCompanies.map(identity));
+
+    return [
+      ...crmCompanies,
+      ...ephemeralCompanies.filter(
+        (company) =>
+          !seenIds.has(company.id) && !seenKeys.has(identity(company)),
+      ),
+    ];
+  }, [crmCompanies, ephemeralCompanies]);
 
   const crmPeople: OutreachPersonRow[] = useMemo(
     () =>
@@ -986,8 +1110,11 @@ export const useOutreachLiveWorkingSet = () => {
     appendCompanies,
     setPeople,
     appendPeople,
+    updateEphemeralPerson,
     refreshPeopleWorkingSet,
     refreshCompaniesWorkingSet,
+    aiColumnRun,
+    aiTableViews,
     parsedIcp,
     isIcpProjectOverride: effectiveIcp.isIcpProjectOverride,
     linkedinConnected,

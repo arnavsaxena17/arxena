@@ -1,22 +1,22 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
+import {
+  type OutreachSkillName,
+  getOutreachSkillContent,
+  listOutreachSkillNames,
+} from 'twenty-shared/outreach';
+
 import { type AllStandardSkillName } from 'src/engine/workspace-manager/twenty-standard-application/types/all-standard-skill-name.type';
 
 const skillContentCache = new Map<AllStandardSkillName, string>();
 
-const SEARCH_SKILL_CONTENT_PARTS = [
-  'search-preamble.md',
-  'search-companies.md',
-  'search-people.md',
-  'search-linkedin-harvest.md',
-] as const;
+const OUTREACH_SKILL_NAMES = new Set<string>(listOutreachSkillNames());
 
-const loadSearchSkillContent = (): string => {
-  return SEARCH_SKILL_CONTENT_PARTS.map((partFileName) =>
-    readFileSync(join(__dirname, 'contents', partFileName), 'utf-8'),
-  ).join('\n');
-};
+const isOutreachSkillName = (
+  skillName: AllStandardSkillName,
+): skillName is AllStandardSkillName & OutreachSkillName =>
+  OUTREACH_SKILL_NAMES.has(skillName);
 
 export const loadStandardSkillContent = (
   skillName: AllStandardSkillName,
@@ -27,13 +27,10 @@ export const loadStandardSkillContent = (
     return cachedContent;
   }
 
-  const content =
-    skillName === 'search'
-      ? loadSearchSkillContent()
-      : readFileSync(
-          join(__dirname, 'contents', `${skillName}.md`),
-          'utf-8',
-        );
+  // Outreach playbooks live in twenty-shared so the MCP server serves the same text.
+  const content = isOutreachSkillName(skillName)
+    ? getOutreachSkillContent(skillName)
+    : readFileSync(join(__dirname, 'contents', `${skillName}.md`), 'utf-8');
 
   skillContentCache.set(skillName, content);
 

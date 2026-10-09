@@ -61,6 +61,8 @@ export type OutreachCompanyRow = {
   segment: string;
   icpFit: string;
   status: string;
+  // AI filter / enrichment columns, one key per column.
+  otherFields?: unknown;
 };
 
 export type OutreachPersonRow = {
@@ -168,12 +170,17 @@ export type OutreachContext = {
   outreachSendMode: OutreachSendMode;
   selectedCompanyId: string | null;
   selectedPersonId: string | null;
+  // Checked rows on the People tab (falls back to the active row)
+  selectedPersonIds: string[];
+  selectedCandidateIds: string[];
   selectedCandidateStage: OutreachStage | null;
   icpName: string | null;
   icpSpecSummary: string | null;
   linkedinConnected: boolean;
   gmailConnected: boolean;
   whatsappConnected: boolean;
+  // The tab the user is looking at (people, companies or setup)
+  activeTab: string | null;
   phase: string | null;
 };
 
@@ -189,18 +196,22 @@ export const buildOutreachContextPrompt = (
     `phase: ${context.phase ?? 'live'}`,
     `selectedCompanyId: ${context.selectedCompanyId ?? 'none'}`,
     `selectedPersonId: ${context.selectedPersonId ?? 'none'}`,
+    `selectedPersonIds: ${JSON.stringify(context.selectedPersonIds)}`,
+    `selectedCandidateIds: ${JSON.stringify(context.selectedCandidateIds)}`,
     `selectedCandidateStage: ${context.selectedCandidateStage ?? 'none'}`,
     `icp: ${context.icpName ?? 'none'}`,
     `icpSpec: ${context.icpSpecSummary ?? 'none'}`,
     `channels: LinkedIn=${context.linkedinConnected} Gmail=${context.gmailConnected} WhatsApp=${context.whatsappConnected}`,
     'Target companies on /outreach-home are ephemeral (Find destination per projectId), not CRM membership.',
     'When the user asks to find/fetch/add/build target companies: load_skills(["search"]), search, then upsert_outreach_target_companies({ projectId, mode: "merge", companies }) before ending the turn. Do not stop at a chat-only list.',
-    'Do NOT create CRM Company records for the Companies tab — only when enrolling people.',
+    'Do NOT create CRM Company records for the Companies tab unless the user confirms Save to CRM (save_outreach_targets_to_crm, no enrollment) or enrolls people.',
     'Target people on the People tab are ephemeral (Find destination) until the user selects rows and confirms Add to CRM / Enroll.',
     'When the user asks to find/fetch/search people (target titles, MD/CEO, etc.) for this campaign: load_skills(["search"]), search, then upsert_outreach_target_people({ projectId, mode: "merge", people }) before ending the turn.',
     'Do NOT create_candidate / create_one_person / create_one_candidate for the People tab. Enrollment writes happen only after explicit user confirmation (Add to CRM / Enroll).',
+    'When the user confirms Save to CRM for the tab rows: save_outreach_targets_to_crm({ projectId, target, companyIds?, personIds? }). It writes Company / Person only, never a Candidate.',
     'When enrolling people (user confirmed), upsert shared CRM Company + Candidate with projectId = this projectId.',
     'Prefer Candidate+Project execution; Person holds stop/compliance memory.',
+    'When the user says "start outreach" for enrolled people: learn_tools({toolNames:["start_outreach"]}) then start_outreach({ projectId, candidateIds: selectedCandidateIds }); whole table with nothing selected: startAllQueuedInProject=true.',
     'Respect send windows, daily caps, stop-on-reply, and approval gates when editing steps.',
   ].join('\n');
 };

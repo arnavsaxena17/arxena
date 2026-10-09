@@ -15,6 +15,16 @@ export const ACTION_TOOL_IDS = [
   'highlight_org_chart',
   'upsert_outreach_target_companies',
   'upsert_outreach_target_people',
+  'save_outreach_targets_to_crm',
+  'start_outreach',
+  'get_outreach_working_set',
+  'preview_sample_message_column',
+  'preview_ai_column',
+  'run_ai_column',
+  'get_ai_column_run_status',
+  'cancel_ai_column_run',
+  'generate_table_view',
+  'apply_table_view',
 ] as const;
 
 export type ActionToolId = (typeof ACTION_TOOL_IDS)[number];
@@ -52,5 +62,35 @@ export const ACTION_TOOL_LABELS: Record<ActionToolId, ActionToolLabel> = {
   },
   upsert_outreach_target_people: {
     label: i18nLabel(msg`Upsert GTM Target People`),
+  },
+  save_outreach_targets_to_crm: {
+    label: i18nLabel(msg`Save Outreach Targets to CRM`),
+  },
+  start_outreach: {
+    label: i18nLabel(msg`Start Outreach`),
+  },
+  get_outreach_working_set: {
+    label: i18nLabel(msg`Get Outreach Working Set`),
+  },
+  preview_sample_message_column: {
+    label: i18nLabel(msg`Preview Sample Message Column`),
+  },
+  preview_ai_column: {
+    label: i18nLabel(msg`Preview AI Column`),
+  },
+  run_ai_column: {
+    label: i18nLabel(msg`Run AI Column`),
+  },
+  get_ai_column_run_status: {
+    label: i18nLabel(msg`Get AI Column Run Status`),
+  },
+  cancel_ai_column_run: {
+    label: i18nLabel(msg`Cancel AI Column Run`),
+  },
+  generate_table_view: {
+    label: i18nLabel(msg`Generate Table Filter and Sort`),
+  },
+  apply_table_view: {
+    label: i18nLabel(msg`Apply Table Filter and Sort`),
   },
 };

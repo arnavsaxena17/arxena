@@ -10,6 +10,7 @@ import {
 } from './linkedin-profile-s3.service';
 
 const REDIS_TTL_MS = 24 * 60 * 60 * 1000;
+const VIEWER_SCOPED_TTL_MS = 3 * 24 * 60 * 60 * 1000;
 
 type CachedProfileEnvelope<T> = LinkedinProfileS3Envelope<T>;
 type CachedPostsEnvelope<T> = {
@@ -31,6 +32,46 @@ export class LinkedinProfileCacheService {
 
   private buildUserRedisKey(publicIdentifier: string): string {
     return `linkedin-user:${publicIdentifier.trim().toLowerCase()}`;
+  }
+
+  // Shared connections and network distance depend on who is looking, so they
+  // are keyed per Unipile account and never stored under the slug key.
+  private buildViewerScopedRedisKey(
+    accountId: string,
+    publicIdentifier: string,
+  ): string {
+    return `linkedin-user:${accountId.trim()}:${publicIdentifier.trim().toLowerCase()}`;
+  }
+
+  async getViewerScopedProfileFacts<T extends Record<string, unknown>>(
+    accountId: string,
+    publicIdentifier: string,
+  ): Promise<T | null> {
+    if (!accountId.trim() || !publicIdentifier.trim()) {
+      return null;
+    }
+
+    return (
+      (await this.cacheStorage.get<T>(
+        this.buildViewerScopedRedisKey(accountId, publicIdentifier),
+      )) ?? null
+    );
+  }
+
+  async saveViewerScopedProfileFacts<T extends Record<string, unknown>>(
+    accountId: string,
+    publicIdentifier: string,
+    facts: T,
+  ): Promise<void> {
+    if (!accountId.trim() || !publicIdentifier.trim()) {
+      return;
+    }
+
+    await this.cacheStorage.set(
+      this.buildViewerScopedRedisKey(accountId, publicIdentifier),
+      facts,
+      VIEWER_SCOPED_TTL_MS,
+    );
   }
 
   private buildUserPostsRedisKey(publicIdentifier: string): string {

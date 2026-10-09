@@ -36,9 +36,11 @@ import { AuthModule } from '../auth/auth.module';
 import { EnvironmentModule } from '../environment/environment.module';
 import { GraphQLExecutionModule } from '../graphql/graphql-execution.module';
 import { WorkspaceModificationsModule } from '../workspace-modifications/workspace-modifications.module';
+import { MeteredLlmModule } from 'src/engine/core-modules/metered-llm/metered-llm.module';
 
 @Module({
   imports: [
+    MeteredLlmModule,
     EnvironmentModule,
     AccountRateLimitModule,
     ApifyModule,

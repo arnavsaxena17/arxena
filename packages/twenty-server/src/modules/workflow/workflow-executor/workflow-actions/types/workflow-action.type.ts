@@ -173,10 +173,11 @@ export type WorkflowLikeLinkedinPostAction = BaseWorkflowAction & {
   settings: WorkflowLikeLinkedinPostActionSettings;
 };
 
-export type WorkflowAcceptLinkedinReceivedInvitationAction = BaseWorkflowAction & {
-  type: WorkflowActionType.ACCEPT_LINKEDIN_RECEIVED_INVITATION;
-  settings: WorkflowAcceptLinkedinReceivedInvitationActionSettings;
-};
+export type WorkflowAcceptLinkedinReceivedInvitationAction =
+  BaseWorkflowAction & {
+    type: WorkflowActionType.ACCEPT_LINKEDIN_RECEIVED_INVITATION;
+    settings: WorkflowAcceptLinkedinReceivedInvitationActionSettings;
+  };
 
 export type WorkflowSendWhatsappMessageAction = BaseWorkflowAction & {
   type: WorkflowActionType.SEND_WHATSAPP_MESSAGE;

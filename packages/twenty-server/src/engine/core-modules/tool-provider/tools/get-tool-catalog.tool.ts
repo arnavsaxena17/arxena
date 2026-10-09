@@ -3,6 +3,12 @@ import { z } from 'zod';
 import { ToolCategory } from 'twenty-shared/ai';
 import { type ToolRegistryService } from 'src/engine/core-modules/tool-provider/services/tool-registry.service';
 import { type ToolIndexEntry } from 'src/engine/core-modules/tool-provider/types/tool-index-entry.type';
+import {
+  TOOL_CATALOG_DEFAULT_LIMIT,
+  TOOL_CATALOG_MAX_LIMIT,
+  buildToolCatalogResponse,
+  type ToolCatalogResponse,
+} from 'src/engine/core-modules/tool-provider/utils/build-tool-catalog-response.util';
 
 export const GET_TOOL_CATALOG_TOOL_NAME = 'get_tool_catalog';
 
@@ -15,16 +21,33 @@ export const getToolCatalogInputSchema = z.object({
     .array(z.string())
     .optional()
     .describe(
-      `Filter by category. Available categories: ${availableCategories}. Omit to get all.`,
+      `Filter by category. Available categories: ${availableCategories}.`,
     ),
+  server: z
+    .string()
+    .optional()
+    .describe(
+      'Connected MCP server slug (e.g. "unipile"). Lists only that server\'s tools. Slugs appear in the index under EXTERNAL_MCP.',
+    ),
+  query: z
+    .string()
+    .optional()
+    .describe(
+      'Keyword search over tool names and descriptions (all terms must match).',
+    ),
+  limit: z
+    .number()
+    .int()
+    .optional()
+    .describe(
+      `Max tools to return (default ${TOOL_CATALOG_DEFAULT_LIMIT}, max ${TOOL_CATALOG_MAX_LIMIT}).`,
+    ),
+  offset: z.number().int().optional().describe('Pagination offset.'),
 });
 
 export type GetToolCatalogInput = z.infer<typeof getToolCatalogInputSchema>;
 
-export type GetToolCatalogResult = {
-  catalog: Record<string, Array<{ name: string; description: string }>>;
-  message: string;
-};
+export type GetToolCatalogResult = ToolCatalogResponse;
 
 export const createGetToolCatalogTool = (
   toolRegistry: ToolRegistryService,
@@ -37,55 +60,28 @@ export const createGetToolCatalogTool = (
   },
 ) => ({
   description:
-    'Refresh-only. Browse available tools by category when the initialize instructions look stale or you need a category filter. Do not call this before learn_tools on the happy path. Construct CRUD names from grammar and take GTM names from loaded skills. Never request the full catalog when you already know the tool names.',
+    'Discover tools without loading them. With no arguments returns a compact index (categories and connected MCP servers with counts). Pass categories, server (e.g. "unipile") or query to list tool names, then call learn_tools for only the ones you will run. Skip this when you already know the tool names (CRUD grammar, loaded skills).',
   inputSchema: getToolCatalogInputSchema,
   execute: async (
     parameters: GetToolCatalogInput,
   ): Promise<GetToolCatalogResult> => {
-    const entries = await toolRegistry.buildToolIndex(
+    const entries = (await toolRegistry.buildToolIndex(
       workspaceId,
       roleId,
       options,
-    );
-
-    const categoryFilter = parameters.categories
-      ? new Set(parameters.categories)
-      : undefined;
+    )) as ToolIndexEntry[];
 
     const excludeSet = options?.excludeTools;
 
-    const catalog: Record<
-      string,
-      Array<{ name: string; description: string }>
-    > = {};
-
-    for (const entry of entries as ToolIndexEntry[]) {
-      if (excludeSet?.has(entry.name)) {
-        continue;
-      }
-
-      if (categoryFilter && !categoryFilter.has(entry.category)) {
-        continue;
-      }
-
-      if (!catalog[entry.category]) {
-        catalog[entry.category] = [];
-      }
-
-      catalog[entry.category].push({
-        name: entry.name,
-        description: entry.description,
-      });
-    }
-
-    const totalTools = Object.values(catalog).reduce(
-      (sum, tools) => sum + tools.length,
-      0,
-    );
-
-    return {
-      catalog,
-      message: `Found ${totalTools} tool(s) across ${Object.keys(catalog).length} category(ies).`,
-    };
+    return buildToolCatalogResponse({
+      entries: excludeSet
+        ? entries.filter((entry) => !excludeSet.has(entry.name))
+        : entries,
+      categories: parameters.categories,
+      server: parameters.server,
+      query: parameters.query,
+      limit: parameters.limit,
+      offset: parameters.offset,
+    });
   },
 });

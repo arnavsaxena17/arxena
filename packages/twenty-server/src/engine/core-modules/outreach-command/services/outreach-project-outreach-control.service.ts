@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
-import { buildCandidateFlagsPatchUpdate } from 'twenty-shared/arx';
+import {
+  buildCandidateFlagsPatchUpdate,
+  isCandidateFlagTrue,
+} from 'twenty-shared/arx';
 import { isDefined } from 'twenty-shared/utils';
 import { StepStatus, WorkflowActionType } from 'twenty-shared/workflow';
 import { In, type ObjectLiteral } from 'typeorm';
@@ -397,11 +400,14 @@ export class OutreachProjectOutreachControlService {
     candidateIds,
     personIds,
     projectId,
+    startAllQueuedInProject,
   }: {
     workspaceId: string;
     candidateIds?: string[];
     personIds?: string[];
     projectId?: string | null;
+    // "Whole table": every enrolled, not-yet-started QUEUED candidate of the project
+    startAllQueuedInProject?: boolean;
   }): Promise<{ startedCandidates: number }> {
     const uniqueCandidateIds = [
       ...new Set((candidateIds ?? []).filter(isNonEmptyString)),
@@ -410,7 +416,14 @@ export class OutreachProjectOutreachControlService {
       ...new Set((personIds ?? []).filter(isNonEmptyString)),
     ];
 
-    if (uniqueCandidateIds.length === 0 && uniquePersonIds.length === 0) {
+    const isProjectWideStart =
+      startAllQueuedInProject === true && isNonEmptyString(projectId);
+
+    if (
+      !isProjectWideStart &&
+      uniqueCandidateIds.length === 0 &&
+      uniquePersonIds.length === 0
+    ) {
       return { startedCandidates: 0 };
     }
 
@@ -434,14 +447,29 @@ export class OutreachProjectOutreachControlService {
             }
           >(workspaceId, 'candidate', { shouldBypassPermissionChecks: true });
 
-        let candidates =
-          uniqueCandidateIds.length > 0
-            ? await candidateRepository.find({
-                where: { id: In(uniqueCandidateIds) },
-              })
-            : await candidateRepository.find({
-                where: { peopleId: In(uniquePersonIds) },
-              });
+        let candidates;
+
+        if (isProjectWideStart) {
+          const queuedCandidates = await candidateRepository.find({
+            where: { projectId, outreachSequenceStage: 'QUEUED' },
+          });
+
+          // Skip already started and explicitly stopped prospects; a bulk
+          // start must not silently undo a Stop Outreach.
+          candidates = queuedCandidates.filter(
+            (candidate) =>
+              !isCandidateFlagTrue(candidate, 'startOutreach') &&
+              !isCandidateFlagTrue(candidate, 'stopOutreach'),
+          );
+        } else if (uniqueCandidateIds.length > 0) {
+          candidates = await candidateRepository.find({
+            where: { id: In(uniqueCandidateIds) },
+          });
+        } else {
+          candidates = await candidateRepository.find({
+            where: { peopleId: In(uniquePersonIds) },
+          });
+        }
 
         if (isNonEmptyString(projectId)) {
           candidates = candidates.filter(

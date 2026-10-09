@@ -140,6 +140,7 @@ import { AddWebsiteTrackingColumnsFastInstanceCommand } from './2-25/2-25-instan
 import { AddExperimentToWorkflowVersionStatusFastInstanceCommand } from './2-25/2-25-instance-command-fast-1785600000076-add-experiment-to-workflow-version-status';
 import { AddWorkspaceCompanyIcpColumnsFastInstanceCommand } from './2-25/2-25-instance-command-fast-1785600000108-add-workspace-company-icp-columns';
 import { AddAgentToolConfigsColumnFastInstanceCommand } from './2-25/2-25-instance-command-fast-1785600000135-add-agent-tool-configs-column';
+import { AddWorkspaceBillingTreatmentOverridesFastInstanceCommand } from './2-25/2-25-instance-command-fast-1785600000180-add-workspace-billing-treatment-overrides';
 
 export const INSTANCE_COMMANDS = [
   AddViewFieldGroupIdIndexOnViewFieldFastInstanceCommand,
@@ -282,4 +283,5 @@ export const INSTANCE_COMMANDS = [
   AddExperimentToWorkflowVersionStatusFastInstanceCommand,
   AddWorkspaceCompanyIcpColumnsFastInstanceCommand,
   AddAgentToolConfigsColumnFastInstanceCommand,
+  AddWorkspaceBillingTreatmentOverridesFastInstanceCommand,
 ];

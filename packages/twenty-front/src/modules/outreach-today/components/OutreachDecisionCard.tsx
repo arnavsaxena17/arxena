@@ -77,6 +77,9 @@ export const OutreachDecisionCard = ({
     <StyledCard>
       <StyledTitle>{decision.title}</StyledTitle>
       {who.length > 0 ? <StyledMeta>{who}</StyledMeta> : null}
+      {decision.ownerName ? (
+        <StyledMeta>Owner: {decision.ownerName}</StyledMeta>
+      ) : null}
       <StyledMeta>{decision.recommendation}</StyledMeta>
       {isEditing ? (
         <StyledTextArea

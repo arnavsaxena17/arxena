@@ -20,8 +20,11 @@ export type BrowsingContext =
       outreachWorkflowId: string | null;
       outreachSendMode: string;
       phase: string | null;
+      activeTab?: string | null;
       selectedCompanyId: string | null;
       selectedPersonId: string | null;
+      selectedPersonIds: string[];
+      selectedCandidateIds: string[];
       icpName: string | null;
       icpSpecSummary: string | null;
       linkedinConnected: boolean;

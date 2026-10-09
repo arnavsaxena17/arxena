@@ -7,6 +7,7 @@ import {
   hasMeaningfulCandidateFieldValue,
 } from 'twenty-shared';
 
+import { MeteredLlmService } from 'src/engine/core-modules/metered-llm/metered-llm.service';
 import { JEV_MODEL_ID } from 'src/engine/metadata-modules/ai/ai-evaluation/constants/jev.const';
 import { JevEvaluationService } from 'src/engine/metadata-modules/ai/ai-evaluation/services/jev-evaluation.service';
 import { isJevModelId } from 'src/engine/metadata-modules/ai/ai-evaluation/utils/is-jev-model-id.util';
@@ -81,6 +82,7 @@ export class AiFilteringProcessorService {
   constructor(
     private configService: ConfigService,
     private readonly jevEvaluationService: JevEvaluationService,
+    private readonly meteredLlmService: MeteredLlmService,
   ) {}
 
   /**
@@ -109,6 +111,7 @@ export class AiFilteringProcessorService {
     candidates: CandidateData[],
     aiFilters: AiFilterConfig[],
     openaiApiKey: string,
+    workspaceId: string,
     progressCallback?: (
       progress: number,
       current: number,
@@ -163,6 +166,7 @@ export class AiFilteringProcessorService {
         const filterData = await this.processSingleAiFilter(
           task.candidate,
           task.aiFilter,
+          workspaceId,
         );
         currentOperation++;
 
@@ -254,6 +258,7 @@ export class AiFilteringProcessorService {
   private async processSingleAiFilter(
     candidate: CandidateData,
     aiFilter: AiFilterConfig,
+    workspaceId: string,
   ): Promise<Record<string, any>> {
     try {
       const userInput = this.buildUserInput(candidate, aiFilter);
@@ -279,6 +284,7 @@ export class AiFilteringProcessorService {
             userInput,
             'gpt4omini',
             aiFilter.fields,
+            workspaceId,
           );
         }
 
@@ -291,6 +297,7 @@ export class AiFilteringProcessorService {
         userInput,
         aiFilter.selectedModel,
         aiFilter.fields,
+        workspaceId,
       );
 
       return response;
@@ -328,6 +335,7 @@ export class AiFilteringProcessorService {
     userInput: string,
     model: string,
     expectedFields: AiFilterField[],
+    workspaceId: string,
   ): Promise<Record<string, any>> {
     const fieldDescriptions = expectedFields
       .map(
@@ -354,13 +362,18 @@ export class AiFilteringProcessorService {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         const mappedModel = this.mapModelName(model);
-        const completion = await this.openaiClient.chat.completions.create({
-          model: mappedModel,
-          messages: messages,
-          temperature: 0,
-          response_format: { type: 'json_object' },
-          // max_tokens: 1000,
-        });
+        // Runs on the workspace's own OpenAI key, so it is recorded but not charged in credits
+        const completion = await this.meteredLlmService.openAiChatCompletion(
+          { workspaceId, feature: 'AI_FILTERING', keySource: 'workspace' },
+          this.openaiClient,
+          {
+            model: mappedModel,
+            messages: messages,
+            temperature: 0,
+            response_format: { type: 'json_object' },
+            // max_tokens: 1000,
+          },
+        );
 
         const responseText = completion.choices[0]?.message?.content;
         if (!responseText) {

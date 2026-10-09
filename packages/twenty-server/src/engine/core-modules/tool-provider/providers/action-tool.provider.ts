@@ -26,7 +26,19 @@ import { CodeInterpreterTool } from 'src/engine/core-modules/tool/tools/code-int
 import { DraftEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/draft-email-tool';
 import { SendEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/send-email-tool';
 import { HttpTool } from 'src/engine/core-modules/tool/tools/http-tool/http-tool';
+import {
+  GetOutreachWorkingSetTool,
+  PreviewOutreachAiColumnTool,
+  GetOutreachAiColumnRunStatusTool,
+  CancelOutreachAiColumnRunTool,
+  GenerateOutreachTableViewTool,
+  ApplyOutreachTableViewTool,
+  RunOutreachAiColumnTool,
+} from 'src/engine/core-modules/tool/tools/outreach-ai-column-tool/outreach-ai-column-tools';
+import { PreviewSampleMessageColumnTool } from 'src/engine/core-modules/tool/tools/outreach-sample-message-tool/preview-sample-message-column-tool';
 import { UpsertOutreachTargetCompaniesTool } from 'src/engine/core-modules/tool/tools/outreach-target-companies-tool/upsert-outreach-target-companies-tool';
+import { SaveOutreachTargetsToCrmTool } from 'src/engine/core-modules/tool/tools/outreach-save-to-crm-tool/save-outreach-targets-to-crm-tool';
+import { StartOutreachTool } from 'src/engine/core-modules/tool/tools/outreach-start-tool/start-outreach-tool';
 import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
 import { NavigateAppTool } from 'src/engine/core-modules/tool/tools/navigate-tool/navigate-app-tool';
 import { HighlightOrgChartTool } from 'src/engine/core-modules/tool/tools/highlight-org-chart-tool/highlight-org-chart-tool';
@@ -56,6 +68,16 @@ export class ActionToolProvider implements ToolProvider {
     private readonly highlightOrgChartTool: HighlightOrgChartTool,
     private readonly upsertOutreachTargetCompaniesTool: UpsertOutreachTargetCompaniesTool,
     private readonly upsertOutreachTargetPeopleTool: UpsertOutreachTargetPeopleTool,
+    private readonly saveOutreachTargetsToCrmTool: SaveOutreachTargetsToCrmTool,
+    private readonly startOutreachTool: StartOutreachTool,
+    private readonly getOutreachWorkingSetTool: GetOutreachWorkingSetTool,
+    private readonly previewOutreachAiColumnTool: PreviewOutreachAiColumnTool,
+    private readonly runOutreachAiColumnTool: RunOutreachAiColumnTool,
+    private readonly getOutreachAiColumnRunStatusTool: GetOutreachAiColumnRunStatusTool,
+    private readonly cancelOutreachAiColumnRunTool: CancelOutreachAiColumnRunTool,
+    private readonly previewSampleMessageColumnTool: PreviewSampleMessageColumnTool,
+    private readonly generateOutreachTableViewTool: GenerateOutreachTableViewTool,
+    private readonly applyOutreachTableViewTool: ApplyOutreachTableViewTool,
     private readonly extractJsonPathsTool: ExtractJsonPathsTool,
     private readonly searchOutputTool: SearchOutputTool,
     private readonly codeInterpreterService: CodeInterpreterService,
@@ -77,6 +99,19 @@ export class ActionToolProvider implements ToolProvider {
         this.upsertOutreachTargetCompaniesTool,
       ],
       ['upsert_outreach_target_people', this.upsertOutreachTargetPeopleTool],
+      [
+        'save_outreach_targets_to_crm',
+        this.saveOutreachTargetsToCrmTool,
+      ],
+      ['start_outreach', this.startOutreachTool],
+      ['get_outreach_working_set', this.getOutreachWorkingSetTool],
+      ['preview_ai_column', this.previewOutreachAiColumnTool],
+      ['run_ai_column', this.runOutreachAiColumnTool],
+      ['get_ai_column_run_status', this.getOutreachAiColumnRunStatusTool],
+      ['cancel_ai_column_run', this.cancelOutreachAiColumnRunTool],
+      ['preview_sample_message_column', this.previewSampleMessageColumnTool],
+      ['generate_table_view', this.generateOutreachTableViewTool],
+      ['apply_table_view', this.applyOutreachTableViewTool],
       ['extract_json_paths', this.extractJsonPathsTool],
       ['search_output', this.searchOutputTool],
     ]);
@@ -193,6 +228,96 @@ export class ActionToolProvider implements ToolProvider {
       this.buildDescriptor(
         'upsert_outreach_target_people',
         this.upsertOutreachTargetPeopleTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'save_outreach_targets_to_crm',
+        this.saveOutreachTargetsToCrmTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'start_outreach',
+        this.startOutreachTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'get_outreach_working_set',
+        this.getOutreachWorkingSetTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'preview_sample_message_column',
+        this.previewSampleMessageColumnTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'preview_ai_column',
+        this.previewOutreachAiColumnTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'run_ai_column',
+        this.runOutreachAiColumnTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'get_ai_column_run_status',
+        this.getOutreachAiColumnRunStatusTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'cancel_ai_column_run',
+        this.cancelOutreachAiColumnRunTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'generate_table_view',
+        this.generateOutreachTableViewTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'apply_table_view',
+        this.applyOutreachTableViewTool,
         includeSchemas,
         context.locale,
       ),

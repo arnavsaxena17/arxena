@@ -37,6 +37,9 @@ export type OutreachDecisionListItem = {
   personTitle: string;
   companyName: string;
   projectName: string;
+  // Member who owns the candidate when sender pinning is in use.
+  ownerMemberId: string | null;
+  ownerName: string;
 };
 
 type DecisionRecord = ObjectLiteral & {
@@ -229,9 +232,11 @@ export class OutreachDecisionService {
   async listOpen({
     workspaceId,
     candidateId,
+    ownerMemberId,
   }: {
     workspaceId: string;
     candidateId?: string;
+    ownerMemberId?: string | null;
   }): Promise<OutreachDecisionListItem[]> {
     const authContext = buildSystemAuthContext(workspaceId);
 
@@ -247,7 +252,16 @@ export class OutreachDecisionService {
           take: 500,
         });
 
-        return this.toListItems(workspaceId, decisions);
+        const items = await this.toListItems(workspaceId, decisions);
+
+        // Unowned candidates stay visible to everyone so nothing is orphaned.
+        return isNonEmptyString(ownerMemberId)
+          ? items.filter(
+              (item) =>
+                item.ownerMemberId === null ||
+                item.ownerMemberId === ownerMemberId,
+            )
+          : items;
       },
       authContext,
     );
@@ -312,11 +326,16 @@ export class OutreachDecisionService {
     const projectIds = uniqueIds(
       decisions.map((decision) => decision.projectId),
     );
-    const [people, companies, projects] = await Promise.all([
-      this.findNamedRecords(workspaceId, 'person', personIds),
-      this.findNamedRecords(workspaceId, 'company', companyIds),
-      this.findNamedRecords(workspaceId, 'project', projectIds),
-    ]);
+    const [people, companies, projects, ownerByCandidateId] =
+      await Promise.all([
+        this.findNamedRecords(workspaceId, 'person', personIds),
+        this.findNamedRecords(workspaceId, 'company', companyIds),
+        this.findNamedRecords(workspaceId, 'project', projectIds),
+        this.findCandidateOwners(
+          workspaceId,
+          uniqueIds(decisions.map((decision) => decision.candidateId)),
+        ),
+      ]);
     const personById = new Map(people.map((person) => [person.id, person]));
     const companyById = new Map(
       companies.map((company) => [company.id, company]),
@@ -360,8 +379,65 @@ export class OutreachDecisionService {
         ),
         companyName: asText(company?.name),
         projectName: asText(project?.name),
+        ownerMemberId:
+          ownerByCandidateId.get(decision.candidateId ?? '')?.id ?? null,
+        ownerName: ownerByCandidateId.get(decision.candidateId ?? '')?.name ?? '',
       };
     });
+  }
+
+  private async findCandidateOwners(
+    workspaceId: string,
+    candidateIds: string[],
+  ): Promise<Map<string, { id: string; name: string }>> {
+    const owners = new Map<string, { id: string; name: string }>();
+
+    if (candidateIds.length === 0) {
+      return owners;
+    }
+
+    const candidateRepository = await this.globalWorkspaceOrmManager.getRepository<{
+      id: string;
+      outreachWorkspaceMemberId?: string | null;
+    }>(workspaceId, 'candidate', { shouldBypassPermissionChecks: true });
+    const memberRepository = await this.globalWorkspaceOrmManager.getRepository<{
+      id: string;
+      name?: { firstName?: string | null; lastName?: string | null } | null;
+      userEmail?: string | null;
+    }>(workspaceId, 'workspaceMember', { shouldBypassPermissionChecks: true });
+    const candidates = await candidateRepository.find({
+      where: { id: In(candidateIds) },
+    });
+    const memberIds = uniqueIds(
+      candidates.map((candidate) => candidate.outreachWorkspaceMemberId),
+    );
+
+    if (memberIds.length === 0) {
+      return owners;
+    }
+
+    const members = await memberRepository.find({
+      where: { id: In(memberIds) },
+    });
+    const memberById = new Map(members.map((member) => [member.id, member]));
+
+    for (const candidate of candidates) {
+      const member = memberById.get(candidate.outreachWorkspaceMemberId ?? '');
+
+      if (isDefined(member)) {
+        owners.set(candidate.id, {
+          id: member.id,
+          name:
+            [member.name?.firstName, member.name?.lastName]
+              .filter(isNonEmptyString)
+              .join(' ') ||
+            member.userEmail ||
+            member.id,
+        });
+      }
+    }
+
+    return owners;
   }
 
   private async findNamedRecords(

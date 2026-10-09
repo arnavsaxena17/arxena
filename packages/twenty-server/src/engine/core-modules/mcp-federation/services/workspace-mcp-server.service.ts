@@ -56,6 +56,7 @@ export class WorkspaceMcpServerService {
     return {
       ...entity,
       hasAuthToken: isNonEmptyString(entity.authTokenEncrypted),
+      toolCount: this.getCachedTools(entity).length,
     };
   }
 

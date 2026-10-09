@@ -82,9 +82,11 @@ const getRunStatusLabel = (person: OutreachPersonRow) =>
 
 export const getOutreachPeopleTableColumns = ({
   companiesByWorkingSetId,
+  ownerNameByCandidateId = {},
   onOpenPerson,
 }: {
   companiesByWorkingSetId: Record<string, OutreachCompanyRow>;
+  ownerNameByCandidateId?: Record<string, string>;
   onOpenPerson: (person: OutreachPersonRow) => void;
 }): OutreachRecordTableColumn<OutreachPersonRow>[] => [
   {
@@ -126,6 +128,19 @@ export const getOutreachPeopleTableColumns = ({
           )}
         />
       ) : null,
+  },
+  {
+    id: 'owner',
+    label: 'Owner',
+    Icon: IconUser,
+    width: 150,
+    sortValue: (person) =>
+      ownerNameByCandidateId[person.candidateId ?? ''] ?? '',
+    render: (person) => (
+      <OutreachTextCell
+        value={ownerNameByCandidateId[person.candidateId ?? ''] ?? ''}
+      />
+    ),
   },
   {
     id: 'location',

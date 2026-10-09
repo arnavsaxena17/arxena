@@ -23,6 +23,7 @@ import {
   OUTREACH_ENRICH_CONTACT_SAMPLE_OUTPUT,
   OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT,
   OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
+  OUTREACH_SELECT_WORKSPACE_MEMBER_SAMPLE_OUTPUT,
   OUTREACH_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
   OUTREACH_SEARCH_COMPANIES_SAMPLE_OUTPUT,
   OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT,
@@ -257,6 +258,9 @@ const IDS = {
   // Fresh FIND before the stage router so IF_ELSE reads first.outreachSequenceStage
   // (works in test runs that pick a candidate without a database-event `after` shape).
   routeFind: '60a10007-aaaa-4fcb-a7d8-17a7736ed045',
+  // Opt-in (pinSenderByWarmOverlap): resolves the candidate's owning member
+  // before the member FIND so every send uses that member's seat.
+  selectMember: '60a10008-aaaa-4fcb-a7d8-17a7736ed045',
   stageRouter: '60a10000-aaaa-4fcb-a7d8-17a7736ed045',
   stageBranchAccepted: '60a10001-aaaa-4fcb-a7d8-17a7736ed045',
   stageBranchReplied: '60a10002-aaaa-4fcb-a7d8-17a7736ed045',
@@ -361,6 +365,7 @@ const sendEmailOrNotifyMember = ({
   action,
   prospectName,
   prospectEmail,
+  candidateId = gtmWfFindId(IDS.repliedFind),
   files,
   fileNames,
   conversation,
@@ -377,6 +382,7 @@ const sendEmailOrNotifyMember = ({
   action: string;
   prospectName: string;
   prospectEmail: string;
+  candidateId?: string;
   fileNames?: string;
   conversation?: string;
 }) =>
@@ -388,6 +394,7 @@ const sendEmailOrNotifyMember = ({
         logicFunctionId: '__LF_notify-member-system-email__',
         logicFunctionInput: {
           memberEmail: gtmWfMemberEmail(),
+          candidateId,
           prospectName,
           action,
           prospectEmail,
@@ -399,6 +406,33 @@ const sendEmailOrNotifyMember = ({
         sampleOutput: OUTREACH_NOTIFY_MEMBER_SYSTEM_EMAIL_SAMPLE_OUTPUT,
         nextStepIds: emailStep.nextStepIds,
       });
+
+// SEND_EMAIL steps default to an empty connected account (first mailbox). A
+// workspace member id is resolved to that member's own mailbox, so with the
+// sender pinned every email leaves from the owning member.
+const withPinnedEmailSender = <TStep extends { type?: unknown }>(
+  steps: TStep[],
+): TStep[] =>
+  steps.map((step) => {
+    const settings = (
+      step as { settings?: { input?: { connectedAccountId?: unknown } } }
+    ).settings;
+
+    if (
+      step.type !== 'SEND_EMAIL' ||
+      settings?.input?.connectedAccountId !== ''
+    ) {
+      return step;
+    }
+
+    return {
+      ...step,
+      settings: {
+        ...settings,
+        input: { ...settings.input, connectedAccountId: gtmWfMemberId() },
+      },
+    };
+  });
 
 export type OutreachSequencerGraphOptions = {
   useLlmConnectionNote: boolean;
@@ -417,6 +451,9 @@ export type OutreachSequencerGraphOptions = {
   inmailEnabled: boolean;
   // Collapses every DELAY step from days → 1 minute for rapid testing.
   testMode: boolean;
+  // Pins each candidate to one workspace member (manual, split, or warm overlap)
+  // so every send and reply stays on that member's seat. Off = first member.
+  pinSenderByWarmOverlap: boolean;
 };
 
 export const DEFAULT_OUTREACH_SEQUENCER_GRAPH_OPTIONS: OutreachSequencerGraphOptions =
@@ -434,6 +471,7 @@ export const DEFAULT_OUTREACH_SEQUENCER_GRAPH_OPTIONS: OutreachSequencerGraphOpt
     inboundInviteWaitDays: 3,
     inmailEnabled: false,
     testMode: false,
+    pinSenderByWarmOverlap: false,
   };
 
 const resolveOutreachSequencerGraphOptions = (
@@ -530,6 +568,7 @@ export const inferOutreachSequencerGraphOptionsFromSteps = (
     })(),
     inmailEnabled: stepIds.has(IDS.sendInmail),
     testMode,
+    pinSenderByWarmOverlap: stepIds.has(IDS.selectMember),
   };
 };
 
@@ -1259,6 +1298,7 @@ const repliedBranchSteps = ({
             logicFunctionId: '__LF_notify-member-system-email__',
             logicFunctionInput: {
               memberEmail: gtmWfMemberEmail(),
+              candidateId: gtmWfFindId(IDS.repliedFind),
               prospectName: gtmWfFindField(IDS.repliedFind, 'name'),
               action: `reach out on {{${IDS.validateSignals}.prospectPhone}} to agree a time for a short demo call`,
               prospectPhone: `{{${IDS.validateSignals}.prospectPhone}}`,
@@ -2819,6 +2859,7 @@ const queuedBranchSteps = ({
     sendEmailOrNotifyMember({
       emailConnected,
       action: 'send the first outreach email',
+      candidateId: gtmWfFindId(IDS.reloadAfterWait),
       prospectName: gtmWfFindField(IDS.reloadAfterWait, 'name'),
       prospectEmail: `{{${IDS.enrich}.email}}`,
       id: IDS.sendEmail,
@@ -3075,6 +3116,7 @@ export const buildCandidateSequencerGraph = (
     inboundInviteWaitDays,
     inmailEnabled,
     testMode,
+    pinSenderByWarmOverlap,
   } = resolved;
 
   const stageStepOutputKey = gtmWfFindField(
@@ -3127,9 +3169,30 @@ export const buildCandidateSequencerGraph = (
 
   const steps = [
     candidateFind(IDS.routeFind, 'Load Candidate', [
-      OUTREACH_WF_MEMBER_STEP_ID,
+      pinSenderByWarmOverlap ? IDS.selectMember : OUTREACH_WF_MEMBER_STEP_ID,
     ]),
-    gtmWfMemberStep([IDS.stageRouter]),
+    ...(pinSenderByWarmOverlap
+      ? [
+          gtmWfLogicFunctionStep({
+            id: IDS.selectMember,
+            name: 'Select outreach sender',
+            logicFunctionId: '__LF_select-outreach-workspace-member__',
+            logicFunctionInput: {
+              candidateId: gtmWfFindId(IDS.routeFind),
+            },
+            sampleOutput: OUTREACH_SELECT_WORKSPACE_MEMBER_SAMPLE_OUTPUT,
+            nextStepIds: [OUTREACH_WF_MEMBER_STEP_ID],
+          }),
+        ]
+      : []),
+    gtmWfMemberStep(
+      [IDS.stageRouter],
+      pinSenderByWarmOverlap
+        ? {
+            pinnedMemberIdTemplate: `{{${IDS.selectMember}.workspaceMemberId}}`,
+          }
+        : {},
+    ),
     gtmWfMultiIfElseStep({
       id: IDS.stageRouter,
       name: 'Route by outreach stage',
@@ -3172,7 +3235,7 @@ export const buildCandidateSequencerGraph = (
       }),
       nextStepIds: [IDS.routeFind],
     }),
-    steps,
+    steps: pinSenderByWarmOverlap ? withPinnedEmailSender(steps) : steps,
   };
 };
 

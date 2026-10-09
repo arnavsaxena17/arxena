@@ -7,19 +7,21 @@ import {
 } from 'twenty-shared/utils';
 
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
-import {
-  ARXENA_TOOL_CATALOG,
-  type ArxenaToolPack,
-} from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-catalog.const';
 import { COMMON_PRELOAD_TOOLS } from 'src/engine/core-modules/tool-provider/constants/common-preload-tools.const';
 import { ToolCategory } from 'twenty-shared/ai';
+import {
+  ARXENA_TOOL_CATALOG,
+  ARXENA_TOOL_PACK_LABELS,
+} from 'twenty-shared/outreach';
 import { ToolRegistryService } from 'src/engine/core-modules/tool-provider/services/tool-registry.service';
 import {
   EXECUTE_TOOL_TOOL_NAME,
   LEARN_TOOLS_TOOL_NAME,
   LOAD_SKILL_TOOL_NAME,
 } from 'src/engine/core-modules/tool-provider/tools';
+import { GET_TOOL_CATALOG_TOOL_NAME } from 'src/engine/core-modules/tool-provider/tools/get-tool-catalog.tool';
 import { type ToolIndexEntry } from 'src/engine/core-modules/tool-provider/types/tool-index-entry.type';
+import { getExternalMcpServerSlug } from 'src/engine/core-modules/tool-provider/utils/build-tool-catalog-response.util';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
   AgentActorContextService,
@@ -50,6 +52,9 @@ export type LinkedinConnectedAccountsContext = {
 
 // ~4 characters per token for mixed English/code content
 const estimateTokenCount = (text: string): number => Math.ceil(text.length / 4);
+
+// Categories above this size are summarized instead of listing every tool name
+const LARGE_CATEGORY_TOOL_LIST_THRESHOLD = 15;
 
 @Injectable()
 export class SystemPromptBuilderService {
@@ -525,17 +530,9 @@ export class SystemPromptBuilderService {
         continue;
       }
 
-      const categoryLabel = this.getCategoryLabel(category);
-
-      sections.push(`
-      #### ${categoryLabel} (${tools.length} tools)
-      ${tools
-        .map((tool) => {
-          const status = preloadedSet.has(tool.name) ? ' ✓' : '';
-
-          return `- \`${tool.name}\`${status}`;
-        })
-        .join('\n')}`);
+      sections.push(
+        this.buildGenericCategoryCatalogSection(category, tools, preloadedSet),
+      );
     }
 
     sections.push(`
@@ -546,23 +543,60 @@ export class SystemPromptBuilderService {
     return sections.join('\n');
   }
 
-  private buildArxenaPackCatalogSection(toolCount: number): string {
-    const packLabels: Record<ArxenaToolPack, string> = {
-      prospecting: 'people/company search',
-      enrichment: 'emails/phones',
-      orgchart: 'account maps',
-      outreach: 'messaging',
-      accounts: 'companies/contacts/projects',
-      crm_workspace: 'workspace helpers',
-      general: 'general',
-    };
+  private buildGenericCategoryCatalogSection(
+    category: ToolCategory,
+    tools: ToolIndexEntry[],
+    preloadedSet: Set<string>,
+  ): string {
+    const categoryLabel = this.getCategoryLabel(category);
 
+    if (tools.length <= LARGE_CATEGORY_TOOL_LIST_THRESHOLD) {
+      return `
+      #### ${categoryLabel} (${tools.length} tools)
+      ${tools
+        .map((tool) => {
+          const status = preloadedSet.has(tool.name) ? ' ✓' : '';
+
+          return `- \`${tool.name}\`${status}`;
+        })
+        .join('\n')}`;
+    }
+
+    if (category === ToolCategory.EXTERNAL_MCP) {
+      const countsBySlug = new Map<string, number>();
+
+      for (const tool of tools) {
+        const slug = getExternalMcpServerSlug(tool.name) ?? 'other';
+
+        countsBySlug.set(slug, (countsBySlug.get(slug) ?? 0) + 1);
+      }
+
+      const serverLines = [...countsBySlug.entries()]
+        .sort((first, second) => second[1] - first[1])
+        .map(
+          ([slug, count]) =>
+            `- \`${slug}\` (${count} tools) → \`${GET_TOOL_CATALOG_TOOL_NAME}({server: "${slug}"})\``,
+        )
+        .join('\n');
+
+      return `
+      #### ${categoryLabel} (${tools.length} tools across ${countsBySlug.size} connected servers)
+      Tool names are not listed here. Browse a server, then \`${LEARN_TOOLS_TOOL_NAME}\` only the tools you will run. Use \`${GET_TOOL_CATALOG_TOOL_NAME}({query: "..."})\` to search by keyword.
+      ${serverLines}`;
+    }
+
+    return `
+      #### ${categoryLabel} (${tools.length} tools)
+      Tool names are not listed here. Browse with \`${GET_TOOL_CATALOG_TOOL_NAME}({categories: ["${category}"]})\` or search with \`${GET_TOOL_CATALOG_TOOL_NAME}({query: "..."})\`.`;
+  }
+
+  private buildArxenaPackCatalogSection(toolCount: number): string {
     const packs = [
       ...new Set(ARXENA_TOOL_CATALOG.map((entry) => entry.pack)),
     ].sort();
 
     const packLines = packs
-      .map((pack) => `- \`${pack}\`: ${packLabels[pack]}`)
+      .map((pack) => `- \`${pack}\`: ${ARXENA_TOOL_PACK_LABELS[pack]}`)
       .join('\n');
 
     return `
@@ -646,17 +680,9 @@ export class SystemPromptBuilderService {
         continue;
       }
 
-      const categoryLabel = this.getCategoryLabel(category);
-
-      sections.push(`
-      #### ${categoryLabel} (${tools.length} tools)
-      ${tools
-        .map((tool) => {
-          const status = preloadedSet.has(tool.name) ? ' ✓' : '';
-
-          return `- \`${tool.name}\`${status}`;
-        })
-        .join('\n')}`);
+      sections.push(
+        this.buildGenericCategoryCatalogSection(category, tools, preloadedSet),
+      );
     }
 
     sections.push(`

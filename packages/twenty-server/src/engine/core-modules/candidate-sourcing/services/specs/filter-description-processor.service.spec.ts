@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { MeteredLlmService } from 'src/engine/core-modules/metered-llm/metered-llm.service';
 import { FilterDescriptionProcessorService } from '../filter-description-processor.service';
 
 describe('FilterDescriptionProcessorService', () => {
@@ -6,7 +7,13 @@ describe('FilterDescriptionProcessorService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [FilterDescriptionProcessorService],
+      providers: [
+        FilterDescriptionProcessorService,
+        {
+          provide: MeteredLlmService,
+          useValue: { openAiChatCompletion: jest.fn() },
+        },
+      ],
     }).compile();
 
     service = module.get<FilterDescriptionProcessorService>(FilterDescriptionProcessorService);
@@ -33,18 +40,18 @@ describe('FilterDescriptionProcessorService', () => {
   });
 
   it('should handle empty filter description', async () => {
-    await expect(service.generateSingleFilter('')).rejects.toThrow('Filter description cannot be empty');
+    await expect(service.generateSingleFilter('', 'ws-1')).rejects.toThrow('Filter description cannot be empty');
   });
 
   it('should handle whitespace-only filter description', async () => {
-    await expect(service.generateSingleFilter('   ')).rejects.toThrow('Filter description cannot be empty');
+    await expect(service.generateSingleFilter('   ', 'ws-1')).rejects.toThrow('Filter description cannot be empty');
   });
 
   // Note: Integration tests with OpenAI API would require API key and network access
   // These are skipped in unit tests to avoid external dependencies
   it.skip('should generate valid filter configuration with real API call', async () => {
     // This test would require OPENAI_KEY environment variable
-    const result = await service.generateSingleFilter('Which of these people are north indians?');
+    const result = await service.generateSingleFilter('Which of these people are north indians?', 'ws-1');
     expect(result).toBeDefined();
     expect(result.modelName).toBeDefined();
     expect(result.prompt).toBeDefined();

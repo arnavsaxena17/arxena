@@ -30,6 +30,14 @@ const MAX_CONCURRENCY = 100;
 const MAX_BATCH_SIZE = 25;
 const OPENAI_ATTEMPTS = 4;
 const OPENAI_FALLBACK_MODEL = 'gpt-4o-mini';
+const DEFAULT_WEB_CONCURRENCY = 8;
+const WEB_SEARCH_CALL_USD = 0.025;
+
+// USD per 1M tokens (input, output).
+const PRICE_PER_MILLION_TOKENS: Record<string, [number, number]> = {
+  'gpt-4o-mini': [0.15, 0.6],
+  'gpt-4o': [2.5, 10],
+};
 
 const OPENAI_MODEL_ALIASES: Record<string, string> = {
   gpt35turbo: 'gpt-3.5-turbo',
@@ -37,6 +45,8 @@ const OPENAI_MODEL_ALIASES: Record<string, string> = {
   gpt54mini: 'gpt-5.4-mini',
   gpt4o: 'gpt-4o',
   gpt4omini: 'gpt-4o-mini',
+  // Web search runs on gpt-4o-mini through the Responses API web_search tool.
+  gpt4ominisearchpreview: 'gpt-4o-mini',
 };
 
 const clamp = (value: number | undefined, fallback: number, max: number) =>
@@ -44,7 +54,18 @@ const clamp = (value: number | undefined, fallback: number, max: number) =>
     ? Math.min(Math.floor(value), max)
     : fallback;
 
+// A drained OpenAI balance answers 429 too, but waiting never helps.
+export const isQuotaExhaustedError = (error: unknown): boolean => {
+  const code = (error as { code?: string } | null)?.code;
+
+  return code === 'insufficient_quota' || code === 'credit_balance_exhausted';
+};
+
 const isRetryable = (error: unknown): boolean => {
+  if (isQuotaExhaustedError(error)) {
+    return false;
+  }
+
   const status = (error as { status?: number } | null)?.status;
 
   return (
@@ -80,7 +101,8 @@ export class AiFilterEngineService {
           (field.type === 'enum' && (field.enumValues?.length ?? 0) >= 2),
       );
 
-    return isJevModelId(spec.model) &&
+    return spec.webSearch !== true &&
+      isJevModelId(spec.model) &&
       this.jevEvaluationService.isConfigured() &&
       jevCompatible
       ? 'jev'
@@ -100,9 +122,19 @@ export class AiFilterEngineService {
       calls: 0,
       retriedRecords: 0,
       durationMs: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      webSearchCalls: 0,
+      estimatedCostUsd: null,
     };
     const semaphore = new Sema(
-      clamp(spec.concurrency, DEFAULT_FILTER_CONCURRENCY, MAX_CONCURRENCY),
+      clamp(
+        spec.concurrency,
+        spec.webSearch === true
+          ? DEFAULT_WEB_CONCURRENCY
+          : DEFAULT_FILTER_CONCURRENCY,
+        MAX_CONCURRENCY,
+      ),
     );
     const byId = new Map<string, RecordVerdict>();
 
@@ -126,11 +158,11 @@ export class AiFilterEngineService {
         ),
       );
     } else {
-      const batchSize = clamp(
-        spec.batchSize,
-        DEFAULT_FILTER_BATCH_SIZE,
-        MAX_BATCH_SIZE,
-      );
+      // A web lookup is about one entity, so it is never batched.
+      const batchSize =
+        spec.webSearch === true
+          ? 1
+          : clamp(spec.batchSize, DEFAULT_FILTER_BATCH_SIZE, MAX_BATCH_SIZE);
       const batches: FilterRecord[][] = [];
 
       for (let index = 0; index < records.length; index += batchSize) {
@@ -152,9 +184,15 @@ export class AiFilterEngineService {
 
       // Records the batch call did not answer validly get one single-record
       // retry, so one bad row never costs the whole batch.
-      const retry = records.filter(
-        (record) => byId.get(record.id)?.status !== 'answered',
-      );
+      // Exhausted credits fail every call the same way, so no retry.
+      const retry = records.filter((record) => {
+        const verdict = byId.get(record.id);
+
+        return (
+          verdict?.status !== 'answered' &&
+          verdict?.error?.includes('credits are exhausted') !== true
+        );
+      });
 
       if (batchSize > 1 && retry.length > 0) {
         stats.retriedRecords = retry.length;
@@ -176,6 +214,8 @@ export class AiFilterEngineService {
     }
 
     stats.durationMs = Date.now() - startedAt;
+    stats.estimatedCostUsd =
+      engine === 'jev' ? null : this.estimateCostUsd(stats);
 
     return {
       verdicts: records.map(
@@ -254,7 +294,10 @@ export class AiFilterEngineService {
     }
   }
 
-  private buildResponseSchema(fields: FilterFieldSpec[]) {
+  private buildResponseSchema(
+    fields: FilterFieldSpec[],
+    allowUnknown = false,
+  ) {
     const properties: Record<string, Record<string, unknown>> = {
       id: { type: 'string' },
     };
@@ -263,9 +306,19 @@ export class AiFilterEngineService {
       properties[field.name] =
         field.type === 'boolean'
           ? { type: 'boolean' }
-          : field.type === 'enum'
-            ? { type: 'string', enum: field.enumValues ?? [] }
-            : { type: 'string' };
+          : field.type === 'integer'
+            ? { type: ['integer', 'null'] }
+            : field.type === 'number'
+              ? { type: ['number', 'null'] }
+              : field.type === 'enum'
+                ? {
+                    type: 'string',
+                    enum: [
+                      ...(field.enumValues ?? []),
+                      ...(allowUnknown ? ['unknown'] : []),
+                    ],
+                  }
+                : { type: 'string' };
     }
 
     return {
@@ -286,6 +339,83 @@ export class AiFilterEngineService {
     };
   }
 
+  private estimateCostUsd(stats: FilterRunStats): number {
+    const [inputPrice, outputPrice] =
+      PRICE_PER_MILLION_TOKENS[stats.model] ??
+      PRICE_PER_MILLION_TOKENS[OPENAI_FALLBACK_MODEL];
+
+    return Number(
+      (
+        (stats.inputTokens * inputPrice + stats.outputTokens * outputPrice) /
+          1_000_000 +
+        stats.webSearchCalls * WEB_SEARCH_CALL_USD
+      ).toFixed(6),
+    );
+  }
+
+  // One model call. With web search it goes through the Responses API and its
+  // web_search tool; otherwise through strict-schema chat completions. Token
+  // and web-search usage are added to the run stats either way.
+  private async completeOnce({
+    system,
+    user,
+    spec,
+    stats,
+  }: {
+    system: string;
+    user: string;
+    spec: FilterSpec;
+    stats: FilterRunStats;
+  }): Promise<string | null | undefined> {
+    const schema = this.buildResponseSchema(
+      spec.fields,
+      spec.allowUnknown === true,
+    );
+
+    if (spec.webSearch === true) {
+      const response = await this.getOpenAiClient().responses.create({
+        model: stats.model,
+        instructions: system,
+        input: user,
+        tools: [{ type: 'web_search_preview' }],
+        text: {
+          format: {
+            type: 'json_schema',
+            name: 'filter_results',
+            strict: true,
+            schema,
+          },
+        },
+      });
+
+      stats.inputTokens += response.usage?.input_tokens ?? 0;
+      stats.outputTokens += response.usage?.output_tokens ?? 0;
+      stats.webSearchCalls += response.output.filter(
+        (item) => item.type === 'web_search_call',
+      ).length;
+
+      return response.output_text;
+    }
+
+    const completion = await this.getOpenAiClient().chat.completions.create({
+      model: stats.model,
+      temperature: 0,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ],
+      response_format: {
+        type: 'json_schema',
+        json_schema: { name: 'filter_results', strict: true, schema },
+      },
+    });
+
+    stats.inputTokens += completion.usage?.prompt_tokens ?? 0;
+    stats.outputTokens += completion.usage?.completion_tokens ?? 0;
+
+    return completion.choices[0]?.message?.content;
+  }
+
   // Strict structured output: the API itself guarantees booleans and enum
   // values, so the model cannot invent a label outside the contract.
   private async askOpenAiBatch(
@@ -296,7 +426,7 @@ export class AiFilterEngineService {
     const answered = new Map<string, RecordVerdict>();
     const system = [
       buildInstructions(spec),
-      `Answer every record below with these fields:\n${spec.fields.map(describeField).join('\n')}`,
+      `Answer every record below with these fields:\n${spec.fields.map((field) => describeField(field, spec.allowUnknown === true)).join('\n')}`,
       'Return one result per record and echo its id exactly.',
     ].join('\n\n');
     const user = batch
@@ -308,25 +438,7 @@ export class AiFilterEngineService {
 
     for (let attempt = 1; attempt <= OPENAI_ATTEMPTS; attempt++) {
       try {
-        const completion = await this.getOpenAiClient().chat.completions.create(
-          {
-            model: stats.model,
-            temperature: 0,
-            messages: [
-              { role: 'system', content: system },
-              { role: 'user', content: user },
-            ],
-            response_format: {
-              type: 'json_schema',
-              json_schema: {
-                name: 'filter_results',
-                strict: true,
-                schema: this.buildResponseSchema(spec.fields),
-              },
-            },
-          },
-        );
-        const content = completion.choices[0]?.message?.content;
+        const content = await this.completeOnce({ system, user, spec, stats });
         const parsed = content
           ? (JSON.parse(content) as {
               results?: Array<Record<string, unknown>>;
@@ -344,8 +456,11 @@ export class AiFilterEngineService {
         return answered;
       } catch (error) {
         if (attempt === OPENAI_ATTEMPTS || !isRetryable(error)) {
-          const message =
-            error instanceof Error ? error.message : String(error);
+          const message = isQuotaExhaustedError(error)
+            ? 'OpenAI credits are exhausted (credit_balance_exhausted). Top up the OpenAI account and run again.'
+            : error instanceof Error
+              ? error.message
+              : String(error);
 
           this.logger.warn(`AI filter OpenAI call failed: ${message}`);
 

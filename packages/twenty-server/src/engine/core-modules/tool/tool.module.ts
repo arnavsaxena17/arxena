@@ -18,8 +18,23 @@ import { CodeInterpreterTool } from 'src/engine/core-modules/tool/tools/code-int
 import { DraftEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/draft-email-tool';
 import { EmailComposerService } from 'src/engine/core-modules/tool/tools/email-tool/email-composer.service';
 import { SendEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/send-email-tool';
+import {
+  GetOutreachWorkingSetTool,
+  PreviewOutreachAiColumnTool,
+  GetOutreachAiColumnRunStatusTool,
+  CancelOutreachAiColumnRunTool,
+  GenerateOutreachTableViewTool,
+  ApplyOutreachTableViewTool,
+  RunOutreachAiColumnTool,
+} from 'src/engine/core-modules/tool/tools/outreach-ai-column-tool/outreach-ai-column-tools';
 import { UpsertOutreachTargetCompaniesTool } from 'src/engine/core-modules/tool/tools/outreach-target-companies-tool/upsert-outreach-target-companies-tool';
+import { SaveOutreachTargetsToCrmTool } from 'src/engine/core-modules/tool/tools/outreach-save-to-crm-tool/save-outreach-targets-to-crm-tool';
+import { StartOutreachTool } from 'src/engine/core-modules/tool/tools/outreach-start-tool/start-outreach-tool';
 import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
+import { PreviewSampleMessageColumnTool } from 'src/engine/core-modules/tool/tools/outreach-sample-message-tool/preview-sample-message-column-tool';
+import { OUTREACH_SAMPLE_MESSAGE_DRAFTER } from 'src/engine/core-modules/outreach-command/types/outreach-sample-message.types';
+import { OutreachSampleMessageService } from 'src/engine/core-modules/tool/tools/outreach-sample-message-tool/outreach-sample-message.service';
+import { AgentEntity } from 'src/engine/metadata-modules/ai/ai-agent/entities/agent.entity';
 import { HttpTool } from 'src/engine/core-modules/tool/tools/http-tool/http-tool';
 import { GetLocalBusinessDetailsTool } from 'src/engine/core-modules/tool/tools/local-business-data-tool/get-local-business-details-tool';
 import { SearchBrightDataBusinessTool } from 'src/engine/core-modules/tool/tools/bright-data-business-search-tool/search-bright-data-business-tool';
@@ -57,7 +72,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     MessagingImportManagerModule,
     MessagingSendManagerModule,
     CalendarEventCreationManagerModule,
-    TypeOrmModule.forFeature([FileEntity, ConnectedAccountEntity]),
+    TypeOrmModule.forFeature([FileEntity, ConnectedAccountEntity, AgentEntity]),
     ApplicationModule,
     FeatureFlagModule,
     FileModule,
@@ -103,10 +118,26 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     HighlightOrgChartTool,
     UpsertOutreachTargetCompaniesTool,
     UpsertOutreachTargetPeopleTool,
+    SaveOutreachTargetsToCrmTool,
+    StartOutreachTool,
+    GetOutreachWorkingSetTool,
+    PreviewOutreachAiColumnTool,
+    RunOutreachAiColumnTool,
+    GetOutreachAiColumnRunStatusTool,
+    CancelOutreachAiColumnRunTool,
+    GenerateOutreachTableViewTool,
+    ApplyOutreachTableViewTool,
+    PreviewSampleMessageColumnTool,
     ExtractJsonPathsTool,
     SearchOutputTool,
     ToolOutputSpillService,
+    OutreachSampleMessageService,
+    {
+      provide: OUTREACH_SAMPLE_MESSAGE_DRAFTER,
+      useExisting: OutreachSampleMessageService,
+    },
     provideWorkspaceScopedRepository(FileEntity),
+    provideWorkspaceScopedRepository(AgentEntity),
   ],
   exports: [
     HttpTool,
@@ -136,6 +167,16 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     HighlightOrgChartTool,
     UpsertOutreachTargetCompaniesTool,
     UpsertOutreachTargetPeopleTool,
+    SaveOutreachTargetsToCrmTool,
+    StartOutreachTool,
+    GetOutreachWorkingSetTool,
+    PreviewOutreachAiColumnTool,
+    RunOutreachAiColumnTool,
+    GetOutreachAiColumnRunStatusTool,
+    CancelOutreachAiColumnRunTool,
+    GenerateOutreachTableViewTool,
+    ApplyOutreachTableViewTool,
+    PreviewSampleMessageColumnTool,
     ExtractJsonPathsTool,
     SearchOutputTool,
     ToolOutputSpillService,

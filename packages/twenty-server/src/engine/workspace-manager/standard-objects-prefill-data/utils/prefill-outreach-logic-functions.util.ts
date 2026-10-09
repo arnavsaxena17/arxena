@@ -27,6 +27,7 @@ import {
   OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_FILTER_PROFILES_LOGIC_FUNCTION_NAME,
   OUTREACH_VALIDATE_INBOUND_SIGNALS_LOGIC_FUNCTION_NAME,
+  OUTREACH_SELECT_WORKSPACE_MEMBER_LOGIC_FUNCTION_NAME,
   OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_LOGIC_FUNCTION_NAME,
   OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME,
@@ -55,6 +56,7 @@ import {
   OUTREACH_DETECT_FAKE_PROFILES_SAMPLE_OUTPUT,
   OUTREACH_FILTER_PROFILES_SAMPLE_OUTPUT,
   OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT,
+  OUTREACH_SELECT_WORKSPACE_MEMBER_SAMPLE_OUTPUT,
   OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_SAMPLE_OUTPUT,
   OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_SAMPLE_OUTPUT,
   OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_SAMPLE_OUTPUT,
@@ -226,6 +228,10 @@ export const getOutreachLogicFunctionIds = (workspaceId: string) => ({
   ),
   filterProfilesId: uuidv5(
     `${workspaceId}:filter-profiles`,
+    OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  selectWorkspaceMemberId: uuidv5(
+    `${workspaceId}:select-outreach-workspace-member`,
     OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
   ),
   validateInboundSignalsId: uuidv5(
@@ -1657,6 +1663,28 @@ export const getOutreachLogicFunctionDefinitions = (
           },
         ],
         sampleOutput: OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.selectWorkspaceMemberId,
+      name: OUTREACH_SELECT_WORKSPACE_MEMBER_LOGIC_FUNCTION_NAME,
+      description:
+        'Resolve the workspace member who owns this candidate. Returns the stored pin, or assigns one by the project policy (round robin, least loaded, warm overlap) and pins it so every later send stays on that seat.',
+      sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
+        OUTREACH_SELECT_WORKSPACE_MEMBER_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Select outreach sender',
+        icon: 'IconUserCheck',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              candidateId: { type: 'string', label: 'Candidate ID' },
+            },
+          },
+        ],
+        sampleOutput: OUTREACH_SELECT_WORKSPACE_MEMBER_SAMPLE_OUTPUT,
       },
     },
     {

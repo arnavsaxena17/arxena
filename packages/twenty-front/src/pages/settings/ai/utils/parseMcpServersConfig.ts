@@ -16,6 +16,27 @@ type McpServerEntry = {
   headers?: Record<string, string>;
   command?: string;
   args?: string[];
+  env?: Record<string, string>;
+};
+
+const BRIGHT_DATA_PACKAGE = '@brightdata/mcp';
+const BRIGHT_DATA_HOSTED_MCP_URL = 'https://mcp.brightdata.com/mcp';
+
+// The stdio package has no HTTP URL in args, but Bright Data hosts the same
+// server remotely and takes the API token as a query param.
+const toBrightDataHostedUrl = (entry: McpServerEntry): string | undefined => {
+  const apiToken = entry.env?.API_TOKEN;
+
+  if (
+    !Array.isArray(entry.args) ||
+    !entry.args.includes(BRIGHT_DATA_PACKAGE) ||
+    typeof apiToken !== 'string' ||
+    apiToken === ''
+  ) {
+    return undefined;
+  }
+
+  return `${BRIGHT_DATA_HOSTED_MCP_URL}?token=${encodeURIComponent(apiToken)}`;
 };
 
 const slugify = (value: string): string =>
@@ -110,6 +131,12 @@ const parseServerEntry = (
         ...toAuthFields(headers),
       },
     };
+  }
+
+  const brightDataUrl = toBrightDataHostedUrl(entry);
+
+  if (brightDataUrl !== undefined) {
+    return { server: { label, slug, url: brightDataUrl } };
   }
 
   if (Array.isArray(entry.args)) {

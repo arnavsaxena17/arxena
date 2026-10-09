@@ -6,7 +6,9 @@ import { isDefined } from 'twenty-shared/utils';
 import {
   OUTREACH_CACHE_UPDATED_EVENT,
   outreachProjectCacheRoom,
+  type OutreachAiColumnRunProgress,
   type OutreachCacheKind,
+  type OutreachTableView,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-cache-realtime.constants';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
 
@@ -36,6 +38,17 @@ export class OutreachCacheRealtimeService {
     this.emit(projectId, kind);
   }
 
+  notifyAiColumnProgress(
+    projectId: string,
+    aiColumnRun: OutreachAiColumnRunProgress,
+  ): void {
+    this.emit(projectId, 'aiColumn', aiColumnRun);
+  }
+
+  notifyTableViewUpdated(projectId: string, tableView: OutreachTableView): void {
+    this.emit(projectId, 'tableView', undefined, tableView);
+  }
+
   private scheduleJourneyNotify(projectId: string): void {
     const existingTimeout = this.journeyNotifyTimeoutByProjectId.get(projectId);
 
@@ -51,7 +64,12 @@ export class OutreachCacheRealtimeService {
     this.journeyNotifyTimeoutByProjectId.set(projectId, timeout);
   }
 
-  private emit(projectId: string, kind: OutreachCacheKind): void {
+  private emit(
+    projectId: string,
+    kind: OutreachCacheKind,
+    aiColumnRun?: OutreachAiColumnRunProgress,
+    tableView?: OutreachTableView,
+  ): void {
     try {
       this.webSocketService.sendToRoom(
         outreachProjectCacheRoom(projectId),
@@ -59,6 +77,8 @@ export class OutreachCacheRealtimeService {
         {
           projectId,
           kind,
+          ...(isDefined(aiColumnRun) ? { aiColumnRun } : {}),
+          ...(isDefined(tableView) ? { tableView } : {}),
         },
       );
     } catch (error) {

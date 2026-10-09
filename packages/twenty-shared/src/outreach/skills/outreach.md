@@ -205,3 +205,25 @@ Rules:
 - Follow the run with `get_workflow_run`. A rate-limited run resumes on its own: never resend or retry it, and say it is waiting, not failed.
 - A repeated call for a company that already has an active run is skipped and returns the existing run id.
 - `stop_workflow_run` and `retry_workflow_run` exist; use them only when the user asks or the run failed.
+
+## Direct candidate messaging (pack `outreach`)
+
+Send and read candidate messages outside a sequencer workflow.
+
+```
+learn_tools({
+  toolNames: [
+    "send_chat",
+    "send_bulk_chats_by_candidate_ids",
+    "get_all_messages_by_candidate_id",
+    "fetch_linkedin_messages",
+    "share_jd_to_candidate",
+    "upload_jd",
+    "linkedin_unipile_get_own_profile",
+    "linkedin_unipile_get_profile",
+    "linkedin_unipile_send_message"
+  ]
+})
+```
+
+Confirm recipient + channel before any send tool. Prefer read tools first when the user asks about thread history.

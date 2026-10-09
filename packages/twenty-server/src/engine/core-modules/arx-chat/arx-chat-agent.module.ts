@@ -119,6 +119,7 @@ import { WhatsappUnipileRequestService } from './services/whatsapp-unipile-reque
 import { WhatsappUnipileSyncService } from './services/whatsapp-unipile/whatsapp-unipile-sync.service';
 import { UnipilePoolModule } from './unipile-pool.module';
 import { AttachmentProcessingService } from './utils/attachment-processes';
+import { MeteredLlmModule } from 'src/engine/core-modules/metered-llm/metered-llm.module';
 
 const isWorker = process.argv[1]?.includes('queue-worker');
 
@@ -128,6 +129,7 @@ const conditionalImports = isWorker
 
 @Module({
   imports: [
+    MeteredLlmModule,
     AccountRateLimitModule,
     WorkspaceCacheStorageModule,
     EmailModule,

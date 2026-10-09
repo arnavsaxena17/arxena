@@ -93,7 +93,10 @@ const flattenChatMessageNodes = (
       return [node];
     }
 
-    return turns.map((turn) => ({
+    // System notes are for the agent's history, not part of the conversation.
+    return turns
+      .filter((turn) => turn.role !== 'system')
+      .map((turn) => ({
       ...node,
       message: turn.content,
       name:

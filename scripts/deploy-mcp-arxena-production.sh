@@ -84,6 +84,13 @@ if ! node -e "require('zod/v4')" 2>/dev/null; then
   npm install --no-save --no-package-lock zod@3.25.76
 fi
 
+# The MCP process imports twenty-shared/outreach (catalog + skills). Prod builds
+# twenty-shared via build_app_in_new_instance.sh, so that deploy must land first.
+if ! node -e "require('twenty-shared/outreach')" 2>/dev/null; then
+  echo "ERROR: twenty-shared/outreach missing on prod. Run build_app_in_new_instance.sh first." >&2
+  exit 1
+fi
+
 chmod +x "$REMOTE_TWENTY/pm2_start_website.sh" 2>/dev/null || true
 cd "$REMOTE_TWENTY"
 pm2 startOrRestart ecosystem.config.js --only arxena-mcp-http || pm2 start ecosystem.config.js --only arxena-mcp-http

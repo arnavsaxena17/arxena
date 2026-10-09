@@ -9,7 +9,7 @@ Prefer this skill over `research` when sourcing target accounts or people.
 | Verb | Meaning | Typical tools |
 | --- | --- | --- |
 | **Find** | Ephemeral campaign list (Companies/People tabs) | `upsert_outreach_target_companies` / `upsert_outreach_target_people` |
-| **Save to CRM** | Explicit Company / Person records | `create_one_company` / `create_many_*` / person CRUD |
+| **Save to CRM** | Plain Company / Person records from the Find tabs (no Candidate, no enrollment) | `save_outreach_targets_to_crm({ projectId, target, companyIds?, personIds? })` |
 | **Enroll** | Person + enrollment record (`create_candidate`, `QUEUED`) after user confirms | `upload-profiles` / `create_candidate` — or load `outreach` for workflows |
 | **Harvest** | Scheduled CRM companies + `projectIds` | Load `outreach` + `workflow-building` — do **not** Redis-upsert |
 
@@ -28,7 +28,7 @@ execute_tool({
 
 - `projectId` from browsing context; ask once if missing — do not upsert without it.
 - **Never** call upsert from inside `code_interpreter`. Use interpreter only to build the array from spilled search files, then upsert via `execute_tool`.
-- **Never** `create_candidate` / `create_one_company` for Find — CRM writes only after user confirms Save to CRM / Enroll.
+- **Never** `create_candidate` / `create_one_company` for Find. When the user confirms Save to CRM, call `save_outreach_targets_to_crm` (omit ids to save the whole tab, pass the selected ids otherwise); it dedupes against the CRM and never enrolls. Enrollment (`upload-profiles` / `create_candidate`) needs its own confirmation.
 - Bulk LinkedIn lists: paginate per **LinkedIn / Harvest** → one interpreter to map rows → one upsert. Do not print multi-KB JSON into chat or loop many interpreter calls.
 
 ## Plan → Learn → Execute

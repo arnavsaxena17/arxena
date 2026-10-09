@@ -1044,6 +1044,7 @@ describe('GTM outreach workflow graphs', () => {
       inboundInviteWaitDays: 3,
       inmailEnabled: false,
       testMode: false,
+      pinSenderByWarmOverlap: false,
     });
     expect(
       inferOutreachSequencerGraphOptionsFromSteps(
@@ -1069,6 +1070,7 @@ describe('GTM outreach workflow graphs', () => {
       inboundInviteWaitDays: 3,
       inmailEnabled: false,
       testMode: false,
+      pinSenderByWarmOverlap: false,
     });
   });
 
@@ -1528,5 +1530,89 @@ describe('GTM outreach workflow graphs', () => {
         graph.trigger,
       ).emailConnected,
     ).toBe(true);
+  });
+
+  describe('pinSenderByWarmOverlap', () => {
+    type FindStep = GraphStep & {
+      settings?: { input?: { objectName?: string; filter?: unknown } };
+    };
+
+    const memberFinds = (steps: GraphStep[]) =>
+      (steps as FindStep[]).filter(
+        (step) =>
+          step.type === 'FIND_RECORDS' &&
+          step.settings?.input?.objectName === 'workspaceMember',
+      );
+
+    it('keeps the unfiltered first-member lookup when the flag is off', () => {
+      const graph = buildCandidateSequencerGraph();
+      const steps = graph.steps as GraphStep[];
+
+      expect(steps.some((step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.selectMember)).toBe(false);
+      expect(JSON.stringify(graph)).not.toContain('select-outreach-workspace-member');
+      expect(JSON.stringify(graph)).not.toContain('__FIELD_workspaceMember.id__');
+
+      const finds = memberFinds(steps);
+
+      expect(finds).toHaveLength(1);
+      expect(finds[0].settings?.input?.filter).toEqual({});
+      expect(
+        buildCandidateSequencerGraph({ pinSenderByWarmOverlap: false }),
+      ).toEqual(graph);
+    });
+
+    it('sends email from the pinned member mailbox only when on', () => {
+      const emailSenders = (steps: unknown[]) =>
+        (
+          steps as Array<{
+            type: string;
+            settings?: { input?: { connectedAccountId?: string } };
+          }>
+        )
+          .filter((step) => step.type === 'SEND_EMAIL')
+          .map((step) => step.settings?.input?.connectedAccountId);
+
+      const off = emailSenders(buildCandidateSequencerGraph().steps);
+      const on = emailSenders(
+        buildCandidateSequencerGraph({
+          pinSenderByWarmOverlap: true,
+          emailConnected: true,
+        }).steps,
+      );
+
+      expect(off.every((sender) => sender === '')).toBe(true);
+      expect(on.length).toBeGreaterThan(0);
+      expect(
+        on.every((sender) => typeof sender === 'string' && sender.includes('.first.id')),
+      ).toBe(true);
+    });
+
+    it('selects the sender before the member lookup and filters on it when on', () => {
+      const graph = buildCandidateSequencerGraph({
+        pinSenderByWarmOverlap: true,
+      });
+      const steps = graph.steps as GraphStep[];
+      const load = steps.find(
+        (step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.routeFind,
+      );
+      const select = steps.find(
+        (step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.selectMember,
+      );
+      const finds = memberFinds(steps) as FindStep[];
+
+      expect(load?.nextStepIds).toEqual([
+        OUTREACH_SEQUENCER_STEP_IDS.selectMember,
+      ]);
+      expect(select?.type).toBe('LOGIC_FUNCTION');
+      expect(finds).toHaveLength(1);
+      expect(select?.nextStepIds).toEqual([finds[0].id]);
+      expect(JSON.stringify(finds[0].settings?.input?.filter)).toContain(
+        `{{${OUTREACH_SEQUENCER_STEP_IDS.selectMember}.workspaceMemberId}}`,
+      );
+      expect(
+        inferOutreachSequencerGraphOptionsFromSteps(steps, graph.trigger)
+          .pinSenderByWarmOverlap,
+      ).toBe(true);
+    });
   });
 });

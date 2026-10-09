@@ -91,3 +91,25 @@ describe('parseMcpServersConfig', () => {
     expect(result.errors[0]).toContain('local command without an HTTP MCP URL');
   });
 });
+
+describe('parseMcpServersConfig bright data', () => {
+  it('should map the @brightdata/mcp stdio entry to the hosted URL when API_TOKEN is set', () => {
+    const result = parseMcpServersConfig(
+      JSON.stringify({
+        mcpServers: {
+          'Bright Data': {
+            command: 'npx',
+            args: ['-y', '@brightdata/mcp'],
+            env: { API_TOKEN: 'abc 123' },
+          },
+        },
+      }),
+    );
+
+    expect(result.errors).toEqual([]);
+    expect(result.servers[0]).toMatchObject({
+      slug: 'bright_data',
+      url: 'https://mcp.brightdata.com/mcp?token=abc%20123',
+    });
+  });
+});

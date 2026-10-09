@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { isNonEmptyString } from '@sniptt/guards';
 import { type ObjectLiteral } from 'typeorm';
 
+import { readOutreachMemberAssignmentConfig } from 'src/engine/core-modules/outreach-command/utils/outreach-member-assignment.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
@@ -121,11 +122,23 @@ export class CreateReferralCandidateService {
             };
           }
 
+          const inheritedOwner = await this.resolveInheritedOwner({
+            referrerCandidateId: input.referrerCandidateId,
+            projectId,
+            repo,
+          });
           const candidate = await candidateRepo.save({
             name,
             peopleId: person.id,
             projectId,
             outreachSequenceStage: REFERRAL_SEQUENCE_STAGE,
+            ...(inheritedOwner
+              ? {
+                  outreachWorkspaceMemberId: inheritedOwner,
+                  outreachAssignedAt: new Date().toISOString(),
+                  outreachAssignmentReason: 'referral',
+                }
+              : {}),
           });
 
           if (isNonEmptyString(input.referrerName?.trim())) {
@@ -163,5 +176,45 @@ export class CreateReferralCandidateService {
 
       return fail(message);
     }
+  }
+
+  // The referred person stays with the member who got the referral, unless the
+  // project opts out. Only stored here; the sequencer reads it when pinning is on.
+  private async resolveInheritedOwner({
+    referrerCandidateId,
+    projectId,
+    repo,
+  }: {
+    referrerCandidateId?: string;
+    projectId: string;
+    repo: (objectName: string) => Promise<{
+      findOne: (options: { where: Record<string, unknown> }) => Promise<Row | null>;
+    }>;
+  }): Promise<string | null> {
+    const referrerId = referrerCandidateId?.trim() ?? '';
+
+    if (!isNonEmptyString(referrerId)) {
+      return null;
+    }
+
+    const referrer = await (await repo('candidate')).findOne({
+      where: { id: referrerId },
+    });
+    const owner = (
+      referrer?.outreachWorkspaceMemberId as string | null | undefined
+    )?.trim();
+
+    if (!isNonEmptyString(owner)) {
+      return null;
+    }
+
+    const project = await (await repo('project')).findOne({
+      where: { id: projectId },
+    });
+
+    return readOutreachMemberAssignmentConfig(project?.outreachConfig)
+      .referralInheritsOwner
+      ? owner
+      : null;
   }
 }

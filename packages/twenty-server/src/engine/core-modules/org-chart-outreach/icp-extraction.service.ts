@@ -591,7 +591,10 @@ export class IcpExtractionService {
     const providedText = params.resumeText?.trim();
     if (providedText) {
       const parsed =
-        await this.resumeReadParseUploadService.parseResumeText(providedText);
+        await this.resumeReadParseUploadService.parseResumeText(
+          providedText,
+          params.workspaceId,
+        );
       return {
         resumeText: providedText,
         resumeFileName: 'resume.txt',
@@ -607,7 +610,10 @@ export class IcpExtractionService {
     }
 
     const { content, parsed } =
-      await this.resumeReadParseUploadService.readAndParseResumeFile(filePath);
+      await this.resumeReadParseUploadService.readAndParseResumeFile(
+        filePath,
+        params.workspaceId,
+      );
     return {
       resumeText: content.text,
       resumeFileName: content.fileName,

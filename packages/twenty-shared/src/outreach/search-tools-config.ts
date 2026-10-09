@@ -1,0 +1,318 @@
+// Pure provider-flag helpers shared by the server and the MCP process.
+
+export const SEARCH_APOLLO_PEOPLE_TOOL_NAME = 'search_apollo_people';
+export const SEARCH_APOLLO_COMPANIES_TOOL_NAME = 'search_apollo_companies';
+export const SEARCH_PEOPLE_INDEX_TOOL_NAME = 'search_people_index';
+export const SEARCH_FIND_CANDIDATE_INTERNAL_TOOL_NAME =
+  'find_candidate_in_arxena_internal';
+export const SEARCH_EXA_TOOL_NAME = 'exa_web_search';
+export const SEARCH_EXA_APP_TOOL_NAME = 'app_exa_web_search';
+export const SEARCH_SERP_TOOL_NAME = 'google_serp_search';
+export const SEARCH_COMPANIES_INDEX_TOOL_NAME = 'search_companies_index';
+export const SEARCH_WIKIDATA_COMPANIES_TOOL_NAME = 'search_wikidata_companies';
+export const SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME =
+  'search_bright_data_business';
+
+export type SearchToolsConfig = {
+  isSearchApolloPeopleEnabled: boolean;
+  isSearchApolloCompaniesEnabled: boolean;
+  isSearchPeopleIndexEnabled: boolean;
+  isSearchFindCandidateInternalEnabled: boolean;
+  isSearchExaEnabled: boolean;
+  isSearchSerpEnabled: boolean;
+  isSearchCompaniesIndexEnabled: boolean;
+  isSearchWikidataCompaniesEnabled: boolean;
+  isSearchBrightDataEnabled: boolean;
+};
+
+export const ALL_SEARCH_TOOLS_ENABLED: SearchToolsConfig = {
+  isSearchApolloPeopleEnabled: true,
+  isSearchApolloCompaniesEnabled: true,
+  isSearchPeopleIndexEnabled: true,
+  isSearchFindCandidateInternalEnabled: true,
+  isSearchExaEnabled: true,
+  isSearchSerpEnabled: true,
+  isSearchCompaniesIndexEnabled: true,
+  isSearchWikidataCompaniesEnabled: true,
+  isSearchBrightDataEnabled: true,
+};
+
+export const getDisabledSearchToolNames = (
+  config: SearchToolsConfig,
+): string[] => {
+  const disabledToolNames: string[] = [];
+
+  if (!config.isSearchApolloPeopleEnabled) {
+    disabledToolNames.push(SEARCH_APOLLO_PEOPLE_TOOL_NAME);
+  }
+
+  if (!config.isSearchApolloCompaniesEnabled) {
+    disabledToolNames.push(SEARCH_APOLLO_COMPANIES_TOOL_NAME);
+  }
+
+  if (!config.isSearchPeopleIndexEnabled) {
+    disabledToolNames.push(SEARCH_PEOPLE_INDEX_TOOL_NAME);
+  }
+
+  if (!config.isSearchFindCandidateInternalEnabled) {
+    disabledToolNames.push(SEARCH_FIND_CANDIDATE_INTERNAL_TOOL_NAME);
+  }
+
+  if (!config.isSearchExaEnabled) {
+    disabledToolNames.push(SEARCH_EXA_TOOL_NAME, SEARCH_EXA_APP_TOOL_NAME);
+  }
+
+  if (!config.isSearchSerpEnabled) {
+    disabledToolNames.push(SEARCH_SERP_TOOL_NAME);
+  }
+
+  if (!config.isSearchCompaniesIndexEnabled) {
+    disabledToolNames.push(SEARCH_COMPANIES_INDEX_TOOL_NAME);
+  }
+
+  if (!config.isSearchWikidataCompaniesEnabled) {
+    disabledToolNames.push(SEARCH_WIKIDATA_COMPANIES_TOOL_NAME);
+  }
+
+  if (!config.isSearchBrightDataEnabled) {
+    disabledToolNames.push(SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME);
+  }
+
+  return disabledToolNames;
+};
+
+export const isSearchToolEnabled = (
+  toolName: string,
+  config: SearchToolsConfig,
+): boolean => !getDisabledSearchToolNames(config).includes(toolName);
+
+export const buildExcludedToolNamesSet = (
+  baseExcludedToolNames: Set<string>,
+  config: SearchToolsConfig,
+): Set<string> => {
+  return new Set([
+    ...baseExcludedToolNames,
+    ...getDisabledSearchToolNames(config),
+  ]);
+};
+
+const stripMarkedSection = (content: string, markerId: string): string => {
+  const pattern = new RegExp(
+    `<!-- ${markerId}:start -->[\\s\\S]*?<!-- ${markerId}:end -->\\n?`,
+    'g',
+  );
+
+  return content.replace(pattern, '');
+};
+
+const buildSearchSkillProviderSummary = (config: SearchToolsConfig): string => {
+  const providers = ['LinkedIn', 'Harvest'];
+
+  if (
+    config.isSearchApolloPeopleEnabled ||
+    config.isSearchApolloCompaniesEnabled
+  ) {
+    providers.push('Apollo');
+  }
+
+  if (config.isSearchExaEnabled) {
+    providers.push('Exa');
+  }
+
+  if (config.isSearchBrightDataEnabled) {
+    providers.push('Bright Data');
+  }
+
+  if (providers.length === 1) {
+    return providers[0] ?? '';
+  }
+
+  if (providers.length === 2) {
+    return `${providers[0]} and ${providers[1]}`;
+  }
+
+  const lastProvider = providers[providers.length - 1];
+
+  return `${providers.slice(0, -1).join(', ')}, and ${lastProvider}`;
+};
+
+export const filterSearchSkillContent = (
+  content: string,
+  config: SearchToolsConfig,
+): string => {
+  let filteredContent = content.replace(
+    /<!-- search-skill-provider-summary:start -->[\s\S]*?<!-- search-skill-provider-summary:end -->/,
+    buildSearchSkillProviderSummary(config),
+  );
+
+  if (!config.isSearchApolloCompaniesEnabled) {
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-apollo-companies-provider-row',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-apollo-companies-learn-tools-line',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-apollo-companies-source-section',
+    );
+  }
+
+  if (!config.isSearchCompaniesIndexEnabled) {
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-companies-index-provider-row',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-companies-index-learn-tools-line',
+    );
+  }
+
+  if (!config.isSearchWikidataCompaniesEnabled) {
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-wikidata-companies-provider-row',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-wikidata-companies-learn-tools-line',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-wikidata-companies-source-section',
+    );
+  }
+
+  if (!config.isSearchBrightDataEnabled) {
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-bright-data-companies-provider-row',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-bright-data-companies-learn-tools-line',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-bright-data-companies-source-section',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-bright-data-people-provider-row',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-bright-data-people-learn-tools-line',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-bright-data-people-source-section',
+    );
+  }
+
+  if (!config.isSearchExaEnabled) {
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-exa-companies-provider-row',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-exa-companies-learn-tools-line',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-exa-companies-source-section',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-exa-people-provider-row',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-exa-people-learn-tools-line',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-exa-people-source-section',
+    );
+  }
+
+  if (!config.isSearchApolloPeopleEnabled) {
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-apollo-people-provider-row',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-apollo-people-learn-tools-line',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-apollo-people-source-section',
+    );
+    filteredContent = filteredContent.replace(
+      '2. Search people (LinkedIn / Harvest / Apollo…).',
+      '2. Search people (LinkedIn / Harvest…).',
+    );
+  }
+
+  if (!config.isSearchPeopleIndexEnabled) {
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-people-index-provider-row',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-people-index-learn-tools-line',
+    );
+  }
+
+  if (!config.isSearchFindCandidateInternalEnabled) {
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'search-find-candidate-internal-learn-tools-line',
+    );
+  }
+
+  if (!config.isSearchExaEnabled && !config.isSearchSerpEnabled) {
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'org-structure-web-search-section',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'org-structure-exa-learn-tools-line',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
+      'org-structure-serp-learn-tools-line',
+    );
+  } else {
+    if (!config.isSearchExaEnabled) {
+      filteredContent = stripMarkedSection(
+        filteredContent,
+        'org-structure-exa-learn-tools-line',
+      );
+      filteredContent = stripMarkedSection(
+        filteredContent,
+        'org-structure-exa-playbook',
+      );
+    }
+
+    if (!config.isSearchSerpEnabled) {
+      filteredContent = stripMarkedSection(
+        filteredContent,
+        'org-structure-serp-learn-tools-line',
+      );
+      filteredContent = stripMarkedSection(
+        filteredContent,
+        'org-structure-serp-playbook',
+      );
+    }
+  }
+
+  return filteredContent;
+};

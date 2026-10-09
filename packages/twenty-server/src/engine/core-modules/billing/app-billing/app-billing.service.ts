@@ -18,6 +18,8 @@ import { WorkspaceEventEmitter } from 'src/engine/workspace-event-emitter/worksp
 const USAGE_UNIT_BY_OPERATION_TYPE: Record<UsageOperationType, UsageUnit> = {
   [UsageOperationType.AI_CHAT_TOKEN]: UsageUnit.TOKEN,
   [UsageOperationType.AI_WORKFLOW_TOKEN]: UsageUnit.TOKEN,
+  [UsageOperationType.AI_BACKGROUND_TOKEN]: UsageUnit.TOKEN,
+  [UsageOperationType.AI_TRANSCRIPTION]: UsageUnit.MINUTE,
   [UsageOperationType.WORKFLOW_EXECUTION]: UsageUnit.INVOCATION,
   [UsageOperationType.CODE_EXECUTION]: UsageUnit.INVOCATION,
   [UsageOperationType.WEB_SEARCH]: UsageUnit.INVOCATION,

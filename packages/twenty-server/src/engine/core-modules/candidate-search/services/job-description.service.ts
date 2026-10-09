@@ -52,7 +52,7 @@ export class JobDescriptionService {
 
       // For text-based job descriptions, use the new jd-parser service
       if (hasJobDescription) {
-        return await this.jdParserService.processJDFromTextToParsedJobDescription(request.jobDescription!);
+        return await this.jdParserService.processJDFromTextToParsedJobDescription(request.jobDescription!, apiToken);
       }
 
       // If neither filePath nor jobDescription is provided, throw an error
@@ -120,7 +120,7 @@ export class JobDescriptionService {
       }
       
       // Use the new JD parser service method that returns ParsedJobDescription directly
-      const parsedJobDescription = await this.jdParserService.processJDFromFileToParsedJobDescription(filePath);
+      const parsedJobDescription = await this.jdParserService.processJDFromFileToParsedJobDescription(filePath, apiToken);
 
       this.logger.log(`Parsed job description from file: ${JSON.stringify(parsedJobDescription, null, 2)}`);
       return parsedJobDescription;

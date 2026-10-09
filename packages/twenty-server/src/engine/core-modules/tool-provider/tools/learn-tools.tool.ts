@@ -61,7 +61,7 @@ export const createLearnToolsTool = (
   options?: LearnToolsOptions,
 ) => ({
   description:
-    'Get input schemas for tools. Pass all the tool names you need in a single call (toolNames accepts an array) rather than calling learn_tools once per tool. Call this with exact tool names to learn the required arguments before calling execute_tool.',
+    'Get input schemas for tools. Pass all the tool names you need in a single call (toolNames accepts an array) rather than calling learn_tools once per tool. Call this with exact tool names to learn the required arguments before calling execute_tool. For company or people search, learn the search tools named in the "search" skill (load it first with load_skills) instead of using web search.',
   inputSchema: learnToolsInputSchema,
   execute: async (parameters: LearnToolsInput): Promise<LearnToolsResult> => {
     const { toolNames, aspects } = parameters;

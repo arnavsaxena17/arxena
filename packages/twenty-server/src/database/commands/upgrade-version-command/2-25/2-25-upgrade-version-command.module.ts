@@ -150,6 +150,12 @@ import { ResyncOutreachSequentialChannelSendsCommand } from 'src/database/comman
 import { ResyncOutreachJevOutputValidationCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000157-resync-outreach-jev-output-validation.command';
 import { SyncOutreachRunWorkflowSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000159-sync-outreach-run-workflow-skill-content.command';
 import { AddAiFilterToFindWorkflowsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000160-add-ai-filter-to-find-workflows.command';
+import { SyncSaveToCrmSkillCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000171-sync-save-to-crm-skill.command';
+import { AddCompanyOtherFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000170-add-company-other-fields.command';
+import { SyncAiFilterEnrichSkillCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000169-sync-ai-filter-enrich-skill.command';
+import { SyncOutreachSkillDirectMessagingCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000168-sync-outreach-skill-direct-messaging.command';
+import { BackfillLocalBusinessSearchSkillCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000167-backfill-local-business-search-skill.command';
+import { AddOutreachMemberPinFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000166-add-outreach-member-pin-fields.command';
 import { AddOutreachTableLayoutCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000161-add-outreach-table-layout.command';
 import { SimplifyOutreachDashboardCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000158-simplify-outreach-dashboard.command';
 import { SetOutreachExtractSignalsDeepseekCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000106-set-outreach-extract-signals-deepseek.command';
@@ -336,6 +342,9 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     SyncOutreachRunWorkflowSkillContentCommand,
     AddAiFilterToFindWorkflowsCommand,
     AddOutreachTableLayoutCommand,
+    AddOutreachMemberPinFieldsCommand,
+    BackfillLocalBusinessSearchSkillCommand,
+    SyncOutreachSkillDirectMessagingCommand,
     SyncSearchSkillBrightDataCommand,
     SyncSearchSkillBrightDataLudicrousCommand,
     SyncOutreachReplyFollowUpAndAttachmentsCommand,
@@ -343,6 +352,9 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     EnsureSearchCrunchbaseCompaniesLogicFunctionCommand,
     MigrateOtherFieldsService,
     DropCandidateFieldObjectsCommand,
+    SyncAiFilterEnrichSkillCommand,
+    AddCompanyOtherFieldsCommand,
+    SyncSaveToCrmSkillCommand,
   ],
 })
 export class V2_25_UpgradeVersionCommandModule {}

@@ -382,6 +382,32 @@ export class OutreachMessagePersistService {
     return resolvedCandidateId;
   }
 
+  // Agent-only note (e.g. "member emailed to send the deck") so later drafts
+  // know what was already handed off. The drawer hides system turns.
+  async appendSystemNote({
+    workspaceId,
+    candidateId,
+    content,
+  }: {
+    workspaceId: string;
+    candidateId: string;
+    content: string;
+  }): Promise<void> {
+    await this.mergeTurns({
+      workspaceId,
+      candidateId,
+      channel: 'LINKEDIN',
+      turns: [
+        {
+          role: 'system',
+          content,
+          timestamp: new Date().toISOString(),
+        },
+      ],
+      typeOfMessage: channelTypeOfMessage('LINKEDIN', false),
+    });
+  }
+
   async persistInboundFlush({
     workspaceId,
     candidateId,

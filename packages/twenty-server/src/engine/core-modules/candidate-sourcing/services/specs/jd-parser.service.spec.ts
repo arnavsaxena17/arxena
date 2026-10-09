@@ -1,15 +1,31 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { MeteredLlmService } from 'src/engine/core-modules/metered-llm/metered-llm.service';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { JDParserService } from '../jd-parser.service';
 import { ResumeReadParseUploadService } from '../resume-read-parse-upload.service';
 
 describe('JDParserService', () => {
   let service: JDParserService;
   let resumeReadParseUploadService: ResumeReadParseUploadService;
+  let meteredLlmService: { openAiChatCompletion: jest.Mock };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         JDParserService,
+        {
+          provide: MeteredLlmService,
+          // Pass straight through to the client so the tests can assert on the OpenAI call
+          useValue: {
+            openAiChatCompletion: jest.fn((_context, client, params) =>
+              client.chat.completions.create(params),
+            ),
+          },
+        },
+        {
+          provide: WorkspaceQueryService,
+          useValue: { getWorkspaceIdFromToken: jest.fn().mockResolvedValue('ws-1') },
+        },
         {
           provide: ResumeReadParseUploadService,
           useValue: {
@@ -22,6 +38,7 @@ describe('JDParserService', () => {
 
     service = module.get<JDParserService>(JDParserService);
     resumeReadParseUploadService = module.get<ResumeReadParseUploadService>(ResumeReadParseUploadService);
+    meteredLlmService = module.get(MeteredLlmService);
   });
 
   it('should be defined', () => {
@@ -85,9 +102,14 @@ describe('JDParserService', () => {
     // Replace the OpenAI instance
     (service as any).openai = mockOpenAI;
 
-    const result = await service.processJDFromText(mockJdText);
+    const result = await service.processJDFromText(mockJdText, 'token');
 
     expect(result).toEqual(mockJobDetails);
+    expect(meteredLlmService.openAiChatCompletion).toHaveBeenCalledWith(
+      { workspaceId: 'ws-1', feature: 'JD_PARSE', keySource: 'platform' },
+      mockOpenAI,
+      expect.objectContaining({ model: 'gpt-4o-mini' }),
+    );
     expect(mockOpenAI.chat.completions.create).toHaveBeenCalledWith(
       expect.objectContaining({
         model: 'gpt-4o-mini',
@@ -112,7 +134,7 @@ describe('JDParserService', () => {
 
     (service as any).openai = mockOpenAI;
 
-    await expect(service.processJDFromText(mockJdText)).rejects.toThrow('Failed to process JD text: Failed to extract job details: API Error');
+    await expect(service.processJDFromText(mockJdText, 'token')).rejects.toThrow('Failed to process JD text: Failed to extract job details: API Error');
   });
 
   it('should handle file processing errors', async () => {
@@ -121,7 +143,7 @@ describe('JDParserService', () => {
 
     jest.spyOn(resumeReadParseUploadService, 'readResumeFile').mockRejectedValue(mockError);
 
-    await expect(service.processJDFromFile(mockFilePath)).rejects.toThrow('Failed to process JD file: File not found');
+    await expect(service.processJDFromFile(mockFilePath, 'token')).rejects.toThrow('Failed to process JD file: File not found');
   });
 
   it('should handle invalid JSON response from OpenAI', async () => {
@@ -143,6 +165,6 @@ describe('JDParserService', () => {
 
     (service as any).openai = mockOpenAI;
 
-    await expect(service.processJDFromText(mockJdText)).rejects.toThrow('Failed to process JD text');
+    await expect(service.processJDFromText(mockJdText, 'token')).rejects.toThrow('Failed to process JD text');
   });
 });

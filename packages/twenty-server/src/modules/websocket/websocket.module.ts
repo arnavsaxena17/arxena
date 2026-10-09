@@ -2,6 +2,7 @@
 import { Module } from '@nestjs/common';
 import { RedisClientModule } from 'src/engine/core-modules/redis-client/redis-client.module';
 import { OrgChartProgressBridgeService } from './orgchart-progress-bridge.service';
+import { WebSocketRoomBridgeService } from './websocket-room-bridge.service';
 import { WebSocketUserBridgeService } from './websocket-user-bridge.service';
 import { WebSocketController } from './websocket.controller';
 import { WebSocketGateway } from './websocket.gateway';
@@ -15,6 +16,7 @@ import { WebSocketService } from './websocket.service';
     WebSocketService,
     OrgChartProgressBridgeService,
     WebSocketUserBridgeService,
+    WebSocketRoomBridgeService,
   ],
   exports: [WebSocketGateway, WebSocketService],
 })

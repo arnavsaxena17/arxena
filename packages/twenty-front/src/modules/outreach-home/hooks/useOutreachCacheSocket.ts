@@ -4,7 +4,9 @@ import { useEffect } from 'react';
 import {
   OUTREACH_CACHE_UPDATED_EVENT,
   outreachProjectCacheRoom,
+  type OutreachAiColumnRunProgress,
   type OutreachCacheUpdatedPayload,
+  type OutreachTableView,
 } from '@/outreach-home/constants/outreach-cache-realtime.constants';
 import { useWebSocket } from '@/websocket-context/hooks/useWebSocket';
 import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
@@ -14,6 +16,8 @@ type UseOutreachCacheSocketProps = {
   onPeopleUpdated: () => void;
   onCompaniesUpdated: () => void;
   onJourneyUpdated?: () => void;
+  onAiColumnProgress?: (run: OutreachAiColumnRunProgress) => void;
+  onTableViewUpdated?: (view: OutreachTableView) => void;
 };
 
 export const useOutreachCacheSocket = ({
@@ -21,6 +25,8 @@ export const useOutreachCacheSocket = ({
   onPeopleUpdated,
   onCompaniesUpdated,
   onJourneyUpdated,
+  onAiColumnProgress,
+  onTableViewUpdated,
 }: UseOutreachCacheSocketProps) => {
   const { socket } = useWebSocket();
 
@@ -56,6 +62,22 @@ export const useOutreachCacheSocket = ({
         return;
       }
 
+      if (payload.kind === 'tableView') {
+        if (payload.tableView) {
+          onTableViewUpdated?.(payload.tableView);
+        }
+
+        return;
+      }
+
+      if (payload.kind === 'aiColumn') {
+        if (payload.aiColumnRun) {
+          onAiColumnProgress?.(payload.aiColumnRun);
+        }
+
+        return;
+      }
+
       if (payload.kind === 'journey') {
         onJourneyUpdated?.();
 
@@ -64,6 +86,13 @@ export const useOutreachCacheSocket = ({
 
       onCompaniesUpdated();
     },
-    [onCompaniesUpdated, onJourneyUpdated, onPeopleUpdated, projectId],
+    [
+      onAiColumnProgress,
+      onCompaniesUpdated,
+      onJourneyUpdated,
+      onPeopleUpdated,
+      onTableViewUpdated,
+      projectId,
+    ],
   );
 };

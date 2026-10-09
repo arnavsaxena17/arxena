@@ -180,6 +180,14 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
       'Standardize a raw / messy company name against std_company_data_scores (CompanyCollector-style ES resolve)',
     icon: 'IconBuilding',
   }),
+  'ai-filter-enrich': createStandardSkillBuilder({
+    skillName: 'ai-filter-enrich',
+    name: 'ai-filter-enrich',
+    label: 'AI Filter & Enrich',
+    description:
+      'Add an AI-computed column (filter or enrichment) to the project people / companies: preview on ~10 rows, confirm, then run for all',
+    icon: 'IconSparkles',
+  }),
   pptx: createStandardSkillBuilder({
     skillName: 'pptx',
     name: 'pptx',

@@ -64,7 +64,90 @@ describe('formatOutreachTranscriptForLlm', () => {
         ],
         error: '',
       }),
-    ).toBe('them: Thanks, I am interested. Can we talk next week?');
+    ).toBe('them [9 Sept, 7:55 pm IST]: Thanks, I am interested. Can we talk next week?');
+  });
+});
+
+describe('formatOutreachTranscriptForLlm history handling', () => {
+  const turn = (index: number, role = 'user') => ({
+    role,
+    content: `message ${index}`,
+    timestamp: new Date(Date.UTC(2026, 8, 1, 10, index)).toISOString(),
+  });
+
+  it('keeps timestamps so the model can see how old a reply is', () => {
+    const text = formatOutreachTranscriptForLlm([
+      {
+        role: 'user',
+        content: 'Not now',
+        timestamp: '2026-10-08T08:31:00.000Z',
+      },
+    ]);
+
+    expect(text).toBe('them [8 Oct, 2:01 pm IST]: Not now');
+  });
+
+  it('folds old turns into a facts line and keeps the recent ones verbatim', () => {
+    const turns = [
+      { role: 'user', content: 'mail me at abc@panda.com or +91 84119 37769' },
+      ...Array.from({ length: 40 }, (_, index) => turn(index + 1)),
+    ];
+    const text = formatOutreachTranscriptForLlm(turns);
+
+    expect(text.split('\n---\n')[0]).toContain('earlier messages omitted');
+    expect(text.split('\n---\n')[0]).toContain('abc@panda.com');
+    expect(text.split('\n---\n')[0]).toContain('+91 84119 37769');
+    expect(text).toContain('message 40');
+    expect(text).not.toContain('message 1:');
+    expect(text.split('\n---\n')).toHaveLength(31);
+  });
+
+  it('merges several channels into one timeline and tags the channel', () => {
+    const text = formatOutreachTranscriptForLlm({
+      all: [
+        {
+          channel: 'EMAIL',
+          messageObj: [
+            {
+              role: 'assistant',
+              content: 'email out',
+              timestamp: '2026-10-02T10:00:00.000Z',
+            },
+          ],
+        },
+        {
+          channel: 'LINKEDIN',
+          messageObj: [
+            {
+              role: 'user',
+              content: 'linkedin one',
+              timestamp: '2026-10-01T10:00:00.000Z',
+            },
+            {
+              role: 'user',
+              content: 'linkedin two',
+              timestamp: '2026-10-03T10:00:00.000Z',
+            },
+          ],
+        },
+      ],
+    });
+    const lines = text.split('\n---\n');
+
+    expect(lines.map((line) => line.split(': ')[1])).toEqual([
+      'linkedin one',
+      'email out',
+      'linkedin two',
+    ]);
+    expect(lines[1]).toContain('EMAIL');
+  });
+
+  it('labels system notes separately from the prospect', () => {
+    expect(
+      formatOutreachTranscriptForLlm([
+        { role: 'system', content: 'Member notified to send the deck' },
+      ]),
+    ).toBe('system: Member notified to send the deck');
   });
 });
 

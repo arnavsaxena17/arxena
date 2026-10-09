@@ -77,9 +77,11 @@ import { JDParserService } from './services/jd-parser.service';
 import { ResumeReadParseUploadService } from './services/resume-read-parse-upload.service';
 import { OutreachCommandModule } from 'src/engine/core-modules/outreach-command/outreach-command.module';
 import { DataProcessingUtils } from './utils/data-processing.utils';
+import { MeteredLlmModule } from 'src/engine/core-modules/metered-llm/metered-llm.module';
 
 @Module({
   imports: [
+    MeteredLlmModule,
     WorkspaceCacheStorageModule,
     EmailModule,
     EnvironmentModule,

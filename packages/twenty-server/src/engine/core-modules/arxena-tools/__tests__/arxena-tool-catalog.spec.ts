@@ -4,7 +4,7 @@ import { join } from 'path';
 import {
   ARXENA_TOOL_CATALOG,
   ARXENA_TOOL_NAMES,
-} from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-catalog.const';
+} from 'twenty-shared/outreach';
 import {
   ARXENA_TOOL_SELECTION_QUERIES,
   countToolsInContext,

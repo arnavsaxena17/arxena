@@ -35,6 +35,11 @@ import {
   getOutreachPersonMobileCard,
 } from '@/outreach-home/components/record-table/getOutreachPeopleTableColumns';
 import { appendOutreachRawJsonColumns } from '@/outreach-home/components/record-table/appendOutreachRawJsonColumns';
+import { OutreachAiViewBar } from '@/outreach-home/components/OutreachAiViewBar';
+import { useOutreachAiTableView } from '@/outreach-home/hooks/useOutreachAiTableView';
+import { type OutreachTableView } from '@/outreach-home/constants/outreach-cache-realtime.constants';
+import { OutreachAiColumnProgressBar } from '@/outreach-home/components/OutreachAiColumnProgressBar';
+import { type OutreachAiColumnRunProgress } from '@/outreach-home/constants/outreach-cache-realtime.constants';
 import { OutreachRecordTable } from '@/outreach-home/components/record-table/OutreachRecordTable';
 import {
   OutreachViewBar,
@@ -43,10 +48,16 @@ import {
   OutreachViewBarPill,
 } from '@/outreach-home/components/record-table/OutreachViewBar';
 import { OutreachTableEmptyState } from '@/outreach-home/components/record-table/OutreachTableEmptyState';
-import { useAddOutreachRecordsToCrm } from '@/outreach-home/hooks/useAddOutreachRecordsToCrm';
+import { OutreachAssignMemberSelect } from '@/outreach-home/components/OutreachAssignMemberSelect';
+import { useOutreachAssignment } from '@/outreach-home/hooks/useOutreachAssignment';
+import { useSaveOutreachTargetsToCrm } from '@/outreach-home/hooks/useSaveOutreachTargetsToCrm';
 import { useOutreachTablePresentation } from '@/outreach-home/hooks/useOutreachTablePresentation';
 import { useOutreachEnroll } from '@/outreach-home/hooks/useOutreachEnroll';
 import { useOutreachProjectJourneySummary } from '@/outreach-home/hooks/useOutreachProjectJourneySummary';
+import {
+  isSameOutreachContext,
+  outreachContextState,
+} from '@/outreach-home/states/outreachContextState';
 import { useStartOutreachSequencerOnCandidates } from '@/outreach-home/hooks/useStartOutreachSequencerOnCandidates';
 import { useStopOutreach } from '@/outreach-home/hooks/useStopOutreach';
 import {
@@ -60,6 +71,7 @@ import {
   OUTREACH_PEOPLE_QUEUE_FILTERS,
   type OutreachPeopleQueueFilter,
 } from '@/outreach-home/utils/outreachPeopleQueueFilter';
+import { useOutreachPersonCellEdit } from '@/outreach-home/hooks/useOutreachPersonCellEdit';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useSetAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useSetAtomComponentState';
@@ -93,7 +105,13 @@ type OutreachPeoplePanelProps = {
   tableInstanceId: string;
   isLoading?: boolean;
   onRefresh?: () => Promise<void>;
+  aiColumnRun?: OutreachAiColumnRunProgress | null;
+  aiTableView?: OutreachTableView | null;
   appendPeople?: (peopleToAdd: OutreachPersonRow[]) => Promise<void>;
+  updateEphemeralPerson?: (
+    personId: string,
+    applyPatch: (person: OutreachPersonRow) => OutreachPersonRow,
+  ) => Promise<void>;
 };
 
 export const OutreachPeoplePanel = ({
@@ -106,7 +124,10 @@ export const OutreachPeoplePanel = ({
   tableInstanceId,
   isLoading = false,
   onRefresh,
+  aiColumnRun,
+  aiTableView,
   appendPeople,
+  updateEphemeralPerson,
 }: OutreachPeoplePanelProps) => {
   const setSearchResults = useSetAtomState(searchResultsState);
   const setTableStateAtom = useSetAtomState(tableStateAtom);
@@ -119,7 +140,12 @@ export const OutreachPeoplePanel = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [stageFilter, setStageFilter] =
     useState<OutreachPeopleQueueFilter>('all');
-  const { isPersisting, addPeopleToCrm } = useAddOutreachRecordsToCrm();
+  const { withEditableCells } = useOutreachPersonCellEdit({
+    onRefresh,
+    updateEphemeralPerson,
+  });
+  const { isSaving: isPersisting, saveTargetsToCrm } =
+    useSaveOutreachTargetsToCrm();
   const {
     columnLayout,
     persistLayout,
@@ -127,6 +153,12 @@ export const OutreachPeoplePanel = ({
     persistFilters,
     clearColumnFilters,
   } = useOutreachTablePresentation(projectId, 'people');
+  const { externalSort, activeView, clearAiView } = useOutreachAiTableView({
+    projectId,
+    tab: 'people',
+    view: aiTableView,
+    persistFilters,
+  });
   const { enrollSelectedPeople, promoteDeferredCandidate } =
     useOutreachEnroll();
   const { isStopping, stopOutreachForCandidates } = useStopOutreach();
@@ -138,6 +170,13 @@ export const OutreachPeoplePanel = ({
     refetch: refetchJourneySummary,
   } = useOutreachProjectJourneySummary(projectId);
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
+  const {
+    members: assignmentMembers,
+    ownerNameByCandidateId,
+    isWorking: isAssigning,
+    assignToMember,
+    splitAcrossTeam,
+  } = useOutreachAssignment(projectId);
   const { openObjectRecordsSpreadsheetImportDialog } =
     useOpenObjectRecordsSpreadsheetImportDialog('person');
 
@@ -321,6 +360,27 @@ export const OutreachPeoplePanel = ({
     return [];
   }, [filteredPeople, selectedPersonId, selectedRowIds]);
 
+  const setOutreachContext = useSetAtomState(outreachContextState);
+
+  // Ask AI reads the checked rows from the browsing context, so "start
+  // outreach" acts on exactly what the user selected.
+  useEffect(() => {
+    const selectedPersonIds = selectedPeople.map((person) => person.id);
+    const selectedCandidateIds = selectedPeople
+      .map((person) => person.candidateId)
+      .filter(isDefined);
+
+    setOutreachContext((previous) =>
+      isSameOutreachContext(previous, {
+        ...previous,
+        selectedPersonIds,
+        selectedCandidateIds,
+      })
+        ? previous
+        : { ...previous, selectedPersonIds, selectedCandidateIds },
+    );
+  }, [selectedPeople, setOutreachContext]);
+
   const deferredCandidateId = selectedPeople.find(
     (person) => person.stage === 'DEFERRED' && isDefined(person.candidateId),
   )?.candidateId;
@@ -385,15 +445,25 @@ export const OutreachPeoplePanel = ({
 
   const columns = useMemo(
     () =>
-      appendOutreachRawJsonColumns(
-        getOutreachPeopleTableColumns({
-          companiesByWorkingSetId,
-          onOpenPerson: handleOpenPerson,
-        }),
-        people,
-        columnLayout,
+      withEditableCells(
+        appendOutreachRawJsonColumns(
+          getOutreachPeopleTableColumns({
+            companiesByWorkingSetId,
+            ownerNameByCandidateId,
+            onOpenPerson: handleOpenPerson,
+          }),
+          people,
+          columnLayout,
+        ),
       ),
-    [columnLayout, companiesByWorkingSetId, handleOpenPerson, people],
+    [
+      withEditableCells,
+      columnLayout,
+      companiesByWorkingSetId,
+      handleOpenPerson,
+      ownerNameByCandidateId,
+      people,
+    ],
   );
 
   const hasActiveFilter =
@@ -465,12 +535,15 @@ export const OutreachPeoplePanel = ({
       />
       <OutreachViewBarDivider />
       <OutreachViewBarIconAction
-        title={withCount('Add selected to CRM', selectedPeople.length)}
+        title={withCount('Save selected to CRM', selectedPeople.length)}
         Icon={IconDatabase}
         disabled={selectedPeople.length === 0 || isPersisting}
-        onClick={() =>
-          addPeopleToCrm({ people: selectedPeople, companiesByWorkingSetId })
-        }
+        onClick={() => {
+          void saveTargetsToCrm({
+            target: 'people',
+            personIds: selectedPeople.map((person) => person.id),
+          });
+        }}
       />
       <OutreachViewBarIconAction
         title={withCount('Enroll in outreach', selectedPeople.length)}
@@ -496,6 +569,17 @@ export const OutreachPeoplePanel = ({
           void stopOutreachForCandidates(selectedCandidateIds);
         }}
       />
+      <OutreachAssignMemberSelect
+        members={assignmentMembers}
+        selectedCount={selectedCandidateIds.length}
+        disabled={isAssigning}
+        onAssign={(memberId) => {
+          void assignToMember(selectedCandidateIds, memberId);
+        }}
+        onSplit={(mode) => {
+          void splitAcrossTeam(selectedCandidateIds, mode);
+        }}
+      />
       {isDefined(deferredCandidateId) && (
         <OutreachViewBarIconAction
           title="Promote deferred"
@@ -514,6 +598,14 @@ export const OutreachPeoplePanel = ({
         searchPlaceholder="Search people"
         onSearchChange={setSearchQuery}
         actions={actions}
+      />
+      <OutreachAiColumnProgressBar run={aiColumnRun} />
+      <OutreachAiViewBar
+        view={activeView}
+        getColumnLabel={(columnId) =>
+          columns.find((column) => column.id === columnId)?.label ?? columnId
+        }
+        onClear={clearAiView}
       />
       {people.length === 0 ? (
         <OutreachTableEmptyState
@@ -543,6 +635,7 @@ export const OutreachPeoplePanel = ({
             onColumnLayoutChange={persistLayout}
             columnFilters={columnFilters}
             onColumnFiltersChange={persistFilters}
+            externalSort={externalSort}
           />
           <HotTableActionMenu tableId={tableInstanceId} />
         </ContextStoreComponentInstanceContext.Provider>

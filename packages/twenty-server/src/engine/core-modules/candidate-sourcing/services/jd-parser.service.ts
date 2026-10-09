@@ -3,6 +3,8 @@ import axios from 'axios';
 import * as fs from 'fs';
 import OpenAI from 'openai';
 import { toOpenAiJsonSchemaResponseFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
+import { MeteredLlmService } from 'src/engine/core-modules/metered-llm/metered-llm.service';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import * as os from 'os';
 import * as path from 'path';
 import { z } from 'zod';
@@ -30,7 +32,11 @@ export class JDParserService {
   private readonly logger = new Logger(JDParserService.name);
   private readonly openai: OpenAI;
 
-  constructor(private readonly resumeReadParseUploadService: ResumeReadParseUploadService) {
+  constructor(
+    private readonly resumeReadParseUploadService: ResumeReadParseUploadService,
+    private readonly meteredLlmService: MeteredLlmService,
+    private readonly workspaceQueryService: WorkspaceQueryService,
+  ) {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_KEY,
     });
@@ -54,7 +60,7 @@ export class JDParserService {
       );
 
       try {
-        const jobDetails = await this.processJDFromFile(tempFilePath);
+        const jobDetails = await this.processJDFromFile(tempFilePath, authToken);
         const jobCode = this.generateJobCode(jobDetails.job_name);
 
         const responseData = {
@@ -187,7 +193,7 @@ export class JDParserService {
   /**
    * Process JD file and extract job details using OpenAI
    */
-  async processJDFromFile(filePath: string): Promise<JobDetails> {
+  async processJDFromFile(filePath: string, apiToken: string): Promise<JobDetails> {
     try {
       this.logger.log(`Processing JD file: ${filePath}`);
 
@@ -199,7 +205,7 @@ export class JDParserService {
 
       // Extract job details using OpenAI
       const fileName = path.basename(filePath);
-      return await this.extractJobDetails(jdText, fileName);
+      return await this.extractJobDetails(jdText, apiToken, fileName);
     } catch (error) {
       this.logger.error(`Error processing JD file ${filePath}:`, error);
       throw new Error(`Failed to process JD file: ${error.message}`);
@@ -209,10 +215,10 @@ export class JDParserService {
   /**
    * Process JD text directly and extract details
    */
-  async processJDFromText(jdText: string): Promise<JobDetails> {
+  async processJDFromText(jdText: string, apiToken: string): Promise<JobDetails> {
     try {
       this.logger.log(`Processing JD text, length: ${jdText.length} characters`);
-      return await this.extractJobDetails(jdText);
+      return await this.extractJobDetails(jdText, apiToken);
     } catch (error) {
       this.logger.error('Error processing JD text:', error);
       throw new Error(`Failed to process JD text: ${error.message}`);
@@ -222,7 +228,13 @@ export class JDParserService {
   /**
    * Extract job details using OpenAI API with structured output
    */
-  private async extractJobDetails(jdText: string, fileName?: string): Promise<JobDetails> {
+  private async extractJobDetails(
+    jdText: string,
+    apiToken: string,
+    fileName?: string,
+  ): Promise<JobDetails> {
+    const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
     const systemPrompt = `
         Extract the following details from the job description:
         - Project Name/Title
@@ -245,7 +257,10 @@ export class JDParserService {
       : jdText;
 
     try {
-      const completion = await this.openai.chat.completions.create({
+      const completion = await this.meteredLlmService.openAiChatCompletion(
+        { workspaceId, feature: 'JD_PARSE', keySource: 'platform' },
+        this.openai,
+        {
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
@@ -255,7 +270,8 @@ export class JDParserService {
           jobDetailsSchema,
           'jobDetails',
         ),
-      });
+        },
+      );
 
       const responseContent = completion.choices[0]?.message?.content;
       if (!responseContent) {
@@ -313,7 +329,10 @@ export class JDParserService {
   /**
    * Process JD file and return ParsedJobDescription
    */
-  async processJDFromFileToParsedJobDescription(filePath: string): Promise<ParsedJobDescription> {
+  async processJDFromFileToParsedJobDescription(
+    filePath: string,
+    apiToken: string,
+  ): Promise<ParsedJobDescription> {
     try {
       this.logger.log(`Processing JD file to ParsedJobDescription: ${filePath}`);
 
@@ -325,7 +344,7 @@ export class JDParserService {
 
       // Extract job details using OpenAI
       const fileName = path.basename(filePath);
-      const jobDetails = await this.extractJobDetails(jdText, fileName);
+      const jobDetails = await this.extractJobDetails(jdText, apiToken, fileName);
       
       // Convert to ParsedJobDescription
       const parsedJobDescription = this.convertToParsedJobDescription(jobDetails, jdText);
@@ -341,12 +360,15 @@ export class JDParserService {
   /**
    * Process JD text and return ParsedJobDescription
    */
-  async processJDFromTextToParsedJobDescription(jdText: string): Promise<ParsedJobDescription> {
+  async processJDFromTextToParsedJobDescription(
+    jdText: string,
+    apiToken: string,
+  ): Promise<ParsedJobDescription> {
     try {
       this.logger.log(`Processing JD text to ParsedJobDescription, length: ${jdText.length} characters`);
       
       // Extract job details using OpenAI
-      const jobDetails = await this.extractJobDetails(jdText);
+      const jobDetails = await this.extractJobDetails(jdText, apiToken);
       
       // Convert to ParsedJobDescription
       const parsedJobDescription = this.convertToParsedJobDescription(jobDetails, jdText);
@@ -365,7 +387,7 @@ export class JDParserService {
    */
   async parseToParsedJobDescription(
     request: JobDescriptionParseRequest,
-    apiToken?: string,
+    apiToken: string,
   ): Promise<ParsedJobDescription> {
     const hasJobDescription =
       request.jobDescription != null && request.jobDescription.trim().length > 0;
@@ -378,11 +400,11 @@ export class JDParserService {
     if (hasFilePath && (request.filePath!.startsWith('http://') || request.filePath!.startsWith('https://'))) {
       const tempFilePath = await this.downloadAttachmentFile(
         request.filePath!,
-        apiToken ?? '',
+        apiToken,
         'parse-jd',
       );
       try {
-        return await this.processJDFromFileToParsedJobDescription(tempFilePath);
+        return await this.processJDFromFileToParsedJobDescription(tempFilePath, apiToken);
       } finally {
         try {
           if (fs.existsSync(tempFilePath)) {
@@ -396,10 +418,10 @@ export class JDParserService {
     }
 
     if (hasFilePath) {
-      return this.processJDFromFileToParsedJobDescription(request.filePath!);
+      return this.processJDFromFileToParsedJobDescription(request.filePath!, apiToken);
     }
 
-    return this.processJDFromTextToParsedJobDescription(request.jobDescription!);
+    return this.processJDFromTextToParsedJobDescription(request.jobDescription!, apiToken);
   }
 
   /**

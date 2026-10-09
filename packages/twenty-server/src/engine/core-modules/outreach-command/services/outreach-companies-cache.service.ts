@@ -5,7 +5,9 @@ import { CacheStorageService } from 'src/engine/core-modules/cache-storage/servi
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { OutreachCacheRealtimeService } from 'src/engine/core-modules/outreach-command/services/outreach-cache-realtime.service';
 
-const OUTREACH_COMPANIES_CACHE_TTL_SECONDS = 3 * 30 * 24 * 60 * 60; // 3 months
+// CacheStorageService takes milliseconds: this was passed as seconds, so the
+// list expired after about two hours instead of three months.
+const OUTREACH_COMPANIES_CACHE_TTL_MS = 3 * 30 * 24 * 60 * 60 * 1000; // 3 months
 const MAX_COMPANIES_PER_PROJECT = 500;
 
 export type OutreachEphemeralCompany = {
@@ -17,6 +19,8 @@ export type OutreachEphemeralCompany = {
   segment: string;
   icpFit: string;
   status: string;
+  // AI filter / enrichment columns: one key per column.
+  otherFields?: Record<string, unknown>;
 };
 
 export type OutreachCompaniesCachePayload = {
@@ -82,7 +86,7 @@ export class OutreachCompaniesCacheService {
     await this.cache.set(
       this.cacheKey(workspaceId, projectId),
       payload,
-      OUTREACH_COMPANIES_CACHE_TTL_SECONDS,
+      OUTREACH_COMPANIES_CACHE_TTL_MS,
     );
 
     this.outreachCacheRealtimeService.notifyProjectCacheUpdated(

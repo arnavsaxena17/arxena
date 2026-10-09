@@ -7,7 +7,14 @@
 //         downstream (kept / rejected / failed, the workflow variables) reads
 //         the contract, so changing the model never changes the node's outputs.
 
-export type FilterFieldType = 'boolean' | 'enum' | 'text';
+// number: money, ratios. integer: counts (employees). Both may be null when the
+// model finds no credible figure.
+export type FilterFieldType =
+  | 'boolean'
+  | 'enum'
+  | 'text'
+  | 'number'
+  | 'integer';
 
 export type FilterFieldSpec = {
   name: string;
@@ -32,16 +39,22 @@ export type FilterSpec = {
   // is sold). Appended to the criteria, never required.
   context?: string;
   fields: FilterFieldSpec[];
-  keepField: string;
+  // The yes/no field that decides keep / reject. Omit it for an enrichment
+  // column: the record is answered, never kept or rejected.
+  keepField?: string;
   model: string;
   metadataFields: string[];
   // Records per model call on batch-capable models. 1 disables batching.
   batchSize?: number;
   // Concurrent model calls.
   concurrency?: number;
+  // Look the answer up on the web (OpenAI web search). One record per call.
+  webSearch?: boolean;
+  // An enum answer may be "unknown" instead of forcing a bucket.
+  allowUnknown?: boolean;
 };
 
-export type FilterAnswerValue = boolean | string;
+export type FilterAnswerValue = boolean | string | number;
 
 export type RecordVerdict = {
   id: string;
@@ -60,6 +73,12 @@ export type FilterRunStats = {
   calls: number;
   retriedRecords: number;
   durationMs: number;
+  // Summed from the OpenAI usage block; jev reports none.
+  inputTokens: number;
+  outputTokens: number;
+  webSearchCalls: number;
+  // Estimated from list prices. null for jev, which the gateway bills.
+  estimatedCostUsd: number | null;
 };
 
 const TRUE_WORDS = new Set(['true', 'yes', 'y', '1']);
@@ -85,20 +104,46 @@ const coerceBoolean = (value: unknown): boolean | null => {
   return null;
 };
 
-const coerceEnum = (value: unknown, enumValues: string[]): string | null => {
+const coerceNumber = (value: unknown, integer: boolean): number | null => {
+  const parsed =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string'
+        ? Number.parseFloat(value.replace(/,/g, ''))
+        : Number.NaN;
+
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+
+  return integer ? Math.round(parsed) : parsed;
+};
+
+const coerceEnum = (
+  value: unknown,
+  enumValues: string[],
+  allowUnknown = false,
+): string | null => {
   if (typeof value !== 'string') {
     return null;
   }
 
   const wanted = value.trim().toLowerCase();
 
+  if (allowUnknown && wanted === 'unknown') {
+    return 'unknown';
+  }
+
   return (
     enumValues.find((candidate) => candidate.toLowerCase() === wanted) ?? null
   );
 };
 
+// Only decisions are required. Free text and numbers are enrichment: a record
+// whose figure could not be found is still answered (the value is just empty).
 export const isRequiredField = (field: FilterFieldSpec): boolean =>
-  field.optional !== true && field.type !== 'text';
+  field.optional !== true &&
+  (field.type === 'boolean' || field.type === 'enum');
 
 export const getRequiredFields = (
   fields: FilterFieldSpec[],
@@ -123,7 +168,7 @@ export const buildVerdict = ({
 }: {
   id: string;
   raw: Record<string, unknown> | null | undefined;
-  spec: Pick<FilterSpec, 'fields' | 'keepField'>;
+  spec: Pick<FilterSpec, 'fields' | 'keepField' | 'allowUnknown'>;
 }): RecordVerdict => {
   if (raw === null || raw === undefined || typeof raw !== 'object') {
     return {
@@ -156,7 +201,11 @@ export const buildVerdict = ({
     }
 
     if (field.type === 'enum') {
-      const value = coerceEnum(rawValue, field.enumValues ?? []);
+      const value = coerceEnum(
+        rawValue,
+        field.enumValues ?? [],
+        spec.allowUnknown === true,
+      );
 
       if (value === null) {
         if (isRequiredField(field)) {
@@ -171,14 +220,28 @@ export const buildVerdict = ({
       continue;
     }
 
+    if (field.type === 'number' || field.type === 'integer') {
+      const value = coerceNumber(rawValue, field.type === 'integer');
+
+      if (value !== null) {
+        answers[field.name] = value;
+      }
+
+      continue;
+    }
+
     if (typeof rawValue === 'string' && rawValue.trim() !== '') {
       answers[field.name] = rawValue.trim();
     }
   }
 
-  const keepAnswer = answers[spec.keepField];
+  const keepAnswer =
+    spec.keepField === undefined ? undefined : answers[spec.keepField];
 
-  if (problems.length > 0 || typeof keepAnswer !== 'boolean') {
+  if (
+    problems.length > 0 ||
+    (spec.keepField !== undefined && typeof keepAnswer !== 'boolean')
+  ) {
     return {
       id,
       status: 'failed',
@@ -198,7 +261,7 @@ export const buildVerdict = ({
     id,
     status: 'answered',
     answers,
-    keep: keepAnswer,
+    keep: typeof keepAnswer === 'boolean' ? keepAnswer : null,
     ...(typeof reason === 'string' ? { reason } : {}),
   };
 };

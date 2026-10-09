@@ -8,6 +8,8 @@
 // Runtime service prompts (classifier, sender profile, company summarizer, etc.) load from
 // this file at call time — no workspace resync needed.
 
+import { isDefined } from 'twenty-shared/utils';
+
 import {
   formatOutreachProspectEnrichmentForLlm,
   formatOutreachProspectPostsForLlm,
@@ -262,6 +264,7 @@ export const buildOutreachFirstMessagePrompt = ({
   prospectPostsText,
   chatHistory,
   calendarSlots,
+  companyNews,
   kind,
 }: {
   senderJson: string;
@@ -270,6 +273,8 @@ export const buildOutreachFirstMessagePrompt = ({
   prospectPostsText?: string;
   chatHistory?: string;
   calendarSlots?: string;
+  // Opener only, and only for sample drafts: the seeded workflow never passes it.
+  companyNews?: string;
   kind: 'opener' | 'fu1' | 'fu2' | 'fu3';
 }): string => {
   // Copied from the local Candidate Sequencer "Draft first LinkedIn message" step.
@@ -286,6 +291,9 @@ export const buildOutreachFirstMessagePrompt = ({
       '',
       `Prospect Posts: ${prospectPostsText ?? '(none)'}`,
       '',
+      ...(isDefined(companyNews)
+        ? [`Company News: ${companyNews || '(none)'}`, '']
+        : []),
       `Chat History: ${chatHistory ?? '(none)'}`,
       '',
       'Write the first LinkedIn message from the profiles and posts above.',
@@ -298,7 +306,14 @@ export const buildOutreachFirstMessagePrompt = ({
       'Happy to walk you through how this would look for you. Would you be open to a quick chat coming Thursday or Friday?',
       'If the fact is from the profile and not a post, write "I noticed on your profile that" instead of "I noticed in your post that".',
       '',
-      'The message must contain "I noticed" and either "in your post" or "on your profile".',
+      ...(isDefined(companyNews)
+        ? [
+            'If no post or profile fact fits, you may use ONE Company News item as the fact. Then write "I noticed that {company} {news item, close to its wording}" instead of the post or profile phrasing. Never invent news.',
+            'The message must contain "I noticed" and one of "in your post", "on your profile" or "that {company}".',
+          ]
+        : [
+            'The message must contain "I noticed" and either "in your post" or "on your profile".',
+          ]),
       'The close must be exactly: Happy to walk you through how this would look for you. Would you be open to a quick chat coming Thursday or Friday?',
       'Do not open with congratulations. Do not name a clock time.',
       '',
@@ -455,6 +470,7 @@ export const buildOutreachInboundSignalExtractionPrompt = ({
     'You do not write a message and you do not classify intent — both happen elsewhere.',
     'Copy only what is literally in the transcript. Never infer a time or a contact detail.',
     'The transcript may span several rounds. Read the full thread, not only the last line.',
+    "Transcript lines read 'us|them [time]: text'. 'system:' lines are workflow notes (e.g. a teammate was asked to email), never something they said. A bracketed '[N earlier messages omitted; …]' line lists contact details they gave earlier - treat them as given.",
     'acceptedSlotIndex: 0-based index into Available slots of the one slot they accepted.',
     '  Only when they confirmed that specific injected slot (by index, or by matching the',
     '  offered window as it was shown to them). Relative times ("tomorrow", "2:30 pm tomorrow",',
@@ -497,6 +513,7 @@ export const buildOutreachInboundSignalExtractionPrompt = ({
     `Now: ${nowIso?.trim() || '(unknown)'}`,
     `Now in their timezone (resolve "today", "tomorrow", weekdays from THIS date, not the UTC date): ${nowLocal?.trim() || '(unknown)'}`,
     `Timezone: ${timeZone?.trim() || 'Asia/Kolkata'}`,
+    "Transcript lines read 'us|them [time]: text'. 'system:' lines are workflow notes (e.g. a teammate was asked to email), never something they said. A bracketed '[N earlier messages omitted; …]' line lists contact details they gave earlier - treat them as given.",
     `Transcript: ${formatOutreachTranscriptForLlm(transcript) || '(none)'}`,
     'Return JSON only: {',
     '  "acceptedSlotIndex": <integer, -1 when none>,',

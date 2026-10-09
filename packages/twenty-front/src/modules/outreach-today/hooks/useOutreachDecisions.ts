@@ -16,9 +16,11 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 export const useOutreachDecisions = ({
   candidateId,
   enabled = true,
+  mine = false,
 }: {
   candidateId?: string | null;
   enabled?: boolean;
+  mine?: boolean;
 } = {}) => {
   const tokenPair = useAtomStateValue(tokenPairState);
   const { enqueueErrorSnackBar, enqueueSuccessSnackBar } = useSnackBar();
@@ -40,6 +42,7 @@ export const useOutreachDecisions = ({
       const data = await fetchOpenOutreachDecisions({
         accessToken,
         candidateId: isDefined(candidateId) ? candidateId : undefined,
+        mine,
       });
 
       setDecisions(data);
@@ -52,7 +55,7 @@ export const useOutreachDecisions = ({
     } finally {
       setIsLoading(false);
     }
-  }, [accessToken, candidateId, enabled, enqueueErrorSnackBar]);
+  }, [accessToken, candidateId, enabled, enqueueErrorSnackBar, mine]);
 
   useEffect(() => {
     void refetch();

@@ -558,6 +558,31 @@ export const ARXENA_TOOL_SELECTION_QUERIES: ToolSelectionQuery[] = [
     query: 'Use the apollo__people_search tool from our connected MCP',
     expectedToolHints: ['apollo__'],
   },
+  // Federation routing: native wrapper first, connected-server tools via server/query discovery
+  {
+    id: 'e2',
+    persona: 'sales',
+    query: 'Open this LinkedIn profile: linkedin.com/in/jane-doe',
+    expectedToolHints: ['linkedin_unipile_get_profile', 'unipile__'],
+  },
+  {
+    id: 'e3',
+    persona: 'sales',
+    query: 'Which LinkedIn account is connected and do I have Sales Navigator?',
+    expectedToolHints: ['linkedin_unipile_get_own_profile'],
+  },
+  {
+    id: 'e4',
+    persona: 'sales',
+    query: 'List the collections in my Postman workspace',
+    expectedToolHints: ['postman__getCollections'],
+  },
+  {
+    id: 'e5',
+    persona: 'sales',
+    query: 'What does the Unipile API offer for LinkedIn invitations?',
+    expectedToolHints: ['unipile__search-endpoints', 'unipile__list-endpoints'],
+  },
 ];
 
 export const countToolsInContext = (

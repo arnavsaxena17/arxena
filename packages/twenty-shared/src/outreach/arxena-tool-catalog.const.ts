@@ -14,7 +14,17 @@ export type ArxenaToolCatalogEntry = {
   description: string;
 };
 
-// Built-in Arxena GTM tools exposed via ToolCategory.ARXENA.
+export const ARXENA_TOOL_PACK_LABELS: Record<ArxenaToolPack, string> = {
+  prospecting: 'people/company search',
+  enrichment: 'emails/phones',
+  orgchart: 'account maps',
+  outreach: 'messaging',
+  accounts: 'companies/contacts/projects',
+  crm_workspace: 'workspace helpers',
+  general: 'general',
+};
+
+// Built-in Arxena tools exposed via ToolCategory.ARXENA.
 // Schemas are loaded on demand via learn_tools (from MCP catalog cache).
 export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
   {

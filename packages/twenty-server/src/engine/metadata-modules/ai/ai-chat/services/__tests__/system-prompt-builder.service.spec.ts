@@ -170,6 +170,47 @@ describe('SystemPromptBuilderService', () => {
     });
   });
 
+  describe('large category summaries', () => {
+    const buildExternalTool = (slug: string, index: number): ToolIndexEntry => ({
+      name: `${slug}__tool_${index}`,
+      label: `${slug} ${index}`,
+      description: 'external tool',
+      category: ToolCategory.EXTERNAL_MCP,
+      executionRef: { kind: 'static', toolId: `${slug}__tool_${index}` },
+    });
+
+    it('should summarize connected servers instead of listing every external tool', () => {
+      const service = buildService();
+      const externalTools = [
+        ...Array.from({ length: 20 }, (_, index) =>
+          buildExternalTool('postman', index),
+        ),
+        ...Array.from({ length: 3 }, (_, index) =>
+          buildExternalTool('unipile', index),
+        ),
+      ];
+
+      const section = service.buildMcpCompactToolCatalogSection(
+        externalTools,
+        [],
+      );
+
+      expect(section).toContain('`postman` (20 tools)');
+      expect(section).toContain('get_tool_catalog({server: "unipile"})');
+      expect(section).not.toContain('`postman__tool_0`');
+    });
+
+    it('should keep listing tool names for small categories', () => {
+      const service = buildService();
+      const section = service.buildMcpCompactToolCatalogSection(
+        [buildExternalTool('unipile', 0)],
+        [],
+      );
+
+      expect(section).toContain('`unipile__tool_0`');
+    });
+  });
+
   describe('buildMcpInstructions', () => {
     it('includes CORE, MCP transport, skills, and omits chat-only UI', async () => {
       const service = buildService({

@@ -951,6 +951,9 @@ export class LinkedinUnipileRequestService {
       linkedinSections?: string[];
       linkedinApi?: 'sales_navigator' | 'recruiter';
       notify?: boolean;
+      // Viewer-relative reads (shared connections, network distance) must not
+      // be served from, or written to, the slug-keyed cache shared by all seats.
+      viewerScoped?: boolean;
       cleanupContext?: LinkedinUnipileAccountCleanupContext;
     },
   ): Promise<Record<string, unknown> | null> {
@@ -963,7 +966,9 @@ export class LinkedinUnipileRequestService {
     // notify=true must hit Unipile so LinkedIn records the visit; SN/Recruiter
     // profiles also skip the classic cache.
     const shouldBypassCache =
-      options?.notify === true || isDefined(options?.linkedinApi);
+      options?.notify === true ||
+      options?.viewerScoped === true ||
+      isDefined(options?.linkedinApi);
 
     if (!shouldBypassCache) {
       const cachedProfile =

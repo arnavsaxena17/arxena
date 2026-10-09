@@ -7,6 +7,8 @@ import { OpenAI } from 'openai';
 import * as path from 'path';
 import * as pdfParse from 'pdf-parse';
 
+import { MeteredLlmService } from 'src/engine/core-modules/metered-llm/metered-llm.service';
+import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import { ProcessCandidatesService } from '../jobs/process-candidates.service';
 import { DataProcessingUtils } from '../utils/data-processing.utils';
 import { CandidateService } from './candidate.service';
@@ -30,6 +32,8 @@ export class ResumeReadParseUploadService {
     private readonly dataProcessingUtils: DataProcessingUtils,
     private readonly configService: ConfigService,
     private readonly candidateService: CandidateService,
+    private readonly meteredLlmService: MeteredLlmService,
+    private readonly workspaceQueryService: WorkspaceQueryService,
   ) {
     this.initializeOpenAI();
   }
@@ -228,7 +232,8 @@ export class ResumeReadParseUploadService {
         throw new Error('No resume files could be read successfully');
       }
 
-      const parseResults = await this.parseResumesInBatches(resumeContents);
+      const workspaceId = await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const parseResults = await this.parseResumesInBatches(resumeContents, workspaceId);
       
       // Process results
       const parsedCVs: ParsedCVData[] = [];
@@ -299,7 +304,7 @@ export class ResumeReadParseUploadService {
   /**
    * Parse resumes in batches to control concurrency and prevent API rate limiting
    */
-  private async parseResumesInBatches(resumeContents: Array<{ text: string; fileName: string }>): Promise<Array<{ success: boolean; data?: ParsedCVData | null; error?: string; fileName: string }>> {
+  private async parseResumesInBatches(resumeContents: Array<{ text: string; fileName: string }>, workspaceId: string): Promise<Array<{ success: boolean; data?: ParsedCVData | null; error?: string; fileName: string }>> {
     const BATCH_SIZE = 5; // Process 5 resumes at a time
     const results: Array<{ success: boolean; data?: ParsedCVData | null; error?: string; fileName: string }> = [];
 
@@ -309,7 +314,7 @@ export class ResumeReadParseUploadService {
 
       const batchPromises = batch.map(async (content) => {
         try {
-          const parsedCV = await this.parseResumeText(content.text);
+          const parsedCV = await this.parseResumeText(content.text, workspaceId);
           return { success: true, data: parsedCV, fileName: content.fileName };
         } catch (error) {
           this.logger.error(`Failed to parse resume ${content.fileName}:`, error);
@@ -333,8 +338,8 @@ export class ResumeReadParseUploadService {
    * Parse resume text using OpenAI. Public so other features (e.g. ICP extract
    * from resume) can reuse the same CV schema without re-uploading candidates.
    */
-  async parseResumeText(resumeText: string): Promise<ParsedCVData> {
-    const parsed = await this.parseResumeWithOpenAI(resumeText);
+  async parseResumeText(resumeText: string, workspaceId: string): Promise<ParsedCVData> {
+    const parsed = await this.parseResumeWithOpenAI(resumeText, workspaceId);
     if (!parsed) {
       throw new Error('Failed to parse resume - no data returned');
     }
@@ -344,19 +349,19 @@ export class ResumeReadParseUploadService {
   /**
    * Read a resume file from disk and parse it into structured CV data.
    */
-  async readAndParseResumeFile(filePath: string): Promise<{
+  async readAndParseResumeFile(filePath: string, workspaceId: string): Promise<{
     content: ResumeContent;
     parsed: ParsedCVData;
   }> {
     const content = await this.readResumeFile(filePath);
-    const parsed = await this.parseResumeText(content.text);
+    const parsed = await this.parseResumeText(content.text, workspaceId);
     return { content, parsed };
   }
 
   /**
    * Parse resume text using OpenAI
    */
-  private async parseResumeWithOpenAI(resumeText: string): Promise<ParsedCVData | null> {
+  private async parseResumeWithOpenAI(resumeText: string, workspaceId: string): Promise<ParsedCVData | null> {
     if (!this.openaiClient) {
       throw new Error('OpenAI client not initialized');
     }
@@ -402,22 +407,26 @@ export class ResumeReadParseUploadService {
     ${resumeText}`;
 
     try {
-      const completion = await this.openaiClient.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert at parsing resume data. Extract information accurately and return only valid JSON.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        temperature: 0,
-        response_format: { type: 'json_object' },
-        // max_tokens: 2000,
-      });
+      const completion = await this.meteredLlmService.openAiChatCompletion(
+        { workspaceId, feature: 'RESUME_PARSE', keySource: 'platform' },
+        this.openaiClient,
+        {
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert at parsing resume data. Extract information accurately and return only valid JSON.',
+            },
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+          temperature: 0,
+          response_format: { type: 'json_object' },
+          // max_tokens: 2000,
+        },
+      );
 
       const responseText = completion.choices[0]?.message?.content;
       if (!responseText) {

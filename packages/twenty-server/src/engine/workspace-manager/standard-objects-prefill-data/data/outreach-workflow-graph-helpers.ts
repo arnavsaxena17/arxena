@@ -24,6 +24,7 @@ export const OUTREACH_WF_HARVEST_PROJECT_ID = '__PROJECT_OUTREACH_HARVEST__';
 export const OUTREACH_WF_FIELD = {
   candidateId: '__FIELD_candidate.id__',
   personId: '__FIELD_person.id__',
+  workspaceMemberId: '__FIELD_workspaceMember.id__',
   chatCandidateId: '__FIELD_chatMessage.candidateId__',
   chatCreatedAt: '__FIELD_chatMessage.createdAt__',
   outreachSequenceStage: '__FIELD_candidate.outreachSequenceStage__',
@@ -1520,15 +1521,25 @@ export const gtmWfMemberStep = (
   {
     memberStepId = OUTREACH_WF_MEMBER_STEP_ID,
     memberStepName = 'Load workspace member',
+    pinnedMemberIdTemplate,
   }: {
     memberStepId?: string;
     memberStepName?: string;
+    // Pins the lookup to one member (selector output) instead of the first row.
+    pinnedMemberIdTemplate?: string;
   } = {},
 ): StepBase =>
   gtmWfFindRecordsStep({
     id: memberStepId,
     name: memberStepName,
     objectName: 'workspaceMember',
+    ...(pinnedMemberIdTemplate
+      ? {
+          fieldMetadataId: OUTREACH_WF_FIELD.workspaceMemberId,
+          filterValue: pinnedMemberIdTemplate,
+          filterLabel: 'Id',
+        }
+      : {}),
     nextStepIds,
   });
 

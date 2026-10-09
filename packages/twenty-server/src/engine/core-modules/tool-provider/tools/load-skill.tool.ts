@@ -31,7 +31,7 @@ export const createLoadSkillTool = (
   listAvailableSkillNames: ListAvailableSkillNamesFunction,
 ) => ({
   description:
-    'Load specialized skills for complex tasks. Returns detailed step-by-step instructions for building workflows, dashboards, manipulating data, or managing metadata. Call this before attempting complex operations.',
+    'Arxena CRM toolkit: company and people search (Apollo, LinkedIn, Harvest, Bright Data), CRM records, outreach campaigns and sequencers, workflows and automations, dashboards, and org charts. Load specialized skills for complex tasks. Returns detailed step-by-step instructions for building workflows, dashboards, manipulating data, or managing metadata. Call this before attempting complex operations. START HERE for any request to search, find, list, or source companies, jobs, or people (e.g. "find companies which do XYZ in India", "CTOs at fintechs"). Call this first to understand capabilities.',
   inputSchema: loadSkillInputSchema,
   execute: async (parameters: LoadSkillInput): Promise<LoadSkillResult> => {
     const { skillNames } = parameters;

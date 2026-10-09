@@ -302,6 +302,14 @@ export class WorkspaceEntity {
   @Column({ default: false })
   isInternalMessagesImportEnabled: boolean;
 
+  // Per-feature billing treatment exceptions for this workspace, e.g. { "AI_CHAT": "SYSTEM" }
+  @Column({
+    type: 'jsonb',
+    nullable: true,
+    name: 'billing_treatment_overrides',
+  })
+  billingTreatmentOverrides: Record<string, string> | null;
+
   // ARX integration keys (snake_case column names match existing runtime ALTER columns)
   @Column({ type: 'varchar', length: 255, nullable: true, name: 'openaikey' })
   openaikey: string | null;

@@ -12,8 +12,9 @@ import {
   ARXENA_INTERNAL_TOOL_NAMES,
   ARXENA_TOOL_CATALOG,
   type ArxenaToolPack,
-} from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-catalog.const';
+} from 'twenty-shared/outreach';
 import { ArxenaMcpBridgeService } from 'src/engine/core-modules/arxena-tools/services/arxena-mcp-bridge.service';
+import { ApiKeyService } from 'src/engine/core-modules/api-key/services/api-key.service';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { type ApiKeyWorkspaceAuthContext } from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
 import { type GenerateDescriptorOptions } from 'src/engine/core-modules/tool-provider/interfaces/generate-descriptor-options.type';
@@ -56,6 +57,7 @@ export class ArxenaToolProvider implements ToolProvider {
     private readonly arxenaMcpBridgeService: ArxenaMcpBridgeService,
     private readonly twentyConfigService: TwentyConfigService,
     private readonly accessTokenService: AccessTokenService,
+    private readonly apiKeyService: ApiKeyService,
   ) {}
 
   async isAvailable(_context: ToolProviderContext): Promise<boolean> {
@@ -82,12 +84,16 @@ export class ArxenaToolProvider implements ToolProvider {
     const authContext = context.authContext;
 
     if (authContext?.type === 'apiKey') {
-      const apiKeyContext = authContext as ApiKeyWorkspaceAuthContext & {
-        apiKey: { token?: string };
-      };
+      const apiKeyContext = authContext as ApiKeyWorkspaceAuthContext;
 
-      if (isDefined(apiKeyContext.apiKey?.token)) {
-        return apiKeyContext.apiKey.token;
+      // The flat API key never carries the raw secret, so re-sign a token for the same key id
+      const apiKeyToken = await this.apiKeyService.generateApiKeyToken(
+        context.workspaceId,
+        apiKeyContext.apiKey.id,
+      );
+
+      if (isDefined(apiKeyToken?.token)) {
+        return apiKeyToken.token;
       }
     }
 

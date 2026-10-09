@@ -73,3 +73,39 @@ export const persistOutreachCompaniesCache = async (
     console.error('Failed to persist GTM companies cache:', error);
   }
 };
+
+// CRM companies tagged to the project (company.projectIds). The Companies tab
+// shows them next to the ephemeral Find list.
+export const fetchOutreachProjectCompanies = async (
+  projectId: string | undefined,
+  accessToken: string | undefined,
+): Promise<OutreachCompanyRow[]> => {
+  if (!projectId || projectId === 'project-id' || !accessToken) {
+    return [];
+  }
+
+  const baseUrl = getBaseUrl();
+
+  if (!baseUrl) {
+    return [];
+  }
+
+  try {
+    const response = await fetch(
+      `${baseUrl}/outreach-command/project-companies?projectId=${encodeURIComponent(projectId)}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    const data = (await response.json()) as { companies?: OutreachCompanyRow[] };
+
+    return Array.isArray(data.companies) ? data.companies : [];
+  } catch (error) {
+    console.error('Failed to fetch CRM project companies:', error);
+
+    return [];
+  }
+};

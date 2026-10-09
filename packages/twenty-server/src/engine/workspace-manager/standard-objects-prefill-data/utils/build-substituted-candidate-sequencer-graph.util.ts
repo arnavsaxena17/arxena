@@ -30,6 +30,7 @@ const LF_TOKEN_TO_ID_KEY = {
   '__LF_fetch-linkedin-messages__': 'fetchLinkedinMessagesId',
   '__LF_fetch-linkedin-profile__': 'fetchLinkedinProfileId',
   '__LF_validate-inbound-signals__': 'validateInboundSignalsId',
+  '__LF_select-outreach-workspace-member__': 'selectWorkspaceMemberId',
   '__LF_get-project-attachments__': 'getProjectAttachmentsId',
   '__LF_notify-member-system-email__': 'notifyMemberSystemEmailId',
   '__LF_create-referral-candidate__': 'createReferralCandidateId',
@@ -75,6 +76,8 @@ export const buildSubstitutedCandidateSequencerGraph = ({
     createdAt: string;
     chatCandidateId: string;
     chatCreatedAt: string;
+    // Only needed when options.pinSenderByWarmOverlap is on.
+    workspaceMemberId?: string;
   };
   options: OutreachSequencerGraphOptions;
 }): {
@@ -102,6 +105,12 @@ export const buildSubstitutedCandidateSequencerGraph = ({
     [OUTREACH_WF_FIELD.createdAt]: fieldMetadataIds.createdAt,
     [OUTREACH_WF_FIELD.chatCandidateId]: fieldMetadataIds.chatCandidateId,
     [OUTREACH_WF_FIELD.chatCreatedAt]: fieldMetadataIds.chatCreatedAt,
+    ...(isDefined(fieldMetadataIds.workspaceMemberId)
+      ? {
+          [OUTREACH_WF_FIELD.workspaceMemberId]:
+            fieldMetadataIds.workspaceMemberId,
+        }
+      : {}),
   };
 
   for (const [token, idKey] of Object.entries(LF_TOKEN_TO_ID_KEY)) {

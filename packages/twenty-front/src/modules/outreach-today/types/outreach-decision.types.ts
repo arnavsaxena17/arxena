@@ -34,6 +34,8 @@ export type OutreachDecisionListItem = {
   personTitle: string;
   companyName: string;
   projectName: string;
+  ownerMemberId?: string | null;
+  ownerName?: string;
 };
 
 export type OutreachDecisionGroup = {

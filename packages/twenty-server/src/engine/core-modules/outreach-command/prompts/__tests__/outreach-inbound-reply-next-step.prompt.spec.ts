@@ -204,6 +204,26 @@ describe('buildOutreachSalesChatDraftPrompt', () => {
     expect(opener).not.toContain(OUTREACH_HUMANIZER_RULES);
   });
 
+  it('should add company news to the opener only when it is passed', () => {
+    const baseInput = {
+      senderJson: '{}',
+      prospectEnrichmentJson: '{}',
+      kind: 'opener' as const,
+    };
+    const withoutNews = buildOutreachFirstMessagePrompt(baseInput);
+    const withNews = buildOutreachFirstMessagePrompt({
+      ...baseInput,
+      companyNews: 'Acme raised a Series B',
+    });
+
+    expect(withoutNews).not.toContain('Company News');
+    expect(withoutNews).toContain(
+      'The message must contain "I noticed" and either "in your post" or "on your profile".',
+    );
+    expect(withNews).toContain('Company News: Acme raised a Series B');
+    expect(withNews).toContain('"that {company}"');
+  });
+
   it('should escalate cold cadence ask types without contradicting T1', () => {
     const fu1 = buildOutreachFirstMessagePrompt({
       senderJson: '{}',

@@ -73,6 +73,7 @@ type OutreachRecordTableColumnMenuProps<TRow> = {
   getCellText: (row: TRow) => string;
   filter: OutreachColumnFilter | undefined;
   canHide: boolean;
+  valueType?: 'text' | 'number';
   top: number;
   left: number;
   onHide: () => void;
@@ -85,6 +86,7 @@ export const OutreachRecordTableColumnMenu = <TRow,>({
   getCellText,
   filter,
   canHide,
+  valueType = 'text',
   top,
   left,
   onHide,
@@ -99,7 +101,13 @@ export const OutreachRecordTableColumnMenu = <TRow,>({
     filter?.kind === 'values' ? filter.values : distinctValues;
   const [operator, setOperator] = useState<
     Extract<OutreachColumnFilter, { kind: 'condition' }>['operator']
-  >(filter?.kind === 'condition' ? filter.operator : 'contains');
+  >(
+    filter?.kind === 'condition'
+      ? filter.operator
+      : valueType === 'number'
+        ? 'greaterThan'
+        : 'contains',
+  );
   const [conditionValue, setConditionValue] = useState(
     filter?.kind === 'condition' ? filter.value : '',
   );
@@ -115,7 +123,8 @@ export const OutreachRecordTableColumnMenu = <TRow,>({
           Hide column
         </StyledMenuButton>
       )}
-      {distinctValues.map((value) => {
+      {valueType !== 'number' &&
+        distinctValues.map((value) => {
         const checked = selectedValues.includes(value);
 
         return (
@@ -138,7 +147,7 @@ export const OutreachRecordTableColumnMenu = <TRow,>({
             {value === '' ? '(empty)' : value}
           </StyledLabel>
         );
-      })}
+        })}
       <StyledConditionRow>
         <StyledSelect
           aria-label="Filter condition"
@@ -155,6 +164,14 @@ export const OutreachRecordTableColumnMenu = <TRow,>({
           <option value="contains">Contains</option>
           <option value="notContains">Does not contain</option>
           <option value="equals">Equals</option>
+          {valueType === 'number' && (
+            <>
+              <option value="greaterThan">Greater than</option>
+              <option value="greaterThanOrEqual">Greater than or equal</option>
+              <option value="lessThan">Less than</option>
+              <option value="lessThanOrEqual">Less than or equal</option>
+            </>
+          )}
           <option value="empty">Is empty</option>
           <option value="notEmpty">Is not empty</option>
         </StyledSelect>

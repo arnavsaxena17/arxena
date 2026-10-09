@@ -89,4 +89,11 @@ export class ApplyOutreachSequencerGraphOptionsInput {
     nullable: false,
   })
   testMode: boolean;
+
+  @Field(() => Boolean, {
+    description:
+      'When true, pin each candidate to one workspace member (manual, split, or warm overlap) so every send and reply stays on that member seat',
+    nullable: true,
+  })
+  pinSenderByWarmOverlap?: boolean;
 }

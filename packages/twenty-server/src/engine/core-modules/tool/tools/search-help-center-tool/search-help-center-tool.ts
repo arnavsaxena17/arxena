@@ -13,7 +13,7 @@ import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twent
 @Injectable()
 export class SearchHelpCenterTool implements Tool {
   description =
-    'Search Twenty documentation and help center to find information about features, setup, usage, and troubleshooting.';
+    'Search Twenty documentation and help center to find information about features, setup, usage, and troubleshooting. Documentation only; do not use it to find companies or people.';
   inputSchema = SearchHelpCenterInputZodSchema;
 
   constructor(

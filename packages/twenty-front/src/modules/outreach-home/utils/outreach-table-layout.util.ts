@@ -3,6 +3,7 @@ import { isDefined } from 'twenty-shared/utils';
 type LayoutColumn<TRow> = {
   id: string;
   width: number;
+  valueType?: 'text' | 'number';
   sortValue?: (row: TRow) => string | number | null | undefined;
 };
 
@@ -40,7 +41,16 @@ export type OutreachColumnFilter =
   | {
       columnId: string;
       kind: 'condition';
-      operator: 'contains' | 'notContains' | 'equals' | 'empty' | 'notEmpty';
+      operator:
+        | 'contains'
+        | 'notContains'
+        | 'equals'
+        | 'empty'
+        | 'notEmpty'
+        | 'greaterThan'
+        | 'greaterThanOrEqual'
+        | 'lessThan'
+        | 'lessThanOrEqual';
       value: string;
     };
 
@@ -226,6 +236,21 @@ const splitRawJsonColumnId = (
   }
 
   return { bag, key: columnId.slice(separatorIndex + 1) };
+};
+
+export const readRawJsonValue = (
+  row: object,
+  columnId: string,
+): unknown => {
+  const parsedId = splitRawJsonColumnId(columnId);
+
+  if (!parsedId) {
+    return undefined;
+  }
+
+  return asRecord((row as Record<string, unknown>)[parsedId.bag])?.[
+    parsedId.key
+  ];
 };
 
 export const readRawJsonCell = (row: object, columnId: string): string => {
@@ -465,14 +490,29 @@ const matchesFilter = (
 
   const haystack = cellText.toLowerCase();
   const needle = filter.value.trim().toLowerCase();
+  const cellNumber = Number(cellText);
+  const needleNumber = Number(needle.replace(/,/g, ''));
+  const isComparable =
+    cellText !== '' &&
+    needle !== '' &&
+    Number.isFinite(cellNumber) &&
+    Number.isFinite(needleNumber);
 
   switch (filter.operator) {
+    case 'greaterThan':
+      return isComparable && cellNumber > needleNumber;
+    case 'greaterThanOrEqual':
+      return isComparable && cellNumber >= needleNumber;
+    case 'lessThan':
+      return isComparable && cellNumber < needleNumber;
+    case 'lessThanOrEqual':
+      return isComparable && cellNumber <= needleNumber;
     case 'contains':
       return haystack.includes(needle);
     case 'notContains':
       return !haystack.includes(needle);
     case 'equals':
-      return haystack === needle;
+      return isComparable ? cellNumber === needleNumber : haystack === needle;
     case 'empty':
       return cellText === '';
     case 'notEmpty':

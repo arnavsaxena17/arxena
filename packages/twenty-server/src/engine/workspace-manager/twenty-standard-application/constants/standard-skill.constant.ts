@@ -63,6 +63,9 @@ export const STANDARD_SKILL = {
   'resolve-company-name': {
     universalIdentifier: '20202020-8e3c-4a1b-9d5f-6b2e0c7a4d81',
   },
+  'ai-filter-enrich': {
+    universalIdentifier: '20202020-9f4d-4b2c-8e6a-7c3f1d8b5e92',
+  },
 } as const satisfies Record<
   string,
   {

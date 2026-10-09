@@ -3,7 +3,6 @@ import { styled } from '@linaria/react';
 import { useParams } from 'react-router-dom';
 import { useDebouncedCallback } from 'use-debounce';
 
-import { FormAdvancedTextFieldInput } from '@/object-record/record-field/ui/form-types/components/FormAdvancedTextFieldInput';
 import { AdvancedSettingsWrapper } from '@/settings/components/AdvancedSettingsWrapper';
 import { SaveAndCancelButtons } from '@/settings/components/SaveAndCancelButtons/SaveAndCancelButtons';
 import { SettingsEditableTitle } from '@/settings/components/SettingsEditableTitle';
@@ -53,6 +52,15 @@ const StyledFormContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[4]};
+`;
+
+// Raw markdown on purpose: the rich-text editor drops code blocks and tables
+// and would save HTML back over the skill markdown.
+const StyledInstructionsContainer = styled.div`
+  && textarea {
+    font-family: ${themeCssVariables.code.font.family};
+    font-size: ${themeCssVariables.font.size.sm};
+  }
 `;
 
 const StyledIconNameRow = styled.div`
@@ -486,28 +494,20 @@ export const SettingsSkillForm = ({ mode }: { mode: 'create' | 'edit' }) => {
                   disabled={isReadonlyMode}
                 />
 
-                <FormAdvancedTextFieldInput
-                  key={originalFormValues?.content ?? 'loading'}
-                  label={t`Instructions`}
-                  readonly={isReadonlyMode}
-                  defaultValue={formValues.content}
-                  contentType="markdown"
-                  onChange={(content: string) =>
-                    handleFieldChange('content', content)
-                  }
-                  enableFullScreen={true}
-                  fullScreenBreadcrumbs={[
-                    {
-                      children: formValues.label || t`Skill`,
-                      href: '#',
-                    },
-                    {
-                      children: t`Instructions Editor`,
-                    },
-                  ]}
-                  minHeight={300}
-                  maxWidth={700}
-                />
+                <StyledInstructionsContainer>
+                  <TextArea
+                    textAreaId="skill-instructions-textarea"
+                    label={t`Instructions`}
+                    placeholder={t`Write the skill instructions in markdown`}
+                    minRows={16}
+                    maxRows={40}
+                    value={formValues.content}
+                    onChange={(value) =>
+                      handleFieldChange('content', value ?? '')
+                    }
+                    disabled={isReadonlyMode}
+                  />
+                </StyledInstructionsContainer>
 
                 <AdvancedSettingsWrapper hideDot>
                   <StyledAdvancedSettingsOuterContainer>

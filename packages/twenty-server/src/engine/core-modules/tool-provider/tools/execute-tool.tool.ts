@@ -58,7 +58,7 @@ export const createExecuteToolTool = (
   },
 ) => ({
   description:
-    'Execute a tool by name with arguments. Call learn_tools first to discover the required input schema.',
+    'Execute a tool by name with arguments. Call learn_tools first to discover the required input schema. Company and people search (Apollo, LinkedIn, Harvest, Bright Data, Exa) runs through this tool; load the "search" skill with load_skills first.',
   inputSchema: executeToolInputSchema,
   execute: async (parameters: ExecuteToolInput): Promise<ToolOutput> => {
     const { toolName, arguments: args = {} } = parameters;

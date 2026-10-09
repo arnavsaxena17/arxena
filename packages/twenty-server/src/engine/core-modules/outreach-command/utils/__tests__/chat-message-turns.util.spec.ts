@@ -190,4 +190,69 @@ describe('chat-message-turns.util', () => {
       ),
     ).toEqual([{ role: 'assistant', content: 'Hi from messageObj' }]);
   });
+
+  it('keeps a repeated message when it arrives as a new send', () => {
+    const merged = mergeChatTurns(
+      [
+        {
+          role: 'user',
+          content: 'ok',
+          id: 'in-1',
+          timestamp: '2026-10-01T10:00:00.000Z',
+        },
+      ],
+      [
+        {
+          role: 'user',
+          content: 'ok',
+          id: 'in-2',
+          timestamp: '2026-10-08T10:00:00.000Z',
+        },
+      ],
+    );
+
+    expect(merged.map((turn) => turn.id)).toEqual(['in-1', 'in-2']);
+  });
+
+  it('keeps an identical turn with no id when it is sent much later', () => {
+    const merged = mergeChatTurns(
+      [
+        {
+          role: 'assistant',
+          content: 'Following up',
+          timestamp: '2026-10-01T10:00:00.000Z',
+        },
+      ],
+      [
+        {
+          role: 'assistant',
+          content: 'Following up',
+          timestamp: '2026-10-08T10:00:00.000Z',
+        },
+      ],
+    );
+
+    expect(merged).toHaveLength(2);
+  });
+
+  it('still collapses a re-delivered copy without id or timestamp', () => {
+    const merged = mergeChatTurns(
+      [{ role: 'user', content: 'No, thank you' }],
+      [{ role: 'user', content: 'No, thank you' }],
+    );
+
+    expect(merged).toHaveLength(1);
+  });
+
+  it('absorbs each stored turn once so two real repeats both survive', () => {
+    const merged = mergeChatTurns(
+      [{ role: 'user', content: 'ok' }],
+      [
+        { role: 'user', content: 'ok' },
+        { role: 'user', content: 'ok' },
+      ],
+    );
+
+    expect(merged).toHaveLength(2);
+  });
 });

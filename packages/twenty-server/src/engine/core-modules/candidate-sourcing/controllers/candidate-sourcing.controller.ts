@@ -1632,9 +1632,16 @@ export class CandidateSourcingController {
 
       console.log(`Processing filter description: ${filterDescription}`);
 
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
       const filterConfig =
         await this.filterDescriptionProcessorService.generateSingleFilter(
           filterDescription,
+          workspaceId,
         );
 
       // Validate that the selected metadata fields are valid

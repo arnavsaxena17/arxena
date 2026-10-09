@@ -11,6 +11,8 @@ export const DEFAULT_OUTREACH_CONTEXT: OutreachContext = {
   outreachSendMode: 'APPROVAL',
   selectedCompanyId: null,
   selectedPersonId: null,
+  selectedPersonIds: [],
+  selectedCandidateIds: [],
   selectedCandidateStage: null,
   icpName: null,
   icpSpecSummary: null,
@@ -18,7 +20,12 @@ export const DEFAULT_OUTREACH_CONTEXT: OutreachContext = {
   gmailConnected: false,
   whatsappConnected: false,
   phase: null,
+  activeTab: null,
 };
+
+const isSameStringList = (left: string[], right: string[]): boolean =>
+  left.length === right.length &&
+  left.every((value, index) => value === right[index]);
 
 export const isSameOutreachContext = (
   left: OutreachContext,
@@ -28,8 +35,11 @@ export const isSameOutreachContext = (
   left.projectName === right.projectName &&
   left.outreachWorkflowId === right.outreachWorkflowId &&
   left.outreachSendMode === right.outreachSendMode &&
+  left.activeTab === right.activeTab &&
   left.selectedCompanyId === right.selectedCompanyId &&
   left.selectedPersonId === right.selectedPersonId &&
+  isSameStringList(left.selectedPersonIds, right.selectedPersonIds) &&
+  isSameStringList(left.selectedCandidateIds, right.selectedCandidateIds) &&
   left.selectedCandidateStage === right.selectedCandidateStage &&
   left.icpName === right.icpName &&
   left.icpSpecSummary === right.icpSpecSummary &&

@@ -1,7 +1,10 @@
 import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 
-import { asChatTurns } from 'src/engine/core-modules/outreach-command/utils/chat-message-turns.util';
+import {
+  asChatTurns,
+  type ChatTurn,
+} from 'src/engine/core-modules/outreach-command/utils/chat-message-turns.util';
 import { flattenFatOutreachSenderProfile } from 'src/engine/core-modules/outreach-command/utils/flatten-fat-outreach-sender-profile.util';
 
 // Leave workflow template chips alone so resolveInput can still substitute them.
@@ -45,16 +48,82 @@ const listLine = (label: string, value: unknown): string[] => {
   return [];
 };
 
-const roleLabel = (role: string): 'us' | 'them' =>
-  role === 'assistant' || role === 'us' ? 'us' : 'them';
+const roleLabel = (role: string): 'us' | 'them' | 'system' =>
+  role === 'system'
+    ? 'system'
+    : role === 'assistant' || role === 'us'
+      ? 'us'
+      : 'them';
 
-export const formatOutreachChatTurnsForLlm = (turns: unknown): string => {
-  const lines = asChatTurns(turns).map(
-    (turn) => `${roleLabel(turn.role)}: ${turn.content}`,
+// Beyond this the oldest turns are folded into a short facts line, so a long
+// thread cannot grow the prompt without bound.
+const MAX_VERBATIM_TURNS = 30;
+const TRANSCRIPT_TIME_ZONE = 'Asia/Kolkata';
+const EMAIL_PATTERN = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
+const PHONE_PATTERN = /\+?\d[\d\s().-]{8,}\d/g;
+
+const formatTurnTime = (timestamp?: string): string => {
+  const parsed = Date.parse(timestamp ?? '');
+
+  if (Number.isNaN(parsed)) {
+    return '';
+  }
+
+  return (
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: TRANSCRIPT_TIME_ZONE,
+      day: 'numeric',
+      month: 'short',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).format(new Date(parsed)) + ' IST'
   );
-
-  return lines.join('\n---\n');
 };
+
+const uniqueMatches = (texts: string[], pattern: RegExp): string[] => [
+  ...new Set(
+    texts.flatMap((text) => text.match(pattern) ?? []).map((m) => m.trim()),
+  ),
+];
+
+const summarizeOmittedTurns = (omitted: ChatTurn[]): string => {
+  const prospectTexts = omitted
+    .filter((turn) => roleLabel(turn.role) === 'them')
+    .map((turn) => turn.content);
+  const emails = uniqueMatches(prospectTexts, EMAIL_PATTERN);
+  const phones = uniqueMatches(prospectTexts, PHONE_PATTERN);
+  const since = formatTurnTime(omitted[0]?.timestamp);
+  const facts = [
+    emails.length > 0 ? `emails they gave: ${emails.join(', ')}` : '',
+    phones.length > 0 ? `phones they gave: ${phones.join(', ')}` : '',
+  ].filter(isNonEmptyString);
+
+  return `[${omitted.length} earlier messages omitted${since ? `, thread started ${since}` : ''}${facts.length > 0 ? `; ${facts.join('; ')}` : ''}]`;
+};
+
+export const formatOutreachChatTurnsForLlm = (
+  turns: unknown,
+  options?: { showChannel?: boolean },
+): string => {
+  const all = asChatTurns(turns);
+  const omitted = all.slice(0, Math.max(0, all.length - MAX_VERBATIM_TURNS));
+  const lines = all.slice(omitted.length).map((turn) => {
+    const meta = [
+      options?.showChannel === true ? turn.channel : undefined,
+      formatTurnTime(turn.timestamp),
+    ].filter(isNonEmptyString);
+
+    return `${roleLabel(turn.role)}${meta.length > 0 ? ` [${meta.join(', ')}]` : ''}: ${turn.content}`;
+  });
+
+  return [
+    ...(omitted.length > 0 ? [summarizeOmittedTurns(omitted)] : []),
+    ...lines,
+  ].join('\n---\n');
+};
+
+const ALREADY_FORMATTED_PATTERN = /^(us|them|system)(\s\[[^\]\n]*\])?:/;
 
 // Find-records dump, messageObj turns, Unipile messages, or an already-plain transcript.
 export const formatOutreachTranscriptForLlm = (value: unknown): string => {
@@ -66,8 +135,8 @@ export const formatOutreachTranscriptForLlm = (value: unknown): string => {
     }
 
     if (
-      trimmed.startsWith('us:') ||
-      trimmed.startsWith('them:') ||
+      ALREADY_FORMATTED_PATTERN.test(trimmed) ||
+      trimmed.startsWith('[') ||
       trimmed.includes('\n---\n')
     ) {
       return trimmed;
@@ -96,14 +165,40 @@ export const formatOutreachTranscriptForLlm = (value: unknown): string => {
         : [];
     // Find chats order by createdAt DESC — reverse so the thread reads oldest→newest.
     const chronologicalRows = [...rows].reverse();
-    const turns = chronologicalRows.flatMap((row) => {
+    const taggedTurns = chronologicalRows.flatMap((row) => {
       const chatMessage = asRecord(row);
+      const channel =
+        typeof chatMessage?.channel === 'string' ? chatMessage.channel : '';
 
-      return asChatTurns(chatMessage?.messageObj);
+      return asChatTurns(chatMessage?.messageObj).map((turn) => ({
+        ...turn,
+        ...(isNonEmptyString(channel) && !isNonEmptyString(turn.channel)
+          ? { channel }
+          : {}),
+      }));
     });
+    const channels = new Set(
+      taggedTurns.map((turn) => turn.channel).filter(isNonEmptyString),
+    );
+    const isMultiChannel = channels.size > 1;
+    // One row per channel keeps each channel's turns together; merge them into
+    // one timeline when every turn carries a time.
+    const turns =
+      isMultiChannel &&
+      taggedTurns.every(
+        (turn) => !Number.isNaN(Date.parse(turn.timestamp ?? '')),
+      )
+        ? [...taggedTurns].sort(
+            (left, right) =>
+              Date.parse(left.timestamp ?? '') -
+              Date.parse(right.timestamp ?? ''),
+          )
+        : taggedTurns;
 
     if (turns.length > 0) {
-      return formatOutreachChatTurnsForLlm(turns);
+      return formatOutreachChatTurnsForLlm(turns, {
+        showChannel: isMultiChannel,
+      });
     }
 
     const fallbackMessages = chronologicalRows

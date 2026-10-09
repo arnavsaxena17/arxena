@@ -182,6 +182,7 @@ export class AiFilteringService {
         candidates,
         aiFilterConfigs,
         openaiApiKey,
+        workspaceId,
         async (progress, current, total) => {
           if (recruiterId) {
             try {

@@ -66,7 +66,10 @@ const StyledEmpty = styled.div`
 `;
 
 export const OutreachTodayPage = () => {
-  const { decisions, isLoading, resolvingId, resolve } = useOutreachDecisions();
+  const [showMineOnly, setShowMineOnly] = useState(false);
+  const { decisions, isLoading, resolvingId, resolve } = useOutreachDecisions({
+    mine: showMineOnly,
+  });
   const [expandedGroupKey, setExpandedGroupKey] = useState<string | null>(null);
   const { needsYouNow, approveGroups } = splitOutreachDecisions(decisions);
   const isClear = !isLoading && decisions.length === 0;
@@ -76,6 +79,20 @@ export const OutreachTodayPage = () => {
       <PageHeader title="Today" />
       <PageBody>
         <StyledContent>
+          <StyledGroupActions>
+            <Button
+              title="Everyone"
+              variant={showMineOnly ? 'secondary' : 'primary'}
+              size="small"
+              onClick={() => setShowMineOnly(false)}
+            />
+            <Button
+              title="Mine"
+              variant={showMineOnly ? 'primary' : 'secondary'}
+              size="small"
+              onClick={() => setShowMineOnly(true)}
+            />
+          </StyledGroupActions>
           {isLoading ? <StyledEmpty>Loading decisions…</StyledEmpty> : null}
           {isClear ? <StyledEmpty>You&apos;re clear.</StyledEmpty> : null}
           {needsYouNow.length > 0 ? (

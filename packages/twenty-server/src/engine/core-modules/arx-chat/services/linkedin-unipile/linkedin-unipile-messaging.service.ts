@@ -53,6 +53,38 @@ export class LinkedinUnipileMessagingService {
     return id || null;
   }
 
+  private async readCandidatePinnedMemberId(
+    candidateId: string,
+    apiToken: string,
+  ): Promise<string | null> {
+    try {
+      const result = (await this.staticGraphQLService.executeGraphQL(
+        `query FindCandidatePin($filter: CandidateFilterInput!) {
+          candidates(filter: $filter, first: 1) {
+            edges {
+              node {
+                outreachWorkspaceMemberId
+              }
+            }
+          }
+        }`,
+        { filter: { id: { eq: candidateId } } },
+        apiToken,
+      )) as {
+        candidates?: {
+          edges?: Array<{ node?: { outreachWorkspaceMemberId?: string | null } }>;
+        };
+      };
+      const pinned =
+        result?.candidates?.edges?.[0]?.node?.outreachWorkspaceMemberId?.trim();
+
+      return pinned || null;
+    } catch {
+      // Workspaces without the pin field fall back to the project recruiter.
+      return null;
+    }
+  }
+
   /**
    * LinkedIn Unipile account for outbound sends: job recruiter's linked account first,
    * then workspace-level linkedin_unipile_account_id (legacy single-account workspaces).
@@ -60,10 +92,17 @@ export class LinkedinUnipileMessagingService {
   private async resolveLinkedinUnipileAccountId(
     candidateJob: Project,
     apiToken: string,
+    candidateId?: string,
   ): Promise<string | null> {
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    const jobRecruiterId = this.jobRecruiterAsWorkspaceMemberId(candidateJob);
+    // A pinned candidate keeps its thread on the member who owns it; only
+    // candidates that were pinned (selector or explicit assign) take this path.
+    const pinnedMemberId = candidateId
+      ? await this.readCandidatePinnedMemberId(candidateId, apiToken)
+      : null;
+    const jobRecruiterId =
+      pinnedMemberId ?? this.jobRecruiterAsWorkspaceMemberId(candidateJob);
     if (this.workspaceMemberUnipileService && jobRecruiterId) {
       const fromProfile =
         await this.workspaceMemberUnipileService.getWorkspaceMemberUnipileAccountId(
@@ -625,6 +664,7 @@ export class LinkedinUnipileMessagingService {
       const linkedinAccountId = await this.resolveLinkedinUnipileAccountId(
         candidateJob,
         apiToken,
+        candidate?.id,
       );
 
       if (!linkedinAccountId) {
@@ -744,6 +784,7 @@ export class LinkedinUnipileMessagingService {
       const linkedinAccountId = await this.resolveLinkedinUnipileAccountId(
         candidateJob,
         apiToken,
+        candidate?.id,
       );
 
       if (!linkedinAccountId) {
@@ -853,6 +894,7 @@ export class LinkedinUnipileMessagingService {
       linkedinAccountId = await this.resolveLinkedinUnipileAccountId(
         candidateJob,
         apiToken,
+        candidate?.id,
       );
 
       if (!linkedinAccountId) {
@@ -975,6 +1017,7 @@ export class LinkedinUnipileMessagingService {
       linkedinAccountId = await this.resolveLinkedinUnipileAccountId(
         candidateJob,
         apiToken,
+        candidate?.id,
       );
 
       if (!linkedinAccountId) {

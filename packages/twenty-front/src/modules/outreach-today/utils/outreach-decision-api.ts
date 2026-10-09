@@ -13,9 +13,11 @@ const decisionHeaders = (accessToken: string) => ({
 export const fetchOpenOutreachDecisions = async ({
   accessToken,
   candidateId,
+  mine,
 }: {
   accessToken: string;
   candidateId?: string;
+  mine?: boolean;
 }): Promise<OutreachDecisionListItem[]> => {
   const response = await axios.get<OutreachDecisionListItem[]>(
     `${REACT_APP_SERVER_BASE_URL}/outreach-command/decisions`,
@@ -24,6 +26,7 @@ export const fetchOpenOutreachDecisions = async ({
       params: {
         status: 'OPEN',
         ...(candidateId ? { candidateId } : {}),
+        ...(mine ? { mine: 'true' } : {}),
       },
     },
   );

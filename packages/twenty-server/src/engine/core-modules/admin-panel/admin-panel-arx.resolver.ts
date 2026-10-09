@@ -6,6 +6,7 @@ import {
   AI_CREDIT_MICRO_FACTOR,
   PermissionFlagType,
 } from 'twenty-shared/constants';
+import { isDefined } from 'twenty-shared/utils';
 import { IsNull, type Repository } from 'typeorm';
 
 import { AdminResolver } from 'src/engine/api/graphql/graphql-config/decorators/admin-resolver.decorator';
@@ -34,11 +35,17 @@ import { LinkedInUnipileMonitoringService } from 'src/engine/core-modules/arx-ch
 import { WhatsAppMonitoringUnifiedService } from 'src/engine/core-modules/arx-chat/services/whatsapp-monitoring-unified.service';
 import { AuthGraphqlApiExceptionFilter } from 'src/engine/core-modules/auth/filters/auth-graphql-api-exception.filter';
 import { AdminAdjustWorkspaceCreditsInput } from 'src/engine/core-modules/billing/dtos/inputs/admin-adjust-workspace-credits.input';
+import { AdminSetBillingTreatmentOverrideInput } from 'src/engine/core-modules/billing/dtos/inputs/admin-set-billing-treatment-override.input';
 import { AdminSetCreditFulfillmentModeInput } from 'src/engine/core-modules/billing/dtos/inputs/admin-set-credit-fulfillment-mode.input';
 import { AdminWorkspaceCreditsRowOutput } from 'src/engine/core-modules/billing/dtos/outputs/admin-workspace-credits-row.output';
 import { BillingCustomerEntity } from 'src/engine/core-modules/billing/entities/billing-customer.entity';
 import { WorkspaceCredits } from 'src/engine/core-modules/billing/entities/workspace-credits.entity';
 import { CreditFulfillmentMode } from 'src/engine/core-modules/billing/enums/credit-fulfillment-mode.enum';
+import {
+  BillingTreatmentOverrideService,
+  isBillingFeature,
+  isBillingTreatment,
+} from 'src/engine/core-modules/billing/services/billing-treatment-override.service';
 import { EntitlementFulfillmentService } from 'src/engine/core-modules/billing/services/entitlement-fulfillment.service';
 import { WorkspaceCreditsService } from 'src/engine/core-modules/billing/services/workspace-credits.service';
 import { LinkedinParameterResolver } from 'src/engine/core-modules/candidate-search/utils/linkedin-parameter-resolver.util';
@@ -55,6 +62,8 @@ import { WhatsAppSessionStats } from 'src/engine/core-modules/whiskeysocket-bail
 import { WhatsAppSessions } from 'src/engine/core-modules/whiskeysocket-baileys/dtos/whatsapp-sessions.dto';
 import { WorkspaceService } from 'src/engine/core-modules/workspace/services/workspace.service';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
+import { type AuthContextUser } from 'src/engine/core-modules/auth/types/auth-context.type';
+import { AuthUser } from 'src/engine/decorators/auth/auth-user.decorator';
 import { AuthWorkspace } from 'src/engine/decorators/auth/auth-workspace.decorator';
 import { AdminPanelGuard } from 'src/engine/guards/admin-panel-guard';
 import { SettingsPermissionGuard } from 'src/engine/guards/settings-permission.guard';
@@ -86,6 +95,7 @@ export class AdminPanelArxResolver {
     private readonly linkedinParameterResolver: LinkedinParameterResolver,
     private readonly workspaceCreditsService: WorkspaceCreditsService,
     private readonly entitlementFulfillmentService: EntitlementFulfillmentService,
+    private readonly billingTreatmentOverrideService: BillingTreatmentOverrideService,
     private readonly workspaceService: WorkspaceService,
     private readonly whatsAppMonitoringUnifiedService: WhatsAppMonitoringUnifiedService,
     private readonly linkedInUnipileMonitoringService: LinkedInUnipileMonitoringService,
@@ -350,6 +360,31 @@ export class AdminPanelArxResolver {
       input.creditType as 'org_chart' | 'reveal' | 'ai' | 'api',
       input.delta,
     );
+
+    return true;
+  }
+
+  @UseGuards(AdminPanelGuard)
+  @Mutation(() => Boolean)
+  async adminSetBillingTreatmentOverride(
+    @Args('input', { type: () => AdminSetBillingTreatmentOverrideInput })
+    input: AdminSetBillingTreatmentOverrideInput,
+    @AuthUser() actor: AuthContextUser,
+  ): Promise<boolean> {
+    if (!isBillingFeature(input.feature)) {
+      throw new UserInputError(`Unknown billing feature: ${input.feature}`);
+    }
+
+    if (isDefined(input.treatment) && !isBillingTreatment(input.treatment)) {
+      throw new UserInputError(`Unknown billing treatment: ${input.treatment}`);
+    }
+
+    await this.billingTreatmentOverrideService.setOverride({
+      workspaceId: input.workspaceId,
+      feature: input.feature,
+      treatment: input.treatment ?? null,
+      actor: actor.email,
+    });
 
     return true;
   }

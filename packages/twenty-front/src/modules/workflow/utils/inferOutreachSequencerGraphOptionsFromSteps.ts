@@ -12,6 +12,7 @@ export const OUTREACH_SEQUENCER_INFERENCE_STEP_IDS = {
   fetchActivity2: 'c7a10109-aaaa-4fcb-a7d8-17a7736ed045',
   waitInboundInvite: 'c7a1010e-aaaa-4fcb-a7d8-17a7736ed045',
   sendInmail: 'c7a10302-aaaa-4fcb-a7d8-17a7736ed045',
+  selectMember: '60a10008-aaaa-4fcb-a7d8-17a7736ed045',
   // Always present DELAY; 1-minute duration means testMode was applied.
   waitAccept: '67f433aa-9f97-4b87-aa9e-792d23839323',
 } as const;
@@ -29,6 +30,7 @@ export type OutreachSequencerGraphOptions = {
   inboundInviteWaitDays: number;
   inmailEnabled: boolean;
   testMode: boolean;
+  pinSenderByWarmOverlap: boolean;
 };
 
 type InferableSequencerStep = {
@@ -104,5 +106,8 @@ export const inferOutreachSequencerGraphOptionsFromSteps = (
       typeof inboundDays === 'number' && inboundDays > 0 ? inboundDays : 3,
     inmailEnabled: stepIds.has(OUTREACH_SEQUENCER_INFERENCE_STEP_IDS.sendInmail),
     testMode,
+    pinSenderByWarmOverlap: stepIds.has(
+      OUTREACH_SEQUENCER_INFERENCE_STEP_IDS.selectMember,
+    ),
   };
 };

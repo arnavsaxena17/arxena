@@ -9,7 +9,7 @@ import { isDefined } from 'twenty-shared/utils';
 import {
   ARXENA_INTERNAL_TOOL_NAMES,
   ARXENA_TOOL_CATALOG,
-} from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-catalog.const';
+} from 'twenty-shared/outreach';
 import { type ArxenaMcpToolDefinition } from 'src/engine/core-modules/arxena-tools/types/arxena-mcp-tool-definition.type';
 
 type CachedCatalog = {

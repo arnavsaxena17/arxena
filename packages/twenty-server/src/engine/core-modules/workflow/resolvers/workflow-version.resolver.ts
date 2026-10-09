@@ -69,6 +69,7 @@ export class WorkflowVersionResolver {
       inboundInviteWaitDays,
       inmailEnabled,
       testMode,
+      pinSenderByWarmOverlap,
     }: ApplyOutreachSequencerGraphOptionsInput,
   ): Promise<WorkflowVersionDTO> {
     return this.workflowVersionWorkspaceService.applyOutreachSequencerGraphOptions(
@@ -88,6 +89,7 @@ export class WorkflowVersionResolver {
           inboundInviteWaitDays,
           inmailEnabled,
           testMode,
+          pinSenderByWarmOverlap: pinSenderByWarmOverlap === true,
         },
       },
     );

@@ -270,6 +270,24 @@ export const EditOutreachSequencerOptionsModal = ({
           </StyledSection>
 
           <StyledSection>
+            <H2Title title={t`Sender`} />
+            <Card
+              rounded
+              backgroundColor={themeCssVariables.background.secondary}
+            >
+              <SettingsOptionCardContentToggle
+                Icon={IconUser}
+                title={t`Pin outreach sender by warm overlap`}
+                description={t`On: each prospect is pinned to one workspace member (assigned manually, split across members, or chosen by warm overlap) and every send and reply stays on that member's seat. Needs two or more members with a connected LinkedIn account. Off: everything sends from the first workspace member. Turning this off later does not unpin anyone, but sends go back to the first member.`}
+                checked={options.pinSenderByWarmOverlap}
+                onChange={(value) => setOption('pinSenderByWarmOverlap', value)}
+                toggleCentered={false}
+                disabled={isSubmitting}
+              />
+            </Card>
+          </StyledSection>
+
+          <StyledSection>
             <H2Title title={t`Prospect filters`} />
             <Card
               rounded

@@ -57,6 +57,9 @@ export type FetchLinkedinProfileInput = {
   candidateId?: string;
 };
 
+// Demo members registered with this prefix use fixtures instead of Unipile.
+export const MOCK_UNIPILE_SEAT_PREFIX = 'mock-unipile-';
+
 @Injectable()
 export class FetchLinkedinProfileService {
   private readonly logger = new Logger(FetchLinkedinProfileService.name);
@@ -111,74 +114,7 @@ export class FetchLinkedinProfileService {
       )) && false;
 
     if (isOutreachMockEnabled) {
-      const identifier =
-        extractLinkedinProfileId(input.linkedinProfileId) ||
-        extractLinkedinProfileId(input.linkedinUrl) ||
-        'mock-linkedin-profile';
-
-      this.logger.log(
-        `IS_OUTREACH_MOCK_UNIPILE_ENABLED: mock LinkedIn profile for ${identifier}`,
-      );
-
-      const fixture = findOutreachMockUnipileRawProfile(identifier);
-
-      if (isDefined(fixture)) {
-        const mapped = mapOutreachMockUnipileProfile(fixture);
-        const person = toUploadProfilesPerson({
-          ...mapped,
-          current_positions: mapped.experience,
-        });
-
-        return this.withStampedEnrichment({
-          workspaceId,
-          candidateId: input.candidateId,
-          profile: mapped,
-          result: {
-            ...mapped,
-            people: person ? [person] : [],
-            error: '',
-          },
-        });
-      }
-
-      const linkedinUrl = isNonEmptyString(input.linkedinUrl)
-        ? input.linkedinUrl
-        : `https://www.linkedin.com/in/${identifier}`;
-      const mapped = {
-        success: true as const,
-        linkedinProfileId: identifier,
-        firstName: 'Mock',
-        lastName: identifier.split('-').slice(-2).join(' ') || 'Profile',
-        headline: 'Mock headline for outreach path testing',
-        about: 'Mock about section',
-        location: 'Bengaluru, India',
-        linkedinUrl,
-        profilePictureUrl: '',
-        experience: [
-          {
-            company: 'Mock Co',
-            position: 'VP Talent',
-            location: 'Bengaluru',
-            description: '',
-            start: '2020-01',
-            end: '',
-          },
-        ],
-        skills: ['Recruiting'],
-        snapshot: `Mock profile for ${identifier}`,
-      };
-      const person = toUploadProfilesPerson(mapped);
-
-      return this.withStampedEnrichment({
-        workspaceId,
-        candidateId: input.candidateId,
-        profile: mapped,
-        result: {
-          ...mapped,
-          people: person ? [person] : [],
-          error: '',
-        },
-      });
+      return this.buildMockProfile({ workspaceId, input });
     }
 
     const authContext = buildSystemAuthContext(workspaceId);
@@ -258,6 +194,20 @@ export class FetchLinkedinProfileService {
         authContext,
       );
 
+    // A seat registered as a mock account (demo members) never reaches Unipile.
+    if (
+      resolved.accountId.startsWith(MOCK_UNIPILE_SEAT_PREFIX) &&
+      (await this.featureFlagService.isFeatureEnabled(
+        FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
+        workspaceId,
+      ))
+    ) {
+      return this.buildMockProfile({
+        workspaceId,
+        input: { ...input, linkedinProfileId: input.linkedinProfileId || resolved.identifier },
+      });
+    }
+
     if (!isNonEmptyString(resolved.accountId)) {
       return {
         ...emptyProfile(resolved.identifier),
@@ -307,6 +257,83 @@ export class FetchLinkedinProfileService {
       result: {
         ...mapped,
         people: person ? [person] : [],
+      },
+    });
+  }
+
+  private async buildMockProfile({
+    workspaceId,
+    input,
+  }: {
+    workspaceId: string;
+    input: FetchLinkedinProfileInput;
+  }) {
+    const identifier =
+      extractLinkedinProfileId(input.linkedinProfileId) ||
+      extractLinkedinProfileId(input.linkedinUrl) ||
+      'mock-linkedin-profile';
+
+    this.logger.log(
+      `IS_OUTREACH_MOCK_UNIPILE_ENABLED: mock LinkedIn profile for ${identifier}`,
+    );
+
+    const fixture = findOutreachMockUnipileRawProfile(identifier);
+
+    if (isDefined(fixture)) {
+      const mapped = mapOutreachMockUnipileProfile(fixture);
+      const person = toUploadProfilesPerson({
+        ...mapped,
+        current_positions: mapped.experience,
+      });
+
+      return this.withStampedEnrichment({
+        workspaceId,
+        candidateId: input.candidateId,
+        profile: mapped,
+        result: {
+          ...mapped,
+          people: person ? [person] : [],
+          error: '',
+        },
+      });
+    }
+
+    const linkedinUrl = isNonEmptyString(input.linkedinUrl)
+      ? input.linkedinUrl
+      : `https://www.linkedin.com/in/${identifier}`;
+    const mapped = {
+      success: true as const,
+      linkedinProfileId: identifier,
+      firstName: 'Mock',
+      lastName: identifier.split('-').slice(-2).join(' ') || 'Profile',
+      headline: 'Mock headline for outreach path testing',
+      about: 'Mock about section',
+      location: 'Bengaluru, India',
+      linkedinUrl,
+      profilePictureUrl: '',
+      experience: [
+        {
+          company: 'Mock Co',
+          position: 'VP Talent',
+          location: 'Bengaluru',
+          description: '',
+          start: '2020-01',
+          end: '',
+        },
+      ],
+      skills: ['Recruiting'],
+      snapshot: `Mock profile for ${identifier}`,
+    };
+    const person = toUploadProfilesPerson(mapped);
+
+    return this.withStampedEnrichment({
+      workspaceId,
+      candidateId: input.candidateId,
+      profile: mapped,
+      result: {
+        ...mapped,
+        people: person ? [person] : [],
+        error: '',
       },
     });
   }

@@ -795,7 +795,7 @@ describe('IcpExtractionService', () => {
         result.contextUsed,
       );
 
-      expect(parseResumeText).toHaveBeenCalled();
+      expect(parseResumeText).toHaveBeenCalledWith(expect.any(String), 'ws-1');
       expect(withOutreachLinkedinSession).toHaveBeenCalled();
       expect(result.parsedResume).toEqual({
         name: 'Prince Kumar',
@@ -963,6 +963,7 @@ describe('IcpExtractionService', () => {
 
       expect(readAndParseResumeFile).toHaveBeenCalledWith(
         '/Users/arnavsaxena/Downloads/Prince cv 26.pdf',
+        'ws-1',
       );
       expect(parseResumeText).not.toHaveBeenCalled();
       expect(result.contextUsed.resumeFileName).toBe('Prince cv 26.pdf');

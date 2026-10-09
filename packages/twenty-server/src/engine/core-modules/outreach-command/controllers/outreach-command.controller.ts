@@ -30,6 +30,12 @@ import {
   type OutreachEphemeralPerson,
   OutreachPeopleCacheService,
 } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
+import {
+  type SaveOutreachTargetsToCrmInput,
+  SaveOutreachTargetsToCrmService,
+} from 'src/engine/core-modules/outreach-command/services/save-outreach-targets-to-crm.service';
+import { OutreachWorkingSetService } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+import { OutreachTableViewService } from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
 import { SearchPeopleForCompanyService } from 'src/engine/core-modules/outreach-command/services/search-people-for-company.service';
 import { OutreachWorkspaceProfileProvisioningService } from 'src/engine/core-modules/outreach-command/services/outreach-workspace-profile-provisioning.service';
 import { OutreachSenderProfileService } from 'src/engine/core-modules/outreach-command/services/outreach-sender-profile.service';
@@ -40,6 +46,8 @@ import { OutreachCandidateJourneyService } from 'src/engine/core-modules/outreac
 import { OutreachDecisionService } from 'src/engine/core-modules/outreach-command/services/outreach-decision.service';
 import { QualifyProspectService } from 'src/engine/core-modules/outreach-command/services/qualify-prospect.service';
 import { LinkedinSelectionFetchService } from 'src/engine/core-modules/outreach-command/services/linkedin-selection-fetch.service';
+import { OutreachMemberAssignmentService } from 'src/engine/core-modules/outreach-command/services/outreach-member-assignment.service';
+import { type OutreachMemberAssignmentConfig, type OutreachSplitMode } from 'src/engine/core-modules/outreach-command/utils/outreach-member-assignment.util';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 @Controller('outreach-command')
@@ -65,7 +73,80 @@ export class OutreachCommandController {
     private readonly outreachDecisionService: OutreachDecisionService,
     private readonly qualifyProspectService: QualifyProspectService,
     private readonly linkedinSelectionFetchService: LinkedinSelectionFetchService,
+    private readonly outreachMemberAssignmentService: OutreachMemberAssignmentService,
+    private readonly outreachTableViewService: OutreachTableViewService,
+    private readonly outreachWorkingSetService: OutreachWorkingSetService,
+    private readonly saveOutreachTargetsToCrmService: SaveOutreachTargetsToCrmService,
   ) {}
+
+  // CRM companies tagged to the project (company.projectIds), shaped like the
+  // Companies tab rows. The tab shows them next to the ephemeral Find list.
+  @Get('project-companies')
+  async getProjectCompanies(
+    @Query('projectId') projectId: string,
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    if (!projectId || projectId === 'project-id') {
+      throw new HttpException('projectId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const workspaceId =
+      await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+    const rows = await this.outreachWorkingSetService.getCrmCompanies(
+      workspaceId,
+      projectId,
+    );
+
+    return {
+      companies: rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        domain: row.domain ?? '',
+        industry: row.industry ?? '',
+        employees: row.employees ?? '',
+        segment: row.segment ?? '',
+        icpFit: row.icpFit ?? '',
+        status: 'new',
+        otherFields: row.otherFields,
+      })),
+    };
+  }
+
+  // The filters and sort the agent last applied to this project's table, so a
+  // page opened later shows them too.
+  @Get('table-view')
+  async getTableView(
+    @Query('projectId') projectId: string,
+    @Query('tab') tab: string,
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    if (!projectId || projectId === 'project-id') {
+      throw new HttpException('projectId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const workspaceId =
+      await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+    return {
+      view: await this.outreachTableViewService.get({
+        workspaceId,
+        projectId,
+        tab: tab === 'companies' ? 'companies' : 'people',
+      }),
+    };
+  }
 
   @Get('cache/companies')
   async getEphemeralCompanies(
@@ -243,6 +324,39 @@ export class OutreachCommandController {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  // Save-to-CRM for the ephemeral Find tabs: plain Company / Person records,
+  // never a Candidate (enrollment is a separate action).
+  @Post('save-targets-to-crm')
+  async saveTargetsToCrm(
+    @Body() body: Partial<SaveOutreachTargetsToCrmInput>,
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    const projectId = body?.projectId;
+
+    if (!projectId || projectId === 'project-id') {
+      throw new HttpException('projectId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const workspaceId =
+      await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+    return this.saveOutreachTargetsToCrmService.execute({
+      workspaceId,
+      input: {
+        projectId,
+        target: body.target ?? 'both',
+        companyIds: body.companyIds,
+        personIds: body.personIds,
+      },
+    });
   }
 
   @Put('cache/people')
@@ -1314,6 +1428,7 @@ export class OutreachCommandController {
   async listDecisions(
     @Query('status') status: string | undefined,
     @Query('candidateId') candidateId: string | undefined,
+    @Query('mine') mine: string | undefined,
     @Req() request: { headers?: { authorization?: string } },
   ) {
     if (isDefined(status) && status !== 'OPEN') {
@@ -1323,10 +1438,14 @@ export class OutreachCommandController {
       );
     }
 
+    const ownerMemberId =
+      mine === 'true' ? await this.readActingMemberId(request) : null;
+
     return this.withWorkspaceAuth(request, (workspaceId) =>
       this.outreachDecisionService.listOpen({
         workspaceId,
         candidateId,
+        ownerMemberId,
       }),
     );
   }
@@ -1462,6 +1581,177 @@ export class OutreachCommandController {
           : 'Outreach journey request failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  @Get('projects/:projectId/assignment/members')
+  async getAssignmentMembers(
+    @Param('projectId') projectId: string,
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    return this.withOutreachAuth({ projectId, request }, async (workspaceId) =>
+      this.outreachMemberAssignmentService.getMemberLoad({
+        workspaceId,
+        projectId,
+      }),
+    );
+  }
+
+  @Get('projects/:projectId/assignment/owners')
+  async getAssignmentOwners(
+    @Param('projectId') projectId: string,
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    return this.withOutreachAuth({ projectId, request }, async (workspaceId) => ({
+      owners: await this.outreachMemberAssignmentService.listOwners({
+        workspaceId,
+        projectId,
+      }),
+    }));
+  }
+
+  @Post('projects/:projectId/assignment/config')
+  async saveAssignmentConfig(
+    @Param('projectId') projectId: string,
+    @Body() body: Partial<OutreachMemberAssignmentConfig>,
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    return this.withOutreachAuth({ projectId, request }, async (workspaceId) =>
+      this.outreachMemberAssignmentService.saveProjectAssignmentConfig({
+        workspaceId,
+        projectId,
+        patch: {
+          policy: body?.policy,
+          participantMemberIds: body?.participantMemberIds,
+          weights: body?.weights,
+          warmMode: body?.warmMode,
+          referralInheritsOwner: body?.referralInheritsOwner,
+        },
+      }),
+    );
+  }
+
+  @Post('projects/:projectId/assignment/assign')
+  async assignCandidatesToMember(
+    @Param('projectId') projectId: string,
+    @Body()
+    body: { candidateIds?: string[]; memberId?: string; force?: boolean },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const candidateIds = this.readStringArray(body?.candidateIds);
+
+    if (candidateIds.length === 0 || !body?.memberId) {
+      throw new HttpException(
+        'candidateIds and memberId are required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return this.withOutreachAuth({ projectId, request }, async (workspaceId) =>
+      this.outreachMemberAssignmentService.assign({
+        workspaceId,
+        candidateIds,
+        memberId: body.memberId as string,
+        assignedById: await this.readActingMemberId(request),
+        force: body.force === true,
+      }),
+    );
+  }
+
+  @Post('projects/:projectId/assignment/split')
+  async splitCandidatesAcrossMembers(
+    @Param('projectId') projectId: string,
+    @Body()
+    body: {
+      candidateIds?: string[];
+      memberIds?: string[];
+      mode?: OutreachSplitMode;
+      force?: boolean;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const candidateIds = this.readStringArray(body?.candidateIds);
+
+    if (candidateIds.length === 0) {
+      throw new HttpException('candidateIds is required', HttpStatus.BAD_REQUEST);
+    }
+
+    return this.withOutreachAuth({ projectId, request }, async (workspaceId) =>
+      this.outreachMemberAssignmentService.split({
+        workspaceId,
+        projectId,
+        candidateIds,
+        memberIds: this.readStringArray(body?.memberIds),
+        mode: body?.mode === 'round_robin' ? 'round_robin' : 'balanced',
+        assignedById: await this.readActingMemberId(request),
+        force: body?.force === true,
+      }),
+    );
+  }
+
+  @Post('projects/:projectId/assignment/confirm-suggestions')
+  async confirmAssignmentSuggestions(
+    @Param('projectId') projectId: string,
+    @Body() body: { candidateIds?: string[] },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    return this.withOutreachAuth({ projectId, request }, async (workspaceId) =>
+      this.outreachMemberAssignmentService.confirmSuggestions({
+        workspaceId,
+        candidateIds: this.readStringArray(body?.candidateIds),
+        assignedById: await this.readActingMemberId(request),
+      }),
+    );
+  }
+
+  @Post('projects/:projectId/candidates/:candidateId/reassign')
+  async reassignCandidate(
+    @Param('projectId') projectId: string,
+    @Param('candidateId') candidateId: string,
+    @Body() body: { memberId?: string; force?: boolean },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    if (!body?.memberId) {
+      throw new HttpException('memberId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    return this.withOutreachAuth({ projectId, request }, async (workspaceId) =>
+      this.outreachMemberAssignmentService.reassign({
+        workspaceId,
+        candidateId,
+        memberId: body.memberId as string,
+        assignedById: await this.readActingMemberId(request),
+        force: body.force === true,
+      }),
+    );
+  }
+
+  private readStringArray(value: unknown): string[] {
+    return Array.isArray(value)
+      ? value.filter(
+          (entry): entry is string =>
+            typeof entry === 'string' && entry.length > 0,
+        )
+      : [];
+  }
+
+  private async readActingMemberId(request: {
+    headers?: { authorization?: string };
+  }): Promise<string | null> {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      return null;
+    }
+
+    try {
+      return (
+        (await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
+          apiToken,
+        )) ?? null
+      );
+    } catch {
+      return null;
     }
   }
 

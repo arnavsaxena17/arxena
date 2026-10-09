@@ -37,6 +37,7 @@ import { SearchJobsService } from 'src/engine/core-modules/outreach-command/serv
 import { SearchPostsService } from 'src/engine/core-modules/outreach-command/services/search-posts.service';
 import { UploadProfilesService } from 'src/engine/core-modules/outreach-command/services/upload-profiles.service';
 import { UploadProfilesWorkflowResumeService } from 'src/engine/core-modules/outreach-command/services/upload-profiles-workflow-resume.service';
+import { SaveOutreachTargetsToCrmService } from 'src/engine/core-modules/outreach-command/services/save-outreach-targets-to-crm.service';
 import { UpsertCompaniesService } from 'src/engine/core-modules/outreach-command/services/upsert-companies.service';
 import { EnrichContactService } from 'src/engine/core-modules/outreach-command/services/enrich-contact.service';
 import { CreateReferralCandidateService } from 'src/engine/core-modules/outreach-command/services/create-referral-candidate.service';
@@ -46,6 +47,8 @@ import { GetCalendarAvailabilityService } from 'src/engine/core-modules/outreach
 import { OutreachFakeProfileDetectorService } from 'src/engine/core-modules/outreach-command/services/outreach-fake-profile-detector.service';
 import { OutreachFilterProfilesService } from 'src/engine/core-modules/outreach-command/services/outreach-filter-profiles.service';
 import { OutreachMessagePersistService } from 'src/engine/core-modules/outreach-command/services/outreach-message-persist.service';
+import { OutreachMemberAssignmentService } from 'src/engine/core-modules/outreach-command/services/outreach-member-assignment.service';
+import { OutreachWarmOverlapService } from 'src/engine/core-modules/outreach-command/services/outreach-warm-overlap.service';
 import { OutreachSenderProfileService } from 'src/engine/core-modules/outreach-command/services/outreach-sender-profile.service';
 import { QualifyProspectService } from 'src/engine/core-modules/outreach-command/services/qualify-prospect.service';
 import { LinkedinSelectionFetchService } from 'src/engine/core-modules/outreach-command/services/linkedin-selection-fetch.service';
@@ -67,6 +70,11 @@ import { OutreachInboundReplyClassifierService } from 'src/engine/core-modules/o
 import { OutreachCompaniesCacheService } from 'src/engine/core-modules/outreach-command/services/outreach-companies-cache.service';
 import { OutreachLinkedInPoolCompanyEnrichmentSource } from 'src/engine/core-modules/outreach-command/services/outreach-linkedin-pool-company-enrichment.source';
 import { OutreachThrottleService } from 'src/engine/core-modules/outreach-command/services/outreach-throttle.service';
+import { ProcessOutreachAiColumnChunkJob } from 'src/engine/core-modules/outreach-command/jobs/process-outreach-ai-column-chunk.job';
+import { OutreachAiColumnRunService } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column-run.service';
+import { OutreachTableViewService } from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
+import { OutreachAiColumnService } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column.service';
+import { OutreachWorkingSetService } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
 import { OutreachPeopleCacheService } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
 import { OutreachProjectOutreachControlService } from 'src/engine/core-modules/outreach-command/services/outreach-project-outreach-control.service';
 import { OutreachCandidateJourneyService } from 'src/engine/core-modules/outreach-command/services/outreach-candidate-journey.service';
@@ -128,12 +136,19 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
   ],
   controllers: [OutreachCommandController, OutreachMockController],
   providers: [
+    OutreachMemberAssignmentService,
+    OutreachWarmOverlapService,
     OutreachCommandMaterializeService,
     OutreachMockLifecycleService,
     OutreachInboundReplyClassifierService,
     OutreachThrottleService,
     OutreachCompaniesCacheService,
     OutreachPeopleCacheService,
+    OutreachWorkingSetService,
+    OutreachAiColumnService,
+    OutreachAiColumnRunService,
+    OutreachTableViewService,
+    ProcessOutreachAiColumnChunkJob,
     CompaniesEsService,
     UnipileCompanyService,
     OutreachCompaniesIndexWikiEnrichmentSource,
@@ -182,6 +197,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     FetchCompanyDetailsService,
     UploadProfilesService,
     UploadProfilesWorkflowResumeService,
+    SaveOutreachTargetsToCrmService,
     UpsertCompaniesService,
     EnrichContactService,
     GetCalendarAvailabilityService,
@@ -211,11 +227,16 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     LinkedinSelectionFetchService,
   ],
   exports: [
+    OutreachMemberAssignmentService,
     OutreachCommandMaterializeService,
     OutreachInboundReplyClassifierService,
     OutreachThrottleService,
     OutreachCompaniesCacheService,
     OutreachPeopleCacheService,
+    OutreachWorkingSetService,
+    OutreachAiColumnService,
+    OutreachAiColumnRunService,
+    OutreachTableViewService,
     OutreachWorkspaceProfileProvisioningService,
     EnsureOutreachProjectService,
     SearchPeopleForCompanyService,
@@ -227,6 +248,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     FetchCompanyDetailsService,
     UploadProfilesService,
     UploadProfilesWorkflowResumeService,
+    SaveOutreachTargetsToCrmService,
     UpsertCompaniesService,
     EnrichContactService,
     GetCalendarAvailabilityService,

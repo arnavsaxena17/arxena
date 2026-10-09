@@ -1,16 +1,31 @@
+import {
+  OUTREACH_COMPLETE_REQUESTS_PROMPT,
+  OUTREACH_DESTINATION_VERBS_PROMPT,
+  OUTREACH_SOURCING_PREFERENCE_PROMPT,
+  buildOutreachRoutingLines,
+} from 'twenty-shared/outreach';
+
 import { CHAT_INTENT_SKILLS } from 'src/engine/metadata-modules/ai/ai-chat/constants/chat-intent-skills.const';
 
 const {
   setup,
   search,
-  localBusinessSearch,
-  resolveCompanyName,
   outreach,
   orgStructureInsights,
   crm,
   workflowBuilding,
   dashboardBuilding,
 } = CHAT_INTENT_SKILLS;
+
+// Ask AI also loads workflow-building for outreach and can paint the org chart canvas.
+const SHARED_ROUTING_LINES = buildOutreachRoutingLines({
+  extraSkillNames: { outreach: [workflowBuilding] },
+  routingLineSuffixes: {
+    'org-structure-insights':
+      ' Then call `highlight_org_chart` when a chart is open.',
+    outreach: ' Finish with `list_workflow_runs`.',
+  },
+});
 
 /**
  * Neutral CRM copy glossary (shared Ask AI + MCP playbook):
@@ -38,28 +53,18 @@ For ANY non-trivial task, follow this order:
 
 ### Intent routing (load these)
 
-- ICP / send prefs / campaign setup → \`load_skills(["${setup}"])\`
-- Find companies or people / LinkedIn / Harvest / Sales Nav → \`load_skills(["${search}"])\` — choose destination **before** providers (see Destination verbs). Do NOT enroll until the user confirms Add to CRM / Enroll.
-- Find local businesses / POIs on Google Maps (hotels, plumbers, restaurants, clinics) → \`load_skills(["${localBusinessSearch}"])\`. Keep B2B people/company sourcing on \`${search}\`.
-- Standardize / resolve a raw or messy company name to a canonical company profile → \`load_skills(["${resolveCompanyName}"])\` then \`resolve_company_from_raw_name\`. Keep firmographic discovery on \`${search}\`.
-- Find / show / highlight people or teams on an org chart, or who-owns / buying-committee / structure at a company → \`load_skills(["${orgStructureInsights}"])\`. Then call \`highlight_org_chart\` when a chart is open. Keep LinkedIn sourcing on \`${search}\`.
-- Start outreach / activate harvest / enroll / sequencer workflows → \`load_skills(["${outreach}", "${workflowBuilding}"])\`. Finish with \`list_workflow_runs\`.
+${SHARED_ROUTING_LINES}
 - Generic workflow create/edit (non-outreach) → \`load_skills(["${workflowBuilding}"])\`
 - Dashboard create/change → \`load_skills(["${dashboardBuilding}"])\`
 - Broad CRM record search/update beyond Find/Enroll → \`load_skills(["${crm}"])\` when needed
+
+${OUTREACH_SOURCING_PREFERENCE_PROMPT}
 
 For simple CRUD (find/create/update/delete one record), you do NOT need a skill — still \`learn_tools\` then \`execute_tool\`.
 
 When searching CRM by name/fields, use the find_many_* filter format below — or load \`${crm}\` for the full recipe.
 
-### Destination verbs (choose before tools)
-
-- **Find** → ephemeral target list for this campaign (Outreach Companies/People tabs)
-- **Save to CRM** → Company / Person records when the user explicitly asks
-- **Enroll** → Person + enrollment record (\`create_candidate\`, \`QUEUED\`) → sequencer (only after confirm)
-- **Harvest** → scheduled CRM companies + run key (outreach workflows, not Find)
-
-Exact persist tool names live inside the loaded skill — do not invent them.
+${OUTREACH_DESTINATION_VERBS_PROMPT}
 
 ### Capability packs (people and company search)
 
@@ -73,6 +78,8 @@ Prefer pack intent over inventing tool names. Exact names come from the compact 
 - connected apps — tools the workspace added under Settings → AI → MCP servers (namespaced \`{slug}__{tool}\`)
 
 Never learn every people/company-search or connected-app tool at once — only tools you will execute.
+
+LinkedIn via Unipile has two routes. Prefer the native \`linkedin_*\` / \`search_linkedin_*\` tools (they resolve the connected account and cache). Use the \`unipile__*\` passthrough (\`search-endpoints\` → \`get-endpoint\` → \`execute-request\`) only for Unipile endpoints that have no native tool. For any other connected app, discover with \`get_tool_catalog({server: "<slug>"})\` or \`{query: "..."}\` and never guess tool names.
 \`execute_tool\` \`arguments\` must be a JSON **object**, never a stringified JSON string.
 
 ## Dashboards
@@ -100,12 +107,7 @@ Intent gate: purely informational dashboard questions are NOT build requests. An
 - **FULL_NAME fields** (e.g. person \`name\`): always write \`{ "firstName": "...", "lastName": "..." }\`. NEVER pass a bare string like \`"Neha Shah"\`.
 - **Relation IDs** (\`companyId\`, \`projectId\`, and any \`*Id\` FK): must be Arxena CRM UUIDs returned by find/create/upsert/lookup tools. NEVER put LinkedIn facet IDs (e.g. \`"139484"\`, \`"60"\`) into CRM foreign keys — those IDs are only for LinkedIn \`searchParameters\`.
 
-## Complete multi-part requests
-
-- When the user asks for several deliverables in one request (e.g. CSV download + create a project + add people), finish ALL of them in the same tool chain before ending your turn.
-- Do NOT stop after a plan, a preamble ("I'll do X next"), or a single success when other requested steps remain.
-- Do NOT re-ask for confirmation after the user already gave explicit execute language ("that's all", "please do", "go ahead", "proceed"). Execute the remaining steps.
-- End a turn with either (a) completed deliverables plus real record ids from tools, or (b) a hard blocker only the user can resolve. Never end on deferred work.
+${OUTREACH_COMPLETE_REQUESTS_PROMPT}
 
 ## Data Efficiency
 
@@ -166,25 +168,11 @@ You are connected through the workspace MCP server, not in-app Ask AI. There is 
 3. One \`learn_tools\` per turn; \`toolNames\` is an array of tools you will actually execute.
 4. Never \`learn_tools\` the whole people/company-search or connected-apps catalog.
 5. Do not call \`load_skills\` if this turn already includes skill markdown from MCP \`prompts/get\`.
-6. \`get_tool_catalog\`, \`list_skills\`, and \`list_object_metadata_names\` are refresh-only when these instructions look stale.
+6. \`get_tool_catalog\` with no arguments returns a compact index of categories and connected MCP servers. Use \`server\`, \`categories\` or \`query\` to list tool names (e.g. \`{server: "unipile"}\`) before \`learn_tools\`. \`list_skills\` and \`list_object_metadata_names\` are refresh-only when these instructions look stale.
 
 Happy path:
 - Simple CRUD: \`learn_tools\` then \`execute_tool\` (2 calls).
-- Skilled task: \`load_skills\` then one \`learn_tools\` then \`execute_tool\` as needed.
-`,
-
-  BROWSING_CONTEXT_INSTRUCTION: `A <browsing_context> tag may appear in the user's last message. Only use it when directly relevant to the question.`,
-
-  RESPONSE_FORMAT: `
-Format responses with markdown for clarity (headings, lists, code blocks, tables).
-
-Record References - IMPORTANT:
-- Tool responses include a "recordReferences" array with clickable links
-- ONLY use record references that are returned by tools - NEVER make up IDs
-- Copy the exact format from the tool response: [[record:objectName:recordId:displayName[[/record]]
-- Example: [[record:company:abc12345-1234-5678-abcd-123456789012:Acme Corp[[/record]]
-- Use record references only in paragraphs, lists, or markdown tables (\`| ... |\`); never in headings, code, links, or raw HTML
-- The recordId MUST be a real UUID (like "abc12345-1234-5678-abcd-123456789012")
+so - The recordId MUST be a real UUID (like "abc12345-1234-5678-abcd-123456789012")
 - DO NOT create record references before calling the tool
 - DO NOT use placeholder IDs like "rec-snowflake" or "rec-person-1"
 - If a tool hasn't been called yet, don't reference records that don't exist`,

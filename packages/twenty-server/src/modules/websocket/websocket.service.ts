@@ -3,7 +3,9 @@ import { Injectable } from '@nestjs/common';
 import { Server } from 'socket.io';
 import { RedisClientService } from 'src/engine/core-modules/redis-client/redis-client.service';
 import {
+  WEBSOCKET_ROOM_CHANNEL_PREFIX,
   WEBSOCKET_USER_CHANNEL_PREFIX,
+  WebSocketRoomRedisPayload,
   WebSocketUserRedisPayload,
 } from './websocket-user-redis.constants';
 
@@ -187,14 +189,38 @@ export class WebSocketService {
   }
 
   sendToRoom(room: string, event: string, data: any) {
+    // Queue workers have no socket server: hand the event to Redis and the
+    // HTTP server's room bridge emits it.
     if (!this.server) {
+      void this.publishRoomEventToRedis(room, event, data);
+
       return;
     }
+
     this.server.to(room).emit(event, {
       ...data,
       room,
       timestamp: new Date().toISOString(),
     });
+  }
+
+  private async publishRoomEventToRedis(
+    room: string,
+    event: string,
+    data: Record<string, unknown>,
+  ): Promise<void> {
+    try {
+      const message: WebSocketRoomRedisPayload = { room, event, data };
+
+      await this.redisClientService
+        .getClient()
+        .publish(
+          `${WEBSOCKET_ROOM_CHANNEL_PREFIX}${room}`,
+          JSON.stringify(message),
+        );
+    } catch (error) {
+      console.error('Failed to publish websocket room event to Redis', error);
+    }
   }
 
   getActiveConnections(): number {

@@ -139,7 +139,10 @@ const OutreachHomePageContent = () => {
     peopleTableInstanceId,
     refreshPeopleWorkingSet,
     refreshCompaniesWorkingSet,
+    aiColumnRun,
+    aiTableViews,
     appendPeople,
+    updateEphemeralPerson,
     appendCompanies,
   } = useOutreachLiveWorkingSet();
   const isSetupTab = activeTab === 'setup';
@@ -204,6 +207,7 @@ const OutreachHomePageContent = () => {
     people.find((person) => person.id === selectedPersonId)?.stage ?? null;
 
   useEffect(() => {
+    const previous = outreachContextStore.get(outreachContextState.atom);
     const next = {
       projectId: projectSettings.projectId,
       projectName: projectSettings.projectName,
@@ -211,6 +215,9 @@ const OutreachHomePageContent = () => {
       outreachSendMode: projectSettings.outreachSendMode,
       selectedCompanyId,
       selectedPersonId,
+      // Owned by OutreachPeoplePanel (it knows the checked rows)
+      selectedPersonIds: previous.selectedPersonIds,
+      selectedCandidateIds: previous.selectedCandidateIds,
       selectedCandidateStage,
       icpName: projectSettings.icpSpec,
       icpSpecSummary: projectSettings.icpSpec,
@@ -218,9 +225,8 @@ const OutreachHomePageContent = () => {
       gmailConnected,
       whatsappConnected,
       phase: 'live' as const,
+      activeTab,
     };
-
-    const previous = outreachContextStore.get(outreachContextState.atom);
 
     if (isSameOutreachContext(previous, next)) {
       return;
@@ -228,6 +234,7 @@ const OutreachHomePageContent = () => {
 
     setOutreachContext(next);
   }, [
+    activeTab,
     gmailConnected,
     linkedinConnected,
     outreachContextStore,
@@ -569,7 +576,10 @@ const OutreachHomePageContent = () => {
                   tableInstanceId={peopleTableInstanceId}
                   isLoading={peopleLoading}
                   onRefresh={refreshPeopleWorkingSet}
+                  aiColumnRun={aiColumnRun}
+                  aiTableView={aiTableViews.people}
                   appendPeople={appendPeople}
+                  updateEphemeralPerson={updateEphemeralPerson}
                 />
               </StyledToolbarTabContent>
             ) : activeTab === 'companies' ? (
@@ -582,6 +592,7 @@ const OutreachHomePageContent = () => {
                   isLoading={companiesLoading}
                   onRefresh={refreshCompaniesWorkingSet}
                   appendCompanies={appendCompanies}
+                  aiTableView={aiTableViews.companies}
                 />
               </StyledToolbarTabContent>
             ) : (

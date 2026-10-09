@@ -240,6 +240,20 @@ export const getOutreachCommandFieldsData = (
   {
     objectName: 'company',
     field: {
+      // Same bag the candidate has: AI filter / enrichment columns write one key
+      // per column here, next to aiColumns (header label, type, status).
+      description:
+        'AI filter and enrichment column values, one key per column',
+      icon: 'IconBraces',
+      label: 'Other fields',
+      name: 'otherFields',
+      objectMetadataId: objectsNameIdMap.company,
+      type: 'RAW_JSON',
+    },
+  },
+  {
+    objectName: 'company',
+    field: {
       description: 'LinkedIn company numeric id or Unipile account id',
       icon: 'IconId',
       isUnique: true,
@@ -363,6 +377,78 @@ export const getOutreachCommandFieldsData = (
     },
   },
 
+  {
+    objectName: 'candidate',
+    field: {
+      description:
+        'Workspace member (UUID) who owns this candidate; every send and reply uses that member seat when Pin outreach sender is on',
+      icon: 'IconUserCheck',
+      label: 'Outreach Sender Member',
+      name: 'outreachWorkspaceMemberId',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'TEXT',
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
+      description:
+        'When the sender member was pinned',
+      icon: 'IconCalendarEvent',
+      label: 'Outreach Assigned At',
+      name: 'outreachAssignedAt',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'DATE_TIME',
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
+      description:
+        'How the sender was chosen: manual, bulk, round_robin, least_loaded, warm, fallback',
+      icon: 'IconInfoCircle',
+      label: 'Outreach Assignment Reason',
+      name: 'outreachAssignmentReason',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'TEXT',
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
+      description:
+        'Workspace member (UUID) who made the assignment, empty when automatic',
+      icon: 'IconUser',
+      label: 'Outreach Assigned By',
+      name: 'outreachAssignedById',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'TEXT',
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
+      description:
+        'Warm overlap suggestion awaiting confirmation (workspace member UUID)',
+      icon: 'IconBulb',
+      label: 'Outreach Suggested Member',
+      name: 'outreachSuggestedMemberId',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'TEXT',
+    },
+  },
+  {
+    objectName: 'candidate',
+    field: {
+      description:
+        'Warm overlap scores and reasons per member for the suggestion',
+      icon: 'IconJson',
+      label: 'Outreach Suggestion Reasons',
+      name: 'outreachSuggestionReasons',
+      objectMetadataId: objectsNameIdMap.candidate,
+      type: 'RAW_JSON',
+    },
+  },
   {
     objectName: 'candidate',
     field: {

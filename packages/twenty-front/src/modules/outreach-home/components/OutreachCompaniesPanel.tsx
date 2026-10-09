@@ -5,6 +5,7 @@ import { getLogoUrlFromDomainName } from 'twenty-shared/utils';
 import { Loader } from 'twenty-ui/feedback';
 import {
   IconBuildingSkyscraper,
+  IconDatabase,
   IconTag,
   IconFileImport,
   IconFilterOff,
@@ -30,6 +31,11 @@ import {
   OutreachTextCell,
 } from '@/outreach-home/components/record-table/OutreachRecordTableCells';
 import { type OutreachRecordCard } from '@/outreach-home/components/record-table/OutreachRecordCardList';
+import { appendOutreachRawJsonColumns } from '@/outreach-home/components/record-table/appendOutreachRawJsonColumns';
+import { OutreachAiViewBar } from '@/outreach-home/components/OutreachAiViewBar';
+import { useSaveOutreachTargetsToCrm } from '@/outreach-home/hooks/useSaveOutreachTargetsToCrm';
+import { useOutreachAiTableView } from '@/outreach-home/hooks/useOutreachAiTableView';
+import { type OutreachTableView } from '@/outreach-home/constants/outreach-cache-realtime.constants';
 import { OutreachTableEmptyState } from '@/outreach-home/components/record-table/OutreachTableEmptyState';
 import {
   OutreachViewBar,
@@ -192,6 +198,7 @@ type OutreachCompaniesPanelProps = {
   isLoading?: boolean;
   onRefresh?: () => Promise<void>;
   appendCompanies?: (companiesToAdd: OutreachCompanyRow[]) => Promise<void>;
+  aiTableView?: OutreachTableView | null;
 };
 
 export const OutreachCompaniesPanel = ({
@@ -202,6 +209,7 @@ export const OutreachCompaniesPanel = ({
   isLoading = false,
   onRefresh,
   appendCompanies,
+  aiTableView,
 }: OutreachCompaniesPanelProps) => {
   const setChatSearchQuery = useSetAtomState(chatSearchQueryState);
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
@@ -209,6 +217,7 @@ export const OutreachCompaniesPanel = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>([]);
+  const { isSaving, saveTargetsToCrm } = useSaveOutreachTargetsToCrm();
   const {
     columnLayout,
     persistLayout,
@@ -216,6 +225,12 @@ export const OutreachCompaniesPanel = ({
     persistFilters,
     clearColumnFilters,
   } = useOutreachTablePresentation(projectId, 'companies');
+  const { externalSort, activeView, clearAiView } = useOutreachAiTableView({
+    projectId,
+    tab: 'companies',
+    view: aiTableView,
+    persistFilters,
+  });
 
   const { openObjectRecordsSpreadsheetImportDialog } =
     useOpenObjectRecordsSpreadsheetImportDialog('company');
@@ -258,6 +273,11 @@ export const OutreachCompaniesPanel = ({
       left.localeCompare(right),
     );
   }, [companies]);
+
+  const companyColumns = useMemo(
+    () => appendOutreachRawJsonColumns(COMPANY_COLUMNS, companies, columnLayout),
+    [companies, columnLayout],
+  );
 
   const filteredCompanies = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -380,6 +400,22 @@ export const OutreachCompaniesPanel = ({
         Icon={IconFileImport}
         onClick={handleImportCompanies}
       />
+      <OutreachViewBarIconAction
+        title={
+          selectedCompanyIds.length > 0
+            ? `Save selected to CRM (${selectedCompanyIds.length})`
+            : 'Save all to CRM'
+        }
+        Icon={IconDatabase}
+        disabled={isSaving}
+        onClick={() => {
+          void saveTargetsToCrm({
+            target: 'companies',
+            companyIds:
+              selectedCompanyIds.length > 0 ? selectedCompanyIds : undefined,
+          });
+        }}
+      />
     </>
   );
 
@@ -391,6 +427,14 @@ export const OutreachCompaniesPanel = ({
         searchPlaceholder="Search companies"
         onSearchChange={setSearchQuery}
         actions={actions}
+      />
+      <OutreachAiViewBar
+        view={activeView}
+        getColumnLabel={(columnId) =>
+          companyColumns.find((column) => column.id === columnId)?.label ??
+          columnId
+        }
+        onClear={clearAiView}
       />
       {companies.length === 0 ? (
         <OutreachTableEmptyState
@@ -406,7 +450,7 @@ export const OutreachCompaniesPanel = ({
       ) : (
         <OutreachRecordTable
           rows={filteredCompanies}
-          columns={COMPANY_COLUMNS}
+          columns={companyColumns}
           getRowId={(company) => company.id}
           selectedRowIds={selectedCompanyIds}
           activeRowId={selectedCompanyId}
@@ -417,6 +461,7 @@ export const OutreachCompaniesPanel = ({
           onColumnLayoutChange={persistLayout}
           columnFilters={columnFilters}
           onColumnFiltersChange={persistFilters}
+          externalSort={externalSort}
         />
       )}
     </StyledPanel>

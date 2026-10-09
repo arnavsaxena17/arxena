@@ -16,6 +16,7 @@ export type ApplyOutreachSequencerGraphOptionsInput = {
   inboundInviteWaitDays: number;
   inmailEnabled: boolean;
   testMode: boolean;
+  pinSenderByWarmOverlap: boolean;
 };
 
 export const useApplyOutreachSequencerGraphOptions = () => {

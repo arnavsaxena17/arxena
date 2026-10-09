@@ -45,7 +45,14 @@ export type OutreachRecordTableColumn<TRow> = {
   Icon?: IconComponent;
   width: number;
   render: (row: TRow) => ReactNode;
+  // Present only on columns whose value can be written back to the server
+  edit?: {
+    getValue: (row: TRow) => string;
+    onSave: (row: TRow, value: string) => Promise<void>;
+  };
   sortValue?: (row: TRow) => string | number | null | undefined;
+  // number: sorted numerically and filtered with comparison operators
+  valueType?: 'text' | 'number';
 };
 
 type SortState = { columnId: string; direction: 'asc' | 'desc' } | null;
@@ -253,6 +260,20 @@ const StyledCell = styled.td`
   }
 `;
 
+const StyledCellInput = styled.input`
+  background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.color.blue};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  box-sizing: border-box;
+  color: ${themeCssVariables.font.color.primary};
+  font-family: inherit;
+  font-size: ${themeCssVariables.font.size.md};
+  height: calc(${RECORD_TABLE_ROW_HEIGHT}px - 6px);
+  outline: none;
+  padding: 0 ${themeCssVariables.spacing[1]};
+  width: 100%;
+`;
+
 const StyledCheckboxContainer = styled.div`
   align-items: center;
   display: flex;
@@ -310,6 +331,13 @@ type OutreachRecordTableProps<TRow> = {
   onColumnLayoutChange?: (layout: OutreachTableColumnLayout[]) => void;
   columnFilters?: OutreachColumnFilter[];
   onColumnFiltersChange?: (filters: OutreachColumnFilter[]) => void;
+  // A sort set from outside (the agent). A new key applies it; an empty
+  // columnId clears the sort.
+  externalSort?: {
+    columnId: string;
+    direction: 'asc' | 'desc';
+    key: string;
+  } | null;
 };
 
 export const OutreachRecordTable = <TRow,>({
@@ -325,14 +353,32 @@ export const OutreachRecordTable = <TRow,>({
   onColumnLayoutChange,
   columnFilters = [],
   onColumnFiltersChange,
+  externalSort = null,
 }: OutreachRecordTableProps<TRow>) => {
   const isMobile = useIsMobile();
   const [sortState, setSortState] = useState<SortState>(null);
+
+  useEffect(() => {
+    if (!externalSort) {
+      return;
+    }
+
+    setSortState(
+      externalSort.columnId === ''
+        ? null
+        : { columnId: externalSort.columnId, direction: externalSort.direction },
+    );
+  }, [externalSort]);
   const [openMenuColumnId, setOpenMenuColumnId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [draggedColumnId, setDraggedColumnId] = useState<string | null>(null);
   const [rawJsonKey, setRawJsonKey] = useState('');
+  const [editingCell, setEditingCell] = useState<{
+    rowId: string;
+    columnId: string;
+    draft: string;
+  } | null>(null);
 
   const visibleColumns = useMemo(
     () => resolveVisibleColumns(columns, columnLayout),
@@ -610,6 +656,7 @@ export const OutreachRecordTable = <TRow,>({
                       getCellText={(row) => getOutreachCellText(column, row)}
                       filter={columnFilter}
                       canHide={column.id !== 'name'}
+                      valueType={column.valueType}
                       top={menuPosition.top}
                       left={menuPosition.left}
                       onHide={() => {
@@ -647,7 +694,14 @@ export const OutreachRecordTable = <TRow,>({
                   const rect = event.currentTarget.getBoundingClientRect();
 
                   setOpenMenuColumnId(null);
-                  setMenuPosition({ top: rect.bottom, left: rect.left });
+                  // The + sits at the table's right edge, so keep the menu inside the viewport
+                  setMenuPosition({
+                    top: rect.bottom,
+                    left: Math.max(
+                      8,
+                      Math.min(rect.left, window.innerWidth - 260),
+                    ),
+                  });
                   setAddMenuOpen((current) => !current);
                 }}
               >
@@ -732,14 +786,71 @@ export const OutreachRecordTable = <TRow,>({
                     />
                   </StyledCheckboxContainer>
                 </StyledCell>
-                {visibleColumns.map((column, columnIndex) => (
-                  <StyledCell
-                    key={column.id}
-                    data-sticky={columnIndex === 0 ? 'true' : undefined}
-                  >
-                    {column.render(row)}
-                  </StyledCell>
-                ))}
+                {visibleColumns.map((column, columnIndex) => {
+                  const isEditing =
+                    editingCell?.rowId === rowId &&
+                    editingCell.columnId === column.id;
+                  const commitEdit = () => {
+                    const pendingEdit = editingCell;
+
+                    setEditingCell(null);
+
+                    if (
+                      !column.edit ||
+                      !pendingEdit ||
+                      pendingEdit.draft === column.edit.getValue(row)
+                    ) {
+                      return;
+                    }
+
+                    void column.edit.onSave(row, pendingEdit.draft);
+                  };
+
+                  return (
+                    <StyledCell
+                      key={column.id}
+                      data-sticky={columnIndex === 0 ? 'true' : undefined}
+                      onClick={
+                        column.edit
+                          ? (event) => {
+                              event.stopPropagation();
+                              setEditingCell({
+                                rowId,
+                                columnId: column.id,
+                                draft: column.edit?.getValue(row) ?? '',
+                              });
+                            }
+                          : undefined
+                      }
+                    >
+                      {isEditing ? (
+                        <StyledCellInput
+                          autoFocus
+                          aria-label={`Edit ${column.label}`}
+                          value={editingCell.draft}
+                          onClick={(event) => event.stopPropagation()}
+                          onChange={(event) =>
+                            setEditingCell({
+                              rowId,
+                              columnId: column.id,
+                              draft: event.target.value,
+                            })
+                          }
+                          onBlur={commitEdit}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                              commitEdit();
+                            } else if (event.key === 'Escape') {
+                              setEditingCell(null);
+                            }
+                          }}
+                        />
+                      ) : (
+                        column.render(row)
+                      )}
+                    </StyledCell>
+                  );
+                })}
                 <StyledFillerCell />
               </StyledRow>
             );

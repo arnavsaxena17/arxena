@@ -1,5 +1,6 @@
 import {
   Field,
+  Int,
   ObjectType,
   registerEnumType,
   HideField,
@@ -113,4 +114,7 @@ export class WorkspaceMcpServerEntity {
 
   @Field()
   hasAuthToken?: boolean;
+
+  @Field(() => Int)
+  toolCount?: number;
 }

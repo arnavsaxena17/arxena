@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { isNonEmptyString } from '@sniptt/guards';
 
 import { EmailService } from 'src/engine/core-modules/email/email.service';
+import { OutreachMessagePersistService } from 'src/engine/core-modules/outreach-command/services/outreach-message-persist.service';
 
 export type NotifyMemberSystemEmailInput = {
   memberEmail?: string;
@@ -15,6 +16,7 @@ export type NotifyMemberSystemEmailInput = {
   body?: string;
   attachmentNames?: string;
   conversation?: string;
+  candidateId?: string;
 };
 
 // Platform (noreply) email to the workspace member. Used when the member has no
@@ -23,13 +25,23 @@ export type NotifyMemberSystemEmailInput = {
 export class NotifyMemberSystemEmailService {
   private readonly logger = new Logger(NotifyMemberSystemEmailService.name);
 
-  constructor(private readonly emailService: EmailService) {}
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly outreachMessagePersistService: OutreachMessagePersistService,
+  ) {}
 
   async execute({
+    workspaceId,
     input,
   }: {
+    workspaceId?: string;
     input: NotifyMemberSystemEmailInput;
-  }): Promise<{ success: boolean; to: string; subject: string; error: string }> {
+  }): Promise<{
+    success: boolean;
+    to: string;
+    subject: string;
+    error: string;
+  }> {
     const to = input.memberEmail?.trim() ?? '';
     const prospect = input.prospectName?.trim() || 'the prospect';
     const action = input.action?.trim() || 'follow up';
@@ -73,6 +85,21 @@ export class NotifyMemberSystemEmailService {
         subject,
         text: lines.join('\n'),
       });
+
+      if (
+        isNonEmptyString(workspaceId) &&
+        isNonEmptyString(input.candidateId)
+      ) {
+        await this.outreachMessagePersistService
+          .appendSystemNote({
+            workspaceId,
+            candidateId: input.candidateId,
+            content: `Workspace member notified by system email to ${action}.`,
+          })
+          .catch((error: unknown) =>
+            this.logger.warn(`System note not saved: ${String(error)}`),
+          );
+      }
 
       return { success: true, to, subject, error: '' };
     } catch (error) {

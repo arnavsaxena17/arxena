@@ -112,6 +112,11 @@
       "import": "./dist/metadata.mjs",
       "require": "./dist/metadata.cjs"
     },
+    "./outreach": {
+      "types": "./dist/outreach/index.d.ts",
+      "import": "./dist/outreach.mjs",
+      "require": "./dist/outreach.cjs"
+    },
     "./testing": {
       "types": "./dist/testing/index.d.ts",
       "import": "./dist/testing.mjs",
@@ -164,6 +169,7 @@
     "i18n",
     "logic-function",
     "metadata",
+    "outreach",
     "testing",
     "timeline",
     "translations",
@@ -201,6 +207,9 @@
       ],
       "metadata": [
         "dist/metadata/index.d.ts"
+      ],
+      "outreach": [
+        "dist/outreach/index.d.ts"
       ],
       "testing": [
         "dist/testing/index.d.ts"

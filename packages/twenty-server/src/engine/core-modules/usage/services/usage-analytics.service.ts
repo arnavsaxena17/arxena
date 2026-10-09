@@ -57,7 +57,12 @@ export class UsageAnalyticsService {
     periodEnd: Date;
     useDollarMode?: boolean;
   }): Promise<UsageBreakdownItem[]> {
-    const aiOperationTypes = ['AI_CHAT_TOKEN', 'AI_WORKFLOW_TOKEN'];
+    const aiOperationTypes = [
+      'AI_CHAT_TOKEN',
+      'AI_WORKFLOW_TOKEN',
+      'AI_BACKGROUND_TOKEN',
+      'AI_TRANSCRIPTION',
+    ];
 
     const convert = params.useDollarMode ? toDollars : toDisplayCredits;
 

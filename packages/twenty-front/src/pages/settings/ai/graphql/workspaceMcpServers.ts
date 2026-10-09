@@ -19,6 +19,7 @@ export const WORKSPACE_MCP_SERVERS = gql`
       createdAt
       updatedAt
       hasAuthToken
+      toolCount
     }
   }
 `;
@@ -34,6 +35,7 @@ export const CREATE_WORKSPACE_MCP_SERVER = gql`
       lastSyncAt
       lastSyncError
       hasAuthToken
+      toolCount
     }
   }
 `;
@@ -49,6 +51,7 @@ export const UPDATE_WORKSPACE_MCP_SERVER = gql`
       lastSyncAt
       lastSyncError
       hasAuthToken
+      toolCount
     }
   }
 `;
@@ -66,6 +69,7 @@ export const SYNC_WORKSPACE_MCP_SERVER_TOOLS = gql`
       lastSyncAt
       lastSyncError
       catalogHash
+      toolCount
     }
   }
 `;
