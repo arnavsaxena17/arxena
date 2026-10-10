@@ -143,6 +143,7 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
   exports: [
     OrgChartService,
     OrgChartS3Service,
+    OrgChartCompanyNewsService,
     OrgChartPublishedAdminService,
     OrgChartPublishedSlugService,
     OrgChartGrantAdminService,
