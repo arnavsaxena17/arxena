@@ -548,9 +548,34 @@ compute_lingui_flags() {
   echo "Lingui extract flags: server=$LINGUI_SERVER front=$LINGUI_FRONT emails=$LINGUI_EMAILS"
 }
 
+# FORCE_FULL_BUILD returns before the diff below. Without this, yarn is
+# skipped and Vite cannot resolve dependencies added since the last deploy.
+note_lockfile_changed_since_last_deploy() {
+  local base_sha="${1:-}"
+  if [ -z "$base_sha" ]; then
+    LOCKFILE_CHANGED=1
+    return 0
+  fi
+  if ! git -C "$REPO_DIR" cat-file -e "${base_sha}^{commit}" 2>/dev/null; then
+    git -C "$REPO_DIR" fetch --depth 1 origin "$base_sha" 2>/dev/null || true
+  fi
+  if ! git -C "$REPO_DIR" cat-file -e "${base_sha}^{commit}" 2>/dev/null; then
+    LOCKFILE_CHANGED=1
+    return 0
+  fi
+  if git -C "$REPO_DIR" diff --name-only "$base_sha" HEAD \
+    | grep -Eq '^(yarn\.lock|package\.json|\.yarnrc\.yml|yarn\.config\.cjs)$'; then
+    LOCKFILE_CHANGED=1
+  fi
+}
+
 compute_selected_builds() {
   SELECTED_BUILDS=""
   LAST_DEPLOY_SHA="$(read_meta_value commit 2>/dev/null || true)"
+  note_lockfile_changed_since_last_deploy "$LAST_DEPLOY_SHA"
+  if [ "$LOCKFILE_CHANGED" = "1" ]; then
+    echo "Lockfile or root manifest changed since ${LAST_DEPLOY_SHA:-none} — yarn install will run"
+  fi
   if ! command -v python3 >/dev/null 2>&1; then
     SELECTED_BUILDS="ALL"
     echo "python3 not found — building all packages"
