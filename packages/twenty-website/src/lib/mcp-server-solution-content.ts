@@ -1,5 +1,4 @@
 export const MCP_SERVER_URL = 'https://mcp.arxena.com/mcp';
-export const MCP_DOCS_URL = 'https://mcp.arxena.com/docs/mcp';
 export const MCP_OAUTH_ISSUER_URL = 'https://mcp.arxena.com';
 export const ARXENA_APP_BASE_URL = 'https://app.arxena.com';
 

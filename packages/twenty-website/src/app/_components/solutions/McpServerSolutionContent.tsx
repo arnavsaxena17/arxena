@@ -6,7 +6,6 @@ import Link from 'next/link';
 import {
     MCP_CLAUDE_DESKTOP_CONFIG_EXAMPLE,
     MCP_CURSOR_CONFIG_EXAMPLE,
-    MCP_DOCS_URL,
     MCP_OAUTH_ISSUER_URL,
     MCP_SERVER_SOLUTION_PAGE,
     MCP_SERVER_URL,
@@ -217,9 +216,6 @@ export const McpServerSolutionContent = ({
 
       <StyledBlockTitle>Reference</StyledBlockTitle>
       <StyledBulletList>
-        <li>
-          Live docs: <StyledLink href={MCP_DOCS_URL}>{MCP_DOCS_URL}</StyledLink>
-        </li>
         <li>
           Privacy policy:{' '}
           <StyledLink href="/legal/privacy/mcp">MCP connector privacy</StyledLink>

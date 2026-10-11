@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
+import { listOutreachSkillNames } from 'twenty-shared/outreach';
+
 import { resetSearchToolsConfigCacheForTests } from '../../api/search-tools-config';
 import { type ArxenaConfig } from '../../config';
 import { type McpTool } from '../../types/tool-types';
@@ -102,14 +104,7 @@ describe('meta-tools provider flags', () => {
       skillNames: string[];
     };
 
-    assert.deepEqual(result.skillNames.sort(), [
-      'local-business-search',
-      'org-structure-insights',
-      'outreach',
-      'resolve-company-name',
-      'search',
-      'setup',
-    ]);
+    assert.deepEqual(result.skillNames.sort(), [...listOutreachSkillNames()].sort());
   });
 });
 
