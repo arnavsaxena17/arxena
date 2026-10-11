@@ -48,12 +48,10 @@ import { buildApiKeyAuthContext } from 'src/engine/core-modules/auth/utils/build
 import { COMMON_PRELOAD_TOOLS } from 'src/engine/core-modules/tool-provider/constants/common-preload-tools.const';
 import { ToolRegistryService } from 'src/engine/core-modules/tool-provider/services/tool-registry.service';
 import {
-  createLearnToolsTool,
   LEARN_TOOLS_TOOL_NAME,
   learnToolsInputSchema,
 } from 'src/engine/core-modules/tool-provider/tools';
 import {
-  createExecuteToolTool,
   EXECUTE_TOOL_TOOL_NAME,
   executeToolInputSchema,
 } from 'src/engine/core-modules/tool-provider/tools/execute-tool.tool';
@@ -63,13 +61,13 @@ import {
   getToolCatalogInputSchema,
 } from 'src/engine/core-modules/tool-provider/tools/get-tool-catalog.tool';
 import {
-  createLoadSkillTool,
   LOAD_SKILL_TOOL_NAME,
   loadSkillInputSchema,
 } from 'src/engine/core-modules/tool-provider/tools/load-skill.tool';
 import { type FlatWorkspace } from 'src/engine/core-modules/workspace/types/flat-workspace.type';
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { SkillService } from 'src/engine/metadata-modules/skill/skill.service';
+import { buildCoreToolSet } from 'src/engine/core-modules/tool-provider/tools/build-core-tool-set.util';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { UserRoleService } from 'src/engine/metadata-modules/user-role/user-role.service';
 
@@ -276,6 +274,14 @@ export class McpProtocolService {
       resolveSearchToolsConfig(this.twentyConfigService),
     );
 
+    const coreTools = buildCoreToolSet({
+      toolRegistry: this.toolRegistry,
+      toolContext,
+      skillService: this.skillService,
+      workspaceId: workspace.id,
+      excludeTools: excludedToolNames,
+    });
+
     const runArxenaTool = (toolName: string, args: Record<string, unknown>) =>
       this.arxenaToolProvider.executeStaticTool(toolName, args, toolContext);
 
@@ -301,24 +307,12 @@ export class McpProtocolService {
         annotations: MCP_CLOSED_WORLD_READ_ONLY_TOOL_ANNOTATIONS,
       } as McpAnnotatedTool,
       [EXECUTE_TOOL_TOOL_NAME]: {
-        ...createExecuteToolTool(this.toolRegistry, toolContext, {
-          excludeTools: excludedToolNames,
-        }),
+        ...coreTools.executeTool,
         inputSchema: executeToolInputSchema,
         annotations: MCP_EXECUTE_TOOL_ANNOTATIONS,
       } as McpAnnotatedTool,
       [LOAD_SKILL_TOOL_NAME]: {
-        ...createLoadSkillTool(
-          (names) =>
-            this.skillService.findFlatSkillsByNames(names, workspace.id),
-          async () => {
-            const allSkills = await this.skillService.findAllFlatSkills(
-              workspace.id,
-            );
-
-            return allSkills.map((skill) => skill.name);
-          },
-        ),
+        ...coreTools.loadSkills,
         inputSchema: zodSchema(loadSkillInputSchema),
         annotations: MCP_CLOSED_WORLD_READ_ONLY_TOOL_ANNOTATIONS,
       } as McpAnnotatedTool,
@@ -336,9 +330,7 @@ export class McpProtocolService {
         annotations: MCP_CLOSED_WORLD_READ_ONLY_TOOL_ANNOTATIONS,
       } as McpAnnotatedTool,
       [LEARN_TOOLS_TOOL_NAME]: {
-        ...createLearnToolsTool(this.toolRegistry, toolContext, {
-          excludeTools: excludedToolNames,
-        }),
+        ...coreTools.learnTools,
         inputSchema: zodSchema(learnToolsInputSchema),
         annotations: MCP_CLOSED_WORLD_READ_ONLY_TOOL_ANNOTATIONS,
       } as McpAnnotatedTool,

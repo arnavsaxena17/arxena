@@ -35,13 +35,11 @@ import { ExceptionHandlerService } from 'src/engine/core-modules/exception-handl
 import { FileService } from 'src/engine/core-modules/file/services/file.service';
 import { ToolRegistryService } from 'src/engine/core-modules/tool-provider/services/tool-registry.service';
 import {
-  createExecuteToolTool,
-  createLearnToolsTool,
-  createLoadSkillTool,
   EXECUTE_TOOL_TOOL_NAME,
   LEARN_TOOLS_TOOL_NAME,
   LOAD_SKILL_TOOL_NAME,
 } from 'src/engine/core-modules/tool-provider/tools';
+import { buildCoreToolSet } from 'src/engine/core-modules/tool-provider/tools/build-core-tool-set.util';
 import { estimateToolOutputTokens } from 'src/engine/core-modules/tool-provider/utils/estimate-tool-output-tokens.util';
 import { getToolMetricName } from 'src/engine/core-modules/tool-provider/utils/get-tool-metric-name.util';
 import { isToolOutputSuccessful } from 'src/engine/core-modules/tool-provider/utils/is-tool-output-successful.util';
@@ -280,37 +278,21 @@ export class ChatExecutionService {
 
     // ToolSet is constant for the entire conversation — no mutation.
     // learn_tools returns schemas as text; execute_tool dispatches via the registry.
+    const coreTools = buildCoreToolSet({
+      toolRegistry: this.toolRegistry,
+      toolContext,
+      skillService: this.skillService,
+      workspaceId: workspace.id,
+      excludeTools: disabledSearchToolNames,
+      outputOptions: { compactOutput: true, spillLargeOutput: true },
+    });
+
     const activeTools: ToolSet = {
       ...directTools,
       [ASK_QUESTIONS_TOOL_NAME]: createAskQuestionsTool(),
-      [LEARN_TOOLS_TOOL_NAME]: createLearnToolsTool(
-        this.toolRegistry,
-        toolContext,
-        {
-          spillLargeOutput: true,
-          excludeTools: disabledSearchToolNames,
-        },
-      ),
-      [EXECUTE_TOOL_TOOL_NAME]: createExecuteToolTool(
-        this.toolRegistry,
-        toolContext,
-        {
-          compactOutput: true,
-          spillLargeOutput: true,
-          excludeTools: disabledSearchToolNames,
-        },
-      ),
-      [LOAD_SKILL_TOOL_NAME]: createLoadSkillTool(
-        (skillNames) =>
-          this.skillService.findFlatSkillsByNames(skillNames, workspace.id),
-        async () => {
-          const allSkills = await this.skillService.findAllFlatSkills(
-            workspace.id,
-          );
-
-          return allSkills.map((skill) => skill.name);
-        },
-      ),
+      [LEARN_TOOLS_TOOL_NAME]: coreTools.learnTools,
+      [EXECUTE_TOOL_TOOL_NAME]: coreTools.executeTool,
+      [LOAD_SKILL_TOOL_NAME]: coreTools.loadSkills,
     };
 
     this.logger.log(
