@@ -1,6 +1,7 @@
 import { jsonSchema } from 'ai';
 import { type JSONSchema7 } from 'json-schema';
 import { z } from 'zod';
+import { MCP_TOOL_DESCRIPTIONS } from 'twenty-shared/outreach';
 
 import { type ToolRegistryService } from 'src/engine/core-modules/tool-provider/services/tool-registry.service';
 import { type ToolContext } from 'src/engine/core-modules/tool-provider/types/tool-context.type';
@@ -57,8 +58,7 @@ export const createExecuteToolTool = (
     spillLargeOutput?: boolean;
   },
 ) => ({
-  description:
-    'Execute a tool by name with arguments. Call learn_tools first to discover the required input schema. Company and people search (Apollo, LinkedIn, Harvest, Bright Data, Exa) runs through this tool; load the "search" skill with load_skills first.',
+  description: MCP_TOOL_DESCRIPTIONS.execute_tool,
   inputSchema: executeToolInputSchema,
   execute: async (parameters: ExecuteToolInput): Promise<ToolOutput> => {
     const { toolName, arguments: args = {} } = parameters;

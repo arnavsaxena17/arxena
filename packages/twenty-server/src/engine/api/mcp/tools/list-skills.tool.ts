@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MCP_TOOL_DESCRIPTIONS } from 'twenty-shared/outreach';
 
 import { type SkillService } from 'src/engine/metadata-modules/skill/skill.service';
 
@@ -15,8 +16,7 @@ export const createListSkillsTool = (
   skillService: SkillService,
   workspaceId: string,
 ) => ({
-  description:
-    'List skill names only when the initialize instructions look stale. Do not call this on the happy path — skill names are already listed in server instructions. Then load a matching skill with load_skills.',
+  description: MCP_TOOL_DESCRIPTIONS.list_skills,
   inputSchema: listSkillsInputSchema,
   execute: async (): Promise<ListSkillsResult> => {
     const allSkills = await skillService.findAllFlatSkills(workspaceId);

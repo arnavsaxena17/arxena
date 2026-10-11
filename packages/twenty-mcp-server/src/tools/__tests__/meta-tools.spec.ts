@@ -1,12 +1,16 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
-import { listOutreachSkillNames } from 'twenty-shared/outreach';
+import {
+  MCP_TOOL_DESCRIPTIONS,
+  listOutreachSkillNames,
+} from 'twenty-shared/outreach';
 
 import { resetSearchToolsConfigCacheForTests } from '../../api/search-tools-config';
 import { type ArxenaConfig } from '../../config';
 import { type McpTool } from '../../types/tool-types';
 import { buildMetaServerInstructions, buildMetaTools } from '../meta-tools';
+import { searchFetchTools } from '../search-fetch-tools';
 
 const CONFIG: ArxenaConfig = { apiToken: 'token', baseUrl: 'http://server.test' };
 
@@ -117,5 +121,21 @@ describe('meta server instructions', () => {
     assert.ok(instructions.includes('Do NOT enroll until the user confirms'));
     assert.ok(!instructions.includes('workflow-building'));
     assert.ok(!instructions.includes('highlight_org_chart'));
+  });
+
+  it('uses the shared MCP tool descriptions for generic tools', () => {
+    const tools = [...buildMetaTools([]), ...searchFetchTools];
+
+    for (const name of Object.keys(MCP_TOOL_DESCRIPTIONS) as Array<
+      keyof typeof MCP_TOOL_DESCRIPTIONS
+    >) {
+      const tool = tools.find((candidate) => candidate.definition.name === name);
+
+      assert.equal(
+        tool?.definition.description,
+        MCP_TOOL_DESCRIPTIONS[name],
+        `${name} description drifted from twenty-shared`,
+      );
+    }
   });
 });

@@ -69,6 +69,13 @@ then removal of `arxena-mcp-http` and the standalone HTTP code (Step 6), and a d
 standalone package (they call Arxena's own `linkedin-unipile` / `whatsapp-unipile` controllers;
 they are not the external Unipile MCP synced under Settings -> AI -> MCP servers).
 
+Single source for tool text (done locally): `twenty-shared/src/outreach/mcp-tool-descriptions.ts`
+(`MCP_TOOL_DESCRIPTIONS`) now defines the descriptions of `execute_tool`, `learn_tools`, `list_skills`,
+`search`, `fetch`; the NestJS factories and the stdio package both read it, with a test on each side.
+`load_skills` and `get_tool_catalog` stay per-surface on purpose (different skills / input parameters).
+The stdio server's own `buildMetaServerInstructions` remains because local stdio users get no NestJS
+instructions; it already reuses the shared routing/prompt builders.
+
 ## Production findings (2026-10-11)
 
 1. **OAuth discovery is broken on the NestJS endpoint.**

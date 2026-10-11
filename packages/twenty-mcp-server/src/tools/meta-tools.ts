@@ -1,5 +1,6 @@
 import { truncateToolResult } from '../auth';
 import {
+  MCP_TOOL_DESCRIPTIONS,
   ARXENA_INTERNAL_TOOL_NAMES,
   ARXENA_TOOL_CATALOG,
   ARXENA_TOOL_PACK_LABELS,
@@ -210,8 +211,7 @@ export const buildMetaTools = (executableTools: McpTool[]): McpTool[] => {
     definition: {
       name: 'learn_tools',
       title: 'Learn Tools',
-      description:
-        'Get input schemas for Arxena tools. Pass every tool you need in one call (toolNames array), then call execute_tool.',
+      description: MCP_TOOL_DESCRIPTIONS.learn_tools,
       annotations: { readOnlyHint: true },
       inputSchema: {
         type: 'object',
@@ -269,8 +269,7 @@ export const buildMetaTools = (executableTools: McpTool[]): McpTool[] => {
     definition: {
       name: 'execute_tool',
       title: 'Execute Tool',
-      description:
-        'Execute a Arxena tool by name with arguments. Call learn_tools first for the input schema. Pass arguments as a JSON object, never a stringified JSON string.',
+      description: MCP_TOOL_DESCRIPTIONS.execute_tool,
       annotations: {
         readOnlyHint: false,
         destructiveHint: true,
@@ -336,8 +335,7 @@ export const buildMetaTools = (executableTools: McpTool[]): McpTool[] => {
     definition: {
       name: 'list_skills',
       title: 'List Skills',
-      description:
-        'List skill names when initialize instructions look stale. Prefer the skill names already listed in server instructions, then load_skills.',
+      description: MCP_TOOL_DESCRIPTIONS.list_skills,
       annotations: { readOnlyHint: true },
       inputSchema: {
         type: 'object',

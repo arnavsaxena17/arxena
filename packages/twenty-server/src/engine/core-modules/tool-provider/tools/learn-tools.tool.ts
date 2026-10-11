@@ -1,5 +1,6 @@
 import { isDefined } from 'twenty-shared/utils';
 import { z } from 'zod';
+import { MCP_TOOL_DESCRIPTIONS } from 'twenty-shared/outreach';
 
 import { type ToolRegistryService } from 'src/engine/core-modules/tool-provider/services/tool-registry.service';
 import { type ToolContext } from 'src/engine/core-modules/tool-provider/types/tool-context.type';
@@ -60,8 +61,7 @@ export const createLearnToolsTool = (
   context: ToolContext,
   options?: LearnToolsOptions,
 ) => ({
-  description:
-    'Get input schemas for tools. Pass all the tool names you need in a single call (toolNames accepts an array) rather than calling learn_tools once per tool. Call this with exact tool names to learn the required arguments before calling execute_tool. For company or people search, learn the search tools named in the "search" skill (load it first with load_skills) instead of using web search.',
+  description: MCP_TOOL_DESCRIPTIONS.learn_tools,
   inputSchema: learnToolsInputSchema,
   execute: async (parameters: LearnToolsInput): Promise<LearnToolsResult> => {
     const { toolNames, aspects } = parameters;

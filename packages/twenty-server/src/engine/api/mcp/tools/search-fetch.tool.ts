@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MCP_TOOL_DESCRIPTIONS } from 'twenty-shared/outreach';
 
 // Top-level `search` and `fetch` follow the OpenAI company-knowledge contract:
 // search -> { results: [{ id, title, url }] }, fetch -> { id, title, text, url, metadata }.
@@ -42,8 +43,7 @@ const unwrapToolResult = async (
 };
 
 export const createSearchTool = (runArxenaTool: RunArxenaTool) => ({
-  description:
-    'Search Arxena workspace knowledge: org charts, companies, jobs and candidates. Returns result ids to pass to fetch.',
+  description: MCP_TOOL_DESCRIPTIONS.search,
   inputSchema: searchInputSchema,
   execute: async (parameters: z.infer<typeof searchInputSchema>) => {
     const query = parameters.query.trim();
@@ -57,8 +57,7 @@ export const createSearchTool = (runArxenaTool: RunArxenaTool) => ({
 });
 
 export const createFetchTool = (runArxenaTool: RunArxenaTool) => ({
-  description:
-    'Fetch a full document by id returned from search (orgchart:{id}, project:{id}, candidate:{id}).',
+  description: MCP_TOOL_DESCRIPTIONS.fetch,
   inputSchema: fetchInputSchema,
   execute: async (parameters: z.infer<typeof fetchInputSchema>) => {
     const id = parameters.id.trim();

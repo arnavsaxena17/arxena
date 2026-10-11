@@ -16,6 +16,7 @@ export {
   ARXENA_TOOL_NAMES,
   ARXENA_INTERNAL_TOOL_NAMES,
 } from './arxena-tool-catalog.const';
+export { MCP_TOOL_DESCRIPTIONS } from './mcp-tool-descriptions';
 export type { OutreachPromptOptions } from './outreach-prompt';
 export {
   buildOutreachRoutingLines,

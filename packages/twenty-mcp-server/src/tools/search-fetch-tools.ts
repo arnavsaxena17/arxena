@@ -1,4 +1,5 @@
 import type { Project, Projects } from 'twenty-shared/arx';
+import { MCP_TOOL_DESCRIPTIONS } from 'twenty-shared/outreach';
 import {
   graphqlToFindManyCompanies,
   graphqlToFindManyProjects,
@@ -230,8 +231,7 @@ export const searchFetchTools: McpTool[] = [
     definition: {
       name: 'search',
       title: 'Search knowledge',
-      description:
-        'Search Arxena workspace knowledge: org charts, companies, jobs, candidates, and global ES people/companies indices (use search_people_index / search_companies_index for direct index search).',
+      description: MCP_TOOL_DESCRIPTIONS.search,
       annotations: { readOnlyHint: true },
       inputSchema: {
         type: 'object',
@@ -259,8 +259,7 @@ export const searchFetchTools: McpTool[] = [
     definition: {
       name: 'fetch',
       title: 'Fetch document',
-      description:
-        'Fetch a full document by id returned from search (orgchart:{id}, project:{id}, candidate:{id}).',
+      description: MCP_TOOL_DESCRIPTIONS.fetch,
       annotations: { readOnlyHint: true },
       inputSchema: {
         type: 'object',
