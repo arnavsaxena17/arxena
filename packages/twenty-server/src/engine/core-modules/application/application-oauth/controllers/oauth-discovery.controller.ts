@@ -98,7 +98,21 @@ export class OAuthDiscoveryController {
 
   private isApiHost(request: Request): boolean {
     const serverUrl = this.twentyConfigService.get('SERVER_URL');
+    const host = request.get('host');
 
-    return request.get('host') === new URL(serverUrl).host;
+    if (host === new URL(serverUrl).host) {
+      return true;
+    }
+
+    const apiOnlyHosts = this.twentyConfigService.get('API_ONLY_HOSTS');
+
+    return (
+      typeof apiOnlyHosts === 'string' &&
+      apiOnlyHosts
+        .split(',')
+        .map((apiOnlyHost) => apiOnlyHost.trim())
+        .filter((apiOnlyHost) => apiOnlyHost.length > 0)
+        .includes(host ?? '')
+    );
   }
 }

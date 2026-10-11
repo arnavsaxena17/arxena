@@ -1,4 +1,7 @@
-# Arxena MCP HTTP — nginx vhost for mcp.arxena.com
+# Arxena MCP — nginx vhost for mcp.arxena.com (direct to EC2, no CloudFront).
+# Proxies to the NestJS server (:3000), which serves /mcp, /oauth/* and /.well-known/*.
+# Pair with API_ONLY_HOSTS=mcp.arxena.com in the server env so OAuth /authorize goes to the
+# default frontend.
 # Deploy: sudo cp to /etc/nginx/sites-available/mcp-arxena.conf && ln -s sites-enabled
 
 server {
@@ -24,7 +27,7 @@ server {
   ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
   location / {
-    proxy_pass http://127.0.0.1:3005;
+    proxy_pass http://127.0.0.1:3000;
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;

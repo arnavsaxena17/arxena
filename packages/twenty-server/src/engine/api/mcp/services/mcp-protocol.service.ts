@@ -30,8 +30,17 @@ import {
   LIST_SKILLS_TOOL_NAME,
   listSkillsInputSchema,
 } from 'src/engine/api/mcp/tools/list-skills.tool';
+import {
+  createFetchTool,
+  createSearchTool,
+  FETCH_TOOL_NAME,
+  fetchInputSchema,
+  SEARCH_TOOL_NAME,
+  searchInputSchema,
+} from 'src/engine/api/mcp/tools/search-fetch.tool';
 import { type McpToolAnnotations } from 'src/engine/api/mcp/types/mcp-tool-annotations.type';
 import { wrapJsonRpcResponse } from 'src/engine/api/mcp/utils/wrap-jsonrpc-response.util';
+import { ArxenaToolProvider } from 'src/engine/core-modules/arxena-tools/providers/arxena-tool.provider';
 import { ApiKeyRoleService } from 'src/engine/core-modules/api-key/services/api-key-role.service';
 import { type FlatApiKey } from 'src/engine/core-modules/api-key/types/flat-api-key.type';
 import { type WorkspaceAuthContext } from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
@@ -104,6 +113,7 @@ export class McpProtocolService {
     private readonly flatEntityMapsCacheService: WorkspaceManyOrAllFlatEntityMapsCacheService,
     private readonly workspaceCacheService: WorkspaceCacheService,
     private readonly twentyConfigService: TwentyConfigService,
+    private readonly arxenaToolProvider: ArxenaToolProvider,
   ) {}
 
   async handleInitialize(
@@ -266,8 +276,21 @@ export class McpProtocolService {
       resolveSearchToolsConfig(this.twentyConfigService),
     );
 
+    const runArxenaTool = (toolName: string, args: Record<string, unknown>) =>
+      this.arxenaToolProvider.executeStaticTool(toolName, args, toolContext);
+
     return {
       ...annotatePreloadedMcpTools(preloadedTools),
+      [SEARCH_TOOL_NAME]: {
+        ...createSearchTool(runArxenaTool),
+        inputSchema: zodSchema(searchInputSchema),
+        annotations: MCP_CLOSED_WORLD_READ_ONLY_TOOL_ANNOTATIONS,
+      } as McpAnnotatedTool,
+      [FETCH_TOOL_NAME]: {
+        ...createFetchTool(runArxenaTool),
+        inputSchema: zodSchema(fetchInputSchema),
+        annotations: MCP_CLOSED_WORLD_READ_ONLY_TOOL_ANNOTATIONS,
+      } as McpAnnotatedTool,
       [GET_TOOL_CATALOG_TOOL_NAME]: {
         ...createGetToolCatalogTool(this.toolRegistry, workspace.id, roleId, {
           userId: options?.userId,

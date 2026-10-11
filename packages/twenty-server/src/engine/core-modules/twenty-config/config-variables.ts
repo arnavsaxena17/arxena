@@ -1449,6 +1449,18 @@ export class ConfigVariables {
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.SERVER_CONFIG,
     description:
+      'Comma-separated hostnames that serve only the API (for example the public ' +
+      'MCP host). OAuth discovery on these hosts sends users to the default ' +
+      'frontend for /authorize, like SERVER_URL.',
+    type: ConfigVariableType.STRING,
+    isEnvOnly: true,
+  })
+  @IsOptional()
+  API_ONLY_HOSTS = '';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.SERVER_CONFIG,
+    description:
       'When enabled, the served frontend resolves the API base URL from ' +
       "the browser's current origin (window.location) instead of the " +
       'baked-in SERVER_URL. Useful for self-hosted deployments reachable ' +

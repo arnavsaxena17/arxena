@@ -71,4 +71,48 @@ describe('OAuthDiscoveryController', () => {
       );
     });
   });
+
+  describe('getAuthorizationServerMetadata', () => {
+    const configureConfig = (values: Record<string, string>) => {
+      const configService = {
+        get: jest.fn((key: string) => values[key]),
+      };
+
+      (controller as unknown as { twentyConfigService: unknown })[
+        'twentyConfigService'
+      ] = configService;
+    };
+
+    it('should send the authorize step to the default frontend on an API-only host', async () => {
+      configureConfig({
+        SERVER_URL: 'https://api.example.com',
+        API_ONLY_HOSTS: 'mcp.example.com, other.example.com',
+      });
+
+      const metadata = await controller.getAuthorizationServerMetadata(
+        buildMockRequest('mcp.example.com'),
+      );
+
+      expect(metadata).toMatchObject({
+        issuer: 'https://mcp.example.com',
+        authorization_endpoint: 'https://app.example.com/authorize',
+        token_endpoint: 'https://mcp.example.com/oauth/token',
+      });
+    });
+
+    it('should keep authorize on the same host for a workspace host', async () => {
+      configureConfig({
+        SERVER_URL: 'https://api.example.com',
+        API_ONLY_HOSTS: 'mcp.example.com',
+      });
+
+      const metadata = await controller.getAuthorizationServerMetadata(
+        buildMockRequest('workspace.example.com'),
+      );
+
+      expect(metadata).toMatchObject({
+        authorization_endpoint: 'https://workspace.example.com/authorize',
+      });
+    });
+  });
 });

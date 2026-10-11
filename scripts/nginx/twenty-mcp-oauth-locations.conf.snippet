@@ -1,0 +1,49 @@
+# MCP + OAuth routes for the Twenty server block (twenty.conf, `server_name *.arxena.com ...`).
+# Paste these BEFORE the big `location ~ ^/(client-config|...|mcp|...)` regex block.
+#
+# Why: regex locations beat plain prefixes, so the old `location /mcp` was never used and the
+# regex block forwarded Host: localhost:3000, which made OAuth discovery advertise
+# http://localhost:3000/... Also `/.well-known/` and `/oauth/` were not routed to NestJS at
+# all (they fell through to the SPA index.html). `^~` makes these prefixes win over the regex.
+
+location ^~ /mcp {
+    if ($request_method = 'OPTIONS') {
+        add_header 'Access-Control-Allow-Origin' "$http_origin" always;
+        add_header 'Access-Control-Allow-Credentials' 'true' always;
+        add_header 'Vary' 'Origin' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, DELETE, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'authorization,content-type,x-api-key,mcp-session-id,mcp-protocol-version,last-event-id,x-origin-domain,origin' always;
+        add_header 'Access-Control-Expose-Headers' 'WWW-Authenticate,mcp-session-id' always;
+        add_header 'Access-Control-Max-Age' 1728000;
+        return 204;
+    }
+
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto https;
+    # SSE responses must not be buffered
+    proxy_buffering off;
+    proxy_read_timeout 3600s;
+    proxy_send_timeout 3600s;
+}
+
+location ^~ /.well-known/ {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto https;
+    add_header 'Access-Control-Allow-Origin' '*' always;
+}
+
+location ^~ /oauth/ {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto https;
+}

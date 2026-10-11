@@ -16,6 +16,8 @@ import { McpToolExecutorService } from 'src/engine/api/mcp/services/mcp-tool-exe
 import { LIST_OBJECT_METADATA_NAMES_TOOL_NAME } from 'src/engine/api/mcp/tools/list-object-metadata-names.tool';
 import { LIST_SKILLS_TOOL_NAME } from 'src/engine/api/mcp/tools/list-skills.tool';
 import { type McpToolAnnotations } from 'src/engine/api/mcp/types/mcp-tool-annotations.type';
+import { ArxenaToolProvider } from 'src/engine/core-modules/arxena-tools/providers/arxena-tool.provider';
+import { FETCH_TOOL_NAME, SEARCH_TOOL_NAME } from 'src/engine/api/mcp/tools/search-fetch.tool';
 import { type FlatApiKey } from 'src/engine/core-modules/api-key/types/flat-api-key.type';
 import { ApiKeyRoleService } from 'src/engine/core-modules/api-key/services/api-key-role.service';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
@@ -56,6 +58,8 @@ describe('McpProtocolService', () => {
     LIST_SKILLS_TOOL_NAME,
     GET_TOOL_CATALOG_TOOL_NAME,
     'search_help_center',
+    SEARCH_TOOL_NAME,
+    FETCH_TOOL_NAME,
   ] as const;
 
   const EXPECTED_MCP_TOOL_ANNOTATIONS: Record<
@@ -70,6 +74,8 @@ describe('McpProtocolService', () => {
     [LIST_SKILLS_TOOL_NAME]: MCP_CLOSED_WORLD_READ_ONLY_TOOL_ANNOTATIONS,
     [GET_TOOL_CATALOG_TOOL_NAME]: MCP_CLOSED_WORLD_READ_ONLY_TOOL_ANNOTATIONS,
     search_help_center: MCP_OPEN_WORLD_READ_ONLY_TOOL_ANNOTATIONS,
+    [SEARCH_TOOL_NAME]: MCP_CLOSED_WORLD_READ_ONLY_TOOL_ANNOTATIONS,
+    [FETCH_TOOL_NAME]: MCP_CLOSED_WORLD_READ_ONLY_TOOL_ANNOTATIONS,
   };
 
   beforeEach(async () => {
@@ -82,6 +88,10 @@ describe('McpProtocolService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         McpProtocolService,
+        {
+          provide: ArxenaToolProvider,
+          useValue: { executeStaticTool: jest.fn() },
+        },
         {
           provide: ToolRegistryService,
           useValue: {

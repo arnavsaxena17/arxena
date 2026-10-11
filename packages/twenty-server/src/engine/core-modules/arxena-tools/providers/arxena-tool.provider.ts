@@ -26,6 +26,13 @@ import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/workspace.type';
 
+// Token minting only needs identity fields, so top-level MCP tools (search/fetch)
+// can call executeStaticTool without a full tool-provider context.
+export type ArxenaToolExecutionContext = Pick<
+  ToolProviderContext,
+  'workspaceId' | 'authContext' | 'userId' | 'userWorkspaceId'
+>;
+
 const extractTextFromMcpResult = (result: unknown): string => {
   if (!isDefined(result) || typeof result !== 'object') {
     return JSON.stringify(result ?? null);
@@ -79,7 +86,7 @@ export class ArxenaToolProvider implements ToolProvider {
   }
 
   private async resolveApiToken(
-    context: ToolProviderContext,
+    context: ArxenaToolExecutionContext,
   ): Promise<string | null> {
     const authContext = context.authContext;
 
@@ -180,7 +187,7 @@ export class ArxenaToolProvider implements ToolProvider {
   async executeStaticTool(
     toolName: string,
     args: Record<string, unknown>,
-    context: ToolProviderContext,
+    context: ArxenaToolExecutionContext,
   ): Promise<ToolOutput> {
     const searchToolsConfig = resolveSearchToolsConfig(
       this.twentyConfigService,

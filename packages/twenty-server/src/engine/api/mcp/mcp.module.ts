@@ -6,6 +6,7 @@ import { McpInstructionBuilderService } from 'src/engine/api/mcp/services/mcp-in
 import { McpPromptService } from 'src/engine/api/mcp/services/mcp-prompt.service';
 import { McpProtocolService } from 'src/engine/api/mcp/services/mcp-protocol.service';
 import { McpToolExecutorService } from 'src/engine/api/mcp/services/mcp-tool-executor.service';
+import { ArxenaToolsModule } from 'src/engine/core-modules/arxena-tools/arxena-tools.module';
 import { ApiKeyModule } from 'src/engine/core-modules/api-key/api-key.module';
 import { MetricsModule } from 'src/engine/core-modules/metrics/metrics.module';
 import { TokenModule } from 'src/engine/core-modules/auth/token/token.module';
@@ -25,6 +26,7 @@ import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache
 @Module({
   imports: [
     ApiKeyModule,
+    ArxenaToolsModule,
     MetricsModule,
     TokenModule,
     WorkspaceCacheStorageModule,
