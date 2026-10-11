@@ -1,21 +1,22 @@
 # Arxena MCP Server
 
-Remote [Model Context Protocol](https://modelcontextprotocol.io) server for the Arxena recruitment platform.
+[Model Context Protocol](https://modelcontextprotocol.io) tool library for the Arxena recruitment platform.
 
-## Modes
+## How it is used
 
-| Mode | Entry | Use case |
-|------|-------|----------|
-| stdio | `yarn start` / `dist/index.js` | Claude Desktop local, in-app assistant subprocess |
-| HTTP | `yarn start:http` / `dist/http-index.js` | Cursor, Claude custom connector, ChatGPT developer mode |
+| Where | How | Use case |
+|------|-----|----------|
+| `twenty-server` | spawns `dist/index.js` over stdio per tool call (`ArxenaMcpBridgeService`) | Arxena GTM tools behind `https://mcp.arxena.com/mcp` and Ask AI |
+| Local stdio | `yarn start` / `dist/index.js` | Claude Desktop local, debugging |
 
-## HTTP deployment
+The public HTTP endpoint is the NestJS `/mcp` in `twenty-server` (`packages/twenty-server/src/engine/api/mcp`).
+This package no longer ships its own HTTP server or OAuth; the old standalone `arxena-mcp-http`
+process (port 3005) was removed.
 
-1. Build: `yarn build`
-2. Configure env (see `.env.example`)
-3. Start: `pm2 start ../../ecosystem.config.js --only arxena-mcp-http` (from repo root on production)
-4. Proxy `mcp.arxena.com` using `scripts/nginx/mcp-arxena.conf.snippet`
-5. Allowlist Anthropic egress `160.79.104.0/21` if using Claude directory
+Production routing: `mcp.arxena.com` is served directly from EC2 by nginx (`scripts/nginx/mcp-arxena.conf.snippet`,
+proxying to `twenty-server` on port 3000) and the app routes `/mcp`, `/oauth/*` and `/.well-known/*`
+are in `scripts/nginx/twenty-mcp-oauth-locations.conf.snippet`. The server env needs `API_ONLY_HOSTS=mcp.arxena.com`
+so OAuth `/authorize` is sent to the default frontend. Allowlist Anthropic egress `160.79.104.0/21` if using the Claude directory.
 
 Public setup guide: https://arxena.com/solutions/mcp-server
 
@@ -84,8 +85,7 @@ Quit Claude Desktop fully (Cmd+Q) after editing the config.
 ## Directory publication
 
 - **Privacy policy:** https://arxena.com/legal/privacy/mcp
-- **Docs:** https://mcp.arxena.com/docs/mcp
-- **OAuth:** `MCP_OAUTH_ENABLED=true` with consent at `/oauth/consent`
+- **OAuth:** platform OAuth on `twenty-server` (dynamic client registration at `/oauth/register`, consent on the frontend `/authorize`)
 - **Claude callback:** `https://claude.ai/api/mcp/auth_callback`
 - **OpenAI:** top-level `search` + `fetch` (company knowledge)
 

@@ -5,15 +5,12 @@
   "description": "MCP server for Arxena recruitment platform",
   "main": "dist/index.js",
   "bin": {
-    "arxena-mcp": "dist/index.js",
-    "arxena-mcp-http": "dist/http-index.js"
+    "arxena-mcp": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",
     "dev": "ts-node src/index.ts",
-    "dev:http": "ts-node src/http-index.ts",
-    "start": "node dist/index.js",
-    "start:http": "node dist/http-index.js"
+    "start": "node dist/index.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.26.0",

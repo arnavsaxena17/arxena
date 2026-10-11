@@ -1336,9 +1336,8 @@ maybe_stream_component() {
       pm2 restart twenty-website || true
       ;;
     TWENTY_MCP_SERVER)
-      ensure_prod_yarn
-      cd "$REPO_DIR"
-      pm2 startOrRestart ecosystem.config.js --only arxena-mcp-http || pm2 restart arxena-mcp-http || true
+      # No process to restart: twenty-server spawns dist/index.js (stdio) per tool call via ArxenaMcpBridgeService
+      echo "twenty-mcp-server built; used in-process by twenty-server (no separate pm2 app)"
       ;;
     TWENTY_EMAILS)
       if [ "$LINGUI_EMAILS" = "1" ]; then

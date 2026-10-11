@@ -50853,7 +50853,6 @@ __metadata:
     zod: "npm:3.25.76"
   bin:
     arxena-mcp: dist/index.js
-    arxena-mcp-http: dist/http-index.js
   languageName: unknown
   linkType: soft
 

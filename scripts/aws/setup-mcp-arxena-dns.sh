@@ -13,7 +13,7 @@ TTL=300
 if [ -n "${1:-}" ]; then
   TARGET_IP="$1"
 else
-  # Production arxena-app public IP (mcp runs on this host via PM2 :3005)
+  # Production arxena-app public IP (mcp.arxena.com is served by nginx on this host, proxying to twenty-server :3000)
   TARGET_IP="${ARXENA_APP_EIP:-3.234.178.51}"
 fi
 

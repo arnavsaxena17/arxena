@@ -12,14 +12,6 @@
         "command": "yarn build"
       },
       "outputs": ["{projectRoot}/dist"]
-    },
-    "start:http": {
-      "executor": "nx:run-commands",
-      "dependsOn": ["build"],
-      "options": {
-        "cwd": "packages/twenty-mcp-server",
-        "command": "yarn start:http"
-      }
     }
   }
 }
