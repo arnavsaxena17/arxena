@@ -30,7 +30,7 @@ import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/worksp
 // can call executeStaticTool without a full tool-provider context.
 export type ArxenaToolExecutionContext = Pick<
   ToolProviderContext,
-  'workspaceId' | 'authContext' | 'userId' | 'userWorkspaceId'
+  'workspaceId' | 'authContext' | 'userId' | 'userWorkspaceId' | 'actorContext'
 >;
 
 const extractTextFromMcpResult = (result: unknown): string => {
@@ -212,9 +212,10 @@ export class ArxenaToolProvider implements ToolProvider {
     }
 
     try {
+      // Handlers expect a workspace member id; a userWorkspaceId is a different id
       const result = await this.arxenaMcpBridgeService.callTool(
         apiToken,
-        context.userWorkspaceId,
+        context.actorContext?.workspaceMemberId ?? undefined,
         toolName,
         args,
       );

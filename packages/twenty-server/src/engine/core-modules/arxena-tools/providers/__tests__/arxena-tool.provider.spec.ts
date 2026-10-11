@@ -97,4 +97,50 @@ describe('ArxenaToolProvider token resolution', () => {
 
     expect(output.error).toBe('UNAUTHORIZED');
   });
+
+  it('should pass the actor workspace member id, not the user workspace id', async () => {
+    const { provider, arxenaMcpBridgeService } = buildProvider();
+    const userContext = {
+      workspaceId: 'workspace-id',
+      userId: 'user-id',
+      userWorkspaceId: 'user-workspace-id',
+      actorContext: { workspaceMemberId: 'workspace-member-id' },
+    } as unknown as ToolProviderContext;
+
+    await provider.executeStaticTool(
+      'linkedin_unipile_get_own_profile',
+      {},
+      userContext,
+    );
+
+    expect(arxenaMcpBridgeService.callTool).toHaveBeenCalledWith(
+      'user-token',
+      'workspace-member-id',
+      'linkedin_unipile_get_own_profile',
+      {},
+    );
+  });
+
+  it('should pass no member id when the actor has none', async () => {
+    const { provider, arxenaMcpBridgeService } = buildProvider();
+    const userContext = {
+      workspaceId: 'workspace-id',
+      userId: 'user-id',
+      userWorkspaceId: 'user-workspace-id',
+      actorContext: { workspaceMemberId: null },
+    } as unknown as ToolProviderContext;
+
+    await provider.executeStaticTool(
+      'linkedin_unipile_get_own_profile',
+      {},
+      userContext,
+    );
+
+    expect(arxenaMcpBridgeService.callTool).toHaveBeenCalledWith(
+      'user-token',
+      undefined,
+      'linkedin_unipile_get_own_profile',
+      {},
+    );
+  });
 });
