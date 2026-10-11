@@ -1,15 +1,12 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
-import {
-  MCP_TOOL_DESCRIPTIONS,
-  listOutreachSkillNames,
-} from 'twenty-shared/outreach';
+import { MCP_TOOL_DESCRIPTIONS } from 'twenty-shared/outreach';
 
 import { resetSearchToolsConfigCacheForTests } from '../../api/search-tools-config';
 import { type ArxenaConfig } from '../../config';
 import { type McpTool } from '../../types/tool-types';
-import { buildMetaServerInstructions, buildMetaTools } from '../meta-tools';
+import { buildMetaTools, resolveSurfaceTools } from '../meta-tools';
 import { searchFetchTools } from '../search-fetch-tools';
 
 const CONFIG: ArxenaConfig = { apiToken: 'token', baseUrl: 'http://server.test' };
@@ -65,74 +62,32 @@ describe('meta-tools provider flags', () => {
     assert.equal(disabled.success, false);
     assert.equal(enabled.ran, 'search_linkedin_people');
   });
-
-  it('strips disabled provider sections from the search skill', async () => {
-    mockServerFlags({ isSearchApolloCompaniesEnabled: false });
-    const loadSkills = findMetaTool(buildMetaTools([]), 'load_skills');
-
-    const result = (await loadSkills.handler(
-      { skillNames: ['search'] },
-      CONFIG,
-    )) as { skills: Array<{ content: string }> };
-
-    assert.ok(result.skills[0].content.includes('resolve_company_from_raw_name'));
-    assert.ok(
-      !result.skills[0].content.includes(
-        '<!-- search-apollo-companies-provider-row:start -->',
-      ),
-    );
-  });
-
-  it('serves every provider when the server flags cannot be fetched', async () => {
-    globalThis.fetch = (async () => {
-      throw new Error('offline');
-    }) as typeof fetch;
-    const loadSkills = findMetaTool(buildMetaTools([]), 'load_skills');
-
-    const result = (await loadSkills.handler(
-      { skillNames: ['search'] },
-      CONFIG,
-    )) as { skills: Array<{ content: string }> };
-
-    assert.ok(
-      result.skills[0].content.includes(
-        '<!-- search-apollo-companies-provider-row:start -->',
-      ),
-    );
-  });
-
-  it('lists the same skill names as the shared Ask AI playbooks', async () => {
-    const listSkills = findMetaTool(buildMetaTools([]), 'list_skills');
-
-    const result = (await listSkills.handler({}, CONFIG)) as {
-      skillNames: string[];
-    };
-
-    assert.deepEqual(result.skillNames.sort(), [...listOutreachSkillNames()].sort());
-  });
 });
 
-describe('meta server instructions', () => {
-  it('shares intent routing and destination rules with Ask AI', () => {
-    const instructions = buildMetaServerInstructions();
+describe('stdio tool surface', () => {
+  // Skills, catalog browsing and instructions are served by the NestJS /mcp only;
+  // this process just executes tools for the server-side bridge.
+  it('lists only the tools the server-side bridge calls', () => {
+    const listed = resolveSurfaceTools(
+      [...searchFetchTools, buildFakeTool('search_people_api')],
+      { metaToolsOnly: true },
+    );
 
-    assert.ok(instructions.includes('load_skills(["search"])'));
-    assert.ok(instructions.includes('### Destination verbs (choose before tools)'));
-    assert.ok(instructions.includes('Do NOT enroll until the user confirms'));
-    assert.ok(!instructions.includes('workflow-building'));
-    assert.ok(!instructions.includes('highlight_org_chart'));
+    assert.deepEqual(
+      listed.map((tool) => tool.definition.name).sort(),
+      ['execute_tool', 'fetch', 'learn_tools', 'search'],
+    );
   });
 
-  it('uses the shared MCP tool descriptions for generic tools', () => {
+  it('uses the shared MCP tool descriptions for the generic tools', () => {
     const tools = [...buildMetaTools([]), ...searchFetchTools];
 
-    for (const name of Object.keys(MCP_TOOL_DESCRIPTIONS) as Array<
-      keyof typeof MCP_TOOL_DESCRIPTIONS
-    >) {
-      const tool = tools.find((candidate) => candidate.definition.name === name);
+    for (const tool of tools) {
+      const name = tool.definition.name as keyof typeof MCP_TOOL_DESCRIPTIONS;
 
+      assert.ok(name in MCP_TOOL_DESCRIPTIONS, `${name} missing from twenty-shared`);
       assert.equal(
-        tool?.definition.description,
+        tool.definition.description,
         MCP_TOOL_DESCRIPTIONS[name],
         `${name} description drifted from twenty-shared`,
       );

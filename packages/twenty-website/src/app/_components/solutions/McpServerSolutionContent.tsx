@@ -9,7 +9,6 @@ import {
     MCP_OAUTH_ISSUER_URL,
     MCP_SERVER_SOLUTION_PAGE,
     MCP_SERVER_URL,
-    MCP_STDIO_CONFIG_EXAMPLE,
 } from '@/lib/mcp-server-solution-content';
 
 const StyledSection = styled.section`
@@ -180,25 +179,15 @@ export const McpServerSolutionContent = ({
       <StyledParagraph>
         Alternatively, use <strong>Settings → Connectors</strong> in Claude
         Desktop and add <StyledInlineCode>{MCP_SERVER_URL}</StyledInlineCode>{' '}
-        for OAuth (see step 5).
+        for OAuth (see step 4).
       </StyledParagraph>
 
-      <StyledBlockTitle>4. Local MCP (stdio)</StyledBlockTitle>
-      <StyledParagraph>
-        Run the stdio server on your machine instead of the hosted endpoint.
-        Clone the Arxena repo, build{' '}
-        <StyledInlineCode>packages/twenty-mcp-server</StyledInlineCode>, then
-        point Claude Desktop at <StyledInlineCode>dist/index.js</StyledInlineCode>
-        :
-      </StyledParagraph>
-      <StyledPre>{MCP_STDIO_CONFIG_EXAMPLE}</StyledPre>
-
-      <StyledBlockTitle>5. Claude &amp; ChatGPT app directories (OAuth)</StyledBlockTitle>
+      <StyledBlockTitle>4. Claude &amp; ChatGPT app directories (OAuth)</StyledBlockTitle>
       <StyledParagraph>
         Published directory integrations use OAuth 2.1 against{' '}
         <StyledInlineCode>{MCP_OAUTH_ISSUER_URL}</StyledInlineCode>. Connect
-        through the app store flow; at consent, paste your workspace API key JWT
-        to authorize access to your data.
+        through the app store flow; you will be asked to sign in to Arxena and
+        approve access to your workspace.
       </StyledParagraph>
       <StyledParagraph>
         Claude callback URL:{' '}

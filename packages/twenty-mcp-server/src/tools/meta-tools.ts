@@ -2,18 +2,7 @@ import { truncateToolResult } from '../auth';
 import {
   MCP_TOOL_DESCRIPTIONS,
   ARXENA_INTERNAL_TOOL_NAMES,
-  ARXENA_TOOL_CATALOG,
-  ARXENA_TOOL_PACK_LABELS,
-  OUTREACH_COMPLETE_REQUESTS_PROMPT,
-  OUTREACH_DESTINATION_VERBS_PROMPT,
-  OUTREACH_SOURCING_PREFERENCE_PROMPT,
-  buildOutreachRoutingLines,
-  type ArxenaToolPack,
-  filterSearchSkillContent,
   getDisabledSearchToolNames,
-  getOutreachSkillByName,
-  listOutreachSkillNames,
-  type OutreachSkill,
 } from 'twenty-shared/outreach';
 
 import { getSearchToolsConfig } from '../api/search-tools-config';
@@ -23,21 +12,10 @@ import { McpTool } from '../types/tool-types';
 const OPENAI_TOP_LEVEL_TOOL_NAMES = new Set(['search', 'fetch']);
 
 export const META_TOOL_NAMES = new Set([
-  'get_tool_catalog',
   'learn_tools',
   'execute_tool',
-  'list_skills',
-  'load_skills',
   'search',
   'fetch',
-]);
-
-const PACK_LABELS = ARXENA_TOOL_PACK_LABELS;
-
-// Skills whose markdown carries provider markers (see filterSearchSkillContent).
-const PROVIDER_FILTERED_SKILL_NAMES = new Set([
-  'search',
-  'org-structure-insights',
 ]);
 
 const getDisabledToolNames = async (
@@ -122,90 +100,6 @@ export const buildExecutableToolMap = (
 
 export const buildMetaTools = (executableTools: McpTool[]): McpTool[] => {
   const executableByName = buildExecutableToolMap(executableTools);
-
-  const getToolCatalog: McpTool = {
-    definition: {
-      name: 'get_tool_catalog',
-      title: 'Get Tool Catalog',
-      description:
-        'Browse available Arxena tools by pack when instructions look stale. Prefer load_skills for exact names. Packs: prospecting, enrichment, orgchart, outreach, accounts, crm_workspace, general.',
-      annotations: { readOnlyHint: true },
-      inputSchema: {
-        type: 'object',
-        properties: {
-          packs: {
-            type: 'array',
-            description:
-              'Optional pack filter (e.g. ["orgchart","outreach"]). Omit to list all packs.',
-            items: { type: 'string' },
-          },
-        },
-      },
-    },
-    handler: async (args, config) => {
-      const disabledToolNames = await getDisabledToolNames(config);
-      const packFilter = new Set(parseStringArray(args.packs));
-      const catalog: Record<
-        string,
-        Array<{ name: string; description: string }>
-      > = {};
-
-      for (const entry of ARXENA_TOOL_CATALOG) {
-        if (
-          !executableByName.has(entry.name) ||
-          disabledToolNames.has(entry.name)
-        ) {
-          continue;
-        }
-
-        if (packFilter.size > 0 && !packFilter.has(entry.pack)) {
-          continue;
-        }
-
-        if (!catalog[entry.pack]) {
-          catalog[entry.pack] = [];
-        }
-
-        catalog[entry.pack].push({
-          name: entry.name,
-          description: entry.description,
-        });
-      }
-
-      // Include executable tools missing from the synced catalog under general.
-      for (const [name, tool] of executableByName) {
-        const listed = ARXENA_TOOL_CATALOG.some((entry) => entry.name === name);
-
-        if (listed || disabledToolNames.has(name)) {
-          continue;
-        }
-
-        if (packFilter.size > 0 && !packFilter.has('general')) {
-          continue;
-        }
-
-        if (!catalog.general) {
-          catalog.general = [];
-        }
-
-        catalog.general.push({
-          name,
-          description: tool.definition.description,
-        });
-      }
-
-      const totalTools = Object.values(catalog).reduce(
-        (sum, tools) => sum + tools.length,
-        0,
-      );
-
-      return {
-        catalog,
-        packLabels: PACK_LABELS,
-        message: `Found ${totalTools} tool(s) across ${Object.keys(catalog).length} pack(s).`,
-      };
-    },
-  };
 
   const learnTools: McpTool = {
     definition: {
@@ -331,123 +225,7 @@ export const buildMetaTools = (executableTools: McpTool[]): McpTool[] => {
     },
   };
 
-  const listSkills: McpTool = {
-    definition: {
-      name: 'list_skills',
-      title: 'List Skills',
-      description: MCP_TOOL_DESCRIPTIONS.list_skills,
-      annotations: { readOnlyHint: true },
-      inputSchema: {
-        type: 'object',
-        properties: {},
-      },
-    },
-    handler: async () => {
-      const skillNames = listOutreachSkillNames();
-
-      return {
-        skillNames,
-        message:
-          skillNames.length > 0
-            ? `Found ${skillNames.length} skill(s): ${skillNames.join(', ')}.`
-            : 'No skills are currently available.',
-      };
-    },
-  };
-
-  const loadSkills: McpTool = {
-    definition: {
-      name: 'load_skills',
-      title: 'Load Skills',
-      description:
-        'Load specialized Outreach skills (playbooks + exact tool names). Call before complex org-chart, search, or outreach work.',
-      annotations: { readOnlyHint: true },
-      inputSchema: {
-        type: 'object',
-        properties: {
-          skillNames: {
-            type: 'array',
-            description:
-              'Skill names to load (e.g. ["org-structure-insights","search"]).',
-            items: { type: 'string' },
-          },
-        },
-        required: ['skillNames'],
-      },
-    },
-    handler: async (args, config) => {
-      const skillNames = parseStringArray(args.skillNames);
-      const skills = skillNames
-        .map((name) => getOutreachSkillByName(name))
-        .filter((skill): skill is OutreachSkill => skill !== undefined);
-
-      if (skills.length === 0) {
-        const availableNames = listOutreachSkillNames();
-
-        return {
-          skills: [],
-          message: `No skills found with names: ${skillNames.join(', ')}. Available: ${availableNames.join(', ')}.`,
-        };
-      }
-
-      const needsProviderFilter = skills.some((skill) =>
-        PROVIDER_FILTERED_SKILL_NAMES.has(skill.name),
-      );
-      const searchToolsConfig = needsProviderFilter
-        ? await getSearchToolsConfig(config.baseUrl, config.apiToken)
-        : undefined;
-
-      return {
-        skills: skills.map((skill) => ({
-          name: skill.name,
-          label: skill.label,
-          content:
-            searchToolsConfig && PROVIDER_FILTERED_SKILL_NAMES.has(skill.name)
-              ? filterSearchSkillContent(skill.content, searchToolsConfig)
-              : skill.content,
-        })),
-        message: `Loaded ${skills.map((skill) => skill.label).join(', ')}.`,
-      };
-    },
-  };
-
-  return [getToolCatalog, learnTools, executeTool, listSkills, loadSkills];
-};
-
-export const buildMetaServerInstructions = (): string => {
-  const packLines = (
-    Object.entries(PACK_LABELS) as Array<[ArxenaToolPack, string]>
-  )
-    .map(([pack, label]) => `- \`${pack}\`: ${label}`)
-    .join('\n');
-
-  const skillLines = listOutreachSkillNames()
-    .map((name) => `- \`${name}\`: ${getOutreachSkillByName(name)?.label}`)
-    .join('\n');
-
-  return [
-    'Arxena MCP server. Arxena tools are NOT bound top-level.',
-    'Flow: load_skills → learn_tools({ toolNames }) → execute_tool({ toolName, arguments }).',
-    'OpenAI company knowledge: use top-level search then fetch.',
-    '',
-    'Packs:',
-    packLines,
-    '',
-    'Skills:',
-    skillLines,
-    '',
-    '### Intent routing (load these)',
-    buildOutreachRoutingLines(),
-    '',
-    OUTREACH_SOURCING_PREFERENCE_PROMPT,
-    '',
-    OUTREACH_DESTINATION_VERBS_PROMPT,
-    '',
-    OUTREACH_COMPLETE_REQUESTS_PROMPT,
-    '',
-    'Preferred starters: list_org_chart_positions, get_org_chart_node_people, check_contact_availability, fetch_email, fetch_phone, fetch_contacts.',
-    'Browse packs with get_tool_catalog when needed. Never learn the entire catalog at once.',
-  ].join('\n');
+  return [learnTools, executeTool];
 };
 
 export const resolveSurfaceTools = (

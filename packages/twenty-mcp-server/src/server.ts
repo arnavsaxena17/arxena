@@ -7,10 +7,7 @@ import {
 
 import { ArxenaConfig, isMetaToolsOnlyEnabled, loadConfig } from './config';
 import { allTools, resolveListedTools } from './tools/index';
-import {
-  buildMetaServerInstructions,
-  runToolCall,
-} from './tools/meta-tools';
+import { runToolCall } from './tools/meta-tools';
 import { McpTool } from './types/tool-types';
 import { formatToolDefinitionForMcp } from './utils/format-tool-definition';
 
@@ -31,9 +28,6 @@ export const buildMcpServer = (
       capabilities: {
         tools: {},
       },
-      instructions: metaToolsOnly
-        ? buildMetaServerInstructions()
-        : 'Arxena MCP server (flat tools mode). Use search then fetch for org charts and workspace records.',
     },
   );
 

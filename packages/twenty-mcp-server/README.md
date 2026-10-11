@@ -7,7 +7,7 @@
 | Where | How | Use case |
 |------|-----|----------|
 | `twenty-server` | spawns `dist/index.js` over stdio per tool call (`ArxenaMcpBridgeService`) | Arxena GTM tools behind `https://mcp.arxena.com/mcp` and Ask AI |
-| Local stdio | `yarn start` / `dist/index.js` | Claude Desktop local, debugging |
+| Local debugging | `yarn start` / `dist/index.js` | Inspect handlers with `MCP_FLAT_TOOLS=true` |
 
 The public HTTP endpoint is the NestJS `/mcp` in `twenty-server` (`packages/twenty-server/src/engine/api/mcp`).
 This package no longer ships its own HTTP server or OAuth; the old standalone `arxena-mcp-http`
@@ -65,23 +65,6 @@ Quit Claude Desktop fully (Cmd+Q) after editing the config.
 
 **Alternative:** Settings → Connectors → add `https://mcp.arxena.com/mcp` for OAuth (directory flow).
 
-### Local stdio (optional)
-
-```json
-{
-  "mcpServers": {
-    "arxena": {
-      "command": "node",
-      "args": ["/path/to/twenty-mcp-server/dist/index.js"],
-      "env": {
-        "ARXENA_API_TOKEN": "<workspace-api-key-jwt>",
-        "ARXENA_BASE_URL": "https://app.arxena.com"
-      }
-    }
-  }
-}
-```
-
 ## Directory publication
 
 - **Privacy policy:** https://arxena.com/legal/privacy/mcp
@@ -89,18 +72,19 @@ Quit Claude Desktop fully (Cmd+Q) after editing the config.
 - **Claude callback:** `https://claude.ai/api/mcp/auth_callback`
 - **OpenAI:** top-level `search` + `fetch` (company knowledge)
 
-## Tools
+## Tools (internal)
 
-Meta-tool surface (default, `MCP_META_TOOLS_ONLY=true`):
+This process is not a user-facing MCP server. `twenty-server` spawns it per call and uses four tools:
 
 | Tool | Role |
 | --- | --- |
-| `get_tool_catalog` | Browse GTM tools by pack |
-| `learn_tools` | Fetch input schemas for named tools |
-| `execute_tool` | Run a GTM tool by name |
-| `list_skills` / `load_skills` | GTM playbooks (org chart, search, outreach, …) |
-| `search` / `fetch` | OpenAI company-knowledge (top-level) |
+| `learn_tools` | Return input schemas for named Arxena tools (used to build the server's tool descriptors) |
+| `execute_tool` | Run an Arxena tool handler by name |
+| `search` / `fetch` | Company-knowledge lookups, called top-level by the server's `search` / `fetch` MCP tools |
 
-Underlying org-chart, candidate, LinkedIn, and messaging handlers stay in-process but are **not** listed in `tools/list`. Flow: `load_skills` → `learn_tools` → `execute_tool`.
+Instructions, skills (`load_skills` / `list_skills`) and tool catalog browsing are served only by the
+NestJS `/mcp` endpoint (`McpInstructionBuilderService`, `SkillService`, `ToolRegistryService`); there is no
+second instruction builder here. Tool descriptions for the generic tools live in
+`twenty-shared/src/outreach/mcp-tool-descriptions.ts`.
 
 Set `MCP_FLAT_TOOLS=true` only for local debugging (lists every handler). Tool `title` and `readOnlyHint`/`destructiveHint` annotations are applied via `utils/tool-metadata.ts`.

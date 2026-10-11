@@ -35,19 +35,6 @@ export const MCP_CLAUDE_DESKTOP_CONFIG_EXAMPLE = `{
 /** @deprecated Use MCP_CURSOR_CONFIG_EXAMPLE */
 export const MCP_REMOTE_CONFIG_EXAMPLE = MCP_CURSOR_CONFIG_EXAMPLE;
 
-export const MCP_STDIO_CONFIG_EXAMPLE = `{
-  "mcpServers": {
-    "arxena": {
-      "command": "node",
-      "args": ["/path/to/arxena/packages/twenty-mcp-server/dist/index.js"],
-      "env": {
-        "ARXENA_API_TOKEN": "<your-workspace-api-key-jwt>",
-        "ARXENA_BASE_URL": "${ARXENA_APP_BASE_URL}"
-      }
-    }
-  }
-}`;
-
 export const MCP_SERVER_SOLUTION_PAGE = {
   slug: 'mcp-server',
   title: 'MCP server',

@@ -1,7 +1,7 @@
 // Single source for MCP tool descriptions used by both the NestJS /mcp server and the
-// stdio tool library (twenty-mcp-server). Only tools with identical semantics on both
-// surfaces live here. load_skills and get_tool_catalog stay per-surface: their skills
-// and input parameters differ.
+// stdio tool library (twenty-mcp-server), which only exposes execute_tool, learn_tools,
+// search and fetch to the server-side bridge. list_skills is served by NestJS only;
+// load_skills and get_tool_catalog have NestJS-specific wording and stay with their tools.
 export const MCP_TOOL_DESCRIPTIONS = {
   execute_tool:
     'Execute a tool by name with arguments. Call learn_tools first to discover the required input schema. Company and people search (Apollo, LinkedIn, Harvest, Bright Data, Exa) runs through this tool; load the "search" skill with load_skills first.',
