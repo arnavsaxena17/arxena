@@ -18,3 +18,16 @@ describe('CHAT_SYSTEM_PROMPTS.CORE', () => {
     expect(core).toContain('## Complete multi-part requests');
   });
 });
+
+describe('CHAT_SYSTEM_PROMPTS chat-only sections', () => {
+  it('should keep browsing context and record-link format off the MCP transport prompt', () => {
+    expect(CHAT_SYSTEM_PROMPTS.BROWSING_CONTEXT_INSTRUCTION).toContain(
+      '<browsing_context>',
+    );
+    expect(CHAT_SYSTEM_PROMPTS.RESPONSE_FORMAT).toContain('recordReferences');
+    expect(CHAT_SYSTEM_PROMPTS.MCP_TRANSPORT).toContain(
+      'Skilled task: `load_skills`',
+    );
+    expect(CHAT_SYSTEM_PROMPTS.MCP_TRANSPORT).not.toContain('recordReferences');
+  });
+});
