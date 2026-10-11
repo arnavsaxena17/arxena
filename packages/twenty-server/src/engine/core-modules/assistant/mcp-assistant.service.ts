@@ -1,10 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
-import * as path from 'path';
-import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 import {
   AssistantChatResponse,
   McpModelProvider,
@@ -33,7 +29,7 @@ import {
   emitTableDataIfJson,
 } from './utils/mcp-assistant-stream-events.util';
 import { stripThreadNameQuotes } from './utils/mcp-assistant-thread-name.util';
-import { withMcpClient } from './utils/mcp-client-session.util';
+import { createMcpClient, withMcpClient } from './utils/mcp-client-session.util';
 import {
   fetchAnthropicTools,
   fetchOpenAITools,
@@ -47,10 +43,8 @@ export class McpAssistantService {
   private readonly anthropic: Anthropic;
   private readonly openai: OpenAI | null;
   private readonly serverBaseUrl: string;
-  private readonly mcpServerScriptPath: string;
 
   constructor(
-    private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly toolExecutor: McpAssistantToolExecutorService,
     private readonly anthropicMessageProcessor: McpAnthropicMessageProcessorService,
   ) {
@@ -67,26 +61,12 @@ export class McpAssistantService {
       process.env.SERVER_BASE_URL ??
       process.env.ARXENA_SITE_BASE_URL ??
       'http://localhost:3000';
-    const packagesDir = path.resolve(
-      __dirname,
-      '..',
-      '..',
-      '..',
-      '..',
-      '..',
-      '..',
-    );
-    this.mcpServerScriptPath =
-      process.env.MCP_SERVER_SCRIPT_PATH ??
-      path.join(packagesDir, 'twenty-mcp-server', 'dist', 'index.js');
   }
 
-  private mcpSessionConfig(apiToken: string, workspaceMemberId?: string | null) {
+  private mcpSessionConfig(apiToken: string) {
     return {
-      serverBaseUrl: this.serverBaseUrl,
-      mcpServerScriptPath: this.mcpServerScriptPath,
+      serverBaseUrl: process.env.MCP_LOOPBACK_URL ?? this.serverBaseUrl,
       apiToken,
-      workspaceMemberId,
     };
   }
 
@@ -153,24 +133,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
   ): Promise<
     Array<{ name: string; description: string; input_schema: unknown }>
   > {
-    const client = new Client({
-      name: 'arxena-assistant-client',
-      version: '1.0.0',
-    });
-    const workspaceMemberId =
-      await this.workspaceQueryService.getWorkspaceMemberIdFromToken(apiToken);
-    const transport = new StdioClientTransport({
-      command: process.execPath,
-      args: [this.mcpServerScriptPath],
-      env: {
-        ...process.env,
-        ARXENA_API_TOKEN: apiToken.replace(/[\r\n]+/g, ''),
-        ARXENA_BASE_URL: this.serverBaseUrl,
-        ARXENA_WORKSPACE_MEMBER_ID: workspaceMemberId ?? '',
-      },
-    });
-
-    await client.connect(transport);
+    const client = await createMcpClient(this.mcpSessionConfig(apiToken));
     try {
       const result = await client.listTools();
       const tools = result.tools.map((t) => ({
@@ -212,21 +175,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
     conversationHistory: MessageParam[] = [],
     systemPrompt?: string,
   ): Promise<AssistantChatResponse> {
-    const client = new Client({
-      name: 'arxena-assistant-client',
-      version: '1.0.0',
-    });
-    const transport = new StdioClientTransport({
-      command: process.execPath,
-      args: [this.mcpServerScriptPath],
-      env: {
-        ...process.env,
-        ARXENA_API_TOKEN: apiToken.replace(/[\r\n]+/g, ''),
-        ARXENA_BASE_URL: this.serverBaseUrl,
-      },
-    });
-
-    await client.connect(transport);
+    const client = await createMcpClient(this.mcpSessionConfig(apiToken));
 
     try {
       const toolsResult = await client.listTools();
@@ -290,7 +239,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
             hasToolUse = true;
             toolCalls.push({ name: block.name, args: block.input ?? {} });
             this.logger.log(
-              `[Non-streaming] Calling MCP subprocess for tool: ${block.name} (args: ${JSON.stringify(sanitizeArgsForLog(block.input ?? {}))})`,
+              `[Non-streaming] Calling MCP tool: ${block.name} (args: ${JSON.stringify(sanitizeArgsForLog(block.input ?? {}))})`,
             );
             const result = await client.callTool({
               name: block.name,
@@ -349,21 +298,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
         'OpenAI client not configured. Set MCP_MODEL_PROVIDER=openai and OPENAI_API_KEY.',
       );
     }
-    const client = new Client({
-      name: 'arxena-assistant-client',
-      version: '1.0.0',
-    });
-    const transport = new StdioClientTransport({
-      command: process.execPath,
-      args: [this.mcpServerScriptPath],
-      env: {
-        ...process.env,
-        ARXENA_API_TOKEN: apiToken.replace(/[\r\n]+/g, ''),
-        ARXENA_BASE_URL: this.serverBaseUrl,
-      },
-    });
-
-    await client.connect(transport);
+    const client = await createMcpClient(this.mcpSessionConfig(apiToken));
 
     try {
       const toolsResult = await client.listTools();
@@ -429,7 +364,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
           })();
           toolCalls.push({ name: tc.function.name, args });
           this.logger.log(
-            `[Non-streaming] Calling MCP subprocess for tool: ${tc.function.name} (args: ${JSON.stringify(sanitizeArgsForLog(args))})`,
+            `[Non-streaming] Calling MCP tool: ${tc.function.name} (args: ${JSON.stringify(sanitizeArgsForLog(args))})`,
           );
           const result = await client.callTool({
             name: tc.function.name,
@@ -547,7 +482,7 @@ Return only the thread name, nothing else. Do not wrap it in quotes.`;
             })();
 
             this.logger.log(
-              `[JobBrief] Calling MCP subprocess for tool: ${toolName} (args: ${JSON.stringify(
+              `[JobBrief] Calling MCP tool: ${toolName} (args: ${JSON.stringify(
                 sanitizeArgsForLog(toolArgs),
               )})`,
             );

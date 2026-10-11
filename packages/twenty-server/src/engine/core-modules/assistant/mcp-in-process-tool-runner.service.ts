@@ -32,7 +32,7 @@ export class McpInProcessToolRunnerService {
     );
     if (!isStreamingTool) {
       this.logger.warn(
-        `Tool "${name}" not in STREAMING_TOOL_NAMES [${STREAMING_TOOL_NAMES.join(', ')}]; delegating to MCP subprocess. ` +
+        `Tool "${name}" not in STREAMING_TOOL_NAMES [${STREAMING_TOOL_NAMES.join(', ')}]; delegating to the MCP server. ` +
           'If this tool should run in-process and produce server logs, add it to STREAMING_TOOL_NAMES in mcp-assistant.constants.ts.',
       );
       this.logger.log(
@@ -134,7 +134,7 @@ export class McpInProcessToolRunnerService {
         !assistantThreadId.trim()
       ) {
         this.logger.log(
-          `Tool ${name}: missing query or assistantThreadId; delegating to MCP subprocess instead of in-process candidate-search handler.`,
+          `Tool ${name}: missing query or assistantThreadId; delegating to the MCP server instead of in-process candidate-search handler.`,
         );
         return null;
       }

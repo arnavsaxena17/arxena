@@ -312,7 +312,7 @@ export class McpAssistantToolExecutorService {
       return { textContent: inProcessResult, fromCache: false };
     }
     this.logger.log(
-      `Calling MCP subprocess for tool: ${name} (args: ${JSON.stringify(sanitizeArgsForLog(effectiveArgs))})`,
+      `Calling MCP tool: ${name} (args: ${JSON.stringify(sanitizeArgsForLog(effectiveArgs))})`,
     );
     try {
       throwIfAborted(abortSignal);
