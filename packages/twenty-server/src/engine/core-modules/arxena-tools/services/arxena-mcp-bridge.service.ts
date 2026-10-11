@@ -20,6 +20,9 @@ type CachedCatalog = {
 const CATALOG_TTL_MS = 5 * 60 * 1000;
 const LEARN_TOOLS_BATCH_SIZE = 40;
 
+// Top-level tools in the stdio server; execute_tool refuses them
+const TOP_LEVEL_TOOL_NAMES = new Set(['search', 'fetch']);
+
 const extractJsonFromMcpResult = (result: unknown): unknown => {
   if (!isDefined(result) || typeof result !== 'object') {
     return result;
@@ -222,13 +225,17 @@ export class ArxenaMcpBridgeService {
     args: Record<string, unknown>,
   ): Promise<unknown> {
     return this.withClient(apiToken, workspaceMemberId, async (client) => {
-      const result = await client.callTool({
-        name: 'execute_tool',
-        arguments: {
-          toolName: name,
-          arguments: args,
-        },
-      });
+      const result = await client.callTool(
+        TOP_LEVEL_TOOL_NAMES.has(name)
+          ? { name, arguments: args }
+          : {
+              name: 'execute_tool',
+              arguments: {
+                toolName: name,
+                arguments: args,
+              },
+            },
+      );
 
       return result;
     });

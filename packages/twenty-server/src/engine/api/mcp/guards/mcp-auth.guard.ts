@@ -19,6 +19,8 @@ export class McpAuthGuard implements CanActivate {
   constructor(private readonly jwtAuthGuard: JwtAuthGuard) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    this.promoteApiKeyHeaderToBearer(context.switchToHttp().getRequest<Request>());
+
     const isAuthenticated = await this.jwtAuthGuard.canActivate(context);
 
     if (!isAuthenticated) {
@@ -40,5 +42,18 @@ export class McpAuthGuard implements CanActivate {
     }
 
     return true;
+  }
+
+  // Existing client configs (Cursor, mcp-remote) send the key as X-API-KEY
+  private promoteApiKeyHeaderToBearer(request: Request) {
+    const apiKeyHeader = request.headers?.['x-api-key'];
+
+    if (
+      typeof apiKeyHeader === 'string' &&
+      apiKeyHeader.trim().length > 0 &&
+      !request.headers.authorization
+    ) {
+      request.headers.authorization = `Bearer ${apiKeyHeader.trim()}`;
+    }
   }
 }

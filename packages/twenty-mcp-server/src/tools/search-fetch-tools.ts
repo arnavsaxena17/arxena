@@ -10,7 +10,6 @@ import { callRestAPI } from '../api/rest-client';
 import { ArxenaConfig } from '../config';
 import { McpTool } from '../types/tool-types';
 import { candidateTools } from './candidate-tools';
-import { projectTools } from './project-tools';
 
 type SearchResult = {
   id: string;
@@ -176,21 +175,22 @@ const fetchDocument = async (
   }
 
   if (type === 'project') {
-    const getProjectTool = projectTools.find(
-      (tool) => tool.definition.name === 'get_project_by_id',
+    const projectsData = await executeGraphQL(
+      config.baseUrl,
+      config.apiToken,
+      graphqlToFindManyProjects,
+      { filter: { id: { eq: resourceId } }, limit: 1 },
     );
-    if (!getProjectTool) {
-      throw new Error('get_project_by_id tool is unavailable');
-    }
+    const project = extractProjects(projectsData)[0];
 
-    const projectResult = await getProjectTool.handler({ projectId: resourceId }, config);
-    const projectName =
-      (projectResult as { project?: { name?: string } })?.project?.name ?? resourceId;
+    if (!project) {
+      throw new Error(`Project not found: ${resourceId}`);
+    }
 
     return {
       id,
-      title: `Project: ${projectName}`,
-      text: JSON.stringify(projectResult, null, 2),
+      title: `Project: ${project.name}`,
+      text: JSON.stringify(project, null, 2),
       url: '',
       metadata: { type: 'project' },
     };

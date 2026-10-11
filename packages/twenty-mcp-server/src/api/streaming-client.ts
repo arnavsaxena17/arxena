@@ -50,14 +50,6 @@ export async function handleStreamingResponse(
 ): Promise<StreamingResult> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  console.log(
-    'handleStreamingResponse',
-    baseUrl,
-    apiToken,
-    pathPrefix,
-    endpoint,
-    body,
-  );
   try {
     const url = `${baseUrl}/${pathPrefix}/${endpoint}`;
 
