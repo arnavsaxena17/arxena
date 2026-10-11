@@ -47,6 +47,28 @@ Corrections to earlier findings:
   `get_project_by_id`). Those are intentionally hidden from `ARXENA_TOOL_CATALOG`; treat
   the diff as indicative until Step 1 runs live.
 
+## Status as of 2026-10-11 (end of day)
+
+Live in production:
+- nginx: `^~` blocks for `/mcp`, `/.well-known/`, `/oauth/` on the app host; stray `twenty.conf.bak*`
+  files moved to `/etc/nginx/backups/`.
+- Server build `5bc1a59ac7`: NestJS `search`/`fetch`, `X-API-KEY` accepted on `/mcp`,
+  `API_ONLY_HOSTS=mcp.arxena.com`, project `fetch` repaired, API-token `console.log`s removed.
+- `mcp.arxena.com` vhost now proxies to NestJS `:3000` (was standalone `:3005`). Verified:
+  discovery documents advertise `https://mcp.arxena.com` with `/authorize` on `app.arxena.com`;
+  `tools/list` = 9 tools; `search` and `fetch` succeed with an `X-API-KEY` key; CORS preflight allows
+  `x-api-key`, `mcp-session-id`. Rollback: restore `/etc/nginx/backups/mcp-arxena.conf.pre-switch-*`
+  and reload nginx (the standalone `arxena-mcp-http` pm2 app is still running, unrouted).
+
+Committed locally, not yet deployed: shared `buildCoreToolSet` (Ask AI + MCP), catalog changes
+(`list_taxonomy_constants` added; six handler-less entries removed, skill references updated).
+
+Open: browser OAuth test through `mcp.arxena.com` (Claude connector / ChatGPT), a one-week soak,
+then removal of `arxena-mcp-http` and the standalone HTTP code (Step 6), and a decision on the
+22 `linkedin_unipile_*` / `whatsapp_unipile_*` account/chat/send tools that exist only in the
+standalone package (they call Arxena's own `linkedin-unipile` / `whatsapp-unipile` controllers;
+they are not the external Unipile MCP synced under Settings -> AI -> MCP servers).
+
 ## Production findings (2026-10-11)
 
 1. **OAuth discovery is broken on the NestJS endpoint.**
