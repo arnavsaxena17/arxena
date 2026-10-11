@@ -215,13 +215,6 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
     description:
       'Process Filter Description (prospecting pack). Use for GTM prospecting workflows.',
   },
-  {
-    name: 'send_shortlist_to_client',
-    pack: 'outreach',
-    label: 'Send Shortlist To Client',
-    description:
-      'Send Shortlist To Client (outreach pack). Use for GTM outreach workflows.',
-  },
   // {
   //   name: 'list_companies',
   //   pack: 'accounts',
@@ -291,13 +284,6 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
     label: 'Get Elasticsearch Index Status',
     description:
       'Get Elasticsearch Index Status (prospecting pack). Use for GTM prospecting workflows.',
-  },
-  {
-    name: 'search_linkedin_with_query',
-    pack: 'prospecting',
-    label: 'Search Linkedin With Query',
-    description:
-      'Run LinkedIn search with a structured query. Prefer after generating or validating a LinkedIn query.',
   },
   {
     name: 'search_linkedin_people',
@@ -656,6 +642,13 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
       'List People Data Sources (prospecting pack). Use for GTM prospecting workflows.',
   },
   {
+    name: 'list_taxonomy_constants',
+    pack: 'prospecting',
+    label: 'List Taxonomy Constants',
+    description:
+      'List Taxonomy Constants (prospecting pack). Public grade levels, grade categories and function roots; use to understand the vocabulary, then prefer search_people_api with naturalLanguage.',
+  },
+  {
     name: 'list_taxonomy_function_roots',
     pack: 'prospecting',
     label: 'List Taxonomy Function Roots',
@@ -689,34 +682,6 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
     label: 'Classify Taxonomy Profile',
     description:
       'Classify a formatted profile or job title into std function/grade labels (prospecting pack). Prefer search_people_api with naturalLanguage to find people.',
-  },
-  {
-    name: 'find_person_in_arxena_internal',
-    pack: 'accounts',
-    label: 'Find Person In Arxena Internal',
-    description:
-      'Find Person In Arxena Internal (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'update_contact_info_in_arxena_internal',
-    pack: 'accounts',
-    label: 'Update Contact Info In Arxena Internal',
-    description:
-      'Update Contact Info In Arxena Internal (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'get_candidate_fields_for_project',
-    pack: 'accounts',
-    label: 'Get Candidate Fields For Project',
-    description:
-      'Get Candidate Fields For Project (accounts pack). Use for GTM accounts workflows.',
-  },
-  {
-    name: 'get_candidate_field_values',
-    pack: 'accounts',
-    label: 'Get Candidate Field Values',
-    description:
-      'Get Candidate Field Values (accounts pack). Use for GTM accounts workflows.',
   },
   {
     name: 'enrich_contact_from_data',

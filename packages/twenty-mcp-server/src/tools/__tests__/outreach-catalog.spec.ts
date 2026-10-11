@@ -12,14 +12,9 @@ import { allTools } from '../index';
 
 // Catalog entries whose MCP handlers are commented out today. Remove each name
 // from here once its handler is restored or the catalog entry is deleted.
-const KNOWN_CATALOG_ENTRIES_WITHOUT_HANDLER = new Set([
-  'send_shortlist_to_client',
-  'search_linkedin_with_query',
-  'find_person_in_arxena_internal',
-  'update_contact_info_in_arxena_internal',
-  'get_candidate_fields_for_project',
-  'get_candidate_field_values',
-]);
+// Catalog entries whose MCP handlers are commented out. Empty today; add a name
+// here only while its handler is being restored.
+const KNOWN_CATALOG_ENTRIES_WITHOUT_HANDLER = new Set<string>();
 
 // Tools the shared playbooks mention that only exist on the Ask AI surface.
 const ASK_AI_ONLY_TOOL_NAMES = new Set(['search_help_center']);

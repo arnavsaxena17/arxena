@@ -56,7 +56,6 @@ Resolve facet IDs with `search_linkedin_parameters` before ID-based filters. Pag
 | `list_linkedin_relations` | Last n 1st-degree connections (`limit`); newest first via `created_at` |
 | `search_linkedin_parameters` | Resolve LOCATION / REGION / INDUSTRY / SALES_INDUSTRY / COMPANY / SCHOOL / JOB_TITLE / SKILL / **LEAD_LISTS** / **ACCOUNT_LISTS** / saved\|recent searches |
 
-Do **not** call `search_linkedin_with_query` — catalogued but not active in MCP.
 
 ### Resolve facet IDs
 
