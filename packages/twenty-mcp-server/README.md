@@ -4,10 +4,13 @@
 
 ## How it is used
 
-| Where | How | Use case |
-|------|-----|----------|
-| `twenty-server` | spawns `dist/index.js` over stdio per tool call (`ArxenaMcpBridgeService`) | Arxena GTM tools behind `https://mcp.arxena.com/mcp` and Ask AI |
-| Local debugging | `yarn start` / `dist/index.js` | Inspect handlers with `MCP_FLAT_TOOLS=true` |
+This package is a library of Arxena GTM tool handlers, not a server. `twenty-server` loads the compiled
+`dist/lib.js` in-process (`ArxenaMcpBridgeService`) and calls `callArxenaTool(config, name, args)`;
+nothing is spawned and nothing listens on a port. It backs the Arxena tools behind
+`https://mcp.arxena.com/mcp`, Ask AI, and the recruiter and candidate-search flows.
+
+Build it before running the server (`npx nx build twenty-mcp-server`); `MCP_TOOL_LIBRARY_PATH` overrides the
+default `packages/twenty-mcp-server/dist/lib.js` lookup.
 
 The public HTTP endpoint is the NestJS `/mcp` in `twenty-server` (`packages/twenty-server/src/engine/api/mcp`).
 This package no longer ships its own HTTP server or OAuth; the old standalone `arxena-mcp-http`
@@ -72,9 +75,9 @@ Quit Claude Desktop fully (Cmd+Q) after editing the config.
 - **Claude callback:** `https://claude.ai/api/mcp/auth_callback`
 - **OpenAI:** top-level `search` + `fetch` (company knowledge)
 
-## Tools (internal)
+## Entry points (internal)
 
-This process is not a user-facing MCP server. `twenty-server` spawns it per call and uses four tools:
+`callArxenaTool` routes four names, which is all the server uses:
 
 | Tool | Role |
 | --- | --- |
@@ -82,9 +85,8 @@ This process is not a user-facing MCP server. `twenty-server` spawns it per call
 | `execute_tool` | Run an Arxena tool handler by name |
 | `search` / `fetch` | Company-knowledge lookups, called top-level by the server's `search` / `fetch` MCP tools |
 
-Instructions, skills (`load_skills` / `list_skills`) and tool catalog browsing are served only by the
-NestJS `/mcp` endpoint (`McpInstructionBuilderService`, `SkillService`, `ToolRegistryService`); there is no
-second instruction builder here. Tool descriptions for the generic tools live in
-`twenty-shared/src/outreach/mcp-tool-descriptions.ts`.
-
-Set `MCP_FLAT_TOOLS=true` only for local debugging (lists every handler). Tool `title` and `readOnlyHint`/`destructiveHint` annotations are applied via `utils/tool-metadata.ts`.
+The server passes `disabledToolNames` (its `IS_SEARCH_*_ENABLED` flags) in the config; without it the library asks
+the server over HTTP and caches the answer for a minute. Instructions, skills (`load_skills` / `list_skills`) and
+tool catalog browsing are served only by the NestJS `/mcp` endpoint (`McpInstructionBuilderService`,
+`SkillService`, `ToolRegistryService`); there is no second instruction builder here. Descriptions for the generic
+tools live in `twenty-shared/src/outreach/mcp-tool-descriptions.ts`.

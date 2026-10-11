@@ -21,7 +21,7 @@ function logMcpRestCall(
       ? JSON.stringify(extra.requestBodyPreview).slice(0, 500)
       : undefined;
 
-  // Use stderr so logs are visible in parent process without corrupting MCP stdio protocol
+  // stderr keeps request logs out of tool results
   // eslint-disable-next-line no-console
   console.error(
     JSON.stringify(

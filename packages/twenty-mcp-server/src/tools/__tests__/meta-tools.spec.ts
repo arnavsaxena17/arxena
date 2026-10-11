@@ -64,7 +64,7 @@ describe('meta-tools provider flags', () => {
   });
 });
 
-describe('stdio tool surface', () => {
+describe('library tool surface', () => {
   // Skills, catalog browsing and instructions are served by the NestJS /mcp only;
   // this process just executes tools for the server-side bridge.
   it('lists only the tools the server-side bridge calls', () => {

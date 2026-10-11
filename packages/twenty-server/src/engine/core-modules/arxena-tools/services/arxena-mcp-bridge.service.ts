@@ -1,6 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { existsSync } from 'fs';
 import * as path from 'path';
 
@@ -10,7 +8,34 @@ import {
   ARXENA_INTERNAL_TOOL_NAMES,
   ARXENA_TOOL_CATALOG,
 } from 'twenty-shared/outreach';
+import {
+  getDisabledSearchToolNames,
+  resolveSearchToolsConfig,
+} from 'src/engine/core-modules/arxena-tools/utils/search-tools-config.util';
 import { type ArxenaMcpToolDefinition } from 'src/engine/core-modules/arxena-tools/types/arxena-mcp-tool-definition.type';
+import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
+
+// Contract of twenty-mcp-server's dist/lib.js, which is loaded in-process
+type ArxenaToolConfig = {
+  apiToken: string;
+  baseUrl: string;
+  workspaceMemberId?: string;
+  disabledToolNames?: readonly string[];
+};
+
+type ArxenaToolCallResult = {
+  content: Array<{ type: 'text'; text: string }>;
+  structuredContent?: unknown;
+  isError?: boolean;
+};
+
+export type ArxenaToolLibrary = {
+  callArxenaTool: (
+    config: ArxenaToolConfig,
+    name: string,
+    args: Record<string, unknown>,
+  ) => Promise<ArxenaToolCallResult>;
+};
 
 type CachedCatalog = {
   tools: ArxenaMcpToolDefinition[];
@@ -20,7 +45,7 @@ type CachedCatalog = {
 const CATALOG_TTL_MS = 5 * 60 * 1000;
 const LEARN_TOOLS_BATCH_SIZE = 40;
 
-// Top-level tools in the stdio server; execute_tool refuses them
+// Top-level tools in the library; execute_tool refuses them
 const TOP_LEVEL_TOOL_NAMES = new Set(['search', 'fetch']);
 
 const extractJsonFromMcpResult = (result: unknown): unknown => {
@@ -55,10 +80,13 @@ const extractJsonFromMcpResult = (result: unknown): unknown => {
 export class ArxenaMcpBridgeService {
   private readonly logger = new Logger(ArxenaMcpBridgeService.name);
   private catalogCache: CachedCatalog | null = null;
+  private toolLibrary: ArxenaToolLibrary | null = null;
 
-  private resolveMcpServerScriptPath(): string {
-    if (isDefined(process.env.MCP_SERVER_SCRIPT_PATH)) {
-      return process.env.MCP_SERVER_SCRIPT_PATH;
+  constructor(private readonly twentyConfigService: TwentyConfigService) {}
+
+  private resolveToolLibraryPath(): string {
+    if (isDefined(process.env.MCP_TOOL_LIBRARY_PATH)) {
+      return process.env.MCP_TOOL_LIBRARY_PATH;
     }
 
     // nx start runs with cwd=packages/twenty-server; monorepo root also works.
@@ -69,9 +97,9 @@ export class ArxenaMcpBridgeService {
         'packages',
         'twenty-mcp-server',
         'dist',
-        'index.js',
+        'lib.js',
       ),
-      path.join(process.cwd(), '..', 'twenty-mcp-server', 'dist', 'index.js'),
+      path.join(process.cwd(), '..', 'twenty-mcp-server', 'dist', 'lib.js'),
       path.resolve(
         __dirname,
         '..',
@@ -82,7 +110,7 @@ export class ArxenaMcpBridgeService {
         '..',
         'twenty-mcp-server',
         'dist',
-        'index.js',
+        'lib.js',
       ),
     ];
 
@@ -91,14 +119,24 @@ export class ArxenaMcpBridgeService {
     );
 
     if (!isDefined(existingPath)) {
-      this.logger.warn(
-        `MCP server script not found. Tried: ${candidates.join(', ')}`,
+      throw new Error(
+        `Arxena tool library not found (build twenty-mcp-server). Tried: ${candidates.join(', ')}`,
       );
-
-      return candidates[0];
     }
 
     return existingPath;
+  }
+
+  private loadToolLibrary(): ArxenaToolLibrary {
+    if (!isDefined(this.toolLibrary)) {
+      // Loaded lazily so the server still boots when the package is not built
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      this.toolLibrary = require(
+        this.resolveToolLibraryPath(),
+      ) as ArxenaToolLibrary;
+    }
+
+    return this.toolLibrary;
   }
 
   private resolveServerBaseUrl(): string {
@@ -109,38 +147,26 @@ export class ArxenaMcpBridgeService {
     );
   }
 
-  private async withClient<T>(
+  private async callLibraryTool(
     apiToken: string,
     workspaceMemberId: string | undefined,
-    fn: (client: Client) => Promise<T>,
-  ): Promise<T> {
-    const client = new Client({
-      name: 'arxena-tool-provider-bridge',
-      version: '1.0.0',
-    });
-    const env: Record<string, string> = {
-      ...(process.env as Record<string, string>),
-      ARXENA_API_TOKEN: apiToken.replace(/[\r\n]+/g, ''),
-      ARXENA_BASE_URL: this.resolveServerBaseUrl(),
-    };
-
-    if (isDefined(workspaceMemberId) && workspaceMemberId !== '') {
-      env.ARXENA_WORKSPACE_MEMBER_ID = workspaceMemberId;
-    }
-
-    const transport = new StdioClientTransport({
-      command: process.execPath,
-      args: [this.resolveMcpServerScriptPath()],
-      env,
-    });
-
-    await client.connect(transport);
-
-    try {
-      return await fn(client);
-    } finally {
-      await client.close().catch(() => undefined);
-    }
+    name: string,
+    args: Record<string, unknown>,
+  ): Promise<ArxenaToolCallResult> {
+    return this.loadToolLibrary().callArxenaTool(
+      {
+        apiToken: apiToken.replace(/[\r\n]+/g, ''),
+        baseUrl: this.resolveServerBaseUrl(),
+        ...(isDefined(workspaceMemberId) && workspaceMemberId !== ''
+          ? { workspaceMemberId }
+          : {}),
+        disabledToolNames: getDisabledSearchToolNames(
+          resolveSearchToolsConfig(this.twentyConfigService),
+        ),
+      },
+      name,
+      args,
+    );
   }
 
   private getCatalogToolNames(): string[] {
@@ -150,7 +176,7 @@ export class ArxenaMcpBridgeService {
   }
 
   private async learnToolDefinitions(
-    client: Client,
+    apiToken: string,
     toolNames: string[],
   ): Promise<ArxenaMcpToolDefinition[]> {
     const learned: ArxenaMcpToolDefinition[] = [];
@@ -161,10 +187,12 @@ export class ArxenaMcpBridgeService {
       offset += LEARN_TOOLS_BATCH_SIZE
     ) {
       const batch = toolNames.slice(offset, offset + LEARN_TOOLS_BATCH_SIZE);
-      const result = await client.callTool({
-        name: 'learn_tools',
-        arguments: { toolNames: batch },
-      });
+      const result = await this.callLibraryTool(
+        apiToken,
+        undefined,
+        'learn_tools',
+        { toolNames: batch },
+      );
       const parsed = extractJsonFromMcpResult(result) as {
         tools?: Array<{
           name?: string;
@@ -206,11 +234,10 @@ export class ArxenaMcpBridgeService {
       return this.catalogCache.tools;
     }
 
-    const tools = await this.withClient(apiToken, undefined, async (client) => {
-      const catalogNames = this.getCatalogToolNames();
-
-      return this.learnToolDefinitions(client, catalogNames);
-    });
+    const tools = await this.learnToolDefinitions(
+      apiToken,
+      this.getCatalogToolNames(),
+    );
 
     this.catalogCache = { tools, fetchedAt: now };
     this.logger.log(`Cached ${tools.length} Arxena MCP tool definitions`);
@@ -224,20 +251,11 @@ export class ArxenaMcpBridgeService {
     name: string,
     args: Record<string, unknown>,
   ): Promise<unknown> {
-    return this.withClient(apiToken, workspaceMemberId, async (client) => {
-      const result = await client.callTool(
-        TOP_LEVEL_TOOL_NAMES.has(name)
-          ? { name, arguments: args }
-          : {
-              name: 'execute_tool',
-              arguments: {
-                toolName: name,
-                arguments: args,
-              },
-            },
-      );
-
-      return result;
-    });
+    return TOP_LEVEL_TOOL_NAMES.has(name)
+      ? this.callLibraryTool(apiToken, workspaceMemberId, name, args)
+      : this.callLibraryTool(apiToken, workspaceMemberId, 'execute_tool', {
+          toolName: name,
+          arguments: args,
+        });
   }
 }

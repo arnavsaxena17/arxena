@@ -21,11 +21,13 @@ export const META_TOOL_NAMES = new Set([
 const getDisabledToolNames = async (
   config: ArxenaConfig,
 ): Promise<Set<string>> =>
-  new Set(
-    getDisabledSearchToolNames(
-      await getSearchToolsConfig(config.baseUrl, config.apiToken),
-    ),
-  );
+  config.disabledToolNames
+    ? new Set(config.disabledToolNames)
+    : new Set(
+        getDisabledSearchToolNames(
+          await getSearchToolsConfig(config.baseUrl, config.apiToken),
+        ),
+      );
 
 const asRecord = (value: unknown): Record<string, unknown> => {
   if (typeof value === 'object' && value !== null && !Array.isArray(value)) {

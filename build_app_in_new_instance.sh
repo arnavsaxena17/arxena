@@ -1336,8 +1336,8 @@ maybe_stream_component() {
       pm2 restart twenty-website || true
       ;;
     TWENTY_MCP_SERVER)
-      # No process to restart: twenty-server spawns dist/index.js (stdio) per tool call via ArxenaMcpBridgeService
-      echo "twenty-mcp-server built; used in-process by twenty-server (no separate pm2 app)"
+      # No process to restart: twenty-server loads dist/lib.js in-process (ArxenaMcpBridgeService), so a server restart picks up the new build
+      echo "twenty-mcp-server built; loaded in-process by twenty-server (no separate pm2 app)"
       ;;
     TWENTY_EMAILS)
       if [ "$LINGUI_EMAILS" = "1" ]; then

@@ -1,5 +1,5 @@
 // Single source for MCP tool descriptions used by both the NestJS /mcp server and the
-// stdio tool library (twenty-mcp-server), which only exposes execute_tool, learn_tools,
+// tool library (twenty-mcp-server), which only exposes execute_tool, learn_tools,
 // search and fetch to the server-side bridge. list_skills is served by NestJS only;
 // load_skills and get_tool_catalog have NestJS-specific wording and stay with their tools.
 export const MCP_TOOL_DESCRIPTIONS = {

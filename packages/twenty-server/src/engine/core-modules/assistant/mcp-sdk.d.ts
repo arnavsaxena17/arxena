@@ -26,17 +26,3 @@ declare module '@modelcontextprotocol/sdk/client/index.js' {
     }>;
   }
 }
-
-declare module '@modelcontextprotocol/sdk/client/stdio.js' {
-  export type StdioClientTransportOptions = {
-    command: string;
-    args?: string[];
-    env?: Record<string, string>;
-  };
-
-  export class StdioClientTransport {
-    constructor(options: StdioClientTransportOptions);
-    send(message: unknown): Promise<void>;
-    close(): Promise<void>;
-  }
-}

@@ -50810,14 +50810,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "twenty-mcp-server@workspace:packages/twenty-mcp-server"
   dependencies:
-    "@modelcontextprotocol/sdk": "npm:1.26.0"
     "@types/node": "npm:18.19.26"
     ts-node: "npm:10.9.1"
     twenty-shared: "workspace:*"
     typescript: "npm:5.3.3"
     zod: "npm:3.25.76"
-  bin:
-    arxena-mcp: dist/index.js
   languageName: unknown
   linkType: soft
 

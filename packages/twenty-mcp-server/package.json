@@ -2,18 +2,12 @@
   "name": "twenty-mcp-server",
   "version": "1.0.0",
   "private": true,
-  "description": "MCP server for Arxena recruitment platform",
-  "main": "dist/index.js",
-  "bin": {
-    "arxena-mcp": "dist/index.js"
-  },
+  "description": "Arxena GTM tool handlers, loaded in-process by twenty-server",
+  "main": "dist/lib.js",
   "scripts": {
-    "build": "tsc",
-    "dev": "ts-node src/index.ts",
-    "start": "node dist/index.js"
+    "build": "tsc"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.26.0",
     "twenty-shared": "workspace:*",
     "zod": "3.25.76"
   },
@@ -28,5 +22,6 @@
   "installConfig": {
     "hoistingLimits": "dependencies"
   },
-  "license": "AGPL-3.0"
+  "license": "AGPL-3.0",
+  "types": "dist/lib.d.ts"
 }
