@@ -213,7 +213,11 @@ export class FetchAndUpsertLocalBusinessesService {
     let skipped = 0;
     const companyIds: string[] = [];
 
-    for (let offset = 0; offset < companyHits.length; offset += UPSERT_BATCH_SIZE) {
+    for (
+      let offset = 0;
+      offset < companyHits.length;
+      offset += UPSERT_BATCH_SIZE
+    ) {
       const batch = companyHits.slice(offset, offset + UPSERT_BATCH_SIZE);
       const result = await this.upsertCompaniesService.execute({
         workspaceId,

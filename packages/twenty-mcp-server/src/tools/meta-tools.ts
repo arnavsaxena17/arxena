@@ -223,7 +223,7 @@ export const buildMetaTools = (executableTools: McpTool[]): McpTool[] => {
 
       const result = await tool.handler(toolArgs, config);
 
-      return truncateToolResult(result);
+      return truncateToolResult(result, toolName);
     },
   };
 
@@ -282,7 +282,13 @@ export const runToolCall = async (
         };
       }
 
-      const truncated = truncateToolResult(result);
+      // execute_tool wraps the real tool, so the cap follows the inner name
+      const truncated = truncateToolResult(
+        result,
+        name === 'execute_tool' && typeof args.toolName === 'string'
+          ? args.toolName
+          : name,
+      );
 
       return {
         content: [

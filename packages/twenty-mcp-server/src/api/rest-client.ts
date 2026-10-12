@@ -24,19 +24,17 @@ function logMcpRestCall(
   // stderr keeps request logs out of tool results
   // eslint-disable-next-line no-console
   console.error(
-    JSON.stringify(
-      {
-        source: 'mcp-rest-client',
-        method,
-        url,
-        status,
-        pathPrefix: extra?.pathPrefix,
-        endpoint: extra?.endpoint,
-        queryParams: extra?.queryParams,
-        requestBodyPreview: bodyPreview,
-        errorMessage: extra?.errorMessage,
-      },
-    ),
+    JSON.stringify({
+      source: 'mcp-rest-client',
+      method,
+      url,
+      status,
+      pathPrefix: extra?.pathPrefix,
+      endpoint: extra?.endpoint,
+      queryParams: extra?.queryParams,
+      requestBodyPreview: bodyPreview,
+      errorMessage: extra?.errorMessage,
+    }),
   );
 }
 
@@ -120,9 +118,10 @@ export async function callRestAPI(
   endpoint: string,
   body: Record<string, unknown> = {},
   queryParams?: Record<string, string>,
+  timeoutMs: number = TIMEOUT_MS,
 ): Promise<unknown> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const url = buildUrl(baseUrl, pathPrefix, endpoint, queryParams);

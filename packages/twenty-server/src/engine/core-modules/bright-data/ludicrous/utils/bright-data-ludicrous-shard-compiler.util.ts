@@ -60,6 +60,21 @@ const anyOfPhrases = (
         ...phrases.map((phrase) => ludicrousText(field, phrase, 'all')),
       );
 
+// Topic phrases match in the about text or the specialties list, every word
+// of the phrase required (mode all). Matches the shape that works live:
+// or(text(about, phrase, all), text(specialties, phrase, all)) per phrase.
+const anyOfPhrasesInFields = (
+  fields: string[],
+  phrases: string[],
+): BrightDataLudicrousQuery | null =>
+  phrases.length === 0
+    ? null
+    : ludicrousOr(
+        ...phrases.flatMap((phrase) =>
+          fields.map((field) => ludicrousText(field, phrase, 'all')),
+        ),
+      );
+
 const compilePeople = (
   filter: Partial<BrightDataLudicrousShardFilter>,
 ): Array<BrightDataLudicrousQuery | null> => {
@@ -105,8 +120,10 @@ const compileCompany = (
 
   return [
     anyOfPhrases('industry', industries),
+    // offices, not HQ: a brand run from abroad with Indian outlets still counts
     filter.countryCodes?.length
-      ? ludicrousIn('headquarters_country_code', filter.countryCodes)
+      ? // array field: always `in`, even for one code (equals is rejected)
+        { in: { offices_country_codes: filter.countryCodes } }
       : null,
     filter.cities?.length
       ? ludicrousIn('headquarters_city', filter.cities)
@@ -129,7 +146,7 @@ const compileCompany = (
       : null,
     // One all-words clause per phrase: a single any-bag lets generic words
     // such as "software" match nearly every company
-    anyOfPhrases('specialties', specialties),
+    anyOfPhrasesInFields(['about', 'specialties'], specialties),
     anyOfPhrases('name', clean(filter.companyNames)),
   ];
 };

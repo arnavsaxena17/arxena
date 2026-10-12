@@ -26,9 +26,7 @@ const isCompanySearchResult = (
 
 // LinkedIn / Sales Nav company search + full Unipile company profile via shared pool accounts.
 @Injectable()
-export class OutreachLinkedInPoolCompanyEnrichmentSource
-  implements OutreachCompanyEnrichmentSource
-{
+export class OutreachLinkedInPoolCompanyEnrichmentSource implements OutreachCompanyEnrichmentSource {
   readonly sourceId = 'linkedin_unipile_pool' as const;
   private readonly logger = new Logger(
     OutreachLinkedInPoolCompanyEnrichmentSource.name,

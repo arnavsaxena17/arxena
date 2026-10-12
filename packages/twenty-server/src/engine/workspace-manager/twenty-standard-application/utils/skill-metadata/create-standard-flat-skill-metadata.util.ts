@@ -188,6 +188,14 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
       'Add an AI-computed column (filter or enrichment) to the project people / companies: preview on ~10 rows, confirm, then run for all',
     icon: 'IconSparkles',
   }),
+  'spreadsheet-import': createStandardSkillBuilder({
+    skillName: 'spreadsheet-import',
+    name: 'spreadsheet-import',
+    label: 'Spreadsheet Import',
+    description:
+      'Import an attached xlsx / csv into the Outreach Companies and People tabs of a project: map columns, choose companies / people / both, upsert',
+    icon: 'IconTableImport',
+  }),
   pptx: createStandardSkillBuilder({
     skillName: 'pptx',
     name: 'pptx',

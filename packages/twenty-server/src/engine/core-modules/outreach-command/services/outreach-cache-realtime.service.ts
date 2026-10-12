@@ -45,7 +45,10 @@ export class OutreachCacheRealtimeService {
     this.emit(projectId, 'aiColumn', aiColumnRun);
   }
 
-  notifyTableViewUpdated(projectId: string, tableView: OutreachTableView): void {
+  notifyTableViewUpdated(
+    projectId: string,
+    tableView: OutreachTableView,
+  ): void {
     this.emit(projectId, 'tableView', undefined, tableView);
   }
 

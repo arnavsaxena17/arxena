@@ -53,7 +53,7 @@ import { HealthModule } from 'src/engine/core-modules/health/health.module';
 import { ImapSmtpCaldavModule } from 'src/engine/core-modules/imap-smtp-caldav-connection/imap-smtp-caldav-connection.module';
 import { ImpersonationModule } from 'src/engine/core-modules/impersonation/impersonation.module';
 import { LabModule } from 'src/engine/core-modules/lab/lab.module';
-import { SerpCompanySearchModule } from 'src/engine/core-modules/linkedin-company-search/linkedin-company-search.module';
+import { SerpCompanySearchModule } from 'src/engine/core-modules/serp-company-search/serp-company-search.module';
 import { WikidataModule } from 'src/engine/core-modules/wikidata/wikidata.module';
 import { LinkedinQueryGenerationModule } from 'src/engine/core-modules/linkedin-query-generation/linkedin-query-generation.module';
 import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';

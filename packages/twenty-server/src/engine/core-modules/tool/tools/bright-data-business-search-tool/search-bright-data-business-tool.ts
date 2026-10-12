@@ -2,14 +2,18 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 
+import { OUTREACH_LIST_MAX_ROWS } from 'src/engine/core-modules/outreach-list/outreach-list.constants';
+import { OutreachListService } from 'src/engine/core-modules/outreach-list/services/outreach-list.service';
+import { fromBrightDataDocument } from 'src/engine/core-modules/outreach-list/utils/outreach-list-normalizers.util';
 import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
 import { type BrightDataLudicrousRunResult } from 'src/engine/core-modules/bright-data/ludicrous/types/bright-data-ludicrous.types';
-import { BrightDataLudicrousSearchService } from 'src/engine/core-modules/bright-data-ludicrous/services/bright-data-ludicrous-search.service';
+import { BrightDataLudicrousSearchService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-search.service';
 import {
   mapBrightDataCompanyToEphemeral,
   mapBrightDataCompanyToSearchHit,
   mapBrightDataPersonToEphemeral,
   mapBrightDataPersonToSearchItem,
+  aggregateBrightDataDocuments,
 } from 'src/engine/core-modules/bright-data/utils/bright-data-business-search.util';
 import {
   SearchBrightDataBusinessToolInputZodSchema,
@@ -22,6 +26,9 @@ import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.ty
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
 
+// OutreachCompaniesCacheService / OutreachPeopleCacheService keep this many
+const MAX_ROWS_PER_PROJECT_TAB = OUTREACH_LIST_MAX_ROWS;
+
 @Injectable()
 export class SearchBrightDataBusinessTool implements Tool {
   private readonly logger = new Logger(SearchBrightDataBusinessTool.name);
@@ -30,8 +37,8 @@ export class SearchBrightDataBusinessTool implements Tool {
 Default mode is ludicrous (billed $0.002 per returned record, max $10 per query). It works in two steps:
 1. Call without planId. This plans several structured queries and spends a few cents sampling them. You get planId, per-slice match counts, expected accuracy and the cost of fetching N records. Show the user the numbers and ask which budget to fetch. Nothing is fetched yet.
 2. After the user confirms, call again with planId and maxBudgetUsd (and optionally targetCount, projectId). Records are fetched slice by slice and low-relevance slices are dropped as the run goes.
-Modes smart and instant take a query up to 200 characters, return immediately and need no confirmation.
-Pass projectId to merge hits into the Outreach Companies or People tab. Do not create CRM records. Omit projectId in smart/instant for a preview (limit 10) with previewRows.`;
+Always ludicrous: any mode passed is ignored (smart and instant only reach the first 100 results). Records are fetched with view full.
+The result never contains the records, only counts and a summary; they go to the project tab and a saved dataset. Fetched records are kept in a list (listId = planId, 30 days); use the outreach_list tool to attach them to a project tab or save them to the CRM, or call again with the same planId and a projectId. Pass projectId to merge hits into the Outreach Companies or People tab. Do not create CRM records. Omit projectId in smart/instant for a preview (limit 10) with previewRows.`;
 
   inputSchema = SearchBrightDataBusinessToolInputZodSchema;
 
@@ -40,6 +47,7 @@ Pass projectId to merge hits into the Outreach Companies or People tab. Do not c
     private readonly brightDataLudicrousSearchService: BrightDataLudicrousSearchService,
     private readonly upsertOutreachTargetCompaniesTool: UpsertOutreachTargetCompaniesTool,
     private readonly upsertOutreachTargetPeopleTool: UpsertOutreachTargetPeopleTool,
+    private readonly outreachListService: OutreachListService,
   ) {}
 
   async execute(
@@ -57,7 +65,9 @@ Pass projectId to merge hits into the Outreach Companies or People tab. Do not c
       };
     }
 
-    const input = parsed.data;
+    // smart/instant only reach the first 100 rows and rank poorly, so every
+    // Ask AI / MCP search goes through the ludicrous planner.
+    const input = { ...parsed.data, mode: 'ludicrous' as const };
 
     if (!isNonEmptyString(input.query)) {
       return {
@@ -142,14 +152,25 @@ Pass projectId to merge hits into the Outreach Companies or People tab. Do not c
       const workspaceId = context.workspaceId;
 
       if (isNonEmptyString(input.planId)) {
-        const run = await this.brightDataLudicrousSearchService.executePlan({
-          workspaceId,
-          planId: input.planId,
-          maxBudgetUsd: input.maxBudgetUsd,
-          targetCount: input.targetCount ?? input.limit,
-        });
+        // Records for this plan may already be paid for (a chat that lost the
+        // output, or no project at fetch time): reuse them, never buy twice.
+        const existing =
+          await this.brightDataLudicrousSearchService.loadDataset({
+            workspaceId,
+            planId: input.planId,
+          });
+        const run =
+          existing ??
+          (await this.brightDataLudicrousSearchService.executePlan({
+            workspaceId,
+            planId: input.planId,
+            maxBudgetUsd: input.maxBudgetUsd,
+            targetCount: input.targetCount ?? input.limit,
+          }));
 
-        return this.buildLudicrousRunOutput(input, run, context);
+        return this.buildLudicrousRunOutput(input, run, context, {
+          reused: existing !== undefined,
+        });
       }
 
       if (input.autoExecute === true) {
@@ -199,84 +220,148 @@ Pass projectId to merge hits into the Outreach Companies or People tab. Do not c
     input: SearchBrightDataBusinessToolInput,
     run: BrightDataLudicrousRunResult,
     context: ToolExecutionContext,
+    { reused = false }: { reused?: boolean } = {},
   ): Promise<ToolOutput> {
     const search = {
       reqId: run.planId,
       matched: run.documents.length,
       mode: 'ludicrous' as const,
       coveragePercent: 100,
-      costUsd: run.spentUsd,
+      costUsd: reused ? 0 : run.spentUsd,
       documents: run.documents.map((document) => ({
         brightId: document.brightId,
         data: document.data,
       })),
     };
     const ephemeral = await this.persistEphemeral(input, search, context);
+    const hasProject = isNonEmptyString(input.projectId);
+    const list = await this.saveToList(input, run, context, reused);
 
+    // Records never go back to the model. They are in the project tab and in
+    // the dataset store (planId), so the conversation only gets counts. This
+    // keeps tool output tiny and stops rows being truncated or re-pasted.
     return {
       success: true,
-      message: `Fetched ${run.documents.length} relevant ${input.entity} record(s) for $${run.spentUsd.toFixed(3)} (budget $${run.budgetUsd.toFixed(2)})`,
+      message: `${reused ? 'Reused' : 'Fetched'} ${run.documents.length} relevant ${input.entity} record(s)${reused ? ' already paid for' : ` for $${run.spentUsd.toFixed(3)} (budget $${run.budgetUsd.toFixed(2)})`}`,
       result: {
         entity: input.entity,
         mode: 'ludicrous',
         planId: run.planId,
-        spentUsd: run.spentUsd,
+        listId: run.planId,
+        list: list
+          ? {
+              name: list.name,
+              added: list.added,
+              duplicates: list.duplicates,
+              total: list.total,
+            }
+          : null,
+        reused,
+        spentUsd: reused ? 0 : run.spentUsd,
         budgetUsd: run.budgetUsd,
         count: run.documents.length,
         ephemeralWritten: ephemeral.written,
+        ...(ephemeral.error
+          ? {
+              ephemeralError: `Could not write to the project tab: ${ephemeral.error}. The rows are still in the list (listId); retry with outreach_list attach.`,
+            }
+          : {}),
+        ...(ephemeral.total > MAX_ROWS_PER_PROJECT_TAB
+          ? {
+              tabLimitNote: `The Companies and People tabs keep at most ${MAX_ROWS_PER_PROJECT_TAB} rows per project, so only the first ${MAX_ROWS_PER_PROJECT_TAB} are visible there.`,
+            }
+          : {}),
         shardReports: run.shardReports,
-        previewRows: this.buildPreviewRows(input, search),
-        companies:
-          input.entity === 'company'
-            ? run.documents.map(mapBrightDataCompanyToSearchHit)
-            : [],
-        people:
-          input.entity === 'people'
-            ? run.documents.map(mapBrightDataPersonToSearchItem)
-            : [],
+        nextStep: hasProject
+          ? 'Records were written to the project tab and kept in the list (listId). To create CRM Company / Person records call outreach_list with action save_to_crm and the same projectId.'
+          : 'No projectId was given, so nothing was written to a project. The records are kept in the list (listId) for 30 days. Ask the user which project to use, then call outreach_list with action attach (to show them on the project tab) or save_to_crm (to create CRM records).',
+        summary: aggregateBrightDataDocuments(input.entity, run.documents),
       },
     };
   }
 
+  // Every fetched record lands in a list (Redis + S3 backup) so it survives a
+  // missing project or a lost chat. A failure here must not hide paid results.
+  private async saveToList(
+    input: SearchBrightDataBusinessToolInput,
+    run: BrightDataLudicrousRunResult,
+    context: ToolExecutionContext,
+    reused: boolean,
+  ) {
+    if (!context.workspaceId) {
+      return undefined;
+    }
+
+    try {
+      return await this.outreachListService.ingest({
+        workspaceId: context.workspaceId,
+        listId: run.planId,
+        name: `Bright Data ${input.entity === 'company' ? 'companies' : 'people'}: ${input.query.trim().slice(0, 60)}`,
+        entity: input.entity,
+        source: 'bright_data',
+        query: input.query.trim(),
+        spentUsd: reused ? 0 : run.spentUsd,
+        rows: run.documents
+          .map((document) => fromBrightDataDocument(input.entity, document))
+          .filter((row) => row !== null),
+      });
+    } catch (error) {
+      this.logger.error('Failed to save Bright Data results to a list', error);
+
+      return undefined;
+    }
+  }
+
+  // The project tabs hold MAX_ROWS_PER_PROJECT_TAB rows and the upsert tools
+  // reject a larger batch outright, so only that many are sent. A failed upsert
+  // is reported, never counted as written.
   private async persistEphemeral(
     input: SearchBrightDataBusinessToolInput,
     search: Awaited<ReturnType<BrightDataBusinessSearchService['search']>>,
     context: ToolExecutionContext,
-  ): Promise<{ written: number }> {
+  ): Promise<{ written: number; total: number; error?: string }> {
     if (!isNonEmptyString(input.projectId) || !context.workspaceId) {
-      return { written: 0 };
+      return { written: 0, total: 0 };
     }
+
+    const projectId = input.projectId;
 
     if (input.entity === 'company') {
       const companies = search.documents
         .map(mapBrightDataCompanyToEphemeral)
         .filter((company) => company !== null);
+      const batch = companies.slice(0, MAX_ROWS_PER_PROJECT_TAB);
 
-      if (companies.length === 0) {
-        return { written: 0 };
+      if (batch.length === 0) {
+        return { written: 0, total: companies.length };
       }
 
-      await this.upsertOutreachTargetCompaniesTool.execute(
-        { projectId: input.projectId, mode: 'merge', companies },
+      const output = await this.upsertOutreachTargetCompaniesTool.execute(
+        { projectId, mode: 'merge', companies: batch },
         context,
       );
 
-      return { written: companies.length };
+      return output.success
+        ? { written: batch.length, total: companies.length }
+        : { written: 0, total: companies.length, error: output.error };
     }
 
     const people = search.documents
       .map(mapBrightDataPersonToEphemeral)
       .filter((person) => person !== null);
+    const batch = people.slice(0, MAX_ROWS_PER_PROJECT_TAB);
 
-    if (people.length === 0) {
-      return { written: 0 };
+    if (batch.length === 0) {
+      return { written: 0, total: people.length };
     }
 
-    await this.upsertOutreachTargetPeopleTool.execute(
-      { projectId: input.projectId, mode: 'merge', people },
+    const output = await this.upsertOutreachTargetPeopleTool.execute(
+      { projectId, mode: 'merge', people: batch },
       context,
     );
 
-    return { written: people.length };
+    return output.success
+      ? { written: batch.length, total: people.length }
+      : { written: 0, total: people.length, error: output.error };
   }
 }

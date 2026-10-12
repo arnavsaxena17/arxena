@@ -2,8 +2,15 @@ import { Injectable } from '@nestjs/common';
 
 import { OutreachAiColumnService } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column.service';
 import { OutreachAiColumnRunService } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column-run.service';
-import { OutreachTableViewService } from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
-import { OutreachWorkingSetService } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+import {
+  matchesTableFilter,
+  OutreachTableViewService,
+  readCellText,
+} from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
+import {
+  type OutreachWorkingSetRow,
+  OutreachWorkingSetService,
+} from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
 import {
   AiColumnRunIdInputZodSchema,
   ApplyOutreachTableViewInputZodSchema,
@@ -20,14 +27,91 @@ import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
 const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
+const MAX_SUMMARY_VALUES = 30;
+
+const readRowValue = (row: OutreachWorkingSetRow, key: string): unknown => {
+  const otherValue = row.otherFields[key];
+
+  if (otherValue !== undefined) {
+    return otherValue;
+  }
+
+  return (row as unknown as Record<string, unknown>)[key];
+};
+
+const quantile = (sorted: number[], fraction: number): number =>
+  sorted[Math.min(sorted.length - 1, Math.floor(fraction * sorted.length))];
+
+// Counts and distributions over every row, so the agent never has to page
+// through the working set just to tally it.
+export const summarizeWorkingSetRows = (
+  rows: OutreachWorkingSetRow[],
+  keys: string[],
+): Record<string, unknown> =>
+  Object.fromEntries(
+    keys.map((key) => {
+      const values = rows
+        .map((row) => readRowValue(row, key))
+        .filter(
+          (value) =>
+            value !== undefined && value !== null && `${value}`.trim() !== '',
+        );
+      const numbers = values
+        .map((value) =>
+          typeof value === 'number'
+            ? value
+            : typeof value === 'string'
+              ? Number(value)
+              : Number.NaN,
+        )
+        .filter((value) => Number.isFinite(value));
+
+      if (values.length > 0 && numbers.length === values.length) {
+        const sorted = [...numbers].sort((a, b) => a - b);
+
+        return [
+          key,
+          {
+            filled: sorted.length,
+            empty: rows.length - sorted.length,
+            min: sorted[0],
+            p25: quantile(sorted, 0.25),
+            median: quantile(sorted, 0.5),
+            p75: quantile(sorted, 0.75),
+            max: sorted[sorted.length - 1],
+          },
+        ];
+      }
+
+      const counts = new Map<string, number>();
+
+      for (const value of values) {
+        counts.set(`${value}`, (counts.get(`${value}`) ?? 0) + 1);
+      }
+
+      const ordered = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+
+      return [
+        key,
+        {
+          filled: values.length,
+          empty: rows.length - values.length,
+          distinctValues: ordered.length,
+          counts: Object.fromEntries(ordered.slice(0, MAX_SUMMARY_VALUES)),
+        },
+      ];
+    }),
+  );
+
 @Injectable()
 export class GetOutreachWorkingSetTool implements Tool {
-  description = `Read a small page of the project's working set: the ephemeral Find list (People / Companies tabs) merged with the CRM people attached to the project. Use it for "these / the list / each" requests instead of find_many_* or a new search. Returns total, aiColumns (the AI columns that already exist on these rows: key, label, type, filled — reuse them instead of adding a new column), rows (id, source, name, title, companyName, otherFields…) and nextCursor. Keep limit at 10.`;
+  description = `Read a small page of the project's working set: the ephemeral Find list (People / Companies tabs) merged with the CRM people attached to the project. Use it for "these / the list / each" requests instead of find_many_* or a new search. Returns total, aiColumns (the AI columns that already exist on these rows: key, label, type, filled — reuse them instead of adding a new column), rows (id, source, name, title, companyName, otherFields…) and nextCursor. Keep limit at 10. To count or to choose a cut-off, pass summarize with column keys: it returns value counts (yes/no and label columns) or min, quartiles and max (number columns) over ALL rows, optionally only the rows of the applied view (onlyViewMatches), so never page through rows to tally them.`;
 
   inputSchema = GetOutreachWorkingSetInputZodSchema;
 
   constructor(
     private readonly outreachWorkingSetService: OutreachWorkingSetService,
+    private readonly outreachTableViewService: OutreachTableViewService,
   ) {}
 
   async execute(
@@ -44,9 +128,10 @@ export class GetOutreachWorkingSetTool implements Tool {
       };
     }
 
+    const { summarize, onlyViewMatches, ...pageInput } = parsed.data;
     const page = await this.outreachWorkingSetService.getPage({
       workspaceId: context.workspaceId,
-      ...parsed.data,
+      ...pageInput,
     });
 
     if (page.total === 0 && parsed.data.subject === 'company') {
@@ -58,10 +143,41 @@ export class GetOutreachWorkingSetTool implements Tool {
       };
     }
 
+    let summaries: Record<string, unknown> | undefined;
+    let summarizedRows: number | undefined;
+
+    if (summarize !== undefined && summarize.length > 0) {
+      const allRows = await this.outreachWorkingSetService.getAll({
+        workspaceId: context.workspaceId,
+        projectId: parsed.data.projectId,
+        subject: parsed.data.subject,
+      });
+      const view =
+        onlyViewMatches === true
+          ? await this.outreachTableViewService.get({
+              workspaceId: context.workspaceId,
+              projectId: parsed.data.projectId,
+              tab: parsed.data.subject === 'person' ? 'people' : 'companies',
+            })
+          : null;
+      const rows =
+        view === null
+          ? allRows
+          : allRows.filter((row) =>
+              view.filters.every((filter) =>
+                matchesTableFilter(readCellText(row, filter.columnId), filter),
+              ),
+            );
+
+      summaries = summarizeWorkingSetRows(rows, summarize);
+      summarizedRows = rows.length;
+    }
+
     return {
       success: true,
       message: `Returned ${page.rows.length} of ${page.total} ${parsed.data.subject} row(s).`,
-      result: page,
+      result:
+        summaries === undefined ? page : { ...page, summarizedRows, summaries },
     };
   }
 }
@@ -72,7 +188,9 @@ export class PreviewOutreachAiColumnTool implements Tool {
 
   inputSchema = PreviewOutreachAiColumnInputZodSchema;
 
-  constructor(private readonly outreachAiColumnService: OutreachAiColumnService) {}
+  constructor(
+    private readonly outreachAiColumnService: OutreachAiColumnService,
+  ) {}
 
   async execute(
     parameters: ToolInput,
@@ -282,7 +400,8 @@ export class GenerateOutreachTableViewTool implements Tool {
     parameters: ToolInput,
     context: ToolExecutionContext,
   ): Promise<ToolOutput> {
-    const parsed = GenerateOutreachTableViewInputZodSchema.safeParse(parameters);
+    const parsed =
+      GenerateOutreachTableViewInputZodSchema.safeParse(parameters);
 
     if (!parsed.success) {
       return {

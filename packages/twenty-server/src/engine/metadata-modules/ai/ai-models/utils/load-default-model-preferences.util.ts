@@ -27,6 +27,7 @@ export const DEFAULT_RECOMMENDED_MODELS = [
   'google/gemini-3.1-pro-preview',
   'xai/grok-4',
   'openrouter/deepseek/deepseek-v4-flash-0731',
+  'openrouter/deepseek/deepseek-v4.1-flash',
 ];
 
 export const DEFAULT_DISABLED_MODELS: string[] = [];

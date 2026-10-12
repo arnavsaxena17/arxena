@@ -70,6 +70,11 @@ export class BillingUsageService {
   async getResourceCreditProductUsage(
     workspace: WorkspaceEntity,
   ): Promise<BillingResourceCreditUsageDTO[]> {
+    // Billing entities are not registered when billing is disabled
+    if (!this.twentyConfigService.get('IS_BILLING_ENABLED')) {
+      return [];
+    }
+
     const subscription =
       await this.billingSubscriptionService.getCurrentBillingSubscription({
         workspaceId: workspace.id,

@@ -63,6 +63,7 @@ import {
   OutreachCompanyEnrichmentCollectorService,
 } from 'src/engine/core-modules/outreach-command/services/outreach-company-enrichment-collector.service';
 import { OutreachCompanyProfileSummarizerService } from 'src/engine/core-modules/outreach-command/services/outreach-company-profile-summarizer.service';
+import { OutreachSpreadsheetMappingService } from 'src/engine/core-modules/outreach-command/services/outreach-spreadsheet-mapping.service';
 import { IcpBootstrapSummarizerService } from 'src/engine/core-modules/outreach-command/services/outreach-icp-bootstrap-summarizer.service';
 import { OutreachCommandMaterializeService } from 'src/engine/core-modules/outreach-command/services/outreach-command-materialize.service';
 import { OutreachMockLifecycleService } from 'src/engine/core-modules/outreach-command/services/outreach-mock-lifecycle.service';
@@ -85,6 +86,7 @@ import { RefreshPendingHitlAfterPromptChangeJob } from 'src/engine/core-modules/
 import { OutreachWorkflowRunFlowSyncService } from 'src/engine/core-modules/outreach-command/services/outreach-workflow-run-flow-sync.service';
 import { OutreachWorkflowRunRepairService } from 'src/engine/core-modules/outreach-command/services/outreach-workflow-run-repair.service';
 import { OutreachWikidataCompanyEnrichmentSource } from 'src/engine/core-modules/outreach-command/services/outreach-wikidata-company-enrichment.source';
+import { ArxWebSearchModule } from 'src/engine/core-modules/arx-web-search/arx-web-search.module';
 import { OutreachWebSearchCompanyEnrichmentSource } from 'src/engine/core-modules/outreach-command/services/outreach-web-search-company-enrichment.source';
 import { OutreachWorkspaceAuthTokenService } from 'src/engine/core-modules/outreach-command/services/outreach-workspace-auth-token.service';
 import { OutreachWorkspaceProfileProvisioningService } from 'src/engine/core-modules/outreach-command/services/outreach-workspace-profile-provisioning.service';
@@ -107,6 +109,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
 @Module({
   imports: [
     TypeOrmModule.forFeature([WorkspaceEntity]),
+    forwardRef(() => ArxWebSearchModule),
     AiBillingModule,
     GraphQLExecutionModule,
     AccountRateLimitModule,
@@ -144,6 +147,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     OutreachThrottleService,
     OutreachCompaniesCacheService,
     OutreachPeopleCacheService,
+    OutreachSpreadsheetMappingService,
     OutreachWorkingSetService,
     OutreachAiColumnService,
     OutreachAiColumnRunService,
@@ -233,6 +237,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     OutreachThrottleService,
     OutreachCompaniesCacheService,
     OutreachPeopleCacheService,
+    OutreachSpreadsheetMappingService,
     OutreachWorkingSetService,
     OutreachAiColumnService,
     OutreachAiColumnRunService,

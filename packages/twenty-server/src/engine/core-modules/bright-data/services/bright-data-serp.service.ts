@@ -51,8 +51,7 @@ export class BrightDataSerpService {
 
   private get datasetId(): string {
     return (
-      process.env.BRIGHT_DATA_SERP_DATASET_ID?.trim() ||
-      'gd_mfz5x93lmsjjjylob'
+      process.env.BRIGHT_DATA_SERP_DATASET_ID?.trim() || 'gd_mfz5x93lmsjjjylob'
     );
   }
 
@@ -65,7 +64,9 @@ export class BrightDataSerpService {
   }
 
   private get snapshotDiscoveryTimeoutMs(): number {
-    return Number(process.env.BRIGHT_DATA_SNAPSHOT_DISCOVERY_TIMEOUT_MS ?? 360_000);
+    return Number(
+      process.env.BRIGHT_DATA_SNAPSHOT_DISCOVERY_TIMEOUT_MS ?? 360_000,
+    );
   }
 
   private get snapshotDownloadRetryIntervalMs(): number {
@@ -83,7 +84,9 @@ export class BrightDataSerpService {
    * Runs a Bright Data SERP zone request for a fully qualified Google search URL.
    * Uses `format: json` so the response includes a structured `organic` array when available.
    */
-  async requestSerpGoogleJson(searchUrl: string): Promise<BrightDataSerpGoogleJson> {
+  async requestSerpGoogleJson(
+    searchUrl: string,
+  ): Promise<BrightDataSerpGoogleJson> {
     return this.requestSerpJson(searchUrl);
   }
 
@@ -300,7 +303,9 @@ export class BrightDataSerpService {
         return snapshot;
       }
 
-      await new Promise((resolve) => setTimeout(resolve, this.snapshotPollIntervalMs));
+      await new Promise((resolve) =>
+        setTimeout(resolve, this.snapshotPollIntervalMs),
+      );
     }
 
     throw new Error(
@@ -447,7 +452,9 @@ export class BrightDataSerpService {
     }
   }
 
-  private async listDatasetSnapshots(): Promise<BrightDataDatasetSnapshotListEntry[]> {
+  private async listDatasetSnapshots(): Promise<
+    BrightDataDatasetSnapshotListEntry[]
+  > {
     const key = this.apiKey;
     if (!key) {
       throw new Error('BRIGHT_DATA_API_KEY is not set');
@@ -488,9 +495,7 @@ export class BrightDataSerpService {
     createdAfterMs: number;
     onPoll?: (
       update: BrightDataDatasetSnapshotProgress & {
-        phase:
-          | 'discovering_snapshot'
-          | 'snapshot_discovered';
+        phase: 'discovering_snapshot' | 'snapshot_discovered';
         attempt?: number;
       },
     ) => Promise<void> | void;
@@ -536,7 +541,9 @@ export class BrightDataSerpService {
         attempt,
       });
 
-      await new Promise((resolve) => setTimeout(resolve, this.snapshotPollIntervalMs));
+      await new Promise((resolve) =>
+        setTimeout(resolve, this.snapshotPollIntervalMs),
+      );
     }
 
     throw new Error(
@@ -626,9 +633,13 @@ export class BrightDataSerpService {
 
         return {
           snapshot_id:
-            typeof record.snapshot_id === 'string' ? record.snapshot_id : undefined,
+            typeof record.snapshot_id === 'string'
+              ? record.snapshot_id
+              : undefined,
           dataset_id:
-            typeof record.dataset_id === 'string' ? record.dataset_id : undefined,
+            typeof record.dataset_id === 'string'
+              ? record.dataset_id
+              : undefined,
           status: normalizedMessage.includes('still in progress')
             ? 'running'
             : normalizedMessage.includes('cannot be retrieved')

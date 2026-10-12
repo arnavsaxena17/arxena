@@ -144,6 +144,12 @@ const OutreachHomePageContent = () => {
     appendPeople,
     updateEphemeralPerson,
     appendCompanies,
+    softDeleteCompanies,
+    undoSoftDeleteCompanies,
+    undoableDeletedCompanyCount,
+    softDeletePeople,
+    undoSoftDeletePeople,
+    undoableDeletedPersonCount,
   } = useOutreachLiveWorkingSet();
   const isSetupTab = activeTab === 'setup';
   const { openAskAiPageWithPreprompt } = useOpenAskAiPageWithPreprompt();
@@ -580,6 +586,9 @@ const OutreachHomePageContent = () => {
                   aiTableView={aiTableViews.people}
                   appendPeople={appendPeople}
                   updateEphemeralPerson={updateEphemeralPerson}
+                  softDeletePeople={softDeletePeople}
+                  undoSoftDeletePeople={undoSoftDeletePeople}
+                  undoableDeletedCount={undoableDeletedPersonCount}
                 />
               </StyledToolbarTabContent>
             ) : activeTab === 'companies' ? (
@@ -592,7 +601,11 @@ const OutreachHomePageContent = () => {
                   isLoading={companiesLoading}
                   onRefresh={refreshCompaniesWorkingSet}
                   appendCompanies={appendCompanies}
+                  softDeleteCompanies={softDeleteCompanies}
+                  undoSoftDeleteCompanies={undoSoftDeleteCompanies}
+                  undoableDeletedCount={undoableDeletedCompanyCount}
                   aiTableView={aiTableViews.companies}
+                  aiColumnRun={aiColumnRun}
                 />
               </StyledToolbarTabContent>
             ) : (

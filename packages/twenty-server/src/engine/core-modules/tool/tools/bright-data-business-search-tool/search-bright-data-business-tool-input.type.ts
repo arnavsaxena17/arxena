@@ -9,7 +9,7 @@ export const SearchBrightDataBusinessToolInputZodSchema = z.object({
     .optional()
     .default('ludicrous')
     .describe(
-      'ludicrous (default) plans structured sharded queries from your raw request and bills $0.002 per record; smart ranks by relevance; instant is a fast lexical search',
+      'Always ludicrous (any value is ignored): plans structured sharded queries from your raw request and bills $0.002 per record. smart and instant exist only for internal callers and reach just the first 100 rows',
     ),
   query: z
     .string()

@@ -12,6 +12,9 @@ import { ListOrphanedWorkspaceEntitiesCommand } from 'src/database/commands/list
 import { ConfirmationQuestion } from 'src/database/commands/questions/confirmation.question';
 import { RebuildApplicationDefaultDepsCommand } from 'src/database/commands/rebuild-application-default-deps.command';
 import { ResyncOutreachSeededWorkflowPromptsCommand } from 'src/database/commands/resync-outreach-seeded-workflow-prompts.command';
+import { AttachOutreachListCommand } from 'src/database/commands/attach-outreach-list.command';
+import { ResyncSkillsCommand } from 'src/database/commands/resync-skills.command';
+import { SyncAiCommand } from 'src/database/commands/sync-ai.command';
 import { KickConnectionAcceptedCommand } from 'src/database/commands/kick-connection-accepted.command';
 import { SyncArxenaStandardCommand } from 'src/database/commands/sync-arxena-standard.command';
 import { RunInstanceCommandsCommand } from 'src/database/commands/run-instance-commands.command';
@@ -24,6 +27,7 @@ import { GenerateApiKeyCommand } from 'src/engine/core-modules/api-key/commands/
 import { MarketplaceModule } from 'src/engine/core-modules/application/application-marketplace/marketplace.module';
 import { StaleRegistrationCleanupModule } from 'src/engine/core-modules/application/application-oauth/stale-registration-cleanup/stale-registration-cleanup.module';
 import { ApplicationUpgradeModule } from 'src/engine/core-modules/application/application-upgrade/application-upgrade.module';
+import { ToolModule } from 'src/engine/core-modules/tool/tool.module';
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { PreInstalledAppsModule } from 'src/engine/core-modules/application/pre-installed-apps/pre-installed-apps.module';
 import { BillingReminderModule } from 'src/engine/core-modules/billing/reminders/billing-reminder.module';
@@ -106,6 +110,7 @@ import { WorkflowCoreConsistencyModule } from 'src/modules/workflow/workflow-cor
     WorkspaceVersionModule,
     UpgradeModule,
     SecretEncryptionRotationModule,
+    ToolModule,
   ],
   providers: [
     DataSeedWorkspaceCommand,
@@ -122,6 +127,9 @@ import { WorkflowCoreConsistencyModule } from 'src/modules/workflow/workflow-cor
     RebuildApplicationDefaultDepsCommand,
     SyncArxenaStandardCommand,
     ResyncOutreachSeededWorkflowPromptsCommand,
+    ResyncSkillsCommand,
+    AttachOutreachListCommand,
+    SyncAiCommand,
     KickConnectionAcceptedCommand,
     InstallPreInstalledAppsCommand,
     provideWorkspaceScopedRepository(RoleEntity),

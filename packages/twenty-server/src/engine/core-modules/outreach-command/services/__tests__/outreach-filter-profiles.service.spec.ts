@@ -162,9 +162,7 @@ describe('OutreachFilterProfilesService', () => {
       name: 'Priya Shah',
       title: 'CFO',
       headline: 'CFO at Acme',
-      current_positions: [
-        { role: 'CFO', company: 'Acme', company_id: '1441' },
-      ],
+      current_positions: [{ role: 'CFO', company: 'Acme', company_id: '1441' }],
     };
     const director = {
       ...SALES_PROFILE,
@@ -199,8 +197,9 @@ describe('OutreachFilterProfilesService', () => {
 
   it('starts a batch of profile LLM calls before waiting for the first to finish', async () => {
     const started: number[] = [];
-    const resolvers: Array<(value: Awaited<ReturnType<typeof generateObject>>) => void> =
-      [];
+    const resolvers: Array<
+      (value: Awaited<ReturnType<typeof generateObject>>) => void
+    > = [];
 
     generateObjectMock.mockImplementation(() => {
       started.push(generateObjectMock.mock.calls.length);
@@ -283,7 +282,9 @@ describe('OutreachFilterProfilesService', () => {
       ),
     ).toBe(2);
     expect(
-      concurrencyForFilterProfilesModel(OUTREACH_COMPANY_ENRICHMENT_LLM_MODEL_ID),
+      concurrencyForFilterProfilesModel(
+        OUTREACH_COMPANY_ENRICHMENT_LLM_MODEL_ID,
+      ),
     ).toBe(2);
     expect(
       repairGeneratedJsonObjectText({

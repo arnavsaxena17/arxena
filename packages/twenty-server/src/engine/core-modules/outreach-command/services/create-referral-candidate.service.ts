@@ -188,7 +188,9 @@ export class CreateReferralCandidateService {
     referrerCandidateId?: string;
     projectId: string;
     repo: (objectName: string) => Promise<{
-      findOne: (options: { where: Record<string, unknown> }) => Promise<Row | null>;
+      findOne: (options: {
+        where: Record<string, unknown>;
+      }) => Promise<Row | null>;
     }>;
   }): Promise<string | null> {
     const referrerId = referrerCandidateId?.trim() ?? '';
@@ -197,7 +199,9 @@ export class CreateReferralCandidateService {
       return null;
     }
 
-    const referrer = await (await repo('candidate')).findOne({
+    const referrer = await (
+      await repo('candidate')
+    ).findOne({
       where: { id: referrerId },
     });
     const owner = (
@@ -208,7 +212,9 @@ export class CreateReferralCandidateService {
       return null;
     }
 
-    const project = await (await repo('project')).findOne({
+    const project = await (
+      await repo('project')
+    ).findOne({
       where: { id: projectId },
     });
 

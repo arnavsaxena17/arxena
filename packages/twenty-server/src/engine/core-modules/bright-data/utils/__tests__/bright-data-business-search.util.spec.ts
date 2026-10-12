@@ -1,4 +1,6 @@
 import {
+  aggregateBrightDataDocuments,
+  buildBrightDataCompanyOtherFields,
   mapBrightDataCompanyToEphemeral,
   mapBrightDataCompanyToSearchHit,
   mapBrightDataPersonToEphemeral,
@@ -68,17 +70,21 @@ describe('bright data business search util', () => {
     expect(
       planBrightDataBusinessSearchPages({ mode: 'smart', limit: 500 }),
     ).toHaveLength(10);
+    // Bright Data 500s once offset + limit passes 100 in smart and instant
     expect(
       planBrightDataBusinessSearchPages({
         mode: 'instant',
         limit: 250,
+        offset: 50,
+      }),
+    ).toEqual([{ offset: 50, limit: 50 }]);
+    expect(() =>
+      planBrightDataBusinessSearchPages({
+        mode: 'instant',
+        limit: 10,
         offset: 100,
       }),
-    ).toEqual([
-      { offset: 100, limit: 100 },
-      { offset: 200, limit: 100 },
-      { offset: 300, limit: 50 },
-    ]);
+    ).toThrow('Use ludicrous mode');
   });
 
   it('maps a company document into search and ephemeral rows', () => {
@@ -100,6 +106,26 @@ describe('bright data business search util', () => {
       segment: 'Public Company',
       status: 'new',
     });
+    expect(
+      mapBrightDataCompanyToEphemeral(apparelCompany)?.otherFields,
+    ).toMatchObject({
+      linkedinUrl: 'https://www.linkedin.com/company/abfrl',
+      headquartersCountry: 'IN',
+      headquartersCity: 'Mumbai',
+      employeesOnLinkedin: 14911,
+      foundedYear: 2007,
+    });
+  });
+
+  it('keeps empty Bright Data fields out of the row columns', () => {
+    const otherFields = buildBrightDataCompanyOtherFields({
+      name: 'Tiny Cafe',
+      about: '',
+      offices_addresses: ['MG Road, Pune, IN', 'FC Road, Pune, IN'],
+      logo: 'https://example.com/logo.png',
+    });
+
+    expect(otherFields).toEqual({ officeAddressCount: 2 });
   });
 
   it('maps a person document into search and ephemeral rows', () => {
@@ -131,5 +157,32 @@ describe('bright data business search util', () => {
       linkedinUrl: 'https://www.linkedin.com/in/ada',
       stage: 'queued',
     });
+  });
+});
+
+describe('aggregateBrightDataDocuments', () => {
+  it('should return counts only, whatever the number of records', () => {
+    const documents = Array.from({ length: 5000 }, (_, index) => ({
+      brightId: `id-${index}`,
+      data: {
+        name: `Company ${index}`,
+        about: 'x'.repeat(2000),
+        industry:
+          index % 2 === 0 ? 'Restaurants' : 'Food and Beverage Services',
+        headquarters_country_code: 'IN',
+      },
+    }));
+
+    const aggregate = aggregateBrightDataDocuments('company', documents);
+    const serialized = JSON.stringify(aggregate);
+
+    expect(aggregate.total).toBe(5000);
+    expect(aggregate.topIndustries[0]).toEqual({
+      name: 'Restaurants',
+      count: 2500,
+    });
+    expect(aggregate.topCountries).toEqual([{ name: 'IN', count: 5000 }]);
+    expect(serialized).not.toContain('Company 1');
+    expect(serialized.length).toBeLessThan(1000);
   });
 });

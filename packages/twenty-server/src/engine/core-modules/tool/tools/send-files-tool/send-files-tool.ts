@@ -255,11 +255,10 @@ export class SendFilesTool implements Tool {
       };
     }
 
-    const isMockUnipileEnabled =
-      await this.featureFlagService.isFeatureEnabled(
-        FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
-        workspaceId,
-      );
+    const isMockUnipileEnabled = await this.featureFlagService.isFeatureEnabled(
+      FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
+      workspaceId,
+    );
 
     if (isMockUnipileEnabled) {
       this.logger.log(

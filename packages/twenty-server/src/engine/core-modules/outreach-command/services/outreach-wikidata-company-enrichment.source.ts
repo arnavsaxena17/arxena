@@ -35,11 +35,11 @@ export const mapWikidataProfileToWikiCompanyHit = (
 
 // Public Wikidata.org enrichment via official website (P856) domain lookup
 @Injectable()
-export class OutreachWikidataCompanyEnrichmentSource
-  implements OutreachCompanyEnrichmentSource
-{
+export class OutreachWikidataCompanyEnrichmentSource implements OutreachCompanyEnrichmentSource {
   readonly sourceId = 'wikidata' as const;
-  private readonly logger = new Logger(OutreachWikidataCompanyEnrichmentSource.name);
+  private readonly logger = new Logger(
+    OutreachWikidataCompanyEnrichmentSource.name,
+  );
 
   constructor(
     @Optional()

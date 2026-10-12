@@ -149,8 +149,7 @@ export class VisitLinkedinProfileService {
             );
 
             accountId = withAccount?.linkedinUnipileAccountId?.trim() ?? '';
-            workspaceMemberId =
-              withAccount?.id ?? workspaceMemberId;
+            workspaceMemberId = withAccount?.id ?? workspaceMemberId;
           }
 
           let identifier =

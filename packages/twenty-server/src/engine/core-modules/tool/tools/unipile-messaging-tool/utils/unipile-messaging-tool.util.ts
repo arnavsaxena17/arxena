@@ -7,8 +7,7 @@ import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-gra
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 // Low-level Unipile send methods only need env credentials; CRM deps are unused.
-const unusedWorkspaceQueryService =
-  null as unknown as WorkspaceQueryService;
+const unusedWorkspaceQueryService = null as unknown as WorkspaceQueryService;
 const unusedStaticGraphQLService = null as unknown as StaticGraphQLService;
 
 export const createLinkedinUnipileMessagingServiceForTools = () =>

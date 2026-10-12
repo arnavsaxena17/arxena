@@ -38,6 +38,7 @@ const OPERATOR_LABELS: Record<string, string> = {
   greaterThanOrEqual: '≥',
   lessThan: '<',
   lessThanOrEqual: '≤',
+  between: 'between',
 };
 
 export const describeOutreachTableFilter = (

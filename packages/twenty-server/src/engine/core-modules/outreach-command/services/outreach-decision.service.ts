@@ -326,8 +326,8 @@ export class OutreachDecisionService {
     const projectIds = uniqueIds(
       decisions.map((decision) => decision.projectId),
     );
-    const [people, companies, projects, ownerByCandidateId] =
-      await Promise.all([
+    const [people, companies, projects, ownerByCandidateId] = await Promise.all(
+      [
         this.findNamedRecords(workspaceId, 'person', personIds),
         this.findNamedRecords(workspaceId, 'company', companyIds),
         this.findNamedRecords(workspaceId, 'project', projectIds),
@@ -335,7 +335,8 @@ export class OutreachDecisionService {
           workspaceId,
           uniqueIds(decisions.map((decision) => decision.candidateId)),
         ),
-      ]);
+      ],
+    );
     const personById = new Map(people.map((person) => [person.id, person]));
     const companyById = new Map(
       companies.map((company) => [company.id, company]),
@@ -381,7 +382,8 @@ export class OutreachDecisionService {
         projectName: asText(project?.name),
         ownerMemberId:
           ownerByCandidateId.get(decision.candidateId ?? '')?.id ?? null,
-        ownerName: ownerByCandidateId.get(decision.candidateId ?? '')?.name ?? '',
+        ownerName:
+          ownerByCandidateId.get(decision.candidateId ?? '')?.name ?? '',
       };
     });
   }
@@ -396,15 +398,19 @@ export class OutreachDecisionService {
       return owners;
     }
 
-    const candidateRepository = await this.globalWorkspaceOrmManager.getRepository<{
-      id: string;
-      outreachWorkspaceMemberId?: string | null;
-    }>(workspaceId, 'candidate', { shouldBypassPermissionChecks: true });
-    const memberRepository = await this.globalWorkspaceOrmManager.getRepository<{
-      id: string;
-      name?: { firstName?: string | null; lastName?: string | null } | null;
-      userEmail?: string | null;
-    }>(workspaceId, 'workspaceMember', { shouldBypassPermissionChecks: true });
+    const candidateRepository =
+      await this.globalWorkspaceOrmManager.getRepository<{
+        id: string;
+        outreachWorkspaceMemberId?: string | null;
+      }>(workspaceId, 'candidate', { shouldBypassPermissionChecks: true });
+    const memberRepository =
+      await this.globalWorkspaceOrmManager.getRepository<{
+        id: string;
+        name?: { firstName?: string | null; lastName?: string | null } | null;
+        userEmail?: string | null;
+      }>(workspaceId, 'workspaceMember', {
+        shouldBypassPermissionChecks: true,
+      });
     const candidates = await candidateRepository.find({
       where: { id: In(candidateIds) },
     });

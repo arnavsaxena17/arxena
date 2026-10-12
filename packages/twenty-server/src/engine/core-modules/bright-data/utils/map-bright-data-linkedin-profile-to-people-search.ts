@@ -66,9 +66,7 @@ const buildCurrentPositions = (
   bd: BrightDataLinkedinProfileRecord,
 ): LinkedInCurrentPosition[] => {
   const companyName =
-    bd.current_company_name?.trim() ||
-    bd.current_company?.name?.trim() ||
-    '';
+    bd.current_company_name?.trim() || bd.current_company?.name?.trim() || '';
   const companyId =
     bd.current_company_company_id?.trim() ||
     bd.current_company?.company_id?.trim() ||
@@ -129,15 +127,13 @@ export const mergeBrightDataIntoLinkedinPeopleSearchResult = (
   bd: BrightDataLinkedinProfileRecord,
 ): LinkedInPeopleSearchResult => {
   const linkedinUrl =
-    bd.input_url ||
-    bd.url ||
-    base.profile_url ||
-    base.public_profile_url ||
-    '';
+    bd.input_url || bd.url || base.profile_url || base.public_profile_url || '';
   let normalizedProfileUrl: string | null = null;
 
   try {
-    normalizedProfileUrl = linkedinUrl ? normalizeLinkedInUrl(linkedinUrl) : null;
+    normalizedProfileUrl = linkedinUrl
+      ? normalizeLinkedInUrl(linkedinUrl)
+      : null;
   } catch {
     normalizedProfileUrl = linkedinUrl || null;
   }

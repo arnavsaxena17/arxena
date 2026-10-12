@@ -1,10 +1,7 @@
 import { z } from 'zod';
 
 export const AcceptLinkedinReceivedInvitationToolInputZodSchema = z.object({
-  unipileAccountId: z
-    .string()
-    .min(1)
-    .describe('Unipile LinkedIn account ID'),
+  unipileAccountId: z.string().min(1).describe('Unipile LinkedIn account ID'),
   linkedinProfileId: z
     .string()
     .optional()

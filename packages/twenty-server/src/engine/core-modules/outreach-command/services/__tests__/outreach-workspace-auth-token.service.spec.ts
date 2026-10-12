@@ -38,7 +38,9 @@ describe('OutreachWorkspaceAuthTokenService', () => {
   it('creates a workspace API key when none exists', async () => {
     workspaceQueryService.getApiKeys.mockResolvedValue([]);
     apiKeyService.ensureWorkspaceApiKey.mockResolvedValue({ id: 'key-2' });
-    apiKeyService.generateApiKeyToken.mockResolvedValue({ token: 'created-tok' });
+    apiKeyService.generateApiKeyToken.mockResolvedValue({
+      token: 'created-tok',
+    });
 
     await expect(service.resolveOrMint('ws-1')).resolves.toBe('created-tok');
     expect(apiKeyService.ensureWorkspaceApiKey).toHaveBeenCalledWith('ws-1');

@@ -4,6 +4,12 @@ import { CODE_INTERPRETER_MIME_TYPES } from 'src/engine/metadata-modules/ai/ai-c
 import { type ExtractCodeInterpreterFilesResult } from 'src/engine/metadata-modules/ai/ai-chat/types/extract-code-interpreter-files-result.type';
 import { type ExtractedFile } from 'src/engine/metadata-modules/ai/ai-chat/types/extracted-file.type';
 
+const SPREADSHEET_MIME_TYPES = new Set([
+  'text/csv',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+]);
+
 export const extractCodeInterpreterFiles = (
   messages: ExtendedUIMessage[],
 ): ExtractCodeInterpreterFilesResult => {
@@ -41,10 +47,15 @@ export const extractCodeInterpreterFiles = (
       const fileList = filesForThisMessage
         .map((f) => `- ${f.filename} (${f.mimeType})`)
         .join('\n');
+      // The spreadsheet-import tools read the file by id, not through the sandbox
+      const spreadsheetNotes = filesForThisMessage
+        .filter((f) => SPREADSHEET_MIME_TYPES.has(f.mimeType))
+        .map((f) => `[Spreadsheet attached: ${f.filename} fileId=${f.fileId}]`)
+        .join('\n');
 
       newParts.push({
         type: 'text',
-        text: `\n\n[Files available for code interpreter at /home/user/:\n${fileList}]\n\nUse the code_interpreter tool to analyze these files.`,
+        text: `\n\n[Files available for code interpreter at /home/user/:\n${fileList}]\n\nUse the code_interpreter tool to analyze these files.${spreadsheetNotes === '' ? '' : `\n\n${spreadsheetNotes}\nTo import a spreadsheet into a project, load the spreadsheet-import skill.`}`,
       });
     }
 

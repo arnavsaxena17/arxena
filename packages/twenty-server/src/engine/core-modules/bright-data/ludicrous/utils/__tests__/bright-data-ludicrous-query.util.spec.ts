@@ -177,7 +177,7 @@ describe('bright data ludicrous query util', () => {
             industry: { value: 'Software Development', mode: 'all' },
           },
         },
-        { equals: { headquarters_country_code: 'IN' } },
+        { in: { offices_country_codes: ['IN'] } },
         { in: { funding_stage: ['series-a', 'series-b'] } },
         {
           or: [
@@ -191,7 +191,7 @@ describe('bright data ludicrous query util', () => {
 });
 
 describe('bright data ludicrous industry taxonomy guard', () => {
-  it('moves non-taxonomy industries into specialties keywords', () => {
+  it('moves non-taxonomy industries into about/specialties keywords', () => {
     const { query } = compileShardFilter({
       entity: 'company',
       filter: {
@@ -207,8 +207,13 @@ describe('bright data ludicrous industry taxonomy guard', () => {
             industry: { value: 'Financial Services', mode: 'all' },
           },
         },
-        { equals: { headquarters_country_code: 'US' } },
-        { text: { specialties: { value: 'Fintech', mode: 'all' } } },
+        { in: { offices_country_codes: ['US'] } },
+        {
+          or: [
+            { text: { about: { value: 'Fintech', mode: 'all' } } },
+            { text: { specialties: { value: 'Fintech', mode: 'all' } } },
+          ],
+        },
       ],
     });
   });

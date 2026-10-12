@@ -151,7 +151,10 @@ import { ResyncOutreachJevOutputValidationCommand } from 'src/database/commands/
 import { SyncOutreachRunWorkflowSkillContentCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000159-sync-outreach-run-workflow-skill-content.command';
 import { AddAiFilterToFindWorkflowsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000160-add-ai-filter-to-find-workflows.command';
 import { SyncSaveToCrmSkillCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000171-sync-save-to-crm-skill.command';
+import { SyncSearchSkillListBuildingCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000173-sync-search-skill-list-building.command';
+import { SyncSearchSkillBrightDataLudicrousOnlyCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000172-sync-search-skill-bright-data-ludicrous-only.command';
 import { AddCompanyOtherFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000170-add-company-other-fields.command';
+import { SyncSpreadsheetImportSkillCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000174-sync-spreadsheet-import-skill.command';
 import { SyncAiFilterEnrichSkillCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000169-sync-ai-filter-enrich-skill.command';
 import { SyncOutreachSkillDirectMessagingCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000168-sync-outreach-skill-direct-messaging.command';
 import { BackfillLocalBusinessSearchSkillCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000167-backfill-local-business-search-skill.command';
@@ -355,6 +358,9 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     SyncAiFilterEnrichSkillCommand,
     AddCompanyOtherFieldsCommand,
     SyncSaveToCrmSkillCommand,
+    SyncSearchSkillBrightDataLudicrousOnlyCommand,
+    SyncSearchSkillListBuildingCommand,
+    SyncSpreadsheetImportSkillCommand,
   ],
 })
 export class V2_25_UpgradeVersionCommandModule {}

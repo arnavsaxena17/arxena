@@ -7,6 +7,7 @@ export const OUTREACH_SKILL_LABELS = {
   outreach: 'Outreach',
   'local-business-search': 'Local Business Search',
   'ai-filter-enrich': 'AI Filter & Enrich',
+  'spreadsheet-import': 'Spreadsheet Import',
   setup: 'Setup',
 } as const;
 
@@ -16,6 +17,7 @@ export type OutreachSkillName = keyof typeof OUTREACH_SKILL_LABELS;
 export const OUTREACH_SEARCH_SKILL_PARTS = [
   'search-preamble',
   'search-companies',
+  'search-list-building',
   'search-people',
   'search-linkedin-harvest',
 ] as const;

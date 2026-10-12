@@ -11,11 +11,11 @@ import type {
 import { pickFirstApolloOrganization } from 'src/engine/core-modules/outreach-command/utils/outreach-workspace-profile-draft.util';
 
 @Injectable()
-export class OutreachApolloCompanyEnrichmentSource
-  implements OutreachCompanyEnrichmentSource
-{
+export class OutreachApolloCompanyEnrichmentSource implements OutreachCompanyEnrichmentSource {
   readonly sourceId = 'apollo' as const;
-  private readonly logger = new Logger(OutreachApolloCompanyEnrichmentSource.name);
+  private readonly logger = new Logger(
+    OutreachApolloCompanyEnrichmentSource.name,
+  );
 
   constructor(
     @Optional()

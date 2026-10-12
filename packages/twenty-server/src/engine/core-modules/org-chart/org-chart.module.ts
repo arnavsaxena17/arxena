@@ -7,7 +7,6 @@ import { ApiKeyModule } from 'src/engine/core-modules/api-key/api-key.module';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 import { BrightDataModule } from 'src/engine/core-modules/bright-data/bright-data.module';
-import { BrightDataLudicrousModule } from 'src/engine/core-modules/bright-data-ludicrous/bright-data-ludicrous.module';
 import { OrgChartBrightDataController } from 'src/engine/core-modules/org-chart/controllers/org-chart-bright-data.controller';
 import { OrgChartBrightDataPeopleService } from 'src/engine/core-modules/org-chart/services/org-chart-bright-data-people.service';
 import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
@@ -79,7 +78,6 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     AuthModule,
     BillingModule,
     BrightDataModule,
-    forwardRef(() => BrightDataLudicrousModule),
     forwardRef(() => CandidateSourcingModule),
     ContactEnrichmentModule,
     EnvironmentModule,

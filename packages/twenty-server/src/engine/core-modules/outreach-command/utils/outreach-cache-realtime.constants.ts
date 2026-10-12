@@ -10,6 +10,8 @@ export type OutreachCacheKind =
 export type OutreachAiColumnRunProgress = {
   runId: string;
   label: string;
+  // Which table the column belongs to, so only that tab shows the progress.
+  subject: 'person' | 'company';
   status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
   total: number;
   done: number;

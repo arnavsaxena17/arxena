@@ -31,8 +31,7 @@ export const StartOutreachInputZodSchema = z
       (input.candidateIds?.length ?? 0) > 0 ||
       (input.personIds?.length ?? 0) > 0,
     {
-      message:
-        'Pass candidateIds, personIds, or startAllQueuedInProject=true',
+      message: 'Pass candidateIds, personIds, or startAllQueuedInProject=true',
     },
   );
 

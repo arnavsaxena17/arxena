@@ -34,6 +34,10 @@ import { callRestAPI, callRestAPIGet } from '../api/rest-client';
 import { handleStreamingResponse } from '../api/streaming-client';
 import { McpTool } from '../types/tool-types';
 import { descriptorToInputSchema } from '../utils/input-schema';
+import {
+  isSalesNavCompanySearchUrl,
+  parseSalesNavCompanyUrl,
+} from '../utils/sales-nav-company-url';
 
 const LINKEDIN_PARAMETER_TYPE_MAP: Record<string, string> = {
   LOCATION: 'LOCATION',
@@ -293,12 +297,35 @@ export const linkedinSearchTools: McpTool[] = [
         };
 
       if (url?.trim()) {
+        const trimmedUrl = url.trim();
+
+        // Parse Sales Nav company URLs into a structured payload: Unipile echoes
+        // it as config.params on every page, so all pages land in one list
+        // (a raw URL search echoes config.url instead).
+        if (isSalesNavCompanySearchUrl(trimmedUrl)) {
+          const { payload, unsupportedFilters } =
+            parseSalesNavCompanyUrl(trimmedUrl);
+
+          if (unsupportedFilters.length === 0) {
+            const { api: _api, category: _category, ...body } = payload;
+
+            return callRestAPI(
+              config.baseUrl,
+              config.apiToken,
+              'linkedin-search',
+              'search/sales-navigator/companies',
+              body,
+              buildLinkedInSearchQueryParams({ account_id, cursor, limit }),
+            );
+          }
+        }
+
         return callRestAPI(
           config.baseUrl,
           config.apiToken,
           'linkedin-search',
           'search/url',
-          { url: url.trim() },
+          { url: trimmedUrl },
           buildLinkedInSearchQueryParams({ account_id, cursor, limit }),
         );
       }

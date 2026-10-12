@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { OUTREACH_LIST_MAX_ROWS } from 'src/engine/core-modules/outreach-list/outreach-list.constants';
+
 export const OutreachEphemeralPersonInputZodSchema = z.object({
   id: z
     .string()
@@ -74,7 +76,7 @@ export const UpsertOutreachTargetPeopleInputZodSchema = z.object({
   people: z
     .array(OutreachEphemeralPersonInputZodSchema)
     .min(1)
-    .max(500)
+    .max(OUTREACH_LIST_MAX_ROWS)
     .describe('Target people to write to the ephemeral People tab'),
 });
 

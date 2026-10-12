@@ -32,7 +32,7 @@ const normalizeName = (name: string): string =>
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
 
-const personDedupeKey = (person: {
+export const personDedupeKey = (person: {
   name: string;
   companyName: string;
   linkedinUrl: string;
@@ -61,7 +61,7 @@ const buildEphemeralId = (person: {
   return createHash('sha256').update(seed).digest('hex').slice(0, 32);
 };
 
-const toEphemeralPerson = (person: {
+export const toEphemeralPerson = (person: {
   id?: string;
   name: string;
   title?: string;

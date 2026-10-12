@@ -146,6 +146,14 @@ const StyledClearSearch = styled.button`
   padding: 0;
 `;
 
+const StyledResultCount = styled.span`
+  color: ${themeCssVariables.font.color.tertiary};
+  flex-shrink: 0;
+  font-size: ${themeCssVariables.font.size.sm};
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+`;
+
 const StyledDivider = styled.div`
   background: ${themeCssVariables.border.color.light};
   height: 16px;
@@ -222,6 +230,7 @@ type OutreachViewBarProps = {
   searchValue: string;
   searchPlaceholder: string;
   onSearchChange: (value: string) => void;
+  resultCount?: number;
   actions?: ReactNode;
 };
 
@@ -230,11 +239,17 @@ export const OutreachViewBar = ({
   searchValue,
   searchPlaceholder,
   onSearchChange,
+  resultCount,
   actions,
 }: OutreachViewBarProps) => (
   <StyledBar>
     <StyledLeft>{pills}</StyledLeft>
     <StyledRight>
+      {isDefined(resultCount) && (
+        <StyledResultCount>
+          {resultCount} {resultCount === 1 ? 'result' : 'results'}
+        </StyledResultCount>
+      )}
       <StyledSearch>
         <IconSearch size={14} />
         <StyledSearchInput

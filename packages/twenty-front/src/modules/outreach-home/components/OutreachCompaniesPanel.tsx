@@ -6,11 +6,14 @@ import { Loader } from 'twenty-ui/feedback';
 import {
   IconBuildingSkyscraper,
   IconDatabase,
+  IconDownload,
   IconTag,
   IconFileImport,
   IconFilterOff,
   IconLink,
+  IconArrowBackUp,
   IconRefresh,
+  IconTrash,
   IconStatusChange,
   IconTarget,
   IconTargetArrow,
@@ -32,7 +35,9 @@ import {
 } from '@/outreach-home/components/record-table/OutreachRecordTableCells';
 import { type OutreachRecordCard } from '@/outreach-home/components/record-table/OutreachRecordCardList';
 import { appendOutreachRawJsonColumns } from '@/outreach-home/components/record-table/appendOutreachRawJsonColumns';
+import { OutreachAiColumnProgressBar } from '@/outreach-home/components/OutreachAiColumnProgressBar';
 import { OutreachAiViewBar } from '@/outreach-home/components/OutreachAiViewBar';
+import { type OutreachAiColumnRunProgress } from '@/outreach-home/constants/outreach-cache-realtime.constants';
 import { useSaveOutreachTargetsToCrm } from '@/outreach-home/hooks/useSaveOutreachTargetsToCrm';
 import { useOutreachAiTableView } from '@/outreach-home/hooks/useOutreachAiTableView';
 import { type OutreachTableView } from '@/outreach-home/constants/outreach-cache-realtime.constants';
@@ -44,11 +49,13 @@ import {
 } from '@/outreach-home/components/record-table/OutreachViewBar';
 import { useOutreachTablePresentation } from '@/outreach-home/hooks/useOutreachTablePresentation';
 import { type OutreachCompanyRow } from '@/outreach-home/types/outreach-home.types';
+import { filterOutreachRows } from '@/outreach-home/utils/outreach-table-layout.util';
 import { mapCrmCompanyRecordsToOutreachCompanyRows } from '@/outreach-home/utils/map-crm-record-to-outreach-row.util';
 import {
   getFreeTextTagColor,
   getIcpFitTagColor,
 } from '@/outreach-home/utils/outreachTagColors';
+import { downloadOutreachRowsAsCsv } from '@/outreach-home/utils/download-outreach-rows-as-csv.util';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
@@ -198,7 +205,11 @@ type OutreachCompaniesPanelProps = {
   isLoading?: boolean;
   onRefresh?: () => Promise<void>;
   appendCompanies?: (companiesToAdd: OutreachCompanyRow[]) => Promise<void>;
+  softDeleteCompanies?: (companyIds: string[]) => Promise<number>;
+  undoSoftDeleteCompanies?: () => Promise<number>;
+  undoableDeletedCount?: number;
   aiTableView?: OutreachTableView | null;
+  aiColumnRun?: OutreachAiColumnRunProgress | null;
 };
 
 export const OutreachCompaniesPanel = ({
@@ -209,7 +220,11 @@ export const OutreachCompaniesPanel = ({
   isLoading = false,
   onRefresh,
   appendCompanies,
+  softDeleteCompanies,
+  undoSoftDeleteCompanies,
+  undoableDeletedCount = 0,
   aiTableView,
+  aiColumnRun,
 }: OutreachCompaniesPanelProps) => {
   const setChatSearchQuery = useSetAtomState(chatSearchQueryState);
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
@@ -297,6 +312,48 @@ export const OutreachCompaniesPanel = ({
     });
   }, [companies, searchQuery, statusFilter]);
 
+  const resultCount = useMemo(
+    () =>
+      filterOutreachRows(filteredCompanies, companyColumns, columnFilters)
+        .length,
+    [columnFilters, companyColumns, filteredCompanies],
+  );
+
+  const handleDeleteSelected = useCallback(async () => {
+    const deletedCount = await softDeleteCompanies?.(selectedCompanyIds);
+
+    setSelectedCompanyIds([]);
+    onSelectCompanyId(null);
+
+    if (!deletedCount) {
+      enqueueErrorSnackBar({
+        message: 'Only unsaved companies can be deleted here',
+      });
+
+      return;
+    }
+
+    enqueueSuccessSnackBar({
+      message: `Deleted ${deletedCount} ${deletedCount === 1 ? 'company' : 'companies'}. Undo is available for 5 minutes.`,
+    });
+  }, [
+    enqueueErrorSnackBar,
+    enqueueSuccessSnackBar,
+    onSelectCompanyId,
+    selectedCompanyIds,
+    softDeleteCompanies,
+  ]);
+
+  const handleUndoDelete = useCallback(async () => {
+    const restoredCount = await undoSoftDeleteCompanies?.();
+
+    if (restoredCount) {
+      enqueueSuccessSnackBar({
+        message: `Restored ${restoredCount} ${restoredCount === 1 ? 'company' : 'companies'}`,
+      });
+    }
+  }, [enqueueSuccessSnackBar, undoSoftDeleteCompanies]);
+
   // Clicking a company scopes the People tab to it; clicking again clears it
   const handleRowClick = useCallback(
     (company: OutreachCompanyRow) => {
@@ -378,8 +435,39 @@ export const OutreachCompaniesPanel = ({
     </>
   );
 
+  const handleDownloadCsv = () => {
+    downloadOutreachRowsAsCsv({
+      rows: filteredCompanies,
+      columns: companyColumns,
+      columnLayout,
+      columnFilters,
+      fileName: `outreach-companies-${new Date().toISOString().slice(0, 10)}.csv`,
+    });
+  };
+
   const actions = (
     <>
+      <OutreachViewBarIconAction
+        title={
+          selectedCompanyIds.length > 0
+            ? `Delete selected (${selectedCompanyIds.length})`
+            : 'Select companies to delete'
+        }
+        Icon={IconTrash}
+        disabled={selectedCompanyIds.length === 0}
+        onClick={() => {
+          void handleDeleteSelected();
+        }}
+      />
+      {undoableDeletedCount > 0 && (
+        <OutreachViewBarIconAction
+          title={`Undo delete (${undoableDeletedCount})`}
+          Icon={IconArrowBackUp}
+          onClick={() => {
+            void handleUndoDelete();
+          }}
+        />
+      )}
       {hasActiveFilter && (
         <OutreachViewBarIconAction
           title="Clear filters and selection"
@@ -394,6 +482,12 @@ export const OutreachCompaniesPanel = ({
         onClick={() => {
           void handleRefresh();
         }}
+      />
+      <OutreachViewBarIconAction
+        title="Download CSV (opens in Excel)"
+        Icon={IconDownload}
+        disabled={filteredCompanies.length === 0}
+        onClick={handleDownloadCsv}
       />
       <OutreachViewBarIconAction
         title="Import companies"
@@ -426,7 +520,11 @@ export const OutreachCompaniesPanel = ({
         searchValue={searchQuery}
         searchPlaceholder="Search companies"
         onSearchChange={setSearchQuery}
+        resultCount={resultCount}
         actions={actions}
+      />
+      <OutreachAiColumnProgressBar
+        run={aiColumnRun?.subject === 'company' ? aiColumnRun : null}
       />
       <OutreachAiViewBar
         view={activeView}

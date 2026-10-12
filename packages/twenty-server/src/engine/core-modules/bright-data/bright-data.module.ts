@@ -1,9 +1,22 @@
 import { Module, forwardRef } from '@nestjs/common';
 
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
+import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
+import { OutreachListController } from 'src/engine/core-modules/bright-data/controllers/outreach-list.controller';
 import { BrightDataBusinessSearchController } from 'src/engine/core-modules/bright-data/controllers/bright-data-business-search.controller';
 import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
+import { BrightDataBillingService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-billing.service';
+import { BrightDataLudicrousDatasetStoreService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-dataset-store.service';
+import { BrightDataLudicrousExecutorService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-executor.service';
+import { BrightDataLudicrousPlannerService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-planner.service';
+import { BrightDataLudicrousPlanStoreService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-plan-store.service';
+import { BrightDataLudicrousRelevanceJudgeService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-relevance-judge.service';
+import { BrightDataLudicrousSearchService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-search.service';
+import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+import { AiBillingModule } from 'src/engine/metadata-modules/ai/ai-billing/ai-billing.module';
+import { AiModelsModule } from 'src/engine/metadata-modules/ai/ai-models/ai-models.module';
+import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 
 import { BrightDataGoogleMapsPlacesService } from './services/bright-data-google-maps-places.service';
@@ -17,6 +30,12 @@ import { BrightDataUnlockerService } from './services/bright-data-unlocker.servi
   imports: [
     AuthModule,
     WorkspaceCacheStorageModule,
+    BillingModule,
+    AiBillingModule,
+    AiModelsModule,
+    WorkspaceCacheModule,
+    // Provides AiFilterEngineService, the Jev judge used for relevance scoring
+    forwardRef(() => CandidateSourcingModule),
     forwardRef(() => {
       // ToolModule → OrgChart → TheOfficialBoard reads BrightDataModule while
       // this file is still initializing. Lazy require waits until the class exists.
@@ -24,7 +43,7 @@ import { BrightDataUnlockerService } from './services/bright-data-unlocker.servi
       return require('../tool/tool.module').ToolModule;
     }),
   ],
-  controllers: [BrightDataBusinessSearchController],
+  controllers: [BrightDataBusinessSearchController, OutreachListController],
   providers: [
     JwtAuthGuard,
     BrightDataResidentialProxyService,
@@ -34,6 +53,13 @@ import { BrightDataUnlockerService } from './services/bright-data-unlocker.servi
     BrightDataLinkedinProfileScrapeService,
     BrightDataGoogleMapsPlacesService,
     BrightDataBusinessSearchService,
+    BrightDataBillingService,
+    BrightDataLudicrousPlanStoreService,
+    BrightDataLudicrousDatasetStoreService,
+    BrightDataLudicrousRelevanceJudgeService,
+    BrightDataLudicrousPlannerService,
+    BrightDataLudicrousExecutorService,
+    BrightDataLudicrousSearchService,
   ],
   exports: [
     BrightDataResidentialProxyService,
@@ -43,6 +69,9 @@ import { BrightDataUnlockerService } from './services/bright-data-unlocker.servi
     BrightDataLinkedinProfileScrapeService,
     BrightDataGoogleMapsPlacesService,
     BrightDataBusinessSearchService,
+    BrightDataBillingService,
+    BrightDataLudicrousRelevanceJudgeService,
+    BrightDataLudicrousSearchService,
   ],
 })
 export class BrightDataModule {}

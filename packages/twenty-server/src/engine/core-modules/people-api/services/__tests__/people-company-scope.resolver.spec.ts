@@ -1,4 +1,4 @@
-import type { SerpCompanySearchService } from 'src/engine/core-modules/linkedin-company-search/services/linkedin-company-search.service';
+import type { SerpCompanySearchService } from 'src/engine/core-modules/serp-company-search/services/serp-company-search.service';
 import type { CompaniesEsService } from 'src/engine/core-modules/org-chart/services/companies-es.service';
 import type { OrgChartService } from 'src/engine/core-modules/org-chart/services/org-chart.service';
 

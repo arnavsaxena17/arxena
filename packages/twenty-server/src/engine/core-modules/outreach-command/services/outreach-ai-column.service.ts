@@ -5,6 +5,10 @@ import { randomUUID } from 'crypto';
 
 import { isDefined } from 'twenty-shared/utils';
 
+import {
+  labelWebSearchEngine,
+  type WebSearchProviderId,
+} from 'src/engine/core-modules/arx-web-search/utils/web-search-provider-chain.util';
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
@@ -50,10 +54,18 @@ export type OutreachAiColumnRowResult = {
 };
 
 export type OutreachAiColumnUsage = {
-  engine: 'jev' | 'openai' | 'openai-web-search';
+  engine:
+    | 'jev'
+    | 'openai'
+    | 'openai-web-search'
+    | 'perplexity-search'
+    | 'bright-data-serp'
+    | 'mixed-web-search';
   model: string;
   calls: number;
   webSearchCalls: number;
+  // Web lookups answered per provider, when the column used web search
+  webSearchProviders?: Partial<Record<WebSearchProviderId, number>>;
   inputTokens: number;
   outputTokens: number;
   // Estimated from list prices; jev is billed by the gateway and reports none.
@@ -103,6 +115,158 @@ export const toRecordForModel = (
   size: row.employees,
   ...row.otherFields,
 });
+
+// Keys that carry bookkeeping rather than facts about the row.
+const NON_RECORD_KEYS = new Set(['id', 'people', 'aiColumns', 'title']);
+
+// The model reads the whole record: every field the row has (core fields, the
+// source data such as about and specialties, and answers of earlier columns),
+// not only the few the column design picked. Order is stable: the chosen fields
+// first, then the rest as they appear.
+export const wholeRecordFields = ({
+  records,
+  preferredFields,
+  excludedFields,
+}: {
+  records: Array<Record<string, unknown>>;
+  preferredFields: string[];
+  excludedFields: string[];
+}): string[] => {
+  const excluded = new Set(excludedFields);
+  const fields = new Set<string>(preferredFields);
+
+  for (const record of records) {
+    for (const [key, value] of Object.entries(record)) {
+      if (
+        NON_RECORD_KEYS.has(key) ||
+        excluded.has(key) ||
+        value === undefined ||
+        value === null ||
+        `${value}`.trim() === ''
+      ) {
+        continue;
+      }
+
+      fields.add(key);
+    }
+  }
+
+  return [...fields].filter((field) => !excluded.has(field));
+};
+
+// AI columns already on the rows: key, label, type, enum values and how many
+// rows hold an answer.
+export type ExistingAiColumn = {
+  key: string;
+  label: string;
+  type: string;
+  enumValues?: string[];
+  filled: number;
+};
+
+export const readExistingAiColumns = (
+  rows: OutreachWorkingSetRow[],
+): ExistingAiColumn[] => {
+  const columns = new Map<string, ExistingAiColumn>();
+
+  for (const row of rows) {
+    const meta = row.otherFields.aiColumns;
+
+    if (typeof meta !== 'object' || meta === null) {
+      continue;
+    }
+
+    for (const [key, entry] of Object.entries(
+      meta as Record<string, unknown>,
+    )) {
+      if (typeof entry !== 'object' || entry === null) {
+        continue;
+      }
+
+      const record = entry as Record<string, unknown>;
+      const existing = columns.get(key) ?? {
+        key,
+        label: typeof record.label === 'string' ? record.label : key,
+        type: typeof record.type === 'string' ? record.type : 'text',
+        ...(Array.isArray(record.enumValues)
+          ? { enumValues: record.enumValues.map(String) }
+          : {}),
+        filled: 0,
+      };
+      const value = row.otherFields[key];
+
+      if (value !== undefined && value !== null && `${value}`.trim() !== '') {
+        existing.filled += 1;
+      }
+
+      columns.set(key, existing);
+    }
+  }
+
+  return [...columns.values()];
+};
+
+const KEY_STOP_TOKENS = new Set([
+  'is',
+  'in',
+  'of',
+  'the',
+  'has',
+  'runs',
+  'count',
+  'number',
+  'total',
+  'usd',
+  'inr',
+  'crore',
+  'india',
+  'source',
+]);
+
+const keyTokens = (key: string): string[] =>
+  key
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .map((token) => token.replace(/s$/, ''))
+    .filter((token) => token.length > 0 && !KEY_STOP_TOKENS.has(token));
+
+const tokensOverlap = (a: string, b: string): boolean =>
+  a === b ||
+  (Math.min(a.length, b.length) >= 3 && (a.startsWith(b) || b.startsWith(a)));
+
+// A new field that shares a meaningful word with an existing column probably
+// repeats it (storeCount vs physicalStoresCount, brandCategory vs brandCat).
+export const findLookAlikeColumns = (
+  newKeys: string[],
+  existingColumns: ExistingAiColumn[],
+): string[] => {
+  const existingKeys = new Set(existingColumns.map((column) => column.key));
+
+  return newKeys
+    .filter((key) => !existingKeys.has(key))
+    .flatMap((key) => {
+      const tokens = keyTokens(key);
+      const similar = existingColumns.filter((column) =>
+        keyTokens(column.key).some((existingToken) =>
+          tokens.some((token) => tokensOverlap(token, existingToken)),
+        ),
+      );
+
+      return similar.length === 0
+        ? []
+        : [
+            `New field "${key}" looks like the existing column ${similar
+              .map(
+                (column) =>
+                  `"${column.key}" (${column.label}, ${column.filled} rows filled)`,
+              )
+              .join(
+                ', ',
+              )}. Reuse the existing column key if it is the same fact (call preview_ai_column again with a description that says to fill or update that column); keep a new column only if it is a genuinely different fact.`,
+          ];
+    });
+};
 
 // Web answers come back with markdown links and tracking parameters.
 const cleanText = (value: string): string =>
@@ -196,22 +360,40 @@ export class OutreachAiColumnService {
     description,
     subject,
     workspaceId,
+    existingColumns = [],
   }: {
     description: string;
     subject: OutreachWorkingSetSubject;
     workspaceId: string;
+    existingColumns?: ExistingAiColumn[];
   }): Promise<OutreachAiColumnFilter> {
     const design = await this.filterDescriptionProcessorService.designColumn({
       description,
       subject,
       workspaceId,
+      existingColumns,
     });
-    const fields: OutreachAiColumnField[] = design.fields.map((field) => ({
-      name: field.name,
-      type: field.type,
-      description: field.description,
-      ...(field.type === 'enum' ? { enumValues: field.enumValues } : {}),
-    }));
+    const existingByKey = new Map(
+      existingColumns.map((column) => [column.key, column]),
+    );
+    // A field that reuses an existing key keeps that column's type and enum
+    // values, so the run fills the same column instead of changing it.
+    const fields: OutreachAiColumnField[] = design.fields.map((field) => {
+      const existing = existingByKey.get(field.name);
+      const type =
+        (existing?.type as typeof field.type | undefined) ?? field.type;
+      const enumValues =
+        type === 'enum'
+          ? (existing?.enumValues ?? field.enumValues)
+          : undefined;
+
+      return {
+        name: field.name,
+        type,
+        description: field.description,
+        ...(enumValues !== undefined ? { enumValues } : {}),
+      };
+    });
     const decidedFromRow = fields.every(
       (field) => field.type === 'boolean' || field.type === 'enum',
     );
@@ -254,6 +436,8 @@ export class OutreachAiColumnService {
     filter: OutreachAiColumnFilter;
     columns: Array<{ key: string; type: string; enumValues?: string[] }>;
     typeWarnings: string[];
+    reusedColumns: string[];
+    duplicateWarnings: string[];
     rows: OutreachAiColumnRowResult[];
     usage: OutreachAiColumnUsage;
     estimatedRunCostUsd: number | null;
@@ -273,7 +457,12 @@ export class OutreachAiColumnService {
     const resolvedFilter =
       filter ??
       (isDefined(description)
-        ? await this.designFilter({ description, subject, workspaceId })
+        ? await this.designFilter({
+            description,
+            subject,
+            workspaceId,
+            existingColumns: readExistingAiColumns(all),
+          })
         : undefined);
 
     if (!isDefined(resolvedFilter)) {
@@ -293,6 +482,7 @@ export class OutreachAiColumnService {
       resolvedFilter,
       workspaceId,
     );
+    const existingColumns = readExistingAiColumns(all);
     const previewId = randomUUID();
     const state: PreviewState = {
       previewId,
@@ -331,6 +521,15 @@ export class OutreachAiColumnService {
         ...(field.type === 'enum' ? { enumValues: field.enumValues } : {}),
       })),
       typeWarnings: detectTypeWarnings(resolvedFilter.fields, results),
+      reusedColumns: resolvedFilter.fields
+        .map((field) => field.name)
+        .filter((name) =>
+          existingColumns.some((column) => column.key === name),
+        ),
+      duplicateWarnings: findLookAlikeColumns(
+        resolvedFilter.fields.map((field) => field.name),
+        existingColumns,
+      ),
       rows: results,
       usage,
       estimatedRunCostUsd:
@@ -545,12 +744,20 @@ export class OutreachAiColumnService {
       fields: filter.fields,
       keepField,
       model: filter.selectedModel,
-      metadataFields: filter.selectedMetadataFields,
+      metadataFields: [],
       webSearch,
       allowUnknown: keepField === undefined,
     };
+    const records = rows.map(toRecordForModel);
+
+    spec.metadataFields = wholeRecordFields({
+      records,
+      preferredFields: filter.selectedMetadataFields,
+      excludedFields: filter.fields.map((field) => field.name),
+    });
+
     const { verdicts, stats } = await this.aiFilterEngineService.run(
-      rows.map(toRecordForModel),
+      records,
       spec,
     );
     const nameById = new Map(rows.map((row) => [row.id, row.name]));
@@ -580,11 +787,12 @@ export class OutreachAiColumnService {
       usage: {
         engine:
           webSearch && stats.engine === 'openai'
-            ? 'openai-web-search'
+            ? labelWebSearchEngine(stats.webSearchProviders)
             : stats.engine,
         model: stats.model,
         calls: stats.calls,
         webSearchCalls: stats.webSearchCalls,
+        ...(webSearch ? { webSearchProviders: stats.webSearchProviders } : {}),
         inputTokens: stats.inputTokens,
         outputTokens: stats.outputTokens,
         estimatedCostUsd: stats.estimatedCostUsd,

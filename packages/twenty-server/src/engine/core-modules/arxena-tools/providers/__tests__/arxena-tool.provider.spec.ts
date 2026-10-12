@@ -21,7 +21,22 @@ const buildProvider = () => {
     generateAccessToken: jest.fn().mockResolvedValue({ token: 'user-token' }),
   };
   const apiKeyService = {
-    generateApiKeyToken: jest.fn().mockResolvedValue({ token: 'api-key-token' }),
+    generateApiKeyToken: jest
+      .fn()
+      .mockResolvedValue({ token: 'api-key-token' }),
+  };
+
+  const outreachListService = {
+    ingest: jest
+      .fn()
+      .mockImplementation(async ({ listId, name, entity, rows }) => ({
+        listId,
+        name,
+        entity,
+        added: rows.length,
+        duplicates: 0,
+        total: rows.length,
+      })),
   };
 
   const provider = new ArxenaToolProvider(
@@ -29,9 +44,16 @@ const buildProvider = () => {
     twentyConfigService as never,
     accessTokenService as never,
     apiKeyService as never,
+    outreachListService as never,
   );
 
-  return { provider, arxenaMcpBridgeService, accessTokenService, apiKeyService };
+  return {
+    provider,
+    outreachListService,
+    arxenaMcpBridgeService,
+    accessTokenService,
+    apiKeyService,
+  };
 };
 
 const apiKeyContext = {
@@ -76,11 +98,10 @@ describe('ArxenaToolProvider token resolution', () => {
   it('should use a user access token for user sessions', async () => {
     const { provider, accessTokenService, apiKeyService } = buildProvider();
 
-    await provider.executeStaticTool(
-      'linkedin_unipile_get_own_profile',
-      {},
-      { workspaceId: 'workspace-id', userId: 'user-id' } as ToolProviderContext,
-    );
+    await provider.executeStaticTool('linkedin_unipile_get_own_profile', {}, {
+      workspaceId: 'workspace-id',
+      userId: 'user-id',
+    } as ToolProviderContext);
 
     expect(accessTokenService.generateAccessToken).toHaveBeenCalled();
     expect(apiKeyService.generateApiKeyToken).not.toHaveBeenCalled();
@@ -142,5 +163,104 @@ describe('ArxenaToolProvider token resolution', () => {
       'linkedin_unipile_get_own_profile',
       {},
     );
+  });
+});
+
+describe('ArxenaToolProvider list routing', () => {
+  const linkedinItems = Array.from({ length: 5 }, (_, index) => ({
+    id: `member-${index}`,
+    name: `Person ${index}`,
+    headline: `CEO at Company ${index}`,
+    location: 'Mumbai',
+    public_profile_url: `https://www.linkedin.com/in/person-${index}`,
+    current_positions: [{ role: 'CEO', company: `Company ${index}` }],
+  }));
+
+  it('should return only a list id and counts for LinkedIn people results', async () => {
+    const { provider, arxenaMcpBridgeService, outreachListService } =
+      buildProvider();
+
+    arxenaMcpBridgeService.callTool.mockResolvedValueOnce({
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            items: linkedinItems,
+            cursor: 'full-cursor',
+            paging: { total_count: 1805 },
+            config: { params: { category: 'people', keywords: 'ceo' } },
+          }),
+        },
+      ],
+    });
+
+    const output = await provider.executeStaticTool(
+      'search_linkedin_people',
+      { searchType: 'classic' },
+      apiKeyContext,
+    );
+    const result = output.result as Record<string, unknown>;
+
+    expect(outreachListService.ingest).toHaveBeenCalledTimes(1);
+    expect(result.total).toBe(5);
+    expect(result.cursor).toBe('full-cursor');
+    expect(JSON.stringify(output)).not.toContain('Person 1');
+    expect(JSON.stringify(output).length).toBeLessThan(1500);
+  });
+
+  it('should keep every page of one search in the same list', async () => {
+    const { provider, arxenaMcpBridgeService, outreachListService } =
+      buildProvider();
+    const page = (cursor: string) => ({
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            items: linkedinItems,
+            cursor,
+            config: { params: { category: 'people', keywords: 'ceo' } },
+          }),
+        },
+      ],
+    });
+
+    arxenaMcpBridgeService.callTool
+      .mockResolvedValueOnce(page('a'))
+      .mockResolvedValueOnce(page('b'));
+
+    await provider.executeStaticTool(
+      'search_linkedin_people',
+      {},
+      apiKeyContext,
+    );
+    await provider.executeStaticTool(
+      'search_linkedin_continue',
+      { cursor: 'a' },
+      apiKeyContext,
+    );
+
+    const [first, second] = outreachListService.ingest.mock.calls;
+
+    expect(first[0].listId).toBe(second[0].listId);
+  });
+
+  it('should leave output untouched for tools that are not list sources', async () => {
+    const { provider, arxenaMcpBridgeService, outreachListService } =
+      buildProvider();
+
+    arxenaMcpBridgeService.callTool.mockResolvedValueOnce({
+      content: [
+        { type: 'text', text: JSON.stringify({ items: linkedinItems }) },
+      ],
+    });
+
+    const output = await provider.executeStaticTool(
+      'linkedin_unipile_get_own_profile',
+      {},
+      apiKeyContext,
+    );
+
+    expect(outreachListService.ingest).not.toHaveBeenCalled();
+    expect(JSON.stringify(output)).toContain('Person 1');
   });
 });

@@ -11,8 +11,8 @@ describe('SearchCompaniesService', () => {
     resolveDefaultWorkspaceAccount: jest.fn(),
   };
   const globalWorkspaceOrmManager = {
-    executeInWorkspaceContext: jest.fn(async (callback: () => Promise<unknown>) =>
-      callback(),
+    executeInWorkspaceContext: jest.fn(
+      async (callback: () => Promise<unknown>) => callback(),
     ),
     getRepository: jest.fn(),
   };
@@ -158,9 +158,8 @@ describe('SearchCompaniesService', () => {
   });
 
   it('rethrows LinkedIn account rate limit errors', async () => {
-    const { AccountRateLimitDeferredError } = await import(
-      'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error'
-    );
+    const { AccountRateLimitDeferredError } =
+      await import('src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error');
 
     gtmWorkspaceAuthTokenService.resolveOrMint.mockResolvedValue('tok');
     unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(

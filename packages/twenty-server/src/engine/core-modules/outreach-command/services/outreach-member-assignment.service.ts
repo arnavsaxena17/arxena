@@ -109,9 +109,8 @@ export class OutreachMemberAssignmentService {
 
     return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
       async () => {
-        const candidateRepository = await this.getCandidateRepository(
-          workspaceId,
-        );
+        const candidateRepository =
+          await this.getCandidateRepository(workspaceId);
         const candidate = await candidateRepository.findOne({
           where: { id: candidateId },
         });
@@ -188,8 +187,7 @@ export class OutreachMemberAssignmentService {
 
           return {
             success: true,
-            workspaceMemberId:
-              winner?.outreachWorkspaceMemberId ?? memberId,
+            workspaceMemberId: winner?.outreachWorkspaceMemberId ?? memberId,
             reason: winner?.outreachAssignmentReason ?? reason,
             alreadyPinned: true,
           };
@@ -249,34 +247,39 @@ export class OutreachMemberAssignmentService {
     mode: OutreachSplitMode;
     assignedById?: string | null;
     force?: boolean;
-  }): Promise<OutreachAssignResult & { plan: Array<{ candidateId: string; memberId: string }> }> {
+  }): Promise<
+    OutreachAssignResult & {
+      plan: Array<{ candidateId: string; memberId: string }>;
+    }
+  > {
     const authContext = buildSystemAuthContext(workspaceId);
 
-    const planInputs = await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
-      async () => {
-        const project = await this.loadProject(workspaceId, projectId);
-        const config = readOutreachMemberAssignmentConfig(
-          project?.outreachConfig,
-        );
-        const members = await this.loadMembers(workspaceId);
-        const requested = (memberIds ?? []).filter(isNonEmptyString);
-        const eligible =
-          requested.length > 0
-            ? requested
-            : await this.resolveEligibleMembers({
-                workspaceId,
-                members,
-                config,
-              });
-        const loadByMemberId = await this.loadActiveCandidateCounts({
-          workspaceId,
-          projectId,
-        });
+    const planInputs =
+      await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+        async () => {
+          const project = await this.loadProject(workspaceId, projectId);
+          const config = readOutreachMemberAssignmentConfig(
+            project?.outreachConfig,
+          );
+          const members = await this.loadMembers(workspaceId);
+          const requested = (memberIds ?? []).filter(isNonEmptyString);
+          const eligible =
+            requested.length > 0
+              ? requested
+              : await this.resolveEligibleMembers({
+                  workspaceId,
+                  members,
+                  config,
+                });
+          const loadByMemberId = await this.loadActiveCandidateCounts({
+            workspaceId,
+            projectId,
+          });
 
-        return { eligible, weights: config.weights, loadByMemberId };
-      },
-      authContext,
-    );
+          return { eligible, weights: config.weights, loadByMemberId };
+        },
+        authContext,
+      );
 
     const plan = buildOutreachSplitPlan({
       candidateIds,
@@ -329,28 +332,26 @@ export class OutreachMemberAssignmentService {
     assignedById?: string | null;
   }): Promise<OutreachAssignResult> {
     const authContext = buildSystemAuthContext(workspaceId);
-    const assignments = await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
-      async () => {
-        const candidateRepository = await this.getCandidateRepository(
-          workspaceId,
-        );
-        const candidates = await candidateRepository.find({
-          where: { id: In(candidateIds) },
-        });
+    const assignments =
+      await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+        async () => {
+          const candidateRepository =
+            await this.getCandidateRepository(workspaceId);
+          const candidates = await candidateRepository.find({
+            where: { id: In(candidateIds) },
+          });
 
-        return candidates
-          .filter((candidate) =>
-            isNonEmptyString(
-              candidate.outreachSuggestedMemberId,
-            ),
-          )
-          .map((candidate) => ({
-            candidateId: candidate.id,
-            memberId: candidate.outreachSuggestedMemberId as string,
-          }));
-      },
-      authContext,
-    );
+          return candidates
+            .filter((candidate) =>
+              isNonEmptyString(candidate.outreachSuggestedMemberId),
+            )
+            .map((candidate) => ({
+              candidateId: candidate.id,
+              memberId: candidate.outreachSuggestedMemberId as string,
+            }));
+        },
+        authContext,
+      );
 
     return this.writeAssignments({
       workspaceId,
@@ -447,7 +448,9 @@ export class OutreachMemberAssignmentService {
           order: { createdAt: 'DESC' } as never,
           take: 10,
         } as never);
-        const hasSelectStep = (version: { steps?: Array<{ id?: string }> | null }) =>
+        const hasSelectStep = (version: {
+          steps?: Array<{ id?: string }> | null;
+        }) =>
           (version.steps ?? []).some(
             (step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.selectMember,
           );
@@ -484,15 +487,18 @@ export class OutreachMemberAssignmentService {
     return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
       async () => {
         try {
-          const candidateRepository = await this.getCandidateRepository(
-            workspaceId,
-          );
+          const candidateRepository =
+            await this.getCandidateRepository(workspaceId);
           const candidates = await candidateRepository.find({
             where: { projectId },
           });
           const owners: Record<
             string,
-            { memberId: string; reason: string; suggestedMemberId: string | null }
+            {
+              memberId: string;
+              reason: string;
+              suggestedMemberId: string | null;
+            }
           > = {};
 
           for (const candidate of candidates) {
@@ -711,9 +717,8 @@ export class OutreachMemberAssignmentService {
 
     return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
       async () => {
-        const candidateRepository = await this.getCandidateRepository(
-          workspaceId,
-        );
+        const candidateRepository =
+          await this.getCandidateRepository(workspaceId);
         const candidates = await candidateRepository.find({
           where: { id: In(assignments.map((entry) => entry.candidateId)) },
         });

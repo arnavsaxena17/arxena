@@ -26,7 +26,9 @@ describe('BrightDataSerpService', () => {
       ok: true,
       text: async () =>
         JSON.stringify({
-          organic: [{ link: 'https://theorg.com/org/acme-corp', global_rank: 1 }],
+          organic: [
+            { link: 'https://theorg.com/org/acme-corp', global_rank: 1 },
+          ],
         }),
     }) as unknown as typeof fetch;
 

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { OUTREACH_LIST_MAX_ROWS } from 'src/engine/core-modules/outreach-list/outreach-list.constants';
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
@@ -8,7 +9,7 @@ import { OutreachCacheRealtimeService } from 'src/engine/core-modules/outreach-c
 // CacheStorageService takes milliseconds: this was passed as seconds, so the
 // list expired after about two hours instead of three months.
 const OUTREACH_COMPANIES_CACHE_TTL_MS = 3 * 30 * 24 * 60 * 60 * 1000; // 3 months
-const MAX_COMPANIES_PER_PROJECT = 500;
+const MAX_COMPANIES_PER_PROJECT = OUTREACH_LIST_MAX_ROWS;
 
 export type OutreachEphemeralCompany = {
   id: string;

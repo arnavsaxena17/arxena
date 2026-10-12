@@ -1,3 +1,4 @@
+import { ArxWebSearchModule } from 'src/engine/core-modules/arx-web-search/arx-web-search.module';
 import { AccountRateLimitModule } from 'src/engine/core-modules/account-rate-limit/account-rate-limit.module';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
@@ -130,6 +131,7 @@ const conditionalImports = isWorker
 @Module({
   imports: [
     MeteredLlmModule,
+    forwardRef(() => ArxWebSearchModule),
     AccountRateLimitModule,
     WorkspaceCacheStorageModule,
     EmailModule,

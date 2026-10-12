@@ -1433,6 +1433,16 @@
         "contextWindowTokens": 1048576,
         "maxOutputTokens": 262144,
         "supportsReasoning": true
+      },
+      {
+        "name": "deepseek/deepseek-v4.1-flash",
+        "label": "DeepSeek V4.1 Flash",
+        "inputCostPerMillionTokens": 0.15,
+        "outputCostPerMillionTokens": 0.6,
+        "cachedInputCostPerMillionTokens": 0.003,
+        "contextWindowTokens": 1048576,
+        "maxOutputTokens": 393216,
+        "supportsReasoning": true
       }
     ]
   },

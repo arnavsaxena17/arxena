@@ -15,6 +15,8 @@ export const ACTION_TOOL_IDS = [
   'highlight_org_chart',
   'upsert_outreach_target_companies',
   'upsert_outreach_target_people',
+  'inspect_outreach_spreadsheet',
+  'import_outreach_spreadsheet',
   'save_outreach_targets_to_crm',
   'start_outreach',
   'get_outreach_working_set',
@@ -62,6 +64,12 @@ export const ACTION_TOOL_LABELS: Record<ActionToolId, ActionToolLabel> = {
   },
   upsert_outreach_target_people: {
     label: i18nLabel(msg`Upsert GTM Target People`),
+  },
+  inspect_outreach_spreadsheet: {
+    label: i18nLabel(msg`Inspect Outreach Spreadsheet`),
+  },
+  import_outreach_spreadsheet: {
+    label: i18nLabel(msg`Import Outreach Spreadsheet`),
   },
   save_outreach_targets_to_crm: {
     label: i18nLabel(msg`Save Outreach Targets to CRM`),

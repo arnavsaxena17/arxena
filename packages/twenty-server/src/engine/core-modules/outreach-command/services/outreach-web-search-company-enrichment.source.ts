@@ -1,14 +1,19 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
-
 import {
-  Output,
-  stepCountIs,
-} from 'ai';
+  Inject,
+  Injectable,
+  Logger,
+  Optional,
+  forwardRef,
+} from '@nestjs/common';
+
+import { Output, stepCountIs } from 'ai';
 import { isDefined } from 'twenty-shared/utils';
 
+import { ArxWebSearchService } from 'src/engine/core-modules/arx-web-search/arx-web-search.service';
 import { OUTREACH_COMPANY_ENRICHMENT_LLM_MODEL_ID } from 'src/engine/core-modules/outreach-command/constants/outreach-company-enrichment-model.const';
 import {
   buildOutreachWebSearchCompanyUserPrompt,
+  OUTREACH_WEB_SEARCH_COMPANY_EVIDENCE_SYSTEM_PROMPT,
   OUTREACH_WEB_SEARCH_COMPANY_SYSTEM_PROMPT,
 } from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
 import {
@@ -66,9 +71,7 @@ const toWebSearchSnapshot = (
 
 // Fetches company website / public web content via a model native web_search tool
 @Injectable()
-export class OutreachWebSearchCompanyEnrichmentSource
-  implements OutreachCompanyEnrichmentSource
-{
+export class OutreachWebSearchCompanyEnrichmentSource implements OutreachCompanyEnrichmentSource {
   readonly sourceId = 'web_search' as const;
   private readonly logger = new Logger(
     OutreachWebSearchCompanyEnrichmentSource.name,
@@ -81,6 +84,10 @@ export class OutreachWebSearchCompanyEnrichmentSource
     private readonly nativeToolBinderService?: NativeToolBinderService,
     @Optional()
     private readonly aiSdkExecutionService?: AiSdkExecutionService,
+    // Perplexity-backed search; the model-native web_search tool is the fallback
+    @Optional()
+    @Inject(forwardRef(() => ArxWebSearchService))
+    private readonly arxWebSearchService?: ArxWebSearchService,
   ) {}
 
   async enrich(
@@ -111,13 +118,25 @@ export class OutreachWebSearchCompanyEnrichmentSource
     const canUseNativeWebSearch = isDefined(tools.web_search);
 
     try {
-      const object = canUseNativeWebSearch
-        ? await this.generateWithNativeWebSearch(
+      const evidenceText = await this.fetchSearchEvidence(input);
+      let object = isDefined(evidenceText)
+        ? await this.generateWithoutNativeWebSearch(
             registeredModel,
-            tools,
             input,
+            evidenceText,
           )
-        : await this.generateWithoutNativeWebSearch(registeredModel, input);
+        : undefined;
+
+      // No Perplexity evidence, or it held no company: use the native tool
+      if (!isDefined(object) || !hasText(object.companyName)) {
+        object = canUseNativeWebSearch
+          ? await this.generateWithNativeWebSearch(
+              registeredModel,
+              tools,
+              input,
+            )
+          : await this.generateWithoutNativeWebSearch(registeredModel, input);
+      }
 
       if (!isDefined(object) || !hasText(object.companyName)) {
         return null;
@@ -126,7 +145,7 @@ export class OutreachWebSearchCompanyEnrichmentSource
       const webSearchCompany = toWebSearchSnapshot(object, input.domain);
 
       this.logger.log(
-        `Web search company enrich domain=${input.domain} model=${registeredModel.modelId} name="${webSearchCompany.companyName}" sources=${webSearchCompany.sourceUrls.length} nativeWebSearch=${canUseNativeWebSearch}`,
+        `Web search company enrich domain=${input.domain} model=${registeredModel.modelId} name="${webSearchCompany.companyName}" sources=${webSearchCompany.sourceUrls.length} nativeWebSearch=${canUseNativeWebSearch} perplexityEvidence=${isDefined(evidenceText)}`,
       );
 
       return {
@@ -172,9 +191,28 @@ export class OutreachWebSearchCompanyEnrichmentSource
     return result.output;
   }
 
+  private async fetchSearchEvidence(
+    input: OutreachCompanyEnrichmentSourceInput,
+  ): Promise<string | undefined> {
+    if (!this.arxWebSearchService?.isAvailable()) {
+      return undefined;
+    }
+
+    const evidence = await this.arxWebSearchService.search(
+      [
+        input.hints?.companyName?.trim() || input.domain.trim(),
+        input.domain.trim(),
+        'company overview products headquarters employees',
+      ].join(' '),
+    );
+
+    return evidence?.text;
+  }
+
   private async generateWithoutNativeWebSearch(
     registeredModel: RegisteredAiModel,
     input: OutreachCompanyEnrichmentSourceInput,
+    evidenceText?: string,
   ): Promise<OutreachWebSearchCompanyLlmResult | undefined> {
     const generationResult = await runGenerateObject(
       this.aiSdkExecutionService,
@@ -184,12 +222,18 @@ export class OutreachWebSearchCompanyEnrichmentSource
         options: {
           model: registeredModel.model,
           schema: gtmWebSearchCompanyLlmResultSchema,
-          system: OUTREACH_WEB_SEARCH_COMPANY_SYSTEM_PROMPT,
-          prompt: buildOutreachWebSearchCompanyUserPrompt({
-            domain: input.domain,
-            workspaceDisplayName: input.workspaceDisplayName,
-            companyNameHint: input.hints?.companyName,
-          }),
+          system: isDefined(evidenceText)
+            ? OUTREACH_WEB_SEARCH_COMPANY_EVIDENCE_SYSTEM_PROMPT
+            : OUTREACH_WEB_SEARCH_COMPANY_SYSTEM_PROMPT,
+          prompt: [
+            buildOutreachWebSearchCompanyUserPrompt({
+              domain: input.domain,
+              workspaceDisplayName: input.workspaceDisplayName,
+              companyNameHint: input.hints?.companyName,
+              searchResultsProvided: isDefined(evidenceText),
+            }),
+            ...(isDefined(evidenceText) ? [`\n${evidenceText}`] : []),
+          ].join('\n'),
           experimental_telemetry: AI_TELEMETRY_CONFIG,
         },
       },

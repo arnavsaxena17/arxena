@@ -24,6 +24,7 @@ describe('outreach skills', () => {
       'resolve-company-name',
       'search',
       'setup',
+      'spreadsheet-import',
     ]);
   });
 

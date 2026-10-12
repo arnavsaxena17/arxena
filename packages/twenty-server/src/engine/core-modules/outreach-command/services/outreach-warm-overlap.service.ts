@@ -54,49 +54,49 @@ export class OutreachWarmOverlapService {
     recruiterId: string | null;
   }): Promise<WarmOverlapResult | null> {
     const authContext = buildSystemAuthContext(workspaceId);
-    const context = await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
-      async () => {
-        const candidateRepository =
-          await this.globalWorkspaceOrmManager.getRepository<
-            { id: string; peopleId?: string | null }
-          >(workspaceId, 'candidate', { shouldBypassPermissionChecks: true });
-        const candidate = await candidateRepository.findOne({
-          where: { id: candidateId },
-        });
-        const personRepository =
-          await this.globalWorkspaceOrmManager.getRepository<
-            {
+    const context =
+      await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+        async () => {
+          const candidateRepository =
+            await this.globalWorkspaceOrmManager.getRepository<{
+              id: string;
+              peopleId?: string | null;
+            }>(workspaceId, 'candidate', {
+              shouldBypassPermissionChecks: true,
+            });
+          const candidate = await candidateRepository.findOne({
+            where: { id: candidateId },
+          });
+          const personRepository =
+            await this.globalWorkspaceOrmManager.getRepository<{
               id: string;
               linkedinProfileId?: string | null;
               linkedinLink?: { primaryLinkUrl?: string | null } | null;
-            }
-          >(workspaceId, 'person', { shouldBypassPermissionChecks: true });
-        const person = isNonEmptyString(candidate?.peopleId)
-          ? await personRepository.findOne({
-              where: { id: candidate.peopleId },
-            })
-          : null;
-        const identifier =
-          extractLinkedinProfileId(person?.linkedinProfileId) ||
-          extractLinkedinProfileId(person?.linkedinLink?.primaryLinkUrl);
-        const memberRepository =
-          await this.globalWorkspaceOrmManager.getRepository<
-            {
+            }>(workspaceId, 'person', { shouldBypassPermissionChecks: true });
+          const person = isNonEmptyString(candidate?.peopleId)
+            ? await personRepository.findOne({
+                where: { id: candidate.peopleId },
+              })
+            : null;
+          const identifier =
+            extractLinkedinProfileId(person?.linkedinProfileId) ||
+            extractLinkedinProfileId(person?.linkedinLink?.primaryLinkUrl);
+          const memberRepository =
+            await this.globalWorkspaceOrmManager.getRepository<{
               id: string;
               linkedinUnipileAccountId?: string | null;
               linkedinProfile?: Record<string, unknown> | null;
-            }
-          >(workspaceId, 'workspaceMember', {
-            shouldBypassPermissionChecks: true,
-          });
-        const members = (await memberRepository.find({})).filter((member) =>
-          memberIds.includes(member.id),
-        );
+            }>(workspaceId, 'workspaceMember', {
+              shouldBypassPermissionChecks: true,
+            });
+          const members = (await memberRepository.find({})).filter((member) =>
+            memberIds.includes(member.id),
+          );
 
-        return { identifier, members };
-      },
-      authContext,
-    );
+          return { identifier, members };
+        },
+        authContext,
+      );
 
     if (!isNonEmptyString(context.identifier)) {
       return null;

@@ -76,7 +76,11 @@ export class BrightDataGoogleMapsPlacesService {
 
     const records: BrightDataGoogleMapsPlaceRecord[] = [];
 
-    for (let offset = 0; offset < normalized.length; offset += ASYNC_INPUT_LIMIT) {
+    for (
+      let offset = 0;
+      offset < normalized.length;
+      offset += ASYNC_INPUT_LIMIT
+    ) {
       const chunk = normalized.slice(offset, offset + ASYNC_INPUT_LIMIT);
 
       if (chunk.length <= SYNC_INPUT_LIMIT) {
@@ -328,7 +332,10 @@ export class BrightDataGoogleMapsPlacesService {
 
     const fromNdjson: BrightDataGoogleMapsPlaceRecord[] = [];
 
-    for (const line of trimmed.split('\n').map((row) => row.trim()).filter(Boolean)) {
+    for (const line of trimmed
+      .split('\n')
+      .map((row) => row.trim())
+      .filter(Boolean)) {
       fromNdjson.push(...tryParse(line));
     }
 

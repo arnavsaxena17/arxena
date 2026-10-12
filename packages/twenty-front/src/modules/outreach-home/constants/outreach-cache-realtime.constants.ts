@@ -10,6 +10,8 @@ export type OutreachCacheKind =
 export type OutreachAiColumnRunProgress = {
   runId: string;
   label: string;
+  // Older servers omit it: those runs were always for people.
+  subject?: 'person' | 'company';
   status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
   total: number;
   done: number;

@@ -208,8 +208,7 @@ export class EnrichContactService {
           const email = emails[0] ?? '';
           const foundEmail = emails.length > 0;
           const foundPhone = phones.length > 0;
-          const found =
-            (wantEmail && foundEmail) || (wantPhone && foundPhone);
+          const found = (wantEmail && foundEmail) || (wantPhone && foundPhone);
           const enrichStatus = found ? 'FOUND' : 'FAILED';
 
           await this.stampCandidate(

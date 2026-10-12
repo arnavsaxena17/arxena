@@ -26,6 +26,9 @@ export type { SearchToolsConfig } from 'twenty-shared/outreach';
 /** @deprecated Use SearchToolsConfig */
 export type SearchApolloToolsConfig = SearchToolsConfig;
 
+const hasConfiguredKey = (value: unknown): boolean =>
+  typeof value === 'string' && value.trim().length > 0;
+
 export const resolveSearchToolsConfig = (
   twentyConfigService: TwentyConfigService,
 ): SearchToolsConfig => ({
@@ -46,8 +49,10 @@ export const resolveSearchToolsConfig = (
     twentyConfigService.get('IS_SEARCH_COMPANIES_INDEX_ENABLED') !== false,
   isSearchWikidataCompaniesEnabled:
     twentyConfigService.get('IS_SEARCH_WIKIDATA_COMPANIES_ENABLED') !== false,
+  // No key means every Bright Data call would fail, so treat it as disabled.
   isSearchBrightDataEnabled:
-    twentyConfigService.get('IS_SEARCH_BRIGHT_DATA_ENABLED') !== false,
+    twentyConfigService.get('IS_SEARCH_BRIGHT_DATA_ENABLED') !== false &&
+    hasConfiguredKey(twentyConfigService.get('BRIGHT_DATA_API_KEY')),
 });
 
 /** @deprecated Use resolveSearchToolsConfig */

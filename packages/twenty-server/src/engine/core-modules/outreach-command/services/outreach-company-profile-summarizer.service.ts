@@ -25,7 +25,9 @@ const hasText = (value: string | null | undefined): value is string =>
 
 @Injectable()
 export class OutreachCompanyProfileSummarizerService {
-  private readonly logger = new Logger(OutreachCompanyProfileSummarizerService.name);
+  private readonly logger = new Logger(
+    OutreachCompanyProfileSummarizerService.name,
+  );
 
   constructor(
     @Optional()
@@ -128,9 +130,7 @@ export class OutreachCompanyProfileSummarizerService {
         );
       }
 
-      return (
-        this.aiModelRegistryService.getModel(modelId) ?? defaultFastModel
-      );
+      return this.aiModelRegistryService.getModel(modelId) ?? defaultFastModel;
     } catch (error) {
       this.logger.warn(
         `Failed to resolve AI model for GTM company summary: ${

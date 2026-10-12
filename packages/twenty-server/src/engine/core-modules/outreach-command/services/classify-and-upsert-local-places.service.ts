@@ -152,7 +152,9 @@ const classificationToCompanyHit = (
 
 @Injectable()
 export class ClassifyAndUpsertLocalPlacesService {
-  private readonly logger = new Logger(ClassifyAndUpsertLocalPlacesService.name);
+  private readonly logger = new Logger(
+    ClassifyAndUpsertLocalPlacesService.name,
+  );
 
   constructor(
     private readonly upsertCompaniesService: UpsertCompaniesService,

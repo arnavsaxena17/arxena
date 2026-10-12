@@ -8,7 +8,7 @@ import { z } from 'zod';
 // Available input fields that candidates can have
 const AVAILABLE_FIELDS = [
   'first_name',
-  'last_name', 
+  'last_name',
   'full_name',
   'job_company_name',
   'location_name',
@@ -49,27 +49,59 @@ const AVAILABLE_FIELDS = [
 // Zod schemas for structured response
 const FilterFieldSchema = z.object({
   name: z.string().describe('Field name'),
-  type: z.enum(['text', 'number', 'boolean', 'enum']).describe('Field data type'),
+  type: z
+    .enum(['text', 'number', 'boolean', 'enum'])
+    .describe('Field data type'),
   description: z.string().describe('Description of what this field represents'),
-  enumValues: z.array(z.string()).describe('Enum values if type is enum (empty array for non-enum types)'),
+  enumValues: z
+    .array(z.string())
+    .describe('Enum values if type is enum (empty array for non-enum types)'),
 });
 
 const AIFilterModelSchema = z.object({
-  fields: z.array(FilterFieldSchema).describe('List of fields for this AI filter that will be created in the spreadsheet'),
+  fields: z
+    .array(FilterFieldSchema)
+    .describe(
+      'List of fields for this AI filter that will be created in the spreadsheet',
+    ),
   modelName: z.string().describe('Name of the AI filter model in PascalCase'),
-  prompt: z.string().describe('Prompt for the AI model that describes the task to be performed on a single candidate'),
-  selectedMetadataFields: z.array(z.string()).describe('List of input fields/columns on spreadsheet that will be used to execute this filter'),
+  prompt: z
+    .string()
+    .describe(
+      'Prompt for the AI model that describes the task to be performed on a single candidate',
+    ),
+  selectedMetadataFields: z
+    .array(z.string())
+    .describe(
+      'List of input fields/columns on spreadsheet that will be used to execute this filter',
+    ),
 });
 
 // Column design for the Outreach tables (Ask AI): the same kind of structured
 // LLM call, with the Outreach row fields and the numeric types a table needs.
 const OUTREACH_COLUMN_INPUT_FIELDS = {
   person: ['name', 'jobTitle', 'headline', 'companyName', 'location'],
-  company: ['name', 'domain', 'industry', 'employees'],
+  company: [
+    'name',
+    'domain',
+    'industry',
+    'employees',
+    'about',
+    'specialties',
+    'slogan',
+    'headquartersCity',
+    'officeCities',
+    'officeAddressCount',
+    'sizeBand',
+    'foundedYear',
+    'linkedinFollowers',
+  ],
 } as const;
 
 const ColumnFieldSchema = z.object({
-  name: z.string().describe('Column key in camelCase, unique, e.g. companyRevenueUsd'),
+  name: z
+    .string()
+    .describe('Column key in camelCase, unique, e.g. companyRevenueUsd'),
   type: z
     .enum(['text', 'number', 'integer', 'boolean', 'enum'])
     .describe('Column data type'),
@@ -78,11 +110,15 @@ const ColumnFieldSchema = z.object({
     .describe('What the column holds, including the unit for numbers'),
   enumValues: z
     .array(z.string())
-    .describe('Ordered, mutually exclusive values if type is enum, else an empty array'),
+    .describe(
+      'Ordered, mutually exclusive values if type is enum, else an empty array',
+    ),
 });
 
 const ColumnDesignSchema = z.object({
-  columnName: z.string().describe('Short header label for the table, Title Case'),
+  columnName: z
+    .string()
+    .describe('Short header label for the table, Title Case'),
   fields: z.array(ColumnFieldSchema).describe('One or two output columns'),
   prompt: z
     .string()
@@ -135,7 +171,9 @@ const TableViewDesignSchema = z.object({
   sortDirection: z.enum(['asc', 'desc']),
   summary: z
     .string()
-    .describe('One short sentence describing the filters and sort, for the user'),
+    .describe(
+      'One short sentence describing the filters and sort, for the user',
+    ),
   unmatched: z
     .string()
     .describe(
@@ -179,7 +217,7 @@ export class FilterDescriptionProcessorService {
     workspaceId: string,
   ): Promise<AIFilterModel> {
     await this.semaphore.acquire();
-    
+
     try {
       this.logger.log(`Processing filter description: ${filterDescription}`);
 
@@ -187,9 +225,9 @@ export class FilterDescriptionProcessorService {
         throw new Error('Filter description cannot be empty');
       }
 
-      const availableFieldsStr = AVAILABLE_FIELDS
-        .map((field, index) => `${index + 1}. ${field}`)
-        .join('\n');
+      const availableFieldsStr = AVAILABLE_FIELDS.map(
+        (field, index) => `${index + 1}. ${field}`,
+      ).join('\n');
 
       const systemPrompt = `You are an AI system that creates filter configurations for candidate screening.
 
@@ -217,7 +255,9 @@ Guidelines:
         { role: 'user' as const, content: userPrompt },
       ];
 
-      this.logger.log('Sending messages to OpenAI for filter description processing');
+      this.logger.log(
+        'Sending messages to OpenAI for filter description processing',
+      );
 
       const maxRetries = 3;
       let lastError: any;
@@ -225,12 +265,19 @@ Guidelines:
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
           const completion = await this.meteredLlmService.openAiChatCompletion(
-            { workspaceId, feature: 'FILTER_DESCRIPTION', keySource: 'platform' },
+            {
+              workspaceId,
+              feature: 'FILTER_DESCRIPTION',
+              keySource: 'platform',
+            },
             this.openai,
             {
               model: 'gpt-4o-mini',
               messages,
-              response_format: toOpenAiJsonSchemaResponseFormat(AIFilterModelSchema, 'ai_filter_model'),
+              response_format: toOpenAiJsonSchemaResponseFormat(
+                AIFilterModelSchema,
+                'ai_filter_model',
+              ),
               temperature: 0,
             },
           );
@@ -239,7 +286,9 @@ Guidelines:
 
           // Check if the model refused to fulfill the request
           if (message?.refusal) {
-            throw new Error(`Model refused to fulfill request: ${message.refusal}`);
+            throw new Error(
+              `Model refused to fulfill request: ${message.refusal}`,
+            );
           }
 
           // The installed SDK has no chat.completions.parse; validate with zod.
@@ -254,43 +303,60 @@ Guidelines:
           if (!result.modelName || result.modelName.trim().length === 0) {
             throw new Error('Generated model name is empty');
           }
-          
+
           if (!result.prompt || result.prompt.trim().length === 0) {
             throw new Error('Generated prompt is empty');
           }
-          
+
           if (!result.fields || result.fields.length === 0) {
             throw new Error('No output fields generated');
           }
-          
-          if (!result.selectedMetadataFields || result.selectedMetadataFields.length === 0) {
+
+          if (
+            !result.selectedMetadataFields ||
+            result.selectedMetadataFields.length === 0
+          ) {
             throw new Error('No input fields selected');
           }
 
           // Validate selectedMetadataFields against available fields
-          const validFields = this.validateSelectedFields(result.selectedMetadataFields);
+          const validFields = this.validateSelectedFields(
+            result.selectedMetadataFields,
+          );
           if (validFields.length === 0) {
             throw new Error('No valid input fields selected');
           }
-          
+
           result.selectedMetadataFields = validFields;
 
-          this.logger.log(`Generated filter configuration: ${JSON.stringify(result)}`);
+          this.logger.log(
+            `Generated filter configuration: ${JSON.stringify(result)}`,
+          );
           return result;
         } catch (error) {
           this.logger.warn(`Attempt ${attempt} failed: ${error.message}`);
           lastError = error;
-          
+
           if (attempt < maxRetries) {
             // Wait before retrying (exponential backoff)
-            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+            await new Promise((resolve) =>
+              setTimeout(resolve, Math.pow(2, attempt) * 1000),
+            );
           }
         }
       }
 
-      throw lastError || new Error('Failed to generate filter configuration after multiple attempts');
+      throw (
+        lastError ||
+        new Error(
+          'Failed to generate filter configuration after multiple attempts',
+        )
+      );
     } catch (error) {
-      this.logger.error(`Error generating filter configuration: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error generating filter configuration: ${error.message}`,
+        error.stack,
+      );
       throw new Error(`Failed to process filter description: ${error.message}`);
     } finally {
       this.semaphore.release();
@@ -301,10 +367,20 @@ Guidelines:
     description,
     subject,
     workspaceId,
+    existingColumns = [],
   }: {
     description: string;
     subject: 'person' | 'company';
     workspaceId: string;
+    // AI columns already on the table; the design reuses them instead of
+    // creating a second column for the same fact.
+    existingColumns?: Array<{
+      key: string;
+      label: string;
+      type: string;
+      enumValues?: string[];
+      filled: number;
+    }>;
   }): Promise<OutreachColumnDesign> {
     if (description.trim().length === 0) {
       throw new Error('Column description cannot be empty');
@@ -324,9 +400,23 @@ Choose each output column's data type carefully, because the table sorts and fil
 When the user does not say, prefer the most filterable type: a number or integer for quantities, an enum for categories.
 Output only the requested values. Never add a column that repeats a row field (name, company name, job title, domain): the table already shows those. When the answer is a web fact, you may add ONE extra text field for the source URL, named <key>Source. Keep it to at most two fields.
 
-Set needsWebSearch=true when the answer is a fact that is not in the row fields (revenue, employees, funding, news, headquarters) and false when it can be decided from the row fields (job title, seniority, department, industry).
-The rows are ${subject === 'person' ? 'people on the People tab. A question about their company (revenue, headcount, industry) is still a column on the person: describe it as the person\'s employer and include companyName in selectedMetadataFields' : 'companies'}.
-Write the prompt for ONE row, in plain language, with the unit and format for each field. Choose only the row fields that are needed.`;
+Set needsWebSearch=true only for facts that the row fields do not hold AND a language model cannot reliably know from training: current or fast-changing numbers and events (store or outlet count, revenue, headcount, funding, news, ad or marketing activity, hiring). Web search is the expensive path.
+Set needsWebSearch=false for anything the row fields decide (job title, seniority, department, industry, what the company sells, whether it is a consumer brand, retailer, marketplace or manufacturer) and for stable general knowledge a model already has (the category a well-known brand belongs to, its country or founding era). The company's about text and specialties often already state facts such as store counts or what it sells: for a judgment, include about and specialties so a cheap model can answer from the row without web search. For a web fact about a company, always include the identifying fields in selectedMetadataFields (domain and employees for companies; companyName for people) so the search finds the right company and not a similarly named one. Prefer one column per kind of fact, so cheap judgments are not bundled with web lookups: put the stable or row-decidable part in its own column.
+The rows are ${subject === 'person' ? "people on the People tab. A question about their company (revenue, headcount, industry) is still a column on the person: describe it as the person's employer and include companyName in selectedMetadataFields" : 'companies'}.
+Write the prompt for ONE row, in plain language, with the unit and format for each field. Choose only the row fields that are needed.${
+      existingColumns.length > 0
+        ? `
+
+EXISTING AI COLUMNS on this table (key, label, type, rows filled):
+${existingColumns
+  .map(
+    (column) =>
+      `- ${column.key} | ${column.label} | ${column.type}${column.enumValues?.length ? ` [${column.enumValues.join(', ')}]` : ''} | ${column.filled} rows`,
+  )
+  .join('\n')}
+REUSE RULE: the table must not hold two columns for the same fact. When a requested value is the same fact as an existing column (even under a different name, such as store count, revenue, brand category, country or headquarters), output that column's EXACT key and type (and its exact enum values) instead of a new name: the run then fills or updates the existing column. Invent a new field name only when no existing column holds that fact, and then pick a name that does not overlap an existing key.`
+        : ''
+    }`;
 
     const maxRetries = 3;
     let lastError: unknown;
@@ -354,7 +444,9 @@ Write the prompt for ONE row, in plain language, with the unit and format for ea
         const message = completion.choices[0]?.message;
 
         if (message?.refusal) {
-          throw new Error(`Model refused to design the column: ${message.refusal}`);
+          throw new Error(
+            `Model refused to design the column: ${message.refusal}`,
+          );
         }
 
         const design = ColumnDesignSchema.parse(
@@ -365,8 +457,8 @@ Write the prompt for ONE row, in plain language, with the unit and format for ea
           throw new Error('Empty column design from OpenAI');
         }
 
-        const metadataFields = design.selectedMetadataFields.filter((field: string) =>
-          (availableFields as string[]).includes(field),
+        const metadataFields = design.selectedMetadataFields.filter(
+          (field: string) => (availableFields as string[]).includes(field),
         );
 
         return {
@@ -378,7 +470,10 @@ Write the prompt for ONE row, in plain language, with the unit and format for ea
       } catch (error) {
         const code = (error as { code?: string } | null)?.code;
 
-        if (code === 'insufficient_quota' || code === 'credit_balance_exhausted') {
+        if (
+          code === 'insufficient_quota' ||
+          code === 'credit_balance_exhausted'
+        ) {
           throw new Error(
             'OpenAI credits are exhausted (credit_balance_exhausted). Top up the OpenAI account and try again.',
           );
@@ -392,7 +487,9 @@ Write the prompt for ONE row, in plain language, with the unit and format for ea
         );
 
         if (attempt < maxRetries) {
-          await new Promise((resolve) => setTimeout(resolve, 2 ** attempt * 1000));
+          await new Promise((resolve) =>
+            setTimeout(resolve, 2 ** attempt * 1000),
+          );
         }
       }
     }
@@ -466,14 +563,21 @@ Write the summary as one short sentence, for example "Is CEO is Yes, Company emp
         const message = completion.choices[0]?.message;
 
         if (message?.refusal) {
-          throw new Error(`Model refused to design the view: ${message.refusal}`);
+          throw new Error(
+            `Model refused to design the view: ${message.refusal}`,
+          );
         }
 
-        return TableViewDesignSchema.parse(JSON.parse(message?.content ?? '{}'));
+        return TableViewDesignSchema.parse(
+          JSON.parse(message?.content ?? '{}'),
+        );
       } catch (error) {
         const code = (error as { code?: string } | null)?.code;
 
-        if (code === 'insufficient_quota' || code === 'credit_balance_exhausted') {
+        if (
+          code === 'insufficient_quota' ||
+          code === 'credit_balance_exhausted'
+        ) {
           throw new Error(
             'OpenAI credits are exhausted (credit_balance_exhausted). Top up the OpenAI account and try again.',
           );
@@ -482,7 +586,9 @@ Write the summary as one short sentence, for example "Is CEO is Yes, Company emp
         lastError = error;
 
         if (attempt < maxRetries) {
-          await new Promise((resolve) => setTimeout(resolve, 2 ** attempt * 1000));
+          await new Promise((resolve) =>
+            setTimeout(resolve, 2 ** attempt * 1000),
+          );
         }
       }
     }
@@ -498,7 +604,7 @@ Write the summary as one short sentence, for example "Is CEO is Yes, Company emp
    * @returns Array of valid field names
    */
   validateSelectedFields(selectedFields: string[]): string[] {
-    return selectedFields.filter(field => AVAILABLE_FIELDS.includes(field));
+    return selectedFields.filter((field) => AVAILABLE_FIELDS.includes(field));
   }
 
   /**

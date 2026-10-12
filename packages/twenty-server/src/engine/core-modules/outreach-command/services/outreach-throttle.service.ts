@@ -27,12 +27,7 @@ export type OutreachThrottleCheckInput = {
 
 export type OutreachThrottleCheckResult = {
   allowed: boolean;
-  reason:
-    | 'ok'
-    | 'needs_connection'
-    | 'outside_send_window'
-    | 'paused'
-    | null;
+  reason: 'ok' | 'needs_connection' | 'outside_send_window' | 'paused' | null;
   delayMs: number;
   nextSendAt: Date | null;
   counterPatch: Partial<OutreachThrottleCounters>;

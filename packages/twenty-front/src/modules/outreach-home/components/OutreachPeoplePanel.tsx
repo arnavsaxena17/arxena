@@ -9,13 +9,16 @@ import {
 import { isDefined } from 'twenty-shared/utils';
 import { Loader } from 'twenty-ui/feedback';
 import {
+  IconArrowBackUp,
   IconArrowUp,
   IconDatabase,
+  IconDownload,
   IconFileImport,
   IconFilterOff,
   IconPlayerPlay,
   IconPlayerStop,
   IconRefresh,
+  IconTrash,
   IconUserPlus,
 } from 'twenty-ui/icon';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
@@ -71,7 +74,9 @@ import {
   OUTREACH_PEOPLE_QUEUE_FILTERS,
   type OutreachPeopleQueueFilter,
 } from '@/outreach-home/utils/outreachPeopleQueueFilter';
+import { filterOutreachRows } from '@/outreach-home/utils/outreach-table-layout.util';
 import { useOutreachPersonCellEdit } from '@/outreach-home/hooks/useOutreachPersonCellEdit';
+import { downloadOutreachRowsAsCsv } from '@/outreach-home/utils/download-outreach-rows-as-csv.util';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useSetAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useSetAtomComponentState';
@@ -108,6 +113,9 @@ type OutreachPeoplePanelProps = {
   aiColumnRun?: OutreachAiColumnRunProgress | null;
   aiTableView?: OutreachTableView | null;
   appendPeople?: (peopleToAdd: OutreachPersonRow[]) => Promise<void>;
+  softDeletePeople?: (personIds: string[]) => Promise<number>;
+  undoSoftDeletePeople?: () => Promise<number>;
+  undoableDeletedCount?: number;
   updateEphemeralPerson?: (
     personId: string,
     applyPatch: (person: OutreachPersonRow) => OutreachPersonRow,
@@ -127,6 +135,9 @@ export const OutreachPeoplePanel = ({
   aiColumnRun,
   aiTableView,
   appendPeople,
+  softDeletePeople,
+  undoSoftDeletePeople,
+  undoableDeletedCount = 0,
   updateEphemeralPerson,
 }: OutreachPeoplePanelProps) => {
   const setSearchResults = useSetAtomState(searchResultsState);
@@ -466,6 +477,41 @@ export const OutreachPeoplePanel = ({
     ],
   );
 
+  const resultCount = useMemo(
+    () => filterOutreachRows(filteredPeople, columns, columnFilters).length,
+    [columnFilters, columns, filteredPeople],
+  );
+
+  const handleDeleteSelected = async () => {
+    const deletedCount = await softDeletePeople?.(
+      selectedPeople.map((person) => person.id),
+    );
+
+    handleSelectedRowIdsChange([]);
+
+    if (!deletedCount) {
+      enqueueErrorSnackBar({
+        message: 'Only unsaved people can be deleted here',
+      });
+
+      return;
+    }
+
+    enqueueSuccessSnackBar({
+      message: `Deleted ${deletedCount} ${deletedCount === 1 ? 'person' : 'people'}. Undo is available for 5 minutes.`,
+    });
+  };
+
+  const handleUndoDelete = async () => {
+    const restoredCount = await undoSoftDeletePeople?.();
+
+    if (restoredCount) {
+      enqueueSuccessSnackBar({
+        message: `Restored ${restoredCount} ${restoredCount === 1 ? 'person' : 'people'}`,
+      });
+    }
+  };
+
   const hasActiveFilter =
     stageFilter !== 'all' || searchQuery.trim().length > 0;
 
@@ -511,8 +557,35 @@ export const OutreachPeoplePanel = ({
     </>
   );
 
+  const handleDownloadCsv = () => {
+    downloadOutreachRowsAsCsv({
+      rows: filteredPeople,
+      columns: columns,
+      columnLayout,
+      columnFilters,
+      fileName: `outreach-people-${new Date().toISOString().slice(0, 10)}.csv`,
+    });
+  };
+
   const actions = (
     <>
+      <OutreachViewBarIconAction
+        title={withCount('Delete selected', selectedPeople.length)}
+        Icon={IconTrash}
+        disabled={selectedPeople.length === 0}
+        onClick={() => {
+          void handleDeleteSelected();
+        }}
+      />
+      {undoableDeletedCount > 0 && (
+        <OutreachViewBarIconAction
+          title={`Undo delete (${undoableDeletedCount})`}
+          Icon={IconArrowBackUp}
+          onClick={() => {
+            void handleUndoDelete();
+          }}
+        />
+      )}
       {hasActiveFilter && (
         <OutreachViewBarIconAction
           title="Clear filters"
@@ -527,6 +600,12 @@ export const OutreachPeoplePanel = ({
         onClick={() => {
           void handleRefresh();
         }}
+      />
+      <OutreachViewBarIconAction
+        title="Download CSV (opens in Excel)"
+        Icon={IconDownload}
+        disabled={filteredPeople.length === 0}
+        onClick={handleDownloadCsv}
       />
       <OutreachViewBarIconAction
         title="Import people"
@@ -597,9 +676,12 @@ export const OutreachPeoplePanel = ({
         searchValue={searchQuery}
         searchPlaceholder="Search people"
         onSearchChange={setSearchQuery}
+        resultCount={resultCount}
         actions={actions}
       />
-      <OutreachAiColumnProgressBar run={aiColumnRun} />
+      <OutreachAiColumnProgressBar
+        run={aiColumnRun?.subject === 'company' ? null : aiColumnRun}
+      />
       <OutreachAiViewBar
         view={activeView}
         getColumnLabel={(columnId) =>

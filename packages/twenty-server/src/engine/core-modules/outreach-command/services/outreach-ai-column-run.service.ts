@@ -19,6 +19,11 @@ import {
   humanizeKey,
   shouldGroupByCompany,
 } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column.service';
+import {
+  matchesTableFilter,
+  OutreachTableViewService,
+  readCellText,
+} from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
 import { OutreachCacheRealtimeService } from 'src/engine/core-modules/outreach-command/services/outreach-cache-realtime.service';
 import {
   type OutreachWorkingSetRow,
@@ -110,6 +115,7 @@ export class OutreachAiColumnRunService {
     private readonly outreachAiColumnService: OutreachAiColumnService,
     private readonly outreachWorkingSetService: OutreachWorkingSetService,
     private readonly outreachCacheRealtimeService: OutreachCacheRealtimeService,
+    private readonly outreachTableViewService: OutreachTableViewService,
   ) {}
 
   async startRun({
@@ -118,14 +124,17 @@ export class OutreachAiColumnRunService {
     subject,
     previewId,
     rerunAll,
+    onlyViewMatches,
   }: {
     workspaceId: string;
     projectId: string;
     subject: OutreachWorkingSetSubject;
     previewId: string;
     rerunAll?: boolean;
+    onlyViewMatches?: boolean;
   }): Promise<RunState> {
-    const preview = await this.outreachAiColumnService.getPreviewState(previewId);
+    const preview =
+      await this.outreachAiColumnService.getPreviewState(previewId);
 
     if (
       !isDefined(preview) ||
@@ -160,11 +169,27 @@ export class OutreachAiColumnRunService {
       );
     }
 
-    const all = await this.outreachWorkingSetService.getAll({
+    const workingSet = await this.outreachWorkingSetService.getAll({
       workspaceId,
       projectId,
       subject,
     });
+    // Rows outside the applied view stay untouched and unpaid for.
+    const view =
+      onlyViewMatches === true
+        ? await this.outreachTableViewService.get({
+            workspaceId,
+            projectId,
+            tab: subject === 'person' ? 'people' : 'companies',
+          })
+        : null;
+    const all = isDefined(view)
+      ? workingSet.filter((row) =>
+          view.filters.every((filter) =>
+            matchesTableFilter(readCellText(row, filter.columnId), filter),
+          ),
+        )
+      : workingSet;
     const columnKeys = preview.filter.fields.map((field) => field.name);
     // Rows that already hold every key are skipped, so a re-run only pays
     // for rows that failed or were added since.
@@ -232,7 +257,11 @@ export class OutreachAiColumnRunService {
     }
 
     await this.cache.set(this.rowsKey(state.runId), snapshot, RUN_TTL_MS);
-    await this.cache.set(this.activeKey(workspaceId, projectId), state.runId, RUN_TTL_MS);
+    await this.cache.set(
+      this.activeKey(workspaceId, projectId),
+      state.runId,
+      RUN_TTL_MS,
+    );
 
     if (units.length === 0 && precomputedIds.length === 0) {
       return this.finish(state, 'completed');
@@ -260,7 +289,11 @@ export class OutreachAiColumnRunService {
     const snapshot = await this.cache.get<RowSnapshot>(this.rowsKey(runId));
 
     if (!isDefined(snapshot)) {
-      await this.finish(state, 'failed', 'Run data expired. Start the column again.');
+      await this.finish(
+        state,
+        'failed',
+        'Run data expired. Start the column again.',
+      );
 
       return;
     }
@@ -329,7 +362,8 @@ export class OutreachAiColumnRunService {
     });
 
     state.written = {
-      ephemeralUpdated: state.written.ephemeralUpdated + written.ephemeralUpdated,
+      ephemeralUpdated:
+        state.written.ephemeralUpdated + written.ephemeralUpdated,
       crmUpdated: state.written.crmUpdated + written.crmUpdated,
     };
 
@@ -514,7 +548,9 @@ export class OutreachAiColumnRunService {
       estimatedCostUsd:
         current.estimatedCostUsd === null || next.estimatedCostUsd === null
           ? null
-          : Number((current.estimatedCostUsd + next.estimatedCostUsd).toFixed(6)),
+          : Number(
+              (current.estimatedCostUsd + next.estimatedCostUsd).toFixed(6),
+            ),
     };
   }
 
@@ -555,6 +591,7 @@ export class OutreachAiColumnRunService {
     this.outreachCacheRealtimeService.notifyAiColumnProgress(state.projectId, {
       runId: state.runId,
       label: state.filter.name,
+      subject: state.subject,
       status: state.status,
       total: state.total,
       done: state.done,

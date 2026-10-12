@@ -1038,10 +1038,25 @@ Rules:
 - sourceUrls: URLs you actually used (homepage + important pages).
 - Return structured JSON matching the schema exactly.`;
 
+// Same snapshot task as above, answered from search results the caller already
+// fetched (Perplexity) instead of a model-driven web_search tool.
+export const OUTREACH_WEB_SEARCH_COMPANY_EVIDENCE_SYSTEM_PROMPT = `You produce a concise company snapshot for Outreach onboarding from web search results that are provided to you.
+
+Rules:
+- Use only the SEARCH RESULTS in the prompt. Prefer the company's own website over third-party directories.
+- Do not invent products, headcount, HQ, or funding that the results do not show.
+- summary should be 2–4 sentences: what they do / who they typically reach.
+- productsOrServices: short concrete offerings (max ~8).
+- keyFacts: notable public facts (founded, HQ, scale signals) — only if evidenced.
+- sourceUrls: URLs from the results that you actually used.
+- Return structured JSON matching the schema exactly.`;
+
 export const buildOutreachWebSearchCompanyUserPrompt = (input: {
   domain: string;
   workspaceDisplayName?: string | null;
   companyNameHint?: string | null;
+  // true when the caller appends already-fetched search results
+  searchResultsProvided?: boolean;
 }): string => {
   const websiteCandidates = [
     `https://${input.domain.trim()}`,
@@ -1065,7 +1080,9 @@ export const buildOutreachWebSearchCompanyUserPrompt = (input: {
 
   sections.push(
     '',
-    'Use web_search to fetch website content for this company, then return the company snapshot JSON.',
+    input.searchResultsProvided === true
+      ? 'Use the SEARCH RESULTS below to return the company snapshot JSON.'
+      : 'Use web_search to fetch website content for this company, then return the company snapshot JSON.',
   );
 
   return sections.join('\n');

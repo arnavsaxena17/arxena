@@ -67,9 +67,8 @@ describe('SearchJobsService', () => {
   });
 
   it('rethrows LinkedIn account rate limit errors', async () => {
-    const { AccountRateLimitDeferredError } = await import(
-      'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error'
-    );
+    const { AccountRateLimitDeferredError } =
+      await import('src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error');
 
     workspaceQueryService.getApiKeys.mockResolvedValue([{ id: 'key-1' }]);
     apiKeyService.generateApiKeyToken.mockResolvedValue({ token: 'tok' });
@@ -90,9 +89,8 @@ describe('SearchJobsService', () => {
   });
 
   it('rethrows LinkedIn account rate limit errors', async () => {
-    const { AccountRateLimitDeferredError } = await import(
-      'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error'
-    );
+    const { AccountRateLimitDeferredError } =
+      await import('src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error');
 
     workspaceQueryService.getApiKeys.mockResolvedValue([{ id: 'key-1' }]);
     apiKeyService.generateApiKeyToken.mockResolvedValue({ token: 'tok' });
@@ -111,5 +109,4 @@ describe('SearchJobsService', () => {
       }),
     ).rejects.toBeInstanceOf(AccountRateLimitDeferredError);
   });
-
 });

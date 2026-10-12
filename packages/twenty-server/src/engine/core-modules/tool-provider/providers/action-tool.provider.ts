@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
 
+import {
+  ImportOutreachSpreadsheetTool,
+  InspectOutreachSpreadsheetTool,
+} from 'src/engine/core-modules/tool/tools/outreach-spreadsheet-import-tool/outreach-spreadsheet-import-tool';
 import { PermissionFlagType } from 'twenty-shared/constants';
 import { isDefined } from 'twenty-shared/utils';
 import { z } from 'zod';
@@ -68,6 +72,8 @@ export class ActionToolProvider implements ToolProvider {
     private readonly highlightOrgChartTool: HighlightOrgChartTool,
     private readonly upsertOutreachTargetCompaniesTool: UpsertOutreachTargetCompaniesTool,
     private readonly upsertOutreachTargetPeopleTool: UpsertOutreachTargetPeopleTool,
+    private readonly inspectOutreachSpreadsheetTool: InspectOutreachSpreadsheetTool,
+    private readonly importOutreachSpreadsheetTool: ImportOutreachSpreadsheetTool,
     private readonly saveOutreachTargetsToCrmTool: SaveOutreachTargetsToCrmTool,
     private readonly startOutreachTool: StartOutreachTool,
     private readonly getOutreachWorkingSetTool: GetOutreachWorkingSetTool,
@@ -99,6 +105,8 @@ export class ActionToolProvider implements ToolProvider {
         this.upsertOutreachTargetCompaniesTool,
       ],
       ['upsert_outreach_target_people', this.upsertOutreachTargetPeopleTool],
+      ['inspect_outreach_spreadsheet', this.inspectOutreachSpreadsheetTool],
+      ['import_outreach_spreadsheet', this.importOutreachSpreadsheetTool],
       [
         'save_outreach_targets_to_crm',
         this.saveOutreachTargetsToCrmTool,
@@ -228,6 +236,24 @@ export class ActionToolProvider implements ToolProvider {
       this.buildDescriptor(
         'upsert_outreach_target_people',
         this.upsertOutreachTargetPeopleTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'inspect_outreach_spreadsheet',
+        this.inspectOutreachSpreadsheetTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'import_outreach_spreadsheet',
+        this.importOutreachSpreadsheetTool,
         includeSchemas,
         context.locale,
       ),

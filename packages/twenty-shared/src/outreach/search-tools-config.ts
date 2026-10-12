@@ -189,6 +189,10 @@ export const filterSearchSkillContent = (
   if (!config.isSearchBrightDataEnabled) {
     filteredContent = stripMarkedSection(
       filteredContent,
+      'search-bright-data-default-rule',
+    );
+    filteredContent = stripMarkedSection(
+      filteredContent,
       'search-bright-data-companies-provider-row',
     );
     filteredContent = stripMarkedSection(

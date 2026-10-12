@@ -1,4 +1,5 @@
 import {
+  OutreachLinkCell,
   OutreachTagCell,
   OutreachTextCell,
 } from '@/outreach-home/components/record-table/OutreachRecordTableCells';
@@ -33,6 +34,19 @@ const readAiColumnType = (rows: object[], key: string): string | null => {
   }
 
   return null;
+};
+
+const URL_KEY_PATTERN = /(url|website|linkedin|domain)/i;
+const HTTP_URL_PATTERN = /^https?:\/\/\S+$/i;
+const BARE_DOMAIN_PATTERN = /^(www\.)?[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i;
+
+const isLinkValue = (key: string, value: string): boolean => {
+  const trimmed = value.trim();
+
+  return (
+    HTTP_URL_PATTERN.test(trimmed) ||
+    (URL_KEY_PATTERN.test(key) && BARE_DOMAIN_PATTERN.test(trimmed))
+  );
 };
 
 const formatNumber = (value: number): string =>
@@ -163,6 +177,8 @@ export const appendOutreachRawJsonColumns = <TRow extends object>(
           return value === '' &&
             readAiColumnRowStatus(row, columnId, key) === 'failed' ? (
             <OutreachTagCell label="Failed" color="red" />
+          ) : isLinkValue(key, value) ? (
+            <OutreachLinkCell url={value.trim()} />
           ) : (
             <OutreachTextCell value={value} />
           );

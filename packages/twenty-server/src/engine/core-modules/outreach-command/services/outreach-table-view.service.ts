@@ -182,7 +182,10 @@ export class OutreachTableViewService {
     workspaceId: string;
     projectId: string;
     tab: OutreachTableTab;
-  }): Promise<{ columns: OutreachTableColumn[]; rows: OutreachWorkingSetRow[] }> {
+  }): Promise<{
+    columns: OutreachTableColumn[];
+    rows: OutreachWorkingSetRow[];
+  }> {
     const rows = await this.outreachWorkingSetService.getAll({
       workspaceId,
       projectId,
@@ -263,11 +266,13 @@ export class OutreachTableViewService {
       projectId,
       tab,
     });
-    const design = await this.filterDescriptionProcessorService.designTableView({
-      description,
-      columns,
-      workspaceId,
-    });
+    const design = await this.filterDescriptionProcessorService.designTableView(
+      {
+        description,
+        columns,
+        workspaceId,
+      },
+    );
     const warnings: string[] =
       design.unmatched.trim() === ''
         ? []
@@ -291,8 +296,14 @@ export class OutreachTableViewService {
       (column) => column.columnId === design.sortColumnId,
     );
 
-    if (design.needsSort && design.sortColumnId !== '' && !isDefined(sortColumn)) {
-      warnings.push(`Unknown sort column "${design.sortColumnId}" was skipped.`);
+    if (
+      design.needsSort &&
+      design.sortColumnId !== '' &&
+      !isDefined(sortColumn)
+    ) {
+      warnings.push(
+        `Unknown sort column "${design.sortColumnId}" was skipped.`,
+      );
     }
 
     const sort =
@@ -349,8 +360,7 @@ export class OutreachTableViewService {
 
       return isKnown;
     });
-    const validSort =
-      sort !== null && known.has(sort.columnId) ? sort : null;
+    const validSort = sort !== null && known.has(sort.columnId) ? sort : null;
 
     if (sort !== null && validSort === null) {
       warnings.push(`Unknown sort column "${sort.columnId}" was skipped.`);

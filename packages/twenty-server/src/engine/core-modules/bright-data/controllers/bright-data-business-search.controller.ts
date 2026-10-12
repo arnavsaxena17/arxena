@@ -24,9 +24,7 @@ const BODY_VALIDATION_PIPE = new ValidationPipe({
 @Controller('bright-data/business-search')
 @UseGuards(JwtAuthGuard)
 export class BrightDataBusinessSearchController {
-  private readonly logger = new Logger(
-    BrightDataBusinessSearchController.name,
-  );
+  private readonly logger = new Logger(BrightDataBusinessSearchController.name);
 
   constructor(
     private readonly searchBrightDataBusinessTool: SearchBrightDataBusinessTool,

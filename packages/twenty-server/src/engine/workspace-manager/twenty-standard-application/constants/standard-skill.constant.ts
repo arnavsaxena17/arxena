@@ -66,6 +66,9 @@ export const STANDARD_SKILL = {
   'ai-filter-enrich': {
     universalIdentifier: '20202020-9f4d-4b2c-8e6a-7c3f1d8b5e92',
   },
+  'spreadsheet-import': {
+    universalIdentifier: '20202020-a1c5-4d3e-9b7f-2e6a8c4d0f13',
+  },
 } as const satisfies Record<
   string,
   {

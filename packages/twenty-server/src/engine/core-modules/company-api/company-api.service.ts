@@ -2,7 +2,7 @@ import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { getLinkedInUnipileSearchPageLimit } from 'twenty-shared';
 
 import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
-import { BrightDataLudicrousSearchService } from 'src/engine/core-modules/bright-data-ludicrous/services/bright-data-ludicrous-search.service';
+import { BrightDataLudicrousSearchService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-search.service';
 import { mapBrightDataCompanyToSearchHit } from 'src/engine/core-modules/bright-data/utils/bright-data-business-search.util';
 import { LinkedinParameterResolver } from 'src/engine/core-modules/candidate-search/utils/linkedin-parameter-resolver.util';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';

@@ -66,7 +66,9 @@ export class OutreachDeferredResumeService {
         let resumed = 0;
 
         for (const candidate of dueCandidates) {
-          const resumeAtIso = resolveOutreachResumeAt(candidate.outreachAnalytics);
+          const resumeAtIso = resolveOutreachResumeAt(
+            candidate.outreachAnalytics,
+          );
 
           if (!resumeAtIso) {
             continue;
@@ -83,9 +85,7 @@ export class OutreachDeferredResumeService {
           await candidateRepository.update(candidate.id, resumePatch);
 
           resumed += 1;
-          this.logger.log(
-            `Resumed deferred candidate ${candidate.id}`,
-          );
+          this.logger.log(`Resumed deferred candidate ${candidate.id}`);
         }
 
         return { resumed };
@@ -105,44 +105,41 @@ export class OutreachDeferredResumeService {
   }): Promise<void> {
     const authContext = buildSystemAuthContext(workspaceId);
 
-    await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
-      async () => {
-        const candidateRepository =
-          await this.globalWorkspaceOrmManager.getRepository<CandidateRecord>(
-            workspaceId,
-            'candidate',
-            { shouldBypassPermissionChecks: true },
-          );
+    await this.globalWorkspaceOrmManager.executeInWorkspaceContext(async () => {
+      const candidateRepository =
+        await this.globalWorkspaceOrmManager.getRepository<CandidateRecord>(
+          workspaceId,
+          'candidate',
+          { shouldBypassPermissionChecks: true },
+        );
 
-        const candidate = await candidateRepository.findOne({
-          where: { id: candidateId },
-        });
+      const candidate = await candidateRepository.findOne({
+        where: { id: candidateId },
+      });
 
-        if (
-          !candidate ||
-          (candidate.outreachSequenceStage !== 'DEFERRED' &&
-            candidate.outreachConversationStage !== 'SNOOZED')
-        ) {
-          return;
-        }
+      if (
+        !candidate ||
+        (candidate.outreachSequenceStage !== 'DEFERRED' &&
+          candidate.outreachConversationStage !== 'SNOOZED')
+      ) {
+        return;
+      }
 
-        const resumePatch = buildOutreachSnoozeResumePatch(candidate);
+      const resumePatch = buildOutreachSnoozeResumePatch(candidate);
 
-        if (apiToken) {
-          await this.staticGraphQLService.executeGraphQL(
-            graphQltoUpdateOneCandidate,
-            {
-              idToUpdate: candidateId,
-              input: resumePatch,
-            },
-            apiToken,
-          );
-        } else {
-          await candidateRepository.update(candidateId, resumePatch);
-        }
-      },
-      authContext,
-    );
+      if (apiToken) {
+        await this.staticGraphQLService.executeGraphQL(
+          graphQltoUpdateOneCandidate,
+          {
+            idToUpdate: candidateId,
+            input: resumePatch,
+          },
+          apiToken,
+        );
+      } else {
+        await candidateRepository.update(candidateId, resumePatch);
+      }
+    }, authContext);
   }
 
   scheduleResumeCheckForCandidate({

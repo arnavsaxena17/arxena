@@ -14,6 +14,7 @@ import {
   type OutreachEphemeralPerson,
   OutreachPeopleCacheService,
 } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
+import { OUTREACH_LIST_MAX_ROWS } from 'src/engine/core-modules/outreach-list/outreach-list.constants';
 import { UpsertCompaniesService } from 'src/engine/core-modules/outreach-command/services/upsert-companies.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
@@ -44,7 +45,7 @@ export type SaveOutreachTargetsToCrmResult = {
   crmPersonIdByEphemeralId: Record<string, string>;
 };
 
-const MAX_ROWS_PER_CALL = 500;
+const MAX_ROWS_PER_CALL = OUTREACH_LIST_MAX_ROWS;
 
 const normalizeLinkedinUrl = (linkedinUrl: string): string =>
   linkedinUrl
@@ -136,6 +137,33 @@ export class SaveOutreachTargetsToCrmService {
       MAX_ROWS_PER_CALL,
     );
 
+    return this.saveRows({
+      workspaceId,
+      projectId,
+      companies: companiesInScope,
+      people: selectedPeople,
+      companyById,
+      result,
+    });
+  }
+
+  // Shared by the project tabs and by saved lists: both end up as the same
+  // plain Company / Person records, never a Candidate.
+  async saveRows({
+    workspaceId,
+    projectId,
+    companies: companiesInScope,
+    people: selectedPeople,
+    companyById,
+    result,
+  }: {
+    workspaceId: string;
+    projectId: string;
+    companies: OutreachEphemeralCompany[];
+    people: OutreachEphemeralPerson[];
+    companyById: Map<string, OutreachEphemeralCompany>;
+    result: SaveOutreachTargetsToCrmResult;
+  }): Promise<SaveOutreachTargetsToCrmResult> {
     if (companiesInScope.length === 0 && selectedPeople.length === 0) {
       return {
         ...result,

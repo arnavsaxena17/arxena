@@ -53,15 +53,15 @@ export type FetchLinkedinPeopleResultsParams = {
     candidates: LinkedInPeopleSearchResult[];
     continuePagination: boolean;
   }>;
-  onStatus?: (
-    update: {
-      engine: SerpSearchEngine;
-      message: string;
-      snapshotId?: string;
-      pollingAttempt?: number;
-    },
+  onStatus?: (update: {
+    engine: SerpSearchEngine;
+    message: string;
+    snapshotId?: string;
+    pollingAttempt?: number;
+  }) => Promise<void> | void;
+  onPageFetched?: (
+    update: FetchLinkedinPeoplePageUpdate,
   ) => Promise<void> | void;
-  onPageFetched?: (update: FetchLinkedinPeoplePageUpdate) => Promise<void> | void;
 };
 
 export type FetchLinkedinPeopleResultsResponse = {
@@ -76,7 +76,9 @@ export type FetchLinkedinPeopleResultsResponse = {
 
 @Injectable()
 export class BrightDataLinkedinPeopleSearchService {
-  private readonly logger = new Logger(BrightDataLinkedinPeopleSearchService.name);
+  private readonly logger = new Logger(
+    BrightDataLinkedinPeopleSearchService.name,
+  );
 
   constructor(private readonly brightDataSerpService: BrightDataSerpService) {}
 
@@ -87,7 +89,10 @@ export class BrightDataLinkedinPeopleSearchService {
   async fetchAllPeopleResults(
     params: FetchLinkedinPeopleResultsParams,
   ): Promise<FetchLinkedinPeopleResultsResponse> {
-    console.log("Fetching all people results in bright data linkedin people search service with params:", params)
+    console.log(
+      'Fetching all people results in bright data linkedin people search service with params:',
+      params,
+    );
     if (params.includePaginatedHtml) {
       return this.fetchAllPeopleResultsViaBrightDataSnapshot(params);
     }
@@ -122,13 +127,15 @@ export class BrightDataLinkedinPeopleSearchService {
       let totalResultsReported: number | undefined;
 
       while (currentUrl && currentPage <= this.maxPages) {
-        const serp = await this.brightDataSerpService.requestSerpJson(currentUrl);
+        const serp =
+          await this.brightDataSerpService.requestSerpJson(currentUrl);
 
         totalPagesAvailable =
           serp.pagination?.pages?.length ||
           serp.pagination?.next_page ||
           totalPagesAvailable;
-        totalResultsReported = serp.general?.results_cnt ?? totalResultsReported;
+        totalResultsReported =
+          serp.general?.results_cnt ?? totalResultsReported;
 
         const pageCandidates = this.mapOrganicEntriesToCandidates(
           serp.organic ?? [],
@@ -138,10 +145,16 @@ export class BrightDataLinkedinPeopleSearchService {
         const newUniqueCandidates: LinkedInPeopleSearchResult[] = [];
 
         for (const candidate of pageCandidates) {
-          const linkedinUrl = candidate.profile_url || candidate.public_profile_url;
-          const dedupeKey = linkedinUrl ? normalizeLinkedInUrl(linkedinUrl) : candidate.id;
+          const linkedinUrl =
+            candidate.profile_url || candidate.public_profile_url;
+          const dedupeKey = linkedinUrl
+            ? normalizeLinkedInUrl(linkedinUrl)
+            : candidate.id;
 
-          if (params.dedupeByLinkedinUrl !== false && seenLinkedinUrls.has(dedupeKey)) {
+          if (
+            params.dedupeByLinkedinUrl !== false &&
+            seenLinkedinUrls.has(dedupeKey)
+          ) {
             continue;
           }
 
@@ -152,7 +165,10 @@ export class BrightDataLinkedinPeopleSearchService {
         let candidatesForPage = newUniqueCandidates;
         let continuePaginationAfterPage = true;
 
-        if (params.postProcessPageCandidates && newUniqueCandidates.length > 0) {
+        if (
+          params.postProcessPageCandidates &&
+          newUniqueCandidates.length > 0
+        ) {
           const processed = await params.postProcessPageCandidates({
             engine,
             page: currentPage,
@@ -300,7 +316,10 @@ export class BrightDataLinkedinPeopleSearchService {
           },
         });
 
-      const snapshotCandidates = this.extractSnapshotCandidates(snapshotItems, engine);
+      const snapshotCandidates = this.extractSnapshotCandidates(
+        snapshotItems,
+        engine,
+      );
       const fetchedPages: number[] = [];
       let totalPagesAvailable =
         this.extractSnapshotTotalPages(snapshotItems) || undefined;
@@ -309,12 +328,16 @@ export class BrightDataLinkedinPeopleSearchService {
         const newUniqueCandidates: LinkedInPeopleSearchResult[] = [];
 
         for (const candidate of pageGroup.candidates) {
-          const linkedinUrl = candidate.profile_url || candidate.public_profile_url;
+          const linkedinUrl =
+            candidate.profile_url || candidate.public_profile_url;
           const dedupeKey = linkedinUrl
             ? normalizeLinkedInUrl(linkedinUrl)
             : candidate.id;
 
-          if (params.dedupeByLinkedinUrl !== false && seenLinkedinUrls.has(dedupeKey)) {
+          if (
+            params.dedupeByLinkedinUrl !== false &&
+            seenLinkedinUrls.has(dedupeKey)
+          ) {
             continue;
           }
 
@@ -325,7 +348,10 @@ export class BrightDataLinkedinPeopleSearchService {
         let candidatesForPage = newUniqueCandidates;
         let continuePaginationAfterPage = true;
 
-        if (params.postProcessPageCandidates && newUniqueCandidates.length > 0) {
+        if (
+          params.postProcessPageCandidates &&
+          newUniqueCandidates.length > 0
+        ) {
           const processed = await params.postProcessPageCandidates({
             engine,
             page: pageGroup.page,
@@ -410,7 +436,9 @@ export class BrightDataLinkedinPeopleSearchService {
     }
 
     const currentFirst = Number(url.searchParams.get('first') ?? '1');
-    const nextFirst = Number.isFinite(currentFirst) ? currentFirst + 10 : input.currentPage * 10 + 1;
+    const nextFirst = Number.isFinite(currentFirst)
+      ? currentFirst + 10
+      : input.currentPage * 10 + 1;
 
     url.searchParams.set('first', String(nextFirst));
 
@@ -435,8 +463,7 @@ export class BrightDataLinkedinPeopleSearchService {
     let totalResultsReported: number | undefined;
 
     for (const item of snapshotItems) {
-      totalResultsReported =
-        item.general?.results_cnt ?? totalResultsReported;
+      totalResultsReported = item.general?.results_cnt ?? totalResultsReported;
 
       for (const entry of item.organic ?? []) {
         const page = this.resolveSnapshotEntryPage(entry.url, engine);
@@ -522,8 +549,13 @@ export class BrightDataLinkedinPeopleSearchService {
     engine: SerpSearchEngine,
   ): LinkedInPeopleSearchResult[] {
     return organicEntries
-      .map((entry, index) => this.mapOrganicEntryToCandidate(entry, engine, index))
-      .filter((candidate): candidate is LinkedInPeopleSearchResult => candidate !== null);
+      .map((entry, index) =>
+        this.mapOrganicEntryToCandidate(entry, engine, index),
+      )
+      .filter(
+        (candidate): candidate is LinkedInPeopleSearchResult =>
+          candidate !== null,
+      );
   }
 
   private mapOrganicEntryToCandidate(
@@ -546,8 +578,13 @@ export class BrightDataLinkedinPeopleSearchService {
     const location = extensionTexts[0] ?? null;
     const role = extensionTexts[1] ?? headlineFromTitle;
     const company = extensionTexts[2] ?? null;
-    const name = nameFromTitle || this.fallbackNameFromUrl(publicIdentifier) || title || linkedinUrl;
-    const headline = headlineFromTitle || entry.description?.trim() || role || '';
+    const name =
+      nameFromTitle ||
+      this.fallbackNameFromUrl(publicIdentifier) ||
+      title ||
+      linkedinUrl;
+    const headline =
+      headlineFromTitle || entry.description?.trim() || role || '';
 
     const currentPositions: LinkedInCurrentPosition[] = role
       ? [
@@ -619,12 +656,15 @@ export class BrightDataLinkedinPeopleSearchService {
 
     try {
       const parsed = new URL(link.trim());
-      const normalizedHost = parsed.hostname.replace(/^www\./, '').toLowerCase();
+      const normalizedHost = parsed.hostname
+        .replace(/^www\./, '')
+        .toLowerCase();
       const normalizedPath = parsed.pathname.replace(/\/+$/, '');
 
       if (
         normalizedHost.endsWith('linkedin.com') &&
-        (normalizedPath.startsWith('/in/') || normalizedPath.startsWith('/pub/'))
+        (normalizedPath.startsWith('/in/') ||
+          normalizedPath.startsWith('/pub/'))
       ) {
         return normalizeLinkedInUrl(`${parsed.origin}${normalizedPath}`);
       }
@@ -644,7 +684,10 @@ export class BrightDataLinkedinPeopleSearchService {
       const parsed = new URL(linkedinUrl);
       const segments = parsed.pathname.split('/').filter(Boolean);
 
-      if (segments.length >= 2 && (segments[0] === 'in' || segments[0] === 'pub')) {
+      if (
+        segments.length >= 2 &&
+        (segments[0] === 'in' || segments[0] === 'pub')
+      ) {
         return segments[1] || null;
       }
     } catch {

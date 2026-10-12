@@ -14,6 +14,9 @@ export const BRIGHT_DATA_ESTIMATE_SAMPLE_SIZE = 5;
 export const BRIGHT_DATA_JUDGE_SAMPLE_PER_PAGE = 10;
 export const BRIGHT_DATA_PLAN_TTL_MS = 60 * 60 * 1000;
 
+// Fetched (paid) records stay available this long after the run
+export const BRIGHT_DATA_DATASET_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
 // What the workspace is charged relative to Bright Data's list price.
 export const BRIGHT_DATA_BILLING_MARGIN_MULTIPLIER = 1;
 

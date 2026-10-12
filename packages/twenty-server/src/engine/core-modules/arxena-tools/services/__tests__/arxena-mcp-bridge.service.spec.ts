@@ -75,7 +75,11 @@ describe('ArxenaMcpBridgeService', () => {
     callArxenaTool.mockResolvedValue(
       textResult({
         tools: [
-          { name: 'get_org_chart', description: 'd', inputSchema: { type: 'object' } },
+          {
+            name: 'get_org_chart',
+            description: 'd',
+            inputSchema: { type: 'object' },
+          },
         ],
       }),
     );
@@ -90,9 +94,9 @@ describe('ArxenaMcpBridgeService', () => {
       ]),
     );
     expect(second).toBe(first);
-    expect(callArxenaTool.mock.calls.every((call) => call[1] === 'learn_tools')).toBe(
-      true,
-    );
+    expect(
+      callArxenaTool.mock.calls.every((call) => call[1] === 'learn_tools'),
+    ).toBe(true);
   });
 
   it('should fail clearly when the library is not built', async () => {
@@ -100,7 +104,9 @@ describe('ArxenaMcpBridgeService', () => {
 
     process.env.MCP_TOOL_LIBRARY_PATH = '/nonexistent/lib.js';
 
-    await expect(service.callTool('token', undefined, 'x', {})).rejects.toThrow();
+    await expect(
+      service.callTool('token', undefined, 'x', {}),
+    ).rejects.toThrow();
 
     delete process.env.MCP_TOOL_LIBRARY_PATH;
   });

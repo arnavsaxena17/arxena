@@ -392,7 +392,9 @@ export class OutreachLogicFunctionNativeExecutor
     if (name === OUTREACH_SELECT_WORKSPACE_MEMBER_LOGIC_FUNCTION_NAME) {
       return this.outreachMemberAssignmentService.selectForCandidate({
         workspaceId,
-        candidateId: String((payload as { candidateId?: string }).candidateId ?? ''),
+        candidateId: String(
+          (payload as { candidateId?: string }).candidateId ?? '',
+        ),
       });
     }
 
@@ -402,7 +404,9 @@ export class OutreachLogicFunctionNativeExecutor
       );
     }
 
-    if (name === OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_LOGIC_FUNCTION_NAME) {
+    if (
+      name === OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_LOGIC_FUNCTION_NAME
+    ) {
       return this.planLocalBusinessCityCoverageService.execute({
         workspaceId,
         input: payload as {
@@ -439,7 +443,9 @@ export class OutreachLogicFunctionNativeExecutor
       });
     }
 
-    if (name === OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME) {
+    if (
+      name === OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME
+    ) {
       return this.classifyAndUpsertLocalPlacesService.execute({
         workspaceId,
         input: payload as {

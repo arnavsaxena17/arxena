@@ -131,4 +131,66 @@ describe('OutreachWebSearchCompanyEnrichmentSource', () => {
       }),
     });
   });
+
+  describe('with Perplexity search evidence', () => {
+    const buildSource = (search: jest.Mock) => {
+      const openaiModel = {
+        modelId: 'openai/gpt-5-mini',
+        sdkPackage: AI_SDK_OPENAI,
+        model: { provider: 'openai-mock' },
+        rawProvider: {},
+      };
+      const aiModelRegistryService = {
+        getModel: jest.fn().mockReturnValue(undefined),
+        getDefaultSpeedModel: jest.fn().mockReturnValue(openaiModel),
+        getAvailableModels: jest.fn().mockReturnValue([openaiModel]),
+        resolveModelForAgentInWorkspace: jest.fn(),
+      } as unknown as AiModelRegistryService;
+      const nativeToolBinderService = {
+        bind: jest.fn().mockReturnValue({
+          web_search: { description: 'native web search' },
+        }),
+      } as unknown as NativeToolBinderService;
+
+      return new OutreachWebSearchCompanyEnrichmentSource(
+        aiModelRegistryService,
+        nativeToolBinderService,
+        undefined,
+        { isAvailable: () => true, search } as never,
+      );
+    };
+
+    it('answers from the search results without the paid native web_search tool', async () => {
+      generateObjectMock.mockResolvedValue({
+        object: snapshotOutput,
+      } as Awaited<ReturnType<typeof generateObject>>);
+      const search = jest.fn().mockResolvedValue({ text: 'SEARCH RESULTS:\n1. Acme' });
+
+      const partial = await buildSource(search).enrich({
+        domain: 'acme.io',
+        hints: { companyName: 'Acme' },
+      });
+
+      expect(search).toHaveBeenCalledWith(expect.stringContaining('acme.io'));
+      expect(generateTextMock).not.toHaveBeenCalled();
+      expect(generateObjectMock.mock.calls[0][0].prompt).toContain(
+        'SEARCH RESULTS:',
+      );
+      expect(partial?.webSearchCompany?.companyName).toBe('Acme Inc');
+    });
+
+    it('falls back to the native web_search tool when Perplexity returns nothing', async () => {
+      generateTextMock.mockResolvedValue({
+        output: snapshotOutput,
+      } as Awaited<ReturnType<typeof generateText>>);
+
+      const partial = await buildSource(
+        jest.fn().mockResolvedValue(null),
+      ).enrich({ domain: 'acme.io' });
+
+      expect(generateObjectMock).not.toHaveBeenCalled();
+      expect(generateTextMock).toHaveBeenCalledTimes(1);
+      expect(partial?.webSearchCompany?.companyName).toBe('Acme Inc');
+    });
+  });
 });

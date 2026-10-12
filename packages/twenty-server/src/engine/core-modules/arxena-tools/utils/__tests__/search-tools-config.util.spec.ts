@@ -29,9 +29,13 @@ type SearchToolsConfigKey =
 
 const buildConfigService = (
   values: Partial<Record<SearchToolsConfigKey, boolean>>,
+  options: { brightDataApiKey?: string } = { brightDataApiKey: 'test-key' },
 ): TwentyConfigService =>
   ({
-    get: (key: string) => values[key as SearchToolsConfigKey],
+    get: (key: string) =>
+      key === 'BRIGHT_DATA_API_KEY'
+        ? options.brightDataApiKey
+        : values[key as SearchToolsConfigKey],
   }) as TwentyConfigService;
 
 describe('search-tools-config.util', () => {
@@ -48,6 +52,18 @@ describe('search-tools-config.util', () => {
     expect(
       isSearchToolEnabled(SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME, config),
     ).toBe(true);
+  });
+
+  it('disables Bright Data when its API key is missing or blank', () => {
+    for (const apiKey of [undefined, '', '   ']) {
+      const config = resolveSearchToolsConfig(
+        buildConfigService({}, { brightDataApiKey: apiKey }),
+      );
+
+      expect(getDisabledSearchToolNames(config)).toEqual([
+        SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME,
+      ]);
+    }
   });
 
   it('disables search tools when env flags are false', () => {

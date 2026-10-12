@@ -61,7 +61,7 @@ Dedup across sources **by normalized name + domain** before saving.
 
 Best for firmographic company search. Available in the `prospecting` pack.
 
-- Prefer whenever the user names Apollo, or wants industry / headcount / geo filtering on companies.
+- Use when the user names Apollo, or Bright Data is unavailable or returned nothing.
 - Pass a structured filter object (organization params) — do not invent Apollo field names; `learn_tools` returns the live schema.
 - Common filters: `organization_num_employees` ranges, `organization_industries`, `q_organization_keywords`, `organization_locations`.
 - Keep `page_size` / `limit` modest; paginate with the returned cursor if the user wants more.
@@ -84,7 +84,9 @@ Live LinkedIn company results. **Full facet workflow: LinkedIn / Harvest section
 - `searchType`: `classic` or `sales_navigator`.
 - Resolve geo/industry facet IDs with `search_linkedin_parameters` (`LOCATION`, `INDUSTRY`).
 - Named Sales Nav account lists: `search_linkedin_parameters({ parameterType: "ACCOUNT_LISTS" })` → `search_linkedin_companies` with `account_lists.include`.
-- `search_linkedin_from_url` for a pasted LinkedIn company search URL.
+- **Pasted LinkedIn company search URL** (`/sales/search/company?...` or `/search/results/companies?...`): call `search_linkedin_companies({ "url": "<exact pasted URL>", "limit": 100 })`. Do not parse the URL or resolve facet IDs yourself: the tool turns a Sales Nav company URL (region, industry, headcount, keywords, include/exclude) into the structured Unipile payload `{ api: "sales_navigator", category: "companies", location, industry, headcount }` and falls back to Unipile's own URL search when the URL has filters it cannot express. `searchType`/`searchParameters` are not needed.
+- **Fetch all results.** Use `limit: 100` (the page maximum). The first result reports `paging.total_count` and a `cursor`; repeat `search_linkedin_continue({ "cursor": "<cursor>", "limit": 100 })` until no `cursor` comes back or the list `total` reaches `total_count`. Every page lands in the same list. Do not stop after the first page when the user asked for all results, and say the total up front (for example "808 companies, 9 pages").
+- Then call `outreach_list` `attach` once with the `projectId` (from browsing context, or the one the user named) to show them on the project's Companies tab. If the project already has companies, `attach` adds to them (duplicates are dropped). Report fetched, added and duplicate counts.
 
 ### Source — Harvest (company discovery via people)
 
@@ -101,7 +103,7 @@ Web/AI search for new, niche, or poorly-covered companies.
 - Prefer `app_exa_web_search` when preloaded; otherwise `exa_web_search`.
 - Requires `EXA_API_KEY` (tell the user if missing).
 - `category`: `"company"`. Returns title/url/snippet only — extract **name** from title and **domain** from URL host.
-- If results spill to a file, parse with `code_interpreter` — never paste multi-KB JSON into the code string.
+- Exa results go to a list like every other provider (see **Result lists**); you only get a `listId` and counts.
 
 ```
 app_exa_web_search({
@@ -117,14 +119,28 @@ app_exa_web_search({
 
 Plain-language company sets. Pass the user's sentence as `query`. Do not turn it into a taxonomy filter, and do not use this for a pasted LinkedIn URL. Requires `BRIGHT_DATA_API_KEY`; tell the user if it is missing.
 
-`entity`: `"company"`. `mode`: `"ludicrous"` (default), `"smart"` or `"instant"`.
+`entity`: `"company"`. `mode`: always ludicrous (smart and instant are not used; any `mode` passed is ignored).
 
-**Ludicrous (default) is budgeted. Always show the cost before fetching.** It bills **$0.002 per returned record**, capped at **$10 per query**. The server turns the request into several structured, non-overlapping queries (title synonyms, cities, size and funding buckets), then fetches slice by slice and drops slices whose results stop being relevant.
+**Ludicrous is budgeted. Always show the cost before fetching.** It bills **$0.002 per returned record**, capped at **$10 per query**. The server turns the request into several structured, non-overlapping queries (title synonyms, cities, size and funding buckets), then fetches slice by slice and drops slices whose results stop being relevant.
+
+**What a query may say.** The sentence can only use ideas the company data holds: what the company is (industry, about, specialties, name), where (country, city), organization type, founded year, employee size, funding, followers. Write "cosmetics and beauty retail companies in India", never "... with stores and outlets", "chain", "franchise", store counts, revenue or ad activity: those words are not in the data, so they break matching. Judge those facts afterwards with enrichment columns (see **Build a target list**).
+
+**How the query is built (server side, you only pass the sentence).** The planner turns the request into a structured ludicrous `query` and always fetches `view: "full"`. Conditions are `and` / `or` / `not` over `text` (text fields), `equals` / `in` / `range` (typed fields). Text fields take only `text`, typed fields never take `text`, and single-value `in` on array fields stays `in`. Topic words use `mode: "all"` (every word required). Example for companies:
+
+```json
+{ "and": [
+  { "or": [
+    { "text": { "about": { "value": "quick service restaurant", "mode": "all" } } },
+    { "text": { "specialties": { "value": "quick service restaurant", "mode": "all" } } }
+  ] },
+  { "in": { "offices_country_codes": ["IN"] } }
+] }
+```
 
 1. **Estimate.** Call with the raw `query`, no `planId`, and **no `projectId`**. It spends a few cents sampling each slice and writes nothing. The result has `planId`, `shards` (per slice: `matched`, `fetchableRecords`, `samplePrecision`), `estimatedUniqueRecords`, `estimatedAccurateRecords`, `estimatedCostUsd`, `estimateCostUsd` and `budgetOptions` (records and dollars at several sizes).
 2. **Ask for a budget.** Show a short table of the slices with their counts, say how many unique records are reachable and the expected accuracy, and offer the `budgetOptions` ("250 records ≈ $0.50, 1,000 ≈ $2.00, all ≈ $X"). State the estimate itself already cost `estimateCostUsd`. If `message` warns that sampled accuracy is low, say so and offer to reword the request before spending more. Stop until the user picks a budget. If every slice matched 0, say so and offer a rewording instead.
 3. **Fetch.** After the user confirms, call again with the same `query`, the `planId`, `maxBudgetUsd` (their chosen budget, at most 10), `targetCount` (the number they asked for) and the `projectId`. The tool writes the Companies tab itself, so do not upsert those rows again. The estimate's sample rows are reused, so nothing is bought twice.
-4. **Report.** Use `count`, `spentUsd` and `shardReports` (per slice: fetched, kept, `stoppedReason`). Say which slices stopped early because relevance dropped, and what was spent against the budget.
+4. **Report.** The result carries `count`, `spentUsd`, `shardReports`, a `summary` (totals, top industries and countries) and a `listId` (= `planId`). The records are in that list (see **Result lists**) for 30 days, so nothing paid for is lost if the chat or the project is missing, and you never read them. Tell the user the count, the cost, the `summary` and where the rows are. If the call had no `projectId`, nothing was written to a tab: ask which project to use (see the write contract), then call `outreach_list` with `action: "attach"` (show them on the Companies tab, 500 at most) or `"save_to_crm"` (create CRM records; needs the user's go-ahead). For the whole list give the user an `export` link; use `peek` (max 10 rows) only for a quality check. Say which slices stopped early because relevance dropped and what was spent against the budget.
 
 If the plan has expired the tool says so; run the estimate again. Never exceed a budget the user did not confirm.
 
@@ -148,13 +164,7 @@ search_bright_data_business({
 })
 ```
 
-**Smart and instant** take a query up to 200 characters, return immediately and need no confirmation. Use them for quick previews or when the request is short. `smart` returns pages of 10 (max 100 results); `instant` pages of 100 (max 1000). Both also bill per returned record. Preview with `limit: 10` and no `projectId`, show the hits and `matched`, and only continue after the user approves the query:
-
-1. Write the preview rows with `execute_tool` `upsert_outreach_target_companies` (`mode: "merge"`, the `previewRows` verbatim, plus `projectId`).
-2. If the target is above 10, call the same query again with `offset: 10`, `limit: target - 10` and the `projectId`; the tool writes the Companies tab itself.
-3. Ranking can shift between calls and the tab dedupes by id. If rows landed are below the target, fetch the shortfall at most twice, then report landed rows against `matched`.
-
-Without a `projectId` (not on Find), keep the estimate or preview and approval, then return the rows in chat instead of writing them.
+Without a `projectId` (not on Find), keep the estimate and approval, then return the rows in chat instead of writing them.
 
 <!-- search-bright-data-companies-source-section:end -->
 <!-- search-wikidata-companies-source-section:start -->
@@ -176,7 +186,7 @@ Follow **Ephemeral write contract** (preamble). Steps:
 
 1. Collect + dedupe rows (normalize name; compare on **domain host**).
 2. Map to `{ name, domain, industry, employees, segment, icpFit, status: "new" }` — domain = URL host without protocol.
-3. Spilled search: one `code_interpreter` to build `companies[]` → one `execute_tool` upsert. Never upsert from the sandbox.
+3. Search tools in **Result lists** return a `listId`: show the rows with `outreach_list` `attach`. For a tool that still returns rows, build `companies[]` and make one `execute_tool` upsert. Never upsert from the sandbox.
 4. Tell the user the Companies tab count (UI refreshes within a few seconds).
 
 ### CRM save (only when the user asks)

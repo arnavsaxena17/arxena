@@ -47,9 +47,7 @@ const DEFAULT_MIN_DELAY = 1;
 const DEFAULT_MAX_DELAY = 5;
 const DEFAULT_CRUNCHBASE_ACTOR_ID = 'BBfgvSNWcySEk1jQO';
 
-const parsePastedCookies = (
-  raw: unknown,
-): BrowserExtensionCookie[] | null => {
+const parsePastedCookies = (raw: unknown): BrowserExtensionCookie[] | null => {
   if (raw === undefined || raw === null || raw === '') {
     return null;
   }
@@ -125,10 +123,7 @@ export class SearchCrunchbaseCompaniesService {
         this.environmentService
           .get('APIFY_CRUNCHBASE_COMPANIES_ACTOR_ID')
           ?.trim() || DEFAULT_CRUNCHBASE_ACTOR_ID;
-      const minDelay = this.resolveDelay(
-        input.minDelay,
-        DEFAULT_MIN_DELAY,
-      );
+      const minDelay = this.resolveDelay(input.minDelay, DEFAULT_MIN_DELAY);
       const maxDelay = Math.max(
         minDelay,
         this.resolveDelay(input.maxDelay, DEFAULT_MAX_DELAY),

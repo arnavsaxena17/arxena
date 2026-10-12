@@ -136,7 +136,10 @@ const companyIdentityKey = (company: {
 
   return domain !== ''
     ? `domain:${domain}`
-    : `name:${(company.name ?? '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()}`;
+    : `name:${(company.name ?? '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim()}`;
 };
 
 const normalizeLinkedinKey = (linkedinUrl: string): string =>
@@ -371,7 +374,9 @@ export class OutreachWorkingSetService {
         });
 
         return companies
-          .filter((company) => projectIdsHasProject(company.projectIds, projectId))
+          .filter((company) =>
+            projectIdsHasProject(company.projectIds, projectId),
+          )
           .map((company) => ({
             id: company.id,
             source: 'crm' as const,
@@ -489,11 +494,7 @@ export class OutreachWorkingSetService {
     });
 
     if (updated > 0) {
-      await this.outreachPeopleCacheService.set(
-        workspaceId,
-        projectId,
-        people,
-      );
+      await this.outreachPeopleCacheService.set(workspaceId, projectId, people);
     }
 
     return updated;

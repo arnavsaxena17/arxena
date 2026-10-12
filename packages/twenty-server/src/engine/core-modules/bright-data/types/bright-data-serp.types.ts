@@ -39,6 +39,8 @@ export type BrightDataSerpGoogleJson = {
     request_id?: string;
   };
   organic?: BrightDataSerpOrganicEntry[];
+  // Present only when Google shows an AI Overview and brd_ai_overview was requested
+  ai_overview?: unknown;
   pagination?: {
     pages?: BrightDataSerpPaginationPage[];
     current_page?: number;
@@ -48,7 +50,12 @@ export type BrightDataSerpGoogleJson = {
   };
 };
 
-export type BrightDataDatasetSnapshotStatus = 'running' | 'collecting' | 'processing' | 'ready' | 'failed';
+export type BrightDataDatasetSnapshotStatus =
+  | 'running'
+  | 'collecting'
+  | 'processing'
+  | 'ready'
+  | 'failed';
 
 export type BrightDataDatasetSnapshotProgress = {
   snapshot_id?: string;

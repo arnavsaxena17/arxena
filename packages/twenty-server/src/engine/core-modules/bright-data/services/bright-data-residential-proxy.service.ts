@@ -29,11 +29,15 @@ export class BrightDataResidentialProxyService {
   }
 
   private get username(): string | undefined {
-    return process.env.BRIGHT_DATA_RESIDENTIAL_PROXY_USERNAME?.trim() || undefined;
+    return (
+      process.env.BRIGHT_DATA_RESIDENTIAL_PROXY_USERNAME?.trim() || undefined
+    );
   }
 
   private get password(): string | undefined {
-    return process.env.BRIGHT_DATA_RESIDENTIAL_PROXY_PASSWORD?.trim() || undefined;
+    return (
+      process.env.BRIGHT_DATA_RESIDENTIAL_PROXY_PASSWORD?.trim() || undefined
+    );
   }
 
   private get ignoreSslErrors(): boolean {
@@ -41,7 +45,9 @@ export class BrightDataResidentialProxyService {
   }
 
   private get requestTimeoutMs(): number {
-    return Number(process.env.BRIGHT_DATA_RESIDENTIAL_PROXY_TIMEOUT_MS ?? 90_000);
+    return Number(
+      process.env.BRIGHT_DATA_RESIDENTIAL_PROXY_TIMEOUT_MS ?? 90_000,
+    );
   }
 
   isConfigured(): boolean {

@@ -45,10 +45,7 @@ export class OutreachCompanyEnrichmentCollectorService {
     const enrichmentSources = this.sources ?? [];
 
     for (const source of enrichmentSources) {
-      if (
-        source.sourceId === 'wikidata' &&
-        isDefined(collected.wikiCompany)
-      ) {
+      if (source.sourceId === 'wikidata' && isDefined(collected.wikiCompany)) {
         this.logger.log(
           `Skipping Wikidata enrich for ${input.domain}: companies index already returned a hit`,
         );
@@ -86,7 +83,9 @@ export class OutreachCompanyEnrichmentCollectorService {
           continue;
         }
 
-        collected.sourceIds.push(partial.sourceId as OutreachCompanyEnrichmentSourceId);
+        collected.sourceIds.push(
+          partial.sourceId as OutreachCompanyEnrichmentSourceId,
+        );
 
         if (partial.apolloOrganization) {
           collected.apolloOrganization = partial.apolloOrganization;

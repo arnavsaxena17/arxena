@@ -201,7 +201,9 @@ export class PlanLocalBusinessCityCoverageService {
       estimatedUsdPayg,
       pricingNote: `Bright Data Maps PAYG ~$${BRIGHT_DATA_MAPS_PAYG_USD_PER_RECORD}/record ($${(
         BRIGHT_DATA_MAPS_PAYG_USD_PER_RECORD * 1000
-      ).toFixed(2)}/1K). Budget uses gross delivered records before place_id dedupe.`,
+      ).toFixed(
+        2,
+      )}/1K). Budget uses gross delivered records before place_id dedupe.`,
       sampleHitRate,
       sampleRecordsReturned,
       sampleCreditsUsed,

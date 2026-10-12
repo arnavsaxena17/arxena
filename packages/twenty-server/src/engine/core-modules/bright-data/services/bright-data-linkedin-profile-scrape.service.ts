@@ -26,7 +26,9 @@ export type EnrichLinkedinPeopleSearchResultsOptions = {
 
 @Injectable()
 export class BrightDataLinkedinProfileScrapeService {
-  private readonly logger = new Logger(BrightDataLinkedinProfileScrapeService.name);
+  private readonly logger = new Logger(
+    BrightDataLinkedinProfileScrapeService.name,
+  );
 
   private get apiKey(): string | undefined {
     return process.env.BRIGHT_DATA_API_KEY?.trim() || undefined;
@@ -40,7 +42,9 @@ export class BrightDataLinkedinProfileScrapeService {
   }
 
   private get requestTimeoutMs(): number {
-    return Number(process.env.BRIGHT_DATA_LINKEDIN_PROFILE_SCRAPE_TIMEOUT_MS ?? 120_000);
+    return Number(
+      process.env.BRIGHT_DATA_LINKEDIN_PROFILE_SCRAPE_TIMEOUT_MS ?? 120_000,
+    );
   }
 
   /**
@@ -173,7 +177,7 @@ export class BrightDataLinkedinProfileScrapeService {
 
       const parsed = this.parseScrapeResponseJson(rawText);
 
-      console.log("Parsed : ", parsed)
+      console.log('Parsed : ', parsed);
 
       return parsed[0] ?? null;
     } catch (error) {
@@ -189,14 +193,12 @@ export class BrightDataLinkedinProfileScrapeService {
 
   private async scrapeProfilesByUrlParallel(
     urls: string[],
-    onProgress?: (
-      done: {
-        index: number;
-        total: number;
-        url: string;
-        success: boolean;
-      },
-    ) => void | Promise<void>,
+    onProgress?: (done: {
+      index: number;
+      total: number;
+      url: string;
+      success: boolean;
+    }) => void | Promise<void>,
   ): Promise<BrightDataLinkedinProfileRecord[]> {
     const uniqueUrls = [...new Set(urls.map((u) => u.trim()).filter(Boolean))];
 
@@ -204,7 +206,7 @@ export class BrightDataLinkedinProfileScrapeService {
       return [];
     }
 
-    console.log("Unique URLs : ", uniqueUrls)
+    console.log('Unique URLs : ', uniqueUrls);
 
     const total = uniqueUrls.length;
     const concurrency = Math.min(this.parallelConcurrency, total);
@@ -232,21 +234,23 @@ export class BrightDataLinkedinProfileScrapeService {
       }
     };
 
-    await Promise.all(
-      Array.from({ length: concurrency }, () => runWorker()),
-    );
+    await Promise.all(Array.from({ length: concurrency }, () => runWorker()));
 
     return records;
   }
 
-  private parseScrapeResponseJson(rawText: string): BrightDataLinkedinProfileRecord[] {
+  private parseScrapeResponseJson(
+    rawText: string,
+  ): BrightDataLinkedinProfileRecord[] {
     const trimmed = rawText.trim();
 
     if (!trimmed) {
       return [];
     }
 
-    const tryParseObject = (chunk: string): BrightDataLinkedinProfileRecord[] => {
+    const tryParseObject = (
+      chunk: string,
+    ): BrightDataLinkedinProfileRecord[] => {
       try {
         const parsed: unknown = JSON.parse(chunk);
 
@@ -273,7 +277,10 @@ export class BrightDataLinkedinProfileScrapeService {
       return fromSingle;
     }
 
-    const lines = trimmed.split('\n').map((l) => l.trim()).filter(Boolean);
+    const lines = trimmed
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
     const fromNdjson: BrightDataLinkedinProfileRecord[] = [];
 
     for (const line of lines) {
@@ -346,22 +353,29 @@ export class BrightDataLinkedinProfileScrapeService {
 
     await onProgress?.({ kind: 'batchStart', totalUrls: urls.length });
 
-    const scraped = await this.scrapeProfilesByUrlParallel(urls, async (done) => {
-      await onProgress?.({
-        kind: 'profileRequestDone',
-        index: done.index,
-        total: done.total,
-        url: done.url,
-        success: done.success,
-      });
-    });
+    const scraped = await this.scrapeProfilesByUrlParallel(
+      urls,
+      async (done) => {
+        await onProgress?.({
+          kind: 'profileRequestDone',
+          index: done.index,
+          total: done.total,
+          url: done.url,
+          success: done.success,
+        });
+      },
+    );
 
-    await onProgress?.({ kind: 'batchComplete', recordsReturned: scraped.length });
+    await onProgress?.({
+      kind: 'batchComplete',
+      recordsReturned: scraped.length,
+    });
 
     const byUrl = this.buildProfileMap(scraped);
 
     return candidates.map((candidate) => {
-      const rawUrl = candidate.profile_url || candidate.public_profile_url || '';
+      const rawUrl =
+        candidate.profile_url || candidate.public_profile_url || '';
       let key: string;
 
       try {

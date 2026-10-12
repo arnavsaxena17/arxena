@@ -14,6 +14,16 @@ import {
   type ArxenaToolPack,
 } from 'twenty-shared/outreach';
 import { ArxenaMcpBridgeService } from 'src/engine/core-modules/arxena-tools/services/arxena-mcp-bridge.service';
+import { createHash } from 'crypto';
+
+import { v5 } from 'uuid';
+
+import { OUTREACH_LIST_FILE_NAMESPACE } from 'src/engine/core-modules/outreach-list/outreach-list.constants';
+import { OutreachListService } from 'src/engine/core-modules/outreach-list/services/outreach-list.service';
+import {
+  isOutreachListSourceTool,
+  normalizeToolOutputToListRows,
+} from 'src/engine/core-modules/outreach-list/utils/outreach-list-normalizers.util';
 import { ApiKeyService } from 'src/engine/core-modules/api-key/services/api-key.service';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { type ApiKeyWorkspaceAuthContext } from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
@@ -65,6 +75,7 @@ export class ArxenaToolProvider implements ToolProvider {
     private readonly twentyConfigService: TwentyConfigService,
     private readonly accessTokenService: AccessTokenService,
     private readonly apiKeyService: ApiKeyService,
+    private readonly outreachListService: OutreachListService,
   ) {}
 
   async isAvailable(_context: ToolProviderContext): Promise<boolean> {
@@ -233,6 +244,23 @@ export class ArxenaToolProvider implements ToolProvider {
         isDefined(result) &&
         (result as { isError?: boolean }).isError === true;
 
+      if (!isError) {
+        const listed = await this.routeResultsToList(
+          toolName,
+          args,
+          parsed,
+          context.workspaceId,
+        );
+
+        if (isDefined(listed)) {
+          return {
+            success: true,
+            message: `Arxena tool ${toolName} completed`,
+            result: listed,
+          };
+        }
+      }
+
       return {
         success: !isError,
         message: isError
@@ -252,5 +280,97 @@ export class ArxenaToolProvider implements ToolProvider {
         error: message,
       };
     }
+  }
+
+  // Search results never go back to the model. Providers that return rows are
+  // routed into a list (Redis + S3 backup) and the model gets the listId and
+  // counts; the user reads the rows in the list, a project tab or an export.
+  private async routeResultsToList(
+    toolName: string,
+    args: Record<string, unknown>,
+    parsed: object,
+    workspaceId: string,
+  ): Promise<Record<string, unknown> | undefined> {
+    if (!isOutreachListSourceTool(toolName)) {
+      return undefined;
+    }
+
+    try {
+      const normalized = normalizeToolOutputToListRows(toolName, args, parsed);
+
+      if (!isDefined(normalized)) {
+        return undefined;
+      }
+
+      const signature = createHash('sha1')
+        .update(
+          JSON.stringify([
+            workspaceId,
+            normalized.source,
+            normalized.entity,
+            normalized.signatureArgs,
+          ]),
+        )
+        .digest('hex');
+      const listId = v5(signature, OUTREACH_LIST_FILE_NAMESPACE);
+      const outcome = await this.outreachListService.ingest({
+        workspaceId,
+        listId,
+        name: `${normalized.source} ${normalized.entity === 'company' ? 'companies' : 'people'}: ${normalized.label.slice(0, 60) || toolName}`,
+        entity: normalized.entity,
+        source: normalized.source,
+        rows: normalized.rows,
+        query: normalized.label || undefined,
+      });
+      const paging = this.extractPaging(parsed);
+
+      return {
+        listId: outcome.listId,
+        name: outcome.name,
+        entity: outcome.entity,
+        source: normalized.source,
+        fetched: normalized.rows.length,
+        added: outcome.added,
+        duplicates: outcome.duplicates,
+        total: outcome.total,
+        ...paging,
+        nextStep:
+          'The rows are in the list, not in this result. Use the outreach_list tool: summary, peek (max 10 rows), export (CSV link for the user), dedupe, attach (show on a project tab) or save_to_crm. Do not try to read the rows.',
+      };
+    } catch (error) {
+      this.logger.warn(
+        `Could not route ${toolName} results to a list: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+
+      return undefined;
+    }
+  }
+
+  // Small paging fields the model needs to ask for the next page
+  private extractPaging(parsed: object): Record<string, unknown> {
+    const root = (parsed as { result?: unknown }).result ?? parsed;
+
+    if (typeof root !== 'object' || root === null) {
+      return {};
+    }
+
+    const record = root as Record<string, unknown>;
+    const organizations = record.organizations as
+      | { pagination?: unknown }
+      | undefined;
+    const searchResults = record.searchResults as
+      | { paging?: unknown; cursor?: unknown }
+      | undefined;
+
+    return {
+      ...(typeof record.cursor === 'string' ? { cursor: record.cursor } : {}),
+      ...(record.paging ? { paging: record.paging } : {}),
+      ...(organizations?.pagination
+        ? { paging: organizations.pagination }
+        : {}),
+      ...(searchResults?.paging ? { paging: searchResults.paging } : {}),
+    };
   }
 }

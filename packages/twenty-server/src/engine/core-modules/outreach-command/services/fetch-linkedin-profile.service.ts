@@ -204,7 +204,10 @@ export class FetchLinkedinProfileService {
     ) {
       return this.buildMockProfile({
         workspaceId,
-        input: { ...input, linkedinProfileId: input.linkedinProfileId || resolved.identifier },
+        input: {
+          ...input,
+          linkedinProfileId: input.linkedinProfileId || resolved.identifier,
+        },
       });
     }
 

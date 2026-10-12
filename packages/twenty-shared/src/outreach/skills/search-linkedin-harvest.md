@@ -228,7 +228,7 @@ Wrong (classic shape — Unipile returns `Expected union value`): flat `job_titl
 }
 ```
 
-**From pasted URL** — use `search_linkedin_from_url` (not `search_linkedin_people`):
+**From pasted URL** — people URLs use `search_linkedin_from_url` (not `search_linkedin_people`); company URLs (`/sales/search/company`, `/search/results/companies`) use `search_linkedin_companies({ url })`. Both put rows in a list (see **Result lists**):
 
 ```json
 { "url": "https://www.linkedin.com/sales/search/people?query=(...)", "limit": 10 }
@@ -237,31 +237,17 @@ Wrong (classic shape — Unipile returns `Expected union value`): flat `job_titl
 **Continue pagination**
 
 ```json
-{ "cursor": "<full cursor from spill file — see cursor rule below>", "limit": 25 }
+{ "cursor": "<cursor from the previous result>", "limit": 25 }
 ```
 
-**Cursor rule (critical):** inline `preview.result.cursor` and hint text are **truncated**. Using them causes `api.Query.invalid_cursor`. Always read the full cursor from the last page’s spill file:
-
-```
-extract_json_paths({ "fileId": "<outputRef.fileId>", "paths": ["$.result.cursor"] })
-```
-
-If continue fails with `invalid_cursor`, re-extract from the spill file — do not substring the preview.
-
-**Spilled file path cheat sheet**
-
-| You have | Read items | Read cursor |
-| --- | --- | --- |
-| Spill file (`outputRef.fileId`) | `$.result.items[*]` via `code_interpreter` | `extract_json_paths` → `$.result.cursor` |
-| Inline tool result (not spilled) | use `preview.result.items` in the response | still prefer `extract_json_paths` on the spill file when `spilled: true` |
+`search_linkedin_people` / `search_linkedin_companies` / `search_linkedin_continue` put their rows in a list (see **Result lists**) and return the **full** `cursor` and `paging` inline. Pass that `cursor` unchanged to `search_linkedin_continue`; every page of the same search appends to the same `listId`. Never shorten the cursor. If continue fails with `api.Query.invalid_cursor`, repeat the search from the start instead of editing the cursor.
 
 **Sales Navigator saved people list** (`/sales/lists/people/{id}` — user pastes a URL):
 
-1. `search_linkedin_from_url({ url, limit: 25 })` — save `outputRef.fileId` as page 0.
-2. Loop: `extract_json_paths` → cursor from spill file → `search_linkedin_continue({ cursor, limit: 25 })` until all pages fetched (`paging.start + paging.page_count >= paging.total_count`).
-3. **One** `code_interpreter`: mount all page files, map each `result.items[]` → `{ name, title, companyName, linkedinUrl, stage: "queued" }` (see **People** field mapping).
-4. **One** `execute_tool({ toolName: "upsert_outreach_target_people", arguments: { projectId, mode: "merge", people } })`.
-5. Do not call `search_help_center` for this URL shape. Do not upsert from inside `code_interpreter`.
+1. `search_linkedin_from_url({ url, limit: 25 })` — rows go to a list (see **Result lists**).
+2. Page with `search_linkedin_continue({ cursor, limit: 25 })` until `paging.start + paging.page_count >= paging.total_count`; every page appends to the same `listId`.
+3. `outreach_list` `attach` with the `projectId` to show the people on the People tab. No `code_interpreter` or upsert needed.
+4. Do not call `search_help_center` for this URL shape.
 
 **Named Sales Navigator lead list** (user says a list name, no URL) — resolve via parameters first:
 

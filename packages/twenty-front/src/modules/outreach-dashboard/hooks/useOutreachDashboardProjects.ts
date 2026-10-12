@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 
-import { isOutreachProject } from '@/outreach-dashboard/utils/isOutreachProject';
 import { type OutreachProjectOption } from '@/outreach-home/types/outreach-home.types';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
@@ -45,7 +44,6 @@ export const useOutreachDashboardProjects = () => {
 
   const projectOptions = useMemo((): OutreachProjectOption[] => {
     return records
-      .filter(isOutreachProject)
       .map((project) => ({
         id: project.id,
         name: project.name?.trim() || 'Untitled GTM project',

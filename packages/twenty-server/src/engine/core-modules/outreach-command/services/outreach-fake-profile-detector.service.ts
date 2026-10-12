@@ -160,7 +160,9 @@ export class OutreachFakeProfileDetectorService {
     const name = profileDisplayName(input.profile);
     const publicIdentifier = profilePublicIdentifier(input.profile);
     const headline = profileHeadline(input.profile);
-    const investigationBrief = buildFakeProfileInvestigationBrief(input.profile);
+    const investigationBrief = buildFakeProfileInvestigationBrief(
+      input.profile,
+    );
     try {
       const generationResult = await runGenerateObject(
         this.aiSdkExecutionService,

@@ -240,7 +240,8 @@ export class BrightDataBusinessSearchService {
       query,
       offset,
       limit,
-      view: mode === 'ludicrous' && fields?.length ? { fields } : view,
+      // Always full: every stored field is kept so rows can be mapped later
+      view: 'full',
     };
 
     // smart and instant still require the legacy source discriminator

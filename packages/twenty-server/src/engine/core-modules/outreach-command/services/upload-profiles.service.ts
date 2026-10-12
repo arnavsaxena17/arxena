@@ -386,9 +386,7 @@ export class UploadProfilesService {
     return fromCreatedBy;
   }
 
-  private mergePeople(
-    people: UploadProfilesPerson[],
-  ): UploadProfilesPerson[] {
+  private mergePeople(people: UploadProfilesPerson[]): UploadProfilesPerson[] {
     const merged: UploadProfilesPerson[] = [];
     const seen = new Set<string>();
 
@@ -472,8 +470,9 @@ export class UploadProfilesService {
     return {
       people,
       projectId:
-        people.find((person) => isNonEmptyString(person.projectId))?.projectId
-          ?.trim() ?? '',
+        people
+          .find((person) => isNonEmptyString(person.projectId))
+          ?.projectId?.trim() ?? '',
     };
   }
 

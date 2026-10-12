@@ -1,3 +1,5 @@
+import { type WebSearchProviderId } from 'src/engine/core-modules/arx-web-search/utils/web-search-provider-chain.util';
+
 // Model-independent contract of the AI filter node.
 //
 // Input : records (people or companies) + a FilterSpec.
@@ -77,6 +79,11 @@ export type FilterRunStats = {
   inputTokens: number;
   outputTokens: number;
   webSearchCalls: number;
+  // Cheap search lookups (Perplexity / Google SERP) that replaced a paid web search call
+  groundedSearches: number;
+  groundedSearchCostUsd: number;
+  // Web lookups answered per provider of the chain, to report which one ran
+  webSearchProviders: Partial<Record<WebSearchProviderId, number>>;
   // Estimated from list prices. null for jev, which the gateway bills.
   estimatedCostUsd: number | null;
 };

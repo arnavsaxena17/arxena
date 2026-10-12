@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { isValidUuid } from 'twenty-shared/utils';
 
-import { SerpCompanySearchService } from 'src/engine/core-modules/linkedin-company-search/services/linkedin-company-search.service';
+import { SerpCompanySearchService } from 'src/engine/core-modules/serp-company-search/services/serp-company-search.service';
 import { CompaniesEsService } from 'src/engine/core-modules/org-chart/services/companies-es.service';
 import {
   OrgChartService,

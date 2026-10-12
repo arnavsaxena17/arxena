@@ -12,6 +12,7 @@ export const CHAT_INTENT_SKILLS = {
   localBusinessSearch: 'local-business-search',
   resolveCompanyName: 'resolve-company-name',
   aiFilterEnrich: 'ai-filter-enrich',
+  spreadsheetImport: 'spreadsheet-import',
   outreach: 'outreach',
   orgStructureInsights: 'org-structure-insights',
   crm: 'data-manipulation',

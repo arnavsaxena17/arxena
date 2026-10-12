@@ -45,6 +45,7 @@ const StyledLabel = styled.label`
 
 const StyledConditionRow = styled.div`
   display: flex;
+  flex-wrap: wrap;
   gap: ${themeCssVariables.spacing[1]};
 `;
 
@@ -97,6 +98,14 @@ export const OutreachRecordTableColumnMenu = <TRow,>({
 
     return [...values].sort((left, right) => left.localeCompare(right));
   }, [getCellText, rows]);
+  // Count-like columns (employees) arrive as text, so detect numbers from the data
+  const isNumeric =
+    valueType === 'number' ||
+    (distinctValues.some((value) => value !== '') &&
+      distinctValues.every(
+        (value) =>
+          value === '' || Number.isFinite(Number(value.replace(/,/g, ''))),
+      ));
   const selectedValues =
     filter?.kind === 'values' ? filter.values : distinctValues;
   const [operator, setOperator] = useState<
@@ -104,12 +113,15 @@ export const OutreachRecordTableColumnMenu = <TRow,>({
   >(
     filter?.kind === 'condition'
       ? filter.operator
-      : valueType === 'number'
+      : isNumeric
         ? 'greaterThan'
         : 'contains',
   );
   const [conditionValue, setConditionValue] = useState(
     filter?.kind === 'condition' ? filter.value : '',
+  );
+  const [conditionValueTo, setConditionValueTo] = useState(
+    filter?.kind === 'condition' ? (filter.valueTo ?? '') : '',
   );
 
   return (
@@ -123,7 +135,7 @@ export const OutreachRecordTableColumnMenu = <TRow,>({
           Hide column
         </StyledMenuButton>
       )}
-      {valueType !== 'number' &&
+      {!isNumeric &&
         distinctValues.map((value) => {
         const checked = selectedValues.includes(value);
 
@@ -164,12 +176,13 @@ export const OutreachRecordTableColumnMenu = <TRow,>({
           <option value="contains">Contains</option>
           <option value="notContains">Does not contain</option>
           <option value="equals">Equals</option>
-          {valueType === 'number' && (
+          {isNumeric && (
             <>
               <option value="greaterThan">Greater than</option>
               <option value="greaterThanOrEqual">Greater than or equal</option>
               <option value="lessThan">Less than</option>
               <option value="lessThanOrEqual">Less than or equal</option>
+              <option value="between">Between</option>
             </>
           )}
           <option value="empty">Is empty</option>
@@ -179,7 +192,16 @@ export const OutreachRecordTableColumnMenu = <TRow,>({
           <StyledInput
             aria-label="Filter value"
             value={conditionValue}
+            placeholder={operator === 'between' ? 'From' : undefined}
             onChange={(event) => setConditionValue(event.target.value)}
+          />
+        )}
+        {operator === 'between' && (
+          <StyledInput
+            aria-label="Filter upper value"
+            value={conditionValueTo}
+            placeholder="To"
+            onChange={(event) => setConditionValueTo(event.target.value)}
           />
         )}
         <StyledMenuButton
@@ -190,6 +212,7 @@ export const OutreachRecordTableColumnMenu = <TRow,>({
               kind: 'condition',
               operator,
               value: conditionValue,
+              ...(operator === 'between' ? { valueTo: conditionValueTo } : {}),
             })
           }
         >

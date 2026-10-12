@@ -19,7 +19,9 @@ export class OutreachWorkspaceAuthTokenService {
 
   async resolveApiKeyToken(workspaceId: string): Promise<string | null> {
     const apiKeys = await this.workspaceQueryService.getApiKeys(workspaceId);
-    const usable = apiKeys.find((apiKey) => this.apiKeyService.isActive(apiKey));
+    const usable = apiKeys.find((apiKey) =>
+      this.apiKeyService.isActive(apiKey),
+    );
     const apiKeyId = usable?.id;
 
     if (!isNonEmptyString(apiKeyId)) {

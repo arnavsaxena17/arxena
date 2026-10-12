@@ -12,7 +12,9 @@ export const SendFilesToolInputZodSchema = z.object({
     .string()
     .uuid()
     .optional()
-    .describe('Candidate id when available (used for LinkedIn provider resolve)'),
+    .describe(
+      'Candidate id when available (used for LinkedIn provider resolve)',
+    ),
   workspaceMemberId: z
     .string()
     .uuid()

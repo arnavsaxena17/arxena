@@ -82,7 +82,9 @@ describe('OutreachFakeProfileDetectorService', () => {
       resolveModelForAgentInWorkspace: jest.fn(),
     } as unknown as AiModelRegistryService;
 
-    const detector = new OutreachFakeProfileDetectorService(aiModelRegistryService);
+    const detector = new OutreachFakeProfileDetectorService(
+      aiModelRegistryService,
+    );
 
     const result = await detector.execute({
       input: { profile: FAKE_PROFILE },
@@ -106,9 +108,7 @@ describe('OutreachFakeProfileDetectorService', () => {
     expect(result.fakeCount).toBe(1);
     expect(result.fakeProfiles[0]?.isLikelyFake).toBe(true);
     expect(result.fakeProfiles[0]?.verdict).toBe('fake');
-    expect(result.fakeProfiles[0]?.publicIdentifier).toBe(
-      'syed-dadapeer5410',
-    );
+    expect(result.fakeProfiles[0]?.publicIdentifier).toBe('syed-dadapeer5410');
   });
 
   it('screens an array and keeps genuine profiles out of fakeProfiles', async () => {
@@ -143,7 +143,9 @@ describe('OutreachFakeProfileDetectorService', () => {
       resolveModelForAgentInWorkspace: jest.fn(),
     } as unknown as AiModelRegistryService;
 
-    const detector = new OutreachFakeProfileDetectorService(aiModelRegistryService);
+    const detector = new OutreachFakeProfileDetectorService(
+      aiModelRegistryService,
+    );
 
     const result = await detector.execute({
       input: {

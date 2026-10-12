@@ -1,8 +1,21 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  Optional,
+  forwardRef,
+} from '@nestjs/common';
 
 import { Sema } from 'async-sema';
 import { OpenAI } from 'openai';
 
+import { ArxWebSearchService } from 'src/engine/core-modules/arx-web-search/arx-web-search.service';
+import {
+  resolveProviderConcurrency,
+  resolveSonarSpillMs,
+  resolveWebSearchProviderChain,
+  type WebSearchProviderId,
+} from 'src/engine/core-modules/arx-web-search/utils/web-search-provider-chain.util';
 import {
   buildVerdict,
   failedVerdict,
@@ -30,7 +43,9 @@ const MAX_CONCURRENCY = 100;
 const MAX_BATCH_SIZE = 25;
 const OPENAI_ATTEMPTS = 4;
 const OPENAI_FALLBACK_MODEL = 'gpt-4o-mini';
-const DEFAULT_WEB_CONCURRENCY = 8;
+// Rows in flight for a web lookup. Each provider has its own, lower limit, so
+// this only has to be wide enough to keep every provider of the chain busy.
+const DEFAULT_WEB_CONCURRENCY = 32;
 const WEB_SEARCH_CALL_USD = 0.025;
 
 // USD per 1M tokens (input, output).
@@ -53,6 +68,30 @@ const clamp = (value: number | undefined, fallback: number, max: number) =>
   typeof value === 'number' && Number.isFinite(value) && value >= 1
     ? Math.min(Math.floor(value), max)
     : fallback;
+
+// An extraction counts as answered when at least one field holds a real value;
+// all-empty output means the SERP evidence did not contain the answer.
+const hasSubstantiveAnswer = (content: string): boolean => {
+  try {
+    const parsed = JSON.parse(content) as {
+      results?: Array<Record<string, unknown>>;
+    };
+
+    return (parsed.results ?? []).some((result) =>
+      Object.entries(result).some(
+        ([key, value]) =>
+          key !== 'id' &&
+          (typeof value === 'boolean' ||
+            typeof value === 'number' ||
+            (typeof value === 'string' &&
+              value.trim() !== '' &&
+              value.trim().toLowerCase() !== 'unknown')),
+      ),
+    );
+  } catch {
+    return false;
+  }
+};
 
 // A drained OpenAI balance answers 429 too, but waiting never helps.
 export const isQuotaExhaustedError = (error: unknown): boolean => {
@@ -85,8 +124,15 @@ const sleep = (milliseconds: number) =>
 export class AiFilterEngineService {
   private readonly logger = new Logger(AiFilterEngineService.name);
   private openAiClient: OpenAI | null = null;
+  private readonly providerLimiters = new Map<WebSearchProviderId, Sema>();
 
-  constructor(private readonly jevEvaluationService: JevEvaluationService) {}
+  constructor(
+    private readonly jevEvaluationService: JevEvaluationService,
+    // Cheap Google-SERP lookup used before the paid OpenAI web search tool
+    @Optional()
+    @Inject(forwardRef(() => ArxWebSearchService))
+    private readonly arxWebSearchService?: ArxWebSearchService,
+  ) {}
 
   // jev only answers boolean / enum questions. A filter whose required fields
   // are all boolean / enum can use it; otherwise, or when jev has no key, the
@@ -125,6 +171,9 @@ export class AiFilterEngineService {
       inputTokens: 0,
       outputTokens: 0,
       webSearchCalls: 0,
+      groundedSearches: 0,
+      groundedSearchCostUsd: 0,
+      webSearchProviders: {},
       estimatedCostUsd: null,
     };
     const semaphore = new Sema(
@@ -294,10 +343,7 @@ export class AiFilterEngineService {
     }
   }
 
-  private buildResponseSchema(
-    fields: FilterFieldSpec[],
-    allowUnknown = false,
-  ) {
+  private buildResponseSchema(fields: FilterFieldSpec[], allowUnknown = false) {
     const properties: Record<string, Record<string, unknown>> = {
       id: { type: 'string' },
     };
@@ -348,7 +394,8 @@ export class AiFilterEngineService {
       (
         (stats.inputTokens * inputPrice + stats.outputTokens * outputPrice) /
           1_000_000 +
-        stats.webSearchCalls * WEB_SEARCH_CALL_USD
+        stats.webSearchCalls * WEB_SEARCH_CALL_USD +
+        stats.groundedSearchCostUsd
       ).toFixed(6),
     );
   }
@@ -373,26 +420,42 @@ export class AiFilterEngineService {
     );
 
     if (spec.webSearch === true) {
-      const response = await this.getOpenAiClient().responses.create({
-        model: stats.model,
-        instructions: system,
-        input: user,
-        tools: [{ type: 'web_search_preview' }],
-        text: {
-          format: {
-            type: 'json_schema',
-            name: 'filter_results',
-            strict: true,
-            schema,
-          },
-        },
+      const grounded = await this.completeFromProviderChain({
+        system,
+        user,
+        spec,
+        stats,
+        schema,
       });
+
+      if (grounded !== undefined) {
+        return grounded;
+      }
+
+      const response = await this.withProviderLimit('openai', () =>
+        this.getOpenAiClient().responses.create({
+          model: stats.model,
+          instructions: system,
+          input: user,
+          // low context keeps each search at the cheapest price tier
+          tools: [{ type: 'web_search_preview', search_context_size: 'low' }],
+          text: {
+            format: {
+              type: 'json_schema',
+              name: 'filter_results',
+              strict: true,
+              schema,
+            },
+          },
+        }),
+      );
 
       stats.inputTokens += response.usage?.input_tokens ?? 0;
       stats.outputTokens += response.usage?.output_tokens ?? 0;
       stats.webSearchCalls += response.output.filter(
         (item) => item.type === 'web_search_call',
       ).length;
+      this.countProviderAnswer(stats, 'openai');
 
       return response.output_text;
     }
@@ -414,6 +477,220 @@ export class AiFilterEngineService {
     stats.outputTokens += completion.usage?.completion_tokens ?? 0;
 
     return completion.choices[0]?.message?.content;
+  }
+
+  private countProviderAnswer(
+    stats: FilterRunStats,
+    provider: WebSearchProviderId,
+  ) {
+    stats.webSearchProviders[provider] =
+      (stats.webSearchProviders[provider] ?? 0) + 1;
+  }
+
+  // One limiter per provider, shared by every run in this process, so a big
+  // column can keep SERP busy without flooding Sonar or the paid OpenAI tool.
+  private withProviderLimit<TResult>(
+    provider: WebSearchProviderId,
+    task: () => Promise<TResult>,
+  ): Promise<TResult> {
+    let limiter = this.providerLimiters.get(provider);
+
+    if (!limiter) {
+      limiter = new Sema(resolveProviderConcurrency(provider));
+      this.providerLimiters.set(provider, limiter);
+    }
+
+    const guard = limiter;
+
+    return (async () => {
+      await guard.acquire();
+
+      try {
+        return await task();
+      } finally {
+        guard.release();
+      }
+    })();
+  }
+
+  // Walks the provider chain (ARX_WEB_SEARCH_PROVIDERS, default perplexity,
+  // serp, openai). A step that gives nothing usable (not configured, failed,
+  // or evidence without an answer) hands the record to the next one. Returns
+  // undefined to let the caller run the paid OpenAI web search, and an empty
+  // result, an unanswered record, when the chain ends without "openai".
+  private async completeFromProviderChain(input: {
+    system: string;
+    user: string;
+    spec: FilterSpec;
+    stats: FilterRunStats;
+    schema: Record<string, unknown>;
+  }): Promise<string | undefined> {
+    for (const provider of resolveWebSearchProviderChain()) {
+      if (provider === 'openai') {
+        return undefined;
+      }
+
+      const answer =
+        provider === 'perplexity'
+          ? await this.completeFromSonar(input)
+          : await this.completeFromSearchEvidence(input);
+
+      if (answer !== undefined) {
+        this.countProviderAnswer(input.stats, provider);
+
+        return answer;
+      }
+    }
+
+    return JSON.stringify({ results: [] });
+  }
+
+  // Perplexity Sonar: live web search and the structured answer in one call.
+  private async completeFromSonar({
+    system,
+    user,
+    stats,
+    schema,
+  }: {
+    system: string;
+    user: string;
+    stats: FilterRunStats;
+    schema: Record<string, unknown>;
+  }): Promise<string | undefined> {
+    const webSearch = this.arxWebSearchService;
+
+    if (!webSearch?.isStructuredAvailable()) {
+      return undefined;
+    }
+
+    // Sonar is paced to the key's rate limit; past this much queue the lookup
+    // goes to the next provider instead of waiting (off unless configured).
+    const spillMs = resolveSonarSpillMs();
+
+    if (spillMs > 0 && (webSearch.sonarBacklogMs ?? 0) > spillMs) {
+      return undefined;
+    }
+
+    const sonar = await this.withProviderLimit('perplexity', () =>
+      webSearch.completeStructured({
+        system: `${system}\n\nAnswer from live web search about the exact record: match its name and, when given, its domain. If only a similarly named, usually bigger, company matches, that is not the record: answer as if nothing was found. Prefer the most recent figure. When no credible answer exists, leave the field empty (null for numbers, "unknown" for text and lists). Never guess.`,
+        user,
+        schema,
+      }),
+    );
+
+    if (sonar === null) {
+      return undefined;
+    }
+
+    stats.groundedSearches += 1;
+    stats.groundedSearchCostUsd += sonar.costUsd;
+    stats.inputTokens += sonar.inputTokens;
+    stats.outputTokens += sonar.outputTokens;
+
+    // Valid schema JSON, empty values included: "no credible answer" is an
+    // answer, not a failure, and trying another search would cost more.
+    return sonar.content;
+  }
+
+  // Cheap web lookup: write one search query, fetch a Google SERP and extract
+  // the answer from it with a strict-schema chat call. Returns undefined when
+  // the search gave nothing usable or the evidence held no answer.
+  private async completeFromSearchEvidence({
+    system,
+    user,
+    spec,
+    stats,
+    schema,
+  }: {
+    system: string;
+    user: string;
+    spec: FilterSpec;
+    stats: FilterRunStats;
+    schema: Record<string, unknown>;
+  }): Promise<string | undefined> {
+    const webSearch = this.arxWebSearchService;
+
+    if (!webSearch?.isSerpAvailable()) {
+      return undefined;
+    }
+
+    try {
+      const query = await this.writeSearchQuery({ user, spec, stats });
+      const evidence = await this.withProviderLimit('serp', () =>
+        webSearch.search(query, { serpOnly: true }),
+      );
+
+      if (evidence === null) {
+        return undefined;
+      }
+
+      stats.groundedSearches += 1;
+      stats.groundedSearchCostUsd += evidence.costUsd;
+
+      const completion = await this.getOpenAiClient().chat.completions.create({
+        model: stats.model,
+        temperature: 0,
+        messages: [
+          {
+            role: 'system',
+            content: `${system}\n\nAnswer only from the WEB EVIDENCE below, which is web search output for the query "${evidence.query}". Prefer the most recent figure. When the evidence holds no credible answer, leave the field empty (null for numbers, "unknown" for text and lists). Never guess.`,
+          },
+          {
+            role: 'user',
+            content: `${user}\n\nWEB EVIDENCE\n${evidence.text}`,
+          },
+        ],
+        response_format: {
+          type: 'json_schema',
+          json_schema: { name: 'filter_results', strict: true, schema },
+        },
+      });
+
+      stats.inputTokens += completion.usage?.prompt_tokens ?? 0;
+      stats.outputTokens += completion.usage?.completion_tokens ?? 0;
+
+      const content = completion.choices[0]?.message?.content;
+
+      return content && hasSubstantiveAnswer(content) ? content : undefined;
+    } catch (error) {
+      this.logger.warn(
+        `Search-grounded lookup failed, trying the next provider: ${error instanceof Error ? error.message : String(error)}`,
+      );
+
+      return undefined;
+    }
+  }
+
+  private async writeSearchQuery({
+    user,
+    spec,
+    stats,
+  }: {
+    user: string;
+    spec: FilterSpec;
+    stats: FilterRunStats;
+  }): Promise<string> {
+    const completion = await this.getOpenAiClient().chat.completions.create({
+      model: stats.model,
+      temperature: 0,
+      max_tokens: 40,
+      messages: [
+        {
+          role: 'system',
+          content:
+            'Write one Google search query of at most 12 words that would surface the answer to the task for the record. Name the company or person explicitly. Reply with the query only.',
+        },
+        { role: 'user', content: `Task:\n${spec.criteria.trim()}\n\n${user}` },
+      ],
+    });
+
+    stats.inputTokens += completion.usage?.prompt_tokens ?? 0;
+    stats.outputTokens += completion.usage?.completion_tokens ?? 0;
+
+    return (completion.choices[0]?.message?.content ?? '')
+      .replace(/^["'\s]+|["'\s]+$/g, '')
+      .slice(0, 200);
   }
 
   // Strict structured output: the API itself guarantees booleans and enum

@@ -1284,25 +1284,25 @@ export const SEARCH_APOLLO_PEOPLE_INPUT_DESCRIPTOR: readonly McpInputFieldDescri
     },
     {
       key: 'personTitles',
-      type: 'object',
+      type: 'array',
       description: 'Person title filters (e.g. ["Software Engineer", "CTO"])',
       required: false,
     },
     {
       key: 'organizationIds',
-      type: 'object',
+      type: 'array',
       description: 'Apollo organization_id filters (24-char IDs)',
       required: false,
     },
     {
       key: 'personLocations',
-      type: 'object',
+      type: 'array',
       description: 'Person location filters (e.g. ["India", "United States"])',
       required: false,
     },
     {
       key: 'organizationLocations',
-      type: 'object',
+      type: 'array',
       description: 'Organization location filters',
       required: false,
     },
@@ -1338,13 +1338,13 @@ export const SEARCH_APOLLO_COMPANIES_INPUT_DESCRIPTOR: readonly McpInputFieldDes
     },
     {
       key: 'domains',
-      type: 'object',
+      type: 'array',
       description: 'Company domain filters (e.g. ["acme.com"])',
       required: false,
     },
     {
       key: 'organizationLocations',
-      type: 'object',
+      type: 'array',
       description: 'Organization location filters',
       required: false,
     },
@@ -1473,8 +1473,9 @@ export const SEARCH_LINKEDIN_COMPANIES_INPUT_DESCRIPTOR: readonly McpInputFieldD
     {
       key: 'searchType',
       type: 'string',
-      description: 'One of: classic, sales_navigator',
-      required: true,
+      description:
+        'One of: classic, sales_navigator. Optional when url is provided.',
+      required: false,
     },
     {
       key: 'searchParameters',

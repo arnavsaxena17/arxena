@@ -12,17 +12,15 @@ const buildService = ({
   profilesByAccount: Record<string, Record<string, unknown> | Error>;
   cache?: Map<string, unknown>;
 }) => {
-  const fetchLinkedinUserProfile = jest.fn(
-    async (accountId: string) => {
-      const profile = profilesByAccount[accountId];
+  const fetchLinkedinUserProfile = jest.fn(async (accountId: string) => {
+    const profile = profilesByAccount[accountId];
 
-      if (profile instanceof Error) {
-        throw profile;
-      }
+    if (profile instanceof Error) {
+      throw profile;
+    }
 
-      return { ...prospectProfile, ...profile };
-    },
-  );
+    return { ...prospectProfile, ...profile };
+  });
   const repositories: Record<string, unknown> = {
     candidate: {
       findOne: async () => ({ id: 'c1', peopleId: 'person1' }),
@@ -128,9 +126,9 @@ describe('OutreachWarmOverlapService', () => {
     });
 
     expect(result?.winnerMemberId).toBe('m2');
-    expect(
-      result?.scores.find((score) => score.memberId === 'm1')?.error,
-    ).toBe('profile_fetch_failed');
+    expect(result?.scores.find((score) => score.memberId === 'm1')?.error).toBe(
+      'profile_fetch_failed',
+    );
   });
 
   it('should reuse the per-account cache instead of fetching again', async () => {

@@ -1,7 +1,15 @@
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+  Optional,
+  forwardRef,
+} from '@nestjs/common';
 import OpenAI from 'openai';
 
+import { ArxWebSearchService } from 'src/engine/core-modules/arx-web-search/arx-web-search.service';
 import { LinkedinUnipileEstimateAccountService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-estimate-account.service';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
@@ -219,6 +227,10 @@ export class IcpExtractionService {
     private readonly apolloIoRestService: ApolloIoRestService,
     private readonly linkedInSearchService: LinkedInSearchService,
     private readonly resumeReadParseUploadService: ResumeReadParseUploadService,
+    // Perplexity-backed search; OpenAI's web_search tool is the fallback
+    @Optional()
+    @Inject(forwardRef(() => ArxWebSearchService))
+    private readonly arxWebSearchService?: ArxWebSearchService,
   ) {}
 
   async extractIcp(params: ExtractIcpParams): Promise<ExtractIcpResponse> {
@@ -665,19 +677,39 @@ export class IcpExtractionService {
       `Company websearch for "${input.companyName}" person="${input.personName ?? ''}"`,
     );
 
+    const evidence = this.arxWebSearchService?.isAvailable()
+      ? await this.arxWebSearchService.search(
+          [
+            input.companyName,
+            input.location,
+            'company what it sells industry employees headquarters',
+          ]
+            .filter(Boolean)
+            .join(' '),
+        )
+      : null;
+
     const response = await openai.responses.create({
       model: COMPANY_WEBSEARCH_MODEL,
       reasoning: { effort: 'medium' },
-      tools: [{ type: 'web_search' }],
-      tool_choice: 'required',
+      // With Perplexity evidence in hand the paid web_search tool is not needed
+      ...(evidence === null
+        ? { tools: [{ type: 'web_search' as const }], tool_choice: 'required' as const }
+        : {}),
       input: [
         {
           role: 'developer',
-          content: COMPANY_WEBSEARCH_DEVELOPER_PROMPT,
+          content:
+            evidence === null
+              ? COMPANY_WEBSEARCH_DEVELOPER_PROMPT
+              : `${COMPANY_WEBSEARCH_DEVELOPER_PROMPT}\n\nWeb search is already done: answer only from the SEARCH RESULTS in the user message and do not guess beyond them.`,
         },
         {
           role: 'user',
-          content: userPrompt,
+          content:
+            evidence === null
+              ? userPrompt
+              : `${userPrompt}\n\n${evidence.text}`,
         },
       ],
       text: {

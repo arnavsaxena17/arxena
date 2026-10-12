@@ -1,5 +1,12 @@
 import { styled } from '@linaria/react';
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { isDefined } from 'twenty-shared/utils';
 import {
   IconArrowDown,
@@ -38,6 +45,15 @@ import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
 // RecordTable.
 
 const CHECKBOX_COLUMN_WIDTH = 32;
+
+// Working sets reach thousands of rows; rendering them all makes every sort,
+// selection or click re-render the whole table. Rows have a fixed height, so
+// only the window in view (plus overscan) is mounted and spacer rows keep the
+// scroll height.
+const ROW_OVERSCAN = 15;
+// The window start moves in buckets so scrolling does not re-render per row
+const WINDOW_START_BUCKET = 5;
+const DEFAULT_VIEWPORT_HEIGHT = 900;
 
 export type OutreachRecordTableColumn<TRow> = {
   id: string;
@@ -366,7 +382,10 @@ export const OutreachRecordTable = <TRow,>({
     setSortState(
       externalSort.columnId === ''
         ? null
-        : { columnId: externalSort.columnId, direction: externalSort.direction },
+        : {
+            columnId: externalSort.columnId,
+            direction: externalSort.direction,
+          },
     );
   }, [externalSort]);
   const [openMenuColumnId, setOpenMenuColumnId] = useState<string | null>(null);
@@ -379,6 +398,24 @@ export const OutreachRecordTable = <TRow,>({
     columnId: string;
     draft: string;
   } | null>(null);
+
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(DEFAULT_VIEWPORT_HEIGHT);
+
+  const handleScroll = useCallback(() => {
+    const nextScrollTop = scrollContainerRef.current?.scrollTop ?? 0;
+    const nextBucket = Math.floor(
+      nextScrollTop / RECORD_TABLE_ROW_HEIGHT / WINDOW_START_BUCKET,
+    );
+
+    setScrollTop((previous) =>
+      Math.floor(previous / RECORD_TABLE_ROW_HEIGHT / WINDOW_START_BUCKET) ===
+      nextBucket
+        ? previous
+        : nextScrollTop,
+    );
+  }, []);
 
   const visibleColumns = useMemo(
     () => resolveVisibleColumns(columns, columnLayout),
@@ -410,6 +447,25 @@ export const OutreachRecordTable = <TRow,>({
 
     return () => window.removeEventListener('mousedown', closeMenu);
   }, [addMenuOpen, openMenuColumnId]);
+
+  const hasScrollContainer = !(isMobile && isDefined(getMobileCard));
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+
+    if (!isDefined(container) || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+
+    const observer = new ResizeObserver(() =>
+      setViewportHeight(container.clientHeight),
+    );
+
+    observer.observe(container);
+    setViewportHeight(container.clientHeight);
+
+    return () => observer.disconnect();
+  }, [hasScrollContainer]);
 
   const sortedRows = useMemo(() => {
     const sortColumn = visibleColumns.find(
@@ -495,13 +551,36 @@ export const OutreachRecordTable = <TRow,>({
     );
   }
 
+  const firstVisibleIndex = Math.max(
+    0,
+    Math.floor((scrollTop - RECORD_TABLE_ROW_HEIGHT) / RECORD_TABLE_ROW_HEIGHT),
+  );
+  const windowStart =
+    Math.max(
+      0,
+      Math.floor(firstVisibleIndex / WINDOW_START_BUCKET) * WINDOW_START_BUCKET,
+    ) - ROW_OVERSCAN;
+  const clampedWindowStart = Math.max(0, windowStart);
+  const windowEnd = Math.min(
+    sortedRows.length,
+    firstVisibleIndex +
+      Math.ceil(viewportHeight / RECORD_TABLE_ROW_HEIGHT) +
+      WINDOW_START_BUCKET +
+      ROW_OVERSCAN,
+  );
+  const windowedRows = sortedRows.slice(clampedWindowStart, windowEnd);
+  const topSpacerHeight = clampedWindowStart * RECORD_TABLE_ROW_HEIGHT;
+  const bottomSpacerHeight =
+    Math.max(0, sortedRows.length - windowEnd) * RECORD_TABLE_ROW_HEIGHT;
+  const columnSpan = visibleColumns.length + 3;
+
   const tableWidth =
     CHECKBOX_COLUMN_WIDTH +
     visibleColumns.reduce((total, column) => total + column.width, 0) +
     32;
 
   return (
-    <StyledScrollContainer>
+    <StyledScrollContainer ref={scrollContainerRef} onScroll={handleScroll}>
       <StyledTable style={{ width: tableWidth }}>
         <colgroup>
           <col style={{ width: CHECKBOX_COLUMN_WIDTH }} />
@@ -760,7 +839,12 @@ export const OutreachRecordTable = <TRow,>({
           </tr>
         </thead>
         <tbody>
-          {sortedRows.map((row) => {
+          {topSpacerHeight > 0 && (
+            <tr aria-hidden style={{ height: topSpacerHeight }}>
+              <td colSpan={columnSpan} style={{ padding: 0, border: 0 }} />
+            </tr>
+          )}
+          {windowedRows.map((row) => {
             const rowId = getRowId(row);
             const isSelected = selectedRowIdSet.has(rowId);
 
@@ -855,6 +939,11 @@ export const OutreachRecordTable = <TRow,>({
               </StyledRow>
             );
           })}
+          {bottomSpacerHeight > 0 && (
+            <tr aria-hidden style={{ height: bottomSpacerHeight }}>
+              <td colSpan={columnSpan} style={{ padding: 0, border: 0 }} />
+            </tr>
+          )}
         </tbody>
       </StyledTable>
     </StyledScrollContainer>

@@ -25,14 +25,19 @@ export class BrightDataUnlockerService {
   }
 
   private get requestTimeoutMs(): number {
-    return Number(process.env.BRIGHT_DATA_UNLOCKER_REQUEST_TIMEOUT_MS ?? 300_000);
+    return Number(
+      process.env.BRIGHT_DATA_UNLOCKER_REQUEST_TIMEOUT_MS ?? 300_000,
+    );
   }
 
   isConfigured(): boolean {
     return Boolean(this.apiKey);
   }
 
-  private async postJson<T>(url: string, payload: Record<string, unknown>): Promise<T> {
+  private async postJson<T>(
+    url: string,
+    payload: Record<string, unknown>,
+  ): Promise<T> {
     const key = this.apiKey;
 
     if (!key) {
@@ -139,22 +144,25 @@ export class BrightDataUnlockerService {
       );
     }
 
-    const response = await this.postRawText('https://api.brightdata.com/request', {
-      zone,
-      url: input.url,
-      format: 'raw',
-      ...(input.country ? { country: input.country } : {}),
-      ...(input.render !== undefined
-        ? {
-            render:
-              typeof input.render === 'boolean'
-                ? input.render
-                  ? 'true'
-                  : 'false'
-                : input.render,
-          }
-        : {}),
-    });
+    const response = await this.postRawText(
+      'https://api.brightdata.com/request',
+      {
+        zone,
+        url: input.url,
+        format: 'raw',
+        ...(input.country ? { country: input.country } : {}),
+        ...(input.render !== undefined
+          ? {
+              render:
+                typeof input.render === 'boolean'
+                  ? input.render
+                    ? 'true'
+                    : 'false'
+                  : input.render,
+            }
+          : {}),
+      },
+    );
 
     return {
       statusCode: response.status,

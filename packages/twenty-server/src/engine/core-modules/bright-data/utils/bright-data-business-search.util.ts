@@ -28,8 +28,10 @@ export const BRIGHT_DATA_BUSINESS_SEARCH_MAX_RESULTS: Record<
   BrightDataBusinessSearchMode,
   number
 > = {
+  // Verified live: smart and instant 500 (backend_search_failed) whenever
+  // offset + limit goes past 100. Only ludicrous can page deeper.
   smart: 100,
-  instant: 1000,
+  instant: 100,
   // offset is capped at 1000 and limit at 100, so a single query tops out here
   ludicrous: 1100,
 };
@@ -63,12 +65,18 @@ export const planBrightDataBusinessSearchPages = ({
 }): Array<{ offset: number; limit: number }> => {
   const pageSize = BRIGHT_DATA_BUSINESS_SEARCH_PAGE_SIZE[mode];
   const maxResults = BRIGHT_DATA_BUSINESS_SEARCH_MAX_RESULTS[mode];
+
+  if (mode !== 'ludicrous' && Math.max(0, offset ?? 0) >= maxResults) {
+    throw new Error(
+      `${mode} mode only returns the first ${maxResults} results (offset + limit <= ${maxResults}). Use ludicrous mode (estimate, then planId and maxBudgetUsd) to fetch more.`,
+    );
+  }
+
   const requested = Math.min(
     Math.max(1, limit ?? pageSize),
-    // offset must stay <= 1000 for ludicrous, so the last page starts there
-    mode === 'ludicrous'
-      ? Math.max(1, maxResults - Math.max(0, offset ?? 0))
-      : maxResults,
+    // ludicrous: offset must stay <= 1000, so the last page starts there.
+    // smart/instant: the whole window is offset + limit <= 100.
+    Math.max(1, maxResults - Math.max(0, offset ?? 0)),
   );
   const pages: Array<{ offset: number; limit: number }> = [];
   let collected = 0;
@@ -85,10 +93,7 @@ export const planBrightDataBusinessSearchPages = ({
   return pages;
 };
 
-const readString = (
-  record: Record<string, unknown>,
-  key: string,
-): string => {
+const readString = (record: Record<string, unknown>, key: string): string => {
   const value = record[key];
 
   if (typeof value === 'string' && value.trim()) {
@@ -146,6 +151,67 @@ export const mapBrightDataCompanyToSearchHit = (
   };
 };
 
+const readList = (record: Record<string, unknown>, key: string): string[] => {
+  const value = record[key];
+
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+    : [];
+};
+
+const readNumber = (
+  record: Record<string, unknown>,
+  key: string,
+): number | undefined => {
+  const value = record[key];
+
+  return typeof value === 'number' && Number.isFinite(value)
+    ? value
+    : undefined;
+};
+
+// The table builds one column per otherFields key, so every queryable
+// Bright Data company field is kept here, readable by name. Long lists of ids
+// and image urls are left out.
+const ABOUT_MAX_LENGTH = 1500;
+
+export const buildBrightDataCompanyOtherFields = (
+  data: Record<string, unknown>,
+): Record<string, unknown> => {
+  const sizeFrom = readString(data, 'company_size_from');
+  const sizeTo = readString(data, 'company_size_to');
+  const officeAddresses = readList(data, 'offices_addresses');
+  const officeCities = readList(data, 'offices_cities');
+  const candidates: Record<string, unknown> = {
+    linkedinUrl: readString(data, 'url'),
+    website: readString(data, 'website'),
+    about: readString(data, 'about').slice(0, ABOUT_MAX_LENGTH),
+    slogan: readString(data, 'slogan'),
+    specialties: readString(data, 'specialties'),
+    headquartersCountry: readString(data, 'headquarters_country_code'),
+    headquartersCity: readString(data, 'headquarters_city'),
+    headquartersLocation: readString(data, 'headquarters_location'),
+    officeCities: officeCities.join(', '),
+    // LinkedIn lists a company's office addresses; for store brands this is a
+    // rough hint of how many locations it has, never an exact store count.
+    officeAddressCount:
+      officeAddresses.length > 0 ? officeAddresses.length : undefined,
+    employeesOnLinkedin: readNumber(data, 'employees_in_linkedin'),
+    sizeBand: sizeFrom && sizeTo ? `${sizeFrom}-${sizeTo}` : sizeFrom || sizeTo,
+    foundedYear: readNumber(data, 'founded_year'),
+    linkedinFollowers: readNumber(data, 'linkedin_followers'),
+    fundingStage: readString(data, 'funding_stage'),
+    fundingRaisedUsd: readNumber(data, 'funding_raised'),
+    investors: readString(data, 'investor_names'),
+  };
+
+  return Object.fromEntries(
+    Object.entries(candidates).filter(
+      ([, value]) => value !== undefined && value !== '',
+    ),
+  );
+};
+
 export const mapBrightDataCompanyToEphemeral = (
   document: BrightDataBusinessSearchDocument,
 ): OutreachEphemeralCompany | null => {
@@ -164,6 +230,7 @@ export const mapBrightDataCompanyToEphemeral = (
     segment: readString(document.data, 'organization_type'),
     icpFit: '',
     status: 'new',
+    otherFields: buildBrightDataCompanyOtherFields(document.data),
   };
 };
 
@@ -172,8 +239,7 @@ export const mapBrightDataPersonToSearchItem = (
 ): Record<string, unknown> => {
   const data = document.data;
   const title = readString(data, 'current_title');
-  const location =
-    readString(data, 'location') || readString(data, 'city');
+  const location = readString(data, 'location') || readString(data, 'city');
 
   return {
     name: readString(data, 'name'),
@@ -206,11 +272,62 @@ export const mapBrightDataPersonToEphemeral = (
     headline: typeof item.headline === 'string' ? item.headline : '',
     summary: typeof item.about === 'string' ? item.about : '',
     companyId: '',
-    companyName:
-      typeof item.companyName === 'string' ? item.companyName : '',
+    companyName: typeof item.companyName === 'string' ? item.companyName : '',
     linkedinUrl: typeof item.url === 'string' ? item.url : '',
     warmPath: '—',
     stage: 'queued',
     email: '',
   };
 };
+
+export type BrightDataRunAggregate = {
+  total: number;
+  topIndustries: Array<{ name: string; count: number }>;
+  topCountries: Array<{ name: string; count: number }>;
+};
+
+const topCounts = (
+  values: string[],
+  limit: number,
+): Array<{ name: string; count: number }> => {
+  const counts = new Map<string, number>();
+
+  for (const value of values) {
+    if (value) {
+      counts.set(value, (counts.get(value) ?? 0) + 1);
+    }
+  }
+
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([name, count]) => ({ name, count }));
+};
+
+// What the model may see about a fetched set: counts only, never the rows. The
+// rows live in the dataset store and the project tab, so they cannot pile up in
+// the conversation or be truncated out of it.
+export const aggregateBrightDataDocuments = (
+  entity: BrightDataBusinessSearchEntity,
+  documents: BrightDataBusinessSearchDocument[],
+): BrightDataRunAggregate => ({
+  total: documents.length,
+  topIndustries: topCounts(
+    documents.map((document) =>
+      readString(
+        document.data,
+        entity === 'company' ? 'industry' : 'current_company_industry',
+      ),
+    ),
+    5,
+  ),
+  topCountries: topCounts(
+    documents.map((document) =>
+      readString(
+        document.data,
+        entity === 'company' ? 'headquarters_country_code' : 'country_code',
+      ),
+    ),
+    5,
+  ),
+});

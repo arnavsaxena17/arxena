@@ -605,7 +605,14 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
     pack: 'prospecting',
     label: 'Search Bright Data Business',
     description:
-      'Bright Data Business Search for companies or people from a raw natural-language request. Default mode ludicrous: first call returns a budget (planId, match counts per slice, expected accuracy, cost at $0.002 per record); call again with planId and maxBudgetUsd (max $10) after the user confirms. Modes smart and instant return immediately. Pass projectId to write the Outreach tab.',
+      'Bright Data Business Search for companies or people from a raw natural-language request. Always ludicrous (any mode is ignored): first call returns a budget (planId, match counts per slice, expected accuracy, cost at $0.002 per record); call again with planId and maxBudgetUsd (max $10) after the user confirms. The result has counts and a summary, never the records. Records are fetched with the full view and kept for 30 days under the planId (call again with planId + projectId to write them at no charge). Pass projectId to write the Outreach tab. For a targeted company + position lookup ("CEO of Burger King India") pass autoExecute true with maxBudgetUsd and targetCount: it plans and fetches in one call, with no estimate or confirmation.',
+  },
+  {
+    name: 'outreach_list',
+    pack: 'prospecting',
+    label: 'Search Result Lists',
+    description:
+      'Search results live in lists (every search tool returns a listId and counts, never rows). Actions: list, summary, peek (max 10 rows), export (CSV link to give the user), dedupe (against crm or other lists), attach (show on a project tab), save_to_crm (create CRM Company / Person records tagged to a project, never enrolled), delete. Lists last 30 days (paid sources) or 7 (free), extended when used. Never read a whole list into the chat.',
   },
   {
     name: 'search_local_businesses',

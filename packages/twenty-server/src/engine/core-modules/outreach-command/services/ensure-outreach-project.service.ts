@@ -5,7 +5,10 @@ import { isDefined } from 'twenty-shared/utils';
 import { type ObjectLiteral } from 'typeorm';
 
 import { buildCreatedByFromSystem } from 'src/engine/core-modules/actor/utils/build-created-by-from-system.util';
-import { appendProjectId, parseProjectIds } from 'src/engine/core-modules/outreach-command/utils/project-ids.util';
+import {
+  appendProjectId,
+  parseProjectIds,
+} from 'src/engine/core-modules/outreach-command/utils/project-ids.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
@@ -75,7 +78,10 @@ export class EnsureOutreachProjectService {
             return;
           }
 
-          const nextKeys = appendProjectId(company.projectIds, resolvedProjectId);
+          const nextKeys = appendProjectId(
+            company.projectIds,
+            resolvedProjectId,
+          );
 
           if (nextKeys.length === parseProjectIds(company.projectIds).length) {
             return;
@@ -123,7 +129,10 @@ export class EnsureOutreachProjectService {
         if (isDefined(existingProject)) {
           await tagCompany(existingProject.id);
 
-          return { projectId: existingProject.id, projectIds: existingProject.id };
+          return {
+            projectId: existingProject.id,
+            projectIds: existingProject.id,
+          };
         }
 
         const createdBy = buildCreatedByFromSystem();

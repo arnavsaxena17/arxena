@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
 import { mapBrightDataPersonToSearchItem } from 'src/engine/core-modules/bright-data/utils/bright-data-business-search.util';
-import { BrightDataLudicrousSearchService } from 'src/engine/core-modules/bright-data-ludicrous/services/bright-data-ludicrous-search.service';
+import { BrightDataLudicrousSearchService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-search.service';
 import { matchesBrightDataCompanyName } from 'src/engine/core-modules/org-chart/utils/match-bright-data-company-name.util';
 
 export type OrgChartBrightDataPeopleInput = {

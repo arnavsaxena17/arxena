@@ -15,7 +15,10 @@ import {
   findMatchingCompanyRecord,
   normalizeCompanyUrl,
 } from 'src/engine/core-modules/company-api/utils/company-identity.util';
-import { appendProjectId, projectIdsHasProject } from 'src/engine/core-modules/outreach-command/utils/project-ids.util';
+import {
+  appendProjectId,
+  projectIdsHasProject,
+} from 'src/engine/core-modules/outreach-command/utils/project-ids.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
@@ -58,7 +61,8 @@ const toPrimaryLink = (url: string) => {
   href = href.replace(/\/+$/, '');
 
   const primaryLinkUrl = href.startsWith('http') ? href : `https://${href}`;
-  const primaryLinkLabel = normalizeCompanyUrl(primaryLinkUrl).split('/')[0] ?? '';
+  const primaryLinkLabel =
+    normalizeCompanyUrl(primaryLinkUrl).split('/')[0] ?? '';
 
   return {
     primaryLinkUrl,
@@ -231,10 +235,14 @@ export class UpsertCompaniesService {
 
           const match = findMatchingCompanyRecord(hit, existing);
 
-          const nextOutreachRunKey = appendProjectId(match?.projectIds, projectId);
+          const nextOutreachRunKey = appendProjectId(
+            match?.projectIds,
+            projectId,
+          );
           const patch = pickWritable(
             {
-              ...(domainLink && !normalizeCompanyUrl(companyWebsiteUrl(match ?? {}))
+              ...(domainLink &&
+              !normalizeCompanyUrl(companyWebsiteUrl(match ?? {}))
                 ? { domainName: domainLink }
                 : {}),
               ...(linkedinLink &&
@@ -347,7 +355,10 @@ export class UpsertCompaniesService {
     ];
     const where: Array<Record<string, unknown>> = [];
 
-    if (linkedinIds.length > 0 && (columns.size === 0 || columns.has('linkedinId'))) {
+    if (
+      linkedinIds.length > 0 &&
+      (columns.size === 0 || columns.has('linkedinId'))
+    ) {
       where.push({ linkedinId: In(linkedinIds) });
     }
 

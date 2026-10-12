@@ -8,6 +8,8 @@ export const WORKFLOW_AGENT_EXCLUDED_TOOL_NAMES = [
   'highlight_org_chart',
   'upsert_outreach_target_companies',
   'upsert_outreach_target_people',
+  'inspect_outreach_spreadsheet',
+  'import_outreach_spreadsheet',
   'save_outreach_targets_to_crm',
   'start_outreach',
   'get_outreach_working_set',

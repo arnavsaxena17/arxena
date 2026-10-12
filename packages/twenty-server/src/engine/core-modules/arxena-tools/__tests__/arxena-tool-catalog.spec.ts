@@ -1,10 +1,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-import {
-  ARXENA_TOOL_CATALOG,
-  ARXENA_TOOL_NAMES,
-} from 'twenty-shared/outreach';
+import { ARXENA_TOOL_CATALOG, ARXENA_TOOL_NAMES } from 'twenty-shared/outreach';
 import {
   ARXENA_TOOL_SELECTION_QUERIES,
   countToolsInContext,

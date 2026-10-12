@@ -12,9 +12,7 @@ import { CompaniesEsService } from 'src/engine/core-modules/org-chart/services/c
 
 // Companies ES index: free_company_dataset first, then std_company_data_scores
 @Injectable()
-export class OutreachCompaniesIndexWikiEnrichmentSource
-  implements OutreachCompanyEnrichmentSource
-{
+export class OutreachCompaniesIndexWikiEnrichmentSource implements OutreachCompanyEnrichmentSource {
   readonly sourceId = 'companies_index_wiki' as const;
   private readonly logger = new Logger(
     OutreachCompaniesIndexWikiEnrichmentSource.name,

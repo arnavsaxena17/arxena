@@ -30,7 +30,9 @@ const inboundClassificationSchema = z.object({
 
 @Injectable()
 export class OutreachInboundReplyClassifierService {
-  private readonly logger = new Logger(OutreachInboundReplyClassifierService.name);
+  private readonly logger = new Logger(
+    OutreachInboundReplyClassifierService.name,
+  );
 
   constructor(private readonly workspaceQueryService: WorkspaceQueryService) {}
 
@@ -119,7 +121,8 @@ export class OutreachInboundReplyClassifierService {
 
     return this.classify({
       workspaceId,
-      inboundBurst: inboundBurst || turns.map((turn) => turn.content).join('\n'),
+      inboundBurst:
+        inboundBurst || turns.map((turn) => turn.content).join('\n'),
       priorTurns,
     });
   }

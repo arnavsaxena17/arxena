@@ -185,10 +185,7 @@ export class OutreachFilterProfilesService {
     const assessments = isOnlyOnePersonPerCompanyEnabled(
       input.onlyOnePersonPerCompany,
     )
-      ? keepSeniorPersonPerCompany(
-          assessed,
-          (assessment) => assessment.profile,
-        )
+      ? keepSeniorPersonPerCompany(assessed, (assessment) => assessment.profile)
       : assessed;
 
     const people = assessments

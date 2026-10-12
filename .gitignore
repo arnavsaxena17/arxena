@@ -72,6 +72,8 @@ screenshots/
 **/graphify-out/
 
 # Large / local-only artifacts (from workflows)
+/final_list_all.csv
+/final_list_food_and_beverage.csv
 sample_jds/
 sample_jds/**
 packages/twenty-e2e-testing/~/

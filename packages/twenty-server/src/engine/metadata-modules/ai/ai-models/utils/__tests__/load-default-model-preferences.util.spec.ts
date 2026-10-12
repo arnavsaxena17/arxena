@@ -6,6 +6,7 @@ describe('DEFAULT_RECOMMENDED_MODELS', () => {
       expect.arrayContaining([
         'openai/gpt-4o-mini',
         'openrouter/deepseek/deepseek-v4-flash-0731',
+        'openrouter/deepseek/deepseek-v4.1-flash',
       ]),
     );
   });

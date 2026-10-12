@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { OUTREACH_LIST_MAX_ROWS } from 'src/engine/core-modules/outreach-list/outreach-list.constants';
+
 export const OutreachEphemeralCompanyInputZodSchema = z.object({
   id: z
     .string()
@@ -24,6 +26,12 @@ export const OutreachEphemeralCompanyInputZodSchema = z.object({
     .string()
     .default('new')
     .describe('Pipeline status for the Companies tab (default "new")'),
+  otherFields: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .describe(
+      'Extra source data shown as table columns, for example linkedinUrl, about, headquartersCity. Existing values (such as AI column answers) are kept on merge.',
+    ),
 });
 
 export const UpsertOutreachTargetCompaniesInputZodSchema = z.object({
@@ -42,7 +50,7 @@ export const UpsertOutreachTargetCompaniesInputZodSchema = z.object({
   companies: z
     .array(OutreachEphemeralCompanyInputZodSchema)
     .min(1)
-    .max(500)
+    .max(OUTREACH_LIST_MAX_ROWS)
     .describe('Target companies to write to the ephemeral Companies tab'),
 });
 

@@ -99,9 +99,8 @@ describe('SearchPeopleService', () => {
   });
 
   it('rethrows LinkedIn account rate limit errors', async () => {
-    const { AccountRateLimitDeferredError } = await import(
-      'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error'
-    );
+    const { AccountRateLimitDeferredError } =
+      await import('src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error');
 
     gtmWorkspaceAuthTokenService.resolveApiKeyToken.mockResolvedValue(null);
     unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(
@@ -162,7 +161,11 @@ describe('SearchPeopleService', () => {
   it('forwards requested profile counts up to 500 instead of capping at 25', async () => {
     gtmWorkspaceAuthTokenService.resolveApiKeyToken.mockResolvedValue(null);
     unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(
-      { accountId: 'member-unipile', product: 'sales_navigator', via: 'member' },
+      {
+        accountId: 'member-unipile',
+        product: 'sales_navigator',
+        via: 'member',
+      },
     );
     peopleApiService.searchPeople.mockResolvedValue({
       status: 'ok',
@@ -173,15 +176,24 @@ describe('SearchPeopleService', () => {
 
     await service.execute({
       workspaceId: 'ws-1',
-      input: { searchUrl: 'https://www.linkedin.com/sales/search/people', limit: 100 },
+      input: {
+        searchUrl: 'https://www.linkedin.com/sales/search/people',
+        limit: 100,
+      },
     });
     await service.execute({
       workspaceId: 'ws-1',
-      input: { searchUrl: 'https://www.linkedin.com/sales/search/people', limit: 500 },
+      input: {
+        searchUrl: 'https://www.linkedin.com/sales/search/people',
+        limit: 500,
+      },
     });
     await service.execute({
       workspaceId: 'ws-1',
-      input: { searchUrl: 'https://www.linkedin.com/sales/search/people', limit: 1000 },
+      input: {
+        searchUrl: 'https://www.linkedin.com/sales/search/people',
+        limit: 1000,
+      },
     });
 
     expect(peopleApiService.searchPeople).toHaveBeenNthCalledWith(
@@ -207,7 +219,11 @@ describe('SearchPeopleService', () => {
   it('maps Unipile current_positions into title, company, experience, and education', async () => {
     gtmWorkspaceAuthTokenService.resolveApiKeyToken.mockResolvedValue(null);
     unipileSearchAccountResolver.resolveDefaultWorkspaceAccount.mockResolvedValue(
-      { accountId: 'member-unipile', product: 'sales_navigator', via: 'member' },
+      {
+        accountId: 'member-unipile',
+        product: 'sales_navigator',
+        via: 'member',
+      },
     );
     peopleApiService.searchPeople.mockResolvedValue({
       status: 'ok',

@@ -33,7 +33,7 @@ const normalizeName = (name: string): string =>
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
 
-const companyDedupeKey = (company: {
+export const companyDedupeKey = (company: {
   name: string;
   domain: string;
 }): string => {
@@ -60,7 +60,7 @@ const buildEphemeralId = (company: {
   return createHash('sha256').update(seed).digest('hex').slice(0, 32);
 };
 
-const toEphemeralCompany = (company: {
+export const toEphemeralCompany = (company: {
   id?: string;
   name: string;
   domain: string;
@@ -69,6 +69,7 @@ const toEphemeralCompany = (company: {
   segment?: string;
   icpFit?: string;
   status?: string;
+  otherFields?: Record<string, unknown>;
 }): OutreachEphemeralCompany => ({
   id: buildEphemeralId(company),
   name: company.name.trim(),
@@ -78,6 +79,10 @@ const toEphemeralCompany = (company: {
   segment: company.segment ?? '',
   icpFit: company.icpFit ?? '',
   status: isNonEmptyString(company.status) ? company.status : 'new',
+  ...(company.otherFields !== undefined &&
+  Object.keys(company.otherFields).length > 0
+    ? { otherFields: company.otherFields }
+    : {}),
 });
 
 @Injectable()
@@ -132,11 +137,18 @@ Prefer mode=merge. Pass projectId from the outreachCommand browsing context.`;
         const key = companyDedupeKey(company);
         const previous = byKey.get(key);
 
+        const otherFields = {
+          ...(company.otherFields ?? {}),
+          // answers already on the row (AI columns) win over fresh source data
+          ...(previous?.otherFields ?? {}),
+        };
+
         byKey.set(key, {
           ...(previous ?? company),
           ...company,
           // Keep stable id when merging into an existing row
           id: previous?.id ?? company.id ?? randomUUID(),
+          ...(Object.keys(otherFields).length > 0 ? { otherFields } : {}),
         });
       }
 

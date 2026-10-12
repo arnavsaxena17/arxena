@@ -4,7 +4,7 @@ const subjectSchema = z
   .enum(['person', 'company'])
   .default('person')
   .describe(
-    'Default and almost always: person (the People tab rows; also for questions about the people\'s companies, using companyName). company only when the user is on the Companies tab.',
+    "Default and almost always: person (the People tab rows; also for questions about the people's companies, using companyName). company only when the user is on the Companies tab.",
   );
 
 export const GetOutreachWorkingSetInputZodSchema = z.object({
@@ -23,6 +23,19 @@ export const GetOutreachWorkingSetInputZodSchema = z.object({
     .string()
     .optional()
     .describe('nextCursor from the previous page, to continue'),
+  summarize: z
+    .array(z.string())
+    .max(12)
+    .optional()
+    .describe(
+      'Column keys (otherFields keys such as brandCategory, or name, domain, industry, employees) to summarize over ALL rows: yes/no and label columns return value counts, number columns return count, min, quartiles and max. Use this to count and to choose a cut-off instead of paging rows.',
+    ),
+  onlyViewMatches: z
+    .boolean()
+    .optional()
+    .describe(
+      'With summarize: only count rows that match the filters of the view currently applied to the table.',
+    ),
 });
 
 export type GetOutreachWorkingSetInput = z.infer<
@@ -78,9 +91,12 @@ export const PreviewOutreachAiColumnInputZodSchema = z
     ),
     rowLimit: z.number().int().min(1).max(10).default(10),
   })
-  .refine((input) => input.description !== undefined || input.filter !== undefined, {
-    message: 'Pass description (preferred) or filter',
-  });
+  .refine(
+    (input) => input.description !== undefined || input.filter !== undefined,
+    {
+      message: 'Pass description (preferred) or filter',
+    },
+  );
 
 export type PreviewOutreachAiColumnInput = z.infer<
   typeof PreviewOutreachAiColumnInputZodSchema
@@ -97,6 +113,12 @@ export const RunOutreachAiColumnInputZodSchema = z.object({
     .optional()
     .describe(
       'Default false: rows that already have the column are skipped, so calling again retries only failed rows. true recomputes every row.',
+    ),
+  onlyViewMatches: z
+    .boolean()
+    .optional()
+    .describe(
+      'true runs only the rows that match the filters of the view currently applied to the project table (apply_table_view), so rows an earlier filter already ruled out are not paid for. Default false: every row.',
     ),
 });
 

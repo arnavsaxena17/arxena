@@ -76,6 +76,7 @@ const setup = ({
       crmUpdated: 1,
     })),
   };
+  const tableView = { get: jest.fn(async () => null as unknown) };
   const realtime = {
     notifyAiColumnProgress: jest.fn(),
     notifyProjectCacheUpdated: jest.fn(),
@@ -86,9 +87,10 @@ const setup = ({
     column as never,
     workingSet as never,
     realtime as never,
+    tableView as never,
   );
 
-  return { service, queue, workingSet, realtime, column, store };
+  return { service, queue, workingSet, realtime, column, store, tableView };
 };
 
 describe('OutreachAiColumnRunService', () => {
@@ -108,6 +110,38 @@ describe('OutreachAiColumnRunService', () => {
     expect(state.done).toBe(1);
     expect(state.units.flat()).toEqual(['b', 'c']);
     expect(queue.add).toHaveBeenCalledTimes(1);
+  });
+
+  it('should run only rows that match the applied view when onlyViewMatches is set', async () => {
+    const { service, tableView } = setup({
+      rows: [
+        buildRow('a', { fit: 'yes' }),
+        buildRow('b', { fit: 'no' }),
+        buildRow('c', { fit: 'yes' }),
+      ],
+    });
+
+    tableView.get.mockResolvedValueOnce({
+      filters: [
+        {
+          columnId: 'otherFields.fit',
+          kind: 'values',
+          values: ['yes'],
+        },
+      ],
+      sort: null,
+    });
+
+    const state = await service.startRun({
+      workspaceId: 'ws',
+      projectId: 'project',
+      subject: 'person',
+      previewId: 'preview-1',
+      onlyViewMatches: true,
+    });
+
+    expect(state.total).toBe(2);
+    expect(state.units.flat()).toEqual(['a', 'c']);
   });
 
   it('should write a failed marker, not a value, for rows the model could not answer', async () => {

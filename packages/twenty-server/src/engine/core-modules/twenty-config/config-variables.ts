@@ -2609,7 +2609,7 @@ export class ConfigVariables {
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.ARXENA,
     description:
-      'Include search_bright_data_business in Ask AI tool catalog and search skill (REST API and standalone MCP server are unaffected)',
+      'Include search_bright_data_business in Ask AI tool catalog and search skill (also requires BRIGHT_DATA_API_KEY; REST API and standalone MCP server are unaffected)',
     type: ConfigVariableType.BOOLEAN,
   })
   @IsOptional()

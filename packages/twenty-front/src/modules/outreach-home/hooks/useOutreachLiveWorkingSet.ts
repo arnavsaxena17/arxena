@@ -67,7 +67,6 @@ import {
   type OutreachProjectCandidateRecord,
 } from '@/outreach-home/utils/fetch-outreach-project-candidates';
 import { fetchOutreachTableView } from '@/outreach-home/utils/outreach-table-view';
-import { isOutreachProject } from '@/outreach-home/utils/is-outreach-project';
 import {
   fetchOutreachCompaniesCache,
   fetchOutreachProjectCompanies,
@@ -109,6 +108,13 @@ const normalizeExperimentVariant = (
   }
 
   return null;
+};
+
+const OUTREACH_SOFT_DELETE_UNDO_MS = 5 * 60 * 1000;
+
+type SoftDeletedBatch<TRow> = {
+  rows: TRow[];
+  expiresAt: number;
 };
 
 const dedupeCompaniesById = (
@@ -336,10 +342,7 @@ export const useOutreachLiveWorkingSet = () => {
     await loadCurrentUser();
   }, [loadCurrentUser]);
 
-  const outreachProjects = useMemo(
-    () => allProjects.filter(isOutreachProject),
-    [allProjects],
-  );
+  const outreachProjects = allProjects;
 
   const hasValidProjectIdInQuery =
     isNonEmptyString(projectIdFromQuery) &&
@@ -599,6 +602,134 @@ export const useOutreachLiveWorkingSet = () => {
       );
     },
     [ephemeralPeople, setPeople],
+  );
+
+  // Soft delete: rows leave the Redis list right away but stay in memory for
+  // OUTREACH_SOFT_DELETE_UNDO_MS so Undo can put them back. CRM-backed rows are
+  // not part of the ephemeral list and are never touched here.
+  const [deletedCompanyBatches, setDeletedCompanyBatches] = useState<
+    SoftDeletedBatch<OutreachCompanyRow>[]
+  >([]);
+  const [deletedPersonBatches, setDeletedPersonBatches] = useState<
+    SoftDeletedBatch<OutreachPersonRow>[]
+  >([]);
+
+  useEffect(() => {
+    setDeletedCompanyBatches([]);
+    setDeletedPersonBatches([]);
+  }, [activeProjectId]);
+
+  useEffect(() => {
+    const nextExpiry = [...deletedCompanyBatches, ...deletedPersonBatches]
+      .map((batch) => batch.expiresAt)
+      .sort((left, right) => left - right)[0];
+
+    if (!isDefined(nextExpiry)) {
+      return;
+    }
+
+    const timeout = window.setTimeout(
+      () => {
+        const now = Date.now();
+
+        setDeletedCompanyBatches((batches) =>
+          batches.filter((batch) => batch.expiresAt > now),
+        );
+        setDeletedPersonBatches((batches) =>
+          batches.filter((batch) => batch.expiresAt > now),
+        );
+      },
+      Math.max(nextExpiry - Date.now(), 0) + 50,
+    );
+
+    return () => window.clearTimeout(timeout);
+  }, [deletedCompanyBatches, deletedPersonBatches]);
+
+  const softDeleteCompanies = useCallback(
+    async (companyIds: string[]): Promise<number> => {
+      const idsToDelete = new Set(companyIds);
+      const removed = ephemeralCompanies.filter((company) =>
+        idsToDelete.has(company.id),
+      );
+
+      if (removed.length === 0) {
+        return 0;
+      }
+
+      await setCompanies(
+        ephemeralCompanies.filter((company) => !idsToDelete.has(company.id)),
+      );
+      setDeletedCompanyBatches((batches) => [
+        ...batches,
+        { rows: removed, expiresAt: Date.now() + OUTREACH_SOFT_DELETE_UNDO_MS },
+      ]);
+
+      return removed.length;
+    },
+    [ephemeralCompanies, setCompanies],
+  );
+
+  const undoSoftDeleteCompanies = useCallback(async (): Promise<number> => {
+    const lastBatch = deletedCompanyBatches[deletedCompanyBatches.length - 1];
+
+    if (!isDefined(lastBatch) || lastBatch.expiresAt <= Date.now()) {
+      setDeletedCompanyBatches([]);
+
+      return 0;
+    }
+
+    setDeletedCompanyBatches((batches) => batches.slice(0, -1));
+    await appendCompanies(lastBatch.rows);
+
+    return lastBatch.rows.length;
+  }, [appendCompanies, deletedCompanyBatches]);
+
+  const softDeletePeople = useCallback(
+    async (personIds: string[]): Promise<number> => {
+      const idsToDelete = new Set(personIds);
+      const removed = ephemeralPeople.filter((person) =>
+        idsToDelete.has(person.id),
+      );
+
+      if (removed.length === 0) {
+        return 0;
+      }
+
+      await setPeople(
+        ephemeralPeople.filter((person) => !idsToDelete.has(person.id)),
+      );
+      setDeletedPersonBatches((batches) => [
+        ...batches,
+        { rows: removed, expiresAt: Date.now() + OUTREACH_SOFT_DELETE_UNDO_MS },
+      ]);
+
+      return removed.length;
+    },
+    [ephemeralPeople, setPeople],
+  );
+
+  const undoSoftDeletePeople = useCallback(async (): Promise<number> => {
+    const lastBatch = deletedPersonBatches[deletedPersonBatches.length - 1];
+
+    if (!isDefined(lastBatch) || lastBatch.expiresAt <= Date.now()) {
+      setDeletedPersonBatches([]);
+
+      return 0;
+    }
+
+    setDeletedPersonBatches((batches) => batches.slice(0, -1));
+    await appendPeople(lastBatch.rows);
+
+    return lastBatch.rows.length;
+  }, [appendPeople, deletedPersonBatches]);
+
+  const undoableDeletedCompanyCount = deletedCompanyBatches.reduce(
+    (total, batch) => total + batch.rows.length,
+    0,
+  );
+  const undoableDeletedPersonCount = deletedPersonBatches.reduce(
+    (total, batch) => total + batch.rows.length,
+    0,
   );
 
   // Paginated REST fetch — same source as candidate table (no 100-record cap).
@@ -1111,6 +1242,12 @@ export const useOutreachLiveWorkingSet = () => {
     setPeople,
     appendPeople,
     updateEphemeralPerson,
+    softDeleteCompanies,
+    undoSoftDeleteCompanies,
+    undoableDeletedCompanyCount,
+    softDeletePeople,
+    undoSoftDeletePeople,
+    undoableDeletedPersonCount,
     refreshPeopleWorkingSet,
     refreshCompaniesWorkingSet,
     aiColumnRun,

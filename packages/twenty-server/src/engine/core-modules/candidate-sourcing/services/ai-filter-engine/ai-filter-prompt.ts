@@ -66,7 +66,9 @@ export const buildInstructions = (
         `Criteria:\n${spec.criteria.trim()}`,
       ]
   )
-    .concat(spec.context?.trim() ? [`Campaign context:\n${spec.context.trim()}`] : [])
+    .concat(
+      spec.context?.trim() ? [`Campaign context:\n${spec.context.trim()}`] : [],
+    )
     .filter(Boolean)
     .join('\n\n');
 

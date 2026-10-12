@@ -970,6 +970,11 @@ export class ChatExecutionService {
       ...buildSeededOutreachWorkflowInventoryLines(
         browsingContext.outreachWorkflowId,
       ),
+      ...(isDefined(browsingContext.projectId)
+        ? []
+        : [
+            'projectId is missing. Before writing any Find results, resolve the project: find_many_projects (id, name) then ask_questions "Which project should these results be tagged to?" with one option per project. Use the chosen id as projectId.',
+          ]),
       'Target companies on the Companies tab are ephemeral (Find destination), not CRM membership.',
       'When the user asks to find/fetch/add/build target companies:',
       `1. load_skills(["${search}"])`,

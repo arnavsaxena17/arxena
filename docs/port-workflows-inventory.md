@@ -76,7 +76,7 @@ Not marked done until Ask AI can discover/execute Arxena GTM tools and workspace
 - [x] `theorg`
 - [x] `theofficialboard`
 - [x] `linkedin-search`
-- [x] `linkedin-company-search`
+- [x] `serp-company-search`
 - [x] `linkedin-query-generation`
 - [x] `unipile-attachments`
 - [x] `whatsapp-media`

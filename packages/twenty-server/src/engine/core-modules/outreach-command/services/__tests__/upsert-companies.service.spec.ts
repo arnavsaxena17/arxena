@@ -236,7 +236,9 @@ describe('UpsertCompaniesService', () => {
         workspaceId: 'ws-1',
         input: {
           projectId: 'missing',
-          companies: [{ name: 'Acme', linkedinUrl: 'https://linkedin.com/company/acme' }],
+          companies: [
+            { name: 'Acme', linkedinUrl: 'https://linkedin.com/company/acme' },
+          ],
         },
       }),
     ).resolves.toMatchObject({

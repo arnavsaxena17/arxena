@@ -9,7 +9,6 @@ import { FileModule } from 'src/engine/core-modules/file/file.module';
 import { OutreachCommandModule } from 'src/engine/core-modules/outreach-command/outreach-command.module';
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { BrightDataModule } from 'src/engine/core-modules/bright-data/bright-data.module';
-import { BrightDataLudicrousModule } from 'src/engine/core-modules/bright-data-ludicrous/bright-data-ludicrous.module';
 import { LocalBusinessDataModule } from 'src/engine/core-modules/local-business-data/local-business-data.module';
 import { OrgChartModule } from 'src/engine/core-modules/org-chart/org-chart.module';
 import { SecureHttpClientModule } from 'src/engine/core-modules/secure-http-client/secure-http-client.module';
@@ -37,6 +36,12 @@ import { OutreachSampleMessageService } from 'src/engine/core-modules/tool/tools
 import { AgentEntity } from 'src/engine/metadata-modules/ai/ai-agent/entities/agent.entity';
 import { HttpTool } from 'src/engine/core-modules/tool/tools/http-tool/http-tool';
 import { GetLocalBusinessDetailsTool } from 'src/engine/core-modules/tool/tools/local-business-data-tool/get-local-business-details-tool';
+import { OutreachListTool } from 'src/engine/core-modules/tool/tools/outreach-list-tool/outreach-list-tool';
+import {
+  ImportOutreachSpreadsheetTool,
+  InspectOutreachSpreadsheetTool,
+} from 'src/engine/core-modules/tool/tools/outreach-spreadsheet-import-tool/outreach-spreadsheet-import-tool';
+import { OutreachListModule } from 'src/engine/core-modules/outreach-list/outreach-list.module';
 import { SearchBrightDataBusinessTool } from 'src/engine/core-modules/tool/tools/bright-data-business-search-tool/search-bright-data-business-tool';
 import { SearchLocalBusinessesTool } from 'src/engine/core-modules/tool/tools/local-business-data-tool/search-local-businesses-tool';
 import { ResolveCompanyFromRawNameTool } from 'src/engine/core-modules/tool/tools/company-name-resolver-tool/resolve-company-from-raw-name-tool';
@@ -74,6 +79,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     CalendarEventCreationManagerModule,
     TypeOrmModule.forFeature([FileEntity, ConnectedAccountEntity, AgentEntity]),
     ApplicationModule,
+    OutreachListModule,
     FeatureFlagModule,
     FileModule,
     JwtModule,
@@ -84,7 +90,6 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     WorkspaceManyOrAllFlatEntityMapsCacheModule,
     UnipilePoolModule,
     forwardRef(() => BrightDataModule),
-    forwardRef(() => BrightDataLudicrousModule),
     LocalBusinessDataModule,
     OrgChartModule,
     // WorkflowRunner → executor actions → ToolModule → OutreachCommand (cycle)
@@ -108,6 +113,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     SendWhatsappMessageTool,
     SearchLocalBusinessesTool,
     SearchBrightDataBusinessTool,
+    OutreachListTool,
     GetLocalBusinessDetailsTool,
     ResolveCompanyFromRawNameTool,
     EmailComposerService,
@@ -118,6 +124,8 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     HighlightOrgChartTool,
     UpsertOutreachTargetCompaniesTool,
     UpsertOutreachTargetPeopleTool,
+    InspectOutreachSpreadsheetTool,
+    ImportOutreachSpreadsheetTool,
     SaveOutreachTargetsToCrmTool,
     StartOutreachTool,
     GetOutreachWorkingSetTool,
@@ -157,6 +165,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     SendWhatsappMessageTool,
     SearchLocalBusinessesTool,
     SearchBrightDataBusinessTool,
+    OutreachListTool,
     GetLocalBusinessDetailsTool,
     ResolveCompanyFromRawNameTool,
     EmailComposerService,
@@ -167,6 +176,8 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     HighlightOrgChartTool,
     UpsertOutreachTargetCompaniesTool,
     UpsertOutreachTargetPeopleTool,
+    InspectOutreachSpreadsheetTool,
+    ImportOutreachSpreadsheetTool,
     SaveOutreachTargetsToCrmTool,
     StartOutreachTool,
     GetOutreachWorkingSetTool,

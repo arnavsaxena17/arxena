@@ -53,7 +53,9 @@ describe('UploadProfilesWorkflowResumeService', () => {
       ['c1'],
       expect.any(Number),
     );
-    expect(workflowRunWorkspaceService.updateWorkflowRunStepInfo).not.toHaveBeenCalled();
+    expect(
+      workflowRunWorkspaceService.updateWorkflowRunStepInfo,
+    ).not.toHaveBeenCalled();
     expect(workflowQueue.add).not.toHaveBeenCalled();
   });
 

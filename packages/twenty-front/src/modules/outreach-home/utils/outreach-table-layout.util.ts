@@ -50,8 +50,11 @@ export type OutreachColumnFilter =
         | 'greaterThan'
         | 'greaterThanOrEqual'
         | 'lessThan'
-        | 'lessThanOrEqual';
+        | 'lessThanOrEqual'
+        | 'between';
       value: string;
+      // Upper bound for 'between' (inclusive); value is the lower bound
+      valueTo?: string;
     };
 
 const EMPTY_LAYOUT: OutreachTableLayoutDocument = {
@@ -490,7 +493,7 @@ const matchesFilter = (
 
   const haystack = cellText.toLowerCase();
   const needle = filter.value.trim().toLowerCase();
-  const cellNumber = Number(cellText);
+  const cellNumber = Number(cellText.replace(/,/g, ''));
   const needleNumber = Number(needle.replace(/,/g, ''));
   const isComparable =
     cellText !== '' &&
@@ -499,6 +502,23 @@ const matchesFilter = (
     Number.isFinite(needleNumber);
 
   switch (filter.operator) {
+    case 'between': {
+      const upperText = (filter.valueTo ?? '').trim().replace(/,/g, '');
+      const upperNumber = Number(upperText);
+
+      if (
+        !isComparable ||
+        upperText === '' ||
+        !Number.isFinite(upperNumber)
+      ) {
+        return false;
+      }
+
+      const lowerBound = Math.min(needleNumber, upperNumber);
+      const upperBound = Math.max(needleNumber, upperNumber);
+
+      return cellNumber >= lowerBound && cellNumber <= upperBound;
+    }
     case 'greaterThan':
       return isComparable && cellNumber > needleNumber;
     case 'greaterThanOrEqual':
