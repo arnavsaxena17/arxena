@@ -2,6 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
 import {
+  isToolIoLoggingEnabled,
+  truncateForLog,
+} from 'src/engine/core-modules/tool-provider/utils/format-tool-call-log.util';
+import {
   BRIGHT_DATA_CLEARLY_GOOD_SAMPLE_PRECISION,
   BRIGHT_DATA_JUDGE_SAMPLE_PER_PAGE,
   BRIGHT_DATA_LUDICROUS_MAX_OFFSET,
@@ -303,6 +307,18 @@ export class BrightDataLudicrousExecutorService {
 
     const finalDocuments =
       input.targetCount !== undefined ? kept.slice(0, input.targetCount) : kept;
+
+    if (isToolIoLoggingEnabled()) {
+      this.logger.log(
+        [
+          `Bright Data run ${plan.planId}: kept ${finalDocuments.length} of ${kept.length} record(s), budget $${budgetUsd}`,
+          ...reports.map(
+            (report) =>
+              `  ${report.shardKey}: ${truncateForLog(report, 400).replace(/\s+/g, ' ')}`,
+          ),
+        ].join('\n'),
+      );
+    }
 
     return {
       planId: plan.planId,

@@ -21,7 +21,7 @@ const loadSkillCall = (
   return `\`load_skills([${skillNames.map((name) => `"${name}"`).join(', ')}])\``;
 };
 
-export const buildOutreachRoutingLines = (
+export const buildRoutingLines = (
   options: OutreachPromptOptions = {},
 ): string => {
   const suffix = (skillName: OutreachSkillName): string =>

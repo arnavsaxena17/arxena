@@ -67,6 +67,13 @@ import {
 import { MessagePruningService } from 'src/engine/metadata-modules/ai/ai-chat/services/message-pruning.service';
 import { SystemPromptBuilderService } from 'src/engine/metadata-modules/ai/ai-chat/services/system-prompt-builder.service';
 import {
+  buildInputTokenBreakdown,
+  estimateToolDefinitionTokens,
+  formatInputTokenBreakdown,
+  isTokenBreakdownLoggingEnabled,
+  type InputTokenBreakdown,
+} from 'src/engine/metadata-modules/ai/ai-chat/utils/build-input-token-breakdown.util';
+import {
   ASK_QUESTIONS_TOOL_NAME,
   createAskQuestionsTool,
 } from 'src/engine/metadata-modules/ai/ai-chat/tools/ask-questions.tool';
@@ -451,6 +458,11 @@ export class ChatExecutionService {
     let stepStartedAt = streamStartedAt;
     let ttftRecorded = false;
     let stepIndex = 0;
+    // Tool definitions do not change during a turn, so they are sized once
+    const toolDefinitionTokens = isTokenBreakdownLoggingEnabled()
+      ? estimateToolDefinitionTokens(activeTools)
+      : {};
+    let lastInputBreakdown: InputTokenBreakdown | undefined;
 
     this.logger.log(
       `[AI_CHAT] streamText starting modelMessageCount=${modelMessages.length} ` +
@@ -636,6 +648,13 @@ export class ChatExecutionService {
         stepStartedAt = performance.now();
         const nextStepIndex = stepIndex + 1;
 
+        if (isTokenBreakdownLoggingEnabled()) {
+          lastInputBreakdown = buildInputTokenBreakdown({
+            messages: stepMessages,
+            toolDefinitionTokens,
+          });
+        }
+
         this.logger.log(
           `[AI_CHAT] prepareStep #${nextStepIndex} ` +
             `messageCount=${stepMessages.length} ` +
@@ -690,6 +709,18 @@ export class ChatExecutionService {
       },
       onStepFinish: async (step) => {
         const currentStepIndex = ++stepIndex;
+
+        if (isTokenBreakdownLoggingEnabled() && isDefined(lastInputBreakdown)) {
+          this.logger.log(
+            formatInputTokenBreakdown({
+              breakdown: lastInputBreakdown,
+              stepNumber: currentStepIndex,
+              reportedInputTokens: step.usage.inputTokens,
+              cacheReadTokens: step.usage.inputTokenDetails?.cacheReadTokens,
+              contextWindowTokens: modelConfig.contextWindowTokens,
+            }),
+          );
+        }
         const stepLatencyMs = Math.round(performance.now() - stepStartedAt);
         const toolNames = step.toolCalls.map((toolCall) => toolCall.toolName);
         const cacheCreationTokens = extractCacheCreationTokens(

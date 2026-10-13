@@ -14,7 +14,7 @@ export const OUTREACH_SKILL_LABELS = {
 export type OutreachSkillName = keyof typeof OUTREACH_SKILL_LABELS;
 
 // The `search` skill is one playbook assembled from these parts, in order.
-export const OUTREACH_SEARCH_SKILL_PARTS = [
+export const SEARCH_SKILL_PARTS = [
   'search-preamble',
   'search-companies',
   'search-list-building',
@@ -44,11 +44,9 @@ const isOutreachSkillName = (name: string): name is OutreachSkillName =>
 export const listOutreachSkillNames = (): OutreachSkillName[] =>
   Object.keys(OUTREACH_SKILL_LABELS) as OutreachSkillName[];
 
-export const getOutreachSkillContent = (
-  name: OutreachSkillName,
-): string =>
+export const getOutreachSkillContent = (name: OutreachSkillName): string =>
   name === 'search'
-    ? OUTREACH_SEARCH_SKILL_PARTS.map(readMarkdown).join('\n')
+    ? SEARCH_SKILL_PARTS.map(readMarkdown).join('\n')
     : readMarkdown(name);
 
 export const getOutreachSkillByName = (

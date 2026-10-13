@@ -19,6 +19,10 @@ import {
   type BrightDataLudicrousPlanLlmOutput,
 } from 'src/engine/core-modules/bright-data/ludicrous/schemas/bright-data-ludicrous-plan-llm.schema';
 import {
+  isToolIoLoggingEnabled,
+  truncateForLog,
+} from 'src/engine/core-modules/tool-provider/utils/format-tool-call-log.util';
+import {
   type BrightDataLudicrousEntity,
   type BrightDataLudicrousPlan,
   type BrightDataLudicrousRubric,
@@ -161,7 +165,54 @@ export class BrightDataLudicrousPlannerService {
 
     await this.planStore.save(plan);
 
+    if (isToolIoLoggingEnabled()) {
+      this.logger.log(this.formatPlanLog(plan, compileErrors));
+    }
+
     return plan;
+  }
+
+  // Readable record of how the raw request became queries: the planner's
+  // reading of intent, each compiled shard query and what sampling found.
+  private formatPlanLog(
+    plan: BrightDataLudicrousPlan,
+    compileErrors: string[],
+  ): string {
+    const shardLines = plan.shards.map((shard) => {
+      const estimate = plan.estimates.find(
+        (candidate) => candidate.shardKey === shard.key,
+      );
+      const stats = estimate
+        ? estimate.error
+          ? `ERROR ${estimate.error}`
+          : `matched=${estimate.matched} fetchable=${estimate.fetchableRecords} precision=${estimate.samplePrecision ?? 'n/a'}`
+        : 'not sampled';
+
+      return [
+        `  [p${shard.priority}] ${shard.key} — ${stats}`,
+        `    why: ${shard.rationale}`,
+        '    query:',
+        truncateForLog(shard.query, 1_200)
+          .split('\n')
+          .map((line) => `      ${line}`)
+          .join('\n'),
+      ].join('\n');
+    });
+
+    return [
+      `Bright Data plan ${plan.planId} (${plan.entity})`,
+      `  raw query: ${plan.rawQuery}`,
+      `  intent: ${plan.intentSummary}`,
+      `  relevance: ${plan.relevanceCriteria}`,
+      `  rubric: ${truncateForLog(plan.rubric, 600)}`,
+      ...shardLines,
+      compileErrors.length > 0
+        ? `  dropped shards: ${compileErrors.join('; ')}`
+        : null,
+      `  estimate cost $${plan.estimateCostUsd}, unique records ~${plan.estimatedUniqueRecords}`,
+    ]
+      .filter((line): line is string => line !== null)
+      .join('\n');
   }
 
   private async resolveModel(input: {

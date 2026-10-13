@@ -15,6 +15,10 @@ import { type ToolContext } from 'src/engine/core-modules/tool-provider/types/to
 import { type ToolDescriptor } from 'src/engine/core-modules/tool-provider/types/tool-descriptor.type';
 import { type ToolIndexEntry } from 'src/engine/core-modules/tool-provider/types/tool-index-entry.type';
 import { findSimilarToolNames } from 'src/engine/core-modules/tool-provider/utils/find-similar-tool-names.util';
+import {
+  formatToolCallLog,
+  isToolIoLoggingEnabled,
+} from 'src/engine/core-modules/tool-provider/utils/format-tool-call-log.util';
 import { wrapWithErrorHandler } from 'src/engine/core-modules/tool-provider/utils/tool-error.util';
 import { ToolOutputSpillService } from 'src/engine/core-modules/tool/services/tool-output-spill.service';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
@@ -305,11 +309,24 @@ export class ToolRegistryService {
         };
       }
 
+      const startedAt = Date.now();
       const result = await this.toolExecutorService.dispatch(
         entry,
         args,
         fullContext,
       );
+
+      if (isToolIoLoggingEnabled()) {
+        this.logger.log(
+          formatToolCallLog({
+            toolName,
+            workspaceId: fullContext.workspaceId,
+            args,
+            output: result,
+            durationMs: Date.now() - startedAt,
+          }),
+        );
+      }
 
       const compacted = options?.compactOutput
         ? (compactToolOutput(result) as ToolOutput)
