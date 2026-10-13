@@ -45,7 +45,7 @@ Two source locations, one DB copy per workspace (22 skills after merging).
 | Native action tools | 23 | `core-modules/tool/tools/*` (22 dirs), registered in `ActionToolProvider` | `execute_tool` |
 | Generated CRUD | 15 objects × operations | `DatabaseToolProvider` | `execute_tool` |
 | Workflow, metadata, view, dashboard, logic function, navigation, webhook | 7 providers | `tool-provider/providers/*` | `execute_tool` |
-| Arxena library | 108 defined in 18 files; 89 in `ARXENA_TOOL_CATALOG` (prospecting 42, accounts 15, enrichment 14, outreach 12, orgchart 6) | `twenty-mcp-server/src/tools`, catalog in `twenty-shared` | `execute_tool` via `ArxenaToolProvider` |
+| Arxena library | 108 defined in 18 files; 89 in `ARXENA_TOOL_CATALOG` (prospecting 42, accounts 15, enrichment 14, outreach 12, orgchart 6) | `twenty-server/src/engine/core-modules/arxena-tools/library/tools`, catalog in `twenty-shared` | `execute_tool` via `ArxenaToolProvider` |
 | External MCP servers | variable | `mcp-federation` | `execute_tool` |
 
 Preloaded (always in the tool list): `search_help_center`, `app_exa_web_search`,
@@ -85,7 +85,7 @@ User message
                            └─ ToolExecutorService.dispatch → provider
                                 ├─ native provider → Tool class (in-process)
                                 └─ ArxenaToolProvider → ArxenaMcpBridgeService
-                                     → twenty-mcp-server/dist/lib.js handler
+                                     → arxena-tools/library handler
                                        → HTTP call back to this same server
                                          → REST controller → service/tool
 ```
@@ -126,7 +126,7 @@ expanded titles in a single unchecked LLM call. The shared
 | 3 | **Bright Data search is described in five places** | MCP tool definition, NestJS `SearchBrightDataBusinessTool.description`, `search-preamble`, `search-companies`, `search-people`, `search-list-building` |
 | 4 | **Six separate "natural language to structured search" LLM pipelines** | Bright Data ludicrous planner; `candidate-search` query-constructor + title/company expanders + `search-parameters-prompts`; `linkedin-query-generation` agents 1–4; LinkedIn x-ray parser; `people-api` natural-language parse; `search-models`. None share title expansion. |
 | 5 | **Two routers plus a third description** for "which skill to load" | CORE routing lines, the skill catalog, and the `load_skills` tool description ("START HERE …") |
-| 6 | **Same capability in the Arxena library and as native tools** | e.g. `outreach_list`, local business search, LinkedIn/WhatsApp messaging exist both in `twenty-mcp-server/src/tools` and in `core-modules/tool/tools` |
+| 6 | **Same capability in the Arxena library and as native tools** | e.g. `outreach_list`, local business search, LinkedIn/WhatsApp messaging exist both in `twenty-server/src/engine/core-modules/arxena-tools/library/tools` and in `core-modules/tool/tools` |
 | 7 | **Self-HTTP loop** | every Arxena tool call goes library handler → HTTP to the same server |
 | 8 | **Catalog and library disagree** | 26 library tools are not in the catalog (browser-extension tools for Naukri/Resdex, legacy `linkedin_*`, query generators, WhatsApp); 7 catalog tools (`linkedin_unipile_*`) are not in the library |
 | 9 | **Two preload lists, mismatched names** | `COMMON_PRELOAD_TOOLS` vs `AI_CHAT_TOOL_NAMES_TO_PRELOAD`; the latter names `app_exa_web_search`, skills say `exa_web_search` |
@@ -255,3 +255,82 @@ tokens).
 - Which of the six parsers are live in production paths; only import counts were checked.
 - The `assistant/mcp-in-process-tool-runner.service.ts` path appeared in searches but was not traced; it may be a further execution route.
 - Token numbers are estimates; the logging work will replace them with measured values.
+
+---
+
+## 7. Status
+
+| Item | State |
+|---|---|
+| Token breakdown and tool I/O logging | Done (`TOKEN_BREAKDOWN_LOG`, `TOOL_IO_LOG`) |
+| 1. Manifest per skill | Partly: CI checks for tool names and token budgets exist (`skill-content-integrity.spec.ts`); front-matter manifest and generated routing/catalog not built |
+| 2. Serve standard skills from code | Done for content: `SkillService` overlays the code version on stored standard skills, so edits ship with the build. Names and descriptions still come from the database; new standard skills still need a backfill command |
+| 3. Split `search`, load by section | Done: `load_skills({skillNames, sections})`, sections `companies`, `list-building`, `people`, `linkedin-harvest`; role lookup loads about 5.5k tokens instead of 15.4k |
+| 4. `find_role_at_companies` | Done: native action tool, Bright Data + Google in parallel, company and title verification, writes the People tab. Not yet run against live Bright Data |
+| 5. One search-intent compiler | Not started |
+| 6. One registry, no HTTP loop | Not started |
+| 7. Layering rules in CI | Token budgets per skill and per section only |
+
+Known unrelated failure: `fetch-linkedin-activity-tool.spec.ts` expects `{ limit: 5 }` but the tool now also passes `cacheIdentifiers`.
+
+Role matching uses the arxena-site job-title taxonomy (`/api/title-taxonomy/classify-titles` and `/manual-boolean-queries`) instead of a hand-kept alias table. If that service is down, the tool falls back to the roles as typed.
+
+---
+
+## 8. What the system prompt is for, how it does it, and better ways
+
+Source: `chat-system-prompts.const.ts` (CORE, CHAT_UI, MCP_TRANSPORT, RESPONSE_FORMAT) plus `system-prompt-builder.service.ts`.
+
+| # | Goal | How the prompt achieves it today | Better way |
+|---|---|---|---|
+| G1 | Keep context small: don't load every tool and skill | Plan→Skill→Learn→Execute ritual; "learn only tools you will run"; catalog and skill list in the prompt | Keep the lazy-loading idea. Make it enforced, not advised: `execute_tool` already redirects uncallable calls to `learn_tools` (`guide-uncallable-tool-calls-to-meta-tool`); do the same for "specialised tool without a loaded skill". Auto-attach the skill's sections when its tools are learned |
+| G2 | Route intent to the right skill | Routing lines (shared builder) + CORE bullets + CHAT_UI bullets + skill catalog + `load_skills` description | Generate from skill manifests (5.1). One router, not four |
+| G3 | Correct tool-call syntax (filters, FULL_NAME, phones, relation IDs, upsert vs update, group_by) | About 3k chars of prose in CORE under "Database vs HTTP Tools" | Move into the tool schemas and descriptions (`find_many_*` filter shape is a schema fact); validate and return a corrective error naming the right shape. Prose rules cost tokens on every call; schema errors cost tokens only on failure |
+| G4 | Data efficiency: small limits, filters, batching | Prose rules | Enforce defaults in the tools (default `limit`, required `select`, cap with a "truncated, use filter" hint) |
+| G5 | Don't hallucinate record links or IDs | RESPONSE_FORMAT rules | Keep the rule, but have the tool layer render `[[record:...]]` strings and reject unknown ones in a post-check; the model then only copies |
+| G6 | Handle large tool outputs | CHAT_UI "spilled outputs" rules; spill service | Fine as is; move the rule text next to the spill tool descriptions (`extract_json_paths`) |
+| G7 | Ask when ambiguous, don't when obvious | `ask_questions` rules (CHAT_UI) | Fine; shorten. Put the CSV/top-N exceptions into the skills that cause them |
+| G8 | Same behaviour in chat and MCP | One CORE, transport-specific tails | Good structure. Anti-bloat list in MCP_TRANSPORT is mostly G1 restated; fold it into G1's enforcement |
+| G9 | Outreach policy: destination verbs, don't enrol before confirmation, complete requests | `OUTREACH_*_PROMPT` constants from `twenty-shared` | These are policy, not prose: gate `outreach_save_to_crm` / enrol on a confirmation flag in the tool; keep one line in the prompt |
+| G10 | Domain primitives often confused (favourites, nav items) | Two bullets in CORE | Belong in the navigation tool description. Remove from CORE |
+
+Summary: about half of CORE is tool-usage rules that belong in schemas, descriptions or validation. The prompt should keep identity, the lazy-load loop, output format and safety, per 5.7.
+
+### Caveats from re-checking this audit
+
+- Finding 9: only `COMMON_PRELOAD_TOOLS` exists in non-test source now; `AI_CHAT_TOOL_NAMES_TO_PRELOAD` is gone, so the mismatch is likely already fixed. The `exa_web_search` vs `app_exa_web_search` name check is still worth confirming.
+- Skill sync/backfill commands: 36 skill-named files across upgrade-version directories (finding 1 says 32).
+
+## Skill front matter and playbooks (built)
+
+Each shared skill file starts with YAML front matter (`description`, `priority`,
+`routes[{when, sections?, hint?}]`, optional `label` and `icon`). The generator
+validates it, strips it from the served text and resolves `{{include: name}}`
+fragments. The routing lines in the system prompt and the catalog descriptions of
+the eight core skills are generated from it and match the former hand-written
+text exactly.
+
+A **playbook** is a markdown file with front matter that is not one of the core
+skills. It needs no label constant, UUID, metadata entry, routing line or upgrade
+command: the server registers it, derives its identifier from the name, routes to
+it, and serves it from the file even before the workspace has a stored row.
+Playbooks default to a 1,500-token cap. How to write one: `skills/README.md`.
+
+First playbook: `find-role-at-companies` (about 640 tokens). Moving "Role at named
+companies" out of the `search` skill took the role lookup from about 5,500 tokens
+of context to about 640.
+
+## Consolidation into twenty-server (done)
+
+- `twenty-mcp-server` no longer exists. Its 41 source files are
+  `src/engine/core-modules/arxena-tools/library`, compiled with the server. The
+  bridge imports it directly: no separate build, no `dist` path lookup, no
+  `MCP_TOOL_LIBRARY_PATH`, nothing to stream in the deploy scripts.
+- All skills are markdown files in
+  `src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/contents`,
+  read at runtime by `skill-library.ts` (front matter via the `yaml` package,
+  `{{include}}` fragments, section selection, generated routing lines). The
+  generator script and the generated TypeScript file in `twenty-shared` are gone.
+- `twenty-shared/outreach` is gone. The tool catalog, the tool descriptions and
+  the search-tools config moved to `arxena-tools/constants` and
+  `arxena-tools/utils`, next to the only code that uses them.

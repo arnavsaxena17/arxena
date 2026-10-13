@@ -154,6 +154,8 @@ import { SyncSaveToCrmSkillCommand } from 'src/database/commands/upgrade-version
 import { SyncSearchSkillListBuildingCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000173-sync-search-skill-list-building.command';
 import { SyncSearchSkillBrightDataLudicrousOnlyCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000172-sync-search-skill-bright-data-ludicrous-only.command';
 import { AddCompanyOtherFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000170-add-company-other-fields.command';
+import { SyncStandardSkillsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000181-sync-standard-skills.command';
+import { StandardSkillSyncService } from 'src/database/commands/upgrade-version-command/common/standard-skill-sync.service';
 import { SyncSpreadsheetImportSkillCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000174-sync-spreadsheet-import-skill.command';
 import { SyncAiFilterEnrichSkillCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000169-sync-ai-filter-enrich-skill.command';
 import { SyncOutreachSkillDirectMessagingCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000168-sync-outreach-skill-direct-messaging.command';
@@ -361,6 +363,8 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     SyncSearchSkillBrightDataLudicrousOnlyCommand,
     SyncSearchSkillListBuildingCommand,
     SyncSpreadsheetImportSkillCommand,
+    StandardSkillSyncService,
+    SyncStandardSkillsCommand,
   ],
 })
 export class V2_25_UpgradeVersionCommandModule {}

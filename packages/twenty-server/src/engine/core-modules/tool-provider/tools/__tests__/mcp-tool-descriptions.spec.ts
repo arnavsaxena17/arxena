@@ -1,5 +1,5 @@
-import { MCP_TOOL_DESCRIPTIONS } from 'twenty-shared/outreach';
 
+import { MCP_TOOL_DESCRIPTIONS } from 'src/engine/core-modules/arxena-tools/constants/mcp-tool-descriptions.const';
 import {
   createFetchTool,
   createSearchTool,

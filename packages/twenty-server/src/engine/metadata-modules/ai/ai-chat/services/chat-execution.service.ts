@@ -59,7 +59,7 @@ import {
   extractCacheCreationTokens,
   extractCacheCreationTokensFromSteps,
 } from 'src/engine/metadata-modules/ai/ai-billing/utils/extract-cache-creation-tokens.util';
-import { AI_CHAT_TOOL_NAMES_TO_PRELOAD } from 'src/engine/metadata-modules/ai/ai-chat/constants/ai-chat-tool-names-to-preload.const';
+import { getPreloadToolNames } from 'src/engine/core-modules/tool-provider/constants/common-preload-tools.const';
 import {
   buildSeededOutreachWorkflowInventoryLines,
   CHAT_INTENT_SKILLS,
@@ -211,9 +211,7 @@ export class ChatExecutionService {
     const disabledSearchToolNames = new Set(
       getDisabledSearchToolNames(searchToolsConfig),
     );
-    const preloadedToolNameList = AI_CHAT_TOOL_NAMES_TO_PRELOAD.filter(
-      (toolName) => !disabledSearchToolNames.has(toolName),
-    );
+    const preloadedToolNameList = getPreloadToolNames(disabledSearchToolNames);
 
     this.logger.log(
       `[AI_CHAT] catalogs tools=${toolCatalog.length} skills=${skillCatalog.length} ` +

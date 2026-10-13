@@ -1,5 +1,9 @@
 # Plan: one public MCP endpoint (NestJS `/mcp`)
 
+> **Status:** done. `twenty-mcp-server` was later folded into `twenty-server`
+> (`src/engine/core-modules/arxena-tools/library`) and the package removed, so the
+> references to it below are historical. See `src/engine/api/mcp/README.md`.
+
 Goal: one MCP implementation, the NestJS `/mcp` in `twenty-server` (the original,
 upstream design). Retire the standalone public HTTP server (`arxena-mcp-http`, port
 3005). Keep `twenty-mcp-server` as an internal tool library (stdio) used by

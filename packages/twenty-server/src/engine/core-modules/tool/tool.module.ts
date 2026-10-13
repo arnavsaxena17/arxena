@@ -28,6 +28,8 @@ import {
 } from 'src/engine/core-modules/tool/tools/outreach-ai-column-tool/outreach-ai-column-tools';
 import { UpsertOutreachTargetCompaniesTool } from 'src/engine/core-modules/tool/tools/outreach-target-companies-tool/upsert-outreach-target-companies-tool';
 import { SaveOutreachTargetsToCrmTool } from 'src/engine/core-modules/tool/tools/outreach-save-to-crm-tool/save-outreach-targets-to-crm-tool';
+import { TitleTaxonomyModule } from 'src/engine/core-modules/title-taxonomy/title-taxonomy.module';
+import { FindRoleAtCompaniesTool } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/find-role-at-companies-tool';
 import { StartOutreachTool } from 'src/engine/core-modules/tool/tools/outreach-start-tool/start-outreach-tool';
 import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
 import { PreviewSampleMessageColumnTool } from 'src/engine/core-modules/tool/tools/outreach-sample-message-tool/preview-sample-message-column-tool';
@@ -74,6 +76,7 @@ import { MessagingSendManagerModule } from 'src/modules/messaging/message-outbou
 import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/provide-workspace-scoped-repository';
 @Module({
   imports: [
+    TitleTaxonomyModule,
     MessagingImportManagerModule,
     MessagingSendManagerModule,
     CalendarEventCreationManagerModule,
@@ -128,6 +131,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     ImportOutreachSpreadsheetTool,
     SaveOutreachTargetsToCrmTool,
     StartOutreachTool,
+    FindRoleAtCompaniesTool,
     GetOutreachWorkingSetTool,
     PreviewOutreachAiColumnTool,
     RunOutreachAiColumnTool,
@@ -180,6 +184,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     ImportOutreachSpreadsheetTool,
     SaveOutreachTargetsToCrmTool,
     StartOutreachTool,
+    FindRoleAtCompaniesTool,
     GetOutreachWorkingSetTool,
     PreviewOutreachAiColumnTool,
     RunOutreachAiColumnTool,

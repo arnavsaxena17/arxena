@@ -1,16 +1,14 @@
-import { readdirSync, readFileSync } from 'fs';
-import { join } from 'path';
 
 import {
   ARXENA_INTERNAL_TOOL_NAMES,
   ARXENA_TOOL_CATALOG,
-  getOutreachSkillContent,
-  listOutreachSkillNames,
-} from 'twenty-shared/outreach';
-
+} from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-catalog.const';
 import { ACTION_TOOL_IDS } from 'src/engine/core-modules/tool-provider/constants/action-tool-label.constant';
-
-const CONTENTS_DIRECTORY = join(__dirname, '..', 'contents');
+import {
+  getSkillContent,
+  listPlaybookNames,
+  listSkillNames,
+} from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/skill-library';
 
 // Characters per token, same rule as the system prompt preview
 const CHARACTERS_PER_TOKEN = 4;
@@ -42,24 +40,20 @@ const SKILL_TOKEN_BUDGETS: Record<string, number> = {
   research: 500,
 };
 
-const loadAllSkills = (): Record<string, string> => {
-  const skills: Record<string, string> = {};
+// A playbook is one short single-purpose instruction, so it needs no budget
+// entry of its own: this is the default, and a longer one belongs in a core skill
+const PLAYBOOK_TOKEN_BUDGET = 1_500;
 
-  for (const skillName of listOutreachSkillNames()) {
-    skills[skillName] = getOutreachSkillContent(skillName);
-  }
+const budgetFor = (skillName: string): number | undefined =>
+  SKILL_TOKEN_BUDGETS[skillName] ??
+  (listPlaybookNames().includes(skillName)
+    ? PLAYBOOK_TOKEN_BUDGET
+    : undefined);
 
-  for (const fileName of readdirSync(CONTENTS_DIRECTORY)) {
-    if (fileName.endsWith('.md')) {
-      skills[fileName.replace(/\.md$/, '')] = readFileSync(
-        join(CONTENTS_DIRECTORY, fileName),
-        'utf-8',
-      );
-    }
-  }
-
-  return skills;
-};
+const loadAllSkills = (): Record<string, string> =>
+  Object.fromEntries(
+    listSkillNames().map((skillName) => [skillName, getSkillContent(skillName)]),
+  );
 
 // Registered in ActionToolProvider's map or created by the core tool set
 const OTHER_KNOWN_TOOLS = [
@@ -124,9 +118,12 @@ describe('standard skill content', () => {
 
   describe('token budgets', () => {
     it('should have a budget for every skill', () => {
-      expect(Object.keys(skills).sort()).toEqual(
-        Object.keys(SKILL_TOKEN_BUDGETS).sort(),
-      );
+      expect(
+        Object.keys(skills).filter((skillName) => budgetFor(skillName) === undefined),
+      ).toEqual([]);
+      expect(
+        Object.keys(SKILL_TOKEN_BUDGETS).filter((skillName) => !(skillName in skills)),
+      ).toEqual([]);
     });
 
     it.each(Object.entries(skills))(
@@ -134,7 +131,7 @@ describe('standard skill content', () => {
       (skillName, content) => {
         const tokens = Math.ceil(content.length / CHARACTERS_PER_TOKEN);
 
-        expect(tokens).toBeLessThanOrEqual(SKILL_TOKEN_BUDGETS[skillName]);
+        expect(tokens).toBeLessThanOrEqual(budgetFor(skillName) ?? 0);
       },
     );
   });

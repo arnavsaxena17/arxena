@@ -1,9 +1,9 @@
+import { buildRoutingLines } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/build-routing-lines.util';
 import {
   OUTREACH_COMPLETE_REQUESTS_PROMPT,
   OUTREACH_DESTINATION_VERBS_PROMPT,
   OUTREACH_SOURCING_PREFERENCE_PROMPT,
-  buildRoutingLines,
-} from 'twenty-shared/outreach';
+} from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/skill-prompts.const';
 
 import { CHAT_INTENT_SKILLS } from 'src/engine/metadata-modules/ai/ai-chat/constants/chat-intent-skills.const';
 

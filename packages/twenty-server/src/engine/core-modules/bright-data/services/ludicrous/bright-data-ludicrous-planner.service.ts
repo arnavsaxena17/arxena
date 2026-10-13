@@ -6,6 +6,7 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { type LanguageModel } from 'ai';
 import { isDefined } from 'twenty-shared/utils';
 
+import { TitleExpansionService } from 'src/engine/core-modules/title-taxonomy/title-expansion.service';
 import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
 import {
   BRIGHT_DATA_ESTIMATE_BUDGET_USD,
@@ -54,6 +55,7 @@ import { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models
 const PLANNER_MAX_OUTPUT_TOKENS = 6_000;
 const PLANNER_ATTEMPT_TIMEOUT_MS = 45_000;
 const PLANNER_MAX_MODEL_ATTEMPTS = 3;
+const TAXONOMY_MAX_TITLES_PER_SHARD = 12;
 
 export type BrightDataLudicrousEstimateInput = {
   workspaceId: string;
@@ -85,6 +87,8 @@ export class BrightDataLudicrousPlannerService {
     private readonly aiModelRegistryService?: AiModelRegistryService,
     @Optional()
     private readonly aiSdkExecutionService?: AiSdkExecutionService,
+    @Optional()
+    private readonly titleExpansionService?: TitleExpansionService,
   ) {}
 
   // Generates shards, compiles them, then spends a few cents sampling each one
@@ -95,6 +99,8 @@ export class BrightDataLudicrousPlannerService {
     await this.billing.validateCreditsOrThrow(input.workspaceId);
 
     const generated = await this.generateShards(input);
+
+    await this.addTaxonomyTitles(input.entity, generated);
     const { shards, compileErrors } = this.compileShards(
       input.entity,
       generated,
@@ -213,6 +219,45 @@ export class BrightDataLudicrousPlannerService {
     ]
       .filter((line): line is string => line !== null)
       .join('\n');
+  }
+
+  // The model names the titles it can think of; the job-title taxonomy adds the
+  // curated titles for the same function and grade (for a CEO: chief executive,
+  // managing director, founder, president). A user-written boolean title string
+  // is never touched. Planning must not fail because the taxonomy is down.
+  private async addTaxonomyTitles(
+    entity: BrightDataLudicrousEntity,
+    generated: BrightDataLudicrousPlanLlmOutput,
+  ): Promise<void> {
+    if (entity !== 'people' || !isDefined(this.titleExpansionService)) {
+      return;
+    }
+
+    for (const shard of generated.shards) {
+      const { titles, booleanTitleExpression } = shard.filter;
+
+      if (titles.length === 0 || booleanTitleExpression.trim() !== '') {
+        continue;
+      }
+
+      try {
+        const expansion = await this.titleExpansionService.expandTitles(
+          titles,
+          { maxTitles: TAXONOMY_MAX_TITLES_PER_SHARD },
+        );
+
+        if (expansion.added.length > 0) {
+          shard.filter.titles = expansion.titles;
+          this.logger.log(
+            `Shard ${shard.key}: job-title taxonomy added ${expansion.added.join(', ')}`,
+          );
+        }
+      } catch (error) {
+        this.logger.warn(
+          `Job-title taxonomy expansion skipped for shard ${shard.key}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
   }
 
   private async resolveModel(input: {

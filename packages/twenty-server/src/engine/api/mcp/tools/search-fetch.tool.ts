@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { MCP_TOOL_DESCRIPTIONS } from 'twenty-shared/outreach';
+
+import { MCP_TOOL_DESCRIPTIONS } from 'src/engine/core-modules/arxena-tools/constants/mcp-tool-descriptions.const';
 
 // Top-level `search` and `fetch` follow the OpenAI company-knowledge contract:
 // search -> { results: [{ id, title, url }] }, fetch -> { id, title, text, url, metadata }.

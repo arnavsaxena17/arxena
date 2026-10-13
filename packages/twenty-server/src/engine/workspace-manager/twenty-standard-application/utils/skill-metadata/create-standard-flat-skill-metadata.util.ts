@@ -1,3 +1,10 @@
+import {
+  getSkillDescription,
+  getSkillIcon,
+  getSkillLabel,
+  listPlaybookNames,
+} from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/skill-library';
+
 import { type FlatSkill } from 'src/engine/metadata-modules/flat-skill/types/flat-skill.type';
 import { type AllStandardSkillName } from 'src/engine/workspace-manager/twenty-standard-application/types/all-standard-skill-name.type';
 import {
@@ -7,7 +14,7 @@ import {
 import { loadStandardSkillContent } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/load-standard-skill-content.util';
 
 type StandardSkillDefinition = {
-  skillName: AllStandardSkillName;
+  skillName: string;
   name: string;
   label: string;
   description: string;
@@ -137,7 +144,7 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     name: 'setup',
     label: 'Setup',
     description:
-      'Campaign setup: ICP and outreach preferences on core Workspace company fields; hand off to Find companies/people',
+      getSkillDescription('setup'),
     icon: 'IconTargetArrow',
   }),
   outreach: createStandardSkillBuilder({
@@ -145,7 +152,7 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     name: 'outreach',
     label: 'Outreach',
     description:
-      'Campaign automation: activate seeded harvest/enroll/sequencer graphs, enroll QUEUED people, HITL send',
+      getSkillDescription('outreach'),
     icon: 'IconSend',
   }),
   search: createStandardSkillBuilder({
@@ -153,7 +160,7 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     name: 'search',
     label: 'Search',
     description:
-      'Source companies and people (Apollo/LinkedIn/Harvest/Exa/Bright Data); Find → ephemeral tabs, Save/Enroll/Harvest per destination verbs',
+      getSkillDescription('search'),
     icon: 'IconBuildingSkyscraper',
   }),
   'org-structure-insights': createStandardSkillBuilder({
@@ -161,7 +168,7 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     name: 'org-structure-insights',
     label: 'Org Structure Insights',
     description:
-      'Find and highlight people or teams on an org chart; answer who-owns and structure questions from stamped taxonomy nodes',
+      getSkillDescription('org-structure-insights'),
     icon: 'IconSitemap',
   }),
   'local-business-search': createStandardSkillBuilder({
@@ -169,7 +176,7 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     name: 'local-business-search',
     label: 'Local Business Search',
     description:
-      'City-wide Google Maps POI scrape via Bright Data (Fetch & Save Local Businesses workflow); plan cost then upsert Companies',
+      getSkillDescription('local-business-search'),
     icon: 'IconMapSearch',
   }),
   'resolve-company-name': createStandardSkillBuilder({
@@ -177,7 +184,7 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     name: 'resolve-company-name',
     label: 'Resolve Company Name',
     description:
-      'Standardize a raw / messy company name against std_company_data_scores (CompanyCollector-style ES resolve)',
+      getSkillDescription('resolve-company-name'),
     icon: 'IconBuilding',
   }),
   'ai-filter-enrich': createStandardSkillBuilder({
@@ -185,7 +192,7 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     name: 'ai-filter-enrich',
     label: 'AI Filter & Enrich',
     description:
-      'Add an AI-computed column (filter or enrichment) to the project people / companies: preview on ~10 rows, confirm, then run for all',
+      getSkillDescription('ai-filter-enrich'),
     icon: 'IconSparkles',
   }),
   'spreadsheet-import': createStandardSkillBuilder({
@@ -193,7 +200,7 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     name: 'spreadsheet-import',
     label: 'Spreadsheet Import',
     description:
-      'Import an attached xlsx / csv into the Outreach Companies and People tabs of a project: map columns, choose companies / people / both, upsert',
+      getSkillDescription('spreadsheet-import'),
     icon: 'IconTableImport',
   }),
   pptx: createStandardSkillBuilder({
@@ -209,3 +216,21 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     args: Omit<CreateStandardSkillArgs, 'context'>,
   ) => FlatSkill;
 };
+
+// Every playbook file becomes a standard skill with no per-skill code: its
+// label, description and icon come from its front matter.
+export const STANDARD_PLAYBOOK_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME: Record<
+  string,
+  (args: Omit<CreateStandardSkillArgs, 'context'>) => FlatSkill
+> = Object.fromEntries(
+  listPlaybookNames().map((name) => [
+    name,
+    createStandardSkillBuilder({
+      skillName: name,
+      name,
+      label: getSkillLabel(name),
+      description: getSkillDescription(name),
+      icon: getSkillIcon(name),
+    }),
+  ]),
+);

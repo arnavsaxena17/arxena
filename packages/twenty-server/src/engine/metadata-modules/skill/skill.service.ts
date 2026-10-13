@@ -23,6 +23,8 @@ import {
   SkillException,
   SkillExceptionCode,
 } from 'src/engine/metadata-modules/skill/skill.exception';
+import { withUnstoredPlaybooks } from 'src/engine/metadata-modules/skill/utils/build-playbook-flat-skills.util';
+import { overlayStandardSkillContentFromCode } from 'src/engine/metadata-modules/skill/utils/overlay-standard-skill-content-from-code.util';
 import { WorkspaceMigrationBuilderException } from 'src/engine/workspace-manager/workspace-migration/exceptions/workspace-migration-builder-exception';
 import { WorkspaceMigrationValidateBuildAndRunService } from 'src/engine/workspace-manager/workspace-migration/services/workspace-migration-validate-build-and-run-service';
 
@@ -50,6 +52,14 @@ export class SkillService {
         resolveSearchToolsConfig(this.twentyConfigService),
       ),
     };
+  }
+
+  // What the model reads: the code version of standard skills, then the
+  // provider filters for the current config
+  private readSkill(flatSkill: FlatSkill): FlatSkill {
+    return this.applySearchSkillContentFilters(
+      overlayStandardSkillContentFromCode(flatSkill),
+    );
   }
 
   async findAll(workspaceId: string): Promise<SkillDTO[]> {
@@ -260,10 +270,12 @@ export class SkillService {
         },
       );
 
-    return Object.values(flatSkillMaps.byUniversalIdentifier)
-      .filter(isDefined)
+    return withUnstoredPlaybooks(
+      workspaceId,
+      Object.values(flatSkillMaps.byUniversalIdentifier).filter(isDefined),
+    )
       .filter((flatSkill) => flatSkill.isActive)
-      .map((flatSkill) => this.applySearchSkillContentFilters(flatSkill))
+      .map((flatSkill) => this.readSkill(flatSkill))
       .sort((a, b) => a.label.localeCompare(b.label));
   }
 
@@ -283,12 +295,14 @@ export class SkillService {
         },
       );
 
-    return Object.values(flatSkillMaps.byUniversalIdentifier)
-      .filter(isDefined)
+    return withUnstoredPlaybooks(
+      workspaceId,
+      Object.values(flatSkillMaps.byUniversalIdentifier).filter(isDefined),
+    )
       .filter(
         (flatSkill) => names.includes(flatSkill.name) && flatSkill.isActive,
       )
-      .map((flatSkill) => this.applySearchSkillContentFilters(flatSkill));
+      .map((flatSkill) => this.readSkill(flatSkill));
   }
 
   async activate(id: string, workspaceId: string): Promise<SkillDTO> {

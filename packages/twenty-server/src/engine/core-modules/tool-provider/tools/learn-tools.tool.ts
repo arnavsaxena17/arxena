@@ -1,6 +1,6 @@
+import { MCP_TOOL_DESCRIPTIONS } from 'src/engine/core-modules/arxena-tools/constants/mcp-tool-descriptions.const';
 import { isDefined } from 'twenty-shared/utils';
 import { z } from 'zod';
-import { MCP_TOOL_DESCRIPTIONS } from 'twenty-shared/outreach';
 
 import { type ToolRegistryService } from 'src/engine/core-modules/tool-provider/services/tool-registry.service';
 import { type ToolContext } from 'src/engine/core-modules/tool-provider/types/tool-context.type';

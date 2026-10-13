@@ -448,7 +448,7 @@ PY
 expand_dependents() {
   case "$1" in
     TWENTY_SHARED)
-      echo "TWENTY_SHARED TWENTY_SERVER TWENTY_FRONT TWENTY_UI TWENTY_ORGCHART TWENTY_WEBSITE TWENTY_EMAILS TWENTY_MCP_SERVER"
+      echo "TWENTY_SHARED TWENTY_SERVER TWENTY_FRONT TWENTY_UI TWENTY_ORGCHART TWENTY_WEBSITE TWENTY_EMAILS"
       ;;
     TWENTY_CLIENT_SDK) echo "TWENTY_CLIENT_SDK TWENTY_SERVER" ;;
     TWENTY_UI) echo "TWENTY_UI TWENTY_FRONT TWENTY_ORGCHART" ;;
@@ -494,9 +494,6 @@ map_path_to_builds() {
     packages/twenty-emails/*)
       echo TWENTY_EMAILS
       ;;
-    packages/twenty-mcp-server/*)
-      echo TWENTY_MCP_SERVER
-      ;;
     packages/twenty-docs/*)
       echo TWENTY_DOCS
       ;;
@@ -514,7 +511,6 @@ map_nx_project() {
     twenty-front) echo TWENTY_FRONT ;;
     twenty-website) echo TWENTY_WEBSITE ;;
     twenty-emails) echo TWENTY_EMAILS ;;
-    twenty-mcp-server) echo TWENTY_MCP_SERVER ;;
     twenty-docs) echo TWENTY_DOCS ;;
   esac
 }
@@ -1099,7 +1095,7 @@ ensure_prod_yarn() {
     scp -i "$SSH_KEY_PATH" "${SSH_OPTS[@]}" \
       "ubuntu@$TEMP_DNS:${REMOTE_WORKSPACE}/yarn.lock" "$REPO_DIR/yarn.lock" 2>/dev/null || true
     local pkg
-    for pkg in twenty-server twenty-front twenty-website twenty-shared twenty-client-sdk twenty-orgchart twenty-ui twenty-emails twenty-mcp-server twenty-docs; do
+    for pkg in twenty-server twenty-front twenty-website twenty-shared twenty-client-sdk twenty-orgchart twenty-ui twenty-emails twenty-docs; do
       if [ -d "$REPO_DIR/packages/$pkg" ]; then
         scp -i "$SSH_KEY_PATH" "${SSH_OPTS[@]}" \
           "ubuntu@$TEMP_DNS:${REMOTE_WORKSPACE}/packages/$pkg/package.json" \
@@ -1274,7 +1270,7 @@ maybe_stream_component() {
 
   if [ "${STREAM_PHASE:-poll}" != "final" ]; then
     case "$build_name" in
-      TWENTY_SERVER|TWENTY_WEBSITE|TWENTY_MCP_SERVER)
+      TWENTY_SERVER|TWENTY_WEBSITE)
         echo "Deferring $label process cutover until the remote build finishes."
         return 0
         ;;
@@ -1334,10 +1330,6 @@ maybe_stream_component() {
       chmod +x "$REPO_DIR/pm2_start_website.sh" 2>/dev/null || true
       cd "$REPO_DIR"
       pm2 restart twenty-website || true
-      ;;
-    TWENTY_MCP_SERVER)
-      # No process to restart: twenty-server loads dist/lib.js in-process (ArxenaMcpBridgeService), so a server restart picks up the new build
-      echo "twenty-mcp-server built; loaded in-process by twenty-server (no separate pm2 app)"
       ;;
     TWENTY_EMAILS)
       if [ "$LINGUI_EMAILS" = "1" ]; then
@@ -1409,10 +1401,6 @@ stream_ready_packages() {
     "${REMOTE_WORKSPACE}/packages/twenty-emails/dist" \
     /home/ubuntu/twenty/packages/twenty-emails/dist || true
 
-  maybe_stream_component TWENTY_MCP_SERVER "twenty-mcp-server dist" "$REPO_DIR/packages/twenty-mcp-server/dist" \
-    "${REMOTE_WORKSPACE}/packages/twenty-mcp-server/dist" \
-    /home/ubuntu/twenty/packages/twenty-mcp-server/dist || true
-
   maybe_stream_component TWENTY_WEBSITE "twenty-website .next" "$REPO_DIR/packages/twenty-website/.next" \
     "${REMOTE_WORKSPACE}/packages/twenty-website/.next" \
     /home/ubuntu/twenty/packages/twenty-website/.next || true
@@ -1456,7 +1444,7 @@ compute_selected_builds
 compute_lingui_flags
 echo "LOCKFILE_CHANGED=$LOCKFILE_CHANGED SELECTED_BUILDS=${SELECTED_BUILDS:-empty}"
 
-for _name in TWENTY_SERVER TWENTY_FRONT TWENTY_SHARED TWENTY_CLIENT_SDK TWENTY_ORGCHART TWENTY_UI TWENTY_WEBSITE TWENTY_MCP_SERVER TWENTY_DOCS TWENTY_EMAILS; do
+for _name in TWENTY_SERVER TWENTY_FRONT TWENTY_SHARED TWENTY_CLIENT_SDK TWENTY_ORGCHART TWENTY_UI TWENTY_WEBSITE TWENTY_DOCS TWENTY_EMAILS; do
   set_deploy_status "$_name" kept-existing-files
 done
 
@@ -1553,7 +1541,7 @@ fi
 
 if [ -n "$HEAD_SHA" ]; then
   local_fail=0
-  for _name in TWENTY_SERVER TWENTY_FRONT TWENTY_ORGCHART TWENTY_UI TWENTY_SHARED TWENTY_CLIENT_SDK TWENTY_WEBSITE TWENTY_MCP_SERVER TWENTY_DOCS; do
+  for _name in TWENTY_SERVER TWENTY_FRONT TWENTY_ORGCHART TWENTY_UI TWENTY_SHARED TWENTY_CLIENT_SDK TWENTY_WEBSITE TWENTY_DOCS; do
     if is_selected "$_name" && [ "$(get_build_status "$_name")" = "failed" ]; then
       local_fail=1
     fi
@@ -1564,7 +1552,7 @@ if [ -n "$HEAD_SHA" ]; then
 fi
 
 echo "Final required build summary before shutdown:"
-for build_name in TWENTY_SERVER TWENTY_FRONT TWENTY_ORGCHART TWENTY_SHARED TWENTY_CLIENT_SDK TWENTY_WEBSITE TWENTY_MCP_SERVER TWENTY_DOCS; do
+for build_name in TWENTY_SERVER TWENTY_FRONT TWENTY_ORGCHART TWENTY_SHARED TWENTY_CLIENT_SDK TWENTY_WEBSITE TWENTY_DOCS; do
   echo " - ${build_name}: build=$(get_build_status "$build_name"), files=$(get_deploy_status "$build_name")"
 done
 echo "Production upgrade: ${PROD_UPGRADE_STATUS}"

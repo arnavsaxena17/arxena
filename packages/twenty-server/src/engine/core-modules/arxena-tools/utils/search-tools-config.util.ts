@@ -1,9 +1,9 @@
-import { type TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import {
-  type SearchToolsConfig,
   getDisabledSearchToolNames,
   isSearchToolEnabled,
-} from 'twenty-shared/outreach';
+  type SearchToolsConfig,
+} from 'src/engine/core-modules/arxena-tools/utils/search-tools-config';
+import { type TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 
 export {
   SEARCH_APOLLO_COMPANIES_TOOL_NAME,
@@ -20,8 +20,8 @@ export {
   filterSearchSkillContent,
   getDisabledSearchToolNames,
   isSearchToolEnabled,
-} from 'twenty-shared/outreach';
-export type { SearchToolsConfig } from 'twenty-shared/outreach';
+} from 'src/engine/core-modules/arxena-tools/utils/search-tools-config';
+export type { SearchToolsConfig } from 'src/engine/core-modules/arxena-tools/utils/search-tools-config';
 
 /** @deprecated Use SearchToolsConfig */
 export type SearchApolloToolsConfig = SearchToolsConfig;

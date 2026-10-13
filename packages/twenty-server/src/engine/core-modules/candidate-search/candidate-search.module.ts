@@ -51,12 +51,13 @@ import { SearchIntentRouterService } from './services/search-intent-router.servi
 import { SearchResponseBuilderService } from './services/search-response-builder.service';
 import { SearchResultsCacheService } from './services/search-results-cache.service';
 import { StrategyExecutionService } from './services/strategy-execution.service';
-import { TitleTaxonomyRemoteService } from './services/title-taxonomy-remote.service';
+import { TitleTaxonomyModule } from 'src/engine/core-modules/title-taxonomy/title-taxonomy.module';
 import { FileUtils } from './utils/file.utils';
 import { LinkedinParameterResolver } from './utils/linkedin-parameter-resolver.util';
 import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
 @Module({
   imports: [
+    TitleTaxonomyModule,
     BillingModule,
     CandidateAvatarModule,
     EnvironmentModule,
@@ -112,7 +113,6 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     ApolloIoRestService,
     ApolloPeopleSearchTransformerService,
     OrgChartIntentService,
-    TitleTaxonomyRemoteService,
     OrgchartLinkedInQueryRouterService,
     OrgChartSearchService,
     OrgchartApifyBuildProcessor,
@@ -136,7 +136,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     ApolloPeopleSearchTransformerService,
     PythonQueryGenerationService,
     OrgChartIntentService,
-    TitleTaxonomyRemoteService,
+    TitleTaxonomyModule,
     LinkedinParameterResolver,
   ],
 })

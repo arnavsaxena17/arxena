@@ -1,0 +1,1 @@
+Boolean title strings ("(VP OR Head) AND Sales NOT assistant") are supported in the user's request for ludicrous: pass them as written in `query`. Do not strip the operators; they are compiled for the engine.

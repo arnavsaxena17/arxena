@@ -15,6 +15,7 @@ import { BrightDataLudicrousSearchService } from 'src/engine/core-modules/bright
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { AiBillingModule } from 'src/engine/metadata-modules/ai/ai-billing/ai-billing.module';
 import { AiModelsModule } from 'src/engine/metadata-modules/ai/ai-models/ai-models.module';
+import { TitleTaxonomyModule } from 'src/engine/core-modules/title-taxonomy/title-taxonomy.module';
 import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 
@@ -27,6 +28,7 @@ import { BrightDataUnlockerService } from './services/bright-data-unlocker.servi
 
 @Module({
   imports: [
+    TitleTaxonomyModule,
     AuthModule,
     WorkspaceCacheStorageModule,
     BillingModule,

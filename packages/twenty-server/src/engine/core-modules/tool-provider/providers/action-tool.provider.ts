@@ -42,6 +42,7 @@ import {
 import { PreviewSampleMessageColumnTool } from 'src/engine/core-modules/tool/tools/outreach-sample-message-tool/preview-sample-message-column-tool';
 import { UpsertOutreachTargetCompaniesTool } from 'src/engine/core-modules/tool/tools/outreach-target-companies-tool/upsert-outreach-target-companies-tool';
 import { SaveOutreachTargetsToCrmTool } from 'src/engine/core-modules/tool/tools/outreach-save-to-crm-tool/save-outreach-targets-to-crm-tool';
+import { FindRoleAtCompaniesTool } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/find-role-at-companies-tool';
 import { StartOutreachTool } from 'src/engine/core-modules/tool/tools/outreach-start-tool/start-outreach-tool';
 import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
 import { NavigateAppTool } from 'src/engine/core-modules/tool/tools/navigate-tool/navigate-app-tool';
@@ -76,6 +77,7 @@ export class ActionToolProvider implements ToolProvider {
     private readonly importOutreachSpreadsheetTool: ImportOutreachSpreadsheetTool,
     private readonly saveOutreachTargetsToCrmTool: SaveOutreachTargetsToCrmTool,
     private readonly startOutreachTool: StartOutreachTool,
+    private readonly findRoleAtCompaniesTool: FindRoleAtCompaniesTool,
     private readonly getOutreachWorkingSetTool: GetOutreachWorkingSetTool,
     private readonly previewOutreachAiColumnTool: PreviewOutreachAiColumnTool,
     private readonly runOutreachAiColumnTool: RunOutreachAiColumnTool,
@@ -112,6 +114,7 @@ export class ActionToolProvider implements ToolProvider {
         this.saveOutreachTargetsToCrmTool,
       ],
       ['start_outreach', this.startOutreachTool],
+      ['find_role_at_companies', this.findRoleAtCompaniesTool],
       ['get_outreach_working_set', this.getOutreachWorkingSetTool],
       ['preview_ai_column', this.previewOutreachAiColumnTool],
       ['run_ai_column', this.runOutreachAiColumnTool],
@@ -272,6 +275,15 @@ export class ActionToolProvider implements ToolProvider {
       this.buildDescriptor(
         'start_outreach',
         this.startOutreachTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'find_role_at_companies',
+        this.findRoleAtCompaniesTool,
         includeSchemas,
         context.locale,
       ),

@@ -1,7 +1,10 @@
+import {
+  ARXENA_TOOL_CATALOG,
+  ARXENA_TOOL_NAMES,
+} from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-catalog.const';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-import { ARXENA_TOOL_CATALOG, ARXENA_TOOL_NAMES } from 'twenty-shared/outreach';
 import {
   ARXENA_TOOL_SELECTION_QUERIES,
   countToolsInContext,
@@ -43,10 +46,7 @@ describe('Arxena tool catalog', () => {
 
   it('registers classify_taxonomy_profile with profile or jobTitle', () => {
     const source = readFileSync(
-      join(
-        __dirname,
-        '../../../../../../twenty-mcp-server/src/tools/people-api-tools.ts',
-      ),
+      join(__dirname, '../library/tools/people-api-tools.ts'),
       'utf8',
     );
 

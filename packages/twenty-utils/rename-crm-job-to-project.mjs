@@ -21,7 +21,6 @@ const DEFAULT_PATHS = [
   'packages/twenty-shared',
   'packages/twenty-front',
   'packages/twenty-server',
-  'packages/twenty-mcp-server',
   'packages/twenty-website',
 ].map((relativePath) => path.join(ROOT, relativePath));
 

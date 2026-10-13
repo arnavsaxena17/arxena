@@ -45,6 +45,7 @@ const buildProvider = () => {
     accessTokenService as never,
     apiKeyService as never,
     outreachListService as never,
+    { forContext: jest.fn(() => undefined) } as never,
   );
 
   return {
@@ -80,6 +81,7 @@ describe('ArxenaToolProvider token resolution', () => {
       undefined,
       'linkedin_unipile_get_own_profile',
       {},
+      undefined,
     );
     expect(output.success).toBe(true);
   });
@@ -139,6 +141,7 @@ describe('ArxenaToolProvider token resolution', () => {
       'workspace-member-id',
       'linkedin_unipile_get_own_profile',
       {},
+      undefined,
     );
   });
 
@@ -162,6 +165,7 @@ describe('ArxenaToolProvider token resolution', () => {
       undefined,
       'linkedin_unipile_get_own_profile',
       {},
+      undefined,
     );
   });
 });

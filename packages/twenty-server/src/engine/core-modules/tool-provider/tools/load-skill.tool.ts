@@ -1,3 +1,4 @@
+import { selectSkillSections } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/select-skill-sections.util';
 import { z } from 'zod';
 
 import { type FlatSkill } from 'src/engine/metadata-modules/flat-skill/types/flat-skill.type';
@@ -10,6 +11,12 @@ export const loadSkillInputSchema = z.object({
     .describe(
       'Names of the skills to load (e.g., ["workflow-building", "data-manipulation"])',
     ),
+  sections: z
+    .array(z.string())
+    .optional()
+    .describe(
+      'Long skills such as search are split into sections (companies, people, list-building, linkedin-harvest). Pass only the ones the task needs; the intro is always included. Omit to load the whole skill.',
+    ),
 });
 
 export type LoadSkillInput = z.infer<typeof loadSkillInputSchema>;
@@ -19,6 +26,7 @@ export type LoadSkillResult = {
     name: string;
     label: string;
     content: string;
+    availableSections?: string[];
   }>;
   message: string;
 };
@@ -31,10 +39,10 @@ export const createLoadSkillTool = (
   listAvailableSkillNames: ListAvailableSkillNamesFunction,
 ) => ({
   description:
-    'Arxena CRM toolkit: company and people search (Apollo, LinkedIn, Harvest, Bright Data), CRM records, outreach campaigns and sequencers, workflows and automations, dashboards, and org charts. Load specialized skills for complex tasks. Returns detailed step-by-step instructions for building workflows, dashboards, manipulating data, or managing metadata. Call this before attempting complex operations. START HERE for any request to search, find, list, or source companies, jobs, or people (e.g. "find companies which do XYZ in India", "CTOs at fintechs"). Call this first to understand capabilities.',
+    'Arxena CRM toolkit: company and people search (Apollo, LinkedIn, Harvest, Bright Data), CRM records, outreach campaigns and sequencers, workflows and automations, dashboards, and org charts. Load specialized skills for complex tasks. Returns detailed step-by-step instructions for building workflows, dashboards, manipulating data, or managing metadata. Call this before attempting complex operations. START HERE for any request to search, find, list, or source companies, jobs, or people (e.g. "find companies which do XYZ in India", "CTOs at fintechs"). Call this first to understand capabilities. For the long search skill pass `sections` to load only the part the task needs.',
   inputSchema: loadSkillInputSchema,
   execute: async (parameters: LoadSkillInput): Promise<LoadSkillResult> => {
-    const { skillNames } = parameters;
+    const { skillNames, sections } = parameters;
 
     const skills = await loadSkills(skillNames);
 
@@ -52,13 +60,30 @@ export const createLoadSkillTool = (
       };
     }
 
+    const selected = skills.map((skill) => ({
+      skill,
+      ...selectSkillSections(skill.content, sections),
+    }));
+    const unknownSections = [
+      ...new Set(
+        selected
+          .filter((entry) => entry.availableSections.length > 0)
+          .flatMap((entry) => entry.unknownSections),
+      ),
+    ];
+
     return {
-      skills: skills.map((skill) => ({
+      skills: selected.map(({ skill, content, availableSections }) => ({
         name: skill.name,
         label: skill.label,
-        content: skill.content,
+        content,
+        ...(availableSections.length > 0 && { availableSections }),
       })),
-      message: `Loaded ${skills.map((skill) => skill.label).join(', ')}.`,
+      message:
+        `Loaded ${skills.map((skill) => skill.label).join(', ')}.` +
+        (unknownSections.length > 0
+          ? ` Unknown sections: ${unknownSections.join(', ')}.`
+          : ''),
     };
   },
 });

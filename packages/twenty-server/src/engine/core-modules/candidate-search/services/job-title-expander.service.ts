@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import OpenAI from 'openai';
+import { TitleExpansionService } from 'src/engine/core-modules/title-taxonomy/title-expansion.service';
 import { toOpenAiJsonSchemaResponseFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
 import type { ParsedRequirement } from '../schemas/parsed-requirement.schema';
 import {
@@ -15,7 +16,11 @@ import { StreamProcessingService } from './stream-processing.service';
 export class JobTitleExpanderService {
   private readonly logger = new Logger(JobTitleExpanderService.name);
 
-  constructor(private readonly streamProcessingService: StreamProcessingService) {}
+  constructor(
+    private readonly streamProcessingService: StreamProcessingService,
+    @Optional()
+    private readonly titleExpansionService?: TitleExpansionService,
+  ) {}
 
   async expandJobTitles(
     parsedRequirement: ParsedRequirement,
@@ -47,6 +52,46 @@ export class JobTitleExpanderService {
       throw new Error('Project title expander returned empty content');
     }
     const parsed = JSON.parse(content);
-    return jobTitleExpanderSchema.parse(parsed) as JobTitleExpanderResult;
+    const expanded = jobTitleExpanderSchema.parse(
+      parsed,
+    ) as JobTitleExpanderResult;
+
+    return this.addTaxonomyTitles(parsedRequirement, expanded);
+  }
+
+  // The model lists the variations it knows; the job-title taxonomy adds the
+  // curated titles filed with the same role. Broad requests that are not about
+  // one role are left to the model, as before.
+  private async addTaxonomyTitles(
+    parsedRequirement: ParsedRequirement,
+    expanded: JobTitleExpanderResult,
+  ): Promise<JobTitleExpanderResult> {
+    const roleName = parsedRequirement.primary_role_name?.trim() ?? '';
+
+    if (
+      roleName === '' ||
+      parsedRequirement.requires_job_title_expansion !== true ||
+      this.titleExpansionService === undefined
+    ) {
+      return expanded;
+    }
+
+    try {
+      const { added } = await this.titleExpansionService.expandTitles([
+        roleName,
+      ]);
+      const known = new Set(expanded.titles.map((title) => title.toLowerCase()));
+      const newTitles = added.filter((title) => !known.has(title.toLowerCase()));
+
+      return newTitles.length === 0
+        ? expanded
+        : { ...expanded, titles: [...expanded.titles, ...newTitles] };
+    } catch (error) {
+      this.logger.warn(
+        `Job-title taxonomy expansion skipped: ${error instanceof Error ? error.message : String(error)}`,
+      );
+
+      return expanded;
+    }
   }
 }

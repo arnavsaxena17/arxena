@@ -10,7 +10,7 @@ Living checklist for selective module ports. Skip Twenty rename leftovers (`doma
 |---|---|---|
 | `packages/twenty-orgchart` | 1 | done |
 | `packages/twenty-orgchart-embed` | 5 | done |
-| `packages/twenty-mcp-server` | 5 | done (builds; an in-process tool library loaded by twenty-server (dist/lib.js); the public HTTP endpoint is the NestJS /mcp). `extension-bridge-tools` kept but not registered in `publicTools` until needed. |
+| `packages/twenty-mcp-server` | 5 | done, then folded into `twenty-server` (`src/engine/core-modules/arxena-tools/library`); the package no longer exists. The public HTTP endpoint is the NestJS /mcp. `extension-bridge-tools` kept but not registered in `publicTools` until needed. |
 | `packages/twenty-tinybird` | 5 | done |
 
 ## Federation (Ask AI + Nest ToolProvider) — in progress

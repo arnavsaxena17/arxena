@@ -612,7 +612,7 @@ rg "candidate-sourcing/get-all-" packages/twenty-front/src/modules
 
 | Old | New |
 | --- | --- |
-| `twenty-mcp-server/.../job-tools.ts` | `project-tools.ts` |
+| `twenty-mcp-server/.../job-tools.ts` (now `twenty-server/.../arxena-tools/library/tools`) | `project-tools.ts` |
 | `autonomous-recruiter/job-context.service.ts` | `project-context.service.ts` |
 | `…/job-candidate-utils.ts` | `project-candidate-utils.ts` |
 | `…/jobCreationService.ts` | `projectCreationService.ts` |

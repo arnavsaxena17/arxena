@@ -2,9 +2,12 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  Optional,
 } from '@nestjs/common';
 
 import OpenAI from 'openai';
+
+import { TitleExpansionService } from 'src/engine/core-modules/title-taxonomy/title-expansion.service';
 
 import {
   LINKEDIN_XRAY_COUNTRIES,
@@ -32,6 +35,8 @@ export class LinkedinXrayService {
 
   constructor(
     private readonly linkedinXrayPeopleResultsJobService: LinkedinXrayPeopleResultsJobService,
+    @Optional()
+    private readonly titleExpansionService?: TitleExpansionService,
   ) {}
 
   getOptions() {
@@ -74,9 +79,11 @@ export class LinkedinXrayService {
     const includeKeywords = this.cleanValue(parsed.include_keywords);
     const excludeKeywords = parsed.exclude_keywords ?? '';
     const currentEmployer = this.cleanValue(parsed.current_employer);
+    const titleExpansion = await this.expandJobTitle(jobTitle);
 
     return {
       rawQuery: trimmedQuery,
+      titleExpansion,
       parsedBuilderFields: {
         country,
         jobTitle,
@@ -89,12 +96,41 @@ export class LinkedinXrayService {
       ...this.generateLinkedinXrayResponse({
         country,
         education,
-        jobTitle,
+        jobTitle: titleExpansion.jobTitle,
         includeKeywords,
         excludeKeywords,
         currentEmployer,
       }),
     };
+  }
+
+  // A plain title ("ceo") becomes the titles the job-title taxonomy files with
+  // it ("ceo OR chief executive OR managing director ..."). A boolean string
+  // the user wrote is used as typed.
+  private async expandJobTitle(
+    jobTitle: string,
+  ): Promise<{ jobTitle: string; added: string[] }> {
+    const isBooleanExpression = /[()]|\b(AND|OR|NOT)\b/.test(jobTitle);
+
+    if (
+      jobTitle === '' ||
+      isBooleanExpression ||
+      this.titleExpansionService === undefined
+    ) {
+      return { jobTitle, added: [] };
+    }
+
+    try {
+      const expansion = await this.titleExpansionService.expandTitles([
+        jobTitle,
+      ]);
+
+      return expansion.added.length === 0
+        ? { jobTitle, added: [] }
+        : { jobTitle: expansion.titles.join(' OR '), added: expansion.added };
+    } catch {
+      return { jobTitle, added: [] };
+    }
   }
 
   async queuePeopleResultsFetch(

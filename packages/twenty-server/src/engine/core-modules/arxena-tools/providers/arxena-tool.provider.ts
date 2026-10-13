@@ -1,3 +1,8 @@
+import {
+  ARXENA_INTERNAL_TOOL_NAMES,
+  ARXENA_TOOL_CATALOG,
+  type ArxenaToolPack,
+} from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-catalog.const';
 import { Injectable, Logger } from '@nestjs/common';
 
 import { ToolCategory } from 'twenty-shared/ai';
@@ -8,11 +13,7 @@ import {
   isSearchToolEnabled,
   resolveSearchToolsConfig,
 } from 'src/engine/core-modules/arxena-tools/utils/search-tools-config.util';
-import {
-  ARXENA_INTERNAL_TOOL_NAMES,
-  ARXENA_TOOL_CATALOG,
-  type ArxenaToolPack,
-} from 'twenty-shared/outreach';
+import { ArxenaInProcessRestTransportService } from 'src/engine/core-modules/arxena-tools/services/arxena-in-process-rest-transport.service';
 import { ArxenaMcpBridgeService } from 'src/engine/core-modules/arxena-tools/services/arxena-mcp-bridge.service';
 import { createHash } from 'crypto';
 
@@ -76,6 +77,7 @@ export class ArxenaToolProvider implements ToolProvider {
     private readonly accessTokenService: AccessTokenService,
     private readonly apiKeyService: ApiKeyService,
     private readonly outreachListService: OutreachListService,
+    private readonly arxenaInProcessRestTransportService: ArxenaInProcessRestTransportService,
   ) {}
 
   async isAvailable(_context: ToolProviderContext): Promise<boolean> {
@@ -229,6 +231,11 @@ export class ArxenaToolProvider implements ToolProvider {
         context.actorContext?.workspaceMemberId ?? undefined,
         toolName,
         args,
+        this.arxenaInProcessRestTransportService.forContext({
+          workspaceId: context.workspaceId,
+          userId: context.userId,
+          userWorkspaceId: context.userWorkspaceId,
+        }),
       );
       const text = extractTextFromMcpResult(result);
       let parsed: object = { raw: text };

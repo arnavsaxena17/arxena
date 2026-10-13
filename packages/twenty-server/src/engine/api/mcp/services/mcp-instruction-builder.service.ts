@@ -7,6 +7,7 @@ import {
   buildExcludedToolNamesSet,
   resolveSearchToolsConfig,
 } from 'src/engine/core-modules/arxena-tools/utils/search-tools-config.util';
+import { getPreloadToolNames } from 'src/engine/core-modules/tool-provider/constants/common-preload-tools.const';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import {
   AgentActorContextService,
@@ -53,6 +54,11 @@ export class McpInstructionBuilderService {
       }
     }
 
+    const excludeTools = buildExcludedToolNamesSet(
+      MCP_EXCLUDED_TOOL_NAMES,
+      resolveSearchToolsConfig(this.twentyConfigService),
+    );
+
     return this.systemPromptBuilderService.buildMcpInstructions({
       workspaceId,
       roleId,
@@ -60,10 +66,8 @@ export class McpInstructionBuilderService {
       userWorkspaceId,
       workspaceMemberId,
       userContext,
-      excludeTools: buildExcludedToolNamesSet(
-        MCP_EXCLUDED_TOOL_NAMES,
-        resolveSearchToolsConfig(this.twentyConfigService),
-      ),
+      excludeTools,
+      preloadedTools: getPreloadToolNames(excludeTools),
     });
   }
 }

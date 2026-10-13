@@ -5,7 +5,7 @@ description: >-
   current branch, push, then git pull on the same branch on the server. Never
   write files directly to the server. Use when the user asks to deploy,
   ship to production, pull on prod, restart pm2, build twenty-server,
-  twenty-website, twenty-front, twenty-orgchart, twenty-mcp-server,
+  twenty-website, twenty-front, twenty-orgchart,
   twenty-shared, twenty-docs (Mintlify), or run build_app_in_new_instance.sh.
 ---
 
@@ -103,7 +103,6 @@ If both server and website changed, build both, run the server upgrade path abov
 - `packages/twenty-front/**`
 - `packages/twenty-orgchart/**`
 - `packages/twenty-orgchart-embed/**`
-- `packages/twenty-mcp-server/**`
 - `packages/twenty-shared/**`
 - `packages/twenty-docs/**` (Mintlify)
 

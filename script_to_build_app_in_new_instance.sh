@@ -370,18 +370,6 @@ else
   skip_step TWENTY_EMAILS
 fi
 
-if should_build TWENTY_MCP_SERVER; then
-  cd "$WORKSPACE/packages/twenty-mcp-server"
-  if ! build_step TWENTY_MCP_SERVER npx nx run twenty-mcp-server:build; then
-    build_step TWENTY_MCP_SERVER yarn build
-  fi
-  if grep -q '^BUILD_TWENTY_MCP_SERVER=success' "$BUILD_STATUS_FILE"; then
-    record_status TWENTY_MCP_SERVER success "$WORKSPACE/packages/twenty-mcp-server/dist"
-  fi
-else
-  skip_step TWENTY_MCP_SERVER
-fi
-
 if should_build TWENTY_DOCS; then
   cd "$WORKSPACE/packages/twenty-docs"
   if build_step TWENTY_DOCS env NODE_OPTIONS="--max-old-space-size=8192" yarn export:brands; then
@@ -399,7 +387,6 @@ required_builds=(
   TWENTY_SHARED
   TWENTY_CLIENT_SDK
   TWENTY_WEBSITE
-  TWENTY_MCP_SERVER
   TWENTY_DOCS
 )
 

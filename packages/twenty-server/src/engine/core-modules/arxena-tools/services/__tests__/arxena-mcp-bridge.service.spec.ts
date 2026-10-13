@@ -1,12 +1,17 @@
+import { callArxenaTool as callArxenaToolImport } from 'src/engine/core-modules/arxena-tools/library/lib';
 import { ArxenaMcpBridgeService } from 'src/engine/core-modules/arxena-tools/services/arxena-mcp-bridge.service';
 import { type TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
+
+jest.mock('src/engine/core-modules/arxena-tools/library/lib', () => ({
+  callArxenaTool: jest.fn(),
+}));
 
 const textResult = (value: unknown) => ({
   content: [{ type: 'text' as const, text: JSON.stringify(value) }],
 });
 
 describe('ArxenaMcpBridgeService', () => {
-  const callArxenaTool = jest.fn();
+  const callArxenaTool = callArxenaToolImport as jest.Mock;
   // Disable Apollo people search server-side; everything else stays on
   const twentyConfigService = {
     get: jest.fn((key: string) =>
@@ -14,16 +19,7 @@ describe('ArxenaMcpBridgeService', () => {
     ),
   } as unknown as TwentyConfigService;
 
-  const buildService = () => {
-    const service = new ArxenaMcpBridgeService(twentyConfigService);
-
-    // The compiled library only exists after building twenty-mcp-server
-    (service as unknown as { toolLibrary: unknown }).toolLibrary = {
-      callArxenaTool,
-    };
-
-    return service;
-  };
+  const buildService = () => new ArxenaMcpBridgeService(twentyConfigService);
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -97,17 +93,5 @@ describe('ArxenaMcpBridgeService', () => {
     expect(
       callArxenaTool.mock.calls.every((call) => call[1] === 'learn_tools'),
     ).toBe(true);
-  });
-
-  it('should fail clearly when the library is not built', async () => {
-    const service = new ArxenaMcpBridgeService(twentyConfigService);
-
-    process.env.MCP_TOOL_LIBRARY_PATH = '/nonexistent/lib.js';
-
-    await expect(
-      service.callTool('token', undefined, 'x', {}),
-    ).rejects.toThrow();
-
-    delete process.env.MCP_TOOL_LIBRARY_PATH;
   });
 });

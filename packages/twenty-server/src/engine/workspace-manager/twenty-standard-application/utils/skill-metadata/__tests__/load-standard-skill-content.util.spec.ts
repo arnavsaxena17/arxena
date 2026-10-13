@@ -1,4 +1,4 @@
-import { getOutreachSkillContent } from 'twenty-shared/outreach';
+import { getSkillContent } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/skill-library';
 
 import { loadStandardSkillContent } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/load-standard-skill-content.util';
 
@@ -10,7 +10,7 @@ describe('loadStandardSkillContent', () => {
     expect(content).toContain('## Companies');
     expect(content).toContain('## People');
     expect(content).toContain('## LinkedIn / Harvest');
-    expect(content).toBe(getOutreachSkillContent('search'));
+    expect(content).toBe(getSkillContent('search'));
     expect(content.indexOf('## Companies')).toBeLessThan(
       content.indexOf('## People'),
     );

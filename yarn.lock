@@ -20826,15 +20826,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:18.19.26":
-  version: 18.19.26
-  resolution: "@types/node@npm:18.19.26"
-  dependencies:
-    undici-types: "npm:~5.26.4"
-  checksum: 10c0/34b9ceb3366fc616f35a3f3a1467478182cc265ff142c02000503161a679d3036d8bbc410d343ae4012a868e879941d64d656bd509674b055c8735aba24d98e2
-  languageName: node
-  linkType: hard
-
 "@types/node@npm:>=18":
   version: 25.9.2
   resolution: "@types/node@npm:25.9.2"
@@ -50806,18 +50797,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"twenty-mcp-server@workspace:packages/twenty-mcp-server":
-  version: 0.0.0-use.local
-  resolution: "twenty-mcp-server@workspace:packages/twenty-mcp-server"
-  dependencies:
-    "@types/node": "npm:18.19.26"
-    ts-node: "npm:10.9.1"
-    twenty-shared: "workspace:*"
-    typescript: "npm:5.3.3"
-    zod: "npm:3.25.76"
-  languageName: unknown
-  linkType: soft
-
 "twenty-orgchart-embed@workspace:packages/twenty-orgchart-embed":
   version: 0.0.0-use.local
   resolution: "twenty-orgchart-embed@workspace:packages/twenty-orgchart-embed"
@@ -51177,6 +51156,7 @@ __metadata:
     uuid: "npm:^11.1.1"
     xlsx: "npm:^0.18.5"
     xml2js: "npm:^0.6.2"
+    yaml: "npm:^2.8.3"
     zod: "npm:^4.1.11"
   languageName: unknown
   linkType: soft
@@ -51741,16 +51721,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:5.3.3":
-  version: 5.3.3
-  resolution: "typescript@npm:5.3.3"
-  bin:
-    tsc: bin/tsc
-    tsserver: bin/tsserver
-  checksum: 10c0/e33cef99d82573624fc0f854a2980322714986bc35b9cb4d1ce736ed182aeab78e2cb32b385efa493b2a976ef52c53e20d6c6918312353a91850e2b76f1ea44f
-  languageName: node
-  linkType: hard
-
 "typescript@npm:5.9.3, typescript@npm:^5.3.0, typescript@npm:^5.9.3, typescript@npm:~5.9.2":
   version: 5.9.3
   resolution: "typescript@npm:5.9.3"
@@ -51758,16 +51728,6 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 10c0/6bd7552ce39f97e711db5aa048f6f9995b53f1c52f7d8667c1abdc1700c68a76a308f579cd309ce6b53646deb4e9a1be7c813a93baaf0a28ccd536a30270e1c5
-  languageName: node
-  linkType: hard
-
-"typescript@patch:typescript@npm%3A5.3.3#optional!builtin<compat/typescript>":
-  version: 5.3.3
-  resolution: "typescript@patch:typescript@npm%3A5.3.3#optional!builtin<compat/typescript>::version=5.3.3&hash=e012d7"
-  bin:
-    tsc: bin/tsc
-    tsserver: bin/tsserver
-  checksum: 10c0/1d0a5f4ce496c42caa9a30e659c467c5686eae15d54b027ee7866744952547f1be1262f2d40de911618c242b510029d51d43ff605dba8fb740ec85ca2d3f9500
   languageName: node
   linkType: hard
 
@@ -54584,17 +54544,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:3.25.76, zod@npm:^3.22.4, zod@npm:^3.25.32":
-  version: 3.25.76
-  resolution: "zod@npm:3.25.76"
-  checksum: 10c0/5718ec35e3c40b600316c5b4c5e4976f7fee68151bc8f8d90ec18a469be9571f072e1bbaace10f1e85cf8892ea12d90821b200e980ab46916a6166a4260a983c
-  languageName: node
-  linkType: hard
-
 "zod@npm:4.3.6":
   version: 4.3.6
   resolution: "zod@npm:4.3.6"
   checksum: 10c0/860d25a81ab41d33aa25f8d0d07b091a04acb426e605f396227a796e9e800c44723ed96d0f53a512b57be3d1520f45bf69c0cb3b378a232a00787a2609625307
+  languageName: node
+  linkType: hard
+
+"zod@npm:^3.22.4, zod@npm:^3.25.32":
+  version: 3.25.76
+  resolution: "zod@npm:3.25.76"
+  checksum: 10c0/5718ec35e3c40b600316c5b4c5e4976f7fee68151bc8f8d90ec18a469be9571f072e1bbaace10f1e85cf8892ea12d90821b200e980ab46916a6166a4260a983c
   languageName: node
   linkType: hard
 

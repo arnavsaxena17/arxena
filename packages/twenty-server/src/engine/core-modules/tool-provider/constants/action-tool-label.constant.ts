@@ -20,6 +20,7 @@ export const ACTION_TOOL_IDS = [
   'save_outreach_targets_to_crm',
   'start_outreach',
   'get_outreach_working_set',
+  'find_role_at_companies',
   'preview_sample_message_column',
   'preview_ai_column',
   'run_ai_column',
@@ -76,6 +77,9 @@ export const ACTION_TOOL_LABELS: Record<ActionToolId, ActionToolLabel> = {
   },
   start_outreach: {
     label: i18nLabel(msg`Start Outreach`),
+  },
+  find_role_at_companies: {
+    label: i18nLabel(msg`Find Role At Companies`),
   },
   get_outreach_working_set: {
     label: i18nLabel(msg`Get Outreach Working Set`),

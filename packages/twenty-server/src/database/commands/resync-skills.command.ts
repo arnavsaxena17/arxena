@@ -6,6 +6,10 @@ import { WorkspaceIteratorService } from 'src/database/commands/command-runners/
 import { type RunOnWorkspaceArgs } from 'src/database/commands/command-runners/workspace.command-runner';
 import { ApplicationService } from 'src/engine/core-modules/application/application.service';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
+import {
+  getPlaybookUniversalIdentifier,
+  STANDARD_PLAYBOOK_SKILL_NAMES,
+} from 'src/engine/workspace-manager/twenty-standard-application/constants/standard-playbook-skills.constant';
 import { STANDARD_SKILL } from 'src/engine/workspace-manager/twenty-standard-application/constants/standard-skill.constant';
 import { computeTwentyStandardApplicationAllFlatEntityMaps } from 'src/engine/workspace-manager/twenty-standard-application/utils/twenty-standard-application-all-flat-entity-maps.constant';
 import { WorkspaceMigrationValidateBuildAndRunService } from 'src/engine/workspace-manager/workspace-migration/services/workspace-migration-validate-build-and-run-service';
@@ -54,7 +58,14 @@ export class ResyncSkillsCommand extends ProvisionedWorkspaceCommandRunner {
     const skillsToCreate = [];
     const skillsToUpdate = [];
 
-    for (const { universalIdentifier } of Object.values(STANDARD_SKILL)) {
+    const standardUniversalIdentifiers = [
+      ...Object.values(STANDARD_SKILL).map(
+        ({ universalIdentifier }) => universalIdentifier,
+      ),
+      ...STANDARD_PLAYBOOK_SKILL_NAMES.map(getPlaybookUniversalIdentifier),
+    ];
+
+    for (const universalIdentifier of standardUniversalIdentifiers) {
       const standardSkill =
         standardAllFlatEntityMaps.flatSkillMaps.byUniversalIdentifier[
           universalIdentifier

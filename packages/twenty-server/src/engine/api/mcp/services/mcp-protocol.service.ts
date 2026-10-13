@@ -45,7 +45,7 @@ import { ApiKeyRoleService } from 'src/engine/core-modules/api-key/services/api-
 import { type FlatApiKey } from 'src/engine/core-modules/api-key/types/flat-api-key.type';
 import { type WorkspaceAuthContext } from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
 import { buildApiKeyAuthContext } from 'src/engine/core-modules/auth/utils/build-api-key-auth-context.util';
-import { COMMON_PRELOAD_TOOLS } from 'src/engine/core-modules/tool-provider/constants/common-preload-tools.const';
+import { getPreloadToolNames } from 'src/engine/core-modules/tool-provider/constants/common-preload-tools.const';
 import { ToolRegistryService } from 'src/engine/core-modules/tool-provider/services/tool-registry.service';
 import {
   LEARN_TOOLS_TOOL_NAME,
@@ -265,13 +265,13 @@ export class McpProtocolService {
       actorContext,
     };
 
-    const preloadedTools = await this.toolRegistry.getToolsByName(
-      COMMON_PRELOAD_TOOLS,
-      toolContext,
-    );
     const excludedToolNames = buildExcludedToolNamesSet(
       MCP_EXCLUDED_TOOL_NAMES,
       resolveSearchToolsConfig(this.twentyConfigService),
+    );
+    const preloadedTools = await this.toolRegistry.getToolsByName(
+      getPreloadToolNames(excludedToolNames),
+      toolContext,
     );
 
     const coreTools = buildCoreToolSet({

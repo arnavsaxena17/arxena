@@ -1,3 +1,7 @@
+import {
+  ARXENA_TOOL_CATALOG,
+  ARXENA_TOOL_PACK_LABELS,
+} from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-catalog.const';
 import { Injectable, Logger } from '@nestjs/common';
 
 import {
@@ -9,10 +13,6 @@ import {
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
 import { COMMON_PRELOAD_TOOLS } from 'src/engine/core-modules/tool-provider/constants/common-preload-tools.const';
 import { ToolCategory } from 'twenty-shared/ai';
-import {
-  ARXENA_TOOL_CATALOG,
-  ARXENA_TOOL_PACK_LABELS,
-} from 'twenty-shared/outreach';
 import { ToolRegistryService } from 'src/engine/core-modules/tool-provider/services/tool-registry.service';
 import {
   EXECUTE_TOOL_TOOL_NAME,
