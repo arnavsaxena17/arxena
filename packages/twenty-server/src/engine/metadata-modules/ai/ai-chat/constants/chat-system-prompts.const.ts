@@ -2,7 +2,7 @@ import {
   OUTREACH_COMPLETE_REQUESTS_PROMPT,
   OUTREACH_DESTINATION_VERBS_PROMPT,
   OUTREACH_SOURCING_PREFERENCE_PROMPT,
-  buildOutreachRoutingLines,
+  buildRoutingLines,
 } from 'twenty-shared/outreach';
 
 import { CHAT_INTENT_SKILLS } from 'src/engine/metadata-modules/ai/ai-chat/constants/chat-intent-skills.const';
@@ -18,7 +18,7 @@ const {
 } = CHAT_INTENT_SKILLS;
 
 // Ask AI also loads workflow-building for outreach and can paint the org chart canvas.
-const SHARED_ROUTING_LINES = buildOutreachRoutingLines({
+const SHARED_ROUTING_LINES = buildRoutingLines({
   extraSkillNames: { outreach: [workflowBuilding] },
   routingLineSuffixes: {
     'org-structure-insights':

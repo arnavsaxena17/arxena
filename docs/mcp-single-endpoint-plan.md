@@ -228,7 +228,7 @@ skills from `twenty-shared/outreach`; the NestJS MCP path
     files under `twenty-standard-application/.../contents/`.
   - Both the standalone `meta-tools.ts` and `skill.service.ts` apply
     `filterSearchSkillContent` (provider enable/disable), and both the standalone server
-    and `chat-system-prompts.const.ts` use `buildOutreachRoutingLines`.
+    and `chat-system-prompts.const.ts` use `buildroutingLines`.
   - So the Arxena playbook text is already single-sourced. What remains duplicated is the
     standalone `load_skills`/`list_skills` implementation (reads shared markdown directly,
     no workspace awareness, no custom skills), `buildMetaServerInstructions` versus

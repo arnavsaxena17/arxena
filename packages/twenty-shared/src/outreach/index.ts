@@ -19,7 +19,7 @@ export {
 export { MCP_TOOL_DESCRIPTIONS } from './mcp-tool-descriptions';
 export type { OutreachPromptOptions } from './outreach-prompt';
 export {
-  buildOutreachRoutingLines,
+  buildRoutingLines,
   OUTREACH_SOURCING_PREFERENCE_PROMPT,
   OUTREACH_DESTINATION_VERBS_PROMPT,
   OUTREACH_COMPLETE_REQUESTS_PROMPT,
