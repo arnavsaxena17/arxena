@@ -12,7 +12,6 @@ import { BrightDataLudicrousPlannerService } from 'src/engine/core-modules/brigh
 import { BrightDataLudicrousPlanStoreService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-plan-store.service';
 import { BrightDataLudicrousRelevanceJudgeService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-relevance-judge.service';
 import { BrightDataLudicrousSearchService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-search.service';
-import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { AiBillingModule } from 'src/engine/metadata-modules/ai/ai-billing/ai-billing.module';
 import { AiModelsModule } from 'src/engine/metadata-modules/ai/ai-models/ai-models.module';
@@ -34,11 +33,16 @@ import { BrightDataUnlockerService } from './services/bright-data-unlocker.servi
     AiBillingModule,
     AiModelsModule,
     WorkspaceCacheModule,
-    // Provides AiFilterEngineService, the Jev judge used for relevance scoring
-    forwardRef(() => CandidateSourcingModule),
+    // AiFilterEngineService (relevance judge) lives on CandidateSourcing.
+    // CandidateSourcing → OutreachCommand → OrgChart → TheOfficialBoard, and
+    // ToolModule → OrgChart, both read BrightDataModule while this file is
+    // still initializing. Lazy require waits until the class exists.
     forwardRef(() => {
-      // ToolModule → OrgChart → TheOfficialBoard reads BrightDataModule while
-      // this file is still initializing. Lazy require waits until the class exists.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      return require('../candidate-sourcing/candidate-sourcing.module')
+        .CandidateSourcingModule;
+    }),
+    forwardRef(() => {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       return require('../tool/tool.module').ToolModule;
     }),

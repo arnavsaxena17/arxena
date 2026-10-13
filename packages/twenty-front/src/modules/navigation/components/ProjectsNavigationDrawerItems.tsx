@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useLingui } from '@lingui/react/macro';
 import { AppPath } from 'twenty-shared/types';
-import { getAppPath } from 'twenty-shared/utils';
+import { getAppPath, isDefined } from 'twenty-shared/utils';
 import { IconBriefcase, IconPlus, IconUsers } from 'twenty-ui/icon';
 import { LightIconButton } from 'twenty-ui/input';
 
@@ -13,6 +13,7 @@ import {
   projectsRefetchTriggerState,
   projectsState,
 } from '@/candidate-table/states/states';
+import { OUTREACH_PROJECT_ID_QUERY_PARAM } from '@/outreach-home/constants/outreach-command.constants';
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { NavigationDrawerItem } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItem';
 import { NavigationDrawerItemGroup } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerItemGroup';
@@ -83,11 +84,23 @@ export const ProjectsNavigationDrawerItems = () => {
     [localProjects],
   );
 
+  const outreachHomePath = `/${getAppPath(AppPath.OutreachHome)}`;
+
   const selectedProjectIdFromRoute = useMemo(() => {
     const match = location.pathname.match(/^\/project\/([^/]+)/);
 
-    return match?.[1] ?? null;
-  }, [location.pathname]);
+    if (isDefined(match)) {
+      return match[1];
+    }
+
+    if (location.pathname === outreachHomePath) {
+      return new URLSearchParams(location.search).get(
+        OUTREACH_PROJECT_ID_QUERY_PARAM,
+      );
+    }
+
+    return null;
+  }, [location.pathname, location.search, outreachHomePath]);
 
   const allProjectsPath = `/${getAppPath(AppPath.Projects)}`;
   const isAllProjectsRoute =
@@ -139,7 +152,7 @@ export const ProjectsNavigationDrawerItems = () => {
           <NavigationDrawerItem
             key={project.id}
             label={project.name}
-            to={`/${getAppPath(AppPath.Project, { projectId: project.id })}`}
+            to={`${outreachHomePath}?${OUTREACH_PROJECT_ID_QUERY_PARAM}=${project.id}`}
             Icon={IconUsers}
             active={project.id === selectedProjectIdFromRoute}
             subItemState={getNavigationSubItemLeftAdornment({
