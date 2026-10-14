@@ -128,10 +128,21 @@ export type BrightDataLudicrousShardRunReport = {
   error?: string;
 };
 
+// A paid row plus the Jev answer for it. relevant is null when that page was
+// accepted from a sample and this row was not scored individually.
+export type BrightDataLudicrousFetchedDocument =
+  BrightDataLudicrousSampleDocument & {
+    relevant: boolean | null;
+  };
+
 export type BrightDataLudicrousRunResult = {
   planId: string;
   entity: BrightDataLudicrousEntity;
+  // Rows the relevance filter kept. The chat count and summary use this.
   documents: BrightDataLudicrousSampleDocument[];
+  // Every row paid for, including ones the filter then dropped. These are
+  // written to the project tab with otherFields.relevant.
+  fetchedDocuments: BrightDataLudicrousFetchedDocument[];
   spentUsd: number;
   budgetUsd: number;
   shardReports: BrightDataLudicrousShardRunReport[];

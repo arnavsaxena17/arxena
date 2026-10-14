@@ -32,19 +32,26 @@ import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
 
 const DEFAULT_BATCH_ROWS = OUTREACH_LIST_MAX_ROWS;
 
-const toEphemeralCompany = (
-  row: OutreachListRow,
-): OutreachEphemeralCompany => ({
-  id: row.key,
-  name: row.name,
-  domain: row.domain,
-  industry: row.industry,
-  employees: row.size,
-  segment: '',
-  icpFit: '',
-  status: 'new',
-  ...(row.linkedinUrl ? { otherFields: { linkedinUrl: row.linkedinUrl } } : {}),
+const companyOtherFields = (row: OutreachListRow): Record<string, unknown> => ({
+  ...(row.otherFields ?? {}),
+  ...(row.linkedinUrl ? { linkedinUrl: row.linkedinUrl } : {}),
 });
+
+const toEphemeralCompany = (row: OutreachListRow): OutreachEphemeralCompany => {
+  const otherFields = companyOtherFields(row);
+
+  return {
+    id: row.key,
+    name: row.name,
+    domain: row.domain,
+    industry: row.industry,
+    employees: row.size,
+    segment: '',
+    icpFit: '',
+    status: 'new',
+    ...(Object.keys(otherFields).length > 0 ? { otherFields } : {}),
+  };
+};
 
 const toEphemeralPerson = (row: OutreachListRow): OutreachEphemeralPerson => ({
   id: row.key,
@@ -58,6 +65,7 @@ const toEphemeralPerson = (row: OutreachListRow): OutreachEphemeralPerson => ({
   warmPath: '—',
   stage: 'queued',
   email: row.email,
+  ...(row.otherFields ? { otherFields: row.otherFields } : {}),
 });
 
 @Injectable()

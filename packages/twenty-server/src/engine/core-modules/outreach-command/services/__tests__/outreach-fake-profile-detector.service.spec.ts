@@ -55,7 +55,7 @@ describe('OutreachFakeProfileDetectorService', () => {
     });
   });
 
-  it('assesses a profile with hy3:free and returns fake hits', async () => {
+  it('assesses a profile with the default fast model and returns fake hits', async () => {
     generateObjectMock.mockResolvedValue({
       object: {
         verdict: 'fake',
@@ -90,9 +90,7 @@ describe('OutreachFakeProfileDetectorService', () => {
       input: { profile: FAKE_PROFILE },
     });
 
-    expect(aiModelRegistryService.getModel).toHaveBeenCalledWith(
-      OUTREACH_COMPANY_ENRICHMENT_LLM_MODEL_ID,
-    );
+    expect(aiModelRegistryService.getDefaultSpeedModel).toHaveBeenCalled();
     expect(generateObjectMock).toHaveBeenCalledTimes(1);
     expect(generateObjectMock.mock.calls[0][0]).toEqual(
       expect.objectContaining({
@@ -135,11 +133,11 @@ describe('OutreachFakeProfileDetectorService', () => {
       } as Awaited<ReturnType<typeof generateObject>>);
 
     const aiModelRegistryService = {
-      getDefaultSpeedModel: jest.fn(),
-      getModel: jest.fn().mockReturnValue({
-        modelId: OUTREACH_COMPANY_ENRICHMENT_LLM_MODEL_ID,
+      getDefaultSpeedModel: jest.fn().mockReturnValue({
+        modelId: 'default-fast',
         model: { provider: 'mock' },
       }),
+      getModel: jest.fn(),
       resolveModelForAgentInWorkspace: jest.fn(),
     } as unknown as AiModelRegistryService;
 

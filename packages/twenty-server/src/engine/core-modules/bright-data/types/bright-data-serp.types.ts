@@ -27,6 +27,8 @@ export type BrightDataSerpPaginationPage = {
 
 /** Typical top-level JSON from Bright Data when scraping Google with structured output. */
 export type BrightDataSerpGoogleJson = {
+  // Set only on Bright Data's failure envelope: {status_code, headers, body}
+  status_code?: number;
   general?: {
     search_engine?: string;
     query?: string;

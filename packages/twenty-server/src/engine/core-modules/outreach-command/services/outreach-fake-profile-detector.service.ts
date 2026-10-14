@@ -3,7 +3,6 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import { type LanguageModel } from 'ai';
 import { isDefined } from 'twenty-shared/utils';
 
-import { OUTREACH_COMPANY_ENRICHMENT_LLM_MODEL_ID } from 'src/engine/core-modules/outreach-command/constants/outreach-company-enrichment-model.const';
 import {
   buildOutreachFakeProfileDetectorUserPrompt,
   OUTREACH_FAKE_PROFILE_DETECTOR_SYSTEM_PROMPT,
@@ -102,7 +101,7 @@ export class OutreachFakeProfileDetectorService {
 
     if (!registeredModel) {
       return this.emptyResult(
-        'No AI model is configured. Need Nous HY3 (nous/tencent/hy3:free) or another registered model.',
+        'No AI model is configured. Configure a default fast model.',
       );
     }
 
@@ -281,11 +280,8 @@ export class OutreachFakeProfileDetectorService {
     }
 
     try {
-      const hy3Model = this.aiModelRegistryService.getModel(
-        OUTREACH_COMPANY_ENRICHMENT_LLM_MODEL_ID,
-      );
       const defaultFastModel =
-        hy3Model ?? this.aiModelRegistryService.getDefaultSpeedModel();
+        this.aiModelRegistryService.getDefaultSpeedModel();
       const modelId = hasText(input.modelId)
         ? input.modelId
         : defaultFastModel.modelId;

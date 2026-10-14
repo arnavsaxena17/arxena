@@ -146,6 +146,16 @@ describe('normalizeToolOutputToListRows', () => {
       size: '201-500',
       source: 'bright_data',
     });
+    expect(
+      fromBrightDataDocument('company', {
+        brightId: 'b1',
+        relevant: false,
+        data: {
+          name: 'Medikabazaar',
+          website: 'https://www.medikabazaar.com/',
+        },
+      })?.otherFields,
+    ).toEqual({ relevant: false });
   });
 });
 

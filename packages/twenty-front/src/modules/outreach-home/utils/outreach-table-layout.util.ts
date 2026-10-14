@@ -336,6 +336,11 @@ export const getOutreachCellText = <TRow>(
   return String(value);
 };
 
+const PINNED_AFTER_STATUS_COLUMN_IDS = [
+  'otherFields.peopleFound',
+  'otherFields.peopleFoundCount',
+];
+
 export const materializeColumnLayout = <TRow>(
   columns: Array<Pick<LayoutColumn<TRow>, 'id' | 'width'>>,
   layout: OutreachTableColumnLayout[] | null,
@@ -395,7 +400,18 @@ export const resolveVisibleColumns = <
       ];
     });
   const unsaved = columns.filter((column) => !savedIds.has(column.id));
-  const merged = [...savedVisible, ...unsaved];
+  const pinned = unsaved.filter((column) =>
+    PINNED_AFTER_STATUS_COLUMN_IDS.includes(column.id),
+  );
+  const rest = unsaved.filter((column) => !pinned.includes(column));
+  const merged = [...savedVisible, ...rest];
+
+  // columns a saved layout has not seen yet go to the end, except the ones
+  // people look for first, which sit right after Status
+  const statusIndex = merged.findIndex((column) => column.id === 'status');
+
+  merged.splice(statusIndex >= 0 ? statusIndex + 1 : merged.length, 0, ...pinned);
+
   const nameColumn = merged.find((column) => column.id === 'name');
 
   if (!nameColumn) {

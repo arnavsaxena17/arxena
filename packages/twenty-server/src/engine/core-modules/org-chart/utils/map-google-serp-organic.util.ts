@@ -10,6 +10,9 @@ export type GoogleSerpOrganicItem = {
   url: string;
   snippet?: string;
   rank?: number;
+  // Fields Bright Data's parser lifted out of the result, e.g. a LinkedIn
+  // result's location, role and company
+  extensions?: string[];
 };
 
 export const resolveGoogleSerpResultLimit = (limit?: number): number => {
@@ -61,6 +64,14 @@ export const mapGoogleSerpOrganicResults = (
 
     if (typeof rank === 'number' && Number.isFinite(rank)) {
       item.rank = rank;
+    }
+
+    const extensions = (entry.extensions ?? [])
+      .map((extension) => (extension.text ?? '').trim())
+      .filter(isNonEmptyString);
+
+    if (extensions.length > 0) {
+      item.extensions = extensions;
     }
 
     items.push(item);

@@ -9,6 +9,7 @@ import {
   streamText,
   type SystemModelMessage,
   type ToolSet,
+  zodSchema,
 } from 'ai';
 import { type ExtendedUIMessage, ToolCategory } from 'twenty-shared/ai';
 import { type APP_LOCALES } from 'twenty-shared/translations';
@@ -36,8 +37,11 @@ import { FileService } from 'src/engine/core-modules/file/services/file.service'
 import { ToolRegistryService } from 'src/engine/core-modules/tool-provider/services/tool-registry.service';
 import {
   EXECUTE_TOOL_TOOL_NAME,
+  GET_TOOL_CATALOG_TOOL_NAME,
   LEARN_TOOLS_TOOL_NAME,
   LOAD_SKILL_TOOL_NAME,
+  createGetToolCatalogTool,
+  getToolCatalogInputSchema,
 } from 'src/engine/core-modules/tool-provider/tools';
 import { buildCoreToolSet } from 'src/engine/core-modules/tool-provider/tools/build-core-tool-set.util';
 import { estimateToolOutputTokens } from 'src/engine/core-modules/tool-provider/utils/estimate-tool-output-tokens.util';
@@ -295,6 +299,16 @@ export class ChatExecutionService {
     const activeTools: ToolSet = {
       ...directTools,
       [ASK_QUESTIONS_TOOL_NAME]: createAskQuestionsTool(),
+      // The prompt tells the model to browse with get_tool_catalog, so Ask AI
+      // must expose it like the MCP endpoint does.
+      [GET_TOOL_CATALOG_TOOL_NAME]: {
+        ...createGetToolCatalogTool(this.toolRegistry, workspace.id, roleId, {
+          userId,
+          userWorkspaceId,
+          excludeTools: disabledSearchToolNames,
+        }),
+        inputSchema: zodSchema(getToolCatalogInputSchema),
+      },
       [LEARN_TOOLS_TOOL_NAME]: coreTools.learnTools,
       [EXECUTE_TOOL_TOOL_NAME]: coreTools.executeTool,
       [LOAD_SKILL_TOOL_NAME]: coreTools.loadSkills,

@@ -16,8 +16,10 @@ import {
   BRIGHT_DATA_MIN_SHARD_SAMPLE_PRECISION,
   BRIGHT_DATA_MIN_PAGE_PRECISION,
   BRIGHT_DATA_MIN_ROWS_FOR_NOVELTY_STOP,
+  allowNextPage,
 } from 'src/engine/core-modules/bright-data/ludicrous/constants/bright-data-ludicrous-pricing.const';
 import {
+  type BrightDataLudicrousFetchedDocument,
   type BrightDataLudicrousPlan,
   type BrightDataLudicrousRunResult,
   type BrightDataLudicrousSampleDocument,
@@ -40,9 +42,9 @@ export type BrightDataLudicrousExecuteInput = {
   excludeBrightIds?: string[];
 };
 
-// Fetches shard by shard in priority order. After every page it judges a small
-// sample and stops the shard as soon as precision or novelty decays, so budget
-// flows to the shards still producing accurate new rows.
+// Fetches shard by shard in priority order. After every page it judges a sample
+// and drops rows Jev marks irrelevant. Paging continues after a low-precision
+// page; novelty or budget is what ends a shard.
 @Injectable()
 export class BrightDataLudicrousExecutorService {
   private readonly logger = new Logger(BrightDataLudicrousExecutorService.name);
@@ -63,6 +65,7 @@ export class BrightDataLudicrousExecutorService {
     );
     const seen = new Set<string>(input.excludeBrightIds ?? []);
     const kept: BrightDataLudicrousSampleDocument[] = [];
+    const fetchedDocuments: BrightDataLudicrousFetchedDocument[] = [];
     const reports: BrightDataLudicrousShardRunReport[] = [];
     let spentRecords = 0;
 
@@ -198,6 +201,13 @@ export class BrightDataLudicrousExecutorService {
           report.newRecords += fresh.length;
           report.duplicates += page.length - fresh.length;
 
+          // Record the paid page before the judge drops rows from `kept`.
+          const fetchedPage: BrightDataLudicrousFetchedDocument[] = fresh.map(
+            (document) => ({ ...document, relevant: null }),
+          );
+
+          fetchedDocuments.push(...fetchedPage);
+
           const newShare = page.length > 0 ? fresh.length / page.length : 0;
 
           if (!judgeIsReliable) {
@@ -250,7 +260,7 @@ export class BrightDataLudicrousExecutorService {
 
           if (pageDecayed) {
             // The page is already paid for, so judge every row rather than
-            // trusting the sample: keep what is relevant, then stop the shard.
+            // trusting the sample. Later pages are still fetched.
             const rest = fresh.slice(sample.length);
             const restJudgement = await this.relevanceJudge.judge({
               entity: plan.entity,
@@ -264,6 +274,18 @@ export class BrightDataLudicrousExecutorService {
             );
           }
 
+          const fetchedById = new Map(
+            fetchedPage.map((document) => [document.brightId, document]),
+          );
+
+          relevantById.forEach((relevant, brightId) => {
+            const fetched = fetchedById.get(brightId);
+
+            if (fetched) {
+              fetched.relevant = relevant;
+            }
+          });
+
           // Unjudged rows ride on the sample's precision while the shard is
           // still above threshold; a rejected row is never returned.
           const accepted = fresh.filter((document) =>
@@ -275,7 +297,7 @@ export class BrightDataLudicrousExecutorService {
           kept.push(...accepted);
           report.keptRecords += accepted.length;
 
-          if (pageDecayed) {
+          if (pageDecayed && allowNextPage !== true) {
             report.stoppedReason = 'low_precision';
             break;
           }
@@ -324,6 +346,7 @@ export class BrightDataLudicrousExecutorService {
       planId: plan.planId,
       entity: plan.entity,
       documents: finalDocuments,
+      fetchedDocuments,
       spentUsd: roundUsd(
         costForRecordsUsd(spentRecords) + plan.estimateCostUsd,
       ),

@@ -1,7 +1,7 @@
 import { styled } from '@linaria/react';
 import { isNonEmptyString } from '@sniptt/guards';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getLogoUrlFromDomainName } from 'twenty-shared/utils';
+import { getLogoUrlFromDomainName, isDefined } from 'twenty-shared/utils';
 import { Loader } from 'twenty-ui/feedback';
 import {
   IconBuildingSkyscraper,
@@ -202,6 +202,7 @@ type OutreachCompaniesPanelProps = {
   projectId: string | null | undefined;
   selectedCompanyId: string | null;
   onSelectCompanyId: (companyId: string | null) => void;
+  onViewCompanyPeople?: (companyId: string) => void;
   isLoading?: boolean;
   onRefresh?: () => Promise<void>;
   appendCompanies?: (companiesToAdd: OutreachCompanyRow[]) => Promise<void>;
@@ -217,6 +218,7 @@ export const OutreachCompaniesPanel = ({
   projectId,
   selectedCompanyId,
   onSelectCompanyId,
+  onViewCompanyPeople,
   isLoading = false,
   onRefresh,
   appendCompanies,
@@ -447,6 +449,22 @@ export const OutreachCompaniesPanel = ({
 
   const actions = (
     <>
+      {isDefined(onViewCompanyPeople) && (
+        <OutreachViewBarIconAction
+          title={
+            isDefined(selectedCompanyId)
+              ? 'View people at this company'
+              : 'Select a company to view its people'
+          }
+          Icon={IconUsers}
+          disabled={!isDefined(selectedCompanyId)}
+          onClick={() => {
+            if (isDefined(selectedCompanyId)) {
+              onViewCompanyPeople(selectedCompanyId);
+            }
+          }}
+        />
+      )}
       <OutreachViewBarIconAction
         title={
           selectedCompanyIds.length > 0

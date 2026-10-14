@@ -1,3 +1,5 @@
+import { JevDecisionsService } from 'src/engine/core-modules/bright-data/services/jev-decisions.service';
+import { BrightDataPersonFitFilterService } from 'src/engine/core-modules/bright-data/services/bright-data-person-fit-filter.service';
 import { Module, forwardRef } from '@nestjs/common';
 
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
@@ -63,6 +65,8 @@ import { BrightDataUnlockerService } from './services/bright-data-unlocker.servi
     BrightDataLudicrousPlanStoreService,
     BrightDataLudicrousDatasetStoreService,
     BrightDataLudicrousRelevanceJudgeService,
+    JevDecisionsService,
+    BrightDataPersonFitFilterService,
     BrightDataLudicrousPlannerService,
     BrightDataLudicrousExecutorService,
     BrightDataLudicrousSearchService,
@@ -77,6 +81,8 @@ import { BrightDataUnlockerService } from './services/bright-data-unlocker.servi
     BrightDataBusinessSearchService,
     BrightDataBillingService,
     BrightDataLudicrousRelevanceJudgeService,
+    JevDecisionsService,
+    BrightDataPersonFitFilterService,
     BrightDataLudicrousSearchService,
   ],
 })

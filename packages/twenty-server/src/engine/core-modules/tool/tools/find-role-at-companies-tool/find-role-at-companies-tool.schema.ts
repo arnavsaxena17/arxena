@@ -6,6 +6,12 @@ export const FindRoleAtCompaniesInputZodSchema = z.object({
   companies: z
     .array(
       z.object({
+        id: z
+          .string()
+          .optional()
+          .describe(
+            'Row id of this company on the Companies tab (from get_outreach_working_set). When set with projectId, the found people are linked to that row and its "People found" column is updated, including when nobody is found.',
+          ),
         name: z
           .string()
           .min(1)

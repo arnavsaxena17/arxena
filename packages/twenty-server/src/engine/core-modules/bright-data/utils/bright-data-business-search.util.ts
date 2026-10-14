@@ -11,6 +11,8 @@ export type BrightDataBusinessSearchView = 'full' | 'summary' | 'id_only';
 export type BrightDataBusinessSearchDocument = {
   brightId: string;
   data: Record<string, unknown>;
+  // Jev verdict for this row. Omitted when the row was not scored.
+  relevant?: boolean;
 };
 
 export const BRIGHT_DATA_BUSINESS_SEARCH_MAX_QUERY_LENGTH = 200;
@@ -230,7 +232,12 @@ export const mapBrightDataCompanyToEphemeral = (
     segment: readString(document.data, 'organization_type'),
     icpFit: '',
     status: 'new',
-    otherFields: buildBrightDataCompanyOtherFields(document.data),
+    otherFields: {
+      ...buildBrightDataCompanyOtherFields(document.data),
+      ...(typeof document.relevant === 'boolean'
+        ? { relevant: document.relevant }
+        : {}),
+    },
   };
 };
 
@@ -238,7 +245,9 @@ export const mapBrightDataPersonToSearchItem = (
   document: BrightDataBusinessSearchDocument,
 ): Record<string, unknown> => {
   const data = document.data;
-  const title = readString(data, 'current_title');
+  // current_title is often missing while position (the headline role) is set
+  const title =
+    readString(data, 'current_title') || readString(data, 'position');
   const location = readString(data, 'location') || readString(data, 'city');
 
   return {
@@ -277,6 +286,9 @@ export const mapBrightDataPersonToEphemeral = (
     warmPath: '—',
     stage: 'queued',
     email: '',
+    ...(typeof document.relevant === 'boolean'
+      ? { otherFields: { relevant: document.relevant } }
+      : {}),
   };
 };
 

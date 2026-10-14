@@ -30,6 +30,59 @@ describe('scoreRoleMatch', () => {
     expect(score('Managing Director', CEO_CLASS)).toBe(2);
   });
 
+  it('should reject a title that works for the role instead of holding it', () => {
+    expect(score('Manager - CEO Office', CEO_CLASS)).toBe(0);
+    expect(score('Head of Finance & Growth | CEO Office', null)).toBe(0);
+    expect(score("Executive, Chairman's Office", null)).toBe(0);
+    expect(score('Office of the MD', null)).toBe(0);
+  });
+
+  it('should still accept a combined CEO title', () => {
+    expect(score('Founder & CEO', CEO_CLASS)).toBe(2);
+    expect(score('CEO | Officer of the Year', CEO_CLASS)).toBe(2);
+  });
+
+  it('should read a typed short role against the spelled-out title when the taxonomy has no answer', () => {
+    const noTaxonomy = (title: string, roles: string[]) =>
+      scoreRoleMatch({
+        title,
+        roles,
+        requestedClasses: [],
+        candidateClass: null,
+      });
+
+    expect(noTaxonomy('Group Chief Executive Officer', ['CEO'])).toBe(2);
+    expect(noTaxonomy('Founder, Chairman & Managing Director', ['MD'])).toBe(2);
+    expect(noTaxonomy('Chief Executive Officer', ['MD', 'CEO'])).toBe(2);
+    expect(noTaxonomy('Managing Director', ['md'])).toBe(2);
+    // and the other way round
+    expect(noTaxonomy('CEO', ['chief executive officer'])).toBe(2);
+    expect(noTaxonomy('MD & CEO', ['managing director'])).toBe(2);
+  });
+
+  it('should not widen a short role to an unrelated title', () => {
+    const noTaxonomy = (title: string, roles: string[]) =>
+      scoreRoleMatch({
+        title,
+        roles,
+        requestedClasses: [],
+        candidateClass: null,
+      });
+
+    expect(noTaxonomy('Chief Financial Officer', ['CEO'])).toBe(0);
+    expect(noTaxonomy('Director of Operations', ['MD'])).toBe(0);
+    expect(noTaxonomy('Deputy Chief Executive Officer', ['CEO'])).toBe(1);
+  });
+
+  it('should order people by the role the user named first', () => {
+    expect(
+      getRequestedRoleOrder('Group Managing Director', ['CEO', 'MD']),
+    ).toBe(1);
+    expect(
+      getRequestedRoleOrder('Chief Executive Officer', ['CEO', 'MD']),
+    ).toBe(0);
+  });
+
   it('should reject a title from another function', () => {
     expect(score('General Manager Human Resources', HR_CLASS)).toBe(0);
   });

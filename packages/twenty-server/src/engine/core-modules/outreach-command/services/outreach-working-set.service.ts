@@ -8,6 +8,8 @@ import { type QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialE
 import { projectIdsHasProject } from 'src/engine/core-modules/outreach-command/utils/project-ids.util';
 import { OutreachCompaniesCacheService } from 'src/engine/core-modules/outreach-command/services/outreach-companies-cache.service';
 import { OutreachPeopleCacheService } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
+import { resolvePeopleCompanyIds } from 'src/engine/core-modules/outreach-command/utils/resolve-people-company-ids.util';
+import { buildPeopleFoundValues } from 'src/engine/core-modules/outreach-command/utils/outreach-people-found.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
@@ -256,7 +258,35 @@ export class OutreachWorkingSetService {
 
   // Adds each row's new keys next to its existing otherFields, on the
   // ephemeral list and on the CRM candidate.
-  async writeOtherFields({
+  async writeOtherFields(args: {
+    workspaceId: string;
+    projectId: string;
+    subject: OutreachWorkingSetSubject;
+    valuesByRowId: Map<string, Record<string, unknown>>;
+  }): Promise<{ ephemeralUpdated: number; crmUpdated: number }> {
+    // Each write reads and rewrites the whole ephemeral list, so concurrent
+    // writes to one project (25 companies finishing together) would overwrite
+    // each other; they run one after another instead.
+    const key = `${args.workspaceId}:${args.projectId}:${args.subject}`;
+    const previous = this.writeQueues.get(key) ?? Promise.resolve();
+    const run = previous
+      .catch(() => undefined)
+      .then(() => this.writeOtherFieldsNow(args));
+    const tail = run.catch(() => undefined);
+
+    this.writeQueues.set(key, tail);
+    void tail.then(() => {
+      if (this.writeQueues.get(key) === tail) {
+        this.writeQueues.delete(key);
+      }
+    });
+
+    return run;
+  }
+
+  private readonly writeQueues = new Map<string, Promise<unknown>>();
+
+  private async writeOtherFieldsNow({
     workspaceId,
     projectId,
     subject,
@@ -290,6 +320,89 @@ export class OutreachWorkingSetService {
     const crmUpdated = await this.writeCandidates(workspaceId, valuesByRowId);
 
     return { ephemeralUpdated, crmUpdated };
+  }
+
+  // Fills the "People found" / "People count" columns of companies from the
+  // people already on the tab, so companies searched before those columns
+  // existed (or found through another provider) get them without a re-run.
+  // A company with no people stays blank: nothing says it was searched.
+  // "Not found" and "Related role only" come from a lookup and are kept
+  // unless people now exist for the company.
+  async syncPeopleFound({
+    workspaceId,
+    projectId,
+  }: {
+    workspaceId: string;
+    projectId: string;
+  }): Promise<{ updated: number }> {
+    const [companiesPayload, peoplePayload] = await Promise.all([
+      this.outreachCompaniesCacheService.get(workspaceId, projectId),
+      this.outreachPeopleCacheService.get(workspaceId, projectId),
+    ]);
+    const companies = companiesPayload?.companies ?? [];
+
+    if (companies.length === 0 || !isDefined(peoplePayload)) {
+      return { updated: 0 };
+    }
+
+    const countByCompanyId = new Map<string, number>();
+    const linkedPeople = resolvePeopleCompanyIds(
+      peoplePayload.people,
+      companies,
+    );
+
+    // save the link on the people too, so the People tab can scope by company
+    if (
+      linkedPeople.some(
+        (person, index) =>
+          person.companyId !== peoplePayload.people[index].companyId,
+      )
+    ) {
+      await this.outreachPeopleCacheService.set(
+        workspaceId,
+        projectId,
+        linkedPeople,
+      );
+    }
+
+    for (const person of linkedPeople) {
+      if (isNonEmptyString(person.companyId)) {
+        countByCompanyId.set(
+          person.companyId,
+          (countByCompanyId.get(person.companyId) ?? 0) + 1,
+        );
+      }
+    }
+
+    const valuesByRowId = new Map<string, Record<string, unknown>>();
+
+    for (const company of companies) {
+      const count = countByCompanyId.get(company.id) ?? 0;
+      const current = toRecord(company.otherFields);
+
+      if (count === 0 || current.peopleFoundCount === count) {
+        continue;
+      }
+
+      valuesByRowId.set(
+        company.id,
+        buildPeopleFoundValues(
+          current.peopleFound === 'Related role only'
+            ? 'Related role only'
+            : 'Found',
+          count,
+        ),
+      );
+    }
+
+    await this.writeOtherFields({
+      workspaceId,
+      projectId,
+      subject: 'company',
+      valuesByRowId,
+    });
+
+    return { updated: valuesByRowId.size };
   }
 
   private async getPeople(

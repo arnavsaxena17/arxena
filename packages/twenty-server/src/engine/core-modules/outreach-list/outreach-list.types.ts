@@ -31,6 +31,8 @@ export type OutreachListRow = {
   about: string;
   source: OutreachListSource;
   addedAt: string;
+  // Extra columns the project tab shows, one key per column
+  otherFields?: Record<string, unknown>;
   // Set by the dedupe action
   inCrm?: boolean;
   inOtherList?: boolean;

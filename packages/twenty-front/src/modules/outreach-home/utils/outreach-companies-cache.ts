@@ -109,3 +109,34 @@ export const fetchOutreachProjectCompanies = async (
     return [];
   }
 };
+
+// Fills the "People found" columns from the people already on the tab, for
+// companies searched before those columns existed. The server notifies the
+// tab when it changes anything.
+export const syncOutreachPeopleFound = async (
+  projectId: string | undefined,
+  accessToken: string | undefined,
+): Promise<void> => {
+  if (!projectId || projectId === 'project-id' || !accessToken) {
+    return;
+  }
+
+  const baseUrl = getBaseUrl();
+
+  if (!baseUrl) {
+    return;
+  }
+
+  try {
+    await fetch(`${baseUrl}/outreach-command/sync-people-found`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ projectId }),
+    });
+  } catch (error) {
+    console.error('Failed to sync People found columns:', error);
+  }
+};

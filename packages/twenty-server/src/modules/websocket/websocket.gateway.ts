@@ -93,25 +93,11 @@ export class WebSocketGateway
         return;
       }
 
-      // Check if there's already an active GENERAL-SOCKET connection for this workspace member
-      // Note: We only track general-socket connections here, not baileys-socket connections
+      // A member can have several tabs open. Dropping the older socket here
+      // leaves that tab silent (socket.io does not reconnect after a server
+      // disconnect), so live updates like AI column progress never arrive.
       const existingClients = this.getClientsForWorkspaceMember(workspaceMemberId);
       const hadPriorSessions = existingClients.length > 0;
-      if (hadPriorSessions) {
-        const recruiterRoom = this.getRecruiterRoom(workspaceMemberId);
-        for (const existingClientId of existingClients) {
-          const existingClient =
-            this.server.sockets.sockets.get(existingClientId);
-          existingClient?.to(recruiterRoom).emit('user_disconnected', {
-            clientId: existingClientId,
-            workspaceMemberId,
-            workspaceMemberName,
-            timestamp: new Date().toISOString(),
-          });
-          this.removeClientFromWorkspaceMember(existingClientId);
-          existingClient?.disconnect();
-        }
-      }
       // Add to tracking
       this.addClientToWorkspaceMember(workspaceMemberId, client.id);
 
@@ -141,7 +127,7 @@ export class WebSocketGateway
       const label = workspaceMemberName ? ` ${workspaceMemberName}` : '';
       if (hadPriorSessions) {
         this.logger.log(
-          `General socket: reconnect ${workspaceMemberId}${label} (${client.id}, dropped ${existingClients.length})`,
+          `General socket: reconnect ${workspaceMemberId}${label} (${client.id}, ${existingClients.length} other tab(s) kept)`,
         );
       } else {
         this.logger.log(
@@ -161,8 +147,18 @@ export class WebSocketGateway
     const workspaceMemberId = this.removeClientFromWorkspaceMember(client.id);
 
     if (workspaceMemberId) {
-      // Remove user mapping from WebSocketService
-      this.webSocketService.removeUserIdMapping(workspaceMemberId);
+      // Keep the mapping while other tabs of this member are still connected
+      const remainingClients =
+        this.getClientsForWorkspaceMember(workspaceMemberId);
+
+      if (remainingClients.length === 0) {
+        this.webSocketService.removeUserIdMapping(workspaceMemberId);
+      } else {
+        this.webSocketService.setUserIdMapping(
+          workspaceMemberId,
+          remainingClients[remainingClients.length - 1],
+        );
+      }
 
       const recruiterRoom = this.getRecruiterRoom(workspaceMemberId);
       const workspaceMemberName =

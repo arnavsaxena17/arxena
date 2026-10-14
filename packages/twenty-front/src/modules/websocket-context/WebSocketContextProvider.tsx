@@ -44,9 +44,16 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setConnected(true);
     });
 
-    socketInstance.on('disconnect', () => {
+    socketInstance.on('disconnect', (reason) => {
       console.log('Disconnected from WebSocket server');
       setConnected(false);
+
+      // socket.io only auto-reconnects on network drops, not when the server
+      // closes the socket (restart, auth hiccup); without this the tab stops
+      // getting live updates until a full refresh.
+      if (reason === 'io server disconnect') {
+        socketInstance.connect();
+      }
     });
 
     socketInstance.on('error', (error: unknown) => {

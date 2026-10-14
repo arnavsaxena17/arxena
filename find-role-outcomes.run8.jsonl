@@ -1,0 +1,3 @@
+{"at":"2026-10-14T11:02:23.000Z","projectId":"b07ddc92-754c-4aeb-84ce-da616f0981f4","company":"Navtara","status":"source_error","people":0,"sourceErrors":["google: fetch failed (UND_ERR_CONNECT_TIMEOUT)"],"rejected":[]}
+{"at":"2026-10-14T11:03:13.001Z","projectId":"b07ddc92-754c-4aeb-84ce-da616f0981f4","company":"KFCH Restaurants (India) Pvt. Ltd.","status":"source_error","people":0,"sourceErrors":["google: fetch failed (UND_ERR_CONNECT_TIMEOUT)"],"rejected":[]}
+{"at":"2026-10-14T11:03:14.484Z","projectId":"b07ddc92-754c-4aeb-84ce-da616f0981f4","company":"Albaik - India's major fast food Restaurant chain","status":"source_error","people":0,"sourceErrors":["google: fetch failed (UND_ERR_CONNECT_TIMEOUT)"],"rejected":[]}

@@ -1,4 +1,10 @@
+import { appendFileSync } from 'fs';
+import { lookup } from 'dns/promises';
+import { connect } from 'net';
+
 import { Injectable, Logger } from '@nestjs/common';
+
+import { Agent, ProxyAgent } from 'undici';
 
 import type {
   BrightDataDatasetSnapshotItem,
@@ -8,6 +14,9 @@ import type {
 } from 'src/engine/core-modules/bright-data/types/bright-data-serp.types';
 
 const BRIGHT_DATA_REQUEST_URL = 'https://api.brightdata.com/request';
+const BRIGHT_DATA_SERP_ASYNC_SUBMIT_URL = 'https://api.brightdata.com/serp/req';
+const BRIGHT_DATA_SERP_ASYNC_RESULT_URL =
+  'https://api.brightdata.com/serp/get_result';
 const BRIGHT_DATA_DATASET_TRIGGER_URL =
   'https://api.brightdata.com/datasets/v3/trigger';
 const BRIGHT_DATA_DATASET_SNAPSHOT_URL =
@@ -16,6 +25,16 @@ const BRIGHT_DATA_DATASET_SNAPSHOTS_URL =
   'https://api.brightdata.com/datasets/v3/snapshots';
 const BRIGHT_DATA_DATASET_PROGRESS_URL =
   'https://api.brightdata.com/datasets/v3/progress';
+
+export type BrightDataSerpRequestOptions = {
+  // Aborts the request when the caller no longer needs it
+  signal?: AbortSignal;
+  // Replaces the default request timeout for this call
+  timeoutMs?: number;
+  // parsed_light returns only the top 10 organic results and answers about
+  // twice as fast as the full parse
+  dataFormat?: 'parsed' | 'parsed_light';
+};
 
 export type BrightDataDatasetScrapeInput = {
   url: string;
@@ -39,6 +58,45 @@ export class BrightDataSerpService {
 
   private get zone(): string {
     return process.env.BRIGHT_DATA_SERP_ZONE?.trim() || 'serp_api';
+  }
+
+  // Async SERP (POST /serp/req, then poll /serp/get_result): no connection is
+  // held open while Google is scraped, which suits hundreds of queries at once
+  private get serpAsyncEnabled(): boolean {
+    return process.env.BRIGHT_DATA_SERP_ASYNC === 'true';
+  }
+
+  // Native proxy access (brd.superproxy.io) to the SERP zone: Google is
+  // requested through the proxy with zone credentials, no REST API key. It is
+  // used whenever a username and password are configured.
+  private get serpProxy():
+    | { host: string; port: number; username: string; password: string }
+    | undefined {
+    const username = process.env.BRIGHT_DATA_SERP_PROXY_USERNAME?.trim();
+    const password = process.env.BRIGHT_DATA_SERP_PROXY_PASSWORD?.trim();
+
+    if (!username || !password) {
+      return undefined;
+    }
+
+    return {
+      host:
+        process.env.BRIGHT_DATA_SERP_PROXY_HOST?.trim() || 'brd.superproxy.io',
+      port: Number(process.env.BRIGHT_DATA_SERP_PROXY_PORT ?? 33335),
+      username,
+      password,
+    };
+  }
+
+  // Async calls name the account as well as the zone
+  private get accountQuery(): string {
+    const accountId = process.env.BRIGHT_DATA_ACCOUNT_ID?.trim();
+
+    return accountId ? `&customer=${encodeURIComponent(accountId)}` : '';
+  }
+
+  private get serpAsyncPollIntervalMs(): number {
+    return Number(process.env.BRIGHT_DATA_SERP_ASYNC_POLL_INTERVAL_MS ?? 2_000);
   }
 
   private get requestTimeoutMs(): number {
@@ -75,9 +133,9 @@ export class BrightDataSerpService {
     );
   }
 
-  /** True when `BRIGHT_DATA_API_KEY` is set (SERP calls will work). */
+  /** True when the SERP proxy credentials or `BRIGHT_DATA_API_KEY` are set. */
   isConfigured(): boolean {
-    return Boolean(this.apiKey);
+    return Boolean(this.apiKey) || this.serpProxy !== undefined;
   }
 
   /**
@@ -86,50 +144,401 @@ export class BrightDataSerpService {
    */
   async requestSerpGoogleJson(
     searchUrl: string,
+    options?: BrightDataSerpRequestOptions,
   ): Promise<BrightDataSerpGoogleJson> {
-    return this.requestSerpJson(searchUrl);
+    return this.requestSerpJson(searchUrl, options);
   }
 
-  async requestSerpJson(searchUrl: string): Promise<BrightDataSerpGoogleJson> {
+  async requestSerpJson(
+    searchUrl: string,
+    options: BrightDataSerpRequestOptions = {},
+  ): Promise<BrightDataSerpGoogleJson> {
     const key = this.apiKey;
-    if (!key) {
+    const proxy = this.serpProxy;
+
+    if (!key && proxy === undefined) {
       throw new Error('BRIGHT_DATA_API_KEY is not set');
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), this.requestTimeoutMs);
+    const timeout = setTimeout(
+      () => controller.abort(),
+      options.timeoutMs ?? this.requestTimeoutMs,
+    );
+    // The caller can cut the request short, e.g. when a backup attempt won
+    const abortFromCaller = () => controller.abort();
+
+    if (options.signal?.aborted === true) {
+      controller.abort();
+    }
+
+    options.signal?.addEventListener('abort', abortFromCaller, { once: true });
 
     try {
-      const response = await fetch(BRIGHT_DATA_REQUEST_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${key}`,
-        },
-        body: JSON.stringify({
-          zone: this.zone,
-          url: searchUrl,
-          format: 'json',
-          data_format: 'parsed',
-        }),
-        signal: controller.signal,
-      });
+      const rawText =
+        proxy !== undefined
+          ? await this.fetchSerpViaProxy(
+              searchUrl,
+              proxy,
+              controller.signal,
+              options.dataFormat,
+            )
+          : this.serpAsyncEnabled
+            ? await this.fetchSerpAsync(
+                searchUrl,
+                key as string,
+                controller.signal,
+              )
+            : await this.fetchSerpSync(
+                searchUrl,
+                key as string,
+                controller.signal,
+                options.dataFormat,
+              );
 
-      const rawText = await response.text();
+      return this.readSerpBody(rawText);
+    } finally {
+      clearTimeout(timeout);
+      options.signal?.removeEventListener('abort', abortFromCaller);
+    }
+  }
 
-      if (!response.ok) {
-        this.logger.warn(
-          `Bright Data SERP HTTP ${response.status}: ${rawText.slice(0, 500)}`,
-        );
-        throw new Error(
-          `Bright Data SERP failed: HTTP ${response.status} ${response.statusText}`,
+  // undici reports every network failure as "fetch failed"; the code that
+  // says why (ECONNRESET, ENOTFOUND, UND_ERR_CONNECT_TIMEOUT...) is on cause
+  // Temporary: when a connection fails, say which addresses the host resolves
+  // to and which of them accept a TCP connection from this process
+  private lastConnectProbeAt = 0;
+
+  // A few kept-alive sockets shared by every SERP call. Opening a new TLS
+  // connection per request (hundreds at once) is what timed out to
+  // api.brightdata.com; short async calls reuse these instead.
+  private dispatcher?: Agent;
+
+  private getDispatcher(): Agent {
+    this.dispatcher ??= new Agent({
+      connections: Number(process.env.BRIGHT_DATA_MAX_CONNECTIONS ?? 16),
+      keepAliveTimeout: 30_000,
+      connect: { timeout: 30_000 },
+    });
+
+    return this.dispatcher;
+  }
+
+  private async probeConnectivity(url: string): Promise<string> {
+    if (Date.now() - this.lastConnectProbeAt < 60_000) {
+      return '';
+    }
+
+    this.lastConnectProbeAt = Date.now();
+
+    try {
+      const host = new URL(url).hostname;
+      const addresses = await lookup(host, { all: true });
+      const results = await Promise.all(
+        addresses.map(
+          (entry) =>
+            new Promise<string>((resolve) => {
+              const startedAt = Date.now();
+              const socket = connect({
+                host: entry.address,
+                port: 443,
+                timeout: 4_000,
+              });
+
+              socket.once('connect', () => {
+                socket.destroy();
+                resolve(`${entry.address} ok ${Date.now() - startedAt}ms`);
+              });
+              socket.once('timeout', () => {
+                socket.destroy();
+                resolve(`${entry.address} timeout`);
+              });
+              socket.once('error', (error: NodeJS.ErrnoException) => {
+                resolve(`${entry.address} ${error.code ?? error.message}`);
+              });
+            }),
+        ),
+      );
+
+      const summary = ` probe[${results.join('; ')}]`;
+      const probeLogPath = process.env.FIND_ROLE_OUTCOME_LOG_PATH;
+
+      if (probeLogPath !== undefined && probeLogPath !== '') {
+        appendFileSync(
+          `${probeLogPath}.probe`,
+          `${new Date().toISOString()} ${host}${summary}\n`,
         );
       }
 
-      return this.parseSerpJsonBody(rawText);
-    } finally {
-      clearTimeout(timeout);
+      return summary;
+    } catch (error) {
+      return ` probe[${(error as Error).message}]`;
     }
+  }
+
+  private async fetchWithCause(
+    url: string,
+    init: RequestInit,
+    dispatcher: Agent | ProxyAgent = this.getDispatcher(),
+  ): Promise<Response> {
+    try {
+      return await fetch(url, {
+        ...init,
+        dispatcher,
+      } as RequestInit);
+    } catch (error) {
+      const cause = (error as { cause?: unknown })?.cause as
+        | {
+            code?: string;
+            message?: string;
+            address?: string;
+            port?: number;
+            errors?: Array<{ code?: string; address?: string; port?: number }>;
+          }
+        | undefined;
+      const attempts = (cause?.errors ?? [])
+        .map((attempt) =>
+          `${attempt.address ?? '?'}:${attempt.port ?? '?'} ${attempt.code ?? ''}`.trim(),
+        )
+        .join(', ');
+      const detail = [
+        cause?.code ??
+          (cause?.message !== undefined && cause.message !== ''
+            ? cause.message
+            : undefined) ??
+          (error as Error)?.name ??
+          'unknown',
+        attempts !== '' ? attempts : undefined,
+        cause?.address !== undefined
+          ? `${cause.address}:${cause.port ?? '?'}`
+          : undefined,
+      ]
+        .filter((part) => part !== undefined)
+        .join(' | ');
+
+      throw new Error(
+        `${(error as Error)?.message ?? 'request failed'} (${detail})${await this.probeConnectivity(url)}`,
+      );
+    }
+  }
+
+  private proxyDispatcher?: ProxyAgent;
+
+  private async fetchSerpViaProxy(
+    searchUrl: string,
+    proxy: { host: string; port: number; username: string; password: string },
+    signal: AbortSignal,
+    dataFormat: 'parsed' | 'parsed_light' = 'parsed',
+  ): Promise<string> {
+    // Bright Data re-signs the TLS of the proxied request, like the `-k` of
+    // its own curl examples; set BRIGHT_DATA_SERP_PROXY_VERIFY_TLS=true once
+    // its CA is installed
+    this.proxyDispatcher ??= new ProxyAgent({
+      uri: `http://${proxy.host}:${proxy.port}`,
+      token: `Basic ${Buffer.from(`${proxy.username}:${proxy.password}`).toString('base64')}`,
+      requestTls: {
+        rejectUnauthorized:
+          process.env.BRIGHT_DATA_SERP_PROXY_VERIFY_TLS === 'true',
+      },
+      connections: Number(process.env.BRIGHT_DATA_MAX_CONNECTIONS ?? 24),
+      keepAliveTimeout: 30_000,
+      proxyTls: { timeout: 30_000 },
+    });
+
+    const response = await this.fetchWithCause(
+      searchUrl,
+      {
+        method: 'GET',
+        headers: { 'x-unblock-data-format': dataFormat },
+        signal,
+      },
+      this.proxyDispatcher,
+    );
+    const rawText = await response.text();
+
+    if (!response.ok) {
+      this.logger.warn(
+        `Bright Data SERP proxy HTTP ${response.status}: ${rawText.slice(0, 300)}`,
+      );
+      throw new Error(
+        `Bright Data SERP failed: HTTP ${response.status} ${response.statusText}`,
+      );
+    }
+
+    return rawText;
+  }
+
+  private async fetchSerpSync(
+    searchUrl: string,
+    key: string,
+    signal: AbortSignal,
+    dataFormat: 'parsed' | 'parsed_light' = 'parsed',
+  ): Promise<string> {
+    const response = await this.fetchWithCause(BRIGHT_DATA_REQUEST_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        zone: this.zone,
+        url: searchUrl,
+        format: 'json',
+        data_format: dataFormat,
+      }),
+      signal,
+    });
+    const rawText = await response.text();
+
+    if (!response.ok) {
+      this.logger.warn(
+        `Bright Data SERP HTTP ${response.status}: ${rawText.slice(0, 500)}`,
+      );
+      throw new Error(
+        `Bright Data SERP failed: HTTP ${response.status} ${response.statusText}`,
+      );
+    }
+
+    return rawText;
+  }
+
+  // Temporary: how long async jobs really take, next to the probe log
+  private logAsyncTurnaround(elapsedMs: number, polls: number): void {
+    const logPath = process.env.FIND_ROLE_OUTCOME_LOG_PATH;
+
+    if (logPath !== undefined && logPath !== '') {
+      try {
+        appendFileSync(
+          `${logPath}.probe`,
+          `${new Date().toISOString()} async job done in ${elapsedMs}ms after ${polls} polls\n`,
+        );
+      } catch {
+        // best effort
+      }
+    }
+  }
+
+  private async fetchSerpAsync(
+    searchUrl: string,
+    key: string,
+    signal: AbortSignal,
+  ): Promise<string> {
+    const headers = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${key}`,
+    };
+    const searchParams = new URL(searchUrl).searchParams;
+    const query: Record<string, string> = {};
+
+    searchParams.forEach((value, name) => {
+      query[name] = value;
+    });
+
+    const submitted = await this.fetchWithCause(
+      `${BRIGHT_DATA_SERP_ASYNC_SUBMIT_URL}?zone=${encodeURIComponent(this.zone)}${this.accountQuery}`,
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ query, brd_json: 'json' }),
+        signal,
+      },
+    );
+    const submittedText = await submitted.text();
+
+    if (!submitted.ok) {
+      this.logger.warn(
+        `Bright Data SERP async submit HTTP ${submitted.status}: ${submittedText.slice(0, 500)}`,
+      );
+      throw new Error(
+        `Bright Data SERP failed: HTTP ${submitted.status} ${submitted.statusText}`,
+      );
+    }
+
+    let responseId = submitted.headers?.get?.('x-response-id') ?? undefined;
+
+    if (!responseId) {
+      try {
+        responseId = (JSON.parse(submittedText) as { response_id?: string })
+          .response_id;
+      } catch {
+        // handled below
+      }
+    }
+
+    if (!responseId) {
+      throw new Error(
+        `Bright Data SERP returned a non-JSON reply: ${submittedText.slice(0, 160)}`,
+      );
+    }
+
+    const submittedAt = Date.now();
+    let polls = 0;
+
+    // 202 means still being scraped; anything else is the answer
+    while (!signal.aborted) {
+      polls += 1;
+      await new Promise((resolve) =>
+        setTimeout(resolve, this.serpAsyncPollIntervalMs),
+      );
+
+      const result = await this.fetchWithCause(
+        `${BRIGHT_DATA_SERP_ASYNC_RESULT_URL}?response_id=${encodeURIComponent(responseId)}&zone=${encodeURIComponent(this.zone)}${this.accountQuery}`,
+        { method: 'GET', headers, signal },
+      );
+
+      if (result.status === 202) {
+        continue;
+      }
+
+      const resultText = await result.text();
+
+      if (!result.ok) {
+        this.logger.warn(
+          `Bright Data SERP async result HTTP ${result.status}: ${resultText.slice(0, 500)}`,
+        );
+        throw new Error(
+          `Bright Data SERP failed: HTTP ${result.status} ${result.statusText}`,
+        );
+      }
+
+      this.logAsyncTurnaround(Date.now() - submittedAt, polls);
+
+      return resultText;
+    }
+
+    throw new Error('Bright Data SERP request aborted');
+  }
+
+  private readSerpBody(rawText: string): BrightDataSerpGoogleJson {
+    const trimmedBody = rawText.trim();
+
+    // Bright Data sometimes answers 200 with a plain sentence instead of
+    // JSON; parsed as "no results" it silently empties a search
+    if (
+      trimmedBody !== '' &&
+      trimmedBody[0] !== '{' &&
+      trimmedBody[0] !== '['
+    ) {
+      throw new Error(
+        `Bright Data SERP returned a non-JSON reply: ${trimmedBody.slice(0, 160)}`,
+      );
+    }
+
+    const parsed = this.parseSerpJsonBody(rawText);
+
+    // Bright Data answers 200 with {status_code: 502, body: ''} when its own
+    // upstream fails; without this it reads as a search with no results
+    if (
+      typeof parsed.status_code === 'number' &&
+      parsed.status_code >= 400 &&
+      !Array.isArray(parsed.organic)
+    ) {
+      throw new Error(
+        `Bright Data SERP failed: HTTP ${parsed.status_code} (upstream)`,
+      );
+    }
+
+    return parsed;
   }
 
   async createDatasetSnapshot(input: {

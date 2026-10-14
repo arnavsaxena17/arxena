@@ -177,8 +177,7 @@ Happy path:
 
   BROWSING_CONTEXT_INSTRUCTION: `A <browsing_context> tag may appear in the user's last message. Only use it when directly relevant to the question.`,
 
-  RESPONSE_FORMAT: `
-Format responses with markdown for clarity (headings, lists, code blocks, tables).
+  RESPONSE_FORMAT: `Format responses with markdown for clarity (headings, lists, code blocks, tables).
 
 Record References - IMPORTANT:
 - Tool responses include a "recordReferences" array with clickable links
@@ -189,5 +188,6 @@ Record References - IMPORTANT:
 - The recordId MUST be a real UUID (like "abc12345-1234-5678-abcd-123456789012")
 - DO NOT create record references before calling the tool
 - DO NOT use placeholder IDs like "rec-snowflake" or "rec-person-1"
-- If a tool hasn't been called yet, don't reference records that don't exist`,
+- If a tool hasn't been called yet, don't reference records that don't exist
+`,
 };

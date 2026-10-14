@@ -71,6 +71,7 @@ import {
   fetchOutreachCompaniesCache,
   fetchOutreachProjectCompanies,
   persistOutreachCompaniesCache,
+  syncOutreachPeopleFound,
 } from '@/outreach-home/utils/outreach-companies-cache';
 import { resolveEffectiveIcp } from '@/outreach-home/utils/outreach-effective-icp.util';
 import {
@@ -429,6 +430,12 @@ export const useOutreachLiveWorkingSet = () => {
       companiesCacheRequestIdRef.current += 1;
     };
   }, [accessToken, activeProjectId, refreshCompaniesCache]);
+
+  useEffect(() => {
+    if (isDefined(activeProjectId) && isDefined(accessToken)) {
+      void syncOutreachPeopleFound(activeProjectId, accessToken);
+    }
+  }, [accessToken, activeProjectId]);
 
   // CRM companies tagged to the project (company.projectIds); display-only,
   // the ephemeral list above is the only one that is written back to Redis.

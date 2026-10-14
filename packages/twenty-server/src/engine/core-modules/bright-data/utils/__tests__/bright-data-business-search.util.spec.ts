@@ -115,6 +115,15 @@ describe('bright data business search util', () => {
       employeesOnLinkedin: 14911,
       foundedYear: 2007,
     });
+    expect(
+      mapBrightDataCompanyToEphemeral(apparelCompany)?.otherFields?.relevant,
+    ).toBeUndefined();
+    expect(
+      mapBrightDataCompanyToEphemeral({
+        ...apparelCompany,
+        relevant: false,
+      })?.otherFields?.relevant,
+    ).toBe(false);
   });
 
   it('keeps empty Bright Data fields out of the row columns', () => {
@@ -157,6 +166,11 @@ describe('bright data business search util', () => {
       linkedinUrl: 'https://www.linkedin.com/in/ada',
       stage: 'queued',
     });
+    expect(mapBrightDataPersonToEphemeral(person)?.otherFields).toBeUndefined();
+    expect(
+      mapBrightDataPersonToEphemeral({ ...person, relevant: true })
+        ?.otherFields,
+    ).toEqual({ relevant: true });
   });
 });
 

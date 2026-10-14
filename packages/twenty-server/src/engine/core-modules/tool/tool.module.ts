@@ -30,6 +30,12 @@ import { UpsertOutreachTargetCompaniesTool } from 'src/engine/core-modules/tool/
 import { SaveOutreachTargetsToCrmTool } from 'src/engine/core-modules/tool/tools/outreach-save-to-crm-tool/save-outreach-targets-to-crm-tool';
 import { TitleTaxonomyModule } from 'src/engine/core-modules/title-taxonomy/title-taxonomy.module';
 import { FindRoleAtCompaniesTool } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/find-role-at-companies-tool';
+import { CandidateJudgeService } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/candidate-judge.service';
+import { FindRoleGoogleSearchService } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/find-role-google-search.service';
+import { LinkedinProfileResolverService } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/linkedin-profile-resolver.service';
+import { GoogleResultExtractionService } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/google-result-extraction.service';
+import { AiBillingModule } from 'src/engine/metadata-modules/ai/ai-billing/ai-billing.module';
+import { AiModelsModule } from 'src/engine/metadata-modules/ai/ai-models/ai-models.module';
 import { StartOutreachTool } from 'src/engine/core-modules/tool/tools/outreach-start-tool/start-outreach-tool';
 import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
 import { PreviewSampleMessageColumnTool } from 'src/engine/core-modules/tool/tools/outreach-sample-message-tool/preview-sample-message-column-tool';
@@ -77,6 +83,8 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
 @Module({
   imports: [
     TitleTaxonomyModule,
+    AiModelsModule,
+    AiBillingModule,
     MessagingImportManagerModule,
     MessagingSendManagerModule,
     CalendarEventCreationManagerModule,
@@ -132,6 +140,10 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     SaveOutreachTargetsToCrmTool,
     StartOutreachTool,
     FindRoleAtCompaniesTool,
+    FindRoleGoogleSearchService,
+    GoogleResultExtractionService,
+    CandidateJudgeService,
+    LinkedinProfileResolverService,
     GetOutreachWorkingSetTool,
     PreviewOutreachAiColumnTool,
     RunOutreachAiColumnTool,

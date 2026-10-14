@@ -58,6 +58,12 @@ export const OutreachEphemeralPersonInputZodSchema = z.object({
     .number()
     .optional()
     .describe('Optional persona priority score'),
+  otherFields: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .describe(
+      'Extra People-tab columns. deprioritised=true sends the row below the rest.',
+    ),
 });
 
 export const UpsertOutreachTargetPeopleInputZodSchema = z.object({

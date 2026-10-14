@@ -73,6 +73,7 @@ export const buildOutreachListRow = (
     about: (partial.about ?? '').slice(0, 500),
     source,
     addedAt: new Date().toISOString(),
+    ...(partial.otherFields ? { otherFields: partial.otherFields } : {}),
   };
 
   if (!row.name) {
@@ -338,9 +339,20 @@ export const normalizeToolOutputToListRows = (
 const text = (value: unknown): string => asText(value);
 
 // Bright Data business search documents (company and people views)
+const jevOtherFields = (document: {
+  relevant?: boolean;
+}): { otherFields?: Record<string, unknown> } =>
+  typeof document.relevant === 'boolean'
+    ? { otherFields: { relevant: document.relevant } }
+    : {};
+
 export const fromBrightDataDocument = (
   entity: OutreachListEntity,
-  document: { brightId: string; data: Record<string, unknown> },
+  document: {
+    brightId: string;
+    data: Record<string, unknown>;
+    relevant?: boolean;
+  },
 ): OutreachListRow | null => {
   const data = document.data;
 
@@ -355,6 +367,7 @@ export const fromBrightDataDocument = (
       country: text(data.country_code),
       industry: text(data.current_company_industry),
       about: text(data.about),
+      ...jevOtherFields(document),
     });
   }
 
@@ -374,5 +387,6 @@ export const fromBrightDataDocument = (
       text(data.employees_in_linkedin) ||
       (sizeFrom && sizeTo ? `${sizeFrom}-${sizeTo}` : sizeFrom || sizeTo),
     about: text(data.about) || text(data.specialties),
+    ...jevOtherFields(document),
   });
 };

@@ -118,6 +118,31 @@ export class OutreachCommandController {
     };
   }
 
+  // Fills the "People found" columns from the people already on the tab.
+  @Post('sync-people-found')
+  async syncPeopleFound(
+    @Body() body: { projectId?: string },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    if (!body?.projectId || body.projectId === 'project-id') {
+      throw new HttpException('projectId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const workspaceId =
+      await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+    return this.outreachWorkingSetService.syncPeopleFound({
+      workspaceId,
+      projectId: body.projectId,
+    });
+  }
+
   // The filters and sort the agent last applied to this project's table, so a
   // page opened later shows them too.
   @Get('table-view')

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 
@@ -14,17 +14,45 @@ import {
   mapBrightDataPersonToEphemeral,
   mapBrightDataPersonToSearchItem,
   aggregateBrightDataDocuments,
+  type BrightDataBusinessSearchDocument,
 } from 'src/engine/core-modules/bright-data/utils/bright-data-business-search.util';
 import {
   SearchBrightDataBusinessToolInputZodSchema,
   type SearchBrightDataBusinessToolInput,
 } from 'src/engine/core-modules/tool/tools/bright-data-business-search-tool/search-bright-data-business-tool-input.type';
 import { UpsertOutreachTargetCompaniesTool } from 'src/engine/core-modules/tool/tools/outreach-target-companies-tool/upsert-outreach-target-companies-tool';
+import { BrightDataPersonFitFilterService } from 'src/engine/core-modules/bright-data/services/bright-data-person-fit-filter.service';
+import {
+  buildDeprioritisationFields,
+  type DeprioritisationReason,
+} from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/outreach-people-deprioritisation.util';
 import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
+
+// Kept rows stay the chat count. The tab gets every paid row so the Jev
+// verdict can be Yes or No in otherFields.relevant.
+const documentsForProjectTab = (
+  run: BrightDataLudicrousRunResult,
+): BrightDataBusinessSearchDocument[] => {
+  const source =
+    run.fetchedDocuments.length > 0 ? run.fetchedDocuments : run.documents;
+
+  return source.map((document) => {
+    const relevant =
+      'relevant' in document && typeof document.relevant === 'boolean'
+        ? document.relevant
+        : undefined;
+
+    return {
+      brightId: document.brightId,
+      data: document.data,
+      ...(relevant === undefined ? {} : { relevant }),
+    };
+  });
+};
 
 // OutreachCompaniesCacheService / OutreachPeopleCacheService keep this many
 const MAX_ROWS_PER_PROJECT_TAB = OUTREACH_LIST_MAX_ROWS;
@@ -36,7 +64,7 @@ export class SearchBrightDataBusinessTool implements Tool {
   description = `Search Bright Data Business Search for companies or people with a raw natural-language request.
 Default mode is ludicrous (billed $0.002 per returned record, max $10 per query). It works in two steps:
 1. Call without planId. This plans several structured queries and spends a few cents sampling them. You get planId, per-slice match counts, expected accuracy and the cost of fetching N records. Show the user the numbers and ask which budget to fetch. Nothing is fetched yet.
-2. After the user confirms, call again with planId and maxBudgetUsd (and optionally targetCount, projectId). Records are fetched slice by slice and low-relevance slices are dropped as the run goes.
+2. After the user confirms, call again with planId and maxBudgetUsd (and optionally targetCount, projectId). Records are fetched slice by slice and rows Jev marks irrelevant are dropped.
 Always ludicrous: any mode passed is ignored (smart and instant only reach the first 100 results). Records are fetched with view full.
 The result never contains the records, only counts and a summary; they go to the project tab and a saved dataset. Fetched records are kept in a list (listId = planId, 30 days); use the outreach_list tool to attach them to a project tab or save them to the CRM, or call again with the same planId and a projectId. Pass projectId to merge hits into the Outreach Companies or People tab. Do not create CRM records. Omit projectId in smart/instant for a preview (limit 10) with previewRows.`;
 
@@ -48,6 +76,8 @@ The result never contains the records, only counts and a summary; they go to the
     private readonly upsertOutreachTargetCompaniesTool: UpsertOutreachTargetCompaniesTool,
     private readonly upsertOutreachTargetPeopleTool: UpsertOutreachTargetPeopleTool,
     private readonly outreachListService: OutreachListService,
+    @Optional()
+    private readonly personFitFilterService?: BrightDataPersonFitFilterService,
   ) {}
 
   async execute(
@@ -222,27 +252,25 @@ The result never contains the records, only counts and a summary; they go to the
     context: ToolExecutionContext,
     { reused = false }: { reused?: boolean } = {},
   ): Promise<ToolOutput> {
+    const documents = documentsForProjectTab(run);
     const search = {
       reqId: run.planId,
       matched: run.documents.length,
       mode: 'ludicrous' as const,
       coveragePercent: 100,
       costUsd: reused ? 0 : run.spentUsd,
-      documents: run.documents.map((document) => ({
-        brightId: document.brightId,
-        data: document.data,
-      })),
+      documents,
     };
     const ephemeral = await this.persistEphemeral(input, search, context);
     const hasProject = isNonEmptyString(input.projectId);
-    const list = await this.saveToList(input, run, context, reused);
+    const list = await this.saveToList(input, documents, run, context, reused);
 
     // Records never go back to the model. They are in the project tab and in
     // the dataset store (planId), so the conversation only gets counts. This
     // keeps tool output tiny and stops rows being truncated or re-pasted.
     return {
       success: true,
-      message: `${reused ? 'Reused' : 'Fetched'} ${run.documents.length} relevant ${input.entity} record(s)${reused ? ' already paid for' : ` for $${run.spentUsd.toFixed(3)} (budget $${run.budgetUsd.toFixed(2)})`}`,
+      message: `${reused ? 'Reused' : 'Fetched'} ${run.documents.length} relevant of ${documents.length} ${input.entity} record(s)${reused ? ' already paid for' : ` for $${run.spentUsd.toFixed(3)} (budget $${run.budgetUsd.toFixed(2)})`}. The project tab lists every fetched row; otherFields.relevant is the Jev verdict.`,
       result: {
         entity: input.entity,
         mode: 'ludicrous',
@@ -260,6 +288,7 @@ The result never contains the records, only counts and a summary; they go to the
         spentUsd: reused ? 0 : run.spentUsd,
         budgetUsd: run.budgetUsd,
         count: run.documents.length,
+        fetchedCount: documents.length,
         ephemeralWritten: ephemeral.written,
         ...(ephemeral.error
           ? {
@@ -284,6 +313,7 @@ The result never contains the records, only counts and a summary; they go to the
   // missing project or a lost chat. A failure here must not hide paid results.
   private async saveToList(
     input: SearchBrightDataBusinessToolInput,
+    documents: BrightDataBusinessSearchDocument[],
     run: BrightDataLudicrousRunResult,
     context: ToolExecutionContext,
     reused: boolean,
@@ -301,7 +331,7 @@ The result never contains the records, only counts and a summary; they go to the
         source: 'bright_data',
         query: input.query.trim(),
         spentUsd: reused ? 0 : run.spentUsd,
-        rows: run.documents
+        rows: documents
           .map((document) => fromBrightDataDocument(input.entity, document))
           .filter((row) => row !== null),
       });
@@ -310,6 +340,68 @@ The result never contains the records, only counts and a summary; they go to the
 
       return undefined;
     }
+  }
+
+  // Likely-fake profiles and people who do not fit the query are still
+  // written, but below the rest. Both checks are model calls and fail open.
+  private async markDeprioritised(
+    input: SearchBrightDataBusinessToolInput,
+    documents: BrightDataBusinessSearchDocument[],
+    workspaceId: string,
+  ) {
+    const rows = documents
+      .map((document) => ({
+        document,
+        person: mapBrightDataPersonToEphemeral(document),
+      }))
+      .filter(
+        (
+          row,
+        ): row is typeof row & {
+          person: NonNullable<typeof row.person>;
+        } => row.person !== null,
+      );
+    const reasonsById = new Map<string, DeprioritisationReason[]>();
+    const flag = (id: string, reason: DeprioritisationReason) =>
+      reasonsById.set(id, [...(reasonsById.get(id) ?? []), reason]);
+
+    // Jev already judged some rows; a row it called irrelevant is a mismatch
+    rows
+      .filter(({ document }) => document.relevant === false)
+      .forEach(({ person }) => flag(person.id, 'query_mismatch'));
+
+    const judgements = await (this.personFitFilterService
+      ?.screen({
+        workspaceId,
+        query: input.query,
+        people: rows.map(({ person, document }) => ({
+          id: person.id,
+          name: person.name,
+          title: person.title,
+          company: person.companyName,
+          location:
+            typeof document.data.location === 'string'
+              ? document.data.location
+              : '',
+          profile: document.data,
+        })),
+      })
+      .catch(() => undefined) ?? Promise.resolve(undefined));
+
+    judgements?.forEach((judgement, id) => {
+      if (!judgement.fitsSearch) {
+        flag(id, 'query_mismatch');
+      }
+
+      if (judgement.likelyFake) {
+        flag(id, 'likely_fake_profile');
+      }
+    });
+
+    return rows.map(({ person }) => ({
+      ...person,
+      ...buildDeprioritisationFields(reasonsById.get(person.id) ?? []),
+    }));
   }
 
   // The project tabs hold MAX_ROWS_PER_PROJECT_TAB rows and the upsert tools
@@ -346,9 +438,11 @@ The result never contains the records, only counts and a summary; they go to the
         : { written: 0, total: companies.length, error: output.error };
     }
 
-    const people = search.documents
-      .map(mapBrightDataPersonToEphemeral)
-      .filter((person) => person !== null);
+    const people = await this.markDeprioritised(
+      input,
+      search.documents,
+      context.workspaceId,
+    );
     const batch = people.slice(0, MAX_ROWS_PER_PROJECT_TAB);
 
     if (batch.length === 0) {

@@ -16,6 +16,8 @@ Step outputs are already unwrapped in run context. Use `{{<step-uuid>.<field>}}`
 
 This is **not** ICP preference collection (`setup`) and **not** Ask AI target-list search (`search` → Find / Redis tabs). Interactive Companies tab stays Find. **Scheduled harvest that writes the CRM companies table** is this skill.
 
+**Preview the first LinkedIn message for people in the list** (before or without enrolling): load `ai-filter-enrich` and use `preview_sample_message_column` (Sample LinkedIn message column). Do not read workflow steps or `find_many_candidates` for this; list rows are not candidates.
+
 ## Ignite (prefer reuse — do not invent webhooks)
 
 Seeded graphs ship as **DRAFT**. Triggers are CRON / `company.created` / `candidate.upserted` / WEBHOOK (search+upload only). Do **not** invent extra webhooks for Harvest / Sequencer / company-created — reuse those seeds as-is.

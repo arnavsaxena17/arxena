@@ -1,3 +1,5 @@
+import { type TagColor } from 'twenty-ui/data-display';
+
 import {
   OutreachLinkCell,
   OutreachTagCell,
@@ -116,6 +118,13 @@ const resolveColumnLabel = (
     ? readAiColumnLabel(rows, key)
     : null) ?? humanizeJsonKey(key);
 
+const PEOPLE_FOUND_TAG_COLORS: Record<string, TagColor> = {
+  Found: 'green',
+  'Related role only': 'orange',
+  'Not found': 'gray',
+  'Lookup failed': 'red',
+};
+
 export const appendOutreachRawJsonColumns = <TRow extends object>(
   columns: OutreachRecordTableColumn<TRow>[],
   rows: TRow[],
@@ -177,6 +186,11 @@ export const appendOutreachRawJsonColumns = <TRow extends object>(
           return value === '' &&
             readAiColumnRowStatus(row, columnId, key) === 'failed' ? (
             <OutreachTagCell label="Failed" color="red" />
+          ) : columnId === 'otherFields.peopleFound' ? (
+            <OutreachTagCell
+              label={value}
+              color={PEOPLE_FOUND_TAG_COLORS[value] ?? 'gray'}
+            />
           ) : isLinkValue(key, value) ? (
             <OutreachLinkCell url={value.trim()} />
           ) : (
@@ -186,5 +200,20 @@ export const appendOutreachRawJsonColumns = <TRow extends object>(
       };
     });
 
-  return [...columns, ...jsonColumns];
+  // the People found columns sit right after Status, not behind every
+  // other field the row carries
+  const pinned = ['otherFields.peopleFound', 'otherFields.peopleFoundCount']
+    .map((id) => jsonColumns.find((column) => column.id === id))
+    .filter((column) => column !== undefined);
+  const rest = jsonColumns.filter((column) => !pinned.includes(column));
+  const statusIndex = columns.findIndex((column) => column.id === 'status');
+
+  return statusIndex < 0
+    ? [...columns, ...pinned, ...rest]
+    : [
+        ...columns.slice(0, statusIndex + 1),
+        ...pinned,
+        ...columns.slice(statusIndex + 1),
+        ...rest,
+      ];
 };

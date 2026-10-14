@@ -9,7 +9,7 @@ export type ParsedLinkedinSerpPerson = {
 const LINKEDIN_SUFFIX = /\s*[|\-–—]\s*linkedin\s*$/i;
 const PART_SEPARATOR = /\s+[-–—]\s+/;
 
-const isLinkedinProfileUrl = (url: string): boolean => {
+export const isLinkedinProfileUrl = (url: string): boolean => {
   try {
     const parsed = new URL(url);
 
@@ -19,6 +19,28 @@ const isLinkedinProfileUrl = (url: string): boolean => {
     );
   } catch {
     return false;
+  }
+};
+
+// A post URL carries its author's profile id before the first underscore:
+// linkedin.com/posts/smita-jatia_ai-technology-... was written by /in/smita-jatia.
+// Some people only appear in Google as a post, so this recovers their profile.
+export const linkedinProfileUrlFromPostUrl = (url: string): string | null => {
+  try {
+    const parsed = new URL(url);
+
+    if (!/(^|\.)linkedin\.com$/i.test(parsed.hostname)) {
+      return null;
+    }
+
+    const [, section, slug] = parsed.pathname.split('/');
+    const profileId = slug?.split('_')[0] ?? '';
+
+    return section === 'posts' && profileId !== ''
+      ? `https://www.linkedin.com/in/${profileId}`
+      : null;
+  } catch {
+    return null;
   }
 };
 

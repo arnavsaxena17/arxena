@@ -7,6 +7,9 @@ const DATASET: BrightDataLudicrousDataset = {
   planId: 'plan-1',
   entity: 'company',
   documents: [{ brightId: 'a', data: { name: 'Wow! Momo' } }],
+  fetchedDocuments: [
+    { brightId: 'a', data: { name: 'Wow! Momo' }, relevant: true },
+  ],
   spentUsd: 0.002,
   budgetUsd: 1,
   shardReports: [],

@@ -100,11 +100,18 @@ const StyledLoading = styled.div`
   min-height: 240px;
 `;
 
+const normalizeCompanyNameKey = (name: string | undefined): string =>
+  (name ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
 type OutreachPeoplePanelProps = {
   people: OutreachPersonRow[];
   companies: OutreachCompanyRow[];
   projectId: string | null | undefined;
   selectedCompanyId: string | null;
+  onClearSelectedCompany?: () => void;
   selectedPersonId: string | null;
   onSelectPersonId: (personId: string | null) => void;
   tableInstanceId: string;
@@ -127,6 +134,7 @@ export const OutreachPeoplePanel = ({
   companies,
   projectId,
   selectedCompanyId,
+  onClearSelectedCompany,
   selectedPersonId,
   onSelectPersonId,
   tableInstanceId,
@@ -311,13 +319,26 @@ export const OutreachPeoplePanel = ({
     return map;
   }, [companies]);
 
+  const selectedCompany = isDefined(selectedCompanyId)
+    ? companiesByWorkingSetId[selectedCompanyId]
+    : undefined;
+
   const filteredPeople = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
+    const selectedCompanyNameKey = normalizeCompanyNameKey(
+      selectedCompany?.name,
+    );
 
     return people.filter((person) => {
+      // People saved before they carried a company id match by company name
       if (
         isDefined(selectedCompanyId) &&
-        person.companyId !== selectedCompanyId
+        person.companyId !== selectedCompanyId &&
+        !(
+          person.companyId === '' &&
+          selectedCompanyNameKey !== '' &&
+          normalizeCompanyNameKey(person.companyName) === selectedCompanyNameKey
+        )
       ) {
         return false;
       }
@@ -334,7 +355,7 @@ export const OutreachPeoplePanel = ({
         .toLowerCase()
         .includes(normalizedQuery);
     });
-  }, [people, searchQuery, selectedCompanyId, stageFilter]);
+  }, [people, searchQuery, selectedCompany, selectedCompanyId, stageFilter]);
 
   // The candidate drawer and Cmd+K actions resolve the selected row from
   // searchResultsState, so keep it mirrored to the visible working set.
@@ -536,6 +557,13 @@ export const OutreachPeoplePanel = ({
 
   const pills = (
     <>
+      {isDefined(selectedCompanyId) && (
+        <OutreachViewBarPill
+          label={`Company: ${selectedCompany?.name ?? 'selected'} ✕`}
+          isActive
+          onClick={() => onClearSelectedCompany?.()}
+        />
+      )}
       <OutreachViewBarPill
         label="All"
         count={getQueueCount('all') ?? people.length}

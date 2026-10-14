@@ -7,6 +7,10 @@ routes:
       Filter / classify / enrich the people or companies in the list ("who is a CEO", "revenue of each", "employees in each")
     hint: |-
       . Never re-search or page `find_many_*` for the list; the skill reads the project working set. On the People tab this is always a person column, also for questions about their companies (revenue, headcount, industry). Apply a table filter or sort only when the user asks to narrow or order the rows ("only the CEOs", "biggest first"); a plain question about data needs none.
+  - when: |-
+      Preview / draft the first LinkedIn message (opener) the people in the list would get once their connection request is accepted ("sample first message for each", "what would we send them after they accept")
+    hint: |-
+      . Do not look for a workflow template or enrolled candidates; list rows need no enrollment. The skill's "Sample LinkedIn message" section uses `preview_sample_message_column`; nothing is sent.
 ---
 # AI Filter & Enrich Skill
 

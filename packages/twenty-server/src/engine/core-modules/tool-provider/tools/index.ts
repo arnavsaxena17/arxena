@@ -23,3 +23,11 @@ export {
   type LoadSkillInput,
   type LoadSkillResult,
 } from './load-skill.tool';
+
+export {
+  GET_TOOL_CATALOG_TOOL_NAME,
+  createGetToolCatalogTool,
+  getToolCatalogInputSchema,
+  type GetToolCatalogInput,
+  type GetToolCatalogResult,
+} from './get-tool-catalog.tool';

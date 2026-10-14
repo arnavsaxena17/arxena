@@ -138,7 +138,7 @@ export class BrightDataLudicrousSearchService {
     workspaceId: string,
     result: BrightDataLudicrousRunResult,
   ): Promise<void> {
-    if (result.documents.length === 0) {
+    if (result.documents.length === 0 && result.fetchedDocuments.length === 0) {
       return;
     }
 

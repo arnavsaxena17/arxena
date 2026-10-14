@@ -499,6 +499,11 @@ const OutreachHomePageContent = () => {
     setActiveTab('companies');
   };
 
+  const handleViewCompanyPeople = (companyId: string) => {
+    setSelectedCompanyId(companyId);
+    setActiveTab('people');
+  };
+
   const handleFindPeople = () => {
     openAskAiPageWithPreprompt({
       mode: 'SEND',
@@ -577,6 +582,7 @@ const OutreachHomePageContent = () => {
                   companies={companies}
                   projectId={activeProjectId}
                   selectedCompanyId={selectedCompanyId}
+                  onClearSelectedCompany={() => setSelectedCompanyId(null)}
                   selectedPersonId={selectedPersonId}
                   onSelectPersonId={setSelectedPersonId}
                   tableInstanceId={peopleTableInstanceId}
@@ -598,6 +604,7 @@ const OutreachHomePageContent = () => {
                   projectId={activeProjectId}
                   selectedCompanyId={selectedCompanyId}
                   onSelectCompanyId={setSelectedCompanyId}
+                  onViewCompanyPeople={handleViewCompanyPeople}
                   isLoading={companiesLoading}
                   onRefresh={refreshCompaniesWorkingSet}
                   appendCompanies={appendCompanies}
