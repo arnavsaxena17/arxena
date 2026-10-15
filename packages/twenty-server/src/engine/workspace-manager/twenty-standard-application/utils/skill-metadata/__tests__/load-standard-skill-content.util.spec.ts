@@ -9,13 +9,15 @@ describe('loadStandardSkillContent', () => {
     expect(content).toContain('# Search Skill');
     expect(content).toContain('## Companies');
     expect(content).toContain('## People');
-    expect(content).toContain('## LinkedIn / Harvest');
+    expect(content).toContain('## People by company');
+    expect(content).toContain('plan-local-business-city-coverage');
+    expect(content).toContain('resolve_company_from_raw_name');
     expect(content).toBe(getSkillContent('search'));
     expect(content.indexOf('## Companies')).toBeLessThan(
       content.indexOf('## People'),
     );
     expect(content.indexOf('## People')).toBeLessThan(
-      content.indexOf('## LinkedIn / Harvest'),
+      content.indexOf('## People by company'),
     );
   });
 
@@ -25,23 +27,6 @@ describe('loadStandardSkillContent', () => {
     expect(content).toContain('# Org Structure Insights Skill');
     expect(content).toContain('highlight_org_chart');
     expect(content).toContain('Canvas search');
-  });
-
-  it('loads local-business-search from a single markdown file', () => {
-    const content = loadStandardSkillContent('local-business-search');
-
-    expect(content).toContain('# Local Business Search');
-    expect(content).toContain('Fetch & Save Local Businesses');
-    expect(content).toContain('plan-local-business-city-coverage');
-    expect(content).toContain('fetch-and-upsert-local-businesses');
-  });
-
-  it('loads resolve-company-name from a single markdown file', () => {
-    const content = loadStandardSkillContent('resolve-company-name');
-
-    expect(content).toContain('# Resolve Company Name');
-    expect(content).toContain('resolve_company_from_raw_name');
-    expect(content).toContain('std_company_data_scores');
   });
 
   it('preserves Apollo marker comments for runtime filtering', () => {

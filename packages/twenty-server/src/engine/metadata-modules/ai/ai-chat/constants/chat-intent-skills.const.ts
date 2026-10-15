@@ -1,29 +1,6 @@
 import { SEEDED_OUTREACH_WORKFLOW } from 'src/engine/workspace-manager/standard-objects-prefill-data/constants/seeded-outreach-workflow-names.const';
 
-/**
- * LLM-facing intent vocabulary. Internal ToolCategory / MCP / LF names stay unchanged.
- *
- * Neutral CRM copy: Outreach (not GTM); Your company; Target titles (JSON key
- * targetTitles); people / enrolled people; create_candidate = enrollment record.
- */
-export const CHAT_INTENT_SKILLS = {
-  setup: 'setup',
-  search: 'search',
-  localBusinessSearch: 'local-business-search',
-  resolveCompanyName: 'resolve-company-name',
-  aiFilterEnrich: 'ai-filter-enrich',
-  spreadsheetImport: 'spreadsheet-import',
-  outreach: 'outreach',
-  orgStructureInsights: 'org-structure-insights',
-  crm: 'data-manipulation',
-  workflowBuilding: 'workflow-building',
-  dashboardBuilding: 'dashboard-building',
-} as const;
-
-export type ChatIntentSkillName =
-  (typeof CHAT_INTENT_SKILLS)[keyof typeof CHAT_INTENT_SKILLS];
-
-/** Stable display names for seeded outreach graphs (IDs via list_workflows). */
+// Stable display names for seeded outreach graphs (IDs via list_workflows).
 export const SEEDED_OUTREACH_WORKFLOW_INVENTORY = [
   {
     name: SEEDED_OUTREACH_WORKFLOW.harvest.name,

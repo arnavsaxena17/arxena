@@ -52,7 +52,6 @@ describe('McpInstructionBuilderService', () => {
         roleId: 'role-1',
         userId: 'user-1',
         userWorkspaceId: 'user-workspace-1',
-        workspaceMemberId: 'member-1',
         userContext: {
           firstName: 'Ada',
           lastName: 'Lovelace',
@@ -70,7 +69,7 @@ describe('McpInstructionBuilderService', () => {
     }
   });
 
-  it('skips LinkedIn/user context for API-key sessions without a user workspace', async () => {
+  it('skips user context for API-key sessions without a user workspace', async () => {
     await service.buildInstructions({
       workspaceId: 'workspace-1',
       roleId: 'admin-role',
@@ -83,7 +82,6 @@ describe('McpInstructionBuilderService', () => {
       systemPromptBuilderService.buildMcpInstructions,
     ).toHaveBeenCalledWith(
       expect.objectContaining({
-        workspaceMemberId: undefined,
         userContext: undefined,
         excludeTools: expect.any(Set),
       }),

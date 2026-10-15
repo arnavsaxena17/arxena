@@ -14,7 +14,10 @@ const buildLoadSkillCall = (
   skillName: string,
   options: RoutingLineOptions,
 ): string => {
-  const skillNames = [skillName, ...(options.extraSkillNames?.[skillName] ?? [])];
+  const skillNames = [
+    skillName,
+    ...(options.extraSkillNames?.[skillName] ?? []),
+  ];
 
   return `\`load_skills([${skillNames.map((name) => `"${name}"`).join(', ')}])\``;
 };

@@ -1,7 +1,6 @@
 import {
   ARXENA_INTERNAL_TOOL_NAMES,
   ARXENA_TOOL_CATALOG,
-  type ArxenaToolPack,
 } from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-catalog.const';
 import { Injectable, Logger } from '@nestjs/common';
 
@@ -88,16 +87,6 @@ export class ArxenaToolProvider implements ToolProvider {
     }
   }
 
-  private resolvePackFilter(
-    options?: GenerateDescriptorOptions,
-  ): ArxenaToolPack | undefined {
-    const retrieval = options as
-      | { pack?: ArxenaToolPack; toolPack?: ArxenaToolPack }
-      | undefined;
-
-    return retrieval?.pack ?? retrieval?.toolPack;
-  }
-
   private async resolveApiToken(
     context: ArxenaToolExecutionContext,
   ): Promise<string | null> {
@@ -135,7 +124,6 @@ export class ArxenaToolProvider implements ToolProvider {
     options?: GenerateDescriptorOptions,
   ): Promise<(ToolIndexEntry | ToolDescriptor)[]> {
     const includeSchemas = options?.includeSchemas ?? true;
-    const packFilter = this.resolvePackFilter(options);
     const searchToolsConfig = resolveSearchToolsConfig(
       this.twentyConfigService,
     );
@@ -145,8 +133,7 @@ export class ArxenaToolProvider implements ToolProvider {
     const catalogEntries = ARXENA_TOOL_CATALOG.filter(
       (entry) =>
         !ARXENA_INTERNAL_TOOL_NAMES.has(entry.name) &&
-        !disabledSearchToolNames.has(entry.name) &&
-        (!isDefined(packFilter) || entry.pack === packFilter),
+        !disabledSearchToolNames.has(entry.name),
     );
 
     let schemaByName = new Map<string, object>();

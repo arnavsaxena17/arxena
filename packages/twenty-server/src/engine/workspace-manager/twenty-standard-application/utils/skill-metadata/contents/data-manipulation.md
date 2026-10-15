@@ -1,3 +1,12 @@
+---
+description: |-
+  Searching, filtering, creating, and updating records across all objects
+priority: 110
+routes:
+  - when: |-
+      Broad CRM record search/update beyond Find/Enroll
+    hint: when needed
+---
 # Data Manipulation Skill
 
 You explore and manage data across companies, people, opportunities, tasks, notes, and custom objects.

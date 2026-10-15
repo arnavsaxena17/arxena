@@ -45,7 +45,16 @@ const buildTool = ({
   resolution = null,
   resolutionErrors = [],
   judge,
+  projectRows = [],
+  tableView = null,
 }: {
+  // Rows the project's Companies tab holds, for fromProject
+  projectRows?: Array<{
+    id: string;
+    name: string;
+    otherFields?: Record<string, unknown>;
+  }>;
+  tableView?: { filters: unknown[] } | null;
   resolutionErrors?: string[];
   // Rules on candidates by name; left out, the judge gives no verdicts and the
   // tool falls back to matching names as text. 'unavailable' makes it fail.
@@ -185,6 +194,10 @@ const buildTool = ({
   const writeOtherFields = jest
     .fn()
     .mockResolvedValue({ ephemeralUpdated: 1, crmUpdated: 0 });
+  const getAll = jest.fn().mockResolvedValue(
+    projectRows.map((row) => ({ otherFields: {}, ...row })),
+  );
+  const getTableView = jest.fn().mockResolvedValue(tableView);
   const tool = new FindRoleAtCompaniesTool(
     { searchNaturalLanguage } as never,
     new FindRoleGoogleSearchService({
@@ -200,7 +213,8 @@ const buildTool = ({
     { resolve } as never,
     { execute: upsert } as never,
     taxonomy as never,
-    { writeOtherFields } as never,
+    { writeOtherFields, getAll } as never,
+    { get: getTableView } as never,
   );
 
   return {
@@ -625,12 +639,20 @@ describe('FindRoleAtCompaniesTool Google enrichment', () => {
 
 describe('FindRoleAtCompaniesTool concurrency and retries', () => {
   // The suite runs on fake timers; these tests wait on real delays
+  const savedConcurrency = process.env.FIND_ROLE_COMPANY_CONCURRENCY;
+
   beforeEach(() => {
     jest.useRealTimers();
+    // the developer's .env may set a lower limit than the default under test
+    delete process.env.FIND_ROLE_COMPANY_CONCURRENCY;
   });
 
   afterEach(() => {
-    delete process.env.FIND_ROLE_COMPANY_CONCURRENCY;
+    if (savedConcurrency === undefined) {
+      delete process.env.FIND_ROLE_COMPANY_CONCURRENCY;
+    } else {
+      process.env.FIND_ROLE_COMPANY_CONCURRENCY = savedConcurrency;
+    }
     jest.useFakeTimers();
   });
 
@@ -653,7 +675,7 @@ describe('FindRoleAtCompaniesTool concurrency and retries', () => {
 
     await tool.execute(
       {
-        companies: Array.from({ length: 25 }, (_, index) => ({
+        companies: Array.from({ length: 50 }, (_, index) => ({
           name: `Company ${index}`,
         })),
         roles: ['CEO'],
@@ -661,7 +683,7 @@ describe('FindRoleAtCompaniesTool concurrency and retries', () => {
       context,
     );
 
-    expect(peak).toBe(25);
+    expect(peak).toBe(50);
   });
 
   it('should honour FIND_ROLE_COMPANY_CONCURRENCY', async () => {
@@ -1369,5 +1391,84 @@ describe('FindRoleAtCompaniesTool judged by a model', () => {
         linkedinUrlDerivedFromPost: true,
       }),
     );
+  });
+});
+
+describe('FindRoleAtCompaniesTool companies read from the project', () => {
+  const rows = [
+    { id: 'c1', name: 'Alpha' },
+    { id: 'c2', name: 'Beta', otherFields: { peopleFound: 'Found' } },
+    { id: 'c3', name: 'Gamma', otherFields: { peopleFound: 'Lookup failed' } },
+  ];
+  const lookedUp = (searchNaturalLanguage: jest.Mock): string[] =>
+    searchNaturalLanguage.mock.calls.map(([call]) => call.rawQuery as string);
+
+  it('should look up the project companies without them being passed', async () => {
+    const { tool, searchNaturalLanguage } = buildTool({
+      brightDataDocuments: [],
+      organic: [],
+      projectRows: rows,
+    });
+
+    const output = await tool.execute(
+      { fromProject: true, projectId: 'project-id', roles: ['CEO'] },
+      context,
+    );
+
+    expect(output.success).toBe(true);
+    // Beta is already Found, so it is not paid for again
+    expect(lookedUp(searchNaturalLanguage).join('|')).toMatch(/Alpha/);
+    expect(lookedUp(searchNaturalLanguage).join('|')).toMatch(/Gamma/);
+    expect(lookedUp(searchNaturalLanguage).join('|')).not.toMatch(/Beta/);
+  });
+
+  it('should look up only the failed companies when onlyFailed is set', async () => {
+    const { tool, searchNaturalLanguage } = buildTool({
+      brightDataDocuments: [],
+      organic: [],
+      projectRows: rows,
+    });
+
+    await tool.execute(
+      {
+        fromProject: true,
+        onlyFailed: true,
+        projectId: 'project-id',
+        roles: ['CEO'],
+      },
+      context,
+    );
+
+    expect(lookedUp(searchNaturalLanguage).join('|')).toMatch(/Gamma/);
+    expect(lookedUp(searchNaturalLanguage).join('|')).not.toMatch(/Alpha/);
+  });
+
+  it('should include Found companies when rerunFound is set', async () => {
+    const { tool, searchNaturalLanguage } = buildTool({
+      brightDataDocuments: [],
+      organic: [],
+      projectRows: rows,
+    });
+
+    await tool.execute(
+      {
+        fromProject: true,
+        rerunFound: true,
+        projectId: 'project-id',
+        roles: ['CEO'],
+      },
+      context,
+    );
+
+    expect(lookedUp(searchNaturalLanguage).join('|')).toMatch(/Beta/);
+  });
+
+  it('should fail clearly when neither companies nor a project are given', async () => {
+    const { tool } = buildTool({ brightDataDocuments: [], organic: [] });
+
+    const output = await tool.execute({ roles: ['CEO'] }, context);
+
+    expect(output.success).toBe(false);
+    expect(output.error).toMatch(/fromProject/);
   });
 });

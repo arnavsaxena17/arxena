@@ -492,6 +492,7 @@ export class StreamAgentChatJob {
                 turnId,
                 parts,
                 workspaceId: data.workspaceId,
+                isCheckpoint: true,
               });
             });
           }

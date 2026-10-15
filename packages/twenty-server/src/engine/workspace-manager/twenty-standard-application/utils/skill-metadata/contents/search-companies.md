@@ -46,12 +46,16 @@ learn_tools({
 <!-- search-bright-data-companies-learn-tools-line:start -->
     "search_bright_data_business",
 <!-- search-bright-data-companies-learn-tools-line:end -->
+    "search_linkedin_parameters",
+    "generate_linkedin_query_set",
+    "plan-local-business-city-coverage",
+    "fetch-and-upsert-local-businesses",
     "upsert_outreach_target_companies"
   ]
 })
 
-# Explicit CRM save only
-learn_tools({ "toolNames": ["create_one_company", "update_one_company"] })
+# Save to CRM only, after the user asks
+learn_tools({ "toolNames": ["save_outreach_targets_to_crm"] })
 ```
 
 Dedup across sources **by normalized name + domain** before saving.
@@ -79,9 +83,9 @@ search_apollo_companies({
 <!-- search-apollo-companies-source-section:end -->
 ### Source — LinkedIn / Unipile (`search_linkedin_companies`)
 
-Live LinkedIn company results. **Full facet workflow: LinkedIn / Harvest section below.**
+Live LinkedIn company results. Company facet examples are at the end of this section. Resolve facet ids with `search_linkedin_parameters` and never invent one. Keep a close title match ("Trident Group" → "Trident Group India"). Drop a clear mismatch ("Raymond Ltd" → "Raymond James") or an empty result, and omit that filter.
 
-- `searchType`: `classic` or `sales_navigator`.
+- `searchType`: `classic` or `sales_navigator`, and only if that value is listed in the LinkedIn status appended when this skill loads.
 - Resolve geo/industry facet IDs with `search_linkedin_parameters` (`LOCATION`, `INDUSTRY`).
 - Named Sales Nav account lists: `search_linkedin_parameters({ parameterType: "ACCOUNT_LISTS" })` → `search_linkedin_companies` with `account_lists.include`.
 - **Pasted LinkedIn company search URL** (`/sales/search/company?...` or `/search/results/companies?...`): call `search_linkedin_companies({ "url": "<exact pasted URL>", "limit": 100 })`. Do not parse the URL or resolve facet IDs yourself: the tool turns a Sales Nav company URL (region, industry, headcount, keywords, include/exclude) into the structured Unipile payload `{ api: "sales_navigator", category: "companies", location, industry, headcount }` and falls back to Unipile's own URL search when the URL has filters it cannot express. `searchType`/`searchParameters` are not needed.
@@ -92,8 +96,7 @@ Live LinkedIn company results. **Full facet workflow: LinkedIn / Harvest section
 
 Harvest has no standalone company search — discover companies *through people* when certain roles exist, or when no LinkedIn session is available.
 
-- Use People API tools with `dataSource: "harvest"`; extract `companyName` from hits to build the company list.
-- **Full Harvest examples: LinkedIn / Harvest section below.**
+- Use People API tools with `dataSource: "harvest"`; extract `companyName` from hits to build the company list. A role at those companies, once they are named, is `people-by-company`.
 
 <!-- search-exa-companies-source-section:start -->
 ### Source — Exa (`app_exa_web_search` / `exa_web_search`)
@@ -123,7 +126,7 @@ Plain-language company sets. Pass the user's sentence as `query`. Do not turn it
 
 **Ludicrous is budgeted. Always show the cost before fetching.** It bills **$0.002 per returned record**, capped at **$10 per query**. The server turns the request into several structured, non-overlapping queries (title synonyms, cities, size and funding buckets), then fetches slice by slice and drops slices whose results stop being relevant.
 
-**What a query may say.** The sentence can only use ideas the company data holds: what the company is (industry, about, specialties, name), where (country, city), organization type, founded year, employee size, funding, followers. Write "cosmetics and beauty retail companies in India", never "... with stores and outlets", "chain", "franchise", store counts, revenue or ad activity: those words are not in the data, so they break matching. Judge those facts afterwards with enrichment columns (see **Build a target list**).
+**What a query may say.** The sentence can only use ideas the company data holds: what the company is (industry, about, specialties, name), where (country, city), organization type, founded year, employee size, funding, followers. Write "cosmetics and beauty retail companies in India", never "... with stores and outlets", "chain", "franchise", store counts, revenue or ad activity: those words are not in the data, so they break matching. Judge those facts afterwards with enrichment columns (see **Judged lists**, then `ai-filter-enrich`).
 
 **How the query is built (server side, you only pass the sentence).** The planner turns the request into a structured ludicrous `query` and always fetches `view: "full"`. Conditions are `and` / `or` / `not` over `text` (text fields), `equals` / `in` / `range` (typed fields). Text fields take only `text`, typed fields never take `text`, and single-value `in` on array fields stays `in`. Topic words use `mode: "all"` (every word required). Example for companies:
 
@@ -189,18 +192,46 @@ Follow **Ephemeral write contract** (preamble). Steps:
 3. Search tools in **Result lists** return a `listId`: show the rows with `outreach_list` `attach`. For a tool that still returns rows, build `companies[]` and make one `execute_tool` upsert. Never upsert from the sandbox.
 4. Tell the user the Companies tab count (UI refreshes within a few seconds).
 
-### CRM save (only when the user asks)
+### Save to CRM (only when the user asks)
 
 1. Normalize and dedupe on **domain host** or normalized name.
-2. Load `data-manipulation` + `code-interpreter`; resolve existing companies in `code_interpreter`:
+2. `save_outreach_targets_to_crm` with `target: "companies"`. Omit ids to save the whole tab. This creates Company records and does not start outreach.
 
-```python
-company_ids = arxena.lookup_by('companies', 'name', [r['name'] for r in company_records])
+### Places on a map
+
+Use this when the user wants outlets they can walk into (hotels, restaurants, clinics, stores, plumbers) across a city. A firmographic set ("apparel brands in India") skips this and starts at Bright Data. A raw employer string with no map step is only `resolve_company_from_raw_name`.
+
+A single `search_local_businesses` call does not cover a city. Run the seeded workflow:
+
+1. `plan-local-business-city-coverage` builds the lat/lng grid and the cost estimate (optional `sample: true`).
+2. `fetch-and-upsert-local-businesses` discovers over that grid and upserts Companies. `projectId` and `maxRecords` are required. Confirm the estimate first (`estimatedMaxRecords`, about $0.0015 per record).
+3. `resolve_company_from_raw_name` on each place or brand name, so "Wow! Momo" becomes the canonical company.
+4. `search_bright_data_business` with `entity: "company"` on that canonical name for the firmographic profile Maps does not have.
+
+Bright Data Google Maps PAYG is about $1.50 per 1,000 records. Budget on gross deliveries. Do not invent another city-grid tool, and do not promise full-city coverage from one Maps search.
+
+### Company facet examples
+
+**Classic companies**
+
+```json
+{
+  "searchType": "classic",
+  "searchParameters": {
+    "api": "classic",
+    "category": "companies",
+    "has_job_offers": true,
+    "location": ["102277331", "102448103"]
+  },
+  "limit": 10
+}
 ```
 
-3. `create_one_company` for missing, `update_one_company` for present. Use returned **CRM UUID** — never provider ids.
-4. Field map: name → `name`, domain → `domainName`, location → `address`, country → `country`, industry → `industry`, employees → `employees`, LinkedIn URL → `linkedinLink.primaryLinkUrl`.
-5. If asked for CSV + project: write `/home/user/output/` from the **same parsed rows** before ending the turn.
+**Named Sales Navigator account list:** `search_linkedin_parameters({ parameterType: "ACCOUNT_LISTS", limit: 100 })`, pick the `id` whose title matches, then `search_linkedin_companies` with `account_lists: { include: ["<id>"] }`.
+
+**Pasted company search URL** (`/sales/search/company` or `/search/results/companies`): `search_linkedin_companies({ "url": "<exact pasted URL>", "limit": 100 })`. Do not parse the URL yourself.
+
+**Natural-language company brief:** `generate_linkedin_query_set` once when the category is companies, then `validate_linkedin_query_set`, then pass the params to `search_linkedin_companies`.
 
 ### Companies constraints
 

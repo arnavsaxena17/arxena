@@ -1,9 +1,5 @@
-import { getSkillContent } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/skill-library';
-
 import { getPlaybookUniversalIdentifier } from 'src/engine/workspace-manager/twenty-standard-application/constants/standard-playbook-skills.constant';
 import { buildStandardFlatSkillMetadataMaps } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/build-standard-flat-skill-metadata-maps.util';
-
-const PLAYBOOK = 'find-role-at-companies';
 
 describe('standard playbook skills', () => {
   const maps = buildStandardFlatSkillMetadataMaps({
@@ -13,27 +9,19 @@ describe('standard playbook skills', () => {
   } as never);
   const skills = Object.values(maps.byUniversalIdentifier);
 
-  it('should register a playbook as a standard skill with no entry in code', () => {
-    const playbook = skills.find((skill) => skill?.name === PLAYBOOK);
-
-    expect(playbook).toMatchObject({
-      label: 'Find Role At Companies',
-      icon: 'IconUserSearch',
-      isCustom: false,
-      content: getSkillContent(PLAYBOOK),
-    });
+  it('should not register find-role-at-companies', () => {
+    expect(
+      skills.find((skill) => skill?.name === 'find-role-at-companies'),
+    ).toBeUndefined();
   });
 
   it('should derive the same universal identifier from the name every time', () => {
-    expect(getPlaybookUniversalIdentifier(PLAYBOOK)).toBe(
-      getPlaybookUniversalIdentifier(PLAYBOOK),
+    expect(getPlaybookUniversalIdentifier('find-role-at-companies')).toBe(
+      getPlaybookUniversalIdentifier('find-role-at-companies'),
     );
-    expect(getPlaybookUniversalIdentifier(PLAYBOOK)).not.toBe(
+    expect(getPlaybookUniversalIdentifier('find-role-at-companies')).not.toBe(
       getPlaybookUniversalIdentifier('another-playbook'),
     );
-    expect(
-      skills.find((skill) => skill?.name === PLAYBOOK)?.universalIdentifier,
-    ).toBe(getPlaybookUniversalIdentifier(PLAYBOOK));
   });
 
   it('should not collide with the hand-registered skills', () => {

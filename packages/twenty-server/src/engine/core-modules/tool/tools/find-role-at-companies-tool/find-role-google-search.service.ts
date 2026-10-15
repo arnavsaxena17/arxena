@@ -73,7 +73,9 @@ const isRetryableSerpError = (error: unknown): boolean =>
 // Bright Data throttles by request rate ("decrease your request rate to
 // 174/min") and says to wait 15 s before retrying a recently failed query. One
 // limit for the whole process, so parallel tool calls share it.
-const DEFAULT_REQUESTS_PER_MINUTE = 150;
+// The documented limit is 1,000/min unfunded (higher when funded); stay at
+// 600 and let a 429 slow every caller down, not just the one that got it
+const DEFAULT_REQUESTS_PER_MINUTE = 600;
 const RATE_LIMIT_BACKOFF_MS = 16_000;
 let nextRequestSlotAt = 0;
 
@@ -95,6 +97,10 @@ const acquireRequestSlot = async (): Promise<void> => {
   if (slotAt > now) {
     await new Promise((resolve) => setTimeout(resolve, slotAt - now));
   }
+};
+
+const pauseRequestSlots = (milliseconds: number): void => {
+  nextRequestSlotAt = Math.max(nextRequestSlotAt, Date.now() + milliseconds);
 };
 
 @Injectable()
@@ -197,6 +203,7 @@ export class FindRoleGoogleSearchService {
                 settle(() => reject(error));
               } else if (started < maxAttempts) {
                 if (/HTTP 429\b/.test(String((error as Error).message))) {
+                  pauseRequestSlots(RATE_LIMIT_BACKOFF_MS);
                   hedgeTimer = setTimeout(startAttempt, RATE_LIMIT_BACKOFF_MS);
                 } else {
                   startAttempt();

@@ -593,3 +593,971 @@
 {"at":"2026-10-14T13:49:41.091Z","projectId":"b07ddc92-754c-4aeb-84ce-da616f0981f4","company":"The Colosseum","status":"matched","people":3,"sourceErrors":[],"rejected":["Preeti Reddy","Adinarayana Chennupati","Anantha Laxmi Pantangi"]}
 {"at":"2026-10-14T13:49:41.704Z","projectId":"b07ddc92-754c-4aeb-84ce-da616f0981f4","company":"DFD Dermafreedom","status":"matched","people":1,"sourceErrors":[],"rejected":["Darlene DeVries","Cody Simmons","Victor Snyders"]}
 {"at":"2026-10-14T13:49:56.028Z","projectId":"b07ddc92-754c-4aeb-84ce-da616f0981f4","company":"Maishaa Furniture & Furnishings","status":"source_error","people":0,"sourceErrors":["google: Bright Data SERP failed: HTTP 502 response body was rejected"],"rejected":["Suman Sahani","Krsnaa Mehta","Amrita Thomas"]}
+{"at":"2026-10-14T14:04:11.692Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"FACES CANADA","status":"no_match","people":0,"sourceErrors":[],"rejected":["Tilanjali Ghosh","Manish Taneja"]}
+{"at":"2026-10-14T14:04:45.544Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Arun Ice Cream","status":"matched","people":3,"sourceErrors":[],"rejected":["Sam Joseph","Gopi Siva kumar","Rajan M.C"]}
+{"at":"2026-10-14T14:04:47.214Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Go Colors","status":"matched","people":2,"sourceErrors":[],"rejected":["Vatsal Koolwal","Tanwirul Khan","Ramakrishnan rajagopalan"]}
+{"at":"2026-10-14T14:04:49.810Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Monginis","status":"matched","people":3,"sourceErrors":[],"rejected":["Dinesh Mahaveer","Rahul Gupta","Deepal Udeshi"]}
+{"at":"2026-10-14T14:04:53.500Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Titan Eyeplus","status":"matched","people":3,"sourceErrors":[],"rejected":["Abhik Bandyopadhyay","md shahid","titan eye vvip"]}
+{"at":"2026-10-14T14:05:00.286Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Vedant Fashions Limited - Manyavar-Mohey","status":"matched","people":3,"sourceErrors":[],"rejected":["Vasudev Chhateja","Deepanshu Dassani","Ravi Modi"]}
+{"at":"2026-10-14T14:05:00.498Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Khadim's","status":"matched","people":3,"sourceErrors":[],"rejected":["Aijaz Ahmad.","KHADIM CONSULTANTS AND TECHNOLOGIES PVT LTD","Farzan Reza"]}
+{"at":"2026-10-14T14:05:00.966Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"La Pino'z Pizza","status":"matched","people":3,"sourceErrors":[],"rejected":["Nakul Kathrotia","Nakul Kathrotia","Nikhlendra Kesharwani"]}
+{"at":"2026-10-14T14:05:01.690Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Pizza Hut","status":"matched","people":3,"sourceErrors":[],"rejected":["Vineet Sharma","Prashant Gaur","Sarmistha Venishetty"]}
+{"at":"2026-10-14T14:05:09.075Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Vadilal Ice Creams","status":"matched","people":3,"sourceErrors":[],"rejected":["Rahul Kaul","Devang Patel","Nihir Pancholi"]}
+{"at":"2026-10-14T14:05:10.766Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Barista","status":"matched","people":3,"sourceErrors":[],"rejected":["Anamika Dham","Neeraj Jain","Krishan Gunasekara"]}
+{"at":"2026-10-14T14:05:19.843Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Killer (Kewal Kiran Clothing)","status":"matched","people":3,"sourceErrors":[],"rejected":["Lakhbir Singh","Pankaj Jain","Dinesh Pukhraj Jain"]}
+{"at":"2026-10-14T14:05:23.085Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Subway India","status":"matched","people":3,"sourceErrors":["google: Bright Data SERP failed: HTTP 502 redirect location was rejected"],"rejected":["Hardik Gohil","Ranjeet Thakur","Rahul yadav"]}
+{"at":"2026-10-14T14:05:24.387Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Café Coffee Day","status":"no_match","people":0,"sourceErrors":[],"rejected":["Adithya Krishnan P C","Malavika Hegde","Malavika Hegde"]}
+{"at":"2026-10-14T14:05:26.368Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Blackberrys Menswear","status":"matched","people":3,"sourceErrors":[],"rejected":["Santhosh Kumar","Gagan Arya","Deepak Parakh"]}
+{"at":"2026-10-14T14:05:35.595Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Baskin Robbins India","status":"matched","people":3,"sourceErrors":["google_extraction: The operation was aborted due to timeout (read LinkedIn titles by pattern instead)"],"rejected":["Yogesh Madhavan","Michelle Zatlyn","Ameet Koomar"]}
+{"at":"2026-10-14T14:05:41.250Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Fabindia","status":"matched","people":3,"sourceErrors":[],"rejected":["Pooja Khurana","Mahesh Kolliyavar","Abhishek Tandon"]}
+{"at":"2026-10-14T14:05:46.747Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"McDonald's India – North and East","status":"matched","people":3,"sourceErrors":[],"rejected":["Rudra Kishore Sen","Rohiit Banyal","Sabir Hossain"]}
+{"at":"2026-10-14T14:05:49.978Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Monte Carlo","status":"matched","people":3,"sourceErrors":[],"rejected":["Léa Lac","Sheel Kumar","Rahul Tambi"]}
+{"at":"2026-10-14T14:05:52.710Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Lite Bite Foods","status":"matched","people":3,"sourceErrors":[],"rejected":["SIDDHANT SINGH","Pragya Das Loke","Adesh Dixit"]}
+{"at":"2026-10-14T14:05:52.746Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Iris Brands LLP","status":"matched","people":1,"sourceErrors":[],"rejected":["Mansi Chalke","BHAVIN DILIP KOTHARI","KIRIT JAYANTILAL KOTHARI"]}
+{"at":"2026-10-14T14:06:02.653Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"cottonking","status":"matched","people":3,"sourceErrors":[],"rejected":["Pradeep Marathe","Kunal Marathe","Cotton King"]}
+{"at":"2026-10-14T14:06:04.534Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Ferns N Petals (FNP)","status":"matched","people":3,"sourceErrors":[],"rejected":["anju bajaj","anju bajaj","Dipesh Kumar"]}
+{"at":"2026-10-14T14:06:04.764Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Curefoods (EatFit, Olio, Crusto's, Frozen Bottle etc.)","status":"matched","people":3,"sourceErrors":[],"rejected":["Heronimus Melvin","Harshita Siddeshwar","Eve Crusto"]}
+{"at":"2026-10-14T14:06:12.154Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Keventers","status":"matched","people":3,"sourceErrors":[],"rejected":["Sohrab Sitaram"]}
+{"at":"2026-10-14T14:06:13.153Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Burger Singh","status":"matched","people":3,"sourceErrors":[],"rejected":["Dhruv Sibal","Kabir Jeet Singh"]}
+{"at":"2026-10-14T14:06:19.931Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Pepe Jeans India","status":"matched","people":3,"sourceErrors":["google_extraction: No object generated: response did not match schema. (read LinkedIn titles by pattern instead)"],"rejected":["Rahul Sasi (Shashi)","Manish Kapoor","Arun Bhatt"]}
+{"at":"2026-10-14T14:06:33.536Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Hangyo IceCreams Pvt. Ltd.","status":"matched","people":3,"sourceErrors":[],"rejected":["Jagdish Pai","Sankeern Pai","Jagadish R Pai"]}
+{"at":"2026-10-14T14:06:33.840Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"A2B – Adyar Ananda Bhavan","status":"matched","people":1,"sourceErrors":[],"rejected":["Bishwanath Dass","Bishwanath Dass","Dany Stephen"]}
+{"at":"2026-10-14T14:06:43.709Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Indian Terrain","status":"matched","people":3,"sourceErrors":[],"rejected":["Chinmay Rathi","Chinmay Rathi","Vinoth Kumar"]}
+{"at":"2026-10-14T14:06:45.559Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Liberty Shoes","status":"matched","people":3,"sourceErrors":[],"rejected":["Lokesh Mishra","Adesh Gupta","Sunil Goel"]}
+{"at":"2026-10-14T14:06:45.654Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Barbeque Nation","status":"matched","people":3,"sourceErrors":[],"rejected":["Nitin chouhan","Revathy Ashok","Taj Muhammad"]}
+{"at":"2026-10-14T14:06:45.887Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Plum","status":"matched","people":3,"sourceErrors":[],"rejected":["samvit lala","Gaurav Shree","Puneeta Bedi"]}
+{"at":"2026-10-14T14:06:50.045Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"United Colors of Benetton India","status":"matched","people":3,"sourceErrors":[],"rejected":["Arun Kumar","Yogesh Bali","Ritik Chaudhary"]}
+{"at":"2026-10-14T14:06:54.153Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Citykart","status":"matched","people":3,"sourceErrors":["google: Bright Data SERP failed: HTTP 429 This query recently failed and cannot be attempted at this time. Please try again later, after a minimum of 15 seconds. https://docs.brightdata.com/scraping-automation/serp-api/debugging#serp-api-error-catalog"],"rejected":["Sudhanshu Agarwal","Md Saif","MD   MODASSIR ALAM"]}
+{"at":"2026-10-14T14:06:55.672Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Emami Frank Ross","status":"matched","people":3,"sourceErrors":[],"rejected":["anurag jatia","Arun Narahari","Nalini Sharma"]}
+{"at":"2026-10-14T14:07:03.655Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Costa Coffee India","status":"matched","people":3,"sourceErrors":[],"rejected":["Santhosh Unni","Aparna Chopra","Bharath Kumar"]}
+{"at":"2026-10-14T14:07:09.110Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Mad Over Donuts","status":"matched","people":3,"sourceErrors":[],"rejected":["Subhankar Bhattacharya","T R Biju Menon","Ankit Shah"]}
+{"at":"2026-10-14T14:07:09.390Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Chai Point","status":"matched","people":3,"sourceErrors":["linkedin_lookup: Amuleek Singh Bijral: bright_data Bright Data business search failed (429): {\"error\":\"Too many search requests, try again shortly\"}"],"rejected":["Sue Khim","Dharmendra Raghuvanshi","Vineet Bhandari"]}
+{"at":"2026-10-14T14:07:10.481Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Woodland","status":"matched","people":3,"sourceErrors":[],"rejected":["Greg Nuttall","Dr Darren Moorcroft","Gagandeep Singh"]}
+{"at":"2026-10-14T14:07:13.967Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"The Sleep Company","status":"matched","people":2,"sourceErrors":[],"rejected":["Vikram Kubal","Ramesh Aekkaladevi","Dhiraj Rathod"]}
+{"at":"2026-10-14T14:08:00.852Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"99 Pancakes","status":"matched","people":3,"sourceErrors":[],"rejected":["Bharat Jadhav","Ganesh Unchade","Arjuman Shaikh"]}
+{"at":"2026-10-14T14:08:24.441Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Biggies Burger","status":"matched","people":3,"sourceErrors":["google: Bright Data SERP failed: HTTP 502 redirect location was rejected"],"rejected":["Rtn.Meenakshi Sarath","Srijit Panda","Biplab Daudung Langthasa"]}
+{"at":"2026-10-14T14:08:28.895Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Dil Foods","status":"matched","people":3,"sourceErrors":[],"rejected":["Mohan dass s","Harsh Rathore","Praveen Anthony Raj"]}
+{"at":"2026-10-14T14:08:47.832Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"New Shop","status":"matched","people":3,"sourceErrors":[],"rejected":["Bharti K Shandilya","ABHISHEK BAJPAI","Rajeev Kumar"]}
+{"at":"2026-10-14T14:08:50.972Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Crossword Bookstores","status":"matched","people":3,"sourceErrors":[],"rejected":["Afzal Shaikh","Janhavi Swamy","Deepali Manthalkar"]}
+{"at":"2026-10-14T14:08:51.989Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Himalaya Optical","status":"matched","people":3,"sourceErrors":["linkedin_lookup: Nidhi Binani: bright_data fetch failed","linkedin_lookup: Uma Binani: bright_data fetch failed"],"rejected":["Sarat Binani","Alok Binani","Neharika Binani"]}
+{"at":"2026-10-14T14:09:00.865Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Bakingo","status":"matched","people":3,"sourceErrors":[],"rejected":["Shrey Sehgal","Md Ikrar Khan","Dhruv Sapra"]}
+{"at":"2026-10-14T14:09:01.439Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Forest Essentials","status":"matched","people":3,"sourceErrors":["google: Bright Data SERP failed: HTTP 502 response body was rejected","linkedin_lookup: Mira Kulkarni: bright_data fetch failed"],"rejected":["Nupur Sarda","Neha Gadi","Ritu Gulati"]}
+{"at":"2026-10-14T14:09:31.809Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"myG","status":"matched","people":3,"sourceErrors":["linkedin_lookup: A.K. Shaji: bright_data fetch failed"],"rejected":["Nikhila Mohan","Mike Goddard","Kamal Karan"]}
+{"at":"2026-10-14T14:09:42.815Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Lawrence & Mayo Opticals","status":"related_role_only","people":1,"sourceErrors":[],"rejected":["Larry Connor","Dr. Vivek Gerard Mendonsa","Vivek Mendonsa"]}
+{"at":"2026-10-14T14:09:43.936Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"V-Bazaar Retail","status":"matched","people":3,"sourceErrors":[],"rejected":["Raghav Agarwal","Smiti Agarwal","Prithviraj Roy"]}
+{"at":"2026-10-14T14:09:48.330Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"HOCCO","status":"matched","people":3,"sourceErrors":["google: Bright Data SERP failed: HTTP 502 redirect location was rejected"],"rejected":["Mahesh Solanki","Kamal Desai","Devraj Singh"]}
+{"at":"2026-10-14T14:10:20.686Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Taco Bell India","status":"matched","people":3,"sourceErrors":[],"rejected":["Gaurav Burman","Kumar Asit","Kunal Kumar"]}
+{"at":"2026-10-14T14:10:48.711Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Albaik - India's major fast food Restaurant chain","status":"matched","people":3,"sourceErrors":[],"rejected":["Abdul Kareem","Abdul Wahid","Riyas Saleem"]}
+{"at":"2026-10-14T14:10:58.970Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Crimsoune Club","status":"matched","people":3,"sourceErrors":[],"rejected":["Cheshta Aggarwal","Paridhi Aggarwal","Md Kaif"]}
+{"at":"2026-10-14T14:11:10.936Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Chicago Pizza","status":"matched","people":3,"sourceErrors":[],"rejected":["Shivani Shivani","hitesh kumar","Md Irfan"]}
+{"at":"2026-10-14T14:11:30.185Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Shahnaz Husain","status":"matched","people":3,"sourceErrors":["linkedin_lookup: Sharik Currimbhoy: bright_data fetch failed"],"rejected":["Durreen Shahnaz","Celia Shahnaz","Kristin Pascoe"]}
+{"at":"2026-10-14T14:11:33.000Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"SMOOR","status":"matched","people":3,"sourceErrors":[],"rejected":["Sonalika Pawar","Rajesh kumar","Sheetal Jain"]}
+{"at":"2026-10-14T14:11:51.818Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Zodiac Clothing Co. Ltd","status":"matched","people":3,"sourceErrors":["linkedin_lookup: Salman Yusuf Noorani: bright_data fetch failed","linkedin_lookup: A.Y Noorani: bright_data fetch failed","linkedin_lookup: Anees Yusuf Noorani: bright_data fetch failed"],"rejected":["Adnan Noorani","Rajesh P.","Mohamed Awais Jehangir Noorani"]}
+{"at":"2026-10-14T14:12:02.302Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"KAZO Brands","status":"matched","people":3,"sourceErrors":[],"rejected":["Divya Aggarwal","Muskaan Singh","Rishab Ahuja"]}
+{"at":"2026-10-14T14:12:17.370Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Moti Mahal Group","status":"matched","people":3,"sourceErrors":["linkedin_lookup: Rupa Gujral: bright_data fetch failed"],"rejected":["Mayur Kaagra","Anand Singh","Rajan Banwar"]}
+{"at":"2026-10-14T14:12:29.458Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Kushal's Fashion Jewellery","status":"matched","people":3,"sourceErrors":[],"rejected":["Tejraj Gulecha","RAJENDRA KUMAR GULECHHA"]}
+{"at":"2026-10-14T14:12:45.560Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Hasbro Clothing Pvt. Ltd.","status":"matched","people":3,"sourceErrors":[],"rejected":["Hanif Sattar","Om Rajesh","Steve Jude Fernandez"]}
+{"at":"2026-10-14T14:12:51.909Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Tasva | Aditya Birla Fashion and Retail Ltd x Tarun Tahiliani","status":"no_match","people":0,"sourceErrors":[],"rejected":["Varun Sharma","Ashish Omar","Abhay Kumar"]}
+{"at":"2026-10-14T14:13:19.810Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Duroflex","status":"matched","people":3,"sourceErrors":[],"rejected":["Mathew Chandy"]}
+{"at":"2026-10-14T14:13:23.268Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"FreshMenu","status":"matched","people":1,"sourceErrors":["google: Bright Data SERP failed: HTTP 502 redirect location was rejected"],"rejected":[]}
+{"at":"2026-10-14T14:13:24.973Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Paradise Biryani","status":"matched","people":3,"sourceErrors":[],"rejected":["Robinder Singh","Rajesh Kumar","Ayush Kumar"]}
+{"at":"2026-10-14T14:13:38.457Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Empire Restaurants","status":"matched","people":3,"sourceErrors":[],"rejected":["Abdul GAFFAR","K Kaushik"]}
+{"at":"2026-10-14T14:13:57.393Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Amritsar Haveli Group","status":"matched","people":2,"sourceErrors":["linkedin_lookup: Mrs. Meeta Baweja: bright_data fetch failed"],"rejected":["John Underwood","Cezary Krysiak"]}
+{"at":"2026-10-14T14:14:14.247Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Biryani By Kilo","status":"matched","people":3,"sourceErrors":[],"rejected":["Sid Sijbrandij","Tadas Langaitis","Sachin Bhatia"]}
+{"at":"2026-10-14T14:14:31.411Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Durian","status":"related_role_only","people":2,"sourceErrors":["linkedin_lookup: L N Dokania: bright_data fetch failed"],"rejected":["Sinan Ismail","Liliyati Yusof","Nuown Zainal"]}
+{"at":"2026-10-14T14:14:36.569Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Splash Fashions India Pvt. Ltd.","status":"matched","people":2,"sourceErrors":[],"rejected":["Murugesan Shockanathan","Charu Lamba Gairola","Jatin Kalra"]}
+{"at":"2026-10-14T14:14:36.605Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"RITU KUMAR","status":"matched","people":2,"sourceErrors":[],"rejected":["Amrish Kumar","Vanita_bose_at Kolkata","Sandeep Bhargava"]}
+{"at":"2026-10-14T14:14:36.973Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Pepperfry","status":"matched","people":3,"sourceErrors":[],"rejected":["Balavender Singh","Mansi Koli","Saurav Singh"]}
+{"at":"2026-10-14T14:14:49.575Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Nirula's","status":"matched","people":3,"sourceErrors":["linkedin_lookup: Samir Kuckreja: bright_data fetch failed"],"rejected":["Shipra Nangia","Nicholas Bloy","Soni Rajput"]}
+{"at":"2026-10-14T14:15:14.180Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"GangarEyenationofficial","status":"related_role_only","people":1,"sourceErrors":[],"rejected":["Assaf Rappaport","Mark Zuckerberg","Ray Kroc"]}
+{"at":"2026-10-14T14:15:50.471Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Urban Ladder","status":"matched","people":3,"sourceErrors":[],"rejected":["Doan Van Binh","Ashish Goel","Krisha Turakhia"]}
+{"at":"2026-10-14T14:15:54.382Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Little Italy","status":"matched","people":3,"sourceErrors":["linkedin_lookup: Lojo Karathra: bright_data fetch failed","linkedin_lookup: Sean Katchuba: bright_data fetch failed"],"rejected":["Savita Rao","Maria Vaccaro","Adam Bortz"]}
+{"at":"2026-10-14T14:15:55.962Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Café Delhi Heights","status":"related_role_only","people":3,"sourceErrors":[],"rejected":["Samay Batra","Shirin Batra","Harender Harry"]}
+{"at":"2026-10-14T14:16:20.693Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Element Retail","status":"matched","people":1,"sourceErrors":[],"rejected":["Varun Bagadiya"]}
+{"at":"2026-10-14T14:16:40.164Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Mayoori Home","status":"matched","people":1,"sourceErrors":[],"rejected":["Arjun Menon","Krishna M kumar","Sharon M J"]}
+{"at":"2026-10-14T14:16:58.146Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"CHIQUE CLOTHING COMPANY","status":"matched","people":3,"sourceErrors":["linkedin_lookup: Suresh Gupta: bright_data fetch failed"],"rejected":["Malaika Arora","isha singh","Deepak Bist"]}
+{"at":"2026-10-14T14:17:08.669Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Anjappar Chettinad","status":"matched","people":3,"sourceErrors":[],"rejected":["Divakar Balakrishnan","Venkata subramani Damodaran"]}
+{"at":"2026-10-14T14:17:12.427Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Cothas Coffee Co","status":"related_role_only","people":2,"sourceErrors":["google: Bright Data SERP failed: HTTP 429 This query recently failed and cannot be attempted at this time. Please try again later, after a minimum of 15 seconds. https://docs.brightdata.com/scraping-automation/serp-api/debugging#serp-api-error-catalog"],"rejected":["C. S. Nitin","Nitin Cotha","VinayagaMurthy M"]}
+{"at":"2026-10-14T14:17:21.210Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"SREE ANNAPOORNA SREE GOWRISHANKAR HOTELS PRIVATE LIMITED","status":"related_role_only","people":1,"sourceErrors":[],"rejected":["Senthil Kumar","Vejay D","Suresh Kumar"]}
+{"at":"2026-10-14T14:17:32.423Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Felix Fashion Pvt Ltd","status":"matched","people":3,"sourceErrors":["linkedin_lookup: Muhammad suhail Thattarakkal Nelliyott: bright_data fetch failed","linkedin_lookup: Shiras Thattoor Mullamanna: bright_data fetch failed","linkedin_lookup: Harshil Manak Jain: bright_data fetch failed"],"rejected":["Mohammed Fahmi","NADIRSHAD MV","Reshma Shaji"]}
+{"at":"2026-10-14T14:17:39.402Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Libas","status":"matched","people":3,"sourceErrors":["google_extraction: The operation was aborted due to timeout (read LinkedIn titles by pattern instead)"],"rejected":["Karan Gill","Pragati Sharma","NIDHI SHUKLA"]}
+{"at":"2026-10-14T14:18:07.130Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Emerald Jewels Industries India Ltd.","status":"matched","people":3,"sourceErrors":["linkedin_lookup: K Srinivasan: bright_data fetch failed"],"rejected":["K Subramaniam","pradeep kumar","Karthikeyan N.K"]}
+{"at":"2026-10-14T14:18:22.413Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Grace Supermarket","status":"matched","people":1,"sourceErrors":["linkedin_lookup: S. Rajkumar: bright_data fetch failed"],"rejected":["Jeya Godwin RAJAKUMAR","S. Raja Kumar"]}
+{"at":"2026-10-14T14:18:36.216Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"KAPSONS","status":"matched","people":3,"sourceErrors":[],"rejected":["Magdum Rajendra","Shamsher Singh","Sudheer Kapoor"]}
+{"at":"2026-10-14T14:18:47.950Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Bonkers Corner","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T14:18:59.966Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Nando's India","status":"matched","people":3,"sourceErrors":[],"rejected":["Shraddha Motipara","Rahul Singh Jodha","Aditya Singh"]}
+{"at":"2026-10-14T14:19:13.536Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"The Bear House","status":"matched","people":2,"sourceErrors":[],"rejected":["Roger Hanshaw","Pat McGeehan","Marty Gearheart"]}
+{"at":"2026-10-14T14:19:28.455Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Hunger Inc","status":"matched","people":3,"sourceErrors":[],"rejected":["Hardik Golchha","Shreya Sharma","Akshay Gupta"]}
+{"at":"2026-10-14T14:19:41.483Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Om Sweets","status":"matched","people":1,"sourceErrors":["linkedin_lookup: S Katoriya: bright_data fetch failed"],"rejected":["Karan Kathuria","Ankit Kathuria","Manpreet Singh Jaggi"]}
+{"at":"2026-10-14T14:19:42.013Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Murugan Idli Shop","status":"matched","people":3,"sourceErrors":["linkedin_lookup: S. Manoharan: bright_data fetch failed"],"rejected":["MANOHARAN UMAMAHESWARI","Shanmitha Manoharan","Mahendar KP"]}
+{"at":"2026-10-14T14:20:24.621Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Royal China","status":"matched","people":3,"sourceErrors":["linkedin_lookup: Michelle Vazifdar: bright_data fetch failed"],"rejected":["Irfan Razack","Rishi Bajoria","Royal China"]}
+{"at":"2026-10-14T14:20:40.204Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Zouk","status":"matched","people":3,"sourceErrors":["google: Bright Data SERP failed: HTTP 502 response body was rejected"],"rejected":[]}
+{"at":"2026-10-14T14:20:40.962Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Bewakoof","status":"matched","people":2,"sourceErrors":[],"rejected":["Abhimanyu Mishra","Harshini Changawala","Ashwin Varadarajan"]}
+{"at":"2026-10-14T14:20:57.204Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Smoke House Deli, India","status":"matched","people":1,"sourceErrors":["linkedin_lookup: Jaydeep Mukherjee: bright_data fetch failed"],"rejected":["Sagar Rai","NIKHIL ALUNG","Mohit Balachandran"]}
+{"at":"2026-10-14T14:21:03.920Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Meghana Foods","status":"matched","people":3,"sourceErrors":["google: Bright Data SERP failed: HTTP 502 redirect location was rejected","linkedin_lookup: Padma Atluri: bright_data fetch failed","linkedin_lookup: Rambabu Mandava: bright_data fetch failed"],"rejected":["Vikash Prasad","Mansoor Ali","Abdul Faheem"]}
+{"at":"2026-10-14T14:21:08.721Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Nandani Creation Limited","status":"matched","people":2,"sourceErrors":["linkedin_lookup: Vandana Mundhra: bright_data fetch failed","linkedin_lookup: Neetesh Kabra: bright_data fetch failed"],"rejected":["Nandani Yadav","Tanvi Nandani Tarun","Nandani Patel"]}
+{"at":"2026-10-14T14:21:28.270Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Jeyachandran Retail Private Limited","status":"related_role_only","people":3,"sourceErrors":["google: Bright Data SERP failed: HTTP 429 This query recently failed and cannot be attempted at this time. Please try again later, after a minimum of 15 seconds. https://docs.brightdata.com/scraping-automation/serp-api/debugging#serp-api-error-catalog"],"rejected":["Shiva Kumar","Satish Jeyachandran","Amilia Jeyachandran"]}
+{"at":"2026-10-14T14:21:56.519Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Pilgrim","status":"matched","people":2,"sourceErrors":["google: Bright Data SERP failed: HTTP 502 redirect location was rejected"],"rejected":["Riya Jain","Shreya Savla","John Graham"]}
+{"at":"2026-10-14T14:22:10.285Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Truffles Hospitality Pvt. Ltd.","status":"matched","people":3,"sourceErrors":[],"rejected":["Ruby De","Aadit Bajaj","Varun Hebbar"]}
+{"at":"2026-10-14T14:22:14.548Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Super Saravana Stores","status":"matched","people":3,"sourceErrors":["google: Bright Data SERP failed: HTTP 502 redirect location was rejected","google_extraction: The operation was aborted due to timeout (read LinkedIn titles by pattern instead)"],"rejected":["Vaidhyanathan K","Ganesan Jayaraman","Sathish Ramakrishnan"]}
+{"at":"2026-10-14T14:22:38.778Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Deconstruct","status":"related_role_only","people":1,"sourceErrors":[],"rejected":["Sparsh Shah","Malini Adapureddy","Sanjula Jain"]}
+{"at":"2026-10-14T14:22:51.805Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Mosaic Wellness","status":"matched","people":3,"sourceErrors":[],"rejected":["Vaibhav Joneja","Amrita Singh","Pratish Bal"]}
+{"at":"2026-10-14T14:22:51.985Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Campus Sutra","status":"matched","people":3,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T14:22:59.979Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Aramya","status":"matched","people":3,"sourceErrors":[],"rejected":["Piyush Mahariya","Shalinee Daga","Prashant Hirwani"]}
+{"at":"2026-10-14T14:23:07.452Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"WOW Skin Science","status":"matched","people":3,"sourceErrors":[],"rejected":["Prakhar Agrawal","Deborah Nehushta","ruchi vijay"]}
+{"at":"2026-10-14T14:23:30.029Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Mirraw.com","status":"matched","people":1,"sourceErrors":[],"rejected":["Shaileshkumar Jain","Amay Virdikar","Vishal Mudgal"]}
+{"at":"2026-10-14T14:23:46.666Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"The Man Company","status":"matched","people":3,"sourceErrors":["linkedin_lookup: Parvesh Bareja: bright_data fetch failed"],"rejected":["Hitaysh Dhingraa","Mayank Agarwal","Siddharth Gulati"]}
+{"at":"2026-10-14T14:23:55.455Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Nua","status":"matched","people":2,"sourceErrors":["google: Bright Data SERP failed: HTTP 502 response body was rejected"],"rejected":["Projjol Banerjea","Swathi Kulkarni","Swathi Kulkarni"]}
+{"at":"2026-10-14T14:24:34.431Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"HungerBox","status":"matched","people":3,"sourceErrors":[],"rejected":["Roopa Saha","Arvind Kumar","Syed Imran"]}
+{"at":"2026-10-14T14:24:52.204Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Wow! Momo","status":"matched","people":3,"sourceErrors":[],"rejected":["Rajiv Verma","Dinesh Homagai","Indranil Banerjee"]}
+{"at":"2026-10-14T14:24:55.543Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"DS Group","status":"matched","people":3,"sourceErrors":[],"rejected":["Marlene Ahrens","Puesh Kumar Gupta","Jyotiroop Barua"]}
+{"at":"2026-10-14T14:25:02.511Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"RICHLOOK","status":"matched","people":1,"sourceErrors":[],"rejected":["Swapnil Goyal"]}
+{"at":"2026-10-14T14:25:18.267Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Avon India","status":"matched","people":3,"sourceErrors":["linkedin_lookup: Dronacharya Chakraborty: bright_data fetch failed"],"rejected":["Angela Cretu","Louise Scott","Kay Nemoto"]}
+{"at":"2026-10-14T14:25:19.992Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"TCNS Clothing Company Ltd","status":"matched","people":3,"sourceErrors":[],"rejected":["Naveen Sharma"]}
+{"at":"2026-10-14T14:26:47.483Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Cantabil","status":"matched","people":3,"sourceErrors":["google_extraction: The operation was aborted due to timeout (read LinkedIn titles by pattern instead)"],"rejected":["Deepak Bansal","Sujoy Biswas","Vikramjeet Singh"]}
+{"at":"2026-10-14T14:26:48.880Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Starbucks India","status":"matched","people":1,"sourceErrors":[],"rejected":["Pooja Dhingra","Abhishek Rungta"]}
+{"at":"2026-10-14T14:26:52.045Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Travel Food Services Limited (TFS)","status":"matched","people":1,"sourceErrors":["google_extraction: The operation was aborted due to timeout (read LinkedIn titles by pattern instead)"],"rejected":["Chhavi Agarwal, CFA","Vikas Kapoor","Shailendra K Singh"]}
+{"at":"2026-10-14T14:26:57.852Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Hindustan Coca-Cola Beverages","status":"matched","people":2,"sourceErrors":[],"rejected":["Avinash Kant Kumar","Sanjay David","Abhishek Agrawal"]}
+{"at":"2026-10-14T14:27:01.731Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Royaloak","status":"matched","people":1,"sourceErrors":["google_extraction: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND openrouter.ai (read LinkedIn titles by pattern instead)"],"rejected":["Vijai Subramaniam","Jayakumar Vincent","Maheshwari Vijai"]}
+{"at":"2026-10-14T14:27:01.791Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Spykar Lifestyles Pvt. Ltd.","status":"matched","people":3,"sourceErrors":["google_extraction: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND openrouter.ai (read LinkedIn titles by pattern instead)"],"rejected":["Vivek Shah","Rajesh Sharma","Akshay Jain"]}
+{"at":"2026-10-14T14:27:01.817Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Goli Vada Pav","status":"matched","people":1,"sourceErrors":["google: fetch failed (ENOTFOUND)","google_extraction: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND openrouter.ai (read LinkedIn titles by pattern instead)"],"rejected":["Venky Iyer","Volen Vulkov","Thomas Pav"]}
+{"at":"2026-10-14T14:27:05.633Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Biba (Rangriti)","status":"source_error","people":0,"sourceErrors":["google: fetch failed (ENOTFOUND)","bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com"],"rejected":[]}
+{"at":"2026-10-14T14:27:05.845Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Theobroma","status":"source_error","people":0,"sourceErrors":["google: fetch failed (ENOTFOUND)","bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com"],"rejected":[]}
+{"at":"2026-10-14T14:27:12.929Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Quest Retail","status":"source_error","people":0,"sourceErrors":["google: fetch failed (ENOTFOUND)","bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com"],"rejected":[]}
+{"at":"2026-10-14T14:27:16.330Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Rebel Foods","status":"matched","people":1,"sourceErrors":["google: 1 of 5 Google queries had not answered when the deadline passed","google_extraction: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND openrouter.ai (read LinkedIn titles by pattern instead)"],"rejected":["Ankush Grover","Ankur Sharma","Nishant Kedia"]}
+{"at":"2026-10-14T14:27:16.420Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Apparel Group India Pvt. Ltd.","status":"source_error","people":0,"sourceErrors":["google: fetch failed (ENOTFOUND)","bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com","google_extraction: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND openrouter.ai (read LinkedIn titles by pattern instead)"],"rejected":["Tushar Ved","Rahul Sasi (Shashi)","Abhishek Bajpai"]}
+{"at":"2026-10-14T14:27:17.064Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Lenexis Foodworks (Chinese Wok, Big Bowl)","status":"source_error","people":0,"sourceErrors":["bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com","google: fetch failed (ENOTFOUND)"],"rejected":[]}
+{"at":"2026-10-14T14:45:08.101Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Giani's","status":"source_error","people":0,"sourceErrors":["bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com","google: 6 of 6 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T14:45:08.104Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"The Belgian Waffle Co","status":"source_error","people":0,"sourceErrors":["bright_data: The operation was aborted due to timeout","google: 6 of 6 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T14:45:08.105Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Twills","status":"source_error","people":0,"sourceErrors":["bright_data: The operation was aborted due to timeout","google: 5 of 5 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T14:45:08.106Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Chaayos","status":"source_error","people":0,"sourceErrors":["bright_data: The operation was aborted due to timeout","google: 5 of 5 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T14:45:08.107Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Specsmakers","status":"source_error","people":0,"sourceErrors":["bright_data: The operation was aborted due to timeout","google: 5 of 5 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T14:45:11.655Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"House of Anita Dongre Limited","status":"matched","people":1,"sourceErrors":["bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com","google_extraction: The operation was aborted due to timeout (read LinkedIn titles by pattern instead)"],"rejected":["Yash Dongre","Anita Dongre","Madhurima Tirkey"]}
+{"at":"2026-10-14T14:54:42.886Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Reliance Vision Express Private Limited","status":"source_error","people":0,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed","bright_data: The operation was aborted due to timeout"],"rejected":[]}
+{"at":"2026-10-14T14:54:42.994Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Blue Tokai Coffee Roasters","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed","bright_data: The operation was aborted due to timeout"],"rejected":[]}
+{"at":"2026-10-14T14:54:49.037Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Soch","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed","bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com"],"rejected":[]}
+{"at":"2026-10-14T14:54:49.039Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Zivame","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed","bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com"],"rejected":[]}
+{"at":"2026-10-14T14:54:49.040Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Girias","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed","bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com"],"rejected":[]}
+{"at":"2026-10-14T14:54:49.044Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Darling Retail","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed","bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com"],"rejected":[]}
+{"at":"2026-10-14T14:55:33.464Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Naturals Ice Cream","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed","bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com"],"rejected":[]}
+{"at":"2026-10-14T14:55:33.465Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Kiaasa","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed","bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com"],"rejected":[]}
+{"at":"2026-10-14T14:55:33.466Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Health & Glow","status":"source_error","people":0,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed","bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com"],"rejected":[]}
+{"at":"2026-10-14T14:55:33.467Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Turtle","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed","bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com"],"rejected":[]}
+{"at":"2026-10-14T14:55:33.471Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Third Wave Coffee","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed","bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com"],"rejected":[]}
+{"at":"2026-10-14T14:55:33.488Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Mia by Tanishq","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed","bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com"],"rejected":[]}
+{"at":"2026-10-14T14:56:06.070Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Metro Retail Pvt. Ltd","status":"source_error","people":0,"sourceErrors":["google: fetch failed (ENOTFOUND)","bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com"],"rejected":[]}
+{"at":"2026-10-14T14:56:06.225Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"RollsKing","status":"source_error","people":0,"sourceErrors":["google: fetch failed (ENOTFOUND)","bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com"],"rejected":[]}
+{"at":"2026-10-14T14:56:12.304Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"SNV Shoppee","status":"source_error","people":0,"sourceErrors":["google: fetch failed (ENOTFOUND)","bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com"],"rejected":[]}
+{"at":"2026-10-14T14:56:15.274Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Mufti","status":"source_error","people":0,"sourceErrors":["bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com","google: fetch failed (ENOTFOUND)"],"rejected":[]}
+{"at":"2026-10-14T14:56:20.043Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"California Burrito","status":"source_error","people":0,"sourceErrors":["bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com","google: fetch failed (ENOTFOUND)","google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T14:56:23.685Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"LuLu Malls India","status":"source_error","people":0,"sourceErrors":["bright_data: Failed after 3 attempts. Last error: Cannot connect to API: getaddrinfo ENOTFOUND api.openai.com","google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T14:56:35.704Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Vijetha Supermarkets","status":"matched","people":1,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T14:56:36.798Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"EatClub (Box8)","status":"matched","people":2,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T14:56:47.935Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Burger Farm India","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T14:56:51.326Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Havmor Ice Cream","status":"matched","people":3,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T14:57:00.731Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Hidesign","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T14:57:03.608Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Da Milano","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Alessandro Soccini","Valeria Giulia Raia","Giada Lanzotti"]}
+{"at":"2026-10-14T14:57:05.999Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Wakefit","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T14:57:19.247Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"GIVA","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Ginni Chaudhary","Chahek Sharma"]}
+{"at":"2026-10-14T14:57:26.124Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Home Centre India","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Dr M Bharani Dharan","Dr Siddhartha Chaudhuri","Basheer Abdul"]}
+{"at":"2026-10-14T14:57:30.868Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Speciality Restaurants","status":"matched","people":2,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T14:57:34.507Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"GKB Opticals","status":"matched","people":1,"sourceErrors":["google: fetch failed (0)"],"rejected":["Gurnoor Kaur Behl","Gorishankar Sharma","gnanasekaran vinodh"]}
+{"at":"2026-10-14T14:57:46.490Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"SUGAR Cosmetics","status":"matched","people":3,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T14:57:49.021Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Kandhari Beverages Private Limited (Coca Cola India FBO)","status":"matched","people":1,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T14:57:59.303Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Marks and Spencer Reliance India Private Limited","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Amit Tiwari","Tanvi Singh"]}
+{"at":"2026-10-14T14:58:01.584Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Sagar Ratna (Swagath, Ocean Pearl)","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T14:58:11.528Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Dindigul Thalappakatti","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T14:58:16.783Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"GTGO India (earlier GOPIZZA India)","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T15:02:12.979Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Osia Hypermart","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T15:02:12.987Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Kama Ayurveda","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T15:02:12.995Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Trent Hypermarket Pvt Ltd-Star Bazaar- A Tata & Tesco Enterprise","status":"source_error","people":0,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T15:02:13.003Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Colorbar Cosmetics Pvt. Ltd.","status":"source_error","people":0,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T15:02:13.005Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Sangeetha Veg","status":"source_error","people":0,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T15:02:14.147Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"FlurysIndia","status":"matched","people":1,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed"],"rejected":["Prasun Banerjee"]}
+{"at":"2026-10-14T15:02:14.197Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"The Souled Store","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed"],"rejected":["Dhananjay Dev"]}
+{"at":"2026-10-14T15:02:14.251Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Stanley","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed"],"rejected":["Amit Prashant Jha Jha, (P.E. Structural Engineering)"]}
+{"at":"2026-10-14T15:02:14.271Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Sai Silks Kalamandir Limited","status":"related_role_only","people":1,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed"],"rejected":["Milan Shah"]}
+{"at":"2026-10-14T15:02:14.614Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Impresario (SOCIAL)","status":"related_role_only","people":2,"sourceErrors":["google: fetch failed (0)","google: This operation was aborted (AbortError)"],"rejected":["Subham Debnath","senthan amuthan","Apurva Singha"]}
+{"at":"2026-10-14T15:10:24.881Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"AASIFE BIRIYANI","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T15:10:24.884Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"SUMEET BAZAAR","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T15:10:28.466Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Snitch","status":"matched","people":1,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed"],"rejected":["Mithun M"]}
+{"at":"2026-10-14T15:10:28.856Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"SHAMA","status":"matched","people":1,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed"],"rejected":["Tippu sultan","shama sultana","Kashif Khan™"]}
+{"at":"2026-10-14T15:10:29.470Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Nysaa Retail Private Limited","status":"source_error","people":0,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed"],"rejected":["Arya Khattiwala","mayadhar behera","Naresh Verma"]}
+{"at":"2026-10-14T15:26:44.349Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Goodricke Group Limited","status":"related_role_only","people":1,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T15:42:42.804Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Tarz - A Chalhoub Group Company","status":"source_error","people":0,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed","bright_data: The operation was aborted due to timeout"],"rejected":[]}
+{"at":"2026-10-14T15:42:42.916Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Gwalia Sweets Pvt .Ltd.","status":"source_error","people":0,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed","bright_data: The operation was aborted due to timeout"],"rejected":[]}
+{"at":"2026-10-14T15:42:42.917Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"PizzaExpress India","status":"source_error","people":0,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed","bright_data: The operation was aborted due to timeout"],"rejected":[]}
+{"at":"2026-10-14T15:42:43.292Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Bella Vita","status":"matched","people":3,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T15:42:43.293Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Noise","status":"matched","people":1,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed"],"rejected":["Gavin Brako","Ranson Mendonca","Kunal Malhotra"]}
+{"at":"2026-10-14T15:42:46.815Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Biotique","status":"matched","people":2,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T15:42:47.768Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Hotel Saravana Bhavan","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T16:00:41.126Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Mokobara","status":"matched","people":1,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed"],"rejected":["Judith Scolt"]}
+{"at":"2026-10-14T16:12:46.783Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Anand Sweets","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed","bright_data: The operation was aborted due to timeout"],"rejected":[]}
+{"at":"2026-10-14T16:12:47.376Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Berco's","status":"source_error","people":0,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed"],"rejected":["Manish Sikri"]}
+{"at":"2026-10-14T16:12:50.666Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Nalli Silk Sarees Pvt. Ltd.","status":"matched","people":1,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T16:20:17.009Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"The Hazelnut Factory","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T16:20:33.806Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Neeman's","status":"source_error","people":0,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T16:20:34.321Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"SBE Unique Retails Pvt Ltd","status":"source_error","people":0,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T16:20:34.533Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Citylife Retail Pvt Ltd","status":"source_error","people":0,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T16:20:37.155Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Aza Fashions","status":"related_role_only","people":2,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T16:20:37.374Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Bombay Shaving Company","status":"source_error","people":0,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed"],"rejected":["Ritesh Sharma"]}
+{"at":"2026-10-14T16:20:37.660Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"The Beer Café","status":"matched","people":2,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed"],"rejected":["Sachin Kadiyan","Rtn.Meenakshi Sarath","Kingshuk Sett"]}
+{"at":"2026-10-14T16:20:37.747Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Work Store Limited","status":"matched","people":1,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T16:20:38.045Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Burman Hospitality Private Limited","status":"source_error","people":0,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed"],"rejected":["Rahul Kumar"]}
+{"at":"2026-10-14T16:20:38.698Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Jamie Oliver Restaurants India","status":"source_error","people":0,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T16:38:23.157Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Traya","status":"matched","people":3,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed"],"rejected":["Karan Jain"]}
+{"at":"2026-10-14T16:54:43.291Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Kapiva","status":"matched","people":1,"sourceErrors":["google: fetch failed (0)","google: This operation was aborted (AbortError)","google: 1 of 5 Google queries had not answered when the deadline passed"],"rejected":["Kiran Naik","Vinayak Naik","Anushreshtha Chourey"]}
+{"at":"2026-10-14T16:54:43.293Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Iconic Fashion India","status":"source_error","people":0,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed"],"rejected":["CA Sandeep Sahoo","Brajraj Mishra","Karan Pade"]}
+{"at":"2026-10-14T16:54:46.899Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"XYXX","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T16:55:36.555Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Janasya","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed","bright_data: The operation was aborted due to timeout"],"rejected":[]}
+{"at":"2026-10-14T16:55:36.599Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"mCaffeine","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed","bright_data: The operation was aborted due to timeout"],"rejected":[]}
+{"at":"2026-10-14T16:55:36.617Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"HomeShop18","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed","bright_data: The operation was aborted due to timeout"],"rejected":[]}
+{"at":"2026-10-14T16:55:36.621Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Hopscotch","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed","bright_data: The operation was aborted due to timeout"],"rejected":[]}
+{"at":"2026-10-14T16:55:36.624Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Foxtale","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed","bright_data: The operation was aborted due to timeout"],"rejected":[]}
+{"at":"2026-10-14T16:55:36.625Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"eShakti.com","status":"source_error","people":0,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed","bright_data: The operation was aborted due to timeout"],"rejected":[]}
+{"at":"2026-10-14T16:55:36.629Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Wellbeing Nutrition","status":"source_error","people":0,"sourceErrors":["google: 5 of 5 Google queries had not answered when the deadline passed","bright_data: The operation was aborted due to timeout"],"rejected":[]}
+{"at":"2026-10-14T16:55:36.630Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Urbanic","status":"source_error","people":0,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed","bright_data: The operation was aborted due to timeout"],"rejected":[]}
+{"at":"2026-10-14T16:55:53.095Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"MAF CLOTHING PRIVATE LIMITED","status":"source_error","people":0,"sourceErrors":["google: 6 of 6 Google queries had not answered when the deadline passed"],"rejected":[]}
+{"at":"2026-10-14T16:55:56.478Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Just In Time","status":"matched","people":2,"sourceErrors":["google: fetch failed (0)"],"rejected":["Abhijit Chakraborty","Jit Cloud","Jitender Sharma"]}
+{"at":"2026-10-14T16:55:56.854Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Madame","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T16:55:58.481Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Rare Rabbit (House of Rare)","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Somrik Mukherji","Charvi Sharma","Arsh Khan"]}
+{"at":"2026-10-14T16:56:06.427Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Bikanervala","status":"matched","people":1,"sourceErrors":["google: fetch failed (0) probe[142.251.151.119 ok 6ms; 142.251.157.119 ok 7ms; 142.251.155.119 ok 7ms; 142.251.153.119 ok 8ms; 142.251.150.119 ok 8ms; 142.251.152.119 ok 8ms; 142.251.154.119 ok 9ms; 142.251.156.119 ok 8ms]","google: fetch failed (0)"],"rejected":["Deepanshu Kumar","Rohit Mittal"]}
+{"at":"2026-10-14T16:56:08.461Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Hometown.in","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Hometown International","Hometown Landbase","Agnes Landa"]}
+{"at":"2026-10-14T16:56:14.553Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Chitale Bandhu","status":"matched","people":2,"sourceErrors":["google: fetch failed (0)"],"rejected":["Akshay B Londhe","Pratik Kelkar"]}
+{"at":"2026-10-14T16:56:16.052Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Powerlook","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T16:56:18.552Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Beyoung","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Taher Kadiwala"]}
+{"at":"2026-10-14T16:57:57.931Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Biba (Rangriti)","status":"matched","people":3,"sourceErrors":["google: fetch failed (0)"],"rejected":["Shivam Padha","Nitish Kumar"]}
+{"at":"2026-10-14T16:57:59.894Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Mufti","status":"matched","people":2,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T16:58:01.751Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Café Coffee Day","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T16:58:08.142Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"FACES CANADA","status":"matched","people":3,"sourceErrors":["google: fetch failed (0)"],"rejected":["Radhika Singh"]}
+{"at":"2026-10-14T16:58:23.889Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Apparel Group India Pvt. Ltd.","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["M M Javeed","Ankur Fumakia","JAVED Qureshi"]}
+{"at":"2026-10-14T16:58:25.405Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Theobroma","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T16:58:27.940Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Quest Retail","status":"matched","people":1,"sourceErrors":["google: fetch failed (0)"],"rejected":["Diana Low"]}
+{"at":"2026-10-14T16:58:30.312Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Lenexis Foodworks (Chinese Wok, Big Bowl)","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Sunil Singh","Manish Modi"]}
+{"at":"2026-10-14T16:58:51.832Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"The Belgian Waffle Co","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Abhijit Saraf"]}
+{"at":"2026-10-14T16:58:54.078Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Chaayos","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Kamal Yadav"]}
+{"at":"2026-10-14T16:58:55.346Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Specsmakers","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T16:58:58.288Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Mia by Tanishq","status":"related_role_only","people":1,"sourceErrors":["google: fetch failed (0)"],"rejected":["Anil Gupta","Ritesh Sadh","Tanishq Consultancy"]}
+{"at":"2026-10-14T16:59:20.238Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Metro Retail Pvt. Ltd","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Manish Sharma","Mahesh Arora","Shobhit Gupta"]}
+{"at":"2026-10-14T16:59:21.351Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Kiaasa","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T16:59:23.398Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"RollsKing","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T16:59:25.347Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"SNV Shoppee","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T16:59:27.355Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"California Burrito","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T16:59:49.843Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"LuLu Malls India","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Afsha Cherian"]}
+{"at":"2026-10-14T16:59:51.496Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Hidesign","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Felipe Hideki Imanisi","Jason King"]}
+{"at":"2026-10-14T16:59:53.762Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Wakefit","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Abhinav Chauhan","Kavi D","Loukik Dhavan"]}
+{"at":"2026-10-14T16:59:55.548Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"GIVA","status":"related_role_only","people":1,"sourceErrors":["google: fetch failed (0)"],"rejected":["Ginni Chaudhary","Shima Kishore","Chahek Sharma"]}
+{"at":"2026-10-14T16:59:57.350Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Burger Farm India","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:00:18.589Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Da Milano","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:00:21.555Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Home Centre India","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Eros Classes","Dr M Bharani Dharan","Dr Siddhartha Chaudhuri"]}
+{"at":"2026-10-14T17:00:23.920Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Sangeetha Veg","status":"matched","people":1,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:00:25.791Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Berco's","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:00:47.762Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"AASIFE BIRIYANI","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Aasif Manzoor","Mohd Bilal Bilal","Asif Shekh"]}
+{"at":"2026-10-14T17:00:49.643Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Hometown.in","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:00:52.297Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Tarz - A Chalhoub Group Company","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Nikhil Deepak"]}
+{"at":"2026-10-14T17:00:54.680Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Gwalia Sweets Pvt .Ltd.","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Arjun Ladia"]}
+{"at":"2026-10-14T17:01:15.941Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"SUMEET BAZAAR","status":"matched","people":1,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:01:17.750Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"PizzaExpress India","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:01:19.743Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Hotel Saravana Bhavan","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:01:22.294Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Anand Sweets","status":"matched","people":1,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:01:43.875Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Iconic Fashion India","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Ankit Chheda","Moin Choteri","Nidhi Singh"]}
+{"at":"2026-10-14T17:01:46.198Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Urbanic","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Shrinivas Kowligi","Sindhu Pillai","Rajesh Bachu"]}
+{"at":"2026-10-14T17:01:47.385Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"XYXX","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:01:49.391Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Wellbeing Nutrition","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:01:51.788Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"eShakti.com","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:02:13.844Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"MAF CLOTHING PRIVATE LIMITED","status":"related_role_only","people":3,"sourceErrors":["google: fetch failed (0)"],"rejected":["Ratan Singh"]}
+{"at":"2026-10-14T17:02:15.912Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Beyoung","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Taher Kadiwala"]}
+{"at":"2026-10-14T17:02:17.905Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Third Wave Coffee","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Shantanu Trivedi"]}
+{"at":"2026-10-14T17:02:19.819Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Madame","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Jannat Pawar","Bhavna Ashish Dhing","Prasenjit saha"]}
+{"at":"2026-10-14T17:02:41.591Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Giani's","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Shashvat Rishi","Mayank Lohia","Shobhit Agarwal"]}
+{"at":"2026-10-14T17:02:43.783Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Twills","status":"matched","people":3,"sourceErrors":["google: fetch failed (0)"],"rejected":["Twill Trend","Jaishree Khurana"]}
+{"at":"2026-10-14T17:02:44.945Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Blue Tokai Coffee Roasters","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:02:48.488Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Reliance Vision Express Private Limited","status":"matched","people":1,"sourceErrors":["google: fetch failed (0)"],"rejected":["ganesh bavalekar","Vedant Dargad"]}
+{"at":"2026-10-14T17:02:49.391Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Girias","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:03:10.589Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Darling Retail","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:03:13.154Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Soch","status":"matched","people":2,"sourceErrors":["google: fetch failed (0)"],"rejected":["yugeshwar singh","Ek Soch","VenkataRamana Nittala"]}
+{"at":"2026-10-14T17:03:14.585Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Zivame","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:03:17.443Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Health & Glow","status":"matched","people":1,"sourceErrors":["google: fetch failed (0)"],"rejected":["Mr. Saurabh kumar Awasthi"]}
+{"at":"2026-10-14T17:03:18.951Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Naturals Ice Cream","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:03:41.173Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Marks and Spencer Reliance India Private Limited","status":"matched","people":1,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:03:43.533Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Sagar Ratna (Swagath, Ocean Pearl)","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["jatin gupta","Dr.Shachi Gunjan","Sagar Kharade"]}
+{"at":"2026-10-14T17:03:44.990Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Dindigul Thalappakatti","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:03:47.907Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Trent Hypermarket Pvt Ltd-Star Bazaar- A Tata & Tesco Enterprise","status":"matched","people":3,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:04:08.985Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Rare Rabbit (House of Rare)","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:04:12.273Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Tasva | Aditya Birla Fashion and Retail Ltd x Tarun Tahiliani","status":"matched","people":2,"sourceErrors":["google: fetch failed (0)"],"rejected":["Rohit Kumar","Sanu Kumar","Jeevan Shetty"]}
+{"at":"2026-10-14T17:04:13.789Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"GTGO India (earlier GOPIZZA India)","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:04:15.792Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Osia Hypermart","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:04:36.960Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Kama Ayurveda","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:04:39.001Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"The Souled Store","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:04:41.518Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Stanley","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Amit Prashant Jha Jha, (P.E. Structural Engineering)"]}
+{"at":"2026-10-14T17:04:43.389Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Nysaa Retail Private Limited","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:05:04.992Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"SBE Unique Retails Pvt Ltd","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:05:07.358Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Neeman's","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:05:10.371Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Burman Hospitality Private Limited","status":"related_role_only","people":1,"sourceErrors":["google: fetch failed (0)"],"rejected":["Rahul Kumar"]}
+{"at":"2026-10-14T17:05:12.713Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Citylife Retail Pvt Ltd","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Anuj Tyagi","Yatin Kalra","ajit sachdeva"]}
+{"at":"2026-10-14T17:05:33.911Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Jamie Oliver Restaurants India","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:05:35.790Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"The Hazelnut Factory","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)","google: fetch failed (0) probe[142.251.151.119 ok 5ms; 142.251.156.119 ok 7ms; 142.251.152.119 ok 5ms; 142.251.154.119 ok 6ms; 142.251.157.119 ok 8ms; 142.251.155.119 ok 10ms; 142.251.153.119 ok 11ms; 142.251.150.119 ok 11ms]"],"rejected":[]}
+{"at":"2026-10-14T17:05:37.788Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Powerlook","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:05:40.722Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Bombay Shaving Company","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Ritesh Sharma"]}
+{"at":"2026-10-14T17:05:42.748Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"HomeShop18","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Rahul Gupta"]}
+{"at":"2026-10-14T17:06:04.122Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Hopscotch","status":"matched","people":2,"sourceErrors":["google: fetch failed (0)"],"rejected":["Virginia Robbins","Salima Haddour","𝐌𝐞𝐧𝐚𝐤𝐚 𝐀𝐯𝐢𝐧𝐚𝐬𝐡"]}
+{"at":"2026-10-14T17:06:06.222Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Janasya","status":"matched","people":2,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:06:07.827Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"mCaffeine","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Shubham Sharma"]}
+{"at":"2026-10-14T17:06:10.249Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Turtle","status":"matched","people":2,"sourceErrors":["google: fetch failed (0)"],"rejected":["VIJAY KUMAR","J.P.S. (Shinoo) Kanwar","Prem Rangwani"]}
+{"at":"2026-10-14T17:06:17.737Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Colorbar Cosmetics Pvt. Ltd.","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":["Sonal Abrol"]}
+{"at":"2026-10-14T17:06:19.494Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Foxtale","status":"related_role_only","people":2,"sourceErrors":["google: fetch failed (0)"],"rejected":["Rajashree S.","Sivakiran Reddy"]}
+{"at":"2026-10-14T17:15:07.955Z","projectId":"project-id","company":"Monginis","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:07.955Z","projectId":"project-id","company":"Monginis","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:07.955Z","projectId":"project-id","company":"Ghost Co","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:07.955Z","company":"FACES CANADA","status":"no_match","people":0,"sourceErrors":[],"rejected":["Sachin Kesharwani"]}
+{"at":"2026-10-14T17:15:07.955Z","company":"Arun Ice Cream","status":"related_role_only","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:07.955Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":["bright_data: planner timed out"],"rejected":[]}
+{"at":"2026-10-14T17:15:07.955Z","projectId":"project-id","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:07.955Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:07.955Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:07.955Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:07.955Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":["Jane Roe"]}
+{"at":"2026-10-14T17:15:07.955Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:07.955Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:07.955Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:07.955Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.454Z","company":"Company 0","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.455Z","company":"Company 1","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.455Z","company":"Company 2","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.455Z","company":"Company 3","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.455Z","company":"Company 4","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.455Z","company":"Company 5","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.455Z","company":"Company 6","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.455Z","company":"Company 7","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.456Z","company":"Company 8","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.456Z","company":"Company 9","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.456Z","company":"Company 10","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.456Z","company":"Company 11","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.495Z","company":"Company 12","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.495Z","company":"Company 13","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.495Z","company":"Company 14","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.495Z","company":"Company 15","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.495Z","company":"Company 16","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.497Z","company":"Company 17","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.497Z","company":"Company 18","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.497Z","company":"Company 19","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.497Z","company":"Company 20","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.497Z","company":"Company 21","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.497Z","company":"Company 22","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.497Z","company":"Company 23","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.537Z","company":"Company 24","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.567Z","company":"Company 0","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.567Z","company":"Company 1","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.568Z","company":"Company 2","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.589Z","company":"Company 3","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.589Z","company":"Company 4","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.589Z","company":"Company 5","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.612Z","company":"Company 6","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.612Z","company":"Company 7","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.612Z","company":"Company 8","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.613Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.613Z","company":"Acme","status":"no_match","people":0,"sourceErrors":["google: Bright Data SERP failed: HTTP 401 Unauthorized"],"rejected":[]}
+{"at":"2026-10-14T17:15:09.614Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.614Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.614Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.614Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.614Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":["google: Bright Data SERP failed: HTTP 400 Bad Request"],"rejected":[]}
+{"at":"2026-10-14T17:15:09.614Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.614Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.614Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":["Deepak Taluja"]}
+{"at":"2026-10-14T17:15:09.614Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.614Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.614Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":["Vikesh Shah"]}
+{"at":"2026-10-14T17:15:09.614Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":["linkedin_lookup: Vikesh Shah: google Bright Data SERP failed: HTTP 502"],"rejected":[]}
+{"at":"2026-10-14T17:15:09.614Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":["Vikesh Shah"]}
+{"at":"2026-10-14T17:15:09.614Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.614Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":["google_extraction: model unavailable (read LinkedIn titles by pattern instead)"],"rejected":[]}
+{"at":"2026-10-14T17:15:09.614Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":["google_extraction: model unavailable (read LinkedIn titles by pattern instead)"],"rejected":["Vikesh Shah"]}
+{"at":"2026-10-14T17:15:09.614Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"related_role_only","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.614Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":2,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.614Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"no_match","people":0,"sourceErrors":[],"rejected":["Amit Jatia"]}
+{"at":"2026-10-14T17:15:09.614Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.614Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.614Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":["Amit Jatia"]}
+{"at":"2026-10-14T17:15:09.614Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":2,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.614Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:09.614Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":["candidate_judge: judge unavailable (checked by name matching instead)"],"rejected":[]}
+{"at":"2026-10-14T17:15:09.614Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:16.433Z","projectId":"project-id","company":"Monginis","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:16.433Z","projectId":"project-id","company":"Monginis","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:16.433Z","projectId":"project-id","company":"Ghost Co","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:16.433Z","company":"FACES CANADA","status":"no_match","people":0,"sourceErrors":[],"rejected":["Sachin Kesharwani"]}
+{"at":"2026-10-14T17:15:16.433Z","company":"Arun Ice Cream","status":"related_role_only","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:16.433Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":["bright_data: planner timed out"],"rejected":[]}
+{"at":"2026-10-14T17:15:16.433Z","projectId":"project-id","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:16.433Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:16.433Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:16.433Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:16.433Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":["Jane Roe"]}
+{"at":"2026-10-14T17:15:16.433Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:16.433Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:16.433Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:16.433Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.265Z","company":"Company 0","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.265Z","company":"Company 1","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.265Z","company":"Company 2","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.265Z","company":"Company 3","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.265Z","company":"Company 4","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.266Z","company":"Company 5","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.266Z","company":"Company 6","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.266Z","company":"Company 7","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.266Z","company":"Company 8","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.266Z","company":"Company 9","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.266Z","company":"Company 10","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.266Z","company":"Company 11","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.308Z","company":"Company 12","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.308Z","company":"Company 13","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.308Z","company":"Company 14","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.308Z","company":"Company 15","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.308Z","company":"Company 16","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.308Z","company":"Company 17","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.308Z","company":"Company 18","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.308Z","company":"Company 19","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.308Z","company":"Company 20","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.308Z","company":"Company 21","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.308Z","company":"Company 22","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.309Z","company":"Company 23","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.349Z","company":"Company 24","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.379Z","company":"Company 0","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.379Z","company":"Company 1","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.379Z","company":"Company 2","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.402Z","company":"Company 3","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.402Z","company":"Company 4","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.402Z","company":"Company 5","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.425Z","company":"Company 6","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.425Z","company":"Company 7","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.425Z","company":"Company 8","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.426Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.426Z","company":"Acme","status":"no_match","people":0,"sourceErrors":["google: Bright Data SERP failed: HTTP 401 Unauthorized"],"rejected":[]}
+{"at":"2026-10-14T17:15:18.427Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.427Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.427Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.427Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.427Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":["google: Bright Data SERP failed: HTTP 400 Bad Request"],"rejected":[]}
+{"at":"2026-10-14T17:15:18.427Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.427Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.427Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":["Deepak Taluja"]}
+{"at":"2026-10-14T17:15:18.427Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.427Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.427Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":["Vikesh Shah"]}
+{"at":"2026-10-14T17:15:18.427Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":["linkedin_lookup: Vikesh Shah: google Bright Data SERP failed: HTTP 502"],"rejected":[]}
+{"at":"2026-10-14T17:15:18.427Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":["Vikesh Shah"]}
+{"at":"2026-10-14T17:15:18.427Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.427Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":["google_extraction: model unavailable (read LinkedIn titles by pattern instead)"],"rejected":[]}
+{"at":"2026-10-14T17:15:18.427Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":["google_extraction: model unavailable (read LinkedIn titles by pattern instead)"],"rejected":["Vikesh Shah"]}
+{"at":"2026-10-14T17:15:18.427Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"related_role_only","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.427Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":2,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.427Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"no_match","people":0,"sourceErrors":[],"rejected":["Amit Jatia"]}
+{"at":"2026-10-14T17:15:18.427Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.427Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.427Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":["Amit Jatia"]}
+{"at":"2026-10-14T17:15:18.427Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":2,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.427Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:18.427Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":["candidate_judge: judge unavailable (checked by name matching instead)"],"rejected":[]}
+{"at":"2026-10-14T17:15:18.427Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.805Z","company":"Company 0","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.806Z","company":"Company 1","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.806Z","company":"Company 2","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.806Z","company":"Company 3","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.806Z","company":"Company 4","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.806Z","company":"Company 5","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.806Z","company":"Company 6","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.807Z","company":"Company 7","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.807Z","company":"Company 8","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.807Z","company":"Company 9","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.807Z","company":"Company 10","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.807Z","company":"Company 11","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.848Z","company":"Company 12","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.848Z","company":"Company 13","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.848Z","company":"Company 14","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.848Z","company":"Company 15","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.848Z","company":"Company 16","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.848Z","company":"Company 17","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.848Z","company":"Company 18","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.848Z","company":"Company 19","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.848Z","company":"Company 20","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.848Z","company":"Company 21","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.848Z","company":"Company 22","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.848Z","company":"Company 23","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:30.890Z","company":"Company 24","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.842Z","company":"Company 0","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.843Z","company":"Company 1","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.843Z","company":"Company 2","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.843Z","company":"Company 3","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.843Z","company":"Company 4","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.843Z","company":"Company 5","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.844Z","company":"Company 6","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.844Z","company":"Company 7","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.844Z","company":"Company 8","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.844Z","company":"Company 9","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.844Z","company":"Company 10","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.844Z","company":"Company 11","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.886Z","company":"Company 12","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.886Z","company":"Company 13","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.886Z","company":"Company 14","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.886Z","company":"Company 15","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.886Z","company":"Company 16","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.886Z","company":"Company 17","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.886Z","company":"Company 18","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.886Z","company":"Company 19","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.886Z","company":"Company 20","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.886Z","company":"Company 21","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.887Z","company":"Company 22","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.887Z","company":"Company 23","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:32.927Z","company":"Company 24","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:43.750Z","projectId":"project-id","company":"Monginis","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:43.750Z","projectId":"project-id","company":"Monginis","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:43.750Z","projectId":"project-id","company":"Ghost Co","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:43.750Z","company":"FACES CANADA","status":"no_match","people":0,"sourceErrors":[],"rejected":["Sachin Kesharwani"]}
+{"at":"2026-10-14T17:15:43.750Z","company":"Arun Ice Cream","status":"related_role_only","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:43.750Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":["bright_data: planner timed out"],"rejected":[]}
+{"at":"2026-10-14T17:15:43.750Z","projectId":"project-id","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:43.750Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:43.750Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:43.750Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:43.750Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":["Jane Roe"]}
+{"at":"2026-10-14T17:15:43.750Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:43.750Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:43.750Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:43.750Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.495Z","company":"Company 0","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.496Z","company":"Company 1","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.496Z","company":"Company 2","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.496Z","company":"Company 3","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.496Z","company":"Company 4","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.496Z","company":"Company 5","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.496Z","company":"Company 6","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.497Z","company":"Company 7","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.497Z","company":"Company 8","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.497Z","company":"Company 9","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.497Z","company":"Company 10","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.497Z","company":"Company 11","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.898Z","company":"Company 12","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.898Z","company":"Company 13","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.898Z","company":"Company 14","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.898Z","company":"Company 15","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.899Z","company":"Company 16","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.899Z","company":"Company 17","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.899Z","company":"Company 18","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.899Z","company":"Company 19","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.899Z","company":"Company 20","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.899Z","company":"Company 21","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.899Z","company":"Company 22","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:45.899Z","company":"Company 23","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.303Z","company":"Company 24","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.333Z","company":"Company 0","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.333Z","company":"Company 1","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.333Z","company":"Company 2","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.357Z","company":"Company 3","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.358Z","company":"Company 4","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.358Z","company":"Company 5","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.379Z","company":"Company 6","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.380Z","company":"Company 7","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.380Z","company":"Company 8","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.381Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.382Z","company":"Acme","status":"no_match","people":0,"sourceErrors":["google: Bright Data SERP failed: HTTP 401 Unauthorized"],"rejected":[]}
+{"at":"2026-10-14T17:15:46.382Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.382Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.382Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.382Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.382Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":["google: Bright Data SERP failed: HTTP 400 Bad Request"],"rejected":[]}
+{"at":"2026-10-14T17:15:46.382Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.382Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.382Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":["Deepak Taluja"]}
+{"at":"2026-10-14T17:15:46.382Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.382Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.382Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":["Vikesh Shah"]}
+{"at":"2026-10-14T17:15:46.382Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":["linkedin_lookup: Vikesh Shah: google Bright Data SERP failed: HTTP 502"],"rejected":[]}
+{"at":"2026-10-14T17:15:46.382Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":["Vikesh Shah"]}
+{"at":"2026-10-14T17:15:46.382Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.382Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":["google_extraction: model unavailable (read LinkedIn titles by pattern instead)"],"rejected":[]}
+{"at":"2026-10-14T17:15:46.382Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":["google_extraction: model unavailable (read LinkedIn titles by pattern instead)"],"rejected":["Vikesh Shah"]}
+{"at":"2026-10-14T17:15:46.382Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"related_role_only","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.382Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":2,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.382Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"no_match","people":0,"sourceErrors":[],"rejected":["Amit Jatia"]}
+{"at":"2026-10-14T17:15:46.382Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.382Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.382Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":["Amit Jatia"]}
+{"at":"2026-10-14T17:15:46.382Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":2,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.382Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:15:46.382Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":["candidate_judge: judge unavailable (checked by name matching instead)"],"rejected":[]}
+{"at":"2026-10-14T17:15:46.382Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:04.704Z","projectId":"project-id","company":"Monginis","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:04.704Z","projectId":"project-id","company":"Monginis","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:04.704Z","projectId":"project-id","company":"Ghost Co","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:04.704Z","company":"FACES CANADA","status":"no_match","people":0,"sourceErrors":[],"rejected":["Sachin Kesharwani"]}
+{"at":"2026-10-14T17:16:04.704Z","company":"Arun Ice Cream","status":"related_role_only","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:04.704Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":["bright_data: planner timed out"],"rejected":[]}
+{"at":"2026-10-14T17:16:04.704Z","projectId":"project-id","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:04.704Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:04.704Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:04.704Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:04.704Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":["Jane Roe"]}
+{"at":"2026-10-14T17:16:04.704Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:04.704Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:04.704Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:04.704Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.151Z","company":"Company 0","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.151Z","company":"Company 1","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.151Z","company":"Company 2","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.151Z","company":"Company 3","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.151Z","company":"Company 4","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.151Z","company":"Company 5","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.151Z","company":"Company 6","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.151Z","company":"Company 7","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.151Z","company":"Company 8","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.152Z","company":"Company 9","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.152Z","company":"Company 10","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.152Z","company":"Company 11","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.152Z","company":"Company 12","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.152Z","company":"Company 13","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.152Z","company":"Company 14","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.152Z","company":"Company 15","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.152Z","company":"Company 16","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.152Z","company":"Company 17","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.152Z","company":"Company 18","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.152Z","company":"Company 19","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.152Z","company":"Company 20","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.152Z","company":"Company 21","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.152Z","company":"Company 22","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.152Z","company":"Company 23","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.152Z","company":"Company 24","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.152Z","company":"Company 25","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.152Z","company":"Company 26","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.152Z","company":"Company 27","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.153Z","company":"Company 28","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.153Z","company":"Company 29","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.153Z","company":"Company 30","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.153Z","company":"Company 31","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.153Z","company":"Company 32","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.153Z","company":"Company 33","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.153Z","company":"Company 34","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.153Z","company":"Company 35","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.153Z","company":"Company 36","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.153Z","company":"Company 37","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.153Z","company":"Company 38","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.153Z","company":"Company 39","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.153Z","company":"Company 40","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.153Z","company":"Company 41","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.153Z","company":"Company 42","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.154Z","company":"Company 43","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.154Z","company":"Company 44","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.154Z","company":"Company 45","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.154Z","company":"Company 46","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.154Z","company":"Company 47","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.154Z","company":"Company 48","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.154Z","company":"Company 49","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.178Z","company":"Company 0","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.179Z","company":"Company 1","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.179Z","company":"Company 2","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.202Z","company":"Company 3","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.202Z","company":"Company 4","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.202Z","company":"Company 5","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.228Z","company":"Company 6","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.228Z","company":"Company 7","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.229Z","company":"Company 8","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.232Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.233Z","company":"Acme","status":"no_match","people":0,"sourceErrors":["google: Bright Data SERP failed: HTTP 401 Unauthorized"],"rejected":[]}
+{"at":"2026-10-14T17:16:08.233Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.233Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.233Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.233Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.233Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":["google: Bright Data SERP failed: HTTP 400 Bad Request"],"rejected":[]}
+{"at":"2026-10-14T17:16:08.233Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.233Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.233Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":["Deepak Taluja"]}
+{"at":"2026-10-14T17:16:08.233Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.233Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.233Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":["Vikesh Shah"]}
+{"at":"2026-10-14T17:16:08.233Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":["linkedin_lookup: Vikesh Shah: google Bright Data SERP failed: HTTP 502"],"rejected":[]}
+{"at":"2026-10-14T17:16:08.233Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":["Vikesh Shah"]}
+{"at":"2026-10-14T17:16:08.233Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.233Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":["google_extraction: model unavailable (read LinkedIn titles by pattern instead)"],"rejected":[]}
+{"at":"2026-10-14T17:16:08.233Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":["google_extraction: model unavailable (read LinkedIn titles by pattern instead)"],"rejected":["Vikesh Shah"]}
+{"at":"2026-10-14T17:16:08.233Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"related_role_only","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.233Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":2,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.233Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"no_match","people":0,"sourceErrors":[],"rejected":["Amit Jatia"]}
+{"at":"2026-10-14T17:16:08.233Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.233Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.233Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":["Amit Jatia"]}
+{"at":"2026-10-14T17:16:08.233Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":2,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.233Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:16:08.233Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":["candidate_judge: judge unavailable (checked by name matching instead)"],"rejected":[]}
+{"at":"2026-10-14T17:16:08.233Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:34:15.152Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Café Coffee Day","status":"matched","people":1,"sourceErrors":["google: fetch failed (0)"],"rejected":["Rashmi Tripathi","RAMESH CHOPDE","CHHAYA Car Decor"]}
+{"at":"2026-10-14T17:34:16.076Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Theobroma","status":"matched","people":1,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:34:20.989Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Girias","status":"matched","people":1,"sourceErrors":["google: fetch failed (0)"],"rejected":["Sundeep Giria","Gautam Kumar Giria","Mayank Jain"]}
+{"at":"2026-10-14T17:34:22.747Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Naturals Ice Cream","status":"matched","people":3,"sourceErrors":["google: fetch failed (0)"],"rejected":["JAGDISH BHOLE"]}
+{"at":"2026-10-14T17:34:24.079Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"RollsKing","status":"matched","people":1,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:34:45.616Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"LuLu Malls India","status":"matched","people":1,"sourceErrors":["google: fetch failed (0)"],"rejected":["Bibu Babu","Afasl Ep","vincent gomes"]}
+{"at":"2026-10-14T17:34:50.071Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Sagar Ratna (Swagath, Ocean Pearl)","status":"matched","people":1,"sourceErrors":["google: fetch failed (0)"],"rejected":["jatin gupta","Dr.Shachi Gunjan","Clivyyah ruzario"]}
+{"at":"2026-10-14T17:35:00.393Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Berco's","status":"matched","people":1,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:36:16.491Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Hometown.in","status":"matched","people":2,"sourceErrors":["google: fetch failed (0)"],"rejected":["Agnes Landa","Smart Hometown","aravind ramanna"]}
+{"at":"2026-10-14T17:36:42.851Z","projectId":"project-id","company":"Monginis","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:42.851Z","projectId":"project-id","company":"Monginis","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:42.851Z","projectId":"project-id","company":"Ghost Co","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:42.851Z","company":"FACES CANADA","status":"no_match","people":0,"sourceErrors":[],"rejected":["Sachin Kesharwani"]}
+{"at":"2026-10-14T17:36:42.851Z","company":"Arun Ice Cream","status":"related_role_only","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:42.851Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":["bright_data: planner timed out"],"rejected":[]}
+{"at":"2026-10-14T17:36:42.851Z","projectId":"project-id","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:42.851Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:42.851Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:42.851Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:42.851Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":["Jane Roe"]}
+{"at":"2026-10-14T17:36:42.851Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:42.851Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:42.851Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:42.851Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.488Z","company":"Company 0","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.488Z","company":"Company 1","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.488Z","company":"Company 2","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.488Z","company":"Company 3","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.488Z","company":"Company 4","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.488Z","company":"Company 5","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.488Z","company":"Company 6","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.488Z","company":"Company 7","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.488Z","company":"Company 8","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.488Z","company":"Company 9","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.488Z","company":"Company 10","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.488Z","company":"Company 11","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.488Z","company":"Company 12","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.489Z","company":"Company 13","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.489Z","company":"Company 14","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.489Z","company":"Company 15","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.489Z","company":"Company 16","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.489Z","company":"Company 17","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.489Z","company":"Company 18","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.489Z","company":"Company 19","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.489Z","company":"Company 20","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.489Z","company":"Company 21","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.489Z","company":"Company 22","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.489Z","company":"Company 23","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.489Z","company":"Company 24","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.489Z","company":"Company 25","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.489Z","company":"Company 26","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.489Z","company":"Company 27","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.489Z","company":"Company 28","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.489Z","company":"Company 29","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.489Z","company":"Company 30","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.489Z","company":"Company 31","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.489Z","company":"Company 32","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.489Z","company":"Company 33","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.489Z","company":"Company 34","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.490Z","company":"Company 35","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.490Z","company":"Company 36","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.490Z","company":"Company 37","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.490Z","company":"Company 38","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.490Z","company":"Company 39","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.490Z","company":"Company 40","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.490Z","company":"Company 41","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.490Z","company":"Company 42","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.490Z","company":"Company 43","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.490Z","company":"Company 44","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.490Z","company":"Company 45","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.490Z","company":"Company 46","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.490Z","company":"Company 47","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.490Z","company":"Company 48","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.490Z","company":"Company 49","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.511Z","company":"Company 0","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.512Z","company":"Company 1","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.512Z","company":"Company 2","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.534Z","company":"Company 3","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.534Z","company":"Company 4","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.534Z","company":"Company 5","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.556Z","company":"Company 6","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.556Z","company":"Company 7","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.556Z","company":"Company 8","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.557Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","company":"Acme","status":"no_match","people":0,"sourceErrors":["google: Bright Data SERP failed: HTTP 401 Unauthorized"],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":["google: Bright Data SERP failed: HTTP 400 Bad Request"],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":["Deepak Taluja"]}
+{"at":"2026-10-14T17:36:44.558Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":["Vikesh Shah"]}
+{"at":"2026-10-14T17:36:44.558Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":["linkedin_lookup: Vikesh Shah: google Bright Data SERP failed: HTTP 502"],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":["Vikesh Shah"]}
+{"at":"2026-10-14T17:36:44.558Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":["google_extraction: model unavailable (read LinkedIn titles by pattern instead)"],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":["google_extraction: model unavailable (read LinkedIn titles by pattern instead)"],"rejected":["Vikesh Shah"]}
+{"at":"2026-10-14T17:36:44.558Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"related_role_only","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":2,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"no_match","people":0,"sourceErrors":[],"rejected":["Amit Jatia"]}
+{"at":"2026-10-14T17:36:44.558Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":["Amit Jatia"]}
+{"at":"2026-10-14T17:36:44.558Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":2,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":["candidate_judge: judge unavailable (checked by name matching instead)"],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","projectId":"project-id","company":"Alpha","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","projectId":"project-id","company":"Gamma","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","projectId":"project-id","company":"Gamma","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","projectId":"project-id","company":"Alpha","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","projectId":"project-id","company":"Beta","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:44.558Z","projectId":"project-id","company":"Gamma","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:36:53.960Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Specsmakers","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:36:54.455Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Chaayos","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:36:54.960Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Third Wave Coffee","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:36:55.456Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Madame","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:36:55.949Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"SNV Shoppee","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:36:56.449Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Zivame","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:36:57.453Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Darling Retail","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:36:58.951Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Hidesign","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:36:59.446Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Kiaasa","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:37:05.451Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"California Burrito","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:37:14.105Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Da Milano","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:37:14.601Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Osia Hypermart","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:37:09.511Z","projectId":"project-id","company":"Monginis","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:09.511Z","projectId":"project-id","company":"Monginis","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:09.511Z","projectId":"project-id","company":"Ghost Co","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:09.511Z","company":"FACES CANADA","status":"no_match","people":0,"sourceErrors":[],"rejected":["Sachin Kesharwani"]}
+{"at":"2026-10-14T17:37:09.511Z","company":"Arun Ice Cream","status":"related_role_only","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:09.511Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":["bright_data: planner timed out"],"rejected":[]}
+{"at":"2026-10-14T17:37:09.511Z","projectId":"project-id","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:09.511Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:09.511Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:09.511Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:09.511Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":["Jane Roe"]}
+{"at":"2026-10-14T17:37:09.511Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:09.511Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:09.511Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:09.511Z","company":"Sapphire Foods India Limited","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.783Z","company":"Company 0","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.784Z","company":"Company 1","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.784Z","company":"Company 2","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.785Z","company":"Company 3","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.785Z","company":"Company 4","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.785Z","company":"Company 5","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.786Z","company":"Company 6","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.786Z","company":"Company 7","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.786Z","company":"Company 8","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.786Z","company":"Company 9","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.786Z","company":"Company 10","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.786Z","company":"Company 11","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.787Z","company":"Company 12","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.787Z","company":"Company 13","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.787Z","company":"Company 14","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.789Z","company":"Company 15","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.789Z","company":"Company 16","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.790Z","company":"Company 17","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.790Z","company":"Company 18","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.790Z","company":"Company 19","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.791Z","company":"Company 20","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.791Z","company":"Company 21","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.791Z","company":"Company 22","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.791Z","company":"Company 23","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.791Z","company":"Company 24","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.792Z","company":"Company 25","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.792Z","company":"Company 26","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.793Z","company":"Company 27","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.793Z","company":"Company 28","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.793Z","company":"Company 29","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.793Z","company":"Company 30","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.793Z","company":"Company 31","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.794Z","company":"Company 32","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.794Z","company":"Company 33","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.794Z","company":"Company 34","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.794Z","company":"Company 35","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.795Z","company":"Company 36","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.795Z","company":"Company 37","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.796Z","company":"Company 38","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.797Z","company":"Company 39","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.797Z","company":"Company 40","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.797Z","company":"Company 41","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.797Z","company":"Company 42","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.797Z","company":"Company 43","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.797Z","company":"Company 44","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.797Z","company":"Company 45","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.797Z","company":"Company 46","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.797Z","company":"Company 47","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.797Z","company":"Company 48","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.797Z","company":"Company 49","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.822Z","company":"Company 0","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.824Z","company":"Company 1","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.827Z","company":"Company 2","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.848Z","company":"Company 3","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.849Z","company":"Company 4","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.850Z","company":"Company 5","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.882Z","company":"Company 6","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.882Z","company":"Company 7","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.882Z","company":"Company 8","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.898Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","company":"Acme","status":"no_match","people":0,"sourceErrors":["google: Bright Data SERP failed: HTTP 401 Unauthorized"],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","company":"Acme","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","company":"Baskin Robbins India","status":"matched","people":1,"sourceErrors":["google: Bright Data SERP failed: HTTP 400 Bad Request"],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":["Deepak Taluja"]}
+{"at":"2026-10-14T17:37:14.900Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":["Vikesh Shah"]}
+{"at":"2026-10-14T17:37:14.900Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":["linkedin_lookup: Vikesh Shah: google Bright Data SERP failed: HTTP 502"],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":["Vikesh Shah"]}
+{"at":"2026-10-14T17:37:14.900Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","company":"99 Pancakes","status":"matched","people":1,"sourceErrors":["google_extraction: model unavailable (read LinkedIn titles by pattern instead)"],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","company":"99 Pancakes","status":"no_match","people":0,"sourceErrors":["google_extraction: model unavailable (read LinkedIn titles by pattern instead)"],"rejected":["Vikesh Shah"]}
+{"at":"2026-10-14T17:37:14.900Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"related_role_only","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":2,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"no_match","people":0,"sourceErrors":[],"rejected":["Amit Jatia"]}
+{"at":"2026-10-14T17:37:14.900Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":["Amit Jatia"]}
+{"at":"2026-10-14T17:37:14.900Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":2,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":["candidate_judge: judge unavailable (checked by name matching instead)"],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","company":"Hardcastle Restaurants Pvt. Ltd.","status":"matched","people":1,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","projectId":"project-id","company":"Alpha","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","projectId":"project-id","company":"Gamma","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","projectId":"project-id","company":"Gamma","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","projectId":"project-id","company":"Alpha","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","projectId":"project-id","company":"Beta","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:14.900Z","projectId":"project-id","company":"Gamma","status":"no_match","people":0,"sourceErrors":[],"rejected":[]}
+{"at":"2026-10-14T17:37:15.152Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Wakefit","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:37:16.223Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Kama Ayurveda","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:37:22.051Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"The Souled Store","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:37:24.945Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"AASIFE BIRIYANI","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:37:25.455Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Dindigul Thalappakatti","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:37:27.934Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Urbanic","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:37:27.934Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Stanley","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:37:28.936Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"The Hazelnut Factory","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:37:30.435Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"HomeShop18","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:37:30.932Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"mCaffeine","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:37:33.439Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Powerlook","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:37:52.949Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Hotel Saravana Bhavan","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:37:54.444Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Wellbeing Nutrition","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:38:03.431Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"XYXX","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:38:08.933Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Beyoung","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:38:13.427Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Giani's","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:38:27.425Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Metro Retail Pvt. Ltd","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:38:48.931Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Rare Rabbit (House of Rare)","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:39:03.915Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Home Centre India","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:39:07.411Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Neeman's","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:39:08.912Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Burger Farm India","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:39:09.910Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Gwalia Sweets Pvt .Ltd.","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:39:11.912Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"PizzaExpress India","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:39:13.407Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"The Belgian Waffle Co","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:39:19.919Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Citylife Retail Pvt Ltd","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:39:41.413Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Jamie Oliver Restaurants India","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:39:49.918Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"GTGO India (earlier GOPIZZA India)","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:39:54.921Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Colorbar Cosmetics Pvt. Ltd.","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:40:04.413Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"eShakti.com","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:40:04.915Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Lenexis Foodworks (Chinese Wok, Big Bowl)","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:40:09.440Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Nysaa Retail Private Limited","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:40:12.418Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Iconic Fashion India","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:40:24.919Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Blue Tokai Coffee Roasters","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0) probe[142.251.153.119 ok 5ms; 142.251.157.119 ok 6ms; 142.251.155.119 ok 7ms; 142.251.154.119 ok 7ms; 142.251.151.119 ok 8ms; 142.251.150.119 ok 9ms; 142.251.152.119 ok 9ms; 142.251.156.119 ok 9ms]","google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:40:29.412Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Tarz - A Chalhoub Group Company","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-14T17:41:25.403Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Bombay Shaving Company","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}

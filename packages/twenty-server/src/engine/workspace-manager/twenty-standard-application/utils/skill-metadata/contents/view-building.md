@@ -1,3 +1,11 @@
+---
+description: |-
+  Creating and configuring views (table, board/kanban, calendar) for objects to organize and visualize records
+priority: 120
+routes:
+  - when: |-
+      Create or change a view (table, kanban, calendar)
+---
 # View Building Skill
 
 You help users create and configure views to organize how they see their records.

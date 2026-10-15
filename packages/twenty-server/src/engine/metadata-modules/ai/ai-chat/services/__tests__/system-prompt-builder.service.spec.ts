@@ -43,17 +43,20 @@ describe('SystemPromptBuilderService', () => {
     executionRef: {} as never,
   };
 
-  describe('buildUserContextSection', () => {
+  describe('buildContextSection', () => {
     it('omits the timezone line when timezone is the "system" sentinel', () => {
       const service = buildService();
 
-      const result = service.buildUserContextSection({
-        firstName: 'John',
-        lastName: 'Doe',
-        locale: 'en',
-        timezone: 'system',
+      const result = service.buildContextSection({
+        userContext: {
+          firstName: 'John',
+          lastName: 'Doe',
+          locale: 'en',
+          timezone: 'system',
+        },
       });
 
+      expect(result).toContain('## Context');
       expect(result).not.toContain('Timezone:');
       expect(result).toContain('Current date:');
     });
@@ -61,23 +64,48 @@ describe('SystemPromptBuilderService', () => {
     it('includes the timezone line for a valid IANA timezone', () => {
       const service = buildService();
 
-      const result = service.buildUserContextSection({
-        firstName: 'John',
-        lastName: 'Doe',
-        locale: 'en',
-        timezone: 'America/New_York',
+      const result = service.buildContextSection({
+        userContext: {
+          firstName: 'John',
+          lastName: 'Doe',
+          locale: 'en',
+          timezone: 'America/New_York',
+        },
       });
 
       expect(result).toContain('Timezone: America/New_York');
       expect(result).toContain('Current date:');
     });
+
+    it('puts workspace instructions, the user, and the browsing rule in one section', () => {
+      const service = buildService();
+
+      const result = service.buildContextSection({
+        userContext: {
+          firstName: 'John',
+          lastName: 'Doe',
+          locale: 'en',
+          timezone: 'America/New_York',
+        },
+        workspaceInstructions: 'Always reply in French',
+        includeBrowsingContext: true,
+      });
+
+      expect(result).toContain('## Context');
+      expect(result).not.toContain('## User Context');
+      expect(result).not.toContain('## Workspace Instructions');
+      expect(result).toContain('Always reply in French');
+      expect(result).toContain('User: John Doe');
+      expect(result).toContain('<browsing_context>');
+      expect(result).not.toContain('LinkedIn (Unipile)');
+    });
   });
 
-  describe('buildConnectedAccountsSection', () => {
+  describe('formatLinkedinConnectionStatus', () => {
     it('lists available Unipile search types when connected', () => {
       const service = buildService();
 
-      const result = service.buildConnectedAccountsSection({
+      const result = service.formatLinkedinConnectionStatus({
         connected: true,
         accountId: 'acc-123',
         inferredSearchType: 'sales_navigator',
@@ -85,25 +113,19 @@ describe('SystemPromptBuilderService', () => {
         recruiterAvailable: false,
       });
 
-      expect(result).toContain('## Connected Accounts');
       expect(result).toContain('connected (account_id=acc-123)');
       expect(result).toContain('Preferred searchType: sales_navigator');
       expect(result).toContain(
         'Search types available: classic, sales_navigator',
       );
       expect(result).toContain('Recruiter: not available');
-      expect(result).toContain(
-        'linkedin_unipile_get_own_profile with accountId=acc-123',
-      );
-      expect(result).toContain('fetch_linkedin_messages');
-      expect(result).toContain('visit_linkedin_profile');
-      expect(result).toContain('linkedinApi=sales_navigator');
+      expect(result).not.toContain('linkedin_unipile_get_own_profile');
     });
 
-    it('instructs the model not to call Unipile search when disconnected', () => {
+    it('reports no Unipile search types when disconnected', () => {
       const service = buildService();
 
-      const result = service.buildConnectedAccountsSection({
+      const result = service.formatLinkedinConnectionStatus({
         connected: false,
         accountId: null,
         inferredSearchType: null,
@@ -112,9 +134,7 @@ describe('SystemPromptBuilderService', () => {
       });
 
       expect(result).toContain('LinkedIn (Unipile): not connected');
-      expect(result).toContain('Do not call search_linkedin_*');
-      expect(result).toContain('linkedin_unipile_get_own_profile');
-      expect(result).toContain('dataSource: "harvest"');
+      expect(result).toContain('Search types available: none via Unipile');
     });
   });
 
@@ -136,7 +156,7 @@ describe('SystemPromptBuilderService', () => {
       expect(prompt).not.toContain(CHAT_SYSTEM_PROMPTS.MCP_TRANSPORT);
     });
 
-    it('uses pack-first prospecting catalog instead of listing every ARXENA tool', () => {
+    it('points Arxena tools at skills instead of listing every tool', () => {
       const service = buildService();
       const prompt = service.buildFullPrompt(
         [crudCompany, arxenaSearch, codeInterpreter],
@@ -144,15 +164,15 @@ describe('SystemPromptBuilderService', () => {
         ['search_help_center'],
       );
 
-      expect(prompt).toContain('Prospecting & enrichment');
-      expect(prompt).toContain('prospecting');
-      expect(prompt).toContain('list_org_chart_positions');
+      expect(prompt).toContain('People and company search');
+      expect(prompt).toContain('Names come from the loaded skill');
       expect(prompt).not.toContain('`search_people_api`');
+      expect(prompt).not.toContain('prospecting');
     });
   });
 
   describe('buildMcpCompactToolCatalogSection', () => {
-    it('omits excluded tools, uses CRUD grammar, and ARXENA packs instead of schemas', () => {
+    it('omits excluded tools and uses CRUD grammar instead of schemas', () => {
       const service = buildService();
       const section = service.buildMcpCompactToolCatalogSection(
         [crudCompany, arxenaSearch, codeInterpreter],
@@ -162,16 +182,18 @@ describe('SystemPromptBuilderService', () => {
 
       expect(section).toContain('find_many');
       expect(section).toContain('companies');
-      expect(section).toContain('prospecting');
-      expect(section).toContain('list_org_chart_positions');
-      expect(section).toContain('check_contact_availability');
+      expect(section).toContain('Names come from the loaded skill');
+      expect(section).not.toContain('prospecting');
       expect(section).not.toContain('`code_interpreter`');
       expect(section).not.toContain('inputSchema');
     });
   });
 
   describe('large category summaries', () => {
-    const buildExternalTool = (slug: string, index: number): ToolIndexEntry => ({
+    const buildExternalTool = (
+      slug: string,
+      index: number,
+    ): ToolIndexEntry => ({
       name: `${slug}__tool_${index}`,
       label: `${slug} ${index}`,
       description: 'external tool',
@@ -245,13 +267,14 @@ describe('SystemPromptBuilderService', () => {
       expect(instructions).toContain('load_skills');
       expect(instructions).toContain('search');
       expect(instructions).toContain('setup');
-      expect(instructions).toContain('Prospecting & enrichment');
+      expect(instructions).toContain('People and company search');
       expect(instructions).not.toContain('Category `ARXENA`');
       expect(instructions).toContain('Anti-bloat');
       expect(instructions).toContain('not in-app Ask AI');
       expect(instructions).not.toContain('## Asking the user questions');
       expect(instructions).not.toContain('## In-app Ask AI');
       expect(instructions).not.toContain('[[record:');
+      expect(instructions).not.toContain('<browsing_context>');
     });
   });
 });

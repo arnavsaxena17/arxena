@@ -1,7 +1,10 @@
 import { getSkillContent } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/skill-library';
 
 import { type FlatSkill } from 'src/engine/metadata-modules/flat-skill/types/flat-skill.type';
-import { createLoadSkillTool } from 'src/engine/core-modules/tool-provider/tools/load-skill.tool';
+import {
+  createLinkedinChannelSkillNote,
+  createLoadSkillTool,
+} from 'src/engine/core-modules/tool-provider/tools/load-skill.tool';
 
 const searchSkill = {
   name: 'search',
@@ -22,9 +25,8 @@ describe('load_skills', () => {
     expect(result.skills[0].content).toBe(searchSkill.content);
     expect(result.skills[0].availableSections).toEqual([
       'companies',
-      'list-building',
       'people',
-      'linkedin-harvest',
+      'people-by-company',
     ]);
   });
 
@@ -35,7 +37,7 @@ describe('load_skills', () => {
     });
 
     expect(result.skills[0].content).toContain('## People');
-    expect(result.skills[0].content).not.toContain('## LinkedIn / Harvest');
+    expect(result.skills[0].content).not.toContain('## People by company');
   });
 
   it('should name sections that do not exist', async () => {
@@ -45,5 +47,30 @@ describe('load_skills', () => {
     });
 
     expect(result.message).toContain('Unknown sections: nope');
+  });
+
+  it('appends the LinkedIn status only for search and outreach', async () => {
+    const resolveNote = jest.fn().mockResolvedValue('LinkedIn: connected');
+    const tool = createLoadSkillTool(
+      async (names) =>
+        names.map(
+          (name) =>
+            ({
+              name,
+              label: name,
+              content: `${name} body`,
+            }) as FlatSkill,
+        ),
+      async () => ['search', 'outreach', 'crm'],
+      createLinkedinChannelSkillNote(resolveNote),
+    );
+
+    const result = await tool.execute({
+      skillNames: ['search', 'crm'],
+    });
+
+    expect(resolveNote).toHaveBeenCalledTimes(1);
+    expect(result.skills[0].content).toContain('LinkedIn: connected');
+    expect(result.skills[1].content).toBe('crm body');
   });
 });

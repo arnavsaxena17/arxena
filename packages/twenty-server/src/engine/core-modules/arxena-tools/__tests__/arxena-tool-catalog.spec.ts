@@ -13,7 +13,7 @@ import {
 import { ToolCategory } from 'twenty-shared/ai';
 
 describe('Arxena tool catalog', () => {
-  it('exposes GTM packs without internal tools', () => {
+  it('exposes Arxena tools without internal tools', () => {
     expect(ARXENA_TOOL_CATALOG.length).toBeGreaterThan(50);
     expect(ARXENA_TOOL_NAMES.has('get_org_chart')).toBe(true);
     expect(ARXENA_TOOL_NAMES.has('get_org_chart_node_people')).toBe(true);

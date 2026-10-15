@@ -1,4 +1,3 @@
-
 import {
   ARXENA_INTERNAL_TOOL_NAMES,
   ARXENA_TOOL_CATALOG,
@@ -16,8 +15,8 @@ const CHARACTERS_PER_TOKEN = 4;
 // A ratchet, not a target: a skill is re-sent on every model step after it is
 // loaded, so growing past its budget needs a deliberate change here.
 const SKILL_TOKEN_BUDGETS: Record<string, number> = {
-  search: 16_000,
-  outreach: 4_500,
+  search: 22_000,
+  outreach: 4_700,
   'workflow-building': 4_500,
   'ai-filter-enrich': 4_000,
   'dashboard-building': 3_000,
@@ -34,9 +33,7 @@ const SKILL_TOKEN_BUDGETS: Record<string, number> = {
   pdf: 1_000,
   'metadata-building': 1_000,
   xlsx: 1_000,
-  'local-business-search': 1_000,
   'custom-objects-cleanup': 1_000,
-  'resolve-company-name': 1_000,
   research: 500,
 };
 
@@ -46,13 +43,14 @@ const PLAYBOOK_TOKEN_BUDGET = 1_500;
 
 const budgetFor = (skillName: string): number | undefined =>
   SKILL_TOKEN_BUDGETS[skillName] ??
-  (listPlaybookNames().includes(skillName)
-    ? PLAYBOOK_TOKEN_BUDGET
-    : undefined);
+  (listPlaybookNames().includes(skillName) ? PLAYBOOK_TOKEN_BUDGET : undefined);
 
 const loadAllSkills = (): Record<string, string> =>
   Object.fromEntries(
-    listSkillNames().map((skillName) => [skillName, getSkillContent(skillName)]),
+    listSkillNames().map((skillName) => [
+      skillName,
+      getSkillContent(skillName),
+    ]),
   );
 
 // Registered in ActionToolProvider's map or created by the core tool set
@@ -119,10 +117,14 @@ describe('standard skill content', () => {
   describe('token budgets', () => {
     it('should have a budget for every skill', () => {
       expect(
-        Object.keys(skills).filter((skillName) => budgetFor(skillName) === undefined),
+        Object.keys(skills).filter(
+          (skillName) => budgetFor(skillName) === undefined,
+        ),
       ).toEqual([]);
       expect(
-        Object.keys(SKILL_TOKEN_BUDGETS).filter((skillName) => !(skillName in skills)),
+        Object.keys(SKILL_TOKEN_BUDGETS).filter(
+          (skillName) => !(skillName in skills),
+        ),
       ).toEqual([]);
     });
 

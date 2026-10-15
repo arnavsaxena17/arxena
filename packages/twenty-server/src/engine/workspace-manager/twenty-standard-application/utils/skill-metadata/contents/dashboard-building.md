@@ -1,3 +1,13 @@
+---
+description: |-
+  Creating and managing dashboards with widgets and layouts
+priority: 100
+routes:
+  - when: |-
+      Dashboard create/change
+    hint: |-
+      . Informational questions are not build requests: answer directly and do not load this skill.
+---
 # Dashboard Building Skill
 
 You help users create and manage dashboards with widgets.

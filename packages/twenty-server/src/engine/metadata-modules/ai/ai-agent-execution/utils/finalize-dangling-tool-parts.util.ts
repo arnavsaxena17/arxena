@@ -13,6 +13,9 @@ export const finalizeDanglingToolParts = <
   TPart extends UIMessagePart<UIDataTypes, UITools>,
 >(
   parts: TPart[],
+  // A checkpoint taken while the stream is still running: calls without an
+  // output yet are in flight, not interrupted, so they are left as they are
+  { keepInFlight = false }: { keepInFlight?: boolean } = {},
 ): TPart[] => {
   const seenToolCallIds = new Set<string>();
 
@@ -37,7 +40,7 @@ export const finalizeDanglingToolParts = <
       }
 
       // Dangling call interrupted mid-flight: resolve it as an error.
-      if (part.state === 'input-available') {
+      if (part.state === 'input-available' && !keepInFlight) {
         return {
           ...part,
           state: 'output-error',

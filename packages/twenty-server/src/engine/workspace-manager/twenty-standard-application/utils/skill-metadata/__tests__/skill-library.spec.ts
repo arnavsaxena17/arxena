@@ -1,4 +1,3 @@
-
 import {
   ALL_SEARCH_TOOLS_ENABLED,
   filterSearchSkillContent,
@@ -9,14 +8,14 @@ import { selectSkillSections } from 'src/engine/workspace-manager/twenty-standar
 import {
   getSkillContent,
   getSkillFrontMatter,
-  getSkillIcon,
-  getSkillLabel,
   listPlaybookNames,
   listRoutedSkillNames,
-  listSkillNames,
 } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/skill-library';
 
-const PROVIDER_FILTERED_SKILL_NAMES = ['search', 'org-structure-insights'] as const;
+const PROVIDER_FILTERED_SKILL_NAMES = [
+  'search',
+  'org-structure-insights',
+] as const;
 
 const ALL_DISABLED: SearchToolsConfig = Object.fromEntries(
   Object.keys(ALL_SEARCH_TOOLS_ENABLED).map((key) => [key, false]),
@@ -26,14 +25,17 @@ describe('skill library', () => {
   it('should expose every skill that has front matter by name', () => {
     expect(listRoutedSkillNames().sort()).toEqual([
       'ai-filter-enrich',
-      'find-role-at-companies',
-      'local-business-search',
+      'dashboard-building',
+      'data-manipulation',
+      'metadata-building',
       'org-structure-insights',
       'outreach',
-      'resolve-company-name',
       'search',
       'setup',
       'spreadsheet-import',
+      'view-building',
+      'view-filters-and-sorts',
+      'workflow-building',
     ]);
   });
 
@@ -57,8 +59,8 @@ describe('skill library', () => {
   it.each(Object.keys(ALL_SEARCH_TOOLS_ENABLED))(
     'should change the skill text when %s is disabled',
     (flag) => {
-      const content = PROVIDER_FILTERED_SKILL_NAMES.map(getSkillContent)
-        .join('\n');
+      const content =
+        PROVIDER_FILTERED_SKILL_NAMES.map(getSkillContent).join('\n');
       const filtered = filterSearchSkillContent(content, {
         ...ALL_SEARCH_TOOLS_ENABLED,
         [flag]: false,
@@ -77,9 +79,8 @@ describe('selectSkillSections', () => {
   it('should list the sections of the search skill', () => {
     expect(selectSkillSections(searchContent).availableSections).toEqual([
       'companies',
-      'list-building',
       'people',
-      'linkedin-harvest',
+      'people-by-company',
     ]);
   });
 
@@ -93,11 +94,9 @@ describe('selectSkillSections', () => {
     expect(content).toContain('# Search Skill');
     expect(content).toContain('## People');
     expect(content).not.toContain('## Companies');
-    expect(content).not.toContain('## LinkedIn / Harvest');
-    expect(content).toContain(
-      'Not loaded: companies, list-building, linkedin-harvest',
-    );
-    expect(content.length).toBeLessThan(searchContent.length / 2);
+    expect(content).not.toContain('## People by company');
+    expect(content).toContain('Not loaded: companies, people-by-company');
+    expect(content.length).toBeLessThan(searchContent.length);
   });
 
   it('should report sections that do not exist', () => {
@@ -126,14 +125,12 @@ describe('search skill section sizes', () => {
   // Loading a slice must stay far cheaper than the whole skill, since the
   // loaded text is re-sent on every model step that follows
   it.each([
-    [['people'], 6_000],
-    [['companies'], 6_000],
-    [['people', 'linkedin-harvest'], 9_000],
-    [['list-building', 'companies'], 9_100],
+    [['people'], 14_000],
+    [['companies'], 14_000],
+    [['people-by-company'], 12_000],
   ])('should keep %j under %i tokens', (sections, budget) => {
     expect(tokens(sections)).toBeLessThanOrEqual(budget);
   });
-
 });
 
 describe('skill front matter and playbooks', () => {
@@ -158,14 +155,9 @@ describe('skill front matter and playbooks', () => {
     }
   });
 
-  it('should find a playbook from its file alone', () => {
-    expect(listPlaybookNames()).toContain('find-role-at-companies');
-    expect(getSkillLabel('find-role-at-companies')).toBe(
-      'Find Role At Companies',
-    );
-    expect(getSkillIcon('find-role-at-companies')).toBe(
-      'IconUserSearch',
-    );
+  it('should have no playbook files', () => {
+    expect(listPlaybookNames()).toEqual([]);
+    expect(listRoutedSkillNames()).not.toContain('find-role-at-companies');
   });
 
   it('should keep every playbook short', () => {
@@ -186,11 +178,8 @@ describe('skill front matter and playbooks', () => {
 
     expect(lines).toHaveLength(routeCount);
     expect(lines[0]).toContain('load_skills(["setup"])');
-    expect(
-      lines.findIndex((line) => line.includes('"find-role-at-companies"')),
-    ).toBeGreaterThan(
-      lines.findIndex((line) => line.includes('load_skills(["search"])')),
-    );
+    expect(lines.join('\n')).toContain('load_skills(["search"])');
+    expect(lines.join('\n')).not.toContain('find-role-at-companies');
   });
 
   it('should add a surface suffix at the {suffix} marker or at the end', () => {
@@ -207,16 +196,17 @@ describe('skill front matter and playbooks', () => {
 
   it('should include extra skills in a load call', () => {
     expect(
-      buildRoutingLines({ extraSkillNames: { outreach: ['workflow-building'] } }),
+      buildRoutingLines({
+        extraSkillNames: { outreach: ['workflow-building'] },
+      }),
     ).toContain('load_skills(["outreach", "workflow-building"])');
   });
 
   it('should resolve a shared fragment into every skill that includes it', () => {
-    const sentence = 'Boolean title strings ("(VP OR Head) AND Sales NOT assistant")';
+    const sentence =
+      'Boolean title strings ("(VP OR Head) AND Sales NOT assistant")';
 
     expect(getSkillContent('search')).toContain(sentence);
-    expect(
-      getSkillContent('search').split(sentence).length - 1,
-    ).toBe(2);
+    expect(getSkillContent('search').split(sentence).length - 1).toBe(2);
   });
 });

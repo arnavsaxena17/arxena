@@ -272,12 +272,14 @@ export class AgentChatService {
     turnId,
     parts,
     workspaceId,
+    isCheckpoint = false,
   }: {
     id: string;
     threadId: string;
     turnId: string;
     parts: ExtendedUIMessage['parts'];
     workspaceId: string;
+    isCheckpoint?: boolean;
   }): Promise<void> {
     await this.messageRepository.upsert(
       workspaceId,
@@ -294,7 +296,7 @@ export class AgentChatService {
     await this.messagePartRepository.delete(workspaceId, { messageId: id });
 
     const dbParts = mapUIMessagePartsToDBParts(
-      finalizeDanglingToolParts(parts),
+      finalizeDanglingToolParts(parts, { keepInFlight: isCheckpoint }),
       id,
       workspaceId,
     );

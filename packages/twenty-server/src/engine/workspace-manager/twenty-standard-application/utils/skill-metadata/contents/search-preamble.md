@@ -1,85 +1,71 @@
 ---
 description: |-
-  Source companies and people (Apollo/LinkedIn/Harvest/Exa/Bright Data); Find → ephemeral tabs, Save/Enroll/Harvest per destination verbs
+  Source companies and people (Apollo/LinkedIn/Harvest/Exa/Bright Data). Find, then Save to CRM, then Start outreach
 priority: 20
 routes:
   - when: |-
-      Find companies or people / LinkedIn / Harvest / Sales Nav
+      Find companies or people / LinkedIn / Harvest / Sales Nav / places on a map
     hint: |-
-      — choose destination **before** providers (see Destination verbs). Do NOT enroll until the user confirms Add to CRM / Enroll. The skill is split: pass `sections` to load only what the task needs, `["people"]` for people, `["companies"]` for companies, add `"list-building"` to build a list of N, add `"linkedin-harvest"` for LinkedIn / Sales Nav / Harvest; omit it only when unsure.
+      . Load one section: `["people"]` for a population, `["companies"]` for companies and places on a map, `["people-by-company"]` for a role at companies already named. A judged list of about N also loads `ai-filter-enrich`.
 ---
 # Search Skill
 
-You source **companies and people** across connected data providers, dedupe them, and **route winners to the correct destination** (Find / Save to CRM / Enroll / Harvest). <!-- search-skill-provider-summary:start -->LinkedIn, Harvest, Apollo, Exa, and Bright Data<!-- search-skill-provider-summary:end --> details live in the sections below — load this one skill only (`load_skills(["search"])`).
+You source companies and people. <!-- search-skill-provider-summary:start -->LinkedIn, Harvest, Apollo, Exa, and Bright Data<!-- search-skill-provider-summary:end -->. One section is loaded with this text. Follow that section.
 
-Prefer this skill over `research` when sourcing target accounts or people.
+## Plan
+
+Pick the path. If that section is not already in this prompt, load it and stop until it is.
+
+| Request | Section |
+| --- | --- |
+| A population: a title, a skill, an industry, a city | `people` |
+| Companies, or places on a map | `companies` |
+| A role at companies already named or already on the project | `people-by-company` |
+
+Stage comes from the system prompt. The tools are:
+
+- **Find** (default): rows on the project tab. List tools use `outreach_list` `attach`. Tools that still return rows use one `upsert_outreach_target_people` or `upsert_outreach_target_companies`.
+- **Save to CRM**: only when the user says save or add to the CRM. `save_outreach_targets_to_crm`. Does not start outreach. Never `create_candidate` or `create_one_company` on Find or on Save to CRM.
+- **Start outreach**: load `outreach`. Not this skill.
+
+A judged list (about N companies or people that must match a rubric, such as store count, revenue, or runs ads) is still `companies` or `people`, and also `load_skills(["ai-filter-enrich"])`. A role at companies already named is never that loop.
+
+## Learn
+
+One `learn_tools` call, with only the tools the loaded section names. Add `outreach_list` when the search returns a `listId`. Add `find_many_projects` and `ask_questions` only when `projectId` is missing. Do not learn tools from a section that was not loaded.
+
+## Execute
+
+Follow the loaded section, then these rules.
 
 <!-- search-bright-data-default-rule:start -->
-## Default provider: Bright Data
+### Provider
 
-For any company or people search, use `search_bright_data_business` (`entity: "company"` or `"people"`, ludicrous mode with the estimate → budget → fetch flow) **unless** the user names another provider (Apollo, LinkedIn / Sales Navigator, Harvest, Exa, a pasted LinkedIn URL) or the request needs a feature only another provider has (a named Sales Nav list, facet IDs, a known domain to enrich). Do not pick Apollo just because it is listed first. Fall back to another provider only if Bright Data errors or returns nothing, and say so. A short request such as "get the CEO of each filtered company" is a lookup for the `find-role-at-companies` playbook: load that instead of this skill, resolve the companies from the project tab yourself and run it without asking about provider, budget or estimates.
+For `people` and `companies`, use `search_bright_data_business` (`entity: "company"` or `"people"`, ludicrous mode, estimate then budget then fetch) unless the user names another provider (Apollo, LinkedIn / Sales Navigator, Harvest, Exa, a pasted LinkedIn URL) or the request needs a feature only that provider has (a named Sales Nav list, facet ids, a known domain to enrich). Do not pick Apollo because it is listed first. Fall back only if Bright Data errors or returns nothing, and say so.
 
+`people-by-company` is one `find_role_at_companies` call for the whole company list. No estimate and no provider question. The tool searches every company and returns the matching people. Do not search those companies yourself and do not loop them.
 <!-- search-bright-data-default-rule:end -->
 
-## Building a list of N that must be filtered and enriched
+### Result lists
 
-When the user wants a **finished list of about N companies** that also needs judging against criteria not in the source data (store count, revenue, marketing activity, category fit), do not run one search. Follow **Build a target list** in the Companies section: many queries per category, estimate, fetch in rounds, filter and enrich, and repeat until the filtered count reaches N or the approved caps are used.
+Search results never come back as rows. `search_bright_data_business`, `search_apollo_companies`, `search_apollo_people`, `search_linkedin_companies`, `search_linkedin_people`, `search_linkedin_from_url`, `search_linkedin_continue` and the Exa tools put what they find in a list and return only a `listId`, counts (`fetched`, `added`, `duplicates`, `total`), paging (`cursor`, `paging`) and a `nextStep`. Do not read the rows: no `code_interpreter`, no `extract_json_paths`, no pasting names into chat.
 
-## Destination verbs (choose first)
+A list is temporary (Redis plus an S3 backup): 30 days when any source was paid (Bright Data), otherwise 7, extended each time it is used. Pages of one search append to the same list and duplicates are dropped.
 
-| Verb | Meaning | Typical tools |
-| --- | --- | --- |
-| **Find** | Ephemeral campaign list (Companies/People tabs) | `upsert_outreach_target_companies` / `upsert_outreach_target_people` |
-| **Save to CRM** | Plain Company / Person records from the Find tabs (no Candidate, no enrollment) | `save_outreach_targets_to_crm({ projectId, target, companyIds?, personIds? })` |
-| **Enroll** | Person + enrollment record (`create_candidate`, `QUEUED`) after user confirms | `upload-profiles` / `create_candidate` — or load `outreach` for workflows |
-| **Harvest** | Scheduled CRM companies + `projectIds` | Load `outreach` + `workflow-building` — do **not** Redis-upsert |
+`outreach_list` (`learn_tools` it once): `summary`, `peek` (at most 10 rows, only for a quality check), `export` (CSV download link), `dedupe` (`against: "crm"` or `"lists"`, `remove: true` drops the matches), `attach` (show rows on the tab, up to 20,000), `save_to_crm` (plain CRM Company / Person records, tagged to the project, never enrolled; up to 20,000 rows, `offset` continues), `list`, `delete`. Companies match by website, people by LinkedIn URL. For "find me N": fetch, `dedupe` against the CRM, report the counts, and offer export or save. Do neither without a yes.
 
-On Find (campaign tabs): never end after a chat-only table — persist with the upsert tools first. Do **not** Enroll until the user confirms Add to CRM / Enroll.
+### Write contract
 
-## Result lists (every provider)
+List tools: show the rows with `outreach_list` `attach`, not an upsert. A tool that still returns rows (Harvest People API, `search_companies_index`, Wikidata): one upsert with `{ projectId, mode: "merge", people }` or `companies`, via `execute_tool`. Never upsert from inside `code_interpreter`. Build the array there, then upsert outside it.
 
-Search results never come back to you as rows. `search_bright_data_business`, `search_apollo_companies`, `search_apollo_people`, `search_linkedin_companies`, `search_linkedin_people`, `search_linkedin_from_url`, `search_linkedin_continue` and the Exa tools put what they find in a **list** and return only a `listId`, counts (`fetched`, `added`, `duplicates`, `total`), paging (`cursor`, `paging`) and a `nextStep`. You cannot read the rows and must not try: no `code_interpreter`, no `extract_json_paths`, no pasting names into chat.
+`projectId` comes from the browsing context. If it is missing, do not guess and do not skip the write. Resolve it before the fetch:
 
-A list is **temporary** (Redis plus an S3 backup): 30 days when any source was paid (Bright Data), otherwise 7, extended each time it is used. Pages of one search append to the same list and duplicates are dropped. Building a list is two separate steps:
+1. `learn_tools` `find_many_projects` and `ask_questions` if not already learned, then `find_many_projects` with `select: ["id", "name"]` and `limit` 10–20.
+2. `ask_questions`: "Which project should these results be tagged to?", one option per project. If there are none, offer "Create a new project", then `create_one_project`.
+3. Use that id for the rest of the turn. Do not ask again in the same conversation.
 
-1. **Fetch** (the search tools above): results are in the list.
-2. **Save** (only when the user asks or confirms): `outreach_list` with `action: "save_to_crm"` and a `projectId` creates plain CRM Company / Person records, tagged to the project and never enrolled. It handles up to 20,000 rows a call (`offset` continues; the result gives `nextOffset`), one company at a time, so a large save takes a while. Companies are matched by website and people by LinkedIn URL.
+When the user confirms Save to CRM, call `save_outreach_targets_to_crm` (omit ids to save the whole tab). Bulk LinkedIn lists: paginate with `search_linkedin_continue`; every page lands in one list, then `attach` or `save_to_crm`. Do not print multi-KB JSON into chat.
 
-Everything else is `outreach_list` too (`learn_tools` it once): `summary` (counts, top industries and countries), `peek` (at most 10 short rows, only for a quality check), `export` (a CSV with every row: give the user the download link), `dedupe` (`against: "crm"` or `"lists"`, `remove: true` drops the matches), `attach` (show rows on the project's Companies or People tab, up to 20,000), `list` (all lists), `delete`. For "find me N companies" requests: fetch, `dedupe` against the CRM, report the counts, and offer export or save.
+### Judged lists
 
-## Ephemeral write contract (Find / Outreach tabs)
-
-For the tools in **Result lists**, show the rows on the tab with `outreach_list` `attach` (not an upsert). For any other search tool that still returns rows (Harvest People API, `search_companies_index`, Wikidata), do **one** upsert before ending the turn:
-
-```
-execute_tool({
-  toolName: "upsert_outreach_target_people",  // or upsert_outreach_target_companies
-  arguments: { projectId, mode: "merge", people: [...] }  // JSON object — from browsing context
-})
-```
-
-- `projectId` comes from the browsing context (`projectId: none` or no browsing context means it is missing). **If it is missing, do not guess and do not skip the write: ask the user which project the results should be tagged to.** Resolve it before the fetch step, not after, so the results are written once:
-  1. `learn_tools({ toolNames: ["find_many_projects", "ask_questions"] })` (skip anything already learned), then `execute_tool` `find_many_projects` with `select: ["id", "name"]` and a small `limit` (10–20), newest first when possible.
-  2. Call `ask_questions` with one single-choice question, "Which project should these results be tagged to?", one option per project (label = project name, keep the id for yourself). If there are no projects, offer "Create a new project" and ask for a name, then `create_one_project`.
-  3. Use the chosen project's id as `projectId` for the rest of the turn (Bright Data fetch call, `upsert_outreach_target_*`). Do not ask again in the same conversation.
-- **Never** call upsert from inside `code_interpreter`. Use interpreter only to build the array from spilled search files, then upsert via `execute_tool`. This applies only to tools that still return rows, not to the list tools.
-- **Never** `create_candidate` / `create_one_company` for Find. When the user confirms Save to CRM, call `save_outreach_targets_to_crm` (omit ids to save the whole tab, pass the selected ids otherwise); it dedupes against the CRM and never enrolls. Enrollment (`upload-profiles` / `create_candidate`) needs its own confirmation.
-- Bulk LinkedIn lists: paginate per **LinkedIn / Harvest**; every page lands in one list, then `attach` or `save_to_crm`. Do not print multi-KB JSON into chat or loop many interpreter calls.
-
-## Plan → Learn → Execute
-
-1. `load_skills(["search"])`
-2. Choose destination verb (table above).
-3. Choose **Companies**, **People**, or both — read that section; read **LinkedIn / Harvest** when using LinkedIn or Harvest sources.
-4. One `learn_tools` with every tool you will use, then `execute_tool`.
-5. Keep search `limit` small (10–25) unless the user wants a big list.
-6. Dedup before any write, persist to the chosen destination, then report.
-
-## Global constraints
-
-- Never invent provider field names or tool names — always `learn_tools` first and use what the schema returns.
-- Respect rate limits; avoid large bulk scrapes unless the user explicitly asks.
-- For LinkedIn/Harvest, follow the **LinkedIn / Harvest** section (facet IDs, `searchParameters` shapes, Harvest People API).
-- Scheduled CRM harvest/enroll workflows are `outreach`, not this skill.
-
----
+Approve fetch and enrichment caps once (`ask_questions`: go / change the caps / cancel). That yes replaces the per-query budget question and covers every estimate, fetch, and column run inside those caps. Then round until the filtered count reaches about N or a cap is hit: fetch in this skill, then filter and enrich in `ai-filter-enrich`. Cheapest cut first: a row-answerable gate, then a free size proxy (employees or followers already on the row), then one web-search column for the facts the row does not hold. Reuse one column per fact. Do not exceed a cap. Report the count, the spend, and offer export or save.

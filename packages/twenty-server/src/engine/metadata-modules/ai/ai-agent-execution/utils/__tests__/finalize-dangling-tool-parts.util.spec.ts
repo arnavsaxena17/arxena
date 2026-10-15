@@ -33,6 +33,14 @@ describe('finalizeDanglingToolParts', () => {
     });
   });
 
+  it('leaves an in-flight tool part as it is when taking a checkpoint', () => {
+    const part = buildToolPart('input-available');
+
+    expect(
+      finalizeDanglingToolParts([part], { keepInFlight: true }),
+    ).toEqual([part]);
+  });
+
   it('leaves a completed tool part untouched', () => {
     const part = buildToolPart('output-available', { output: { ok: true } });
 

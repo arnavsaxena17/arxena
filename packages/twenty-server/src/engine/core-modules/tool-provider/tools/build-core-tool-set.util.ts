@@ -2,7 +2,10 @@ import { type ToolRegistryService } from 'src/engine/core-modules/tool-provider/
 import { type ToolContext } from 'src/engine/core-modules/tool-provider/types/tool-context.type';
 import { createExecuteToolTool } from 'src/engine/core-modules/tool-provider/tools/execute-tool.tool';
 import { createLearnToolsTool } from 'src/engine/core-modules/tool-provider/tools/learn-tools.tool';
-import { createLoadSkillTool } from 'src/engine/core-modules/tool-provider/tools/load-skill.tool';
+import {
+  createLoadSkillTool,
+  type SkillNoteFunction,
+} from 'src/engine/core-modules/tool-provider/tools/load-skill.tool';
 import { type SkillService } from 'src/engine/metadata-modules/skill/skill.service';
 
 type BuildCoreToolSetArgs = {
@@ -11,6 +14,7 @@ type BuildCoreToolSetArgs = {
   skillService: Pick<SkillService, 'findFlatSkillsByNames' | 'findAllFlatSkills'>;
   workspaceId: string;
   excludeTools: Set<string>;
+  skillNote?: SkillNoteFunction;
   // Ask AI compacts and spills large outputs; MCP returns them as-is
   outputOptions?: { compactOutput?: boolean; spillLargeOutput?: boolean };
 };
@@ -23,6 +27,7 @@ export const buildCoreToolSet = ({
   skillService,
   workspaceId,
   excludeTools,
+  skillNote,
   outputOptions,
 }: BuildCoreToolSetArgs) => ({
   learnTools: createLearnToolsTool(toolRegistry, toolContext, {
@@ -41,5 +46,6 @@ export const buildCoreToolSet = ({
 
       return allSkills.map((skill) => skill.name);
     },
+    skillNote,
   ),
 });

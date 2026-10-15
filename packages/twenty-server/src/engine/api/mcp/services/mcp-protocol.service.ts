@@ -68,6 +68,8 @@ import { type FlatWorkspace } from 'src/engine/core-modules/workspace/types/flat
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { SkillService } from 'src/engine/metadata-modules/skill/skill.service';
 import { buildCoreToolSet } from 'src/engine/core-modules/tool-provider/tools/build-core-tool-set.util';
+import { createLinkedinChannelSkillNote } from 'src/engine/core-modules/tool-provider/tools/load-skill.tool';
+import { SystemPromptBuilderService } from 'src/engine/metadata-modules/ai/ai-chat/services/system-prompt-builder.service';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { UserRoleService } from 'src/engine/metadata-modules/user-role/user-role.service';
 
@@ -112,6 +114,7 @@ export class McpProtocolService {
     private readonly workspaceCacheService: WorkspaceCacheService,
     private readonly twentyConfigService: TwentyConfigService,
     private readonly arxenaToolProvider: ArxenaToolProvider,
+    private readonly systemPromptBuilder: SystemPromptBuilderService,
   ) {}
 
   async handleInitialize(
@@ -274,12 +277,27 @@ export class McpProtocolService {
       toolContext,
     );
 
+    const workspaceMemberId = actorContext.workspaceMemberId;
     const coreTools = buildCoreToolSet({
       toolRegistry: this.toolRegistry,
       toolContext,
       skillService: this.skillService,
       workspaceId: workspace.id,
       excludeTools: excludedToolNames,
+      skillNote: isDefined(workspaceMemberId)
+        ? createLinkedinChannelSkillNote(() =>
+            this.systemPromptBuilder
+              .resolveLinkedinConnectedAccountsContext(
+                workspace.id,
+                workspaceMemberId,
+              )
+              .then((connectedAccountsContext) =>
+                this.systemPromptBuilder.formatLinkedinConnectionStatus(
+                  connectedAccountsContext,
+                ),
+              ),
+          )
+        : undefined,
     });
 
     const runArxenaTool = (toolName: string, args: Record<string, unknown>) =>

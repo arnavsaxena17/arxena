@@ -21,9 +21,8 @@ const INCLUDE_PATTERN = /^\{\{include: ([a-z0-9-]+)\}\}$/gm;
 export const SEARCH_SKILL_PARTS = [
   'search-preamble',
   'search-companies',
-  'search-list-building',
   'search-people',
-  'search-linkedin-harvest',
+  'search-people-by-company',
 ] as const;
 
 type Library = {

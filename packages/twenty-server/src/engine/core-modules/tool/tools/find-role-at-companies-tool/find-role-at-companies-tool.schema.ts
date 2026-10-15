@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
-export const FIND_ROLE_AT_COMPANIES_MAX_COMPANIES = 25;
+export const FIND_ROLE_AT_COMPANIES_MAX_COMPANIES = 50;
+// Companies read from the project by the tool itself are not typed by the
+// model, so the cap is about run length, not output size
+export const FIND_ROLE_AT_COMPANIES_MAX_PROJECT_COMPANIES = 500;
 
 export const FindRoleAtCompaniesInputZodSchema = z.object({
   companies: z
@@ -28,7 +31,34 @@ export const FindRoleAtCompaniesInputZodSchema = z.object({
     )
     .min(1)
     .max(FIND_ROLE_AT_COMPANIES_MAX_COMPANIES)
-    .describe('Companies to look up, one entry each'),
+    .optional()
+    .describe(
+      'Companies to look up, one entry each. Leave out and set fromProject to look up the project\'s own companies without typing them.',
+    ),
+  fromProject: z
+    .boolean()
+    .default(false)
+    .describe(
+      `Take the companies from the project's Companies tab (needs projectId, up to ${FIND_ROLE_AT_COMPANIES_MAX_PROJECT_COMPANIES}) instead of listing them. Use this for "all companies in this project" / "the filtered ones": the tool reads the rows, skips those already Found, and runs them all in one call. Ignored when companies is given.`,
+    ),
+  onlyViewMatches: z
+    .boolean()
+    .default(false)
+    .describe(
+      'With fromProject: only the rows shown by the Companies tab\'s applied view (its filters and AI columns).',
+    ),
+  onlyFailed: z
+    .boolean()
+    .default(false)
+    .describe(
+      'With fromProject: only the rows whose "People found" is Lookup failed, to run again after a run that could not complete.',
+    ),
+  rerunFound: z
+    .boolean()
+    .default(false)
+    .describe(
+      'With fromProject: also look up rows already marked Found (paid again). Off by default.',
+    ),
   roles: z
     .array(z.string())
     .min(1)

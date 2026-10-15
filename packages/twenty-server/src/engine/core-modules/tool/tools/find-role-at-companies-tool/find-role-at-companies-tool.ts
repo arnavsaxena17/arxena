@@ -18,6 +18,7 @@ import {
 import {
   FindRoleAtCompaniesInputZodSchema,
   type FindRoleAtCompaniesInput,
+  FIND_ROLE_AT_COMPANIES_MAX_PROJECT_COMPANIES,
 } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/find-role-at-companies-tool.schema';
 import {
   FindRoleGoogleSearchService,
@@ -60,6 +61,11 @@ import {
   buildPeopleFoundValues,
   type OutreachPeopleFoundLabel,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-people-found.util';
+import {
+  matchesTableFilter,
+  OutreachTableViewService,
+  readCellText,
+} from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
 import { OutreachWorkingSetService } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
 import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
@@ -68,7 +74,22 @@ import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.
 import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
 
 // The input is capped at 25 companies, so the default runs them all at once
-const DEFAULT_COMPANY_CONCURRENCY = 25;
+type FindRoleAtCompany = NonNullable<
+  FindRoleAtCompaniesInput['companies']
+>[number];
+// The input once the companies are known, whether given or read from the project
+type ResolvedInput = Omit<FindRoleAtCompaniesInput, 'companies'> & {
+  companies: FindRoleAtCompany[];
+};
+
+// Bright Data's SERP limit is 1,000 requests/min on an unfunded account and
+// higher once funded (docs.brightdata.com/general/usage-monitoring/serp-rate-limit);
+// a company sends about 5 queries, so 50 at a time stays inside it
+const DEFAULT_COMPANY_CONCURRENCY = 50;
+// A lookup that could not complete (source_error) is run again before the
+// model sees it, so a blip or a laptop wake-up does not cost a model round
+const DEFAULT_COMPANY_LOOKUP_RETRIES = 2;
+const COMPANY_RETRY_BACKOFF_MS = [5_000, 15_000];
 const MAX_VARIANTS_PER_BRIGHT_DATA_SEARCH = 2;
 const BRIGHT_DATA_CANDIDATES_PER_SEARCH = 5;
 const MAX_PEOPLE_PER_COMPANY = 3;
@@ -150,6 +171,14 @@ const getCompanyConcurrency = (): number => {
   return Number.isInteger(configured) && configured > 0
     ? configured
     : DEFAULT_COMPANY_CONCURRENCY;
+};
+
+const getCompanyLookupRetries = (): number => {
+  const configured = Number(process.env.FIND_ROLE_COMPANY_LOOKUP_RETRIES);
+
+  return Number.isInteger(configured) && configured >= 0
+    ? configured
+    : DEFAULT_COMPANY_LOOKUP_RETRIES;
 };
 
 const EMPTY_GOOGLE_RESULT: GoogleCompanySearchResult = {
@@ -249,6 +278,7 @@ export class FindRoleAtCompaniesTool implements Tool {
     private readonly upsertOutreachTargetPeopleTool: UpsertOutreachTargetPeopleTool,
     private readonly titleExpansionService: TitleExpansionService,
     private readonly outreachWorkingSetService: OutreachWorkingSetService,
+    private readonly outreachTableViewService: OutreachTableViewService,
   ) {}
 
   async execute(
@@ -273,7 +303,20 @@ export class FindRoleAtCompaniesTool implements Tool {
       };
     }
 
-    const input = parsed.data;
+    const resolved = await this.resolveCompanies(
+      parsed.data,
+      context.workspaceId,
+    );
+
+    if (typeof resolved === 'string') {
+      return {
+        success: false,
+        message: 'Failed to find roles at companies',
+        error: resolved,
+      };
+    }
+
+    const input = { ...parsed.data, companies: resolved };
     const startedAt = Date.now();
     const resolvedRoles = await this.titleExpansionService.resolveRoles(
       input.roles,
@@ -286,24 +329,11 @@ export class FindRoleAtCompaniesTool implements Tool {
       input.companies,
       getCompanyConcurrency(),
       async (company) => {
-        const outcome = await withGlobalLookupSlot(() =>
-          this.lookupCompany(
-            company,
-            input,
-            resolvedRoles,
-            context.workspaceId,
-          ),
-        ).catch(
-          (error): CompanyOutcome => ({
-            company: company.name,
-            status: 'source_error',
-            people: [],
-            rejected: [],
-            sourceErrors: [
-              error instanceof Error ? error.message : String(error),
-            ],
-            spentUsd: 0,
-          }),
+        const outcome = await this.lookupCompanyWithRetries(
+          company,
+          input,
+          resolvedRoles,
+          context.workspaceId,
         );
 
         outcome.companyRowId = company.id;
@@ -367,9 +397,118 @@ export class FindRoleAtCompaniesTool implements Tool {
     };
   }
 
-  private async lookupCompany(
-    company: FindRoleAtCompaniesInput['companies'][number],
+  // The model can pass the companies, or ask for the project's own so it
+  // never has to copy hundreds of names and ids through its output. Returns an
+  // error text when there is nothing to look up.
+  private async resolveCompanies(
     input: FindRoleAtCompaniesInput,
+    workspaceId: string,
+  ): Promise<FindRoleAtCompany[] | string> {
+    if (isDefined(input.companies)) {
+      return input.companies;
+    }
+
+    if (!input.fromProject || !isNonEmptyString(input.projectId)) {
+      return 'Pass companies, or set fromProject with a projectId to look up the project\'s Companies tab';
+    }
+
+    const rows = await this.outreachWorkingSetService.getAll({
+      workspaceId,
+      projectId: input.projectId,
+      subject: 'company',
+    });
+    const view = input.onlyViewMatches
+      ? await this.outreachTableViewService.get({
+          workspaceId,
+          projectId: input.projectId,
+          tab: 'companies',
+        })
+      : null;
+    const peopleFoundOf = (row: (typeof rows)[number]): unknown =>
+      row.otherFields.peopleFound;
+    const selected = rows
+      .filter((row) =>
+        isDefined(view)
+          ? view.filters.every((filter) =>
+              matchesTableFilter(readCellText(row, filter.columnId), filter),
+            )
+          : true,
+      )
+      .filter((row) =>
+        input.onlyFailed
+          ? peopleFoundOf(row) === PEOPLE_FOUND_LABEL_BY_STATUS.source_error
+          : input.rerunFound ||
+            peopleFoundOf(row) !== PEOPLE_FOUND_LABEL_BY_STATUS.matched,
+      )
+      .filter((row) => isNonEmptyString(row.name));
+
+    if (selected.length === 0) {
+      return input.onlyFailed
+        ? 'No companies on the project have a failed lookup'
+        : 'No companies left to look up on the project (none match, or all are already Found; set rerunFound to run them again)';
+    }
+
+    return selected
+      .slice(0, FIND_ROLE_AT_COMPANIES_MAX_PROJECT_COMPANIES)
+      .map((row) => ({ id: row.id, name: row.name as string }));
+  }
+
+  // The slot is released while waiting, so a retrying company does not hold
+  // back the others. Nothing was verified when the status is source_error, so
+  // the last attempt simply replaces the earlier ones (spend is added up).
+  private async lookupCompanyWithRetries(
+    company: FindRoleAtCompany,
+    input: ResolvedInput,
+    resolvedRoles: ResolvedRoles,
+    workspaceId: string,
+  ): Promise<CompanyOutcome> {
+    const maxRetries = getCompanyLookupRetries();
+    let spentUsd = 0;
+    let outcome: CompanyOutcome | undefined;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+      if (attempt > 0) {
+        const backoff =
+          COMPANY_RETRY_BACKOFF_MS[
+            Math.min(attempt - 1, COMPANY_RETRY_BACKOFF_MS.length - 1)
+          ];
+
+        await new Promise((resolve) =>
+          setTimeout(resolve, backoff + Math.random() * 2_000),
+        );
+      }
+
+      outcome = await withGlobalLookupSlot(() =>
+        this.lookupCompany(company, input, resolvedRoles, workspaceId),
+      ).catch(
+        (error): CompanyOutcome => ({
+          company: company.name,
+          status: 'source_error',
+          people: [],
+          rejected: [],
+          sourceErrors: [
+            error instanceof Error ? error.message : String(error),
+          ],
+          spentUsd: 0,
+        }),
+      );
+      spentUsd += outcome.spentUsd;
+
+      if (outcome.status !== 'source_error') {
+        break;
+      }
+
+      this.logger.warn(
+        `find_role_at_companies "${company.name}": lookup failed (attempt ${attempt + 1}/${maxRetries + 1}): ${outcome.sourceErrors.join('; ')}`,
+      );
+    }
+
+    return { ...(outcome as CompanyOutcome), spentUsd };
+  }
+
+  private async lookupCompany(
+    company: FindRoleAtCompany,
+    input: ResolvedInput,
     resolvedRoles: ResolvedRoles,
     workspaceId: string,
   ): Promise<CompanyOutcome> {
@@ -1197,7 +1336,7 @@ export class FindRoleAtCompaniesTool implements Tool {
   }
 
   private async persist(
-    input: FindRoleAtCompaniesInput,
+    input: ResolvedInput,
     outcomes: CompanyOutcome[],
     context: ToolExecutionContext,
   ): Promise<{ count: number; error?: string }> {
@@ -1256,7 +1395,7 @@ export class FindRoleAtCompaniesTool implements Tool {
   // Writes the per-company result to the Companies tab, so companies with
   // nobody found (or a lookup that failed) are visible, not just the hits.
   private async recordPeopleFound(
-    input: FindRoleAtCompaniesInput,
+    input: ResolvedInput,
     outcome: CompanyOutcome,
     workspaceId: string,
   ): Promise<void> {
@@ -1292,7 +1431,7 @@ export class FindRoleAtCompaniesTool implements Tool {
 
   // Optional JSONL trail of every company outcome, for run reports
   private logOutcome(
-    input: FindRoleAtCompaniesInput,
+    input: ResolvedInput,
     outcome: CompanyOutcome,
   ): void {
     const path = process.env.FIND_ROLE_OUTCOME_LOG_PATH;

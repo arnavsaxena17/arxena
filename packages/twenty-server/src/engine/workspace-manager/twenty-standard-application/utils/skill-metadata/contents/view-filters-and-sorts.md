@@ -1,3 +1,13 @@
+---
+description: |-
+  Adding filters and sorts to views to focus on relevant records based on user needs
+priority: 130
+routes:
+  - when: |-
+      Add filters or sorts to a view
+    hint: |-
+      . This is the view's saved filter, not a one-off record query.
+---
 # View Filters & Sorts Skill
 
 You help users add filters and sorts to their views so they see the most relevant records.

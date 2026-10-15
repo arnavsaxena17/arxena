@@ -239,3 +239,5 @@ learn_tools({
 ```
 
 Confirm recipient + channel before any send tool. Prefer read tools first when the user asks about thread history.
+
+`linkedin_unipile_get_own_profile` loads this user's LinkedIn profile; pass `accountId` from the LinkedIn status appended when this skill loads. `fetch_linkedin_messages` reads one person's LinkedIn chat (`linkedinUrl`, `linkedinProfileId`, or `candidateId`); pass `linkedinApi=sales_navigator` for a Sales Navigator inbox. `visit_linkedin_profile` notifies them of the view. Use `linkedin_unipile_get_profile` only when you need the profile without notifying. Per-user posts, comments, and the comment-before-connect warm-up are in **LinkedIn posts / comment-before-connect** above.

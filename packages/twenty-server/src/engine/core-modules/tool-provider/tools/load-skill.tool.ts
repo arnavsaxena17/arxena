@@ -15,7 +15,7 @@ export const loadSkillInputSchema = z.object({
     .array(z.string())
     .optional()
     .describe(
-      'Long skills such as search are split into sections (companies, people, list-building, linkedin-harvest). Pass only the ones the task needs; the intro is always included. Omit to load the whole skill.',
+      'Long skills such as search are split into sections (companies, people, people-by-company). Pass only the ones the task needs; the intro is always included. Omit to load the whole skill.',
     ),
 });
 
@@ -33,10 +33,34 @@ export type LoadSkillResult = {
 
 export type LoadSkillFunction = (names: string[]) => Promise<FlatSkill[]>;
 export type ListAvailableSkillNamesFunction = () => Promise<string[]>;
+export type SkillNoteFunction = (
+  skillName: string,
+) => Promise<string | undefined>;
+
+// LinkedIn account status is only needed to pick a searchType or to start
+// Unipile outreach. Resolve it when these skills load, not on every prompt.
+const LINKEDIN_CHANNEL_SKILL_NAMES = new Set(['search', 'outreach']);
+
+export const createLinkedinChannelSkillNote = (
+  resolveNote: () => Promise<string>,
+): SkillNoteFunction => {
+  let note: Promise<string> | undefined;
+
+  return (skillName) => {
+    if (!LINKEDIN_CHANNEL_SKILL_NAMES.has(skillName)) {
+      return Promise.resolve(undefined);
+    }
+
+    note ??= resolveNote();
+
+    return note;
+  };
+};
 
 export const createLoadSkillTool = (
   loadSkills: LoadSkillFunction,
   listAvailableSkillNames: ListAvailableSkillNamesFunction,
+  skillNote?: SkillNoteFunction,
 ) => ({
   description:
     'Arxena CRM toolkit: company and people search (Apollo, LinkedIn, Harvest, Bright Data), CRM records, outreach campaigns and sequencers, workflows and automations, dashboards, and org charts. Load specialized skills for complex tasks. Returns detailed step-by-step instructions for building workflows, dashboards, manipulating data, or managing metadata. Call this before attempting complex operations. START HERE for any request to search, find, list, or source companies, jobs, or people (e.g. "find companies which do XYZ in India", "CTOs at fintechs"). Call this first to understand capabilities. For the long search skill pass `sections` to load only the part the task needs.',
@@ -72,13 +96,21 @@ export const createLoadSkillTool = (
       ),
     ];
 
+    const skillsWithNotes = await Promise.all(
+      selected.map(async ({ skill, content, availableSections }) => {
+        const note = skillNote ? await skillNote(skill.name) : undefined;
+
+        return {
+          name: skill.name,
+          label: skill.label,
+          content: note ? `${content}\n\n${note}` : content,
+          ...(availableSections.length > 0 && { availableSections }),
+        };
+      }),
+    );
+
     return {
-      skills: selected.map(({ skill, content, availableSections }) => ({
-        name: skill.name,
-        label: skill.label,
-        content,
-        ...(availableSections.length > 0 && { availableSections }),
-      })),
+      skills: skillsWithNotes,
       message:
         `Loaded ${skills.map((skill) => skill.label).join(', ')}.` +
         (unknownSections.length > 0

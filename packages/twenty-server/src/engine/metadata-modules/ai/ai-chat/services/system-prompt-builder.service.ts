@@ -1,13 +1,8 @@
-import {
-  ARXENA_TOOL_CATALOG,
-  ARXENA_TOOL_PACK_LABELS,
-} from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-catalog.const';
 import { Injectable, Logger } from '@nestjs/common';
 
 import {
   assertUnreachable,
   getValidTimeZoneOrUndefined,
-  isDefined,
 } from 'twenty-shared/utils';
 
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
@@ -73,7 +68,7 @@ export class SystemPromptBuilderService {
     userWorkspaceId: string,
     workspaceInstructions?: string,
   ): Promise<SystemPromptPreview> {
-    const { roleId, userId, userContext, workspaceMemberId } =
+    const { roleId, userId, userContext } =
       await this.agentActorContextService.buildUserAndAgentActorContext(
         userWorkspaceId,
         workspaceId,
@@ -86,11 +81,6 @@ export class SystemPromptBuilderService {
     );
 
     const skillCatalog = await this.skillService.findAllFlatSkills(workspaceId);
-    const connectedAccountsContext =
-      await this.resolveLinkedinConnectedAccountsContext(
-        workspaceId,
-        workspaceMemberId,
-      );
 
     const sections: SystemPromptSection[] = [];
 
@@ -113,36 +103,16 @@ export class SystemPromptBuilderService {
       estimatedTokenCount: estimateTokenCount(responseFormatContent),
     });
 
-    if (workspaceInstructions) {
-      const workspaceSection = this.buildWorkspaceInstructionsSection(
-        workspaceInstructions,
-      );
-
-      sections.push({
-        title: 'Workspace Instructions',
-        content: workspaceSection,
-        estimatedTokenCount: estimateTokenCount(workspaceSection),
-      });
-    }
-
-    if (userContext) {
-      const userSection = this.buildUserContextSection(userContext);
-
-      sections.push({
-        title: 'User Context',
-        content: userSection,
-        estimatedTokenCount: estimateTokenCount(userSection),
-      });
-    }
-
-    const connectedAccountsSection = this.buildConnectedAccountsSection(
-      connectedAccountsContext,
-    );
+    const contextSection = this.buildContextSection({
+      userContext,
+      workspaceInstructions,
+      includeBrowsingContext: true,
+    });
 
     sections.push({
-      title: 'Connected Accounts',
-      content: connectedAccountsSection,
-      estimatedTokenCount: estimateTokenCount(connectedAccountsSection),
+      title: 'Context',
+      content: contextSection,
+      estimatedTokenCount: estimateTokenCount(contextSection),
     });
 
     const toolSection = this.buildToolCatalogSection(
@@ -187,25 +157,19 @@ export class SystemPromptBuilderService {
     }>,
     workspaceInstructions?: string,
     userContext?: UserContext,
-    connectedAccountsContext?: LinkedinConnectedAccountsContext,
   ): string {
     const parts: string[] = [
       CHAT_SYSTEM_PROMPTS.CORE,
       CHAT_SYSTEM_PROMPTS.CHAT_UI,
-      CHAT_SYSTEM_PROMPTS.BROWSING_CONTEXT_INSTRUCTION,
       CHAT_SYSTEM_PROMPTS.RESPONSE_FORMAT,
     ];
-
-    if (workspaceInstructions) {
-      parts.push(this.buildWorkspaceInstructionsSection(workspaceInstructions));
-    }
-
-    if (userContext) {
-      parts.push(this.buildUserContextSection(userContext));
-    }
-
-    if (connectedAccountsContext) {
-      parts.push(this.buildConnectedAccountsSection(connectedAccountsContext));
+    const contextSection = this.buildContextSection({
+      userContext,
+      workspaceInstructions,
+      includeBrowsingContext: true,
+    });
+    if (contextSection) {
+      parts.push(contextSection);
     }
 
     parts.push(this.buildToolCatalogSection(toolCatalog, preloadedTools));
@@ -223,7 +187,6 @@ export class SystemPromptBuilderService {
     roleId,
     userId,
     userWorkspaceId,
-    workspaceMemberId,
     userContext,
     excludeTools,
     preloadedTools = COMMON_PRELOAD_TOOLS,
@@ -232,7 +195,6 @@ export class SystemPromptBuilderService {
     roleId: string;
     userId?: string;
     userWorkspaceId?: string;
-    workspaceMemberId?: string;
     userContext?: UserContext;
     excludeTools?: Set<string>;
     preloadedTools?: string[];
@@ -250,18 +212,10 @@ export class SystemPromptBuilderService {
       CHAT_SYSTEM_PROMPTS.MCP_TRANSPORT,
     ];
 
-    if (userContext) {
-      parts.push(this.buildUserContextSection(userContext));
-    }
+    const contextSection = this.buildContextSection({ userContext });
 
-    if (isDefined(workspaceMemberId)) {
-      const connectedAccountsContext =
-        await this.resolveLinkedinConnectedAccountsContext(
-          workspaceId,
-          workspaceMemberId,
-        );
-
-      parts.push(this.buildConnectedAccountsSection(connectedAccountsContext));
+    if (contextSection) {
+      parts.push(contextSection);
     }
 
     parts.push(
@@ -334,36 +288,59 @@ export class SystemPromptBuilderService {
     }
   }
 
-  buildWorkspaceInstructionsSection(instructions: string): string {
-    return `
-    ## Workspace Instructions
+  buildContextSection({
+    userContext,
+    workspaceInstructions,
+    includeBrowsingContext = false,
+  }: {
+    userContext?: UserContext;
+    workspaceInstructions?: string;
+    includeBrowsingContext?: boolean;
+  }): string {
+    const blocks: string[] = [];
 
-    The following are custom instructions provided by the workspace administrator:
-
-    ${instructions}`;
-  }
-
-  buildUserContextSection(userContext: UserContext): string {
-    const parts = [
-      `User: ${userContext.firstName} ${userContext.lastName}`.trim(),
-      `Locale: ${userContext.locale}`,
-    ];
-
-    const resolvedTimeZone = getValidTimeZoneOrUndefined(userContext.timezone);
-
-    if (resolvedTimeZone) {
-      parts.push(`Timezone: ${resolvedTimeZone}`);
+    if (workspaceInstructions) {
+      blocks.push(
+        `The following are custom instructions provided by the workspace administrator:\n${workspaceInstructions}`,
+      );
     }
 
-    parts.push(`Current date: ${this.formatCurrentDate(userContext.timezone)}`);
+    if (userContext) {
+      const userLines = [
+        `User: ${userContext.firstName} ${userContext.lastName}`.trim(),
+        `Locale: ${userContext.locale}`,
+      ];
+      const resolvedTimeZone = getValidTimeZoneOrUndefined(
+        userContext.timezone,
+      );
+
+      if (resolvedTimeZone) {
+        userLines.push(`Timezone: ${resolvedTimeZone}`);
+      }
+
+      userLines.push(
+        `Current date: ${this.formatCurrentDate(userContext.timezone)}`,
+      );
+      blocks.push(userLines.join('\n'));
+    }
+
+    if (includeBrowsingContext) {
+      blocks.push(
+        "A <browsing_context> tag may appear in the user's last message. Only use it when directly relevant to the question.",
+      );
+    }
+
+    if (blocks.length === 0) {
+      return '';
+    }
 
     return `
-    ## User Context
+    ## Context
 
-    ${parts.join('\n')}`;
+    ${blocks.join('\n\n')}`;
   }
 
-  buildConnectedAccountsSection(
+  formatLinkedinConnectionStatus(
     connectedAccountsContext: LinkedinConnectedAccountsContext,
   ): string {
     const availableSearchTypes = ['classic'];
@@ -383,12 +360,6 @@ export class SystemPromptBuilderService {
           `- Search types available: ${availableSearchTypes.join(', ')}`,
           `- Sales Navigator: ${connectedAccountsContext.salesNavigatorAvailable ? 'available' : 'not available'}`,
           `- Recruiter: ${connectedAccountsContext.recruiterAvailable ? 'available' : 'not available'}`,
-          `- To load the user's own LinkedIn profile, call linkedin_unipile_get_own_profile with accountId=${connectedAccountsContext.accountId}.`,
-          `- LinkedIn chat history for a person: call fetch_linkedin_messages with linkedinUrl (or linkedinProfileId / candidateId). Pass linkedinApi=sales_navigator for Sales Navigator inbox chats.`,
-          `- To visit someone's LinkedIn profile so they are notified of the view: call visit_linkedin_profile with linkedinUrl (or linkedinProfileId / candidateId). Same as workflow step VIEW_LINKEDIN_PROFILE. Use linkedin_unipile_get_profile only when you need profile data without notifying.`,
-          `- To fetch someone's LinkedIn posts/activity: call linkedin_unipile_get_user_posts or linkedin_unipile_get_profile_overview (posts include social_id). Comments written by the user: linkedin_unipile_get_user_comments. Keyword post search is search_linkedin_posts — different from per-user posts.`,
-          `- Warm-up before connect can include VIEW_LINKEDIN_PROFILE → DELAY (random 1–2h) → FETCH_LINKEDIN_ACTIVITY → COMMENT_ON_LINKEDIN_POST → DELAY → ACCEPT_LINKEDIN_RECEIVED_INVITATION (else SEND_LINKEDIN_CONNECTION_REQUEST). Edit Workflow option commentBeforeConnect builds this. postId = mostRecentPost.socialId; round 2 uses excludePostSocialIds. FOLLOW_LINKEDIN_PROFILE and SEND_LINKEDIN_VOICE_NOTE are also first-class steps; voice is workflow-step only for outbound voice. Load outreach + workflow-building skills. Do not invent a chat MCP for commenting.`,
-          `- Only use searchType values listed as available. If the user asks for Sales Nav or Recruiter and it is not available, explain that and fall back to classic or Harvest.`,
         ]
       : [
           `- LinkedIn (Unipile): not connected${
@@ -397,14 +368,12 @@ export class SystemPromptBuilderService {
               : ''
           }`,
           `- Search types available: none via Unipile`,
-          `- Do not call search_linkedin_* or linkedin_unipile_get_own_profile until the user connects LinkedIn. Prefer Harvest People API (dataSource: "harvest") when appropriate, or ask the user to connect LinkedIn.`,
         ];
 
-    return `
-    ## Connected Accounts
-
-    Runtime LinkedIn connection status for the current user. Read this before choosing Unipile searchType.
-    ${lines.join('\n')}`;
+    return [
+      'LinkedIn for this user. Use only these searchType values.',
+      ...lines,
+    ].join('\n');
   }
 
   private formatCurrentDate(timezone: string | null): string {
@@ -514,7 +483,7 @@ export class SystemPromptBuilderService {
     const arxenaTools = toolsByCategory.get(ToolCategory.ARXENA);
 
     if (arxenaTools && arxenaTools.length > 0) {
-      sections.push(this.buildArxenaPackCatalogSection(arxenaTools.length));
+      sections.push(this.buildArxenaCatalogSection(arxenaTools.length));
     }
 
     const categoryOrder = Object.values(ToolCategory).filter(
@@ -590,29 +559,10 @@ export class SystemPromptBuilderService {
       Tool names are not listed here. Browse with \`${GET_TOOL_CATALOG_TOOL_NAME}({categories: ["${category}"]})\` or search with \`${GET_TOOL_CATALOG_TOOL_NAME}({query: "..."})\`.`;
   }
 
-  private buildArxenaPackCatalogSection(toolCount: number): string {
-    const packs = [
-      ...new Set(ARXENA_TOOL_CATALOG.map((entry) => entry.pack)),
-    ].sort();
-
-    const packLines = packs
-      .map((pack) => `- \`${pack}\`: ${ARXENA_TOOL_PACK_LABELS[pack]}`)
-      .join('\n');
-
+  private buildArxenaCatalogSection(toolCount: number): string {
     return `
       #### ${this.getCategoryLabel(ToolCategory.ARXENA)} (${toolCount} tools)
-      Exact names come from the matching skill after \`load_skills\`. Do not \`learn_tools\` this whole pack list.
-
-      Packs:
-      ${packLines}
-
-      Preferred tools (learn only these unless a skill names others):
-      - \`list_org_chart_positions\`
-      - \`get_org_chart_node_people\`
-      - \`check_contact_availability\`
-      - \`fetch_contacts\`
-      - \`fetch_email\`
-      - \`fetch_phone\``;
+      Names come from the loaded skill. If the skill does not name the tool, search with \`${GET_TOOL_CATALOG_TOOL_NAME}({query: "..."})\`.`;
   }
 
   buildToolCatalogSection(
@@ -664,7 +614,7 @@ export class SystemPromptBuilderService {
     const arxenaTools = toolsByCategory.get(ToolCategory.ARXENA);
 
     if (arxenaTools && arxenaTools.length > 0) {
-      sections.push(this.buildArxenaPackCatalogSection(arxenaTools.length));
+      sections.push(this.buildArxenaCatalogSection(arxenaTools.length));
     }
 
     const categoryOrder = Object.values(ToolCategory).filter(
@@ -777,7 +727,7 @@ export class SystemPromptBuilderService {
       case ToolCategory.WEBHOOK:
         return 'Webhook Tools (outgoing webhooks)';
       case ToolCategory.ARXENA:
-        return 'Prospecting & enrichment (first-party packs)';
+        return 'People and company search';
       case ToolCategory.EXTERNAL_MCP:
         return 'Connected apps (workspace MCP servers)';
       default:

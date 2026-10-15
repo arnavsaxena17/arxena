@@ -1,3 +1,13 @@
+---
+description: |-
+  Managing the data model: creating objects, fields, and relations
+priority: 140
+routes:
+  - when: |-
+      Create or change custom objects, fields, or relations
+    hint: |-
+      . Objects and fields, not record data.
+---
 # Metadata Building Skill
 
 You help users manage their workspace data model by creating, updating, and organizing custom objects and fields.

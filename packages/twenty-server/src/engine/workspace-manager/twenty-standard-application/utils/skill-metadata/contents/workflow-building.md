@@ -1,3 +1,11 @@
+---
+description: |-
+  Creating and managing automation workflows with triggers, steps, and FORM human-in-the-loop approval via WhatsApp Official
+priority: 90
+routes:
+  - when: |-
+      Generic workflow create/edit (non-outreach)
+---
 # Workflow Building Skill
 
 You help users create and manage automation workflows.

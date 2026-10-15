@@ -36,7 +36,6 @@ export class McpInstructionBuilderService {
     userId,
     userWorkspaceId,
   }: McpInstructionAuthContext): Promise<string> {
-    let workspaceMemberId: string | undefined;
     let userContext: UserContext | undefined;
 
     if (isDefined(userWorkspaceId)) {
@@ -47,10 +46,9 @@ export class McpInstructionBuilderService {
             workspaceId,
           );
 
-        workspaceMemberId = actorContext.workspaceMemberId;
         userContext = actorContext.userContext;
       } catch {
-        // API-key sessions and missing workspace members skip user/LinkedIn context.
+        // API-key sessions and missing workspace members skip user context.
       }
     }
 
@@ -64,7 +62,6 @@ export class McpInstructionBuilderService {
       roleId,
       userId,
       userWorkspaceId,
-      workspaceMemberId,
       userContext,
       excludeTools,
       preloadedTools: getPreloadToolNames(excludeTools),

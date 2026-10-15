@@ -40,16 +40,14 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     skillName: 'workflow-building',
     name: 'workflow-building',
     label: 'Workflow Building',
-    description:
-      'Creating and managing automation workflows with triggers, steps, and FORM human-in-the-loop approval via WhatsApp Official',
+    description: getSkillDescription('workflow-building'),
     icon: 'IconSettingsAutomation',
   }),
   'data-manipulation': createStandardSkillBuilder({
     skillName: 'data-manipulation',
     name: 'data-manipulation',
     label: 'Data Manipulation',
-    description:
-      'Searching, filtering, creating, and updating records across all objects',
+    description: getSkillDescription('data-manipulation'),
     icon: 'IconDatabase',
   }),
   'workspace-demo-seeding': createStandardSkillBuilder({
@@ -64,15 +62,14 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     skillName: 'dashboard-building',
     name: 'dashboard-building',
     label: 'Dashboard Building',
-    description: 'Creating and managing dashboards with widgets and layouts',
+    description: getSkillDescription('dashboard-building'),
     icon: 'IconLayoutDashboard',
   }),
   'metadata-building': createStandardSkillBuilder({
     skillName: 'metadata-building',
     name: 'metadata-building',
     label: 'Metadata Building',
-    description:
-      'Managing the data model: creating objects, fields, and relations',
+    description: getSkillDescription('metadata-building'),
     icon: 'IconBuildingSkyscraper',
   }),
   research: createStandardSkillBuilder({
@@ -119,16 +116,14 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     skillName: 'view-building',
     name: 'view-building',
     label: 'View Building',
-    description:
-      'Creating and configuring views (table, board/kanban, calendar) for objects to organize and visualize records',
+    description: getSkillDescription('view-building'),
     icon: 'IconLayoutBoard',
   }),
   'view-filters-and-sorts': createStandardSkillBuilder({
     skillName: 'view-filters-and-sorts',
     name: 'view-filters-and-sorts',
     label: 'View Filters & Sorts',
-    description:
-      'Adding filters and sorts to views to focus on relevant records based on user needs',
+    description: getSkillDescription('view-filters-and-sorts'),
     icon: 'IconFilter',
   }),
   'custom-objects-cleanup': createStandardSkillBuilder({
@@ -143,64 +138,42 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     skillName: 'setup',
     name: 'setup',
     label: 'Setup',
-    description:
-      getSkillDescription('setup'),
+    description: getSkillDescription('setup'),
     icon: 'IconTargetArrow',
   }),
   outreach: createStandardSkillBuilder({
     skillName: 'outreach',
     name: 'outreach',
     label: 'Outreach',
-    description:
-      getSkillDescription('outreach'),
+    description: getSkillDescription('outreach'),
     icon: 'IconSend',
   }),
   search: createStandardSkillBuilder({
     skillName: 'search',
     name: 'search',
     label: 'Search',
-    description:
-      getSkillDescription('search'),
+    description: getSkillDescription('search'),
     icon: 'IconBuildingSkyscraper',
   }),
   'org-structure-insights': createStandardSkillBuilder({
     skillName: 'org-structure-insights',
     name: 'org-structure-insights',
     label: 'Org Structure Insights',
-    description:
-      getSkillDescription('org-structure-insights'),
+    description: getSkillDescription('org-structure-insights'),
     icon: 'IconSitemap',
-  }),
-  'local-business-search': createStandardSkillBuilder({
-    skillName: 'local-business-search',
-    name: 'local-business-search',
-    label: 'Local Business Search',
-    description:
-      getSkillDescription('local-business-search'),
-    icon: 'IconMapSearch',
-  }),
-  'resolve-company-name': createStandardSkillBuilder({
-    skillName: 'resolve-company-name',
-    name: 'resolve-company-name',
-    label: 'Resolve Company Name',
-    description:
-      getSkillDescription('resolve-company-name'),
-    icon: 'IconBuilding',
   }),
   'ai-filter-enrich': createStandardSkillBuilder({
     skillName: 'ai-filter-enrich',
     name: 'ai-filter-enrich',
     label: 'AI Filter & Enrich',
-    description:
-      getSkillDescription('ai-filter-enrich'),
+    description: getSkillDescription('ai-filter-enrich'),
     icon: 'IconSparkles',
   }),
   'spreadsheet-import': createStandardSkillBuilder({
     skillName: 'spreadsheet-import',
     name: 'spreadsheet-import',
     label: 'Spreadsheet Import',
-    description:
-      getSkillDescription('spreadsheet-import'),
+    description: getSkillDescription('spreadsheet-import'),
     icon: 'IconTableImport',
   }),
   pptx: createStandardSkillBuilder({

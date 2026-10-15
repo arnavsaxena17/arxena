@@ -57,12 +57,6 @@ export const STANDARD_SKILL = {
   'org-structure-insights': {
     universalIdentifier: '20202020-e6f8-4c9a-b2d1-7a4e0c3f5b28',
   },
-  'local-business-search': {
-    universalIdentifier: '20202020-7d2a-4f6b-9c1e-3a8b5e0d4f92',
-  },
-  'resolve-company-name': {
-    universalIdentifier: '20202020-8e3c-4a1b-9d5f-6b2e0c7a4d81',
-  },
   'ai-filter-enrich': {
     universalIdentifier: '20202020-9f4d-4b2c-8e6a-7c3f1d8b5e92',
   },
@@ -85,4 +79,8 @@ export const RETIRED_STANDARD_SKILL_UNIVERSAL_IDENTIFIERS = {
   linkedinSearch: '20202020-c4e8-4f7a-9b2d-1e6a0c8f5d3b',
   /** formerly `search-people` — content lives in `search` */
   searchPeople: '20202020-3f7d-4a9b-8c2e-1a5b0d4e7c69',
+  /** formerly `local-business-search` — steps live in `search` companies */
+  localBusinessSearch: '20202020-7d2a-4f6b-9c1e-3a8b5e0d4f92',
+  /** formerly `resolve-company-name` — the tool stays, listed in `search` companies */
+  resolveCompanyName: '20202020-8e3c-4a1b-9d5f-6b2e0c7a4d81',
 } as const;

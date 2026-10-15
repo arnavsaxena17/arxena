@@ -1,5 +1,7 @@
 ## People
 
+A population is this section: a title, a skill, an industry, a city, or "all software engineers who know React in SaaS companies in Mumbai". Do not call `find_role_at_companies` and do not look up each person at each company. A role at companies already named loads `people-by-company`.
+
 ### Provider map (choose by intent)
 
 | Source | Tool(s) | Best for | Requires |
@@ -21,7 +23,7 @@
 
 ### learn_tools (people)
 
-On Outreach include `upsert_outreach_target_people` and **omit** `create_candidate` unless the user confirmed CRM save:
+On Outreach include `upsert_outreach_target_people`. Do not `create_candidate` on Find or on Save to CRM.
 
 ```
 # Outreach (default)
@@ -42,18 +44,15 @@ learn_tools([
   "upsert_outreach_target_people"
 ])
 
-# Explicit CRM save only
+# Save to CRM only, after the user asks
 learn_tools([
-<!-- search-apollo-people-learn-tools-line:start -->
-  "search_apollo_people",
-<!-- search-apollo-people-learn-tools-line:end -->
-  "search_linkedin_people",
-  "create_candidate",
-<!-- search-find-candidate-internal-learn-tools-line:start -->
-  "find_candidate_in_arxena_internal"
-<!-- search-find-candidate-internal-learn-tools-line:end -->
+  "save_outreach_targets_to_crm"
 ])
 ```
+
+<!-- search-find-candidate-internal-learn-tools-line:start -->
+`find_candidate_in_arxena_internal` looks up one existing person. It does not create a record.
+<!-- search-find-candidate-internal-learn-tools-line:end -->
 
 Dedup across sources **by normalized name + email/linkedin** before writing.
 
@@ -78,17 +77,16 @@ search_apollo_people({
 <!-- search-apollo-people-source-section:end -->
 ### Source — LinkedIn / Unipile (`search_linkedin_people`)
 
-Live LinkedIn people. **Full facet workflow: LinkedIn / Harvest section below.**
+Live LinkedIn people. Facet examples are at the end of this section. Resolve facet ids with `search_linkedin_parameters` and never invent one. Keep a close title match ("Trident Group" → "Trident Group India"). Drop a clear mismatch ("Raymond Ltd" → "Raymond James") or an empty result, and omit that filter.
 
-- `searchType`: `classic`, `sales_navigator`, or `recruiter` — check **Connected Accounts** in the system prompt.
-- Resolve facet IDs with `search_linkedin_parameters` before ID-based filters.
+- `searchType`: `classic`, `sales_navigator`, or `recruiter` — only values listed in the LinkedIn status appended when this skill loads. If Sales Navigator or Recruiter is not listed, say so and use `classic` or Harvest (`dataSource: "harvest"`). If LinkedIn is not connected, do not call `search_linkedin_*`.
 - Named Sales Nav lead lists: `search_linkedin_parameters({ parameterType: "LEAD_LISTS" })` → `search_linkedin_people` with `lead_lists.include`.
-- `search_linkedin_from_url` for pasted LinkedIn / Sales Nav / Recruiter URLs.
+- `search_linkedin_from_url` for pasted LinkedIn / Sales Nav / Recruiter people URLs.
 - Recently added 1st-degree connections: `list_linkedin_relations` with `limit` = n.
 
 ### Source — Harvest (People API)
 
-Taxonomy-backed people search without a LinkedIn session. **Full Harvest examples: LinkedIn / Harvest section below.**
+Taxonomy-backed people search without a LinkedIn session. Population examples (no named employer) are at the end of this section.
 
 - `search_people_api` with `naturalLanguage` (preferred) or `search_people_by_job_title` alias.
 - Always pass `dataSource: "harvest"`. Never invent `harvest_*` tool names.
@@ -117,7 +115,7 @@ Plain-language people sets. Pass the user's sentence as `query`. Do not turn it 
 
 `entity`: `"people"`. `mode`: always ludicrous (smart and instant are not used; any `mode` passed is ignored).
 
-**Ludicrous is budgeted. Show the cost before fetching, except for a targeted lookup (use the `find-role-at-companies` playbook).** It bills **$0.002 per returned record**, capped at **$10 per query**. The server turns the request into several structured, non-overlapping queries (title synonyms, cities, size and funding buckets), then fetches slice by slice and drops slices whose results stop being relevant.
+**Ludicrous is budgeted. Show the cost before fetching.** A role at companies already named is `people-by-company`, not this estimate. It bills **$0.002 per returned record**. The server turns the request into several structured, non-overlapping queries (title synonyms, cities, size and funding buckets), then fetches slice by slice and drops slices whose results stop being relevant.
 
 **How the query is built (server side, you only pass the sentence).** The planner turns the request into a structured ludicrous `query` and always fetches `view: "full"`. Conditions are `and` / `or` / `not` over `text` (text fields), `equals` / `in` / `range` (typed fields). Titles use `text` on `current_title` with `mode: "all"` (every word required, any order), people locations use `country_code` / `city` (typed), employers use `current_company_name` / `current_company_industry` (text). A people search cannot filter on company attributes such as funding or headquarters; for those, search companies first, then people. Example:
 
@@ -180,26 +178,92 @@ Follow **Ephemeral write contract** (preamble). Steps:
 3. Search tools in **Result lists** return a `listId`: show the rows with `outreach_list` `attach`. For a tool that still returns rows, build `people[]` and make one `execute_tool` upsert. Never upsert from the sandbox.
 4. Summarize written count. Do **not** create enrollment records until the user confirms.
 
-### CRM save (only when the user asks)
-
-On Outreach this does **not** apply until the user confirms Add to CRM / Enroll after seeing the People tab.
+### Save to CRM (only when the user asks)
 
 1. Dedupe on **email** first, then **LinkedIn URL**, then normalized name + company.
-2. Load `data-manipulation` + `code-interpreter`; resolve existing candidates:
-
-```python
-existing = arxena.lookup_by('candidates', 'email', [r['email'] for r in people_records if r.get('email')])
-```
-
-   Or use `find_candidate_in_arxena_internal` for a single lookup.
-3. `create_candidate` for missing, update for present. Use **CRM UUID** — never provider ids.
-4. Field map: first/last name → `name`, headline → `jobTitle`, company → resolve `companyId`, email → `email`, phone → `phone`, LinkedIn URL → `linkedinLink.primaryLinkUrl`.
-5. **LinkedIn results** are in a list (see **Result lists**): use `outreach_list` `save_to_crm` for the CRM write; do not parse them yourself.
-6. If asked for CSV + project: write `/home/user/output/` from the **same parsed rows**; attach to project via candidate link tools when needed.
+2. `save_outreach_targets_to_crm` with `target: "people"`. Omit ids to save the whole tab. This creates Person records and does not start outreach.
+3. **LinkedIn results** are in a list (see **Result lists**): `outreach_list` `save_to_crm` is the same write. Do not parse the rows yourself.
+4. Start outreach only after those records exist, and only when the user asks: load `outreach`.
 
 ### People constraints
 
-- On Outreach People tab, `upsert_outreach_target_people` is mandatory before ending the turn; never `create_candidate` until confirm.
+- On Outreach People tab, `upsert_outreach_target_people` or `outreach_list` `attach` is mandatory before ending a Find. Do not `create_candidate` on Find or on Save to CRM.
 - Present results with name, title, company, location, and source; note when Recruiter results hide public identifiers.
+
+### People facet examples
+
+Do not mix classic flat arrays into Sales Navigator or Recruiter bodies. Job title on Sales Navigator is `role: { include: ["id"] }`, never `job_title`. Recruiter role is `role: [{ keywords }]` or `[{ id }]`.
+
+**Classic people**
+
+```json
+{
+  "searchType": "classic",
+  "searchParameters": {
+    "api": "classic",
+    "category": "people",
+    "keywords": "product manager",
+    "location": ["102277331"],
+    "industry": ["6"],
+    "network_distance": [1, 2, 3]
+  },
+  "limit": 10
+}
+```
+
+**Sales Navigator people** (population, no named employer)
+
+```json
+{
+  "searchType": "sales_navigator",
+  "searchParameters": {
+    "api": "sales_navigator",
+    "category": "people",
+    "keywords": "textile OR fabric",
+    "role": { "include": ["14"] },
+    "industry": { "include": ["60"] },
+    "location": { "include": ["102713980"] },
+    "profile_language": ["en"]
+  },
+  "limit": 10
+}
+```
+
+**Recruiter people**
+
+```json
+{
+  "searchType": "recruiter",
+  "searchParameters": {
+    "api": "recruiter",
+    "category": "people",
+    "network_distance": [1, 2, 3],
+    "industry": { "include": ["4"] },
+    "role": [{ "keywords": "developer OR engineer", "priority": "MUST_HAVE", "scope": "CURRENT_OR_PAST" }],
+    "skills": [{ "id": "50517", "priority": "MUST_HAVE" }]
+  },
+  "limit": 10
+}
+```
+
+**Pasted people-list URL** (`/sales/lists/people/{id}`): `search_linkedin_from_url({ url, limit: 25 })`, then `search_linkedin_continue` until the pages are done. Attach once.
+
+**Named Sales Navigator lead list** (a list name, no URL): `search_linkedin_parameters({ parameterType: "LEAD_LISTS", limit: 100 })`, pick the `id` whose title matches, then `search_linkedin_people` with `lead_lists: { include: ["<id>"] }`.
+
+**Recently added connections:** `list_linkedin_relations` with the user's n as `limit`. Do not walk the whole network.
+
+**Natural-language people brief:** `generate_linkedin_query_set` once for that `rawRequirement`, then `validate_linkedin_query_set`, then pass the params to `search_linkedin_people`.
+
+**Harvest population** (no named employer). Call `list_people_data_sources` if you are unsure Harvest is configured. Never invent `harvest_*` tool names.
+
+```json
+{
+  "dataSource": "harvest",
+  "stdFunction": "engineering",
+  "stdGrade": "leadership",
+  "country": "United States",
+  "limit": 20
+}
+```
 
 ---

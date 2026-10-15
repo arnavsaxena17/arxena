@@ -230,6 +230,8 @@ export const getOutreachPeopleTableColumns = ({
     label: 'LinkedIn',
     Icon: IconBrandLinkedin,
     width: 150,
+    // Also what the CSV export reads; columns without a sortValue are skipped
+    sortValue: (person) => person.linkedinUrl,
     render: (person) => <OutreachLinkCell url={person.linkedinUrl} />,
   },
   {

@@ -44,6 +44,7 @@ import {
   getToolCatalogInputSchema,
 } from 'src/engine/core-modules/tool-provider/tools';
 import { buildCoreToolSet } from 'src/engine/core-modules/tool-provider/tools/build-core-tool-set.util';
+import { createLinkedinChannelSkillNote } from 'src/engine/core-modules/tool-provider/tools/load-skill.tool';
 import { estimateToolOutputTokens } from 'src/engine/core-modules/tool-provider/utils/estimate-tool-output-tokens.util';
 import { getToolMetricName } from 'src/engine/core-modules/tool-provider/utils/get-tool-metric-name.util';
 import { isToolOutputSuccessful } from 'src/engine/core-modules/tool-provider/utils/is-tool-output-successful.util';
@@ -64,10 +65,7 @@ import {
   extractCacheCreationTokensFromSteps,
 } from 'src/engine/metadata-modules/ai/ai-billing/utils/extract-cache-creation-tokens.util';
 import { getPreloadToolNames } from 'src/engine/core-modules/tool-provider/constants/common-preload-tools.const';
-import {
-  buildSeededOutreachWorkflowInventoryLines,
-  CHAT_INTENT_SKILLS,
-} from 'src/engine/metadata-modules/ai/ai-chat/constants/chat-intent-skills.const';
+import { buildSeededOutreachWorkflowInventoryLines } from 'src/engine/metadata-modules/ai/ai-chat/constants/chat-intent-skills.const';
 import { MessagePruningService } from 'src/engine/metadata-modules/ai/ai-chat/services/message-pruning.service';
 import { SystemPromptBuilderService } from 'src/engine/metadata-modules/ai/ai-chat/services/system-prompt-builder.service';
 import {
@@ -293,6 +291,18 @@ export class ChatExecutionService {
       skillService: this.skillService,
       workspaceId: workspace.id,
       excludeTools: disabledSearchToolNames,
+      skillNote: createLinkedinChannelSkillNote(() =>
+        this.systemPromptBuilder
+          .resolveLinkedinConnectedAccountsContext(
+            workspace.id,
+            workspaceMemberId,
+          )
+          .then((connectedAccountsContext) =>
+            this.systemPromptBuilder.formatLinkedinConnectionStatus(
+              connectedAccountsContext,
+            ),
+          ),
+      ),
       outputOptions: { compactOutput: true, spillLargeOutput: true },
     });
 
@@ -373,20 +383,6 @@ export class ChatExecutionService {
       userContext.timezone,
     );
 
-    const connectedAccountsContext =
-      await this.systemPromptBuilder.resolveLinkedinConnectedAccountsContext(
-        workspace.id,
-        workspaceMemberId,
-      );
-
-    this.logger.log(
-      `[AI_CHAT] connectedAccounts linkedinConnected=${connectedAccountsContext.connected} ` +
-        `accountId=${connectedAccountsContext.accountId ?? 'none'} ` +
-        `inferredSearchType=${connectedAccountsContext.inferredSearchType ?? 'none'} ` +
-        `salesNavigator=${connectedAccountsContext.salesNavigatorAvailable} ` +
-        `recruiter=${connectedAccountsContext.recruiterAvailable}`,
-    );
-
     const systemPrompt = this.systemPromptBuilder.buildFullPrompt(
       toolCatalog,
       skillCatalog,
@@ -394,7 +390,6 @@ export class ChatExecutionService {
       storedFiles,
       workspace.aiAdditionalInstructions ?? undefined,
       userContext,
-      connectedAccountsContext,
     );
 
     const providerOptions = getCacheProviderOptions(registeredModel.sdkPackage);
@@ -963,8 +958,6 @@ export class ChatExecutionService {
   private buildOrgChartContext(
     browsingContext: Extract<BrowsingContextType, { type: 'orgChart' }>,
   ): string {
-    const { orgStructureInsights } = CHAT_INTENT_SKILLS;
-
     return [
       'The user is viewing an org chart.',
       `companyId: ${browsingContext.companyId ?? 'none'}`,
@@ -974,7 +967,7 @@ export class ChatExecutionService {
       `titleQuery: ${browsingContext.titleQuery ?? 'none'}`,
       `searchTerm: ${browsingContext.searchTerm ?? 'none'}`,
       'When they ask to find, show, highlight, or map people or teams on this chart:',
-      `1. load_skills(["${orgStructureInsights}"])`,
+      '1. load_skills(["org-structure-insights"])',
       '2. Resolve 1–3 search words that match node headlines, names, or titles',
       '3. learn_tools({toolNames:["highlight_org_chart"]}) then execute_tool with a JSON-object arguments field',
       '4. Call highlight_org_chart({ searchTerms: [...] }) before ending the turn — do not tell them to type in the search box',
@@ -986,8 +979,6 @@ export class ChatExecutionService {
     workspace: WorkspaceEntity,
     browsingContext: Extract<BrowsingContextType, { type: 'outreachCommand' }>,
   ): string {
-    const { search, outreach, workflowBuilding } = CHAT_INTENT_SKILLS;
-
     return [
       'The user is on campaign home (Find companies / people / outreach).',
       `projectId: ${browsingContext.projectId ?? 'none'}`,
@@ -1020,14 +1011,14 @@ export class ChatExecutionService {
           ]),
       'Target companies on the Companies tab are ephemeral (Find destination), not CRM membership.',
       'When the user asks to find/fetch/add/build target companies:',
-      `1. load_skills(["${search}"])`,
+      '1. load_skills(["search"])',
       '2. Search providers per the search skill',
       '3. learn_tools({toolNames:["upsert_outreach_target_companies"]}) then execute_tool with a JSON-object arguments field',
       '4. Call upsert_outreach_target_companies({ projectId, mode: "merge", companies: [...] }) before ending the turn',
       'Do NOT create CRM Company records for the Companies tab. Only create CRM Company when enrolling people.',
       'Target people on the People tab are ephemeral (Find) until the user selects rows and confirms Add to CRM / Enroll.',
       'When the user asks to find/fetch/search people (target titles, MD/CEO, personas) for this campaign:',
-      `1. load_skills(["${search}"])`,
+      '1. load_skills(["search"])',
       '2. Search using companies from this project when relevant',
       '3. learn_tools({toolNames:["upsert_outreach_target_people"]}) then execute_tool with a JSON-object arguments field',
       '4. Call upsert_outreach_target_people({ projectId, mode: "merge", people: [...] }) before ending the turn',
@@ -1039,7 +1030,7 @@ export class ChatExecutionService {
       '3. Whole table (nothing selected, user said everyone/all): start_outreach({ projectId, startAllQueuedInProject: true })',
       '4. Report startedCandidates. If 0 and rows were selected, the people are not enrolled yet: enroll them (upload-profiles) with the steps below, then call start_outreach with the new candidate ids',
       'When the user asks to enroll / set up the sequencer / send connection requests and the sequencer or candidates do not exist yet:',
-      `1. load_skills(["${outreach}","${workflowBuilding}"]) — treat that ask as execute authorization for enrollment`,
+      '1. load_skills(["outreach", "workflow-building"]) — treat that ask as execute authorization for enrollment',
       '2. Prefer Project outreachWorkflowId / name "Outreach — Candidate Sequencer"; clone via create_draft_from_workflow_version before editing; do not rebuild from scratch',
       '3. Person Links field is linkedinLink.primaryLinkUrl (not Candidate linkedinUrl) — load Person after Candidate and wire SEND_* / fetch-linkedin inputs from the person FIND',
       '4. Activate the draft, then create Candidates for ephemeral People with projectId=projectId, outreachSequenceStage=QUEUED, linkedinUrl set',
