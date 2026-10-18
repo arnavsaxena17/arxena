@@ -19,6 +19,7 @@ import {
   humanizeKey,
   shouldGroupByCompany,
 } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column.service';
+import { type OutreachSampleMessageInclude } from 'src/engine/core-modules/outreach-command/types/outreach-sample-message.types';
 import {
   matchesTableFilter,
   OutreachTableViewService,
@@ -118,6 +119,38 @@ export class OutreachAiColumnRunService {
     private readonly outreachTableViewService: OutreachTableViewService,
   ) {}
 
+  async startSampleLinkedinMessageForSelection({
+    workspaceId,
+    projectId,
+    rowIds,
+    include,
+  }: {
+    workspaceId: string;
+    projectId: string;
+    rowIds: string[];
+    include?: OutreachSampleMessageInclude;
+  }): Promise<RunState> {
+    if (rowIds.length === 0) {
+      throw new Error('Select at least one person');
+    }
+
+    const previewId =
+      await this.outreachAiColumnService.createSampleMessagePreview({
+        workspaceId,
+        projectId,
+        include,
+      });
+
+    return this.startRun({
+      workspaceId,
+      projectId,
+      subject: 'person',
+      previewId,
+      rerunAll: true,
+      rowIds,
+    });
+  }
+
   async startRun({
     workspaceId,
     projectId,
@@ -125,6 +158,8 @@ export class OutreachAiColumnRunService {
     previewId,
     rerunAll,
     onlyViewMatches,
+    rowLimit,
+    rowIds,
   }: {
     workspaceId: string;
     projectId: string;
@@ -132,6 +167,8 @@ export class OutreachAiColumnRunService {
     previewId: string;
     rerunAll?: boolean;
     onlyViewMatches?: boolean;
+    rowLimit?: number;
+    rowIds?: string[];
   }): Promise<RunState> {
     const preview =
       await this.outreachAiColumnService.getPreviewState(previewId);
@@ -183,13 +220,28 @@ export class OutreachAiColumnRunService {
             tab: subject === 'person' ? 'people' : 'companies',
           })
         : null;
-    const all = isDefined(view)
+    const viewMatched = isDefined(view)
       ? workingSet.filter((row) =>
           view.filters.every((filter) =>
             matchesTableFilter(readCellText(row, filter.columnId), filter),
           ),
         )
       : workingSet;
+    const rowIdSet =
+      isDefined(rowIds) && rowIds.length > 0 ? new Set(rowIds) : null;
+    const selectionMatched = isDefined(rowIdSet)
+      ? viewMatched.filter((row) => rowIdSet.has(row.id))
+      : viewMatched;
+
+    if (isDefined(rowIdSet) && selectionMatched.length === 0) {
+      throw new Error('None of the selected people are in this project list');
+    }
+
+    // First N of the (view-/selection-filtered) working set — not "first N empty".
+    const all =
+      isDefined(rowLimit) && rowLimit > 0
+        ? selectionMatched.slice(0, rowLimit)
+        : selectionMatched;
     const columnKeys = preview.filter.fields.map((field) => field.name);
     // Rows that already hold every key are skipped, so a re-run only pays
     // for rows that failed or were added since.
@@ -422,16 +474,30 @@ export class OutreachAiColumnRunService {
       return state;
     }
 
-    state.cancelRequested = true;
+    // Always finish now: a stalled worker never reads cancelRequested, and the
+    // UI Stop button is meant to unblock the project immediately. Rows already
+    // written by earlier chunks stay.
+    return this.finish(state, 'cancelled');
+  }
 
-    if (state.status === 'queued' || isStalled(state)) {
-      return this.finish(state, 'cancelled');
+  async cancelActiveRunForProject({
+    workspaceId,
+    projectId,
+    runId,
+  }: {
+    workspaceId: string;
+    projectId: string;
+    runId?: string;
+  }): Promise<RunState | undefined> {
+    const activeRunId =
+      runId ??
+      (await this.cache.get<string>(this.activeKey(workspaceId, projectId)));
+
+    if (!isDefined(activeRunId)) {
+      return undefined;
     }
 
-    state.updatedAt = new Date().toISOString();
-    await this.cache.set(this.runKey(runId), state, RUN_TTL_MS);
-
-    return state;
+    return this.cancelRun(activeRunId);
   }
 
   async waitForRun(runId: string, maxWaitMs: number): Promise<RunState> {

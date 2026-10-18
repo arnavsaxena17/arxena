@@ -8,6 +8,7 @@ import { MetricsService } from 'src/engine/core-modules/metrics/metrics.service'
 import { ToolRegistryService } from 'src/engine/core-modules/tool-provider/services/tool-registry.service';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AgentAsyncExecutorService } from 'src/engine/metadata-modules/ai/ai-agent-execution/services/agent-async-executor.service';
+import { AGENT_CONFIG } from 'src/engine/metadata-modules/ai/ai-agent/constants/agent-config.const';
 import { type AgentEntity } from 'src/engine/metadata-modules/ai/ai-agent/entities/agent.entity';
 import { NATIVE_WEB_SEARCH_COST_PER_CALL_DOLLARS } from 'src/engine/metadata-modules/ai/ai-billing/constants/native-web-search-cost-per-call-dollars';
 import { AiBillingService } from 'src/engine/metadata-modules/ai/ai-billing/services/ai-billing.service';
@@ -215,6 +216,37 @@ describe('AgentAsyncExecutorService — workflow agent role-scoped tool resoluti
         system: expect.stringContaining('Tool usage strategy'),
       }),
     );
+  });
+
+  it('bounds the tool loop so a hung provider cannot block the queue', async () => {
+    await service.executeAgent({
+      agent: buildAgent(),
+      userPrompt: 'test',
+      workspaceId,
+    });
+
+    expect(generateTextMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        timeout: {
+          totalMs: AGENT_CONFIG.LLM_TOOL_LOOP_TIMEOUT_MS,
+          stepMs: AGENT_CONFIG.LLM_STEP_TIMEOUT_MS,
+        },
+      }),
+    );
+  });
+
+  it('surfaces a provider timeout as an agent execution failure', async () => {
+    generateTextMock.mockRejectedValueOnce(
+      new DOMException('The operation timed out', 'TimeoutError'),
+    );
+
+    await expect(
+      service.executeAgent({
+        agent: buildAgent(),
+        userPrompt: 'test',
+        workspaceId,
+      }),
+    ).rejects.toThrow('timed out waiting for the model provider');
   });
 
   describe('cost folding', () => {

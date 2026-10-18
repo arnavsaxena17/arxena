@@ -1,0 +1,94 @@
+[
+  {
+    "company": "Stripe",
+    "query": "Stripe San Francisco",
+    "ms": 0,
+    "count": 10,
+    "top": [
+      {
+        "date": "1 week ago",
+        "summary": "FedEx Dataworks and Stripe to Join Forces to Reduce Friction in Global Commerce for SMBs (Business Wire)",
+        "url": "https://www.businesswire.com/news/home/20261006931608/en/FedEx-Dataworks-and-Stripe-to-Join-Forces-to-Reduce-Friction-in-Global-Commerce-for-SMBs"
+      },
+      {
+        "date": "2 weeks ago",
+        "summary": "Stripe alums spark new payments plays (Payments Dive)",
+        "url": "https://www.paymentsdive.com/news/stripe-alums-spark-new-payments-plays/831410/"
+      },
+      {
+        "date": "19 hours ago",
+        "summary": "Stripe and Plasma co-develop a new multi-currency card experience (The Manila Times)",
+        "url": "https://www.manilatimes.net/2026/10/15/tmt-newswire/globenewswire/stripe-and-plasma-co-develop-a-new-multi-currency-card-experience/2446675/amp"
+      }
+    ]
+  },
+  {
+    "company": "Notion",
+    "query": "Notion San Francisco",
+    "ms": 0,
+    "count": 10,
+    "top": [
+      {
+        "date": "1 month ago",
+        "summary": "Notion’s new San Francisco HQ is an ode to classic design (Fast Company)",
+        "url": "https://www.fastcompany.com/91599202/notion-designed-its-new-hq-as-an-ode-to-classic-design"
+      },
+      {
+        "date": "1 day ago",
+        "summary": "Podcaster Shuts Down Notion That Tyreek Hill Would Be a Good Fit for the 49ers (Athlon Sports)",
+        "url": "https://athlonsports.com/nfl/san-francisco-49ers/podcaster-shuts-down-tyreek-hill-good-49ers"
+      },
+      {
+        "date": "1 month ago",
+        "summary": "Interior Architects creates Craftsman-style office for Notion (Dezeen)",
+        "url": "https://www.dezeen.com/2026/08/26/interior-architects-notion-craftsman-style-office-san-francisco/"
+      }
+    ]
+  },
+  {
+    "company": "Zoho",
+    "query": "Zoho Chennai",
+    "ms": 0,
+    "count": 10,
+    "top": [
+      {
+        "date": "2 days ago",
+        "summary": "Zoho’s Vembu says co paused hikes & ad spend due to AI costs (The Times of India)",
+        "url": "https://timesofindia.indiatimes.com/city/chennai/zohos-vembu-says-co-paused-hikes-ad-spend-due-to-ai-costs/articleshow/134907078.cms"
+      },
+      {
+        "date": "22 hours ago",
+        "summary": "Zoho Freezes Annual Salary Hikes as AI Costs Rise and Growth Slows (TheWire.in)",
+        "url": "https://m.thewire.in/article/business/zoho-freezes-annual-salary-hikes-as-ai-costs-rise-and-growth-slows"
+      },
+      {
+        "date": "1 day ago",
+        "summary": "Skipping appraisal to avoid layoffs & burden customers: Zoho CEO (The Times of India)",
+        "url": "https://timesofindia.indiatimes.com/city/chennai/skipping-appraisal-to-avoid-layoffs-burden-customers-zoho-ceo/articleshow/134961900.cms"
+      }
+    ]
+  },
+  {
+    "company": "Razorpay",
+    "query": "Razorpay Bangalore",
+    "ms": 0,
+    "count": 10,
+    "top": [
+      {
+        "date": "Jun 14, 2026",
+        "summary": "Bengaluru-based fintech unicorn Razorpay has confidentially filed its DRHP with SEBI for a $500-$600 million IPO, officially starting one of India's biggest fintech public offerings of 2026. According to media reports, Razorpay is targeting a valuation of $6 billio (Instagram)",
+        "url": "https://www.instagram.com/p/DZmH7P_mAXZ/"
+      },
+      {
+        "date": "Jul 28, 2026",
+        "summary": "Razorpay Software Number of Employees 2026 | Employee Count & Headcount Data (Revelio Labs)",
+        "url": "https://www.reveliolabs.com/companies/razorpay-software/employees"
+      },
+      {
+        "date": "Jan 28, 2026",
+        "summary": "32 Fintech Companies in Bangalore to Know (Built In)",
+        "url": "https://builtin.com/articles/fintech-company-bangalore"
+      }
+    ]
+  }
+]

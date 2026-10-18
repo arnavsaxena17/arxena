@@ -1,7 +1,10 @@
 import {
   buildWorkflowAgentSystemPrompt,
   getWorkflowOutputGeneratorPrompt,
-  WORKFLOW_SYSTEM_PROMPTS,
+  WORKFLOW_AGENT_BASE,
+  WORKFLOW_AGENT_TOOL_USAGE_STRATEGY,
+  WORKFLOW_AGENT_OUTPUT_GENERATOR_WITH_TOOLS,
+  WORKFLOW_AGENT_OUTPUT_GENERATOR_WITHOUT_TOOLS,
 } from 'src/engine/metadata-modules/ai/ai-agent/constants/agent-system-prompts.const';
 
 describe('workflow agent system prompts', () => {
@@ -12,7 +15,7 @@ describe('workflow agent system prompts', () => {
     });
 
     expect(systemPrompt).toBe(
-      `${WORKFLOW_SYSTEM_PROMPTS.BASE}\n\nQualify the prospect.`,
+      `${WORKFLOW_AGENT_BASE}\n\nQualify the prospect.`,
     );
     expect(systemPrompt).not.toContain('Tool usage strategy');
   });
@@ -29,10 +32,10 @@ describe('workflow agent system prompts', () => {
 
   it('selects the tool-aware output generator only when tools were used', () => {
     expect(getWorkflowOutputGeneratorPrompt(true)).toBe(
-      WORKFLOW_SYSTEM_PROMPTS.OUTPUT_GENERATOR,
+      WORKFLOW_AGENT_OUTPUT_GENERATOR_WITH_TOOLS,
     );
     expect(getWorkflowOutputGeneratorPrompt(false)).toBe(
-      WORKFLOW_SYSTEM_PROMPTS.OUTPUT_GENERATOR_WITHOUT_TOOLS,
+      WORKFLOW_AGENT_OUTPUT_GENERATOR_WITHOUT_TOOLS,
     );
     expect(getWorkflowOutputGeneratorPrompt(false)).not.toContain(
       'tool outputs',

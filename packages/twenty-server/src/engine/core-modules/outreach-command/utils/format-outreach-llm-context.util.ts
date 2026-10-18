@@ -6,6 +6,7 @@ import {
   type ChatTurn,
 } from 'src/engine/core-modules/outreach-command/utils/chat-message-turns.util';
 import { flattenFatOutreachSenderProfile } from 'src/engine/core-modules/outreach-command/utils/flatten-fat-outreach-sender-profile.util';
+import { applyOutreachOpenerSeedRewrite } from 'src/engine/core-modules/outreach-command/utils/outreach-opener-assignment.util';
 
 // Leave workflow template chips alone so resolveInput can still substitute them.
 export const isUnresolvedWorkflowTemplate = (value: string): boolean =>
@@ -724,6 +725,7 @@ export const formatOutreachProspectEnrichmentForLlm = (
     ...listLine('Likely systems', record.likely_systems),
     ...listLine('Matching problem', record.matching_problem_statement),
     ...listLine('Referral source', record.referral_source),
+    ...formatOutreachOpenerHookLines(record.opener_hook),
     ...(hooks.length > 0
       ? [
           'Hooks:',
@@ -748,18 +750,57 @@ export const formatOutreachProspectEnrichmentForLlm = (
   return lines.join('\n');
 };
 
+const formatOutreachOpenerHookLines = (value: unknown): string[] => {
+  const openerHook = asRecord(value);
+
+  if (!isDefined(openerHook)) {
+    return [];
+  }
+
+  const quote =
+    typeof openerHook.quote === 'string' ? openerHook.quote.trim() : '';
+  const problem =
+    typeof openerHook.problem === 'string' ? openerHook.problem.trim() : '';
+  const whySender =
+    typeof openerHook.why_sender === 'string'
+      ? openerHook.why_sender.trim()
+      : '';
+
+  // Tier 2/3 may have hypothesis (problem) without a citeable quote.
+  if (
+    !isNonEmptyString(quote) &&
+    !isNonEmptyString(problem) &&
+    !isNonEmptyString(whySender)
+  ) {
+    return [];
+  }
+
+  return [
+    'Opener hook:',
+    ...listLine('Source', openerHook.source),
+    ...listLine('Quote', quote),
+    ...listLine('Problem', problem),
+    ...listLine('Why sender', whySender),
+  ];
+};
+
 // After resolveInput, objects land as JSON.stringify inside labeled sections.
 // Rewrite those sections so the model sees prose instead of raw dumps.
+// Also fills deferred opener shape/ask markers once the candidate id chip resolves.
 export const rewriteOutreachResolvedPromptSections = (
   prompt: string,
 ): string => {
   if (
     !prompt.includes('SENDER_JSON') &&
+    !prompt.includes('SENDER:') &&
     !prompt.includes('PROSPECT_ENRICHMENT') &&
+    !prompt.includes('PROSPECT:') &&
     !prompt.includes('Prospect:') &&
     !prompt.includes('prospect:') &&
     !prompt.includes('prospect_posts:') &&
+    !prompt.includes('Prospect posts:') &&
     !prompt.includes('prospect_profile:') &&
+    !prompt.includes('Prospect profile:') &&
     !prompt.includes('0-based index into Available slots') &&
     !prompt.includes('Available slots (only source of times)') &&
     !prompt.includes('chat_history:') &&
@@ -767,7 +808,7 @@ export const rewriteOutreachResolvedPromptSections = (
     !prompt.includes('calendar:') &&
     !prompt.includes('calendar (ignore')
   ) {
-    return prompt;
+    return applyOutreachOpenerSeedRewrite(prompt);
   }
 
   const withNoneFallback =
@@ -811,8 +852,27 @@ export const rewriteOutreachResolvedPromptSections = (
         ` ${withNoneFallback(formatOutreachSenderForLlm)(raw)}`,
     },
     {
+      prefix: 'SENDER:',
+      format: (raw: string) =>
+        ` ${withNoneFallback(formatOutreachSenderForLlm)(raw)}`,
+    },
+    {
       prefix: 'PROSPECT_ENRICHMENT: ',
       format: withNoneFallback(formatOutreachProspectEnrichmentForLlm),
+    },
+    {
+      prefix: 'PROSPECT:',
+      format: (raw: string) => {
+        const formatted = withNoneFallback(
+          formatOutreachProspectEnrichmentForLlm,
+        )(raw);
+
+        if (formatted.startsWith('Prospect:')) {
+          return formatted.slice('Prospect:'.length);
+        }
+
+        return ` ${formatted}`;
+      },
     },
     {
       prefix: 'prospect: ',
@@ -839,7 +899,15 @@ export const rewriteOutreachResolvedPromptSections = (
       format: withNoneFallback(formatOutreachProspectProfileForLlm),
     },
     {
+      prefix: 'Prospect profile: ',
+      format: withNoneFallback(formatOutreachProspectProfileForLlm),
+    },
+    {
       prefix: 'prospect_posts: ',
+      format: withNoneFallback(formatOutreachProspectPostsForLlm),
+    },
+    {
+      prefix: 'Prospect posts: ',
       format: withNoneFallback(formatOutreachProspectPostsForLlm),
     },
   ];
@@ -872,7 +940,7 @@ export const rewriteOutreachResolvedPromptSections = (
     }
   }
 
-  return result;
+  return applyOutreachOpenerSeedRewrite(result);
 };
 
 const extractSectionValue = (

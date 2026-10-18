@@ -19,6 +19,7 @@ import {
   ArxFetchLinkedinMessagesCommand,
   ArxFetchLinkedinPostsCommand,
   ArxFetchLinkedinProfileCommand,
+  ArxGenerateSampleLinkedinMessageCommand,
   ArxMoveCandidatesToAnotherProjectCommand,
   ArxPopulateShortlistCommand,
   ArxQualifyProspectCommand,
@@ -366,6 +367,9 @@ export const ENGINE_COMPONENT_KEY_COMPONENT_MAP: Record<
   ),
   [EngineComponentKey.ARX_FETCH_LINKEDIN_PROFILE]: (
     <ArxFetchLinkedinProfileCommand />
+  ),
+  [EngineComponentKey.ARX_GENERATE_SAMPLE_LINKEDIN_MESSAGE]: (
+    <ArxGenerateSampleLinkedinMessageCommand />
   ),
 
   // Deprecated keys kept for backward compatibility until migration runs

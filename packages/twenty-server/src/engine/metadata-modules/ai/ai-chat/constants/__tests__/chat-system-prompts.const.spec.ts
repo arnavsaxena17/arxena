@@ -44,4 +44,20 @@ describe('CHAT_SYSTEM_PROMPTS chat-only sections', () => {
     );
     expect(CHAT_SYSTEM_PROMPTS.MCP_TRANSPORT).not.toContain('recordReferences');
   });
+
+  it('should require ask_questions when Outreach projectId is missing', () => {
+    expect(CHAT_SYSTEM_PROMPTS.CHAT_UI).toContain(
+      'Exception — Outreach `projectId`',
+    );
+    expect(CHAT_SYSTEM_PROMPTS.CHAT_UI).toContain(
+      "Never pick a project from `find_many_projects` without the user's answer",
+    );
+  });
+
+  it('should tell the agent to ask when in doubt instead of guessing', () => {
+    expect(CHAT_SYSTEM_PROMPTS.CHAT_UI).toContain('When in doubt, ask.');
+    expect(CHAT_SYSTEM_PROMPTS.CHAT_UI).toContain(
+      'Instructions conflict (e.g. "show me the drafts" and "run immediately")',
+    );
+  });
 });

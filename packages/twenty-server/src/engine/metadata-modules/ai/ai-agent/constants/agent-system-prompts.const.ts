@@ -60,13 +60,6 @@ Guidelines:
 - Ensure the output is clean, well-formatted, and ready for workflow consumption
 `;
 
-export const WORKFLOW_SYSTEM_PROMPTS = {
-  BASE: WORKFLOW_AGENT_BASE,
-  TOOL_USAGE_STRATEGY: WORKFLOW_AGENT_TOOL_USAGE_STRATEGY,
-  OUTPUT_GENERATOR: WORKFLOW_AGENT_OUTPUT_GENERATOR_WITH_TOOLS,
-  OUTPUT_GENERATOR_WITHOUT_TOOLS: WORKFLOW_AGENT_OUTPUT_GENERATOR_WITHOUT_TOOLS,
-};
-
 export const buildWorkflowAgentSystemPrompt = ({
   agentPrompt,
   hasTools,

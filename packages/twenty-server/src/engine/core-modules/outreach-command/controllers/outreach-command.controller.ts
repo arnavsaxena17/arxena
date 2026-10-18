@@ -46,8 +46,13 @@ import { OutreachCandidateJourneyService } from 'src/engine/core-modules/outreac
 import { OutreachDecisionService } from 'src/engine/core-modules/outreach-command/services/outreach-decision.service';
 import { QualifyProspectService } from 'src/engine/core-modules/outreach-command/services/qualify-prospect.service';
 import { LinkedinSelectionFetchService } from 'src/engine/core-modules/outreach-command/services/linkedin-selection-fetch.service';
+import { OutreachAiColumnRunService } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column-run.service';
 import { OutreachMemberAssignmentService } from 'src/engine/core-modules/outreach-command/services/outreach-member-assignment.service';
-import { type OutreachMemberAssignmentConfig, type OutreachSplitMode } from 'src/engine/core-modules/outreach-command/utils/outreach-member-assignment.util';
+import { type OutreachSampleMessageInclude } from 'src/engine/core-modules/outreach-command/types/outreach-sample-message.types';
+import {
+  type OutreachMemberAssignmentConfig,
+  type OutreachSplitMode,
+} from 'src/engine/core-modules/outreach-command/utils/outreach-member-assignment.util';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 @Controller('outreach-command')
@@ -73,6 +78,7 @@ export class OutreachCommandController {
     private readonly outreachDecisionService: OutreachDecisionService,
     private readonly qualifyProspectService: QualifyProspectService,
     private readonly linkedinSelectionFetchService: LinkedinSelectionFetchService,
+    private readonly outreachAiColumnRunService: OutreachAiColumnRunService,
     private readonly outreachMemberAssignmentService: OutreachMemberAssignmentService,
     private readonly outreachTableViewService: OutreachTableViewService,
     private readonly outreachWorkingSetService: OutreachWorkingSetService,
@@ -536,6 +542,223 @@ export class OutreachCommandController {
     }
   }
 
+  @Post('ai-column/cancel')
+  async cancelAiColumnRun(
+    @Body()
+    body: {
+      projectId?: string;
+      runId?: string;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    const projectId = body?.projectId;
+
+    if (!isDefined(projectId) || projectId === 'project-id') {
+      throw new HttpException('projectId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const run =
+        await this.outreachAiColumnRunService.cancelActiveRunForProject({
+          workspaceId,
+          projectId,
+          runId:
+            typeof body.runId === 'string' && body.runId.length > 0
+              ? body.runId
+              : undefined,
+        });
+
+      if (!isDefined(run)) {
+        return {
+          success: true,
+          status: 'idle',
+          message: 'No active AI column',
+        };
+      }
+
+      return {
+        success: true,
+        runId: run.runId,
+        status: run.status,
+        done: run.done,
+        total: run.total,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      this.logger.error('Cancel AI column run failed', error);
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Cancel AI column run failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('working-set/patch-other-fields')
+  async patchWorkingSetOtherFields(
+    @Body()
+    body: {
+      projectId?: string;
+      subject?: 'person' | 'company';
+      rowId?: string;
+      values?: Record<string, unknown>;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    const projectId = body?.projectId;
+    const rowId = body?.rowId;
+    const subject = body?.subject === 'company' ? 'company' : 'person';
+    const values =
+      typeof body?.values === 'object' && body.values !== null
+        ? body.values
+        : null;
+
+    if (!isDefined(projectId) || projectId === 'project-id') {
+      throw new HttpException('projectId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    if (!isDefined(rowId) || rowId.length === 0) {
+      throw new HttpException('rowId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    if (!isDefined(values)) {
+      throw new HttpException('values is required', HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const written = await this.outreachWorkingSetService.writeOtherFields({
+        workspaceId,
+        projectId,
+        subject,
+        valuesByRowId: new Map([[rowId, values]]),
+      });
+
+      return { success: true, ...written };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      this.logger.error('Patch working-set otherFields failed', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Patch working-set otherFields failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('generate-sample-linkedin-message')
+  async generateSampleLinkedinMessage(
+    @Body()
+    body: {
+      projectId?: string;
+      candidateIds?: string[];
+      personIds?: string[];
+      include?: OutreachSampleMessageInclude;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    const projectId = body?.projectId;
+
+    if (!isDefined(projectId) || projectId === 'project-id') {
+      throw new HttpException('projectId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const candidateIds = Array.isArray(body?.candidateIds)
+      ? body.candidateIds.filter(
+          (id): id is string => typeof id === 'string' && id.length > 0,
+        )
+      : [];
+    const personIds = Array.isArray(body?.personIds)
+      ? body.personIds.filter(
+          (id): id is string => typeof id === 'string' && id.length > 0,
+        )
+      : [];
+
+    if (candidateIds.length === 0 && personIds.length === 0) {
+      throw new HttpException(
+        'candidateIds or personIds is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const workingSet = await this.outreachWorkingSetService.getAll({
+        workspaceId,
+        projectId,
+        subject: 'person',
+      });
+      const selectedIds = new Set([...candidateIds, ...personIds]);
+      const rowIds = workingSet
+        .filter((row) => selectedIds.has(row.id))
+        .map((row) => row.id);
+
+      if (rowIds.length === 0) {
+        throw new HttpException(
+          'None of the selected people are in this project list',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const run =
+        await this.outreachAiColumnRunService.startSampleLinkedinMessageForSelection(
+          {
+            workspaceId,
+            projectId,
+            rowIds,
+            include: body.include,
+          },
+        );
+
+      return {
+        success: true,
+        runId: run.runId,
+        total: run.total,
+        status: run.status,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      this.logger.error('Generate sample LinkedIn message failed', error);
+      throw new HttpException(
+        error instanceof Error
+          ? error.message
+          : 'Generate sample LinkedIn message failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Post('visit-linkedin-profile')
   async visitLinkedinProfile(
     @Body()
@@ -738,7 +961,6 @@ export class OutreachCommandController {
       workspaceMemberId?: string;
       linkedinProfileText?: string;
       collateralText?: string;
-      senderNotes?: string;
     },
     @Req() request: { headers?: { authorization?: string } },
   ) {
@@ -758,7 +980,6 @@ export class OutreachCommandController {
       ...this.outreachSenderProfileService.getBuildPrompt({
         linkedinProfileText,
         collateralText: body.collateralText,
-        senderNotes: body.senderNotes,
         existingObject: existing.outreachSenderProfile,
       }),
       existingSenderProfile: existing.outreachSenderProfile,
@@ -843,7 +1064,6 @@ export class OutreachCommandController {
       workspaceMemberId?: string;
       linkedinProfileText?: string;
       collateralText?: string;
-      senderNotes?: string;
     },
     @Req() request: { headers?: { authorization?: string } },
   ) {
@@ -857,7 +1077,6 @@ export class OutreachCommandController {
           workspaceMemberId,
           linkedinProfileText: body.linkedinProfileText,
           collateralText: body.collateralText,
-          senderNotes: body.senderNotes,
         },
       );
     } catch (error) {
@@ -1023,7 +1242,6 @@ export class OutreachCommandController {
       workspaceMemberId?: string;
       linkedinProfileText?: string;
       collateralText?: string;
-      senderNotes?: string;
       senderProfile?: OutreachSenderProfile;
     },
     @Req() request: { headers?: { authorization?: string } },
@@ -1043,7 +1261,6 @@ export class OutreachCommandController {
       workspaceMemberId,
       linkedinProfileText: body.linkedinProfileText ?? '',
       collateralText: body.collateralText,
-      senderNotes: body.senderNotes,
       senderProfile: body.senderProfile,
     });
   }
@@ -1112,6 +1329,19 @@ export class OutreachCommandController {
           personIds,
           projectId: body?.projectId,
         });
+
+      if (result.startedCandidates === 0) {
+        const hasUnenrolledPeople = result.unenrolledPersonIds.length > 0;
+
+        throw new HttpException(
+          hasUnenrolledPeople
+            ? `None of the ${personIds.length} selected people are enrolled in ${
+                body?.projectId ? 'this project' : 'a project'
+              }, so outreach cannot start. Enroll them first.`
+            : 'No matching candidates found to start outreach',
+          HttpStatus.UNPROCESSABLE_ENTITY,
+        );
+      }
 
       return { success: true, ok: true, ...result };
     } catch (error) {
@@ -1627,12 +1857,15 @@ export class OutreachCommandController {
     @Param('projectId') projectId: string,
     @Req() request: { headers?: { authorization?: string } },
   ) {
-    return this.withOutreachAuth({ projectId, request }, async (workspaceId) => ({
-      owners: await this.outreachMemberAssignmentService.listOwners({
-        workspaceId,
-        projectId,
+    return this.withOutreachAuth(
+      { projectId, request },
+      async (workspaceId) => ({
+        owners: await this.outreachMemberAssignmentService.listOwners({
+          workspaceId,
+          projectId,
+        }),
       }),
-    }));
+    );
   }
 
   @Post('projects/:projectId/assignment/config')
@@ -1698,7 +1931,10 @@ export class OutreachCommandController {
     const candidateIds = this.readStringArray(body?.candidateIds);
 
     if (candidateIds.length === 0) {
-      throw new HttpException('candidateIds is required', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'candidateIds is required',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     return this.withOutreachAuth({ projectId, request }, async (workspaceId) =>

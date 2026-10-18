@@ -11,6 +11,7 @@ import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/
 import { CandidateSourcingModule } from 'src/engine/core-modules/candidate-sourcing/candidate-sourcing.module';
 import { EnvironmentModule } from 'src/engine/core-modules/environment/environment.module';
 import { FeatureFlagModule } from 'src/engine/core-modules/feature-flag/feature-flag.module';
+import { FileModule } from 'src/engine/core-modules/file/file.module';
 import { OutreachCommandController } from 'src/engine/core-modules/outreach-command/controllers/outreach-command.controller';
 import { OutreachDecisionModule } from 'src/engine/core-modules/outreach-command/outreach-decision.module';
 import { OutreachMockController } from 'src/engine/core-modules/outreach-command/controllers/outreach-mock.controller';
@@ -120,6 +121,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     UnipilePoolModule,
     EnvironmentModule,
     FeatureFlagModule,
+    FileModule,
     ApifyModule,
     WikidataModule,
     ApiKeyModule,

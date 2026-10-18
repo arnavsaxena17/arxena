@@ -120,6 +120,16 @@ export const RunOutreachAiColumnInputZodSchema = z.object({
     .describe(
       'true runs only the rows that match the filters of the view currently applied to the project table (apply_table_view), so rows an earlier filter already ruled out are not paid for. Default false: every row.',
     ),
+  // Caps how many working-set rows (in table order) are touched. Omit only for an explicit full run.
+  rowLimit: z
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .optional()
+    .describe(
+      'Only process the first N rows of the working set (table order). Use for tests / "first N" / regenerate-N. Omit ONLY when the user explicitly asked to run for all rows.',
+    ),
 });
 
 export type RunOutreachAiColumnInput = z.infer<

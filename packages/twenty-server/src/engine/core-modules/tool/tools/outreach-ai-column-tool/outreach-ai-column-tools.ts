@@ -237,7 +237,7 @@ const RUN_WAIT_MS = 45_000;
 
 @Injectable()
 export class RunOutreachAiColumnTool implements Tool {
-  description = `Run a previewed AI column for every row of the project working set. It runs as a background job on the AI filtering queue and saves each answer as a new key in the row's otherFields (ephemeral list and CRM) in chunks, so values appear in the table as they land and a progress bar shows above it. Call only after the user confirmed the preview. Waits up to ~45 seconds: if the column is not finished it returns status "running" with progress; tell the user it continues in the background and use get_ai_column_run_status to check. Calling again with the same previewId only fills rows that are still missing (failed rows), unless rerunAll is true.`;
+  description = `Run a previewed AI column as a background job on the AI filtering queue; writes each answer into the row's otherFields (ephemeral + CRM) in chunks with a progress bar. Call only after the user confirmed the preview (or asked to persist a limited test). Pass rowLimit to touch only the first N working-set rows (table order) — required for tests / "first N" / regenerate-N. Omit rowLimit ONLY when the user explicitly asked to run for all rows. Without rowLimit, every unfilled row is processed (rerunAll false still skips already-filled). Waits up to ~45s; if still running, use get_ai_column_run_status. Same previewId again retries only missing/failed rows unless rerunAll is true.`;
 
   inputSchema = RunOutreachAiColumnInputZodSchema;
 
@@ -347,7 +347,7 @@ export class GetOutreachAiColumnRunStatusTool implements Tool {
 
 @Injectable()
 export class CancelOutreachAiColumnRunTool implements Tool {
-  description = `Cancel a running AI column. Rows already filled are kept; the run stops after the current chunk.`;
+  description = `Cancel a running AI column immediately. Rows already filled are kept; the project is unblocked for a new run.`;
 
   inputSchema = AiColumnRunIdInputZodSchema;
 

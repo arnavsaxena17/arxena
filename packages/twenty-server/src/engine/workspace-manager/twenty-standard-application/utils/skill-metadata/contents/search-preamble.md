@@ -58,11 +58,11 @@ A list is temporary (Redis plus an S3 backup): 30 days when any source was paid 
 
 List tools: show the rows with `outreach_list` `attach`, not an upsert. A tool that still returns rows (Harvest People API, `search_companies_index`, Wikidata): one upsert with `{ projectId, mode: "merge", people }` or `companies`, via `execute_tool`. Never upsert from inside `code_interpreter`. Build the array there, then upsert outside it.
 
-`projectId` comes from the browsing context. If it is missing, do not guess and do not skip the write. Resolve it before the fetch:
+`projectId` comes from the browsing context. If it is missing or `none`, do not guess, do not pick the closest name, and do not skip the write. Resolve it before the fetch (and before any paid fetch):
 
 1. `learn_tools` `find_many_projects` and `ask_questions` if not already learned, then `find_many_projects` with `select: ["id", "name"]` and `limit` 10–20.
-2. `ask_questions`: "Which project should these results be tagged to?", one option per project. If there are none, offer "Create a new project", then `create_one_project`.
-3. Use that id for the rest of the turn. Do not ask again in the same conversation.
+2. **Mandatory** `ask_questions`: "Which project should these results be tagged to?", one option per project (mark a recommended option only as a suggestion). If there are none, offer "Create a new project", then `create_one_project`.
+3. Stop until the user answers. Use that id for the rest of the turn. Do not ask again in the same conversation.
 
 When the user confirms Save to CRM, call `save_outreach_targets_to_crm` (omit ids to save the whole tab). Bulk LinkedIn lists: paginate with `search_linkedin_continue`; every page lands in one list, then `attach` or `save_to_crm`. Do not print multi-KB JSON into chat.
 

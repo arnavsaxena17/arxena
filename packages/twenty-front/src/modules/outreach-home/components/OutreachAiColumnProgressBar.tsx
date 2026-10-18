@@ -1,8 +1,15 @@
 import { styled } from '@linaria/react';
+import axios from 'axios';
 import { isNonEmptyString } from '@sniptt/guards';
+import { useCallback, useState } from 'react';
+import { isDefined } from 'twenty-shared/utils';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
+import { tokenPairState } from '@/auth/states/tokenPairState';
 import { type OutreachAiColumnRunProgress } from '@/outreach-home/constants/outreach-cache-realtime.constants';
+import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 const StyledBar = styled.div`
   align-items: center;
@@ -33,9 +40,7 @@ const StyledTrack = styled.div`
 
 const StyledFill = styled.div<{ isFailed: boolean }>`
   background: ${({ isFailed }) =>
-    isFailed
-      ? themeCssVariables.color.red
-      : themeCssVariables.color.blue};
+    isFailed ? themeCssVariables.color.red : themeCssVariables.color.blue};
   height: 100%;
   transition: width 0.3s ease;
 `;
@@ -43,6 +48,27 @@ const StyledFill = styled.div<{ isFailed: boolean }>`
 const StyledCount = styled.span`
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+`;
+
+const StyledStopButton = styled.button`
+  background: transparent;
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.secondary};
+  cursor: pointer;
+  font-size: ${themeCssVariables.font.size.sm};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    background: ${themeCssVariables.background.tertiary};
+    color: ${themeCssVariables.font.color.primary};
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
 `;
 
 const getStatusText = (run: OutreachAiColumnRunProgress): string => {
@@ -62,11 +88,68 @@ const getStatusText = (run: OutreachAiColumnRunProgress): string => {
 
 type OutreachAiColumnProgressBarProps = {
   run: OutreachAiColumnRunProgress | null | undefined;
+  projectId?: string | null;
 };
 
 export const OutreachAiColumnProgressBar = ({
   run,
+  projectId,
 }: OutreachAiColumnProgressBarProps) => {
+  const tokenPair = useAtomStateValue(tokenPairState);
+  const { enqueueErrorSnackBar } = useSnackBar();
+  const [isStopping, setIsStopping] = useState(false);
+
+  const canStop =
+    isNonEmptyString(projectId) &&
+    isDefined(run) &&
+    (run.status === 'queued' || run.status === 'running');
+
+  const handleStop = useCallback(async () => {
+    if (!canStop || !isDefined(run) || !isNonEmptyString(projectId)) {
+      return;
+    }
+
+    const token = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
+
+    if (!isNonEmptyString(token)) {
+      enqueueErrorSnackBar({ message: 'Not signed in' });
+
+      return;
+    }
+
+    setIsStopping(true);
+
+    try {
+      await axios.post(
+        `${REACT_APP_SERVER_BASE_URL}/outreach-command/ai-column/cancel`,
+        { projectId, runId: run.runId },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+    } catch (error) {
+      const axiosMessage =
+        axios.isAxiosError(error) &&
+        typeof error.response?.data?.message === 'string'
+          ? error.response.data.message
+          : undefined;
+
+      enqueueErrorSnackBar({
+        message:
+          axiosMessage ??
+          (error instanceof Error
+            ? error.message
+            : 'Failed to stop AI column run'),
+      });
+    } finally {
+      setIsStopping(false);
+    }
+  }, [
+    canStop,
+    enqueueErrorSnackBar,
+    projectId,
+    run,
+    tokenPair?.accessOrWorkspaceAgnosticToken?.token,
+  ]);
+
   if (!run) {
     return null;
   }
@@ -87,6 +170,17 @@ export const OutreachAiColumnProgressBar = ({
         {run.done}/{run.total}
       </StyledCount>
       <span title={run.error}>{getStatusText(run)}</span>
+      {canStop ? (
+        <StyledStopButton
+          type="button"
+          disabled={isStopping}
+          onClick={() => {
+            void handleStop();
+          }}
+        >
+          {isStopping ? 'Stopping…' : 'Stop'}
+        </StyledStopButton>
+      ) : null}
     </StyledBar>
   );
 };

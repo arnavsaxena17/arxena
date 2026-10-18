@@ -121,7 +121,6 @@ const pollOutreachSenderProfileDraft = async (input: {
 
 export const fetchOutreachSenderProfilePrompt = async (input: {
   accessToken: string | undefined;
-  senderNotes?: string;
   collateralText?: string;
 }): Promise<{
   existingSenderProfile: Record<string, unknown> | null;
@@ -141,7 +140,6 @@ export const fetchOutreachSenderProfilePrompt = async (input: {
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
-        senderNotes: input.senderNotes,
         collateralText: input.collateralText,
       }),
     },
@@ -238,7 +236,6 @@ export const fetchOutreachSenderLinkedinProfile = async (input: {
 
 export const generateOutreachSenderProfile = async (input: {
   accessToken: string | undefined;
-  senderNotes?: string;
   collateralText?: string;
   linkedinProfileText?: string;
 }): Promise<OutreachSenderProfileDraftResponse> => {
@@ -254,7 +251,6 @@ export const generateOutreachSenderProfile = async (input: {
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
-        senderNotes: input.senderNotes,
         collateralText: input.collateralText,
         linkedinProfileText: input.linkedinProfileText,
       }),
@@ -283,7 +279,6 @@ export const generateOutreachSenderProfile = async (input: {
 export const saveOutreachSenderProfile = async (input: {
   accessToken: string | undefined;
   senderProfile: Record<string, unknown>;
-  senderNotes?: string;
   collateralText?: string;
   linkedinProfileText?: string;
 }): Promise<{ outreachSenderProfile: Record<string, unknown> }> => {
@@ -298,7 +293,6 @@ export const saveOutreachSenderProfile = async (input: {
     },
     body: JSON.stringify({
       senderProfile: input.senderProfile,
-      senderNotes: input.senderNotes,
       collateralText: input.collateralText,
       linkedinProfileText: input.linkedinProfileText,
     }),

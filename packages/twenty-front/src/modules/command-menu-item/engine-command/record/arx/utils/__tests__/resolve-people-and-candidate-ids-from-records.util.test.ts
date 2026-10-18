@@ -40,6 +40,24 @@ describe('buildOutreachSelectionPayload', () => {
     });
   });
 
+  it('should accept Find-list hash ids (not UUIDs) on outreach home rows', () => {
+    const hashId =
+      '3f5fda5b51d0430c32403f68cd5ad37444d65bd863047ae620811a348b2da46b';
+    const records = [
+      {
+        id: hashId,
+        isOutreachHomeRow: true,
+        peopleId: hashId,
+        personId: hashId,
+      },
+    ] as ObjectRecord[];
+
+    expect(buildOutreachSelectionPayload(records, 'candidate')).toEqual({
+      personIds: [hashId],
+      candidateIds: [],
+    });
+  });
+
   it('should send candidateIds for standard candidate table rows', () => {
     const records = [
       {

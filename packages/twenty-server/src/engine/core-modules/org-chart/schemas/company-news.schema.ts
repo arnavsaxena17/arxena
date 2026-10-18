@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+export const companyNewsSourceSchema = z.enum(['bright_data', 'openai']);
+
 export const companyNewsItemSchema = z.object({
   summary: z.string().describe('Concise news summary (2-4 sentences)'),
   date: z.string().describe('Approximate publication date or "unknown"'),
@@ -14,7 +16,11 @@ export const companyNewsLlmResultSchema = z.object({
 });
 
 export const companyNewsFetchRecordSchema = z.object({
-  fetchedAt: z.string().describe('ISO-8601 date-time when this fetch completed'),
+  fetchedAt: z
+    .string()
+    .describe('ISO-8601 date-time when this fetch completed'),
+  // Optional for S3 records written before source tracking existed
+  source: companyNewsSourceSchema.optional(),
   result: companyNewsLlmResultSchema,
 });
 
@@ -22,11 +28,16 @@ export const companyNewsStorageSchema = z.object({
   companyId: z.string(),
   companyName: z.string(),
   location: z.string().optional(),
-  updatedAt: z.string().describe('ISO-8601 date-time of the last storage update'),
+  updatedAt: z
+    .string()
+    .describe('ISO-8601 date-time of the last storage update'),
   fetches: z.array(companyNewsFetchRecordSchema),
 });
 
+export type CompanyNewsSource = z.infer<typeof companyNewsSourceSchema>;
 export type CompanyNewsItem = z.infer<typeof companyNewsItemSchema>;
 export type CompanyNewsLlmResult = z.infer<typeof companyNewsLlmResultSchema>;
-export type CompanyNewsFetchRecord = z.infer<typeof companyNewsFetchRecordSchema>;
+export type CompanyNewsFetchRecord = z.infer<
+  typeof companyNewsFetchRecordSchema
+>;
 export type CompanyNewsStorage = z.infer<typeof companyNewsStorageSchema>;

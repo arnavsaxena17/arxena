@@ -21,6 +21,13 @@ export type OutreachSampleMessageProspect = {
 export type OutreachSampleMessageDraft = {
   message: string;
   warnings: string[];
+  tier?: number;
+  hookUsed?: string;
+  openerVariant?: 'question' | 'demo';
+  openerShape?:
+    | 'observation_question'
+    | 'thanks_question'
+    | 'fact_comment';
 };
 
 export type OutreachSampleMessageDrafter = {

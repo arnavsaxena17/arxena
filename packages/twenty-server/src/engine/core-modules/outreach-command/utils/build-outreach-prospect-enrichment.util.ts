@@ -1,6 +1,33 @@
 import { isNonEmptyString } from '@sniptt/guards';
+import { isDefined } from 'twenty-shared/utils';
 
 import { type OutreachQualifyProspectLlmResult } from 'src/engine/core-modules/outreach-command/schemas/outreach-qualify-prospect-llm.schema';
+
+export const hasOutreachOpenerHook = (value: unknown): boolean => {
+  if (!isDefined(value) || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+  const openerHook = record.opener_hook;
+
+  if (
+    !isDefined(openerHook) ||
+    typeof openerHook !== 'object' ||
+    Array.isArray(openerHook)
+  ) {
+    return false;
+  }
+
+  const quote = (openerHook as { quote?: unknown }).quote;
+  const problem = (openerHook as { problem?: unknown }).problem;
+
+  // Quote (tier 1/2 fact) or hypothesis observation (tier 2) counts as usable.
+  return (
+    (typeof quote === 'string' && isNonEmptyString(quote.trim())) ||
+    (typeof problem === 'string' && isNonEmptyString(problem.trim()))
+  );
+};
 
 // Same shape stamped by workflow "Stamp prospect enrichment".
 export const buildOutreachProspectEnrichment = (
@@ -18,6 +45,7 @@ export const buildOutreachProspectEnrichment = (
   likely_systems: result.likely_systems,
   matching_problem_statement: result.matching_problem_statement,
   referral_source: result.referral_source,
+  opener_hook: result.opener_hook,
 });
 
 type LinkedinProfileForEnrichment = {

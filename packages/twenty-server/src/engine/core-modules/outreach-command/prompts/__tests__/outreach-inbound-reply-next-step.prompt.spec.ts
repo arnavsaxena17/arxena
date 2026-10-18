@@ -12,9 +12,15 @@ import {
   buildOutreachRescheduleOfferPrompt,
   buildOutreachSalesChatDraftPrompt,
 } from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
-import { OUTREACH_AI_LEGACY_SAMPLE_TRANSCRIPT } from 'src/engine/core-modules/outreach-command/prompts/fixtures/transcripts/outreach-ai-naresh-transcripts';
 
-const TRANSCRIPT = OUTREACH_AI_LEGACY_SAMPLE_TRANSCRIPT;
+// Minimal multi-round thread for prompt injection assertions only.
+const TRANSCRIPT = [
+  'them: Interested, can you call on 8826545599',
+  'us: Happy to find a slot.',
+  'them: Lets do Sat 11 am',
+  'them: My email is gaurav.zatakia@flomattress.com',
+  'them: Will discuss internally and revert',
+].join('\n---\n');
 
 describe('buildOutreachSalesChatDraftPrompt', () => {
   const prompt = buildOutreachSalesChatDraftPrompt({
@@ -145,7 +151,9 @@ describe('buildOutreachSalesChatDraftPrompt', () => {
   it('should soft-ask until a window, then propose one concrete range from Available slots', () => {
     expect(prompt).toContain('Interested but no time named: soft ask only');
     expect(prompt).toContain('propose ONE concrete range built from the');
-    expect(prompt).toContain('Available slots are the only source of times WE propose');
+    expect(prompt).toContain(
+      'Available slots are the only source of times WE propose',
+    );
     expect(prompt).toContain('INTENT / ACKNOWLEDGEMENT: acknowledge');
     expect(prompt).toContain('No Available slots.');
     expect(prompt).toContain(
@@ -172,36 +180,32 @@ describe('buildOutreachSalesChatDraftPrompt', () => {
 
   it('should seed the local first LinkedIn message prompt', () => {
     const opener = buildOutreachFirstMessagePrompt({
-      senderJson: '{{member.text}}',
+      senderJson: '{{member.first.outreachSenderProfile}}',
       prospectEnrichmentJson: '{{find.first.outreachProspectEnrichment}}',
       prospectProfileText: '{{profile.text}}',
       prospectPostsText: '{{posts.text}}',
       chatHistory: '{{messages.text}}',
+      openerSeed: '{{find.id}}',
       kind: 'opener',
     });
 
     expect(opener).toContain(
-      "The prospect has just accepted the senders' connection request with the text: {{messages.text}}",
+      'You write the first LinkedIn message after a cold connection request was accepted',
     );
-    expect(opener).toContain(
-      'Happy to walk you through how this would look for you.',
-    );
-    expect(opener).toContain('I noticed in your post that');
-    expect(opener).toContain(
-      'Would you be open to a quick chat coming Thursday or Friday?',
-    );
-    expect(opener).toContain("sit inside the sender's current offer");
-    expect(opener).toContain('Sender Profile:{{member.text}}');
-    expect(opener).toContain(
-      'Prospect: {{find.first.outreachProspectEnrichment}}',
-    );
-    expect(opener).toContain('Prospect Profile: {{profile.text}}');
-    expect(opener).toContain('Prospect Posts: {{posts.text}}');
-    expect(opener).toContain('Chat History: {{messages.text}}');
-    expect(opener).toContain('Return JSON only: { "message": "<body>" }');
-    expect(opener).not.toContain('curiosity question only');
+    expect(opener).toContain('One goal: get a reply');
+    expect(opener).toContain('PICK THE STRONGEST TIER THAT HAS REAL MATERIAL');
+    expect(opener).toContain('Tier 1:');
+    expect(opener).toContain('Tier 3:');
+    expect(opener).toContain('SENDER:');
+    expect(opener).toContain('Our connection note: {{messages.text}}');
+    expect(opener).toContain('Prospect profile:');
+    expect(opener).toContain('Prospect posts:');
+    expect(opener).toContain('<<<OUTREACH_OPENER_SHAPE_RULE>>>');
+    expect(opener).toContain('<<<OUTREACH_OPENER_ASK_RULE>>>');
+    expect(opener).toContain('<<<OUTREACH_OPENER_SEED:{{find.id}}>>>');
+    expect(opener).toContain('"tier": <1|2|3>');
+    expect(opener).toContain(OUTREACH_HUMANIZER_RULES);
     expect(opener).not.toContain('calendar (ignore — do not use)');
-    expect(opener).not.toContain(OUTREACH_HUMANIZER_RULES);
   });
 
   it('should add company news to the opener only when it is passed', () => {
@@ -216,12 +220,10 @@ describe('buildOutreachSalesChatDraftPrompt', () => {
       companyNews: 'Acme raised a Series B',
     });
 
-    expect(withoutNews).not.toContain('Company News');
-    expect(withoutNews).toContain(
-      'The message must contain "I noticed" and either "in your post" or "on your profile".',
-    );
-    expect(withNews).toContain('Company News: Acme raised a Series B');
-    expect(withNews).toContain('"that {company}"');
+    expect(withoutNews).not.toContain('Company news:');
+    expect(withoutNews).toContain('One goal: get a reply');
+    expect(withNews).toContain('Company news: Acme raised a Series B');
+    expect(withNews).not.toContain('Variant B');
   });
 
   it('should escalate cold cadence ask types without contradicting T1', () => {
@@ -362,10 +364,8 @@ describe('outreach humanizer rules', () => {
     expect(connectionNote).toContain('Hard limit 280 characters.');
     expect(connectionNote).toContain('not X, but Y');
     expect(connectionNote.split('Em dashes').length - 1).toBe(1);
-    expect(opener).toContain(
-      'Would you be open to a quick chat coming Thursday or Friday?',
-    );
-    expect(opener).not.toContain(OUTREACH_HUMANIZER_RULES);
+    expect(opener).toContain('One goal: get a reply');
+    expect(opener).toContain(OUTREACH_HUMANIZER_RULES);
     expect(followUp).toContain('40–60 words');
   });
 

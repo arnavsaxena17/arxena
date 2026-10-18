@@ -12,6 +12,9 @@ export const WORKFLOW_AGENT_EXCLUDED_TOOL_NAMES = [
   'import_outreach_spreadsheet',
   'save_outreach_targets_to_crm',
   'start_outreach',
+  // Chat discovery tool — LinkedIn opener agents were calling this mid-draft
+  // (Mock Co / employer lookups) and stalling AI-column sample-message chunks.
+  'find_role_at_companies',
   'get_outreach_working_set',
   'preview_sample_message_column',
   'preview_ai_column',

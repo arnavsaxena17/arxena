@@ -10,6 +10,7 @@
 
 import { isDefined } from 'twenty-shared/utils';
 
+import { LOCAL_PLACE_CLASSIFIER_SYSTEM_PROMPT } from 'src/engine/core-modules/outreach-command/prompts/local-place-classifier.prompt';
 import {
   formatOutreachProspectEnrichmentForLlm,
   formatOutreachProspectPostsForLlm,
@@ -18,7 +19,18 @@ import {
   formatOutreachSlotsForLlm,
   formatOutreachTranscriptForLlm,
 } from 'src/engine/core-modules/outreach-command/utils/format-outreach-llm-context.util';
-import { LOCAL_PLACE_CLASSIFIER_SYSTEM_PROMPT } from 'src/engine/core-modules/outreach-command/prompts/local-place-classifier.prompt';
+import {
+  OUTREACH_OPENER_ASK_RULE_MARKER,
+  OUTREACH_OPENER_ASK_RULES,
+  OUTREACH_OPENER_SEED_MARKER_PREFIX,
+  OUTREACH_OPENER_SEED_MARKER_SUFFIX,
+  OUTREACH_OPENER_SHAPE_RULE_MARKER,
+  OUTREACH_OPENER_SHAPE_RULES,
+  type OutreachOpenerShape,
+  type OutreachOpenerVariant,
+  pickOutreachOpenerShape,
+  pickOutreachOpenerVariant,
+} from 'src/engine/core-modules/outreach-command/utils/outreach-opener-assignment.util';
 
 export const OUTREACH_DONT_RESPOND_SENTINEL = '#DONTRESPOND#';
 
@@ -96,8 +108,195 @@ export const OUTREACH_HUMANIZER_DONT_RESPOND_RULE = [
 export const OUTREACH_QUALIFY_HOOKS_CONTRACT =
   'hooks is an array of at most 3 { "text", "source" } objects';
 
+export const OUTREACH_QUALIFY_OPENER_HOOK_CONTRACT_V2 =
+  'opener_hook is { "source", "quote", "problem", "why_sender" }. source is post|news|activity|profile. quote is a citeable business fact close to their words, never job title at company alone. problem is one thing they likely care about, in their words, phrased as a topic and not as a claim. why_sender is one short phrase on why the sender is a credible person to ask about it. When no citeable fact exists, leave all four fields empty strings.';
+
+export const OUTREACH_QUALIFY_COMPANY_FIT_RULE =
+  'COMPANY FIT: score 0-2 and go=false for single-outlet shops, one-unit franchisees, and sole proprietors with no multi-location or multi-channel footprint, unless the sender brief names them as ICP. Multi-location, multi-channel, or group-level roles score on role match as usual.';
+
 export const OUTREACH_QUALIFY_JSON_KEYS =
-  '{ "go", "score", "segment", "reason", "first_name", "honorific", "company_short", "industry_phrase", "hooks", "likely_systems", "matching_problem_statement", "referral_source" }';
+  '{ "go", "score", "segment", "reason", "first_name", "honorific", "company_short", "industry_phrase", "hooks", "likely_systems", "matching_problem_statement", "referral_source", "opener_hook" }';
+
+export const OUTREACH_OPENER_JSON_KEYS =
+  '{ "message": "<body>", "tier": <1|2|3>, "hook_used": "<the one fact used, or empty>", "shape": "<shape>" }';
+
+// ILLUSTRATIVE ONLY. Replace with 5 to 8 messages the sender wrote or edited himself,
+// including a couple that are slightly blunt or rough. Real samples beat any rule list.
+// The model must copy the tone, never the content. Invented names below.
+export const OUTREACH_OPENER_EXAMPLES = [
+  '[tier 1, post, observation_question]',
+  'Hi Priya, saw your post on closing three stores this quarter. Hard call. Do you see store-level margins every month, or only by city?',
+  '',
+  '[tier 1, news, fact_comment]',
+  'Hi Arjun, read that Kiran Foods is adding 40 outlets in the south. Growth like that can hide a few weak stores for a while. How are you tracking the new ones against the old?',
+  '',
+  '[tier 2, company fact, thanks_question]',
+  "Thanks for accepting, Neha. With stores in nine cities, I'd guess rent and stock in the wrong place eat more margin than anyone sees. Do you look at profit store by store?",
+  '',
+  '[tier 2, company fact, thanks_question]',
+  'Thanks for accepting, Vikram. Sharma Retail sells in stores and online. Do you see profit by channel, or one blended number?',
+  '',
+  '[tier 3, nothing usable]',
+  "Hi Rohit, thanks for connecting. I spent a long time in consumer retail, so I'm always curious how people track where margin goes. How do you do it?",
+].join('\n');
+
+export const buildOutreachOpenerPrompt = ({
+  senderJson,
+  prospectEnrichmentJson,
+  prospectProfileText,
+  prospectPostsText,
+  connectionNote,
+  companyNews,
+  priorEngagement,
+  segmentHypotheses,
+  variant,
+  shape,
+  openerSeed,
+  retryFeedback,
+}: {
+  senderJson: string;
+  prospectEnrichmentJson: string;
+  prospectProfileText?: string;
+  prospectPostsText?: string;
+  // Text of the connection request the prospect just accepted.
+  connectionNote?: string;
+  // Only for sample drafts; the seeded workflow does not pass it.
+  companyNews?: string;
+  // Set only when the sender really reacted or commented before connecting.
+  priorEngagement?: string;
+  // Observations the sender has actually made running businesses like this one.
+  segmentHypotheses?: string;
+  variant: OutreachOpenerVariant;
+  shape: OutreachOpenerShape;
+  // Workflow chips stay unresolved until rewrite; then pickers fill the markers.
+  openerSeed?: string;
+  // Problems found by validateOutreachOpenerMessage on the previous attempt.
+  retryFeedback?: string;
+}): string => {
+  const deferAssignment = isDefined(openerSeed) && openerSeed.includes('{{');
+  const shapeRule = deferAssignment
+    ? OUTREACH_OPENER_SHAPE_RULE_MARKER
+    : OUTREACH_OPENER_SHAPE_RULES[shape];
+  const askRule = deferAssignment
+    ? OUTREACH_OPENER_ASK_RULE_MARKER
+    : OUTREACH_OPENER_ASK_RULES[variant];
+
+  return [
+    'You write the first LinkedIn message after a cold connection request was accepted, on behalf of the sender below.',
+    'One goal: get a reply. This is not a pitch. Write the way the sender would type it on his phone.',
+    '',
+    `SENDER: ${formatOutreachSenderForLlm(senderJson) || '(none)'}`,
+    `Our connection note: ${connectionNote?.trim() || '(none)'}`,
+    '',
+    `PROSPECT: ${formatOutreachProspectEnrichmentForLlm(prospectEnrichmentJson) || '(none)'}`,
+    `Prospect profile: ${formatOutreachProspectProfileForLlm(prospectProfileText) || '(none)'}`,
+    `Prospect posts: ${formatOutreachProspectPostsForLlm(prospectPostsText) || '(none)'}`,
+    ...(isDefined(companyNews)
+      ? [`Company news: ${companyNews.trim() || '(none)'}`]
+      : []),
+    `Prior engagement by sender: ${priorEngagement?.trim() || '(none)'}`,
+    `Sender observations for this segment: ${segmentHypotheses?.trim() || '(none)'}`,
+    '',
+    'PICK THE STRONGEST TIER THAT HAS REAL MATERIAL. Never invent material.',
+    'Tier 1: a recent post, news item, or activity (PROSPECT opener_hook with source post, news or activity, or an item in Prospect posts or Company news). Use one fact, close to their own words.',
+    'Tier 2: no such item, but a concrete company-level or business fact exists (scale, locations, channels, years, a move into a new category) in PROSPECT or Prospect profile. Use one fact. You may add at most one sender observation, only when it fits, and with no number that is not written there.',
+    'Tier 3: nothing usable. Write a short thanks plus one broad question about how businesses like theirs track profit, using only their industry. Do not fake a fact.',
+    'matching_problem_statement and likely_systems are topics to ask about, never claims. Do not tell them they have a problem. Ask.',
+    '',
+    shapeRule,
+    askRule,
+    ...(deferAssignment && isDefined(openerSeed)
+      ? [
+          `${OUTREACH_OPENER_SEED_MARKER_PREFIX}${openerSeed}${OUTREACH_OPENER_SEED_MARKER_SUFFIX}`,
+        ]
+      : []),
+    '',
+    'RULES',
+    '- 25 to 50 words in total, 300 characters at most. Plain text, no markdown, no signature (LinkedIn already shows the name).',
+    '- Exactly one question mark in the whole message.',
+    '- Use the first name once. Vary how you greet, "Hi {name}," or "Thanks for accepting, {name}." Do not use a fixed opening or closing sentence.',
+    '- One fact or none. Never open by restating job title and company alone. No flattery, no congratulations.',
+    '- Use their words and their world (stores, stock, rent, channels). Do not use framework language: no ROI, profit leakage, financial impact, root cause, dashboard, platform, AI.',
+    '- Do not list credentials or numbers about the sender. His profile covers that. A background clause of six words or fewer is allowed only when it makes the question make sense.',
+    '- No links, no attachments, no "I noticed that you are {title} at {company}".',
+    '- Do not claim to have read more than the material above.',
+    '',
+    OUTREACH_VOICE_AND_NEVER_USE,
+    '',
+    'EXAMPLES (copy the tone, not the content; the bracket labels are not part of the message):',
+    OUTREACH_OPENER_EXAMPLES,
+    '',
+    ...(retryFeedback?.trim()
+      ? [
+          `Your last draft failed these checks. Fix them: ${retryFeedback.trim()}`,
+          '',
+        ]
+      : []),
+    OUTREACH_HUMANIZER_RULES,
+    `Return JSON only: ${OUTREACH_OPENER_JSON_KEYS}`,
+  ].join('\n');
+};
+
+const OUTREACH_OPENER_BANNED_WORDS =
+  /\b(leverage|utilize|facilitate|robust|seamless|pivotal|paramount|comprehensive|nuanced|holistic|synergy|transformative|foster|navigate|embark|resonate|underscore|streamline|cutting-edge|innovative|game-changer|empower|harness)\b/i;
+
+const OUTREACH_OPENER_FRAMEWORK_WORDS =
+  /\b(roi|ai|profit leakage|financial impact|root cause|dashboards?|platform)\b/i;
+
+const OUTREACH_OPENER_ASK_WORDS =
+  /\b(demo|walkthrough|15 minutes|30 minutes|calendar|book a)\b/i;
+
+// Run on the agent's `message` before it is queued.
+export const validateOutreachOpenerMessage = (
+  message: string,
+  variant: OutreachOpenerVariant,
+): { ok: boolean; problems: string[] } => {
+  const text = message.trim();
+  const problems: string[] = [];
+  const wordCount = text === '' ? 0 : text.split(/\s+/).length;
+
+  if (wordCount < 15 || wordCount > 55) {
+    problems.push(`${wordCount} words, target 25 to 50`);
+  }
+
+  if (text.length > 320) {
+    problems.push(`${text.length} characters, max 300`);
+  }
+
+  if ((text.match(/\?/g) ?? []).length !== 1) {
+    problems.push('must contain exactly one question mark');
+  }
+
+  if (/[\u2014\u2013]/.test(text)) {
+    problems.push('contains a dash character, use a comma or period');
+  }
+
+  if (/https?:\/\/|www\./i.test(text)) {
+    problems.push('contains a link');
+  }
+
+  if (/\*\*|^#|^- /m.test(text)) {
+    problems.push('contains markdown');
+  }
+
+  if (OUTREACH_OPENER_BANNED_WORDS.test(text)) {
+    problems.push('contains a banned word');
+  }
+
+  if (OUTREACH_OPENER_FRAMEWORK_WORDS.test(text)) {
+    problems.push('uses framework language (ROI, AI, profit leakage, etc.)');
+  }
+
+  if (/congrat|impressed|love your work/i.test(text)) {
+    problems.push('opens with flattery or congratulations');
+  }
+
+  if (variant === 'question' && OUTREACH_OPENER_ASK_WORDS.test(text)) {
+    problems.push('asks for a demo or meeting, question variant must not');
+  }
+
+  return { ok: problems.length === 0, problems };
+};
 
 export const OUTREACH_FALLBACK_EMAIL_CORE =
   'Draft short ICP-aligned emails when LinkedIn connect is ignored. Do not invent LinkedIn facts.';
@@ -107,8 +306,9 @@ export const OUTREACH_FALLBACK_EMAIL_CORE =
 
 export const OUTREACH_SEEDED_AGENT_LINKEDIN_MESSAGE_SYSTEM_PROMPT = [
   'You draft short LinkedIn messages for GTM outreach. On cold cadence, earn a reply — do not pitch hard.',
-  'When you infer a prospect problem, pick one their profile or a post makes plausible and that the sender currently sells against. Skip problems outside that offer.',
-  'Return JSON { "message": "<body>" } only.',
+  'For the first message after connect accept: follow the user prompt tiers, shape, and ask rules. One fact or none. Exactly one question.',
+  'Never invent pain, metrics, customers, or numbers missing from the inputs.',
+  `Opener return JSON ${OUTREACH_OPENER_JSON_KEYS}. Follow-ups return JSON { "message" } only.`,
   'Call send_files with channel linkedin only when the user prompt explicitly asks to share a deck or presentation',
   '(files come from sender collateral / agent config).',
 ].join(' ');
@@ -163,7 +363,8 @@ export const buildOutreachSharedSenderContextPrompt = (
 ): string =>
   [
     'You draft outbound messages on behalf of the sender described below.',
-    'Use identity, offer, credibility, voice, and meeting fields. Never invent facts.',
+    'Read tagged brief sections: ## identity, ## one_liner, ## proof_points, ## wedges,',
+    '## hypotheses, ## voice_sample, ## cta_style, ## later_stage. Never invent facts.',
     'Rules: one ask per message; never two questions. No bullet lists in LinkedIn/WhatsApp.',
     'Never invent facts about the prospect — use only the inputs. Output only the message text',
     'unless the prompt asks for JSON.',
@@ -193,10 +394,14 @@ export const buildOutreachQualifyProspectPrompt = ({
     `posts: ${(posts ?? '').trim() || '(none)'}`,
     `crm: ${(crm ?? '').trim() || '(empty)'}`,
     'SCORING 0–5 vs sender targetTitles / locations and brief ICP. Role match + company match → 4–5. Clear exclude signals in brief → 0–2 go=false.',
+    OUTREACH_QUALIFY_COMPANY_FIT_RULE,
     'Retired/ex-/advisor/independent director/consultant → go=false.',
     'HOOKS at most 3: business fact, pain-related post, shared background. Prefer facts from prospect_profile.',
+    'OPENER_HOOK: prefer a recent post, activity, or news fact; else a company-level fact (industry/scale/channels).',
+    'problem is a topic to ask about, never a claim that they have that problem.',
+    'Do not invent a problem from the post.',
     `Return JSON only: ${OUTREACH_QUALIFY_JSON_KEYS}`,
-    `${OUTREACH_QUALIFY_HOOKS_CONTRACT}. honorific and referral_source may be null.`,
+    `${OUTREACH_QUALIFY_HOOKS_CONTRACT}. ${OUTREACH_QUALIFY_OPENER_HOOK_CONTRACT_V2} honorific and referral_source may be null.`,
   ].join('\n');
 
 export const buildOutreachConnectionNotePrompt = ({
@@ -230,7 +435,7 @@ export const buildOutreachConnectionNotePrompt = ({
     'No links, no product name, no pitch.',
     `prospect: ${formatOutreachProspectEnrichmentForLlm(prospectEnrichmentJson) || '(none)'}`,
     `prospect_profile: ${formatOutreachProspectProfileForLlm(prospectProfileText) || '(none)'}`,
-    'VARIANT A (cold): S1 hook from hooks[0]; S2 credibility.one_liner; S3 "Would be glad to connect."',
+    'VARIANT A (cold): S1 hook from hooks[0]; S2 one line from ## one_liner (or ## proof_points); S3 "Would be glad to connect."',
     'VARIANT B (referral_source set): open with referral, then as A, close "Look forward to connecting here."',
     'Output the note only.',
     '',
@@ -265,6 +470,13 @@ export const buildOutreachFirstMessagePrompt = ({
   chatHistory,
   calendarSlots,
   companyNews,
+  connectionNote,
+  priorEngagement,
+  segmentHypotheses,
+  openerSeed,
+  variant,
+  shape,
+  retryFeedback,
   kind,
 }: {
   senderJson: string;
@@ -275,50 +487,42 @@ export const buildOutreachFirstMessagePrompt = ({
   calendarSlots?: string;
   // Opener only, and only for sample drafts: the seeded workflow never passes it.
   companyNews?: string;
+  connectionNote?: string;
+  priorEngagement?: string;
+  segmentHypotheses?: string;
+  // Candidate id (or workflow chip). Drives deterministic shape/variant picks.
+  openerSeed?: string;
+  variant?: OutreachOpenerVariant;
+  shape?: OutreachOpenerShape;
+  retryFeedback?: string;
   kind: 'opener' | 'fu1' | 'fu2' | 'fu3';
 }): string => {
-  // Copied from the local Candidate Sequencer "Draft first LinkedIn message" step.
   if (kind === 'opener') {
-    return [
-      'You draft outbound messages on behalf of the sender described below.',
-      `The prospect has just accepted the senders' connection request with the text: ${chatHistory ?? '(none)'}`,
-      '',
-      `Sender Profile:${senderJson}`,
-      '',
-      `Prospect: ${prospectEnrichmentJson}`,
-      '',
-      `Prospect Profile: ${prospectProfileText ?? '(none)'}`,
-      '',
-      `Prospect Posts: ${prospectPostsText ?? '(none)'}`,
-      '',
-      ...(isDefined(companyNews)
-        ? [`Company News: ${companyNews || '(none)'}`, '']
-        : []),
-      `Chat History: ${chatHistory ?? '(none)'}`,
-      '',
-      'Write the first LinkedIn message from the profiles and posts above.',
-      'Pick ONE fact from Prospect Posts or Prospect Profile. Prefer a recent post when the problem it implies is something the sender sells. Otherwise use an older post or a profile fact that does.',
-      "From that fact, infer ONE problem. It must follow from the fact and sit inside the sender's current offer. Do not invent a metric, a customer, or a detail they did not write.",
-      "Use that problem as the reason the sender's current work could help. Phrase it as a guess they can reject.",
-      '',
-      'Required shape, in this order:',
-      'Hi {first name}, I noticed in your post that {fact, close to their words}. I may have this wrong, but that seems like it would raise {problem grounded in that fact}, which is close to our work in {sender capability}.',
-      'Happy to walk you through how this would look for you. Would you be open to a quick chat coming Thursday or Friday?',
-      'If the fact is from the profile and not a post, write "I noticed on your profile that" instead of "I noticed in your post that".',
-      '',
-      ...(isDefined(companyNews)
-        ? [
-            'If no post or profile fact fits, you may use ONE Company News item as the fact. Then write "I noticed that {company} {news item, close to its wording}" instead of the post or profile phrasing. Never invent news.',
-            'The message must contain "I noticed" and one of "in your post", "on your profile" or "that {company}".',
-          ]
-        : [
-            'The message must contain "I noticed" and either "in your post" or "on your profile".',
-          ]),
-      'The close must be exactly: Happy to walk you through how this would look for you. Would you be open to a quick chat coming Thursday or Friday?',
-      'Do not open with congratulations. Do not name a clock time.',
-      '',
-      'Return JSON only: { "message": "<body>" }',
-    ].join('\n');
+    const seed = openerSeed?.trim() || prospectEnrichmentJson;
+    const deferAssignment = seed.includes('{{');
+    const resolvedVariant =
+      variant ??
+      (deferAssignment ? 'question' : pickOutreachOpenerVariant(seed));
+    const resolvedShape =
+      shape ??
+      (deferAssignment
+        ? 'observation_question'
+        : pickOutreachOpenerShape(seed));
+
+    return buildOutreachOpenerPrompt({
+      senderJson,
+      prospectEnrichmentJson,
+      prospectProfileText,
+      prospectPostsText,
+      connectionNote: connectionNote ?? chatHistory,
+      companyNews,
+      priorEngagement,
+      segmentHypotheses,
+      variant: resolvedVariant,
+      shape: resolvedShape,
+      openerSeed: deferAssignment ? seed : undefined,
+      retryFeedback,
+    });
   }
 
   const kindRules = {
@@ -326,7 +530,7 @@ export const buildOutreachFirstMessagePrompt = ({
       'Second cold message (T2), sent if no reply. Ask type: interest CTA only — not minutes, not a call.',
       '50–70 words. Natural bridge — never "following up" / "circling back" / "bumping this".',
       'One insight tied to a different hook than T1, or deepen matching_problem.',
-      'Optional: ONE proof_point from sender that fits their industry — never invent customers or numbers.',
+      'Optional: ONE line from ## proof_points (or ## one_liner) that fits their industry — never invent customers or numbers.',
       'Close with low-commitment interest only ("worth a look?" / "happy to share how").',
       OUTREACH_CADENCE_TRIGGER_PRIORITY,
       OUTREACH_CADENCE_NO_FLATTERY,
@@ -601,9 +805,8 @@ export const buildOutreachSalesChatDraftPrompt = ({
     `prospect_profile: ${formatOutreachProspectProfileForLlm(prospectProfileText) || '(none)'}`,
     `prospect_posts: ${formatOutreachProspectPostsForLlm(prospectPostsText) || '(none)'}`,
     OUTREACH_VOICE_AND_NEVER_USE,
-    'Answer offer questions using ONLY sender.offer.faq / works_with / implementation_time /',
-    'pilot_offer / pricing_line / data_security_line. If unsupported, say you will confirm and',
-    'come back — do not invent.',
+    'Answer offer questions using ONLY ## later_stage / ## wedges / ## proof_points in the sender brief.',
+    'If unsupported, say you will confirm and come back — do not invent.',
     `If "Asked to stop" below is true, set linkedinMessage to "${OUTREACH_DONT_RESPOND_SENTINEL}" exactly and leave every other field empty.`,
     'Do not invent product claims they did not ask about.',
     'Be short, conversational, and to the point. Plain text, no markdown.',
@@ -930,35 +1133,70 @@ export const buildOutreachInboundReplyClassifierUserPrompt = ({
   ].join('\n');
 
 // Build a slim sender profile for outbound messaging agents + discovery chips.
+// Called from Outreach setup when the user clicks Generate (LinkedIn + collateral).
 export const OUTREACH_BUILD_SENDER_PROFILE_SYSTEM_PROMPT = `You build a reusable sender profile for an outbound-messaging agent.
 
-Return JSON with exactly three keys:
-- targetTitles: string[] — buyer job titles to find (discovery). Prefer 3–8 concrete titles.
-- locations: string[] — geos to search (countries/cities/regions). Prefer 1–5.
-- brief: string — freeform paragraphs the agent will read when writing LinkedIn / WhatsApp / email.
-  Cover: who the sender is and how they sign, company + offer/pitch, voice/tone, FAQ and
-  common objections, meeting prefs. Traceable to inputs only — do not invent facts.
-  Prefer short paragraphs over bullet laundry lists.
+This runs once at setup when Generate is clicked. Populate every brief section from the
+inputs below (linkedin_profile + collateral from decks/PDFs/notes). Do not leave a section
+blank when the inputs support it. Traceable to inputs only — do not invent facts, numbers,
+customers, or meeting prefs.
 
-If sender_notes specify ICP titles or geos, prefer those for targetTitles / locations.
-If existing_object is set, merge; never drop human-edited brief the inputs still support.`;
+Return JSON with exactly three keys:
+- targetTitles: string[] — buyer job titles to find (discovery). Prefer 3–8 concrete titles
+  inferred from who the offer is sold to in the inputs.
+- locations: string[] — geos to search (countries/cities/regions). Prefer 1–5 from HQ,
+  markets, or ICP geography in the inputs.
+- brief: string — tagged markdown sections. Prefer short lines. Use these exact headings:
+
+  ## identity
+  Name, role, city from linkedin_profile. LinkedIn does not need a "Sign as" line.
+  For email only, note preferred sign-off if present in inputs.
+
+  ## one_liner
+  One credibility line (operator background → what they build now).
+
+  ## proof_points
+  Atomic, segment-tagged lines. Numbers only if present in inputs.
+
+  ## wedges
+  Demo-able offers for later stages (not the T1 close), from collateral pitch.
+
+  ## hypotheses
+  Prefer 8–12 entries as: segment | signal | observation | wedge
+  Derive observations only from the sender's operating experience and offer in the inputs
+  (roles, P&Ls, industries, problems the collateral names). Never invent stats.
+  If collateral is thin, write fewer entries — quality over filler.
+
+  ## voice_sample
+  2–3 short sample LinkedIn openers in the sender's voice, grounded in the hypotheses
+  and proof points above (tone models for later writers). Not copy of LinkedIn About.
+
+  ## cta_style
+  T1: question-first, no call/demo ask. Later: meeting prefs only if stated in inputs
+  (else: "30-minute video with the P&L owner; in-person if local" as a default).
+
+  ## later_stage
+  Objections, collateral routing by segment, pilot framing — for reply/FU only.
+  Pull from FAQ / objection handling in collateral when present.
+  Strip meta-instructions like "No explicit meeting preferences are stated…".
+
+If existing_object is set, merge; never drop human-edited brief lines the inputs still support.
+Prefer ICP titles/geos already in existing_object when inputs still support them.`;
 
 export const buildOutreachSenderProfileUserPrompt = ({
   linkedinProfileText,
   collateralText,
-  senderNotes,
   existingObjectJson,
 }: {
   linkedinProfileText: string;
   collateralText?: string;
-  senderNotes?: string;
   existingObjectJson?: string;
 }): string =>
   [
-    'INPUTS',
+    'INPUTS (Outreach setup — Generate)',
+    'Build the full tagged brief from these sources only.',
     `linkedin_profile: ${linkedinProfileText.trim() || '(empty)'}`,
     `collateral: ${(collateralText ?? '').trim() || '(empty)'}`,
-    `sender_notes: ${(senderNotes ?? '').trim() || '(empty)'}`,
     `existing_object: ${(existingObjectJson ?? '').trim() || '(none)'}`,
     '',
     'Return JSON only: { "targetTitles": [], "locations": [], "brief": "" }',

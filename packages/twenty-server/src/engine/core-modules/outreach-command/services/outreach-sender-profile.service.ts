@@ -2,6 +2,7 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 import { type LanguageModel } from 'ai';
+import { FileFolder } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import { type ObjectLiteral } from 'typeorm';
 import { v4 } from 'uuid';
@@ -11,6 +12,7 @@ import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
+import { FileService } from 'src/engine/core-modules/file/services/file.service';
 import { OUTREACH_SENDER_PROFILE_LLM_MODEL_ID } from 'src/engine/core-modules/outreach-command/constants/outreach-sender-profile-model.const';
 import {
   OUTREACH_BUILD_SENDER_PROFILE_SYSTEM_PROMPT,
@@ -20,8 +22,15 @@ import {
   outreachSenderProfileLlmSchema,
   type OutreachSenderProfileLlmResult,
 } from 'src/engine/core-modules/outreach-command/schemas/outreach-sender-profile-llm.schema';
-import { type OutreachSenderProfile } from 'src/engine/core-modules/outreach-command/types/outreach-sender-profile.type';
+import {
+  type OutreachSenderCollateralFile,
+  type OutreachSenderProfile,
+} from 'src/engine/core-modules/outreach-command/types/outreach-sender-profile.type';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
+import {
+  extractOutreachSenderCollateralText,
+  isOutreachSenderCollateralExtensionSupported,
+} from 'src/engine/core-modules/outreach-command/utils/extract-outreach-sender-collateral-text.util';
 import {
   EMPTY_OUTREACH_SENDER_PROFILE,
   buildSenderProfileSeed,
@@ -36,9 +45,16 @@ import { AI_TELEMETRY_CONFIG } from 'src/engine/metadata-modules/ai/ai-models/co
 import { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-registry.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
+import { streamToBuffer } from 'src/utils/stream-to-buffer';
 
 const SENDER_PROFILE_GENERATE_LLM_TIMEOUT_MS = 120_000;
 const SENDER_PROFILE_GENERATE_JOB_TTL_MS = 10 * 60 * 1000;
+const SENDER_PROFILE_COLLATERAL_EXTRACT_MAX_BYTES = 8 * 1024 * 1024;
+const SENDER_PROFILE_COLLATERAL_FILE_FOLDERS = [
+  FileFolder.Workflow,
+  FileFolder.EmailAttachment,
+  FileFolder.FilesField,
+];
 
 type WorkspaceMemberArxRecord = ObjectLiteral & {
   id: string;
@@ -73,7 +89,6 @@ type BuildAndSaveSenderProfileInput = {
   workspaceMemberId: string;
   linkedinProfileText: string;
   collateralText?: string;
-  senderNotes?: string;
   senderProfile?: OutreachSenderProfile;
 };
 
@@ -82,7 +97,6 @@ type GenerateSenderProfileInput = {
   workspaceMemberId: string;
   linkedinProfileText?: string;
   collateralText?: string;
-  senderNotes?: string;
   modelId?: string;
 };
 
@@ -121,12 +135,13 @@ export class OutreachSenderProfileService {
     private readonly aiSdkExecutionService?: AiSdkExecutionService,
     @InjectCacheStorage(CacheStorageNamespace.EngineOutreachCommand)
     private readonly cache: CacheStorageService,
+    @Optional()
+    private readonly fileService?: FileService,
   ) {}
 
   getBuildPrompt(input: {
     linkedinProfileText: string;
     collateralText?: string;
-    senderNotes?: string;
     existingObject?: OutreachSenderProfile | null;
   }): { system: string; user: string } {
     return {
@@ -134,7 +149,6 @@ export class OutreachSenderProfileService {
       user: buildOutreachSenderProfileUserPrompt({
         linkedinProfileText: input.linkedinProfileText,
         collateralText: input.collateralText,
-        senderNotes: input.senderNotes,
         existingObjectJson: input.existingObject
           ? JSON.stringify(input.existingObject)
           : undefined,
@@ -337,10 +351,15 @@ export class OutreachSenderProfileService {
       );
     }
 
+    const collateralText = await this.resolveCollateralTextForGenerate({
+      workspaceId: input.workspaceId,
+      pastedCollateralText: input.collateralText,
+      collateralFiles: existing.outreachSenderProfile?.collateralFiles,
+    });
+
     const prompt = this.getBuildPrompt({
       linkedinProfileText,
-      collateralText: input.collateralText,
-      senderNotes: input.senderNotes,
+      collateralText,
       existingObject: existing.outreachSenderProfile,
     });
 
@@ -777,7 +796,6 @@ export class OutreachSenderProfileService {
     const prompt = this.getBuildPrompt({
       linkedinProfileText,
       collateralText: input.collateralText,
-      senderNotes: input.senderNotes,
       existingObject: existing.outreachSenderProfile,
     });
 
@@ -827,6 +845,84 @@ export class OutreachSenderProfileService {
     return isDefined(member.outreachSenderProfile)
       ? normalizeOutreachSenderProfile(member.outreachSenderProfile)
       : null;
+  }
+
+  // Merge pasted notes with text extracted from uploaded PDF/DOCX collateral.
+  private async resolveCollateralTextForGenerate({
+    workspaceId,
+    pastedCollateralText,
+    collateralFiles,
+  }: {
+    workspaceId: string;
+    pastedCollateralText?: string;
+    collateralFiles?: OutreachSenderCollateralFile[];
+  }): Promise<string> {
+    const sections: string[] = [];
+    const pasted = pastedCollateralText?.trim() ?? '';
+
+    if (isNonEmptyString(pasted)) {
+      sections.push(pasted);
+    }
+
+    if (!isDefined(this.fileService) || !isDefined(collateralFiles)) {
+      return sections.join('\n\n');
+    }
+
+    for (const collateralFile of collateralFiles) {
+      if (
+        !isNonEmptyString(collateralFile.fileId) ||
+        !isNonEmptyString(collateralFile.fileName)
+      ) {
+        continue;
+      }
+
+      if (
+        !isOutreachSenderCollateralExtensionSupported(collateralFile.fileName)
+      ) {
+        this.logger.warn(
+          `Skipping collateral extract for unsupported file: ${collateralFile.fileName}`,
+        );
+        continue;
+      }
+
+      try {
+        const fileStream = await this.fileService.getFileStreamById({
+          fileId: collateralFile.fileId,
+          workspaceId,
+          allowedFileFolders: SENDER_PROFILE_COLLATERAL_FILE_FOLDERS,
+        });
+
+        if (!isDefined(fileStream)) {
+          this.logger.warn(
+            `Collateral file not found for generate: ${collateralFile.fileName}`,
+          );
+          continue;
+        }
+
+        const fileBuffer = await streamToBuffer(
+          fileStream.stream,
+          SENDER_PROFILE_COLLATERAL_EXTRACT_MAX_BYTES,
+        );
+        const extracted = await extractOutreachSenderCollateralText({
+          fileName: collateralFile.fileName,
+          fileBuffer,
+        });
+
+        if (isNonEmptyString(extracted)) {
+          sections.push(
+            `--- ${collateralFile.fileName} ---\n${extracted.trim()}`,
+          );
+        }
+      } catch (error) {
+        this.logger.warn(
+          `Failed to extract collateral ${collateralFile.fileName}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    }
+
+    return sections.join('\n\n');
   }
 
   private buildLinkedinProfileText(

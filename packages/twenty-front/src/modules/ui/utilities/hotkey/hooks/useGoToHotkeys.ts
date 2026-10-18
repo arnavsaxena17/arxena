@@ -24,8 +24,9 @@ export const useGoToHotkeys = ({
       navigate(location);
     },
     {
-      enableOnContentEditable: true,
-      enableOnFormTags: true,
+      // navigation must not fire while the user is typing in an input
+      enableOnContentEditable: false,
+      enableOnFormTags: false,
       preventDefault: true,
     },
     [navigate],

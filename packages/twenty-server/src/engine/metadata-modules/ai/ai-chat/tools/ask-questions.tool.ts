@@ -68,11 +68,12 @@ type AskQuestionsPendingOutput = {
 
 export const createAskQuestionsTool = () => ({
   description:
-    'Ask the user one or more multiple-choice questions when you need a decision you cannot ' +
-    'infer from the request or context and that has no obvious default. The conversation ' +
-    'pauses until the user answers, then continues with their choice in mind. Prefer this ' +
-    'over guessing on consequential or ambiguous decisions. Do NOT use it for information you ' +
-    'could look up with another tool, or for trivial choices with an obvious default. The ' +
+    'Ask the user one or more multiple-choice questions when in doubt: ambiguous intent, ' +
+    'conflicting instructions, or a consequential next step without a clear go-ahead. Prefer ' +
+    'this over guessing. The conversation pauses until they answer. Do NOT use it for ' +
+    'information you could look up with another tool, or for trivial choices with an obvious ' +
+    'default. Exception: when Outreach browsing context has no projectId, you MUST ask which ' +
+    'project to tag Find results to — a similar project name is not an obvious default. The ' +
     'user can always type a free-form answer instead of picking an option.',
   inputSchema: askQuestionsInputSchema,
   execute: async (

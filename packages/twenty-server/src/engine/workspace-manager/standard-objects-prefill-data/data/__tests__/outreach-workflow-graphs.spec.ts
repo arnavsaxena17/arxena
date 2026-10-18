@@ -250,6 +250,7 @@ describe('GTM outreach workflow graphs', () => {
       'industry_phrase',
       'likely_systems',
       'matching_problem_statement',
+      'opener_hook',
       'reason',
       'referral_source',
       'score',
@@ -519,6 +520,20 @@ describe('GTM outreach workflow graphs', () => {
     expect(byName('Stamp prospect enrichment')?.nextStepIds).toEqual([
       byName('Qualify go?')?.id,
     ]);
+    expect(
+      (
+        byName('Stamp prospect enrichment')?.settings?.input as {
+          objectRecord?: {
+            outreachProspectEnrichment?: { opener_hook?: unknown };
+          };
+        }
+      )?.objectRecord?.outreachProspectEnrichment?.opener_hook,
+    ).toEqual({
+      source: expect.stringContaining('opener_hook.source'),
+      quote: expect.stringContaining('opener_hook.quote'),
+      problem: expect.stringContaining('opener_hook.problem'),
+      why_sender: expect.stringContaining('opener_hook.why_sender'),
+    });
     expect(branchNext('Qualify go?', 0)).toEqual([
       byName('Draft connection note')?.id,
     ]);
@@ -530,10 +545,15 @@ describe('GTM outreach workflow graphs', () => {
     expect(byName('Draft first LinkedIn message')).toBeDefined();
     expect(
       byName('Draft first LinkedIn message')?.settings?.input?.prompt,
-    ).toContain('Would you be open to a quick chat coming Thursday or Friday?');
+    ).toContain('Goal: earn a reply');
     expect(
       byName('Draft first LinkedIn message')?.settings?.input?.prompt,
-    ).toContain('{{b8e1d001-4a11-4c11-8c11-000000000001.text}}');
+    ).toContain('"tier": 1|2|3');
+    expect(
+      byName('Draft first LinkedIn message')?.settings?.input?.prompt,
+    ).toContain(
+      '{{b8e1d001-4a11-4c11-8c11-000000000001.first.outreachSenderProfile}}',
+    );
     expect(byName('Get calendar availability (opener)')).toBeDefined();
     expect(byName('Fetch LinkedIn posts (before opener)')).toBeDefined();
     expect(byName('Get calendar availability (opener)')?.nextStepIds).toEqual([
@@ -763,6 +783,7 @@ describe('GTM outreach workflow graphs', () => {
       'industry_phrase',
       'likely_systems',
       'matching_problem_statement',
+      'opener_hook',
       'reason',
       'referral_source',
       'score',
@@ -1508,9 +1529,9 @@ describe('GTM outreach workflow graphs', () => {
 
     const disconnected = typesFor(false);
 
-    expect(
-      disconnected.types.every((type) => type === 'LOGIC_FUNCTION'),
-    ).toBe(true);
+    expect(disconnected.types.every((type) => type === 'LOGIC_FUNCTION')).toBe(
+      true,
+    );
     expect(
       disconnected.steps.filter((step) => step.type === 'SEND_EMAIL'),
     ).toHaveLength(0);
@@ -1548,9 +1569,17 @@ describe('GTM outreach workflow graphs', () => {
       const graph = buildCandidateSequencerGraph();
       const steps = graph.steps as GraphStep[];
 
-      expect(steps.some((step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.selectMember)).toBe(false);
-      expect(JSON.stringify(graph)).not.toContain('select-outreach-workspace-member');
-      expect(JSON.stringify(graph)).not.toContain('__FIELD_workspaceMember.id__');
+      expect(
+        steps.some(
+          (step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.selectMember,
+        ),
+      ).toBe(false);
+      expect(JSON.stringify(graph)).not.toContain(
+        'select-outreach-workspace-member',
+      );
+      expect(JSON.stringify(graph)).not.toContain(
+        '__FIELD_workspaceMember.id__',
+      );
 
       const finds = memberFinds(steps);
 
@@ -1583,7 +1612,10 @@ describe('GTM outreach workflow graphs', () => {
       expect(off.every((sender) => sender === '')).toBe(true);
       expect(on.length).toBeGreaterThan(0);
       expect(
-        on.every((sender) => typeof sender === 'string' && sender.includes('.first.id')),
+        on.every(
+          (sender) =>
+            typeof sender === 'string' && sender.includes('.first.id'),
+        ),
       ).toBe(true);
     });
 

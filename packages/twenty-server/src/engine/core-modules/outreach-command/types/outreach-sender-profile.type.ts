@@ -11,6 +11,14 @@ export type OutreachSenderProfile = {
   collateralFiles?: OutreachSenderCollateralFile[];
 };
 
+// Citeable stamp for the first LinkedIn message. Empty strings = no hook.
+export type OutreachOpenerHook = {
+  source: string;
+  quote: string;
+  problem: string;
+  why_sender: string;
+};
+
 export type OutreachProspectEnrichment = {
   go: boolean;
   score: number;
@@ -24,4 +32,5 @@ export type OutreachProspectEnrichment = {
   likely_systems: string;
   matching_problem_statement: string;
   referral_source: string | null;
+  opener_hook: OutreachOpenerHook;
 };

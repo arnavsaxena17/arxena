@@ -13,6 +13,7 @@ import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system
 
 // One-shot repair after automated-trigger resync:
 //   yarn command:prod outreach:kick-connection-accepted --workspace-id <id> --candidate-ids <id,id>
+// Add --stage QUEUED for candidates whose run ended before the first send.
 @Command({
   name: 'outreach:kick-connection-accepted',
   description:
@@ -45,10 +46,21 @@ export class KickConnectionAcceptedCommand extends CommandRunner {
     return value;
   }
 
+  // Re-entry for runs that were closed before the first send (stage QUEUED).
+  @Option({
+    flags: '-s, --stage <stage>',
+    description:
+      'Only kick candidates in this outreachSequenceStage (default CONNECTION_ACCEPTED)',
+  })
+  parseStage(value: string): string {
+    return value.trim().toUpperCase();
+  }
+
   override async run(
     _passedParams: string[],
-    options: { workspaceId?: string; candidateIds?: string },
+    options: { workspaceId?: string; candidateIds?: string; stage?: string },
   ): Promise<void> {
+    const expectedStage = options.stage ?? 'CONNECTION_ACCEPTED';
     const workspaceId = options.workspaceId;
     const candidateIds = (options.candidateIds ?? '')
       .split(',')
@@ -81,7 +93,7 @@ export class KickConnectionAcceptedCommand extends CommandRunner {
           continue;
         }
 
-        if (candidate.outreachSequenceStage !== 'CONNECTION_ACCEPTED') {
+        if (candidate.outreachSequenceStage !== expectedStage) {
           this.logger.warn(
             `Candidate ${candidateId} stage=${String(candidate.outreachSequenceStage)}; skipping`,
           );
@@ -108,7 +120,7 @@ export class KickConnectionAcceptedCommand extends CommandRunner {
         );
 
         this.logger.log(
-          `Kicked CONNECTION_ACCEPTED sequencer re-entry for ${candidateId}`,
+          `Kicked ${expectedStage} sequencer re-entry for ${candidateId}`,
         );
       }
     }, authContext);

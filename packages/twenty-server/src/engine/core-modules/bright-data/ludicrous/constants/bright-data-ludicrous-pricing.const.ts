@@ -1,6 +1,10 @@
 // Bright Data bills Business Search per returned record, not per request.
 export const BRIGHT_DATA_COST_PER_RECORD_USD = 0.002;
 
+// Fast SERP / Google News: pay-as-you-go is $1.50 per 1K successful requests.
+// Override with BRIGHT_DATA_SERP_COST_USD when the contract rate differs.
+export const BRIGHT_DATA_SERP_COST_PER_REQUEST_USD = 0.0015;
+
 // Bright Data caps a single ludicrous query at 100 rows per page and offset 1000.
 export const BRIGHT_DATA_LUDICROUS_PAGE_SIZE = 100;
 export const BRIGHT_DATA_LUDICROUS_MAX_OFFSET = 1000;

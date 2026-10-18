@@ -2057,7 +2057,8 @@ export class OrgChartController {
   /**
    * POST /org-chart/:companyId/company-news/fetch
    *
-   * Fetches latest company news via OpenAI web search and appends to S3.
+   * Fetches latest company news (Bright Data Fast SERP by default; OpenAI
+   * web search when source=openai) and appends to S3.
    */
   @UseGuards(JwtAuthGuard)
   @Post(':companyId/company-news/fetch')
@@ -2067,6 +2068,7 @@ export class OrgChartController {
     body: {
       companyName?: string;
       location?: string;
+      source?: 'bright_data' | 'openai';
     },
     @Req() req: Request,
   ) {
@@ -2085,6 +2087,17 @@ export class OrgChartController {
     const normalizedCompanyId = this.normalizeCompanyId(companyId);
     const companyName = (body?.companyName ?? '').trim() || normalizedCompanyId;
     const location = (body?.location ?? '').trim() || undefined;
+    const source = body?.source;
+    const workspaceId = req.workspace?.id;
+    const userWorkspaceId =
+      (req as { userWorkspaceId?: string }).userWorkspaceId ?? null;
+
+    if (!workspaceId) {
+      throw new HttpException(
+        'Workspace context required',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
 
     try {
       const storage =
@@ -2092,6 +2105,9 @@ export class OrgChartController {
           companyId: normalizedCompanyId,
           companyName,
           location,
+          source,
+          workspaceId,
+          userWorkspaceId,
         });
 
       return {

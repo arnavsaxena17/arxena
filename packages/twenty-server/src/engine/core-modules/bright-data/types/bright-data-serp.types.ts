@@ -19,6 +19,22 @@ export type BrightDataSerpOrganicEntry = {
   global_rank?: number;
 };
 
+/** Google News row from Bright Data Fast SERP (`tbm=nws` + `parsed_light`). */
+export type BrightDataSerpNewsEntry = {
+  link?: string;
+  title?: string;
+  source?: string;
+  source_logo?: string;
+  date?: string;
+  image?: string;
+  global_rank?: number;
+};
+
+export type BrightDataSerpNewsArticleSet = {
+  heading?: string;
+  items?: BrightDataSerpNewsEntry[];
+};
+
 export type BrightDataSerpPaginationPage = {
   page?: number;
   start?: number;
@@ -32,6 +48,7 @@ export type BrightDataSerpGoogleJson = {
   general?: {
     search_engine?: string;
     query?: string;
+    detected_query?: string;
     results_cnt?: number;
     page_title?: string;
     timestamp?: string;
@@ -41,6 +58,9 @@ export type BrightDataSerpGoogleJson = {
     request_id?: string;
   };
   organic?: BrightDataSerpOrganicEntry[];
+  // Fast SERP Google News (`tbm=nws`); absent on organic-only responses
+  news?: BrightDataSerpNewsEntry[];
+  article_sets?: BrightDataSerpNewsArticleSet[];
   // Present only when Google shows an AI Overview and brd_ai_overview was requested
   ai_overview?: unknown;
   pagination?: {

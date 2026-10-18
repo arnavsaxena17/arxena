@@ -160,6 +160,7 @@ export const OutreachPeoplePanel = ({
   const [stageFilter, setStageFilter] =
     useState<OutreachPeopleQueueFilter>('all');
   const { withEditableCells } = useOutreachPersonCellEdit({
+    projectId,
     onRefresh,
     updateEphemeralPerson,
   });
@@ -709,6 +710,7 @@ export const OutreachPeoplePanel = ({
       />
       <OutreachAiColumnProgressBar
         run={aiColumnRun?.subject === 'company' ? null : aiColumnRun}
+        projectId={projectId}
       />
       <OutreachAiViewBar
         view={activeView}

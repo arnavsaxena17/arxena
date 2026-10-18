@@ -60,6 +60,25 @@ export const OUTREACH_WF_AI_MESSAGE_OUTPUT = {
     label: 'message',
     value: '',
   },
+  // Opener only; follow-ups leave these empty.
+  tier: {
+    isLeaf: true,
+    type: 'number',
+    label: 'tier',
+    value: '',
+  },
+  hook_used: {
+    isLeaf: true,
+    type: 'string',
+    label: 'hook_used',
+    value: '',
+  },
+  shape: {
+    isLeaf: true,
+    type: 'string',
+    label: 'shape',
+    value: '',
+  },
 };
 
 export const OUTREACH_WF_MESSAGE_OUTPUT_VALIDATION = {
@@ -279,6 +298,37 @@ export const OUTREACH_WF_AI_QUALIFY_OUTPUT = {
     type: 'string',
     label: 'referral_source',
     value: '',
+  },
+  opener_hook: {
+    isLeaf: false,
+    type: 'object',
+    label: 'opener_hook',
+    value: {
+      source: {
+        isLeaf: true,
+        type: 'string',
+        label: 'source',
+        value: '',
+      },
+      quote: {
+        isLeaf: true,
+        type: 'string',
+        label: 'quote',
+        value: '',
+      },
+      problem: {
+        isLeaf: true,
+        type: 'string',
+        label: 'problem',
+        value: '',
+      },
+      why_sender: {
+        isLeaf: true,
+        type: 'string',
+        label: 'why_sender',
+        value: '',
+      },
+    },
   },
 };
 

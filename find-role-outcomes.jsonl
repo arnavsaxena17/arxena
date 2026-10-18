@@ -1561,3 +1561,23 @@
 {"at":"2026-10-14T17:40:24.919Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Blue Tokai Coffee Roasters","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0) probe[142.251.153.119 ok 5ms; 142.251.157.119 ok 6ms; 142.251.155.119 ok 7ms; 142.251.154.119 ok 7ms; 142.251.151.119 ok 8ms; 142.251.150.119 ok 9ms; 142.251.152.119 ok 9ms; 142.251.156.119 ok 9ms]","google: fetch failed (0)"],"rejected":[]}
 {"at":"2026-10-14T17:40:29.412Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Tarz - A Chalhoub Group Company","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
 {"at":"2026-10-14T17:41:25.403Z","projectId":"0cf5ff6c-05b3-4540-af50-9b70936438df","company":"Bombay Shaving Company","status":"source_error","people":0,"sourceErrors":["google: fetch failed (0)"],"rejected":[]}
+{"at":"2026-10-16T11:30:17.941Z","company":"FNP","status":"matched","people":3,"sourceErrors":[],"rejected":["Teresa Powell FNP","Kristen C. Miller","Ariane Rasori"]}
+{"at":"2026-10-16T11:38:41.053Z","company":"Liberty Shoes","status":"matched","people":3,"sourceErrors":[],"rejected":["Liberty Wipes","Vineeth Ravi Paul","Sabrina Shwetsova"]}
+{"at":"2026-10-16T12:13:57.113Z","company":"V-Bazaar","status":"matched","people":1,"sourceErrors":[],"rejected":["Praneel Nundkumar","Stephen Mwanje","Ryan McDougall"]}
+{"at":"2026-10-16T12:15:27.563Z","company":"Taco Bell India","status":"matched","people":3,"sourceErrors":[],"rejected":["Brycen Sears","Roger A. Gonzales","Pamela Anson"]}
+{"at":"2026-10-16T12:16:30.819Z","company":"Mock Co","status":"no_match","people":0,"sourceErrors":[],"rejected":["Mary Mock","Darin Mock","Hanna Volchek"]}
+{"at":"2026-10-16T12:32:49.634Z","company":"SMOOR Chocolates","status":"matched","people":3,"sourceErrors":[],"rejected":["Kanchan Achpal"]}
+{"at":"2026-10-16T12:32:57.176Z","company":"Mock Co","status":"no_match","people":0,"sourceErrors":[],"rejected":["Darin Mock","Sherrie Mock","Valarie Toda"]}
+{"at":"2026-10-16T12:37:23.367Z","company":"Mock Co","status":"no_match","people":0,"sourceErrors":[],"rejected":["Erica Shatzkamer","Amber Young","Jami Delaney"]}
+{"at":"2026-10-16T12:39:54.757Z","company":"Mock Co","status":"no_match","people":0,"sourceErrors":[],"rejected":["Darin Mock","Sherrie Mock, PRC","Valarie Toda"]}
+{"at":"2026-10-16T12:40:33.951Z","company":"Little Italy","status":"matched","people":3,"sourceErrors":[],"rejected":["Victor Toledo Benitez","Little Italy Wines","Adam Bortz"]}
+{"at":"2026-10-16T12:42:53.355Z","company":"Little Italy","status":"matched","people":3,"sourceErrors":[],"rejected":["Adam Bortz","Julian Adams","Rajesh Mehta"]}
+{"at":"2026-10-16T12:44:14.177Z","company":"Little Italy","status":"matched","people":3,"sourceErrors":[],"rejected":["Naveen Shetty","Rohan K.","Adam Bortz"]}
+{"at":"2026-10-16T12:49:25.777Z","company":"Mock Co","status":"no_match","people":0,"sourceErrors":[],"rejected":["Darin Mock","Sherrie Mock","Justin Mahmud"]}
+{"at":"2026-10-16T12:51:22.723Z","company":"Grace Supermarket","status":"no_match","people":0,"sourceErrors":[],"rejected":["Vivian Oparah","S. Raja Kumar","Jeya Godwin RAJAKUMAR"]}
+{"at":"2026-10-16T12:55:11.157Z","company":"Hatsun Agro Product Ltd","status":"matched","people":3,"sourceErrors":[],"rejected":["Senthil Kumar S","Gopal G","shashikant singh"]}
+{"at":"2026-10-16T13:12:46.390Z","company":"Om Sweets Private Limited","status":"matched","people":3,"sourceErrors":[],"rejected":["sunny chandwani","Rajan Kumar","Siddhant Swarnokar"]}
+{"at":"2026-10-16T13:17:16.293Z","company":"Mock Co","status":"matched","people":1,"sourceErrors":[],"rejected":["colette herwitt","Nick Flaherty","Lauren Moretz"]}
+{"at":"2026-10-16T13:22:01.914Z","company":"Mock Co","status":"related_role_only","people":2,"sourceErrors":[],"rejected":["Darin Mock","Chris Abbass","Mary Mock"]}
+{"at":"2026-10-16T13:23:59.630Z","company":"Mock Co","status":"matched","people":1,"sourceErrors":[],"rejected":["Stephen Mock","Charity Valente","Christian Kotzamanis"]}
+{"at":"2026-10-16T13:26:15.748Z","company":"Avon India","status":"matched","people":3,"sourceErrors":[],"rejected":["Sanjeev Bindra","Srikanth Reddy Aileni","Ritesh Thakkar"]}

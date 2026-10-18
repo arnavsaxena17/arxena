@@ -119,6 +119,12 @@ export const OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT =
       first_name: 'Arapa',
       company_short: 'Acme',
       hooks: [{ text: 'Head of Sales', source: 'profile' }],
+      opener_hook: {
+        source: '',
+        quote: '',
+        problem: '',
+        why_sender: '',
+      },
     },
     people: [
       {

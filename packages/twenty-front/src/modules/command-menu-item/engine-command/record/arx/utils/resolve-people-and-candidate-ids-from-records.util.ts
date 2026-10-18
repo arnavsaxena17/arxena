@@ -21,6 +21,17 @@ const firstUuid = (...values: unknown[]): string | undefined => {
   return undefined;
 };
 
+// Find-list / Redis people use content-hash ids, not UUIDs.
+const firstNonEmptyString = (...values: unknown[]): string | undefined => {
+  for (const value of values) {
+    if (typeof value === 'string' && value.length > 0) {
+      return value;
+    }
+  }
+
+  return undefined;
+};
+
 // Outreach People rows use person id as row id under a candidate context store.
 export const resolvePeopleAndCandidateIdsFromRecords = (
   records: ObjectRecord[],
@@ -35,13 +46,21 @@ export const resolvePeopleAndCandidateIdsFromRecords = (
     const isOutreachHomeRow = record.isOutreachHomeRow === true;
     const peopleRelation = asRecord(record.people);
 
-    const personId = firstUuid(
-      record.peopleId,
-      record.personId,
-      peopleRelation?.id,
-      isOutreachHomeRow ? record.id : undefined,
-      isPersonObject ? record.id : undefined,
-    );
+    // Outreach home Find-list rows are keyed by hash ids; CRM person/candidate
+    // rows stay UUID-only so we never treat a random string as a CRM id.
+    const personId = isOutreachHomeRow
+      ? firstNonEmptyString(
+          record.peopleId,
+          record.personId,
+          peopleRelation?.id,
+          record.id,
+        )
+      : firstUuid(
+          record.peopleId,
+          record.personId,
+          peopleRelation?.id,
+          isPersonObject ? record.id : undefined,
+        );
 
     const explicitCandidateId = firstUuid(
       otherFields?.candidateId,

@@ -117,7 +117,6 @@ export const OutreachSetupSenderProfileSection = () => {
   const [isFetchingLinkedin, setIsFetchingLinkedin] = useState(false);
   const [isDrafting, setIsDrafting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [senderNotes, setSenderNotes] = useState('');
   const [collateralText, setCollateralText] = useState('');
   const [collateralFiles, setCollateralFiles] = useState<WorkflowEmailFiles>(
     [],
@@ -176,7 +175,6 @@ export const OutreachSetupSenderProfileSection = () => {
               mimeType: file.type,
             })),
           },
-          senderNotes,
           collateralText,
           linkedinProfileText,
         });
@@ -305,7 +303,6 @@ export const OutreachSetupSenderProfileSection = () => {
     try {
       const result = await generateOutreachSenderProfile({
         accessToken,
-        senderNotes,
         collateralText,
         linkedinProfileText,
       });
@@ -356,7 +353,6 @@ export const OutreachSetupSenderProfileSection = () => {
             mimeType: file.type,
           })),
         },
-        senderNotes,
         collateralText,
         linkedinProfileText,
       });
@@ -441,7 +437,7 @@ export const OutreachSetupSenderProfileSection = () => {
   return (
     <OutreachSetupSectionCard
       title="Sender profile"
-      description="Voice, offer, and ICP for outbound messages on your seat. Fetch your LinkedIn profile, then review the draft before saving."
+      description="Voice, offer, and ICP for outbound messages on your seat. Fetch LinkedIn, add deck notes or PDF/DOCX, then Generate to build the tagged brief."
       headerAdornment={
         <Tag
           color={savedSummary ? 'green' : 'gray'}
@@ -509,20 +505,8 @@ export const OutreachSetupSenderProfileSection = () => {
           </StyledFieldStack>
 
           <StyledFieldStack>
-            <StyledFieldLabel>Sender notes</StyledFieldLabel>
-            <TextArea
-              textAreaId="outreach-setup-sender-notes"
-              minRows={3}
-              maxRows={8}
-              value={senderNotes}
-              onChange={setSenderNotes}
-              placeholder="ICP focus, offer nuances, what to avoid, preferred meeting length…"
-            />
-          </StyledFieldStack>
-
-          <StyledFieldStack>
             <StyledFieldLabel>
-              Collateral (paste notes; upload decks / PDFs to send)
+              Collateral (notes + PDFs for Generate; files also sendable later)
             </StyledFieldLabel>
             <TextArea
               textAreaId="outreach-setup-sender-collateral"
@@ -530,7 +514,7 @@ export const OutreachSetupSenderProfileSection = () => {
               maxRows={10}
               value={collateralText}
               onChange={setCollateralText}
-              placeholder="Paste pitch deck talking points, one-pagers, FAQ…"
+              placeholder="Paste pitch talking points, FAQ, ICP notes…"
             />
             {collateralFiles.length > 0 ? (
               <>
@@ -538,14 +522,14 @@ export const OutreachSetupSenderProfileSection = () => {
                   Uploaded files ({collateralFiles.length})
                 </StyledFieldLabel>
                 <StyledMuted>
-                  These stay on your seat for the Send Files agent tool. Remove
-                  a chip to delete.
+                  PDF / DOCX text is extracted into Generate. Files also stay on
+                  your seat for Send Files. Remove a chip to delete.
                 </StyledMuted>
               </>
             ) : (
               <StyledMuted>
-                No files uploaded yet. Add decks / PDFs below — they appear here
-                after upload.
+                Upload PDF / DOCX decks for Generate (and later Send Files). PPT
+                is send-only — paste talking points above for Generate.
               </StyledMuted>
             )}
             <WorkflowSendEmailAttachments
@@ -561,7 +545,8 @@ export const OutreachSetupSenderProfileSection = () => {
               readonly={!accessToken}
             />
             <StyledMuted>
-              PPT / PDF / DOCX are supported for sending.
+              Generate uses LinkedIn + notes + extractable PDF/DOCX. PPT/PPTX
+              need pasted notes for the brief.
             </StyledMuted>
           </StyledFieldStack>
 

@@ -8,6 +8,16 @@ import {
   formatOutreachTranscriptForLlm,
   rewriteOutreachResolvedPromptSections,
 } from '../format-outreach-llm-context.util';
+import {
+  OUTREACH_OPENER_ASK_RULE_MARKER,
+  OUTREACH_OPENER_ASK_RULES,
+  OUTREACH_OPENER_SEED_MARKER_PREFIX,
+  OUTREACH_OPENER_SEED_MARKER_SUFFIX,
+  OUTREACH_OPENER_SHAPE_RULE_MARKER,
+  OUTREACH_OPENER_SHAPE_RULES,
+  pickOutreachOpenerShape,
+  pickOutreachOpenerVariant,
+} from '../outreach-opener-assignment.util';
 
 describe('formatOutreachTranscriptForLlm', () => {
   it('folds find-records chatMessage dumps into us/them turns', () => {
@@ -64,7 +74,9 @@ describe('formatOutreachTranscriptForLlm', () => {
         ],
         error: '',
       }),
-    ).toBe('them [9 Sept, 7:55 pm IST]: Thanks, I am interested. Can we talk next week?');
+    ).toBe(
+      'them [9 Sept, 7:55 pm IST]: Thanks, I am interested. Can we talk next week?',
+    );
   });
 });
 
@@ -244,11 +256,48 @@ describe('formatOutreachProspectEnrichmentForLlm', () => {
       likely_systems: 'ERP',
       matching_problem_statement: 'Late MIS',
       referral_source: null,
+      opener_hook: {
+        source: 'post',
+        quote: 'Still closing books in Excel',
+        problem: 'Late plant MIS',
+        why_sender: 'realtime reporting',
+      },
     });
 
     expect(formatted).toContain('Prospect: Arvind · Dangote');
     expect(formatted).toContain('- (0) Multi-plant finance [crm]');
+    expect(formatted).toContain('Opener hook:');
+    expect(formatted).toContain('Still closing books in Excel');
     expect(formatted).not.toContain('"hooks"');
+  });
+
+  it('emits hypothesis lines when quote is empty', () => {
+    const formatted = formatOutreachProspectEnrichmentForLlm({
+      go: true,
+      score: 3,
+      segment: 'retail',
+      reason: 'multi-store',
+      first_name: 'Ravi',
+      honorific: null,
+      company_short: 'Acme',
+      industry_phrase: 'retail',
+      hooks: [],
+      likely_systems: '',
+      matching_problem_statement: '',
+      referral_source: null,
+      opener_hook: {
+        source: 'company',
+        quote: '',
+        problem: 'Store-level margin variance hides in the group P&L',
+        why_sender: 'store-level leakage map',
+      },
+    });
+
+    expect(formatted).toContain('Opener hook:');
+    expect(formatted).toContain(
+      'Store-level margin variance hides in the group P&L',
+    );
+    expect(formatted).toContain('store-level leakage map');
   });
 });
 
@@ -371,6 +420,29 @@ describe('rewriteOutreachResolvedPromptSections', () => {
     expect(rewritten).toContain('prospect_profile: Mohammad Abdelghaffar');
     expect(rewritten).toContain('Director Of Operations');
     expect(rewritten).not.toContain('"success"');
+  });
+
+  it('fills deferred opener shape and ask rules from a resolved candidate id', () => {
+    const candidateId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+    const shape = pickOutreachOpenerShape(candidateId);
+    const variant = pickOutreachOpenerVariant(candidateId);
+    const rewritten = rewriteOutreachResolvedPromptSections(
+      [
+        'SENDER: none',
+        OUTREACH_OPENER_SHAPE_RULE_MARKER,
+        OUTREACH_OPENER_ASK_RULE_MARKER,
+        `${OUTREACH_OPENER_SEED_MARKER_PREFIX}${candidateId}${OUTREACH_OPENER_SEED_MARKER_SUFFIX}`,
+      ].join('\n'),
+    );
+
+    expect(rewritten).toContain(OUTREACH_OPENER_SHAPE_RULES[shape]);
+    expect(rewritten).toContain(OUTREACH_OPENER_ASK_RULES[variant]);
+    expect(rewritten).toContain(
+      `Opener assignment: shape=${shape}, variant=${variant}`,
+    );
+    expect(rewritten).not.toContain(OUTREACH_OPENER_SHAPE_RULE_MARKER);
+    expect(rewritten).not.toContain(OUTREACH_OPENER_ASK_RULE_MARKER);
+    expect(rewritten).not.toContain(OUTREACH_OPENER_SEED_MARKER_PREFIX);
   });
 });
 

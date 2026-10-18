@@ -75,6 +75,12 @@ import { WorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scope
 // the tool loop has already run and must not run again.
 const STRUCTURED_OUTPUT_PARSE_RETRY_LIMIT = 1;
 
+const isTimeoutError = (error: unknown): boolean =>
+  typeof error === 'object' &&
+  error !== null &&
+  'name' in error &&
+  error.name === 'TimeoutError';
+
 const EMPTY_USAGE: LanguageModelUsage = {
   inputTokens: 0,
   outputTokens: 0,
@@ -279,6 +285,10 @@ export class AgentAsyncExecutorService {
         model: registeredModel.model,
         prompt: userPrompt,
         maxOutputTokens: modelConfig.maxOutputTokens,
+        timeout: {
+          totalMs: AGENT_CONFIG.LLM_TOOL_LOOP_TIMEOUT_MS,
+          stepMs: AGENT_CONFIG.LLM_STEP_TIMEOUT_MS,
+        },
         stopWhen: (step) =>
           stepCountIs(AGENT_CONFIG.MAX_STEPS)(step) ||
           hasNoMoreAvailableCredits,
@@ -438,6 +448,7 @@ export class AgentAsyncExecutorService {
                 prompt: structuredOutputPrompt,
                 output: Output.object({ schema: jsonSchema(agentSchema) }),
                 maxOutputTokens: modelConfig.maxOutputTokens,
+                timeout: AGENT_CONFIG.LLM_STRUCTURED_OUTPUT_TIMEOUT_MS,
                 providerOptions: structuredProviderOptions,
                 experimental_telemetry: AI_TELEMETRY_CONFIG,
                 onStepFinish: async (step) => {
@@ -539,6 +550,15 @@ export class AgentAsyncExecutorService {
       if (error instanceof AiException) {
         throw error;
       }
+      // AbortSignal timeouts surface as DOMException, which is not an Error
+      // in every runtime, so the message would otherwise be lost.
+      if (isTimeoutError(error)) {
+        throw new AiException(
+          'Agent execution timed out waiting for the model provider',
+          AiExceptionCode.AGENT_EXECUTION_FAILED,
+        );
+      }
+
       throw new AiException(
         error instanceof Error ? error.message : 'Agent execution failed',
         AiExceptionCode.AGENT_EXECUTION_FAILED,

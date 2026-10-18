@@ -187,7 +187,7 @@ Follow **Ephemeral write contract** (preamble). Steps:
 
 ### People constraints
 
-- On Outreach People tab, `upsert_outreach_target_people` or `outreach_list` `attach` is mandatory before ending a Find. Do not `create_candidate` on Find or on Save to CRM.
+- On Outreach People tab, a Find must write the tab before ending: `search_bright_data_business` with `projectId`, or `outreach_list` `attach`, or `upsert_outreach_target_people`. Do not end on a chat-only list. Do not `create_candidate` on Find or on Save to CRM.
 - Present results with name, title, company, location, and source; note when Recruiter results hide public identifiers.
 
 ### People facet examples

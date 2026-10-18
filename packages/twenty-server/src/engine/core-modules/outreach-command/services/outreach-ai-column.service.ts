@@ -19,6 +19,7 @@ import {
 import { AiFilterEngineService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filter-engine/ai-filter-engine.service';
 import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
 import {
+  OUTREACH_SAMPLE_MESSAGE_COLUMN_KEY,
   OUTREACH_SAMPLE_MESSAGE_DRAFTER,
   type OutreachSampleMessageDrafter,
   type OutreachSampleMessageInclude,
@@ -543,6 +544,45 @@ export class OutreachAiColumnService {
     return this.cache.get<PreviewState>(this.previewKey(previewId));
   }
 
+  // Selection drawer action: stash the sample-message filter without drafting
+  // a preview sample, then run only the chosen row ids.
+  async createSampleMessagePreview({
+    workspaceId,
+    projectId,
+    include,
+  }: {
+    workspaceId: string;
+    projectId: string;
+    include?: OutreachSampleMessageInclude;
+  }): Promise<string> {
+    const previewId = randomUUID();
+    const state: PreviewState = {
+      previewId,
+      workspaceId,
+      projectId,
+      subject: 'person',
+      filter: {
+        name: 'Sample LinkedIn message',
+        prompt: 'Draft the first LinkedIn message for this prospect.',
+        selectedModel: 'linkedin-message-agent',
+        fields: [
+          {
+            name: OUTREACH_SAMPLE_MESSAGE_COLUMN_KEY,
+            type: 'text',
+            description: 'Draft of the first LinkedIn message',
+          },
+        ],
+        selectedMetadataFields: ['name'],
+        sampleMessage: { include: include ?? {} },
+      },
+      previewedRows: {},
+    };
+
+    await this.cache.set(this.previewKey(previewId), state, PREVIEW_TTL_MS);
+
+    return previewId;
+  }
+
   // The preview should show real answers, so rows that carry data for the
   // fields the model will read come first; thin rows only fill what is left.
   private pickPreviewSample(
@@ -686,6 +726,18 @@ export class OutreachAiColumnService {
                   linkedinUrl: row.linkedinUrl,
                 },
               });
+
+              if (!draft.message.trim()) {
+                return {
+                  id: row.id,
+                  name: row.name,
+                  status: 'failed',
+                  values: {},
+                  error:
+                    draft.warnings.join(' ') ||
+                    'Opener draft returned an empty message',
+                };
+              }
 
               return {
                 id: row.id,

@@ -116,10 +116,25 @@ LinkedIn via Unipile has two routes. Prefer the native \`linkedin_*\` / \`search
 
 ## Asking the user questions
 
-- When a decision is genuinely ambiguous or consequential and you cannot infer it from the request or context, call \`ask_questions\` to ask the user one or more multiple-choice questions instead of guessing. The conversation pauses until they answer.
-- Each question needs a short \`header\`, the \`question\` text, and 2-4 \`options\` (each with a \`label\` and an optional \`description\`); mark the suggested option with \`isRecommended\`. The user can always type a free-form answer instead of picking an option.
-- Do NOT use \`ask_questions\` for information you can look up with another tool, or for trivial choices that have an obvious default — make the reasonable choice and proceed. Ask at most a few focused questions at once.
-- Do NOT use \`ask_questions\` (or free-form re-confirmation) for CSV column defaults, "top N vs full list" when the user already ordered download/import, or other format choices with a sensible default — pick the default and finish the request.
+**When in doubt, ask.** Prefer \`ask_questions\` over guessing whenever the next action is unclear, instructions conflict, or a wrong choice would waste work or money. The conversation pauses until they answer.
+
+Call \`ask_questions\` when any of these apply:
+
+- The request is ambiguous (two plausible intents, missing scope, unclear which rows/project/channel).
+- Instructions conflict (e.g. "show me the drafts" and "run immediately") — ask which to do first.
+- A step is consequential (send messages, enroll, run a column on hundreds of rows, delete/overwrite) and the user has not clearly authorized that exact step.
+- You are unsure whether to proceed, skip, or change include flags / models / limits.
+
+Each question needs a short \`header\`, the \`question\` text, and 2-4 \`options\` (each with a \`label\` and an optional \`description\`); mark the suggested option with \`isRecommended\`. The user can always type a free-form answer instead of picking an option. Ask at most a few focused questions at once.
+
+Do NOT use \`ask_questions\` for:
+
+- Information you can look up with another tool.
+- Trivial choices with an obvious default — make the reasonable choice and proceed.
+- CSV column defaults, "top N vs full list" when the user already ordered download/import, or other format choices with a sensible default — pick the default and finish.
+- Re-confirming after the user already gave explicit execute language ("go ahead", "proceed", "that's all") for the remaining steps of a multi-part request.
+
+**Exception — Outreach \`projectId\`:** if browsing context has no \`projectId\` (or it says \`none\`), you MUST \`ask_questions\` which project to tag Find results to. A similar project name is not an obvious default. Never pick a project from \`find_many_projects\` without the user's answer.
 `,
 
   MCP_TRANSPORT: `## Workspace MCP transport

@@ -292,7 +292,8 @@ export const OutreachCompaniesPanel = ({
   }, [companies]);
 
   const companyColumns = useMemo(
-    () => appendOutreachRawJsonColumns(COMPANY_COLUMNS, companies, columnLayout),
+    () =>
+      appendOutreachRawJsonColumns(COMPANY_COLUMNS, companies, columnLayout),
     [companies, columnLayout],
   );
 
@@ -543,6 +544,7 @@ export const OutreachCompaniesPanel = ({
       />
       <OutreachAiColumnProgressBar
         run={aiColumnRun?.subject === 'company' ? aiColumnRun : null}
+        projectId={projectId}
       />
       <OutreachAiViewBar
         view={activeView}

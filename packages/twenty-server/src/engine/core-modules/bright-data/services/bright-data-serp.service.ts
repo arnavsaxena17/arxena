@@ -34,6 +34,8 @@ export type BrightDataSerpRequestOptions = {
   // parsed_light returns only the top 10 organic results and answers about
   // twice as fast as the full parse
   dataFormat?: 'parsed' | 'parsed_light';
+  // Prefer image URLs over Base64 payloads (Fast SERP news defaults to Base64)
+  imgFormat?: 'link';
 };
 
 export type BrightDataDatasetScrapeInput = {
@@ -83,6 +85,37 @@ export class BrightDataSerpService {
       host:
         process.env.BRIGHT_DATA_SERP_PROXY_HOST?.trim() || 'brd.superproxy.io',
       port: Number(process.env.BRIGHT_DATA_SERP_PROXY_PORT ?? 33335),
+      username,
+      password,
+    };
+  }
+
+  // Fast SERP news proxy. Reuses SERP proxy credentials/host when dedicated
+  // FSERP ones are absent (many zones expose Fast SERP on port 44445).
+  private get fastSerpProxy():
+    | { host: string; port: number; username: string; password: string }
+    | undefined {
+    const username =
+      process.env.BRIGHT_DATA_FSERP_PROXY_USERNAME?.trim() ||
+      process.env.BRIGHT_DATA_SERP_PROXY_USERNAME?.trim();
+    const password =
+      process.env.BRIGHT_DATA_FSERP_PROXY_PASSWORD?.trim() ||
+      process.env.BRIGHT_DATA_SERP_PROXY_PASSWORD?.trim();
+
+    if (!username || !password) {
+      return undefined;
+    }
+
+    return {
+      host:
+        process.env.BRIGHT_DATA_FSERP_PROXY_HOST?.trim() ||
+        process.env.BRIGHT_DATA_SERP_PROXY_HOST?.trim() ||
+        'fserp.brd.superproxy.io',
+      port: Number(
+        process.env.BRIGHT_DATA_FSERP_PROXY_PORT ??
+          process.env.BRIGHT_DATA_SERP_PROXY_PORT ??
+          44445,
+      ),
       username,
       password,
     };
@@ -138,6 +171,11 @@ export class BrightDataSerpService {
     return Boolean(this.apiKey) || this.serpProxy !== undefined;
   }
 
+  /** True when Fast SERP news (FSERP proxy) or regular SERP credentials are set. */
+  isGoogleNewsConfigured(): boolean {
+    return this.fastSerpProxy !== undefined || this.isConfigured();
+  }
+
   /**
    * Runs a Bright Data SERP zone request for a fully qualified Google search URL.
    * Uses `format: json` so the response includes a structured `organic` array when available.
@@ -147,6 +185,55 @@ export class BrightDataSerpService {
     options?: BrightDataSerpRequestOptions,
   ): Promise<BrightDataSerpGoogleJson> {
     return this.requestSerpJson(searchUrl, options);
+  }
+
+  /**
+   * Fast SERP Google News (`tbm=nws`). Prefers the FSERP native proxy when
+   * credentials exist; falls back to the API key path if the proxy fails.
+   */
+  async requestGoogleNewsJson(
+    query: string,
+    options: BrightDataSerpRequestOptions = {},
+  ): Promise<BrightDataSerpGoogleJson> {
+    const trimmedQuery = query.trim();
+
+    if (!trimmedQuery) {
+      throw new Error('Google News query must not be empty');
+    }
+
+    // `q` must be the first query parameter for Fast SERP news
+    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(trimmedQuery)}&tbm=nws&brd_json=1&hl=en&gl=us`;
+    const newsOptions: BrightDataSerpRequestOptions = {
+      ...options,
+      dataFormat: options.dataFormat ?? 'parsed_light',
+      imgFormat: options.imgFormat ?? 'link',
+    };
+    const fastProxy = this.fastSerpProxy;
+    const key = this.apiKey;
+
+    if (fastProxy !== undefined) {
+      try {
+        return await this.requestSerpJsonViaProxy(
+          searchUrl,
+          fastProxy,
+          newsOptions,
+        );
+      } catch (error) {
+        if (key === undefined) {
+          throw error;
+        }
+
+        this.logger.warn(
+          `Fast SERP proxy news failed, falling back to API: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+
+    if (key !== undefined) {
+      return this.requestSerpJsonViaApi(searchUrl, key, newsOptions);
+    }
+
+    return this.requestSerpJson(searchUrl, newsOptions);
   }
 
   async requestSerpJson(
@@ -160,12 +247,23 @@ export class BrightDataSerpService {
       throw new Error('BRIGHT_DATA_API_KEY is not set');
     }
 
+    if (proxy !== undefined) {
+      return this.requestSerpJsonViaProxy(searchUrl, proxy, options);
+    }
+
+    return this.requestSerpJsonViaApi(searchUrl, key as string, options);
+  }
+
+  private async requestSerpJsonViaProxy(
+    searchUrl: string,
+    proxy: { host: string; port: number; username: string; password: string },
+    options: BrightDataSerpRequestOptions = {},
+  ): Promise<BrightDataSerpGoogleJson> {
     const controller = new AbortController();
     const timeout = setTimeout(
       () => controller.abort(),
       options.timeoutMs ?? this.requestTimeoutMs,
     );
-    // The caller can cut the request short, e.g. when a backup attempt won
     const abortFromCaller = () => controller.abort();
 
     if (options.signal?.aborted === true) {
@@ -175,26 +273,48 @@ export class BrightDataSerpService {
     options.signal?.addEventListener('abort', abortFromCaller, { once: true });
 
     try {
-      const rawText =
-        proxy !== undefined
-          ? await this.fetchSerpViaProxy(
-              searchUrl,
-              proxy,
-              controller.signal,
-              options.dataFormat,
-            )
-          : this.serpAsyncEnabled
-            ? await this.fetchSerpAsync(
-                searchUrl,
-                key as string,
-                controller.signal,
-              )
-            : await this.fetchSerpSync(
-                searchUrl,
-                key as string,
-                controller.signal,
-                options.dataFormat,
-              );
+      const rawText = await this.fetchSerpViaProxy(
+        searchUrl,
+        proxy,
+        controller.signal,
+        options.dataFormat,
+        options.imgFormat,
+      );
+
+      return this.readSerpBody(rawText);
+    } finally {
+      clearTimeout(timeout);
+      options.signal?.removeEventListener('abort', abortFromCaller);
+    }
+  }
+
+  private async requestSerpJsonViaApi(
+    searchUrl: string,
+    key: string,
+    options: BrightDataSerpRequestOptions = {},
+  ): Promise<BrightDataSerpGoogleJson> {
+    const controller = new AbortController();
+    const timeout = setTimeout(
+      () => controller.abort(),
+      options.timeoutMs ?? this.requestTimeoutMs,
+    );
+    const abortFromCaller = () => controller.abort();
+
+    if (options.signal?.aborted === true) {
+      controller.abort();
+    }
+
+    options.signal?.addEventListener('abort', abortFromCaller, { once: true });
+
+    try {
+      const rawText = this.serpAsyncEnabled
+        ? await this.fetchSerpAsync(searchUrl, key, controller.signal)
+        : await this.fetchSerpSync(
+            searchUrl,
+            key,
+            controller.signal,
+            options.dataFormat,
+          );
 
       return this.readSerpBody(rawText);
     } finally {
@@ -322,18 +442,25 @@ export class BrightDataSerpService {
     }
   }
 
-  private proxyDispatcher?: ProxyAgent;
+  private proxyDispatchers = new Map<string, ProxyAgent>();
 
-  private async fetchSerpViaProxy(
-    searchUrl: string,
-    proxy: { host: string; port: number; username: string; password: string },
-    signal: AbortSignal,
-    dataFormat: 'parsed' | 'parsed_light' = 'parsed',
-  ): Promise<string> {
+  private getProxyDispatcher(proxy: {
+    host: string;
+    port: number;
+    username: string;
+    password: string;
+  }): ProxyAgent {
+    const key = `${proxy.host}:${proxy.port}:${proxy.username}`;
+    const existing = this.proxyDispatchers.get(key);
+
+    if (existing !== undefined) {
+      return existing;
+    }
+
     // Bright Data re-signs the TLS of the proxied request, like the `-k` of
     // its own curl examples; set BRIGHT_DATA_SERP_PROXY_VERIFY_TLS=true once
     // its CA is installed
-    this.proxyDispatcher ??= new ProxyAgent({
+    const dispatcher = new ProxyAgent({
       uri: `http://${proxy.host}:${proxy.port}`,
       token: `Basic ${Buffer.from(`${proxy.username}:${proxy.password}`).toString('base64')}`,
       requestTls: {
@@ -345,14 +472,34 @@ export class BrightDataSerpService {
       proxyTls: { timeout: 30_000 },
     });
 
+    this.proxyDispatchers.set(key, dispatcher);
+
+    return dispatcher;
+  }
+
+  private async fetchSerpViaProxy(
+    searchUrl: string,
+    proxy: { host: string; port: number; username: string; password: string },
+    signal: AbortSignal,
+    dataFormat: 'parsed' | 'parsed_light' = 'parsed',
+    imgFormat?: 'link',
+  ): Promise<string> {
+    const headers: Record<string, string> = {
+      'x-unblock-data-format': dataFormat,
+    };
+
+    if (imgFormat === 'link') {
+      headers['x-unblock-img-format'] = 'link';
+    }
+
     const response = await this.fetchWithCause(
       searchUrl,
       {
         method: 'GET',
-        headers: { 'x-unblock-data-format': dataFormat },
+        headers,
         signal,
       },
-      this.proxyDispatcher,
+      this.getProxyDispatcher(proxy),
     );
     const rawText = await response.text();
 

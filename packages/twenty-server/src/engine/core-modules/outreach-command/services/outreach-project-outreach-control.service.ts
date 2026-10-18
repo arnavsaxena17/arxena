@@ -408,7 +408,7 @@ export class OutreachProjectOutreachControlService {
     projectId?: string | null;
     // "Whole table": every enrolled, not-yet-started QUEUED candidate of the project
     startAllQueuedInProject?: boolean;
-  }): Promise<{ startedCandidates: number }> {
+  }): Promise<{ startedCandidates: number; unenrolledPersonIds: string[] }> {
     const uniqueCandidateIds = [
       ...new Set((candidateIds ?? []).filter(isNonEmptyString)),
     ];
@@ -424,7 +424,7 @@ export class OutreachProjectOutreachControlService {
       uniqueCandidateIds.length === 0 &&
       uniquePersonIds.length === 0
     ) {
-      return { startedCandidates: 0 };
+      return { startedCandidates: 0, unenrolledPersonIds: [] };
     }
 
     const authContext = buildSystemAuthContext(workspaceId);
@@ -495,7 +495,18 @@ export class OutreachProjectOutreachControlService {
           startedCandidates += 1;
         }
 
-        return { startedCandidates };
+        // People saved to CRM but never enrolled have no candidate row, so
+        // there is nothing for the sequencer's candidate.upserted trigger to fire on.
+        const enrolledPersonIds = new Set(
+          candidates
+            .map((candidate) => candidate.peopleId)
+            .filter(isNonEmptyString),
+        );
+        const unenrolledPersonIds = uniquePersonIds.filter(
+          (personId) => !enrolledPersonIds.has(personId),
+        );
+
+        return { startedCandidates, unenrolledPersonIds };
       },
       authContext,
     );

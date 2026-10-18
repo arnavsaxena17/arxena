@@ -94,4 +94,50 @@ describe('BrightDataBillingService.billRecords', () => {
     expect(decrementAvailableCreditsInCache).not.toHaveBeenCalled();
     expect(emitCustomBatchEvent).toHaveBeenCalledTimes(1);
   });
+
+  it('should charge $0.0015 per SERP request for company news', async () => {
+    const hasAvailableCreditsOrThrow = jest.fn().mockResolvedValue(undefined);
+    const billingUsageService = {
+      decrementAvailableCreditsInCache,
+      hasAvailableCreditsOrThrow,
+    } as unknown as BillingUsageService;
+
+    service = new BrightDataBillingService(
+      new CreditsService(
+        { emitCustomBatchEvent } as unknown as WorkspaceEventEmitter,
+        { isBillingEnabled: () => true } as unknown as BillingService,
+        billingUsageService,
+        { getOrRecompute } as unknown as WorkspaceCacheService,
+        {
+          resolveTreatment: jest.fn().mockResolvedValue('CUSTOMER'),
+        } as unknown as BillingTreatmentOverrideService,
+      ),
+      billingUsageService,
+    );
+
+    const { chargedUsd } = await service.billSerpRequest({
+      workspaceId: 'ws-1',
+      resourceContext: 'company_news',
+      resourceId: 'acme',
+    });
+
+    expect(chargedUsd).toBeCloseTo(0.0015, 6);
+    expect(decrementAvailableCreditsInCache).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      usedCredits: 1_500,
+    });
+    expect(emitCustomBatchEvent).toHaveBeenCalledWith(
+      USAGE_RECORDED,
+      [
+        expect.objectContaining({
+          operationType: UsageOperationType.BRIGHT_DATA_SEARCH,
+          creditsUsedMicro: 1_500,
+          quantity: 1,
+          resourceContext: 'company_news',
+          resourceId: 'acme',
+        }),
+      ],
+      'ws-1',
+    );
+  });
 });

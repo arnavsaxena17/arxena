@@ -11,16 +11,61 @@ describe('BrightDataSerpService', () => {
     delete process.env.BRIGHT_DATA_SERP_PROXY_USERNAME;
     delete process.env.BRIGHT_DATA_SERP_PROXY_PASSWORD;
     delete process.env.BRIGHT_DATA_SERP_ASYNC_POLL_INTERVAL_MS;
+    delete process.env.BRIGHT_DATA_FSERP_PROXY_USERNAME;
+    delete process.env.BRIGHT_DATA_FSERP_PROXY_PASSWORD;
+    delete process.env.BRIGHT_DATA_FSERP_PROXY_HOST;
+    delete process.env.BRIGHT_DATA_FSERP_PROXY_PORT;
     service = new BrightDataSerpService();
   });
 
   it('isConfigured is false without API key', () => {
     expect(service.isConfigured()).toBe(false);
+    expect(service.isGoogleNewsConfigured()).toBe(false);
   });
 
   it('isConfigured is true when BRIGHT_DATA_API_KEY is set', () => {
     process.env.BRIGHT_DATA_API_KEY = 'test-key';
     expect(new BrightDataSerpService().isConfigured()).toBe(true);
+    expect(new BrightDataSerpService().isGoogleNewsConfigured()).toBe(true);
+  });
+
+  it('requestGoogleNewsJson uses the Fast SERP proxy with news headers', async () => {
+    process.env.BRIGHT_DATA_SERP_PROXY_USERNAME =
+      'brd-customer-hl_x-zone-serp_api';
+    process.env.BRIGHT_DATA_SERP_PROXY_PASSWORD = 'secret';
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () =>
+        JSON.stringify({
+          news: [
+            {
+              link: 'https://example.com/n',
+              title: 'Quake hits region',
+              source: 'Example News',
+              date: '1 hour ago',
+            },
+          ],
+        }),
+    }) as unknown as typeof fetch;
+
+    const result = await new BrightDataSerpService().requestGoogleNewsJson(
+      'earthquake',
+    );
+
+    expect(result.news?.[0]?.title).toBe('Quake hits region');
+    expect(fetch).toHaveBeenCalledWith(
+      'https://www.google.com/search?q=earthquake&tbm=nws&brd_json=1&hl=en&gl=us',
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          'x-unblock-data-format': 'parsed_light',
+          'x-unblock-img-format': 'link',
+        },
+        dispatcher: expect.anything(),
+      }),
+    );
   });
 
   it('submits an async SERP job and polls until the result is ready', async () => {

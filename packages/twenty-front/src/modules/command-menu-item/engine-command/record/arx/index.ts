@@ -20,6 +20,7 @@ export {
 } from './ArxFetchLinkedinSelectionCommands';
 export { ArxMoveCandidatesToAnotherProjectCommand } from './ArxMoveCandidatesToAnotherProjectCommand';
 export { ArxPopulateShortlistCommand } from './ArxPopulateShortlistCommand';
+export { ArxGenerateSampleLinkedinMessageCommand } from './ArxGenerateSampleLinkedinMessageCommand';
 export { ArxQualifyProspectCommand } from './ArxQualifyProspectCommand';
 export { ArxRefreshChatCountsCommand } from './ArxRefreshChatCountsCommand';
 export { ArxRefreshChatStatusesCommand } from './ArxRefreshChatStatusesCommand';

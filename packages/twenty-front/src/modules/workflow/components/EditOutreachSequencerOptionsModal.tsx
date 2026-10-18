@@ -142,13 +142,21 @@ export const EditOutreachSequencerOptionsModal = ({
     setOptionsSyncedForOpen(false);
   }
 
+  const currentOptions = inferOutreachSequencerGraphOptionsFromSteps(
+    steps,
+    trigger,
+  );
+  const hasChanges = (
+    Object.keys(currentOptions) as (keyof OutreachSequencerGraphOptions)[]
+  ).some((key) => currentOptions[key] !== options[key]);
+
   const handleClose = () => {
     closeModal(EDIT_OUTREACH_SEQUENCER_OPTIONS_MODAL_ID);
     onDismiss?.();
   };
 
   const handleApply = async () => {
-    if (isSubmitting) {
+    if (isSubmitting || !hasChanges) {
       return;
     }
 
@@ -409,7 +417,7 @@ export const EditOutreachSequencerOptionsModal = ({
             fullWidth
             justify="center"
             onClick={handleApply}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !hasChanges}
             isLoading={isSubmitting}
           />
         </StyledFooter>

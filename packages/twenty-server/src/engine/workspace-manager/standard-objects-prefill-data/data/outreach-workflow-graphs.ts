@@ -658,17 +658,17 @@ const linkedinDraftPrompt = (
   kind: 'opener' | 'fu1' | 'fu2' | 'fu3',
 ) =>
   buildOutreachFirstMessagePrompt({
-    // Opener uses the member find's text dump, matching the local draft prompt.
-    senderJson:
-      kind === 'opener'
-        ? `{{${OUTREACH_WF_MEMBER_STEP_ID}.text}}`
-        : senderJson(),
+    senderJson: senderJson(),
     prospectEnrichmentJson: prospectEnrichment(findId),
     // Accepted-branch fetch; FU steps hydrate this by chip reference when needed.
     prospectProfileText: `{{${IDS.fetchProfile}.text}}`,
     prospectPostsText: `{{${IDS.fetchPostsAccept}.text}}`,
     chatHistory: `{{${IDS.fetchMessages}.text}}`,
     calendarSlots: `{{${IDS.acceptCalendar}.text}}`,
+    // Deterministic shape/variant from candidate id after chip resolve.
+    ...(kind === 'opener'
+      ? { openerSeed: gtmWfFindId(findId) }
+      : {}),
     kind,
   });
 
@@ -2201,6 +2201,12 @@ const queuedBranchSteps = ({
                 likely_systems: `{{${IDS.qualifyDraft}.likely_systems}}`,
                 matching_problem_statement: `{{${IDS.qualifyDraft}.matching_problem_statement}}`,
                 referral_source: `{{${IDS.qualifyDraft}.referral_source}}`,
+                opener_hook: {
+                  source: `{{${IDS.qualifyDraft}.opener_hook.source}}`,
+                  quote: `{{${IDS.qualifyDraft}.opener_hook.quote}}`,
+                  problem: `{{${IDS.qualifyDraft}.opener_hook.problem}}`,
+                  why_sender: `{{${IDS.qualifyDraft}.opener_hook.why_sender}}`,
+                },
               },
             },
             nextStepIds: [IDS.qualifyGoIf],

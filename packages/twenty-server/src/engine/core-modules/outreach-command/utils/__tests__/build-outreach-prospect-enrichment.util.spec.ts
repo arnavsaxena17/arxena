@@ -1,6 +1,7 @@
 import {
   buildOutreachProspectEnrichment,
   buildOutreachProspectEnrichmentFromLinkedinProfile,
+  hasOutreachOpenerHook,
   isQualifyOwnedProspectEnrichment,
 } from 'src/engine/core-modules/outreach-command/utils/build-outreach-prospect-enrichment.util';
 
@@ -20,6 +21,12 @@ describe('buildOutreachProspectEnrichment', () => {
         likely_systems: 'SAP',
         matching_problem_statement: 'manual handoffs',
         referral_source: '',
+        opener_hook: {
+          source: 'post',
+          quote: 'hiring three plant controllers',
+          problem: 'manual handoffs across plants',
+          why_sender: 'realtime consolidated MIS',
+        },
       }),
     ).toEqual({
       go: true,
@@ -34,7 +41,41 @@ describe('buildOutreachProspectEnrichment', () => {
       likely_systems: 'SAP',
       matching_problem_statement: 'manual handoffs',
       referral_source: '',
+      opener_hook: {
+        source: 'post',
+        quote: 'hiring three plant controllers',
+        problem: 'manual handoffs across plants',
+        why_sender: 'realtime consolidated MIS',
+      },
     });
+  });
+
+  it('detects a usable opener_hook quote or hypothesis', () => {
+    expect(
+      hasOutreachOpenerHook({
+        opener_hook: {
+          source: 'post',
+          quote: 'plant MIS',
+          problem: '',
+          why_sender: '',
+        },
+      }),
+    ).toBe(true);
+    expect(
+      hasOutreachOpenerHook({
+        opener_hook: {
+          source: 'company',
+          quote: '',
+          problem: 'Store-level margin variance hides in the group P&L',
+          why_sender: 'store-level leakage map',
+        },
+      }),
+    ).toBe(true);
+    expect(
+      hasOutreachOpenerHook({
+        opener_hook: { source: '', quote: '', problem: '', why_sender: '' },
+      }),
+    ).toBe(false);
   });
 });
 

@@ -4,6 +4,20 @@ export const OUTREACH_SEEDED_LINKEDIN_MESSAGE_SCHEMA = {
   type: 'object' as const,
   properties: {
     message: { type: 'string' as const, description: 'LinkedIn message body' },
+    tier: {
+      type: 'integer' as const,
+      description: 'Opener personalization tier 1|2|3. Omit on follow-ups.',
+    },
+    hook_used: {
+      type: 'string' as const,
+      description:
+        'Short label of the fact used in the opener, else empty. Omit on follow-ups.',
+    },
+    shape: {
+      type: 'string' as const,
+      description:
+        'Opener shape used: observation_question|thanks_question|fact_comment. Omit on follow-ups.',
+    },
   },
   required: ['message'],
   additionalProperties: false as const,
@@ -193,6 +207,34 @@ export const OUTREACH_SEEDED_QUALIFY_PROSPECT_SCHEMA = {
       type: 'string' as const,
       description: 'Referral source when known, else empty',
     },
+    opener_hook: {
+      type: 'object' as const,
+      description:
+        'First-message stamp: citeable business fact plus a topic to ask about. Empty strings when no citeable fact exists.',
+      properties: {
+        source: {
+          type: 'string' as const,
+          description: 'post | news | activity | profile, else empty',
+        },
+        quote: {
+          type: 'string' as const,
+          description:
+            'Citeable business fact close to their words; never job title at company alone',
+        },
+        problem: {
+          type: 'string' as const,
+          description:
+            'One thing they likely care about, in their words, as a topic to ask about — not a claim',
+        },
+        why_sender: {
+          type: 'string' as const,
+          description:
+            'Short phrase on why the sender is a credible person to ask about it',
+        },
+      },
+      required: ['source', 'quote', 'problem', 'why_sender'] as const,
+      additionalProperties: false as const,
+    },
   },
   required: [
     'go',
@@ -207,6 +249,7 @@ export const OUTREACH_SEEDED_QUALIFY_PROSPECT_SCHEMA = {
     'likely_systems',
     'matching_problem_statement',
     'referral_source',
+    'opener_hook',
   ],
   additionalProperties: false as const,
 };

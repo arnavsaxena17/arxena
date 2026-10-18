@@ -235,7 +235,7 @@ Bright Data Google Maps PAYG is about $1.50 per 1,000 records. Budget on gross d
 
 ### Companies constraints
 
-- On Outreach Companies tab, `upsert_outreach_target_companies` is mandatory before ending the turn.
+- On Outreach Companies tab, a Find must write the tab before ending: `search_bright_data_business` with `projectId`, or `outreach_list` `attach`, or `upsert_outreach_target_companies`. Do not end on a chat-only list.
 - Present results with name, domain, industry, location, size, and source so the user can judge quality.
 
 ---

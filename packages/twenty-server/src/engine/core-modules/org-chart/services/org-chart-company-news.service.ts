@@ -1,7 +1,11 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 
+import { CreditsService } from 'src/engine/core-modules/billing/services/credits.service';
+import { BrightDataBillingService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-billing.service';
+import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/services/bright-data-serp.service';
 import { toOpenAiResponsesJsonSchemaFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
+import { NATIVE_WEB_SEARCH_COST_PER_CALL_DOLLARS } from 'src/engine/metadata-modules/ai/ai-billing/constants/native-web-search-cost-per-call-dollars';
 import {
   COMPANY_NEWS_DEVELOPER_PROMPT,
   buildCompanyNewsUserPrompt,
@@ -9,21 +13,32 @@ import {
 import {
   companyNewsFetchRecordSchema,
   companyNewsLlmResultSchema,
+  companyNewsSourceSchema,
   companyNewsStorageSchema,
-  type CompanyNewsFetchRecord,
   type CompanyNewsItem,
   type CompanyNewsLlmResult,
+  type CompanyNewsSource,
   type CompanyNewsStorage,
 } from '../schemas/company-news.schema';
+import {
+  buildCompanyNewsSearchQuery,
+  mapBrightDataNewsToCompanyNewsResult,
+} from '../utils/map-bright-data-news-to-company-news.util';
 import { OrgChartS3Service } from './orgchart-s3.service';
 
 const COMPANY_NEWS_MODEL = 'gpt-5.4-nano';
+const DEFAULT_COMPANY_NEWS_SOURCE: CompanyNewsSource = 'bright_data';
 
 @Injectable()
 export class OrgChartCompanyNewsService {
   private readonly logger = new Logger(OrgChartCompanyNewsService.name);
 
-  constructor(private readonly orgChartS3Service: OrgChartS3Service) {}
+  constructor(
+    private readonly orgChartS3Service: OrgChartS3Service,
+    private readonly brightDataSerpService: BrightDataSerpService,
+    private readonly brightDataBillingService: BrightDataBillingService,
+    private readonly creditsService: CreditsService,
+  ) {}
 
   private createOpenAiClient(): OpenAI {
     const apiKey = process.env.OPENAI_API_KEY ?? process.env.OPENAI_KEY;
@@ -50,22 +65,41 @@ export class OrgChartCompanyNewsService {
     companyId: string;
     companyName: string;
     location?: string;
+    source?: CompanyNewsSource;
+    workspaceId?: string;
+    userWorkspaceId?: string | null;
   }): Promise<CompanyNewsStorage> {
     const companyId = input.companyId.trim();
     const companyName = input.companyName.trim() || companyId;
     const location = input.location?.trim();
+    const source = this.resolveSource(input.source);
+    const workspaceId = input.workspaceId?.trim() || undefined;
 
     this.logger.log(
-      `Fetching company news for companyId=${companyId} companyName="${companyName}" location="${location ?? ''}"`,
+      `Fetching company news for companyId=${companyId} companyName="${companyName}" location="${location ?? ''}" source=${source}`,
     );
 
-    const llmResult = await this.fetchCompanyNewsFromLlm({
-      companyName,
-      location,
-    });
+    if (workspaceId !== undefined && source === 'bright_data') {
+      await this.brightDataBillingService.validateCreditsOrThrow(workspaceId);
+    }
+
+    if (workspaceId !== undefined && source === 'openai') {
+      await this.creditsService.assertCanSpend({
+        workspaceId,
+        feature: 'AI_WEB_SEARCH',
+      });
+    }
+
+    const { result: llmResult, source: usedSource } =
+      await this.fetchCompanyNews({
+        companyName,
+        location,
+        source,
+      });
     const fetchedAt = new Date().toISOString();
     const fetchRecord = companyNewsFetchRecordSchema.parse({
       fetchedAt,
+      source: usedSource,
       result: llmResult,
     });
 
@@ -79,8 +113,18 @@ export class OrgChartCompanyNewsService {
     });
 
     await this.orgChartS3Service.saveCompanyNews(companyId, nextStorage);
+
+    if (workspaceId !== undefined) {
+      await this.billCompanyNewsFetch({
+        workspaceId,
+        companyId,
+        usedSource,
+        userWorkspaceId: input.userWorkspaceId,
+      });
+    }
+
     this.logger.log(
-      `Saved company news to S3 for companyId=${companyId} fetchCount=${nextStorage.fetches.length}`,
+      `Saved company news to S3 for companyId=${companyId} fetchCount=${nextStorage.fetches.length} source=${usedSource}`,
     );
 
     return nextStorage;
@@ -112,6 +156,101 @@ export class OrgChartCompanyNewsService {
     }
 
     return Array.from(byUrl.values());
+  }
+
+  private async billCompanyNewsFetch(input: {
+    workspaceId: string;
+    companyId: string;
+    usedSource: CompanyNewsSource;
+    userWorkspaceId?: string | null;
+  }): Promise<void> {
+    if (input.usedSource === 'bright_data') {
+      await this.brightDataBillingService.billSerpRequest({
+        workspaceId: input.workspaceId,
+        resourceContext: 'company_news',
+        resourceId: input.companyId,
+        userWorkspaceId: input.userWorkspaceId,
+      });
+
+      return;
+    }
+
+    await this.creditsService.record({
+      workspaceId: input.workspaceId,
+      feature: 'AI_WEB_SEARCH',
+      quantity: 1,
+      providerCostUsd: NATIVE_WEB_SEARCH_COST_PER_CALL_DOLLARS,
+      userWorkspaceId: input.userWorkspaceId ?? null,
+      resourceId: input.companyId,
+      resourceContext: 'company_news',
+    });
+  }
+
+  private resolveSource(source?: CompanyNewsSource): CompanyNewsSource {
+    if (source !== undefined) {
+      return companyNewsSourceSchema.parse(source);
+    }
+
+    return DEFAULT_COMPANY_NEWS_SOURCE;
+  }
+
+  private async fetchCompanyNews(input: {
+    companyName: string;
+    location?: string;
+    source: CompanyNewsSource;
+  }): Promise<{ result: CompanyNewsLlmResult; source: CompanyNewsSource }> {
+    if (input.source === 'bright_data') {
+      if (!this.brightDataSerpService.isGoogleNewsConfigured()) {
+        this.logger.warn(
+          'Bright Data SERP is not configured; falling back to OpenAI web search for company news',
+        );
+
+        return {
+          result: await this.fetchCompanyNewsFromLlm(input),
+          source: 'openai',
+        };
+      }
+
+      try {
+        return {
+          result: await this.fetchCompanyNewsFromBrightData(input),
+          source: 'bright_data',
+        };
+      } catch (error) {
+        this.logger.warn(
+          `Bright Data company news failed, falling back to OpenAI: ${error instanceof Error ? error.message : String(error)}`,
+        );
+
+        return {
+          result: await this.fetchCompanyNewsFromLlm(input),
+          source: 'openai',
+        };
+      }
+    }
+
+    return {
+      result: await this.fetchCompanyNewsFromLlm(input),
+      source: 'openai',
+    };
+  }
+
+  private async fetchCompanyNewsFromBrightData(input: {
+    companyName: string;
+    location?: string;
+  }): Promise<CompanyNewsLlmResult> {
+    const query = buildCompanyNewsSearchQuery(input);
+    const serp = await this.brightDataSerpService.requestGoogleNewsJson(query);
+    const mapped = mapBrightDataNewsToCompanyNewsResult({
+      companyName: input.companyName,
+      location: input.location,
+      serp,
+    });
+
+    this.logger.log(
+      `Company news Bright Data returned ${mapped.news_items.length} items for "${mapped.company_name}"`,
+    );
+
+    return mapped;
   }
 
   private async fetchCompanyNewsFromLlm(input: {
@@ -171,12 +310,17 @@ export class OrgChartCompanyNewsService {
       content?: Array<{ type?: string; text?: string }>;
     }>;
   }): string | null {
-    if (typeof response.output_text === 'string' && response.output_text.trim()) {
+    if (
+      typeof response.output_text === 'string' &&
+      response.output_text.trim()
+    ) {
       return response.output_text.trim();
     }
 
     const message = response.output?.find((item) => item.type === 'message');
-    const textPart = message?.content?.find((part) => part.type === 'output_text');
+    const textPart = message?.content?.find(
+      (part) => part.type === 'output_text',
+    );
     return typeof textPart?.text === 'string' ? textPart.text.trim() : null;
   }
 

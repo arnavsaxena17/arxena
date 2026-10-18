@@ -112,6 +112,30 @@ describe('OutreachAiColumnRunService', () => {
     expect(queue.add).toHaveBeenCalledTimes(1);
   });
 
+  it('should only process the first N working-set rows when rowLimit is set', async () => {
+    const { service, queue } = setup({
+      rows: [
+        buildRow('a'),
+        buildRow('b'),
+        buildRow('c'),
+        buildRow('d'),
+        buildRow('e'),
+      ],
+    });
+
+    const state = await service.startRun({
+      workspaceId: 'ws',
+      projectId: 'project',
+      subject: 'person',
+      previewId: 'preview-1',
+      rowLimit: 3,
+    });
+
+    expect(state.total).toBe(3);
+    expect(state.units.flat()).toEqual(['a', 'b', 'c']);
+    expect(queue.add).toHaveBeenCalledTimes(1);
+  });
+
   it('should run only rows that match the applied view when onlyViewMatches is set', async () => {
     const { service, tableView } = setup({
       rows: [
@@ -308,6 +332,30 @@ describe('OutreachAiColumnRunService', () => {
     });
 
     expect((await service.cancelRun(started.runId))?.status).toBe('cancelled');
+  });
+
+  it('should cancel an active queued run for a project by projectId', async () => {
+    const { service } = setup({ rows: [buildRow('a'), buildRow('b')] });
+    const started = await service.startRun({
+      workspaceId: 'ws',
+      projectId: 'project',
+      subject: 'person',
+      previewId: 'preview-1',
+    });
+
+    const cancelled = await service.cancelActiveRunForProject({
+      workspaceId: 'ws',
+      projectId: 'project',
+    });
+
+    expect(cancelled?.runId).toBe(started.runId);
+    expect(cancelled?.status).toBe('cancelled');
+    expect(
+      await service.cancelActiveRunForProject({
+        workspaceId: 'ws',
+        projectId: 'project',
+      }),
+    ).toBeUndefined();
   });
 
   it('should end the run as failed, not leave it running, when a chunk throws', async () => {

@@ -6,7 +6,11 @@ import { isDefined, isValidUuid } from 'twenty-shared/utils';
 import { type FindOptionsWhere, type ObjectLiteral } from 'typeorm';
 
 import { OrgChartCompanyNewsService } from 'src/engine/core-modules/org-chart/services/org-chart-company-news.service';
-import { buildOutreachFirstMessagePrompt } from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
+import { filterRecentCompanyNewsItems } from 'src/engine/core-modules/org-chart/utils/filter-recent-company-news-items.util';
+import {
+  buildOutreachFirstMessagePrompt,
+  validateOutreachOpenerMessage,
+} from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
 import { FetchLinkedinMessagesService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-messages.service';
 import { FetchLinkedinProfileService } from 'src/engine/core-modules/outreach-command/services/fetch-linkedin-profile.service';
 import { OutreachSenderProfileService } from 'src/engine/core-modules/outreach-command/services/outreach-sender-profile.service';
@@ -23,6 +27,10 @@ import {
   formatOutreachTranscriptForLlm,
   rewriteOutreachResolvedPromptSections,
 } from 'src/engine/core-modules/outreach-command/utils/format-outreach-llm-context.util';
+import {
+  pickOutreachOpenerShape,
+  pickOutreachOpenerVariant,
+} from 'src/engine/core-modules/outreach-command/utils/outreach-opener-assignment.util';
 import { UsageOperationType } from 'src/engine/core-modules/usage/enums/usage-operation-type.enum';
 import { AgentAsyncExecutorService } from 'src/engine/metadata-modules/ai/ai-agent-execution/services/agent-async-executor.service';
 import { AgentEntity } from 'src/engine/metadata-modules/ai/ai-agent/entities/agent.entity';
@@ -41,7 +49,7 @@ const DEFAULT_INCLUDE: Required<OutreachSampleMessageInclude> = {
   profile: true,
   posts: true,
   chatHistory: true,
-  companyNews: false,
+  companyNews: true,
 };
 
 type RecordWithId = ObjectLiteral & { id: string };
@@ -158,28 +166,81 @@ export class OutreachSampleMessageService implements OutreachSampleMessageDrafte
         })
       : undefined;
 
-    const prompt = rewriteOutreachResolvedPromptSections(
-      buildOutreachFirstMessagePrompt({
-        senderJson,
-        prospectEnrichmentJson: hasEnrichment
-          ? JSON.stringify(enrichment)
-          : this.buildRowSummary(prospect),
-        prospectProfileText,
-        prospectPostsText,
-        chatHistory,
-        // Only pass the news section when the flag is on, so the prompt stays
-        // identical to the seeded opener otherwise.
-        companyNews: include.companyNews ? (companyNews ?? '') : undefined,
-        kind: 'opener',
-      }),
-    );
-    const message = await this.runLinkedinAgent({ workspaceId, prompt });
+    const openerSeed =
+      prospect.candidateId?.trim() ||
+      prospect.linkedinUrl?.trim() ||
+      prospect.name;
+    const variant = pickOutreachOpenerVariant(openerSeed);
+    const shape = pickOutreachOpenerShape(openerSeed);
+    const prospectEnrichmentJson = hasEnrichment
+      ? JSON.stringify(enrichment)
+      : this.buildRowSummary(prospect);
+    const buildPrompt = (retryFeedback?: string) =>
+      rewriteOutreachResolvedPromptSections(
+        buildOutreachFirstMessagePrompt({
+          senderJson,
+          prospectEnrichmentJson,
+          prospectProfileText,
+          prospectPostsText,
+          chatHistory,
+          // Only pass the news section when the flag is on, so the prompt stays
+          // identical to the seeded opener otherwise.
+          companyNews: include.companyNews ? (companyNews ?? '') : undefined,
+          openerSeed,
+          variant,
+          shape,
+          retryFeedback,
+          kind: 'opener',
+        }),
+      );
 
-    return { message, warnings };
+    let prompt = buildPrompt();
+    let draft = await this.runLinkedinAgent({ workspaceId, prompt });
+    let message = draft.message;
+    let tier = draft.tier;
+    let hookUsed = draft.hookUsed;
+    let validation = validateOutreachOpenerMessage(message, variant);
+
+    // Two retries with the failed checks fed back into the prompt, then hold.
+    for (
+      let retryIndex = 0;
+      retryIndex < 2 && !validation.ok;
+      retryIndex += 1
+    ) {
+      prompt = buildPrompt(validation.problems.join('; '));
+      draft = await this.runLinkedinAgent({ workspaceId, prompt });
+      message = draft.message;
+      tier = draft.tier ?? tier;
+      hookUsed = draft.hookUsed ?? hookUsed;
+      validation = validateOutreachOpenerMessage(message, variant);
+    }
+
+    if (!isNonEmptyString(message.trim()) || !validation.ok) {
+      return {
+        message: '',
+        warnings: [
+          ...warnings,
+          !isNonEmptyString(message.trim())
+            ? 'No message: opener agent returned an empty body.'
+            : `Opener held for review: ${validation.problems.join('; ')}`,
+        ],
+        openerVariant: variant,
+        openerShape: shape,
+      };
+    }
+
+    return {
+      message,
+      warnings,
+      openerVariant: variant,
+      openerShape: shape,
+      ...(isDefined(tier) ? { tier } : {}),
+      ...(isDefined(hookUsed) ? { hookUsed } : {}),
+    };
   }
 
   // Find-list rows carry no Qualify enrichment, so the row's own fields stand
-  // in for it.
+  // in for it when a citeable profile/posts/news context is also present.
   private buildRowSummary(prospect: OutreachSampleMessageProspect): string {
     return JSON.stringify({
       name: prospect.name,
@@ -383,12 +444,14 @@ export class OutreachSampleMessageService implements OutreachSampleMessageDrafte
           await this.orgChartCompanyNewsService.fetchAndStoreCompanyNews({
             companyId: storageKey,
             companyName,
+            workspaceId,
           });
       }
 
-      const items = this.orgChartCompanyNewsService
-        .mergeNewsItemsFromStorage(storage)
-        .slice(0, NEWS_ITEMS_IN_PROMPT);
+      // Drop stale / undated items so the opener never cites old coverage.
+      const items = filterRecentCompanyNewsItems(
+        this.orgChartCompanyNewsService.mergeNewsItemsFromStorage(storage),
+      ).slice(0, NEWS_ITEMS_IN_PROMPT);
 
       if (items.length === 0) {
         warnings.push(`No recent news found for ${companyName}.`);
@@ -398,6 +461,7 @@ export class OutreachSampleMessageService implements OutreachSampleMessageDrafte
 
       return [
         `Company: ${companyName}`,
+        'Only use the recent items below. Do not refer to older company news.',
         ...items.map((item) => `- (${item.date}) ${item.summary}`),
       ].join('\n');
     } catch (error) {
@@ -413,7 +477,11 @@ export class OutreachSampleMessageService implements OutreachSampleMessageDrafte
   }: {
     workspaceId: string;
     prompt: string;
-  }): Promise<string> {
+  }): Promise<{
+    message: string;
+    tier?: number;
+    hookUsed?: string;
+  }> {
     const agent = await this.agentRepository.findOne(workspaceId, {
       where: { id: getOutreachAgentIds(workspaceId).linkedinMessage },
     });
@@ -440,8 +508,12 @@ export class OutreachSampleMessageService implements OutreachSampleMessageDrafte
       throw new Error('credit_balance_exhausted: AI agent stopped.');
     }
 
-    const message = (executionResult.result as { message?: unknown } | null)
-      ?.message;
+    const result = executionResult.result as {
+      message?: unknown;
+      tier?: unknown;
+      hook_used?: unknown;
+    } | null;
+    const message = result?.message;
 
     if (!isNonEmptyString(message)) {
       this.logger.warn(
@@ -451,6 +523,12 @@ export class OutreachSampleMessageService implements OutreachSampleMessageDrafte
       throw new Error('The agent returned no message.');
     }
 
-    return message;
+    return {
+      message,
+      ...(typeof result?.tier === 'number' ? { tier: result.tier } : {}),
+      ...(typeof result?.hook_used === 'string'
+        ? { hookUsed: result.hook_used }
+        : {}),
+    };
   }
 }

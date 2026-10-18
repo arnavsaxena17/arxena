@@ -90,6 +90,7 @@ export enum EngineComponentKey {
   ARX_FETCH_LINKEDIN_MESSAGES = 'ARX_FETCH_LINKEDIN_MESSAGES',
   ARX_FETCH_LINKEDIN_POSTS = 'ARX_FETCH_LINKEDIN_POSTS',
   ARX_FETCH_LINKEDIN_PROFILE = 'ARX_FETCH_LINKEDIN_PROFILE',
+  ARX_GENERATE_SAMPLE_LINKEDIN_MESSAGE = 'ARX_GENERATE_SAMPLE_LINKEDIN_MESSAGE',
 
   // TODO: Remove deprecated keys once upgrade:1-21:refactor-navigation-commands has run on all workspaces
   // Deprecated: replaced by NAVIGATION engine key with payload

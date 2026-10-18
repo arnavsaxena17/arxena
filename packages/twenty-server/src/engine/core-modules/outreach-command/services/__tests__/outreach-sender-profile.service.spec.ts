@@ -30,6 +30,11 @@ describe('OutreachSenderProfileService.getBuildPrompt', () => {
     });
 
     expect(prompt.system).toBe(OUTREACH_BUILD_SENDER_PROFILE_SYSTEM_PROMPT);
+    expect(prompt.system).toContain('## hypotheses');
+    expect(prompt.system).toContain('## voice_sample');
+    expect(prompt.system).toContain('## later_stage');
+    expect(prompt.system).toContain('when Generate is clicked');
+    expect(prompt.user).toContain('INPUTS (Outreach setup — Generate)');
     expect(prompt.user).toContain('linkedin_profile: Jane Doe');
     expect(prompt.user).toContain('collateral: Pitch one-pager');
   });

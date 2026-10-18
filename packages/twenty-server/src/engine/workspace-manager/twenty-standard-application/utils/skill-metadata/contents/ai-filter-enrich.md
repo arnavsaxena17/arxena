@@ -33,8 +33,10 @@ Do **not** use `search` to re-source the list, and do **not** page through `find
    Show the user: the column name(s) **with their types** (and enum values), the 10 results as a small table, the model that ran (`usage.engine`, `usage.model`), tokens and the estimated cost of the full run. If `typeWarnings` is not empty, say what it says and call `preview_ai_column` again with a more specific `description` (for example "revenue as a number in USD" or "company size as one of 1-50, 51-200, 201-1000, 1000+").
 4. **Ask before running on everything**: end the turn with `ask_questions` — "Run for all {total} rows (~$X)?" — options: Run for all / Adjust the column / Cancel. Do not run on all rows without the answer.
    **Exception: pre-approved list build.** When the user already approved an enrichment cap for a list build (see **Judged lists** in the `search` skill), skip this question if the preview's estimated cost fits inside the remaining cap, and run straight away. Ask only when the cost would exceed it.
-5. **Run for all**: `run_ai_column({ projectId, subject, previewId })` (add `onlyViewMatches: true` to run only the rows that match the filters of the currently applied table view, so rows an earlier filter ruled out are not paid for) using the `previewId` from the preview. It starts a **background job** on the AI filtering queue and fills the column in chunks: answers are written into each row's `otherFields` under the column key (ephemeral list and CRM), values appear in the People table as they land, and a progress bar shows above the table. The tool waits up to ~45 seconds. If it returns `status: "running"`, tell the user the column keeps filling in the background (progress is above the table), give them `done/total`, and check later with `get_ai_column_run_status({ runId })`; `cancel_ai_column_run({ runId })` stops it and keeps the filled rows. Only one column runs per project at a time.
-   If rows failed (rate limit etc.), call `run_ai_column` again with the **same** `previewId`: it skips rows that are already answered, so only the failed rows are retried and paid for. Failed rows show a red "Failed" tag in the table (an empty cell means not run yet, "unknown" or an empty number means no credible answer was found). Pass `rerunAll: true` only when the user wants every row recomputed. The previewId lasts one hour; after that, preview again.
+5. **Run — scope matters**:
+   - **Limited / test / "first N" / regenerate N**: `run_ai_column({ projectId, subject, previewId, rowLimit: N })`. `rowLimit` is the first N rows of the working set in table order. **Always pass `rowLimit` unless the user explicitly said all rows / everyone / run for all.** `rerunAll: false` alone is not a limit — it still fills every empty row in the project.
+   - **Full run (user confirmed all)**: `run_ai_column({ projectId, subject, previewId })` with **no** `rowLimit` (add `onlyViewMatches: true` to run only the applied table view). Starts a background job; values land in `otherFields` with a progress bar. Waits ~45s; if `status: "running"`, tell the user and poll `get_ai_column_run_status({ runId })`; `cancel_ai_column_run({ runId })` stops and keeps filled rows. One column run per project at a time.
+   If rows failed (rate limit etc.), call `run_ai_column` again with the **same** `previewId` (and the same `rowLimit` if used): it skips rows that are already answered. Failed rows show a red "Failed" tag. Pass `rerunAll: true` only when the user wants every in-scope row recomputed. The previewId lasts one hour; after that, preview again.
 6. **Report**: the new column name(s) and types, rows answered / failed, the engine and model that ran, tokens and cost from `usage` (`inputTokens`, `outputTokens`, `estimatedCostUsd`; jev reports no tokens or cost, say so), and a few sample rows. For a yes/no filter also say how many matched. Tell the user the column can be sorted and filtered in the table header (numbers by comparison, labels by value).
 
 7. **Filter and sort, only when the request asks for it** (see the next section): once the column is filled, call `generate_table_view({ projectId, tab: <the active tab>, description: "<the user's request in their words>" })`, then `apply_table_view` with its result unchanged.
@@ -73,13 +75,15 @@ Adding a column and filtering or sorting the table are different things. Decide 
 
 When the user wants to **see what the first LinkedIn message would look like** for the people in the list ("draft the first message for these", "show me sample openers", "what would we send them after they accept"), add a **Sample LinkedIn message** column. It is the same column flow, with its own tool for the preview.
 
-1. Preview: `preview_sample_message_column({ projectId, rowLimit: 3, include: { ... } })` instead of `preview_ai_column`. Drafts use the seeded opener prompt and agent; nothing is sent.
+1. Preview: `preview_sample_message_column({ projectId, rowLimit: N, include: { ... } })` instead of `preview_ai_column` (N = what the user asked for). Drafts use the seeded opener prompt and agent; nothing is sent.
 2. Choose `include` from what the user asked. Omit it for the defaults. Each flag is a context section:
    - `senderProfile`, `prospectEnrichment`, `profile`, `posts`, `chatHistory`: **on** by default. Set one to `false` only when the user asks to leave it out.
    - `profile` makes one live LinkedIn lookup per row; `posts` and `chatHistory` only exist for people already enrolled in the sequence (Find-list rows skip them).
-   - `companyNews`: **off** by default. Turn it on only when the user asks for news, funding or recent company events in the message. It adds a web-search lookup per company (cached for 30 days).
-3. Show the drafts, the sections used, and ask before running for all rows, exactly as in the flow above. Then `run_ai_column({ projectId, subject: "person", previewId })`. The messages land in `otherFields.sampleLinkedinMessage`, shown as the **Sample LinkedIn message** column.
-4. Use it for the opener only. Follow-ups and replies are not drafted by this column.
+   - `companyNews`: Adds a web-search lookup per company (cached for 30 days).
+3. **Persist scope**:
+   - User said first N / regenerate N / test / sample: `run_ai_column({ projectId, subject: "person", previewId, rowLimit: N })` with the **same N**. Do **not** omit `rowLimit`. Clearing a few empty cells and calling run without `rowLimit` will fill every empty person in the project.
+   - User explicitly said all rows / everyone / run for all: ask once (cost), then `run_ai_column({ projectId, subject: "person", previewId })` with **no** `rowLimit`.
+4. Messages land in `otherFields.sampleLinkedinMessage` (**Sample LinkedIn message** column). Opener only — not follow-ups or replies.
 
 ## What the server decides (so you do not)
 
@@ -102,6 +106,7 @@ The answer is written as a **new key in `otherFields`** of every row, next to ex
 - Use `subject: "company"` for a question asked on the People tab (it is a person column about the employer), or `subject: "person"` on the Companies tab; or ask where the companies should come from
 - Load every person or company into the conversation, loop `find_many_*`, or call `get_object_metadata` to find the title field
 - Run `run_ai_column` before the user has confirmed the preview
+- Call `run_ai_column` without `rowLimit` when the user only asked for first N / a test / regenerate N (that processes every empty row)
 - Invent revenue or headcount when the web search returns nothing
 - Create CRM Company / Person records or enroll anyone as part of a filter or enrichment
 - Create a column for a fact an existing column already holds (see **One column per fact**), or filter on a duplicate
