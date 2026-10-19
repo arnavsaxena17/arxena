@@ -4,7 +4,7 @@ type OutreachSenderProfileApiErrorBody = {
   message?: string;
 };
 
-const readErrorMessage = async (
+export const readErrorMessage = async (
   response: Response,
   fallback: string,
 ): Promise<string> => {
@@ -24,7 +24,7 @@ const readErrorMessage = async (
   return fallback;
 };
 
-const requireAccessToken = (accessToken: string | undefined): string => {
+export const requireAccessToken = (accessToken: string | undefined): string => {
   if (!accessToken) {
     throw new Error('You need to be signed in to manage the sender profile.');
   }
@@ -32,7 +32,7 @@ const requireAccessToken = (accessToken: string | undefined): string => {
   return accessToken;
 };
 
-const requireBaseUrl = (): string => {
+export const requireBaseUrl = (): string => {
   const baseUrl = REACT_APP_SERVER_BASE_URL ?? '';
 
   if (!baseUrl) {

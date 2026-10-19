@@ -37,6 +37,7 @@ type EditOutreachSequencerOptionsModalProps = {
   steps:
     | Array<{
         id?: string;
+        type?: string;
         settings?: {
           input?: {
             duration?: {
@@ -231,6 +232,16 @@ export const EditOutreachSequencerOptionsModal = ({
                 description={t`Off: remove approve steps and send drafted messages directly.`}
                 checked={options.humanInTheLoop}
                 onChange={(value) => setOption('humanInTheLoop', value)}
+                toggleCentered={false}
+                divider
+                disabled={isSubmitting}
+              />
+              <SettingsOptionCardContentToggle
+                Icon={IconMessageCircle}
+                title={t`Standard draft messages (manual)`}
+                description={t`On: connection note, first message and follow-ups use the templates from Setup → Draft messages, with no AI draft or approve step before them.`}
+                checked={options.manualDraftTemplates}
+                onChange={(value) => setOption('manualDraftTemplates', value)}
                 toggleCentered={false}
                 divider
                 disabled={isSubmitting}

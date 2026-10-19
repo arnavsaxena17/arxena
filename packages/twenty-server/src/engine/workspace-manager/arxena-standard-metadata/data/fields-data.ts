@@ -493,6 +493,78 @@ const getAllFieldsData = (
     {
       objectName: 'workspaceMember',
       field: {
+        description:
+          'Standard manual draft for the LinkedIn connection note. Uses person/company/sender variables.',
+        icon: 'IconMessage',
+        label: 'Outreach Draft: Connection Note',
+        name: 'outreachDraftConnectionNote',
+        objectMetadataId: objectsNameIdMap.workspaceMember,
+        type: 'TEXT',
+      },
+    },
+    {
+      objectName: 'workspaceMember',
+      field: {
+        description:
+          'Standard manual draft for the first LinkedIn message after the connection is accepted.',
+        icon: 'IconMessage',
+        label: 'Outreach Draft: First Message',
+        name: 'outreachDraftFirstMessage',
+        objectMetadataId: objectsNameIdMap.workspaceMember,
+        type: 'TEXT',
+      },
+    },
+    {
+      objectName: 'workspaceMember',
+      field: {
+        description:
+          'Standard manual draft for LinkedIn follow-up 1.',
+        icon: 'IconMessage',
+        label: 'Outreach Draft: Follow-up 1',
+        name: 'outreachDraftFollowUp1',
+        objectMetadataId: objectsNameIdMap.workspaceMember,
+        type: 'TEXT',
+      },
+    },
+    {
+      objectName: 'workspaceMember',
+      field: {
+        description:
+          'Standard manual draft for LinkedIn follow-up 2.',
+        icon: 'IconMessage',
+        label: 'Outreach Draft: Follow-up 2',
+        name: 'outreachDraftFollowUp2',
+        objectMetadataId: objectsNameIdMap.workspaceMember,
+        type: 'TEXT',
+      },
+    },
+    {
+      objectName: 'workspaceMember',
+      field: {
+        description:
+          'Standard manual draft for LinkedIn follow-up 3.',
+        icon: 'IconMessage',
+        label: 'Outreach Draft: Follow-up 3',
+        name: 'outreachDraftFollowUp3',
+        objectMetadataId: objectsNameIdMap.workspaceMember,
+        type: 'TEXT',
+      },
+    },
+    {
+      objectName: 'workspaceMember',
+      field: {
+        description:
+          'Attachments per standard draft message: { connectionNote | firstMessage | followUp1..3: file[] }',
+        icon: 'IconPaperclip',
+        label: 'Outreach Draft Attachments',
+        name: 'outreachDraftAttachments',
+        objectMetadataId: objectsNameIdMap.workspaceMember,
+        type: 'RAW_JSON',
+      },
+    },
+    {
+      objectName: 'workspaceMember',
+      field: {
         description: 'Last LinkedIn connection request sent from this seat',
         icon: 'IconClock',
         label: 'Last LinkedIn Connect At',

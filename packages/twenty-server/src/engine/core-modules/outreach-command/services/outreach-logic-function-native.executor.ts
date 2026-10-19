@@ -21,6 +21,7 @@ import {
   OUTREACH_FETCH_PHONE_LOGIC_FUNCTION_NAME,
   OUTREACH_GET_PROJECT_ATTACHMENTS_LOGIC_FUNCTION_NAME,
   OUTREACH_NOTIFY_MEMBER_SYSTEM_EMAIL_LOGIC_FUNCTION_NAME,
+  OUTREACH_RENDER_DRAFT_TEMPLATE_LOGIC_FUNCTION_NAME,
   OUTREACH_CREATE_REFERRAL_CANDIDATE_LOGIC_FUNCTION_NAME,
   OUTREACH_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
   OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
@@ -59,6 +60,10 @@ import {
   type CreateReferralCandidateInput,
 } from 'src/engine/core-modules/outreach-command/services/create-referral-candidate.service';
 import {
+  OutreachDraftTemplateService,
+  type RenderOutreachDraftTemplateInput,
+} from 'src/engine/core-modules/outreach-command/services/outreach-draft-template.service';
+import {
   NotifyMemberSystemEmailService,
   type NotifyMemberSystemEmailInput,
 } from 'src/engine/core-modules/outreach-command/services/notify-member-system-email.service';
@@ -91,6 +96,7 @@ export class OutreachLogicFunctionNativeExecutor
     private readonly getCalendarAvailabilityService: GetCalendarAvailabilityService,
     private readonly getProjectAttachmentsService: GetProjectAttachmentsService,
     private readonly notifyMemberSystemEmailService: NotifyMemberSystemEmailService,
+    private readonly outreachDraftTemplateService: OutreachDraftTemplateService,
     private readonly createReferralCandidateService: CreateReferralCandidateService,
     private readonly gtmFakeProfileDetectorService: OutreachFakeProfileDetectorService,
     private readonly gtmFilterProfilesService: OutreachFilterProfilesService,
@@ -353,6 +359,13 @@ export class OutreachLogicFunctionNativeExecutor
       return this.createReferralCandidateService.execute({
         workspaceId,
         input: payload as CreateReferralCandidateInput,
+      });
+    }
+
+    if (name === OUTREACH_RENDER_DRAFT_TEMPLATE_LOGIC_FUNCTION_NAME) {
+      return this.outreachDraftTemplateService.render({
+        workspaceId,
+        input: payload as RenderOutreachDraftTemplateInput,
       });
     }
 

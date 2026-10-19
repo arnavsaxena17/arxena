@@ -38,6 +38,10 @@ import { OutreachWorkingSetService } from 'src/engine/core-modules/outreach-comm
 import { OutreachTableViewService } from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
 import { SearchPeopleForCompanyService } from 'src/engine/core-modules/outreach-command/services/search-people-for-company.service';
 import { OutreachWorkspaceProfileProvisioningService } from 'src/engine/core-modules/outreach-command/services/outreach-workspace-profile-provisioning.service';
+import {
+  OutreachDraftTemplateService,
+  type OutreachDraftAttachments,
+} from 'src/engine/core-modules/outreach-command/services/outreach-draft-template.service';
 import { OutreachSenderProfileService } from 'src/engine/core-modules/outreach-command/services/outreach-sender-profile.service';
 import { type OutreachSenderProfile } from 'src/engine/core-modules/outreach-command/types/outreach-sender-profile.type';
 import { extractOutreachSenderCollateralText } from 'src/engine/core-modules/outreach-command/utils/extract-outreach-sender-collateral-text.util';
@@ -71,6 +75,7 @@ export class OutreachCommandController {
     private readonly gtmCommandMaterializeService: OutreachCommandMaterializeService,
     private readonly gtmWorkspaceProfileProvisioningService: OutreachWorkspaceProfileProvisioningService,
     private readonly outreachSenderProfileService: OutreachSenderProfileService,
+    private readonly outreachDraftTemplateService: OutreachDraftTemplateService,
     private readonly outreachFakeProfileDetectorService: OutreachFakeProfileDetectorService,
     private readonly outreachFilterProfilesService: OutreachFilterProfilesService,
     private readonly outreachProjectOutreachControlService: OutreachProjectOutreachControlService,
@@ -1262,6 +1267,46 @@ export class OutreachCommandController {
       linkedinProfileText: body.linkedinProfileText ?? '',
       collateralText: body.collateralText,
       senderProfile: body.senderProfile,
+    });
+  }
+
+  // Standard (manual) draft messages for the signed-in member. Empty fields come
+  // back as the seeded defaults so Setup always has text to edit.
+  @Get('draft-templates')
+  async getDraftTemplates(
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const { workspaceId, workspaceMemberId } =
+      await this.resolveSenderProfileAuthContext({}, request);
+
+    return this.outreachDraftTemplateService.getDraftSettings({
+      workspaceId,
+      workspaceMemberId,
+    });
+  }
+
+  @Put('draft-templates')
+  async saveDraftTemplates(
+    @Body()
+    body: {
+      templates?: Record<string, string>;
+      attachments?: OutreachDraftAttachments;
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const { workspaceId, workspaceMemberId } =
+      await this.resolveSenderProfileAuthContext({}, request);
+
+    await this.outreachDraftTemplateService.saveDraftSettings({
+      workspaceId,
+      workspaceMemberId,
+      templates: body?.templates,
+      attachments: body?.attachments,
+    });
+
+    return this.outreachDraftTemplateService.getDraftSettings({
+      workspaceId,
+      workspaceMemberId,
     });
   }
 

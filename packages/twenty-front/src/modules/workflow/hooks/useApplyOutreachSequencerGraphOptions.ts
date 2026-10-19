@@ -6,6 +6,7 @@ export type ApplyOutreachSequencerGraphOptionsInput = {
   workflowId: string;
   useLlmConnectionNote: boolean;
   humanInTheLoop: boolean;
+  manualDraftTemplates: boolean;
   whatsappEnabled: boolean;
   emailConnected: boolean;
   meetingFollowUpEnabled: boolean;

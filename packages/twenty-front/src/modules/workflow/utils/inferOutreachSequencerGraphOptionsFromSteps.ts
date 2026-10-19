@@ -1,6 +1,7 @@
 // Stable Candidate Sequencer step ids used to infer Edit Workflow toggles.
 export const OUTREACH_SEQUENCER_INFERENCE_STEP_IDS = {
   draftConnectNote: 'c7a10010-aaaa-4fcb-a7d8-17a7736ed045',
+  draftFirst: '4582ca2b-2b80-4c4f-a802-7a923b296322',
   approveFirst: '4d4e9ac8-ecdd-4174-af3e-43b31971079b',
   approveReply: 'c83e4113-c3b9-4207-8baf-e311be592bf3',
   sendReplyWhatsapp: '51a10027-aaaa-4fcb-a7d8-17a7736ed045',
@@ -20,6 +21,7 @@ export const OUTREACH_SEQUENCER_INFERENCE_STEP_IDS = {
 export type OutreachSequencerGraphOptions = {
   useLlmConnectionNote: boolean;
   humanInTheLoop: boolean;
+  manualDraftTemplates: boolean;
   whatsappEnabled: boolean;
   emailConnected: boolean;
   meetingFollowUpEnabled: boolean;
@@ -73,6 +75,10 @@ export const inferOutreachSequencerGraphOptionsFromSteps = (
     useLlmConnectionNote: stepIds.has(
       OUTREACH_SEQUENCER_INFERENCE_STEP_IDS.draftConnectNote,
     ),
+    manualDraftTemplates:
+      (steps ?? []).find(
+        (step) => step.id === OUTREACH_SEQUENCER_INFERENCE_STEP_IDS.draftFirst,
+      )?.type === 'LOGIC_FUNCTION',
     humanInTheLoop:
       stepIds.has(OUTREACH_SEQUENCER_INFERENCE_STEP_IDS.approveFirst) ||
       stepIds.has(OUTREACH_SEQUENCER_INFERENCE_STEP_IDS.approveReply),
@@ -104,7 +110,9 @@ export const inferOutreachSequencerGraphOptionsFromSteps = (
       : 1,
     inboundInviteWaitDays:
       typeof inboundDays === 'number' && inboundDays > 0 ? inboundDays : 3,
-    inmailEnabled: stepIds.has(OUTREACH_SEQUENCER_INFERENCE_STEP_IDS.sendInmail),
+    inmailEnabled: stepIds.has(
+      OUTREACH_SEQUENCER_INFERENCE_STEP_IDS.sendInmail,
+    ),
     testMode,
     pinSenderByWarmOverlap: stepIds.has(
       OUTREACH_SEQUENCER_INFERENCE_STEP_IDS.selectMember,

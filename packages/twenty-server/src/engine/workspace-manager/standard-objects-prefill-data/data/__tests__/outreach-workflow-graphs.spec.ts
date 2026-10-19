@@ -1055,6 +1055,7 @@ describe('GTM outreach workflow graphs', () => {
     ).toEqual({
       useLlmConnectionNote: true,
       humanInTheLoop: true,
+      manualDraftTemplates: false,
       whatsappEnabled: false,
       emailConnected: false,
       meetingFollowUpEnabled: true,
@@ -1081,6 +1082,7 @@ describe('GTM outreach workflow graphs', () => {
     ).toEqual({
       useLlmConnectionNote: false,
       humanInTheLoop: false,
+      manualDraftTemplates: false,
       whatsappEnabled: false,
       emailConnected: false,
       meetingFollowUpEnabled: false,
@@ -1645,6 +1647,133 @@ describe('GTM outreach workflow graphs', () => {
         inferOutreachSequencerGraphOptionsFromSteps(steps, graph.trigger)
           .pinSenderByWarmOverlap,
       ).toBe(true);
+    });
+  });
+  describe('manual draft templates', () => {
+    const MANUAL_SITES = [
+      {
+        key: 'connectionNote',
+        draft: OUTREACH_SEQUENCER_STEP_IDS.draftConnectNote,
+        approve: OUTREACH_SEQUENCER_STEP_IDS.approveConnectNote,
+        send: OUTREACH_SEQUENCER_STEP_IDS.sendConnect,
+      },
+      {
+        key: 'firstMessage',
+        draft: OUTREACH_SEQUENCER_STEP_IDS.draftFirst,
+        approve: OUTREACH_SEQUENCER_STEP_IDS.approveFirst,
+        send: OUTREACH_SEQUENCER_STEP_IDS.sendFirst,
+      },
+      {
+        key: 'followUp1',
+        draft: OUTREACH_SEQUENCER_STEP_IDS.draftFu1,
+        approve: OUTREACH_SEQUENCER_STEP_IDS.approveFu1,
+        send: OUTREACH_SEQUENCER_STEP_IDS.sendFu1,
+      },
+      {
+        key: 'followUp2',
+        draft: OUTREACH_SEQUENCER_STEP_IDS.draftFu2,
+        approve: OUTREACH_SEQUENCER_STEP_IDS.approveFu2,
+        send: OUTREACH_SEQUENCER_STEP_IDS.sendFu2,
+      },
+      {
+        key: 'followUp3',
+        draft: OUTREACH_SEQUENCER_STEP_IDS.draftFu3,
+        approve: OUTREACH_SEQUENCER_STEP_IDS.approveFu3,
+        send: OUTREACH_SEQUENCER_STEP_IDS.sendFu3,
+      },
+    ];
+
+    const buildManual = () =>
+      buildCandidateSequencerGraph({
+        humanInTheLoop: true,
+        manualDraftTemplates: true,
+      });
+
+    it.each(MANUAL_SITES)(
+      'replaces the AI draft and approve form before the $key send',
+      ({ key, draft, approve, send }) => {
+        const steps = buildManual().steps as GraphStep[];
+        const draftStep = steps.find((step) => step.id === draft);
+        const sendStep = steps.find((step) => step.id === send);
+
+        expect(draftStep?.type).toBe('LOGIC_FUNCTION');
+        expect(JSON.stringify(draftStep?.settings?.input)).toContain(
+          `"templateKey":"${key}"`,
+        );
+        expect(steps.some((step) => step.id === approve)).toBe(false);
+        expect(draftStep?.nextStepIds).toEqual([
+          key === 'connectionNote'
+            ? OUTREACH_SEQUENCER_STEP_IDS.connectionNotSentIf
+            : send,
+        ]);
+        expect(JSON.stringify(sendStep?.settings?.input)).toContain(
+          `{{${draft}.message}}`,
+        );
+      },
+    );
+
+    it('sends the connection note template even when the LLM note option is off', () => {
+      const steps = buildCandidateSequencerGraph({
+        useLlmConnectionNote: false,
+        manualDraftTemplates: true,
+      }).steps as GraphStep[];
+      const send = steps.find(
+        (step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.sendConnect,
+      );
+
+      expect(
+        steps.find(
+          (step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.draftConnectNote,
+        )?.type,
+      ).toBe('LOGIC_FUNCTION');
+      expect(JSON.stringify(send?.settings?.input)).toContain(
+        `{{${OUTREACH_SEQUENCER_STEP_IDS.draftConnectNote}.message}}`,
+      );
+    });
+
+    it('keeps the reply-branch approval forms when human-in-the-loop is on', () => {
+      const steps = buildManual().steps as GraphStep[];
+
+      expect(
+        steps.some(
+          (step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.approveReply,
+        ),
+      ).toBe(true);
+    });
+
+    it('keeps the AI draft flow when manual mode is off', () => {
+      const steps = buildCandidateSequencerGraph({ humanInTheLoop: true })
+        .steps as GraphStep[];
+
+      expect(
+        steps.find((step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.draftFirst)
+          ?.type,
+      ).toBe('AI_AGENT');
+      expect(
+        inferOutreachSequencerGraphOptionsFromSteps(steps).manualDraftTemplates,
+      ).toBe(false);
+    });
+
+    it('infers manual mode from the rendered graph', () => {
+      const graph = buildManual();
+
+      expect(
+        inferOutreachSequencerGraphOptionsFromSteps(
+          graph.steps as GraphStep[],
+          graph.trigger,
+        ),
+      ).toMatchObject({ manualDraftTemplates: true, humanInTheLoop: true });
+    });
+
+    it('feeds member attachments into the follow-up 1 send', () => {
+      const steps = buildManual().steps as GraphStep[];
+      const sendStep = steps.find(
+        (step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.sendFu1,
+      );
+
+      expect(JSON.stringify(sendStep?.settings?.input)).toContain(
+        'outreachDraftAttachments.followUp1',
+      );
     });
   });
 });

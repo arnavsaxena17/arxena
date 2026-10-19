@@ -1,4 +1,9 @@
-import { OUTREACH_HITL_CONTEXT_TEMPLATES } from 'twenty-shared/arx';
+import {
+  OUTREACH_DRAFT_ATTACHMENTS_FIELD_NAME,
+  OUTREACH_DRAFT_TEMPLATE_FIELD_NAMES,
+  OUTREACH_HITL_CONTEXT_TEMPLATES,
+  type OutreachDraftTemplateKey,
+} from 'twenty-shared/arx';
 
 import {
   buildOutreachConnectionNotePrompt,
@@ -21,6 +26,7 @@ import {
 } from 'src/engine/core-modules/outreach-command/prompts/outreach.prompts';
 import {
   OUTREACH_ENRICH_CONTACT_SAMPLE_OUTPUT,
+  OUTREACH_RENDER_DRAFT_TEMPLATE_SAMPLE_OUTPUT,
   OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT,
   OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
   OUTREACH_SELECT_WORKSPACE_MEMBER_SAMPLE_OUTPUT,
@@ -437,6 +443,9 @@ const withPinnedEmailSender = <TStep extends { type?: unknown }>(
 export type OutreachSequencerGraphOptions = {
   useLlmConnectionNote: boolean;
   humanInTheLoop: boolean;
+  // On: connection note, first message and follow-ups 1–3 are the member's
+  // standard draft templates (no AI draft, no approve form before the send).
+  manualDraftTemplates: boolean;
   whatsappEnabled: boolean;
   // Off: email sends become a system email telling the workspace member what to send.
   emailConnected: boolean;
@@ -460,6 +469,7 @@ export const DEFAULT_OUTREACH_SEQUENCER_GRAPH_OPTIONS: OutreachSequencerGraphOpt
   {
     useLlmConnectionNote: true,
     humanInTheLoop: true,
+    manualDraftTemplates: false,
     // Off by default: a shared phone number emails the workspace member instead.
     whatsappEnabled: false,
     emailConnected: false,
@@ -511,6 +521,62 @@ const hitlOrDraftMessage = ({
     ? `{{${approveId}.editedBody}}`
     : `{{${draftId}.${draftField}}}`;
 
+const MANUAL_DRAFT_MEMBER_FIELD = (templateKey: OutreachDraftTemplateKey) =>
+  gtmWfFindField(
+    OUTREACH_WF_MEMBER_STEP_ID,
+    OUTREACH_DRAFT_TEMPLATE_FIELD_NAMES[templateKey],
+  );
+
+// Manual mode: replaces the AI draft step (same id, so every edge into it still
+// works) with a render step that fills the member's standard template. The
+// step fails when a variable is empty, which stops the run before the send.
+const manualDraftRenderStep = ({
+  id,
+  name,
+  templateKey,
+  personFindId,
+  nextStepIds,
+}: {
+  id: string;
+  name: string;
+  templateKey: OutreachDraftTemplateKey;
+  personFindId: string;
+  nextStepIds: string[];
+}) =>
+  gtmWfLogicFunctionStep({
+    id,
+    name,
+    logicFunctionId: '__LF_render-outreach-draft-template__',
+    logicFunctionInput: {
+      templateKey,
+      template: MANUAL_DRAFT_MEMBER_FIELD(templateKey),
+      personFirstName: gtmWfFindField(personFindId, 'name.firstName'),
+      personLastName: gtmWfFindField(personFindId, 'name.lastName'),
+      companyName: gtmWfFindField(
+        personFindId,
+        OUTREACH_WF_FIELD.jobCompanyNamePath,
+      ),
+      senderFirstName: gtmWfFindField(
+        OUTREACH_WF_MEMBER_STEP_ID,
+        'name.firstName',
+      ),
+      senderLastName: gtmWfFindField(
+        OUTREACH_WF_MEMBER_STEP_ID,
+        'name.lastName',
+      ),
+    },
+    sampleOutput: OUTREACH_RENDER_DRAFT_TEMPLATE_SAMPLE_OUTPUT,
+    nextStepIds,
+  });
+
+// Attachments added next to the template in Setup; empty list when none.
+const manualDraftFiles = (templateKey: OutreachDraftTemplateKey) => [
+  gtmWfFindField(
+    OUTREACH_WF_MEMBER_STEP_ID,
+    `${OUTREACH_DRAFT_ATTACHMENTS_FIELD_NAME}.${templateKey}`,
+  ),
+];
+
 export const inferOutreachSequencerGraphOptionsFromSteps = (
   steps:
     | Array<{
@@ -546,6 +612,9 @@ export const inferOutreachSequencerGraphOptionsFromSteps = (
 
   return {
     useLlmConnectionNote: stepIds.has(IDS.draftConnectNote),
+    manualDraftTemplates:
+      (steps ?? []).find((step) => step.id === IDS.draftFirst)?.type ===
+      'LOGIC_FUNCTION',
     humanInTheLoop:
       stepIds.has(IDS.approveFirst) || stepIds.has(IDS.approveReply),
     whatsappEnabled: stepIds.has(IDS.sendReplyWhatsapp),
@@ -666,9 +735,7 @@ const linkedinDraftPrompt = (
     chatHistory: `{{${IDS.fetchMessages}.text}}`,
     calendarSlots: `{{${IDS.acceptCalendar}.text}}`,
     // Deterministic shape/variant from candidate id after chip resolve.
-    ...(kind === 'opener'
-      ? { openerSeed: gtmWfFindId(findId) }
-      : {}),
+    ...(kind === 'opener' ? { openerSeed: gtmWfFindId(findId) } : {}),
     kind,
   });
 
@@ -685,6 +752,7 @@ const followUpSteps = ({
   nextFindId,
   isLast,
   humanInTheLoop,
+  manualDraftTemplates,
   testMode,
 }: {
   n: 1 | 2 | 3;
@@ -699,6 +767,7 @@ const followUpSteps = ({
   nextFindId?: string;
   isLast: boolean;
   humanInTheLoop: boolean;
+  manualDraftTemplates: boolean;
   testMode: boolean;
 }) => [
   candidateFind(findId, `Reload candidate before follow-up ${n}`, [
@@ -712,15 +781,23 @@ const followUpSteps = ({
     value: 'CONNECTION_ACCEPTED',
     nextStepIds: [draftId],
   }),
-  gtmWfAiAgentStep({
-    id: draftId,
-    name: `Draft LinkedIn follow-up ${n}`,
-    prompt: linkedinDraftPrompt(findId, `fu${n}` as 'fu1' | 'fu2' | 'fu3'),
-    agentId: OUTREACH_WF_AGENT_LINKEDIN,
-    outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
-    nextStepIds: [humanInTheLoop ? approveId : sendId],
-  }),
-  ...(humanInTheLoop
+  manualDraftTemplates
+    ? manualDraftRenderStep({
+        id: draftId,
+        name: `Render follow-up ${n} template`,
+        templateKey: `followUp${n}`,
+        personFindId,
+        nextStepIds: [sendId],
+      })
+    : gtmWfAiAgentStep({
+        id: draftId,
+        name: `Draft LinkedIn follow-up ${n}`,
+        prompt: linkedinDraftPrompt(findId, `fu${n}` as 'fu1' | 'fu2' | 'fu3'),
+        agentId: OUTREACH_WF_AGENT_LINKEDIN,
+        outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
+        nextStepIds: [humanInTheLoop ? approveId : sendId],
+      }),
+  ...(humanInTheLoop && !manualDraftTemplates
     ? [
         gtmWfFormStep({
           id: approveId,
@@ -739,7 +816,14 @@ const followUpSteps = ({
   gtmWfSendLinkedInMessageStep({
     id: sendId,
     name: `Send follow-up ${n}`,
-    body: hitlOrDraftMessage({ draftId, approveId, humanInTheLoop }),
+    body: hitlOrDraftMessage({
+      draftId,
+      approveId,
+      humanInTheLoop: humanInTheLoop && !manualDraftTemplates,
+    }),
+    ...(manualDraftTemplates
+      ? { files: manualDraftFiles(`followUp${n}`) }
+      : {}),
     candidateId: gtmWfFindId(findId),
     linkedinProfileId: gtmWfFindField(
       personFindId,
@@ -782,9 +866,11 @@ const followUpSteps = ({
 // stamp REPLIED and stop so candidate.upserted re-enters the replied branch.
 const acceptedBranchSteps = ({
   humanInTheLoop,
+  manualDraftTemplates,
   testMode,
 }: {
   humanInTheLoop: boolean;
+  manualDraftTemplates: boolean;
   testMode: boolean;
 }) => [
   candidateFind(IDS.acceptFind, 'Load Candidate', [IDS.acceptPersonFind]),
@@ -866,15 +952,23 @@ const acceptedBranchSteps = ({
     postsLimit: 5,
     nextStepIds: [IDS.draftFirst],
   }),
-  gtmWfAiAgentStep({
-    id: IDS.draftFirst,
-    name: 'Draft first LinkedIn message',
-    prompt: linkedinDraftPrompt(IDS.acceptFind, 'opener'),
-    agentId: OUTREACH_WF_AGENT_LINKEDIN,
-    outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
-    nextStepIds: [humanInTheLoop ? IDS.approveFirst : IDS.sendFirst],
-  }),
-  ...(humanInTheLoop
+  manualDraftTemplates
+    ? manualDraftRenderStep({
+        id: IDS.draftFirst,
+        name: 'Render first message template',
+        templateKey: 'firstMessage',
+        personFindId: IDS.acceptPersonFind,
+        nextStepIds: [IDS.sendFirst],
+      })
+    : gtmWfAiAgentStep({
+        id: IDS.draftFirst,
+        name: 'Draft first LinkedIn message',
+        prompt: linkedinDraftPrompt(IDS.acceptFind, 'opener'),
+        agentId: OUTREACH_WF_AGENT_LINKEDIN,
+        outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
+        nextStepIds: [humanInTheLoop ? IDS.approveFirst : IDS.sendFirst],
+      }),
+  ...(humanInTheLoop && !manualDraftTemplates
     ? [
         gtmWfFormStep({
           id: IDS.approveFirst,
@@ -896,8 +990,11 @@ const acceptedBranchSteps = ({
     body: hitlOrDraftMessage({
       draftId: IDS.draftFirst,
       approveId: IDS.approveFirst,
-      humanInTheLoop,
+      humanInTheLoop: humanInTheLoop && !manualDraftTemplates,
     }),
+    ...(manualDraftTemplates
+      ? { files: manualDraftFiles('firstMessage') }
+      : {}),
     candidateId: gtmWfFindId(IDS.acceptFind),
     linkedinProfileId: gtmWfFindField(
       IDS.acceptPersonFind,
@@ -929,6 +1026,7 @@ const acceptedBranchSteps = ({
     nextFindId: IDS.reloadFu2,
     isLast: false,
     humanInTheLoop,
+    manualDraftTemplates,
     testMode,
   }),
   ...followUpSteps({
@@ -944,6 +1042,7 @@ const acceptedBranchSteps = ({
     nextFindId: IDS.reloadFu3,
     isLast: false,
     humanInTheLoop,
+    manualDraftTemplates,
     testMode,
   }),
   ...followUpSteps({
@@ -957,6 +1056,7 @@ const acceptedBranchSteps = ({
     stampId: IDS.stampFu3,
     isLast: true,
     humanInTheLoop,
+    manualDraftTemplates,
     testMode,
   }),
 ];
@@ -2059,6 +2159,7 @@ const queuedBranchSteps = ({
   hoistedMember,
   useLlmConnectionNote,
   humanInTheLoop,
+  manualDraftTemplates,
   checkDeduplicationPerCompany,
   qualifyProspectEnabled,
   commentBeforeConnect,
@@ -2071,6 +2172,7 @@ const queuedBranchSteps = ({
   hoistedMember: boolean;
   useLlmConnectionNote: boolean;
   humanInTheLoop: boolean;
+  manualDraftTemplates: boolean;
   checkDeduplicationPerCompany: boolean;
   qualifyProspectEnabled: boolean;
   commentBeforeConnect: boolean;
@@ -2079,6 +2181,8 @@ const queuedBranchSteps = ({
   inmailEnabled: boolean;
   testMode: boolean;
 }) => {
+  // Manual mode sends the member's connection-note template without an approve form.
+  const connectNoteHumanInTheLoop = humanInTheLoop && !manualDraftTemplates;
   const companyConnectEntryId = useLlmConnectionNote
     ? IDS.draftConnectNote
     : IDS.connectionNotSentIf;
@@ -2099,14 +2203,14 @@ const queuedBranchSteps = ({
     : hitlOrDraftMessage({
         draftId: IDS.draftConnectNote,
         approveId: IDS.approveConnectNote,
-        humanInTheLoop,
+        humanInTheLoop: connectNoteHumanInTheLoop,
       });
   const connectMessageNoCompany = !useLlmConnectionNote
     ? ''
     : hitlOrDraftMessage({
         draftId: IDS.draftConnectNoteNoCompany,
         approveId: IDS.approveConnectNoteNoCompany,
-        humanInTheLoop,
+        humanInTheLoop: connectNoteHumanInTheLoop,
       });
 
   const candidateId = gtmWfFindId(IDS.queuedFind);
@@ -2525,24 +2629,34 @@ const queuedBranchSteps = ({
       : []),
     ...(useLlmConnectionNote
       ? [
-          gtmWfAiAgentStep({
-            id: IDS.draftConnectNote,
-            name: 'Draft connection note',
-            prompt: buildOutreachConnectionNotePrompt({
-              senderJson: senderJson(),
-              // Stamped on candidate after Qualify — Test can fill from the record
-              // (or default {}). Do not chip qualifyDraft.* (AI_AGENT predecessors
-              // are not hydrated by AI agent Test).
-              prospectEnrichmentJson: prospectEnrichment(IDS.queuedFind),
-              prospectProfileText: `{{${IDS.queuedFetchProfile}.text}}`,
-            }),
-            agentId: OUTREACH_WF_AGENT_LINKEDIN,
-            outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
-            nextStepIds: [
-              humanInTheLoop ? IDS.approveConnectNote : IDS.connectionNotSentIf,
-            ],
-          }),
-          ...(humanInTheLoop
+          manualDraftTemplates
+            ? manualDraftRenderStep({
+                id: IDS.draftConnectNote,
+                name: 'Render connection note template',
+                templateKey: 'connectionNote',
+                personFindId: IDS.queuedPersonFind,
+                nextStepIds: [IDS.connectionNotSentIf],
+              })
+            : gtmWfAiAgentStep({
+                id: IDS.draftConnectNote,
+                name: 'Draft connection note',
+                prompt: buildOutreachConnectionNotePrompt({
+                  senderJson: senderJson(),
+                  // Stamped on candidate after Qualify — Test can fill from the record
+                  // (or default {}). Do not chip qualifyDraft.* (AI_AGENT predecessors
+                  // are not hydrated by AI agent Test).
+                  prospectEnrichmentJson: prospectEnrichment(IDS.queuedFind),
+                  prospectProfileText: `{{${IDS.queuedFetchProfile}.text}}`,
+                }),
+                agentId: OUTREACH_WF_AGENT_LINKEDIN,
+                outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
+                nextStepIds: [
+                  connectNoteHumanInTheLoop
+                    ? IDS.approveConnectNote
+                    : IDS.connectionNotSentIf,
+                ],
+              }),
+          ...(connectNoteHumanInTheLoop
             ? [
                 gtmWfFormStep({
                   id: IDS.approveConnectNote,
@@ -2561,23 +2675,33 @@ const queuedBranchSteps = ({
             : []),
           ...(checkDeduplicationPerCompany
             ? [
-                gtmWfAiAgentStep({
-                  id: IDS.draftConnectNoteNoCompany,
-                  name: 'Draft connection note (no company)',
-                  prompt: buildOutreachConnectionNotePrompt({
-                    senderJson: senderJson(),
-                    prospectEnrichmentJson: prospectEnrichment(IDS.queuedFind),
-                    prospectProfileText: `{{${IDS.queuedFetchProfile}.text}}`,
-                  }),
-                  agentId: OUTREACH_WF_AGENT_LINKEDIN,
-                  outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
-                  nextStepIds: [
-                    humanInTheLoop
-                      ? IDS.approveConnectNoteNoCompany
-                      : IDS.connectionNotSentNoCompanyIf,
-                  ],
-                }),
-                ...(humanInTheLoop
+                manualDraftTemplates
+                  ? manualDraftRenderStep({
+                      id: IDS.draftConnectNoteNoCompany,
+                      name: 'Render connection note template (no company)',
+                      templateKey: 'connectionNote',
+                      personFindId: IDS.queuedPersonFind,
+                      nextStepIds: [IDS.connectionNotSentNoCompanyIf],
+                    })
+                  : gtmWfAiAgentStep({
+                      id: IDS.draftConnectNoteNoCompany,
+                      name: 'Draft connection note (no company)',
+                      prompt: buildOutreachConnectionNotePrompt({
+                        senderJson: senderJson(),
+                        prospectEnrichmentJson: prospectEnrichment(
+                          IDS.queuedFind,
+                        ),
+                        prospectProfileText: `{{${IDS.queuedFetchProfile}.text}}`,
+                      }),
+                      agentId: OUTREACH_WF_AGENT_LINKEDIN,
+                      outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
+                      nextStepIds: [
+                        connectNoteHumanInTheLoop
+                          ? IDS.approveConnectNoteNoCompany
+                          : IDS.connectionNotSentNoCompanyIf,
+                      ],
+                    }),
+                ...(connectNoteHumanInTheLoop
                   ? [
                       gtmWfFormStep({
                         id: IDS.approveConnectNoteNoCompany,
@@ -3110,8 +3234,9 @@ export const buildCandidateSequencerGraph = (
 } => {
   const resolved = resolveOutreachSequencerGraphOptions(options);
   const {
-    useLlmConnectionNote,
+    useLlmConnectionNote: useLlmConnectionNoteOption,
     humanInTheLoop,
+    manualDraftTemplates,
     whatsappEnabled,
     emailConnected,
     meetingFollowUpEnabled,
@@ -3124,6 +3249,9 @@ export const buildCandidateSequencerGraph = (
     testMode,
     pinSenderByWarmOverlap,
   } = resolved;
+  // The connection note is one of the standard templates, so Manual mode always sends it.
+  const useLlmConnectionNote =
+    useLlmConnectionNoteOption || manualDraftTemplates;
 
   const stageStepOutputKey = gtmWfFindField(
     IDS.routeFind,
@@ -3209,6 +3337,7 @@ export const buildCandidateSequencerGraph = (
       hoistedMember: true,
       useLlmConnectionNote,
       humanInTheLoop,
+      manualDraftTemplates,
       checkDeduplicationPerCompany,
       qualifyProspectEnabled,
       commentBeforeConnect,
@@ -3217,7 +3346,7 @@ export const buildCandidateSequencerGraph = (
       inmailEnabled,
       testMode,
     }),
-    ...acceptedBranchSteps({ humanInTheLoop, testMode }),
+    ...acceptedBranchSteps({ humanInTheLoop, manualDraftTemplates, testMode }),
     ...repliedBranchSteps({
       humanInTheLoop,
       whatsappEnabled,

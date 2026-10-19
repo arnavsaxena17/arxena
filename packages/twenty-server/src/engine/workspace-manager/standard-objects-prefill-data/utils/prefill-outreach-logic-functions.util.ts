@@ -22,6 +22,7 @@ import {
   OUTREACH_FETCH_PHONE_LOGIC_FUNCTION_NAME,
   OUTREACH_GET_PROJECT_ATTACHMENTS_LOGIC_FUNCTION_NAME,
   OUTREACH_NOTIFY_MEMBER_SYSTEM_EMAIL_LOGIC_FUNCTION_NAME,
+  OUTREACH_RENDER_DRAFT_TEMPLATE_LOGIC_FUNCTION_NAME,
   OUTREACH_CREATE_REFERRAL_CANDIDATE_LOGIC_FUNCTION_NAME,
   OUTREACH_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
   OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
@@ -51,6 +52,7 @@ import {
   OUTREACH_FETCH_PHONE_SAMPLE_OUTPUT,
   OUTREACH_GET_PROJECT_ATTACHMENTS_SAMPLE_OUTPUT,
   OUTREACH_NOTIFY_MEMBER_SYSTEM_EMAIL_SAMPLE_OUTPUT,
+  OUTREACH_RENDER_DRAFT_TEMPLATE_SAMPLE_OUTPUT,
   OUTREACH_CREATE_REFERRAL_CANDIDATE_SAMPLE_OUTPUT,
   OUTREACH_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
   OUTREACH_DETECT_FAKE_PROFILES_SAMPLE_OUTPUT,
@@ -212,6 +214,10 @@ export const getOutreachLogicFunctionIds = (workspaceId: string) => ({
   ),
   createReferralCandidateId: uuidv5(
     `${workspaceId}:create-referral-candidate`,
+    OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  renderDraftTemplateId: uuidv5(
+    `${workspaceId}:render-outreach-draft-template`,
     OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
   ),
   notifyMemberSystemEmailId: uuidv5(
@@ -1378,6 +1384,45 @@ export const getOutreachLogicFunctionDefinitions = (
           },
         ],
         sampleOutput: OUTREACH_CREATE_REFERRAL_CANDIDATE_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.renderDraftTemplateId,
+      name: OUTREACH_RENDER_DRAFT_TEMPLATE_LOGIC_FUNCTION_NAME,
+      description:
+        'Fill a standard draft message template (workspace member field) for one candidate. Fails, stopping the send, when a variable used by the template is empty.',
+      sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
+        OUTREACH_RENDER_DRAFT_TEMPLATE_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Render draft message',
+        icon: 'IconMessage',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              templateKey: { type: 'string', label: 'Template key' },
+              template: { type: 'string', label: 'Template' },
+              personFirstName: { type: 'string', label: 'Person first name' },
+              personLastName: { type: 'string', label: 'Person last name' },
+              companyName: { type: 'string', label: 'Company name' },
+              senderFirstName: { type: 'string', label: 'Sender first name' },
+              senderLastName: { type: 'string', label: 'Sender last name' },
+              senderWebsite: { type: 'string', label: 'Sender website' },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              message: { type: 'string', label: 'message' },
+              error: { type: 'string', label: 'Error' },
+            },
+          },
+        ],
+        sampleOutput: OUTREACH_RENDER_DRAFT_TEMPLATE_SAMPLE_OUTPUT,
       },
     },
     {

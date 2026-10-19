@@ -1457,6 +1457,7 @@ export const gtmWfSendLinkedInMessageStep = ({
   candidateId,
   linkedinProfileId,
   linkedinUrl,
+  files = [],
   nextStepIds,
 }: {
   id: string;
@@ -1465,6 +1466,7 @@ export const gtmWfSendLinkedInMessageStep = ({
   candidateId: string;
   linkedinProfileId: string;
   linkedinUrl?: string;
+  files?: string[];
   nextStepIds?: string[];
 }): StepBase =>
   withNext(
@@ -1480,7 +1482,7 @@ export const gtmWfSendLinkedInMessageStep = ({
           linkedinProfileId,
           ...(linkedinUrl ? { linkedinUrl } : {}),
           workspaceMemberId: gtmWfMemberId(),
-          files: [],
+          files,
         },
         outputSchema: {},
         errorHandlingOptions: OUTREACH_WF_ERROR_HANDLING,

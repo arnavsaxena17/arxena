@@ -96,6 +96,7 @@ const LF_TOKEN_TO_ID_KEY = {
   '__LF_select-outreach-workspace-member__': 'selectWorkspaceMemberId',
   '__LF_get-project-attachments__': 'getProjectAttachmentsId',
   '__LF_notify-member-system-email__': 'notifyMemberSystemEmailId',
+  '__LF_render-outreach-draft-template__': 'renderDraftTemplateId',
   '__LF_create-referral-candidate__': 'createReferralCandidateId',
   '__LF_plan-local-business-city-coverage__':
     'planLocalBusinessCityCoverageId',

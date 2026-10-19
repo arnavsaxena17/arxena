@@ -17,6 +17,7 @@ import {
   OUTREACH_FETCH_PHONE_LOGIC_FUNCTION_NAME,
   OUTREACH_GET_PROJECT_ATTACHMENTS_LOGIC_FUNCTION_NAME,
   OUTREACH_NOTIFY_MEMBER_SYSTEM_EMAIL_LOGIC_FUNCTION_NAME,
+  OUTREACH_RENDER_DRAFT_TEMPLATE_LOGIC_FUNCTION_NAME,
   OUTREACH_CREATE_REFERRAL_CANDIDATE_LOGIC_FUNCTION_NAME,
   OUTREACH_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME,
   OUTREACH_DETECT_FAKE_PROFILES_LOGIC_FUNCTION_NAME,
@@ -314,6 +315,13 @@ export const main = async (params: Record<string, string>) => {
 };
 `;
 
+const RENDER_DRAFT_TEMPLATE_HANDLER = `// Native GTM action: OutreachDraftTemplateService.
+// Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
+export const main = async (params: Record<string, string>) => {
+  return params;
+};
+`;
+
 const CREATE_REFERRAL_CANDIDATE_HANDLER = `// Native GTM action: CreateReferralCandidateService.
 // Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
 export const main = async (params: Record<string, string>) => {
@@ -396,6 +404,7 @@ const NATIVE_HANDLERS: Record<string, string> = {
     GET_PROJECT_ATTACHMENTS_HANDLER,
   [OUTREACH_NOTIFY_MEMBER_SYSTEM_EMAIL_LOGIC_FUNCTION_NAME]:
     NOTIFY_MEMBER_SYSTEM_EMAIL_HANDLER,
+  [OUTREACH_RENDER_DRAFT_TEMPLATE_LOGIC_FUNCTION_NAME]: RENDER_DRAFT_TEMPLATE_HANDLER,
   [OUTREACH_CREATE_REFERRAL_CANDIDATE_LOGIC_FUNCTION_NAME]:
     CREATE_REFERRAL_CANDIDATE_HANDLER,
   [OUTREACH_GET_CALENDAR_AVAILABILITY_LOGIC_FUNCTION_NAME]:

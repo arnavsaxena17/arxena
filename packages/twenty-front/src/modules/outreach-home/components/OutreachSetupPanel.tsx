@@ -18,6 +18,7 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { OutreachSendWindowDayPicker } from '@/outreach-home/components/OutreachSendWindowDayPicker';
 import { OutreachSetupSectionCard } from '@/outreach-home/components/OutreachSetupSectionCard';
 import { OutreachSetupTeamSendingSection } from '@/outreach-home/components/OutreachSetupTeamSendingSection';
+import { OutreachSetupDraftMessagesSection } from '@/outreach-home/components/OutreachSetupDraftMessagesSection';
 import { OutreachSetupSenderProfileSection } from '@/outreach-home/components/OutreachSetupSenderProfileSection';
 import {
   type OutreachSendMode,
@@ -525,6 +526,8 @@ export const OutreachSetupPanel = ({
         </OutreachSetupSectionCard>
 
         <OutreachSetupSenderProfileSection />
+
+        <OutreachSetupDraftMessagesSection />
 
         <OutreachSetupTeamSendingSection />
 

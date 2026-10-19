@@ -166,7 +166,6 @@ export class BrightDataSerpService {
     );
   }
 
-  /** True when the SERP proxy credentials or `BRIGHT_DATA_API_KEY` are set. */
   isConfigured(): boolean {
     return Boolean(this.apiKey) || this.serpProxy !== undefined;
   }

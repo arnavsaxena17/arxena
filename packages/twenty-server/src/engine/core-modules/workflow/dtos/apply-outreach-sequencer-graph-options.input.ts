@@ -23,6 +23,13 @@ export class ApplyOutreachSequencerGraphOptionsInput {
   humanInTheLoop: boolean;
 
   @Field(() => Boolean, {
+    description:
+      'Use the workspace member standard draft templates for connection note, first message and follow-ups (no AI draft or approve form before those sends)',
+    nullable: true,
+  })
+  manualDraftTemplates?: boolean;
+
+  @Field(() => Boolean, {
     description: 'Include WhatsApp channel send branches',
     nullable: false,
   })

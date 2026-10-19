@@ -59,6 +59,7 @@ export class WorkflowVersionResolver {
       workflowId,
       useLlmConnectionNote,
       humanInTheLoop,
+      manualDraftTemplates,
       whatsappEnabled,
       emailConnected,
       meetingFollowUpEnabled,
@@ -79,6 +80,7 @@ export class WorkflowVersionResolver {
         options: {
           useLlmConnectionNote,
           humanInTheLoop,
+          manualDraftTemplates: manualDraftTemplates === true,
           whatsappEnabled,
           emailConnected,
           meetingFollowUpEnabled,

@@ -302,6 +302,26 @@ export {
   OUTREACH_DEMO_KUNAL_SALES_THREAD,
   OUTREACH_DEMO_MANU_RECRUITING_THREAD,
 } from './outreachDemoThreads';
+export type {
+  OutreachDraftTemplateKey,
+  OutreachDraftVariableKey,
+  OutreachDraftVariable,
+  OutreachDraftTemplateValues,
+  OutreachDraftTemplateRenderResult,
+  OutreachDraftTemplateValidation,
+} from './outreachDraftTemplates';
+export {
+  OUTREACH_DRAFT_TEMPLATE_KEYS,
+  OUTREACH_DRAFT_TEMPLATE_FIELD_NAMES,
+  OUTREACH_DRAFT_ATTACHMENTS_FIELD_NAME,
+  OUTREACH_DRAFT_TEMPLATE_LABELS,
+  OUTREACH_DRAFT_CONNECTION_NOTE_MAX_LENGTH,
+  OUTREACH_DRAFT_VARIABLES,
+  OUTREACH_DRAFT_DEFAULT_TEMPLATES,
+  extractOutreachDraftTemplateVariableKeys,
+  renderOutreachDraftTemplate,
+  validateOutreachDraftTemplate,
+} from './outreachDraftTemplates';
 export { OUTREACH_HITL_CONTEXT_TEMPLATES } from './outreachHitl';
 export type { SendWindowWeekday } from './sendWindowDays';
 export {

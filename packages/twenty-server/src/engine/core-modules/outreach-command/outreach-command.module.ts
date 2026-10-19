@@ -42,6 +42,7 @@ import { SaveOutreachTargetsToCrmService } from 'src/engine/core-modules/outreac
 import { UpsertCompaniesService } from 'src/engine/core-modules/outreach-command/services/upsert-companies.service';
 import { EnrichContactService } from 'src/engine/core-modules/outreach-command/services/enrich-contact.service';
 import { CreateReferralCandidateService } from 'src/engine/core-modules/outreach-command/services/create-referral-candidate.service';
+import { OutreachDraftTemplateService } from 'src/engine/core-modules/outreach-command/services/outreach-draft-template.service';
 import { NotifyMemberSystemEmailService } from 'src/engine/core-modules/outreach-command/services/notify-member-system-email.service';
 import { GetProjectAttachmentsService } from 'src/engine/core-modules/outreach-command/services/get-project-attachments.service';
 import { GetCalendarAvailabilityService } from 'src/engine/core-modules/outreach-command/services/get-calendar-availability.service';
@@ -209,6 +210,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     GetCalendarAvailabilityService,
     GetProjectAttachmentsService,
     NotifyMemberSystemEmailService,
+    OutreachDraftTemplateService,
     CreateReferralCandidateService,
     OutreachFakeProfileDetectorService,
     OutreachFilterProfilesService,
@@ -261,6 +263,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     GetCalendarAvailabilityService,
     GetProjectAttachmentsService,
     NotifyMemberSystemEmailService,
+    OutreachDraftTemplateService,
     CreateReferralCandidateService,
     OutreachFakeProfileDetectorService,
     OutreachFilterProfilesService,
