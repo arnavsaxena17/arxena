@@ -1,5 +1,12 @@
 import { Injectable } from '@nestjs/common';
 
+import { type z } from 'zod';
+
+import {
+  estimateRunCostUsd,
+  getAiColumnAutoRunMaxUsd,
+  needsCostApproval,
+} from 'src/engine/core-modules/outreach-command/utils/ai-column-cost-limit.util';
 import { OutreachAiColumnService } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column.service';
 import { OutreachAiColumnRunService } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column-run.service';
 import {
@@ -14,6 +21,7 @@ import {
 import {
   AiColumnRunIdInputZodSchema,
   ApplyOutreachTableViewInputZodSchema,
+  GetAiColumnRunStatusInputZodSchema,
   GenerateOutreachTableViewInputZodSchema,
   GetOutreachWorkingSetInputZodSchema,
   PreviewOutreachAiColumnInputZodSchema,
@@ -184,7 +192,9 @@ export class GetOutreachWorkingSetTool implements Tool {
 
 @Injectable()
 export class PreviewOutreachAiColumnTool implements Tool {
-  description = `Preview an AI column (filter or enrichment) on up to 10 rows of the project working set. Pass the user's request as description: the server designs the typed columns (boolean, integer, number, enum, text) with the AI filtering design call, picks the model (jev for decisions from row fields, web search for outside facts) and returns the design so you can show the types. Nothing is saved. Returns the rows with their values, a previewId, token usage and an estimated cost for the full run. After this, ask the user whether to run it for all rows; only then call run_ai_column. Load the ai-filter-enrich skill first.`;
+  description = `Preview an AI column (filter or enrichment) on up to 10 rows of the project working set. Pass the user's request as description: the server designs the typed columns (boolean, integer, number, enum, text) with the AI filtering design call, picks the model (jev for decisions from row fields, web search for outside facts) and returns the design so you can show the types. Nothing is saved. Returns the rows with their values, a previewId, token usage and an estimated cost for the full run. Then call run_ai_column without asking when needsApproval is false (the estimated full-run cost is at or under autoRunLimitUsd, or the engine reports no cost). When needsApproval is true, ask the user once and pass approvedCostUsd to run_ai_column. Load the ai-filter-enrich skill first.
+
+For sourcing a list pass fitment instead of description: { stage, criteria: [{ key, description, mustHave, weight }] }. The model answers pass, fail or unknown per criterion; the columns fitmentOutcome, fitmentScore and fitmentReason are computed in code against the server's fitment threshold (a request may raise it with minimumScore, never lower it). stage "snapshot" for rows a search just returned (unknown means profile fetch, not fail); stage "profile" once the full profile is on the row. To rescore at the profile stage run again with rerunAll true.`;
 
   inputSchema = PreviewOutreachAiColumnInputZodSchema;
 
@@ -213,6 +223,7 @@ export class PreviewOutreachAiColumnTool implements Tool {
         subject: parsed.data.subject,
         filter: parsed.data.filter,
         description: parsed.data.description,
+        fitment: parsed.data.fitment,
         rowLimit: parsed.data.rowLimit,
       });
 
@@ -231,18 +242,15 @@ export class PreviewOutreachAiColumnTool implements Tool {
   }
 }
 
-// How long run_ai_column waits for the background job before handing back
-// control. Short columns finish inside it; long ones keep running.
-const RUN_WAIT_MS = 45_000;
-
 @Injectable()
 export class RunOutreachAiColumnTool implements Tool {
-  description = `Run a previewed AI column as a background job on the AI filtering queue; writes each answer into the row's otherFields (ephemeral + CRM) in chunks with a progress bar. Call only after the user confirmed the preview (or asked to persist a limited test). Pass rowLimit to touch only the first N working-set rows (table order) — required for tests / "first N" / regenerate-N. Omit rowLimit ONLY when the user explicitly asked to run for all rows. Without rowLimit, every unfilled row is processed (rerunAll false still skips already-filled). Waits up to ~45s; if still running, use get_ai_column_run_status. Same previewId again retries only missing/failed rows unless rerunAll is true.`;
+  description = `Run a previewed AI column as a background job on the AI filtering queue; writes each answer into the row's otherFields (ephemeral + CRM) in chunks with a progress bar. Call after the preview. No confirmation is needed while the estimate is within the auto-run limit; above it the call is refused (cost_approval_required) until approvedCostUsd carries what the user approved. Pass rowLimit to touch only the first N working-set rows (table order) — required for tests / "first N" / regenerate-N. Omit rowLimit ONLY when the user explicitly asked to run for all rows. Without rowLimit, every unfilled row is processed (rerunAll false still skips already-filled). Waits for the run (waitSeconds, default 150, max 240) and returns as soon as it is done; if it is still running, call get_ai_column_run_status ONCE with waitSeconds 120 and never check more often than once a minute: every check is a full model step. Same previewId again retries only missing/failed rows unless rerunAll is true.`;
 
   inputSchema = RunOutreachAiColumnInputZodSchema;
 
   constructor(
     private readonly outreachAiColumnRunService: OutreachAiColumnRunService,
+    private readonly outreachAiColumnService: OutreachAiColumnService,
   ) {}
 
   async execute(
@@ -259,6 +267,12 @@ export class RunOutreachAiColumnTool implements Tool {
       };
     }
 
+    const blocked = await this.checkCostApproval(parsed.data);
+
+    if (blocked !== null) {
+      return blocked;
+    }
+
     try {
       const started = await this.outreachAiColumnRunService.startRun({
         workspaceId: context.workspaceId,
@@ -266,7 +280,7 @@ export class RunOutreachAiColumnTool implements Tool {
       });
       const run = await this.outreachAiColumnRunService.waitForRun(
         started.runId,
-        RUN_WAIT_MS,
+        parsed.data.waitSeconds * 1000,
       );
       const summary = this.outreachAiColumnRunService.summarize(run);
 
@@ -282,6 +296,44 @@ export class RunOutreachAiColumnTool implements Tool {
         error: errorMessage(error),
       };
     }
+  }
+
+  // Money is the one thing a run needs approval for: under the limit the agent
+  // runs at once, over it the user is asked once and the amount is passed back.
+  private async checkCostApproval(
+    input: z.infer<typeof RunOutreachAiColumnInputZodSchema>,
+  ): Promise<ToolOutput | null> {
+    const preview = await this.outreachAiColumnService.getPreviewState(
+      input.previewId,
+    );
+
+    if (!preview) {
+      return null;
+    }
+
+    const estimatedCostUsd = estimateRunCostUsd({
+      estimatedRunCostUsd: preview.estimatedRunCostUsd,
+      estimatedPerRowUsd: preview.estimatedPerRowUsd,
+      rowLimit: input.rowLimit,
+    });
+
+    if (
+      !needsCostApproval({
+        estimatedCostUsd,
+        approvedCostUsd: input.approvedCostUsd,
+      })
+    ) {
+      return null;
+    }
+
+    const limit = getAiColumnAutoRunMaxUsd();
+
+    return {
+      success: false,
+      message: `This run is estimated at about $${(estimatedCostUsd ?? 0).toFixed(2)}, over the $${limit.toFixed(2)} that runs without asking. Ask the user once to approve it (up to that amount, or the enrichment cap they approved for the whole list build), then call run_ai_column again with approvedCostUsd set to the amount they approved.`,
+      error: 'cost_approval_required',
+      result: { estimatedCostUsd, autoRunLimitUsd: limit },
+    };
   }
 }
 
@@ -305,21 +357,21 @@ const describeRun = (summary: {
     return `Run cancelled at ${summary.done} of ${summary.total} row(s). Filled rows are kept.`;
   }
 
-  return `Still running in the background: ${summary.done} of ${summary.total} row(s) done. Tell the user it continues and shows progress above the table; check with get_ai_column_run_status.`;
+  return `Still running in the background: ${summary.done} of ${summary.total} row(s) done. It continues and shows progress above the table. Check once more with get_ai_column_run_status (waitSeconds 120); do not check more often than once a minute.`;
 };
 
 @Injectable()
 export class GetOutreachAiColumnRunStatusTool implements Tool {
-  description = `Check an AI column run started by run_ai_column: status, rows done / total, failed rows, tokens and cost so far.`;
+  description = `Check an AI column run started by run_ai_column: status, rows done / total, failed rows, tokens and cost so far. Waits for the run to finish (waitSeconds, default 120, max 240) and returns as soon as it is done, so one call replaces many polls. Never call it more than once a minute.`;
 
-  inputSchema = AiColumnRunIdInputZodSchema;
+  inputSchema = GetAiColumnRunStatusInputZodSchema;
 
   constructor(
     private readonly outreachAiColumnRunService: OutreachAiColumnRunService,
   ) {}
 
   async execute(parameters: ToolInput): Promise<ToolOutput> {
-    const parsed = AiColumnRunIdInputZodSchema.safeParse(parameters);
+    const parsed = GetAiColumnRunStatusInputZodSchema.safeParse(parameters);
 
     if (!parsed.success) {
       return {
@@ -339,7 +391,13 @@ export class GetOutreachAiColumnRunStatusTool implements Tool {
       };
     }
 
-    const summary = this.outreachAiColumnRunService.summarize(run);
+    const waited =
+      parsed.data.waitSeconds > 0
+        ? await this.outreachAiColumnRunService
+            .waitForRun(run.runId, parsed.data.waitSeconds * 1000)
+            .catch(() => run)
+        : run;
+    const summary = this.outreachAiColumnRunService.summarize(waited);
 
     return { success: true, message: describeRun(summary), result: summary };
   }

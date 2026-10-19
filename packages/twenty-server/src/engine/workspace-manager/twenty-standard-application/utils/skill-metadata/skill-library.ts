@@ -16,19 +16,24 @@ const FRAGMENTS_DIRECTORY = join(CONTENTS_DIRECTORY, 'fragments');
 const NON_SKILL_FILES = new Set(['README']);
 const INCLUDE_PATTERN = /^\{\{include: ([a-z0-9-]+)\}\}$/gm;
 
-// The `search` skill is one text assembled from these files, in order. Only the
-// first carries front matter; the rest become sections named after the file.
-export const SEARCH_SKILL_PARTS = [
-  'search-preamble',
-  'search-companies',
-  'search-people',
-  'search-people-by-company',
-] as const;
+// A skill renamed after workspaces stored it. Old names still load, so a chat
+// or an MCP client that remembers `search` keeps working.
+export const SKILL_NAME_ALIASES: Readonly<Record<string, string>> = {
+  search: 'sourcing',
+};
+
+export const canonicalSkillName = (name: string): string =>
+  SKILL_NAME_ALIASES[name] ?? name;
 
 type Library = {
   bodies: Map<string, string>;
   frontMatter: Map<string, SkillFrontMatter>;
+  // Files that are parts of a longer skill, not skills of their own
+  partFileNames: Set<string>;
 };
+
+const partFileName = (skillName: string, part: string): string =>
+  `${skillName}-${part}`;
 
 let library: Library | undefined;
 
@@ -92,25 +97,50 @@ const loadLibrary = (): Library => {
     );
   }
 
-  return { bodies, frontMatter };
+  const partFileNames = new Set<string>();
+
+  for (const [skillName, skillFrontMatter] of frontMatter) {
+    for (const part of skillFrontMatter.parts ?? []) {
+      const fileName = partFileName(skillName, part);
+
+      if (!bodies.has(fileName)) {
+        throw new Error(
+          `Skill ${skillName}: part "${part}" has no file ${fileName}.md`,
+        );
+      }
+
+      partFileNames.add(fileName);
+    }
+  }
+
+  return { bodies, frontMatter, partFileNames };
 };
 
 const getLibrary = (): Library => (library ??= loadLibrary());
 
-const frontMatterFileName = (name: string): string =>
-  name === 'search' ? SEARCH_SKILL_PARTS[0] : name;
+// Shared text (fragments/*.md), for server-side prompts that must say the same
+// thing a skill says, such as the scorer and the title expanders
+export const getSkillFragment = (name: string): string => {
+  const fragment = readFragments().get(name);
 
-export const listSkillNames = (): string[] => {
-  const searchParts = new Set<string>(SEARCH_SKILL_PARTS);
+  if (fragment === undefined) {
+    throw new Error(`Unknown skill fragment: ${name}`);
+  }
 
-  return [
-    ...[...getLibrary().bodies.keys()].filter((name) => !searchParts.has(name)),
-    'search',
-  ].sort((first, second) => first.localeCompare(second));
+  return fragment;
 };
 
-export const getSkillContent = (name: string): string => {
-  const { bodies } = getLibrary();
+export const listSkillNames = (): string[] => {
+  const { bodies, partFileNames } = getLibrary();
+
+  return [...bodies.keys()]
+    .filter((name) => !partFileNames.has(name))
+    .sort((first, second) => first.localeCompare(second));
+};
+
+export const getSkillContent = (requestedName: string): string => {
+  const name = canonicalSkillName(requestedName);
+  const { bodies, frontMatter } = getLibrary();
   const read = (fileName: string): string => {
     const body = bodies.get(fileName);
 
@@ -120,18 +150,17 @@ export const getSkillContent = (name: string): string => {
 
     return body;
   };
+  const parts = frontMatter.get(name)?.parts;
 
-  if (name !== 'search') {
+  if (parts === undefined) {
     return read(name);
   }
 
-  const [preamble, ...sections] = SEARCH_SKILL_PARTS;
-
   return [
-    read(preamble),
-    ...sections.map(
-      (fileName) =>
-        `${buildSkillSectionMarker(fileName.replace(/^search-/, ''))}\n${read(fileName)}`,
+    read(name),
+    ...parts.map(
+      (part) =>
+        `${buildSkillSectionMarker(part)}\n${read(partFileName(name, part))}`,
     ),
   ].join('\n');
 };
@@ -140,7 +169,40 @@ export const getSkillContent = (name: string): string => {
 export const getSkillFrontMatter = (
   name: string,
 ): SkillFrontMatter | undefined =>
-  getLibrary().frontMatter.get(frontMatterFileName(name));
+  getLibrary().frontMatter.get(canonicalSkillName(name));
+
+// What a load_skills call returns for a long skill: the sections asked for (or
+// the skill's default ones when none were), plus the sections they require.
+// Undefined means the whole skill, as for a skill without parts.
+export const resolveSkillSections = (
+  name: string,
+  requested?: string[],
+): string[] | undefined => {
+  const frontMatter = getSkillFrontMatter(name);
+
+  if (frontMatter?.parts === undefined) {
+    return requested;
+  }
+
+  const wanted =
+    requested !== undefined && requested.length > 0
+      ? requested
+      : frontMatter.defaultSections;
+
+  if (wanted === undefined) {
+    return requested;
+  }
+
+  // Unknown names pass through, so the tool can report them
+  return [
+    ...new Set(
+      wanted.flatMap((section) => [
+        section,
+        ...(frontMatter.requires?.[section] ?? []),
+      ]),
+    ),
+  ];
+};
 
 const requireFrontMatter = (name: string): SkillFrontMatter => {
   const frontMatter = getSkillFrontMatter(name);

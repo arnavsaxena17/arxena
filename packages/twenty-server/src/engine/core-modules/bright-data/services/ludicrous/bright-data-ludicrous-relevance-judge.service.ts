@@ -12,6 +12,7 @@ import {
   passesRubricHardConstraints,
   scoreRecordAgainstRubric,
 } from 'src/engine/core-modules/bright-data/ludicrous/utils/bright-data-ludicrous-relevance.util';
+import { getFitmentThreshold } from 'src/engine/core-modules/candidate-sourcing/services/fitment/fitment-threshold.util';
 import { JEV_MODEL_ID } from 'src/engine/metadata-modules/ai/ai-evaluation/constants/jev.const';
 
 const RELEVANT_FIELD = 'relevant';
@@ -126,6 +127,8 @@ export class BrightDataLudicrousRelevanceJudgeService {
         'industry',
       ],
       concurrency: 5,
+      // Relevance is a fitment judgement: it passes at the server's bar
+      probabilityThreshold: getFitmentThreshold(),
     };
 
     try {

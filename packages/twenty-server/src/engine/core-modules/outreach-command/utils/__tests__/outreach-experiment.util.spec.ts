@@ -7,8 +7,12 @@ import {
 describe('outreach-experiment.util', () => {
   describe('assignOutreachExperimentVariant', () => {
     it('is sticky for the same seed', () => {
-      const first = assignOutreachExperimentVariant({ seed: 'ACoAAA-profile-1' });
-      const second = assignOutreachExperimentVariant({ seed: 'ACoAAA-profile-1' });
+      const first = assignOutreachExperimentVariant({
+        seed: 'ACoAAA-profile-1',
+      });
+      const second = assignOutreachExperimentVariant({
+        seed: 'ACoAAA-profile-1',
+      });
 
       expect(first).toBe(second);
       expect(['A', 'B']).toContain(first);

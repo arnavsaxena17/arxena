@@ -54,6 +54,9 @@ export type FilterSpec = {
   webSearch?: boolean;
   // An enum answer may be "unknown" instead of forcing a bucket.
   allowUnknown?: boolean;
+  // Probability at which a Jev yes/no answer counts as yes. A fitment judgement
+  // passes the server's fitment threshold; omit it for an ordinary column.
+  probabilityThreshold?: number;
 };
 
 export type FilterAnswerValue = boolean | string | number;

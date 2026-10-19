@@ -109,7 +109,8 @@ describe('validateOutreachInboundSignals', () => {
       'drops a past, too-distant or unparseable date (%p)',
       (followUpAt) => {
         expect(
-          validateOutreachInboundSignals({ followUpAt, nowIso: NOW }).followUpAt,
+          validateOutreachInboundSignals({ followUpAt, nowIso: NOW })
+            .followUpAt,
         ).toBe('');
       },
     );

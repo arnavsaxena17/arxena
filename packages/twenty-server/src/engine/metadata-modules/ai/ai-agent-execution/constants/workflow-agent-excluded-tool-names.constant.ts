@@ -15,6 +15,8 @@ export const WORKFLOW_AGENT_EXCLUDED_TOOL_NAMES = [
   // Chat discovery tool — LinkedIn opener agents were calling this mid-draft
   // (Mock Co / employer lookups) and stalling AI-column sample-message chunks.
   'find_role_at_companies',
+  'fetch_profiles',
+  'get_sourcing_ledger',
   'get_outreach_working_set',
   'preview_sample_message_column',
   'preview_ai_column',

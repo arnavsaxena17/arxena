@@ -16,7 +16,7 @@ import { WorkspaceMigrationValidateBuildAndRunService } from 'src/engine/workspa
 
 const INTENT_SKILL_UNIVERSAL_IDENTIFIERS = [
   STANDARD_SKILL.setup.universalIdentifier,
-  STANDARD_SKILL.search.universalIdentifier,
+  STANDARD_SKILL.sourcing.universalIdentifier,
   STANDARD_SKILL.outreach.universalIdentifier,
   STANDARD_SKILL['workflow-building'].universalIdentifier,
   STANDARD_SKILL.research.universalIdentifier,

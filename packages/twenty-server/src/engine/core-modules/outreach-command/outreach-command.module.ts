@@ -77,6 +77,7 @@ import { ProcessOutreachAiColumnChunkJob } from 'src/engine/core-modules/outreac
 import { OutreachAiColumnRunService } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column-run.service';
 import { OutreachTableViewService } from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
 import { OutreachAiColumnService } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column.service';
+import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
 import { OutreachWorkingSetService } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
 import { OutreachPeopleCacheService } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
 import { OutreachProjectOutreachControlService } from 'src/engine/core-modules/outreach-command/services/outreach-project-outreach-control.service';
@@ -152,6 +153,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     OutreachPeopleCacheService,
     OutreachSpreadsheetMappingService,
     OutreachWorkingSetService,
+    SourcingLedgerService,
     OutreachAiColumnService,
     OutreachAiColumnRunService,
     OutreachTableViewService,
@@ -243,6 +245,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     OutreachPeopleCacheService,
     OutreachSpreadsheetMappingService,
     OutreachWorkingSetService,
+    SourcingLedgerService,
     OutreachAiColumnService,
     OutreachAiColumnRunService,
     OutreachTableViewService,

@@ -1622,7 +1622,21 @@ export const SEARCH_LINKEDIN_CONTINUE_INPUT_DESCRIPTOR: readonly McpInputFieldDe
     {
       key: 'limit',
       type: 'number',
-      description: 'Maximum number of results to return',
+      description: 'Maximum number of results to return per page',
+      required: false,
+    },
+    {
+      key: 'maxPages',
+      type: 'number',
+      description:
+        'Follow the cursor on the server for up to this many pages (1 to 50) and return them as one result. Default 1.',
+      required: false,
+    },
+    {
+      key: 'maxRows',
+      type: 'number',
+      description:
+        'With maxPages: stop once this many rows are collected (default 1000)',
       required: false,
     },
   ] as const;

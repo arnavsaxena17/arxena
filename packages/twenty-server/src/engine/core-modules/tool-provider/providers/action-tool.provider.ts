@@ -43,6 +43,8 @@ import { PreviewSampleMessageColumnTool } from 'src/engine/core-modules/tool/too
 import { UpsertOutreachTargetCompaniesTool } from 'src/engine/core-modules/tool/tools/outreach-target-companies-tool/upsert-outreach-target-companies-tool';
 import { SaveOutreachTargetsToCrmTool } from 'src/engine/core-modules/tool/tools/outreach-save-to-crm-tool/save-outreach-targets-to-crm-tool';
 import { FindRoleAtCompaniesTool } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/find-role-at-companies-tool';
+import { GetSourcingLedgerTool } from 'src/engine/core-modules/tool/tools/sourcing-ledger-tool/get-sourcing-ledger-tool';
+import { FetchProfilesTool } from 'src/engine/core-modules/tool/tools/fetch-profiles-tool/fetch-profiles-tool';
 import { StartOutreachTool } from 'src/engine/core-modules/tool/tools/outreach-start-tool/start-outreach-tool';
 import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
 import { NavigateAppTool } from 'src/engine/core-modules/tool/tools/navigate-tool/navigate-app-tool';
@@ -78,6 +80,8 @@ export class ActionToolProvider implements ToolProvider {
     private readonly saveOutreachTargetsToCrmTool: SaveOutreachTargetsToCrmTool,
     private readonly startOutreachTool: StartOutreachTool,
     private readonly findRoleAtCompaniesTool: FindRoleAtCompaniesTool,
+    private readonly fetchProfilesTool: FetchProfilesTool,
+    private readonly getSourcingLedgerTool: GetSourcingLedgerTool,
     private readonly getOutreachWorkingSetTool: GetOutreachWorkingSetTool,
     private readonly previewOutreachAiColumnTool: PreviewOutreachAiColumnTool,
     private readonly runOutreachAiColumnTool: RunOutreachAiColumnTool,
@@ -109,12 +113,11 @@ export class ActionToolProvider implements ToolProvider {
       ['upsert_outreach_target_people', this.upsertOutreachTargetPeopleTool],
       ['inspect_outreach_spreadsheet', this.inspectOutreachSpreadsheetTool],
       ['import_outreach_spreadsheet', this.importOutreachSpreadsheetTool],
-      [
-        'save_outreach_targets_to_crm',
-        this.saveOutreachTargetsToCrmTool,
-      ],
+      ['save_outreach_targets_to_crm', this.saveOutreachTargetsToCrmTool],
       ['start_outreach', this.startOutreachTool],
       ['find_role_at_companies', this.findRoleAtCompaniesTool],
+      ['fetch_profiles', this.fetchProfilesTool],
+      ['get_sourcing_ledger', this.getSourcingLedgerTool],
       ['get_outreach_working_set', this.getOutreachWorkingSetTool],
       ['preview_ai_column', this.previewOutreachAiColumnTool],
       ['run_ai_column', this.runOutreachAiColumnTool],
@@ -302,6 +305,24 @@ export class ActionToolProvider implements ToolProvider {
       this.buildDescriptor(
         'preview_sample_message_column',
         this.previewSampleMessageColumnTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'get_sourcing_ledger',
+        this.getSourcingLedgerTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'fetch_profiles',
+        this.fetchProfilesTool,
         includeSchemas,
         context.locale,
       ),

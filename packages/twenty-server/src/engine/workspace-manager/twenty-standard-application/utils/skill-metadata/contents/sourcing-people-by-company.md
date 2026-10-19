@@ -15,7 +15,8 @@ A role at companies already named, or already on the project. **One call for the
    - `country` is a country, never a city. `projectId` writes the verified people to the People tab.
 3. **Read `status` per company.** `matched`: someone holds the role. `related_role_only`: a deputy, vice or acting holder. `no_match`: searched, nothing verified. `source_error`: the lookup could not complete, so the answer is unknown. `rejected` lists people who were found but do not belong. They are not written to the tab. Keep every verified match the tool returns. Do not stop at the first person.
 4. **No match.** For companies still `source_error`, call once more with `fromProject: true, onlyFailed: true`. For `no_match`, call with an explicit list and any `alternateNames` you can add. Do not broaden the roles.
-5. **Report in one short table**: company, person, title, LinkedIn URL, source; then the related-role-only and no-match companies and the spend.
+5. **Profiles.** Bright Data matches arrive with their profile stored on the row. A person found only by Google has a name and a LinkedIn URL at most: run `fetch_profiles` before scoring.
+6. **Report in one short table**: company, person, title, LinkedIn URL, source; then the related-role-only and no-match companies and the spend.
 
 ### Only when the user names LinkedIn or Harvest
 

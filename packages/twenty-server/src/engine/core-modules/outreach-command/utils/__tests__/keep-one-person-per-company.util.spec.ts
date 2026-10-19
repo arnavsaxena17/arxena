@@ -10,7 +10,9 @@ describe('keep-one-person-per-company', () => {
     expect(
       extractProfileCompanyKey({
         companyId: 'crm-uuid',
-        current_positions: [{ role: 'CFO', company: 'Acme', company_id: '1441' }],
+        current_positions: [
+          { role: 'CFO', company: 'Acme', company_id: '1441' },
+        ],
       }),
     ).toBe('1441');
   });
@@ -37,9 +39,7 @@ describe('keep-one-person-per-company', () => {
     const cfo = {
       name: 'Priya Shah',
       title: 'CFO',
-      current_positions: [
-        { role: 'CFO', company: 'Acme', company_id: '1441' },
-      ],
+      current_positions: [{ role: 'CFO', company: 'Acme', company_id: '1441' }],
     };
     const director = {
       name: 'Alex Kim',

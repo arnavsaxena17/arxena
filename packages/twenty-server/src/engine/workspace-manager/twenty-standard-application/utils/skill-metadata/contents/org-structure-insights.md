@@ -6,13 +6,13 @@ routes:
   - when: |-
       Find / show / highlight people or teams on an org chart, or who-owns / buying-committee / structure at a company
     hint: |-
-      .{suffix} Keep LinkedIn sourcing on `search`.
+      .{suffix} Keep LinkedIn sourcing on `sourcing`.
 ---
 # Org Structure Insights Skill
 
 You answer org-map questions and paint the **currently open org chart**. Skills are documentation; tools do the work.
 
-This is **not** LinkedIn / Harvest sourcing (`search`) and not outreach enrollment (`outreach`).
+This is **not** LinkedIn / Harvest sourcing (`sourcing`) and not outreach enrollment (`outreach`).
 
 ## When to load this skill
 
@@ -25,7 +25,7 @@ Load `org-structure-insights` when:
 
 Do **not** load this skill for:
 
-- Finding new people or companies to enroll → `search`
+- Finding new people or companies to enroll → `sourcing`
 - Starting harvest / sequencer → `outreach`
 - Generic CRM record CRUD → no skill, or `data-manipulation`
 

@@ -54,6 +54,12 @@ import {
   type PersonJudgement,
 } from 'src/engine/core-modules/bright-data/services/bright-data-person-fit-filter.service';
 import {
+  PROFILE_FIELD_KEY,
+  isUsableProfile,
+  profileToRowProfile,
+  type RowProfile,
+} from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/profile-row-fields.util';
+import {
   buildDeprioritisationFields,
   type DeprioritisationReason,
 } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/outreach-people-deprioritisation.util';
@@ -149,6 +155,9 @@ type CompanyOutcome = {
     note?: string;
     linkedinUrlDerivedFromPost?: boolean;
     deprioritisedReasons: DeprioritisationReason[];
+    // The full profile, when the source returned one: stored on the row so the
+    // profile fetch skips this person
+    profile?: RowProfile;
   }>;
   rejected: RejectedCandidate[];
   sourceErrors: string[];
@@ -409,7 +418,7 @@ export class FindRoleAtCompaniesTool implements Tool {
     }
 
     if (!input.fromProject || !isNonEmptyString(input.projectId)) {
-      return 'Pass companies, or set fromProject with a projectId to look up the project\'s Companies tab';
+      return "Pass companies, or set fromProject with a projectId to look up the project's Companies tab";
     }
 
     const rows = await this.outreachWorkingSetService.getAll({
@@ -672,9 +681,10 @@ export class FindRoleAtCompaniesTool implements Tool {
       requestedClasses: resolvedRoles.requestedClasses,
       verdicts,
     });
-    const topPeople = (
-      await this.mergeDuplicates(verified, workspaceId)
-    ).slice(0, MAX_PEOPLE_PER_COMPANY);
+    const topPeople = (await this.mergeDuplicates(verified, workspaceId)).slice(
+      0,
+      MAX_PEOPLE_PER_COMPANY,
+    );
     // nobody found while a source failed is not a miss: the answer is unknown
     const sourceFailed = sourceErrors.some((error) =>
       /deadline|fetch failed|timed out|aborted|HTTP (429|5\d\d)\b|non-JSON|rate/i.test(
@@ -729,6 +739,7 @@ export class FindRoleAtCompaniesTool implements Tool {
         ...(person.linkedinUrlDerivedFromPost === true && {
           linkedinUrlDerivedFromPost: true,
         }),
+        ...this.profileOf(person),
       })),
       rejected: rejected.slice(0, MAX_REJECTED_PER_COMPANY),
       sourceErrors: [...new Set(sourceErrors)],
@@ -966,6 +977,22 @@ export class FindRoleAtCompaniesTool implements Tool {
       source,
       linkedinUrlDerivedFromPost: person.linkedinUrlDerivedFromPost,
     };
+  }
+
+  // A Bright Data record already holds the profile; keep it when it has enough
+  // to judge a person on, so no second fetch is paid for
+  private profileOf(person: VerifiedCandidate): { profile?: RowProfile } {
+    if (!isDefined(person.rawProfile)) {
+      return {};
+    }
+
+    const profile = profileToRowProfile({
+      source: 'bright_data',
+      record: person.rawProfile,
+      fetchedAt: new Date().toISOString(),
+    });
+
+    return isUsableProfile(profile) ? { profile } : {};
   }
 
   private noteOf(verdict: PersonJudgement | undefined): string {
@@ -1335,6 +1362,28 @@ export class FindRoleAtCompaniesTool implements Tool {
     };
   }
 
+  private otherFieldsOf(
+    outcome: CompanyOutcome,
+    person: CompanyOutcome['people'][number],
+  ): { otherFields?: Record<string, unknown> } {
+    const otherFields: Record<string, unknown> = {
+      ...(buildDeprioritisationFields(person.deprioritisedReasons)
+        .otherFields as Record<string, unknown> | undefined),
+      ...(isNonEmptyString(outcome.companyRowId)
+        ? {
+            sourceCompanyId: outcome.companyRowId,
+            sourceCompanyName: outcome.company,
+            foundVia: 'find_role_at_companies',
+          }
+        : {}),
+      ...(isDefined(person.profile)
+        ? { [PROFILE_FIELD_KEY]: person.profile }
+        : {}),
+    };
+
+    return Object.keys(otherFields).length > 0 ? { otherFields } : {};
+  }
+
   private async persist(
     input: ResolvedInput,
     outcomes: CompanyOutcome[],
@@ -1347,17 +1396,7 @@ export class FindRoleAtCompaniesTool implements Tool {
     const people = outcomes.flatMap((outcome) =>
       outcome.people.map((person) => ({
         ...buildDeprioritisationFields(person.deprioritisedReasons),
-        ...(isNonEmptyString(outcome.companyRowId)
-          ? {
-              otherFields: {
-                ...(buildDeprioritisationFields(person.deprioritisedReasons)
-                  .otherFields as Record<string, unknown> | undefined),
-                sourceCompanyId: outcome.companyRowId,
-                sourceCompanyName: outcome.company,
-                foundVia: 'find_role_at_companies',
-              },
-            }
-          : {}),
+        ...this.otherFieldsOf(outcome, person),
         id: toId(
           isNonEmptyString(person.linkedinUrl)
             ? normalizeLinkedinProfileUrl(person.linkedinUrl)
@@ -1430,10 +1469,7 @@ export class FindRoleAtCompaniesTool implements Tool {
   }
 
   // Optional JSONL trail of every company outcome, for run reports
-  private logOutcome(
-    input: ResolvedInput,
-    outcome: CompanyOutcome,
-  ): void {
+  private logOutcome(input: ResolvedInput, outcome: CompanyOutcome): void {
     const path = process.env.FIND_ROLE_OUTCOME_LOG_PATH;
 
     if (!isNonEmptyString(path)) {

@@ -7,7 +7,7 @@ type SkillMapsByUniversalIdentifier = {
 };
 
 // Standard skills missing from a workspace are created; present ones are
-// refreshed only when their text, label or description differ from the code.
+// refreshed only when their name, text, label or description differ from the code.
 export const planStandardSkillSync = ({
   existingFlatSkillMaps,
   standardFlatSkillMaps,
@@ -32,12 +32,14 @@ export const planStandardSkillSync = ({
     }
 
     if (
+      existingSkill.name !== standardSkill.name ||
       existingSkill.content !== standardSkill.content ||
       existingSkill.description !== standardSkill.description ||
       existingSkill.label !== standardSkill.label
     ) {
       skillsToUpdate.push({
         ...existingSkill,
+        name: standardSkill.name,
         content: standardSkill.content,
         description: standardSkill.description,
         label: standardSkill.label,

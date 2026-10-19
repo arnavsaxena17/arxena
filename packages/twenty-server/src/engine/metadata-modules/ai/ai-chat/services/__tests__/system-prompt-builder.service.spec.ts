@@ -144,7 +144,7 @@ describe('SystemPromptBuilderService', () => {
       const prompt = service.buildFullPrompt([], [], ['search_help_center']);
 
       expect(prompt).toContain('Plan → Skill → Learn → Execute');
-      expect(prompt).toContain('load_skills(["search"])');
+      expect(prompt).toContain('load_skills(["sourcing"])');
       expect(prompt).toContain('load_skills(["setup"])');
       expect(prompt).toContain('load_skills(["org-structure-insights"])');
       expect(prompt).toContain('highlight_org_chart');

@@ -12,9 +12,9 @@ describe('project-ids.util', () => {
       'project-2',
     ]);
     expect(parseProjectIds('["a","b"]')).toEqual(['a', 'b']);
-    expect(
-      parseProjectIds('{84a08312-0e86-59ed-8103-f575c3f17812}'),
-    ).toEqual(['84a08312-0e86-59ed-8103-f575c3f17812']);
+    expect(parseProjectIds('{84a08312-0e86-59ed-8103-f575c3f17812}')).toEqual([
+      '84a08312-0e86-59ed-8103-f575c3f17812',
+    ]);
   });
 
   it('appends without duplicating', () => {

@@ -22,4 +22,13 @@ export type SkillFrontMatter = {
   // Order of the skill's routing lines, lowest first
   priority: number;
   routes: SkillRoute[];
+  // A long skill is the head file plus these parts, in order. Part `x` lives in
+  // `<skill>-x.md` and is loaded as section `x`.
+  parts?: string[];
+  // Sections that always come with a section: `people: [src-bright-data]`
+  // means loading `people` also loads `src-bright-data`. Not transitive.
+  requires?: Record<string, string[]>;
+  // Sections returned when the caller passes none, so an unscoped load does not
+  // return the whole skill
+  defaultSections?: string[];
 };

@@ -49,6 +49,11 @@ export type OutreachListMeta = {
   projectIds: string[];
   query?: string;
   spentUsd: number;
+  // How the search behind the list went: batches added, rows returned (before
+  // dedupe) and rows that were already in the list. Feeds the sourcing ledger.
+  batches?: number;
+  fetched?: number;
+  duplicates?: number;
   // Paid sources (Bright Data) keep the list 30 days, free ones 7. Reads and
   // writes extend it; an expired list is gone from Redis and ignored on S3.
   paid: boolean;

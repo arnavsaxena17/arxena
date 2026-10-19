@@ -90,9 +90,7 @@ describe('prepareUploadPersonEmployer', () => {
       id: '946958',
       name: 'Hinduja Group Limited',
     });
-    expect(kept.person.companyId).toBe(
-      '3616d8a1-0219-408a-a6e9-75105117be4e',
-    );
+    expect(kept.person.companyId).toBe('3616d8a1-0219-408a-a6e9-75105117be4e');
     expect(kept.person.jobCompanyId).toBe('946958');
     expect(skipped.skip).toBe(true);
   });
@@ -116,8 +114,6 @@ describe('prepareUploadPersonEmployer', () => {
       ['3616d8a1-0219-408a-a6e9-75105117be4e'],
     );
 
-    expect(stamped[0].companyId).toBe(
-      '3616d8a1-0219-408a-a6e9-75105117be4e',
-    );
+    expect(stamped[0].companyId).toBe('3616d8a1-0219-408a-a6e9-75105117be4e');
   });
 });

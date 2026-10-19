@@ -15,7 +15,7 @@ const CHARACTERS_PER_TOKEN = 4;
 // A ratchet, not a target: a skill is re-sent on every model step after it is
 // loaded, so growing past its budget needs a deliberate change here.
 const SKILL_TOKEN_BUDGETS: Record<string, number> = {
-  search: 22_000,
+  sourcing: 16_500,
   outreach: 4_700,
   'workflow-building': 4_500,
   'ai-filter-enrich': 4_000,

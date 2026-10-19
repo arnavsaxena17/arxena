@@ -21,6 +21,8 @@ export const ACTION_TOOL_IDS = [
   'start_outreach',
   'get_outreach_working_set',
   'find_role_at_companies',
+  'fetch_profiles',
+  'get_sourcing_ledger',
   'preview_sample_message_column',
   'preview_ai_column',
   'run_ai_column',
@@ -86,6 +88,12 @@ export const ACTION_TOOL_LABELS: Record<ActionToolId, ActionToolLabel> = {
   },
   preview_sample_message_column: {
     label: i18nLabel(msg`Preview Sample Message Column`),
+  },
+  get_sourcing_ledger: {
+    label: i18nLabel(msg`Get Sourcing Ledger`),
+  },
+  fetch_profiles: {
+    label: i18nLabel(msg`Fetch Profiles`),
   },
   preview_ai_column: {
     label: i18nLabel(msg`Preview AI Column`),

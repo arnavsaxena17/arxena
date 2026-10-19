@@ -17,6 +17,9 @@ import { CodeInterpreterTool } from 'src/engine/core-modules/tool/tools/code-int
 import { DraftEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/draft-email-tool';
 import { EmailComposerService } from 'src/engine/core-modules/tool/tools/email-tool/email-composer.service';
 import { SendEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/send-email-tool';
+import { FetchProfilesService } from 'src/engine/core-modules/tool/tools/fetch-profiles-tool/fetch-profiles.service';
+import { FetchProfilesTool } from 'src/engine/core-modules/tool/tools/fetch-profiles-tool/fetch-profiles-tool';
+import { GetSourcingLedgerTool } from 'src/engine/core-modules/tool/tools/sourcing-ledger-tool/get-sourcing-ledger-tool';
 import {
   GetOutreachWorkingSetTool,
   PreviewOutreachAiColumnTool,
@@ -140,6 +143,9 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     SaveOutreachTargetsToCrmTool,
     StartOutreachTool,
     FindRoleAtCompaniesTool,
+    FetchProfilesService,
+    FetchProfilesTool,
+    GetSourcingLedgerTool,
     FindRoleGoogleSearchService,
     GoogleResultExtractionService,
     CandidateJudgeService,
@@ -197,6 +203,8 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     SaveOutreachTargetsToCrmTool,
     StartOutreachTool,
     FindRoleAtCompaniesTool,
+    FetchProfilesTool,
+    GetSourcingLedgerTool,
     GetOutreachWorkingSetTool,
     PreviewOutreachAiColumnTool,
     RunOutreachAiColumnTool,

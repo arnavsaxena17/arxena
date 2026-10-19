@@ -1,4 +1,5 @@
 import { selectSkillSections } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/select-skill-sections.util';
+import { resolveSkillSections } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/skill-library';
 import { z } from 'zod';
 
 import { type FlatSkill } from 'src/engine/metadata-modules/flat-skill/types/flat-skill.type';
@@ -86,7 +87,10 @@ export const createLoadSkillTool = (
 
     const selected = skills.map((skill) => ({
       skill,
-      ...selectSkillSections(skill.content, sections),
+      ...selectSkillSections(
+        skill.content,
+        resolveSkillSections(skill.name, sections),
+      ),
     }));
     const unknownSections = [
       ...new Set(

@@ -7,13 +7,15 @@ import { buildRoutingLines } from 'src/engine/workspace-manager/twenty-standard-
 import { selectSkillSections } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/select-skill-sections.util';
 import {
   getSkillContent,
+  getSkillFragment,
   getSkillFrontMatter,
+  resolveSkillSections,
   listPlaybookNames,
   listRoutedSkillNames,
 } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/skill-library';
 
 const PROVIDER_FILTERED_SKILL_NAMES = [
-  'search',
+  'sourcing',
   'org-structure-insights',
 ] as const;
 
@@ -30,8 +32,8 @@ describe('skill library', () => {
       'metadata-building',
       'org-structure-insights',
       'outreach',
-      'search',
       'setup',
+      'sourcing',
       'spreadsheet-import',
       'view-building',
       'view-filters-and-sorts',
@@ -39,8 +41,8 @@ describe('skill library', () => {
     ]);
   });
 
-  it('should include resolve_company_from_raw_name in the search skill', () => {
-    expect(getSkillContent('search')).toContain(
+  it('should include resolve_company_from_raw_name in the sourcing skill', () => {
+    expect(getSkillContent('sourcing')).toContain(
       'resolve_company_from_raw_name',
     );
   });
@@ -74,14 +76,12 @@ describe('skill library', () => {
 });
 
 describe('selectSkillSections', () => {
-  const searchContent = getSkillContent('search');
+  const searchContent = getSkillContent('sourcing');
 
-  it('should list the sections of the search skill', () => {
-    expect(selectSkillSections(searchContent).availableSections).toEqual([
-      'companies',
-      'people',
-      'people-by-company',
-    ]);
+  it('should list the sections of the sourcing skill', () => {
+    expect(selectSkillSections(searchContent).availableSections).toEqual(
+      getSkillFrontMatter('sourcing')?.parts,
+    );
   });
 
   it('should return the whole skill when no sections are requested', () => {
@@ -91,7 +91,7 @@ describe('selectSkillSections', () => {
   it('should return only the head and the requested section', () => {
     const { content } = selectSkillSections(searchContent, ['people']);
 
-    expect(content).toContain('# Search Skill');
+    expect(content).toContain('# Sourcing Skill');
     expect(content).toContain('## People');
     expect(content).not.toContain('## Companies');
     expect(content).not.toContain('## People by company');
@@ -117,19 +117,58 @@ describe('selectSkillSections', () => {
   });
 });
 
-describe('search skill section sizes', () => {
-  const full = getSkillContent('search');
+describe('sourcing skill section sizes', () => {
+  const full = getSkillContent('sourcing');
+  // What a load_skills call returns once the required sections are added
   const tokens = (sections: string[]) =>
-    Math.ceil(selectSkillSections(full, sections).content.length / 4);
+    Math.ceil(
+      selectSkillSections(full, resolveSkillSections('sourcing', sections))
+        .content.length / 4,
+    );
 
-  // Loading a slice must stay far cheaper than the whole skill, since the
-  // loaded text is re-sent on every model step that follows
+  // A bundle is re-sent on every model step after it is loaded, so each route
+  // has its own budget and must stay far cheaper than the whole skill
   it.each([
-    [['people'], 14_000],
-    [['companies'], 14_000],
-    [['people-by-company'], 12_000],
-  ])('should keep %j under %i tokens', (sections, budget) => {
+    [['people'], 5_400],
+    [['companies'], 5_700],
+    [['people-by-company'], 3_900],
+    [['playbook-judged-list'], 4_300],
+    [['playbook-company-first'], 4_700],
+  ])('should keep the bundle for %j under %i tokens', (sections, budget) => {
     expect(tokens(sections)).toBeLessThanOrEqual(budget);
+  });
+
+  it('should load the default sections when none are requested', () => {
+    expect(resolveSkillSections('sourcing')).toEqual([
+      'people',
+      'src-bright-data-people',
+      'companies',
+      'src-bright-data-companies',
+    ]);
+  });
+
+  it('should add the sections a section requires, once', () => {
+    expect(
+      resolveSkillSections('sourcing', ['people', 'src-bright-data-people']),
+    ).toEqual(['people', 'src-bright-data-people']);
+  });
+
+  it('should keep a single source out of an unrelated bundle', () => {
+    expect(resolveSkillSections('sourcing', ['people'])).not.toContain(
+      'src-linkedin',
+    );
+  });
+
+  it('should load the old name of the skill', () => {
+    expect(getSkillContent('search')).toBe(getSkillContent('sourcing'));
+    expect(getSkillFrontMatter('search')).toBe(getSkillFrontMatter('sourcing'));
+  });
+
+  it('should keep the shared fitment text in the scoring bundle', () => {
+    expect(
+      selectSkillSections(full, resolveSkillSections('sourcing', ['scoring']))
+        .content,
+    ).toContain(getSkillFragment('fitment-rules'));
   });
 });
 
@@ -178,7 +217,7 @@ describe('skill front matter and playbooks', () => {
 
     expect(lines).toHaveLength(routeCount);
     expect(lines[0]).toContain('load_skills(["setup"])');
-    expect(lines.join('\n')).toContain('load_skills(["search"])');
+    expect(lines.join('\n')).toContain('load_skills(["sourcing"])');
     expect(lines.join('\n')).not.toContain('find-role-at-companies');
   });
 
@@ -190,7 +229,7 @@ describe('skill front matter and playbooks', () => {
       },
     });
 
-    expect(lines).toContain('. SUFFIX-A. Keep LinkedIn sourcing on `search`.');
+    expect(lines).toContain('. SUFFIX-A. Keep LinkedIn sourcing on `sourcing`.');
     expect(lines).toContain('. SUFFIX-B.');
   });
 
@@ -206,7 +245,7 @@ describe('skill front matter and playbooks', () => {
     const sentence =
       'Boolean title strings ("(VP OR Head) AND Sales NOT assistant")';
 
-    expect(getSkillContent('search')).toContain(sentence);
-    expect(getSkillContent('search').split(sentence).length - 1).toBe(2);
+    expect(getSkillContent('sourcing')).toContain(sentence);
+    expect(getSkillContent('sourcing').split(sentence).length - 1).toBe(2);
   });
 });

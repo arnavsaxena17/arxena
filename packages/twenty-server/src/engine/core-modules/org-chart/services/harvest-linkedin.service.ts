@@ -504,6 +504,13 @@ export class HarvestLinkedinService {
     };
   }
 
+  // One full profile by public LinkedIn URL; null when Harvest has none
+  async fetchProfileByUrl(
+    linkedinUrl: string,
+  ): Promise<HarvestProfileResponse | null> {
+    return this.fetchProfile(linkedinUrl);
+  }
+
   private async fetchProfile(
     linkedinUrl: string,
   ): Promise<HarvestProfileResponse | null> {

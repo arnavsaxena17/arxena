@@ -190,6 +190,9 @@ export class OutreachListService {
       document.meta.paid =
         document.meta.paid || OUTREACH_LIST_PAID_SOURCES.includes(source);
       document.meta.spentUsd += spentUsd;
+      document.meta.batches = (document.meta.batches ?? 0) + 1;
+      document.meta.fetched = (document.meta.fetched ?? 0) + rows.length;
+      document.meta.duplicates = (document.meta.duplicates ?? 0) + duplicates;
       document.meta.query = document.meta.query ?? query;
 
       const saved = await this.store.save(document);

@@ -10,7 +10,7 @@ routes:
 
 You run **Workflow A (bootstrap)** for Outreach inside Ask AI: learn the user's campaign preferences conversationally, persist the **workspace default** company + ICP on **core Workspace** fields, optionally set Project overrides, then hand off to company/people discovery via Setup CTAs.
 
-This is preference collection + ICP approval — not outreach execution (`outreach`) and not LinkedIn search (load `search` only when searching).
+This is preference collection + ICP approval — not outreach execution (`outreach`) and not LinkedIn search (load `sourcing` only when searching).
 
 ## When to load this skill
 
@@ -25,9 +25,9 @@ Load `setup` when:
 Do **not** load this skill for:
 
 - Editing harvest / enroll / outreach sequencer graphs → use `outreach` + `workflow-building`
-- LinkedIn / Harvest people search → use `search`
+- LinkedIn / Harvest people search → use `sourcing`
 - Dashboard widgets → use `dashboard-building`
-- Find companies / Find people SEND prompts → use `search` (+ upsert tools)
+- Find companies / Find people SEND prompts → use `sourcing` (+ upsert tools)
 
 ## Plan → Skill → Learn → Execute
 

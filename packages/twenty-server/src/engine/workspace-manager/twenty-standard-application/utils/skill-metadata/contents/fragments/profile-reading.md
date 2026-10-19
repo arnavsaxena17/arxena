@@ -1,0 +1,9 @@
+- **Headline versus position.** The headline is free text the person edits: "Open to work", "Founder | Investor | Speaker". The current position in the experience list is the better evidence of title and employer. When they disagree, trust the position and note the headline.
+- **Current role.** A role with no end date or "Present" is current. A profile whose latest role ended more than a year ago and shows nothing newer is probably stale.
+- **Several roles at once.** Advisor, board member and founder of a side venture can sit beside the main job. Pick the main one by employment type, start date and company size.
+- **Employer names.** Free text. The brand, the legal entity and the parent can all appear for one company. "Self-employed", "Freelance", "Stealth" and "Confidential" are not employers.
+- **Title inflation.** Small firms and startups hand out large titles ("Co-founder and CEO" of a three-person company). Judge by company size and scope as well as the label.
+- **Former and honorary.** "Ex-", "Former", "Past" and a role with an end date are not current. Check them before you count a title.
+- **Places.** The profile location is where the person lives, not where the company is headquartered. "Greater Mumbai Area", "Bengaluru" and "Bangalore" are the same place; normalize spellings before you filter.
+- **Weak-profile signals.** No photo, very few connections, no experience detail, a brand-new account with a senior title, an employer with no company page, or years of experience far too few for the title. These are signals, not proof: lower the score, do not fail the row on one alone.
+- **What a snapshot hides.** Skills, full job history, education and the about text are usually only on the full profile. Mark them unknown at the snapshot stage.

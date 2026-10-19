@@ -148,11 +148,11 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     description: getSkillDescription('outreach'),
     icon: 'IconSend',
   }),
-  search: createStandardSkillBuilder({
-    skillName: 'search',
-    name: 'search',
-    label: 'Search',
-    description: getSkillDescription('search'),
+  sourcing: createStandardSkillBuilder({
+    skillName: 'sourcing',
+    name: 'sourcing',
+    label: 'Sourcing',
+    description: getSkillDescription('sourcing'),
     icon: 'IconBuildingSkyscraper',
   }),
   'org-structure-insights': createStandardSkillBuilder({

@@ -1,3 +1,4 @@
+import { collectLinkedinSearchPages } from '../utils/collect-linkedin-search-pages';
 import {
   CHECK_CONTACT_AVAILABILITY_FROM_APOLLO_INPUT_DESCRIPTOR,
   CHECK_CONTACT_AVAILABILITY_FROM_ARXENA_INPUT_DESCRIPTOR,
@@ -441,30 +442,46 @@ export const linkedinSearchTools: McpTool[] = [
     definition: {
       name: 'search_linkedin_continue',
       description:
-        'Fetch the next page of LinkedIn search results (profiles, companies, etc.) using the cursor from a prior search_linkedin_* response.',
+        'Fetch the next page of LinkedIn search results (profiles, companies, etc.) using the cursor from a prior search_linkedin_* response. Pass maxPages (up to 50) to follow the cursor on the server and get all those pages in this one call; the rows go to the list as one batch. Use it for any search longer than a page: one call with maxPages 40 replaces 40 model steps. The result says how many pages were read and why it stopped (autoContinue), plus the cursor to carry on from.',
       inputSchema: descriptorToInputSchema(
         SEARCH_LINKEDIN_CONTINUE_INPUT_DESCRIPTOR,
       ),
     },
     handler: async (args, config) => {
-      const { cursor, account_id, limit } = args as {
+      const { cursor, account_id, limit, maxPages, maxRows } = args as {
         cursor: string;
         account_id?: string;
         limit?: number;
+        maxPages?: number;
+        maxRows?: number;
       };
 
       if (!cursor?.trim()) {
         throw new Error('cursor is required');
       }
 
-      return callRestAPI(
-        config.baseUrl,
-        config.apiToken,
-        'linkedin-search',
-        'search/continue',
-        { cursor },
-        buildLinkedInSearchQueryParams({ account_id, limit }),
-      );
+      const fetchPage = (pageCursor: string) =>
+        callRestAPI(
+          config.baseUrl,
+          config.apiToken,
+          'linkedin-search',
+          'search/continue',
+          { cursor: pageCursor },
+          buildLinkedInSearchQueryParams({ account_id, limit }),
+        );
+
+      if (!maxPages || maxPages <= 1) {
+        return fetchPage(cursor);
+      }
+
+      return (
+        await collectLinkedinSearchPages({
+          firstCursor: cursor,
+          fetchPage,
+          maxPages,
+          maxRows,
+        })
+      ).response;
     },
   },
 

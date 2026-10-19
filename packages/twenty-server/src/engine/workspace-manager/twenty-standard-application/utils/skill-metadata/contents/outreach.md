@@ -14,7 +14,7 @@ You build and run **campaign automation graphs** (company harvest + enroll + Lin
 
 Step outputs are already unwrapped in run context. Use `{{<step-uuid>.<field>}}` for LOGIC_FUNCTION / AI_AGENT, `{{<step-uuid>.first.<field>}}` for FIND_RECORDS, `{{trigger.properties.after.<field>}}` for DATABASE_EVENT, and `{{<form-uuid>.<fieldName>}}` for FORM (no extra `.result`).
 
-This is **not** ICP preference collection (`setup`) and **not** Ask AI target-list search (`search` → Find / Redis tabs). Interactive Companies tab stays Find. **Scheduled harvest that writes the CRM companies table** is this skill.
+This is **not** ICP preference collection (`setup`) and **not** Ask AI target-list search (`sourcing` → Find / Redis tabs). Interactive Companies tab stays Find. **Scheduled harvest that writes the CRM companies table** is this skill.
 
 **Preview the first LinkedIn message for people in the list** (before or without enrolling): load `ai-filter-enrich` and use `preview_sample_message_column` (Sample LinkedIn message column). Do not read workflow steps or `find_many_candidates` for this; list rows are not candidates.
 
@@ -46,7 +46,7 @@ Load `outreach` (with `workflow-building`) when:
 - The user wants a **workflow** that harvests LinkedIn companies on a schedule, enrolls people on company create, or runs LinkedIn / email / meeting outreach
 - The user wants to clone or edit the seeded outreach graphs, or browsing context is the campaign home and the ask is about outreach **workflows**
 
-Do **not** load this skill for generic CRM automations or for chat-only company/people lists — use `workflow-building` or `search`. Dashboards: load `dashboard-building` and **extend** the existing campaign dashboard.
+Do **not** load this skill for generic CRM automations or for chat-only company/people lists — use `workflow-building` or `sourcing`. Dashboards: load `dashboard-building` and **extend** the existing campaign dashboard.
 
 ## Plan → Skill → Learn → Execute
 
@@ -54,7 +54,7 @@ Do **not** load this skill for generic CRM automations or for chat-only company/
 2. `list_logic_function_tools` — use `inputSchema` / `isNative`. Enroll with native `upload-profiles`. Persist harvested companies with native `upsert-companies`.
 3. `learn_tools` for `create_complete_workflow` (or clone tools) then execute. Do **not** grep spilled JSON Schema with `code_interpreter`.
 
-Native workflow actions (kebab-case LFs — **not** the `search` skill): `search-people-for-company`, `search-people`, `search-companies`, `search-jobs`, `search-posts`, `fetch-user-comments`, `fetch-linkedin-profile`, `visit-linkedin-profile`, `fetch-linkedin-messages`, `fetch-company-details`, `upload-profiles`, `upsert-companies`, `enrich-contact`, `get-calendar-availability`. They have stub source — do **not** call `get_logic_function_source` for them.
+Native workflow actions (kebab-case LFs — **not** the `sourcing` skill): `search-people-for-company`, `search-people`, `search-companies`, `search-jobs`, `search-posts`, `fetch-user-comments`, `fetch-linkedin-profile`, `visit-linkedin-profile`, `fetch-linkedin-messages`, `fetch-company-details`, `upload-profiles`, `upsert-companies`, `enrich-contact`, `get-calendar-availability`. They have stub source — do **not** call `get_logic_function_source` for them.
 
 Search LFs return hits only. People persist with `upload-profiles`. Company persist for automation is CRM + `projectIds` (not Find/Redis).
 

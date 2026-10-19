@@ -5,13 +5,13 @@ describe('CHAT_SYSTEM_PROMPTS.CORE', () => {
     const core = CHAT_SYSTEM_PROMPTS.CORE;
 
     expect(core).toContain('load_skills(["setup"])');
-    expect(core).toContain('load_skills(["search"])');
+    expect(core).toContain('load_skills(["sourcing"])');
     expect(core).toContain('sections: ["companies"]');
     expect(core).not.toContain('load_skills(["resolve-company-name"])');
     expect(core).not.toContain('local-business-search');
     expect(core).toContain('**Start outreach**');
     expect(core).toContain(
-      'load_skills(["org-structure-insights"])`. Then call `highlight_org_chart` when a chart is open. Keep LinkedIn sourcing on `search`.',
+      'load_skills(["org-structure-insights"])`. Then call `highlight_org_chart` when a chart is open. Keep LinkedIn sourcing on `sourcing`.',
     );
     expect(core).toContain(
       'load_skills(["outreach", "workflow-building"])`. Finish with `list_workflow_runs`.',

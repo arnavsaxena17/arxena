@@ -75,6 +75,59 @@ export const OutreachAiColumnFilterZodSchema = z.object({
     ),
 });
 
+const fitmentCriterionSchema = z.object({
+  key: z
+    .string()
+    .regex(/^[a-zA-Z][a-zA-Z0-9]*$/)
+    .describe(
+      'Column key, camelCase, unique among the criteria (e.g. isPlantHead)',
+    ),
+  description: z
+    .string()
+    .min(3)
+    .describe(
+      'What passing means, in plain words and in the user\'s terms (e.g. "currently heads a manufacturing plant")',
+    ),
+  mustHave: z
+    .boolean()
+    .default(true)
+    .describe(
+      'true: a fail rejects the row. false: nice-to-have, it only moves the score.',
+    ),
+  weight: z
+    .number()
+    .int()
+    .min(1)
+    .max(10)
+    .default(1)
+    .describe('How much the criterion counts toward the score'),
+});
+
+export const OutreachAiColumnFitmentZodSchema = z.object({
+  stage: z
+    .enum(['snapshot', 'profile'])
+    .describe(
+      'snapshot: the rows hold only what a search previews, so criteria they cannot answer come back unknown (go to a profile fetch). profile: the rows hold the full profile, so unknown must-haves fail.',
+    ),
+  criteria: z.array(fitmentCriterionSchema).min(1).max(8),
+  request: z
+    .string()
+    .optional()
+    .describe("The user's request in their own words, for context"),
+  minimumScore: z
+    .number()
+    .min(0)
+    .max(1)
+    .optional()
+    .describe(
+      "Raise the bar above the server's fitment threshold (0 to 1). It can never go below it.",
+    ),
+});
+
+export type OutreachAiColumnFitmentInput = z.infer<
+  typeof OutreachAiColumnFitmentZodSchema
+>;
+
 export const PreviewOutreachAiColumnInputZodSchema = z
   .object({
     projectId: z.string(),
@@ -89,12 +142,18 @@ export const PreviewOutreachAiColumnInputZodSchema = z
     filter: OutreachAiColumnFilterZodSchema.optional().describe(
       'Only when the user asks for a specific column design: overrides the designed one.',
     ),
+    fitment: OutreachAiColumnFitmentZodSchema.optional().describe(
+      "Score the rows against the user's criteria: pass, fail or unknown per criterion, then a score and an outcome computed in code against the server's fitment threshold. Use instead of description for sourcing a list. Needs no design call.",
+    ),
     rowLimit: z.number().int().min(1).max(10).default(10),
   })
   .refine(
-    (input) => input.description !== undefined || input.filter !== undefined,
+    (input) =>
+      input.description !== undefined ||
+      input.filter !== undefined ||
+      input.fitment !== undefined,
     {
-      message: 'Pass description (preferred) or filter',
+      message: 'Pass fitment (sourcing), description (preferred) or filter',
     },
   );
 
@@ -102,8 +161,33 @@ export type PreviewOutreachAiColumnInput = z.infer<
   typeof PreviewOutreachAiColumnInputZodSchema
 >;
 
+// A run is a background job; the tool waits for it so the agent does not spend
+// a model step per check. Every extra step re-reads the whole conversation.
+export const AI_COLUMN_DEFAULT_RUN_WAIT_SECONDS = 150;
+export const AI_COLUMN_DEFAULT_STATUS_WAIT_SECONDS = 120;
+export const AI_COLUMN_MAX_WAIT_SECONDS = 240;
+
+const waitSecondsSchema = (defaultSeconds: number) =>
+  z
+    .number()
+    .int()
+    .min(0)
+    .max(AI_COLUMN_MAX_WAIT_SECONDS)
+    .default(defaultSeconds)
+    .describe(
+      `Seconds to wait for the run to finish before answering (default ${defaultSeconds}, max ${AI_COLUMN_MAX_WAIT_SECONDS}). The call returns as soon as the run is done. 0 answers at once.`,
+    );
+
 export const RunOutreachAiColumnInputZodSchema = z.object({
   projectId: z.string(),
+  waitSeconds: waitSecondsSchema(AI_COLUMN_DEFAULT_RUN_WAIT_SECONDS),
+  approvedCostUsd: z
+    .number()
+    .min(0)
+    .optional()
+    .describe(
+      'The most the user approved for this run, in USD. Needed only when the preview says needsApproval; pass the amount they agreed to (or the enrichment cap they approved once for the whole list build).',
+    ),
   subject: subjectSchema,
   previewId: z
     .string()
@@ -139,6 +223,11 @@ export type RunOutreachAiColumnInput = z.infer<
 export const AiColumnRunIdInputZodSchema = z.object({
   runId: z.string().describe('runId returned by run_ai_column'),
 });
+
+export const GetAiColumnRunStatusInputZodSchema =
+  AiColumnRunIdInputZodSchema.extend({
+    waitSeconds: waitSecondsSchema(AI_COLUMN_DEFAULT_STATUS_WAIT_SECONDS),
+  });
 
 const tabSchema = z
   .enum(['people', 'companies'])

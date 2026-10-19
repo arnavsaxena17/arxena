@@ -70,8 +70,12 @@ describe('outreach-command-materialize.util', () => {
     expect(mapMessagingChannelToOutreachChannel('WHATSAPP_UNIPILE')).toBe(
       'WHATSAPP',
     );
-    expect(mapMessagingChannelToOutreachChannel('linkedin-inmail')).toBe('INMAIL');
-    expect(mapMessagingChannelToOutreachChannel('LINKEDIN_INMAIL')).toBe('INMAIL');
+    expect(mapMessagingChannelToOutreachChannel('linkedin-inmail')).toBe(
+      'INMAIL',
+    );
+    expect(mapMessagingChannelToOutreachChannel('LINKEDIN_INMAIL')).toBe(
+      'INMAIL',
+    );
     expect(mapMessagingChannelToOutreachChannel('linkedin')).toBe(
       'LINKEDIN_CONNECT',
     );

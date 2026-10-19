@@ -332,7 +332,9 @@ export class AiFilterEngineService {
 
       return buildVerdict({
         id: record.id,
-        raw: mapJevAnswersToRecord(result.answers),
+        raw: mapJevAnswersToRecord(result.answers, {
+          booleanProbabilityThreshold: spec.probabilityThreshold,
+        }),
         spec,
       });
     } catch (error) {

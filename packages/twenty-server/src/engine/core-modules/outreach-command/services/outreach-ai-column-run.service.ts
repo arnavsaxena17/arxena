@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { randomUUID } from 'crypto';
 
@@ -25,6 +25,8 @@ import {
   OutreachTableViewService,
   readCellText,
 } from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
+import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
+import { computeSourcingFunnel } from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
 import { OutreachCacheRealtimeService } from 'src/engine/core-modules/outreach-command/services/outreach-cache-realtime.service';
 import {
   type OutreachWorkingSetRow,
@@ -117,6 +119,8 @@ export class OutreachAiColumnRunService {
     private readonly outreachWorkingSetService: OutreachWorkingSetService,
     private readonly outreachCacheRealtimeService: OutreachCacheRealtimeService,
     private readonly outreachTableViewService: OutreachTableViewService,
+    @Optional()
+    private readonly sourcingLedgerService?: SourcingLedgerService,
   ) {}
 
   async startSampleLinkedinMessageForSelection({
@@ -647,8 +651,49 @@ export class OutreachAiColumnRunService {
     this.logger.log(
       `AI column run ${state.runId} ${status} answered=${state.answered} failed=${state.failed} total=${state.total}`,
     );
+    await this.recordFitmentRun(state);
 
     return state;
+  }
+
+  // A fitment run is a step of the sourcing funnel: record how it came out
+  private async recordFitmentRun(state: RunState): Promise<void> {
+    const fitment = state.filter.fitment;
+
+    if (!isDefined(fitment) || !isDefined(this.sourcingLedgerService)) {
+      return;
+    }
+
+    try {
+      const rows = await this.outreachWorkingSetService.getAll({
+        workspaceId: state.workspaceId,
+        projectId: state.projectId,
+        subject: state.subject,
+      });
+      const { outcomes } = computeSourcingFunnel(rows);
+
+      await this.sourcingLedgerService.append(
+        state.workspaceId,
+        state.projectId,
+        {
+          kind: 'score',
+          at: new Date().toISOString(),
+          stage: fitment.stage,
+          column: state.filter.name,
+          rows: state.total,
+          pass: outcomes.pass,
+          unknown: outcomes.unknown,
+          fail: outcomes.fail,
+          failedRows: state.failed,
+          threshold: fitment.threshold,
+          costUsd: state.usage?.estimatedCostUsd ?? null,
+        },
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Could not record the fitment run in the sourcing ledger: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 
   private async saveAndEmit(state: RunState): Promise<void> {

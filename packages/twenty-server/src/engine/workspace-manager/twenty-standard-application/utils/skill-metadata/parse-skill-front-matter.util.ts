@@ -12,6 +12,9 @@ const TOP_LEVEL_KEYS = new Set([
   'description',
   'priority',
   'routes',
+  'parts',
+  'requires',
+  'defaultSections',
 ]);
 const ROUTE_KEYS = new Set(['when', 'sections', 'hint']);
 
@@ -76,6 +79,44 @@ export const parseSkillFrontMatter = (
 
   if (!Array.isArray(record.routes) || record.routes.length === 0) {
     return fail('has no routes');
+  }
+
+  const isNameList = (value: unknown): value is string[] =>
+    Array.isArray(value) && value.every(isNonEmptyString);
+
+  for (const key of ['parts', 'defaultSections'] as const) {
+    if (record[key] !== undefined && !isNameList(record[key])) {
+      fail(`has "${key}" that is not a list of names`);
+    }
+  }
+
+  if (record.requires !== undefined) {
+    const requires = record.requires;
+
+    if (
+      typeof requires !== 'object' ||
+      requires === null ||
+      Array.isArray(requires) ||
+      !Object.values(requires).every(isNameList)
+    ) {
+      fail('has "requires" that is not a mapping of section to a list of names');
+    }
+  }
+
+  if (record.parts !== undefined) {
+    const parts = new Set(record.parts as string[]);
+    const named = [
+      ...((record.defaultSections as string[] | undefined) ?? []),
+      ...Object.entries((record.requires ?? {}) as Record<string, string[]>).flat(
+        2,
+      ),
+    ];
+
+    for (const name of named) {
+      if (!parts.has(name)) {
+        fail(`names the section "${name}", which is not in "parts"`);
+      }
+    }
   }
 
   for (const route of record.routes as Array<Record<string, unknown>>) {

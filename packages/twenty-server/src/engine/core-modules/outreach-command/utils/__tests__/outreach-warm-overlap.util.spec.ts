@@ -56,13 +56,19 @@ describe('outreach warm overlap util', () => {
       };
       const strong = scoreWarmOverlap({
         memberId: 'a',
-        viewerFacts: { sharedConnectionsCount: 20, networkDistance: 'DISTANCE_2' },
+        viewerFacts: {
+          sharedConnectionsCount: 20,
+          networkDistance: 'DISTANCE_2',
+        },
         memberFacts: { ...emptyFacts, schools: ['IIT Bombay'] },
         prospectFacts: prospect,
       });
       const weak = scoreWarmOverlap({
         memberId: 'b',
-        viewerFacts: { sharedConnectionsCount: 5, networkDistance: 'DISTANCE_2' },
+        viewerFacts: {
+          sharedConnectionsCount: 5,
+          networkDistance: 'DISTANCE_2',
+        },
         memberFacts: emptyFacts,
         prospectFacts: prospect,
       });
@@ -85,7 +91,10 @@ describe('outreach warm overlap util', () => {
     it('should give a large bonus for an existing first degree connection', () => {
       const result = scoreWarmOverlap({
         memberId: 'a',
-        viewerFacts: { sharedConnectionsCount: 0, networkDistance: 'FIRST_DEGREE' },
+        viewerFacts: {
+          sharedConnectionsCount: 0,
+          networkDistance: 'FIRST_DEGREE',
+        },
         memberFacts: emptyFacts,
         prospectFacts: emptyFacts,
       });

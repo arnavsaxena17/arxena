@@ -3,16 +3,17 @@ import { getSkillContent } from 'src/engine/workspace-manager/twenty-standard-ap
 import { loadStandardSkillContent } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/load-standard-skill-content.util';
 
 describe('loadStandardSkillContent', () => {
-  it('concatenates search skill parts in order', () => {
-    const content = loadStandardSkillContent('search');
+  it('concatenates sourcing skill parts in order', () => {
+    const content = loadStandardSkillContent('sourcing');
 
-    expect(content).toContain('# Search Skill');
+    expect(content).toContain('# Sourcing Skill');
     expect(content).toContain('## Companies');
     expect(content).toContain('## People');
     expect(content).toContain('## People by company');
     expect(content).toContain('plan-local-business-city-coverage');
     expect(content).toContain('resolve_company_from_raw_name');
-    expect(content).toBe(getSkillContent('search'));
+    expect(content).toBe(getSkillContent('sourcing'));
+    expect(loadStandardSkillContent('search')).toBe(content);
     expect(content.indexOf('## Companies')).toBeLessThan(
       content.indexOf('## People'),
     );
@@ -30,7 +31,7 @@ describe('loadStandardSkillContent', () => {
   });
 
   it('preserves Apollo marker comments for runtime filtering', () => {
-    const content = loadStandardSkillContent('search');
+    const content = loadStandardSkillContent('sourcing');
 
     expect(content).toContain(
       '<!-- search-apollo-companies-provider-row:start -->',

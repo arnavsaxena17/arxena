@@ -1,0 +1,5 @@
+## Playbook: judged list
+
+About N companies or people that must clear a rubric (store count, revenue, runs ads, a seniority). Search first, then score by the funnel in the Vocabulary: snapshots, then profile fetch for the rows that pass or are unknown, then enrichment, then full-profile scoring.
+
+Approve fetch and enrichment caps once (`ask_questions`: go / change the caps / cancel). That yes replaces the per-query budget question and covers every estimate, fetch, and column run inside those caps. Then round until the filtered count reaches about N or a cap is hit: fetch in this skill, then filter and enrich in `ai-filter-enrich`. Cheapest cut first: a row-answerable gate, then a free size proxy (employees or followers already on the row), then one web-search column for the facts the row does not hold. Reuse one column per fact. Pass the enrichment cap as `approvedCostUsd` on every `run_ai_column`. Do not exceed a cap. Report the count, the spend, and offer export or save.

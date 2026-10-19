@@ -46,8 +46,9 @@ export const STANDARD_SKILL = {
     // formerly outreach-icp-onboarding
     universalIdentifier: '20202020-a7c3-4e91-8b5f-2d6e9f1a4c80',
   },
-  search: {
-    // formerly search-companies (linkedin-search + search-people merged into this content)
+  sourcing: {
+    // formerly `search` (and before that search-companies, with linkedin-search
+    // and search-people merged into it). `search` still loads: see SKILL_NAME_ALIASES.
     universalIdentifier: '20202020-9c2b-4f1a-8d3e-6b7a0c5e2f41',
   },
   outreach: {

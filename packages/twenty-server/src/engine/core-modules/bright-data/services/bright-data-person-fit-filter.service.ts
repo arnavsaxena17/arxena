@@ -7,13 +7,23 @@ import {
   type JevDecisionAnswer,
   type JevDecisionQuestion,
 } from 'src/engine/core-modules/bright-data/services/jev-decisions.service';
+import {
+  getFakeProfileThreshold,
+  getFitmentThreshold,
+  getSamePersonThreshold,
+} from 'src/engine/core-modules/candidate-sourcing/services/fitment/fitment-threshold.util';
+import {
+  scoreFitment,
+  type FitmentCriterion,
+  type FitmentResult,
+  type FitmentStage,
+} from 'src/engine/core-modules/candidate-sourcing/services/fitment/fitment-score.util';
 import { buildFakeProfileInvestigationBrief } from 'src/engine/core-modules/outreach-command/utils/outreach-fake-profile-investigation.util';
 
 // People per Jev call: every person adds four questions
 const BATCH_SIZE = 8;
 const MAX_BATCHES = 25;
 const CONCURRENT_CALLS = 4;
-const TRUE_PROBABILITY = 0.5;
 const MAX_PAIRS = 60;
 
 export type PersonToJudge = {
@@ -39,6 +49,10 @@ export type PersonJudgement = {
   // True when the person matches the search (the place, the company, the role)
   fitsSearch: boolean;
   likelyFake: boolean;
+  // The same verdicts through the shared fitment score: fit, company and role
+  // are must-haves; a related company or role counts as a pass here, and
+  // `company`/`role` still say how close it is
+  fitment: FitmentResult;
 };
 
 export type PersonToCompare = {
@@ -108,10 +122,70 @@ const noul = (
   criteria: { true: whenTrue, false: whenFalse },
 });
 
-const isTrue = (answer: JevDecisionAnswer | undefined): boolean | undefined =>
+// Each caller passes the bar for its own question: fit, fake profile or same
+// person (see fitment-threshold.util)
+const isTrue = (
+  answer: JevDecisionAnswer | undefined,
+  probability: number,
+): boolean | undefined =>
   answer?.type === 'noul' && typeof answer.noul === 'number'
-    ? answer.noul >= TRUE_PROBABILITY
+    ? answer.noul >= probability
     : undefined;
+
+const FIT_CRITERION: FitmentCriterion = {
+  key: 'fits',
+  description: 'fits the search',
+  mustHave: true,
+  weight: 1,
+};
+const COMPANY_CRITERION: FitmentCriterion = {
+  key: 'company',
+  description: 'works at the target company or a related one',
+  mustHave: true,
+  weight: 1,
+};
+const ROLE_CRITERION: FitmentCriterion = {
+  key: 'role',
+  description: 'holds a wanted role',
+  mustHave: true,
+  weight: 1,
+};
+
+export const scorePersonFitment = ({
+  fits,
+  company,
+  role,
+  withCompanyAndRole,
+  hasProfile,
+}: {
+  fits: boolean | undefined;
+  company: CompanyRelation;
+  role: RoleFit;
+  withCompanyAndRole: boolean;
+  hasProfile: boolean;
+}): FitmentResult => {
+  const stage: FitmentStage = hasProfile ? 'profile' : 'snapshot';
+  const verdicts: Record<string, 'pass' | 'fail' | 'unknown'> = {
+    // No answer is the benefit of the doubt the question itself asks for
+    fits: fits === false ? 'fail' : 'pass',
+    company:
+      company === 'same' || company === 'related'
+        ? 'pass'
+        : company === 'different'
+          ? 'fail'
+          : 'unknown',
+    role: role === 'none' ? 'fail' : 'pass',
+  };
+
+  return scoreFitment({
+    criteria: withCompanyAndRole
+      ? [FIT_CRITERION, COMPANY_CRITERION, ROLE_CRITERION]
+      : [FIT_CRITERION],
+    verdicts,
+    stage,
+    threshold: getFitmentThreshold(),
+  });
+};
 
 const runPool = async <TItem>(
   items: TItem[],
@@ -247,7 +321,10 @@ export class BrightDataPersonFitFilterService {
       });
 
       pairs.forEach(([first, second], index) => {
-        if (isTrue(answers[`pair${index}__same`]) !== true) {
+        if (
+          isTrue(answers[`pair${index}__same`], getSamePersonThreshold()) !==
+          true
+        ) {
           return;
         }
 
@@ -327,12 +404,14 @@ export class BrightDataPersonFitFilterService {
           };
         }
 
-        questions[`p${index}__misfit`] = noul(
+        // Asked as "fits" so the fitment threshold reads the right way round:
+        // a higher bar rejects more, not fewer
+        questions[`p${index}__fits`] = noul(
           withCompanyAndRole
-            ? `For ${subject}: does the person clearly not fit the search${country ? `, including not being based in ${country}` : ''}? A missing location is not a mismatch.`
-            : `For ${subject}: does the person clearly not match what \`search.query\` asks for (the place, the kind of company or industry, the kind of role)? A missing field is not a mismatch.`,
-          'Clearly does not fit: another country, an unrelated industry, an unrelated role.',
+            ? `For ${subject}: does the person fit the search${country ? `, including being based in ${country}` : ''}? A missing location is not a mismatch; say yes when the evidence is too thin to rule the person out.`
+            : `For ${subject}: does the person match what \`search.query\` asks for (the place, the kind of company or industry, the kind of role)? A missing field is not a mismatch; say yes when the evidence is too thin to rule the person out.`,
           'Fits, or the evidence is too thin to say otherwise.',
+          'Clearly does not fit: another country, an unrelated industry, an unrelated role.',
         );
         // a person read from a search result alone has no profile to judge
         if (isDefined(person.profile)) {
@@ -353,28 +432,43 @@ export class BrightDataPersonFitFilterService {
         batch.forEach((person, index) => {
           const company = answers[`p${index}__company`]?.choice;
           const role = answers[`p${index}__role`]?.choice;
-          const misfit = isTrue(answers[`p${index}__misfit`]);
+          const fits = isTrue(
+            answers[`p${index}__fits`],
+            getFitmentThreshold(),
+          );
           const fake = isDefined(person.profile)
-            ? isTrue(answers[`p${index}__fake`])
+            ? isTrue(answers[`p${index}__fake`], getFakeProfileThreshold())
             : false;
 
-          if (misfit === undefined && fake === undefined) {
+          if (fits === undefined && fake === undefined) {
             return;
           }
 
-          judgements.set(person.id, {
-            company: (['same', 'related', 'different', 'unknown'].includes(
+          const companyRelation = (
+            ['same', 'related', 'different', 'unknown'].includes(
               String(company),
             )
               ? company
-              : 'unknown') as CompanyRelation,
+              : 'unknown'
+          ) as CompanyRelation;
+          const roleFit = (
+            ['exact', 'related', 'none'].includes(String(role)) ? role : 'none'
+          ) as RoleFit;
+
+          judgements.set(person.id, {
+            company: companyRelation,
             companyNote: '',
-            role: (['exact', 'related', 'none'].includes(String(role))
-              ? role
-              : 'none') as RoleFit,
+            role: roleFit,
             roleNote: '',
-            fitsSearch: misfit !== true,
+            fitsSearch: fits !== false,
             likelyFake: fake === true,
+            fitment: scorePersonFitment({
+              fits,
+              company: companyRelation,
+              role: roleFit,
+              withCompanyAndRole,
+              hasProfile: isDefined(person.profile),
+            }),
           });
         });
       } catch (error) {

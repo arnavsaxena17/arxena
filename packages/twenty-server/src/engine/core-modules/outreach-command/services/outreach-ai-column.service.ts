@@ -17,6 +17,21 @@ import {
   type FilterSpec,
 } from 'src/engine/core-modules/candidate-sourcing/services/ai-filter-engine/ai-filter-contract';
 import { AiFilterEngineService } from 'src/engine/core-modules/candidate-sourcing/services/ai-filter-engine/ai-filter-engine.service';
+import {
+  FITMENT_EVIDENCE_KEY,
+  FITMENT_OUTCOME_KEY,
+  buildFitmentColumnFields,
+  buildFitmentModelFields,
+  buildFitmentPrompt,
+  computeFitmentColumns,
+  type FitmentSetup,
+} from 'src/engine/core-modules/candidate-sourcing/services/fitment/fitment-filter.util';
+import { resolveFitmentThreshold } from 'src/engine/core-modules/candidate-sourcing/services/fitment/fitment-threshold.util';
+import { type FitmentCriterion } from 'src/engine/core-modules/candidate-sourcing/services/fitment/fitment-score.util';
+import {
+  getAiColumnAutoRunMaxUsd,
+  needsCostApproval,
+} from 'src/engine/core-modules/outreach-command/utils/ai-column-cost-limit.util';
 import { FilterDescriptionProcessorService } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
 import {
   OUTREACH_SAMPLE_MESSAGE_COLUMN_KEY,
@@ -42,6 +57,9 @@ export type OutreachAiColumnFilter = {
   // Set for the sample first-LinkedIn-message column: rows are drafted by the
   // opener agent instead of the AI filter engine.
   sampleMessage?: { include: OutreachSampleMessageInclude };
+  // Set for a fitment column: the model gives pass / fail / unknown per
+  // criterion and code computes the score and outcome against the threshold.
+  fitment?: FitmentSetup;
 };
 
 export type OutreachAiColumnValue = boolean | string | number | null;
@@ -81,12 +99,57 @@ export type PreviewState = {
   subject: OutreachWorkingSetSubject;
   filter: OutreachAiColumnFilter;
   previewedRows: Record<string, OutreachAiColumnRowResult>;
+  // What a full run is expected to cost; run_ai_column asks for approval above
+  // the auto-run limit. null when the engine reports no cost (Jev).
+  estimatedRunCostUsd?: number | null;
+  estimatedPerRowUsd?: number | null;
 };
 
 // CacheStorageService takes milliseconds.
 const PREVIEW_TTL_MS = 60 * 60 * 1000;
 const PREVIEW_ROW_LIMIT = 10;
 const SAMPLE_MESSAGE_CONCURRENCY = 3;
+
+// A fitment column is decided from the fields on the row, so it needs no design
+// call: the criteria are the design.
+export const buildFitmentFilter = ({
+  stage,
+  criteria,
+  request,
+  minimumScore,
+}: {
+  stage: FitmentSetup['stage'];
+  criteria: FitmentCriterion[];
+  request?: string;
+  minimumScore?: number;
+}): OutreachAiColumnFilter => ({
+  name: stage === 'snapshot' ? 'Fitment (snapshot)' : 'Fitment',
+  prompt: buildFitmentPrompt({ stage, criteria, request }),
+  selectedModel: 'jev',
+  fields: buildFitmentColumnFields(criteria),
+  selectedMetadataFields: ['name'],
+  fitment: {
+    stage,
+    criteria,
+    threshold: resolveFitmentThreshold(minimumScore),
+  },
+});
+
+const countFitmentOutcomes = (
+  results: OutreachAiColumnRowResult[],
+): { pass: number; fail: number; unknown: number } => {
+  const counts = { pass: 0, fail: 0, unknown: 0 };
+
+  for (const result of results) {
+    const outcome = result.values[FITMENT_OUTCOME_KEY];
+
+    if (outcome === 'pass' || outcome === 'fail' || outcome === 'unknown') {
+      counts[outcome] += 1;
+    }
+  }
+
+  return counts;
+};
 
 export const isWebSearchModel = (model: string): boolean =>
   /search|web/i.test(model);
@@ -423,6 +486,7 @@ export class OutreachAiColumnService {
     subject,
     filter,
     description,
+    fitment,
     rowLimit,
   }: {
     workspaceId: string;
@@ -430,6 +494,12 @@ export class OutreachAiColumnService {
     subject: OutreachWorkingSetSubject;
     filter?: OutreachAiColumnFilter;
     description?: string;
+    fitment?: {
+      stage: FitmentSetup['stage'];
+      criteria: FitmentCriterion[];
+      request?: string;
+      minimumScore?: number;
+    };
     rowLimit?: number;
   }): Promise<{
     previewId: string;
@@ -442,6 +512,17 @@ export class OutreachAiColumnService {
     rows: OutreachAiColumnRowResult[];
     usage: OutreachAiColumnUsage;
     estimatedRunCostUsd: number | null;
+    // A full run over this limit needs the user's approval (approvedCostUsd on
+    // run_ai_column); under it the agent runs without asking
+    autoRunLimitUsd: number;
+    needsApproval: boolean;
+    fitment?: {
+      stage: FitmentSetup['stage'];
+      threshold: number;
+      pass: number;
+      fail: number;
+      unknown: number;
+    };
   }> {
     const all = await this.outreachWorkingSetService.getAll({
       workspaceId,
@@ -457,6 +538,7 @@ export class OutreachAiColumnService {
 
     const resolvedFilter =
       filter ??
+      (isDefined(fitment) ? buildFitmentFilter(fitment) : undefined) ??
       (isDefined(description)
         ? await this.designFilter({
             description,
@@ -485,21 +567,6 @@ export class OutreachAiColumnService {
     );
     const existingColumns = readExistingAiColumns(all);
     const previewId = randomUUID();
-    const state: PreviewState = {
-      previewId,
-      workspaceId,
-      projectId,
-      subject,
-      filter: resolvedFilter,
-      previewedRows: Object.fromEntries(
-        results
-          .filter((result) => result.status === 'answered')
-          .map((result) => [result.id, result]),
-      ),
-    };
-
-    await this.cache.set(this.previewKey(previewId), state, PREVIEW_TTL_MS);
-
     const remaining = groupByCompany
       ? Math.max(
           0,
@@ -511,6 +578,24 @@ export class OutreachAiColumnService {
       usage.estimatedCostUsd !== null && sample.length > 0
         ? usage.estimatedCostUsd / sample.length
         : null;
+    const estimatedRunCostUsd =
+      perRowCost === null ? null : Number((perRowCost * remaining).toFixed(4));
+    const state: PreviewState = {
+      previewId,
+      workspaceId,
+      projectId,
+      subject,
+      filter: resolvedFilter,
+      previewedRows: Object.fromEntries(
+        results
+          .filter((result) => result.status === 'answered')
+          .map((result) => [result.id, result]),
+      ),
+      estimatedRunCostUsd,
+      estimatedPerRowUsd: perRowCost,
+    };
+
+    await this.cache.set(this.previewKey(previewId), state, PREVIEW_TTL_MS);
 
     return {
       previewId,
@@ -533,10 +618,18 @@ export class OutreachAiColumnService {
       ),
       rows: results,
       usage,
-      estimatedRunCostUsd:
-        perRowCost === null
-          ? null
-          : Number((perRowCost * remaining).toFixed(4)),
+      ...(isDefined(resolvedFilter.fitment)
+        ? {
+            fitment: {
+              stage: resolvedFilter.fitment.stage,
+              threshold: resolvedFilter.fitment.threshold,
+              ...countFitmentOutcomes(results),
+            },
+          }
+        : {}),
+      estimatedRunCostUsd,
+      autoRunLimitUsd: getAiColumnAutoRunMaxUsd(),
+      needsApproval: needsCostApproval({ estimatedCostUsd: estimatedRunCostUsd }),
     };
   }
 
@@ -782,6 +875,7 @@ export class OutreachAiColumnService {
     results: OutreachAiColumnRowResult[];
     usage: OutreachAiColumnUsage;
   }> {
+    const fitment = filter.fitment;
     const webSearch = isWebSearchModel(filter.selectedModel);
     // A single yes/no column is a filter (keep / reject); anything else is an
     // enrichment column and may answer "unknown".
@@ -793,19 +887,29 @@ export class OutreachAiColumnService {
       name: filter.name,
       subject,
       criteria: filter.prompt,
-      fields: filter.fields,
-      keepField,
+      fields: isDefined(fitment)
+        ? buildFitmentModelFields(fitment.criteria)
+        : filter.fields,
+      keepField: isDefined(fitment) ? undefined : keepField,
       model: filter.selectedModel,
       metadataFields: [],
       webSearch,
-      allowUnknown: keepField === undefined,
+      allowUnknown: isDefined(fitment) || keepField === undefined,
+      // A Jev yes/no inside a fitment judgement uses the server's bar
+      ...(isDefined(fitment)
+        ? { probabilityThreshold: fitment.threshold }
+        : {}),
     };
     const records = rows.map(toRecordForModel);
 
     spec.metadataFields = wholeRecordFields({
       records,
       preferredFields: filter.selectedMetadataFields,
-      excludedFields: filter.fields.map((field) => field.name),
+      // Earlier verdicts and scores must not leak into the next judgement
+      excludedFields: [
+        ...filter.fields.map((field) => field.name),
+        ...(isDefined(fitment) ? [FITMENT_EVIDENCE_KEY] : []),
+      ],
     });
 
     const { verdicts, stats } = await this.aiFilterEngineService.run(
@@ -823,6 +927,23 @@ export class OutreachAiColumnService {
           typeof answer === 'string'
             ? cleanText(answer) || null
             : (answer ?? null);
+      }
+
+      // The model gives verdicts; the score and the outcome are computed here
+      if (isDefined(fitment) && verdict.status === 'answered') {
+        Object.assign(
+          values,
+          computeFitmentColumns({ answers: verdict.answers, setup: fitment })
+            .values,
+          Object.fromEntries(
+            fitment.criteria.map((criterion) => [
+              criterion.key,
+              typeof verdict.answers[criterion.key] === 'string'
+                ? verdict.answers[criterion.key]
+                : 'unknown',
+            ]),
+          ),
+        );
       }
 
       return {

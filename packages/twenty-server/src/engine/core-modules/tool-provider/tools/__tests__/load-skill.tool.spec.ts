@@ -1,4 +1,7 @@
-import { getSkillContent } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/skill-library';
+import {
+  getSkillContent,
+  getSkillFrontMatter,
+} from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/skill-library';
 
 import { type FlatSkill } from 'src/engine/metadata-modules/flat-skill/types/flat-skill.type';
 import {
@@ -7,27 +10,42 @@ import {
 } from 'src/engine/core-modules/tool-provider/tools/load-skill.tool';
 
 const searchSkill = {
-  name: 'search',
-  label: 'Search',
-  content: getSkillContent('search'),
+  name: 'sourcing',
+  label: 'Sourcing',
+  content: getSkillContent('sourcing'),
 } as FlatSkill;
 
 const buildTool = () =>
   createLoadSkillTool(
-    async (names) => (names.includes('search') ? [searchSkill] : []),
-    async () => ['search'],
+    async (names) =>
+      names.includes('sourcing') || names.includes('search')
+        ? [searchSkill]
+        : [],
+    async () => ['sourcing'],
   );
 
 describe('load_skills', () => {
-  it('should load the whole skill when no sections are requested', async () => {
+  it('should load the default sections when no sections are requested', async () => {
     const result = await buildTool().execute({ skillNames: ['search'] });
 
-    expect(result.skills[0].content).toBe(searchSkill.content);
-    expect(result.skills[0].availableSections).toEqual([
-      'companies',
-      'people',
-      'people-by-company',
-    ]);
+    expect(result.skills[0].content).toContain('## People');
+    expect(result.skills[0].content).toContain('## Companies');
+    expect(result.skills[0].content).not.toContain('## People by company');
+    expect(result.skills[0].availableSections).toEqual(
+      getSkillFrontMatter('sourcing')?.parts,
+    );
+  });
+
+  it('should add the sections a requested section requires', async () => {
+    const result = await buildTool().execute({
+      skillNames: ['sourcing'],
+      sections: ['people'],
+    });
+
+    expect(result.skills[0].content).toContain(
+      '## Source: Bright Data, people',
+    );
+    expect(result.skills[0].content).not.toContain('## Source: LinkedIn');
   });
 
   it('should load only the requested sections', async () => {

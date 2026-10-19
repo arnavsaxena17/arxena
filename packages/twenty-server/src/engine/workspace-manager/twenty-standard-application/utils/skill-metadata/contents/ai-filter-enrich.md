@@ -1,6 +1,6 @@
 ---
 description: |-
-  Add an AI-computed column (filter or enrichment) to the project people / companies: preview on ~10 rows, confirm, then run for all
+  Add an AI-computed column (filter or enrichment) to the project people / companies: preview on ~10 rows, then run for all
 priority: 40
 routes:
   - when: |-
@@ -21,7 +21,9 @@ Use this skill when the user wants to **filter, classify, or enrich the people o
 - "number of employees in each company in the list"
 - "mark which of these are in fintech", "what department is each person in"
 
-Do **not** use `search` to re-source the list, and do **not** page through `find_many_*` to read it. The list the user means is the **project working set**. Do **not** design the column's data types yourself: the server does that with the AI filtering design call.
+Do **not** use `sourcing` to re-source the list, and do **not** page through `find_many_*` to read it. The list the user means is the **project working set**. Do **not** design the column's data types yourself: the server does that with the AI filtering design call.
+
+**Sourcing a list against criteria** is a fitment column, not a designed one: pass `fitment` to `preview_ai_column` instead of `description`, as the `sourcing` skill's `scoring` section describes. The columns `fitmentOutcome`, `fitmentScore` and `fitmentReason` are computed in code.
 
 ## Flow (always in this order)
 
@@ -31,11 +33,11 @@ Do **not** use `search` to re-source the list, and do **not** page through `find
 2. **Check what already exists first.** Call `get_outreach_working_set({ projectId, subject, limit: 1 })`: its `aiColumns` lists the AI columns already on the table (key, label, type, how many rows are filled). If the data the user wants is already there (an "Is CEO" column for "who is a CEO", an employee-count column for "companies over 500 employees"), **reuse it**: do not preview or run a new column (it costs money); go straight to the filter/sort step. Only add a column when nothing existing answers the request. **To count or to choose a cut-off, never page rows**: call `get_outreach_working_set({ projectId, subject, limit: 1, summarize: ["brandCategory", "employeesOnLinkedin"], onlyViewMatches: true })`. It returns value counts (yes/no and label columns) or min, quartiles and max (number columns) over ALL rows, or only the rows of the applied view with `onlyViewMatches`. Use the keys listed in `aiColumns` and the row fields (name, domain, industry, employees, or any otherFields key). Beyond that, look at a page of rows only if you need to see them, never everything: `get_outreach_working_set({ projectId, subject, limit: 10 })`. It merges the ephemeral Find list on the project with the CRM people attached to it and returns `total`, `rows` and a `cursor`. Never fetch more than the page you need.
 3. **Preview on ~10 rows with the user's own words**: `preview_ai_column({ projectId, subject, description: "<what the user asked, in their words>" })`. The server designs the column with the AI filtering design call: the column name, the **typed fields** (`boolean`, `integer`, `number`, `enum` with ordered values, `text`), the prompt, which row fields the model reads, and the model (jev for decisions the row can answer, web search for facts that are not on the row). Pass `filter` only when the user asks for a specific design.
    Show the user: the column name(s) **with their types** (and enum values), the 10 results as a small table, the model that ran (`usage.engine`, `usage.model`), tokens and the estimated cost of the full run. If `typeWarnings` is not empty, say what it says and call `preview_ai_column` again with a more specific `description` (for example "revenue as a number in USD" or "company size as one of 1-50, 51-200, 201-1000, 1000+").
-4. **Ask before running on everything**: end the turn with `ask_questions` — "Run for all {total} rows (~$X)?" — options: Run for all / Adjust the column / Cancel. Do not run on all rows without the answer.
-   **Exception: pre-approved list build.** When the user already approved an enrichment cap for a list build (see **Judged lists** in the `search` skill), skip this question if the preview's estimated cost fits inside the remaining cap, and run straight away. Ask only when the cost would exceed it.
+4. **Run without asking when it is cheap.** The preview returns `needsApproval` and `autoRunLimitUsd`. If `needsApproval` is false (the estimated full-run cost is within the limit, or the engine reports no cost), go straight to the run. If it is true, ask once: `ask_questions` — "Run for all {total} rows (~$X)?" — options: Run for all / Adjust the column / Cancel, then pass the amount they approved as `approvedCostUsd`. `run_ai_column` refuses a run over the limit without it, so this cannot be skipped by mistake.
+   **Pre-approved list build.** When the user already approved an enrichment cap for a list build (see **Judged lists** in the `sourcing` skill), do not ask again: pass that cap as `approvedCostUsd` on every run and stay inside it.
 5. **Run — scope matters**:
    - **Limited / test / "first N" / regenerate N**: `run_ai_column({ projectId, subject, previewId, rowLimit: N })`. `rowLimit` is the first N rows of the working set in table order. **Always pass `rowLimit` unless the user explicitly said all rows / everyone / run for all.** `rerunAll: false` alone is not a limit — it still fills every empty row in the project.
-   - **Full run (user confirmed all)**: `run_ai_column({ projectId, subject, previewId })` with **no** `rowLimit` (add `onlyViewMatches: true` to run only the applied table view). Starts a background job; values land in `otherFields` with a progress bar. Waits ~45s; if `status: "running"`, tell the user and poll `get_ai_column_run_status({ runId })`; `cancel_ai_column_run({ runId })` stops and keeps filled rows. One column run per project at a time.
+   - **Full run (the user asked for all rows)**: `run_ai_column({ projectId, subject, previewId })` with **no** `rowLimit` (add `onlyViewMatches: true` to run only the applied table view). Starts a background job; values land in `otherFields` with a progress bar. The call waits for the run (`waitSeconds`, default 150); if `status` is still `"running"`, call `get_ai_column_run_status({ runId })` once (it waits two minutes) and never more than once a minute; `cancel_ai_column_run({ runId })` stops and keeps filled rows. One column run per project at a time.
    If rows failed (rate limit etc.), call `run_ai_column` again with the **same** `previewId` (and the same `rowLimit` if used): it skips rows that are already answered. Failed rows show a red "Failed" tag. Pass `rerunAll: true` only when the user wants every in-scope row recomputed. The previewId lasts one hour; after that, preview again.
 6. **Report**: the new column name(s) and types, rows answered / failed, the engine and model that ran, tokens and cost from `usage` (`inputTokens`, `outputTokens`, `estimatedCostUsd`; jev reports no tokens or cost, say so), and a few sample rows. For a yes/no filter also say how many matched. Tell the user the column can be sorted and filtered in the table header (numbers by comparison, labels by value).
 
@@ -105,7 +107,7 @@ The answer is written as a **new key in `otherFields`** of every row, next to ex
 - Hand-design column types, or put revenue / headcount into a `text` column
 - Use `subject: "company"` for a question asked on the People tab (it is a person column about the employer), or `subject: "person"` on the Companies tab; or ask where the companies should come from
 - Load every person or company into the conversation, loop `find_many_*`, or call `get_object_metadata` to find the title field
-- Run `run_ai_column` before the user has confirmed the preview
+- Ask before a column run that is within the auto-run limit, or skip the approval above it (`run_ai_column` refuses without `approvedCostUsd`)
 - Call `run_ai_column` without `rowLimit` when the user only asked for first N / a test / regenerate N (that processes every empty row)
 - Invent revenue or headcount when the web search returns nothing
 - Create CRM Company / Person records or enroll anyone as part of a filter or enrichment

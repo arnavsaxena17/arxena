@@ -25,6 +25,7 @@ import {
 } from 'src/engine/metadata-modules/skill/skill.exception';
 import { withUnstoredPlaybooks } from 'src/engine/metadata-modules/skill/utils/build-playbook-flat-skills.util';
 import { overlayStandardSkillContentFromCode } from 'src/engine/metadata-modules/skill/utils/overlay-standard-skill-content-from-code.util';
+import { canonicalSkillName } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/skill-library';
 import { WorkspaceMigrationBuilderException } from 'src/engine/workspace-manager/workspace-migration/exceptions/workspace-migration-builder-exception';
 import { WorkspaceMigrationValidateBuildAndRunService } from 'src/engine/workspace-manager/workspace-migration/services/workspace-migration-validate-build-and-run-service';
 
@@ -38,10 +39,9 @@ export class SkillService {
   ) {}
 
   private applySearchSkillContentFilters(flatSkill: FlatSkill): FlatSkill {
-    if (
-      flatSkill.name !== 'search' &&
-      flatSkill.name !== 'org-structure-insights'
-    ) {
+    const skillName = canonicalSkillName(flatSkill.name);
+
+    if (skillName !== 'sourcing' && skillName !== 'org-structure-insights') {
       return flatSkill;
     }
 
@@ -287,6 +287,8 @@ export class SkillService {
       return [];
     }
 
+    const requestedNames = new Set(names.map(canonicalSkillName));
+
     const { flatSkillMaps } =
       await this.workspaceManyOrAllFlatEntityMapsCacheService.getOrRecomputeManyOrAllFlatEntityMaps(
         {
@@ -300,7 +302,9 @@ export class SkillService {
       Object.values(flatSkillMaps.byUniversalIdentifier).filter(isDefined),
     )
       .filter(
-        (flatSkill) => names.includes(flatSkill.name) && flatSkill.isActive,
+        (flatSkill) =>
+          requestedNames.has(canonicalSkillName(flatSkill.name)) &&
+          flatSkill.isActive,
       )
       .map((flatSkill) => this.readSkill(flatSkill));
   }

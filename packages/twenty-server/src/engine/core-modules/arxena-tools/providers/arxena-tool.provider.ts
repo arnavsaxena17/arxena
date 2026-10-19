@@ -360,6 +360,8 @@ export class ArxenaToolProvider implements ToolProvider {
 
     return {
       ...(typeof record.cursor === 'string' ? { cursor: record.cursor } : {}),
+      // Pages the server followed for a maxPages call, and why it stopped
+      ...(record.autoContinue ? { autoContinue: record.autoContinue } : {}),
       ...(record.paging ? { paging: record.paging } : {}),
       ...(organizations?.pagination
         ? { paging: organizations.pagination }
