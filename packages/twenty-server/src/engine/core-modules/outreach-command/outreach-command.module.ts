@@ -79,6 +79,7 @@ import { OutreachTableViewService } from 'src/engine/core-modules/outreach-comma
 import { OutreachAiColumnService } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column.service';
 import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
 import { OutreachWorkingSetService } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+import { UndoChatOutreachService } from 'src/engine/core-modules/outreach-command/services/undo-chat-outreach.service';
 import { OutreachPeopleCacheService } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
 import { OutreachProjectOutreachControlService } from 'src/engine/core-modules/outreach-command/services/outreach-project-outreach-control.service';
 import { OutreachCandidateJourneyService } from 'src/engine/core-modules/outreach-command/services/outreach-candidate-journey.service';
@@ -153,6 +154,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     OutreachPeopleCacheService,
     OutreachSpreadsheetMappingService,
     OutreachWorkingSetService,
+    UndoChatOutreachService,
     SourcingLedgerService,
     OutreachAiColumnService,
     OutreachAiColumnRunService,
@@ -245,6 +247,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     OutreachPeopleCacheService,
     OutreachSpreadsheetMappingService,
     OutreachWorkingSetService,
+    UndoChatOutreachService,
     SourcingLedgerService,
     OutreachAiColumnService,
     OutreachAiColumnRunService,

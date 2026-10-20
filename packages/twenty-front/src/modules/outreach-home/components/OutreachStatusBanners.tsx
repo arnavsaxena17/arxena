@@ -29,7 +29,7 @@ export const OutreachStatusBanners = ({
   const isMockUnipileEnabled = useIsFeatureEnabled(
     FeatureFlagKey.IS_OUTREACH_MOCK_UNIPILE_ENABLED,
   );
-  const setMockUnipileBannerIsOpen = useSetAtomComponentState(
+  const setInformationBannerIsOpen = useSetAtomComponentState(
     informationBannerIsOpenComponentState,
     MOCK_UNIPILE_BANNER_INSTANCE_ID,
   );

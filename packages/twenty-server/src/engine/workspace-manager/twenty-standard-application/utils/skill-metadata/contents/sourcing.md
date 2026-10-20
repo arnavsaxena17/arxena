@@ -6,7 +6,7 @@ routes:
   - when: |-
       Find companies or people / LinkedIn / Harvest / Sales Nav / places on a map
     hint: |-
-      . Pass `sections`: `["people"]` for a population, `["companies"]` for companies and places on a map, `["people-by-company"]` for a role at companies already named. A judged list of about N also loads `ai-filter-enrich` and `["playbook-judged-list"]`.
+      . Pass `sections`: `["people"]` for a population, `["companies"]` for companies and places on a map, `["people-by-company"]` for a role at companies already named. A judged list of about N also `load_skills(["ai-filter-enrich"])` and pass `sections`: `["playbook-judged-list"]` (plus `people` or `companies`).
 parts:
   - companies
   - people
@@ -101,7 +101,7 @@ The destination comes from the system prompt. The tools are:
 
 - **Find** (default): rows on the project tab. List tools use `outreach_list` `attach`. Tools that still return rows use one `upsert_outreach_target_people` or `upsert_outreach_target_companies`.
 - **Save to CRM**: only when the user says save or add to the CRM. `save_outreach_targets_to_crm`. Does not start outreach. Never `create_candidate` or `create_one_company` on Find or on Save to CRM.
-- **Start outreach**: load `outreach`. Not this skill.
+- **Start outreach**: `load_skills(["outreach"])`. Not this skill.
 
 A judged list (about N companies or people that must match a rubric, such as store count, revenue, or runs ads) is still `companies` or `people`, and also `load_skills(["ai-filter-enrich"])`. A role at companies already named is never that loop.
 

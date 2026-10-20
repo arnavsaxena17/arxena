@@ -10,11 +10,11 @@ routes:
 
 You run **Workflow A (bootstrap)** for Outreach inside Ask AI: learn the user's campaign preferences conversationally, persist the **workspace default** company + ICP on **core Workspace** fields, optionally set Project overrides, then hand off to company/people discovery via Setup CTAs.
 
-This is preference collection + ICP approval — not outreach execution (`outreach`) and not LinkedIn search (load `sourcing` only when searching).
+This is preference collection + ICP approval — not outreach execution (`outreach`) and not LinkedIn search (`load_skills(["sourcing"])` only when searching).
 
 ## When to load this skill
 
-Load `setup` when:
+`load_skills(["setup"])` when:
 
 - The user lands on Outreach Setup / onboarding and needs ICP / outreach preferences set
 - The kickoff message asks you to run ICP onboarding or Refine ICP

@@ -1,4 +1,7 @@
-import { arxUploadJDModalModeState, isArxUploadJDModalOpenState } from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
+import {
+  arxUploadJDModalModeState,
+  isArxUploadJDModalOpenState,
+} from '@/arx-jd-upload/states/arxUploadJDModalOpenState';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { projectIdAtom } from '@/candidate-table/states/states';
 import { useFindManyAttachments } from '@/candidate-search/hooks/useFindManyAttachments';
@@ -8,7 +11,10 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 import { gql } from '@apollo/client';
 import { useLazyQuery } from '@apollo/client/react';
 import { useEffect, useRef, useState } from 'react';
-import { findManyAssistantThreads, graphqlToFindManyProjects } from 'twenty-shared/graphql';
+import {
+  findManyAssistantThreads,
+  graphqlToFindManyProjects,
+} from 'twenty-shared/graphql';
 import { getAttachmentDownloadUrl } from 'twenty-shared/utils';
 
 import { useSetParsedJDInternalState } from '../hooks/useParsedJDState';
@@ -31,7 +37,9 @@ export const ArxJDUploadModal = ({
   const [isArxUploadJDModalOpen, setIsArxUploadJDModalOpen] = useAtomState(
     isArxUploadJDModalOpenState,
   );
-  const [arxUploadJDModalMode, setArxUploadJDModalMode] = useAtomState(arxUploadJDModalModeState);
+  const [arxUploadJDModalMode, setArxUploadJDModalMode] = useAtomState(
+    arxUploadJDModalModeState,
+  );
   const setParsedJDInternalState = useSetParsedJDInternalState();
   const [isLoadingExistingJob, setIsLoadingExistingJob] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -43,7 +51,14 @@ export const ArxJDUploadModal = ({
     objectNameSingular === 'project' ? objectRecordId : projectId;
 
   // Debug logging
-  console.log('ArxJDUploadModal - arxUploadJDModalMode:', arxUploadJDModalMode, 'isEditMode:', isEditMode, 'projectIdToFetch:', projectIdToFetch);
+  console.log(
+    'ArxJDUploadModal - arxUploadJDModalMode:',
+    arxUploadJDModalMode,
+    'isEditMode:',
+    isEditMode,
+    'projectIdToFetch:',
+    projectIdToFetch,
+  );
 
   const {
     parsedJD,
@@ -101,8 +116,6 @@ export const ArxJDUploadModal = ({
     }
   };
 
-
-
   // Function to fetch job data for editing
   const fetchJobData = async () => {
     if (!projectIdToFetch || !isEditMode || jobDataFetchedRef.current) return;
@@ -132,13 +145,16 @@ export const ArxJDUploadModal = ({
 
         // Get chat flow order preferences
         const chatFlowOrder = jobData.chatFlowOrder || [];
-        const hasVideoInterview = chatFlowOrder.includes('startVideoInterviewChat');
-        const hasMeetingScheduling = chatFlowOrder.includes('startMeetingSchedulingChat');
+        const hasVideoInterview = chatFlowOrder.includes(
+          'startVideoInterviewChat',
+        );
+        const hasMeetingScheduling = chatFlowOrder.includes(
+          'startMeetingSchedulingChat',
+        );
 
         // Get questions
-        const chatQuestions = jobData.questions?.edges?.map(
-          (edge: any) => edge.node.name
-        ) || [];
+        const chatQuestions =
+          jobData.questions?.edges?.map((edge: any) => edge.node.name) || [];
 
         // Get meeting schedule info
         const meetingType = 'online';
@@ -170,7 +186,10 @@ export const ArxJDUploadModal = ({
             remoteWork: false,
             salaryRange: null,
           };
-          console.log('Using existing job data for parsedJobDescription (edit mode):', parsedJobDescription);
+          console.log(
+            'Using existing job data for parsedJobDescription (edit mode):',
+            parsedJobDescription,
+          );
         }
 
         // Fetch assistant threads for this project (app-owned relation, not on Project)
@@ -216,7 +235,10 @@ export const ArxJDUploadModal = ({
         const assistantThreadId = assistantThreads[0]?.id;
 
         // Create a parsed JD from the job data
-        console.log('Creating parsedData with assistantThreadId:', assistantThreadId);
+        console.log(
+          'Creating parsedData with assistantThreadId:',
+          assistantThreadId,
+        );
         const parsedData = createDefaultParsedJD({
           id: jobData.id,
           name: jobData.name || '',
@@ -258,7 +280,6 @@ export const ArxJDUploadModal = ({
         setTimeout(() => {
           resetFormStepper(0);
         }, 0);
-
       } else {
         setLoadError('Could not find the job data');
       }
@@ -296,7 +317,15 @@ export const ArxJDUploadModal = ({
 
     // Update the previous state ref
     prevOpenStateRef.current = isArxUploadJDModalOpen;
-  }, [isArxUploadJDModalOpen, resetUploadState, isEditMode, projectIdToFetch, fetchJobData, setParsedJD, setParsedJDInternalState]);
+  }, [
+    isArxUploadJDModalOpen,
+    resetUploadState,
+    isEditMode,
+    projectIdToFetch,
+    fetchJobData,
+    setParsedJD,
+    setParsedJDInternalState,
+  ]);
 
   // Separate effect to reset the form stepper only after the first render
   // This prevents circular dependencies with Jotai state updates
@@ -351,8 +380,15 @@ export const ArxJDUploadModal = ({
   }
 
   // Determine modal title based on mode
-  const modalTitle = isEditMode ? "Edit Project Details" : "Upload Project Description";
-  console.log('ArxJDUploadModal - modalTitle:', modalTitle, 'isEditMode:', isEditMode);
+  const modalTitle = isEditMode
+    ? 'Edit Project Details'
+    : 'Upload Project Description';
+  console.log(
+    'ArxJDUploadModal - modalTitle:',
+    modalTitle,
+    'isEditMode:',
+    isEditMode,
+  );
 
   return (
     <ArxJDUploadDropzone

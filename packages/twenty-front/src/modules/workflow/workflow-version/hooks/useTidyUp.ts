@@ -12,7 +12,7 @@ export const useTidyUp = () => {
   );
 
   const { tidyUpWorkflowVersion } = useTidyUpWorkflowVersion();
-  const workflowVersionId = useAtomComponentStateValue(
+  const workflowVisualizerWorkflowVersionId = useAtomComponentStateValue(
     workflowVisualizerWorkflowVersionIdComponentState,
   );
 

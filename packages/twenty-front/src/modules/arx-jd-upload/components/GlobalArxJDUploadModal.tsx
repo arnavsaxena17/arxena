@@ -8,9 +8,7 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 
 // Mount once at app level so nav "+" (and other openers) work on any route
 export const GlobalArxJDUploadModal = () => {
-  const isArxUploadJDModalOpen = useAtomStateValue(
-    isArxUploadJDModalOpenState,
-  );
+  const isArxUploadJDModalOpen = useAtomStateValue(isArxUploadJDModalOpenState);
   const arxUploadJDModalMode = useAtomStateValue(arxUploadJDModalModeState);
   const projectId = useAtomStateValue(projectIdAtom);
 
@@ -21,9 +19,7 @@ export const GlobalArxJDUploadModal = () => {
   return (
     <ArxJDUploadModal
       objectNameSingular="project"
-      objectRecordId={
-        arxUploadJDModalMode === 'edit' ? projectId || '0' : ''
-      }
+      objectRecordId={arxUploadJDModalMode === 'edit' ? projectId || '0' : ''}
     />
   );
 };

@@ -4,13 +4,30 @@ import { type WorkspaceEntity } from 'src/engine/core-modules/workspace/workspac
 import { OutreachDraftTemplateService } from 'src/engine/core-modules/outreach-command/services/outreach-draft-template.service';
 import { type GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 
-const buildService = (companyDomain: string | null = 'www.acme.com') =>
-  new OutreachDraftTemplateService(
-    {} as GlobalWorkspaceOrmManager,
-    {
-      findOne: jest.fn().mockResolvedValue({ id: 'workspace', companyDomain }),
-    } as unknown as Repository<WorkspaceEntity>,
-  );
+const buildService = ({
+  companyDomain = 'www.acme.com',
+  memberEmails = [],
+}: {
+  companyDomain?: string | null;
+  memberEmails?: Array<string | null>;
+} = {}) => {
+  const globalWorkspaceOrmManager = {
+    executeInWorkspaceContext: jest.fn(async (callback: () => unknown) =>
+      callback(),
+    ),
+    getRepository: jest.fn().mockResolvedValue({
+      find: jest
+        .fn()
+        .mockResolvedValue(memberEmails.map((userEmail) => ({ userEmail }))),
+      findOne: jest.fn().mockResolvedValue(null),
+      update: jest.fn(),
+    }),
+  } as unknown as GlobalWorkspaceOrmManager;
+
+  return new OutreachDraftTemplateService(globalWorkspaceOrmManager, {
+    findOne: jest.fn().mockResolvedValue({ id: 'workspace', companyDomain }),
+  } as unknown as Repository<WorkspaceEntity>);
+};
 
 const FULL_INPUT = {
   personFirstName: 'Priya',
@@ -67,7 +84,44 @@ describe('OutreachDraftTemplateService.render', () => {
   });
 
   it('should fail when the workspace has no website but the template uses it', async () => {
-    const result = await buildService(null).render({
+    const result = await buildService({ companyDomain: null }).render({
+      workspaceId: 'workspace',
+      input: {
+        ...FULL_INPUT,
+        templateKey: 'firstMessage',
+        template: 'Visit {{sender.website}}',
+      },
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Sender Website is empty');
+  });
+
+  it('should fall back to a member work-email domain when companyDomain is empty', async () => {
+    const result = await buildService({
+      companyDomain: null,
+      memberEmails: ['arnav@gmail.com', 'arnav@arxena.com'],
+    }).render({
+      workspaceId: 'workspace',
+      input: {
+        ...FULL_INPUT,
+        templateKey: 'firstMessage',
+        template: 'Visit {{sender.website}}',
+      },
+    });
+
+    expect(result).toEqual({
+      success: true,
+      message: 'Visit arxena.com',
+      error: '',
+    });
+  });
+
+  it('should ignore free-mail domains when falling back for sender website', async () => {
+    const result = await buildService({
+      companyDomain: null,
+      memberEmails: ['arnav@gmail.com'],
+    }).render({
       workspaceId: 'workspace',
       input: {
         ...FULL_INPUT,

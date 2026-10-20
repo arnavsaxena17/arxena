@@ -35,6 +35,7 @@ describe('skill library', () => {
       'setup',
       'sourcing',
       'spreadsheet-import',
+      'validate-profiles',
       'view-building',
       'view-filters-and-sorts',
       'workflow-building',
@@ -194,8 +195,9 @@ describe('skill front matter and playbooks', () => {
     }
   });
 
-  it('should have no playbook files', () => {
-    expect(listPlaybookNames()).toEqual([]);
+  it('should auto-register playbook files with front matter', () => {
+    expect(listPlaybookNames()).toEqual(['validate-profiles']);
+    expect(listRoutedSkillNames()).toContain('validate-profiles');
     expect(listRoutedSkillNames()).not.toContain('find-role-at-companies');
   });
 
@@ -229,7 +231,9 @@ describe('skill front matter and playbooks', () => {
       },
     });
 
-    expect(lines).toContain('. SUFFIX-A. Keep LinkedIn sourcing on `sourcing`.');
+    expect(lines).toContain(
+      '. SUFFIX-A. Keep LinkedIn sourcing on `sourcing`.',
+    );
     expect(lines).toContain('. SUFFIX-B.');
   });
 

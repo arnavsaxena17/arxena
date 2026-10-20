@@ -21,6 +21,8 @@ Use this skill when the user wants to **filter, classify, or enrich the people o
 - "number of employees in each company in the list"
 - "mark which of these are in fintech", "what department is each person in"
 
+**Authentic / real / worthy / validate / clean up fakes** on the People tab is not this skill: `load_skills(["validate-profiles"])` (fetch full profiles, then fitment). Do not design an authenticity column on name, title and company alone.
+
 Do **not** use `sourcing` to re-source the list, and do **not** page through `find_many_*` to read it. The list the user means is the **project working set**. Do **not** design the column's data types yourself: the server does that with the AI filtering design call.
 
 **Sourcing a list against criteria** is a fitment column, not a designed one: pass `fitment` to `preview_ai_column` instead of `description`, as the `sourcing` skill's `scoring` section describes. The columns `fitmentOutcome`, `fitmentScore` and `fitmentReason` are computed in code.
@@ -43,7 +45,12 @@ Do **not** use `sourcing` to re-source the list, and do **not** page through `fi
 
 7. **Filter and sort, only when the request asks for it** (see the next section): once the column is filled, call `generate_table_view({ projectId, tab: <the active tab>, description: "<the user's request in their words>" })`, then `apply_table_view` with its result unchanged.
 
-Tools: `learn_tools({ toolNames: ["get_outreach_working_set", "preview_ai_column", "preview_sample_message_column", "run_ai_column", "get_ai_column_run_status", "cancel_ai_column_run", "generate_table_view", "apply_table_view"] })` once, before the first call.
+Tools: `learn_tools({ toolNames: ["get_outreach_working_set", "preview_ai_column", "preview_sample_message_column", "run_ai_column", "get_ai_column_run_status", "cancel_ai_column_run", "remove_ai_column", "generate_table_view", "apply_table_view"] })` once, before the first call.
+
+## Remove / undo a column
+
+- **Delete named columns:** `remove_ai_column({ projectId, subject, columnKeys: ["isCeo"] })` strips the value keys and `otherFields.aiColumns` meta from every working-set row (ephemeral + CRM). Prefer keys from `get_outreach_working_set.aiColumns`. This does **not** restore earlier cell values if the column was reused and overwritten.
+- **Undo this chat's AI column work:** the Ask AI side panel **Undo** control (or the `undoChatOutreach` mutation) removes every column this thread's successful `run_ai_column` calls wrote and clears any `apply_table_view` it applied. It does not undo upserts, enrollments, sends, or profile fetches.
 
 ## One column per fact: reuse before you create
 
@@ -114,3 +121,5 @@ The answer is written as a **new key in `otherFields`** of every row, next to ex
 - Create a column for a fact an existing column already holds (see **One column per fact**), or filter on a duplicate
 - Skip `learn_tools` before the first call
 - Apply a filter or sort when the user only asked for data, or apply one built from a column that does not exist
+- Call `remove_ai_column` unless the user asked to delete / undo / drop the column (or to undo this chat's column work)
+- Judge profile authenticity or worthiness from snapshot fields alone — use `validate-profiles` instead

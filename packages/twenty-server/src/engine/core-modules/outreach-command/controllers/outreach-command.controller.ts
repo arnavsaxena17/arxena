@@ -609,6 +609,58 @@ export class OutreachCommandController {
     }
   }
 
+  @Post('ai-column/remove')
+  async removeAiColumns(
+    @Body()
+    body: {
+      projectId?: string;
+      subject?: 'person' | 'company';
+      columnKeys?: string[];
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    const projectId = body?.projectId;
+    const columnKeys = Array.isArray(body?.columnKeys) ? body.columnKeys : [];
+    const subject = body?.subject === 'company' ? 'company' : 'person';
+
+    if (!isDefined(projectId) || projectId === 'project-id') {
+      throw new HttpException('projectId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    if (columnKeys.length === 0) {
+      throw new HttpException('columnKeys is required', HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      const removed = await this.outreachWorkingSetService.removeAiColumns({
+        workspaceId,
+        projectId,
+        subject,
+        columnKeys,
+      });
+
+      return { success: true, ...removed };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      this.logger.error('Remove AI column failed', error);
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Remove AI column failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Post('working-set/patch-other-fields')
   async patchWorkingSetOtherFields(
     @Body()

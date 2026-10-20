@@ -168,18 +168,34 @@ export class SystemPromptBuilderService {
       workspaceInstructions,
       includeBrowsingContext: true,
     });
+    console.log('contextSection content:', contextSection);
+
     if (contextSection) {
       parts.push(contextSection);
     }
 
-    parts.push(this.buildToolCatalogSection(toolCatalog, preloadedTools));
-    parts.push(this.buildSkillCatalogSection(skillCatalog));
+    const toolCatalogSection = this.buildToolCatalogSection(
+      toolCatalog,
+      preloadedTools,
+    );
+    console.log('toolCatalogSection content:', toolCatalogSection);
+
+    const skillCatalogSection = this.buildSkillCatalogSection(skillCatalog);
+    console.log('skillCatalogSection content:', skillCatalogSection);
+
+    parts.push(toolCatalogSection);
+    parts.push(skillCatalogSection);
 
     if (storedFiles && storedFiles.length > 0) {
-      parts.push(this.buildUploadedFilesSection(storedFiles));
+      const uploadedFilesSection = this.buildUploadedFilesSection(storedFiles);
+      console.log('uploadedFilesSection content:', uploadedFilesSection);
+      parts.push(uploadedFilesSection);
     }
 
-    return parts.join('\n');
+    const fullPrompt = parts.join('\n');
+    console.log('fullPrompt content:', fullPrompt);
+
+    return fullPrompt;
   }
 
   async buildMcpInstructions({
@@ -435,81 +451,10 @@ export class SystemPromptBuilderService {
     preloadedTools: string[],
     excludeTools?: Set<string>,
   ): string {
-    const filteredCatalog = excludeTools
-      ? toolCatalog.filter((entry) => !excludeTools.has(entry.name))
-      : toolCatalog;
-
-    const filteredPreloaded = excludeTools
-      ? preloadedTools.filter((name) => !excludeTools.has(name))
-      : preloadedTools;
-
-    const preloadedSet = new Set(filteredPreloaded);
-    const toolsByCategory = new Map<string, ToolIndexEntry[]>();
-
-    for (const tool of filteredCatalog) {
-      const existing = toolsByCategory.get(tool.category) ?? [];
-
-      existing.push(tool);
-      toolsByCategory.set(tool.category, existing);
-    }
-
-    const sections: string[] = [];
-    const preloadedList =
-      filteredPreloaded.length > 0
-        ? filteredPreloaded.map((toolName) => `- \`${toolName}\` ✓`).join('\n')
-        : '(none)';
-
-    sections.push(`
-      ## Available Tools
-
-      You have access to ${filteredCatalog.length} tools via \`learn_tools\` / \`execute_tool\`. They are NOT bound as top-level MCP tools.
-      Construct CRUD names from the grammar below. Load a skill for GTM/workflow/metadata tool names.
-
-      ### Pre-loaded Tools (ready to use now)
-      ${preloadedList}`);
-
-    const crudTools = toolsByCategory.get(ToolCategory.DATABASE_CRUD);
-
-    if (crudTools && crudTools.length > 0) {
-      sections.push(
-        this.buildDatabaseCrudCatalogSection(
-          crudTools,
-          preloadedSet,
-          this.getCategoryLabel(ToolCategory.DATABASE_CRUD),
-        ),
-      );
-    }
-
-    const arxenaTools = toolsByCategory.get(ToolCategory.ARXENA);
-
-    if (arxenaTools && arxenaTools.length > 0) {
-      sections.push(this.buildArxenaCatalogSection(arxenaTools.length));
-    }
-
-    const categoryOrder = Object.values(ToolCategory).filter(
-      (category) =>
-        category !== ToolCategory.DATABASE_CRUD &&
-        category !== ToolCategory.ARXENA,
-    );
-
-    for (const category of categoryOrder) {
-      const tools = toolsByCategory.get(category);
-
-      if (!tools || tools.length === 0) {
-        continue;
-      }
-
-      sections.push(
-        this.buildGenericCategoryCatalogSection(category, tools, preloadedSet),
-      );
-    }
-
-    sections.push(`
-      ### How to Use Tools
-      1. **Pre-loaded tools** (marked with ✓): Use directly
-      2. **Other tools**: First call \`${LEARN_TOOLS_TOOL_NAME}({toolNames: ["tool_name"]})\` to learn the schema, then call \`${EXECUTE_TOOL_TOOL_NAME}({toolName: "tool_name", arguments: {...}})\` to run it`);
-
-    return sections.join('\n');
+    return this.buildToolCatalogSection(toolCatalog, preloadedTools, {
+      excludeTools,
+      intro: 'mcp',
+    });
   }
 
   private buildGenericCategoryCatalogSection(
@@ -568,36 +513,54 @@ export class SystemPromptBuilderService {
   buildToolCatalogSection(
     toolCatalog: ToolIndexEntry[],
     preloadedTools: string[],
+    options?: {
+      excludeTools?: Set<string>;
+      intro?: 'chat' | 'mcp';
+    },
   ): string {
-    const preloadedSet = new Set(preloadedTools);
+    const excludeTools = options?.excludeTools;
+    const intro = options?.intro ?? 'chat';
 
+    const filteredCatalog = excludeTools
+      ? toolCatalog.filter((entry) => !excludeTools.has(entry.name))
+      : toolCatalog;
+    const filteredPreloaded = excludeTools
+      ? preloadedTools.filter((name) => !excludeTools.has(name))
+      : preloadedTools;
+
+    const preloadedSet = new Set(filteredPreloaded);
     const toolsByCategory = new Map<string, ToolIndexEntry[]>();
 
-    for (const tool of toolCatalog) {
-      const category = tool.category;
-      const existing = toolsByCategory.get(category) ?? [];
+    for (const tool of filteredCatalog) {
+      const existing = toolsByCategory.get(tool.category) ?? [];
 
       existing.push(tool);
-      toolsByCategory.set(category, existing);
+      toolsByCategory.set(tool.category, existing);
     }
 
-    const sections: string[] = [];
-
     const preloadedList =
-      preloadedTools.length > 0
-        ? preloadedTools.map((toolName) => `- \`${toolName}\` ✓`).join('\n')
+      filteredPreloaded.length > 0
+        ? filteredPreloaded.map((toolName) => `- \`${toolName}\` ✓`).join('\n')
         : '(none)';
 
-    sections.push(`
+    const introLead =
+      intro === 'mcp'
+        ? `You have access to ${filteredCatalog.length} tools via \`learn_tools\` / \`execute_tool\`. They are NOT bound as top-level MCP tools.
+      Construct CRUD names from the grammar below. Load a skill for GTM/workflow/metadata tool names.`
+        : `You have access to ${filteredCatalog.length} tools. Some are pre-loaded and ready to use immediately.
+      To use any other tool, first call \`${LEARN_TOOLS_TOOL_NAME}\` to learn its schema, then call \`${EXECUTE_TOOL_TOOL_NAME}\` to run it.`;
+
+    const sections: string[] = [
+      `
       ## Available Tools
 
-      You have access to ${toolCatalog.length} tools. Some are pre-loaded and ready to use immediately.
-      To use any other tool, first call \`${LEARN_TOOLS_TOOL_NAME}\` to learn its schema, then call \`${EXECUTE_TOOL_TOOL_NAME}\` to run it.
+      ${introLead}
 
       ### Pre-loaded Tools (ready to use now)
-      ${preloadedList}
-
-      ### Tool Catalog by Category`);
+      ${preloadedList}${
+        intro === 'chat' ? '\n\n      ### Tool Catalog by Category' : ''
+      }`,
+    ];
 
     const crudTools = toolsByCategory.get(ToolCategory.DATABASE_CRUD);
 

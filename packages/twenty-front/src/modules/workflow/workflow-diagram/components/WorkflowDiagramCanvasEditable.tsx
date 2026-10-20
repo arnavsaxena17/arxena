@@ -54,7 +54,7 @@ export const WorkflowDiagramCanvasEditable = () => {
     workflowVisualizerWorkflowIdComponentState,
   );
 
-  const workflowVersionId = useAtomComponentStateValue(
+  const workflowVisualizerWorkflowVersionId = useAtomComponentStateValue(
     workflowVisualizerWorkflowVersionIdComponentState,
   );
 

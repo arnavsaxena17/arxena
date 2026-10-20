@@ -15,7 +15,7 @@ import * as XLSX from 'xlsx';
 
 export const ArxDownloadAsExcelCommand = () => {
   const tableState = useAtomStateValue(tableStateAtom);
-  const journeySummaryState = useAtomStateValue(candidateJourneySummaryState);
+  const candidateJourneySummary = useAtomStateValue(candidateJourneySummaryState);
   const { isConfirmed, handleCancel, handleConfirm } =
     useArxCommandConfirmationFlow(ARX_DOWNLOAD_EXCEL_MODAL_ID);
   const {

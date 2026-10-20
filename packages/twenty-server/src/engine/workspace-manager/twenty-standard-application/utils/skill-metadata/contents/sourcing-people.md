@@ -79,7 +79,7 @@ Follow **Ephemeral write contract** (the head of this skill). Steps:
 1. Dedupe on **email** first, then **LinkedIn URL**, then normalized name + company.
 2. `save_outreach_targets_to_crm` with `target: "people"`. Omit ids to save the whole tab. This creates Person records and does not start outreach.
 3. **LinkedIn results** are in a list (see **Result lists**): `outreach_list` `save_to_crm` is the same write. Do not parse the rows yourself.
-4. Start outreach only after those records exist, and only when the user asks: load `outreach`.
+4. Start outreach only after those records exist, and only when the user asks: `load_skills(["outreach"])`.
 
 ### People constraints
 

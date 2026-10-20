@@ -10,6 +10,7 @@ import { OutreachCompaniesCacheService } from 'src/engine/core-modules/outreach-
 import { OutreachPeopleCacheService } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
 import { resolvePeopleCompanyIds } from 'src/engine/core-modules/outreach-command/utils/resolve-people-company-ids.util';
 import { buildPeopleFoundValues } from 'src/engine/core-modules/outreach-command/utils/outreach-people-found.util';
+import { stripAiColumnKeys } from 'src/engine/core-modules/outreach-command/utils/strip-ai-column-keys.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
@@ -264,6 +265,83 @@ export class OutreachWorkingSetService {
     subject: OutreachWorkingSetSubject;
     valuesByRowId: Map<string, Record<string, unknown>>;
   }): Promise<{ ephemeralUpdated: number; crmUpdated: number }> {
+    return this.enqueueOtherFieldsWrite(args, 'merge');
+  }
+
+  // Drops AI column value keys and their aiColumns meta from every row in
+  // the project working set (ephemeral Find list + CRM).
+  async removeAiColumns({
+    workspaceId,
+    projectId,
+    subject,
+    columnKeys,
+  }: {
+    workspaceId: string;
+    projectId: string;
+    subject: OutreachWorkingSetSubject;
+    columnKeys: string[];
+  }): Promise<{
+    ephemeralUpdated: number;
+    crmUpdated: number;
+    columnKeys: string[];
+    rowsTouched: number;
+  }> {
+    const keys = [
+      ...new Set(columnKeys.filter((key) => isNonEmptyString(key))),
+    ];
+
+    if (keys.length === 0) {
+      return {
+        ephemeralUpdated: 0,
+        crmUpdated: 0,
+        columnKeys: [],
+        rowsTouched: 0,
+      };
+    }
+
+    const rows = await this.getAll({ workspaceId, projectId, subject });
+    const valuesByRowId = new Map<string, Record<string, unknown>>();
+
+    for (const row of rows) {
+      const stripped = stripAiColumnKeys(row.otherFields, keys);
+
+      if (!isDefined(stripped)) {
+        continue;
+      }
+
+      valuesByRowId.set(row.id, stripped);
+    }
+
+    if (valuesByRowId.size === 0) {
+      return {
+        ephemeralUpdated: 0,
+        crmUpdated: 0,
+        columnKeys: keys,
+        rowsTouched: 0,
+      };
+    }
+
+    const written = await this.enqueueOtherFieldsWrite(
+      { workspaceId, projectId, subject, valuesByRowId },
+      'replace',
+    );
+
+    return {
+      ...written,
+      columnKeys: keys,
+      rowsTouched: valuesByRowId.size,
+    };
+  }
+
+  private enqueueOtherFieldsWrite(
+    args: {
+      workspaceId: string;
+      projectId: string;
+      subject: OutreachWorkingSetSubject;
+      valuesByRowId: Map<string, Record<string, unknown>>;
+    },
+    mode: 'merge' | 'replace',
+  ): Promise<{ ephemeralUpdated: number; crmUpdated: number }> {
     // Each write reads and rewrites the whole ephemeral list, so concurrent
     // writes to one project (25 companies finishing together) would overwrite
     // each other; they run one after another instead.
@@ -271,7 +349,7 @@ export class OutreachWorkingSetService {
     const previous = this.writeQueues.get(key) ?? Promise.resolve();
     const run = previous
       .catch(() => undefined)
-      .then(() => this.writeOtherFieldsNow(args));
+      .then(() => this.writeOtherFieldsNow(args, mode));
     const tail = run.catch(() => undefined);
 
     this.writeQueues.set(key, tail);
@@ -286,17 +364,20 @@ export class OutreachWorkingSetService {
 
   private readonly writeQueues = new Map<string, Promise<unknown>>();
 
-  private async writeOtherFieldsNow({
-    workspaceId,
-    projectId,
-    subject,
-    valuesByRowId,
-  }: {
-    workspaceId: string;
-    projectId: string;
-    subject: OutreachWorkingSetSubject;
-    valuesByRowId: Map<string, Record<string, unknown>>;
-  }): Promise<{ ephemeralUpdated: number; crmUpdated: number }> {
+  private async writeOtherFieldsNow(
+    {
+      workspaceId,
+      projectId,
+      subject,
+      valuesByRowId,
+    }: {
+      workspaceId: string;
+      projectId: string;
+      subject: OutreachWorkingSetSubject;
+      valuesByRowId: Map<string, Record<string, unknown>>;
+    },
+    mode: 'merge' | 'replace' = 'merge',
+  ): Promise<{ ephemeralUpdated: number; crmUpdated: number }> {
     if (valuesByRowId.size === 0) {
       return { ephemeralUpdated: 0, crmUpdated: 0 };
     }
@@ -307,8 +388,13 @@ export class OutreachWorkingSetService {
           workspaceId,
           projectId,
           valuesByRowId,
+          mode,
         ),
-        crmUpdated: await this.writeCompanies(workspaceId, valuesByRowId),
+        crmUpdated: await this.writeCompanies(
+          workspaceId,
+          valuesByRowId,
+          mode,
+        ),
       };
     }
 
@@ -316,8 +402,13 @@ export class OutreachWorkingSetService {
       workspaceId,
       projectId,
       valuesByRowId,
+      mode,
     );
-    const crmUpdated = await this.writeCandidates(workspaceId, valuesByRowId);
+    const crmUpdated = await this.writeCandidates(
+      workspaceId,
+      valuesByRowId,
+      mode,
+    );
 
     return { ephemeralUpdated, crmUpdated };
   }
@@ -576,10 +667,21 @@ export class OutreachWorkingSetService {
     );
   }
 
+  private applyOtherFields(
+    existing: unknown,
+    values: Record<string, unknown>,
+    mode: 'merge' | 'replace',
+  ): Record<string, unknown> {
+    return mode === 'replace'
+      ? values
+      : mergeOtherFieldValues(existing, values);
+  }
+
   private async writeEphemeralPeople(
     workspaceId: string,
     projectId: string,
     valuesByRowId: Map<string, Record<string, unknown>>,
+    mode: 'merge' | 'replace' = 'merge',
   ): Promise<number> {
     const payload = await this.outreachPeopleCacheService.get(
       workspaceId,
@@ -602,7 +704,7 @@ export class OutreachWorkingSetService {
 
       return {
         ...person,
-        otherFields: mergeOtherFieldValues(person.otherFields, values),
+        otherFields: this.applyOtherFields(person.otherFields, values, mode),
       };
     });
 
@@ -617,6 +719,7 @@ export class OutreachWorkingSetService {
     workspaceId: string,
     projectId: string,
     valuesByRowId: Map<string, Record<string, unknown>>,
+    mode: 'merge' | 'replace' = 'merge',
   ): Promise<number> {
     const payload = await this.outreachCompaniesCacheService.get(
       workspaceId,
@@ -639,7 +742,7 @@ export class OutreachWorkingSetService {
 
       return {
         ...company,
-        otherFields: mergeOtherFieldValues(company.otherFields, values),
+        otherFields: this.applyOtherFields(company.otherFields, values, mode),
       };
     });
 
@@ -657,6 +760,7 @@ export class OutreachWorkingSetService {
   private async writeCompanies(
     workspaceId: string,
     valuesByRowId: Map<string, Record<string, unknown>>,
+    mode: 'merge' | 'replace' = 'merge',
   ): Promise<number> {
     const authContext = buildSystemAuthContext(workspaceId);
 
@@ -686,7 +790,11 @@ export class OutreachWorkingSetService {
           }
 
           await companyRepository.update(company.id, {
-            otherFields: mergeOtherFieldValues(company.otherFields, values),
+            otherFields: this.applyOtherFields(
+              company.otherFields,
+              values,
+              mode,
+            ),
           } as QueryDeepPartialEntity<CompanyRecord>);
         }
 
@@ -699,6 +807,7 @@ export class OutreachWorkingSetService {
   private async writeCandidates(
     workspaceId: string,
     valuesByRowId: Map<string, Record<string, unknown>>,
+    mode: 'merge' | 'replace' = 'merge',
   ): Promise<number> {
     const authContext = buildSystemAuthContext(workspaceId);
 
@@ -729,7 +838,11 @@ export class OutreachWorkingSetService {
           }
 
           await candidateRepository.update(candidate.id, {
-            otherFields: mergeOtherFieldValues(candidate.otherFields, values),
+            otherFields: this.applyOtherFields(
+              candidate.otherFields,
+              values,
+              mode,
+            ),
           } as QueryDeepPartialEntity<CandidateRecord>);
         }
 

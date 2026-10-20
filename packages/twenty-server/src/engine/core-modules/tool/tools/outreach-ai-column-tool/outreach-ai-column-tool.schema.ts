@@ -290,3 +290,32 @@ export const ApplyOutreachTableViewInputZodSchema = z.object({
     .optional()
     .describe('true removes every filter and the sort'),
 });
+
+export const RemoveOutreachAiColumnInputZodSchema = z.object({
+  projectId: z.string().describe('Project id from the outreach browsing context'),
+  subject: subjectSchema,
+  columnKeys: z
+    .array(z.string().min(1))
+    .min(1)
+    .describe(
+      'AI column keys to remove from every working-set row (value + aiColumns meta). Use keys from get_outreach_working_set.aiColumns.',
+    ),
+});
+
+export type RemoveOutreachAiColumnInput = z.infer<
+  typeof RemoveOutreachAiColumnInputZodSchema
+>;
+
+export const UndoChatOutreachInputZodSchema = z.object({
+  threadId: z
+    .string()
+    .uuid()
+    .optional()
+    .describe(
+      'Ask AI chat thread id to revert. Defaults to the current chat thread when omitted.',
+    ),
+});
+
+export type UndoChatOutreachInput = z.infer<
+  typeof UndoChatOutreachInputZodSchema
+>;

@@ -18,14 +18,18 @@ import { parsedJDInternalState } from '../states/arxJDFormStepperState';
 
 export const useParsedJDState = (): [
   ParsedJD | null,
-  (value: ParsedJD | null | ((prev: ParsedJD | null) => ParsedJD | null)) => void,
+  (
+    value: ParsedJD | null | ((prev: ParsedJD | null) => ParsedJD | null),
+  ) => void,
 ] => {
   const parsedJDInternal = useAtomStateValue(parsedJDInternalState);
   const setParsedJDInternal = useSetAtomState(parsedJDInternalState);
   const arxUploadJDModalMode = useAtomStateValue(arxUploadJDModalModeState);
   const isArxUploadJDModalOpen = useAtomStateValue(isArxUploadJDModalOpenState);
   const projectId = useAtomStateValue(projectIdAtom);
-  const projects = useAtomStateValue(projectsState) as ProjectForParsedJDMerge[];
+  const projects = useAtomStateValue(
+    projectsState,
+  ) as ProjectForParsedJDMerge[];
 
   const parsedJD = useMemo(
     () =>

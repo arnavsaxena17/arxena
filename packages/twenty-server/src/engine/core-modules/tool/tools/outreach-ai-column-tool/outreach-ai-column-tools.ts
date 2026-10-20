@@ -25,6 +25,7 @@ import {
   GenerateOutreachTableViewInputZodSchema,
   GetOutreachWorkingSetInputZodSchema,
   PreviewOutreachAiColumnInputZodSchema,
+  RemoveOutreachAiColumnInputZodSchema,
   RunOutreachAiColumnInputZodSchema,
 } from 'src/engine/core-modules/tool/tools/outreach-ai-column-tool/outreach-ai-column-tool.schema';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
@@ -441,6 +442,54 @@ export class CancelOutreachAiColumnRunTool implements Tool {
       message: `Cancel requested (${run.status}). Filled rows are kept.`,
       result: this.outreachAiColumnRunService.summarize(run),
     };
+  }
+}
+
+@Injectable()
+export class RemoveOutreachAiColumnTool implements Tool {
+  description = `Remove AI column(s) from every row in the project working set (ephemeral Find list + CRM). Deletes the value keys and otherFields.aiColumns meta. Use when the user asks to delete / undo / drop a column by name or key. Does not restore previous cell values if the column was reused and overwritten.`;
+
+  inputSchema = RemoveOutreachAiColumnInputZodSchema;
+
+  constructor(
+    private readonly outreachWorkingSetService: OutreachWorkingSetService,
+  ) {}
+
+  async execute(
+    parameters: ToolInput,
+    context: ToolExecutionContext,
+  ): Promise<ToolOutput> {
+    const parsed = RemoveOutreachAiColumnInputZodSchema.safeParse(parameters);
+
+    if (!parsed.success) {
+      return {
+        success: false,
+        message: 'Invalid remove_ai_column input',
+        error: parsed.error.message,
+      };
+    }
+
+    try {
+      const removed = await this.outreachWorkingSetService.removeAiColumns({
+        workspaceId: context.workspaceId,
+        ...parsed.data,
+      });
+
+      return {
+        success: true,
+        message:
+          removed.rowsTouched === 0
+            ? `No rows held column(s) ${removed.columnKeys.join(', ')}.`
+            : `Removed ${removed.columnKeys.join(', ')} from ${removed.rowsTouched} row(s) (${removed.ephemeralUpdated} ephemeral, ${removed.crmUpdated} CRM).`,
+        result: removed,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'remove_ai_column failed',
+        error: errorMessage(error),
+      };
+    }
   }
 }
 

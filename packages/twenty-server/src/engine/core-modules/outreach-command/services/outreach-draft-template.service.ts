@@ -18,6 +18,8 @@ import { type ObjectLiteral, Repository } from 'typeorm';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
+import { getDomainFromEmail } from 'src/utils/get-domain-from-email';
+import { isWorkEmail } from 'src/utils/is-work-email';
 
 export type OutreachDraftTemplates = Record<OutreachDraftTemplateKey, string>;
 export type OutreachDraftAttachments = Partial<
@@ -46,6 +48,7 @@ export type RenderOutreachDraftTemplateOutput = {
 type WorkspaceMemberDraftRecord = ObjectLiteral & {
   id: string;
   name?: { firstName?: string | null; lastName?: string | null } | null;
+  userEmail?: string | null;
   outreachDraftAttachments?: OutreachDraftAttachments | null;
 };
 
@@ -56,6 +59,17 @@ const joinName = (
   firstName: string | null | undefined,
   lastName: string | null | undefined,
 ): string => [firstName, lastName].filter(isNonEmptyString).join(' ').trim();
+
+// Matches GTM workspace bootstrap: only work emails, never free-mail providers.
+const domainFromWorkEmail = (email: string | null | undefined): string => {
+  const trimmed = email?.trim();
+
+  if (!isNonEmptyString(trimmed) || !isWorkEmail(trimmed)) {
+    return '';
+  }
+
+  return getDomainFromEmail(trimmed)?.toLowerCase() ?? '';
+};
 
 @Injectable()
 export class OutreachDraftTemplateService {
@@ -125,13 +139,27 @@ export class OutreachDraftTemplateService {
     return { success: true, message: rendered.message, error: '' };
   }
 
-  async getSenderWebsite(workspaceId: string): Promise<string> {
+  async getSenderWebsite(
+    workspaceId: string,
+    preferredEmail?: string | null,
+  ): Promise<string> {
     const workspace = await this.workspaceRepository.findOne({
       where: { id: workspaceId },
       select: ['id', 'companyDomain'],
     });
+    const fromWorkspace = workspace?.companyDomain?.trim() ?? '';
 
-    return workspace?.companyDomain?.trim() ?? '';
+    if (isNonEmptyString(fromWorkspace)) {
+      return fromWorkspace;
+    }
+
+    const fromPreferredEmail = domainFromWorkEmail(preferredEmail);
+
+    if (isNonEmptyString(fromPreferredEmail)) {
+      return fromPreferredEmail;
+    }
+
+    return this.getSenderWebsiteFromMemberWorkEmails(workspaceId);
   }
 
   async getDraftSettings({
@@ -161,7 +189,10 @@ export class OutreachDraftTemplateService {
       templates,
       attachments: member?.outreachDraftAttachments ?? {},
       senderName: joinName(member?.name?.firstName, member?.name?.lastName),
-      senderWebsite: await this.getSenderWebsite(workspaceId),
+      senderWebsite: await this.getSenderWebsite(
+        workspaceId,
+        member?.userEmail,
+      ),
     };
   }
 
@@ -245,6 +276,51 @@ export class OutreachDraftTemplateService {
       );
 
       return null;
+    }
+  }
+
+  // Send path has no signed-in member; pick any work-email domain on the workspace.
+  private async getSenderWebsiteFromMemberWorkEmails(
+    workspaceId: string,
+  ): Promise<string> {
+    try {
+      const emails =
+        await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+          async () => {
+            const repository =
+              await this.globalWorkspaceOrmManager.getRepository<{
+                userEmail?: string | null;
+              }>(workspaceId, 'workspaceMember', {
+                shouldBypassPermissionChecks: true,
+              });
+
+            const members = await repository.find({
+              select: ['userEmail'] as never,
+              take: 20,
+            });
+
+            return members.map((member) => member.userEmail);
+          },
+          buildSystemAuthContext(workspaceId),
+        );
+
+      for (const email of emails) {
+        const domain = domainFromWorkEmail(email);
+
+        if (isNonEmptyString(domain)) {
+          return domain;
+        }
+      }
+
+      return '';
+    } catch (error) {
+      this.logger.warn(
+        `workspaceMember emails unavailable for sender website: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+
+      return '';
     }
   }
 }

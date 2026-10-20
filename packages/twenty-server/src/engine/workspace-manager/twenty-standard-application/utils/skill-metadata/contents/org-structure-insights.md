@@ -16,7 +16,7 @@ This is **not** LinkedIn / Harvest sourcing (`sourcing`) and not outreach enroll
 
 ## When to load this skill
 
-Load `org-structure-insights` when:
+`load_skills(["org-structure-insights"])` when:
 
 - The user is on an org chart and asks to find, show, highlight, or map people or teams
 - Who-owns / buying-committee / budget-ownership guesses at a named company

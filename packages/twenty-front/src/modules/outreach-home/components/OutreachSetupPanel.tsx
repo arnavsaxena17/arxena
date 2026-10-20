@@ -21,6 +21,7 @@ import { OutreachSetupTeamSendingSection } from '@/outreach-home/components/Outr
 import { OutreachSetupDraftMessagesSection } from '@/outreach-home/components/OutreachSetupDraftMessagesSection';
 import { OutreachSetupSenderProfileSection } from '@/outreach-home/components/OutreachSetupSenderProfileSection';
 import {
+  type OutreachPersonRow,
   type OutreachSendMode,
   type OutreachWorkspaceCompany,
 } from '@/outreach-home/types/outreach-home.types';
@@ -270,6 +271,7 @@ type OutreachSetupPanelProps = {
   workspaceCompany: OutreachWorkspaceCompany;
   hasWorkspaceCompany: boolean;
   hasProject: boolean;
+  people: OutreachPersonRow[];
   sendTimezone: string;
   sendWindowStart: string;
   sendWindowEnd: string;
@@ -288,6 +290,7 @@ export const OutreachSetupPanel = ({
   workspaceCompany,
   hasWorkspaceCompany,
   hasProject,
+  people,
   sendTimezone,
   sendWindowStart,
   sendWindowEnd,
@@ -527,7 +530,7 @@ export const OutreachSetupPanel = ({
 
         <OutreachSetupSenderProfileSection />
 
-        <OutreachSetupDraftMessagesSection />
+        <OutreachSetupDraftMessagesSection people={people} />
 
         <OutreachSetupTeamSendingSection />
 

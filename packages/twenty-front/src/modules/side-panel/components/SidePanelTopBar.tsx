@@ -1,7 +1,9 @@
 import { SidePanelBackButton } from '@/side-panel/components/SidePanelBackButton';
 import { SidePanelPageInfo } from '@/side-panel/components/SidePanelPageInfo';
 import { SidePanelTopBarInputFocusEffect } from '@/side-panel/components/SidePanelTopBarInputFocusEffect';
+import { SidePanelCopyAiChatIdButton } from '@/side-panel/components/SidePanelCopyAiChatIdButton';
 import { SidePanelExpandAiChatButton } from '@/side-panel/components/SidePanelExpandAiChatButton';
+import { SidePanelUndoAiChatButton } from '@/side-panel/components/SidePanelUndoAiChatButton';
 import { SidePanelTopBarRightCornerIcon } from '@/side-panel/components/SidePanelTopBarRightCornerIcon';
 import { COMMAND_MENU_SIDE_PANEL_PAGES } from '@/side-panel/constants/CommandMenuSidePanelPages';
 import { SIDE_PANEL_FOCUS_ID } from '@/side-panel/constants/SidePanelFocusId';
@@ -212,6 +214,8 @@ export const SidePanelTopBar = () => {
       </StyledContentContainer>
       <StyledRightControlsContainer>
         <SidePanelTopBarRightCornerIcon />
+        <SidePanelUndoAiChatButton />
+        <SidePanelCopyAiChatIdButton />
         <SidePanelExpandAiChatButton />
         {!shouldHideCloseButton && (
           <IconButton

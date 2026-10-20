@@ -24,8 +24,11 @@ export const getCandidateProfileUrl = (candidateData: unknown): string => {
       ? (record.people as Record<string, unknown>)
       : undefined;
 
+  // CRM nodes use people.linkedinLink; table / outreach rows use linkedinUrl
+  // (string or Links field); some paths still set profileUrl / linkedin.
   const linkedin =
     readLinkUrl(people?.linkedinLink) ||
+    readLinkUrl(record.linkedinUrl) ||
     readLinkUrl(record.linkedin) ||
     readLinkUrl(record.profileUrl);
 

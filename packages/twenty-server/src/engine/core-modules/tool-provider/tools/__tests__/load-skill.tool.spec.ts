@@ -67,7 +67,7 @@ describe('load_skills', () => {
     expect(result.message).toContain('Unknown sections: nope');
   });
 
-  it('appends the LinkedIn status only for search and outreach', async () => {
+  it('appends the LinkedIn status only for sourcing and outreach', async () => {
     const resolveNote = jest.fn().mockResolvedValue('LinkedIn: connected');
     const tool = createLoadSkillTool(
       async (names) =>
@@ -79,12 +79,12 @@ describe('load_skills', () => {
               content: `${name} body`,
             }) as FlatSkill,
         ),
-      async () => ['search', 'outreach', 'crm'],
+      async () => ['sourcing', 'outreach', 'crm'],
       createLinkedinChannelSkillNote(resolveNote),
     );
 
     const result = await tool.execute({
-      skillNames: ['search', 'crm'],
+      skillNames: ['sourcing', 'crm'],
     });
 
     expect(resolveNote).toHaveBeenCalledTimes(1);

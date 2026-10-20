@@ -7,6 +7,7 @@ import { UnipilePoolModule } from 'src/engine/core-modules/arx-chat/unipile-pool
 import { WorkspaceDomainsModule } from 'src/engine/core-modules/domain/workspace-domains/workspace-domains.module';
 import { FileEntity } from 'src/engine/core-modules/file/entities/file.entity';
 import { FileModule } from 'src/engine/core-modules/file/file.module';
+import { OutreachCommandModule } from 'src/engine/core-modules/outreach-command/outreach-command.module';
 import { ThrottlerModule } from 'src/engine/core-modules/throttler/throttler.module';
 import { ToolProviderModule } from 'src/engine/core-modules/tool-provider/tool-provider.module';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
@@ -70,6 +71,7 @@ import { SystemPromptBuilderService } from './services/system-prompt-builder.ser
     WorkflowToolsModule,
     UnipilePoolModule,
     WorkspaceModificationsModule,
+    OutreachCommandModule,
   ],
   providers: [
     AgentChatCancelSubscriberService,

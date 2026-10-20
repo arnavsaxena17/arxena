@@ -30,7 +30,7 @@ export const OutreachSafeDashboardPath = ({
 
 const OutreachSafeDashboardPathWithQuery = ({
   children,
-}: OutreachSafeDashboardPathProps) => {
+}: OutreachSafeDashboardPathWithQueryProps) => {
   const { dashboardPath } = useOutreachCommandDashboardPath();
 
   return <>{children(dashboardPath)}</>;

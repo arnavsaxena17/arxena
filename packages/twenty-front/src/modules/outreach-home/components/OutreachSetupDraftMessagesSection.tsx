@@ -1,6 +1,6 @@
 import { styled } from '@linaria/react';
 import { isNonEmptyString } from '@sniptt/guards';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   OUTREACH_DRAFT_DEFAULT_TEMPLATES,
   OUTREACH_DRAFT_TEMPLATE_KEYS,
@@ -14,7 +14,7 @@ import {
 } from 'twenty-shared/arx';
 import { isDefined } from 'twenty-shared/utils';
 import { type WorkflowEmailFiles } from 'twenty-shared/workflow';
-import { Button, SegmentedControl } from 'twenty-ui/input';
+import { Button, SegmentedControl, type SelectOption } from 'twenty-ui/input';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { WorkflowSendEmailAttachments } from '@/advanced-text-editor/components/WorkflowSendEmailAttachments';
@@ -22,12 +22,14 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { OutreachDraftTemplateEditor } from '@/outreach-home/components/OutreachDraftTemplateEditor';
 import { OutreachSetupSectionCard } from '@/outreach-home/components/OutreachSetupSectionCard';
 import { useOutreachWorkflowEmbed } from '@/outreach-home/hooks/useOutreachWorkflowEmbed';
+import { type OutreachPersonRow } from '@/outreach-home/types/outreach-home.types';
 import {
   fetchOutreachDraftSettings,
   saveOutreachDraftSettings,
   type OutreachDraftSettings,
 } from '@/outreach-home/utils/outreach-draft-templates-api';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { Select } from '@/ui/input/components/Select';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useApplyOutreachSequencerGraphOptions } from '@/workflow/hooks/useApplyOutreachSequencerGraphOptions';
 import { useWorkflowWithCurrentVersion } from '@/workflow/hooks/useWorkflowWithCurrentVersion';
@@ -35,10 +37,17 @@ import { inferOutreachSequencerGraphOptionsFromSteps } from '@/workflow/utils/in
 
 type DraftMode = 'AI' | 'MANUAL';
 
+const SAMPLE_PREVIEW_PERSON_ID = '';
+
 // LinkedIn connection requests cannot carry files.
 const TEMPLATE_KEYS_WITHOUT_ATTACHMENTS: OutreachDraftTemplateKey[] = [
   'connectionNote',
 ];
+
+const SAMPLE_PREVIEW_PERSON_OPTION: SelectOption<string> = {
+  label: 'Sample prospect',
+  value: SAMPLE_PREVIEW_PERSON_ID,
+};
 
 const StyledMuted = styled.p`
   color: ${themeCssVariables.font.color.tertiary};
@@ -85,9 +94,24 @@ const StyledValidationList = styled.ul<{ isValid: boolean }>`
   padding-left: ${themeCssVariables.spacing[4]};
 `;
 
-const buildPreviewValues = (
-  settings: OutreachDraftSettings,
-): OutreachDraftTemplateValues => {
+const getPersonOptionLabel = (person: OutreachPersonRow): string => {
+  const fullName = person.name.trim();
+  const companyName = person.companyName.trim();
+
+  if (!isNonEmptyString(companyName)) {
+    return fullName;
+  }
+
+  return `${fullName} · ${companyName}`;
+};
+
+const buildPreviewValues = ({
+  settings,
+  person,
+}: {
+  settings: OutreachDraftSettings;
+  person: OutreachPersonRow | undefined;
+}): OutreachDraftTemplateValues => {
   const values: OutreachDraftTemplateValues = {};
 
   for (const variable of OUTREACH_DRAFT_VARIABLES) {
@@ -97,6 +121,14 @@ const buildPreviewValues = (
   // The sender is the real signed-in member; a blank value must surface as missing.
   values['sender.name'] = settings.senderName;
   values['sender.website'] = settings.senderWebsite;
+
+  if (isDefined(person)) {
+    const fullName = person.name.trim();
+
+    values['person.firstName'] = fullName.split(/\s+/)[0] ?? '';
+    values['person.fullName'] = fullName;
+    values['company.name'] = person.companyName.trim();
+  }
 
   return values;
 };
@@ -118,7 +150,13 @@ const renderPreview = (
   return renderOutreachDraftTemplate(template, valuesWithMarkers).message;
 };
 
-export const OutreachSetupDraftMessagesSection = () => {
+type OutreachSetupDraftMessagesSectionProps = {
+  people: OutreachPersonRow[];
+};
+
+export const OutreachSetupDraftMessagesSection = ({
+  people,
+}: OutreachSetupDraftMessagesSectionProps) => {
   const tokenPair = useAtomStateValue(tokenPairState);
   const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
   const { enqueueSuccessSnackBar, enqueueErrorSnackBar } = useSnackBar();
@@ -151,6 +189,9 @@ export const OutreachSetupDraftMessagesSection = () => {
   >({});
   const [isSaving, setIsSaving] = useState(false);
   const [isSwitchingMode, setIsSwitchingMode] = useState(false);
+  const [previewPersonId, setPreviewPersonId] = useState(
+    SAMPLE_PREVIEW_PERSON_ID,
+  );
 
   useEffect(() => {
     let isCancelled = false;
@@ -198,7 +239,23 @@ export const OutreachSetupDraftMessagesSection = () => {
     : null;
   const mode: DraftMode =
     currentOptions?.manualDraftTemplates === true ? 'MANUAL' : 'AI';
-  const previewValues = isDefined(settings) ? buildPreviewValues(settings) : {};
+  const previewPersonOptions = useMemo(
+    (): SelectOption<string>[] =>
+      people
+        .filter((person) => isNonEmptyString(person.name.trim()))
+        .map((person) => ({
+          label: getPersonOptionLabel(person),
+          value: person.id,
+        })),
+    [people],
+  );
+  const previewPerson = people.find((person) => person.id === previewPersonId);
+  const previewValues = isDefined(settings)
+    ? buildPreviewValues({ settings, person: previewPerson })
+    : {};
+  const previewLabel = isDefined(previewPerson)
+    ? `Preview (${previewPerson.name.trim()})`
+    : 'Preview (sample prospect)';
   const isDirty = drafts[activeKey] !== savedTemplates[activeKey];
   const validation = validations[activeKey];
   const canHaveAttachments =
@@ -405,7 +462,30 @@ export const OutreachSetupDraftMessagesSection = () => {
       </StyledFieldStack>
 
       <StyledFieldStack>
-        <StyledFieldLabel>Preview (sample prospect)</StyledFieldLabel>
+        <StyledFieldLabel>Preview as</StyledFieldLabel>
+        <Select<string>
+          dropdownId="outreach-draft-preview-person-select"
+          value={
+            isDefined(previewPerson)
+              ? previewPersonId
+              : SAMPLE_PREVIEW_PERSON_ID
+          }
+          onChange={setPreviewPersonId}
+          options={previewPersonOptions}
+          emptyOption={SAMPLE_PREVIEW_PERSON_OPTION}
+          fullWidth
+          selectSizeVariant="small"
+          withSearchInput
+          needIconCheck={false}
+          disabled={previewPersonOptions.length === 0}
+        />
+        {previewPersonOptions.length === 0 && (
+          <StyledMuted>
+            Add people to this project to preview messages with their names and
+            companies.
+          </StyledMuted>
+        )}
+        <StyledFieldLabel>{previewLabel}</StyledFieldLabel>
         <StyledPreview>
           {renderPreview(drafts[activeKey], previewValues)}
         </StyledPreview>

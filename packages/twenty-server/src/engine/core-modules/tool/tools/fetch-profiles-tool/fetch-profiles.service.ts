@@ -25,6 +25,8 @@ const DEFAULT_ROW_LIMIT = 100;
 const DEFAULT_TIME_BUDGET_MS = 75_000;
 const MAX_REPORTED_FAILURES = 10;
 
+export type FetchProfilesSource = 'bright_data' | 'harvest';
+
 export type FetchProfilesInput = {
   workspaceId: string;
   projectId: string;
@@ -34,6 +36,8 @@ export type FetchProfilesInput = {
   rowLimit?: number;
   // Fetch again rows that already have a profile
   refresh?: boolean;
+  // Default: Bright Data then Harvest. Pass ["bright_data"] to skip Harvest.
+  sources?: FetchProfilesSource[];
   timeBudgetMs?: number;
 };
 
@@ -150,22 +154,29 @@ export class FetchProfilesService {
     const targets = pending.slice(0, input.rowLimit ?? DEFAULT_ROW_LIMIT);
     const profiles = new Map<string, RowProfile>();
     const fetched = { brightData: 0, harvest: 0 };
+    const sources = input.sources ?? ['bright_data', 'harvest'];
+    const useBrightData = sources.includes('bright_data');
+    const useHarvest = sources.includes('harvest');
 
-    await this.fetchFromBrightData(targets, deadline, (target, profile) => {
-      profiles.set(target.id, profile);
-      fetched.brightData += 1;
-    });
-    await this.writeProfiles(input, profiles);
+    if (useBrightData) {
+      await this.fetchFromBrightData(targets, deadline, (target, profile) => {
+        profiles.set(target.id, profile);
+        fetched.brightData += 1;
+      });
+      await this.writeProfiles(input, profiles);
+    }
 
     const missing = targets.filter((target) => !profiles.has(target.id));
     const harvested = new Map<string, RowProfile>();
 
-    await this.fetchFromHarvest(missing, deadline, (target, profile) => {
-      harvested.set(target.id, profile);
-      profiles.set(target.id, profile);
-      fetched.harvest += 1;
-    });
-    await this.writeProfiles(input, harvested);
+    if (useHarvest && missing.length > 0) {
+      await this.fetchFromHarvest(missing, deadline, (target, profile) => {
+        harvested.set(target.id, profile);
+        profiles.set(target.id, profile);
+        fetched.harvest += 1;
+      });
+      await this.writeProfiles(input, harvested);
+    }
 
     const failed = targets.filter((target) => !profiles.has(target.id));
     const remaining =

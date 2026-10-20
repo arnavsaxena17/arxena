@@ -16,7 +16,7 @@ export const loadSkillInputSchema = z.object({
     .array(z.string())
     .optional()
     .describe(
-      'Long skills such as search are split into sections (companies, people, people-by-company). Pass only the ones the task needs; the intro is always included. Omit to load the whole skill.',
+      'Long skills such as sourcing are split into sections (companies, people, people-by-company). Pass only the ones the task needs; the intro is always included. Omit to load the whole skill.',
     ),
 });
 
@@ -40,7 +40,12 @@ export type SkillNoteFunction = (
 
 // LinkedIn account status is only needed to pick a searchType or to start
 // Unipile outreach. Resolve it when these skills load, not on every prompt.
-const LINKEDIN_CHANNEL_SKILL_NAMES = new Set(['search', 'outreach']);
+// `search` is a stored alias for `sourcing` (SKILL_NAME_ALIASES).
+const LINKEDIN_CHANNEL_SKILL_NAMES = new Set([
+  'sourcing',
+  'search',
+  'outreach',
+]);
 
 export const createLinkedinChannelSkillNote = (
   resolveNote: () => Promise<string>,
@@ -64,7 +69,7 @@ export const createLoadSkillTool = (
   skillNote?: SkillNoteFunction,
 ) => ({
   description:
-    'Arxena CRM toolkit: company and people search (Apollo, LinkedIn, Harvest, Bright Data), CRM records, outreach campaigns and sequencers, workflows and automations, dashboards, and org charts. Load specialized skills for complex tasks. Returns detailed step-by-step instructions for building workflows, dashboards, manipulating data, or managing metadata. Call this before attempting complex operations. START HERE for any request to search, find, list, or source companies, jobs, or people (e.g. "find companies which do XYZ in India", "CTOs at fintechs"). Call this first to understand capabilities. For the long search skill pass `sections` to load only the part the task needs.',
+    'Arxena CRM toolkit: company and people search (Apollo, LinkedIn, Harvest, Bright Data), CRM records, outreach campaigns and sequencers, workflows and automations, dashboards, and org charts. Load specialized skills for complex tasks. Returns detailed step-by-step instructions for building workflows, dashboards, manipulating data, or managing metadata. Call this before attempting complex operations. START HERE for any request to search, find, list, or source companies, jobs, or people (e.g. "find companies which do XYZ in India", "CTOs at fintechs"). Call this first to understand capabilities. For the long sourcing skill pass `sections` to load only the part the task needs.',
   inputSchema: loadSkillInputSchema,
   execute: async (parameters: LoadSkillInput): Promise<LoadSkillResult> => {
     const { skillNames, sections } = parameters;

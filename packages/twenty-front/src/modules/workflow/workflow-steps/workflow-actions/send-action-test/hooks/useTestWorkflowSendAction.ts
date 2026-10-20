@@ -25,11 +25,11 @@ type TestWorkflowSendActionMutationResult = {
 export const useTestWorkflowSendAction = (actionId: string) => {
   const apolloCoreClient = useApolloCoreClient();
   const [isTesting, setIsTesting] = useState(false);
-  const sendActionTestData = useAtomFamilyStateValue(
+  const workflowSendActionTestData = useAtomFamilyStateValue(
     workflowSendActionTestDataFamilyState,
     actionId,
   );
-  const setSendActionTestData = useSetAtomFamilyState(
+  const setWorkflowSendActionTestData = useSetAtomFamilyState(
     workflowSendActionTestDataFamilyState,
     actionId,
   );

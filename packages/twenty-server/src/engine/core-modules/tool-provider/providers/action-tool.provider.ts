@@ -35,6 +35,7 @@ import {
   PreviewOutreachAiColumnTool,
   GetOutreachAiColumnRunStatusTool,
   CancelOutreachAiColumnRunTool,
+  RemoveOutreachAiColumnTool,
   GenerateOutreachTableViewTool,
   ApplyOutreachTableViewTool,
   RunOutreachAiColumnTool,
@@ -87,6 +88,7 @@ export class ActionToolProvider implements ToolProvider {
     private readonly runOutreachAiColumnTool: RunOutreachAiColumnTool,
     private readonly getOutreachAiColumnRunStatusTool: GetOutreachAiColumnRunStatusTool,
     private readonly cancelOutreachAiColumnRunTool: CancelOutreachAiColumnRunTool,
+    private readonly removeOutreachAiColumnTool: RemoveOutreachAiColumnTool,
     private readonly previewSampleMessageColumnTool: PreviewSampleMessageColumnTool,
     private readonly generateOutreachTableViewTool: GenerateOutreachTableViewTool,
     private readonly applyOutreachTableViewTool: ApplyOutreachTableViewTool,
@@ -123,6 +125,7 @@ export class ActionToolProvider implements ToolProvider {
       ['run_ai_column', this.runOutreachAiColumnTool],
       ['get_ai_column_run_status', this.getOutreachAiColumnRunStatusTool],
       ['cancel_ai_column_run', this.cancelOutreachAiColumnRunTool],
+      ['remove_ai_column', this.removeOutreachAiColumnTool],
       ['preview_sample_message_column', this.previewSampleMessageColumnTool],
       ['generate_table_view', this.generateOutreachTableViewTool],
       ['apply_table_view', this.applyOutreachTableViewTool],
@@ -359,6 +362,15 @@ export class ActionToolProvider implements ToolProvider {
       this.buildDescriptor(
         'cancel_ai_column_run',
         this.cancelOutreachAiColumnRunTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'remove_ai_column',
+        this.removeOutreachAiColumnTool,
         includeSchemas,
         context.locale,
       ),

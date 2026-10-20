@@ -28,6 +28,7 @@ export const ACTION_TOOL_IDS = [
   'run_ai_column',
   'get_ai_column_run_status',
   'cancel_ai_column_run',
+  'remove_ai_column',
   'generate_table_view',
   'apply_table_view',
 ] as const;
@@ -106,6 +107,9 @@ export const ACTION_TOOL_LABELS: Record<ActionToolId, ActionToolLabel> = {
   },
   cancel_ai_column_run: {
     label: i18nLabel(msg`Cancel AI Column Run`),
+  },
+  remove_ai_column: {
+    label: i18nLabel(msg`Remove AI Column`),
   },
   generate_table_view: {
     label: i18nLabel(msg`Generate Table Filter and Sort`),

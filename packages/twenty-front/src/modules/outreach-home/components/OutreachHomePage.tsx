@@ -623,6 +623,7 @@ const OutreachHomePageContent = () => {
                       workspaceCompany={workspaceCompany}
                       hasWorkspaceCompany={hasWorkspaceCompany}
                       hasProject={isDefined(activeProjectId)}
+                      people={people}
                       sendTimezone={projectSettings.sendTimezone}
                       sendWindowStart={projectSettings.sendWindowStart}
                       sendWindowEnd={projectSettings.sendWindowEnd}

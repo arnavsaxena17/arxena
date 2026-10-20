@@ -93,7 +93,7 @@ const StyledRoot = styled.div`
   gap: ${themeCssVariables.spacing[2]};
 `;
 
-const DraftVariableChip = ({ node, deleteNode, editor }: NodeViewProps) => {
+const DraftVariableChip = ({ node, deleteNode, editor }: DraftVariableChipProps) => {
   const variableKey = String(node.attrs.variable ?? '');
   const label = getDraftVariableLabel(variableKey);
 

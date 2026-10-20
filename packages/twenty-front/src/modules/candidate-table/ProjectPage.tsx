@@ -130,7 +130,7 @@ const DataTable = lazy(() =>
 
 export const ProjectPage: React.FC = () => {
   debugLog(`ProjectPage rendering`);
-  const [projectId, setProjectId] = useAtomState(projectIdAtom);
+  const [projectIdAtom, setProjectIdAtom] = useAtomState(projectIdAtom);
   const [, setCurrentProjectId] = useAtomState(currentProjectIdState);
   const [projects, setProjects] = useAtomState(projectsState);
   const [tokenPair] = useAtomState(tokenPairState);

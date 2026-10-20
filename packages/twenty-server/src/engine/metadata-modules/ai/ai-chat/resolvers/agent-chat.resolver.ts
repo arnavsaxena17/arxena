@@ -23,12 +23,14 @@ import { SettingsPermissionGuard } from 'src/engine/guards/settings-permission.g
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 import { AgentMessageDTO } from 'src/engine/metadata-modules/ai/ai-agent-execution/dtos/agent-message.dto';
 import { type BrowsingContextType } from 'src/engine/metadata-modules/ai/ai-agent/types/browsingContext.type';
+import { UndoChatOutreachService } from 'src/engine/core-modules/outreach-command/services/undo-chat-outreach.service';
 import { AgentChatQuestionAnswerInput } from 'src/engine/metadata-modules/ai/ai-chat/dtos/agent-chat-question-answer.input';
 import { AgentChatThreadDTO } from 'src/engine/metadata-modules/ai/ai-chat/dtos/agent-chat-thread.dto';
 import { FileAttachmentInput } from 'src/engine/metadata-modules/ai/ai-chat/dtos/file-attachment.input';
 import { AiSystemPromptPreviewDTO } from 'src/engine/metadata-modules/ai/ai-chat/dtos/ai-system-prompt-preview.dto';
 import { ChatStreamCatchupChunksDTO } from 'src/engine/metadata-modules/ai/ai-chat/dtos/chat-stream-catchup-chunks.dto';
 import { SendChatMessageResultDTO } from 'src/engine/metadata-modules/ai/ai-chat/dtos/send-chat-message-result.dto';
+import { UndoChatOutreachResultDTO } from 'src/engine/metadata-modules/ai/ai-chat/dtos/undo-chat-outreach-result.dto';
 import { AgentChatThreadEntity } from 'src/engine/metadata-modules/ai/ai-chat/entities/agent-chat-thread.entity';
 import { AgentChatEventPublisherService } from 'src/engine/metadata-modules/ai/ai-chat/services/agent-chat-event-publisher.service';
 import { AgentChatStreamingService } from 'src/engine/metadata-modules/ai/ai-chat/services/agent-chat-streaming.service';
@@ -58,6 +60,7 @@ export class AgentChatResolver {
     private readonly aiBillingService: AiBillingService,
     private readonly aiModelRegistryService: AiModelRegistryService,
     private readonly redisClientService: RedisClientService,
+    private readonly undoChatOutreachService: UndoChatOutreachService,
     @InjectWorkspaceScopedRepository(AgentChatThreadEntity)
     private readonly threadRepository: WorkspaceScopedRepository<AgentChatThreadEntity>,
   ) {}
@@ -451,6 +454,27 @@ export class AgentChatResolver {
     });
 
     return true;
+  }
+
+  // Best-effort: removes AI columns and clears table views this chat applied.
+  // Does not restore overwritten cell values or undo list/CRM/send actions.
+  @Mutation(() => UndoChatOutreachResultDTO)
+  async undoChatOutreach(
+    @Args('threadId', { type: () => UUIDScalarType }) threadId: string,
+    @AuthUserWorkspaceId() userWorkspaceId: string,
+    @AuthWorkspace() { id: workspaceId }: WorkspaceEntity,
+  ): Promise<UndoChatOutreachResultDTO> {
+    const messages = await this.agentChatService.getMessagesForThread({
+      threadId,
+      userWorkspaceId,
+      workspaceId,
+    });
+
+    return this.undoChatOutreachService.undoFromMessages({
+      workspaceId,
+      threadId,
+      messages,
+    });
   }
 
   private async cancelActiveStreamIfAny(

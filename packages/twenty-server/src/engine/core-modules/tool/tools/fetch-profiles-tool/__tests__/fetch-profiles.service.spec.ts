@@ -86,6 +86,30 @@ describe('FetchProfilesService', () => {
     expect(result.failed).toEqual([]);
   });
 
+  it('should skip Harvest when sources is bright_data only', async () => {
+    const { service, harvest } = build({
+      rows: [
+        row('1', 'https://www.linkedin.com/in/asha'),
+        row('2', 'https://www.linkedin.com/in/ben'),
+      ],
+      scrape: jest.fn(async () => [
+        brightRecord('https://www.linkedin.com/in/asha'),
+      ]),
+      harvest: jest.fn(async () => ({
+        headline: 'Head of Ops',
+        experience: [{ position: 'Head', companyName: 'Acme' }],
+      })),
+    });
+    const result = await service.fetch({
+      ...input,
+      sources: ['bright_data'],
+    });
+
+    expect(harvest).not.toHaveBeenCalled();
+    expect(result.fetched).toEqual({ brightData: 1, harvest: 0 });
+    expect(result.failed.map((failure) => failure.id)).toEqual(['2']);
+  });
+
   it('should report a person neither source could find', async () => {
     const { service } = build({
       rows: [row('1', 'https://www.linkedin.com/in/ghost')],

@@ -16,7 +16,7 @@ Step outputs are already unwrapped in run context. Use `{{<step-uuid>.<field>}}`
 
 This is **not** ICP preference collection (`setup`) and **not** Ask AI target-list search (`sourcing` → Find / Redis tabs). Interactive Companies tab stays Find. **Scheduled harvest that writes the CRM companies table** is this skill.
 
-**Preview the first LinkedIn message for people in the list** (before or without enrolling): load `ai-filter-enrich` and use `preview_sample_message_column` (Sample LinkedIn message column). Do not read workflow steps or `find_many_candidates` for this; list rows are not candidates.
+**Preview the first LinkedIn message for people in the list** (before or without enrolling): `load_skills(["ai-filter-enrich"])` and use `preview_sample_message_column` (Sample LinkedIn message column). Do not read workflow steps or `find_many_candidates` for this; list rows are not candidates.
 
 ## Ignite (prefer reuse — do not invent webhooks)
 
@@ -41,7 +41,7 @@ Seeded graphs ship as **DRAFT**. Triggers are CRON / `company.created` / `candid
 
 ## When to load this skill
 
-Load `outreach` (with `workflow-building`) when:
+`load_skills(["outreach", "workflow-building"])` when:
 
 - The user wants a **workflow** that harvests LinkedIn companies on a schedule, enrolls people on company create, or runs LinkedIn / email / meeting outreach
 - The user wants to clone or edit the seeded outreach graphs, or browsing context is the campaign home and the ask is about outreach **workflows**

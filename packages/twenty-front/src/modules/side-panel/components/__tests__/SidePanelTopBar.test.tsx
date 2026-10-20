@@ -28,6 +28,14 @@ jest.mock('@/side-panel/components/SidePanelTopBarRightCornerIcon', () => ({
   SidePanelTopBarRightCornerIcon: () => null,
 }));
 
+jest.mock('@/side-panel/components/SidePanelCopyAiChatIdButton', () => ({
+  SidePanelCopyAiChatIdButton: () => null,
+}));
+
+jest.mock('@/side-panel/components/SidePanelUndoAiChatButton', () => ({
+  SidePanelUndoAiChatButton: () => null,
+}));
+
 jest.mock('@/side-panel/components/SidePanelExpandAiChatButton', () => ({
   SidePanelExpandAiChatButton: () => null,
 }));
