@@ -8,6 +8,10 @@ import { mergeBrightDataIntoLinkedinPeopleSearchResult } from '../utils/map-brig
 
 const BRIGHT_DATA_DATASET_SCRAPE_URL =
   'https://api.brightdata.com/datasets/v3/scrape';
+const BRIGHT_DATA_DATASET_PROGRESS_URL =
+  'https://api.brightdata.com/datasets/v3/progress';
+const BRIGHT_DATA_DATASET_SNAPSHOT_URL =
+  'https://api.brightdata.com/datasets/v3/snapshot';
 
 export type BrightDataEnrichProgressEvent =
   | { kind: 'batchStart'; totalUrls: number }
@@ -47,6 +51,17 @@ export class BrightDataLinkedinProfileScrapeService {
     );
   }
 
+  // Bright Data sync /scrape times out at 1m and returns snapshot_id; poll from there
+  private get snapshotPollIntervalMs(): number {
+    return Number(process.env.BRIGHT_DATA_SNAPSHOT_POLL_INTERVAL_MS ?? 10_000);
+  }
+
+  private get snapshotTimeoutMs(): number {
+    return Number(
+      process.env.BRIGHT_DATA_LINKEDIN_PROFILE_SNAPSHOT_TIMEOUT_MS ?? 300_000,
+    );
+  }
+
   /**
    * Concurrent Bright Data scrape requests (one HTTP request per profile URL).
    */
@@ -64,6 +79,7 @@ export class BrightDataLinkedinProfileScrapeService {
 
   /**
    * Synchronous Bright Data dataset scrape for LinkedIn profile URLs (batch in one request).
+   * On HTTP 202 / snapshot_id (sync window exceeded), polls progress and downloads.
    */
   async scrapeProfilesByUrl(
     urls: string[],
@@ -104,17 +120,12 @@ export class BrightDataLinkedinProfileScrapeService {
 
       const rawText = await response.text();
 
-      if (!response.ok) {
-        this.logger.warn(
-          `Bright Data LinkedIn profile scrape HTTP ${response.status}: ${rawText.slice(0, 500)}`,
-        );
-
-        return [];
-      }
-
-      const parsed = this.parseScrapeResponseJson(rawText);
-
-      return parsed;
+      return await this.resolveScrapeResponse({
+        status: response.status,
+        ok: response.ok,
+        rawText,
+        context: `batch=${uniqueUrls.length}`,
+      });
     } catch (error) {
       this.logger.error(
         `Bright Data LinkedIn profile scrape failed: ${error instanceof Error ? error.message : error}`,
@@ -166,18 +177,12 @@ export class BrightDataLinkedinProfileScrapeService {
       });
 
       const rawText = await response.text();
-
-      if (!response.ok) {
-        this.logger.warn(
-          `Bright Data single profile scrape HTTP ${response.status} url=${trimmed.slice(0, 80)}: ${rawText.slice(0, 300)}`,
-        );
-
-        return null;
-      }
-
-      const parsed = this.parseScrapeResponseJson(rawText);
-
-      console.log('Parsed : ', parsed);
+      const parsed = await this.resolveScrapeResponse({
+        status: response.status,
+        ok: response.ok,
+        rawText,
+        context: `url=${trimmed.slice(0, 80)}`,
+      });
 
       return parsed[0] ?? null;
     } catch (error) {
@@ -206,8 +211,6 @@ export class BrightDataLinkedinProfileScrapeService {
       return [];
     }
 
-    console.log('Unique URLs : ', uniqueUrls);
-
     const total = uniqueUrls.length;
     const concurrency = Math.min(this.parallelConcurrency, total);
     const records: BrightDataLinkedinProfileRecord[] = [];
@@ -222,21 +225,158 @@ export class BrightDataLinkedinProfileScrapeService {
           break;
         }
 
-        const url = uniqueUrls[i];
-        const record = await this.scrapeSingleProfileUrl(url);
+        const profileUrl = uniqueUrls[i];
+        const record = await this.scrapeSingleProfileUrl(profileUrl);
         const success = Boolean(record);
 
         if (record) {
           records.push(record);
         }
 
-        await onProgress?.({ index: i, total, url, success });
+        await onProgress?.({ index: i, total, url: profileUrl, success });
       }
     };
 
     await Promise.all(Array.from({ length: concurrency }, () => runWorker()));
 
     return records;
+  }
+
+  // Sync /scrape past 1m → HTTP 202 + snapshot_id; poll then download
+  private async resolveScrapeResponse(input: {
+    status: number;
+    ok: boolean;
+    rawText: string;
+    context: string;
+  }): Promise<BrightDataLinkedinProfileRecord[]> {
+    const snapshotId = this.extractSnapshotId(input.rawText);
+
+    if (snapshotId && (input.status === 202 || input.ok)) {
+      this.logger.log(
+        `Bright Data LinkedIn profile scrape deferred to snapshot ${snapshotId} (${input.context})`,
+      );
+
+      try {
+        return await this.pollSnapshotUntilReady(snapshotId);
+      } catch (error) {
+        this.logger.warn(
+          `Bright Data LinkedIn profile snapshot ${snapshotId} failed: ${error instanceof Error ? error.message : error}`,
+        );
+
+        return [];
+      }
+    }
+
+    if (!input.ok) {
+      this.logger.warn(
+        `Bright Data LinkedIn profile scrape HTTP ${input.status} (${input.context}): ${input.rawText.slice(0, 500)}`,
+      );
+
+      return [];
+    }
+
+    return this.parseScrapeResponseJson(input.rawText);
+  }
+
+  private extractSnapshotId(rawText: string): string | undefined {
+    try {
+      const parsed: unknown = JSON.parse(rawText.trim());
+
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return undefined;
+      }
+
+      const record = parsed as Record<string, unknown>;
+      const snapshotId =
+        typeof record.snapshot_id === 'string' ? record.snapshot_id.trim() : '';
+
+      if (!snapshotId) {
+        return undefined;
+      }
+
+      // Deferred job body is snapshot_id (+ message); profile rows carry url/name
+      if (
+        typeof record.url === 'string' ||
+        typeof record.input_url === 'string' ||
+        typeof record.name === 'string'
+      ) {
+        return undefined;
+      }
+
+      return snapshotId;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private async pollSnapshotUntilReady(
+    snapshotId: string,
+  ): Promise<BrightDataLinkedinProfileRecord[]> {
+    const key = this.apiKey;
+
+    if (!key) {
+      throw new Error('BRIGHT_DATA_API_KEY is not set');
+    }
+
+    const deadline = Date.now() + this.snapshotTimeoutMs;
+    let attempt = 0;
+
+    while (Date.now() < deadline) {
+      attempt += 1;
+
+      const progressResponse = await fetch(
+        `${BRIGHT_DATA_DATASET_PROGRESS_URL}/${encodeURIComponent(snapshotId)}`,
+        {
+          headers: { Authorization: `Bearer ${key}` },
+        },
+      );
+      const progressText = await progressResponse.text();
+
+      if (!progressResponse.ok) {
+        throw new Error(
+          `Bright Data LinkedIn profile snapshot progress HTTP ${progressResponse.status}`,
+        );
+      }
+
+      const progress = JSON.parse(progressText) as { status?: string };
+      const status = (progress.status ?? 'running').toString().toLowerCase();
+
+      this.logger.log(
+        `Bright Data LinkedIn profile snapshot poll snapshotId=${snapshotId} attempt=${attempt} status=${status}`,
+      );
+
+      if (status === 'failed' || status === 'canceled') {
+        throw new Error(
+          `Bright Data LinkedIn profile snapshot ${snapshotId} ended with status=${status}`,
+        );
+      }
+
+      if (status === 'ready') {
+        const snapshotResponse = await fetch(
+          `${BRIGHT_DATA_DATASET_SNAPSHOT_URL}/${encodeURIComponent(snapshotId)}?format=json`,
+          {
+            headers: { Authorization: `Bearer ${key}` },
+          },
+        );
+        const snapshotText = await snapshotResponse.text();
+
+        if (!snapshotResponse.ok) {
+          throw new Error(
+            `Bright Data LinkedIn profile snapshot download HTTP ${snapshotResponse.status}`,
+          );
+        }
+
+        return this.parseScrapeResponseJson(snapshotText);
+      }
+
+      await new Promise((resolve) =>
+        setTimeout(resolve, this.snapshotPollIntervalMs),
+      );
+    }
+
+    throw new Error(
+      `Bright Data LinkedIn profile snapshot ${snapshotId} timed out after ${this.snapshotTimeoutMs}ms`,
+    );
   }
 
   private parseScrapeResponseJson(
@@ -257,11 +397,17 @@ export class BrightDataLinkedinProfileScrapeService {
         if (Array.isArray(parsed)) {
           return parsed.filter(
             (row): row is BrightDataLinkedinProfileRecord =>
-              row !== null && typeof row === 'object',
+              row !== null &&
+              typeof row === 'object' &&
+              !this.isSnapshotOnlyRecord(row as Record<string, unknown>),
           );
         }
 
         if (parsed && typeof parsed === 'object') {
+          if (this.isSnapshotOnlyRecord(parsed as Record<string, unknown>)) {
+            return [];
+          }
+
           return [parsed as BrightDataLinkedinProfileRecord];
         }
       } catch {
@@ -279,7 +425,7 @@ export class BrightDataLinkedinProfileScrapeService {
 
     const lines = trimmed
       .split('\n')
-      .map((l) => l.trim())
+      .map((line) => line.trim())
       .filter(Boolean);
     const fromNdjson: BrightDataLinkedinProfileRecord[] = [];
 
@@ -298,6 +444,16 @@ export class BrightDataLinkedinProfileScrapeService {
     );
 
     return [];
+  }
+
+  private isSnapshotOnlyRecord(record: Record<string, unknown>): boolean {
+    return (
+      typeof record.snapshot_id === 'string' &&
+      record.snapshot_id.trim() !== '' &&
+      typeof record.url !== 'string' &&
+      typeof record.input_url !== 'string' &&
+      typeof record.name !== 'string'
+    );
   }
 
   /**
@@ -342,7 +498,10 @@ export class BrightDataLinkedinProfileScrapeService {
     }
 
     const urls = candidates
-      .map((c) => c.profile_url || c.public_profile_url || '')
+      .map(
+        (candidate) =>
+          candidate.profile_url || candidate.public_profile_url || '',
+      )
       .filter(Boolean);
 
     if (urls.length === 0) {
@@ -384,13 +543,16 @@ export class BrightDataLinkedinProfileScrapeService {
         key = rawUrl;
       }
 
-      const bd = byUrl.get(key);
+      const brightDataRecord = byUrl.get(key);
 
-      if (!bd) {
+      if (!brightDataRecord) {
         return candidate;
       }
 
-      return mergeBrightDataIntoLinkedinPeopleSearchResult(candidate, bd);
+      return mergeBrightDataIntoLinkedinPeopleSearchResult(
+        candidate,
+        brightDataRecord,
+      );
     });
   }
 }
