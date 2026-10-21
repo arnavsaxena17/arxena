@@ -7,6 +7,7 @@ import {
   type OutreachEphemeralCompany,
   OutreachCompaniesCacheService,
 } from 'src/engine/core-modules/outreach-command/services/outreach-companies-cache.service';
+import { mergeOutreachOtherFields } from 'src/engine/core-modules/outreach-command/utils/merge-outreach-other-fields.util';
 import {
   type UpsertOutreachTargetCompaniesInput,
   UpsertOutreachTargetCompaniesInputZodSchema,
@@ -137,18 +138,17 @@ Prefer mode=merge. Pass projectId from the outreachCommand browsing context.`;
         const key = companyDedupeKey(company);
         const previous = byKey.get(key);
 
-        const otherFields = {
-          ...(company.otherFields ?? {}),
-          // answers already on the row (AI columns) win over fresh source data
-          ...(previous?.otherFields ?? {}),
-        };
+        const otherFields = mergeOutreachOtherFields(
+          previous?.otherFields,
+          company.otherFields,
+        );
 
         byKey.set(key, {
           ...(previous ?? company),
           ...company,
           // Keep stable id when merging into an existing row
           id: previous?.id ?? company.id ?? randomUUID(),
-          ...(Object.keys(otherFields).length > 0 ? { otherFields } : {}),
+          ...(otherFields !== undefined ? { otherFields } : {}),
         });
       }
 

@@ -137,6 +137,7 @@ describe('normalizeToolOutputToListRows', () => {
         headquarters_country_code: 'IN',
         company_size_from: 201,
         company_size_to: 500,
+        linkedin_followers: 12000,
       },
     });
 
@@ -145,6 +146,12 @@ describe('normalizeToolOutputToListRows', () => {
       country: 'IN',
       size: '201-500',
       source: 'bright_data',
+    });
+    expect(row?.otherFields).toMatchObject({
+      website: 'https://www.wowmomo.com/',
+      headquartersCountry: 'IN',
+      sizeBand: '201-500',
+      linkedinFollowers: 12000,
     });
     expect(
       fromBrightDataDocument('company', {
@@ -155,7 +162,47 @@ describe('normalizeToolOutputToListRows', () => {
           website: 'https://www.medikabazaar.com/',
         },
       })?.otherFields,
-    ).toEqual({ relevant: false });
+    ).toEqual({
+      website: 'https://www.medikabazaar.com/',
+      relevant: false,
+    });
+  });
+
+  it('should map Bright Data people fields into otherFields', () => {
+    const row = fromBrightDataDocument('people', {
+      brightId: 'p1',
+      data: {
+        name: 'Sachin Kesharwani',
+        current_title: 'Co-Founder',
+        current_company_name: 'HAPPY FACES',
+        url: 'https://www.linkedin.com/in/sachin-kesharwani',
+        connections: 500,
+        followers: 1264,
+        education_schools: 'Indira Gandhi National Open University',
+        past_job_titles: 'Volunteer',
+        past_company_names: 'Dream Empowerment Organization',
+      },
+    });
+
+    expect(row).toMatchObject({
+      name: 'Sachin Kesharwani',
+      title: 'Co-Founder',
+      companyName: 'HAPPY FACES',
+      source: 'bright_data',
+    });
+    expect(row?.otherFields).toMatchObject({
+      connections: 500,
+      followers: 1264,
+      educationSchools: 'Indira Gandhi National Open University',
+      pastJobTitles: 'Volunteer',
+      pastCompanyNames: 'Dream Empowerment Organization',
+      workExperience: [
+        { role: 'Volunteer', company: 'Dream Empowerment Organization' },
+      ],
+      education: [
+        { school: 'Indira Gandhi National Open University', degree: '' },
+      ],
+    });
   });
 });
 

@@ -149,4 +149,42 @@ describe('mergePeople', () => {
 
     expect(merged).toHaveLength(2);
   });
+
+  it('merges otherFields surgically: keeps existing keys, adds and updates from incoming', () => {
+    const existing = {
+      ...person(
+        'Sachin Kesharwani',
+        'HAPPY FACES',
+        'https://www.linkedin.com/in/sachin-kesharwani',
+      ),
+      otherFields: {
+        isProfileAuthentic: true,
+        authenticityReason: 'Name matches',
+        connections: 100,
+      },
+    };
+    const incoming = {
+      ...person(
+        'Sachin Kesharwani',
+        'HAPPY FACES',
+        'https://www.linkedin.com/in/sachin-kesharwani',
+      ),
+      otherFields: {
+        connections: 500,
+        followers: 1264,
+        educationSchools: 'IGNOU',
+      },
+    };
+
+    const merged = mergePeople([existing], [incoming]);
+
+    expect(merged).toHaveLength(1);
+    expect(merged[0].otherFields).toEqual({
+      isProfileAuthentic: true,
+      authenticityReason: 'Name matches',
+      connections: 500,
+      followers: 1264,
+      educationSchools: 'IGNOU',
+    });
+  });
 });

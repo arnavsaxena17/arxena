@@ -10,6 +10,7 @@ import {
 } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
 import { OutreachCompaniesCacheService } from 'src/engine/core-modules/outreach-command/services/outreach-companies-cache.service';
 import { OutreachWorkingSetService } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+import { mergeOutreachOtherFields } from 'src/engine/core-modules/outreach-command/utils/merge-outreach-other-fields.util';
 import { resolvePeopleCompanyIds } from 'src/engine/core-modules/outreach-command/utils/resolve-people-company-ids.util';
 import { isDeprioritisedPerson } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/outreach-people-deprioritisation.util';
 import { personNamesRoughlyMatch } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/person-name-matching.util';
@@ -245,7 +246,9 @@ export const mergePeople = (
     // The same person under a one-letter spelling slip, where one of the two
     // rows has no profile URL to tell them apart by
     if (previous === undefined) {
-      const similarKey = (keysByCompany.get(normalizeName(person.companyName)) ?? [])
+      const similarKey = (
+        keysByCompany.get(normalizeName(person.companyName)) ?? []
+      )
         .map((candidateKey) => [candidateKey, byKey.get(candidateKey)] as const)
         .find(
           ([, other]) =>
@@ -277,6 +280,20 @@ export const mergePeople = (
       ...(isIncoming || previous === undefined ? person : {}),
       id: previous?.id ?? person.id ?? randomUUID(),
     };
+
+    // otherFields: add/update keys only — never drop columns already on the row
+    if (previous !== undefined && isIncoming) {
+      const otherFields = mergeOutreachOtherFields(
+        previous.otherFields,
+        person.otherFields,
+      );
+
+      if (otherFields !== undefined) {
+        merged.otherFields = otherFields;
+      } else {
+        delete merged.otherFields;
+      }
+    }
 
     // keep a profile URL once one is known
     if (

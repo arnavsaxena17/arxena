@@ -1,6 +1,7 @@
 import {
   aggregateBrightDataDocuments,
   buildBrightDataCompanyOtherFields,
+  buildBrightDataPersonOtherFields,
   mapBrightDataCompanyToEphemeral,
   mapBrightDataCompanyToSearchHit,
   mapBrightDataPersonToEphemeral,
@@ -148,6 +149,13 @@ describe('bright data business search util', () => {
         url: 'https://www.linkedin.com/in/ada',
         location: 'Mumbai, India',
         about: 'Runs restaurants',
+        connections: 500,
+        followers: 1264,
+        past_job_titles: 'Volunteer; Analyst',
+        past_company_names: 'Dream Org; Acme',
+        education_schools: 'IGNOU',
+        education_details: 'BA',
+        experience_years: 7,
       },
     };
 
@@ -157,6 +165,13 @@ describe('bright data business search util', () => {
       companyName: 'QSR India',
       url: 'https://www.linkedin.com/in/ada',
       source: 'bright_data',
+      connections_count: 500,
+      followers_count: 1264,
+      work_experience: [
+        { role: 'Volunteer', company: 'Dream Org' },
+        { role: 'Analyst', company: 'Acme' },
+      ],
+      education: [{ school: 'IGNOU', degree: 'BA' }],
     });
     expect(mapBrightDataPersonToEphemeral(person)).toMatchObject({
       id: 'person-1',
@@ -166,11 +181,32 @@ describe('bright data business search util', () => {
       linkedinUrl: 'https://www.linkedin.com/in/ada',
       stage: 'queued',
     });
-    expect(mapBrightDataPersonToEphemeral(person)?.otherFields).toBeUndefined();
+    expect(mapBrightDataPersonToEphemeral(person)?.otherFields).toMatchObject({
+      connections: 500,
+      followers: 1264,
+      pastJobTitles: 'Volunteer; Analyst',
+      educationSchools: 'IGNOU',
+      workExperience: [
+        { role: 'Volunteer', company: 'Dream Org' },
+        { role: 'Analyst', company: 'Acme' },
+      ],
+      education: [{ school: 'IGNOU', degree: 'BA' }],
+    });
     expect(
-      mapBrightDataPersonToEphemeral({ ...person, relevant: true })
-        ?.otherFields,
-    ).toEqual({ relevant: true });
+      mapBrightDataPersonToEphemeral({ ...person, relevant: true })?.otherFields
+        ?.relevant,
+    ).toBe(true);
+  });
+
+  it('keeps empty Bright Data people fields out of the row columns', () => {
+    expect(
+      buildBrightDataPersonOtherFields({
+        name: 'Sparse',
+        about: '',
+        connections: 12,
+        avatar: '',
+      }),
+    ).toEqual({ connections: 12 });
   });
 });
 

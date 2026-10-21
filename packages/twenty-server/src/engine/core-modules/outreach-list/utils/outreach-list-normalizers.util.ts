@@ -1,4 +1,8 @@
 import {
+  buildBrightDataCompanyOtherFields,
+  buildBrightDataPersonOtherFields,
+} from 'src/engine/core-modules/bright-data/utils/bright-data-business-search.util';
+import {
   type OutreachListEntity,
   type OutreachListRow,
   type OutreachListSource,
@@ -339,12 +343,24 @@ export const normalizeToolOutputToListRows = (
 const text = (value: unknown): string => asText(value);
 
 // Bright Data business search documents (company and people views)
-const jevOtherFields = (document: {
-  relevant?: boolean;
-}): { otherFields?: Record<string, unknown> } =>
-  typeof document.relevant === 'boolean'
-    ? { otherFields: { relevant: document.relevant } }
-    : {};
+const brightDataOtherFields = (
+  entity: OutreachListEntity,
+  document: {
+    data: Record<string, unknown>;
+    relevant?: boolean;
+  },
+): { otherFields?: Record<string, unknown> } => {
+  const otherFields = {
+    ...(entity === 'people'
+      ? buildBrightDataPersonOtherFields(document.data)
+      : buildBrightDataCompanyOtherFields(document.data)),
+    ...(typeof document.relevant === 'boolean'
+      ? { relevant: document.relevant }
+      : {}),
+  };
+
+  return Object.keys(otherFields).length > 0 ? { otherFields } : {};
+};
 
 export const fromBrightDataDocument = (
   entity: OutreachListEntity,
@@ -367,7 +383,7 @@ export const fromBrightDataDocument = (
       country: text(data.country_code),
       industry: text(data.current_company_industry),
       about: text(data.about),
-      ...jevOtherFields(document),
+      ...brightDataOtherFields('people', document),
     });
   }
 
@@ -387,6 +403,6 @@ export const fromBrightDataDocument = (
       text(data.employees_in_linkedin) ||
       (sizeFrom && sizeTo ? `${sizeFrom}-${sizeTo}` : sizeFrom || sizeTo),
     about: text(data.about) || text(data.specialties),
-    ...jevOtherFields(document),
+    ...brightDataOtherFields('company', document),
   });
 };

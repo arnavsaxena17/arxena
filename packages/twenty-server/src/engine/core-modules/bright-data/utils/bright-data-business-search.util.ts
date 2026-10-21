@@ -214,6 +214,20 @@ export const buildBrightDataCompanyOtherFields = (
   );
 };
 
+const mergeBrightDataOtherFields = (
+  base: Record<string, unknown>,
+  document: Pick<BrightDataBusinessSearchDocument, 'relevant'>,
+): Record<string, unknown> | undefined => {
+  const otherFields = {
+    ...base,
+    ...(typeof document.relevant === 'boolean'
+      ? { relevant: document.relevant }
+      : {}),
+  };
+
+  return Object.keys(otherFields).length > 0 ? otherFields : undefined;
+};
+
 export const mapBrightDataCompanyToEphemeral = (
   document: BrightDataBusinessSearchDocument,
 ): OutreachEphemeralCompany | null => {
@@ -222,6 +236,11 @@ export const mapBrightDataCompanyToEphemeral = (
   if (!hit.name) {
     return null;
   }
+
+  const otherFields = mergeBrightDataOtherFields(
+    buildBrightDataCompanyOtherFields(document.data),
+    document,
+  );
 
   return {
     id: hit.id,
@@ -232,13 +251,85 @@ export const mapBrightDataCompanyToEphemeral = (
     segment: readString(document.data, 'organization_type'),
     icpFit: '',
     status: 'new',
-    otherFields: {
-      ...buildBrightDataCompanyOtherFields(document.data),
-      ...(typeof document.relevant === 'boolean'
-        ? { relevant: document.relevant }
-        : {}),
-    },
+    ...(otherFields ? { otherFields } : {}),
   };
+};
+
+// Semicolon-separated Bright Data bags → paired title/company rows
+const splitBrightDataBag = (value: string): string[] =>
+  value
+    .split(';')
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+const buildPastWorkExperience = (
+  data: Record<string, unknown>,
+): Array<{ role: string; company: string }> => {
+  const titles = splitBrightDataBag(readString(data, 'past_job_titles'));
+  const companies = splitBrightDataBag(readString(data, 'past_company_names'));
+  const length = Math.max(titles.length, companies.length);
+
+  return Array.from({ length }, (_, index) => ({
+    role: titles[index] ?? '',
+    company: companies[index] ?? '',
+  })).filter((entry) => entry.role || entry.company);
+};
+
+const buildEducationEntries = (
+  data: Record<string, unknown>,
+): Array<{ school: string; degree: string }> => {
+  const schools = splitBrightDataBag(readString(data, 'education_schools'));
+  const details = splitBrightDataBag(readString(data, 'education_details'));
+  const length = Math.max(schools.length, details.length);
+
+  return Array.from({ length }, (_, index) => ({
+    school: schools[index] ?? '',
+    degree: details[index] ?? '',
+  })).filter((entry) => entry.school || entry.degree);
+};
+
+// Same idea as company otherFields: one table column per queryable people field
+export const buildBrightDataPersonOtherFields = (
+  data: Record<string, unknown>,
+): Record<string, unknown> => {
+  const workExperience = buildPastWorkExperience(data);
+  const education = buildEducationEntries(data);
+  const candidates: Record<string, unknown> = {
+    linkedinUrl: readString(data, 'url'),
+    about: readString(data, 'about').slice(0, ABOUT_MAX_LENGTH),
+    avatar: readString(data, 'avatar'),
+    firstName: readString(data, 'first_name'),
+    city: readString(data, 'city'),
+    countryCode: readString(data, 'country_code'),
+    location: readString(data, 'location') || readString(data, 'city'),
+    connections: readNumber(data, 'connections'),
+    followers: readNumber(data, 'followers'),
+    experienceYears: readNumber(data, 'experience_years'),
+    currentTenureMonths: readNumber(data, 'current_tenure_months'),
+    pastJobTitles: readString(data, 'past_job_titles'),
+    pastCompanyNames: readString(data, 'past_company_names'),
+    educationSchools: readString(data, 'education_schools'),
+    educationDetails: readString(data, 'education_details'),
+    currentCompanyId: readString(data, 'current_company_id'),
+    currentCompanyIndustry: readString(data, 'current_company_industry'),
+    currentCompanyDescription: readString(
+      data,
+      'current_company_description',
+    ).slice(0, ABOUT_MAX_LENGTH),
+    currentCompanyHeadquarters: readString(
+      data,
+      'current_company_headquarters',
+    ),
+    currentCompanyCountryCode: readString(data, 'current_company_country_code'),
+    workExperience: workExperience.length > 0 ? workExperience : undefined,
+    education: education.length > 0 ? education : undefined,
+  };
+
+  return Object.fromEntries(
+    Object.entries(candidates).filter(
+      ([, value]) => value !== undefined && value !== '',
+    ),
+  );
 };
 
 export const mapBrightDataPersonToSearchItem = (
@@ -249,6 +340,17 @@ export const mapBrightDataPersonToSearchItem = (
   const title =
     readString(data, 'current_title') || readString(data, 'position');
   const location = readString(data, 'location') || readString(data, 'city');
+  const workExperience = buildPastWorkExperience(data);
+  const education = buildEducationEntries(data);
+  const connections = readNumber(data, 'connections');
+  const followers = readNumber(data, 'followers');
+
+  const experienceYears = readNumber(data, 'experience_years');
+  const avatar = readString(data, 'avatar');
+  const pastJobTitles = readString(data, 'past_job_titles');
+  const pastCompanyNames = readString(data, 'past_company_names');
+  const educationSchools = readString(data, 'education_schools');
+  const educationDetails = readString(data, 'education_details');
 
   return {
     name: readString(data, 'name'),
@@ -261,6 +363,24 @@ export const mapBrightDataPersonToSearchItem = (
     location,
     source: 'bright_data',
     brightId: document.brightId,
+    ...(connections !== undefined
+      ? { connections_count: connections, connections }
+      : {}),
+    ...(followers !== undefined
+      ? { followers_count: followers, followers }
+      : {}),
+    ...(workExperience.length > 0
+      ? { work_experience: workExperience, experience: workExperience }
+      : {}),
+    ...(education.length > 0 ? { education } : {}),
+    ...(pastJobTitles ? { past_job_titles: pastJobTitles } : {}),
+    ...(pastCompanyNames ? { past_company_names: pastCompanyNames } : {}),
+    ...(educationSchools ? { education_schools: educationSchools } : {}),
+    ...(educationDetails ? { education_details: educationDetails } : {}),
+    ...(experienceYears !== undefined
+      ? { experience_years: experienceYears }
+      : {}),
+    ...(avatar ? { avatar } : {}),
   };
 };
 
@@ -274,6 +394,11 @@ export const mapBrightDataPersonToEphemeral = (
     return null;
   }
 
+  const otherFields = mergeBrightDataOtherFields(
+    buildBrightDataPersonOtherFields(document.data),
+    document,
+  );
+
   return {
     id: document.brightId,
     name,
@@ -286,9 +411,7 @@ export const mapBrightDataPersonToEphemeral = (
     warmPath: '—',
     stage: 'queued',
     email: '',
-    ...(typeof document.relevant === 'boolean'
-      ? { otherFields: { relevant: document.relevant } }
-      : {}),
+    ...(otherFields ? { otherFields } : {}),
   };
 };
 
