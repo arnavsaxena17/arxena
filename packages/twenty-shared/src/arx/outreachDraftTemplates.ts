@@ -1,3 +1,8 @@
+import {
+  cleanCompanyNameForDisplay,
+  cleanPersonNameForDisplay,
+} from './cleanOutreachDisplayNames';
+
 // Standard (manual) draft messages for the Candidate Sequencer. Templates live
 // on the workspace member and use {{variable}} tokens that the render step
 // resolves per candidate. Shared so Setup preview and the server render agree.
@@ -161,6 +166,25 @@ export type OutreachDraftTemplateRenderResult = {
   unknownVariableKeys: string[];
 };
 
+const cleanDisplayValue = (
+  key: OutreachDraftVariableKey,
+  rawValue: string,
+): string => {
+  if (key === 'company.name') {
+    return cleanCompanyNameForDisplay(rawValue);
+  }
+
+  if (
+    key === 'person.firstName' ||
+    key === 'person.fullName' ||
+    key === 'sender.name'
+  ) {
+    return cleanPersonNameForDisplay(rawValue);
+  }
+
+  return rawValue.trim();
+};
+
 export const renderOutreachDraftTemplate = (
   template: string,
   values: OutreachDraftTemplateValues,
@@ -179,7 +203,10 @@ export const renderOutreachDraftTemplate = (
       return '';
     }
 
-    const value = values[key as OutreachDraftVariableKey]?.trim() ?? '';
+    const value = cleanDisplayValue(
+      key as OutreachDraftVariableKey,
+      values[key as OutreachDraftVariableKey] ?? '',
+    );
 
     if (value === '') {
       if (!missingVariableKeys.includes(key)) {

@@ -4,11 +4,10 @@ import { OUTREACH_LIST_MAX_ROWS } from 'src/engine/core-modules/outreach-list/ou
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
+import { OUTREACH_PROJECT_CACHE_TTL_MS } from 'src/engine/core-modules/outreach-command/constants/outreach-project-cache.constants';
 import { OutreachCacheRealtimeService } from 'src/engine/core-modules/outreach-command/services/outreach-cache-realtime.service';
+import { OutreachProjectCacheBackupService } from 'src/engine/core-modules/outreach-command/services/outreach-project-cache-backup.service';
 
-// CacheStorageService takes milliseconds: this was passed as seconds, so the
-// list expired after about two hours instead of three months.
-const OUTREACH_PEOPLE_CACHE_TTL_MS = 3 * 30 * 24 * 60 * 60 * 1000; // 3 months
 const MAX_PEOPLE_PER_PROJECT = OUTREACH_LIST_MAX_ROWS;
 
 export type OutreachEphemeralPerson = {
@@ -43,6 +42,7 @@ export class OutreachPeopleCacheService {
     @InjectCacheStorage(CacheStorageNamespace.EngineOutreachCommand)
     private readonly cache: CacheStorageService,
     private readonly outreachCacheRealtimeService: OutreachCacheRealtimeService,
+    private readonly outreachProjectCacheBackupService: OutreachProjectCacheBackupService,
   ) {}
 
   cacheKey(workspaceId: string, projectId: string): string {
@@ -57,15 +57,33 @@ export class OutreachPeopleCacheService {
       return undefined;
     }
 
-    const payload = await this.cache.get<OutreachPeopleCachePayload>(
+    const cached = await this.cache.get<OutreachPeopleCachePayload>(
       this.cacheKey(workspaceId, projectId),
     );
 
-    if (!payload || payload.projectId !== projectId) {
+    if (cached && cached.projectId === projectId) {
+      return cached;
+    }
+
+    const fromBackup =
+      await this.outreachProjectCacheBackupService.read<OutreachPeopleCachePayload>(
+        workspaceId,
+        'people',
+        projectId,
+      );
+
+    if (!fromBackup || fromBackup.projectId !== projectId) {
       return undefined;
     }
 
-    return payload;
+    // Rehydrate Redis so the next read is hot
+    await this.cache.set(
+      this.cacheKey(workspaceId, projectId),
+      fromBackup,
+      OUTREACH_PROJECT_CACHE_TTL_MS,
+    );
+
+    return fromBackup;
   }
 
   async set(
@@ -91,7 +109,13 @@ export class OutreachPeopleCacheService {
     await this.cache.set(
       this.cacheKey(workspaceId, projectId),
       payload,
-      OUTREACH_PEOPLE_CACHE_TTL_MS,
+      OUTREACH_PROJECT_CACHE_TTL_MS,
+    );
+    await this.outreachProjectCacheBackupService.write(
+      workspaceId,
+      'people',
+      projectId,
+      payload,
     );
 
     this.outreachCacheRealtimeService.notifyProjectCacheUpdated(
@@ -106,6 +130,11 @@ export class OutreachPeopleCacheService {
     }
 
     await this.cache.del(this.cacheKey(workspaceId, projectId));
+    await this.outreachProjectCacheBackupService.remove(
+      workspaceId,
+      'people',
+      projectId,
+    );
     this.outreachCacheRealtimeService.notifyProjectCacheUpdated(
       projectId,
       'people',

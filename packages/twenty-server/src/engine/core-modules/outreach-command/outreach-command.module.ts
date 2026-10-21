@@ -2,6 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ApifyModule } from 'src/engine/core-modules/apify/apify.module';
+import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { AccountRateLimitModule } from 'src/engine/core-modules/account-rate-limit/account-rate-limit.module';
 import { UnipileCompanyService } from 'src/engine/core-modules/arx-chat/services/unipile-company.service';
 import { UnipilePoolModule } from 'src/engine/core-modules/arx-chat/unipile-pool.module';
@@ -81,6 +82,7 @@ import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/
 import { OutreachWorkingSetService } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
 import { UndoChatOutreachService } from 'src/engine/core-modules/outreach-command/services/undo-chat-outreach.service';
 import { OutreachPeopleCacheService } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
+import { OutreachProjectCacheBackupService } from 'src/engine/core-modules/outreach-command/services/outreach-project-cache-backup.service';
 import { OutreachProjectOutreachControlService } from 'src/engine/core-modules/outreach-command/services/outreach-project-outreach-control.service';
 import { OutreachCandidateJourneyService } from 'src/engine/core-modules/outreach-command/services/outreach-candidate-journey.service';
 import { OutreachDeferredResumeCronService } from 'src/engine/core-modules/outreach-command/services/outreach-deferred-resume-cron.service';
@@ -125,6 +127,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     EnvironmentModule,
     FeatureFlagModule,
     FileModule,
+    ApplicationModule,
     ApifyModule,
     WikidataModule,
     ApiKeyModule,
@@ -150,6 +153,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     OutreachMockLifecycleService,
     OutreachInboundReplyClassifierService,
     OutreachThrottleService,
+    OutreachProjectCacheBackupService,
     OutreachCompaniesCacheService,
     OutreachPeopleCacheService,
     OutreachSpreadsheetMappingService,
