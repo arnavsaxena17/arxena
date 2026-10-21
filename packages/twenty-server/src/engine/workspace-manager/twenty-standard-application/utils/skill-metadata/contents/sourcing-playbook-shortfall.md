@@ -6,7 +6,7 @@ You are short when `get_sourcing_ledger({ projectId, target })` shows `shortfall
 
 One change per round, and say what you changed in one line.
 
-1. **Use what is already in the pipeline.** `fetch_profiles` for the rows awaiting a profile, then score the profile stage again. It is the cheapest source of qualified rows.
+1. **Use what is already in the pipeline.** `fetch_profiles` for the rows awaiting a profile (Business Search by LinkedIn URL first, slow scrape only for misses), then score the profile stage again. It is the cheapest source of qualified rows.
 2. **Next slice of the same source.** The next Unipile cursor or slice, or the next Bright Data slice. Read the source's "Limits and exhaustion" before assuming there is more.
 3. **Related titles.** Expand the roles with the title synonyms in the `know-seniority` section (load it). Never drop a role the user named.
 4. **Adjacent industries**, then **wider geography** (more cities, then the country).

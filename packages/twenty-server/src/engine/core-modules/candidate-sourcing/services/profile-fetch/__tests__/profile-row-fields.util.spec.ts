@@ -142,10 +142,36 @@ describe('isUsableProfile', () => {
         profileToRowProfile({
           source: 'bright_data',
           fetchedAt,
-          record: { followers: 10, avatar: 'x' },
+          record: { avatar: 'x' },
         }),
       ),
     ).toBe(false);
+  });
+
+  it('should accept a record with only follower and connection counts', () => {
+    expect(
+      isUsableProfile(
+        profileToRowProfile({
+          source: 'bright_data',
+          fetchedAt,
+          record: { followers: 10, connections: 3 },
+        }),
+      ),
+    ).toBe(true);
+  });
+
+  it('should fall back to the current employer when no experience list exists', () => {
+    const profile = profileToRowProfile({
+      source: 'bright_data',
+      fetchedAt,
+      record: {
+        experience: null,
+        current_company: { name: 'Go Colors' },
+        position: 'CEO',
+      },
+    });
+
+    expect(profile.experience).toBe('CEO @ Go Colors (current)');
   });
 
   it('should accept a record with experience', () => {

@@ -71,6 +71,12 @@ const experienceLine = (entry: Loose): string => {
 
 const educationLine = (entry: Loose): string => {
   const school = firstText(entry, ['title', 'schoolName', 'school', 'name']);
+
+  // Bright Data scrape lists some entries with dates only; a year alone says nothing
+  if (school === '') {
+    return '';
+  }
+
   const degree = firstText(entry, ['degree', 'degreeName', 'field']);
   const year = firstText(entry, ['end_year', 'endYear', 'endDate']);
 
@@ -162,8 +168,19 @@ export const profileToRowProfile = ({
     entries(profile.education ?? profile.educations).map(educationLine),
     MAX_EDUCATION_ENTRIES,
   );
+  // The LinkedIn URL scrape often returns no experience list; the current
+  // employer is then the only experience fact it gives
+  const currentCompany = firstText(asRecord(profile.current_company), ['name']);
+  const currentEmployment = [
+    firstText(profile, ['position']),
+    currentCompany || firstText(profile, ['current_company_name']),
+  ]
+    .filter((part) => part !== '')
+    .join(' @ ');
   const experience =
-    experienceFromArrays || experienceFromBrightDataSearch(profile);
+    experienceFromArrays ||
+    experienceFromBrightDataSearch(profile) ||
+    (currentEmployment === '' ? '' : `${currentEmployment} (current)`);
   const education =
     educationFromArrays || educationFromBrightDataSearch(profile);
   const location = firstText(profile, ['location', 'city']);
@@ -226,7 +243,14 @@ export const profileToRowProfile = ({
 // A profile counts as fetched only when the source returned something to judge
 export const isUsableProfile = (profile: RowProfile): boolean =>
   profile.fieldsPresent.some((field) =>
-    ['about', 'experience', 'education', 'headline'].includes(field),
+    [
+      'about',
+      'experience',
+      'education',
+      'headline',
+      'followers',
+      'connections',
+    ].includes(field),
   );
 
 export const readRowProfile = (

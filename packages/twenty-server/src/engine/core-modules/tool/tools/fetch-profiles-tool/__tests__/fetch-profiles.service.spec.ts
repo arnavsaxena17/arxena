@@ -22,8 +22,10 @@ const build = ({
   rows,
   scrape = jest.fn(async (urls: string[]) => urls.map(brightRecord)),
   harvest = jest.fn(async () => null),
+  search = undefined as jest.Mock | undefined,
 }: {
   rows: OutreachWorkingSetRow[];
+  search?: jest.Mock;
   scrape?: jest.Mock;
   harvest?: jest.Mock;
 }) => {
@@ -33,6 +35,7 @@ const build = ({
   }));
   const service = new FetchProfilesService(
     { getAll: jest.fn(async () => rows), writeOtherFields } as never,
+    { isConfigured: () => search !== undefined, search } as never,
     { isConfigured: () => true, scrapeProfilesByUrl: scrape } as never,
     { fetchProfileByUrl: harvest } as never,
   );
@@ -43,6 +46,35 @@ const build = ({
 const input = { workspaceId: 'w', projectId: 'p' };
 
 describe('FetchProfilesService', () => {
+  it('should take profiles from Business Search first and scrape only the ones it misses', async () => {
+    const search = jest.fn(async ({ query }: { query: string }) => ({
+      documents: query.endsWith('/asha')
+        ? [
+            {
+              brightId: 'a',
+              data: {
+                url: 'https://br.linkedin.com/in/asha',
+                followers: 10,
+                connections: 5,
+              },
+            },
+          ]
+        : [],
+    }));
+    const { service, scrape } = build({
+      rows: [
+        row('1', 'https://www.linkedin.com/in/asha'),
+        row('2', 'https://www.linkedin.com/in/ben'),
+      ],
+      search,
+    });
+    const result = await service.fetch(input);
+
+    expect(search).toHaveBeenCalledTimes(2);
+    expect(scrape).toHaveBeenCalledWith(['https://www.linkedin.com/in/ben']);
+    expect(result.fetched).toEqual({ brightData: 2, harvest: 0 });
+  });
+
   it('should fetch from Bright Data in one batch and store the profile with its source', async () => {
     const { service, scrape, writeOtherFields } = build({
       rows: [
@@ -127,7 +159,7 @@ describe('FetchProfilesService', () => {
       scrape: jest.fn(async () => [
         {
           input_url: 'https://www.linkedin.com/in/asha',
-          followers: 3,
+          avatar: 'https://example.com/a.jpg',
         },
       ]),
       harvest: jest.fn(async () => ({ headline: 'CEO' })),

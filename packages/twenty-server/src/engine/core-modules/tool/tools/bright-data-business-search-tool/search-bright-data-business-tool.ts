@@ -398,9 +398,18 @@ The result never contains the records, only counts and a summary; they go to the
       }
     });
 
+    // The flags go beside the fetched Bright Data fields, never in place of them
     return rows.map(({ person }) => ({
       ...person,
-      ...buildDeprioritisationFields(reasonsById.get(person.id) ?? []),
+      ...(reasonsById.has(person.id)
+        ? {
+            otherFields: {
+              ...person.otherFields,
+              ...buildDeprioritisationFields(reasonsById.get(person.id) ?? [])
+                .otherFields,
+            },
+          }
+        : {}),
     }));
   }
 

@@ -2,6 +2,7 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { isDefined } from 'twenty-shared/utils';
 
+import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
 import { BrightDataLinkedinProfileScrapeService } from 'src/engine/core-modules/bright-data/services/bright-data-linkedin-profile-scrape.service';
 import { type BrightDataLinkedinProfileRecord } from 'src/engine/core-modules/bright-data/types/bright-data-linkedin-profile.types';
 import { type FitmentVerdict } from 'src/engine/core-modules/candidate-sourcing/services/fitment/fitment-score.util';
@@ -21,6 +22,8 @@ import { HarvestLinkedinService } from 'src/engine/core-modules/org-chart/servic
 // Bright Data takes many URLs in one request; a few requests run side by side
 const BRIGHT_DATA_BATCH_SIZE = 20;
 const BRIGHT_DATA_CONCURRENCY = 4;
+// Business Search answers one URL in about 2 seconds, so many run side by side
+const BUSINESS_SEARCH_CONCURRENCY = 10;
 const HARVEST_CONCURRENCY = 6;
 const DEFAULT_ROW_LIMIT = 100;
 const DEFAULT_TIME_BUDGET_MS = 75_000;
@@ -93,6 +96,7 @@ export class FetchProfilesService {
 
   constructor(
     private readonly outreachWorkingSetService: OutreachWorkingSetService,
+    private readonly brightDataBusinessSearchService: BrightDataBusinessSearchService,
     private readonly brightDataProfileScrapeService: BrightDataLinkedinProfileScrapeService,
     private readonly harvestLinkedinService: HarvestLinkedinService,
     @Optional()
@@ -162,14 +166,27 @@ export class FetchProfilesService {
     const useHarvest = sources.includes('harvest');
 
     if (useBrightData) {
-      await this.fetchFromBrightData(
+      const onBrightDataProfile = (
+        target: Target,
+        profile: RowProfile,
+        record: Record<string, unknown>,
+      ) => {
+        profiles.set(target.id, profile);
+        brightDataRecords.set(target.id, record);
+        fetched.brightData += 1;
+      };
+
+      // Business Search first (seconds); the slow URL scrape only for the
+      // people it does not know
+      await this.fetchFromBusinessSearch(
         targets,
         deadline,
-        (target, profile, record) => {
-          profiles.set(target.id, profile);
-          brightDataRecords.set(target.id, record);
-          fetched.brightData += 1;
-        },
+        onBrightDataProfile,
+      );
+      await this.fetchFromBrightData(
+        targets.filter((target) => !profiles.has(target.id)),
+        deadline,
+        onBrightDataProfile,
       );
       await this.writeBrightDataProfiles(input, brightDataRecords);
     }
@@ -221,6 +238,62 @@ export class FetchProfilesService {
       timedOut: Date.now() >= deadline,
       durationMs: Date.now() - startedAt,
     };
+  }
+
+  private async fetchFromBusinessSearch(
+    targets: Target[],
+    deadline: number,
+    onProfile: (
+      target: Target,
+      profile: RowProfile,
+      record: Record<string, unknown>,
+    ) => void,
+  ): Promise<void> {
+    if (
+      targets.length === 0 ||
+      !this.brightDataBusinessSearchService.isConfigured()
+    ) {
+      return;
+    }
+
+    await runPool(targets, BUSINESS_SEARCH_CONCURRENCY, async (target) => {
+      if (Date.now() >= deadline) {
+        return;
+      }
+
+      try {
+        const result = await this.brightDataBusinessSearchService.search({
+          entity: 'people',
+          mode: 'instant',
+          query: target.linkedinUrl,
+          limit: 3,
+        });
+        // Instant search is fuzzy: only the record with this exact profile URL counts
+        const match = result.documents.find((document) => {
+          const url = document.data.url;
+
+          return typeof url === 'string' && urlKey(url) === target.key;
+        });
+
+        if (!isDefined(match)) {
+          return;
+        }
+
+        const profile = profileToRowProfile({
+          source: 'bright_data',
+          record: match.data,
+          fetchedAt: new Date().toISOString(),
+        });
+
+        if (isUsableProfile(profile)) {
+          onProfile(target, profile, match.data);
+        }
+      } catch (error) {
+        this.logger.warn(
+          `Bright Data business search profile lookup failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    });
   }
 
   private async fetchFromBrightData(

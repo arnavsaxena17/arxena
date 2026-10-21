@@ -1,3 +1,5 @@
+import { isDefined } from 'twenty-shared/utils';
+
 import { buildBrightDataPersonOtherFields } from 'src/engine/core-modules/bright-data/utils/bright-data-business-search.util';
 import {
   PROFILE_FIELD_KEY,
@@ -18,8 +20,14 @@ export const brightDataRecordToPersonOtherFields = (
     record,
     fetchedAt,
   });
+  const baseFields = buildBrightDataPersonOtherFields(record);
   const otherFields: Record<string, unknown> = {
-    ...buildBrightDataPersonOtherFields(record),
+    ...baseFields,
+    // The nested profile is one cell; experience as its own column keeps it
+    // readable on the People tab when the record has no work-experience list
+    ...(isDefined(profile.experience) && !isDefined(baseFields.workExperience)
+      ? { experience: profile.experience }
+      : {}),
     ...(isUsableProfile(profile) ? { [PROFILE_FIELD_KEY]: profile } : {}),
   };
 
