@@ -21,6 +21,8 @@ export type OutreachRawJsonBag = (typeof OUTREACH_RAW_JSON_BAGS)[number];
 export type OutreachTableColumnLayout = {
   id: string;
   isVisible: boolean;
+  // User picked this from Hidden fields; keep showing even when every cell is blank
+  forceVisible?: boolean;
   size: number;
   position: number;
 };
@@ -79,7 +81,8 @@ const isLayoutItem = (value: unknown): value is OutreachTableColumnLayout => {
     typeof item.id === 'string' &&
     typeof item.isVisible === 'boolean' &&
     typeof item.size === 'number' &&
-    typeof item.position === 'number'
+    typeof item.position === 'number' &&
+    (item.forceVisible === undefined || typeof item.forceVisible === 'boolean')
   );
 };
 
@@ -241,10 +244,7 @@ const splitRawJsonColumnId = (
   return { bag, key: columnId.slice(separatorIndex + 1) };
 };
 
-export const readRawJsonValue = (
-  row: object,
-  columnId: string,
-): unknown => {
+export const readRawJsonValue = (row: object, columnId: string): unknown => {
   const parsedId = splitRawJsonColumnId(columnId);
 
   if (!parsedId) {
@@ -336,6 +336,13 @@ export const getOutreachCellText = <TRow>(
   return String(value);
 };
 
+export const isOutreachColumnBlank = <TRow>(
+  column: Pick<LayoutColumn<TRow>, 'sortValue'>,
+  rows: TRow[],
+): boolean =>
+  rows.length === 0 ||
+  rows.every((row) => getOutreachCellText(column, row) === '');
+
 const PINNED_AFTER_STATUS_COLUMN_IDS = [
   'otherFields.peopleFound',
   'otherFields.peopleFoundCount',
@@ -372,13 +379,39 @@ export const materializeColumnLayout = <TRow>(
 };
 
 export const resolveVisibleColumns = <
-  TColumn extends { id: string; width: number },
+  TRow,
+  TColumn extends Pick<LayoutColumn<TRow>, 'id' | 'width' | 'sortValue'>,
 >(
   columns: TColumn[],
   layout: OutreachTableColumnLayout[] | null,
+  rows: TRow[] = [],
 ): TColumn[] => {
+  const layoutById = new Map((layout ?? []).map((item) => [item.id, item]));
+  const shouldShowColumn = (column: TColumn): boolean => {
+    if (column.id === 'name') {
+      return true;
+    }
+
+    const layoutItem = layoutById.get(column.id);
+
+    if (layoutItem && !layoutItem.isVisible && !layoutItem.forceVisible) {
+      return false;
+    }
+
+    if (layoutItem?.forceVisible === true) {
+      return true;
+    }
+
+    // Entirely blank columns stay in Hidden fields until the user re-adds them
+    if (rows.length > 0 && isOutreachColumnBlank(column, rows)) {
+      return false;
+    }
+
+    return true;
+  };
+
   if (!layout || layout.length === 0) {
-    return columns;
+    return columns.filter(shouldShowColumn);
   }
 
   const columnsById = new Map(columns.map((column) => [column.id, column]));
@@ -388,7 +421,7 @@ export const resolveVisibleColumns = <
     .flatMap((item) => {
       const column = columnsById.get(item.id);
 
-      if (!column || (item.id !== 'name' && !item.isVisible)) {
+      if (!column || !shouldShowColumn(column)) {
         return [];
       }
 
@@ -399,7 +432,9 @@ export const resolveVisibleColumns = <
         },
       ];
     });
-  const unsaved = columns.filter((column) => !savedIds.has(column.id));
+  const unsaved = columns.filter(
+    (column) => !savedIds.has(column.id) && shouldShowColumn(column),
+  );
   const pinned = unsaved.filter((column) =>
     PINNED_AFTER_STATUS_COLUMN_IDS.includes(column.id),
   );
@@ -410,7 +445,11 @@ export const resolveVisibleColumns = <
   // people look for first, which sit right after Status
   const statusIndex = merged.findIndex((column) => column.id === 'status');
 
-  merged.splice(statusIndex >= 0 ? statusIndex + 1 : merged.length, 0, ...pinned);
+  merged.splice(
+    statusIndex >= 0 ? statusIndex + 1 : merged.length,
+    0,
+    ...pinned,
+  );
 
   const nameColumn = merged.find((column) => column.id === 'name');
 
@@ -428,7 +467,7 @@ export const hideColumnInLayout = <TRow>(
 ): OutreachTableColumnLayout[] =>
   materializeColumnLayout(columns, layout).map((item) =>
     item.id === columnId && item.id !== 'name'
-      ? { ...item, isVisible: false }
+      ? { ...item, isVisible: false, forceVisible: false }
       : item,
   );
 
@@ -445,13 +484,16 @@ export const showColumnInLayout = <TRow>(
         {
           id: columnId,
           isVisible: true,
+          forceVisible: true,
           size: 160,
           position: full.length,
         },
       ];
 
   return withColumn.map((item) =>
-    item.id === columnId ? { ...item, isVisible: true } : item,
+    item.id === columnId
+      ? { ...item, isVisible: true, forceVisible: true }
+      : item,
   );
 };
 
@@ -522,11 +564,7 @@ const matchesFilter = (
       const upperText = (filter.valueTo ?? '').trim().replace(/,/g, '');
       const upperNumber = Number(upperText);
 
-      if (
-        !isComparable ||
-        upperText === '' ||
-        !Number.isFinite(upperNumber)
-      ) {
+      if (!isComparable || upperText === '' || !Number.isFinite(upperNumber)) {
         return false;
       }
 

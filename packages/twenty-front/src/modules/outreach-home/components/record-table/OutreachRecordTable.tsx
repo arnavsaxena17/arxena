@@ -22,6 +22,7 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { RECORD_TABLE_COLUMN_MIN_WIDTH } from '@/object-record/record-table/constants/RecordTableColumnMinWidth';
 import { RECORD_TABLE_ROW_HEIGHT } from '@/object-record/record-table/constants/RecordTableRowHeight';
 import { OutreachRecordTableColumnMenu } from '@/outreach-home/components/record-table/OutreachRecordTableColumnMenu';
+import { OutreachRecordTableHiddenFieldsMenu } from '@/outreach-home/components/record-table/OutreachRecordTableHiddenFieldsMenu';
 import {
   type OutreachColumnFilter,
   type OutreachTableColumnLayout,
@@ -185,46 +186,6 @@ const StyledAddHeaderCell = styled.th`
   top: 0;
   width: 32px;
   z-index: 2;
-`;
-
-const StyledAddMenu = styled.div`
-  background: ${themeCssVariables.background.primary};
-  border: 1px solid ${themeCssVariables.border.color.medium};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  box-shadow: ${themeCssVariables.boxShadow.strong};
-  display: flex;
-  flex-direction: column;
-  max-height: 280px;
-  min-width: 180px;
-  overflow: auto;
-  padding: ${themeCssVariables.spacing[1]};
-  position: fixed;
-  z-index: 20;
-`;
-
-const StyledAddMenuButton = styled.button`
-  background: transparent;
-  border: none;
-  color: ${themeCssVariables.font.color.primary};
-  cursor: pointer;
-  font-family: inherit;
-  font-size: ${themeCssVariables.font.size.md};
-  padding: ${themeCssVariables.spacing[1]};
-  text-align: left;
-
-  &:hover {
-    background: ${themeCssVariables.background.transparent.light};
-  }
-`;
-
-const StyledAddMenuInput = styled.input`
-  border: 1px solid ${themeCssVariables.border.color.medium};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  color: ${themeCssVariables.font.color.primary};
-  font-family: inherit;
-  font-size: ${themeCssVariables.font.size.sm};
-  margin: ${themeCssVariables.spacing[1]};
-  padding: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledSortIcon = styled.span`
@@ -392,7 +353,6 @@ export const OutreachRecordTable = <TRow,>({
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [draggedColumnId, setDraggedColumnId] = useState<string | null>(null);
-  const [rawJsonKey, setRawJsonKey] = useState('');
   const [editingCell, setEditingCell] = useState<{
     rowId: string;
     columnId: string;
@@ -418,8 +378,8 @@ export const OutreachRecordTable = <TRow,>({
   }, []);
 
   const visibleColumns = useMemo(
-    () => resolveVisibleColumns(columns, columnLayout),
-    [columnLayout, columns],
+    () => resolveVisibleColumns(columns, columnLayout, rows),
+    [columnLayout, columns, rows],
   );
 
   const hiddenColumns = useMemo(() => {
@@ -778,7 +738,7 @@ export const OutreachRecordTable = <TRow,>({
                     top: rect.bottom,
                     left: Math.max(
                       8,
-                      Math.min(rect.left, window.innerWidth - 260),
+                      Math.min(rect.left, window.innerWidth - 200),
                     ),
                   });
                   setAddMenuOpen((current) => !current);
@@ -787,52 +747,19 @@ export const OutreachRecordTable = <TRow,>({
                 <IconPlus size={14} />
               </StyledIconButton>
               {addMenuOpen && (
-                <StyledAddMenu
-                  style={{ top: menuPosition.top, left: menuPosition.left }}
-                  onMouseDown={(event) => event.stopPropagation()}
-                >
-                  {hiddenColumns.map((column) => (
-                    <StyledAddMenuButton
-                      key={column.id}
-                      type="button"
-                      onClick={() => {
-                        onColumnLayoutChange?.(
-                          showColumnInLayout(columns, columnLayout, column.id),
-                        );
-                        setAddMenuOpen(false);
-                      }}
-                    >
-                      {column.label}
-                    </StyledAddMenuButton>
-                  ))}
-                  <StyledAddMenuInput
-                    aria-label="Other fields key"
-                    placeholder="otherFields key"
-                    value={rawJsonKey}
-                    onChange={(event) => setRawJsonKey(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key !== 'Enter' || !onColumnLayoutChange) {
-                        return;
-                      }
-
-                      const key = rawJsonKey.trim();
-
-                      if (!key) {
-                        return;
-                      }
-
-                      onColumnLayoutChange(
-                        showColumnInLayout(
-                          columns,
-                          columnLayout,
-                          `otherFields.${key}`,
-                        ),
+                <div onMouseDown={(event) => event.stopPropagation()}>
+                  <OutreachRecordTableHiddenFieldsMenu
+                    hiddenColumns={hiddenColumns}
+                    top={menuPosition.top}
+                    left={menuPosition.left}
+                    onShowColumn={(columnId) => {
+                      onColumnLayoutChange?.(
+                        showColumnInLayout(columns, columnLayout, columnId),
                       );
-                      setRawJsonKey('');
                       setAddMenuOpen(false);
                     }}
                   />
-                </StyledAddMenu>
+                </div>
               )}
             </StyledAddHeaderCell>
             <StyledFillerHeaderCell />

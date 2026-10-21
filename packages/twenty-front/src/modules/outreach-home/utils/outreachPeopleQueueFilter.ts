@@ -14,6 +14,8 @@ export const OUTREACH_PEOPLE_QUEUE_FILTERS = [
   { id: 'not_interested', label: 'Not interested' },
   { id: 'snoozed', label: 'Snoozed' },
   { id: 'STOPPED', label: 'Stopped' },
+  // Redis discovery rows (no Candidate yet) — not counted in journey chips.
+  { id: 'not_enrolled', label: 'Not enrolled' },
 ] as const;
 
 export type OutreachPeopleQueueFilter =
@@ -46,7 +48,10 @@ export const matchesOutreachPeopleQueueFilter = (
 ): boolean => {
   switch (filter) {
     case 'all':
-      return true;
+      // Chip "All" is totalEnrolled — show Candidate rows with CRM stage / runs.
+      return isDefined(person.candidateId);
+    case 'not_enrolled':
+      return !isDefined(person.candidateId);
     case 'needs_approval':
       return person.needsApproval === true;
     case 'workflow_failed':
@@ -69,4 +74,20 @@ export const matchesOutreachPeopleQueueFilter = (
     default:
       return isDefined(person.candidateId) && person.stage === filter;
   }
+};
+
+// Discovery-only projects have no Candidate rows yet — fall back to Redis list.
+export const resolveOutreachPeopleQueueRows = (
+  people: OutreachPersonRow[],
+  filter: OutreachPeopleQueueFilter,
+): OutreachPersonRow[] => {
+  const matched = people.filter((person) =>
+    matchesOutreachPeopleQueueFilter(person, filter),
+  );
+
+  if (filter === 'all' && matched.length === 0 && people.length > 0) {
+    return people;
+  }
+
+  return matched;
 };

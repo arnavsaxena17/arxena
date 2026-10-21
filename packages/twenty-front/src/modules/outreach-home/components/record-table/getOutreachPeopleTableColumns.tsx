@@ -129,27 +129,8 @@ export const getOutreachPeopleTableColumns = ({
         />
       ) : null,
   },
-  {
-    id: 'owner',
-    label: 'Owner',
-    Icon: IconUser,
-    width: 150,
-    sortValue: (person) =>
-      ownerNameByCandidateId[person.candidateId ?? ''] ?? '',
-    render: (person) => (
-      <OutreachTextCell
-        value={ownerNameByCandidateId[person.candidateId ?? ''] ?? ''}
-      />
-    ),
-  },
-  {
-    id: 'location',
-    label: 'Location',
-    Icon: IconMap,
-    width: 170,
-    sortValue: (person) => person.locationName,
-    render: (person) => <OutreachTextCell value={person.locationName} />,
-  },
+  // Stage / run / next sit next to identity so CRM progress is not buried
+  // behind Owner + Location while discovery Redis rows still say Queued.
   {
     id: 'stage',
     label: 'Stage',
@@ -160,21 +141,6 @@ export const getOutreachPeopleTableColumns = ({
       <OutreachTagCell
         label={getStageLabel(person)}
         color={getOutreachStageTagColor(person.stage)}
-      />
-    ),
-  },
-  {
-    id: 'intent',
-    label: 'Intent',
-    Icon: IconSparkles,
-    width: 170,
-    sortValue: getConversationStageLabel,
-    render: (person) => (
-      <OutreachTagCell
-        label={getConversationStageLabel(person)}
-        color={getOutreachConversationStageTagColor(
-          person.outreachConversationStage,
-        )}
       />
     ),
   },
@@ -199,6 +165,42 @@ export const getOutreachPeopleTableColumns = ({
     sortValue: (person) => person.nextStepLabel,
     render: (person) => (
       <OutreachTextCell value={person.nextStepLabel} isMuted />
+    ),
+  },
+  {
+    id: 'owner',
+    label: 'Owner',
+    Icon: IconUser,
+    width: 150,
+    sortValue: (person) =>
+      ownerNameByCandidateId[person.candidateId ?? ''] ?? '',
+    render: (person) => (
+      <OutreachTextCell
+        value={ownerNameByCandidateId[person.candidateId ?? ''] ?? ''}
+      />
+    ),
+  },
+  {
+    id: 'location',
+    label: 'Location',
+    Icon: IconMap,
+    width: 170,
+    sortValue: (person) => person.locationName,
+    render: (person) => <OutreachTextCell value={person.locationName} />,
+  },
+  {
+    id: 'intent',
+    label: 'Intent',
+    Icon: IconSparkles,
+    width: 170,
+    sortValue: getConversationStageLabel,
+    render: (person) => (
+      <OutreachTagCell
+        label={getConversationStageLabel(person)}
+        color={getOutreachConversationStageTagColor(
+          person.outreachConversationStage,
+        )}
+      />
     ),
   },
   {

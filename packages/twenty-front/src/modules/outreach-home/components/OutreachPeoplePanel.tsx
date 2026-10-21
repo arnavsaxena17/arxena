@@ -70,8 +70,8 @@ import {
 import { mapCrmPersonRecordsToOutreachPersonRows } from '@/outreach-home/utils/map-crm-record-to-outreach-row.util';
 import { mapOutreachPersonToTableRow } from '@/outreach-home/utils/mapOutreachPersonToTableRow';
 import {
-  matchesOutreachPeopleQueueFilter,
   OUTREACH_PEOPLE_QUEUE_FILTERS,
+  resolveOutreachPeopleQueueRows,
   type OutreachPeopleQueueFilter,
 } from '@/outreach-home/utils/outreachPeopleQueueFilter';
 import { filterOutreachRows } from '@/outreach-home/utils/outreach-table-layout.util';
@@ -276,6 +276,11 @@ export const OutreachPeoplePanel = ({
       switch (filterId) {
         case 'all':
           return journeySummary.totalEnrolled;
+        case 'not_enrolled':
+          return Math.max(
+            0,
+            people.length - (journeySummary.totalEnrolled ?? 0),
+          );
         case 'awaiting_reply':
           return (
             (byStage.CONNECTION_ACCEPTED ?? 0) + (byStage.WAITING_REPLY ?? 0)
@@ -298,7 +303,7 @@ export const OutreachPeoplePanel = ({
           return byStage[filterId] ?? 0;
       }
     },
-    [isJourneySummaryLoading, journeySummary],
+    [isJourneySummaryLoading, journeySummary, people.length],
   );
 
   useEffect(() => {
@@ -330,32 +335,31 @@ export const OutreachPeoplePanel = ({
       selectedCompany?.name,
     );
 
-    return people.filter((person) => {
-      // People saved before they carried a company id match by company name
-      if (
-        isDefined(selectedCompanyId) &&
-        person.companyId !== selectedCompanyId &&
-        !(
-          person.companyId === '' &&
-          selectedCompanyNameKey !== '' &&
-          normalizeCompanyNameKey(person.companyName) === selectedCompanyNameKey
-        )
-      ) {
-        return false;
-      }
+    return resolveOutreachPeopleQueueRows(people, stageFilter).filter(
+      (person) => {
+        // People saved before they carried a company id match by company name
+        if (
+          isDefined(selectedCompanyId) &&
+          person.companyId !== selectedCompanyId &&
+          !(
+            person.companyId === '' &&
+            selectedCompanyNameKey !== '' &&
+            normalizeCompanyNameKey(person.companyName) ===
+              selectedCompanyNameKey
+          )
+        ) {
+          return false;
+        }
 
-      if (!matchesOutreachPeopleQueueFilter(person, stageFilter)) {
-        return false;
-      }
+        if (normalizedQuery.length === 0) {
+          return true;
+        }
 
-      if (normalizedQuery.length === 0) {
-        return true;
-      }
-
-      return `${person.name} ${person.title} ${person.companyName} ${person.locationName ?? ''}`
-        .toLowerCase()
-        .includes(normalizedQuery);
-    });
+        return `${person.name} ${person.title} ${person.companyName} ${person.locationName ?? ''}`
+          .toLowerCase()
+          .includes(normalizedQuery);
+      },
+    );
   }, [people, searchQuery, selectedCompany, selectedCompanyId, stageFilter]);
 
   // The candidate drawer and Cmd+K actions resolve the selected row from

@@ -31,9 +31,11 @@ export const downloadOutreachRowsAsCsv = <TRow>({
   columnFilters: OutreachColumnFilter[];
   fileName: string;
 }): number => {
-  const visibleColumns = resolveVisibleColumns(columns, columnLayout).filter(
-    (column) => column.sortValue !== undefined,
-  );
+  const visibleColumns = resolveVisibleColumns(
+    columns,
+    columnLayout,
+    rows,
+  ).filter((column) => column.sortValue !== undefined);
   const exportedRows = filterOutreachRows(rows, columns, columnFilters);
 
   const lines = [
