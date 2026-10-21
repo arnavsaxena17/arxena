@@ -82,9 +82,7 @@ import { OrgChartS3Service } from './orgchart-s3.service';
 import { PythonOrgChartService } from './python-org-chart.service';
 
 /** Matches OrgChartSearchService.buildOrgChartFromLinkedInCompanyCandidates input rows */
-type OrgChartBuildCandidateRow =
-  | CandidateTableRow
-  | Record<string, unknown>;
+type OrgChartBuildCandidateRow = CandidateTableRow | Record<string, unknown>;
 
 type OrgchartSearchType = 'classic' | 'sales_navigator' | 'recruiter';
 const APIFY_ORG_INTELLIGENCE_SOURCE_TAG = 'apify-org-intelligence';
@@ -141,6 +139,8 @@ type SearchOrgchartLinkedInBody = {
   linkedinLocationId?: string;
   linkedinLocationName?: string;
   linkedinCompanyParameterId?: string;
+  /** LLM-planned Unipile shards beyond the normal ~1000 cap. */
+  unlimited?: boolean;
 };
 
 type EntireCompanyFilterState = {
@@ -2939,6 +2939,7 @@ export class OrgChartLinkedInBuildService {
       industry: body.industry,
       industryCategory: body.industryCategory,
       shouldWriteCompanyOrgChartCache,
+      unlimited: body.unlimited === true,
     };
 
     await this.orgchartApifyQueue.add(
@@ -3903,6 +3904,8 @@ export class OrgChartLinkedInBuildService {
         validateAndScoreLinkedInResults:
           body.validateAndScoreLinkedInResults === true,
         queryGenerator: body.queryGenerator,
+        unlimited: body.unlimited === true,
+        industry: body.industry,
       },
     );
 
@@ -4862,6 +4865,7 @@ export class OrgChartLinkedInBuildService {
       businessDivisionRawQuery: jobData.businessDivisionRawQuery,
       industry: jobData.industry,
       industryCategory: jobData.industryCategory,
+      unlimited: jobData.unlimited === true,
     };
 
     try {
@@ -4885,6 +4889,8 @@ export class OrgChartLinkedInBuildService {
           linkedinCompanyUrl,
           linkedinUnipileAccountId: body.linkedinUnipileAccountId?.trim(),
           businessDivisionRawQuery: body.businessDivisionRawQuery?.trim(),
+          unlimited: jobData.unlimited === true,
+          industry: jobData.industry,
         },
       );
 

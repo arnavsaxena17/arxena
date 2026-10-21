@@ -52,7 +52,10 @@ export const matchesOutreachPeopleQueueFilter = (
     case 'workflow_failed':
       return person.workflowRunStatus === 'FAILED';
     case 'awaiting_reply':
-      return AWAITING_REPLY_STAGES.has(person.stage);
+      // Journey chips are enrolled-only; Redis discovery defaults to QUEUED.
+      return (
+        isDefined(person.candidateId) && AWAITING_REPLY_STAGES.has(person.stage)
+      );
     case 'intent':
       return person.outreachConversationStage === 'INTENT';
     case 'follow_up_due':
@@ -64,6 +67,6 @@ export const matchesOutreachPeopleQueueFilter = (
     case 'snoozed':
       return person.outreachConversationStage === 'SNOOZED';
     default:
-      return person.stage === filter;
+      return isDefined(person.candidateId) && person.stage === filter;
   }
 };

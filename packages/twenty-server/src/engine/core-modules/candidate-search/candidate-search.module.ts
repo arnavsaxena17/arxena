@@ -52,9 +52,13 @@ import { SearchResponseBuilderService } from './services/search-response-builder
 import { SearchResultsCacheService } from './services/search-results-cache.service';
 import { StrategyExecutionService } from './services/strategy-execution.service';
 import { TitleTaxonomyModule } from 'src/engine/core-modules/title-taxonomy/title-taxonomy.module';
+import { AiBillingModule } from 'src/engine/metadata-modules/ai/ai-billing/ai-billing.module';
+import { AiModelsModule } from 'src/engine/metadata-modules/ai/ai-models/ai-models.module';
+import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { FileUtils } from './utils/file.utils';
 import { LinkedinParameterResolver } from './utils/linkedin-parameter-resolver.util';
 import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
+import { OrgchartUnipileShardPlannerService } from './services/orgchart-unipile-shard-planner.service';
 @Module({
   imports: [
     TitleTaxonomyModule,
@@ -64,6 +68,9 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     LinkedInSearchModule,
     UnipilePoolModule,
     WorkspaceModificationsModule,
+    WorkspaceCacheStorageModule,
+    AiBillingModule,
+    AiModelsModule,
     forwardRef(() => CandidateSourcingModule),
     GraphQLExecutionModule,
     forwardRef(() => OrgChartModule),
@@ -114,6 +121,7 @@ import { ParameterSanitizer } from './utils/parameter-sanitizer.util';
     ApolloPeopleSearchTransformerService,
     OrgChartIntentService,
     OrgchartLinkedInQueryRouterService,
+    OrgchartUnipileShardPlannerService,
     OrgChartSearchService,
     OrgchartApifyBuildProcessor,
     OrgchartApolloBuildProcessor,

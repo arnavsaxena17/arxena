@@ -198,32 +198,51 @@ function generateSalesNavigatorUrl(
     filters.push(`(type:CURRENT_COMPANY,values:List(${companyValues}))`);
   }
 
-  // Add location filter (REGION) - only use resolved numeric IDs
-  let locationIds: string[] = [];
+  // Add location filter (REGION) - resolved numeric IDs; include and exclude
+  const locationIncludeIds: string[] = [];
+  const locationExcludeIds: string[] = [];
   const locationDisplay: Array<{ id: string; title: string }> =
     params.location_display || [];
 
   if (params.location) {
-    // Sales Navigator uses include/exclude structure
     if (params.location.include && Array.isArray(params.location.include)) {
-      locationIds = params.location.include.filter((id) => {
-        // Only include resolved IDs (numeric or URN)
-        return typeof id === 'string' && id.trim() && isResolvedId(id);
-      });
+      for (const id of params.location.include) {
+        if (typeof id === 'string' && id.trim() && isResolvedId(id)) {
+          locationIncludeIds.push(id.trim());
+        }
+      }
+    }
+    if (params.location.exclude && Array.isArray(params.location.exclude)) {
+      for (const id of params.location.exclude) {
+        if (typeof id === 'string' && id.trim() && isResolvedId(id)) {
+          locationExcludeIds.push(id.trim());
+        }
+      }
     }
   }
 
-  if (locationIds.length > 0) {
-    const locationValues = locationIds.map((id: string) => {
-      // Try to find display name
-      const displayInfo = locationDisplay.find((d) => d.id === id);
-      const text = displayInfo?.title || 'Unknown';
-      // Escape commas and special characters in text
-      const escapedText = text.replace(/,/g, '\\,').replace(/:/g, '\\:');
-      return `(id:${id},text:${escapedText},selectionType:INCLUDED)`;
-    }).join(',');
+  const locationFilterValues: string[] = [];
+  for (const id of locationIncludeIds) {
+    const displayInfo = locationDisplay.find((item) => item.id === id);
+    const text = displayInfo?.title || 'Unknown';
+    const escapedText = text.replace(/,/g, '\\,').replace(/:/g, '\\:');
+    locationFilterValues.push(
+      `(id:${id},text:${escapedText},selectionType:INCLUDED)`,
+    );
+  }
+  for (const id of locationExcludeIds) {
+    const displayInfo = locationDisplay.find((item) => item.id === id);
+    const text = displayInfo?.title || 'Unknown';
+    const escapedText = text.replace(/,/g, '\\,').replace(/:/g, '\\:');
+    locationFilterValues.push(
+      `(id:${id},text:${escapedText},selectionType:EXCLUDED)`,
+    );
+  }
 
-    filters.push(`(type:REGION,values:List(${locationValues}))`);
+  if (locationFilterValues.length > 0) {
+    filters.push(
+      `(type:REGION,values:List(${locationFilterValues.join(',')}))`,
+    );
   }
 
   // Build query parts

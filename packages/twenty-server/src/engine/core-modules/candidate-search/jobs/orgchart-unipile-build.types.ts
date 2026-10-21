@@ -25,4 +25,6 @@ export type OrgchartUnipileBuildJobData = {
   /** Macro category override forwarded to Python list_data.industry_category */
   industryCategory?: string;
   shouldWriteCompanyOrgChartCache: boolean;
+  /** LLM-planned Unipile shards beyond the normal ~1000 cap (slow 30–120s pacing). */
+  unlimited?: boolean;
 };

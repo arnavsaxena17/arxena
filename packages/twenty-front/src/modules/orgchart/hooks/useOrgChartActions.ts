@@ -15,8 +15,8 @@ import { useOrgChartSnackBar } from '@/orgchart/hooks/useOrgChartSnackBar';
 import { formatAccountRateLimitErrorFromUnknown } from '@/unipile/utils/accountRateLimitError';
 import { tryExtensionLinkedinUnipileRecovery } from '@/unipile/utils/linkedinUnipileExtensionBridge';
 import {
-    isLinkedInNotConnectedErrorMessage,
-    LINKEDIN_NOT_CONNECTED_USER_MESSAGE,
+  isLinkedInNotConnectedErrorMessage,
+  LINKEDIN_NOT_CONNECTED_USER_MESSAGE,
 } from '@/unipile/utils/linkedinNotConnectedError';
 import { useWebSocketEvent } from '@/websocket-context/useWebSocketEvent';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
@@ -24,22 +24,27 @@ import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomStat
 import { Mixpanel } from '~/mixpanel';
 
 import {
-    normalizeCompanyIdForUrl,
-    type OrgChartContextAction,
-    type OrgChartNodeContextPayload,
+  normalizeCompanyIdForUrl,
+  type OrgChartContextAction,
+  type OrgChartNodeContextPayload,
 } from 'twenty-orgchart';
-import { isValidLinkedInProfileUrl, type NodeState, type OrgChartNodeData, type OrgchartSearchMode as OrgchartSearchModeValue } from 'twenty-shared/utils';
+import {
+  isValidLinkedInProfileUrl,
+  type NodeState,
+  type OrgChartNodeData,
+  type OrgchartSearchMode as OrgchartSearchModeValue,
+} from 'twenty-shared/utils';
 import { type ContextResultItem } from '../types';
 import type {
-    SuperImposeTargetCompany,
-    SuperImposeTargetLocation,
+  SuperImposeTargetCompany,
+  SuperImposeTargetLocation,
 } from '../types/superImposeTypes';
 import {
-    buildBooleanKeywordsForNode,
-    contextResultItemFromNodePersonSlot,
-    exportContextResultsToCsv,
-    extractCompanyDomainFromWebsite,
-    normalizeCandidateItem,
+  buildBooleanKeywordsForNode,
+  contextResultItemFromNodePersonSlot,
+  exportContextResultsToCsv,
+  extractCompanyDomainFromWebsite,
+  normalizeCandidateItem,
 } from '../utils/orgChartUtils';
 
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
@@ -109,7 +114,15 @@ export type UseOrgChartActionsParams = {
 };
 
 type OrgChartSearchProgressEvent = {
-  event?: 'status' | 'paginationInfo' | 'pageResults' | 'complete' | 'error';
+  event?:
+    | 'status'
+    | 'paginationInfo'
+    | 'pageResults'
+    | 'searchPlan'
+    | 'unlimitedShardPlan'
+    | 'unlimitedShardProgress'
+    | 'complete'
+    | 'error';
   requestId?: string;
   mode?: string;
   companyName?: string;
@@ -129,6 +142,19 @@ type OrgChartSearchProgressEvent = {
     candidatesReceived?: number;
     candidatesCollectedSoFar?: number;
     remainingToFetch?: number;
+    // Unlimited Unipile shard crawl
+    unlimited?: boolean;
+    primaryDimension?: string;
+    shardKeys?: string[];
+    intentSummary?: string;
+    phase?: 'started' | 'completed';
+    currentShardKey?: string;
+    shardsCompleted?: number;
+    shardsTotal?: number;
+    profilesCollectedSoFar?: number;
+    estimatedTotal?: number;
+    remainingProfiles?: number;
+    estimatedTotalUpperBound?: number;
   };
 };
 
@@ -179,6 +205,53 @@ const formatOrgChartTransportErrorMessage = (message: string): string => {
 
 const createOrgChartRequestId = () =>
   `orgchart-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+const unlimitedOrgChartRequestStorageKey = (companyId: string) =>
+  `orgchart-unlimited-request:${companyId}`;
+
+const readStoredUnlimitedOrgChartRequestId = (
+  companyId: string,
+): string | null => {
+  if (!companyId.trim() || typeof sessionStorage === 'undefined') {
+    return null;
+  }
+  try {
+    const stored = sessionStorage.getItem(
+      unlimitedOrgChartRequestStorageKey(companyId),
+    );
+    return stored?.trim() || null;
+  } catch {
+    return null;
+  }
+};
+
+const persistUnlimitedOrgChartRequestId = (
+  companyId: string,
+  requestId: string,
+) => {
+  if (!companyId.trim() || !requestId.trim()) {
+    return;
+  }
+  try {
+    sessionStorage.setItem(
+      unlimitedOrgChartRequestStorageKey(companyId),
+      requestId.trim(),
+    );
+  } catch {
+    // sessionStorage may be unavailable (private mode / quota)
+  }
+};
+
+const clearStoredUnlimitedOrgChartRequestId = (companyId: string) => {
+  if (!companyId.trim()) {
+    return;
+  }
+  try {
+    sessionStorage.removeItem(unlimitedOrgChartRequestStorageKey(companyId));
+  } catch {
+    // ignore
+  }
+};
 
 const collectJobTitlesFromOrgChartNode = (n: OrgChartNodeData): string[] => {
   const titles: string[] = [];
@@ -465,7 +538,8 @@ export const useOrgChartActions = ({
   onQueuedOrgChartComplete,
 }: UseOrgChartActionsParams) => {
   const tokenPair = useAtomStateValue(tokenPairState);
-  const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token ?? undefined;
+  const accessToken =
+    tokenPair?.accessOrWorkspaceAgnosticToken?.token ?? undefined;
   const setOrgChartContactsByKey = useSetAtomState(orgChartContactsByKeyState);
   const orgChartLinkedinCandidateSource = useAtomStateValue(
     orgChartLinkedinCandidateSourceState,
@@ -554,9 +628,8 @@ export const useOrgChartActions = ({
   >(undefined);
 
   const [isAddToJobModalOpen, setIsAddToJobModalOpen] = useState(false);
-  const [addToProjectNode, setAddToProjectNode] = useState<OrgChartNodeData | null>(
-    null,
-  );
+  const [addToProjectNode, setAddToProjectNode] =
+    useState<OrgChartNodeData | null>(null);
   const [addToJobQueueStartChat, setAddToJobQueueStartChat] = useState(true);
 
   const closeAddToJobModal = useCallback(() => {
@@ -703,6 +776,9 @@ export const useOrgChartActions = ({
         if (payload.mode === 'entire_company' && companyId) {
           closeSnackBarByDedupeKey(`orgchart-entire-company-${companyId}`);
         }
+        if (companyId) {
+          clearStoredUnlimitedOrgChartRequestId(companyId);
+        }
         enqueueSnackBar(msg, {
           variant: SnackBarVariant.Error,
           dedupeKey: payload.requestId
@@ -725,6 +801,128 @@ export const useOrgChartActions = ({
           setContextProgressMessage(eventData.message);
           updateSnackBarIfEntireCompany(eventData.message);
         }
+        return;
+      }
+
+      if (payload.event === 'searchPlan') {
+        if (eventData.unlimited === true && companyId) {
+          persistUnlimitedOrgChartRequestId(companyId, payload.requestId);
+        }
+        const estimated =
+          typeof eventData.estimatedTotalUpperBound === 'number'
+            ? eventData.estimatedTotalUpperBound
+            : typeof eventData.totalCount === 'number'
+              ? eventData.totalCount
+              : null;
+        if (estimated != null) {
+          setContextProgressTotalCandidates(estimated);
+        }
+        const planMsg =
+          eventData.message?.trim() ||
+          (estimated != null
+            ? eventData.unlimited === true
+              ? `LinkedIn reports ~${estimated.toLocaleString()} matches. Planning unlimited shards…`
+              : `LinkedIn reports ~${estimated.toLocaleString()} matches.`
+            : 'Search plan ready.');
+        setContextProgressMessage(planMsg);
+        updateSnackBarIfEntireCompany(planMsg);
+        return;
+      }
+
+      if (payload.event === 'unlimitedShardPlan') {
+        if (companyId) {
+          persistUnlimitedOrgChartRequestId(companyId, payload.requestId);
+        }
+        const shardTotal =
+          typeof eventData.shardsTotal === 'number'
+            ? eventData.shardsTotal
+            : Array.isArray(eventData.shardKeys)
+              ? eventData.shardKeys.length
+              : null;
+        if (shardTotal != null) {
+          setContextProgressTotalPages(shardTotal);
+          setContextProgressPage(0);
+        }
+        const planMsg =
+          eventData.message?.trim() ||
+          (shardTotal != null
+            ? `Unlimited mode: ${shardTotal} shards${
+                eventData.primaryDimension
+                  ? ` by ${eventData.primaryDimension}`
+                  : ''
+              }. Fetching slowly…`
+            : 'Unlimited shard plan ready.');
+        setContextProgressMessage(planMsg);
+        updateSnackBarIfEntireCompany(planMsg);
+        return;
+      }
+
+      if (payload.event === 'unlimitedShardProgress') {
+        if (companyId) {
+          persistUnlimitedOrgChartRequestId(companyId, payload.requestId);
+        }
+        const shardsCompleted =
+          typeof eventData.shardsCompleted === 'number'
+            ? eventData.shardsCompleted
+            : null;
+        const shardsTotal =
+          typeof eventData.shardsTotal === 'number'
+            ? eventData.shardsTotal
+            : null;
+        const profilesCollected =
+          typeof eventData.profilesCollectedSoFar === 'number'
+            ? eventData.profilesCollectedSoFar
+            : typeof eventData.totalCandidates === 'number'
+              ? eventData.totalCandidates
+              : null;
+        const estimatedTotal =
+          typeof eventData.estimatedTotal === 'number'
+            ? eventData.estimatedTotal
+            : null;
+        const remainingProfiles =
+          typeof eventData.remainingProfiles === 'number'
+            ? eventData.remainingProfiles
+            : typeof eventData.remainingToFetch === 'number'
+              ? eventData.remainingToFetch
+              : null;
+        const shardKey =
+          typeof eventData.currentShardKey === 'string'
+            ? eventData.currentShardKey
+            : null;
+        const page =
+          typeof eventData.page === 'number'
+            ? eventData.page
+            : eventData.phase === 'started' && shardsCompleted != null
+              ? shardsCompleted + 1
+              : shardsCompleted;
+
+        if (page != null) {
+          setContextProgressPage(page);
+        }
+        if (shardsTotal != null) {
+          setContextProgressTotalPages(shardsTotal);
+        }
+        if (profilesCollected != null) {
+          setContextProgressTotalCandidates(profilesCollected);
+        } else if (estimatedTotal != null) {
+          setContextProgressTotalCandidates(estimatedTotal);
+        }
+
+        const progressMsg =
+          eventData.message?.trim() ||
+          (shardsTotal != null && page != null
+            ? `Shard ${page}/${shardsTotal}${shardKey ? ` (${shardKey})` : ''}${
+                profilesCollected != null
+                  ? ` · ~${profilesCollected.toLocaleString()} collected`
+                  : ''
+              }${
+                remainingProfiles != null
+                  ? ` · ~${remainingProfiles.toLocaleString()} remaining`
+                  : ''
+              }`
+            : 'Unlimited fetch in progress…');
+        setContextProgressMessage(progressMsg);
+        updateSnackBarIfEntireCompany(progressMsg);
         return;
       }
 
@@ -892,6 +1090,9 @@ export const useOrgChartActions = ({
           );
         }
 
+        if (companyId) {
+          clearStoredUnlimitedOrgChartRequestId(companyId);
+        }
         setContextError(null);
         setIsContextLoading(false);
         clearProgressTimers();
@@ -914,6 +1115,126 @@ export const useOrgChartActions = ({
       setActiveOrgChartRequestId(null);
     }
   }, [activeOrgChartRequestId, clearProgressTimers, isContextLoading]);
+
+  // Reload-safe: restore unlimited Unipile shard progress from GET + sessionStorage
+  useEffect(() => {
+    if (!companyId || !accessToken || isContextLoading) {
+      return;
+    }
+    if (activeOrgChartRequestIdRef.current) {
+      return;
+    }
+
+    const storedRequestId = readStoredUnlimitedOrgChartRequestId(companyId);
+    if (!storedRequestId) {
+      return;
+    }
+
+    let cancelled = false;
+    const baseUrl = (REACT_APP_SERVER_BASE_URL ?? '').replace(/\/$/, '');
+    if (!baseUrl) {
+      return;
+    }
+
+    const restore = async () => {
+      try {
+        const response = await fetch(
+          `${baseUrl}/org-chart/search/unlimited-progress?requestId=${encodeURIComponent(storedRequestId)}`,
+          { headers: { Authorization: `Bearer ${accessToken}` } },
+        );
+        if (!response.ok || cancelled) {
+          return;
+        }
+        const status = (await response.json()) as {
+          status?: string;
+          message?: string;
+          shardsCompleted?: number;
+          shardsTotal?: number;
+          profilesCollectedSoFar?: number;
+          estimatedTotal?: number;
+          remainingProfiles?: number;
+          currentShardKey?: string;
+          phase?: string;
+        };
+
+        if (cancelled) {
+          return;
+        }
+
+        if (status.status !== 'in_progress') {
+          clearStoredUnlimitedOrgChartRequestId(companyId);
+          return;
+        }
+
+        setActiveOrgChartRequestId(storedRequestId);
+        setIsContextLoading(true);
+        setContextLoadingStartedAt(Date.now());
+        setContextError(null);
+
+        const shardsTotal =
+          typeof status.shardsTotal === 'number' ? status.shardsTotal : null;
+        const shardsCompleted =
+          typeof status.shardsCompleted === 'number'
+            ? status.shardsCompleted
+            : null;
+        const page =
+          status.phase === 'started' && shardsCompleted != null
+            ? shardsCompleted + 1
+            : shardsCompleted;
+
+        if (page != null) {
+          setContextProgressPage(page);
+        }
+        if (shardsTotal != null) {
+          setContextProgressTotalPages(shardsTotal);
+        }
+        if (typeof status.profilesCollectedSoFar === 'number') {
+          setContextProgressTotalCandidates(status.profilesCollectedSoFar);
+        } else if (typeof status.estimatedTotal === 'number') {
+          setContextProgressTotalCandidates(status.estimatedTotal);
+        }
+
+        const progressMsg =
+          status.message?.trim() ||
+          (shardsTotal != null && page != null
+            ? `Shard ${page}/${shardsTotal}${
+                status.currentShardKey ? ` (${status.currentShardKey})` : ''
+              }${
+                typeof status.profilesCollectedSoFar === 'number'
+                  ? ` · ~${status.profilesCollectedSoFar.toLocaleString()} collected`
+                  : ''
+              }${
+                typeof status.remainingProfiles === 'number'
+                  ? ` · ~${status.remainingProfiles.toLocaleString()} remaining`
+                  : ''
+              }`
+            : 'Unlimited fetch in progress…');
+        setContextProgressMessage(progressMsg);
+        armProgressTimers(storedRequestId);
+
+        if (companyId) {
+          enqueueSnackBar(progressMsg, {
+            variant: SnackBarVariant.Info,
+            dedupeKey: `orgchart-entire-company-${companyId}`,
+          });
+        }
+      } catch {
+        // Keep stored id; next mount can retry
+      }
+    };
+
+    void restore();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    accessToken,
+    armProgressTimers,
+    companyId,
+    enqueueSnackBar,
+    isContextLoading,
+  ]);
 
   useEffect(() => {
     if (companyId === '' || isContextLoading !== true) {
@@ -1128,7 +1449,10 @@ export const useOrgChartActions = ({
           return;
         }
         const payload = (await res.json()) as ContactEnrichmentFetchPayload;
-        if (typeof payload.projectId === 'string' && payload.projectId.trim() !== '') {
+        if (
+          typeof payload.projectId === 'string' &&
+          payload.projectId.trim() !== ''
+        ) {
           enqueueSnackBar(
             'Contact match was queued; refresh people on this position after the job completes.',
             { variant: SnackBarVariant.Info, duration: 8000 },
@@ -1153,7 +1477,8 @@ export const useOrgChartActions = ({
               ? payload.phones[0]
               : existing.phone;
           const liFromPayload =
-            typeof payload.linkedinUrl === 'string' && payload.linkedinUrl.trim()
+            typeof payload.linkedinUrl === 'string' &&
+            payload.linkedinUrl.trim()
               ? payload.linkedinUrl.trim()
               : existing.linkedinUrl;
           const fullNameFromPayload =
@@ -1302,9 +1627,10 @@ export const useOrgChartActions = ({
       targetCompany?: SuperImposeTargetCompany;
       targetLocation?: SuperImposeTargetLocation;
     };
+    /** LLM-planned Unipile shards beyond the ~1000 cap (slow pacing). */
+    unlimited?: boolean;
   }) => {
-    const effectiveCompanyId =
-      params.companyIdOverride?.trim() || companyId;
+    const effectiveCompanyId = params.companyIdOverride?.trim() || companyId;
     if (!effectiveCompanyId) return;
 
     const baseUrl = REACT_APP_SERVER_BASE_URL ?? '';
@@ -1326,7 +1652,9 @@ export const useOrgChartActions = ({
 
     let prereqStatus = await fetchLinkedinDataSourcesStatus();
     const isUnipilePrereqReady = (
-      status: NonNullable<Awaited<ReturnType<typeof fetchLinkedinDataSourcesStatus>>>,
+      status: NonNullable<
+        Awaited<ReturnType<typeof fetchLinkedinDataSourcesStatus>>
+      >,
     ) =>
       status.linkedinUnipileConnected === true ||
       (status.linkedinUnipileOnDemand === true &&
@@ -1368,9 +1696,7 @@ export const useOrgChartActions = ({
           });
           return;
         }
-      } else if (
-        effectiveCandidateSource === ORG_CHART_CANDIDATE_SOURCE_M7KQ
-      ) {
+      } else if (effectiveCandidateSource === ORG_CHART_CANDIDATE_SOURCE_M7KQ) {
         if (prereqStatus.m7kqDirectoryApiReady !== true) {
           enqueueSnackBar(
             'This org chart source requires the data service to be configured on the server.',
@@ -1413,10 +1739,7 @@ export const useOrgChartActions = ({
       return;
     }
 
-    if (
-      effectiveCandidateSource === 'apify' &&
-      mode !== 'entire_company'
-    ) {
+    if (effectiveCandidateSource === 'apify' && mode !== 'entire_company') {
       enqueueSnackBar(APIFY_MODE_UNSUPPORTED_SNACKBAR, {
         variant: SnackBarVariant.Error,
         duration: 10000,
@@ -1510,6 +1833,12 @@ export const useOrgChartActions = ({
 
     const requestId = createOrgChartRequestId();
     setActiveOrgChartRequestId(requestId);
+    if (effectiveCompanyId) {
+      clearStoredUnlimitedOrgChartRequestId(effectiveCompanyId);
+    }
+    if (params.unlimited === true) {
+      persistUnlimitedOrgChartRequestId(effectiveCompanyId, requestId);
+    }
     orgchartAbortControllerRef.current = new AbortController();
 
     let jobTitles: string[] = [];
@@ -1665,7 +1994,10 @@ export const useOrgChartActions = ({
         ? { linkedinLocationName: params.linkedinLocationName.trim() }
         : {}),
       ...(params.linkedinCompanyParameterId?.trim()
-        ? { linkedinCompanyParameterId: params.linkedinCompanyParameterId.trim() }
+        ? {
+            linkedinCompanyParameterId:
+              params.linkedinCompanyParameterId.trim(),
+          }
         : {}),
       ...(companyDomain ? { companyDomain } : {}),
       ...(useUnipileSource && linkedinUnipileAccountId?.trim()
@@ -1684,6 +2016,7 @@ export const useOrgChartActions = ({
       ...(mode === 'super_impose' && params.superImpose
         ? { superImpose: params.superImpose }
         : {}),
+      ...(params.unlimited === true ? { unlimited: true } : {}),
     };
 
     let isQueuedAsyncSearch = false;
@@ -1798,19 +2131,19 @@ export const useOrgChartActions = ({
             : typeof json.candidateSource === 'string' &&
                 json.candidateSource === 'multi'
               ? 'Multi-source org chart queued. Waiting for results...'
-            : typeof json.candidateSource === 'string' &&
-                json.candidateSource === 'super_impose'
-              ? 'Super impose org chart queued. Waiting for results...'
-            : typeof json.candidateSource === 'string' &&
-                json.candidateSource === 'harvest'
-              ? 'Harvest org chart search queued. Waiting for results...'
               : typeof json.candidateSource === 'string' &&
-                json.candidateSource === 'unipile'
-              ? 'LinkedIn search queued. Waiting for results...'
-              : typeof json.candidateSource === 'string' &&
-                  isOrgChartM7kqCandidateSource(json.candidateSource)
-                ? 'Directory org chart search queued. Waiting for results...'
-                : 'Org chart search queued. Waiting for results...',
+                  json.candidateSource === 'super_impose'
+                ? 'Super impose org chart queued. Waiting for results...'
+                : typeof json.candidateSource === 'string' &&
+                    json.candidateSource === 'harvest'
+                  ? 'Harvest org chart search queued. Waiting for results...'
+                  : typeof json.candidateSource === 'string' &&
+                      json.candidateSource === 'unipile'
+                    ? 'LinkedIn search queued. Waiting for results...'
+                    : typeof json.candidateSource === 'string' &&
+                        isOrgChartM7kqCandidateSource(json.candidateSource)
+                      ? 'Directory org chart search queued. Waiting for results...'
+                      : 'Org chart search queued. Waiting for results...',
         );
         armProgressTimers(requestId);
         return;
@@ -2106,10 +2439,13 @@ export const useOrgChartActions = ({
           const rawLinkedinVal = n[linkedinKey];
           const rawLi =
             typeof rawLinkedinVal === 'string' ? rawLinkedinVal : '';
-          const tenureKey = `org_chart_company_tenure_${i}` as keyof OrgChartNodeData;
+          const tenureKey =
+            `org_chart_company_tenure_${i}` as keyof OrgChartNodeData;
           const tenureVal = n[tenureKey];
           const tenure =
-            tenureVal === 'current' || tenureVal === 'past' ? tenureVal : undefined;
+            tenureVal === 'current' || tenureVal === 'past'
+              ? tenureVal
+              : undefined;
           rows.push({
             id: `${i}`,
             fullName: name.trim(),
@@ -2510,7 +2846,8 @@ export const useOrgChartActions = ({
         );
         return;
       }
-      const isReloadOrgIntelligence = action === 'reload_apify_org_intelligence';
+      const isReloadOrgIntelligence =
+        action === 'reload_apify_org_intelligence';
       const progressDedupeKey = isReloadOrgIntelligence
         ? `orgchart-reload-org-intelligence-${companyId}`
         : `orgchart-rebuild-saved-people-${companyId}`;
@@ -2562,7 +2899,9 @@ export const useOrgChartActions = ({
       } catch (error) {
         closeSnackBarByDedupeKey(progressDedupeKey);
         enqueueSnackBar(
-          error instanceof Error ? error.message : 'Failed to rebuild org chart',
+          error instanceof Error
+            ? error.message
+            : 'Failed to rebuild org chart',
           { variant: SnackBarVariant.Error, duration: 8000 },
         );
       }

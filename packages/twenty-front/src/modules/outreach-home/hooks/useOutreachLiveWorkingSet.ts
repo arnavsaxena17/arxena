@@ -45,6 +45,7 @@ import {
 } from '@/outreach-home/constants/outreach-cache-realtime.constants';
 import { useOutreachCacheSocket } from '@/outreach-home/hooks/useOutreachCacheSocket';
 import { useOutreachProjectJourneySummary } from '@/outreach-home/hooks/useOutreachProjectJourneySummary';
+import { mergeEphemeralAndCrmPeople } from '@/outreach-home/utils/merge-ephemeral-and-crm-people.util';
 import {
   type OutreachCompanyRow,
   type OutreachMainTab,
@@ -152,30 +153,6 @@ const dedupePeopleById = (people: OutreachPersonRow[]): OutreachPersonRow[] => {
   return result;
 };
 
-const normalizePersonLinkedinKey = (linkedinUrl: string): string =>
-  linkedinUrl
-    .trim()
-    .toLowerCase()
-    .replace(/^https?:\/\//, '')
-    .replace(/^www\./, '')
-    .replace(/\/+$/, '')
-    .split('?')[0];
-
-const personMergeKey = (person: {
-  id: string;
-  name: string;
-  companyName: string;
-  linkedinUrl: string;
-}): string => {
-  const linkedinKey = normalizePersonLinkedinKey(person.linkedinUrl);
-
-  if (isNonEmptyString(linkedinKey)) {
-    return `linkedin:${linkedinKey}`;
-  }
-
-  return `id:${person.id}`;
-};
-
 const outreachCompanySignature = (companies: OutreachCompanyRow[]): string =>
   companies
     .map(
@@ -191,24 +168,6 @@ const outreachPersonSignature = (people: OutreachPersonRow[]): string =>
         `${person.id}:${person.stage}:${person.candidateId ?? ''}:${person.name}:${person.title}:${person.companyName}:${person.locationName ?? ''}:${person.linkedinUrl}:${JSON.stringify(person.otherFields ?? null)}:${person.experimentVariant ?? ''}:${person.recruiterStatus ?? ''}:${person.candConversationStatus ?? ''}:${person.workflowRunStatus ?? ''}:${person.messagesExchanged?.length ?? 0}:${person.outreachConversationStage ?? ''}:${person.needsApproval ? '1' : '0'}:${person.nextStepLabel ?? ''}:${person.nextRetryAt ?? ''}:${person.outreachResumeAt ?? ''}:${person.candidateFlags?.startOutreach ? '1' : '0'}:${person.candidateFlags?.stopOutreach ? '1' : '0'}:${person.createdAt ?? ''}:${person.updatedAt ?? ''}`,
     )
     .join('|');
-
-const mergeEphemeralAndCrmPeople = (
-  ephemeralPeople: OutreachPersonRow[],
-  crmPeople: OutreachPersonRow[],
-): OutreachPersonRow[] => {
-  const byKey = new Map<string, OutreachPersonRow>();
-
-  for (const person of ephemeralPeople) {
-    byKey.set(personMergeKey(person), person);
-  }
-
-  // CRM enrolled rows win on the same LinkedIn / id key
-  for (const person of crmPeople) {
-    byKey.set(personMergeKey(person), person);
-  }
-
-  return [...byKey.values()];
-};
 
 const isOutreachMainTab = (value: string | null): value is OutreachMainTab =>
   value === 'companies' || value === 'people' || value === 'setup';

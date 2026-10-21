@@ -34,6 +34,8 @@ import { CacheStorageService } from 'src/engine/core-modules/cache-storage/servi
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { ApolloIoRestService } from 'src/engine/core-modules/candidate-search/services/apollo-io-rest.service';
 import { CandidateSearchHandlerService } from 'src/engine/core-modules/candidate-search/services/candidate-search-handler.service';
+import { OrgchartCancelRegistryService } from 'src/engine/core-modules/org-chart/services/orgchart-cancel-registry.service';
+import { OrgChartIncrementalBuildCacheService } from 'src/engine/core-modules/org-chart/services/orgchart-incremental-build-cache.service';
 import {
   ClassicPeopleSearchStrategyResult,
   GeneratedSearchParameters,
@@ -138,6 +140,8 @@ export class OrgChartController {
     private readonly orgChartCompanyNewsService: OrgChartCompanyNewsService,
     private readonly orgChartCompanyTechnologyService: OrgChartCompanyTechnologyService,
     private readonly orgChartPublishedSlugService: OrgChartPublishedSlugService,
+    private readonly orgChartIncrementalBuildCache: OrgChartIncrementalBuildCacheService,
+    private readonly orgchartCancelRegistry: OrgchartCancelRegistryService,
     @InjectCacheStorage(CacheStorageNamespace.EngineOrgChart)
     private readonly orgChartCacheStorageService: CacheStorageService,
   ) {}
@@ -3227,6 +3231,8 @@ export class OrgChartController {
       xraySearchEngine?: LinkedinXraySearchEngine;
       includePaginatedHtml?: boolean;
       superImpose?: SuperImposeInputs;
+      /** LLM-planned Unipile shards beyond the normal ~1000 cap (slow pacing). */
+      unlimited?: boolean;
     },
     @Query('account_id') accountIdQuery: string | undefined,
     @Req() req: Request,
@@ -3290,6 +3296,60 @@ export class OrgChartController {
       { requestId: body.requestId.trim() },
       normalizedHeaders,
     );
+  }
+
+  /**
+   * Latest unlimited Unipile shard crawl status for a requestId (reload-safe).
+   * Returns in_progress snapshot while the Redis plan exists; otherwise not_found
+   * (or cancel-registry terminal status when available).
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('search/unlimited-progress')
+  async getUnlimitedUnipileSearchProgress(
+    @Query('requestId') requestIdQuery: string | undefined,
+  ) {
+    const requestId = requestIdQuery?.trim();
+
+    if (!requestId) {
+      throw new HttpException(
+        'Query parameter "requestId" is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const progressStatus =
+      await this.orgChartIncrementalBuildCache.getUnlimitedPublicStatus(
+        requestId,
+      );
+
+    if (progressStatus.status === 'in_progress') {
+      return progressStatus;
+    }
+
+    const cancelState = await this.orgchartCancelRegistry.getState(requestId);
+
+    if (
+      cancelState?.status === 'completed' ||
+      cancelState?.status === 'failed' ||
+      cancelState?.status === 'cancelled'
+    ) {
+      return {
+        requestId,
+        status: cancelState.status,
+        mode: cancelState.mode,
+        searchType: cancelState.searchType,
+        companyName: cancelState.companyName,
+        message:
+          cancelState.message?.trim() ||
+          `Org chart search ${cancelState.status}.`,
+        shardKeys: [],
+        shardsCompleted: 0,
+        shardsTotal: 0,
+        profilesCollectedSoFar: 0,
+      };
+    }
+
+    return progressStatus;
   }
 
   /**

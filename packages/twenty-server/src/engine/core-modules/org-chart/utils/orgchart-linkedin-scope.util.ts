@@ -57,6 +57,23 @@ export const getOrgChartLinkedInMaxCandidates = (): number => {
   return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 1000;
 };
 
+// Unlimited mode: max profiles fetched per Unipile search (per shard)
+export const ORGCHART_UNIPILE_UNLIMITED_MAX_CANDIDATES_PER_SHARD = 2500;
+
+// Soft ceiling for merged unique profiles across all unlimited shards
+export const ORGCHART_UNIPILE_UNLIMITED_OVERALL_MAX_CANDIDATES = 50_000;
+
+export const getOrgChartUnipileUnlimitedMaxCandidatesPerShard = (): number => {
+  const raw = Number(
+    process.env.ORGCHART_UNIPILE_UNLIMITED_MAX_CANDIDATES_PER_SHARD ??
+      String(ORGCHART_UNIPILE_UNLIMITED_MAX_CANDIDATES_PER_SHARD),
+  );
+
+  return Number.isFinite(raw) && raw > 0
+    ? Math.floor(raw)
+    : ORGCHART_UNIPILE_UNLIMITED_MAX_CANDIDATES_PER_SHARD;
+};
+
 export const getOrgChartLinkedInPageSize = (
   searchType: LinkedInSearchType,
 ): number => getLinkedInUnipileSearchPageLimit(searchType);
@@ -145,6 +162,21 @@ export const randomOrgChartLinkedInPageDelayMs = (): number => {
   const min = Number.isFinite(minRaw) && minRaw >= 0 ? minRaw : 2000;
   const max =
     Number.isFinite(maxRaw) && maxRaw >= min ? maxRaw : Math.max(min, 3000);
+
+  return min + Math.floor(Math.random() * (max - min + 1));
+};
+
+// Unlimited mode: random gap before every Unipile request (first page + cursors)
+export const randomOrgChartUnipileUnlimitedRequestDelayMs = (): number => {
+  const minRaw = Number(
+    process.env.ORGCHART_UNIPILE_UNLIMITED_REQUEST_DELAY_MS_MIN ?? '30000',
+  );
+  const maxRaw = Number(
+    process.env.ORGCHART_UNIPILE_UNLIMITED_REQUEST_DELAY_MS_MAX ?? '120000',
+  );
+  const min = Number.isFinite(minRaw) && minRaw >= 0 ? minRaw : 30_000;
+  const max =
+    Number.isFinite(maxRaw) && maxRaw >= min ? maxRaw : Math.max(min, 120_000);
 
   return min + Math.floor(Math.random() * (max - min + 1));
 };

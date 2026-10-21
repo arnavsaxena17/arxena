@@ -75,8 +75,12 @@ type SearchExecutionOptions = {
   linkedInAccountId?: string;
   /** How linkedInAccountId was resolved (from LinkedinUnipileSessionService). */
   linkedInAccountIdSource?: string;
-  /** When true, sleep 2–3s (configurable) between page fetches. */
+  /** When true, sleep between page fetches (default 2–3s unless pageDelayMs set). */
   throttlePages?: boolean;
+  /** Override inter-page delay (e.g. unlimited mode 30–120s). */
+  pageDelayMs?: () => number;
+  /** Also sleep before the first page request when throttlePages is true. */
+  throttleBeforeFirstPage?: boolean;
   /** Stop collecting once this many unique candidates are gathered. */
   maxCandidates?: number;
   /** Resolved from withLinkedinSession when parent already holds a session. */
@@ -344,8 +348,30 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         `Executing multi-page search (without validation/scoring) for strategy ${strategy.id} (${strategy.label || 'unnamed'})`,
       );
 
+      const resolvePageDelayMs = (): number =>
+        typeof executionOptions?.pageDelayMs === 'function'
+          ? executionOptions.pageDelayMs()
+          : randomOrgChartLinkedInPageDelayMs();
+
       // Main pagination loop
       while (state.currentPage <= maxPagesToFetch) {
+        if (
+          executionOptions?.throttlePages === true &&
+          executionOptions?.throttleBeforeFirstPage === true &&
+          state.currentPage === 1 &&
+          !state.currentCursor
+        ) {
+          const delayMs = resolvePageDelayMs();
+          this.logger.log(
+            `Throttling before first LinkedIn page for strategy ${strategy.id}: sleeping ${delayMs}ms`,
+          );
+          await sleepMs(delayMs);
+          if (this.shouldAbort(sendEvent)) {
+            this.logger.log('Stream aborted during first-page throttle delay');
+            break;
+          }
+        }
+
         if (this.shouldAbort(sendEvent)) {
           this.logger.log('Stream aborted, stopping multi-page search');
           break;
@@ -479,7 +505,7 @@ export class SearchExecutionService extends CandidateSearchBaseService {
         }
 
         if (executionOptions?.throttlePages === true && state.currentPage >= 1) {
-          const delayMs = randomOrgChartLinkedInPageDelayMs();
+          const delayMs = resolvePageDelayMs();
           this.logger.log(
             `Throttling org-chart LinkedIn pagination: sleeping ${delayMs}ms before page ${state.currentPage + 1}`,
           );
