@@ -267,6 +267,26 @@ describe('BrightDataSerpService', () => {
       expect(proxy).not.toHaveBeenCalled();
     });
 
+    it('should not resend a query Bright Data answered with a 502 to the next route', async () => {
+      const api = jest.fn().mockRejectedValue(new Error('HTTP 502 rejected'));
+      const proxy = jest.fn().mockResolvedValue(answer);
+
+      await expect(
+        configureRoutes(api, proxy).requestSerpJson(searchUrl),
+      ).rejects.toThrow('HTTP 502');
+      expect(proxy).not.toHaveBeenCalled();
+    });
+
+    it('should fall back when the zone credentials are refused', async () => {
+      const api = jest.fn().mockRejectedValue(new Error('HTTP 407 auth'));
+      const proxy = jest.fn().mockResolvedValue(answer);
+      const result = await configureRoutes(api, proxy).requestSerpJson(
+        searchUrl,
+      );
+
+      expect(result).toBe(answer);
+    });
+
     it('should throw the last error when every route fails', async () => {
       const api = jest.fn().mockRejectedValue(new Error('fetch failed'));
       const proxy = jest.fn().mockRejectedValue(new Error('HTTP 502 upstream'));

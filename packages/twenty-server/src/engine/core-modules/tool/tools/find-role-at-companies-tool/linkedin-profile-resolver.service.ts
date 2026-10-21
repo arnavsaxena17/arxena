@@ -60,6 +60,7 @@ export class LinkedinProfileResolverService {
     name,
     companyNames,
     googleOnlyWhenBrightDataMisses = false,
+    skipBrightData = false,
   }: {
     name: string;
     // Every name the person's company goes by or is linked to, best first: the
@@ -68,6 +69,8 @@ export class LinkedinProfileResolverService {
     // Ask Google only when the Bright Data name and company query found nobody:
     // slower and flakier than Bright Data, so callers on a budget skip it
     googleOnlyWhenBrightDataMisses?: boolean;
+    // Bright Data is known to be unreachable: go straight to Google
+    skipBrightData?: boolean;
   }): Promise<{
     profiles: ResolvedLinkedinProfile[];
     spentUsd: number;
@@ -81,7 +84,13 @@ export class LinkedinProfileResolverService {
       .slice(0, MAX_COMPANY_NAMES);
     const errors: string[] = [];
     const lookUpBrightData = () =>
-      this.resolveViaBrightData(name, companies).catch((error) => {
+      (skipBrightData
+        ? Promise.resolve({
+            profiles: [] as ResolvedLinkedinProfile[],
+            spentUsd: 0,
+          })
+        : this.resolveViaBrightData(name, companies)
+      ).catch((error) => {
         errors.push(
           `${name}: bright_data ${error instanceof Error ? error.message : String(error)}`,
         );

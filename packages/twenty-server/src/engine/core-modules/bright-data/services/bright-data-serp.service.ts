@@ -50,11 +50,13 @@ export type BrightDataDatasetScrapeInput = {
   tbm?: string;
 };
 
-// A failure of the route itself (cannot connect, timed out, server error, rate
-// limited) is worth another route; a bad request is not
+// A route that cannot be reached, or whose zone credentials or account are
+// refused, is worth another route. An answer from Bright Data itself (a 502 for
+// a query Google rejected, a 429 "this query recently failed, wait 15 s") is
+// not: the next route would send the same query at once and hit the same lock.
 const isRouteFailure = (error: unknown): boolean =>
   error instanceof Error &&
-  /HTTP (429|5\d\d)\b|non-JSON reply|aborted|fetch failed|timed out|ECONN|ENOTFOUND|ETIMEDOUT|socket/i.test(
+  /HTTP (401|402|403|407)\b|aborted|fetch failed|timed out|ECONN|ENOTFOUND|ETIMEDOUT|socket/i.test(
     error.message,
   );
 

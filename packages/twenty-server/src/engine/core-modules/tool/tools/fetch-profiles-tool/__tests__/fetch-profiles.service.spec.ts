@@ -52,6 +52,20 @@ const build = ({
 
 const input = { workspaceId: 'w', projectId: 'p' };
 
+// The service checks that Bright Data's API can be reached before using it;
+// the tests must not depend on the network of the machine they run on
+const mockApiReachable = (reachable: boolean) => {
+  global.fetch = (reachable
+    ? jest.fn().mockResolvedValue({ ok: true })
+    : jest
+        .fn()
+        .mockRejectedValue(
+          new Error('fetch failed'),
+        )) as unknown as typeof fetch;
+};
+
+beforeEach(() => mockApiReachable(true));
+
 describe('FetchProfilesService people without a LinkedIn URL', () => {
   const personRow = (id: string, name: string, companyName: string) => ({
     ...row(id, undefined),
@@ -373,5 +387,19 @@ describe('FetchProfilesService', () => {
     expect(scrape).not.toHaveBeenCalled();
     expect(result.timedOut).toBe(true);
     expect(result.remaining).toBe(1);
+  });
+
+  it('should skip Bright Data and report failed lookups when its API cannot be reached', async () => {
+    mockApiReachable(false);
+
+    const { service, scrape } = build({
+      rows: [row('1', 'https://www.linkedin.com/in/asha')],
+      search: jest.fn(),
+    });
+    const result = await service.fetch(input);
+
+    expect(scrape).not.toHaveBeenCalled();
+    expect(result.fetched).toEqual({ brightData: 0, harvest: 0 });
+    expect(result.lookupErrors).toBeGreaterThan(0);
   });
 });

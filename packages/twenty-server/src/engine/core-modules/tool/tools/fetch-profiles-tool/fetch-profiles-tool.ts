@@ -127,6 +127,21 @@ export class FetchProfilesTool implements Tool {
         total: result.requested,
         lookupErrors: result.lookupErrors,
       };
+      // Nothing came back and lookups kept failing: the provider is down, and
+      // calling again only repeats minutes of timeouts
+      if (total === 0 && result.lookupErrors > 0) {
+        emit(
+          'error',
+          `No profiles fetched: ${result.lookupErrors} lookup(s) failed`,
+        );
+
+        return {
+          success: false,
+          message: 'Bright Data lookups are failing',
+          error: `No profile could be fetched and ${result.lookupErrors} Bright Data lookup(s) failed on the network or API (not "not found"), so Bright Data looks unreachable or rate limiting. Stop: tell the user, do not retry now, and do not score or mark people who have no profile (a missing profile is unknown, not a fail).`,
+        };
+      }
+
       emit(
         'completed',
         `Fetched ${total} of ${result.requested} profile(s) in ${Math.round(result.durationMs / 1000)}s` +

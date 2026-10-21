@@ -97,6 +97,12 @@ type Target = {
 // Each person is one Business Search query, a Google search when it finds
 // nobody, and one model call, so only a few run side by side
 const NAME_LOOKUP_CONCURRENCY = 4;
+// Finding URLs by name is slow (Business Search, then Google, then a model per
+// person), so it never takes more than this of one call's time
+const NAME_LOOKUP_BUDGET_MS = 30_000;
+// A lookup that cannot connect hangs for minutes with retries; one quick check
+// up front says whether Bright Data's API can be used at all in this call
+const API_REACHABILITY_TIMEOUT_MS = 5_000;
 
 const urlKey = (url: string): string => {
   try {
@@ -250,6 +256,16 @@ export class FetchProfilesService {
       `Checking ${targets.length} profile(s) (${skipped.alreadyFetched} already have one, ${withoutUrl.length} have no LinkedIn URL and will be searched by name, ${skipped.noLinkedinUrl} cannot be searched)`,
     );
 
+    const brightDataApiReachable =
+      useBrightData && (await this.isBrightDataApiReachable());
+
+    if (useBrightData && !brightDataApiReachable) {
+      lookupErrors.count += 1;
+      lookupErrors.lastError =
+        'api.brightdata.com is not reachable from this server';
+      lookupErrors.notify?.();
+    }
+
     if (useBrightData) {
       const onBrightDataProfile = (
         target: Target,
@@ -262,9 +278,25 @@ export class FetchProfilesService {
         reportProgress('Fetching profiles from Bright Data');
       };
 
-      // People with no URL: Business Search by name and company first, Google
-      // for the ones it does not match, a model to say which candidate is the
-      // person; the URL found goes through Business Search by URL below
+      const needsProfile = () =>
+        targets.filter(
+          (target) => target.linkedinUrl !== '' && !profiles.has(target.id),
+        );
+
+      // 1. The fast bulk path first: Business Search by URL, seconds per batch
+      if (brightDataApiReachable) {
+        await this.fetchFromBusinessSearch(
+          needsProfile(),
+          deadline,
+          onBrightDataProfile,
+          lookupErrors,
+        );
+      }
+
+      // 2. People with no URL: Business Search by name and company, Google for
+      // the ones it does not match, a model to say which candidate is the
+      // person. Slow and per person, so it gets a slice of the budget and the
+      // rest are left for the next call.
       if (withoutUrl.length > 0) {
         reportProgress(
           `Finding the LinkedIn URL of ${withoutUrl.length} person(s) by name and company (Bright Data, then Google)`,
@@ -272,25 +304,25 @@ export class FetchProfilesService {
         await this.resolveWithoutUrl({
           workspaceId: input.workspaceId,
           targets: withoutUrl,
-          deadline,
+          deadline: Math.min(deadline, Date.now() + NAME_LOOKUP_BUDGET_MS),
           resolvedLinkedinUrls,
           lookupErrors,
+          skipBrightData: !brightDataApiReachable,
         });
+
+        // 3. The URLs just found go through Business Search by URL
+        if (brightDataApiReachable) {
+          await this.fetchFromBusinessSearch(
+            needsProfile(),
+            deadline,
+            onBrightDataProfile,
+            lookupErrors,
+          );
+        }
       }
 
-      // Business Search by URL first (seconds); the slow URL scrape only for the
-      // people it does not know
-      await this.fetchFromBusinessSearch(
-        targets.filter(
-          (target) => target.linkedinUrl !== '' && !profiles.has(target.id),
-        ),
-        deadline,
-        onBrightDataProfile,
-        lookupErrors,
-      );
-      const unknownToSearch = targets.filter(
-        (target) => target.linkedinUrl !== '' && !profiles.has(target.id),
-      );
+      // 4. The slow URL scrape only for the people Business Search does not know
+      const unknownToSearch = brightDataApiReachable ? needsProfile() : [];
 
       if (unknownToSearch.length > 0) {
         reportProgress(
@@ -363,6 +395,21 @@ export class FetchProfilesService {
     };
   }
 
+  // Any HTTP answer, even an error page, means the API can be reached; only a
+  // failure to connect or a timeout means it cannot
+  private async isBrightDataApiReachable(): Promise<boolean> {
+    try {
+      await fetch('https://api.brightdata.com/', {
+        method: 'HEAD',
+        signal: AbortSignal.timeout(API_REACHABILITY_TIMEOUT_MS),
+      });
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   // The resolver finds the profiles that carry the person's name (Bright Data by
   // name and company, Google for the misses); a model then says which of them
   // works at the company on the row. Without a model, the company on the
@@ -373,10 +420,12 @@ export class FetchProfilesService {
     deadline,
     resolvedLinkedinUrls,
     lookupErrors,
+    skipBrightData,
   }: {
     workspaceId: string;
     targets: Target[];
     deadline: number;
+    skipBrightData: boolean;
     resolvedLinkedinUrls: { businessSearch: number; google: number };
     lookupErrors: { count: number; lastError?: string; notify?: () => void };
   }): Promise<void> {
@@ -398,6 +447,7 @@ export class FetchProfilesService {
           name: target.name,
           companyNames: [companyName],
           googleOnlyWhenBrightDataMisses: true,
+          skipBrightData,
         });
 
         if (profiles.length === 0) {
