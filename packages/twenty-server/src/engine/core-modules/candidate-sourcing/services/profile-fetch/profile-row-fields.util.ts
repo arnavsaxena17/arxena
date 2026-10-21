@@ -83,6 +83,61 @@ const joinLines = (lines: string[], limit: number): string =>
     .slice(0, limit)
     .join('; ');
 
+// Bright Data people search returns past jobs / schools as semicolon bags, not
+// the scrape-shaped experience / education arrays
+const splitBag = (value: string): string[] =>
+  value
+    .split(';')
+    .map((part) => part.trim())
+    .filter((part) => part !== '');
+
+const experienceFromBrightDataSearch = (profile: Loose): string => {
+  const titles = splitBag(
+    firstText(profile, ['past_job_titles', 'pastJobTitles']),
+  );
+  const companies = splitBag(
+    firstText(profile, ['past_company_names', 'pastCompanyNames']),
+  );
+  const length = Math.max(titles.length, companies.length);
+
+  if (length === 0) {
+    return '';
+  }
+
+  return joinLines(
+    Array.from({ length }, (_, index) => {
+      const title = titles[index] ?? '';
+      const company = companies[index] ?? '';
+
+      return [title, company].filter((part) => part !== '').join(' @ ');
+    }),
+    MAX_EXPERIENCE_ENTRIES,
+  );
+};
+
+const educationFromBrightDataSearch = (profile: Loose): string => {
+  const schools = splitBag(
+    firstText(profile, ['education_schools', 'educationSchools']),
+  );
+  const details = splitBag(
+    firstText(profile, ['education_details', 'educationDetails']),
+  );
+  const length = Math.max(schools.length, details.length);
+
+  if (length === 0) {
+    return '';
+  }
+
+  return joinLines(
+    Array.from({ length }, (_, index) =>
+      [schools[index] ?? '', details[index] ?? '']
+        .filter((part) => part !== '')
+        .join(', '),
+    ),
+    MAX_EDUCATION_ENTRIES,
+  );
+};
+
 // Both providers' profile shapes reduced to the same compact object. Fields the
 // provider did not return are left out and not listed in fieldsPresent.
 export const profileToRowProfile = ({
@@ -99,14 +154,18 @@ export const profileToRowProfile = ({
   const result: RowProfile = { source, fetchedAt, fieldsPresent: present };
   const headline = firstText(profile, ['headline']);
   const about = firstText(profile, ['about', 'summary']);
-  const experience = joinLines(
+  const experienceFromArrays = joinLines(
     entries(profile.experience ?? profile.experiences).map(experienceLine),
     MAX_EXPERIENCE_ENTRIES,
   );
-  const education = joinLines(
+  const educationFromArrays = joinLines(
     entries(profile.education ?? profile.educations).map(educationLine),
     MAX_EDUCATION_ENTRIES,
   );
+  const experience =
+    experienceFromArrays || experienceFromBrightDataSearch(profile);
+  const education =
+    educationFromArrays || educationFromBrightDataSearch(profile);
   const location = firstText(profile, ['location', 'city']);
   const followers = count(profile.followers);
   const connections = count(profile.connections);

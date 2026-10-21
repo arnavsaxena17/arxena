@@ -53,10 +53,9 @@ import {
   BrightDataPersonFitFilterService,
   type PersonJudgement,
 } from 'src/engine/core-modules/bright-data/services/bright-data-person-fit-filter.service';
+import { brightDataRecordToPersonOtherFields } from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/bright-data-person-row-fields.util';
 import {
   PROFILE_FIELD_KEY,
-  isUsableProfile,
-  profileToRowProfile,
   type RowProfile,
 } from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/profile-row-fields.util';
 import {
@@ -158,6 +157,8 @@ type CompanyOutcome = {
     // The full profile, when the source returned one: stored on the row so the
     // profile fetch skips this person
     profile?: RowProfile;
+    // Raw Bright Data person document — same fields written as fetch_profiles
+    rawProfile?: Record<string, unknown>;
   }>;
   rejected: RejectedCandidate[];
   sourceErrors: string[];
@@ -740,6 +741,9 @@ export class FindRoleAtCompaniesTool implements Tool {
           linkedinUrlDerivedFromPost: true,
         }),
         ...this.profileOf(person),
+        ...(isDefined(person.rawProfile)
+          ? { rawProfile: person.rawProfile }
+          : {}),
       })),
       rejected: rejected.slice(0, MAX_REJECTED_PER_COMPANY),
       sourceErrors: [...new Set(sourceErrors)],
@@ -986,13 +990,9 @@ export class FindRoleAtCompaniesTool implements Tool {
       return {};
     }
 
-    const profile = profileToRowProfile({
-      source: 'bright_data',
-      record: person.rawProfile,
-      fetchedAt: new Date().toISOString(),
-    });
+    const { profile } = brightDataRecordToPersonOtherFields(person.rawProfile);
 
-    return isUsableProfile(profile) ? { profile } : {};
+    return isDefined(profile) ? { profile } : {};
   }
 
   private noteOf(verdict: PersonJudgement | undefined): string {
@@ -1366,7 +1366,13 @@ export class FindRoleAtCompaniesTool implements Tool {
     outcome: CompanyOutcome,
     person: CompanyOutcome['people'][number],
   ): { otherFields?: Record<string, unknown> } {
+    const fromBrightData = isDefined(person.rawProfile)
+      ? brightDataRecordToPersonOtherFields(person.rawProfile).otherFields
+      : isDefined(person.profile)
+        ? { [PROFILE_FIELD_KEY]: person.profile }
+        : {};
     const otherFields: Record<string, unknown> = {
+      ...fromBrightData,
       ...(buildDeprioritisationFields(person.deprioritisedReasons)
         .otherFields as Record<string, unknown> | undefined),
       ...(isNonEmptyString(outcome.companyRowId)
@@ -1375,9 +1381,6 @@ export class FindRoleAtCompaniesTool implements Tool {
             sourceCompanyName: outcome.company,
             foundVia: 'find_role_at_companies',
           }
-        : {}),
-      ...(isDefined(person.profile)
-        ? { [PROFILE_FIELD_KEY]: person.profile }
         : {}),
     };
 

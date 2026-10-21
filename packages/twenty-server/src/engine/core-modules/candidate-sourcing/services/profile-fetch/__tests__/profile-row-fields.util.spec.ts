@@ -83,6 +83,32 @@ describe('profileToRowProfile', () => {
     expect(profile.education).toBeUndefined();
   });
 
+  it('should read Bright Data people-search bags for experience and education', () => {
+    const profile = profileToRowProfile({
+      source: 'bright_data',
+      fetchedAt,
+      record: {
+        about: 'Founder',
+        past_job_titles: 'Volunteer; Analyst',
+        past_company_names: 'Dream Org; Acme',
+        education_schools: 'IGNOU',
+        education_details: 'BA',
+        connections: 500,
+      },
+    });
+
+    expect(profile.experience).toBe('Volunteer @ Dream Org; Analyst @ Acme');
+    expect(profile.education).toBe('IGNOU, BA');
+    expect(profile.fieldsPresent).toEqual(
+      expect.arrayContaining([
+        'experience',
+        'education',
+        'about',
+        'connections',
+      ]),
+    );
+  });
+
   it('should cut a long about text', () => {
     const profile = profileToRowProfile({
       source: 'bright_data',

@@ -288,12 +288,90 @@ const buildEducationEntries = (
   })).filter((entry) => entry.school || entry.degree);
 };
 
-// Same idea as company otherFields: one table column per queryable people field
+// Scrape-shaped experience / education arrays (fetch_profiles) → same row shape
+const buildWorkExperienceFromArrays = (
+  data: Record<string, unknown>,
+): Array<{ role: string; company: string }> => {
+  const value = data.experience ?? data.experiences;
+
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((entry) => {
+      if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) {
+        return null;
+      }
+
+      const record = entry as Record<string, unknown>;
+
+      return {
+        role:
+          readString(record, 'title') ||
+          readString(record, 'position') ||
+          readString(record, 'role'),
+        company:
+          readString(record, 'company') ||
+          readString(record, 'companyName') ||
+          readString(record, 'company_name'),
+      };
+    })
+    .filter(
+      (entry): entry is { role: string; company: string } =>
+        entry !== null && (entry.role !== '' || entry.company !== ''),
+    );
+};
+
+const buildEducationFromArrays = (
+  data: Record<string, unknown>,
+): Array<{ school: string; degree: string }> => {
+  const value = data.education ?? data.educations;
+
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((entry) => {
+      if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) {
+        return null;
+      }
+
+      const record = entry as Record<string, unknown>;
+
+      return {
+        school:
+          readString(record, 'title') ||
+          readString(record, 'school') ||
+          readString(record, 'schoolName') ||
+          readString(record, 'name'),
+        degree:
+          readString(record, 'degree') ||
+          readString(record, 'degreeName') ||
+          readString(record, 'field') ||
+          readString(record, 'description'),
+      };
+    })
+    .filter(
+      (entry): entry is { school: string; degree: string } =>
+        entry !== null && (entry.school !== '' || entry.degree !== ''),
+    );
+};
+
+// Same idea as company otherFields: one table column per queryable people field.
+// Accepts both Bright Data people-search bags and LinkedIn profile-scrape arrays.
 export const buildBrightDataPersonOtherFields = (
   data: Record<string, unknown>,
 ): Record<string, unknown> => {
-  const workExperience = buildPastWorkExperience(data);
-  const education = buildEducationEntries(data);
+  const fromBags = buildPastWorkExperience(data);
+  const workExperience =
+    fromBags.length > 0 ? fromBags : buildWorkExperienceFromArrays(data);
+  const educationFromBags = buildEducationEntries(data);
+  const education =
+    educationFromBags.length > 0
+      ? educationFromBags
+      : buildEducationFromArrays(data);
   const candidates: Record<string, unknown> = {
     linkedinUrl: readString(data, 'url'),
     about: readString(data, 'about').slice(0, ABOUT_MAX_LENGTH),

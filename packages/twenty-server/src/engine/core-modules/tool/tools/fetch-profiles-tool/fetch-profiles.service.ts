@@ -5,6 +5,7 @@ import { isDefined } from 'twenty-shared/utils';
 import { BrightDataLinkedinProfileScrapeService } from 'src/engine/core-modules/bright-data/services/bright-data-linkedin-profile-scrape.service';
 import { type BrightDataLinkedinProfileRecord } from 'src/engine/core-modules/bright-data/types/bright-data-linkedin-profile.types';
 import { type FitmentVerdict } from 'src/engine/core-modules/candidate-sourcing/services/fitment/fitment-score.util';
+import { brightDataRecordToPersonOtherFields } from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/bright-data-person-row-fields.util';
 import {
   PROFILE_FIELD_KEY,
   isUsableProfile,
@@ -153,17 +154,24 @@ export class FetchProfilesService {
 
     const targets = pending.slice(0, input.rowLimit ?? DEFAULT_ROW_LIMIT);
     const profiles = new Map<string, RowProfile>();
+    // Bright Data also keeps the provider record so row columns match find_role
+    const brightDataRecords = new Map<string, Record<string, unknown>>();
     const fetched = { brightData: 0, harvest: 0 };
     const sources = input.sources ?? ['bright_data', 'harvest'];
     const useBrightData = sources.includes('bright_data');
     const useHarvest = sources.includes('harvest');
 
     if (useBrightData) {
-      await this.fetchFromBrightData(targets, deadline, (target, profile) => {
-        profiles.set(target.id, profile);
-        fetched.brightData += 1;
-      });
-      await this.writeProfiles(input, profiles);
+      await this.fetchFromBrightData(
+        targets,
+        deadline,
+        (target, profile, record) => {
+          profiles.set(target.id, profile);
+          brightDataRecords.set(target.id, record);
+          fetched.brightData += 1;
+        },
+      );
+      await this.writeBrightDataProfiles(input, brightDataRecords);
     }
 
     const missing = targets.filter((target) => !profiles.has(target.id));
@@ -218,7 +226,11 @@ export class FetchProfilesService {
   private async fetchFromBrightData(
     targets: Target[],
     deadline: number,
-    onProfile: (target: Target, profile: RowProfile) => void,
+    onProfile: (
+      target: Target,
+      profile: RowProfile,
+      record: Record<string, unknown>,
+    ) => void,
   ): Promise<void> {
     if (
       targets.length === 0 ||
@@ -272,7 +284,7 @@ export class FetchProfilesService {
 
         // A record with nothing to judge is a miss: Harvest gets a turn
         if (isUsableProfile(profile)) {
-          onProfile(target, profile);
+          onProfile(target, profile, record as Record<string, unknown>);
         }
       }
     });
@@ -306,6 +318,27 @@ export class FetchProfilesService {
           `Harvest profile fetch failed: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
+    });
+  }
+
+  private async writeBrightDataProfiles(
+    input: FetchProfilesInput,
+    records: Map<string, Record<string, unknown>>,
+  ): Promise<void> {
+    if (records.size === 0) {
+      return;
+    }
+
+    await this.outreachWorkingSetService.writeOtherFields({
+      workspaceId: input.workspaceId,
+      projectId: input.projectId,
+      subject: 'person',
+      valuesByRowId: new Map(
+        [...records].map(([rowId, record]) => [
+          rowId,
+          brightDataRecordToPersonOtherFields(record).otherFields,
+        ]),
+      ),
     });
   }
 
