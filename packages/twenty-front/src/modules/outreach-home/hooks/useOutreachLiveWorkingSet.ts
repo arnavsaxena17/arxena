@@ -304,12 +304,11 @@ export const useOutreachLiveWorkingSet = () => {
 
   const outreachProjects = allProjects;
 
-  const hasValidProjectIdInQuery =
-    isNonEmptyString(projectIdFromQuery) &&
-    outreachProjects.some((project) => project.id === projectIdFromQuery);
-
-  // Deep link wins; otherwise stay null until unused-project resolve / create finishes.
-  const activeProjectId = hasValidProjectIdInQuery ? projectIdFromQuery : null;
+  // URL is source of truth for cache fetches. Do not gate on the projects list —
+  // a mid-refetch empty list was clearing people/candidates and hiding the table.
+  const activeProjectId = isNonEmptyString(projectIdFromQuery)
+    ? projectIdFromQuery
+    : null;
 
   const setActiveProjectId = useCallback(
     (projectId: string) => {
@@ -327,7 +326,7 @@ export const useOutreachLiveWorkingSet = () => {
     (candidate) => candidate.id === activeProjectId,
   );
 
-  const scopeKey = project?.id ?? null;
+  const scopeKey = activeProjectId;
 
   const { summary: journeySummary, refetch: refetchJourneySummary } =
     useOutreachProjectJourneySummary(activeProjectId);
@@ -433,6 +432,17 @@ export const useOutreachLiveWorkingSet = () => {
 
   const peopleCacheRequestIdRef = useRef(0);
   const projectCandidatesRequestIdRef = useRef(0);
+  const loadedCandidatesProjectIdRef = useRef<string | null>(null);
+
+  // Drop enrolled rows only when the project id actually changes.
+  useEffect(() => {
+    if (loadedCandidatesProjectIdRef.current === activeProjectId) {
+      return;
+    }
+
+    loadedCandidatesProjectIdRef.current = activeProjectId ?? null;
+    setProjectCandidates([]);
+  }, [activeProjectId]);
 
   const refreshPeopleCache = useCallback(
     async (options?: { silent?: boolean }) => {
@@ -702,8 +712,6 @@ export const useOutreachLiveWorkingSet = () => {
   const refreshProjectCandidates = useCallback(
     async (options?: { silent?: boolean }) => {
       if (!isDefined(scopeKey) || !isDefined(accessToken)) {
-        setProjectCandidates([]);
-
         return;
       }
 
@@ -726,9 +734,7 @@ export const useOutreachLiveWorkingSet = () => {
 
         setProjectCandidates(candidates);
       } catch {
-        if (requestId === projectCandidatesRequestIdRef.current) {
-          setProjectCandidates([]);
-        }
+        // Keep last good enrolled rows — a blip must not empty Stage/Next.
       } finally {
         if (requestId === projectCandidatesRequestIdRef.current) {
           setProjectCandidatesLoading(false);
@@ -888,10 +894,11 @@ export const useOutreachLiveWorkingSet = () => {
     .map((project) => project.id)
     .join(',');
 
-  // On /outreach-home without a valid ?projectId=, reuse the newest unused project
-  // (empty Redis companies + people) or create a new Project.
+  // On /outreach-home without ?projectId=, reuse the newest unused project
+  // (empty Redis companies + people) or create a new Project. Never replace a
+  // deep-linked id just because it is not in the first page of the projects list.
   useEffect(() => {
-    if (hasValidProjectIdInQuery) {
+    if (isNonEmptyString(projectIdFromQuery)) {
       setIsResolvingProject(false);
 
       return;
@@ -965,7 +972,7 @@ export const useOutreachLiveWorkingSet = () => {
   }, [
     accessToken,
     outreachProjectIdsKey,
-    hasValidProjectIdInQuery,
+    projectIdFromQuery,
     projectsLoading,
     setActiveProjectId,
   ]);

@@ -266,6 +266,21 @@ export const OutreachPeoplePanel = ({
 
   const getQueueCount = useCallback(
     (filterId: OutreachPeopleQueueFilter): number | null => {
+      if (filterId === 'all') {
+        return people.length;
+      }
+
+      if (filterId === 'not_enrolled') {
+        if (isDefined(journeySummary)) {
+          return Math.max(
+            0,
+            people.length - (journeySummary.totalEnrolled ?? 0),
+          );
+        }
+
+        return people.filter((person) => !isDefined(person.candidateId)).length;
+      }
+
       if (isJourneySummaryLoading || !isDefined(journeySummary)) {
         return null;
       }
@@ -274,13 +289,8 @@ export const OutreachPeoplePanel = ({
       const byConversation = journeySummary.byConversationStage ?? {};
 
       switch (filterId) {
-        case 'all':
+        case 'enrolled':
           return journeySummary.totalEnrolled;
-        case 'not_enrolled':
-          return Math.max(
-            0,
-            people.length - (journeySummary.totalEnrolled ?? 0),
-          );
         case 'awaiting_reply':
           return (
             (byStage.CONNECTION_ACCEPTED ?? 0) + (byStage.WAITING_REPLY ?? 0)
@@ -303,7 +313,7 @@ export const OutreachPeoplePanel = ({
           return byStage[filterId] ?? 0;
       }
     },
-    [isJourneySummaryLoading, journeySummary, people.length],
+    [isJourneySummaryLoading, journeySummary, people],
   );
 
   useEffect(() => {
@@ -503,10 +513,30 @@ export const OutreachPeoplePanel = ({
     ],
   );
 
-  const resultCount = useMemo(
-    () => filterOutreachRows(filteredPeople, columns, columnFilters).length,
+  const visiblePeople = useMemo(
+    () => filterOutreachRows(filteredPeople, columns, columnFilters),
     [columnFilters, columns, filteredPeople],
   );
+  const resultCount = visiblePeople.length;
+
+  // Stale column filters (e.g. Stage=Queued) apply after CRM stages load and
+  // wipe the table — clear them instead of leaving a blank grid.
+  useEffect(() => {
+    if (
+      columnFilters.length === 0 ||
+      filteredPeople.length === 0 ||
+      visiblePeople.length > 0
+    ) {
+      return;
+    }
+
+    clearColumnFilters();
+  }, [
+    clearColumnFilters,
+    columnFilters.length,
+    filteredPeople.length,
+    visiblePeople.length,
+  ]);
 
   const handleDeleteSelected = async () => {
     const deletedCount = await softDeletePeople?.(

@@ -16,6 +16,8 @@ export const OUTREACH_PEOPLE_QUEUE_FILTERS = [
   { id: 'STOPPED', label: 'Stopped' },
   // Redis discovery rows (no Candidate yet) — not counted in journey chips.
   { id: 'not_enrolled', label: 'Not enrolled' },
+  // Enrolled only — Candidate.outreachSequenceStage + workflow run progress.
+  { id: 'enrolled', label: 'Enrolled' },
 ] as const;
 
 export type OutreachPeopleQueueFilter =
@@ -48,7 +50,8 @@ export const matchesOutreachPeopleQueueFilter = (
 ): boolean => {
   switch (filter) {
     case 'all':
-      // Chip "All" is totalEnrolled — show Candidate rows with CRM stage / runs.
+      return true;
+    case 'enrolled':
       return isDefined(person.candidateId);
     case 'not_enrolled':
       return !isDefined(person.candidateId);
@@ -76,7 +79,8 @@ export const matchesOutreachPeopleQueueFilter = (
   }
 };
 
-// Discovery-only projects have no Candidate rows yet — fall back to Redis list.
+// All = full working set; enrolled (CRM stage) float to the top so progress
+// is not buried under Redis discovery rows that stay Queued.
 export const resolveOutreachPeopleQueueRows = (
   people: OutreachPersonRow[],
   filter: OutreachPeopleQueueFilter,
@@ -85,9 +89,14 @@ export const resolveOutreachPeopleQueueRows = (
     matchesOutreachPeopleQueueFilter(person, filter),
   );
 
-  if (filter === 'all' && matched.length === 0 && people.length > 0) {
-    return people;
+  if (filter !== 'all') {
+    return matched;
   }
 
-  return matched;
+  return [...matched].sort((left, right) => {
+    const leftEnrolled = isDefined(left.candidateId) ? 0 : 1;
+    const rightEnrolled = isDefined(right.candidateId) ? 0 : 1;
+
+    return leftEnrolled - rightEnrolled;
+  });
 };
