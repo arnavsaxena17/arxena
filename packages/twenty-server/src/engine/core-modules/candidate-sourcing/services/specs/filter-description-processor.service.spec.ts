@@ -50,7 +50,7 @@ describe('FilterDescriptionProcessorService', () => {
   // Note: Integration tests with OpenAI API would require API key and network access
   // These are skipped in unit tests to avoid external dependencies
   it.skip('should generate valid filter configuration with real API call', async () => {
-    // This test would require OPENAI_KEY environment variable
+    // This test would require OPENAI_API_KEY environment variable
     const result = await service.generateSingleFilter('Which of these people are north indians?', 'ws-1');
     expect(result).toBeDefined();
     expect(result.modelName).toBeDefined();

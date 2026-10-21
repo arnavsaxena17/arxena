@@ -835,11 +835,11 @@ export class LinkedinQueryGenerationService {
   }
 
   private createOpenAiClient(): OpenAI {
-    const apiKey = process.env.OPENAI_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
 
     if (!apiKey) {
       throw new HttpException(
-        'OPENAI_KEY is not configured',
+        'OPENAI_API_KEY is not configured',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

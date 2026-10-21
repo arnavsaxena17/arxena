@@ -159,12 +159,12 @@ export const WorkflowDiagramCanvasEditable = () => {
   };
 
   const onNodeDragStop: OnNodeDrag<WorkflowDiagramNode> = async (_, node) => {
-    if (!isDefined(workflowVersionId)) {
+    if (!isDefined(workflowVisualizerWorkflowVersionId)) {
       return;
     }
 
     // Layout-only: update positions on the current version (no draft fork)
-    await updateWorkflowVersionPosition(workflowVersionId, [
+    await updateWorkflowVersionPosition(workflowVisualizerWorkflowVersionId, [
       {
         id: node.id,
         position: node.position,

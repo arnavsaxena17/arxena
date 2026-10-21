@@ -52,7 +52,7 @@ export class McpAssistantService {
     this.anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
-    const openaiKey = process.env.OPENAI_API_KEY ?? process.env.OPENAI_KEY;
+    const openaiKey = process.env.OPENAI_API_KEY;
     this.openai =
       this.provider === 'openai' && openaiKey
         ? new OpenAI({ apiKey: openaiKey })

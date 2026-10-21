@@ -654,7 +654,7 @@ export class IcpExtractionService {
   }
 
   private createOpenAiClient(): OpenAI {
-    const apiKey = process.env.OPENAI_API_KEY ?? process.env.OPENAI_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey?.trim()) {
       throw new BadRequestException('OpenAI API key is not configured');
     }

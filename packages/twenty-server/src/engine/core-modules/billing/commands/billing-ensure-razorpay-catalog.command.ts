@@ -28,6 +28,16 @@ export class BillingEnsureRazorpayCatalogCommand extends MigrationCommandRunner 
     _passedParams: string[],
     options: MigrationCommandOptions,
   ): Promise<void> {
+    // Billing entities are excluded from TypeORM when IS_BILLING_ENABLED is
+    // false (see core.datasource), so plan sync would throw EntityMetadataNotFound.
+    if (!this.environmentService.get('IS_BILLING_ENABLED')) {
+      this.logger.log(
+        'Skipping Razorpay catalog ensure (IS_BILLING_ENABLED=false)',
+      );
+
+      return;
+    }
+
     const provider = this.environmentService.get('BILLING_PROVIDER');
 
     if (provider !== 'razorpay') {

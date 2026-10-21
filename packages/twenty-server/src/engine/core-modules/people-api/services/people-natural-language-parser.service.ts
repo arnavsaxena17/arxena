@@ -47,7 +47,7 @@ export class PeopleNaturalLanguageParserService {
 
   constructor() {
     this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_KEY,
+      apiKey: process.env.OPENAI_API_KEY,
     });
   }
 
@@ -62,7 +62,7 @@ export class PeopleNaturalLanguageParserService {
       );
     }
 
-    if (!process.env.OPENAI_KEY) {
+    if (!process.env.OPENAI_API_KEY) {
       throw new HttpException(
         'Natural language parser is unavailable',
         HttpStatus.SERVICE_UNAVAILABLE,

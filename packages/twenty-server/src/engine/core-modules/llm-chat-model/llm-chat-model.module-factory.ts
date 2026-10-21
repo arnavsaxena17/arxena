@@ -7,7 +7,7 @@ export const llmChatModelModuleFactory = (
 ) => {
   const configuredDriver = environmentService.get('LLM_CHAT_MODEL_DRIVER');
   const openAiApiKey =
-    environmentService.get('OPENAI_API_KEY') ?? process.env.OPENAI_KEY;
+    environmentService.get('OPENAI_API_KEY');
 
   const driver =
     configuredDriver ??

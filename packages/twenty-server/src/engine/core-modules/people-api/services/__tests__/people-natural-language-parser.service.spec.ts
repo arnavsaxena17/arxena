@@ -25,17 +25,17 @@ const buildCompletionResponse = (payload: unknown) => ({
 });
 
 describe('PeopleNaturalLanguageParserService', () => {
-  const originalOpenAiKey = process.env.OPENAI_KEY;
+  const originalOpenAiKey = process.env.OPENAI_API_KEY;
   let service: PeopleNaturalLanguageParserService;
 
   beforeEach(() => {
-    process.env.OPENAI_KEY = 'test-key';
+    process.env.OPENAI_API_KEY = 'test-key';
     mockCompletionCreate.mockReset();
     service = new PeopleNaturalLanguageParserService();
   });
 
   afterEach(() => {
-    process.env.OPENAI_KEY = originalOpenAiKey;
+    process.env.OPENAI_API_KEY = originalOpenAiKey;
   });
 
   it('should extract job title, company, website, and locations', async () => {
@@ -113,8 +113,8 @@ describe('PeopleNaturalLanguageParserService', () => {
     });
   });
 
-  it('should throw when OPENAI_KEY is missing', async () => {
-    delete process.env.OPENAI_KEY;
+  it('should throw when OPENAI_API_KEY is missing', async () => {
+    delete process.env.OPENAI_API_KEY;
 
     await expect(service.parse('CEO at StayVista')).rejects.toMatchObject({
       status: HttpStatus.SERVICE_UNAVAILABLE,

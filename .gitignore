@@ -72,8 +72,13 @@ screenshots/
 **/graphify-out/
 
 # Large / local-only artifacts (from workflows)
-/final_list_all.csv
-/final_list_food_and_beverage.csv
+# Never put run dumps, CSVs, scrapes, or agent notes in the repo root — use tmp/agent-runs/
+/final_list_*.csv
+/bright-data-*.json
+/find-role-outcomes*
+/find-role-agent-notes.md
+/*.jsonl
+/*.probe
 sample_jds/
 sample_jds/**
 packages/twenty-e2e-testing/~/
@@ -94,3 +99,4 @@ scripts/aws/.arm64-builder-ami-id
 build-meta.json
 Arxena.code-workspace
 tmp/
+tmp/agent-runs/

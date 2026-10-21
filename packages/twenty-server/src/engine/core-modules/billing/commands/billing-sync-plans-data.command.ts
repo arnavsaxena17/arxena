@@ -183,9 +183,7 @@ export class BillingSyncPlansDataCommand extends MigrationCommandRunner {
     return SubscriptionInterval.Month;
   }
 
-  private resolveRazorpayRecurring(
-    plan: RazorpayPlan,
-  ): Stripe.Price.Recurring {
+  private resolveRazorpayRecurring(plan: RazorpayPlan): Stripe.Price.Recurring {
     const interval =
       plan.period === 'yearly'
         ? 'year'
@@ -278,6 +276,12 @@ export class BillingSyncPlansDataCommand extends MigrationCommandRunner {
     _passedParams: string[],
     options: MigrationCommandOptions,
   ): Promise<void> {
+    if (!this.environmentService.get('IS_BILLING_ENABLED')) {
+      this.logger.log('Skipping billing plan sync (IS_BILLING_ENABLED=false)');
+
+      return;
+    }
+
     const provider = this.environmentService.get('BILLING_PROVIDER');
 
     if (provider === 'razorpay') {

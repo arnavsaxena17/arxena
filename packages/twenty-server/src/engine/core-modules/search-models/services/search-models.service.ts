@@ -38,7 +38,7 @@ export class SearchModelsService {
 
   constructor() {
     this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_KEY,
+      apiKey: process.env.OPENAI_API_KEY,
     });
   }
 

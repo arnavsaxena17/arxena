@@ -3015,7 +3015,7 @@ export class CandidateSourcingController {
       }
 
       // Use OpenAI API to create a ChatKit session
-      const openaiApiKey = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY;
+      const openaiApiKey = process.env.OPENAI_API_KEY;
 
       if (!openaiApiKey) {
         return {

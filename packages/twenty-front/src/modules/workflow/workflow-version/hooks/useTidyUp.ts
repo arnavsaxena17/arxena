@@ -25,13 +25,16 @@ export const useTidyUp = () => {
   };
 
   const tidyUp = async () => {
-    if (!isDefined(workflowDiagram) || !isDefined(workflowVersionId)) {
+    if (
+      !isDefined(workflowDiagram) ||
+      !isDefined(workflowVisualizerWorkflowVersionId)
+    ) {
       return;
     }
 
     // Layout-only: update the current version in place (no draft fork)
     const tidiedUpDiagram = await tidyUpWorkflowVersion(
-      workflowVersionId,
+      workflowVisualizerWorkflowVersionId,
       workflowDiagram,
     );
 

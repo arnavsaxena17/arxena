@@ -1,0 +1,16 @@
+node_modules
+.yarn
+.nx
+.cache
+dist
+build
+coverage
+storybook-static
+**/generated
+**/generated-metadata
+*.log
+.cursor/debug*.log
+packages/twenty-website
+packages/twenty-docs
+packages/twenty-zapier
+packages/twenty-e2e-testing

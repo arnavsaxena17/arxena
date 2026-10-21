@@ -7,11 +7,11 @@ export class OpenAIDriver implements LLMChatModelDriver {
   private chatModel: BaseChatModel;
 
   constructor() {
-    const apiKey = process.env.OPENAI_API_KEY ?? process.env.OPENAI_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
 
     if (!apiKey) {
       throw new Error(
-        'OpenAI API key is not configured. Set OPENAI_API_KEY or OPENAI_KEY.',
+        'OpenAI API key is not configured. Set OPENAI_API_KEY.',
       );
     }
 

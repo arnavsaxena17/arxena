@@ -407,11 +407,11 @@ export class LinkedinXrayService {
   private async parseRawLinkedinXrayQueryWithLlm(
     rawQuery: string,
   ): Promise<ParsedLlmFields> {
-    const apiKey = process.env.OPENAI_API_KEY ?? process.env.OPENAI_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
 
     if (!apiKey) {
       throw new InternalServerErrorException(
-        'Missing OPENAI_API_KEY or OPENAI_KEY',
+        'Missing OPENAI_API_KEY',
       );
     }
 

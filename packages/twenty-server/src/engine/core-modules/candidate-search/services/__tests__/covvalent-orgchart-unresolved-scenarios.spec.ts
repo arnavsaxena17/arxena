@@ -11,7 +11,7 @@
  * Opt-in integration (costs $ / needs local services):
  * - `COVVALENT_ORGCHART_LIVE_PYTHON=1` — raw `fetch` to query-set + real
  *   `PythonQueryGenerationService.generateSearchParameters` (HTTP to Python).
- * - `COVVALENT_ORGCHART_LIVE_LLM=1` and `OPENAI_KEY` — real
+ * - `COVVALENT_ORGCHART_LIVE_LLM=1` and `OPENAI_API_KEY` — real
  *   `LinkedinQueryGenerationService.generateSearchQuerySet` (multi-agent LLM).
  */
 import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service';
@@ -456,7 +456,7 @@ const RUN_LIVE_LLM =
   process.env.COVVALENT_ORGCHART_LIVE_LLM === 'true' ||
   process.env.COVVALENT_ORGCHART_LIVE_LLM === '1';
 
-const HAS_OPENAI_KEY = Boolean(process.env.OPENAI_KEY?.trim());
+const HAS_OPENAI_API_KEY = Boolean(process.env.OPENAI_API_KEY?.trim());
 
 function livePythonBaseUrl(): string {
   const raw =
@@ -661,7 +661,7 @@ function expectQuerySetMapsToClassicUnresolvedParams(
   },
 );
 
-(RUN_LIVE_LLM && HAS_OPENAI_KEY ? describe : describe.skip)(
+(RUN_LIVE_LLM && HAS_OPENAI_API_KEY ? describe : describe.skip)(
   'LinkedinQueryGenerationService (real multi-agent LLM)',
   () => {
     jest.setTimeout(360_000);

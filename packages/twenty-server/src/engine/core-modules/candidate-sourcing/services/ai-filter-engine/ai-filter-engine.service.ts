@@ -279,7 +279,7 @@ export class AiFilterEngineService {
   protected getOpenAiClient(): OpenAI {
     if (!this.openAiClient) {
       const apiKey =
-        process.env.OPENAI_API_KEY?.trim() || process.env.OPENAI_KEY?.trim();
+        process.env.OPENAI_API_KEY?.trim();
 
       if (!apiKey) {
         throw new Error('OPENAI_API_KEY is required for the AI filter.');

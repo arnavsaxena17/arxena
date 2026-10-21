@@ -201,7 +201,7 @@ export class FilterDescriptionProcessorService {
 
   constructor(private readonly meteredLlmService: MeteredLlmService) {
     this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_KEY,
+      apiKey: process.env.OPENAI_API_KEY,
     });
     // Initialize semaphore for filter processing (limit to 5 concurrent requests)
     this.semaphore = new Sema(5);
