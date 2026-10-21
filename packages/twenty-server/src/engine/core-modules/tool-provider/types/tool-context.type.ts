@@ -1,3 +1,4 @@
+import { type ToolProgressStreamEmitter } from 'src/engine/core-modules/tool-provider/interfaces/tool-progress-stream-emitter.type';
 import { type ActorMetadata } from 'twenty-shared/types';
 import { type APP_LOCALES } from 'twenty-shared/translations';
 
@@ -15,4 +16,5 @@ export type ToolContext = {
   threadId?: string;
   locale?: keyof typeof APP_LOCALES;
   onCodeExecutionUpdate?: CodeExecutionStreamEmitter;
+  onToolProgress?: ToolProgressStreamEmitter;
 };

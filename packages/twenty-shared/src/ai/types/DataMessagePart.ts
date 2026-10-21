@@ -41,6 +41,21 @@ export type CodeExecutionData = {
   error?: string;
 };
 
+export type ToolProgressState = 'running' | 'completed' | 'error';
+
+// Live status of a long tool call, so the chat shows it is still working
+export type ToolProgressData = {
+  progressId: string;
+  toolName: string;
+  state: ToolProgressState;
+  message: string;
+  current?: number;
+  total?: number;
+  elapsedMs?: number;
+  // Most recent notable events (failures, phase changes), newest last
+  logs?: string[];
+};
+
 export type DataMessagePart = {
   'routing-status': {
     text: string;
@@ -87,6 +102,7 @@ export type DataMessagePart = {
     };
   };
   'code-execution': CodeExecutionData;
+  'tool-progress': ToolProgressData;
   'thread-title': { title: string };
   compaction: Record<string, never>;
 };

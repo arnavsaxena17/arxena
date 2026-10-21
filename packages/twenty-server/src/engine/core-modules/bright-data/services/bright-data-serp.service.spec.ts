@@ -11,6 +11,8 @@ describe('BrightDataSerpService', () => {
     delete process.env.BRIGHT_DATA_SERP_PROXY_USERNAME;
     delete process.env.BRIGHT_DATA_SERP_PROXY_PASSWORD;
     delete process.env.BRIGHT_DATA_SERP_ASYNC_POLL_INTERVAL_MS;
+    delete process.env.BRIGHT_DATA_SERP_FALLBACK_PROXY_USERNAME;
+    delete process.env.BRIGHT_DATA_SERP_FALLBACK_PROXY_PASSWORD;
     delete process.env.BRIGHT_DATA_FSERP_PROXY_USERNAME;
     delete process.env.BRIGHT_DATA_FSERP_PROXY_PASSWORD;
     delete process.env.BRIGHT_DATA_FSERP_PROXY_HOST;
@@ -218,5 +220,60 @@ describe('BrightDataSerpService', () => {
     );
 
     expect(result.organic?.[0]?.link).toBe('https://theorg.com/org/wrapped');
+  });
+
+  describe('route fallback', () => {
+    type Routes = {
+      requestSerpJsonViaApi: jest.Mock;
+      requestSerpJsonViaProxy: jest.Mock;
+    };
+    const searchUrl = 'https://www.google.com/search?q=test';
+    const answer = { organic: [{ link: 'https://example.com/a' }] };
+
+    const configureRoutes = (api: jest.Mock, proxy: jest.Mock) => {
+      process.env.BRIGHT_DATA_API_KEY = 'test-key';
+      process.env.BRIGHT_DATA_SERP_FALLBACK_PROXY_USERNAME =
+        'brd-customer-hl_x-zone-serp_api_full_json';
+      process.env.BRIGHT_DATA_SERP_FALLBACK_PROXY_PASSWORD = 'secret';
+
+      const configured = new BrightDataSerpService();
+      const routes = configured as unknown as Routes;
+
+      routes.requestSerpJsonViaApi = api;
+      routes.requestSerpJsonViaProxy = proxy;
+
+      return configured;
+    };
+
+    it('should use the fallback proxy zone when the API cannot connect', async () => {
+      const api = jest.fn().mockRejectedValue(new Error('fetch failed'));
+      const proxy = jest.fn().mockResolvedValue(answer);
+      const result = await configureRoutes(api, proxy).requestSerpJson(
+        searchUrl,
+      );
+
+      expect(result).toBe(answer);
+      expect(api).toHaveBeenCalledTimes(1);
+      expect(proxy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not fall back on a rejected request', async () => {
+      const api = jest.fn().mockRejectedValue(new Error('HTTP 400 bad query'));
+      const proxy = jest.fn().mockResolvedValue(answer);
+
+      await expect(
+        configureRoutes(api, proxy).requestSerpJson(searchUrl),
+      ).rejects.toThrow('HTTP 400');
+      expect(proxy).not.toHaveBeenCalled();
+    });
+
+    it('should throw the last error when every route fails', async () => {
+      const api = jest.fn().mockRejectedValue(new Error('fetch failed'));
+      const proxy = jest.fn().mockRejectedValue(new Error('HTTP 502 upstream'));
+
+      await expect(
+        configureRoutes(api, proxy).requestSerpJson(searchUrl),
+      ).rejects.toThrow('HTTP 502');
+    });
   });
 });

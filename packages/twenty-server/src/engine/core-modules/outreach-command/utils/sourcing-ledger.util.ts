@@ -50,6 +50,9 @@ export type SourcingLedgerEvent =
       brightData: number;
       harvest: number;
       notFound: number;
+      // People with no LinkedIn URL whose URL was found by name and company
+      resolvedByName?: number;
+      resolvedByGoogle?: number;
       remaining: number;
     }
   | {

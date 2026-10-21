@@ -439,6 +439,7 @@ export class ToolRegistryService {
       threadId: context.threadId,
       locale: context.locale,
       onCodeExecutionUpdate: context.onCodeExecutionUpdate,
+      onToolProgress: context.onToolProgress,
     };
   }
 }

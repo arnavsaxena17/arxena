@@ -3,6 +3,7 @@ import { AiChatInitialLoadingIndicator } from '@/ai/components/AiChatInitialLoad
 import { CodeExecutionDisplay } from '@/ai/components/CodeExecutionDisplay';
 import { RoutingStatusDisplay } from '@/ai/components/RoutingStatusDisplay';
 import { ThinkingStepsDisplay } from '@/ai/components/ThinkingStepsDisplay';
+import { ToolProgressDisplay } from '@/ai/components/ToolProgressDisplay';
 
 import { AiChatQuestionStatusRenderer } from '@/ai/components/AiChatQuestionStatusRenderer';
 import { LazyMarkdownRenderer } from '@/ai/components/LazyMarkdownRenderer';
@@ -12,7 +13,10 @@ import { groupContiguousThinkingStepParts } from '@/ai/utils/groupContiguousThin
 import { isCodeInterpreterToolPart } from '@/ai/utils/isCodeInterpreterToolPart';
 import { styled } from '@linaria/react';
 import { getToolName, isToolUIPart } from 'ai';
-import { ASK_QUESTIONS_TOOL_NAME, type ExtendedUIMessagePart } from 'twenty-shared/ai';
+import {
+  ASK_QUESTIONS_TOOL_NAME,
+  type ExtendedUIMessagePart,
+} from 'twenty-shared/ai';
 import { isDefined } from 'twenty-shared/utils';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
@@ -36,6 +40,8 @@ const MessagePartRenderer = ({
       return <RoutingStatusDisplay data={part.data} />;
     case 'data-compaction':
       return <AiChatCompactionIndicator />;
+    case 'data-tool-progress':
+      return <ToolProgressDisplay data={part.data} />;
     case 'data-code-execution':
       return (
         <CodeExecutionDisplay

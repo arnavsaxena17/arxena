@@ -14,6 +14,12 @@ import {
   readRowProfile,
   type RowProfile,
 } from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/profile-row-fields.util';
+import { BrightDataPersonFitFilterService } from 'src/engine/core-modules/bright-data/services/bright-data-person-fit-filter.service';
+import { profileMatchesCompany } from 'src/engine/core-modules/tool/tools/fetch-profiles-tool/utils/profile-match.util';
+import {
+  LinkedinProfileResolverService,
+  type ResolvedLinkedinProfile,
+} from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/linkedin-profile-resolver.service';
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
 import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
 import { OutreachWorkingSetService } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
@@ -22,8 +28,11 @@ import { HarvestLinkedinService } from 'src/engine/core-modules/org-chart/servic
 // Bright Data takes many URLs in one request; a few requests run side by side
 const BRIGHT_DATA_BATCH_SIZE = 20;
 const BRIGHT_DATA_CONCURRENCY = 4;
-// Business Search answers one URL in about 2 seconds, so many run side by side
-const BUSINESS_SEARCH_CONCURRENCY = 10;
+// Business Search answers one URL in about 2 seconds, but rate-limits bursts
+// (HTTP 429), so only a few run side by side and all pause together on a 429
+const BUSINESS_SEARCH_CONCURRENCY = 4;
+const BUSINESS_SEARCH_RATE_LIMIT_PAUSE_MS = 5_000;
+const BUSINESS_SEARCH_MAX_ATTEMPTS = 3;
 const HARVEST_CONCURRENCY = 6;
 const DEFAULT_ROW_LIMIT = 100;
 const DEFAULT_TIME_BUDGET_MS = 75_000;
@@ -31,7 +40,17 @@ const MAX_REPORTED_FAILURES = 10;
 
 export type FetchProfilesSource = 'bright_data' | 'harvest';
 
+export type FetchProfilesProgress = {
+  phase: string;
+  fetched: number;
+  total: number;
+  lookupErrors: number;
+  lastError?: string;
+};
+
 export type FetchProfilesInput = {
+  // Called whenever the phase or the number of fetched profiles changes
+  onProgress?: (progress: FetchProfilesProgress) => void;
   workspaceId: string;
   projectId: string;
   // Rows whose fitment outcome is one of these are fetched. Rows with no
@@ -49,6 +68,8 @@ export type FetchProfilesResult = {
   requested: number;
   fetched: { brightData: number; harvest: number };
   failed: Array<{ id: string; name: string; linkedinUrl: string }>;
+  // People with no LinkedIn URL on the row, found by name and company
+  resolvedLinkedinUrls: { businessSearch: number; google: number };
   skipped: {
     noLinkedinUrl: number;
     alreadyFetched: number;
@@ -56,11 +77,26 @@ export type FetchProfilesResult = {
   };
   // Rows still waiting for a profile after this call: call again to continue
   remaining: number;
+  // Lookups that failed on the network or the API (not "person not found")
+  lookupErrors: number;
   timedOut: boolean;
   durationMs: number;
 };
 
-type Target = { id: string; name: string; linkedinUrl: string; key: string };
+// linkedinUrl is empty for a person found by name and company only; the
+// company is what tells two people with one name apart
+type Target = {
+  id: string;
+  name: string;
+  linkedinUrl: string;
+  key: string;
+  companyName?: string;
+  title?: string;
+};
+
+// Each person is one Business Search query, a Google search when it finds
+// nobody, and one model call, so only a few run side by side
+const NAME_LOOKUP_CONCURRENCY = 4;
 
 const urlKey = (url: string): string => {
   try {
@@ -101,6 +137,10 @@ export class FetchProfilesService {
     private readonly harvestLinkedinService: HarvestLinkedinService,
     @Optional()
     private readonly sourcingLedgerService?: SourcingLedgerService,
+    @Optional()
+    private readonly linkedinProfileResolverService?: LinkedinProfileResolverService,
+    @Optional()
+    private readonly personFitFilterService?: BrightDataPersonFitFilterService,
   ) {}
 
   async fetch(input: FetchProfilesInput): Promise<FetchProfilesResult> {
@@ -118,15 +158,11 @@ export class FetchProfilesService {
       filteredByOutcome: 0,
     };
     const pending: Target[] = [];
+    const unresolved: Target[] = [];
     const seenKeys = new Set<string>();
 
     for (const row of rows) {
       const linkedinUrl = (row.linkedinUrl ?? '').trim();
-
-      if (linkedinUrl === '') {
-        skipped.noLinkedinUrl += 1;
-        continue;
-      }
 
       if (!input.refresh && isDefined(readRowProfile(row.otherFields))) {
         skipped.alreadyFetched += 1;
@@ -145,6 +181,26 @@ export class FetchProfilesService {
         continue;
       }
 
+      if (linkedinUrl === '') {
+        const companyName = (row.companyName ?? '').trim();
+
+        // Without a company a name finds namesakes, so there is nothing to search
+        if (row.name.trim() === '' || companyName === '') {
+          skipped.noLinkedinUrl += 1;
+        } else {
+          unresolved.push({
+            id: row.id,
+            name: row.name,
+            linkedinUrl: '',
+            key: `row:${row.id}`,
+            companyName,
+            title: row.title,
+          });
+        }
+
+        continue;
+      }
+
       const key = urlKey(linkedinUrl);
 
       // Two rows for one person cost one fetch
@@ -156,14 +212,43 @@ export class FetchProfilesService {
       pending.push({ id: row.id, name: row.name, linkedinUrl, key });
     }
 
-    const targets = pending.slice(0, input.rowLimit ?? DEFAULT_ROW_LIMIT);
+    const rowLimit = input.rowLimit ?? DEFAULT_ROW_LIMIT;
+    const withUrl = pending.slice(0, rowLimit);
+    const withoutUrl = unresolved.slice(
+      0,
+      Math.max(0, rowLimit - withUrl.length),
+    );
+    const targets = [...withUrl, ...withoutUrl];
+    const resolvedLinkedinUrls = { businessSearch: 0, google: 0 };
     const profiles = new Map<string, RowProfile>();
     // Bright Data also keeps the provider record so row columns match find_role
     const brightDataRecords = new Map<string, Record<string, unknown>>();
     const fetched = { brightData: 0, harvest: 0 };
+    const lookupErrors: {
+      count: number;
+      lastError?: string;
+      notify?: () => void;
+    } = { count: 0 };
+    let currentPhase = 'Starting';
     const sources = input.sources ?? ['bright_data', 'harvest'];
     const useBrightData = sources.includes('bright_data');
     const useHarvest = sources.includes('harvest');
+    const reportProgress = (phase: string) => {
+      currentPhase = phase;
+      input.onProgress?.({
+        phase,
+        fetched: fetched.brightData + fetched.harvest,
+        total: targets.length,
+        lookupErrors: lookupErrors.count,
+        lastError: lookupErrors.lastError,
+      });
+    };
+
+    lookupErrors.notify = () => reportProgress(currentPhase);
+
+    reportProgress(
+      `Checking ${targets.length} profile(s) (${skipped.alreadyFetched} already have one, ${withoutUrl.length} have no LinkedIn URL and will be searched by name, ${skipped.noLinkedinUrl} cannot be searched)`,
+    );
 
     if (useBrightData) {
       const onBrightDataProfile = (
@@ -174,24 +259,56 @@ export class FetchProfilesService {
         profiles.set(target.id, profile);
         brightDataRecords.set(target.id, record);
         fetched.brightData += 1;
+        reportProgress('Fetching profiles from Bright Data');
       };
 
-      // Business Search first (seconds); the slow URL scrape only for the
+      // People with no URL: Business Search by name and company first, Google
+      // for the ones it does not match, a model to say which candidate is the
+      // person; the URL found goes through Business Search by URL below
+      if (withoutUrl.length > 0) {
+        reportProgress(
+          `Finding the LinkedIn URL of ${withoutUrl.length} person(s) by name and company (Bright Data, then Google)`,
+        );
+        await this.resolveWithoutUrl({
+          workspaceId: input.workspaceId,
+          targets: withoutUrl,
+          deadline,
+          resolvedLinkedinUrls,
+          lookupErrors,
+        });
+      }
+
+      // Business Search by URL first (seconds); the slow URL scrape only for the
       // people it does not know
       await this.fetchFromBusinessSearch(
-        targets,
+        targets.filter(
+          (target) => target.linkedinUrl !== '' && !profiles.has(target.id),
+        ),
         deadline,
         onBrightDataProfile,
+        lookupErrors,
       );
+      const unknownToSearch = targets.filter(
+        (target) => target.linkedinUrl !== '' && !profiles.has(target.id),
+      );
+
+      if (unknownToSearch.length > 0) {
+        reportProgress(
+          `Scraping ${unknownToSearch.length} profile(s) Business Search did not know (slower, can take minutes)`,
+        );
+      }
+
       await this.fetchFromBrightData(
-        targets.filter((target) => !profiles.has(target.id)),
+        unknownToSearch,
         deadline,
         onBrightDataProfile,
       );
       await this.writeBrightDataProfiles(input, brightDataRecords);
     }
 
-    const missing = targets.filter((target) => !profiles.has(target.id));
+    const missing = targets.filter(
+      (target) => target.linkedinUrl !== '' && !profiles.has(target.id),
+    );
     const harvested = new Map<string, RowProfile>();
 
     if (useHarvest && missing.length > 0) {
@@ -199,13 +316,15 @@ export class FetchProfilesService {
         harvested.set(target.id, profile);
         profiles.set(target.id, profile);
         fetched.harvest += 1;
+        reportProgress('Fetching profiles from Harvest');
       });
       await this.writeProfiles(input, harvested);
     }
 
     const failed = targets.filter((target) => !profiles.has(target.id));
     const remaining =
-      pending.length -
+      pending.length +
+      unresolved.length -
       targets.length +
       (Date.now() >= deadline ? failed.length : 0);
 
@@ -220,6 +339,8 @@ export class FetchProfilesService {
           brightData: fetched.brightData,
           harvest: fetched.harvest,
           notFound: failed.length,
+          resolvedByName: resolvedLinkedinUrls.businessSearch,
+          resolvedByGoogle: resolvedLinkedinUrls.google,
           remaining,
         },
       );
@@ -234,10 +355,140 @@ export class FetchProfilesService {
         linkedinUrl: target.linkedinUrl,
       })),
       skipped,
+      resolvedLinkedinUrls,
       remaining,
+      lookupErrors: lookupErrors.count,
       timedOut: Date.now() >= deadline,
       durationMs: Date.now() - startedAt,
     };
+  }
+
+  // The resolver finds the profiles that carry the person's name (Bright Data by
+  // name and company, Google for the misses); a model then says which of them
+  // works at the company on the row. Without a model, the company on the
+  // profile is matched by name instead.
+  private async resolveWithoutUrl({
+    workspaceId,
+    targets,
+    deadline,
+    resolvedLinkedinUrls,
+    lookupErrors,
+  }: {
+    workspaceId: string;
+    targets: Target[];
+    deadline: number;
+    resolvedLinkedinUrls: { businessSearch: number; google: number };
+    lookupErrors: { count: number; lastError?: string; notify?: () => void };
+  }): Promise<void> {
+    const resolver = this.linkedinProfileResolverService;
+
+    if (!isDefined(resolver)) {
+      return;
+    }
+
+    await runPool(targets, NAME_LOOKUP_CONCURRENCY, async (target) => {
+      if (Date.now() >= deadline) {
+        return;
+      }
+
+      const companyName = target.companyName ?? '';
+
+      try {
+        const { profiles, errors } = await resolver.resolve({
+          name: target.name,
+          companyNames: [companyName],
+          googleOnlyWhenBrightDataMisses: true,
+        });
+
+        if (profiles.length === 0) {
+          if (errors.length > 0) {
+            lookupErrors.count += 1;
+            lookupErrors.lastError = errors[0];
+            lookupErrors.notify?.();
+          }
+
+          return;
+        }
+
+        const chosen = await this.chooseProfile({
+          workspaceId,
+          target,
+          profiles,
+        });
+
+        if (!isDefined(chosen)) {
+          return;
+        }
+
+        target.linkedinUrl = chosen.linkedinUrl;
+        target.key = urlKey(chosen.linkedinUrl);
+
+        if (chosen.via === 'google') {
+          resolvedLinkedinUrls.google += 1;
+        } else {
+          resolvedLinkedinUrls.businessSearch += 1;
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+
+        lookupErrors.count += 1;
+        lookupErrors.lastError = message;
+        lookupErrors.notify?.();
+        this.logger.warn(`LinkedIn URL lookup by name failed: ${message}`);
+      }
+    });
+  }
+
+  // First candidate the model places at the row's company (the same business
+  // or a related one); a namesake elsewhere is rejected. If the model is
+  // unavailable, the company on the profile or in its evidence must match by name.
+  private async chooseProfile({
+    workspaceId,
+    target,
+    profiles,
+  }: {
+    workspaceId: string;
+    target: Target;
+    profiles: ResolvedLinkedinProfile[];
+  }): Promise<ResolvedLinkedinProfile | undefined> {
+    const companyName = target.companyName ?? '';
+
+    if (isDefined(this.personFitFilterService)) {
+      try {
+        const judgements = await this.personFitFilterService.judge({
+          workspaceId,
+          company: companyName,
+          alternateNames: [],
+          roles: [target.title ?? ''].filter((role) => role !== ''),
+          candidates: profiles.map((profile) => ({
+            id: profile.linkedinUrl,
+            name: target.name,
+            title: profile.title,
+            company: profile.companyName,
+            location: '',
+            evidence: profile.evidence,
+          })),
+        });
+
+        // A verdict for every candidate: trust it. Missing verdicts (a batch
+        // the model failed on) fall through to name matching below.
+        if (judgements.size > 0) {
+          return profiles.find((profile) => {
+            const company = judgements.get(profile.linkedinUrl)?.company;
+
+            return company === 'same' || company === 'related';
+          });
+        }
+      } catch (error) {
+        this.logger.warn(
+          `Candidate judge unavailable, matching company names instead: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+
+    return profiles.find((profile) =>
+      profileMatchesCompany(profile, companyName),
+    );
   }
 
   private async fetchFromBusinessSearch(
@@ -248,6 +499,7 @@ export class FetchProfilesService {
       profile: RowProfile,
       record: Record<string, unknown>,
     ) => void,
+    lookupErrors: { count: number; lastError?: string; notify?: () => void },
   ): Promise<void> {
     if (
       targets.length === 0 ||
@@ -256,42 +508,71 @@ export class FetchProfilesService {
       return;
     }
 
+    let pausedUntil = 0;
+
     await runPool(targets, BUSINESS_SEARCH_CONCURRENCY, async (target) => {
-      if (Date.now() >= deadline) {
-        return;
-      }
+      for (
+        let attempt = 1;
+        attempt <= BUSINESS_SEARCH_MAX_ATTEMPTS;
+        attempt++
+      ) {
+        const waitMs = pausedUntil - Date.now();
 
-      try {
-        const result = await this.brightDataBusinessSearchService.search({
-          entity: 'people',
-          mode: 'instant',
-          query: target.linkedinUrl,
-          limit: 3,
-        });
-        // Instant search is fuzzy: only the record with this exact profile URL counts
-        const match = result.documents.find((document) => {
-          const url = document.data.url;
+        if (waitMs > 0) {
+          await new Promise((resolve) => setTimeout(resolve, waitMs));
+        }
 
-          return typeof url === 'string' && urlKey(url) === target.key;
-        });
-
-        if (!isDefined(match)) {
+        if (Date.now() >= deadline) {
           return;
         }
 
-        const profile = profileToRowProfile({
-          source: 'bright_data',
-          record: match.data,
-          fetchedAt: new Date().toISOString(),
-        });
+        try {
+          const result = await this.brightDataBusinessSearchService.search({
+            entity: 'people',
+            mode: 'instant',
+            query: target.linkedinUrl,
+            limit: 3,
+          });
+          // Instant search is fuzzy: only the record with this exact profile URL counts
+          const match = result.documents.find((document) => {
+            const url = document.data.url;
 
-        if (isUsableProfile(profile)) {
-          onProfile(target, profile, match.data);
+            return typeof url === 'string' && urlKey(url) === target.key;
+          });
+
+          if (!isDefined(match)) {
+            return;
+          }
+
+          const profile = profileToRowProfile({
+            source: 'bright_data',
+            record: match.data,
+            fetchedAt: new Date().toISOString(),
+          });
+
+          if (isUsableProfile(profile)) {
+            onProfile(target, profile, match.data);
+          }
+
+          return;
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : String(error);
+
+          if (message.includes('(429)')) {
+            pausedUntil = Date.now() + BUSINESS_SEARCH_RATE_LIMIT_PAUSE_MS;
+            continue;
+          }
+
+          lookupErrors.count += 1;
+          lookupErrors.lastError = message;
+          lookupErrors.notify?.();
+          this.logger.warn(
+            `Bright Data business search profile lookup failed: ${message}`,
+          );
+
+          return;
         }
-      } catch (error) {
-        this.logger.warn(
-          `Bright Data business search profile lookup failed: ${error instanceof Error ? error.message : String(error)}`,
-        );
       }
     });
   }

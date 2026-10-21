@@ -50,6 +50,14 @@ export type BrightDataDatasetScrapeInput = {
   tbm?: string;
 };
 
+// A failure of the route itself (cannot connect, timed out, server error, rate
+// limited) is worth another route; a bad request is not
+const isRouteFailure = (error: unknown): boolean =>
+  error instanceof Error &&
+  /HTTP (429|5\d\d)\b|non-JSON reply|aborted|fetch failed|timed out|ECONN|ENOTFOUND|ETIMEDOUT|socket/i.test(
+    error.message,
+  );
+
 @Injectable()
 export class BrightDataSerpService {
   private readonly logger = new Logger(BrightDataSerpService.name);
@@ -85,6 +93,35 @@ export class BrightDataSerpService {
       host:
         process.env.BRIGHT_DATA_SERP_PROXY_HOST?.trim() || 'brd.superproxy.io',
       port: Number(process.env.BRIGHT_DATA_SERP_PROXY_PORT ?? 33335),
+      username,
+      password,
+    };
+  }
+
+  // Second superproxy zone (the "serp_api_full_json" zone), tried when the
+  // primary route cannot connect or fails. Same host, different credentials.
+  private get serpFallbackProxy():
+    | { host: string; port: number; username: string; password: string }
+    | undefined {
+    const username =
+      process.env.BRIGHT_DATA_SERP_FALLBACK_PROXY_USERNAME?.trim();
+    const password =
+      process.env.BRIGHT_DATA_SERP_FALLBACK_PROXY_PASSWORD?.trim();
+
+    if (!username || !password) {
+      return undefined;
+    }
+
+    return {
+      host:
+        process.env.BRIGHT_DATA_SERP_FALLBACK_PROXY_HOST?.trim() ||
+        process.env.BRIGHT_DATA_SERP_PROXY_HOST?.trim() ||
+        'brd.superproxy.io',
+      port: Number(
+        process.env.BRIGHT_DATA_SERP_FALLBACK_PROXY_PORT ??
+          process.env.BRIGHT_DATA_SERP_PROXY_PORT ??
+          33335,
+      ),
       username,
       password,
     };
@@ -241,16 +278,66 @@ export class BrightDataSerpService {
   ): Promise<BrightDataSerpGoogleJson> {
     const key = this.apiKey;
     const proxy = this.serpProxy;
+    const fallbackProxy = this.serpFallbackProxy;
 
-    if (!key && proxy === undefined) {
+    if (!key && proxy === undefined && fallbackProxy === undefined) {
       throw new Error('BRIGHT_DATA_API_KEY is not set');
     }
 
+    // Routes in order of preference: the primary superproxy zone, then the
+    // REST API, then the fallback zone. A route that cannot connect or answers
+    // with a server error hands over to the next; a caller's abort and a
+    // 4xx do not.
+    const routes: Array<{
+      name: string;
+      run: () => Promise<BrightDataSerpGoogleJson>;
+    }> = [];
+
     if (proxy !== undefined) {
-      return this.requestSerpJsonViaProxy(searchUrl, proxy, options);
+      routes.push({
+        name: 'SERP proxy',
+        run: () => this.requestSerpJsonViaProxy(searchUrl, proxy, options),
+      });
     }
 
-    return this.requestSerpJsonViaApi(searchUrl, key as string, options);
+    if (key) {
+      routes.push({
+        name: 'SERP API',
+        run: () => this.requestSerpJsonViaApi(searchUrl, key, options),
+      });
+    }
+
+    if (fallbackProxy !== undefined) {
+      routes.push({
+        name: 'SERP fallback proxy',
+        run: () =>
+          this.requestSerpJsonViaProxy(searchUrl, fallbackProxy, options),
+      });
+    }
+
+    let lastError: unknown;
+
+    for (const [index, route] of routes.entries()) {
+      try {
+        return await route.run();
+      } catch (error) {
+        lastError = error;
+
+        if (
+          options.signal?.aborted === true ||
+          index === routes.length - 1 ||
+          !isRouteFailure(error)
+        ) {
+          throw error;
+        }
+
+        this.logger.warn(
+          `${route.name} failed, trying ${routes[index + 1].name}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+
+    throw lastError;
   }
 
   private async requestSerpJsonViaProxy(

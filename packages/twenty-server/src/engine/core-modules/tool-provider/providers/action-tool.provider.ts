@@ -469,6 +469,7 @@ export class ActionToolProvider implements ToolProvider {
       userWorkspaceId: context.userWorkspaceId,
       threadId: context.threadId,
       onCodeExecutionUpdate: context.onCodeExecutionUpdate,
+      onToolProgress: context.onToolProgress,
       toolConfigs: context.toolConfigs,
     });
   }

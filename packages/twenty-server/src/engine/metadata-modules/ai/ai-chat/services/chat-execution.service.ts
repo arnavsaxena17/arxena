@@ -1,3 +1,4 @@
+import { type ToolProgressStreamEmitter } from 'src/engine/core-modules/tool-provider/interfaces/tool-progress-stream-emitter.type';
 import { Injectable, Logger } from '@nestjs/common';
 
 import {
@@ -109,6 +110,7 @@ export type ChatExecutionOptions = {
   messages: ExtendedUIMessage[];
   browsingContext: BrowsingContextType | null;
   onCodeExecutionUpdate?: CodeExecutionStreamEmitter;
+  onToolProgress?: ToolProgressStreamEmitter;
   onCompaction?: () => void;
   modelId?: string;
   abortSignal?: AbortSignal;
@@ -152,6 +154,7 @@ export class ChatExecutionService {
     messages,
     browsingContext,
     onCodeExecutionUpdate,
+    onToolProgress,
     onCompaction,
     modelId,
     abortSignal,
@@ -188,6 +191,7 @@ export class ChatExecutionService {
       threadId,
       locale,
       onCodeExecutionUpdate,
+      onToolProgress,
     };
 
     const toolCatalog = await this.toolRegistry.buildToolIndex(

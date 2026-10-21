@@ -44,6 +44,8 @@ export type {
   ExtendedFileUIPart,
   CodeExecutionState,
   CodeExecutionData,
+  ToolProgressState,
+  ToolProgressData,
   DataMessagePart,
 } from './types/DataMessagePart';
 export { isExtendedFileUIPart } from './types/DataMessagePart';

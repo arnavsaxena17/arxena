@@ -23,9 +23,13 @@ const build = ({
   scrape = jest.fn(async (urls: string[]) => urls.map(brightRecord)),
   harvest = jest.fn(async () => null),
   search = undefined as jest.Mock | undefined,
+  resolver = undefined as { resolve: jest.Mock } | undefined,
+  judge = undefined as jest.Mock | undefined,
 }: {
   rows: OutreachWorkingSetRow[];
   search?: jest.Mock;
+  resolver?: { resolve: jest.Mock };
+  judge?: jest.Mock;
   scrape?: jest.Mock;
   harvest?: jest.Mock;
 }) => {
@@ -38,12 +42,140 @@ const build = ({
     { isConfigured: () => search !== undefined, search } as never,
     { isConfigured: () => true, scrapeProfilesByUrl: scrape } as never,
     { fetchProfileByUrl: harvest } as never,
+    undefined,
+    resolver as never,
+    judge === undefined ? undefined : ({ judge } as never),
   );
 
   return { service, scrape, harvest, writeOtherFields };
 };
 
 const input = { workspaceId: 'w', projectId: 'p' };
+
+describe('FetchProfilesService people without a LinkedIn URL', () => {
+  const personRow = (id: string, name: string, companyName: string) => ({
+    ...row(id, undefined),
+    name,
+    companyName,
+  });
+  const candidate = (via: 'bright_data' | 'google', company: string) => ({
+    linkedinUrl: 'https://in.linkedin.com/in/rahil-gandhi',
+    title: 'CEO',
+    companyName: company,
+    evidence: `CEO at ${company}`,
+    via,
+    sameNameProfileCount: null,
+    derivedFromPost: false,
+  });
+  const urlLookup = jest.fn(async () => ({
+    documents: [
+      {
+        brightId: 'a',
+        data: {
+          url: 'https://in.linkedin.com/in/rahil-gandhi',
+          followers: 12,
+          connections: 3,
+        },
+      },
+    ],
+  }));
+  const buildWithResolver = ({
+    resolved,
+    judge,
+  }: {
+    resolved: unknown[];
+    judge?: jest.Mock;
+  }) => {
+    const resolve = jest.fn(async () => ({
+      profiles: resolved,
+      spentUsd: 0,
+      errors: [],
+    }));
+    const built = build({
+      rows: [personRow('1', 'Rahil Gandhi', 'Vadilal')],
+      search: urlLookup,
+      resolver: { resolve },
+      judge,
+    });
+
+    return { ...built, resolve };
+  };
+
+  it('should take the candidate the model places at the company, then look its URL up', async () => {
+    const judge = jest.fn(
+      async () =>
+        new Map([
+          ['https://in.linkedin.com/in/rahil-gandhi', { company: 'same' }],
+        ]),
+    );
+    const { service, resolve } = buildWithResolver({
+      resolved: [candidate('bright_data', 'Vadilal Industries')],
+      judge,
+    });
+    const result = await service.fetch(input);
+
+    expect(resolve).toHaveBeenCalledWith(
+      expect.objectContaining({ googleOnlyWhenBrightDataMisses: true }),
+    );
+    expect(result.resolvedLinkedinUrls).toEqual({
+      businessSearch: 1,
+      google: 0,
+    });
+    expect(result.fetched.brightData).toBe(1);
+  });
+
+  it('should count a candidate found through Google separately', async () => {
+    const judge = jest.fn(
+      async () =>
+        new Map([
+          ['https://in.linkedin.com/in/rahil-gandhi', { company: 'related' }],
+        ]),
+    );
+    const { service } = buildWithResolver({
+      resolved: [candidate('google', 'Vadilal Group')],
+      judge,
+    });
+    const result = await service.fetch(input);
+
+    expect(result.resolvedLinkedinUrls).toEqual({
+      businessSearch: 0,
+      google: 1,
+    });
+  });
+
+  it('should reject a namesake the model places at a different company', async () => {
+    const judge = jest.fn(
+      async () =>
+        new Map([
+          ['https://in.linkedin.com/in/rahil-gandhi', { company: 'different' }],
+        ]),
+    );
+    const { service } = buildWithResolver({
+      resolved: [candidate('bright_data', 'Acme')],
+      judge,
+    });
+    const result = await service.fetch(input);
+
+    expect(result.resolvedLinkedinUrls).toEqual({
+      businessSearch: 0,
+      google: 0,
+    });
+    expect(result.fetched.brightData).toBe(0);
+  });
+
+  it('should match the company by name when the model is unavailable', async () => {
+    const judge = jest.fn(async () => {
+      throw new Error('model down');
+    });
+    const { service } = buildWithResolver({
+      resolved: [candidate('bright_data', 'Vadilal Industries Limited')],
+      judge,
+    });
+    const result = await service.fetch(input);
+
+    expect(result.resolvedLinkedinUrls.businessSearch).toBe(1);
+  });
+});
 
 describe('FetchProfilesService', () => {
   it('should take profiles from Business Search first and scrape only the ones it misses', async () => {

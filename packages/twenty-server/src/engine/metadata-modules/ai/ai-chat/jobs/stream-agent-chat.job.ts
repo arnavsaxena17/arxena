@@ -7,6 +7,7 @@ import type {
   CodeExecutionData,
   ExtendedUIMessage,
   ExtendedUIMessagePart,
+  ToolProgressData,
 } from 'twenty-shared/ai';
 import { isDefined } from 'twenty-shared/utils';
 import { Repository } from 'typeorm';
@@ -351,6 +352,14 @@ export class StreamAgentChatJob {
             });
           };
 
+          const onToolProgress = (toolProgressData: ToolProgressData) => {
+            writer.write({
+              type: 'data-tool-progress' as const,
+              id: `tool-progress-${toolProgressData.progressId}`,
+              data: toolProgressData,
+            });
+          };
+
           const onCompaction = () => {
             writer.write({
               type: 'data-compaction' as const,
@@ -370,6 +379,7 @@ export class StreamAgentChatJob {
               browsingContext: data.browsingContext,
               modelId: data.modelId,
               onCodeExecutionUpdate,
+              onToolProgress,
               onCompaction,
               abortSignal,
               conversationSizeTokens: data.conversationSizeTokens,

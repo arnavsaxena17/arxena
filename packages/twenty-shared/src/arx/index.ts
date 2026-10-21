@@ -207,6 +207,10 @@ export {
   getCandidateChatControlValue,
   isChatControlCompleted,
 } from './candidateFlags';
+export {
+  cleanCompanyNameForDisplay,
+  cleanPersonNameForDisplay,
+} from './cleanOutreachDisplayNames';
 export type { MessagingChannelValue } from './messagingChannel';
 export {
   MessagingChannel,
@@ -322,10 +326,6 @@ export {
   renderOutreachDraftTemplate,
   validateOutreachDraftTemplate,
 } from './outreachDraftTemplates';
-export {
-  cleanCompanyNameForDisplay,
-  cleanPersonNameForDisplay,
-} from './cleanOutreachDisplayNames';
 export { OUTREACH_HITL_CONTEXT_TEMPLATES } from './outreachHitl';
 export type { SendWindowWeekday } from './sendWindowDays';
 export {

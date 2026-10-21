@@ -59,11 +59,15 @@ export class LinkedinProfileResolverService {
   async resolve({
     name,
     companyNames,
+    googleOnlyWhenBrightDataMisses = false,
   }: {
     name: string;
     // Every name the person's company goes by or is linked to, best first: the
     // employer their own results state, then the target and its alternates
     companyNames: string[];
+    // Ask Google only when the Bright Data name and company query found nobody:
+    // slower and flakier than Bright Data, so callers on a budget skip it
+    googleOnlyWhenBrightDataMisses?: boolean;
   }): Promise<{
     profiles: ResolvedLinkedinProfile[];
     spentUsd: number;
@@ -76,16 +80,36 @@ export class LinkedinProfileResolverService {
       .filter(isNonEmptyString)
       .slice(0, MAX_COMPANY_NAMES);
     const errors: string[] = [];
-    const [fromBrightData, fromGoogle] = await Promise.all([
+    const lookUpBrightData = () =>
       this.resolveViaBrightData(name, companies).catch((error) => {
         errors.push(
           `${name}: bright_data ${error instanceof Error ? error.message : String(error)}`,
         );
 
         return { profiles: [] as ResolvedLinkedinProfile[], spentUsd: 0 };
-      }),
-      this.resolveViaGoogle(name, companies),
-    ]);
+      });
+    const noGoogle = {
+      profiles: [] as ResolvedLinkedinProfile[],
+      errors: [] as string[],
+    };
+    let fromBrightData: Awaited<ReturnType<typeof lookUpBrightData>>;
+    let fromGoogle: Awaited<ReturnType<typeof this.resolveViaGoogle>>;
+
+    if (googleOnlyWhenBrightDataMisses) {
+      fromBrightData = await lookUpBrightData();
+      // Profiles found by name alone are mostly namesakes, so only a hit on
+      // the name and company query spares the Google lookup
+      fromGoogle = fromBrightData.profiles.some(
+        (profile) => profile.sameNameProfileCount === null,
+      )
+        ? noGoogle
+        : await this.resolveViaGoogle(name, companies);
+    } else {
+      [fromBrightData, fromGoogle] = await Promise.all([
+        lookUpBrightData(),
+        this.resolveViaGoogle(name, companies),
+      ]);
+    }
 
     errors.push(
       ...fromGoogle.errors.map((error) => `${name}: google ${error}`),
