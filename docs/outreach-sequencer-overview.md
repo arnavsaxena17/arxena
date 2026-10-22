@@ -1,8 +1,174 @@
 # Outreach sequencer & workflow actions
 
-Short reference for the Candidate Sequencer, workflow step types, enrollment, and local mock runs.
+Short reference for the Candidate Sequencer, workflow step types, enrollment, and local mock runs — plus a step-by-step path to get good at **setting up conversations**, **testing flows/nodes**, **tuning AI prompts**, and **evaluating** different conversation shapes.
 
 Source of truth for the graph: `packages/twenty-server/src/engine/workspace-manager/standard-objects-prefill-data/data/outreach-workflow-graphs.ts`.
+
+---
+
+## Become a pro: step-by-step
+
+Goal order: **run something end-to-end first**, then learn the front surfaces, then the server pieces, then isolate nodes and prompts, then systematically evaluate conversation types. Do not start by editing prompts in the dark.
+
+### Phase 0 — Prerequisites (once)
+
+1. Local app up (`yarn start` / front + server + worker).
+2. Workspace with **`IS_OUTREACH_MOCK_UNIPILE_ENABLED`** (dev seed usually has this).
+3. An API token for curl/scripts (`Authorization: Bearer …`).
+4. Know these three URLs:
+   - Outreach Home: `/outreach-home?projectId=…`
+   - Outreach Today (HITL inbox): `/outreach-today`
+   - Candidate Sequencer canvas: `/object/workflow/<workflowId>` → **Edit Workflow**
+
+### Phase 1 — Run first (end-to-end with mocks)
+
+Do this before opening a single prompt. You need a feel for stages, FORMs, and journey.
+
+1. **Seed** a matrix project (creates QUEUED candidates for branch/HITL cases):
+
+   ```bash
+   cd packages/twenty-server
+   API_TOKEN=<token> SERVER_URL=http://127.0.0.1:3000 SERVER_HOST=arxena-4.localhost \
+     npx ts-node scripts/seed-outreach-bc-path-matrix.ts
+   ```
+
+2. Open the printed Outreach Home URL. Confirm people show as enrolled / `QUEUED`.
+
+3. On the Candidate Sequencer workflow → **Edit Workflow** → turn on **Test mode** (short delays) → apply → **activate**.
+
+4. **Start outreach** on one simple candidate (or let the drive script do it). Watch:
+   - People table stage / next-step labels update
+   - Candidate drawer **Journey** (active run, pending FORM, draft preview)
+   - `/outreach-today` for approve/edit/reject cards
+
+5. Drive one happy path by hand with mocks:
+   - Approve any early FORM (or `POST …/hitl` `{ "decision": "approve" }`)
+   - `POST …/accept` when waiting on connection
+   - Approve opener → optionally `POST …/reply` with prospect text → approve sales reply
+
+6. Then run the **automated drive** once so you see every seeded terminal stage:
+
+   ```bash
+   API_TOKEN=<token> PROJECT_ID=<from-seed> \
+     npx ts-node scripts/drive-outreach-bc-path-matrix.ts
+   ```
+
+You are “running” when you can predict: *this stage → this FORM or wait → this mock call → this next stage*.
+
+### Phase 2 — Front surfaces (what each screen is for)
+
+Work through these in order; each maps to a testing job.
+
+| Surface | Path / entry | You use it to… |
+| --- | --- | --- |
+| **Outreach Home — People** | `/outreach-home` | Enroll, Start/Stop outreach, see stage chips, open journey drawer |
+| **Outreach Today** | `/outreach-today` | Decide HITL FORMs (approve / edit / reject); this is the human gate before sends |
+| **Candidate Journey drawer** | People row → drawer | Inspect active/failed runs, pending step, draft preview, pause/resume/snooze |
+| **Workflow list → Candidate Sequencer** | `/object/workflow/…` | Open the graph that owns the conversation machine |
+| **Edit Workflow canvas** | Edit on sequencer | See nodes, edges, stage router; click a node to configure |
+| **Edit sequencer options** | Modal on sequencer edit | Toggle HITL, WhatsApp, email, InMail, qualify, comment-before-connect, warm sender pin, **test mode** — regenerates graph shape |
+| **Node side panel — Config** | Click any step | Edit settings (filters, templates, logic-function inputs) |
+| **Node side panel — Test** (AI / send) | AI Agent or Send LinkedIn/WhatsApp/Email steps | Run **one node** against a real candidate without walking the whole flow |
+| **Workflow runs** | Runs on the workflow record | Debug a full run: which step failed, step outputs, status |
+
+Practice loop on the front:
+
+1. Change one sequencer option (e.g. HITL off) → activate → start a fresh QUEUED candidate → confirm Today no longer parks (or does).
+2. Open Journey while a FORM is pending → match `pendingFormStepId` / draft to the Today card.
+3. Open the same AI step on the canvas → **Test** tab → pick that candidate → Run → compare output to the Journey draft.
+
+### Phase 3 — Test nodes in isolation (front → server)
+
+Once E2E works, stop burning full runs for every prompt tweak.
+
+#### AI Agent nodes (prompts)
+
+1. On the canvas, open nodes like **Qualify prospect**, **Draft first LinkedIn message**, **Draft sales reply**, **Extract inbound signals**.
+2. Open the **Test** tab.
+3. **Pick a Candidate** — the server hydrates prior-step context (profile, messages, candidate fields) into the prompt.
+4. Edit the prompt in the test panel if needed → Run.
+5. Read result + duration + output-validation report. Record changes / model usage are real.
+
+Front: `WorkflowEditActionAiAgent` / `useTestAiAgent` → GraphQL `testAiAgent`.  
+Server: `workflow-version-step.resolver` → agent executor (tools + optional JSON schema pass).
+
+**Pro habit:** keep a small set of fixture candidates (opener-only, accepted+silent, inbound “interested”, inbound “not now”, referral, meeting ask). Re-run the same candidate after each prompt edit.
+
+#### Send / channel nodes
+
+On **Send LinkedIn Message**, **WhatsApp**, **Email**, etc.:
+
+1. Open **Test** tab → `testWorkflowSendAction`.
+2. With mocks on, the send is a no-op Unipile/email call but still exercises the step wiring and payload.
+3. Confirm chat / transcript side effects you care about (mock paths write/skip differently than live).
+
+#### Logic functions & filters
+
+- Logic Function steps: exercise via a short workflow run or unit tests on the native util (e.g. `validate-inbound-signals`).
+- AI Filtering: has its own test mutation (`testWorkflowAiFiltering`) from the step UI.
+- If/else / Filter: cheapest to validate by watching which branch a Journey takes after a known stage stamp.
+
+### Phase 4 — Server map (where to change what)
+
+Learn the code in this order; each file owns a testing concern.
+
+| Concern | Where | What you change / read |
+| --- | --- | --- |
+| Graph shape & step wiring | `…/data/outreach-workflow-graphs.ts` (`buildCandidateSequencerGraph`) | Stages, which AI/FORM/send nodes exist, options |
+| Graph helpers / schemas | `…/data/outreach-workflow-graph-helpers.ts` | Output schemas (`OUTREACH_WF_AI_*`), step builders |
+| Prompt text | `…/outreach-command/prompts/` (`outreach.prompts.ts` + reply/inbound prompt modules) | Instructions the AI Agent steps call |
+| Mock AI results (flag on) | `…/ai-agent/utils/build-outreach-mock-ai-agent-result.util.ts` | Deterministic drafts when Unipile mock is on |
+| Mock lifecycle API | `outreach-mock.controller.ts` + `outreach-mock-lifecycle.service.ts` | accept / reply / hitl / reset / upload-profiles |
+| Start / stop outreach | `outreach-project-outreach-control.service.ts` | `startOutreach` flag → trigger |
+| Journey API | `outreach-candidate-journey.service.ts` | What the drawer shows (runs, drafts, pending FORM) |
+| Workflow execution | `packages/twenty-server/src/modules/workflow/workflow-executor/…` | Per-action executors (FORM, DELAY, AI_AGENT, sends) |
+| Seed / drive scripts | `packages/twenty-server/scripts/seed-outreach-bc-path-matrix.ts`, `drive-outreach-bc-path-matrix.ts` | Repeatable conversation matrices |
+
+After editing a **seeded graph or prompt builder**, re-sync / activate the workspace workflow (upgrade command or Edit options apply) so the running version matches your code. Prompt-only edits inside an **already activated** draft version can be tested from the AI Test tab without a full reseed.
+
+### Phase 5 — Set up & evaluate conversations
+
+Treat each “conversation kind” as a scenario with **setup → inject → assert**.
+
+| Conversation kind | Setup | Inject / act | What “good” looks like |
+| --- | --- | --- | --- |
+| Connect → ignore → email/InMail fallback | QUEUED, start | Let accept wait expire (test mode) | Stage `EMAIL_SENT` / `INMAIL_SENT` / `FAILED_ENRICH` as designed |
+| Connect → accept → opener | QUEUED → accept | `accept` + HITL approve opener | Opener draft grounded in profile; send → waiting FU |
+| Accept → silent → FU1–FU3 | After opener sent | No reply; approve FU forms | Cadence advances; eventually `FAILED_NO_REPLY` if still silent |
+| Inbound interested → meeting | After opener / FU | `reply` with meeting intent + HITL edit times | Calendar / `MEETING_BOOKED` or `WAITING_REPLY` with slots |
+| Inbound not interested / stop | Same | `reply` with opt-out language | `#DONTRESPOND#` / skip send / `FAILED_NO_REPLY` |
+| HITL reject | Any FORM | `hitl` `reject` | Run stopped; no outbound send |
+| HITL edit | FORM parked | `hitl` `edit` + `editedBody` | Edited text is what gets sent |
+| Company dedupe / DEFERRED | Two people same company | Start second while first still QUEUED or contacted | Second → `DEFERRED` |
+| Multi-channel reply | Prefer WhatsApp/email flags on | Inbound on that channel | Reply router picks last inbound channel |
+
+Eval checklist per scenario (write it down):
+
+1. **Stage** on the candidate matches expectation.
+2. **Journey** shows the right pending step / empty when terminal.
+3. **Draft quality** (AI Test or Today card): grounded, correct tone, schema keys filled only when true.
+4. **Side effects**: mock message ids, calendar, referral candidate — only when signals validated.
+5. **No zombie runs**: sibling waits cancelled after accept/reply re-entry.
+
+### Phase 6 — Daily practice loop (prompt / flow work)
+
+1. Pick **one** conversation kind from the table.
+2. Reset candidate (`…/reset?to=QUEUED` or `CONNECTION_SENT`) or use a fresh seed row.
+3. Change **one** thing (prompt line, option toggle, or if/else).
+4. Prefer **AI Test tab** for prompt-only; full Start + mock drive for routing/FORM/send.
+5. Compare before/after on the **same candidate** and same inject text.
+6. Only then activate / ship the workflow version.
+
+### Phase 7 — Pro checklist
+
+You are fluent when you can, without notes:
+
+- [ ] Seed + drive mocks and explain each terminal stage in the matrix
+- [ ] Enroll → start → approve Today → accept → reply from UI and from `/outreach-mock`
+- [ ] Toggle sequencer options and predict which nodes appear/disappear
+- [ ] Test any AI node with a candidate picker and say what context was hydrated
+- [ ] Point to the server file for graph vs prompt vs mock vs journey
+- [ ] Design a new conversation scenario (setup / inject / assert) and run it twice reproducibly
 
 ---
 
@@ -139,6 +305,8 @@ People saved to CRM **without** enrollment have no Candidate — start-outreach 
 ---
 
 ## Running the sequencer with mocks
+
+Use this as the API/script reference; for the learning order start at **Phase 1** above.
 
 Local / seed workspaces can avoid real Unipile / email / calendar by enabling the mock flag.
 
