@@ -10,7 +10,20 @@ Source of truth for the graph: `packages/twenty-server/src/engine/workspace-mana
 
 Goal order: **run something end-to-end first**, then learn the front surfaces, then the server pieces, then isolate nodes and prompts, then systematically evaluate conversation types. Do not start by editing prompts in the dark.
 
-### Phase 0 — Prerequisites (once)
+**Estimated total (first pass):** ~10–14 hours over 2 days. Daily loop (Phase 6) is ongoing.
+
+| Phase | Focus | Est. time |
+| --- | --- | --- |
+| 0 | Prerequisites | 15–30 min (once; +30–60 min if cold env setup) |
+| 1 | Run E2E with mocks | 45–90 min |
+| 2 | Front surfaces | 60–90 min |
+| 3 | Test nodes in isolation | 2–3 h |
+| 4 | Server map | 2–3 h |
+| 5 | Conversation eval matrix | 3–4 h first pass (~20–30 min per scenario later) |
+| 6 | Daily practice loop | 30–45 min per iteration |
+| 7 | Pro checklist | 30–60 min self-audit |
+
+### Phase 0 — Prerequisites (once) · ~15–30 min
 
 1. Local app up (`yarn start` / front + server + worker).
 2. Workspace with **`IS_OUTREACH_MOCK_UNIPILE_ENABLED`** (dev seed usually has this).
@@ -20,7 +33,7 @@ Goal order: **run something end-to-end first**, then learn the front surfaces, t
    - Outreach Today (HITL inbox): `/outreach-today`
    - Candidate Sequencer canvas: `/object/workflow/<workflowId>` → **Edit Workflow**
 
-### Phase 1 — Run first (end-to-end with mocks)
+### Phase 1 — Run first (end-to-end with mocks) · ~45–90 min
 
 Do this before opening a single prompt. You need a feel for stages, FORMs, and journey.
 
@@ -55,7 +68,7 @@ Do this before opening a single prompt. You need a feel for stages, FORMs, and j
 
 You are “running” when you can predict: *this stage → this FORM or wait → this mock call → this next stage*.
 
-### Phase 2 — Front surfaces (what each screen is for)
+### Phase 2 — Front surfaces (what each screen is for) · ~60–90 min
 
 Work through these in order; each maps to a testing job.
 
@@ -77,11 +90,11 @@ Practice loop on the front:
 2. Open Journey while a FORM is pending → match `pendingFormStepId` / draft to the Today card.
 3. Open the same AI step on the canvas → **Test** tab → pick that candidate → Run → compare output to the Journey draft.
 
-### Phase 3 — Test nodes in isolation (front → server)
+### Phase 3 — Test nodes in isolation (front → server) · ~2–3 h
 
 Once E2E works, stop burning full runs for every prompt tweak.
 
-#### AI Agent nodes (prompts)
+#### AI Agent nodes (prompts) · ~60–90 min
 
 1. On the canvas, open nodes like **Qualify prospect**, **Draft first LinkedIn message**, **Draft sales reply**, **Extract inbound signals**.
 2. Open the **Test** tab.
@@ -89,12 +102,12 @@ Once E2E works, stop burning full runs for every prompt tweak.
 4. Edit the prompt in the test panel if needed → Run.
 5. Read result + duration + output-validation report. Record changes / model usage are real.
 
-Front: `WorkflowEditActionAiAgent` / `useTestAiAgent` → GraphQL `testAiAgent`.  
+Front: `WorkflowEditActionAiAgent` / `useTestAiAgent` → GraphQL `testAiAgent`.
 Server: `workflow-version-step.resolver` → agent executor (tools + optional JSON schema pass).
 
 **Pro habit:** keep a small set of fixture candidates (opener-only, accepted+silent, inbound “interested”, inbound “not now”, referral, meeting ask). Re-run the same candidate after each prompt edit.
 
-#### Send / channel nodes
+#### Send / channel nodes · ~20–30 min
 
 On **Send LinkedIn Message**, **WhatsApp**, **Email**, etc.:
 
@@ -102,13 +115,13 @@ On **Send LinkedIn Message**, **WhatsApp**, **Email**, etc.:
 2. With mocks on, the send is a no-op Unipile/email call but still exercises the step wiring and payload.
 3. Confirm chat / transcript side effects you care about (mock paths write/skip differently than live).
 
-#### Logic functions & filters
+#### Logic functions & filters · ~30–45 min
 
 - Logic Function steps: exercise via a short workflow run or unit tests on the native util (e.g. `validate-inbound-signals`).
 - AI Filtering: has its own test mutation (`testWorkflowAiFiltering`) from the step UI.
 - If/else / Filter: cheapest to validate by watching which branch a Journey takes after a known stage stamp.
 
-### Phase 4 — Server map (where to change what)
+### Phase 4 — Server map (where to change what) · ~2–3 h
 
 Learn the code in this order; each file owns a testing concern.
 
@@ -126,21 +139,21 @@ Learn the code in this order; each file owns a testing concern.
 
 After editing a **seeded graph or prompt builder**, re-sync / activate the workspace workflow (upgrade command or Edit options apply) so the running version matches your code. Prompt-only edits inside an **already activated** draft version can be tested from the AI Test tab without a full reseed.
 
-### Phase 5 — Set up & evaluate conversations
+### Phase 5 — Set up & evaluate conversations · ~3–4 h first pass
 
-Treat each “conversation kind” as a scenario with **setup → inject → assert**.
+Treat each “conversation kind” as a scenario with **setup → inject → assert**. Budget **~20–30 min per scenario** once the loop is familiar.
 
-| Conversation kind | Setup | Inject / act | What “good” looks like |
-| --- | --- | --- | --- |
-| Connect → ignore → email/InMail fallback | QUEUED, start | Let accept wait expire (test mode) | Stage `EMAIL_SENT` / `INMAIL_SENT` / `FAILED_ENRICH` as designed |
-| Connect → accept → opener | QUEUED → accept | `accept` + HITL approve opener | Opener draft grounded in profile; send → waiting FU |
-| Accept → silent → FU1–FU3 | After opener sent | No reply; approve FU forms | Cadence advances; eventually `FAILED_NO_REPLY` if still silent |
-| Inbound interested → meeting | After opener / FU | `reply` with meeting intent + HITL edit times | Calendar / `MEETING_BOOKED` or `WAITING_REPLY` with slots |
-| Inbound not interested / stop | Same | `reply` with opt-out language | `#DONTRESPOND#` / skip send / `FAILED_NO_REPLY` |
-| HITL reject | Any FORM | `hitl` `reject` | Run stopped; no outbound send |
-| HITL edit | FORM parked | `hitl` `edit` + `editedBody` | Edited text is what gets sent |
-| Company dedupe / DEFERRED | Two people same company | Start second while first still QUEUED or contacted | Second → `DEFERRED` |
-| Multi-channel reply | Prefer WhatsApp/email flags on | Inbound on that channel | Reply router picks last inbound channel |
+| Conversation kind | Setup | Inject / act | What “good” looks like | Est. |
+| --- | --- | --- | --- | --- |
+| Connect → ignore → email/InMail fallback | QUEUED, start | Let accept wait expire (test mode) | Stage `EMAIL_SENT` / `INMAIL_SENT` / `FAILED_ENRICH` as designed | ~25–40 min |
+| Connect → accept → opener | QUEUED → accept | `accept` + HITL approve opener | Opener draft grounded in profile; send → waiting FU | ~20–30 min |
+| Accept → silent → FU1–FU3 | After opener sent | No reply; approve FU forms | Cadence advances; eventually `FAILED_NO_REPLY` if still silent | ~30–45 min |
+| Inbound interested → meeting | After opener / FU | `reply` with meeting intent + HITL edit times | Calendar / `MEETING_BOOKED` or `WAITING_REPLY` with slots | ~25–35 min |
+| Inbound not interested / stop | Same | `reply` with opt-out language | `#DONTRESPOND#` / skip send / `FAILED_NO_REPLY` | ~15–25 min |
+| HITL reject | Any FORM | `hitl` `reject` | Run stopped; no outbound send | ~10–15 min |
+| HITL edit | FORM parked | `hitl` `edit` + `editedBody` | Edited text is what gets sent | ~10–15 min |
+| Company dedupe / DEFERRED | Two people same company | Start second while first still QUEUED or contacted | Second → `DEFERRED` | ~20–30 min |
+| Multi-channel reply | Prefer WhatsApp/email flags on | Inbound on that channel | Reply router picks last inbound channel | ~25–35 min |
 
 Eval checklist per scenario (write it down):
 
@@ -150,7 +163,7 @@ Eval checklist per scenario (write it down):
 4. **Side effects**: mock message ids, calendar, referral candidate — only when signals validated.
 5. **No zombie runs**: sibling waits cancelled after accept/reply re-entry.
 
-### Phase 6 — Daily practice loop (prompt / flow work)
+### Phase 6 — Daily practice loop (prompt / flow work) · ~30–45 min per iteration
 
 1. Pick **one** conversation kind from the table.
 2. Reset candidate (`…/reset?to=QUEUED` or `CONNECTION_SENT`) or use a fresh seed row.
@@ -159,7 +172,7 @@ Eval checklist per scenario (write it down):
 5. Compare before/after on the **same candidate** and same inject text.
 6. Only then activate / ship the workflow version.
 
-### Phase 7 — Pro checklist
+### Phase 7 — Pro checklist · ~30–60 min self-audit
 
 You are fluent when you can, without notes:
 
@@ -172,7 +185,7 @@ You are fluent when you can, without notes:
 
 ---
 
-## Workflow action items
+## Workflow action items · ~10–15 min skim
 
 Steps you can drop on a workflow canvas. Grouped by role.
 
@@ -230,7 +243,7 @@ Steps you can drop on a workflow canvas. Grouped by role.
 
 ---
 
-## How the outreach sequencer works
+## How the outreach sequencer works · ~20–30 min read
 
 **Workflow name:** `Outreach — Candidate Sequencer`
 
@@ -280,7 +293,7 @@ Seeded alongside the sequencer for list building:
 
 ---
 
-## Adding candidates to the sequencer
+## Adding candidates to the sequencer · ~15–20 min hands-on
 
 Enrollment creates a **Candidate** row on a project at stage `QUEUED`. Discovery rows in Redis alone are not enough — there must be a CRM Candidate for `candidate.upserted` to fire.
 
@@ -304,9 +317,9 @@ People saved to CRM **without** enrollment have no Candidate — start-outreach 
 
 ---
 
-## Running the sequencer with mocks
+## Running the sequencer with mocks · ~20–30 min reference
 
-Use this as the API/script reference; for the learning order start at **Phase 1** above.
+Use this as the API/script reference; for the learning order start at **Phase 1** above (~45–90 min hands-on).
 
 Local / seed workspaces can avoid real Unipile / email / calendar by enabling the mock flag.
 
