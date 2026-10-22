@@ -296,4 +296,71 @@ describe('BrightDataSerpService', () => {
       ).rejects.toThrow('HTTP 502');
     });
   });
+
+  describe('query cooldown and sharing', () => {
+    const searchUrl = 'https://www.google.com/search?q=cooldown';
+    const answer = { organic: [{ link: 'https://example.com/a' }] };
+    const withApi = (api: jest.Mock) => {
+      process.env.BRIGHT_DATA_API_KEY = 'test-key';
+
+      const configured = new BrightDataSerpService();
+
+      (
+        configured as unknown as { requestSerpJsonViaApi: jest.Mock }
+      ).requestSerpJsonViaApi = api;
+
+      return configured;
+    };
+
+    it('should send identical concurrent queries once and share the answer', async () => {
+      const api = jest.fn().mockResolvedValue(answer);
+      const configured = withApi(api);
+      const [first, second] = await Promise.all([
+        configured.requestSerpJson(searchUrl),
+        configured.requestSerpJson(searchUrl),
+      ]);
+
+      expect(first).toBe(answer);
+      expect(second).toBe(answer);
+      expect(api).toHaveBeenCalledTimes(1);
+    });
+
+    it('should wait out the cooldown before sending a failed query again', async () => {
+      jest.useFakeTimers();
+
+      const api = jest
+        .fn()
+        .mockRejectedValueOnce(new Error('HTTP 502 rejected'))
+        .mockResolvedValueOnce(answer);
+      const configured = withApi(api);
+
+      await expect(configured.requestSerpJson(searchUrl)).rejects.toThrow(
+        'HTTP 502',
+      );
+
+      const retry = configured.requestSerpJson(searchUrl);
+
+      await jest.advanceTimersByTimeAsync(10_000);
+      expect(api).toHaveBeenCalledTimes(1);
+
+      await jest.advanceTimersByTimeAsync(7_000);
+      await expect(retry).resolves.toBe(answer);
+      expect(api).toHaveBeenCalledTimes(2);
+
+      jest.useRealTimers();
+    });
+
+    it('should stop waiting for a shared query when the caller aborts', async () => {
+      const api = jest.fn(() => new Promise(() => undefined));
+      const controller = new AbortController();
+      const waiting = withApi(api as unknown as jest.Mock).requestSerpJson(
+        searchUrl,
+        { signal: controller.signal },
+      );
+
+      controller.abort();
+
+      await expect(waiting).rejects.toThrow('aborted');
+    });
+  });
 });

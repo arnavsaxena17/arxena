@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import {
+  BrightDataRequestRateLimiter,
+  parseRetryAfterMs,
+} from 'src/engine/core-modules/bright-data/utils/bright-data-request-rate-limiter.util';
 import { BRIGHT_DATA_LUDICROUS_MAX_RETRIES } from 'src/engine/core-modules/bright-data/ludicrous/constants/bright-data-ludicrous-pricing.const';
 import { type BrightDataLudicrousQuery } from 'src/engine/core-modules/bright-data/ludicrous/types/bright-data-ludicrous.types';
 import { assertValidLudicrousQuery } from 'src/engine/core-modules/bright-data/ludicrous/utils/bright-data-ludicrous-query.util';
@@ -16,6 +20,42 @@ import {
 
 const BRIGHT_DATA_SEARCH_URL = 'https://api.brightdata.com/search';
 const RETRY_BASE_DELAY_MS = 500;
+// Bright Data allows 60 requests a minute per account, category (people or
+// company) and mode, refilled continuously; a request over it is rejected with
+// a 429, not queued and not billed. Stay a little under it.
+const DEFAULT_REQUESTS_PER_MINUTE = 55;
+
+const readRequestsPerMinute = (): number => {
+  const configured = Number(
+    process.env.BRIGHT_DATA_BUSINESS_SEARCH_REQUESTS_PER_MINUTE,
+  );
+
+  return Number.isFinite(configured) && configured > 0
+    ? configured
+    : DEFAULT_REQUESTS_PER_MINUTE;
+};
+
+// One limiter per category and mode for the whole process, so every caller
+// (fetch_profiles, find_role, the ludicrous planner) shares one budget
+const rateLimiters = new Map<string, BrightDataRequestRateLimiter>();
+
+const rateLimiterFor = (
+  entity: string,
+  mode: string,
+): BrightDataRequestRateLimiter => {
+  const key = `${entity}:${mode}`;
+  const existing = rateLimiters.get(key);
+
+  if (existing !== undefined) {
+    return existing;
+  }
+
+  const created = new BrightDataRequestRateLimiter(readRequestsPerMinute);
+
+  rateLimiters.set(key, created);
+
+  return created;
+};
 
 export type BrightDataBusinessSearchInput = {
   entity: BrightDataBusinessSearchEntity;
@@ -52,6 +92,8 @@ export class BrightDataBusinessSearchHttpError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    // From the Retry-After header of a 429
+    readonly retryAfterMs?: number,
   ) {
     super(message);
   }
@@ -250,6 +292,7 @@ export class BrightDataBusinessSearchService {
         entity === 'company' ? 'linkedin_company' : 'linkedin_people';
     }
 
+    const rateLimiter = rateLimiterFor(entity, mode);
     let lastError: unknown;
 
     for (
@@ -258,6 +301,10 @@ export class BrightDataBusinessSearchService {
       attempt++
     ) {
       try {
+        // Wait for a slot in the shared budget; during a 429 pause this holds
+        // every caller, so nobody retries on their own
+        await rateLimiter.acquire();
+
         const page = await this.postOnce({ apiKey, entity, body });
 
         return {
@@ -288,6 +335,16 @@ export class BrightDataBusinessSearchService {
 
         if (!isRetryable || attempt === BRIGHT_DATA_LUDICROUS_MAX_RETRIES) {
           break;
+        }
+
+        if (
+          error instanceof BrightDataBusinessSearchHttpError &&
+          error.status === 429
+        ) {
+          // Honor Retry-After for everyone; the next attempt re-enters the
+          // shared budget, which is slower for a while after a 429
+          rateLimiter.pause(error.retryAfterMs);
+          continue;
         }
 
         await sleep(RETRY_BASE_DELAY_MS * 2 ** attempt);
@@ -328,6 +385,7 @@ export class BrightDataBusinessSearchService {
         throw new BrightDataBusinessSearchHttpError(
           response.status,
           `Bright Data business search failed (${response.status}): ${rawText.slice(0, 200)}`,
+          parseRetryAfterMs(response.headers?.get?.('retry-after')),
         );
       }
 

@@ -60,6 +60,43 @@ const isRouteFailure = (error: unknown): boolean =>
     error.message,
   );
 
+// Bright Data: wait at least 15 seconds before sending a failed query again
+const QUERY_COOLDOWN_MS = 16_000;
+
+// Stop waiting for a shared request when this caller is aborted; the request
+// itself carries on for the other callers
+const waitForOrAbort = <TValue>(
+  promise: Promise<TValue>,
+  signal?: AbortSignal,
+): Promise<TValue> => {
+  if (signal === undefined) {
+    return promise;
+  }
+
+  return new Promise<TValue>((resolve, reject) => {
+    const onAbort = () =>
+      reject(new Error('Bright Data SERP request aborted by the caller'));
+
+    if (signal.aborted) {
+      onAbort();
+
+      return;
+    }
+
+    signal.addEventListener('abort', onAbort, { once: true });
+    promise.then(
+      (value) => {
+        signal.removeEventListener('abort', onAbort);
+        resolve(value);
+      },
+      (error) => {
+        signal.removeEventListener('abort', onAbort);
+        reject(error);
+      },
+    );
+  });
+};
+
 @Injectable()
 export class BrightDataSerpService {
   private readonly logger = new Logger(BrightDataSerpService.name);
@@ -274,7 +311,70 @@ export class BrightDataSerpService {
     return this.requestSerpJson(searchUrl, newsOptions);
   }
 
+  // Bright Data rejects a query that just failed for at least 15 seconds ("this
+  // query recently failed") and asks that identical requests are not sent at the
+  // same time. So one request per query is in flight, any caller asking for it
+  // meanwhile shares it, and a failed query is not sent again until the cooldown
+  // has passed. The shared request does not follow one caller's abort signal;
+  // each caller stops waiting for it on its own.
+  private readonly inFlightQueries = new Map<
+    string,
+    Promise<BrightDataSerpGoogleJson>
+  >();
+  private readonly queryCooldownUntil = new Map<string, number>();
+
   async requestSerpJson(
+    searchUrl: string,
+    options: BrightDataSerpRequestOptions = {},
+  ): Promise<BrightDataSerpGoogleJson> {
+    const queryKey = `${searchUrl}|${options.dataFormat ?? ''}`;
+    const shared = this.inFlightQueries.get(queryKey);
+
+    if (shared !== undefined) {
+      return waitForOrAbort(shared, options.signal);
+    }
+
+    const { signal: _callerSignal, ...sharedOptions } = options;
+    const request = (async () => {
+      const cooldownMs =
+        (this.queryCooldownUntil.get(queryKey) ?? 0) - Date.now();
+
+      if (cooldownMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, cooldownMs));
+      }
+
+      try {
+        return await this.requestSerpJsonOverRoutes(searchUrl, sharedOptions);
+      } catch (error) {
+        this.queryCooldownUntil.set(queryKey, Date.now() + QUERY_COOLDOWN_MS);
+        this.pruneQueryCooldowns();
+
+        throw error;
+      } finally {
+        this.inFlightQueries.delete(queryKey);
+      }
+    })();
+
+    this.inFlightQueries.set(queryKey, request);
+
+    return waitForOrAbort(request, options.signal);
+  }
+
+  private pruneQueryCooldowns(): void {
+    if (this.queryCooldownUntil.size < 500) {
+      return;
+    }
+
+    const now = Date.now();
+
+    for (const [key, until] of this.queryCooldownUntil) {
+      if (until <= now) {
+        this.queryCooldownUntil.delete(key);
+      }
+    }
+  }
+
+  private async requestSerpJsonOverRoutes(
     searchUrl: string,
     options: BrightDataSerpRequestOptions = {},
   ): Promise<BrightDataSerpGoogleJson> {
