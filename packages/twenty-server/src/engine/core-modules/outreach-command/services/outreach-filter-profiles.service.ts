@@ -47,10 +47,8 @@ export const reasoningProviderOptionsForFilterProfiles = (
   _modelId: string,
 ): {
   openrouter: { reasoning: { effort: 'medium' } };
-  nous: { reasoning: { effort: 'medium' } };
 } => ({
   openrouter: { reasoning: { effort: 'medium' } },
-  nous: { reasoning: { effort: 'medium' } },
 });
 
 export const repairGeneratedJsonObjectText = ({
@@ -164,7 +162,7 @@ export class OutreachFilterProfilesService {
 
     if (!registeredModel) {
       return this.emptyResult(
-        'No AI model is configured. Need Nous HY3 (nous/tencent/hy3:free) or another registered model.',
+        'No AI model is configured. Need DeepSeek (openrouter/deepseek/deepseek-v4-flash-0731) or another registered model.',
       );
     }
 
@@ -325,11 +323,11 @@ export class OutreachFilterProfilesService {
     }
 
     try {
-      const hy3Model = this.aiModelRegistryService.getModel(
+      const enrichmentModel = this.aiModelRegistryService.getModel(
         OUTREACH_COMPANY_ENRICHMENT_LLM_MODEL_ID,
       );
       const defaultFastModel =
-        hy3Model ?? this.aiModelRegistryService.getDefaultSpeedModel();
+        enrichmentModel ?? this.aiModelRegistryService.getDefaultSpeedModel();
       const modelId = hasText(input.modelId)
         ? input.modelId
         : defaultFastModel.modelId;

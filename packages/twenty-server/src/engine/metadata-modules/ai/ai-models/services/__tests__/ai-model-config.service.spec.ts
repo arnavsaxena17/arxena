@@ -208,7 +208,7 @@ describe('AiModelConfigService.getReasoningProviderOptions', () => {
 
   it('disables OpenRouter reasoning when the model does not support it', () => {
     const openRouterModel: RegisteredAiModel = {
-      modelId: 'openrouter/tencent/hy3',
+      modelId: 'openrouter/deepseek/deepseek-v4-flash-0731',
       sdkPackage: AI_SDK_OPENAI_COMPATIBLE,
       model: {} as RegisteredAiModel['model'],
       supportsReasoning: false,
@@ -227,7 +227,7 @@ describe('AiModelConfigService.getReasoningProviderOptions', () => {
 
   it('enables medium OpenRouter reasoning for reasoning-capable models', () => {
     const openRouterModel: RegisteredAiModel = {
-      modelId: 'openrouter/tencent/hy3',
+      modelId: 'openrouter/deepseek/deepseek-v4-flash-0731',
       sdkPackage: AI_SDK_OPENAI_COMPATIBLE,
       model: {} as RegisteredAiModel['model'],
       supportsReasoning: true,
@@ -237,25 +237,6 @@ describe('AiModelConfigService.getReasoningProviderOptions', () => {
 
     expect(service.getReasoningProviderOptions(openRouterModel)).toEqual({
       openrouter: {
-        reasoning: {
-          effort: 'medium',
-        },
-      },
-    });
-  });
-
-  it('enables medium Nous reasoning for reasoning-capable hy3:free', () => {
-    const nousModel: RegisteredAiModel = {
-      modelId: 'nous/tencent/hy3:free',
-      sdkPackage: AI_SDK_OPENAI_COMPATIBLE,
-      model: {} as RegisteredAiModel['model'],
-      supportsReasoning: true,
-      providerName: 'nous',
-      rawProvider: {},
-    };
-
-    expect(service.getReasoningProviderOptions(nousModel)).toEqual({
-      nous: {
         reasoning: {
           effort: 'medium',
         },

@@ -71,7 +71,7 @@ describe('OutreachCompanyProfileSummarizerService', () => {
     } as Awaited<ReturnType<typeof generateObject>>);
 
     const defaultFastModel = {
-      modelId: 'nous/tencent/hy3:free',
+      modelId: 'openrouter/deepseek/deepseek-v4-flash-0731',
       model: { provider: 'mock' },
     };
 
@@ -92,7 +92,7 @@ describe('OutreachCompanyProfileSummarizerService', () => {
     });
 
     expect(aiModelRegistryService.getModel).toHaveBeenCalledWith(
-      'nous/tencent/hy3:free',
+      'openrouter/deepseek/deepseek-v4-flash-0731',
     );
     expect(result).toEqual({
       companyName: 'Acme Inc',
@@ -132,7 +132,7 @@ describe('OutreachCompanyProfileSummarizerService', () => {
 
     const aiModelRegistryService = {
       getDefaultSpeedModel: jest.fn().mockReturnValue({
-        modelId: 'nous/tencent/hy3:free',
+        modelId: 'openrouter/deepseek/deepseek-v4-flash-0731',
         model: { provider: 'default-mock' },
       }),
       getModel: jest.fn().mockReturnValue({

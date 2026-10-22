@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
+import { resolveOutreachConfigIcpSpecString } from 'twenty-shared/arx';
 import { isDefined } from 'twenty-shared/utils';
 import { type ObjectLiteral } from 'typeorm';
 
@@ -12,6 +13,7 @@ import { EnsureOutreachProjectService } from 'src/engine/core-modules/outreach-c
 import { OutreachSenderProfileService } from 'src/engine/core-modules/outreach-command/services/outreach-sender-profile.service';
 import { OutreachWorkspaceAuthTokenService } from 'src/engine/core-modules/outreach-command/services/outreach-workspace-auth-token.service';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
+import { resolveEffectiveIcpSpec } from 'src/engine/core-modules/outreach-command/utils/outreach-icp-spec.util';
 import {
   mapSearchPeopleProfile,
   type SearchPeopleEducation,
@@ -39,6 +41,8 @@ type ProjectRecord = ObjectLiteral & {
   name?: string | null;
   projectIds?: string | null;
   maxPersonasPerCompany?: number | null;
+  outreachConfig?: unknown;
+  icpSpec?: string | null;
 };
 
 export type SearchPeopleForCompanyInput = {
@@ -235,9 +239,16 @@ export class SearchPeopleForCompanyService {
       await this.outreachSenderProfileService.resolveOperatorSenderProfile({
         workspaceId,
       });
+    const { icpSpec: effectiveIcp } = resolveEffectiveIcpSpec({
+      projectIcpSpec: resolveOutreachConfigIcpSpecString(
+        context.project.outreachConfig,
+        context.project.icpSpec,
+      ),
+      senderProfile,
+    });
     const targetTitle =
-      input.jobTitle?.trim() || senderProfile?.targetTitles[0] || '';
-    const locations = senderProfile?.locations ?? [];
+      input.jobTitle?.trim() || effectiveIcp.targetTitles[0] || '';
+    const locations = effectiveIcp.locations;
     const website = companyWebsite(context.company);
     const linkedinCompanyUrl = companyLinkedinUrl(context.company);
 

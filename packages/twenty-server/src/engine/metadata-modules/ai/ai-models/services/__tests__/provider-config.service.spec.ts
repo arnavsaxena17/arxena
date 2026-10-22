@@ -7,16 +7,16 @@ import { type AiProvidersConfig } from 'src/engine/metadata-modules/ai/ai-models
 
 describe('ProviderConfigService', () => {
   const catalog: AiProvidersConfig = {
-    nous: {
+    openrouter: {
       npm: '@ai-sdk/openai-compatible',
-      name: 'nous',
-      label: 'Nous Research',
-      baseUrl: 'https://inference-api.nousresearch.com/v1',
-      apiKey: '{{NOUS_API_KEY}}',
+      name: 'openrouter',
+      label: 'OpenRouter',
+      baseUrl: 'https://openrouter.ai/api/v1',
+      apiKey: '{{OPENROUTER_API_KEY}}',
       models: [
         {
-          name: 'tencent/hy3:free',
-          label: 'Nous Research HY3',
+          name: 'deepseek/deepseek-v4-flash-0731',
+          label: 'DeepSeek V4 Flash',
           inputCostPerMillionTokens: 0,
           outputCostPerMillionTokens: 0,
           contextWindowTokens: 262144,
@@ -28,10 +28,10 @@ describe('ProviderConfigService', () => {
 
   const createService = async ({
     aiProviders = {},
-    nousApiKey = 'sk-nous-test',
+    openrouterApiKey = 'sk-openrouter-test',
   }: {
     aiProviders?: AiProvidersConfig;
-    nousApiKey?: string;
+    openrouterApiKey?: string;
   } = {}) => {
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -50,8 +50,8 @@ describe('ProviderConfigService', () => {
                 return aiProviders;
               }
 
-              if (key === 'NOUS_API_KEY') {
-                return nousApiKey;
+              if (key === 'OPENROUTER_API_KEY') {
+                return openrouterApiKey;
               }
 
               throw new Error(`Unknown config key: ${key}`);
@@ -67,24 +67,24 @@ describe('ProviderConfigService', () => {
   it('should resolve catalog apiKey templates', async () => {
     const service = await createService();
 
-    expect(service.getResolvedProviders().nous?.apiKey).toBe('sk-nous-test');
+    expect(service.getResolvedProviders().openrouter?.apiKey).toBe('sk-openrouter-test');
   });
 
   it('should resolve catalog-declared templates in AI_PROVIDERS overrides', async () => {
     const service = await createService({
       aiProviders: {
-        nous: {
+        openrouter: {
           npm: '@ai-sdk/openai-compatible',
-          name: 'nous',
-          label: 'Nous Research',
-          baseUrl: 'https://inference-api.nousresearch.com/v1',
-          apiKey: '{{NOUS_API_KEY}}',
-          models: catalog.nous?.models,
+          name: 'openrouter',
+          label: 'OpenRouter',
+          baseUrl: 'https://openrouter.ai/api/v1',
+          apiKey: '{{OPENROUTER_API_KEY}}',
+          models: catalog.openrouter?.models,
         },
       },
     });
 
-    expect(service.getResolvedProviders().nous?.apiKey).toBe('sk-nous-test');
+    expect(service.getResolvedProviders().openrouter?.apiKey).toBe('sk-openrouter-test');
   });
 
   it('should not resolve non-catalog templates from AI_PROVIDERS', async () => {
@@ -109,15 +109,15 @@ describe('ProviderConfigService', () => {
   it('should deep-merge custom provider fields onto catalog', async () => {
     const service = await createService({
       aiProviders: {
-        nous: {
+        openrouter: {
           npm: '@ai-sdk/openai-compatible',
-          name: 'nous',
-          label: 'Nous Override',
-          baseUrl: 'https://custom-nous.example/v1',
+          name: 'openrouter',
+          label: 'OpenRouter Override',
+          baseUrl: 'https://custom-openrouter.example/v1',
           models: [
             {
-              name: 'tencent/hy3:free',
-              label: 'HY3 Override',
+              name: 'deepseek/deepseek-v4-flash-0731',
+              label: 'DeepSeek Override',
               inputCostPerMillionTokens: 0,
               outputCostPerMillionTokens: 0,
               contextWindowTokens: 1,
@@ -128,11 +128,11 @@ describe('ProviderConfigService', () => {
       },
     });
 
-    const resolved = service.getResolvedProviders().nous;
+    const resolved = service.getResolvedProviders().openrouter;
 
-    expect(resolved?.label).toBe('Nous Override');
-    expect(resolved?.baseUrl).toBe('https://custom-nous.example/v1');
-    expect(resolved?.apiKey).toBe('sk-nous-test');
-    expect(resolved?.models?.[0]?.label).toBe('HY3 Override');
+    expect(resolved?.label).toBe('OpenRouter Override');
+    expect(resolved?.baseUrl).toBe('https://custom-openrouter.example/v1');
+    expect(resolved?.apiKey).toBe('sk-openrouter-test');
+    expect(resolved?.models?.[0]?.label).toBe('DeepSeek Override');
   });
 });

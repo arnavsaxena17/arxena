@@ -144,15 +144,12 @@ export class AiModelConfigService {
     };
   }
 
-  // OpenRouter/Nous enable thinking by default for hy3 unless effort is set.
+  // OpenRouter enables thinking by default for some models unless effort is set.
   // Always send an explicit effort so short calls still return text.
   private getOpenAiCompatibleReasoningProviderOptions(
     model: RegisteredAiModel,
   ): ProviderOptions {
-    if (
-      model.providerName !== 'openrouter' &&
-      model.providerName !== 'nous'
-    ) {
+    if (model.providerName !== 'openrouter') {
       return {};
     }
 

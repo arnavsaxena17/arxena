@@ -130,7 +130,6 @@ describe('OutreachFilterProfilesService', () => {
         maxOutputTokens: 2048,
         providerOptions: {
           openrouter: { reasoning: { effort: 'medium' } },
-          nous: { reasoning: { effort: 'medium' } },
         },
       }),
     );

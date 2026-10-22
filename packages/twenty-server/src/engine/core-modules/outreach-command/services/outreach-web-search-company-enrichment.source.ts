@@ -250,10 +250,10 @@ export class OutreachWebSearchCompanyEnrichmentSource implements OutreachCompany
     }
 
     try {
-      const hy3Model = this.aiModelRegistryService.getModel(
+      const enrichmentModel = this.aiModelRegistryService.getModel(
         OUTREACH_COMPANY_ENRICHMENT_LLM_MODEL_ID,
       );
-      const fallbackModel = hy3Model ?? this.getDefaultSpeedModelOrNull();
+      const fallbackModel = enrichmentModel ?? this.getDefaultSpeedModelOrNull();
 
       if (!fallbackModel) {
         return null;

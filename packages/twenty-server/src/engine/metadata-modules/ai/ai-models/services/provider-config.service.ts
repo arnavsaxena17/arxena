@@ -25,7 +25,7 @@ export class ProviderConfigService {
     const rawCatalog = this.defaultAiCatalogService.getDefaultAiCatalog();
     // Only resolve {{VAR}} templates that the catalog itself declares.
     // Prevents AI_PROVIDERS from exfiltrating arbitrary config secrets
-    // (e.g. {{DATABASE_URL}}) while still allowing {{NOUS_API_KEY}}.
+    // (e.g. {{DATABASE_URL}}) while still allowing {{OPENROUTER_API_KEY}}.
     const catalogTemplateVars =
       this.collectTemplateVariableNames(rawCatalog);
     const catalog = this.resolveTemplates(rawCatalog);

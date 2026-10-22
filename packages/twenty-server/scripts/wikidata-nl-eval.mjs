@@ -311,7 +311,7 @@ const main = async () => {
       ? 'https://inference-api.nousresearch.com/v1'
       : 'https://openrouter.ai/api/v1',
   });
-  const modelId = useNous ? 'tencent/hy3:free' : 'openai/gpt-4o-mini';
+  const modelId = useNous ? 'deepseek/deepseek-v4-flash-0731' : 'openai/gpt-4o-mini';
   const model = provider(modelId);
 
   console.log(`Model: ${useNous ? 'nous' : 'openrouter'}/${modelId}`);

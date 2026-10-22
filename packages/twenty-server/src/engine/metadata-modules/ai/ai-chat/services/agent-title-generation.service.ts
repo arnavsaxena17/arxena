@@ -71,10 +71,9 @@ export class AgentTitleGenerationService {
     try {
       const reasoningProviderOptions =
         this.aiModelConfigService.getReasoningProviderOptions(registeredModel);
-      // Titles must return text quickly; disable OpenRouter/Nous thinking budget.
+      // Titles must return text quickly; disable OpenRouter thinking budget.
       const providerOptions =
-        registeredModel.providerName === 'openrouter' ||
-        registeredModel.providerName === 'nous'
+        registeredModel.providerName === 'openrouter'
           ? {
               ...reasoningProviderOptions,
               [registeredModel.providerName]: {

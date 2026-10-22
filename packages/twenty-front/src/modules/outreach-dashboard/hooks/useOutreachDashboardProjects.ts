@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { resolveOutreachConfigIcpSpecString } from 'twenty-shared/arx';
 
 import { type OutreachProjectOption } from '@/outreach-home/types/outreach-home.types';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
@@ -7,7 +8,7 @@ import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 type OutreachProjectRecord = ObjectRecord & {
   name?: string | null;
   outreachWorkflowId?: string | null;
-  icpSpec?: string | null;
+  outreachConfig?: unknown;
 };
 
 const parseIcpSegment = (icpSpec: string | null | undefined): string | null => {
@@ -37,7 +38,7 @@ export const useOutreachDashboardProjects = () => {
       id: true,
       name: true,
       outreachWorkflowId: true,
-      icpSpec: true,
+      outreachConfig: true,
       updatedAt: true,
     },
   });
@@ -47,7 +48,9 @@ export const useOutreachDashboardProjects = () => {
       .map((project) => ({
         id: project.id,
         name: project.name?.trim() || 'Untitled GTM project',
-        icpSegment: parseIcpSegment(project.icpSpec),
+        icpSegment: parseIcpSegment(
+          resolveOutreachConfigIcpSpecString(project.outreachConfig),
+        ),
       }));
   }, [records]);
 

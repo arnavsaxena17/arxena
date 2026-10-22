@@ -1445,24 +1445,5 @@
         "supportsReasoning": true
       }
     ]
-  },
-  "nous": {
-    "npm": "@ai-sdk/openai-compatible",
-    "name": "nous",
-    "label": "Nous Research",
-    "baseUrl": "https://inference-api.nousresearch.com/v1",
-    "apiKey": "{{NOUS_API_KEY}}",
-    "supportsStructuredOutputs": true,
-    "models": [
-      {
-        "name": "tencent/hy3:free",
-        "label": "Nous Research HY3",
-        "inputCostPerMillionTokens": 0,
-        "outputCostPerMillionTokens": 0,
-        "contextWindowTokens": 262144,
-        "maxOutputTokens": 8192,
-        "supportsReasoning": true
-      }
-    ]
   }
 }

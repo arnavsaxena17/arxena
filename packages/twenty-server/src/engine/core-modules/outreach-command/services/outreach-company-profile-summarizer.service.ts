@@ -114,11 +114,11 @@ export class OutreachCompanyProfileSummarizerService {
     }
 
     try {
-      const hy3Model = this.aiModelRegistryService.getModel(
+      const enrichmentModel = this.aiModelRegistryService.getModel(
         OUTREACH_COMPANY_ENRICHMENT_LLM_MODEL_ID,
       );
       const defaultFastModel =
-        hy3Model ?? this.aiModelRegistryService.getDefaultSpeedModel();
+        enrichmentModel ?? this.aiModelRegistryService.getDefaultSpeedModel();
       const modelId = hasText(input.modelId)
         ? input.modelId
         : defaultFastModel.modelId;

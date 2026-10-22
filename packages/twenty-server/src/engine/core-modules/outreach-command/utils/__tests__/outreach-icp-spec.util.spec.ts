@@ -1,6 +1,7 @@
 import {
   normalizeIcpSpec,
   renameBuyerTitlesKeyInIcpSpecJson,
+  resolveEffectiveIcpSpec,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-icp-spec.util';
 
 describe('outreach-icp-spec.util', () => {
@@ -39,6 +40,53 @@ describe('outreach-icp-spec.util', () => {
       ).toEqual({
         targetTitles: ['Current Title'],
         locations: ['UK'],
+      });
+    });
+  });
+
+  describe('resolveEffectiveIcpSpec', () => {
+    const senderProfile = {
+      targetTitles: ['CFO', 'VP Finance'],
+      locations: ['India'],
+    };
+
+    it('uses the sender profile when the project has no override', () => {
+      expect(
+        resolveEffectiveIcpSpec({ projectIcpSpec: null, senderProfile }),
+      ).toEqual({ icpSpec: senderProfile, source: 'sender-profile' });
+    });
+
+    it('prefers the project override', () => {
+      const projectIcpSpec = JSON.stringify({
+        targetTitles: ['CRO'],
+        locations: ['US'],
+      });
+
+      expect(
+        resolveEffectiveIcpSpec({ projectIcpSpec, senderProfile }),
+      ).toEqual({
+        icpSpec: { targetTitles: ['CRO'], locations: ['US'] },
+        source: 'project',
+      });
+    });
+
+    it('inherits each missing field from the sender profile', () => {
+      const projectIcpSpec = JSON.stringify({ locations: ['UK'] });
+
+      expect(
+        resolveEffectiveIcpSpec({ projectIcpSpec, senderProfile }),
+      ).toEqual({
+        icpSpec: { targetTitles: ['CFO', 'VP Finance'], locations: ['UK'] },
+        source: 'project',
+      });
+    });
+
+    it('returns none when neither level has values', () => {
+      expect(
+        resolveEffectiveIcpSpec({ projectIcpSpec: '', senderProfile: null }),
+      ).toEqual({
+        icpSpec: { targetTitles: [], locations: [] },
+        source: 'none',
       });
     });
   });

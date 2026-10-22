@@ -63,6 +63,42 @@ export const parseIcpSpec = (
 export const stringifyIcpSpec = (spec: IcpSpec): string =>
   JSON.stringify(normalizeIcpSpec(spec));
 
+export type EffectiveIcpSource = 'project' | 'sender-profile' | 'none';
+
+// The seat sender profile is the default ICP; a project may override it.
+// Each field inherits on its own, so a project that only sets locations still
+// gets target titles from the sender profile.
+export const resolveEffectiveIcpSpec = ({
+  projectIcpSpec,
+  senderProfile,
+}: {
+  projectIcpSpec?: string | null;
+  senderProfile?: Partial<IcpSpec> | null;
+}): { icpSpec: IcpSpec; source: EffectiveIcpSource } => {
+  const project = parseIcpSpec(projectIcpSpec);
+  const sender = normalizeIcpSpec(senderProfile ?? {});
+
+  const icpSpec: IcpSpec = {
+    targetTitles:
+      project.targetTitles.length > 0
+        ? project.targetTitles
+        : sender.targetTitles,
+    locations:
+      project.locations.length > 0 ? project.locations : sender.locations,
+  };
+
+  const hasProjectOverride =
+    project.targetTitles.length > 0 || project.locations.length > 0;
+  const hasSenderValues =
+    sender.targetTitles.length > 0 || sender.locations.length > 0;
+
+  if (hasProjectOverride) {
+    return { icpSpec, source: 'project' };
+  }
+
+  return { icpSpec, source: hasSenderValues ? 'sender-profile' : 'none' };
+};
+
 export const renameBuyerTitlesKeyInIcpSpecJson = (
   raw: string,
 ): { next: string; changed: boolean } => {

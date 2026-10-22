@@ -47,19 +47,19 @@ describe('OutreachWebSearchCompanyEnrichmentSource', () => {
     await expect(source.enrich({ domain: 'acme.io' })).resolves.toBeNull();
   });
 
-  it('uses hy3:free with generateObject when native web_search is unavailable', async () => {
+  it('uses DeepSeek with generateObject when native web_search is unavailable', async () => {
     generateObjectMock.mockResolvedValue({
       object: snapshotOutput,
     } as Awaited<ReturnType<typeof generateObject>>);
 
-    const hy3Model = {
+    const enrichmentModel = {
       modelId: OUTREACH_COMPANY_ENRICHMENT_LLM_MODEL_ID,
       sdkPackage: '@ai-sdk/openai-compatible',
-      model: { provider: 'hy3-mock' },
+      model: { provider: 'deepseek-mock' },
     };
 
     const aiModelRegistryService = {
-      getModel: jest.fn().mockReturnValue(hy3Model),
+      getModel: jest.fn().mockReturnValue(enrichmentModel),
       getDefaultSpeedModel: jest.fn(),
       resolveModelForAgentInWorkspace: jest.fn(),
     } as unknown as AiModelRegistryService;

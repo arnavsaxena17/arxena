@@ -59,6 +59,8 @@ learn_tools([
 
 Empty Project ICP fields mean **inherit Workspace `icpSpec`**. Do not clear Project fields to empty unless the user wants to drop a project override.
 
+**Where each ICP is actually read:** Find people (`search-people-for-company`) uses the Project override if set, else the operator's **sender profile** (`targetTitles` / `locations`, saved on their seat in Setup). It does **not** read Workspace `icpSpec`. Workspace `icpSpec` currently feeds only the AI filter context and the Ask AI context, so saving it alone does not change who Find people searches for. Onboarding fills the sender profile, not Workspace `icpSpec`.
+
 ## Persisting Workspace company + default ICP
 
 Ask AI has **no** CRM `workspaceProfile` tools and **no** direct Workspace mutation tool. Persist defaults through:

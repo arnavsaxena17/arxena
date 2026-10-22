@@ -256,12 +256,12 @@ describe('applyOutreachNativeLogicFunctionInputSchema', () => {
         profiles: '{{people}}',
         profile: null,
         snapshot: null,
-        modelId: 'nous/tencent/hy3:free',
+        modelId: 'openrouter/deepseek/deepseek-v4-flash-0731',
       },
     });
 
     expect(formFields.showAiModelSelect).toBe(true);
-    expect(formFields.modelId).toBe('nous/tencent/hy3:free');
+    expect(formFields.modelId).toBe('openrouter/deepseek/deepseek-v4-flash-0731');
     expect(Object.keys(formFields.functionInput)).toEqual([
       'profiles',
       'profile',
@@ -350,12 +350,12 @@ describe('applyOutreachNativeLogicFunctionInputSchema', () => {
       functionInput: {
         profiles: '{{people}}',
         prompt: 'senior engineers in fintech',
-        modelId: 'nous/tencent/hy3:free',
+        modelId: 'openrouter/deepseek/deepseek-v4-flash-0731',
       },
     });
 
     expect(formFields.showAiModelSelect).toBe(true);
-    expect(formFields.modelId).toBe('nous/tencent/hy3:free');
+    expect(formFields.modelId).toBe('openrouter/deepseek/deepseek-v4-flash-0731');
     expect(Object.keys(formFields.functionInput)).toEqual([
       'profiles',
       'prompt',
