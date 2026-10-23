@@ -42,7 +42,7 @@ export const useTestWorkflowSendAction = (actionId: string) => {
   );
 
   const showTestError = (errorMessage: string) => {
-    setSendActionTestData((previous) => ({
+    setWorkflowSendActionTestData((previous) => ({
       ...previous,
       output: {
         data: undefined,
@@ -103,7 +103,7 @@ export const useTestWorkflowSendAction = (actionId: string) => {
           : JSON.stringify(response.result, null, 2);
         const language = isObject(response.result) ? 'json' : 'plaintext';
 
-        setSendActionTestData((previous) => ({
+        setWorkflowSendActionTestData((previous) => ({
           ...previous,
           output: {
             data: resultData,
@@ -129,7 +129,7 @@ export const useTestWorkflowSendAction = (actionId: string) => {
         : rawErrorMessage;
       const language = isDefined(jsonParsedErrorMessage) ? 'json' : 'plaintext';
 
-      setSendActionTestData((previous) => ({
+      setWorkflowSendActionTestData((previous) => ({
         ...previous,
         output: {
           data: undefined,
@@ -147,6 +147,6 @@ export const useTestWorkflowSendAction = (actionId: string) => {
     testWorkflowSendAction,
     showTestError,
     isTesting,
-    sendActionTestData,
+    sendActionTestData: workflowSendActionTestData,
   };
 };
