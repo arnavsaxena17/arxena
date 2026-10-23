@@ -279,6 +279,8 @@ export type OrgChartSuperImposeModalProps = {
     linkedinCompanyParameterId?: string;
     /** Slow Unipile shard crawl past the ~1000 cap (progress streams live). */
     unlimited?: boolean;
+    /** Rotate Unipile fetch across shared Sales Navigator accounts. */
+    useSalesNavigatorAccountPool?: boolean;
   }) => void;
   isGenerating: boolean;
 };
@@ -329,6 +331,8 @@ export const OrgChartSuperImposeModal = ({
   );
   const [leadershipOnly, setLeadershipOnly] = useState(false);
   const [unlimitedMode, setUnlimitedMode] = useState(false);
+  const [useSalesNavigatorAccountPool, setUseSalesNavigatorAccountPool] =
+    useState(false);
   const [appendToExisting, setAppendToExisting] = useState(false);
   const [estimate, setEstimate] = useState<SuperImposeEstimate | null>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
@@ -639,6 +643,9 @@ export const OrgChartSuperImposeModal = ({
       linkedinLocationName: targetLocation?.title,
       linkedinCompanyParameterId: targetCompany.id,
       ...(unlimitedSelected ? { unlimited: true } : {}),
+      ...(candidateSource === 'unipile' && useSalesNavigatorAccountPool
+        ? { useSalesNavigatorAccountPool: true }
+        : {}),
     });
   };
 
@@ -816,6 +823,21 @@ export const OrgChartSuperImposeModal = ({
                 {`Unlimited mode (slow full fetch)`}
                 <StyledCheckboxHint>
                   — shards LinkedIn results and streams progress as people load
+                </StyledCheckboxHint>
+              </StyledCheckboxRow>
+            ) : null}
+
+            {candidateSource === 'unipile' ? (
+              <StyledCheckboxRow>
+                <Checkbox
+                  checked={useSalesNavigatorAccountPool}
+                  onCheckedChange={setUseSalesNavigatorAccountPool}
+                  size={CheckboxSize.Small}
+                  variant={CheckboxVariant.Primary}
+                />
+                {`Rotate Sales Navigator account pool`}
+                <StyledCheckboxHint>
+                  — each fetch picks a connected Sales Navigator Unipile account
                 </StyledCheckboxHint>
               </StyledCheckboxRow>
             ) : null}

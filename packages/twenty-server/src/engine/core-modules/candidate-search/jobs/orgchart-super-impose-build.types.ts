@@ -28,4 +28,6 @@ export type OrgchartSuperImposeBuildJobData = {
   linkedinCompanyParameterId?: string;
   /** Slow Unipile shard crawl past the normal ~1000 cap. */
   unlimited?: boolean;
+  /** Rotate Unipile fetch across the shared Sales Navigator account pool. */
+  useSalesNavigatorAccountPool?: boolean;
 };

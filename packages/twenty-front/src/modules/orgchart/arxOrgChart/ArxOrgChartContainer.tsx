@@ -20,12 +20,23 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import {
-    type OrgChartDiagramHandle,
-    normalizeCompanyIdForUrl,
-    useOrgChartData,
-    useOrgChartFilterOptions,
+  type OrgChartDiagramHandle,
+  normalizeCompanyIdForUrl,
+  useOrgChartData,
+  useOrgChartFilterOptions,
 } from 'twenty-orgchart';
-import { DEFAULT_ORG_CHART_GRADE_VISIBILITY, extractOrgData, filterOrgChartNodeDataArray, resolveLinkedinUnipileAccountIdForWorkspaceMember, resolveOrgChartCanonicalCompanyId, toTitleCase, type OrgChartNodeData, type OrgChartGradeTier, type OrgChartGradeVisibility, type OrgchartSearchMode } from 'twenty-shared/utils';
+import {
+  DEFAULT_ORG_CHART_GRADE_VISIBILITY,
+  extractOrgData,
+  filterOrgChartNodeDataArray,
+  resolveLinkedinUnipileAccountIdForWorkspaceMember,
+  resolveOrgChartCanonicalCompanyId,
+  toTitleCase,
+  type OrgChartNodeData,
+  type OrgChartGradeTier,
+  type OrgChartGradeVisibility,
+  type OrgchartSearchMode,
+} from 'twenty-shared/utils';
 import { useThemeColorScheme } from 'twenty-ui/theme-constants';
 import { FeatureFlagKey } from '~/generated-metadata/graphql';
 import { Mixpanel } from '~/mixpanel';
@@ -35,19 +46,27 @@ import { OrgChartShareModal } from '../components/OrgChartShareModal';
 import { OrgChartSuperImposeModal } from '../components/OrgChartSuperImposeModal';
 import type { OrgChartTitleQueryResolved } from '../components/OrgChartTitleQueryBar';
 import { useProjectOrgChartData } from '../hooks/useProjectOrgChartData';
-import { useOrgChartActions, type OrgChartLinkedInSearchEstimate } from '../hooks/useOrgChartActions';
+import {
+  useOrgChartActions,
+  type OrgChartLinkedInSearchEstimate,
+} from '../hooks/useOrgChartActions';
 import { useApplyOrgChartAiHighlight } from '../hooks/useApplyOrgChartAiHighlight';
 import { useSyncOrgChartBrowsingContext } from '../hooks/useSyncOrgChartBrowsingContext';
 import { isDifferentSuperImposeTargetCompany } from '../types/superImposeTypes';
 import { mapStdGradeToOrgChartGradeVisibility } from '../utils/mapStdGradeToOrgChartGradeVisibility';
-import { extractCompanyDomainFromWebsite, extractOrgChartSavedCompanyMetadata, needsOrgChartCompanyInfoLookup, orgChartSelectionSearch } from '../utils/orgChartUtils';
 import {
-    StyledOrgChartConfirmDd,
-    StyledOrgChartConfirmDt,
-    StyledOrgChartConfirmIntro,
-    StyledOrgChartConfirmRow,
-    StyledOrgChartConfirmRows,
-    StyledOrgChartConfirmSummary,
+  extractCompanyDomainFromWebsite,
+  extractOrgChartSavedCompanyMetadata,
+  needsOrgChartCompanyInfoLookup,
+  orgChartSelectionSearch,
+} from '../utils/orgChartUtils';
+import {
+  StyledOrgChartConfirmDd,
+  StyledOrgChartConfirmDt,
+  StyledOrgChartConfirmIntro,
+  StyledOrgChartConfirmRow,
+  StyledOrgChartConfirmRows,
+  StyledOrgChartConfirmSummary,
 } from './ArxOrgChart.styles';
 import { ArxOrgChartView } from './ArxOrgChartView';
 import { useOrgChartBanners } from './hooks/useOrgChartBanners';
@@ -103,16 +122,16 @@ const normalizeMultiSourceSlug = (raw: string): MultiSourceSlug | null => {
     lowered === 'harvest' || lowered === 'harvestapi'
       ? 'harvest'
       : lowered === 'linkedin (unipile)' || lowered === 'linkedin unipile'
-      ? 'unipile'
-      : lowered === 'apollo'
-        ? 'apollo'
-        : lowered === 'theorg leadership' ||
-            lowered === 'the org leadership' ||
-            lowered === 'theorg'
-          ? 'theorg'
-          : lowered === 'officialboard' || lowered === 'official board'
-            ? 'officialboard'
-            : null;
+        ? 'unipile'
+        : lowered === 'apollo'
+          ? 'apollo'
+          : lowered === 'theorg leadership' ||
+              lowered === 'the org leadership' ||
+              lowered === 'theorg'
+            ? 'theorg'
+            : lowered === 'officialboard' || lowered === 'official board'
+              ? 'officialboard'
+              : null;
 
   return mapped as MultiSourceSlug | null;
 };
@@ -154,9 +173,8 @@ export const ArxOrgChartContainer = ({
   const [searchResultCount, setSearchResultCount] = useState<number | null>(
     null,
   );
-  const [gradeVisibility, setGradeVisibility] = useState<OrgChartGradeVisibility>(
-    DEFAULT_ORG_CHART_GRADE_VISIBILITY,
-  );
+  const [gradeVisibility, setGradeVisibility] =
+    useState<OrgChartGradeVisibility>(DEFAULT_ORG_CHART_GRADE_VISIBILITY);
   const [businessDivisionQuery, setBusinessDivisionQuery] = useState('');
   const [titleQuery, setTitleQuery] = useState('');
   const [titleQueryResolved, setTitleQueryResolved] =
@@ -194,7 +212,8 @@ export const ArxOrgChartContainer = ({
   const colorScheme = useThemeColorScheme();
 
   const tokenPair = useAtomStateValue(tokenPairState);
-  const accessToken = tokenPair?.accessOrWorkspaceAgnosticToken?.token ?? undefined;
+  const accessToken =
+    tokenPair?.accessOrWorkspaceAgnosticToken?.token ?? undefined;
 
   const orgChartLinkedinCandidateSource = useAtomStateValue(
     orgChartLinkedinCandidateSourceState,
@@ -214,7 +233,9 @@ export const ArxOrgChartContainer = ({
   const workspaceMemberUnipileFields = useAtomStateValue(
     workspaceMemberUnipileFieldsState,
   );
-  const linkedinUnipileAccounts = useAtomStateValue(linkedinUnipileAccountsState);
+  const linkedinUnipileAccounts = useAtomStateValue(
+    linkedinUnipileAccountsState,
+  );
   const setOrgChartSelectedCompanyInfo = useSetAtomState(
     orgChartSelectedCompanyInfoState,
   );
@@ -276,7 +297,8 @@ export const ArxOrgChartContainer = ({
   const linkedinUrlToUse = linkedinUrl;
 
   const resolvedLinkedinUnipileAccountId = useMemo(() => {
-    const envOverride = process.env.REACT_APP_ORGCHART_UNIPILE_ACCOUNT_ID?.trim();
+    const envOverride =
+      process.env.REACT_APP_ORGCHART_UNIPILE_ACCOUNT_ID?.trim();
     if (envOverride) {
       return envOverride;
     }
@@ -399,9 +421,7 @@ export const ArxOrgChartContainer = ({
       country: selectedCountry,
       functionRoot: selectedFunctionRoot,
       asOfMonth: asOfMonth || undefined,
-      expectedEmployeeCount:
-        effectiveEmployeeCount ??
-        profileCount,
+      expectedEmployeeCount: effectiveEmployeeCount ?? profileCount,
     },
     { baseUrl, accessToken },
   );
@@ -515,7 +535,13 @@ export const ArxOrgChartContainer = ({
         duration: 5000,
       },
     );
-  }, [apolloQueueRequestId, apolloQueued, companyId, enqueueSnackBar, isJobMode]);
+  }, [
+    apolloQueueRequestId,
+    apolloQueued,
+    companyId,
+    enqueueSnackBar,
+    isJobMode,
+  ]);
 
   const needsCompanyInfoLookup = useMemo(
     () =>
@@ -526,13 +552,7 @@ export const ArxOrgChartContainer = ({
         linkedinUrl,
         profileCount,
       }),
-    [
-      baseCompanyWebsite,
-      industry,
-      linkedinUrl,
-      locationName,
-      profileCount,
-    ],
+    [baseCompanyWebsite, industry, linkedinUrl, locationName, profileCount],
   );
 
   useEffect(() => {
@@ -608,8 +628,7 @@ export const ArxOrgChartContainer = ({
     effectiveCompanyWebsite ?? savedCompanyMetadata.website;
   const displayCompanyName =
     effectiveCompanyName ?? savedCompanyMetadata.companyName;
-  const displayLinkedinUrl =
-    linkedinUrl ?? savedCompanyMetadata.linkedinUrl;
+  const displayLinkedinUrl = linkedinUrl ?? savedCompanyMetadata.linkedinUrl;
 
   useEffect(() => {
     const next = hydrateContactsByKeyFromOrgData({
@@ -743,8 +762,7 @@ export const ArxOrgChartContainer = ({
     }
 
     const domainForResolve =
-      baseCompanyDomain ||
-      extractCompanyDomainFromWebsite(baseCompanyWebsite);
+      baseCompanyDomain || extractCompanyDomainFromWebsite(baseCompanyWebsite);
 
     if (!domainForResolve || !baseUrl) {
       setDomainResolveResult(null);
@@ -814,8 +832,7 @@ export const ArxOrgChartContainer = ({
     }
     setOrgChartSelectedCompanyInfo({
       companyId,
-      companyName:
-        displayCompanyName ?? companyId,
+      companyName: displayCompanyName ?? companyId,
       website: displayCompanyWebsite,
       locationName,
       industry,
@@ -1190,16 +1207,11 @@ export const ArxOrgChartContainer = ({
         })
         .catch(() => {
           setPendingSearchConfirm((prev) =>
-            prev?.title === title
-              ? { ...prev, estimateLoading: false }
-              : prev,
+            prev?.title === title ? { ...prev, estimateLoading: false } : prev,
           );
         });
     },
-    [
-      actions.estimateOrgchartLinkedInSearch,
-      orgChartLinkedinCandidateSource,
-    ],
+    [actions.estimateOrgchartLinkedInSearch, orgChartLinkedinCandidateSource],
   );
 
   const handleViewAllCandidates = useCallback(async () => {
@@ -1261,6 +1273,7 @@ export const ArxOrgChartContainer = ({
       businessDivisionRawQuery?: string;
       leadershipOnly?: boolean;
       unlimited?: boolean;
+      useSalesNavigatorAccountPool?: boolean;
       targetCompany?: {
         id: string;
         title: string;
@@ -1321,6 +1334,8 @@ export const ArxOrgChartContainer = ({
         businessDivisionRawQuery: input.businessDivisionRawQuery,
         leadershipOnly: input.leadershipOnly,
         unlimited: input.unlimited === true,
+        useSalesNavigatorAccountPool:
+          input.useSalesNavigatorAccountPool === true,
         candidateSourceOverride: superImposeCandidateSource,
         companyIdOverride: targetCompany?.slug,
         companyNameOverride: targetCompany?.title,
@@ -1668,12 +1683,12 @@ export const ArxOrgChartContainer = ({
           ? t`Apify`
           : orgChartLinkedinCandidateSource === 'harvest'
             ? t`Harvest`
-          : orgChartLinkedinCandidateSource === 'linkedin_xray'
-            ? t`LinkedIn X-Ray`
-            : orgChartLinkedinCandidateSource ===
-                ORG_CHART_CANDIDATE_SOURCE_M7KQ
-              ? t`Directory`
-              : t`Unknown data source`;
+            : orgChartLinkedinCandidateSource === 'linkedin_xray'
+              ? t`LinkedIn X-Ray`
+              : orgChartLinkedinCandidateSource ===
+                  ORG_CHART_CANDIDATE_SOURCE_M7KQ
+                ? t`Directory`
+                : t`Unknown data source`;
 
     return {
       functionLabel,
@@ -1704,8 +1719,8 @@ export const ArxOrgChartContainer = ({
             </Trans>
           ) : (
             <Trans>
-              The search will use the scope below. Confirm to continue, or cancel
-              to adjust filters first.
+              The search will use the scope below. Confirm to continue, or
+              cancel to adjust filters first.
             </Trans>
           )}
         </StyledOrgChartConfirmIntro>
@@ -2141,7 +2156,10 @@ export const ArxOrgChartContainer = ({
           isBlankTemplate={isBlankTemplate}
           firstSourceUsed={firstSourceUsed}
           latestOrgChart={
-            (actions.latestOrgChart ?? orgData) as Record<string, unknown> | null
+            (actions.latestOrgChart ?? orgData) as Record<
+              string,
+              unknown
+            > | null
           }
           itemCount={
             typeof (actions.latestOrgChart as Record<string, unknown> | null)

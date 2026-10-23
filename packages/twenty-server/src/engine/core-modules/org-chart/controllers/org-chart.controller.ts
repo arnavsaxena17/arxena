@@ -3233,6 +3233,8 @@ export class OrgChartController {
       superImpose?: SuperImposeInputs;
       /** LLM-planned Unipile shards beyond the normal ~1000 cap (slow pacing). */
       unlimited?: boolean;
+      /** Rotate Unipile fetch across the shared Sales Navigator account pool. */
+      useSalesNavigatorAccountPool?: boolean;
     },
     @Query('account_id') accountIdQuery: string | undefined,
     @Req() req: Request,

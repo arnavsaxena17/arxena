@@ -62,6 +62,8 @@ export type SuperImposeFetchContext = {
   candidateSource: 'harvest' | 'unipile';
   searchType?: 'classic' | 'sales_navigator' | 'recruiter';
   linkedinUnipileAccountId?: string;
+  /** When true, pick a Sales Navigator Unipile account from the shared pool for this fetch. */
+  useSalesNavigatorAccountPool?: boolean;
   linkedinLocationId?: string;
   linkedinLocationName?: string;
   linkedinCompanyParameterId?: string;
@@ -526,111 +528,124 @@ export class OrgChartSuperImposeService {
       return aggregated;
     }
 
+    const runUnipileFetch = async (session: {
+      accountId: string;
+    }): Promise<Array<Record<string, unknown>>> => {
+      const aggregatedInSession: Array<Record<string, unknown>> = [];
+
+      for (const salesNavUrl of plan.salesNavigatorSearchUrls) {
+        await context.onProgress?.('Unipile: fetching Sales Navigator URL...');
+        const snRows = await this.fetchUnipileSearchUrlCandidates({
+          url: salesNavUrl,
+          accountId: session.accountId,
+          companyName: context.primaryCompanyName,
+          maxProfiles:
+            maxProfiles ??
+            (unlimited
+              ? getOrgChartUnipileUnlimitedMaxCandidatesPerShard()
+              : undefined),
+          fetchSource: 'linkedin_search',
+          searchType: plan.searchType,
+        });
+        aggregatedInSession.push(...snRows);
+      }
+
+      if (
+        plan.salesNavigatorSearchUrls.length === 0 &&
+        plan.companySearchNames.length > 0
+      ) {
+        const primaryCompany = plan.resolvedCompanies[0];
+        const searchLabel = plan.companySearchNames.join(', ');
+        await context.onProgress?.(
+          unlimited
+            ? `Unlimited mode: fetching employees for ${searchLabel}…`
+            : `Unipile: fetching employees for ${searchLabel}...`,
+        );
+        const profileFacets =
+          await this.resolveCompanyProfileFacetsWithPoolAccount({
+            apiToken: context.apiToken,
+            companies: plan.resolvedCompanies,
+            primaryParameterId:
+              plan.linkedinCompanyParameterId ??
+              context.linkedinCompanyParameterId,
+          });
+        const companyParameterIds =
+          resolveSuperImposeLinkedinCompanyParameterIds(
+            plan.resolvedCompanies,
+            plan.linkedinCompanyParameterId ??
+              context.linkedinCompanyParameterId,
+            profileFacets.map((facet) => facet.linkedinCompanyId),
+          );
+        const searchResult =
+          await this.orgChartSearchService.runOrgchartLinkedInSearch(
+            `Employees at ${searchLabel}`,
+            `Employees at ${searchLabel}`,
+            plan.searchType,
+            context.apiToken,
+            undefined,
+            {
+              mode: plan.mode,
+              companyName:
+                primaryCompany?.companyName ??
+                primaryCompany?.slug ??
+                searchLabel,
+              companyNames: plan.companySearchNames,
+              companyId: primaryCompany?.slug,
+              requestId: context.requestId,
+              country: context.country,
+              functionRoot: context.functionRoot,
+              linkedinCompanyUrl: primaryCompany?.linkedinUrl,
+              linkedinUnipileAccountId: session.accountId,
+              businessDivisionRawQuery: context.businessDivisionRawQuery,
+              linkedinLocationId:
+                plan.linkedinLocationId ?? context.linkedinLocationId,
+              linkedinLocationName:
+                plan.linkedinLocationName ?? context.linkedinLocationName,
+              linkedinCompanyParameterId:
+                plan.linkedinCompanyParameterId ??
+                context.linkedinCompanyParameterId,
+              linkedinCompanyParameterIds:
+                companyParameterIds.length > 0
+                  ? companyParameterIds
+                  : undefined,
+              linkedinKeywords: plan.mergedKeywords,
+              linkedinJobTitle: plan.mergedJobTitle,
+              leadershipOnly: plan.leadershipOnly,
+              unlimited,
+            },
+          );
+        const items = Array.isArray(searchResult.items)
+          ? (searchResult.items as Array<Record<string, unknown>>)
+          : [];
+        aggregatedInSession.push(
+          ...items.map((row) =>
+            this.tagSuperImposeRow(
+              row,
+              'company_page',
+              plan.resolvedCompanies.map((company) => company.slug).join('+'),
+            ),
+          ),
+        );
+      }
+
+      return aggregatedInSession;
+    };
+
+    if (context.useSalesNavigatorAccountPool === true) {
+      await context.onProgress?.(
+        'Unipile: using rotating Sales Navigator account pool...',
+      );
+      return this.linkedinUnipileEstimateAccountService.withSharedSalesNavigatorPoolSession(
+        context.apiToken,
+        runUnipileFetch,
+        'Org-chart Advanced Mode fetch',
+      );
+    }
+
     return this.linkedinUnipileSessionService.withLinkedinSession(
       context.apiToken,
       context.linkedinUnipileAccountId,
-      async (session) => {
-        const aggregatedInSession: Array<Record<string, unknown>> = [];
-
-        for (const salesNavUrl of plan.salesNavigatorSearchUrls) {
-          await context.onProgress?.(
-            'Unipile: fetching Sales Navigator URL...',
-          );
-          const snRows = await this.fetchUnipileSearchUrlCandidates({
-            url: salesNavUrl,
-            accountId: session.accountId,
-            companyName: context.primaryCompanyName,
-            maxProfiles:
-              maxProfiles ??
-              (unlimited
-                ? getOrgChartUnipileUnlimitedMaxCandidatesPerShard()
-                : undefined),
-            fetchSource: 'linkedin_search',
-            searchType: plan.searchType,
-          });
-          aggregatedInSession.push(...snRows);
-        }
-
-        if (
-          plan.salesNavigatorSearchUrls.length === 0 &&
-          plan.companySearchNames.length > 0
-        ) {
-          const primaryCompany = plan.resolvedCompanies[0];
-          const searchLabel = plan.companySearchNames.join(', ');
-          await context.onProgress?.(
-            unlimited
-              ? `Unlimited mode: fetching employees for ${searchLabel}…`
-              : `Unipile: fetching employees for ${searchLabel}...`,
-          );
-          const profileFacets =
-            await this.resolveCompanyProfileFacetsWithPoolAccount({
-              apiToken: context.apiToken,
-              companies: plan.resolvedCompanies,
-              primaryParameterId:
-                plan.linkedinCompanyParameterId ??
-                context.linkedinCompanyParameterId,
-            });
-          const companyParameterIds =
-            resolveSuperImposeLinkedinCompanyParameterIds(
-              plan.resolvedCompanies,
-              plan.linkedinCompanyParameterId ??
-                context.linkedinCompanyParameterId,
-              profileFacets.map((facet) => facet.linkedinCompanyId),
-            );
-          const searchResult =
-            await this.orgChartSearchService.runOrgchartLinkedInSearch(
-              `Employees at ${searchLabel}`,
-              `Employees at ${searchLabel}`,
-              plan.searchType,
-              context.apiToken,
-              undefined,
-              {
-                mode: plan.mode,
-                companyName:
-                  primaryCompany?.companyName ??
-                  primaryCompany?.slug ??
-                  searchLabel,
-                companyNames: plan.companySearchNames,
-                companyId: primaryCompany?.slug,
-                requestId: context.requestId,
-                country: context.country,
-                functionRoot: context.functionRoot,
-                linkedinCompanyUrl: primaryCompany?.linkedinUrl,
-                linkedinUnipileAccountId: session.accountId,
-                businessDivisionRawQuery: context.businessDivisionRawQuery,
-                linkedinLocationId:
-                  plan.linkedinLocationId ?? context.linkedinLocationId,
-                linkedinLocationName:
-                  plan.linkedinLocationName ?? context.linkedinLocationName,
-                linkedinCompanyParameterId:
-                  plan.linkedinCompanyParameterId ??
-                  context.linkedinCompanyParameterId,
-                linkedinCompanyParameterIds:
-                  companyParameterIds.length > 0
-                    ? companyParameterIds
-                    : undefined,
-                linkedinKeywords: plan.mergedKeywords,
-                linkedinJobTitle: plan.mergedJobTitle,
-                leadershipOnly: plan.leadershipOnly,
-                unlimited,
-              },
-            );
-          const items = Array.isArray(searchResult.items)
-            ? (searchResult.items as Array<Record<string, unknown>>)
-            : [];
-          aggregatedInSession.push(
-            ...items.map((row) =>
-              this.tagSuperImposeRow(
-                row,
-                'company_page',
-                plan.resolvedCompanies.map((company) => company.slug).join('+'),
-              ),
-            ),
-          );
-        }
-
-        return aggregatedInSession;
-      },
+      runUnipileFetch,
     );
   }
 

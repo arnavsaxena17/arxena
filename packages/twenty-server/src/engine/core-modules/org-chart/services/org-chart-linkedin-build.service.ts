@@ -141,6 +141,8 @@ type SearchOrgchartLinkedInBody = {
   linkedinCompanyParameterId?: string;
   /** LLM-planned Unipile shards beyond the normal ~1000 cap. */
   unlimited?: boolean;
+  /** Rotate Unipile fetch across the shared Sales Navigator account pool. */
+  useSalesNavigatorAccountPool?: boolean;
 };
 
 type EntireCompanyFilterState = {
@@ -3567,6 +3569,8 @@ export class OrgChartLinkedInBuildService {
         linkedinCompanyParameterId:
           body.linkedinCompanyParameterId ?? targetCompany?.id,
         unlimited: body.unlimited === true,
+        useSalesNavigatorAccountPool:
+          body.useSalesNavigatorAccountPool === true,
       };
 
       await this.orgchartApifyQueue.add(
@@ -5820,6 +5824,9 @@ export class OrgChartLinkedInBuildService {
       }
 
       const unlimited = jobData.unlimited === true;
+      const useSalesNavigatorAccountPool =
+        jobData.useSalesNavigatorAccountPool === true ||
+        rawBody.useSalesNavigatorAccountPool === true;
       const fetchContext = {
         apiToken,
         primaryCompanyName: resolvedCompanyName,
@@ -5833,6 +5840,7 @@ export class OrgChartLinkedInBuildService {
         candidateSource,
         searchType,
         linkedinUnipileAccountId: rawBody.linkedinUnipileAccountId,
+        useSalesNavigatorAccountPool,
         linkedinLocationId:
           jobData.linkedinLocationId ??
           rawBody.linkedinLocationId ??

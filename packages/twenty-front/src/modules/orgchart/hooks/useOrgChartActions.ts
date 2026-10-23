@@ -1629,6 +1629,8 @@ export const useOrgChartActions = ({
     };
     /** LLM-planned Unipile shards beyond the ~1000 cap (slow pacing). */
     unlimited?: boolean;
+    /** Rotate Unipile fetch across shared Sales Navigator accounts. */
+    useSalesNavigatorAccountPool?: boolean;
   }) => {
     const effectiveCompanyId = params.companyIdOverride?.trim() || companyId;
     if (!effectiveCompanyId) return;
@@ -2017,6 +2019,9 @@ export const useOrgChartActions = ({
         ? { superImpose: params.superImpose }
         : {}),
       ...(params.unlimited === true ? { unlimited: true } : {}),
+      ...(params.useSalesNavigatorAccountPool === true
+        ? { useSalesNavigatorAccountPool: true }
+        : {}),
     };
 
     let isQueuedAsyncSearch = false;

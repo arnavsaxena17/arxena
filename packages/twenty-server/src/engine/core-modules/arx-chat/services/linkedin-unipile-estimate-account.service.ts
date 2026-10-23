@@ -21,7 +21,9 @@ type SalesNavigatorPoolCache = {
 
 @Injectable()
 export class LinkedinUnipileEstimateAccountService {
-  private readonly logger = new Logger(LinkedinUnipileEstimateAccountService.name);
+  private readonly logger = new Logger(
+    LinkedinUnipileEstimateAccountService.name,
+  );
   private salesNavigatorPoolCache: SalesNavigatorPoolCache | null = null;
   private static readonly SALES_NAVIGATOR_POOL_CACHE_TTL_MS = 5 * 60_000;
   private static readonly POOL_MAX_RETRY_ATTEMPTS = 3;
@@ -128,6 +130,21 @@ export class LinkedinUnipileEstimateAccountService {
     return accountId;
   }
 
+  // Org-chart fetch/build: rotate across connected Sales Navigator Unipile accounts.
+  async withSharedSalesNavigatorPoolSession<T>(
+    apiToken: string,
+    run: (session: LinkedinSessionHandle) => Promise<T>,
+    logPrefix = 'Org-chart fetch',
+  ): Promise<T> {
+    return this.withPooledLinkedinSession(
+      LinkedinUnipileEstimateAccountMode.SharedSalesNavigatorPool,
+      apiToken,
+      undefined,
+      logPrefix,
+      run,
+    );
+  }
+
   private async withPooledLinkedinSession<T>(
     mode: LinkedinUnipileEstimateAccountMode,
     apiToken: string,
@@ -156,7 +173,8 @@ export class LinkedinUnipileEstimateAccountService {
       attempt < LinkedinUnipileEstimateAccountService.POOL_MAX_RETRY_ATTEMPTS;
       attempt += 1
     ) {
-      const candidates = await this.getPoolCandidatesExcluding(excludedAccountIds);
+      const candidates =
+        await this.getPoolCandidatesExcluding(excludedAccountIds);
       if (candidates.length === 0) {
         break;
       }

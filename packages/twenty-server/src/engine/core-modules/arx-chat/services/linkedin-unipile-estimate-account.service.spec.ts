@@ -100,11 +100,9 @@ describe('LinkedinUnipileEstimateAccountService', () => {
     );
 
     expect(result).toBe(clientAccountId);
-    expect(linkedinUnipileSessionService.withLinkedinSession).toHaveBeenCalledWith(
-      apiToken,
-      clientAccountId,
-      expect.any(Function),
-    );
+    expect(
+      linkedinUnipileSessionService.withLinkedinSession,
+    ).toHaveBeenCalledWith(apiToken, clientAccountId, expect.any(Function));
   });
 
   it('env_account_id mode uses UNIPILE_LINKEDIN_ACCOUNT_ID', async () => {
@@ -121,18 +119,21 @@ describe('LinkedinUnipileEstimateAccountService', () => {
     );
 
     expect(result).toBe(envAccountId);
-    expect(linkedinUnipileSessionService.withLinkedinSession).toHaveBeenCalledWith(
-      apiToken,
-      envAccountId,
-      expect.any(Function),
-    );
+    expect(
+      linkedinUnipileSessionService.withLinkedinSession,
+    ).toHaveBeenCalledWith(apiToken, envAccountId, expect.any(Function));
   });
 
   it('shared_sales_navigator_pool mode picks a cached Sales Navigator account', async () => {
     console.log('LinkedinUnipileEstimateAccountService: pool cache');
     jest.spyOn(Math, 'random').mockReturnValue(0);
-    const { service, linkedinUnipileSessionService, linkedinUnipileRequestService } =
-      createService(LinkedinUnipileEstimateAccountMode.SharedSalesNavigatorPool);
+    const {
+      service,
+      linkedinUnipileSessionService,
+      linkedinUnipileRequestService,
+    } = createService(
+      LinkedinUnipileEstimateAccountMode.SharedSalesNavigatorPool,
+    );
 
     const first = await service.withEstimateLinkedinSession(
       apiToken,
@@ -150,11 +151,9 @@ describe('LinkedinUnipileEstimateAccountService', () => {
     expect(
       linkedinUnipileRequestService.listAllLinkedinAccountsFromUnipileApi,
     ).toHaveBeenCalledTimes(1);
-    expect(linkedinUnipileSessionService.withLinkedinSession).toHaveBeenCalledWith(
-      apiToken,
-      first,
-      expect.any(Function),
-    );
+    expect(
+      linkedinUnipileSessionService.withLinkedinSession,
+    ).toHaveBeenCalledWith(apiToken, first, expect.any(Function));
   });
 
   it('retries with another pool account when the first account is unusable', async () => {
@@ -164,9 +163,12 @@ describe('LinkedinUnipileEstimateAccountService', () => {
       LinkedinUnipileEstimateAccountMode.SharedSalesNavigatorPool,
     );
 
-    const unusableError = new UnipileLinkedinAccountUnusableError('dead account', {
-      accountId: poolAccountA,
-    });
+    const unusableError = new UnipileLinkedinAccountUnusableError(
+      'dead account',
+      {
+        accountId: poolAccountA,
+      },
+    );
 
     linkedinUnipileSessionService.withLinkedinSession = jest.fn(
       async (
@@ -188,13 +190,20 @@ describe('LinkedinUnipileEstimateAccountService', () => {
     );
 
     expect(result).toBe(poolAccountB);
-    expect(linkedinUnipileSessionService.withLinkedinSession).toHaveBeenCalledTimes(2);
+    expect(
+      linkedinUnipileSessionService.withLinkedinSession,
+    ).toHaveBeenCalledTimes(2);
     expect(invalidateUnipileAccountsListCache).toHaveBeenCalled();
-    console.log('LinkedinUnipileEstimateAccountService: pool retry success account', result);
+    console.log(
+      'LinkedinUnipileEstimateAccountService: pool retry success account',
+      result,
+    );
   });
 
   it('does not retry pool accounts for non-account failures', async () => {
-    console.log('LinkedinUnipileEstimateAccountService: no retry on business error');
+    console.log(
+      'LinkedinUnipileEstimateAccountService: no retry on business error',
+    );
     jest.spyOn(Math, 'random').mockReturnValue(0);
     const { service, linkedinUnipileSessionService } = createService(
       LinkedinUnipileEstimateAccountMode.SharedSalesNavigatorPool,
@@ -211,10 +220,16 @@ describe('LinkedinUnipileEstimateAccountService', () => {
     );
 
     await expect(
-      service.withEstimateLinkedinSession(apiToken, clientAccountId, async () => 'ok'),
+      service.withEstimateLinkedinSession(
+        apiToken,
+        clientAccountId,
+        async () => 'ok',
+      ),
     ).rejects.toThrow('LLM timeout');
 
-    expect(linkedinUnipileSessionService.withLinkedinSession).toHaveBeenCalledTimes(1);
+    expect(
+      linkedinUnipileSessionService.withLinkedinSession,
+    ).toHaveBeenCalledTimes(1);
   });
 
   it('throws when all pool accounts are unusable', async () => {
@@ -238,21 +253,30 @@ describe('LinkedinUnipileEstimateAccountService', () => {
     );
 
     await expect(
-      service.withEstimateLinkedinSession(apiToken, clientAccountId, async () => 'ok'),
+      service.withEstimateLinkedinSession(
+        apiToken,
+        clientAccountId,
+        async () => 'ok',
+      ),
     ).rejects.toThrow(
       'All shared Sales Navigator pool LinkedIn Unipile accounts failed or are unavailable',
     );
 
-    expect(linkedinUnipileSessionService.withLinkedinSession).toHaveBeenCalledTimes(2);
+    expect(
+      linkedinUnipileSessionService.withLinkedinSession,
+    ).toHaveBeenCalledTimes(2);
   });
 
   it('resolveOutreachAccountId uses outreach account mode env', async () => {
-    console.log('LinkedinUnipileEstimateAccountService: resolveOutreachAccountId');
+    console.log(
+      'LinkedinUnipileEstimateAccountService: resolveOutreachAccountId',
+    );
     jest.spyOn(Math, 'random').mockReturnValue(0);
     const { service } = createService(
       LinkedinUnipileEstimateAccountMode.Session,
       {
-        outreachMode: LinkedinUnipileEstimateAccountMode.SharedSalesNavigatorPool,
+        outreachMode:
+          LinkedinUnipileEstimateAccountMode.SharedSalesNavigatorPool,
       },
     );
 
@@ -262,12 +286,15 @@ describe('LinkedinUnipileEstimateAccountService', () => {
   });
 
   it('withOutreachLinkedinSession uses outreach account mode', async () => {
-    console.log('LinkedinUnipileEstimateAccountService: withOutreachLinkedinSession');
+    console.log(
+      'LinkedinUnipileEstimateAccountService: withOutreachLinkedinSession',
+    );
     jest.spyOn(Math, 'random').mockReturnValue(0);
     const { service, linkedinUnipileSessionService } = createService(
       LinkedinUnipileEstimateAccountMode.Session,
       {
-        outreachMode: LinkedinUnipileEstimateAccountMode.SharedSalesNavigatorPool,
+        outreachMode:
+          LinkedinUnipileEstimateAccountMode.SharedSalesNavigatorPool,
       },
     );
 
@@ -278,6 +305,26 @@ describe('LinkedinUnipileEstimateAccountService', () => {
     );
 
     expect([poolAccountA, poolAccountB]).toContain(result);
-    expect(linkedinUnipileSessionService.withLinkedinSession).toHaveBeenCalled();
+    expect(
+      linkedinUnipileSessionService.withLinkedinSession,
+    ).toHaveBeenCalled();
+  });
+
+  it('withSharedSalesNavigatorPoolSession always uses the Sales Navigator pool', async () => {
+    jest.spyOn(Math, 'random').mockReturnValue(0);
+    const { service, linkedinUnipileSessionService } = createService(
+      LinkedinUnipileEstimateAccountMode.Session,
+    );
+
+    const result = await service.withSharedSalesNavigatorPoolSession(
+      apiToken,
+      async (session) => session.accountId,
+      'Org-chart Advanced Mode fetch',
+    );
+
+    expect([poolAccountA, poolAccountB]).toContain(result);
+    expect(
+      linkedinUnipileSessionService.withLinkedinSession,
+    ).toHaveBeenCalledWith(apiToken, result, expect.any(Function));
   });
 });
