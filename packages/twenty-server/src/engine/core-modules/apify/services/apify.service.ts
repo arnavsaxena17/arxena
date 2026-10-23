@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
+import { RawFetchArchiveService } from 'src/engine/core-modules/raw-fetch-archive/raw-fetch-archive.service';
 
 import { ApifyClient } from 'apify-client';
 
@@ -33,7 +34,11 @@ const APIFY_TERMINAL_RUN_STATUSES = new Set([
 export class ApifyService {
   private readonly logger = new Logger(ApifyService.name);
 
-  constructor(private readonly environmentService: EnvironmentService) {}
+  constructor(
+    private readonly environmentService: EnvironmentService,
+    @Optional()
+    private readonly rawFetchArchiveService?: RawFetchArchiveService,
+  ) {}
 
   isConfigured(): boolean {
     const token = this.environmentService.get('APIFY_API_TOKEN');
@@ -139,6 +144,18 @@ export class ApifyService {
       for (;;) {
         const page = await client.dataset(datasetId).listItems({ offset, limit });
         const batch = page.items ?? [];
+
+        // Actor runs are billed per run, so each dataset page is archived
+        // before Apify's own dataset retention can expire it
+        await this.rawFetchArchiveService?.archive({
+          provider: 'apify',
+          endpoint: 'dataset-items',
+          request: { datasetId, offset, limit },
+          response: batch,
+          pageKey: offset,
+          meta: { itemCount: batch.length },
+        });
+
         for (const row of batch) {
           items.push(row as Record<string, unknown>);
         }

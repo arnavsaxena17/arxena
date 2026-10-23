@@ -2,7 +2,9 @@ import { appendFileSync } from 'fs';
 import { lookup } from 'dns/promises';
 import { connect } from 'net';
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
+
+import { RawFetchArchiveService } from 'src/engine/core-modules/raw-fetch-archive/raw-fetch-archive.service';
 
 import { Agent, ProxyAgent } from 'undici';
 
@@ -100,6 +102,11 @@ const waitForOrAbort = <TValue>(
 @Injectable()
 export class BrightDataSerpService {
   private readonly logger = new Logger(BrightDataSerpService.name);
+
+  constructor(
+    @Optional()
+    private readonly rawFetchArchiveService?: RawFetchArchiveService,
+  ) {}
 
   private get apiKey(): string | undefined {
     return process.env.BRIGHT_DATA_API_KEY?.trim() || undefined;
@@ -421,7 +428,17 @@ export class BrightDataSerpService {
 
     for (const [index, route] of routes.entries()) {
       try {
-        return await route.run();
+        const result = await route.run();
+
+        await this.rawFetchArchiveService?.archive({
+          provider: 'serp',
+          endpoint: 'google-serp',
+          request: { searchUrl, options: { dataFormat: options.dataFormat } },
+          response: result,
+          meta: { route: route.name },
+        });
+
+        return result;
       } catch (error) {
         lastError = error;
 
@@ -1183,6 +1200,14 @@ export class BrightDataSerpService {
       const parsed = this.parseDatasetSnapshotBody(rawText);
 
       if (Array.isArray(parsed)) {
+        await this.rawFetchArchiveService?.archive({
+          provider: 'bright-data',
+          endpoint: 'dataset-snapshot',
+          request: { snapshotId },
+          response: parsed,
+          meta: { itemCount: parsed.length },
+        });
+
         return parsed;
       }
 

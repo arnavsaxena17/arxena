@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import {
   BrightDataRequestRateLimiter,
@@ -7,6 +7,7 @@ import {
 import { BRIGHT_DATA_LUDICROUS_MAX_RETRIES } from 'src/engine/core-modules/bright-data/ludicrous/constants/bright-data-ludicrous-pricing.const';
 import { type BrightDataLudicrousQuery } from 'src/engine/core-modules/bright-data/ludicrous/types/bright-data-ludicrous.types';
 import { assertValidLudicrousQuery } from 'src/engine/core-modules/bright-data/ludicrous/utils/bright-data-ludicrous-query.util';
+import { RawFetchArchiveService } from 'src/engine/core-modules/raw-fetch-archive/raw-fetch-archive.service';
 import { costForRecordsUsd } from 'src/engine/core-modules/bright-data/ludicrous/utils/bright-data-ludicrous-pricing.util';
 import {
   BRIGHT_DATA_BUSINESS_SEARCH_MAX_QUERY_LENGTH,
@@ -67,6 +68,8 @@ export type BrightDataBusinessSearchInput = {
   view?: BrightDataBusinessSearchView;
   // Ludicrous only: request just these fields instead of a named view
   fields?: string[];
+  // Scopes the raw-response archive to the workspace that paid for the call
+  workspaceId?: string;
 };
 
 export type BrightDataBusinessSearchResult = {
@@ -104,6 +107,11 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 @Injectable()
 export class BrightDataBusinessSearchService {
   private readonly logger = new Logger(BrightDataBusinessSearchService.name);
+
+  constructor(
+    @Optional()
+    private readonly rawFetchArchiveService?: RawFetchArchiveService,
+  ) {}
 
   private get apiKey(): string | undefined {
     return process.env.BRIGHT_DATA_API_KEY?.trim() || undefined;
@@ -148,6 +156,7 @@ export class BrightDataBusinessSearchService {
         limit: page.limit,
         view: input.view ?? 'full',
         fields: input.fields,
+        workspaceId: input.workspaceId,
       });
 
       reqId = response.reqId || reqId;
@@ -182,12 +191,14 @@ export class BrightDataBusinessSearchService {
     offset,
     limit,
     fields,
+    workspaceId,
   }: {
     entity: BrightDataBusinessSearchEntity;
     query: BrightDataLudicrousQuery;
     offset: number;
     limit: number;
     fields?: string[];
+    workspaceId?: string;
   }): Promise<BrightDataBusinessSearchResult> {
     const key = this.apiKey;
 
@@ -205,6 +216,7 @@ export class BrightDataBusinessSearchService {
       limit,
       view: 'full',
       fields,
+      workspaceId,
     });
 
     return {
@@ -262,6 +274,7 @@ export class BrightDataBusinessSearchService {
     limit,
     view,
     fields,
+    workspaceId,
   }: {
     apiKey: string;
     entity: BrightDataBusinessSearchEntity;
@@ -271,6 +284,7 @@ export class BrightDataBusinessSearchService {
     limit: number;
     view: BrightDataBusinessSearchView;
     fields?: string[];
+    workspaceId?: string;
   }): Promise<{
     reqId: string;
     matched: number | undefined;
@@ -306,6 +320,19 @@ export class BrightDataBusinessSearchService {
         await rateLimiter.acquire();
 
         const page = await this.postOnce({ apiKey, entity, body });
+
+        // Archive the untouched response before any filtering: the records
+        // are billed per document the moment this call returns
+        await this.rawFetchArchiveService?.archive({
+          provider: 'bright-data',
+          endpoint: `business-search/${entity}`,
+          workspaceId,
+          request: body,
+          response: page,
+          pageKey: offset,
+          costUsd: costForRecordsUsd(page.documents?.length ?? 0),
+          meta: { mode, reqId: page.req_id ?? null },
+        });
 
         return {
           reqId: page.req_id ?? '',

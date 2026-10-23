@@ -26,4 +26,6 @@ export type OrgchartSuperImposeBuildJobData = {
   linkedinLocationId?: string;
   linkedinLocationName?: string;
   linkedinCompanyParameterId?: string;
+  /** Slow Unipile shard crawl past the normal ~1000 cap. */
+  unlimited?: boolean;
 };

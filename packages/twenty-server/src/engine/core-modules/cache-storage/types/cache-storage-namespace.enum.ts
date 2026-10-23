@@ -19,5 +19,6 @@ export enum CacheStorageNamespace {
   EngineOutreachCommand = 'engine:outreach-command',
   EngineContactEnrichment = 'engine:contact-enrichment',
   EngineTheOrg = 'engine:theorg',
+  EngineRawFetchArchive = 'engine:raw-fetch-archive',
   IntegrationTests = 'integration-tests',
 }

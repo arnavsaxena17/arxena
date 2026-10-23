@@ -1,4 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
+
+import { RawFetchArchiveService } from 'src/engine/core-modules/raw-fetch-archive/raw-fetch-archive.service';
 
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
 import type { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
@@ -33,6 +35,11 @@ export class BrightDataLinkedinProfileScrapeService {
   private readonly logger = new Logger(
     BrightDataLinkedinProfileScrapeService.name,
   );
+
+  constructor(
+    @Optional()
+    private readonly rawFetchArchiveService?: RawFetchArchiveService,
+  ) {}
 
   private get apiKey(): string | undefined {
     return process.env.BRIGHT_DATA_API_KEY?.trim() || undefined;
@@ -243,7 +250,30 @@ export class BrightDataLinkedinProfileScrapeService {
   }
 
   // Sync /scrape past 1m → HTTP 202 + snapshot_id; poll then download
+  // Every scrape is billed per record, so the rows are archived untouched
+  // before any caller maps or filters them
   private async resolveScrapeResponse(input: {
+    status: number;
+    ok: boolean;
+    rawText: string;
+    context: string;
+  }): Promise<BrightDataLinkedinProfileRecord[]> {
+    const records = await this.resolveScrapeResponseUnarchived(input);
+
+    if (records.length > 0) {
+      await this.rawFetchArchiveService?.archive({
+        provider: 'bright-data',
+        endpoint: 'linkedin-profile-scrape',
+        request: { context: input.context },
+        response: records,
+        meta: { recordCount: records.length },
+      });
+    }
+
+    return records;
+  }
+
+  private async resolveScrapeResponseUnarchived(input: {
     status: number;
     ok: boolean;
     rawText: string;

@@ -277,6 +277,8 @@ export type OrgChartSuperImposeModalProps = {
     linkedinLocationId?: string;
     linkedinLocationName?: string;
     linkedinCompanyParameterId?: string;
+    /** Slow Unipile shard crawl past the ~1000 cap (progress streams live). */
+    unlimited?: boolean;
   }) => void;
   isGenerating: boolean;
 };
@@ -326,6 +328,7 @@ export const OrgChartSuperImposeModal = ({
     businessDivisionRawQuery ?? '',
   );
   const [leadershipOnly, setLeadershipOnly] = useState(false);
+  const [unlimitedMode, setUnlimitedMode] = useState(false);
   const [appendToExisting, setAppendToExisting] = useState(false);
   const [estimate, setEstimate] = useState<SuperImposeEstimate | null>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
@@ -405,6 +408,7 @@ export const OrgChartSuperImposeModal = ({
     setFunctionRoot(selectedFunctionRoot ?? 'fullcompany');
     setBusinessDivision(businessDivisionRawQuery ?? '');
     setLeadershipOnly(false);
+    setUnlimitedMode(false);
     setAppendToExisting(false);
   }, [
     businessDivisionRawQuery,
@@ -589,16 +593,20 @@ export const OrgChartSuperImposeModal = ({
     targetLocation,
   ]);
 
+  const canUseUnlimitedMode =
+    candidateSource === 'unipile' && estimate?.scopeRequired === true;
+  const unlimitedSelected = canUseUnlimitedMode && unlimitedMode;
+
   const generateDisabled =
     isGenerating ||
     estimateLoading ||
-    estimate?.scopeRequired === true ||
+    (estimate?.scopeRequired === true && !unlimitedSelected) ||
     !targetCompany;
 
   const estimateTone: 'ok' | 'warn' | 'error' =
-    estimate?.scopeRequired === true
+    estimate?.scopeRequired === true && !unlimitedSelected
       ? 'error'
-      : estimate?.thresholdExceeded === true
+      : estimate?.scopeRequired === true || estimate?.thresholdExceeded === true
         ? 'warn'
         : 'ok';
 
@@ -611,9 +619,9 @@ export const OrgChartSuperImposeModal = ({
       return;
     }
 
-    if (estimate?.scopeRequired) {
+    if (estimate?.scopeRequired && !unlimitedSelected) {
       enqueueSnackBar(
-        `Too many people. Select a location, function, or leadership filter first.`,
+        `Too many people. Select a location, function, leadership filter, or enable Unlimited mode.`,
         { variant: SnackBarVariant.Error, duration: 6000 },
       );
       return;
@@ -630,6 +638,7 @@ export const OrgChartSuperImposeModal = ({
       linkedinLocationId: targetLocation?.id,
       linkedinLocationName: targetLocation?.title,
       linkedinCompanyParameterId: targetCompany.id,
+      ...(unlimitedSelected ? { unlimited: true } : {}),
     });
   };
 
@@ -644,7 +653,7 @@ export const OrgChartSuperImposeModal = ({
       </StyledCloseButtonContainer>
 
       <StyledHeader>
-        <StyledHeaderTitle>{`Super Impose Org Charts`}</StyledHeaderTitle>
+        <StyledHeaderTitle>{`Advanced Mode`}</StyledHeaderTitle>
       </StyledHeader>
 
       <StyledContent>
@@ -787,12 +796,29 @@ export const OrgChartSuperImposeModal = ({
                 ? `Estimating people…`
                 : estimate
                   ? estimate.scopeRequired
-                    ? `Too many people (~${estimate.estimatedTotalUpperBound}). Select a location, function, or leadership filter.`
+                    ? unlimitedSelected
+                      ? `Unlimited mode: ~${estimate.estimatedTotalUpperBound.toLocaleString()} people. Fetch will run slowly in shards with live progress.`
+                      : `Too many people (~${estimate.estimatedTotalUpperBound.toLocaleString()}). Select a location, function, leadership filter, or Unlimited mode.`
                     : `≈ ${estimate.estimatedTotal} people (up to ${estimate.estimatedTotalUpperBound})`
                   : targetCompany
                     ? `Estimating…`
                     : `Select a company to see an estimate`}
             </StyledInfoCard>
+
+            {canUseUnlimitedMode ? (
+              <StyledCheckboxRow>
+                <Checkbox
+                  checked={unlimitedMode}
+                  onCheckedChange={setUnlimitedMode}
+                  size={CheckboxSize.Small}
+                  variant={CheckboxVariant.Primary}
+                />
+                {`Unlimited mode (slow full fetch)`}
+                <StyledCheckboxHint>
+                  — shards LinkedIn results and streams progress as people load
+                </StyledCheckboxHint>
+              </StyledCheckboxRow>
+            ) : null}
 
             <StyledCheckboxRow>
               <Checkbox

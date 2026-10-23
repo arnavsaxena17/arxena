@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { withAcquiredAccountRateLimit } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
+import { RawFetchArchiveService } from 'src/engine/core-modules/raw-fetch-archive/raw-fetch-archive.service';
 import { LinkedinProfileCacheService } from './linkedin-profile-cache.service';
 
 export type UnipileCompanyProfileDto = {
@@ -90,6 +91,8 @@ export class UnipileCompanyService {
 
   constructor(
     private readonly linkedinProfileCacheService: LinkedinProfileCacheService,
+    @Optional()
+    private readonly rawFetchArchiveService?: RawFetchArchiveService,
   ) {}
 
   isConfigured(): boolean {
@@ -160,6 +163,14 @@ export class UnipileCompanyService {
               `Unipile company API error for ${slug}: ${response.status} ${errMsg}`,
             );
           }
+
+          // The cached DTO below drops fields, so the full payload is kept
+          await this.rawFetchArchiveService?.archive({
+            provider: 'unipile',
+            endpoint: 'get/linkedin/company',
+            request: { slug, accountId },
+            response: payload,
+          });
 
           return payload;
         },

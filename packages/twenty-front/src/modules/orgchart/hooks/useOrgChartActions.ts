@@ -1080,7 +1080,7 @@ export const useOrgChartActions = ({
             payload.companyName ?? companyName ?? companyId;
           enqueueSnackBar(
             payload.mode === 'super_impose'
-              ? `Super impose org chart ready for ${displayCompanyName} (${typeof eventData.itemCount === 'number' ? eventData.itemCount : completeItems.length} people)`
+              ? `Advanced Mode org chart ready for ${displayCompanyName} (${typeof eventData.itemCount === 'number' ? eventData.itemCount : completeItems.length} people)`
               : `Org chart ready for ${displayCompanyName} (${typeof eventData.itemCount === 'number' ? eventData.itemCount : completeItems.length} people)`,
             {
               variant: SnackBarVariant.Success,
@@ -1799,7 +1799,7 @@ export const useOrgChartActions = ({
         title = 'Map business division';
         break;
       case 'super_impose':
-        title = 'Super impose org chart';
+        title = 'Advanced Mode org chart';
         break;
       default:
         title = 'Get all names in this function';
@@ -2069,7 +2069,7 @@ export const useOrgChartActions = ({
             : '';
         enqueueSnackBar(
           mode === 'super_impose'
-            ? `Generating super impose org chart for ${resolvedCompanyName}...`
+            ? `Generating Advanced Mode org chart for ${resolvedCompanyName}...`
             : `Generating full org chart for ${resolvedCompanyName}${employeeSuffix}...`,
           {
             variant: SnackBarVariant.Info,
@@ -2133,7 +2133,7 @@ export const useOrgChartActions = ({
               ? 'Multi-source org chart queued. Waiting for results...'
               : typeof json.candidateSource === 'string' &&
                   json.candidateSource === 'super_impose'
-                ? 'Super impose org chart queued. Waiting for results...'
+                ? 'Advanced Mode org chart queued. Waiting for results...'
                 : typeof json.candidateSource === 'string' &&
                     json.candidateSource === 'harvest'
                   ? 'Harvest org chart search queued. Waiting for results...'

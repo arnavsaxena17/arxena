@@ -1260,6 +1260,7 @@ export const ArxOrgChartContainer = ({
       functionRoot?: string;
       businessDivisionRawQuery?: string;
       leadershipOnly?: boolean;
+      unlimited?: boolean;
       targetCompany?: {
         id: string;
         title: string;
@@ -1319,6 +1320,7 @@ export const ArxOrgChartContainer = ({
         functionRoot: input.functionRoot ?? selectedFunctionRoot,
         businessDivisionRawQuery: input.businessDivisionRawQuery,
         leadershipOnly: input.leadershipOnly,
+        unlimited: input.unlimited === true,
         candidateSourceOverride: superImposeCandidateSource,
         companyIdOverride: targetCompany?.slug,
         companyNameOverride: targetCompany?.title,

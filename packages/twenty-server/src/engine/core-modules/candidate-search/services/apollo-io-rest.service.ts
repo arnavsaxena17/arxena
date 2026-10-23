@@ -1,4 +1,10 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  Logger,
+  Optional,
+} from '@nestjs/common';
 
 import { createHash } from 'crypto';
 
@@ -7,6 +13,7 @@ import axios, { AxiosInstance, isAxiosError } from 'axios';
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
+import { RawFetchArchiveService } from 'src/engine/core-modules/raw-fetch-archive/raw-fetch-archive.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 
 const APOLLO_API_BASE = 'https://api.apollo.io/api/v1';
@@ -112,6 +119,8 @@ export class ApolloIoRestService {
     private readonly environmentService: EnvironmentService,
     @InjectCacheStorage(CacheStorageNamespace.EngineCandidateSearch)
     private readonly engineCandidateSearchCache: CacheStorageService,
+    @Optional()
+    private readonly rawFetchArchiveService?: RawFetchArchiveService,
   ) {
     this.client = axios.create({
       baseURL: APOLLO_API_BASE,
@@ -121,6 +130,42 @@ export class ApolloIoRestService {
       },
       timeout: 120_000,
     });
+
+    // Every Apollo credit-consuming response is archived untouched. Headers
+    // are never stored, so API keys stay out of S3.
+    this.client.interceptors.response.use(async (response) => {
+      await this.rawFetchArchiveService?.archive({
+        provider: 'apollo',
+        endpoint: (response.config.url ?? 'unknown').split('?')[0],
+        request: {
+          method: response.config.method,
+          url: response.config.url,
+          params: response.config.params,
+          body: this.parseRequestBody(response.config.data),
+        },
+        response: response.data,
+        meta: { status: response.status },
+      });
+
+      return response;
+    });
+  }
+
+  private parseRequestBody(data: unknown): unknown {
+    if (typeof data !== 'string') {
+      return data ?? null;
+    }
+
+    try {
+      const { api_key: _apiKey, ...body } = JSON.parse(data) as Record<
+        string,
+        unknown
+      >;
+
+      return body;
+    } catch {
+      return null;
+    }
   }
 
   private getApiKey(): string | null {
@@ -130,9 +175,7 @@ export class ApolloIoRestService {
   }
 
   private getRapidApiKey(): string | null {
-    const key = this.environmentService.get(
-      'RAPIDAPI_APOLLO_ORG_SEARCH_KEY',
-    );
+    const key = this.environmentService.get('RAPIDAPI_APOLLO_ORG_SEARCH_KEY');
 
     return key?.trim() ? key.trim() : null;
   }
@@ -378,6 +421,14 @@ export class ApolloIoRestService {
           'x-rapidapi-host': this.getRapidApiHost(),
           'x-rapidapi-key': rapidApiKey,
         },
+      });
+
+      await this.rawFetchArchiveService?.archive({
+        provider: 'apollo',
+        endpoint: 'rapidapi/search_organization',
+        request: { url: url.split('?')[0], page },
+        response: data,
+        pageKey: page,
       });
 
       const normalized = this.buildRapidApiApolloOrgResponse(data);

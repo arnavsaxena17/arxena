@@ -46,6 +46,7 @@ import { exceptionHandlerModuleFactory } from 'src/engine/core-modules/exception
 import { ExtensionBridgeModule } from 'src/engine/core-modules/extension-bridge/extension-bridge.module';
 import { FeatureFlagModule } from 'src/engine/core-modules/feature-flag/feature-flag.module';
 import { FileStorageModule } from 'src/engine/core-modules/file-storage/file-storage.module';
+import { RawFetchArchiveModule } from 'src/engine/core-modules/raw-fetch-archive/raw-fetch-archive.module';
 import { GeoMapModule } from 'src/engine/core-modules/geo-map/geo-map-module';
 import { MailerModule } from 'src/engine/core-modules/gmail-sender/gmail-sender.module';
 import { GoogleDriveModule } from 'src/engine/core-modules/google-drive/google-drive.module';
@@ -195,6 +196,7 @@ import { FileModule } from './file/file.module';
       wildcard: true,
     }),
     CacheStorageModule,
+    RawFetchArchiveModule,
     AiModelsModule,
     AiEvaluationModule,
     AiBillingModule,

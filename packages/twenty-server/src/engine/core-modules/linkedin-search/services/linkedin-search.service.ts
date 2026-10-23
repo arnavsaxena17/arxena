@@ -1,4 +1,10 @@
-import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  Optional,
+  forwardRef,
+} from '@nestjs/common';
 import { ApifyLinkedInCompanyProfileTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/apify-linkedin-company-profile-transformer.service';
 import type { CandidateTableRow } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import {
@@ -49,6 +55,8 @@ import {
 } from '../utils/unipile-user-relations.util';
 import { LinkedInHtmlParserService } from './linkedin-html-parser.service';
 import { LinkedInSessionTrackerService } from './linkedin-session-tracker.service';
+import { RawFetchArchiveService } from 'src/engine/core-modules/raw-fetch-archive/raw-fetch-archive.service';
+
 import { UnipileSearchResultsCacheService } from './unipile-search-results-cache.service';
 import { UnipileV2AccountResolver } from './unipile-v2-account.resolver';
 
@@ -152,6 +160,8 @@ export class LinkedInSearchService {
     private readonly unipileV2AccountResolver: UnipileV2AccountResolver,
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
     private readonly unipileSearchResultsCache: UnipileSearchResultsCacheService,
+    @Optional()
+    private readonly rawFetchArchiveService?: RawFetchArchiveService,
   ) {
     this.baseUrl = process.env.UNIPILE_API_URL || '';
     this.apiKey = process.env.UNIPILE_ACCESS_TOKEN || '';
@@ -349,6 +359,20 @@ export class LinkedInSearchService {
     }
 
     const data: LinkedInSearchResponse = await response.json();
+
+    // Archive each page as it arrives, before the 24h Redis cache or any
+    // parsing; cursor pages share a request body, so the cursor is the key
+    await this.rawFetchArchiveService?.archive({
+      provider: 'unipile',
+      endpoint: 'linkedin-search',
+      request: {
+        url: url.replace(this.baseUrl, ''),
+        query: queryParams.toString(),
+        body: searchRequest,
+      },
+      response: data,
+      pageKey: queryParams.get('cursor'),
+    });
     this.logger.log(
       `LinkedIn search completed successfully. Found ${data.items.length} results (paging.total_count=${data.paging?.total_count ?? 'n/a'} page_count=${data.paging?.page_count ?? 'n/a'} cursor=${data.cursor ?? 'none'}).`,
     );
@@ -480,6 +504,16 @@ export class LinkedInSearchService {
     }
 
     const data: LinkedInSearchParametersList = await response.json();
+
+    await this.rawFetchArchiveService?.archive({
+      provider: 'unipile',
+      endpoint: 'linkedin-search-parameters',
+      request: {
+        url: url.replace(this.baseUrl, ''),
+        query: queryParams.toString(),
+      },
+      response: data,
+    });
     this.logger.log(
       `Retrieved ${data.items.length} LinkedIn search parameters for type: ${queryParams.get('type')}`,
     );
@@ -567,6 +601,15 @@ export class LinkedInSearchService {
 
           // Parse response - Unipile returns JSON with HTML in data field
           const responseData = await response.json();
+
+          await this.rawFetchArchiveService?.archive({
+            provider: 'unipile',
+            endpoint: 'linkedin-search-raw',
+            request: rawRequest,
+            response: responseData,
+            pageKey: options.cursor ?? null,
+          });
+
           const html = responseData.data || responseData;
 
           // Debug: log raw response for troubleshooting (length + truncated sample)
@@ -925,6 +968,14 @@ export class LinkedInSearchService {
           total_count?: number;
           next_cursor?: string | null;
         };
+
+        await this.rawFetchArchiveService?.archive({
+          provider: 'unipile',
+          endpoint: 'sales-navigator-account-list',
+          request: body,
+          response: payload,
+          pageKey: options.offset ?? null,
+        });
         const data = payload.data ?? [];
         const items = data.map((item) => ({
           ...item,

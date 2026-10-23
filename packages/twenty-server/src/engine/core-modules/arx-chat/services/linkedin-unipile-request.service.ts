@@ -60,6 +60,7 @@ import {
 } from '../utils/unipile-linkedin-snapshot.cache';
 import type { MemberLinkedinUnipileConnectionService } from './member-linkedin-unipile-connection.service';
 import type { LinkedinProfileCacheService } from './linkedin-profile-cache.service';
+import { RawFetchArchiveService } from 'src/engine/core-modules/raw-fetch-archive/raw-fetch-archive.service';
 import type { WorkspaceMemberUnipileService } from './workspace-member-unipile.service';
 
 const getMemberLinkedinUnipileConnectionService = () =>
@@ -112,6 +113,8 @@ export class LinkedinUnipileRequestService {
     @Optional()
     @Inject(forwardRef(getLinkedinProfileCacheService))
     private readonly linkedinProfileCacheService?: LinkedinProfileCacheService,
+    @Optional()
+    private readonly rawFetchArchiveService?: RawFetchArchiveService,
   ) {
     this.logger.log(`Unipile API URL: ${this.unipileApiUrl}`);
     this.logger.log(
@@ -180,6 +183,8 @@ export class LinkedinUnipileRequestService {
         invalidateUnipileAccountsListCache();
       }
 
+      await this.archiveUnipileResponse(endpoint, method, body, data);
+
       if (options?.returnStatus) {
         return { status: response.status, data };
       }
@@ -195,6 +200,36 @@ export class LinkedinUnipileRequestService {
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
+  }
+
+  // Reads and searches are the data we pay Unipile rate limits for. Account
+  // endpoints carry credentials and writes carry no fetched data, so both
+  // are left out. Every cursor page is its own call, hence its own object.
+  private async archiveUnipileResponse(
+    endpoint: string,
+    method: string,
+    body: unknown,
+    data: unknown,
+  ): Promise<void> {
+    const path = endpoint.split('?')[0];
+
+    if (path.startsWith('/api/v1/accounts')) {
+      return;
+    }
+
+    const isRead = method === 'GET';
+    const isSearch = method === 'POST' && path === '/api/v1/linkedin';
+
+    if (!isRead && !isSearch) {
+      return;
+    }
+
+    await this.rawFetchArchiveService?.archive({
+      provider: 'unipile',
+      endpoint: `${method.toLowerCase()}${path.replace(/\/api\/v1/, '')}`,
+      request: { endpoint, method, body: body ?? null },
+      response: data,
+    });
   }
 
   private async handleDisconnectedAccountApiErrorIfNeeded(

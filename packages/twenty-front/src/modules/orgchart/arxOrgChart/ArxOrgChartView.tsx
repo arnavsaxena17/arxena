@@ -3,18 +3,18 @@ import { IconChevronDown } from 'twenty-ui/icon';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 
 import {
-    OrgChartDiagram,
-    type OrgChartDiagramHandle,
-    type OrgChartDiagramProps,
-    OrgChartSearchControls,
+  OrgChartDiagram,
+  type OrgChartDiagramHandle,
+  type OrgChartDiagramProps,
+  OrgChartSearchControls,
 } from 'twenty-orgchart';
 import type { OrgChartNodeData } from 'twenty-shared/utils';
 
 import { OrgChartAddToProjectModal } from '../components/OrgChartAddToProjectModal';
 import { OrgChartCompanyDrawer } from '../components/OrgChartCompanyDrawer';
 import {
-    OrgChartHeader,
-    type OrgChartHeaderProps,
+  OrgChartHeader,
+  type OrgChartHeaderProps,
 } from '../components/OrgChartHeader';
 import { OrgChartOutreachModal } from '../components/OrgChartOutreachModal';
 import { OrgChartResultModal } from '../components/OrgChartResultModal';
@@ -25,8 +25,8 @@ import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/Drop
 import { DropdownMenuSeparator } from '@/ui/layout/dropdown/components/DropdownMenuSeparator';
 import { useCloseDropdown } from '@/ui/layout/dropdown/hooks/useCloseDropdown';
 import {
-    ConfirmationModal,
-    StyledCenteredButton,
+  ConfirmationModal,
+  StyledCenteredButton,
 } from '@/ui/layout/modal/components/ConfirmationModal';
 import { useModal } from '@/ui/layout/modal/hooks/useModal';
 
@@ -37,29 +37,29 @@ const SEARCH_CONFIRM_MODAL_ID = 'orgchart-search-confirm';
 const PREVIEW_NODE_MODAL_ID = 'orgchart-preview-node-choice';
 
 import {
-    StyledAsOfMonthPicker,
-    StyledContainer,
-    StyledDiagramArea,
-    StyledDiagramBody,
-    StyledErrorMessage,
-    StyledLeadershipBannerLink,
-    StyledLeadershipBannerPaidNote,
-    StyledLeadershipInfoBanner,
-    StyledLeadershipLoadingOverlay,
-    StyledLoadingMessage,
-    StyledPreviewBannerSignupButton,
-    StyledPreviewPersistentBanner,
-    StyledProgressBanner,
-    StyledProgressCancelRow,
-    StyledProgressElapsed,
-    StyledSearchOverlay,
-    StyledSpinner,
-    StyledTemplateBanner,
-    StyledTemplateBannerButton,
-    StyledTopRightActionButton,
-    StyledTopRightActionsCenterGroup,
-    StyledTopRightActionsOverlay,
-    StyledTopRightActionsRightGroup,
+  StyledAsOfMonthPicker,
+  StyledContainer,
+  StyledDiagramArea,
+  StyledDiagramBody,
+  StyledErrorMessage,
+  StyledLeadershipBannerLink,
+  StyledLeadershipBannerPaidNote,
+  StyledLeadershipInfoBanner,
+  StyledLeadershipLoadingOverlay,
+  StyledLoadingMessage,
+  StyledPreviewBannerSignupButton,
+  StyledPreviewPersistentBanner,
+  StyledProgressBanner,
+  StyledProgressCancelRow,
+  StyledProgressElapsed,
+  StyledSearchOverlay,
+  StyledSpinner,
+  StyledTemplateBanner,
+  StyledTemplateBannerButton,
+  StyledTopRightActionButton,
+  StyledTopRightActionsCenterGroup,
+  StyledTopRightActionsOverlay,
+  StyledTopRightActionsRightGroup,
 } from './ArxOrgChart.styles';
 
 export type ArxOrgChartViewProps = {
@@ -641,7 +641,9 @@ export const ArxOrgChartView = ({
                               : 'Off'
                           }
                           onClick={() => {
-                            searchControlsProps.onToggleMultiSource?.('harvest');
+                            searchControlsProps.onToggleMultiSource?.(
+                              'harvest',
+                            );
                           }}
                         />
                         <MenuItem
@@ -697,7 +699,7 @@ export const ArxOrgChartView = ({
                   />
                   {searchControlsProps?.onSuperImpose ? (
                     <StyledTopRightActionButton
-                      title="Super Impose"
+                      title="Advanced Mode"
                       variant="secondary"
                       accent="default"
                       size="small"

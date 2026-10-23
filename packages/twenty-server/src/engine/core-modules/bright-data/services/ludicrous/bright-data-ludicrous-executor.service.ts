@@ -170,6 +170,7 @@ export class BrightDataLudicrousExecutorService {
                 offset,
                 limit,
                 fields: plan.fields,
+                workspaceId: plan.workspaceId,
               });
 
             page = response.documents;

@@ -3566,6 +3566,7 @@ export class OrgChartLinkedInBuildService {
           body.linkedinLocationName ?? superImpose.targetLocation?.title,
         linkedinCompanyParameterId:
           body.linkedinCompanyParameterId ?? targetCompany?.id,
+        unlimited: body.unlimited === true,
       };
 
       await this.orgchartApifyQueue.add(
@@ -3582,7 +3583,7 @@ export class OrgChartLinkedInBuildService {
         event: 'status',
         data: {
           message:
-            'Super impose org chart job queued. Waiting for worker pickup…',
+            'Advanced Mode org chart job queued. Waiting for worker pickup…',
           candidateSource: 'super_impose',
         },
       });
@@ -5818,6 +5819,7 @@ export class OrgChartLinkedInBuildService {
         });
       }
 
+      const unlimited = jobData.unlimited === true;
       const fetchContext = {
         apiToken,
         primaryCompanyName: resolvedCompanyName,
@@ -5843,7 +5845,11 @@ export class OrgChartLinkedInBuildService {
           jobData.linkedinCompanyParameterId ??
           rawBody.linkedinCompanyParameterId ??
           superImpose.targetCompany?.id,
-        maxProfiles: this.orgChartSuperImposeService.getSuperImposeThreshold(),
+        requestId,
+        unlimited,
+        maxProfiles: unlimited
+          ? undefined
+          : this.orgChartSuperImposeService.getSuperImposeThreshold(),
         onProgress: async (message: string) => {
           await this.emitOrgchartSearchProgressForToken(apiToken, {
             requestId,
@@ -5866,11 +5872,27 @@ export class OrgChartLinkedInBuildService {
       const estimate =
         await this.orgChartSuperImposeService.estimateFromPlan(plan);
 
-      if (estimate.scopeRequired) {
+      if (estimate.scopeRequired && !unlimited) {
         throw new HttpException(
-          `Too many people (~${estimate.estimatedTotalUpperBound}). Select a country, function, or leadership filter before generating.`,
+          `Too many people (~${estimate.estimatedTotalUpperBound}). Select a country, function, leadership filter, or enable Unlimited mode before generating.`,
           HttpStatus.BAD_REQUEST,
         );
+      }
+
+      if (unlimited) {
+        await this.emitOrgchartSearchProgressForToken(apiToken, {
+          requestId,
+          mode,
+          searchType,
+          companyName: resolvedCompanyName,
+          event: 'status',
+          data: {
+            message: `Unlimited mode: LinkedIn reports ~${estimate.estimatedTotalUpperBound.toLocaleString()} matches. Fetching slowly in shards…`,
+            candidateSource: 'super_impose',
+            unlimited: true,
+            estimatedTotalUpperBound: estimate.estimatedTotalUpperBound,
+          },
+        });
       }
 
       const aggregated: Array<Record<string, unknown>> = [];
@@ -6054,7 +6076,7 @@ export class OrgChartLinkedInBuildService {
         companyName: resolvedCompanyName,
         event: 'complete',
         data: {
-          message: `Super impose org chart ready (${mergedResult.itemCount} people).`,
+          message: `Advanced Mode org chart ready (${mergedResult.itemCount} people).`,
           itemCount: mergedResult.itemCount,
           candidateSource: 'super_impose',
           orgChart,
@@ -6072,7 +6094,7 @@ export class OrgChartLinkedInBuildService {
           ? String(error.message)
           : error instanceof Error
             ? error.message
-            : 'Super impose org chart build failed';
+            : 'Advanced Mode org chart build failed';
 
       if (requestId) {
         await this.orgchartCancelRegistry.setFailed(requestId, message);

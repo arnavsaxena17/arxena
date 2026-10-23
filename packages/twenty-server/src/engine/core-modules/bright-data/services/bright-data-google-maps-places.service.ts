@@ -1,4 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
+
+import { RawFetchArchiveService } from 'src/engine/core-modules/raw-fetch-archive/raw-fetch-archive.service';
 
 import type {
   BrightDataGoogleMapsDiscoverByLocationInput,
@@ -21,6 +23,11 @@ const ASYNC_INPUT_LIMIT = 5_000;
 @Injectable()
 export class BrightDataGoogleMapsPlacesService {
   private readonly logger = new Logger(BrightDataGoogleMapsPlacesService.name);
+
+  constructor(
+    @Optional()
+    private readonly rawFetchArchiveService?: RawFetchArchiveService,
+  ) {}
 
   private get apiKey(): string | undefined {
     return process.env.BRIGHT_DATA_API_KEY?.trim() || undefined;
@@ -101,6 +108,24 @@ export class BrightDataGoogleMapsPlacesService {
   private async scrapeDiscoverByLocation(
     inputs: BrightDataGoogleMapsDiscoverByLocationInput[],
   ): Promise<BrightDataGoogleMapsPlaceRecord[]> {
+    const records = await this.scrapeDiscoverByLocationUnarchived(inputs);
+
+    if (records.length > 0) {
+      await this.rawFetchArchiveService?.archive({
+        provider: 'bright-data',
+        endpoint: 'google-maps-places/scrapeDiscoverByLocation',
+        request: { inputs },
+        response: records,
+        meta: { recordCount: records.length },
+      });
+    }
+
+    return records;
+  }
+
+  private async scrapeDiscoverByLocationUnarchived(
+    inputs: BrightDataGoogleMapsDiscoverByLocationInput[],
+  ): Promise<BrightDataGoogleMapsPlaceRecord[]> {
     const key = this.apiKey;
 
     if (!key) {
@@ -166,6 +191,24 @@ export class BrightDataGoogleMapsPlacesService {
   }
 
   private async triggerDiscoverByLocation(
+    inputs: BrightDataGoogleMapsDiscoverByLocationInput[],
+  ): Promise<BrightDataGoogleMapsPlaceRecord[]> {
+    const records = await this.triggerDiscoverByLocationUnarchived(inputs);
+
+    if (records.length > 0) {
+      await this.rawFetchArchiveService?.archive({
+        provider: 'bright-data',
+        endpoint: 'google-maps-places/triggerDiscoverByLocation',
+        request: { inputs },
+        response: records,
+        meta: { recordCount: records.length },
+      });
+    }
+
+    return records;
+  }
+
+  private async triggerDiscoverByLocationUnarchived(
     inputs: BrightDataGoogleMapsDiscoverByLocationInput[],
   ): Promise<BrightDataGoogleMapsPlaceRecord[]> {
     const key = this.apiKey;
