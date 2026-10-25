@@ -2239,11 +2239,12 @@ export class OrgChartController {
     }
   }
 
+  // private: URL is shared with the SPA (nginx serves index.html when Accept
+  // has text/html). public + s-maxage let CloudFront cache JSON and return it
+  // for document navigations (no Accept in CF cache key).
   @Get(':companyId/:country/:functionRoot')
-  @Header(
-    'Cache-Control',
-    'public, s-maxage=86400, max-age=60, stale-while-revalidate=86400',
-  )
+  @Header('Cache-Control', 'private, max-age=60')
+  @Header('Vary', 'Accept')
   async getOrgChartPath3(
     @Param('companyId') companyId: string,
     @Param('country') country: string,
@@ -2266,10 +2267,8 @@ export class OrgChartController {
   }
 
   @Get(':companyId/:country')
-  @Header(
-    'Cache-Control',
-    'public, s-maxage=86400, max-age=60, stale-while-revalidate=86400',
-  )
+  @Header('Cache-Control', 'private, max-age=60')
+  @Header('Vary', 'Accept')
   async getOrgChartPath2(
     @Param('companyId') companyId: string,
     @Param('country') country: string,
@@ -2297,10 +2296,8 @@ export class OrgChartController {
   }
 
   @Get(':companyId')
-  @Header(
-    'Cache-Control',
-    'public, s-maxage=86400, max-age=60, stale-while-revalidate=86400',
-  )
+  @Header('Cache-Control', 'private, max-age=60')
+  @Header('Vary', 'Accept')
   async getOrgChart(
     @Param('companyId') companyId: string,
     @Query('companyName') companyName: string | undefined,
