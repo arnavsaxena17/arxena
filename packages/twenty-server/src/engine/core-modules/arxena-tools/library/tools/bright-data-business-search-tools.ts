@@ -19,7 +19,7 @@ export const brightDataBusinessSearchTools: McpTool[] = [
       name: 'search_bright_data_business',
       title: 'Search Bright Data business',
       description:
-        'Bright Data Business Search for companies or people from a raw natural-language request. Always ludicrous (mode is ignored); billed at $0.002 per returned record (max $10 per query) and works in two steps. Step 1: call WITHOUT planId. The server plans several structured queries and samples them for a few cents, then returns planId, per-slice match counts, expected accuracy and the cost of fetching N records; nothing is fetched yet. Show these numbers to the user and ask which budget to spend. Step 2: after the user confirms, call again with planId and maxBudgetUsd (optionally targetCount, projectId). The result never contains the records, only counts and a summary; they go to the project tab and a saved dataset. Fetched records are saved server-side under the planId for 30 days: if no project was known, call again with the same planId and a projectId to write them at no charge. Pass projectId so results are written to the Outreach tab; do not upsert those rows again. Requires BRIGHT_DATA_API_KEY.',
+        'Bright Data Business Search for companies or people from a raw natural-language request. Default ludicrous; billed at $0.002 per returned record (max $10 per query) and works in two steps. Step 1: call WITHOUT planId. The server plans several structured queries and samples them for a few cents, then returns planId, per-slice match counts, expected accuracy and the cost of fetching N records; nothing is fetched yet. Show these numbers to the user and ask which budget to spend. Step 2: after the user confirms, call again with planId and maxBudgetUsd (optionally targetCount, projectId). Pass mode instant with entity company and a bare domain (e.g. stripe.com) to look up one company by website. The ludicrous result never contains the records, only counts and a summary; they go to the project tab and a saved dataset. Fetched records are saved server-side under the planId for 30 days: if no project was known, call again with the same planId and a projectId to write them at no charge. Pass projectId so results are written to the Outreach tab; do not upsert those rows again. Requires BRIGHT_DATA_API_KEY.',
       annotations: { readOnlyHint: false },
       inputSchema: {
         type: 'object',
@@ -32,7 +32,13 @@ export const brightDataBusinessSearchTools: McpTool[] = [
           query: {
             type: 'string',
             description:
-              'Raw natural-language request. Longer requests and boolean title strings are accepted. Not a LinkedIn URL.',
+              'Raw natural-language request, or for mode instant a bare domain/URL (e.g. stripe.com). Not a LinkedIn URL.',
+          },
+          mode: {
+            type: 'string',
+            enum: ['ludicrous', 'instant'],
+            description:
+              'Default ludicrous. Pass instant only for company lookup by domain (bare host, no spaces).',
           },
           limit: {
             type: 'number',
@@ -83,7 +89,10 @@ export const brightDataBusinessSearchTools: McpTool[] = [
         args.entity,
         {
           query: args.query.trim(),
-          mode: 'ludicrous',
+          mode:
+            args.mode === 'instant' && args.entity === 'company'
+              ? 'instant'
+              : 'ludicrous',
           limit: toOptionalNumber(args.limit),
           projectId: hasNonEmptyString(args.projectId)
             ? args.projectId

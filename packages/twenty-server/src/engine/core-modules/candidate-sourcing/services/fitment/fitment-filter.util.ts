@@ -94,12 +94,12 @@ export const buildFitmentPrompt = ({
       ? `The user is looking for: ${request.trim()}`
       : null,
     STAGE_TEXT[stage],
-    'Judge every criterion on its own as pass, fail or unknown:',
+    'Score every criterion on its own as pass, fail or unknown:',
     ...criteria.map(
       (criterion) =>
         `- ${criterion.key} (${criterion.mustHave ? 'must-have' : 'nice-to-have'}): ${criterion.description}`,
     ),
-    'A title, company or place the person used to hold is not current. Judge by scope as well as the label: the same title means different seniority in different industries and regions. Never turn unknown into fail.',
+    'A title, company or place the person used to hold is not current. Weigh scope as well as the label: the same title means different seniority in different industries and regions. Never turn unknown into fail.',
   ]
     .filter((line): line is string => line !== null)
     .join('\n');

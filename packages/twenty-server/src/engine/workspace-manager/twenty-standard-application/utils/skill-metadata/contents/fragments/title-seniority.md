@@ -1,4 +1,4 @@
-The same title means different seniority in different industries, firms and regions. Judge by scope (team size, reporting line, budget or P&L) as well as the label.
+The same title means different seniority in different industries, firms and regions. Weigh scope (team size, reporting line, budget or P&L) as well as the label.
 
 - **Consultant.** Management consulting: junior to mid. Executive search and hospitals: senior (a hospital consultant is a senior specialist).
 - **Director.** US corporates: senior manager, below VP. India, the UK and Europe: can mean a board director, and "Managing Director" is the top executive.

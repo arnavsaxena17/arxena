@@ -25,6 +25,32 @@ export const normalizeCompanyUrl = (value?: string | null): string => {
     .replace(/\/+$/, '');
 };
 
+export const isLinkedinHostUrl = (value?: string | null): boolean => {
+  const normalized = normalizeCompanyUrl(value);
+
+  return (
+    normalized === 'linkedin.com' || normalized.startsWith('linkedin.com/')
+  );
+};
+
+// Maps place links (and misfiled google.com/search URLs) that must not live
+// on Company.linkedinLink
+export const isGoogleMapsHostUrl = (value?: string | null): boolean => {
+  const normalized = normalizeCompanyUrl(value);
+
+  if (!normalized) {
+    return false;
+  }
+
+  return (
+    normalized === 'google.com' ||
+    normalized.startsWith('google.com/') ||
+    normalized.startsWith('maps.google.com') ||
+    normalized.startsWith('maps.app.goo.gl') ||
+    normalized.includes('goo.gl/')
+  );
+};
+
 export const extractLinkedinCompanyId = (hit: {
   id?: string | null;
   linkedinUrl?: string | null;
@@ -64,9 +90,7 @@ export const identityKeysForHit = (hit: CompanySearchHit): string[] =>
     website: hit.website,
   });
 
-export const identityKeysForRecord = (
-  row: CompanyIdentityRecord,
-): string[] =>
+export const identityKeysForRecord = (row: CompanyIdentityRecord): string[] =>
   identityKeys({
     id: (row.linkedinId ?? '').trim(),
     name: row.name ?? '',

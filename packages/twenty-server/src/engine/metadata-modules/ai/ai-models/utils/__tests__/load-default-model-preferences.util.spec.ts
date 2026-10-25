@@ -5,8 +5,10 @@ describe('DEFAULT_RECOMMENDED_MODELS', () => {
     expect(DEFAULT_RECOMMENDED_MODELS).toEqual(
       expect.arrayContaining([
         'openai/gpt-4o-mini',
-        'openrouter/deepseek/deepseek-v4-flash-0731',
         'openrouter/deepseek/deepseek-v4.1-flash',
+        'openrouter/deepseek/deepseek-v4.1-flash-1017',
+        'openrouter/deepseek/deepseek-v4-flash-vision-exp',
+        'openrouter/deepseek/deepseek-v4-flash-0731',
       ]),
     );
   });

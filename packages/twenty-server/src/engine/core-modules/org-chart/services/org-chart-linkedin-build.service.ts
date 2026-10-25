@@ -194,6 +194,47 @@ export class OrgChartLinkedInBuildService {
     private readonly orgchartApifyQueue: MessageQueueService,
   ) {}
 
+  // User JWTs expire in ~30m; unlimited super-impose can run for hours.
+  // Mint a workspace API key for the job and keep workspaceMemberId separately.
+  private async resolveOrgChartJobAuth(userApiToken: string): Promise<{
+    apiToken: string;
+    workspaceId: string;
+    workspaceMemberId?: string;
+  }> {
+    const authContext =
+      await this.workspaceQueryService.accessTokenService.validateToken(
+        userApiToken,
+      );
+    const workspaceId = authContext.workspace.id;
+    const workspaceMemberId = authContext.workspaceMemberId;
+
+    let apiToken = userApiToken;
+
+    try {
+      const apiKey =
+        await this.workspaceQueryService.apiKeyService.ensureWorkspaceApiKey(
+          workspaceId,
+        );
+      const minted =
+        await this.workspaceQueryService.apiKeyService.generateApiKeyToken(
+          workspaceId,
+          apiKey.id,
+        );
+
+      if (minted?.token) {
+        apiToken = minted.token;
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Could not mint workspace API key for org chart job (workspace=${workspaceId}); using user token: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+
+    return { apiToken, workspaceId, workspaceMemberId };
+  }
+
   async rebuildOrgChartUsingSavedPeople(input: {
     apiToken: string;
     companyId?: string;
@@ -582,6 +623,7 @@ export class OrgChartLinkedInBuildService {
 
   private async emitMergedPartialOrgChart(args: {
     apiToken: string;
+    workspaceMemberId?: string;
     requestId?: string;
     mode: OrgchartSearchMode;
     searchType: OrgchartSearchType;
@@ -618,17 +660,21 @@ export class OrgChartLinkedInBuildService {
       dedupedItemCount: deduped.length,
     });
 
-    await this.emitOrgchartSearchProgressForToken(args.apiToken, {
-      requestId,
-      mode: args.mode,
-      searchType: args.searchType,
-      companyName: args.resolvedCompanyName,
-      event: 'status',
-      data: {
-        message: args.message,
-        candidateSource: args.candidateSourceLabel,
+    await this.emitOrgchartSearchProgressForToken(
+      args.apiToken,
+      {
+        requestId,
+        mode: args.mode,
+        searchType: args.searchType,
+        companyName: args.resolvedCompanyName,
+        event: 'status',
+        data: {
+          message: args.message,
+          candidateSource: args.candidateSourceLabel,
+        },
       },
-    });
+      args.workspaceMemberId,
+    );
 
     try {
       const orgChart =
@@ -658,19 +704,23 @@ export class OrgChartLinkedInBuildService {
         ),
       ]);
 
-      await this.emitOrgchartSearchProgressForToken(args.apiToken, {
-        requestId,
-        mode: args.mode,
-        searchType: args.searchType,
-        companyName: args.resolvedCompanyName,
-        event: 'partialOrgChart',
-        data: {
-          orgChart,
-          itemCountSoFar: deduped.length,
-          dedupedCountSoFar: deduped.length,
-          candidateSource: args.candidateSourceLabel,
+      await this.emitOrgchartSearchProgressForToken(
+        args.apiToken,
+        {
+          requestId,
+          mode: args.mode,
+          searchType: args.searchType,
+          companyName: args.resolvedCompanyName,
+          event: 'partialOrgChart',
+          data: {
+            orgChart,
+            itemCountSoFar: deduped.length,
+            dedupedCountSoFar: deduped.length,
+            candidateSource: args.candidateSourceLabel,
+          },
         },
-      });
+        args.workspaceMemberId,
+      );
     } catch {
       // Best-effort.
     }
@@ -1782,6 +1832,7 @@ export class OrgChartLinkedInBuildService {
     companyId: string | undefined,
     resolvedCompanyName: string,
     s3Variant?: string,
+    workspaceMemberIdOverride?: string,
   ): Promise<{
     companyName?: string;
     companyId?: string;
@@ -1797,11 +1848,13 @@ export class OrgChartLinkedInBuildService {
         persistKey,
         s3Variant,
       );
-    const workspaceMemberId = apiToken
-      ? ((await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
-          apiToken,
-        )) ?? undefined)
-      : undefined;
+    const workspaceMemberId =
+      workspaceMemberIdOverride ??
+      (apiToken
+        ? ((await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
+            apiToken,
+          )) ?? undefined)
+        : undefined);
 
     return {
       companyName: resolvedCompanyName,
@@ -3056,6 +3109,8 @@ export class OrgChartLinkedInBuildService {
 
   private async buildOrgChartAfterLinkedInSearch(args: {
     apiToken: string;
+    workspaceId?: string;
+    workspaceMemberId?: string;
     body: SearchOrgchartLinkedInBody;
     mode: OrgchartSearchMode;
     resolvedCompanyName: string;
@@ -3070,6 +3125,8 @@ export class OrgChartLinkedInBuildService {
   }): Promise<{ orgChart: OrgChartData | undefined; orgChartError?: string }> {
     const {
       apiToken,
+      workspaceId: workspaceIdOverride,
+      workspaceMemberId: workspaceMemberIdOverride,
       body,
       mode,
       resolvedCompanyName,
@@ -3130,14 +3187,18 @@ export class OrgChartLinkedInBuildService {
             : 'Failed to build organization chart after people search.';
 
         orgChartError = buildFailureMessage;
-        await this.emitOrgchartSearchProgressForToken(apiToken, {
-          requestId,
-          mode,
-          searchType,
-          companyName: resolvedCompanyName,
-          event: 'error',
-          data: { message: buildFailureMessage },
-        });
+        await this.emitOrgchartSearchProgressForToken(
+          apiToken,
+          {
+            requestId,
+            mode,
+            searchType,
+            companyName: resolvedCompanyName,
+            event: 'error',
+            data: { message: buildFailureMessage },
+          },
+          workspaceMemberIdOverride,
+        );
       }
       const shouldCacheBuiltOrgChartFromLinkedIn =
         orgChart &&
@@ -3151,7 +3212,8 @@ export class OrgChartLinkedInBuildService {
 
       if (process.env.IS_BILLING_ENABLED === 'true' && apiToken) {
         const workspaceId =
-          await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+          workspaceIdOverride ??
+          (await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken));
         const hasSufficient =
           await this.workspaceCreditsService.hasSufficientOrgChartCredits(
             workspaceId,
@@ -3197,6 +3259,8 @@ export class OrgChartLinkedInBuildService {
           apiToken,
           companyId,
           resolvedCompanyName,
+          undefined,
+          workspaceMemberIdOverride,
         );
 
         await this.workspaceCreditsService.debitOrgChartCredits(
@@ -3243,6 +3307,8 @@ export class OrgChartLinkedInBuildService {
           apiToken,
           companyId,
           resolvedCompanyName,
+          undefined,
+          workspaceMemberIdOverride,
         );
 
         const functionGradeMeta = (
@@ -3253,6 +3319,7 @@ export class OrgChartLinkedInBuildService {
 
         await this.orgChartRecordWorkspaceService.tryPersistOrgChartRecord({
           apiToken,
+          workspaceMemberId: workspaceMemberIdOverride,
           mode,
           searchType,
           resolvedCompanyName,
@@ -3268,11 +3335,16 @@ export class OrgChartLinkedInBuildService {
 
         if (process.env.IS_BILLING_ENABLED !== 'true' && apiToken) {
           const workspaceIdForGrant =
-            await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+            workspaceIdOverride ??
+            (await this.workspaceQueryService.getWorkspaceIdFromToken(
+              apiToken,
+            ));
           const creditMetaGrant = await this.buildOrgChartCreditMetadata(
             apiToken,
             companyId,
             resolvedCompanyName,
+            undefined,
+            workspaceMemberIdOverride,
           );
 
           if (workspaceIdForGrant && creditMetaGrant.workspaceMemberId) {
@@ -3341,14 +3413,18 @@ export class OrgChartLinkedInBuildService {
             : 'Failed to build organization chart for this function.';
 
         orgChartError = buildFailureMessage;
-        await this.emitOrgchartSearchProgressForToken(apiToken, {
-          requestId,
-          mode,
-          searchType,
-          companyName: resolvedCompanyName,
-          event: 'error',
-          data: { message: buildFailureMessage },
-        });
+        await this.emitOrgchartSearchProgressForToken(
+          apiToken,
+          {
+            requestId,
+            mode,
+            searchType,
+            companyName: resolvedCompanyName,
+            event: 'error',
+            data: { message: buildFailureMessage },
+          },
+          workspaceMemberIdOverride,
+        );
       }
 
       if (
@@ -3384,10 +3460,13 @@ export class OrgChartLinkedInBuildService {
           apiToken,
           companyId,
           resolvedCompanyName,
+          undefined,
+          workspaceMemberIdOverride,
         );
 
         await this.orgChartRecordWorkspaceService.tryPersistOrgChartRecord({
           apiToken,
+          workspaceMemberId: workspaceMemberIdOverride,
           mode,
           searchType,
           resolvedCompanyName,
@@ -3403,7 +3482,10 @@ export class OrgChartLinkedInBuildService {
 
         if (process.env.IS_BILLING_ENABLED !== 'true' && apiToken) {
           const workspaceIdForGrant =
-            await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+            workspaceIdOverride ??
+            (await this.workspaceQueryService.getWorkspaceIdFromToken(
+              apiToken,
+            ));
 
           if (workspaceIdForGrant && creditMetaForRow.workspaceMemberId) {
             await this.creditTransactionService.recordOrgChartAccessGrant({
@@ -3546,8 +3628,11 @@ export class OrgChartLinkedInBuildService {
         });
       }
 
+      const jobAuth = await this.resolveOrgChartJobAuth(apiToken);
       const jobData: OrgchartSuperImposeBuildJobData = {
-        apiToken,
+        apiToken: jobAuth.apiToken,
+        workspaceId: jobAuth.workspaceId,
+        workspaceMemberId: jobAuth.workspaceMemberId,
         requestId,
         body: body as unknown as Record<string, unknown>,
         canonicalCompanyLinkedinUrl: effectiveLinkedinUrl,
@@ -5770,6 +5855,8 @@ export class OrgChartLinkedInBuildService {
   ): Promise<void> {
     const {
       apiToken,
+      workspaceId,
+      workspaceMemberId,
       requestId,
       mode,
       searchType,
@@ -5788,6 +5875,7 @@ export class OrgChartLinkedInBuildService {
         companyName: resolvedCompanyName,
         candidateSource: 'super_impose',
         logLabel: 'Super impose org chart job',
+        workspaceMemberId,
       })
     ) {
       return;
@@ -5810,17 +5898,21 @@ export class OrgChartLinkedInBuildService {
         });
 
       if (errors.length > 0) {
-        await this.emitOrgchartSearchProgressForToken(apiToken, {
-          requestId,
-          mode,
-          searchType,
-          companyName: resolvedCompanyName,
-          event: 'status',
-          data: {
-            message: `Input warnings: ${errors.join('; ')}`,
-            candidateSource: 'super_impose',
+        await this.emitOrgchartSearchProgressForToken(
+          apiToken,
+          {
+            requestId,
+            mode,
+            searchType,
+            companyName: resolvedCompanyName,
+            event: 'status',
+            data: {
+              message: `Input warnings: ${errors.join('; ')}`,
+              candidateSource: 'super_impose',
+            },
           },
-        });
+          workspaceMemberId,
+        );
       }
 
       const unlimited = jobData.unlimited === true;
@@ -5859,14 +5951,18 @@ export class OrgChartLinkedInBuildService {
           ? undefined
           : this.orgChartSuperImposeService.getSuperImposeThreshold(),
         onProgress: async (message: string) => {
-          await this.emitOrgchartSearchProgressForToken(apiToken, {
-            requestId,
-            mode,
-            searchType,
-            companyName: resolvedCompanyName,
-            event: 'status',
-            data: { message, candidateSource: 'super_impose' },
-          });
+          await this.emitOrgchartSearchProgressForToken(
+            apiToken,
+            {
+              requestId,
+              mode,
+              searchType,
+              companyName: resolvedCompanyName,
+              event: 'status',
+              data: { message, candidateSource: 'super_impose' },
+            },
+            workspaceMemberId,
+          );
         },
       };
 
@@ -5888,19 +5984,23 @@ export class OrgChartLinkedInBuildService {
       }
 
       if (unlimited) {
-        await this.emitOrgchartSearchProgressForToken(apiToken, {
-          requestId,
-          mode,
-          searchType,
-          companyName: resolvedCompanyName,
-          event: 'status',
-          data: {
-            message: `Unlimited mode: LinkedIn reports ~${estimate.estimatedTotalUpperBound.toLocaleString()} matches. Fetching slowly in shards…`,
-            candidateSource: 'super_impose',
-            unlimited: true,
-            estimatedTotalUpperBound: estimate.estimatedTotalUpperBound,
+        await this.emitOrgchartSearchProgressForToken(
+          apiToken,
+          {
+            requestId,
+            mode,
+            searchType,
+            companyName: resolvedCompanyName,
+            event: 'status',
+            data: {
+              message: `Unlimited mode: LinkedIn reports ~${estimate.estimatedTotalUpperBound.toLocaleString()} matches. Fetching slowly in shards…`,
+              candidateSource: 'super_impose',
+              unlimited: true,
+              estimatedTotalUpperBound: estimate.estimatedTotalUpperBound,
+            },
           },
-        });
+          workspaceMemberId,
+        );
       }
 
       const aggregated: Array<Record<string, unknown>> = [];
@@ -5914,6 +6014,7 @@ export class OrgChartLinkedInBuildService {
         aggregated.push(...next);
         await this.emitMergedPartialOrgChart({
           apiToken,
+          workspaceMemberId,
           requestId,
           mode: plan.mode,
           searchType: plan.searchType,
@@ -5986,6 +6087,8 @@ export class OrgChartLinkedInBuildService {
       const { orgChart, orgChartError } =
         await this.buildOrgChartAfterLinkedInSearch({
           apiToken,
+          workspaceId,
+          workspaceMemberId,
           body: {
             ...rawBody,
             mode: modeForOrgChartBuild,
@@ -6008,14 +6111,18 @@ export class OrgChartLinkedInBuildService {
         if (requestId) {
           await this.orgchartCancelRegistry.setFailed(requestId, orgChartError);
         }
-        await this.emitOrgchartSearchProgressForToken(apiToken, {
-          requestId,
-          mode,
-          searchType,
-          companyName: resolvedCompanyName,
-          event: 'error',
-          data: { message: orgChartError, candidateSource: 'super_impose' },
-        });
+        await this.emitOrgchartSearchProgressForToken(
+          apiToken,
+          {
+            requestId,
+            mode,
+            searchType,
+            companyName: resolvedCompanyName,
+            event: 'error',
+            data: { message: orgChartError, candidateSource: 'super_impose' },
+          },
+          workspaceMemberId,
+        );
 
         return;
       }
@@ -6077,25 +6184,29 @@ export class OrgChartLinkedInBuildService {
         await this.orgchartCancelRegistry.setCompleted(requestId);
       }
 
-      await this.emitOrgchartSearchProgressForToken(apiToken, {
-        requestId,
-        mode,
-        searchType,
-        companyName: resolvedCompanyName,
-        event: 'complete',
-        data: {
-          message: `Advanced Mode org chart ready (${mergedResult.itemCount} people).`,
-          itemCount: mergedResult.itemCount,
-          candidateSource: 'super_impose',
-          orgChart,
-          items: mergedResult.items,
-          superImposeSummary: {
-            companiesFetched: resolvedCompanies.length,
-            salesNavUrlsFetched: salesNavigatorSearchUrls.length,
-            duplicatesRemoved,
+      await this.emitOrgchartSearchProgressForToken(
+        apiToken,
+        {
+          requestId,
+          mode,
+          searchType,
+          companyName: resolvedCompanyName,
+          event: 'complete',
+          data: {
+            message: `Advanced Mode org chart ready (${mergedResult.itemCount} people).`,
+            itemCount: mergedResult.itemCount,
+            candidateSource: 'super_impose',
+            orgChart,
+            items: mergedResult.items,
+            superImposeSummary: {
+              companiesFetched: resolvedCompanies.length,
+              salesNavUrlsFetched: salesNavigatorSearchUrls.length,
+              duplicatesRemoved,
+            },
           },
         },
-      });
+        workspaceMemberId,
+      );
     } catch (error) {
       const message =
         error instanceof HttpException
@@ -6108,14 +6219,18 @@ export class OrgChartLinkedInBuildService {
         await this.orgchartCancelRegistry.setFailed(requestId, message);
       }
 
-      await this.emitOrgchartSearchProgressForToken(apiToken, {
-        requestId,
-        mode,
-        searchType,
-        companyName: resolvedCompanyName,
-        event: 'error',
-        data: { message, candidateSource: 'super_impose' },
-      });
+      await this.emitOrgchartSearchProgressForToken(
+        apiToken,
+        {
+          requestId,
+          mode,
+          searchType,
+          companyName: resolvedCompanyName,
+          event: 'error',
+          data: { message, candidateSource: 'super_impose' },
+        },
+        workspaceMemberId,
+      );
     }
   }
 
@@ -6163,6 +6278,7 @@ export class OrgChartLinkedInBuildService {
    */
   private async abortOrgChartJobIfCancelled(args: {
     apiToken: string;
+    workspaceMemberId?: string;
     requestId: string | undefined;
     mode: OrgchartSearchMode;
     searchType: OrgchartSearchType;
@@ -6182,19 +6298,23 @@ export class OrgChartLinkedInBuildService {
       `${args.logLabel} skipped (cancelled) requestId=${args.requestId}`,
     );
 
-    await this.emitOrgchartSearchProgressForToken(args.apiToken, {
-      requestId: args.requestId,
-      mode: args.mode,
-      searchType: args.searchType,
-      companyName: args.companyName,
-      event: 'error',
-      data: {
-        message: 'Org chart search was cancelled.',
-        ...(args.candidateSource
-          ? { candidateSource: args.candidateSource }
-          : {}),
+    await this.emitOrgchartSearchProgressForToken(
+      args.apiToken,
+      {
+        requestId: args.requestId,
+        mode: args.mode,
+        searchType: args.searchType,
+        companyName: args.companyName,
+        event: 'error',
+        data: {
+          message: 'Org chart search was cancelled.',
+          ...(args.candidateSource
+            ? { candidateSource: args.candidateSource }
+            : {}),
+        },
       },
-    });
+      args.workspaceMemberId,
+    );
 
     return true;
   }
@@ -6209,13 +6329,18 @@ export class OrgChartLinkedInBuildService {
       event: string;
       data: Record<string, unknown>;
     },
+    workspaceMemberIdOverride?: string,
   ): Promise<void> {
     try {
-      const authContext =
-        await this.workspaceQueryService.accessTokenService.validateToken(
-          apiToken,
-        );
-      const workspaceMemberId = authContext.workspaceMemberId;
+      let workspaceMemberId = workspaceMemberIdOverride;
+
+      if (!workspaceMemberId) {
+        const authContext =
+          await this.workspaceQueryService.accessTokenService.validateToken(
+            apiToken,
+          );
+        workspaceMemberId = authContext.workspaceMemberId;
+      }
 
       if (!workspaceMemberId) {
         return;

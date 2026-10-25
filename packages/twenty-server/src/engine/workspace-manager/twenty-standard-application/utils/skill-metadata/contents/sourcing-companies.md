@@ -13,10 +13,10 @@
 | **Exa** | `app_exa_web_search` (preloaded) or `exa_web_search` | Web/AI search for hard-to-find or new companies; `category: "company"` | `EXA_API_KEY` set |
 <!-- search-exa-companies-provider-row:end -->
 <!-- search-bright-data-companies-provider-row:start -->
-| **Bright Data** | `search_bright_data_business` (`entity: "company"`) | Plain-language company sets ("apparel brands in India with more than 50 stores"), budgeted ludicrous mode by default ($0.002/record), not a pasted LinkedIn URL or a taxonomy filter | `BRIGHT_DATA_API_KEY` set |
+| **Bright Data** | `search_bright_data_business` (`entity: "company"`) | Plain-language company sets (ludicrous, $0.002/record); **or** look up one company by domain with `mode: "instant"` and a bare host (`stripe.com`) — see domain recipe in the Bright Data companies source | `BRIGHT_DATA_API_KEY` set |
 <!-- search-bright-data-companies-provider-row:end -->
 <!-- search-wikidata-companies-provider-row:start -->
-| **Wikidata** | `search_wikidata_companies` | Enrich a known domain/URL with structured facts (HQ, industry, employees, CEO) | Public Wikidata API (no key) |
+| **Wikidata** | `search_wikidata_companies` | Fallback facts for a known domain/URL when Bright Data instant domain lookup returns nothing (HQ, industry, employees, CEO) | Public Wikidata API (no key) |
 <!-- search-wikidata-companies-provider-row:end -->
 <!-- search-companies-index-provider-row:start -->
 | **Internal index** | `search_companies_index` | Free-text company search across ES indices | Elasticsearch index |
@@ -90,4 +90,4 @@ Bright Data Google Maps PAYG is about $1.50 per 1,000 records. Budget on gross d
 ### Companies constraints
 
 - On Outreach Companies tab, a Find must write the tab before ending: `search_bright_data_business` with `projectId`, or `outreach_list` `attach`, or `upsert_outreach_target_companies`. Do not end on a chat-only list.
-- Present results with name, domain, industry, location, size, and source so the user can judge quality.
+- Present results with name, domain, industry, location, size, and source so the user can assess quality.

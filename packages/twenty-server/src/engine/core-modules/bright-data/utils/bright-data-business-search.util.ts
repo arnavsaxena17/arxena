@@ -119,13 +119,49 @@ const websiteHost = (website: string): string => {
       ? website
       : `https://${website}`;
 
-    return new URL(withProtocol).hostname.replace(/^www\./, '');
+    return new URL(withProtocol).hostname.replace(/^www\./, '').toLowerCase();
   } catch {
     return website
       .replace(/^https?:\/\//i, '')
       .replace(/^www\./, '')
-      .split('/')[0];
+      .split('/')[0]
+      .toLowerCase();
   }
+};
+
+// Bare host or URL with no spaces, e.g. stripe.com or https://www.stripe.com/about
+export const parseBrightDataDomainLookupQuery = (
+  query: string,
+): string | null => {
+  const trimmed = query.trim();
+
+  if (!trimmed || /\s/.test(trimmed)) {
+    return null;
+  }
+
+  const host = websiteHost(trimmed);
+
+  if (!host.includes('.') || host.startsWith('.') || host.endsWith('.')) {
+    return null;
+  }
+
+  return host;
+};
+
+// Instant NL search ranks by tokens, so "stripe.com" also returns Stripes etc.
+export const filterBrightDataDocumentsByDomain = (
+  documents: BrightDataBusinessSearchDocument[],
+  domainHost: string,
+): BrightDataBusinessSearchDocument[] => {
+  const want = domainHost.replace(/^www\./, '').toLowerCase();
+
+  return documents.filter((document) => {
+    const website =
+      readString(document.data, 'website') ||
+      readString(document.data, 'domain');
+
+    return websiteHost(website) === want;
+  });
 };
 
 export const mapBrightDataCompanyToSearchHit = (

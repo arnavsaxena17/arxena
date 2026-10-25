@@ -131,9 +131,9 @@ describe('sourcing skill section sizes', () => {
   // has its own budget and must stay far cheaper than the whole skill
   it.each([
     [['people'], 5_400],
-    [['companies'], 5_700],
+    [['companies'], 5_900],
     [['people-by-company'], 3_900],
-    [['playbook-judged-list'], 4_300],
+    [['playbook-scored-list'], 4_400],
     [['playbook-company-first'], 4_700],
   ])('should keep the bundle for %j under %i tokens', (sections, budget) => {
     expect(tokens(sections)).toBeLessThanOrEqual(budget);

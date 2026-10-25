@@ -9,12 +9,12 @@ export const SearchBrightDataBusinessToolInputZodSchema = z.object({
     .optional()
     .default('ludicrous')
     .describe(
-      'Always ludicrous (any value is ignored): plans structured sharded queries from your raw request and bills $0.002 per record. smart and instant exist only for internal callers and reach just the first 100 rows',
+      'Default ludicrous: plans structured sharded queries and bills $0.002 per record. Pass instant only for company lookup by domain (bare host or URL, no spaces); the tool filters to that website host. smart is ignored',
     ),
   query: z
     .string()
     .describe(
-      'Raw natural-language request. For smart/instant it is passed to Bright Data (max 200 characters); for ludicrous it is planned into several structured queries and may be longer',
+      'Raw natural-language request, or for mode instant a bare domain/URL (e.g. stripe.com). Ludicrous may be longer; instant max 200 characters',
     ),
   limit: z.number().min(1).max(1000).optional(),
   offset: z.number().min(0).optional(),

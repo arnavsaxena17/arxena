@@ -6,6 +6,8 @@ export type CompanySearchHit = {
   name: string;
   website: string;
   linkedinUrl: string;
+  // Google Maps place URL from local-business discover — not a LinkedIn URL
+  googleMapsUrl?: string;
   industry: string;
   country?: string;
   region?: string;

@@ -10,14 +10,12 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
   {
     name: 'read_agent_notes',
     label: 'Read Agent Notes',
-    description:
-      'Read Agent Notes.',
+    description: 'Read Agent Notes.',
   },
   {
     name: 'append_agent_note',
     label: 'Append Agent Note',
-    description:
-      'Append Agent Note.',
+    description: 'Append Agent Note.',
   },
   {
     name: 'send_chat',
@@ -27,26 +25,22 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
   {
     name: 'get_all_messages_by_candidate_id',
     label: 'Get All Messages By Candidate Id',
-    description:
-      'Get All Messages By Candidate Id.',
+    description: 'Get All Messages By Candidate Id.',
   },
   {
     name: 'share_jd_to_candidate',
     label: 'Share Jd To Candidate',
-    description:
-      'Share Jd To Candidate.',
+    description: 'Share Jd To Candidate.',
   },
   {
     name: 'upload_jd',
     label: 'Upload Jd',
-    description:
-      'Upload Jd.',
+    description: 'Upload Jd.',
   },
   {
     name: 'send_bulk_chats_by_candidate_ids',
     label: 'Send Bulk Chats By Candidate Ids',
-    description:
-      'Send Bulk Chats By Candidate Ids.',
+    description: 'Send Bulk Chats By Candidate Ids.',
   },
   {
     name: 'search_apollo_people',
@@ -57,116 +51,97 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
   {
     name: 'search_apollo_companies',
     label: 'Search Apollo Companies',
-    description:
-      'Search Apollo Companies.',
+    description: 'Search Apollo Companies.',
   },
   {
     name: 'parse_job_description',
     label: 'Parse Job Description',
-    description:
-      'Parse Job Description.',
+    description: 'Parse Job Description.',
   },
   {
     name: 'job_brief_understanding',
     label: 'Job Brief Understanding',
-    description:
-      'Job Brief Understanding.',
+    description: 'Job Brief Understanding.',
   },
   {
     name: 'expand_companies',
     label: 'Expand Companies',
-    description:
-      'Expand Companies.',
+    description: 'Expand Companies.',
   },
   {
     name: 'expand_job_titles',
     label: 'Expand Job Titles',
-    description:
-      'Expand Job Titles.',
+    description: 'Expand Job Titles.',
   },
   {
     name: 'list_candidates_for_project',
     label: 'List Candidates For Project',
-    description:
-      'List Candidates For Project.',
+    description: 'List Candidates For Project.',
   },
   {
     name: 'find_candidate_in_arxena_internal',
     label: 'Find Candidate In Arxena Internal',
-    description:
-      'Find Candidate In Arxena Internal.',
+    description: 'Find Candidate In Arxena Internal.',
   },
   {
     name: 'get_candidate_details_in_arxena_internal',
     label: 'Get Candidate Details In Arxena Internal',
-    description:
-      'Get Candidate Details In Arxena Internal.',
+    description: 'Get Candidate Details In Arxena Internal.',
   },
   {
     name: 'create_candidate',
     label: 'Create Candidate',
-    description:
-      'Create Candidate.',
+    description: 'Create Candidate.',
   },
   {
     name: 'update_candidate_status',
     label: 'Update Candidate Status',
-    description:
-      'Update Candidate Status.',
+    description: 'Update Candidate Status.',
   },
   {
     name: 'update_candidate_phone',
     label: 'Update Candidate Phone',
-    description:
-      'Update Candidate Phone.',
+    description: 'Update Candidate Phone.',
   },
   {
     name: 'update_candidate_salary',
     label: 'Update Candidate Salary',
-    description:
-      'Update Candidate Salary.',
+    description: 'Update Candidate Salary.',
   },
   {
     name: 'update_candidate_remarks',
     label: 'Update Candidate Remarks',
-    description:
-      'Update Candidate Remarks.',
+    description: 'Update Candidate Remarks.',
   },
   {
     name: 'get_candidates_by_project_id',
     label: 'Get Candidates By Project Id',
-    description:
-      'Get Candidates By Project Id.',
+    description: 'Get Candidates By Project Id.',
   },
   {
     name: 'upload_profiles',
     label: 'Upload Profiles',
-    description:
-      'Upload Profiles.',
+    description: 'Upload Profiles.',
   },
   {
     name: 'post_candidates',
     label: 'Post Candidates',
-    description:
-      'Post Candidates.',
+    description: 'Post Candidates.',
   },
   {
     name: 'refresh_table_data',
     label: 'Refresh Table Data',
-    description:
-      'Refresh Table Data.',
+    description: 'Refresh Table Data.',
   },
   {
     name: 'process_ai_filters',
     label: 'Process Ai Filters',
-    description:
-      'Process Ai Filters.',
+    description: 'Process Ai Filters.',
   },
   {
     name: 'process_filter_description',
     label: 'Process Filter Description',
-    description:
-      'Process Filter Description.',
+    description: 'Process Filter Description.',
   },
   // {
   //   name: 'list_companies',
@@ -201,14 +176,12 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
   {
     name: 'search_people_index',
     label: 'Search People Index',
-    description:
-      'Search People Index.',
+    description: 'Search People Index.',
   },
   {
     name: 'search_companies_index',
     label: 'Search Companies Index',
-    description:
-      'Search Companies Index.',
+    description: 'Search Companies Index.',
   },
   {
     name: 'resolve_company_from_raw_name',
@@ -225,8 +198,7 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
   {
     name: 'get_elasticsearch_index_status',
     label: 'Get Elasticsearch Index Status',
-    description:
-      'Get Elasticsearch Index Status.',
+    description: 'Get Elasticsearch Index Status.',
   },
   {
     name: 'search_linkedin_people',
@@ -237,32 +209,27 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
   {
     name: 'search_linkedin_companies',
     label: 'Search Linkedin Companies',
-    description:
-      'Search Linkedin Companies.',
+    description: 'Search Linkedin Companies.',
   },
   {
     name: 'search_linkedin_jobs',
     label: 'Search Linkedin Jobs',
-    description:
-      'Search Linkedin Jobs.',
+    description: 'Search Linkedin Jobs.',
   },
   {
     name: 'search_linkedin_posts',
     label: 'Search Linkedin Posts',
-    description:
-      'Search Linkedin Posts.',
+    description: 'Search Linkedin Posts.',
   },
   {
     name: 'search_linkedin_from_url',
     label: 'Search Linkedin From Url',
-    description:
-      'Search Linkedin From Url.',
+    description: 'Search Linkedin From Url.',
   },
   {
     name: 'search_linkedin_continue',
     label: 'Search Linkedin Continue',
-    description:
-      'Search Linkedin Continue.',
+    description: 'Search Linkedin Continue.',
   },
   {
     name: 'list_linkedin_relations',
@@ -339,20 +306,17 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
   {
     name: 'generate_linkedin_query_set',
     label: 'Generate Linkedin Query Set',
-    description:
-      'Generate Linkedin Query Set.',
+    description: 'Generate Linkedin Query Set.',
   },
   {
     name: 'generate_linkedin_query_batch',
     label: 'Generate Linkedin Query Batch',
-    description:
-      'Generate Linkedin Query Batch.',
+    description: 'Generate Linkedin Query Batch.',
   },
   {
     name: 'validate_linkedin_query_set',
     label: 'Validate Linkedin Query Set',
-    description:
-      'Validate Linkedin Query Set.',
+    description: 'Validate Linkedin Query Set.',
   },
   {
     name: 'check_contact_availability',
@@ -363,8 +327,7 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
   {
     name: 'check_contact_availability_from_arxena',
     label: 'Check Contact Availability From Arxena',
-    description:
-      'Check Contact Availability From Arxena.',
+    description: 'Check Contact Availability From Arxena.',
   },
   // {
   //   name: 'check_contact_availability_from_pdl',
@@ -375,20 +338,17 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
   {
     name: 'check_contact_availability_from_contactout',
     label: 'Check Contact Availability From Contactout',
-    description:
-      'Check Contact Availability From Contactout.',
+    description: 'Check Contact Availability From Contactout.',
   },
   {
     name: 'check_contact_availability_from_lusha',
     label: 'Check Contact Availability From Lusha',
-    description:
-      'Check Contact Availability From Lusha.',
+    description: 'Check Contact Availability From Lusha.',
   },
   {
     name: 'check_contact_availability_from_apollo',
     label: 'Check Contact Availability From Apollo',
-    description:
-      'Check Contact Availability From Apollo.',
+    description: 'Check Contact Availability From Apollo.',
   },
   {
     name: 'fetch_contacts',
@@ -411,8 +371,7 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
   {
     name: 'fetch_contacts_from_arxena',
     label: 'Fetch Contacts From Arxena',
-    description:
-      'Fetch Contacts From Arxena.',
+    description: 'Fetch Contacts From Arxena.',
   },
   // {
   //   name: 'fetch_contacts_from_pdl',
@@ -423,26 +382,22 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
   {
     name: 'fetch_contacts_from_contactout',
     label: 'Fetch Contacts From Contactout',
-    description:
-      'Fetch Contacts From Contactout.',
+    description: 'Fetch Contacts From Contactout.',
   },
   {
     name: 'fetch_contacts_from_lusha',
     label: 'Fetch Contacts From Lusha',
-    description:
-      'Fetch Contacts From Lusha.',
+    description: 'Fetch Contacts From Lusha.',
   },
   {
     name: 'fetch_contacts_from_apollo',
     label: 'Fetch Contacts From Apollo',
-    description:
-      'Fetch Contacts From Apollo.',
+    description: 'Fetch Contacts From Apollo.',
   },
   {
     name: 'get_contact_enrichment_job',
     label: 'Get Contact Enrichment Job',
-    description:
-      'Get Contact Enrichment Job.',
+    description: 'Get Contact Enrichment Job.',
   },
   {
     name: 'list_org_chart_positions',
@@ -459,14 +414,12 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
   {
     name: 'search_org_charts_by_country',
     label: 'Search Org Charts By Country',
-    description:
-      'Search Org Charts By Country.',
+    description: 'Search Org Charts By Country.',
   },
   {
     name: 'search_org_charts_by_function',
     label: 'Search Org Charts By Function',
-    description:
-      'Search Org Charts By Function.',
+    description: 'Search Org Charts By Function.',
   },
   {
     name: 'get_org_chart_node_people',
@@ -483,8 +436,7 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
   {
     name: 'get_pending_recruiter_actions',
     label: 'Get Pending Recruiter Actions',
-    description:
-      'Get Pending Recruiter Actions.',
+    description: 'Get Pending Recruiter Actions.',
   },
   {
     name: 'search_people_by_job_title',
@@ -502,7 +454,7 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
     name: 'search_bright_data_business',
     label: 'Search Bright Data Business',
     description:
-      'Bright Data Business Search for companies or people from a raw natural-language request. Always ludicrous (any mode is ignored): first call returns a budget (planId, match counts per slice, expected accuracy, cost at $0.002 per record); call again with planId and maxBudgetUsd (max $10) after the user confirms. The result has counts and a summary, never the records. Records are fetched with the full view and kept for 30 days under the planId (call again with planId + projectId to write them at no charge). Pass projectId to write the Outreach tab. For a targeted company + position lookup ("CEO of Burger King India") pass autoExecute true with maxBudgetUsd and targetCount: it plans and fetches in one call, with no estimate or confirmation.',
+      'Bright Data Business Search for companies or people from a raw natural-language request. Default ludicrous: first call returns a budget (planId, match counts per slice, expected accuracy, cost at $0.002 per record); call again with planId and maxBudgetUsd (max $10) after the user confirms. The result has counts and a summary, never the records. Pass mode instant with entity company and a bare domain/URL (e.g. stripe.com) to look up one company by website host (rows are filtered to that domain). Records are fetched with the full view and kept for 30 days under the planId (call again with planId + projectId to write them at no charge). Pass projectId to write the Outreach tab. For a targeted company + position lookup ("CEO of Burger King India") pass autoExecute true with maxBudgetUsd and targetCount: it plans and fetches in one call, with no estimate or confirmation.',
   },
   {
     name: 'outreach_list',
@@ -536,8 +488,7 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
   {
     name: 'list_people_data_sources',
     label: 'List People Data Sources',
-    description:
-      'List People Data Sources.',
+    description: 'List People Data Sources.',
   },
   {
     name: 'list_taxonomy_constants',
@@ -548,20 +499,17 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
   {
     name: 'list_taxonomy_function_roots',
     label: 'List Taxonomy Function Roots',
-    description:
-      'List Taxonomy Function Roots.',
+    description: 'List Taxonomy Function Roots.',
   },
   {
     name: 'list_taxonomy_functions',
     label: 'List Taxonomy Functions',
-    description:
-      'List Taxonomy Functions.',
+    description: 'List Taxonomy Functions.',
   },
   {
     name: 'list_taxonomy_grades',
     label: 'List Taxonomy Grades',
-    description:
-      'List Taxonomy Grades.',
+    description: 'List Taxonomy Grades.',
   },
   {
     name: 'list_taxonomy_slice',
@@ -578,8 +526,7 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
   {
     name: 'enrich_contact_from_data',
     label: 'Enrich Contact From Data',
-    description:
-      'Enrich Contact From Data.',
+    description: 'Enrich Contact From Data.',
   },
   // {
   //   name: 'list_active_projects',

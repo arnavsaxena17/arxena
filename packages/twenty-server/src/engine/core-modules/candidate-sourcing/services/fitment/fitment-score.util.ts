@@ -1,6 +1,6 @@
 // How well a person or company fits the user's criteria.
 //
-// Each criterion is judged pass, fail or unknown. A snapshot is a partial
+// Each criterion is scored pass, fail or unknown. A snapshot is a partial
 // profile, so at that stage a criterion it cannot answer is unknown, never
 // fail: the row goes on to a profile fetch. On the full profile an unknown
 // must-have fails the row, because there is nothing left to fetch.

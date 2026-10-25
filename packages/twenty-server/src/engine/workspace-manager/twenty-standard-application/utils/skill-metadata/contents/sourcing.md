@@ -6,12 +6,12 @@ routes:
   - when: |-
       Find companies or people / LinkedIn / Harvest / Sales Nav / places on a map
     hint: |-
-      . Pass `sections`: `["people"]` for a population, `["companies"]` for companies and places on a map, `["people-by-company"]` for a role at companies already named. A judged list of about N also `load_skills(["ai-filter-enrich"])` and pass `sections`: `["playbook-judged-list"]` (plus `people` or `companies`).
+      . Pass `sections`: `["people"]` for a population, `["companies"]` for companies and places on a map, `["people-by-company"]` for a role at companies already named. A scored list of about N also `load_skills(["ai-filter-enrich"])` and pass `sections`: `["playbook-scored-list"]` (plus `people` or `companies`).
 parts:
   - companies
   - people
   - people-by-company
-  - playbook-judged-list
+  - playbook-scored-list
   - playbook-company-first
   - playbook-shortfall
   - requirements
@@ -29,7 +29,7 @@ parts:
 requires:
   companies: [src-bright-data-companies]
   people: [src-bright-data-people]
-  playbook-judged-list: [scoring, playbook-shortfall]
+  playbook-scored-list: [scoring, playbook-shortfall]
   playbook-company-first: [people-by-company, playbook-shortfall]
 defaultSections:
   - people
@@ -92,7 +92,7 @@ Pick the path. If that section is not already in this prompt, load it and stop u
 | Companies, or places on a map | `companies` |
 | A role at companies already named or already on the project | `people-by-company` |
 | A company list first, then a role at each | `playbook-company-first` |
-| About N rows that must clear a rubric | `playbook-judged-list` |
+| About N rows that must clear a rubric | `playbook-scored-list` |
 | Fewer results than asked for | `playbook-shortfall` |
 | The request lacks a target, criteria or destination | `requirements` |
 
@@ -103,7 +103,7 @@ The destination comes from the system prompt. The tools are:
 - **Save to CRM**: only when the user says save or add to the CRM. `save_outreach_targets_to_crm`. Does not start outreach. Never `create_candidate` or `create_one_company` on Find or on Save to CRM.
 - **Start outreach**: `load_skills(["outreach"])`. Not this skill.
 
-A judged list (about N companies or people that must match a rubric, such as store count, revenue, or runs ads) is still `companies` or `people`, and also `load_skills(["ai-filter-enrich"])`. A role at companies already named is never that loop.
+A scored list (about N companies or people that must match a rubric, such as store count, revenue, or runs ads) is still `companies` or `people`, and also `load_skills(["ai-filter-enrich"])`. A role at companies already named is never that loop.
 
 ## Learn
 
@@ -116,7 +116,7 @@ Follow the loaded section, then these rules.
 <!-- search-bright-data-default-rule:start -->
 ### Provider
 
-For `people` and `companies`, use `search_bright_data_business` (`entity: "company"` or `"people"`, ludicrous mode, estimate then budget then fetch) unless the user names another provider (Apollo, LinkedIn / Sales Navigator, Harvest, Exa, a pasted LinkedIn URL) or the request needs a feature only that provider has (a named Sales Nav list, facet ids, a known domain to enrich). Do not pick Apollo because it is listed first. Fall back only if Bright Data errors or returns nothing, and say so.
+For `people` and `companies`, use `search_bright_data_business` (`entity: "company"` or `"people"`, ludicrous mode, estimate then budget then fetch) unless the user names another provider (Apollo, LinkedIn / Sales Navigator, Harvest, Exa, a pasted LinkedIn URL) or the request needs a feature only that provider has (a named Sales Nav list, facet ids). For a **known domain or company website**, use Bright Data company search with `mode: "instant"` and the bare host (domain recipe in `src-bright-data-companies`), not ludicrous and not Apollo. Do not pick Apollo because it is listed first. Fall back only if Bright Data errors or returns nothing, and say so.
 
 `people-by-company` is one `find_role_at_companies` call for the whole company list. No estimate and no provider question. The tool searches every company and returns the matching people. Do not search those companies yourself and do not loop them.
 <!-- search-bright-data-default-rule:end -->

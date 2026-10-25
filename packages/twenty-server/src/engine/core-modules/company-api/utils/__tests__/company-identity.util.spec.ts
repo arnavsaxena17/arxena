@@ -4,6 +4,8 @@ import {
   findMatchingCompanyRecord,
   hitMatchesIdentityKeys,
   identityKeysForHit,
+  isGoogleMapsHostUrl,
+  isLinkedinHostUrl,
   normalizeCompanyUrl,
 } from '../company-identity.util';
 
@@ -11,6 +13,22 @@ describe('company-identity.util', () => {
   it('normalizes LinkedIn and website URLs', () => {
     expect(normalizeCompanyUrl('https://www.Acme.com/about?x=1')).toBe(
       'acme.com/about',
+    );
+  });
+
+  it('detects LinkedIn vs Google Maps host URLs', () => {
+    expect(isLinkedinHostUrl('https://www.linkedin.com/company/acme')).toBe(
+      true,
+    );
+    expect(isLinkedinHostUrl('https://www.google.com/maps/place/Acme')).toBe(
+      false,
+    );
+    expect(isGoogleMapsHostUrl('https://www.google.com/maps/place/Acme')).toBe(
+      true,
+    );
+    expect(isGoogleMapsHostUrl('https://maps.app.goo.gl/abc')).toBe(true);
+    expect(isGoogleMapsHostUrl('https://www.linkedin.com/company/acme')).toBe(
+      false,
     );
   });
 

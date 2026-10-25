@@ -13,6 +13,7 @@ describe('UpsertCompaniesService', () => {
         { propertyName: 'name' },
         { propertyName: 'domainNamePrimaryLinkUrl' },
         { propertyName: 'linkedinLinkPrimaryLinkUrl' },
+        { propertyName: 'googleMapsLinkPrimaryLinkUrl' },
         { propertyName: 'linkedinId' },
         { propertyName: 'projectIds' },
         { propertyName: 'outreachFunnelStage' },
@@ -245,5 +246,55 @@ describe('UpsertCompaniesService', () => {
       success: false,
       error: 'Project not found',
     });
+  });
+
+  it('writes Google Maps URLs to googleMapsLink, not linkedinLink', async () => {
+    await expect(
+      service.execute({
+        workspaceId: 'ws-1',
+        input: {
+          projectId: 'project-1',
+          companies: [
+            {
+              name: "Domino's Pizza",
+              website: 'https://www.dominos.com',
+              linkedinUrl: '',
+              googleMapsUrl: 'https://www.google.com/maps/place/Dominos+Pizza',
+            },
+            {
+              name: 'KFC',
+              // Legacy misfile: Maps URL parked on linkedinUrl
+              linkedinUrl: 'https://www.google.com/maps/place/KFC',
+            },
+          ],
+        },
+      }),
+    ).resolves.toMatchObject({
+      success: true,
+      created: 2,
+    });
+
+    expect(createdRecords).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "Domino's Pizza",
+          googleMapsLink: {
+            primaryLinkUrl: 'https://www.google.com/maps/place/Dominos+Pizza',
+            primaryLinkLabel: 'google.com',
+          },
+        }),
+        expect.objectContaining({
+          name: 'KFC',
+          googleMapsLink: {
+            primaryLinkUrl: 'https://www.google.com/maps/place/KFC',
+            primaryLinkLabel: 'google.com',
+          },
+        }),
+      ]),
+    );
+
+    for (const record of createdRecords) {
+      expect(record.linkedinLink).toBeUndefined();
+    }
   });
 });

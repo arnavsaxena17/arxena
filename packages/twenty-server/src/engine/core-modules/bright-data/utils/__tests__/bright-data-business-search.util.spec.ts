@@ -2,11 +2,13 @@ import {
   aggregateBrightDataDocuments,
   buildBrightDataCompanyOtherFields,
   buildBrightDataPersonOtherFields,
+  filterBrightDataDocumentsByDomain,
   mapBrightDataCompanyToEphemeral,
   mapBrightDataCompanyToSearchHit,
   mapBrightDataPersonToEphemeral,
   mapBrightDataPersonToSearchItem,
   normalizeBrightDataBusinessSearchMode,
+  parseBrightDataDomainLookupQuery,
   planBrightDataBusinessSearchPages,
 } from 'src/engine/core-modules/bright-data/utils/bright-data-business-search.util';
 
@@ -27,6 +29,32 @@ const apparelCompany = {
 };
 
 describe('bright data business search util', () => {
+  it('parses bare domains and URLs for company domain lookup', () => {
+    expect(parseBrightDataDomainLookupQuery('stripe.com')).toBe('stripe.com');
+    expect(
+      parseBrightDataDomainLookupQuery('https://www.Stripe.com/about'),
+    ).toBe('stripe.com');
+    expect(parseBrightDataDomainLookupQuery('company website stripe.com')).toBe(
+      null,
+    );
+    expect(parseBrightDataDomainLookupQuery('stripe')).toBe(null);
+  });
+
+  it('keeps only documents whose website host matches the domain', () => {
+    const kept = filterBrightDataDocumentsByDomain(
+      [
+        apparelCompany,
+        {
+          brightId: 'other',
+          data: { name: 'Other', website: 'https://stripes.co' },
+        },
+      ],
+      'abfrl.com',
+    );
+
+    expect(kept).toEqual([apparelCompany]);
+  });
+
   it('normalizes mode case, defaults to ludicrous and rejects unknown modes', () => {
     expect(normalizeBrightDataBusinessSearchMode('Smart')).toBe('smart');
     expect(normalizeBrightDataBusinessSearchMode()).toBe('ludicrous');

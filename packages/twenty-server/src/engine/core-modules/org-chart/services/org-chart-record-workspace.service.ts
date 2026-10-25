@@ -12,6 +12,8 @@ type OrgchartSearchType = 'classic' | 'sales_navigator' | 'recruiter';
 
 export type PersistOrgChartWorkspaceRecordParams = {
   apiToken: string | undefined;
+  /** Prefer when `apiToken` is a workspace API key (no member claim). */
+  workspaceMemberId?: string;
   mode: OrgchartSearchMode;
   searchType: OrgchartSearchType;
   resolvedCompanyName: string;
@@ -54,9 +56,10 @@ export class OrgChartRecordWorkspaceService {
 
     try {
       const workspaceMemberId =
-        await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
+        params.workspaceMemberId ??
+        (await this.workspaceQueryService.getWorkspaceMemberIdFromToken(
           apiToken,
-        );
+        ));
 
       if (!workspaceMemberId) {
         return undefined;

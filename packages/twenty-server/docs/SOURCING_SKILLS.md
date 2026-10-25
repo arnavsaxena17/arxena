@@ -13,8 +13,8 @@ Search returns snapshots. Profile fetch turns a snapshot's LinkedIn URL into the
 | --- | --- | --- |
 | `sourcing.md` | head | always: vocabulary, funnel, destinations, source order, result lists, write contract |
 | `sourcing-people.md`, `-companies.md`, `-people-by-company.md` | search types | by route |
-| `sourcing-playbook-judged-list.md`, `-playbook-company-first.md`, `-playbook-shortfall.md` | playbooks (the first two bring the shortfall one) | by route |
-| `sourcing-scoring.md` | scoring | with judged list |
+| `sourcing-playbook-scored-list.md`, `-playbook-company-first.md`, `-playbook-shortfall.md` | playbooks (the first two bring the shortfall one) | by route |
+| `sourcing-scoring.md` | scoring | with scored list |
 | `sourcing-know-profiles.md`, `-know-seniority.md` | knowledge | on demand |
 | `sourcing-src-<source>.md` | one per source | people and companies bring Bright Data; the rest only when named or as a fallback |
 | `fragments/profile-reading.md`, `title-seniority.md`, `fitment-rules.md` | shared text | included in the sections above and readable from server prompts with `getSkillFragment(name)` |
@@ -44,7 +44,7 @@ Facts only the team has; the drafts are in the files, please correct and extend:
 
 ## Fitment scoring
 
-`preview_ai_column` takes `fitment: { stage, criteria, minimumScore? }`. The model gives pass, fail or unknown per criterion; `scoreFitment` (`candidate-sourcing/services/fitment/`) computes `fitmentScore`, `fitmentOutcome` and `fitmentReason`. The bar is `SOURCING_FITMENT_THRESHOLD` (default 0.5; `0.6`, `60` and `60%` all work). A request may raise it, never lower it. Judges that use it: the AI column, the Bright Data relevance judge (`probabilityThreshold` on the filter spec) and the person fit filter used by `find_role_at_companies` and Bright Data people search. `CandidateJudgeService` has no caller.
+`preview_ai_column` takes `fitment: { stage, criteria, minimumScore? }`. The model gives pass, fail or unknown per criterion; `scoreFitment` (`candidate-sourcing/services/fitment/`) computes `fitmentScore`, `fitmentOutcome` and `fitmentReason`. The bar is `SOURCING_FITMENT_THRESHOLD` (default 0.5; `0.6`, `60` and `60%` all work). A request may raise it, never lower it. Callers: the AI column, Bright Data ludicrous relevance filtering (`probabilityThreshold` on the filter spec), and the person fit filter used by `find_role_at_companies` and Bright Data people search. `CandidateJudgeService` has no caller (orphan).
 
 ## Profile fetch
 
@@ -52,7 +52,7 @@ Facts only the team has; the drafts are in the files, please correct and extend:
 
 ## Asking the user
 
-The head of `sourcing` sorts every open point into look it up, decide and say so, or ask. The `requirements` section (loaded when the target, the criteria or the destination is missing) holds the brief and one block per kind of request: population, named role at named companies, company list, judged list, look-alikes, expand or refresh. The traps and the questions in each block are drafts; correct them with what you know. Why it is built this way: in 45 real `ask_questions` calls, a third were "run this column for all N rows?" and users said yes 82% of the time they answered; only the ambiguity and recovery questions drew typed answers.
+The head of `sourcing` sorts every open point into look it up, decide and say so, or ask. The `requirements` section (loaded when the target, the criteria or the destination is missing) holds the brief and one block per kind of request: population, named role at named companies, company list, scored list, look-alikes, expand or refresh. The traps and the questions in each block are drafts; correct them with what you know. Why it is built this way: in 45 real `ask_questions` calls, a third were "run this column for all N rows?" and users said yes 82% of the time they answered; only the ambiguity and recovery questions drew typed answers.
 
 Money is the one thing a column run needs approval for, and it is enforced in code. `preview_ai_column` returns `needsApproval` and `autoRunLimitUsd`; under the limit the agent runs without asking, over it `run_ai_column` refuses (`cost_approval_required`) until it gets `approvedCostUsd`. The limit is `AI_COLUMN_AUTO_RUN_MAX_USD` (default 5; 0 means always ask). A run limited by `rowLimit` is priced by its rows. A column whose engine reports no cost (Jev) never blocks. The UI's own run button is not affected.
 

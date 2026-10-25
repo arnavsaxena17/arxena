@@ -21,7 +21,7 @@ State the brief in a few lines, ask only what is missing in one batch (at most f
 
 **Company list** ("QSR restaurants in India"). Needs the industry, the geography, a size band, the unit, the count. Defaults: companies headquartered in the country; exclude those already in the project. Traps: chains against single outlets; India HQ against India presence; brands against legal entities. Ask: the unit and the count.
 
-**Judged list of about N** ("60 multi-store Indian consumer brands that run digital marketing"). A company or population request plus a rubric. Needs each criterion's threshold and its evidence ("20 or more stores" is read from what). Defaults: stated attributes are must-haves; the fitment threshold is the server's. Ask: thresholds the user did not state; the caps, once; the count.
+**Scored list of about N** ("60 multi-store Indian consumer brands that run digital marketing"). A company or population request plus a rubric. Needs each criterion's threshold and its evidence ("20 or more stores" is read from what). Defaults: stated attributes are must-haves; the fitment threshold is the server's. Ask: thresholds the user did not state; the caps, once; the count.
 
 **Look-alikes of a seed list** ("more like these"). Needs the seed (the working set or pasted URLs) and which attributes make them alike. Default: match the industry, size band and geography the seeds share. Ask: which attributes, only if the seeds differ on them.
 

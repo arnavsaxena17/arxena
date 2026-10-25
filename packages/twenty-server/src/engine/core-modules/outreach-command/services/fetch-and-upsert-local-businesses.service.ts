@@ -56,8 +56,9 @@ const placeToCompanyHit = (
   return {
     id: placeId || name,
     name: name || placeId,
-    website: website || mapsUrl,
-    linkedinUrl: mapsUrl,
+    website,
+    linkedinUrl: '',
+    ...(mapsUrl ? { googleMapsUrl: mapsUrl } : {}),
     industry: (place.category ?? '').toString().trim(),
   };
 };

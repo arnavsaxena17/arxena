@@ -6,11 +6,11 @@ routes:
   - when: |-
       Validate / clean up the people list for authentic, real, or worthy profiles ("are these authentic", "which are fake", "mark not worthy", "clean up this list")
     hint: |-
-      . Never judge from name, title and company alone. Reuse an existing `profile` column (especially `source: "bright_data"` from find_role or a prior fetch). Only `fetch_profiles` with `sources: ["bright_data"]` for rows that still lack one — no Harvest, no second Bright Data pull on the same rows. Then fitment at stage "profile".
+      . Never score from name, title and company alone. Reuse an existing `profile` column (especially `source: "bright_data"` from find_role or a prior fetch). Only `fetch_profiles` with `sources: ["bright_data"]` for rows that still lack one — no Harvest, no second Bright Data pull on the same rows. Then fitment at stage "profile".
 ---
 # Validate profiles
 
-Judge people **already on the People tab** as worthy or not. Do not re-source. Do not add a designed authenticity column on snapshot fields.
+Score people **already on the People tab** as worthy or not. Do not re-source. Do not add a designed authenticity column on snapshot fields.
 
 ## Flow
 

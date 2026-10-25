@@ -1,4 +1,4 @@
-## Playbook: judged list
+## Playbook: scored list
 
 About N companies or people that must clear a rubric (eg. employee count, store count, revenue, runs ads, a seniority, a geography, an industry). Search first, then score by the funnel in the Vocabulary: snapshots, then profile fetch for the rows that pass or are unknown, then enrichment, then full-profile scoring. For **people**, that profile-stage rubric includes the worthiness gates (connections, activity, filled) from scoring / `validate-profiles`, not only the business criteria.
 

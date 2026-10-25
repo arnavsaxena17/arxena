@@ -20,7 +20,7 @@ const BriefZodSchema = z.object({
       'population',
       'named_role',
       'company_list',
-      'judged_list',
+      'scored_list',
       'look_alike',
       'expand',
     ])

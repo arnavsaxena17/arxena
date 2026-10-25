@@ -13,6 +13,8 @@ import {
   companyWebsiteUrl as identityCompanyWebsiteUrl,
   extractLinkedinCompanyId,
   findMatchingCompanyRecord,
+  isGoogleMapsHostUrl,
+  isLinkedinHostUrl,
   normalizeCompanyUrl,
 } from 'src/engine/core-modules/company-api/utils/company-identity.util';
 import {
@@ -29,6 +31,8 @@ type CompanyRecord = ObjectLiteral & {
   domainNamePrimaryLinkUrl?: string | null;
   linkedinLink?: { primaryLinkUrl?: string | null } | null;
   linkedinLinkPrimaryLinkUrl?: string | null;
+  googleMapsLink?: { primaryLinkUrl?: string | null } | null;
+  googleMapsLinkPrimaryLinkUrl?: string | null;
   linkedinId?: string | null;
   projectIds?: string | string[] | null;
   outreachFunnelStage?: string | null;
@@ -101,6 +105,8 @@ const pickWritable = (
       columns.has(key) ||
       (key === 'domainName' && columns.has('domainNamePrimaryLinkUrl')) ||
       (key === 'linkedinLink' && columns.has('linkedinLinkPrimaryLinkUrl')) ||
+      (key === 'googleMapsLink' &&
+        columns.has('googleMapsLinkPrimaryLinkUrl')) ||
       (key === 'createdBy' && columns.has('createdBySource'));
 
     if (exists) {
@@ -216,17 +222,31 @@ export class UpsertCompaniesService {
         for (const hit of hits) {
           const name = hit.name.trim();
           const website = hit.website.trim();
-          const linkedinUrl = hit.linkedinUrl.trim();
-          const linkedinId = extractLinkedinCompanyId(hit);
+          const rawLinkedinUrl = hit.linkedinUrl.trim();
+          const rawMapsUrl = (hit.googleMapsUrl ?? '').trim();
+          // Local-business discover used to park Maps URLs in linkedinUrl
+          const googleMapsUrl =
+            rawMapsUrl ||
+            (isGoogleMapsHostUrl(rawLinkedinUrl) ? rawLinkedinUrl : '');
+          const linkedinUrl = isLinkedinHostUrl(rawLinkedinUrl)
+            ? rawLinkedinUrl
+            : '';
+          const linkedinId = extractLinkedinCompanyId({
+            ...hit,
+            linkedinUrl,
+          });
           const domainLink = toPrimaryLink(website);
           const linkedinLink = toPrimaryLink(linkedinUrl);
+          const googleMapsLink = toPrimaryLink(googleMapsUrl);
           const normalizedLinkedin = normalizeCompanyUrl(linkedinUrl);
           const normalizedDomain = normalizeCompanyUrl(website);
+          const normalizedMaps = normalizeCompanyUrl(googleMapsUrl);
 
           if (
             !isNonEmptyString(name) &&
             !normalizedLinkedin &&
             !normalizedDomain &&
+            !normalizedMaps &&
             !isNonEmptyString(linkedinId)
           ) {
             skipped += 1;
@@ -239,6 +259,10 @@ export class UpsertCompaniesService {
             match?.projectIds,
             projectId,
           );
+          const existingMapsUrl =
+            match?.googleMapsLink?.primaryLinkUrl ??
+            match?.googleMapsLinkPrimaryLinkUrl ??
+            '';
           const patch = pickWritable(
             {
               ...(domainLink &&
@@ -248,6 +272,9 @@ export class UpsertCompaniesService {
               ...(linkedinLink &&
               !normalizeCompanyUrl(companyLinkedinUrl(match ?? {}))
                 ? { linkedinLink }
+                : {}),
+              ...(googleMapsLink && !normalizeCompanyUrl(existingMapsUrl)
+                ? { googleMapsLink }
                 : {}),
               ...(isNonEmptyString(linkedinId) &&
               !isNonEmptyString(match?.linkedinId)
@@ -277,6 +304,9 @@ export class UpsertCompaniesService {
               linkedinLinkPrimaryLinkUrl:
                 linkedinLink?.primaryLinkUrl ??
                 match.linkedinLinkPrimaryLinkUrl,
+              googleMapsLinkPrimaryLinkUrl:
+                googleMapsLink?.primaryLinkUrl ??
+                match.googleMapsLinkPrimaryLinkUrl,
               linkedinId: linkedinId || match.linkedinId,
               projectIds: nextOutreachRunKey,
             });
@@ -289,9 +319,10 @@ export class UpsertCompaniesService {
           const record = pickWritable(
             {
               id,
-              name: name || website || linkedinUrl,
+              name: name || website || linkedinUrl || googleMapsUrl,
               ...(domainLink ? { domainName: domainLink } : {}),
               ...(linkedinLink ? { linkedinLink } : {}),
+              ...(googleMapsLink ? { googleMapsLink } : {}),
               ...(isNonEmptyString(linkedinId) ? { linkedinId } : {}),
               projectIds: appendProjectId(null, projectId),
               outreachFunnelStage: 'ADDED',
@@ -305,6 +336,7 @@ export class UpsertCompaniesService {
             ...record,
             domainNamePrimaryLinkUrl: domainLink?.primaryLinkUrl,
             linkedinLinkPrimaryLinkUrl: linkedinLink?.primaryLinkUrl,
+            googleMapsLinkPrimaryLinkUrl: googleMapsLink?.primaryLinkUrl,
             linkedinId,
             projectIds: appendProjectId(null, projectId),
           });

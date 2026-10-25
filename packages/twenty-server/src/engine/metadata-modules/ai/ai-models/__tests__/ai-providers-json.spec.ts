@@ -75,16 +75,14 @@ describe('ai-providers.json integrity', () => {
   });
 
   it('should use the current OpenRouter API host', () => {
-    expect(PROVIDERS.openrouter?.baseUrl).toBe(
-      'https://openrouter.ai/api/v1',
-    );
+    expect(PROVIDERS.openrouter?.baseUrl).toBe('https://openrouter.ai/api/v1');
   });
 
   it('should enable structured outputs for OpenRouter', () => {
     expect(PROVIDERS.openrouter?.supportsStructuredOutputs).toBe(true);
   });
 
-  it('should include OpenRouter DeepSeek V4 Flash 0731', () => {
+  it('should include OpenRouter DeepSeek V4 Flash 0731 as text-only', () => {
     const deepSeekFlash = PROVIDERS.openrouter?.models?.find(
       (model) => model.name === 'deepseek/deepseek-v4-flash-0731',
     );
@@ -93,5 +91,24 @@ describe('ai-providers.json integrity', () => {
     expect(deepSeekFlash?.label).toBe('DeepSeek V4 Flash');
     expect(deepSeekFlash?.supportsReasoning).toBe(true);
     expect(deepSeekFlash?.contextWindowTokens).toBe(1048576);
+    expect(deepSeekFlash?.modalities ?? []).not.toContain('image');
+  });
+
+  it('should include OpenRouter DeepSeek vision models with image modality', () => {
+    const visionModelNames = [
+      'deepseek/deepseek-v4.1-flash',
+      'deepseek/deepseek-v4.1-flash-1017',
+      'deepseek/deepseek-v4-flash-vision-exp',
+    ];
+
+    visionModelNames.forEach((modelName) => {
+      const model = PROVIDERS.openrouter?.models?.find(
+        (openRouterModel) => openRouterModel.name === modelName,
+      );
+
+      expect(model).toBeDefined();
+      expect(model?.modalities).toContain('image');
+      expect(model?.supportsReasoning).toBe(true);
+    });
   });
 });

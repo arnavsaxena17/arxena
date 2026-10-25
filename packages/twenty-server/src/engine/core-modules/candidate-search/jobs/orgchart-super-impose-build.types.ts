@@ -9,6 +9,13 @@ type OrgchartSearchType = 'classic' | 'sales_navigator' | 'recruiter';
  */
 export type OrgchartSuperImposeBuildJobData = {
   apiToken: string;
+  /**
+   * Captured at enqueue from the user JWT. Long jobs mint a workspace API key
+   * for `apiToken`; API keys have no workspaceMemberId, so persist this for
+   * progress pub/sub and CRM recruiterId.
+   */
+  workspaceId?: string;
+  workspaceMemberId?: string;
   requestId?: string;
   body: Record<string, unknown>;
   canonicalCompanyLinkedinUrl?: string;

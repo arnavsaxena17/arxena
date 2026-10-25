@@ -136,16 +136,14 @@ const uniqueCompaniesFromPlaces = (
 const classificationToCompanyHit = (
   classification: LocalPlaceClassification,
 ): CompanySearchHit => {
-  const website =
-    classification.website ||
-    classification.mapsUrl ||
-    classification.companyName;
+  const mapsUrl = classification.mapsUrl.trim();
 
   return {
     id: classification.placeId || classification.companyName,
     name: classification.companyName,
-    website,
-    linkedinUrl: classification.mapsUrl || website,
+    website: classification.website.trim(),
+    linkedinUrl: '',
+    ...(mapsUrl ? { googleMapsUrl: mapsUrl } : {}),
     industry: classification.category || 'Local business',
   };
 };

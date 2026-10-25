@@ -18,7 +18,7 @@ const SKILL_TOKEN_BUDGETS: Record<string, number> = {
   sourcing: 16_500,
   outreach: 4_700,
   'workflow-building': 4_500,
-  'ai-filter-enrich': 4_000,
+  'ai-filter-enrich': 4_500,
   'dashboard-building': 3_000,
   'workspace-demo-seeding': 3_000,
   'data-manipulation': 3_000,

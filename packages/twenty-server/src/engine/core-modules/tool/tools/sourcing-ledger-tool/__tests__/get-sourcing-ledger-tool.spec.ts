@@ -122,7 +122,7 @@ describe('GetSourcingLedgerTool', () => {
   it('should store the brief and return it with the table', async () => {
     const { tool, append } = build();
     const brief = {
-      requestType: 'judged_list' as const,
+      requestType: 'scored_list' as const,
       target: 60,
       who: 'multi-store Indian consumer brands',
       criteria: [{ description: '20 or more stores', mustHave: true }],

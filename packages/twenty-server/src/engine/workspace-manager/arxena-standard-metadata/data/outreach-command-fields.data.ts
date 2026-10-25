@@ -242,8 +242,7 @@ export const getOutreachCommandFieldsData = (
     field: {
       // Same bag the candidate has: AI filter / enrichment columns write one key
       // per column here, next to aiColumns (header label, type, status).
-      description:
-        'AI filter and enrichment column values, one key per column',
+      description: 'AI filter and enrichment column values, one key per column',
       icon: 'IconBraces',
       label: 'Other fields',
       name: 'otherFields',
@@ -261,6 +260,19 @@ export const getOutreachCommandFieldsData = (
       name: 'linkedinId',
       objectMetadataId: objectsNameIdMap.company,
       type: 'TEXT',
+    },
+  },
+  {
+    objectName: 'company',
+    field: {
+      // Local-business discover writes Google Maps place URLs here — never
+      // into linkedinLink (that column is LinkedIn company pages only).
+      description: 'Google Maps place URL for this company location',
+      icon: 'IconMapPin',
+      label: 'Google Maps',
+      name: 'googleMapsLink',
+      objectMetadataId: objectsNameIdMap.company,
+      type: 'LINKS',
     },
   },
   {
@@ -392,8 +404,7 @@ export const getOutreachCommandFieldsData = (
   {
     objectName: 'candidate',
     field: {
-      description:
-        'When the sender member was pinned',
+      description: 'When the sender member was pinned',
       icon: 'IconCalendarEvent',
       label: 'Outreach Assigned At',
       name: 'outreachAssignedAt',

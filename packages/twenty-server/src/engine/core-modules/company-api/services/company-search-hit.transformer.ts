@@ -199,6 +199,13 @@ export class CompanySearchHitTransformer {
     const employeeSize = readString(item, ['size']);
     const founded = readString(item, ['founded']);
 
+    const googleMapsUrl = readUrl(item, [
+      'googleMapsUrl',
+      'google_maps_url',
+      'mapsUrl',
+      'maps_url',
+    ]);
+
     return {
       id: readString(item, ['id', 'universalName', 'universal_name']),
       name: readString(item, ['name', 'display_name', 'companyName']),
@@ -206,6 +213,7 @@ export class CompanySearchHitTransformer {
         readUrl(item, ['website', 'websiteUrl', 'domain', 'domainName']) ||
         readWebsites(item),
       linkedinUrl: readLinkedinUrl(item),
+      ...(googleMapsUrl ? { googleMapsUrl } : {}),
       industry: readString(item, ['industry']),
       ...(country ? { country } : {}),
       ...(region ? { region } : {}),

@@ -71,6 +71,10 @@
       {
         "include": "engine/workspace-manager/twenty-standard-application/utils/skill-metadata/contents/**/*.md",
         "outDir": "dist"
+      },
+      {
+        "include": "engine/metadata-modules/ai/ai-chat/constants/contents/**/*.md",
+        "outDir": "dist"
       }
     ]
   },

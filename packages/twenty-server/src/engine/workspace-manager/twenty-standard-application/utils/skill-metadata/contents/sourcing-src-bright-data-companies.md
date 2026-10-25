@@ -9,11 +9,35 @@ One query returns at most 1,100 rows (`limit` up to 100, `offset` up to 1,000), 
 
 Plain-language company sets. Pass the user's sentence as `query`. Do not turn it into a taxonomy filter, and do not use this for a pasted LinkedIn URL. Requires `BRIGHT_DATA_API_KEY`; tell the user if it is missing.
 
-`entity`: `"company"`. `mode`: always ludicrous (smart and instant are not used; any `mode` passed is ignored).
+`entity`: `"company"`. Default `mode` is ludicrous. Pass `mode: "instant"` **only** for the domain-lookup recipe below. smart is ignored.
+
+### Recipe — find a company by domain
+
+Bright Data has **no domain filter** on company search. Instant mode still accepts a domain string and usually ranks the right company first, then the tool **keeps only rows whose `website` / `domain` host matches**.
+
+Use this when the user gives a domain or company website (e.g. "who is stripe.com", "enrich notion.so", "look up https://www.abfrl.com").
+
+1. Normalize to a bare host or URL with **no spaces** (`stripe.com`, `https://stripe.com`). Do not wrap it in a sentence.
+2. Call once (no estimate, no budget ask):
+
+```
+search_bright_data_business({
+  "entity": "company",
+  "mode": "instant",
+  "query": "stripe.com",
+  "limit": 20,
+  "projectId": "<from browsing context, if writing the tab>"
+})
+```
+
+3. The result's `domainHost`, `count`, and `companies` / `previewRows` are already domain-filtered. If `count` is 0, say so and try Wikidata (`search_wikidata_companies`) or ask for the LinkedIn company URL. Do not fall back to ludicrous with the domain as the query — ludicrous cannot filter on domain either.
+4. Report name, domain, industry, LinkedIn URL, size. On Outreach, pass `projectId` so the tab is written; otherwise show the preview and offer attach / save.
+
+Do **not** use this recipe for firmographic sets ("apparel brands in India") — those stay on ludicrous below.
 
 **Ludicrous is budgeted. Always show the cost before fetching.** It bills **$0.002 per returned record**, capped at **$10 per query**. The server turns the request into several structured, non-overlapping queries (title synonyms, cities, size and funding buckets), then fetches slice by slice and drops slices whose results stop being relevant.
 
-**What a query may say.** The sentence can only use ideas the company data holds: what the company is (industry, about, specialties, name), where (country, city), organization type, founded year, employee size, funding, followers. Write "cosmetics and beauty retail companies in India", never "... with stores and outlets", "chain", "franchise", store counts, revenue or ad activity: those words are not in the data, so they break matching. Judge those facts afterwards with enrichment columns (see **Judged lists**, then `ai-filter-enrich`).
+**What a query may say.** The sentence can only use ideas the company data holds: what the company is (industry, about, specialties, name), where (country, city), organization type, founded year, employee size, funding, followers. Write "cosmetics and beauty retail companies in India", never "... with stores and outlets", "chain", "franchise", store counts, revenue or ad activity: those words are not in the data, so they break matching. Score those facts afterwards with enrichment columns (see **Scored lists**, then `ai-filter-enrich`).
 
 **How the query is built (server side, you only pass the sentence).** The planner turns the request into a structured ludicrous `query` and always fetches `view: "full"`. Conditions are `and` / `or` / `not` over `text` (text fields), `equals` / `in` / `range` (typed fields). Text fields take only `text`, typed fields never take `text`, and single-value `in` on array fields stays `in`. Topic words use `mode: "all"` (every word required). Example for companies:
 

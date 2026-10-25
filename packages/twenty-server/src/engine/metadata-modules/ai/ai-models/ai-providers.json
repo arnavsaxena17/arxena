@@ -1427,21 +1427,44 @@
       {
         "name": "deepseek/deepseek-v4-flash-0731",
         "label": "DeepSeek V4 Flash",
-        "inputCostPerMillionTokens": 0.03,
-        "outputCostPerMillionTokens": 0.1,
-        "cachedInputCostPerMillionTokens": 0.007,
+        "inputCostPerMillionTokens": 0.044,
+        "outputCostPerMillionTokens": 0.133,
+        "cachedInputCostPerMillionTokens": 0.0014,
         "contextWindowTokens": 1048576,
-        "maxOutputTokens": 262144,
+        "maxOutputTokens": 131072,
         "supportsReasoning": true
       },
       {
         "name": "deepseek/deepseek-v4.1-flash",
         "label": "DeepSeek V4.1 Flash",
+        "inputCostPerMillionTokens": 0.02,
+        "outputCostPerMillionTokens": 1,
+        "cachedInputCostPerMillionTokens": 0.015,
+        "contextWindowTokens": 1048576,
+        "maxOutputTokens": 943718,
+        "modalities": ["image"],
+        "supportsReasoning": true
+      },
+      {
+        "name": "deepseek/deepseek-v4.1-flash-1017",
+        "label": "DeepSeek V4.1 Flash 1017",
         "inputCostPerMillionTokens": 0.15,
         "outputCostPerMillionTokens": 0.6,
         "cachedInputCostPerMillionTokens": 0.003,
         "contextWindowTokens": 1048576,
         "maxOutputTokens": 393216,
+        "modalities": ["image"],
+        "supportsReasoning": true
+      },
+      {
+        "name": "deepseek/deepseek-v4-flash-vision-exp",
+        "label": "DeepSeek V4 Flash Vision Exp",
+        "inputCostPerMillionTokens": 0.216,
+        "outputCostPerMillionTokens": 0.647,
+        "cachedInputCostPerMillionTokens": 0.007,
+        "contextWindowTokens": 1048576,
+        "maxOutputTokens": 262144,
+        "modalities": ["image"],
         "supportsReasoning": true
       }
     ]

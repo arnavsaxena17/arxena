@@ -14,6 +14,8 @@ import {
   mapBrightDataPersonToEphemeral,
   mapBrightDataPersonToSearchItem,
   aggregateBrightDataDocuments,
+  filterBrightDataDocumentsByDomain,
+  parseBrightDataDomainLookupQuery,
   type BrightDataBusinessSearchDocument,
 } from 'src/engine/core-modules/bright-data/utils/bright-data-business-search.util';
 import {
@@ -65,8 +67,8 @@ export class SearchBrightDataBusinessTool implements Tool {
 Default mode is ludicrous (billed $0.002 per returned record, max $10 per query). It works in two steps:
 1. Call without planId. This plans several structured queries and spends a few cents sampling them. You get planId, per-slice match counts, expected accuracy and the cost of fetching N records. Show the user the numbers and ask which budget to fetch. Nothing is fetched yet.
 2. After the user confirms, call again with planId and maxBudgetUsd (and optionally targetCount, projectId). Records are fetched slice by slice and rows Jev marks irrelevant are dropped.
-Always ludicrous: any mode passed is ignored (smart and instant only reach the first 100 results). Records are fetched with view full.
-The result never contains the records, only counts and a summary; they go to the project tab and a saved dataset. Fetched records are kept in a list (listId = planId, 30 days); use the outreach_list tool to attach them to a project tab or save them to the CRM, or call again with the same planId and a projectId. Pass projectId to merge hits into the Outreach Companies or People tab. Do not create CRM records. Omit projectId in smart/instant for a preview (limit 10) with previewRows.`;
+Ludicrous is the default. Pass mode "instant" only for company lookup by domain (bare host or URL such as stripe.com); the tool keeps rows whose website/domain matches that host. smart is ignored. Records are fetched with view full.
+Ludicrous results never contain the records, only counts and a summary; they go to the project tab and a saved dataset. Fetched records are kept in a list (listId = planId, 30 days); use the outreach_list tool to attach them to a project tab or save them to the CRM, or call again with the same planId and a projectId. Pass projectId to merge hits into the Outreach Companies or People tab. Do not create CRM records. Omit projectId on instant domain lookup for a preview with previewRows / companies.`;
 
   inputSchema = SearchBrightDataBusinessToolInputZodSchema;
 
@@ -95,9 +97,18 @@ The result never contains the records, only counts and a summary; they go to the
       };
     }
 
-    // smart/instant only reach the first 100 rows and rank poorly, so every
-    // Ask AI / MCP search goes through the ludicrous planner.
-    const input = { ...parsed.data, mode: 'ludicrous' as const };
+    // Instant is only for company-by-domain (see sourcing skill recipe).
+    // Everything else stays on the ludicrous planner.
+    const wantsInstantDomainLookup =
+      parsed.data.mode === 'instant' &&
+      parsed.data.entity === 'company' &&
+      parseBrightDataDomainLookupQuery(parsed.data.query) !== null;
+    const input = {
+      ...parsed.data,
+      mode: wantsInstantDomainLookup
+        ? ('instant' as const)
+        : ('ludicrous' as const),
+    };
 
     if (!isNonEmptyString(input.query)) {
       return {
@@ -112,28 +123,46 @@ The result never contains the records, only counts and a summary; they go to the
     }
 
     try {
-      const search = await this.brightDataBusinessSearchService.search(input);
-      const ephemeral = await this.persistEphemeral(input, search, context);
+      const domainHost = parseBrightDataDomainLookupQuery(input.query);
+      const search = await this.brightDataBusinessSearchService.search({
+        ...input,
+        // Instant ranks by tokens; a small page is enough once we filter
+        limit: input.limit ?? 20,
+      });
+      const documents =
+        domainHost !== null
+          ? filterBrightDataDocumentsByDomain(search.documents, domainHost)
+          : search.documents;
+      const filteredSearch = { ...search, documents };
+      const ephemeral = await this.persistEphemeral(
+        input,
+        filteredSearch,
+        context,
+      );
 
       return {
         success: true,
-        message: `Found ${search.documents.length} ${input.entity} record(s)`,
+        message:
+          domainHost !== null
+            ? `Found ${documents.length} company record(s) for domain ${domainHost}`
+            : `Found ${documents.length} ${input.entity} record(s)`,
         result: {
           entity: input.entity,
           mode: search.mode,
           query: input.query.trim(),
+          ...(domainHost !== null ? { domainHost } : {}),
           reqId: search.reqId,
           matched: search.matched,
-          count: search.documents.length,
+          count: documents.length,
           ephemeralWritten: ephemeral.written,
-          previewRows: this.buildPreviewRows(input, search),
+          previewRows: this.buildPreviewRows(input, filteredSearch),
           companies:
             input.entity === 'company'
-              ? search.documents.map(mapBrightDataCompanyToSearchHit)
+              ? documents.map(mapBrightDataCompanyToSearchHit)
               : [],
           people:
             input.entity === 'people'
-              ? search.documents.map(mapBrightDataPersonToSearchItem)
+              ? documents.map(mapBrightDataPersonToSearchItem)
               : [],
         },
       };
