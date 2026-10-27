@@ -281,6 +281,22 @@ export const filterSearchSkillContent = (
     );
   }
 
+  if (!config.isSearchSerpEnabled) {
+    for (const markerPrefix of [
+      'search-serp-people',
+      'search-serp-companies',
+    ]) {
+      filteredContent = stripMarkedSection(
+        filteredContent,
+        `${markerPrefix}-provider-row`,
+      );
+      filteredContent = stripMarkedSection(
+        filteredContent,
+        `${markerPrefix}-learn-tools-line`,
+      );
+    }
+  }
+
   if (!config.isSearchExaEnabled && !config.isSearchSerpEnabled) {
     filteredContent = stripMarkedSection(
       filteredContent,

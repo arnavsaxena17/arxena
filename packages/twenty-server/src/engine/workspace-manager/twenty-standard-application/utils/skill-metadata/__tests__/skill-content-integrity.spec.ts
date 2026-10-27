@@ -15,7 +15,9 @@ const CHARACTERS_PER_TOKEN = 4;
 // A ratchet, not a target: a skill is re-sent on every model step after it is
 // loaded, so growing past its budget needs a deliberate change here.
 const SKILL_TOKEN_BUDGETS: Record<string, number> = {
-  sourcing: 16_500,
+  // Raised from 16_500 for the Google SERP rows the source registry adds to
+  // both provider maps (SERP was in the source order but no provider map)
+  sourcing: 16_700,
   outreach: 4_700,
   'workflow-building': 4_500,
   'ai-filter-enrich': 4_500,

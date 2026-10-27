@@ -36,6 +36,16 @@ Put a passage used by more than one skill in `fragments/<name>.md` and include
 it with `{{include: name}}` on a line of its own. Includes are resolved when the
 package is built and do not nest.
 
+## Sourcing providers
+Facts about a sourcing provider (tools, cost, caps, blind spots, source order,
+what to learn) live in `../sourcing-sources.constant.ts`, not in markdown. A
+skill renders them with a line of its own: `{{sources: provider-map people}}`,
+`{{sources: learn-tools companies}}`, `{{sources: source-order}}`,
+`{{sources: source-profiles}}` or `{{sources: limits bright-data}}`. A number
+inside a sentence is `{{fact: bright-data.costPerRecord}}`, which also works
+in fragments. Add or change a provider there; a provider behind a flag also
+needs its `markerPrefix` stripped in `search-tools-config.ts`.
+
 ## Core skills
 `search`, `setup`, `outreach` and the others listed in `OUTREACH_SKILL_LABELS`
 are long skills with their own front matter. A new instruction should start as a

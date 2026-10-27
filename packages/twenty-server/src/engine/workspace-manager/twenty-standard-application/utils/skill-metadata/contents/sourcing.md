@@ -125,13 +125,7 @@ For `people` and `companies`, use `search_bright_data_business` (`entity: "compa
 
 The order we prefer, not a list to try in turn. Use the first source that has the fields the request needs. Go to a later one only when the user names it, an earlier one fails or returns nothing, or a field you need is only there. A source missing from that section's provider map is switched off: skip it.
 
-| # | People | Companies |
-| --- | --- | --- |
-| 1 | Bright Data people (`src-bright-data-people`) | Bright Data companies (`src-bright-data-companies`) |
-| 2 | Google SERP people results (`src-serp`) | Google SERP (`src-serp`) |
-| 3 | LinkedIn via Unipile (`src-linkedin`) | LinkedIn via Unipile (`src-linkedin`) |
-| 4 | Harvest, Sales Navigator and People API (`src-harvest`) | Harvest (`src-harvest`) |
-| 5 | Apollo (`src-apollo`) | Apollo (`src-apollo`) |
+{{sources: source-order}}
 
 Exa (`src-exa`) and Wikidata (`src-wikidata`) are for niche public people and for company look-ups the sources above do not cover.
 

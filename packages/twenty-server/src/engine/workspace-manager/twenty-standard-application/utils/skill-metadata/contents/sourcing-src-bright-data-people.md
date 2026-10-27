@@ -1,8 +1,6 @@
 ## Source: Bright Data, people
 
-### Limits and exhaustion
-
-One query returns at most 1,100 rows (`limit` up to 100, `offset` up to 1,000). The planner splits a request into slices to get past that; the estimate shows `fetchableRecords` per slice, and a slice with none left is exhausted. Billing is $0.002 per returned record and a primary query is capped at $10. Running the same query again returns only rows already in the list: more rows need different title words, cities or size bands.
+{{sources: limits bright-data}}
 
 <!-- search-bright-data-people-source-section:start -->
 ### Source — Bright Data (`search_bright_data_business`)

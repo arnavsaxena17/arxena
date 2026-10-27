@@ -131,7 +131,7 @@ describe('sourcing skill section sizes', () => {
   // has its own budget and must stay far cheaper than the whole skill
   it.each([
     [['people'], 5_400],
-    [['companies'], 5_900],
+    [['companies'], 6_000],
     [['people-by-company'], 3_900],
     [['playbook-scored-list'], 4_400],
     [['playbook-company-first'], 4_700],

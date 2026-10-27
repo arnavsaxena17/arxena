@@ -1,8 +1,6 @@
 ## Source: Bright Data, companies
 
-### Limits and exhaustion
-
-One query returns at most 1,100 rows (`limit` up to 100, `offset` up to 1,000), split into slices by the planner; a slice with no `fetchableRecords` left is exhausted. $0.002 per returned record, $10 cap per primary query. Repeating a query returns only duplicates: change the industry words, the city or the size band.
+{{sources: limits bright-data}}
 
 <!-- search-bright-data-companies-source-section:start -->
 ### Source — Bright Data (`search_bright_data_business`)

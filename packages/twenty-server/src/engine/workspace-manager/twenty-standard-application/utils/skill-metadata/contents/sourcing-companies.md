@@ -2,61 +2,11 @@
 
 ### Provider map (choose by intent)
 
-| Source | Tool(s) | Best for | Requires |
-| --- | --- | --- | --- |
-<!-- search-apollo-companies-provider-row:start -->
-| **Apollo** | `search_apollo_companies` | Firmographic company search: industry, headcount, location, keywords; richest company metadata | Apollo connected (server config) |
-<!-- search-apollo-companies-provider-row:end -->
-| **LinkedIn / Unipile** | `search_linkedin_companies` | Live LinkedIn company results; `has_job_offers`, geo/industry facets | Connected LinkedIn Unipile account |
-| **Harvest** | People API (`dataSource: "harvest"`) | Company discovery *via people* — find companies where people match a role | Harvest configured |
-<!-- search-exa-companies-provider-row:start -->
-| **Exa** | `app_exa_web_search` (preloaded) or `exa_web_search` | Web/AI search for hard-to-find or new companies; `category: "company"` | `EXA_API_KEY` set |
-<!-- search-exa-companies-provider-row:end -->
-<!-- search-bright-data-companies-provider-row:start -->
-| **Bright Data** | `search_bright_data_business` (`entity: "company"`) | Plain-language company sets (ludicrous, $0.002/record); **or** look up one company by domain with `mode: "instant"` and a bare host (`stripe.com`) — see domain recipe in the Bright Data companies source | `BRIGHT_DATA_API_KEY` set |
-<!-- search-bright-data-companies-provider-row:end -->
-<!-- search-wikidata-companies-provider-row:start -->
-| **Wikidata** | `search_wikidata_companies` | Fallback facts for a known domain/URL when Bright Data instant domain lookup returns nothing (HQ, industry, employees, CEO) | Public Wikidata API (no key) |
-<!-- search-wikidata-companies-provider-row:end -->
-<!-- search-companies-index-provider-row:start -->
-| **Internal index** | `search_companies_index` | Free-text company search across ES indices | Elasticsearch index |
-<!-- search-companies-index-provider-row:end -->
-| **Raw → std name** | `resolve_company_from_raw_name` | Standardize a messy employer string to one best company profile (`std_company_data_scores`) | Elasticsearch (`ES_ENDPOINT`) |
+{{sources: provider-map companies}}
 
 ### learn_tools (companies)
 
-```
-# Outreach (default)
-learn_tools({
-  "toolNames": [
-<!-- search-apollo-companies-learn-tools-line:start -->
-    "search_apollo_companies",
-<!-- search-apollo-companies-learn-tools-line:end -->
-    "search_linkedin_companies",
-<!-- search-companies-index-learn-tools-line:start -->
-    "search_companies_index",
-    "resolve_company_from_raw_name",
-<!-- search-companies-index-learn-tools-line:end -->
-<!-- search-wikidata-companies-learn-tools-line:start -->
-    "search_wikidata_companies",
-<!-- search-wikidata-companies-learn-tools-line:end -->
-<!-- search-exa-companies-learn-tools-line:start -->
-    "exa_web_search",
-<!-- search-exa-companies-learn-tools-line:end -->
-<!-- search-bright-data-companies-learn-tools-line:start -->
-    "search_bright_data_business",
-<!-- search-bright-data-companies-learn-tools-line:end -->
-    "search_linkedin_parameters",
-    "generate_linkedin_query_set",
-    "plan-local-business-city-coverage",
-    "fetch-and-upsert-local-businesses",
-    "upsert_outreach_target_companies"
-  ]
-})
-
-# Save to CRM only, after the user asks
-learn_tools({ "toolNames": ["save_outreach_targets_to_crm"] })
-```
+{{sources: learn-tools companies}}
 
 Dedup across sources **by normalized name + domain** before saving.
 

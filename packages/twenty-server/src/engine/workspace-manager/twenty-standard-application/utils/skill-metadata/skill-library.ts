@@ -6,6 +6,10 @@ import {
   parseSkillFrontMatter,
   splitSkillFrontMatter,
 } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/parse-skill-front-matter.util';
+import {
+  renderSourcingFacts,
+  renderSourcingSources,
+} from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/render-sourcing-sources.util';
 import { buildSkillSectionMarker } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/select-skill-sections.util';
 import { type SkillFrontMatter } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/skill-front-matter.type';
 
@@ -83,17 +87,22 @@ const loadLibrary = (): Library => {
       );
     }
 
+    // Includes first, so a fragment can quote the source registry too
     bodies.set(
       name,
-      split.body.replace(INCLUDE_PATTERN, (_line, fragmentName: string) => {
-        const fragment = fragments.get(fragmentName);
+      renderSourcingSources(
+        split.body.replace(INCLUDE_PATTERN, (_line, fragmentName: string) => {
+          const fragment = fragments.get(fragmentName);
 
-        if (fragment === undefined) {
-          throw new Error(`Skill ${fileName}: unknown fragment "${fragmentName}"`);
-        }
+          if (fragment === undefined) {
+            throw new Error(
+              `Skill ${fileName}: unknown fragment "${fragmentName}"`,
+            );
+          }
 
-        return fragment;
-      }),
+          return fragment;
+        }),
+      ),
     );
   }
 
@@ -127,7 +136,7 @@ export const getSkillFragment = (name: string): string => {
     throw new Error(`Unknown skill fragment: ${name}`);
   }
 
-  return fragment;
+  return renderSourcingFacts(fragment);
 };
 
 export const listSkillNames = (): string[] => {
