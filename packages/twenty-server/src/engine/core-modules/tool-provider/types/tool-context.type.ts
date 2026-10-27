@@ -14,6 +14,8 @@ export type ToolContext = {
   userId?: string;
   userWorkspaceId?: string;
   threadId?: string;
+  // The Outreach project the user is looking at, from the browsing context
+  projectId?: string;
   locale?: keyof typeof APP_LOCALES;
   onCodeExecutionUpdate?: CodeExecutionStreamEmitter;
   onToolProgress?: ToolProgressStreamEmitter;

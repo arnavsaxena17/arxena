@@ -282,11 +282,32 @@ export class OutreachListTool implements Tool {
     document: OutreachListDocument,
     context: ToolExecutionContext,
   ): Promise<ToolOutput> {
-    if (!isNonEmptyString(input.projectId)) {
+    const projectId = isNonEmptyString(input.projectId)
+      ? input.projectId
+      : context.projectId;
+
+    if (!isNonEmptyString(projectId)) {
       return this.fail(
         'projectId is required',
         'Ask the user which project the list should be shown on.',
       );
+    }
+
+    // A search with projectId already wrote these rows; writing them again
+    // would only repeat the merge. An explicit offset still pages on.
+    if (
+      input.offset === undefined &&
+      document.meta.projectIds.includes(projectId)
+    ) {
+      return {
+        success: true,
+        message: 'This list is already on the project tab',
+        result: {
+          listId: document.meta.id,
+          attached: 0,
+          alreadyOnProject: true,
+        },
+      };
     }
 
     const offset = input.offset ?? 0;
@@ -304,7 +325,7 @@ export class OutreachListTool implements Tool {
     if (document.meta.entity === 'company') {
       written = await this.upsertOutreachTargetCompaniesTool.execute(
         {
-          projectId: input.projectId,
+          projectId,
           mode: 'merge',
           companies: batch.map(toEphemeralCompany),
         },
@@ -313,7 +334,7 @@ export class OutreachListTool implements Tool {
     } else {
       written = await this.upsertOutreachTargetPeopleTool.execute(
         {
-          projectId: input.projectId,
+          projectId,
           mode: 'merge',
           people: batch.map(toEphemeralPerson),
         },
@@ -330,8 +351,6 @@ export class OutreachListTool implements Tool {
       document.meta.workspaceId,
       document.meta.id,
       (current) => {
-        const projectId = input.projectId as string;
-
         if (!current.meta.projectIds.includes(projectId)) {
           current.meta.projectIds.push(projectId);
         }

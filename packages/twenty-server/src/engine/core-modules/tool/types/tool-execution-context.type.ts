@@ -8,6 +8,8 @@ export type ToolExecutionContext = {
   userId?: string;
   userWorkspaceId?: string;
   threadId?: string;
+  // The Outreach project the user is looking at, from the browsing context
+  projectId?: string;
   onCodeExecutionUpdate?: CodeExecutionStreamEmitter;
   onToolProgress?: ToolProgressStreamEmitter;
   toolConfigs?: AgentToolConfigs | null;

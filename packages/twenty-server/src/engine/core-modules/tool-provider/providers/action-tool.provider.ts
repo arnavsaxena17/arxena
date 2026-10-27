@@ -468,6 +468,7 @@ export class ActionToolProvider implements ToolProvider {
       userId: context.userId,
       userWorkspaceId: context.userWorkspaceId,
       threadId: context.threadId,
+      projectId: context.projectId,
       onCodeExecutionUpdate: context.onCodeExecutionUpdate,
       onToolProgress: context.onToolProgress,
       toolConfigs: context.toolConfigs,

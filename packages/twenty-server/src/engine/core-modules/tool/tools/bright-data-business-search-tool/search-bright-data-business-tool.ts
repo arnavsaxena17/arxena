@@ -1,6 +1,7 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
+import { isDefined } from 'twenty-shared/utils';
 
 import { OUTREACH_LIST_MAX_ROWS } from 'src/engine/core-modules/outreach-list/outreach-list.constants';
 import { OutreachListService } from 'src/engine/core-modules/outreach-list/services/outreach-list.service';
@@ -108,6 +109,11 @@ Ludicrous results never contain the records, only counts and a summary; they go 
       mode: wantsInstantDomainLookup
         ? ('instant' as const)
         : ('ludicrous' as const),
+      // The project the user is on, so a fetch still writes its tab when the
+      // model omits it. An estimate ignores projectId.
+      projectId: isNonEmptyString(parsed.data.projectId)
+        ? parsed.data.projectId
+        : context.projectId,
     };
 
     if (!isNonEmptyString(input.query)) {
@@ -294,6 +300,14 @@ Ludicrous results never contain the records, only counts and a summary; they go 
     const hasProject = isNonEmptyString(input.projectId);
     const list = await this.saveToList(input, documents, run, context, reused);
 
+    if (
+      isDefined(list) &&
+      isNonEmptyString(input.projectId) &&
+      ephemeral.written > 0
+    ) {
+      await this.linkListToProject(run.planId, input.projectId, context);
+    }
+
     // Records never go back to the model. They are in the project tab and in
     // the dataset store (planId), so the conversation only gets counts. This
     // keeps tool output tiny and stops rows being truncated or re-pasted.
@@ -336,6 +350,28 @@ Ludicrous results never contain the records, only counts and a summary; they go 
         summary: aggregateBrightDataDocuments(input.entity, run.documents),
       },
     };
+  }
+
+  // The sourcing ledger counts a list's searches and spend only once the list
+  // names the project, as an attach does
+  private async linkListToProject(
+    listId: string,
+    projectId: string,
+    context: ToolExecutionContext,
+  ): Promise<void> {
+    try {
+      await this.outreachListService.update(
+        context.workspaceId,
+        listId,
+        (current) => {
+          if (!current.meta.projectIds.includes(projectId)) {
+            current.meta.projectIds.push(projectId);
+          }
+        },
+      );
+    } catch (error) {
+      this.logger.error('Failed to link Bright Data list to project', error);
+    }
   }
 
   // Every fetched record lands in a list (Redis + S3 backup) so it survives a

@@ -7,6 +7,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ToolCategory } from 'twenty-shared/ai';
 import { isDefined } from 'twenty-shared/utils';
 
+import { applyDefaultProjectId } from 'src/engine/core-modules/arxena-tools/utils/apply-default-project-id.util';
 import {
   getDisabledSearchToolNames,
   isSearchToolEnabled,
@@ -40,7 +41,12 @@ import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/worksp
 // can call executeStaticTool without a full tool-provider context.
 export type ArxenaToolExecutionContext = Pick<
   ToolProviderContext,
-  'workspaceId' | 'authContext' | 'userId' | 'userWorkspaceId' | 'actorContext'
+  | 'workspaceId'
+  | 'authContext'
+  | 'userId'
+  | 'userWorkspaceId'
+  | 'actorContext'
+  | 'projectId'
 >;
 
 const extractTextFromMcpResult = (result: unknown): string => {
@@ -186,9 +192,14 @@ export class ArxenaToolProvider implements ToolProvider {
 
   async executeStaticTool(
     toolName: string,
-    args: Record<string, unknown>,
+    requestedArgs: Record<string, unknown>,
     context: ArxenaToolExecutionContext,
   ): Promise<ToolOutput> {
+    const args = applyDefaultProjectId(
+      toolName,
+      requestedArgs,
+      context.projectId,
+    );
     const searchToolsConfig = resolveSearchToolsConfig(
       this.twentyConfigService,
     );
@@ -222,6 +233,7 @@ export class ArxenaToolProvider implements ToolProvider {
           workspaceId: context.workspaceId,
           userId: context.userId,
           userWorkspaceId: context.userWorkspaceId,
+          projectId: context.projectId,
         }),
       );
       const text = extractTextFromMcpResult(result);

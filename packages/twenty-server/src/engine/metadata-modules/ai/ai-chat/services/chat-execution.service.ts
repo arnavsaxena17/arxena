@@ -15,6 +15,7 @@ import {
 import { type ExtendedUIMessage, ToolCategory } from 'twenty-shared/ai';
 import { type APP_LOCALES } from 'twenty-shared/translations';
 import { AppPath, FileFolder } from 'twenty-shared/types';
+import { isNonEmptyString } from '@sniptt/guards';
 import { getAppPath, isDefined } from 'twenty-shared/utils';
 
 import { AI_LATENCY_MS_BUCKET_BOUNDARIES } from 'src/engine/core-modules/metrics/constants/ai-latency-ms-bucket-boundaries.constant';
@@ -189,6 +190,12 @@ export class ChatExecutionService {
       userId,
       userWorkspaceId,
       threadId,
+      // Search tools write the project tab when the model omits projectId
+      projectId:
+        browsingContext?.type === 'outreachCommand' &&
+        isNonEmptyString(browsingContext.projectId)
+          ? browsingContext.projectId
+          : undefined,
       locale,
       onCodeExecutionUpdate,
       onToolProgress,
