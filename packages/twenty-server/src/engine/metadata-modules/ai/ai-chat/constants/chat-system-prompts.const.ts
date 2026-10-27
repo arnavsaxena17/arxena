@@ -13,8 +13,6 @@ const SHARED_ROUTING_LINES = buildRoutingLines({
   },
 });
 
-console.log('SHARED_ROUTING_LINES::', SHARED_ROUTING_LINES);
-// console.log("SHARED_ROUTING_LINES::", SHARED_ROUTING_LINES);
 // Neutral CRM copy (Ask AI + MCP): Outreach (not GTM Command); Your company
 // (not Seller); Target titles (JSON key targetTitles); people / enrolled
 // people; create_candidate = Person + enrollment record. Keep LinkedIn Sales

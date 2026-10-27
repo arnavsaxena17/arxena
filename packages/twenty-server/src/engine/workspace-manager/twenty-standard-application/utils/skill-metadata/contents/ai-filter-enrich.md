@@ -6,12 +6,12 @@ routes:
   - when: |-
       Filter / classify / enrich the people or companies in the list ("who is a CEO", "revenue of each", "employees in each")
     hint: |-
-      . Never re-search or page `find_many_*` for the list; the skill reads the project tab. On the People tab this is always a person column, also for questions about their companies (revenue, headcount, industry). Apply a table filter or sort only when the user asks to narrow or order the rows ("only the CEOs", "biggest first"); a plain question about data needs none.
+      . Never re-search or page `find_many_*` for the list; the skill reads the project tab.
   - when: |-
       Preview / draft the first LinkedIn message (opener) the people in the list would get once their connection request is accepted ("sample first message for each", "what would we send them after they accept")
     sections: [sample-message]
     hint: |-
-      . Do not look for a workflow template or enrolled candidates; list rows need no enrollment. The `sample-message` section uses `preview_sample_message_column`; nothing is sent.
+      . Do not look for a workflow template or enrolled candidates; list rows need no enrollment.
 parts:
   - filter-and-sort
   - sample-message
@@ -22,7 +22,7 @@ defaultSections:
 
 Add an AI-computed column to filter, classify or enrich the people or companies the user is already looking at ("who is a CEO", "revenue of each", "mark which are in fintech").
 
-Authentic / real / worthy / clean up fakes is `validate-profiles`, never an authenticity column on name, title and company. Do not re-source with `sourcing` and do not page `find_many_*`: the list is the **project tab**. Sourcing against criteria is a fitment column: pass `fitment` to `preview_ai_column` instead of `description` (`scoring`); `fitmentOutcome`, `fitmentScore` and `fitmentReason` are computed in code.
+Authentic / real / worthy / clean up fakes is `validate-profiles`. Sourcing against criteria is a fitment column: pass `fitment` to `preview_ai_column` instead of `description` (`scoring`); `fitmentOutcome`, `fitmentScore` and `fitmentReason` are computed in code.
 
 ## Flow (always in this order)
 

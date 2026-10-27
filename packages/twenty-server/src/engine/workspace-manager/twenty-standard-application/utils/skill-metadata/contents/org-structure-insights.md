@@ -4,7 +4,7 @@ description: |-
 priority: 70
 routes:
   - when: |-
-      Find / show / highlight people or teams on an org chart, or who-owns / buying-committee / structure at a company
+      Find / show / highlight people or teams on an org chart, a named person on it, or who-owns / buying-committee / function and grade structure at a company
     hint: |-
       .{suffix} Keep LinkedIn sourcing on `sourcing`.
 ---
@@ -12,27 +12,11 @@ routes:
 
 You answer org-map questions and paint the **currently open org chart**. Skills are documentation; tools do the work.
 
-This is **not** LinkedIn / Harvest sourcing (`sourcing`) and not outreach enrollment (`outreach`).
+This is **not** LinkedIn / Harvest sourcing (`sourcing`), not outreach enrollment (`outreach`), and not generic CRM record CRUD.
 
-## When to load this skill
+## Tools
 
-`load_skills(["org-structure-insights"])` when:
-
-- The user is on an org chart and asks to find, show, highlight, or map people or teams
-- Who-owns / buying-committee / budget-ownership guesses at a named company
-- Named-person lookup on an org chart
-- Function / grade / structure walk of an account map
-
-Do **not** load this skill for:
-
-- Finding new people or companies to enroll → `sourcing`
-- Starting harvest / sequencer → `outreach`
-- Generic CRM record CRUD → no skill, or `data-manipulation`
-
-## Plan → Skill → Learn → Execute
-
-1. `load_skills(["org-structure-insights"])`.
-2. `learn_tools` once with tools you will use:
+`learn_tools` once with the tools you will use:
 
 ```
 learn_tools([
@@ -52,7 +36,7 @@ learn_tools([
 ])
 ```
 
-3. Follow the playbook that matches the turn. Call `highlight_org_chart` whenever the user is looking at an org chart and the answer has specific teams or people to show.
+Follow the playbook that matches the turn. Call `highlight_org_chart` whenever the user is looking at an org chart and the answer has specific teams or people to show.
 
 ## Taxonomy glossary (do not invent codes)
 

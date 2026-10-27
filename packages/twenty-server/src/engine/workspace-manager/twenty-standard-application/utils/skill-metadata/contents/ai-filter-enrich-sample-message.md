@@ -7,7 +7,5 @@ When the user wants to **see what the first LinkedIn message would look like** f
    - `senderProfile`, `prospectEnrichment`, `profile`, `posts`, `chatHistory`: **on** by default. Set one to `false` only when the user asks to leave it out.
    - `profile` makes one live LinkedIn lookup per row; `posts` and `chatHistory` only exist for people already enrolled in the sequence (Find-list rows skip them).
    - `companyNews`: Adds a web-search lookup per company (cached for 30 days).
-3. **Persist scope**:
-   - User said first N / regenerate N / test / sample: `run_ai_column({ projectId, tab: "people", previewId, rowLimit: N })` with the **same N** (first N unfilled). Do **not** omit `rowLimit`. Clearing a few empty cells and calling run without `rowLimit` will fill every empty person in scope.
-   - User explicitly said all rows / everyone / run for all: ask once (cost), then `run_ai_column({ projectId, tab: "people", previewId })` with **no** `rowLimit`.
+3. **Run** as in step 6 of the flow, with `tab: "people"` and the **same N** as `rowLimit`. Omit `rowLimit` only when the user said all rows / everyone.
 4. Messages land in `otherFields.sampleLinkedinMessage` (**Sample LinkedIn message** column). Opener only — not follow-ups or replies.

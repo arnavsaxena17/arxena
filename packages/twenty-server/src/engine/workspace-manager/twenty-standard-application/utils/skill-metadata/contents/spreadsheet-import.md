@@ -10,9 +10,7 @@ routes:
 ---
 # Spreadsheet Import Skill
 
-Use this skill when the user attaches a `.xlsx` / `.xls` / `.csv` and wants its rows in the Outreach **Companies** and/or **People** tabs ("import this sheet", "upload these leads into project X", "create a project from this file").
-
-The rows land in the project's **ephemeral lists** (Companies / People tabs), exactly like search results. Nothing is written to the CRM; that only happens later through Add to CRM / Enroll. Never read the sheet yourself or paste rows into chat: the server parses every row.
+The rows of an attached `.xlsx` / `.xls` / `.csv` land in the project's **ephemeral lists** (Companies / People tabs), exactly like search results. Nothing is written to the CRM; that only happens later through Add to CRM / Enroll. Do not paste rows into chat.
 
 ## Flow (always in this order)
 
@@ -20,7 +18,7 @@ The rows land in the project's **ephemeral lists** (Companies / People tabs), ex
 2. **Find the file.** The user message carries a note `[Spreadsheet attached: <name> fileId=<id>]`. Use that `fileId`. If it is missing, ask the user to attach the file again.
 3. **Inspect**: `inspect_outreach_spreadsheet({ fileId })`. It returns the headers, five sample rows, a `suggestedMapping` and `suggestedCounts` (companies / people the mapping would produce). The mapping is proposed by a separate structured LLM call (`mappingSource: "llm"`, header heuristics when it is `"heuristic"`): sheet columns go onto the built-in company / person fields where one fits, and the rest become **proposed extra columns**, each with a snake_case `key`, a `label` and a `type` (text / number / boolean / url). Pass `sheetName` / `headerRow` only when the workbook has several sheets or the header is not on the first filled row.
 4. **Ask the user, in one `ask_questions` turn** (skip any question the message already answers):
-   - **Project**: the project from the browsing context if they are on `/outreach-home`, else list with `find_many_projects`. If they want a new one ("create a project", "new project called X"), `create_one_project({ name })` and use its id.
+   - **Project**: the project from the browsing context; with none, ask as the system prompt says. If they want a new one ("create a project", "new project called X"), `create_one_project({ name })` and use its id.
    - **What to import**: Companies only / People only / Both.
    - **Mapping**: show the suggested mapping as a short table (sheet column → company name, domain, industry, …; each contact column set → person, and the proposed extra columns with their key, label and type). Say which column is the company name and which fills in when it is empty, and which columns become extra table columns.
 5. **Adjust** only what the user corrects, then **import**: `import_outreach_spreadsheet({ fileId, projectId, target, mapping, mode: "merge" })`. Pass the `suggestedMapping` object unchanged when the user accepted it. Use `mode: "replace"` only if they ask to overwrite the existing lists.

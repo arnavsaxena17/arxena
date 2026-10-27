@@ -117,5 +117,3 @@ Some fields have sub-fields that can be filtered:
 - Always check field types before suggesting operators — using an invalid operator for a field type will fail
 - When the user says "show me X", translate that into the appropriate filter logic
 - Suggest sorts that complement the filters (e.g., if filtering overdue tasks, sort by dueAt ASC)
-- Explain what the filters do so users understand the results
-- If complex filtering is needed (AND + OR), explain the logic clearly

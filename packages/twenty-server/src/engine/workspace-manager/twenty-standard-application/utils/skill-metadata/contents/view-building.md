@@ -84,4 +84,3 @@ Example: { "objectNameSingular": "opportunity", "type": "KANBAN", "name": "Pipel
 - If the user is vague (e.g., "create a board"), ask which object they want to see
 - Suggest the most relevant view type based on the object's fields
 - After creating a view, always configure useful view fields and navigate to it
-- Explain what each view type does so users can make informed choices

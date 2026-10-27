@@ -4,19 +4,17 @@ description: |-
 priority: 80
 routes:
   - when: |-
-      Start outreach / activate harvest / enroll / sequencer workflows, or message people
+      Start outreach / activate harvest / enroll / sequencer workflows / scheduled company harvest into the CRM, clone or edit the seeded outreach graphs, or message people
     hint: |-
       .
 ---
 # Outreach Skill
 
-You build and run **campaign automation graphs** (company harvest + enroll + LinkedIn/email sequencer). Generic mechanics (DELAY vs event, FORM HITL, CRON schema) live in `workflow-building` — load both; do not restate them here.
+You build and run **campaign automation graphs** (company harvest + enroll + LinkedIn/email sequencer). Generic mechanics (DELAY vs event, FORM HITL, CRON schema) live in `workflow-building`; do not restate them here.
 
 Step outputs are already unwrapped in run context. Use `{{<step-uuid>.<field>}}` for LOGIC_FUNCTION / AI_AGENT, `{{<step-uuid>.first.<field>}}` for FIND_RECORDS, `{{trigger.properties.after.<field>}}` for DATABASE_EVENT, and `{{<form-uuid>.<fieldName>}}` for FORM (no extra `.result`).
 
-This is **not** ICP preference collection (`setup`) and **not** Ask AI target-list search (`sourcing` → Find / Redis tabs). Interactive Companies tab stays Find. **Scheduled harvest that writes the CRM companies table** is this skill.
-
-**Preview the first LinkedIn message for people in the list** (before or without enrolling): `load_skills(["ai-filter-enrich"])` with `sections: ["sample-message"]` and use `preview_sample_message_column` (Sample LinkedIn message column). Do not read workflow steps or `find_many_candidates` for this; list rows are not candidates.
+This is **not** ICP preference collection (`setup`), **not** generic CRM automations (`workflow-building`), and **not** Ask AI target-list search (`sourcing` → Find / Redis tabs). Interactive Companies tab stays Find. **Scheduled harvest that writes the CRM companies table** is this skill. Dashboards: `dashboard-building`, and **extend** the existing campaign dashboard.
 
 ## Ignite (prefer reuse — do not invent webhooks)
 
@@ -39,20 +37,10 @@ Seeded graphs ship as **DRAFT**. Triggers are CRON / `company.created` / `candid
 5. Harvest and company-created run once ACTIVE — no manual fire.
 6. Finish with `list_workflow_runs`.
 
-## When to load this skill
+## Tools
 
-`load_skills(["outreach", "workflow-building"])` when:
-
-- The user wants a **workflow** that harvests LinkedIn companies on a schedule, enrolls people on company create, or runs LinkedIn / email / meeting outreach
-- The user wants to clone or edit the seeded outreach graphs, or browsing context is the campaign home and the ask is about outreach **workflows**
-
-Do **not** load this skill for generic CRM automations or for chat-only company/people lists — use `workflow-building` or `sourcing`. Dashboards: load `dashboard-building` and **extend** the existing campaign dashboard.
-
-## Plan → Skill → Learn → Execute
-
-1. `load_skills(["outreach", "workflow-building"])`.
-2. `list_logic_function_tools` — use `inputSchema` / `isNative`. Enroll with native `upload-profiles`. Persist harvested companies with native `upsert-companies`.
-3. `learn_tools` for `create_complete_workflow` (or clone tools) then execute. Do **not** grep spilled JSON Schema with `code_interpreter`.
+1. `list_logic_function_tools` — use `inputSchema` / `isNative`. Enroll with native `upload-profiles`. Persist harvested companies with native `upsert-companies`.
+2. `learn_tools` for `create_complete_workflow` (or clone tools). Do **not** grep spilled JSON Schema with `code_interpreter`.
 
 Native workflow actions (kebab-case LFs — **not** the `sourcing` skill): `search-people-for-company`, `search-people`, `search-companies`, `search-jobs`, `search-posts`, `fetch-user-comments`, `fetch-linkedin-profile`, `visit-linkedin-profile`, `fetch-linkedin-messages`, `fetch-company-details`, `upload-profiles`, `upsert-companies`, `enrich-contact`, `get-calendar-availability`. They have stub source — do **not** call `get_logic_function_source` for them.
 

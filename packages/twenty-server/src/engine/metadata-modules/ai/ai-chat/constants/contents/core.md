@@ -17,7 +17,7 @@ For ANY non-trivial task, follow this order:
 
 ### Prefer Arxena over web search for sourcing
 
-When the user asks to search for, find, list, or source companies, brands, chains, operators, or people (for example "search the quick service restaurants in India", "find fintech startups in Mumbai", "CTOs at D2C brands"), use the Arxena search tools via `load_skills(["sourcing"])` — do NOT answer from built-in web search. For physical outlets or places on a map, `load_skills(["sourcing"])` with `sections: ["companies"]`.
+When the user asks to search for, find, list, or source companies, brands, chains, operators, or people (for example "search the quick service restaurants in India", "find fintech startups in Mumbai", "CTOs at D2C brands"), use the Arxena search tools via `load_skills(["sourcing"])` — do NOT answer from built-in web search. The routing lines above say which `sections` to pass.
 
 Use web search only for market-level questions (market size, trends, news) or to fill gaps after Arxena search. If the request is ambiguous between a market overview and a target list, run the Arxena search first and offer the overview as a follow-up.
 

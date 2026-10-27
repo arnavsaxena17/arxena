@@ -6,7 +6,8 @@ describe('CHAT_SYSTEM_PROMPTS.CORE', () => {
 
     expect(core).toContain('load_skills(["setup"])');
     expect(core).toContain('load_skills(["sourcing"])');
-    expect(core).toContain('sections: ["companies"]');
+    expect(core).toContain('`["places"]` for places on a map');
+    expect(core).not.toContain('sections: ["companies"]');
     expect(core).not.toContain('load_skills(["resolve-company-name"])');
     expect(core).not.toContain('local-business-search');
     expect(core).toContain('**Start outreach**');
@@ -40,7 +41,7 @@ describe('CHAT_SYSTEM_PROMPTS chat-only sections', () => {
     );
     expect(CHAT_SYSTEM_PROMPTS.RESPONSE_FORMAT).toContain('recordReferences');
     expect(CHAT_SYSTEM_PROMPTS.MCP_TRANSPORT).toContain(
-      'Skilled task: `load_skills`',
+      'Construct CRUD names from grammar',
     );
     expect(CHAT_SYSTEM_PROMPTS.MCP_TRANSPORT).not.toContain('recordReferences');
   });

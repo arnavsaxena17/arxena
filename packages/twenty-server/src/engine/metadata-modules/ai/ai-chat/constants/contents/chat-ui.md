@@ -27,6 +27,5 @@ Do NOT use `ask_questions` for:
 - Trivial choices with an obvious default — make the reasonable choice and proceed.
 - Confirming a column run, a model, a preview size or a column design: choose, state it in one line, and go on.
 - CSV column defaults, "top N vs full list" when the user already ordered download/import, or other format choices with a sensible default — pick the default and finish.
-- Re-confirming after the user already gave explicit execute language ("go ahead", "proceed", "that's all") for the remaining steps of a multi-part request.
 
-**Exception — Outreach `projectId`:** if browsing context has no `projectId` (or it says `none`), you MUST `ask_questions` which project to tag Find results to. A similar project name is not an obvious default. Never pick a project from `find_many_projects` without the user's answer.
+**Exception — Outreach `projectId`:** if browsing context has no `projectId` (or it says `none`), you MUST `ask_questions` which project to tag Find or import results to, before any paid fetch. List projects with `find_many_projects` (`select: ["id", "name"]`, `limit` 10–20), one option per project; if there are none, offer "Create a new project" and `create_one_project`. A similar project name is not an obvious default. Never pick a project from `find_many_projects` without the user's answer. Stop until they answer, then use that id for the rest of the conversation without asking again.
