@@ -239,7 +239,7 @@ export class RecruiterMessageService {
             { role: 'user' as const, content: this.buildUserPrompt(userMessage, conversationSummaryParts) },
           ],
           toOpenAiJsonSchemaResponseFormat(this.plannerSchema, 'recruiterPlanner'),
-          'gpt-4o-mini',
+          'gpt-6-luna',
         ),
       {
         chunkEventName: 'text',

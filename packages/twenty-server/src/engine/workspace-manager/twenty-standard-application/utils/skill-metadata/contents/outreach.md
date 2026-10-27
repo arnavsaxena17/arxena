@@ -16,7 +16,7 @@ Step outputs are already unwrapped in run context. Use `{{<step-uuid>.<field>}}`
 
 This is **not** ICP preference collection (`setup`) and **not** Ask AI target-list search (`sourcing` → Find / Redis tabs). Interactive Companies tab stays Find. **Scheduled harvest that writes the CRM companies table** is this skill.
 
-**Preview the first LinkedIn message for people in the list** (before or without enrolling): `load_skills(["ai-filter-enrich"])` and use `preview_sample_message_column` (Sample LinkedIn message column). Do not read workflow steps or `find_many_candidates` for this; list rows are not candidates.
+**Preview the first LinkedIn message for people in the list** (before or without enrolling): `load_skills(["ai-filter-enrich"])` with `sections: ["sample-message"]` and use `preview_sample_message_column` (Sample LinkedIn message column). Do not read workflow steps or `find_many_candidates` for this; list rows are not candidates.
 
 ## Ignite (prefer reuse — do not invent webhooks)
 
@@ -83,7 +83,7 @@ Do **not** add a workflow whose only job is “mark connection accepted” — U
 
 | Workflow | Trigger | Role |
 | --- | --- | --- |
-| **Harvest** | `CRON` `HOURS` | Native `search-companies` `{ query, keywords, limit }` → native `upsert-companies` `{ projectId, companies: "{{searchUuid.companies}}" }` (CRM + `projectIds`). Seed Project **Harvest**. Do **not** `upsert_outreach_target_companies`. Skip rows already tagged to this project. |
+| **Harvest** | `CRON` `HOURS` | Native `search-companies` `{ query, keywords, limit }` → native `upsert-companies` `{ projectId, companies: "{{searchUuid.companies}}" }` (CRM + `projectIds`). Seed Project **Harvest**. Skip rows already tagged to this project. |
 | **Workflow 1** (company people search) | `company.created` | LOGIC_FUNCTION `search-people-for-company` → LOGIC_FUNCTION `upload-profiles`. Optional FORM between only if the user wants to approve enroll. |
 | **Fetch & Save** (`Add people`) | MANUAL | Native `upload-profiles` for ad-hoc enroll from the workflow launcher (org-chart / People tab paths may still use HTTP `upload-profiles` directly). |
 | **Search and Upload** (`Find people by search`) | WEBHOOK POST | Native `search-people` → `upload-profiles`. Body: `projectId` (required for enroll) plus search fields (`naturalLanguage`, `searchUrl`, `companyName`, `website`, `companyId`, `jobTitle`, `country`, `limit`). Activate then POST the workflow webhook URL. |
@@ -208,7 +208,7 @@ Start a seeded workflow by name with `run_workflow({ workflow, payload })`. The 
 
 These three existing graphs now start from a webhook (no more CRON / company.created) and have the AI filtering step already in them (search → filter → save only the kept records); never add or edit steps to run them. Seeded workflows start as drafts: `activate_workflow_version` once, then run. The filter prompt is on the AI filtering step ("Company fit" / "Keep people"); change it with `update_workflow_version_step` when the ICP changes.
 
-The AI filtering step ("Company fit filter", "Keep people filter") outputs `kept`, `rejected` (each with a `reason`) and `failed` (the model gave no usable answer: re-run, do not treat as rejected). Its `selectedModel` is set per step; the company filter uses `gpt4o` and the people filter `gpt4omini` because small models misread headcount bands. Change the model or prompt with `update_workflow_version_step`; the answer contract (`keep`/`fit` boolean, `confidence` strong|borderline, optional `reason`) is the same for every model. The workspace ICP (titles, locations) is appended to the prompt at run time.
+The AI filtering step ("Company fit filter", "Keep people filter") outputs `kept`, `rejected` (each with a `reason`) and `failed` (the model gave no usable answer: re-run, do not treat as rejected). Its `selectedModel` is set per step; the company filter uses `gpt4o` and the people filter `gpt6luna` because small models misread headcount bands. Change the model or prompt with `update_workflow_version_step`; the answer contract (`keep`/`fit` boolean, `confidence` strong|borderline, optional `reason`) is the same for every model. The workspace ICP (titles, locations) is appended to the prompt at run time.
 
 Rules:
 

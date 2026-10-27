@@ -11,6 +11,7 @@ const fieldMetadataIds = {
   createdAt: '77777777-7777-4777-8777-777777777777',
   chatCandidateId: '88888888-8888-4888-8888-888888888888',
   chatCreatedAt: '99999999-9999-4999-8999-999999999999',
+  projectRecordId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
 };
 
 describe('buildSubstitutedCandidateSequencerGraph', () => {

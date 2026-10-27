@@ -33,6 +33,7 @@ import { CandidateAvatarModule } from 'src/engine/core-modules/candidate-avatar/
 import { OrgChartClientIpModule } from 'src/engine/core-modules/org-chart/org-chart-client-ip.module';
 
 import { ElasticsearchSearchController } from './controllers/elasticsearch-search.controller';
+import { HarvestSearchController } from './controllers/harvest-search.controller';
 import { OrgChartController } from './controllers/org-chart.controller';
 import { ArxenaBackendService } from './services/arxena-backend.service';
 import { CompaniesEsService } from './services/companies-es.service';
@@ -98,6 +99,7 @@ import { SuperImposeQueryBuilderService } from './services/super-impose-query-bu
     OrgChartController,
     ElasticsearchSearchController,
     OrgChartBrightDataController,
+    HarvestSearchController,
   ],
   providers: [
     OrgChartBrightDataPeopleService,

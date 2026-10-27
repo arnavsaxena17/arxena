@@ -1,7 +1,6 @@
 import { isNonEmptyString, isObject } from '@sniptt/guards';
 
 import { resolveToolName } from 'src/engine/core-modules/tool-provider/utils/resolve-tool-name.util';
-import { type OutreachWorkingSetSubject } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
 import { type OutreachTableTab } from 'src/engine/core-modules/outreach-command/utils/outreach-cache-realtime.constants';
 
 const EXECUTE_TOOL_TOOL_NAME = 'execute_tool';
@@ -15,7 +14,7 @@ export type ChatToolPartLike = {
 
 export type OutreachChatColumnRemoval = {
   projectId: string;
-  subject: OutreachWorkingSetSubject;
+  tab: OutreachTableTab;
   columnKeys: string[];
 };
 
@@ -31,9 +30,6 @@ export type OutreachChatMutations = {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   isObject(value) && !Array.isArray(value);
-
-const readSubject = (value: unknown): OutreachWorkingSetSubject =>
-  value === 'company' ? 'company' : 'person';
 
 const readTab = (value: unknown): OutreachTableTab =>
   value === 'companies' ? 'companies' : 'people';
@@ -89,7 +85,7 @@ const columnKeysFromOutput = (output: Record<string, unknown>): string[] => {
 };
 
 const columnRemovalKey = (removal: OutreachChatColumnRemoval): string =>
-  `${removal.projectId}:${removal.subject}:${[...removal.columnKeys].sort().join(',')}`;
+  `${removal.projectId}:${removal.tab}:${[...removal.columnKeys].sort().join(',')}`;
 
 const viewClearKey = (clear: OutreachChatViewClear): string =>
   `${clear.projectId}:${clear.tab}`;
@@ -129,7 +125,7 @@ export const collectOutreachMutationsFromChatParts = (
 
       const removal: OutreachChatColumnRemoval = {
         projectId,
-        subject: readSubject(input.subject),
+        tab: readTab(input.tab),
         columnKeys: [...new Set(columnKeys)],
       };
 

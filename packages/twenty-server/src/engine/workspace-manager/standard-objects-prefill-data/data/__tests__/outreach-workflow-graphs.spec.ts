@@ -461,7 +461,10 @@ describe('GTM outreach workflow graphs', () => {
     expect(routeFind?.nextStepIds).toEqual([
       byName('Load workspace member')?.id,
     ]);
-    expect(byName('Load workspace member')?.nextStepIds).toEqual([router?.id]);
+    expect(byName('Load workspace member')?.nextStepIds).toEqual([
+      byName('Load project')?.id,
+    ]);
+    expect(byName('Load project')?.nextStepIds).toEqual([router?.id]);
     expect(byName('Load workspace member profile')).toBeUndefined();
 
     const branches = router?.settings?.input?.branches ?? [];
@@ -802,6 +805,38 @@ describe('GTM outreach workflow graphs', () => {
 
     // The old FILTER-first gate must not survive the merge.
     expect(byName('Only QUEUED candidates')).toBeUndefined();
+  });
+
+  it('feeds project persona guidance into qualify and every cold draft prompt', () => {
+    const steps = buildCandidateSequencerGraph({
+      useLlmConnectionNote: true,
+    }).steps as GraphStep[];
+    const projectStep = steps.find((step) => step.name === 'Load project');
+    const personaChip = `{{${projectStep?.id}.first.outreachConfig.personaGuidance}}`;
+    const promptOf = (name: string) =>
+      steps.find((step) => step.name === name)?.settings?.input?.prompt;
+
+    expect(projectStep?.type).toBe('FIND_RECORDS');
+
+    for (const name of [
+      'Qualify prospect',
+      'Draft connection note',
+      'Draft first LinkedIn message',
+    ]) {
+      expect(promptOf(name)).toContain(personaChip);
+    }
+
+    const followUpPrompts = steps
+      .filter((step) =>
+        /^Draft LinkedIn follow-up [123]$/.test(step.name ?? ''),
+      )
+      .map((step) => step.settings?.input?.prompt);
+
+    expect(followUpPrompts).toHaveLength(3);
+
+    for (const prompt of followUpPrompts) {
+      expect(prompt).toContain(personaChip);
+    }
   });
 
   it('only seeds Candidate Sequencer on candidate.upserted', () => {
@@ -1448,14 +1483,14 @@ describe('GTM outreach workflow graphs', () => {
       'Keep people filter',
       'keep',
       'person',
-      'gpt4omini',
+      'gpt6luna',
     ],
     [
       'Find people by search',
       'Keep people filter',
       'keep',
       'person',
-      'gpt4omini',
+      'gpt6luna',
     ],
   ])(
     'seeds %s as a webhook search → AI filter → save of the kept records',

@@ -11,9 +11,9 @@ import {
 } from 'src/engine/core-modules/candidate-sourcing/services/filter-description-processor.service';
 import { OutreachCacheRealtimeService } from 'src/engine/core-modules/outreach-command/services/outreach-cache-realtime.service';
 import {
-  type OutreachWorkingSetRow,
-  OutreachWorkingSetService,
-} from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+  type OutreachTabRow,
+  OutreachTabService,
+} from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
 import {
   type OutreachTableFilter,
   type OutreachTableSort,
@@ -60,10 +60,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 // Text shown in the table cell for this column. Filters compare against it,
 // exactly like the table does on the front end.
-export const readCellText = (
-  row: OutreachWorkingSetRow,
-  columnId: string,
-): string => {
+export const readCellText = (row: OutreachTabRow, columnId: string): string => {
   if (columnId.startsWith(AI_COLUMN_PREFIX)) {
     const value = row.otherFields[columnId.slice(AI_COLUMN_PREFIX.length)];
 
@@ -137,7 +134,7 @@ export const matchesTableFilter = (
 };
 
 export const countMatchingRows = (
-  rows: OutreachWorkingSetRow[],
+  rows: OutreachTabRow[],
   filters: OutreachTableFilter[],
 ): number =>
   rows.filter((row) =>
@@ -151,7 +148,7 @@ export class OutreachTableViewService {
   constructor(
     @InjectCacheStorage(CacheStorageNamespace.EngineOutreachCommand)
     private readonly cache: CacheStorageService,
-    private readonly outreachWorkingSetService: OutreachWorkingSetService,
+    private readonly outreachTabService: OutreachTabService,
     private readonly filterDescriptionProcessorService: FilterDescriptionProcessorService,
     private readonly outreachCacheRealtimeService: OutreachCacheRealtimeService,
   ) {}
@@ -184,12 +181,12 @@ export class OutreachTableViewService {
     tab: OutreachTableTab;
   }): Promise<{
     columns: OutreachTableColumn[];
-    rows: OutreachWorkingSetRow[];
+    rows: OutreachTabRow[];
   }> {
-    const rows = await this.outreachWorkingSetService.getAll({
+    const rows = await this.outreachTabService.getAll({
       workspaceId,
       projectId,
-      subject: tab === 'people' ? 'person' : 'company',
+      tab,
     });
     const aiColumns = new Map<
       string,

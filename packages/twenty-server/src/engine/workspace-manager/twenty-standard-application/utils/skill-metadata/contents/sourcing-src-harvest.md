@@ -1,30 +1,32 @@
 ## Source: Harvest
 
-### Limits and exhaustion
+Harvest runs LinkedIn Sales Navigator people and company searches on its own accounts: no LinkedIn seat needed, $0.004 per record returned. Use it when the user names Harvest, or when the request needs Sales Navigator filters and the LinkedIn status lists no `sales_navigator`. Learn `generate_linkedin_query_set` and `search_harvest_leads` (people) or `search_harvest_accounts` (companies).
 
-The cap for this source is not documented here yet. Treat a page or batch that adds no new rows (all duplicates) as exhausted, and report that.
+### Spend
 
-### Source — Harvest (People API)
+- A call fetches `limit` records (default 25, max 250). Say the cost before each call ("100 records, about $0.40"). Ask before going past 250 records for one request.
+- Each result reports `costUsd`; rows land in a list kept 30 days. Continue with `page: paging.nextPage` until `totalElements` or the user's number is reached.
+- One search stops at 100 pages of 25 (2,500 records). Split a bigger request by location or title band.
 
-Taxonomy-backed people search without a LinkedIn session. Population examples (no named employer) are at the end of this section.
+### Brief
 
-- `search_people_api` with `naturalLanguage` (preferred) or `search_people_by_job_title` alias.
-- Always pass `dataSource: "harvest"`. Never invent `harvest_*` tool names.
+1. `generate_linkedin_query_set({ rawRequirement, category, provider: "harvest" })` once per brief. It returns `tool` and `queries[]`: titles and locations as text, employers as LinkedIn company URLs.
+2. Call `tool` with `queries[i].searchParameters` unchanged. Employers in `unresolvedCompanies` were left out: say so.
 
-### Source — Harvest (company discovery via people)
+### Filters by hand
 
-Harvest has no standalone company search — discover companies *through people* when certain roles exist, or when no LinkedIn session is available.
+People (`search_harvest_leads`): `search` (LinkedIn operators), `currentJobTitles`, `locations` and `companyHeadquarterLocations` as text; `currentCompanies` as LinkedIn company URLs; `seniorityLevelIds`, `functionIds`, `industryIds` as Sales Navigator ids. Each has an `exclude…` twin. A pasted Sales Navigator people URL: `{ "salesNavUrl": "<url>" }`.
 
-- Use People API tools with `dataSource: "harvest"`; extract `companyName` from hits to build the company list. A role at those companies, once they are named, is `people-by-company`.
-
-**Harvest population** (no named employer). Call `list_people_data_sources` if you are unsure Harvest is configured. Never invent `harvest_*` tool names.
+Companies (`search_harvest_accounts`): `search`, `headquarterLocations` (text), `industryIds`, `companyHeadcount` (`51-200`, `201-500`, …), `companyHeadcountGrowth` (`"10-100"`), `annualRevenue` (`"10-100;USD"`, millions), `departmentHeadcount` (`"10-100;Engineering"`), `jobOpportunities: "HIRING_ON_LINKEDIN"`. No account lists.
 
 ```json
 {
-  "dataSource": "harvest",
-  "stdFunction": "engineering",
-  "stdGrade": "leadership",
-  "country": "United States",
-  "limit": 20
+  "searchParameters": {
+    "currentJobTitles": ["Plant Manager", "Factory Manager"],
+    "locations": ["Mumbai"]
+  },
+  "limit": 50
 }
 ```
+
+A role at companies already named stays on `people-by-company`.

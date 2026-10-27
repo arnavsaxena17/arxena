@@ -145,7 +145,7 @@ export class StreamProcessingService {
     openaiClient: OpenAI,
     messages: Array<{ role: 'system' | 'user'; content: string }>,
     responseFormat: ReturnType<typeof toOpenAiJsonSchemaResponseFormat>,
-    model: string = 'gpt-4o-mini',
+    model: string = 'gpt-6-luna',
   ): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>> {
     return openaiClient.chat.completions.create({
       model,

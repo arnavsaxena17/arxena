@@ -167,8 +167,8 @@
         "supportsReasoning": true
       },
       {
-        "name": "gpt-4o-mini",
-        "label": "GPT-4o mini",
+        "name": "gpt-6-luna",
+        "label": "GPT-6 Luna",
         "modelFamily": "GPT",
         "inputCostPerMillionTokens": 0.15,
         "outputCostPerMillionTokens": 0.6,

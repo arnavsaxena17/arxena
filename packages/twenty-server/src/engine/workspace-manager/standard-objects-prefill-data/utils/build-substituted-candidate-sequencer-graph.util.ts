@@ -77,6 +77,7 @@ export const buildSubstitutedCandidateSequencerGraph = ({
     createdAt: string;
     chatCandidateId: string;
     chatCreatedAt: string;
+    projectRecordId: string;
     // Only needed when options.pinSenderByWarmOverlap is on.
     workspaceMemberId?: string;
   };
@@ -106,6 +107,7 @@ export const buildSubstitutedCandidateSequencerGraph = ({
     [OUTREACH_WF_FIELD.createdAt]: fieldMetadataIds.createdAt,
     [OUTREACH_WF_FIELD.chatCandidateId]: fieldMetadataIds.chatCandidateId,
     [OUTREACH_WF_FIELD.chatCreatedAt]: fieldMetadataIds.chatCreatedAt,
+    [OUTREACH_WF_FIELD.projectRecordId]: fieldMetadataIds.projectRecordId,
     ...(isDefined(fieldMetadataIds.workspaceMemberId)
       ? {
           [OUTREACH_WF_FIELD.workspaceMemberId]:

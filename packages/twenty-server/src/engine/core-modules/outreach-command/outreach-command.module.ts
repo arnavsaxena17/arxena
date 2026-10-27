@@ -78,8 +78,9 @@ import { ProcessOutreachAiColumnChunkJob } from 'src/engine/core-modules/outreac
 import { OutreachAiColumnRunService } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column-run.service';
 import { OutreachTableViewService } from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
 import { OutreachAiColumnService } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column.service';
+import { ChatTabWritesService } from 'src/engine/core-modules/outreach-command/services/chat-tab-writes.service';
 import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
-import { OutreachWorkingSetService } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+import { OutreachTabService } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
 import { UndoChatOutreachService } from 'src/engine/core-modules/outreach-command/services/undo-chat-outreach.service';
 import { OutreachPeopleCacheService } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
 import { OutreachProjectCacheBackupService } from 'src/engine/core-modules/outreach-command/services/outreach-project-cache-backup.service';
@@ -157,9 +158,10 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     OutreachCompaniesCacheService,
     OutreachPeopleCacheService,
     OutreachSpreadsheetMappingService,
-    OutreachWorkingSetService,
+    OutreachTabService,
     UndoChatOutreachService,
     SourcingLedgerService,
+    ChatTabWritesService,
     OutreachAiColumnService,
     OutreachAiColumnRunService,
     OutreachTableViewService,
@@ -250,9 +252,10 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     OutreachCompaniesCacheService,
     OutreachPeopleCacheService,
     OutreachSpreadsheetMappingService,
-    OutreachWorkingSetService,
+    OutreachTabService,
     UndoChatOutreachService,
     SourcingLedgerService,
+    ChatTabWritesService,
     OutreachAiColumnService,
     OutreachAiColumnRunService,
     OutreachTableViewService,

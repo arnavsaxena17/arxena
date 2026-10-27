@@ -194,9 +194,9 @@ const buildTool = ({
   const writeOtherFields = jest
     .fn()
     .mockResolvedValue({ ephemeralUpdated: 1, crmUpdated: 0 });
-  const getAll = jest.fn().mockResolvedValue(
-    projectRows.map((row) => ({ otherFields: {}, ...row })),
-  );
+  const getAll = jest
+    .fn()
+    .mockResolvedValue(projectRows.map((row) => ({ otherFields: {}, ...row })));
   const getTableView = jest.fn().mockResolvedValue(tableView);
   const tool = new FindRoleAtCompaniesTool(
     { searchNaturalLanguage } as never,
@@ -796,7 +796,7 @@ describe('FindRoleAtCompaniesTool Google queries', () => {
     });
 
     await tool.execute(
-      { companies: [{ name: 'Acme' }], roles: ['MD'], country: 'India' },
+      { companies: [{ name: 'Acme' }], roles: ['MD'], location: 'India' },
       context,
     );
 

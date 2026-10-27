@@ -1,10 +1,10 @@
 import { OutreachAiColumnRunService } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column-run.service';
-import { type OutreachWorkingSetRow } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+import { type OutreachTabRow } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
 
 const buildRow = (
   id: string,
   otherFields: Record<string, unknown> = {},
-): OutreachWorkingSetRow => ({
+): OutreachTabRow => ({
   id,
   source: 'crm',
   name: `Person ${id}`,
@@ -25,7 +25,7 @@ const setup = ({
   rows,
   evaluate,
 }: {
-  rows: OutreachWorkingSetRow[];
+  rows: OutreachTabRow[];
   evaluate?: jest.Mock;
 }) => {
   const store = new Map<string, unknown>();
@@ -44,13 +44,13 @@ const setup = ({
       previewId: 'preview-1',
       workspaceId: 'ws',
       projectId: 'project',
-      subject: 'person',
+      tab: 'people',
       filter: FILTER,
       previewedRows: {},
     })),
     evaluateRows:
       evaluate ??
-      jest.fn(async (chunkRows: OutreachWorkingSetRow[]) => ({
+      jest.fn(async (chunkRows: OutreachTabRow[]) => ({
         results: chunkRows.map((row) => ({
           id: row.id,
           name: row.name,
@@ -59,7 +59,7 @@ const setup = ({
         })),
         usage: {
           engine: 'openai',
-          model: 'gpt-4o-mini',
+          model: 'gpt-6-luna',
           calls: chunkRows.length,
           webSearchCalls: 0,
           inputTokens: 10,
@@ -69,7 +69,7 @@ const setup = ({
         },
       })),
   };
-  const workingSet = {
+  const tab = {
     getAll: jest.fn(async () => rows),
     writeOtherFields: jest.fn(async () => ({
       ephemeralUpdated: 0,
@@ -85,12 +85,12 @@ const setup = ({
     cache as never,
     queue as never,
     column as never,
-    workingSet as never,
+    tab as never,
     realtime as never,
     tableView as never,
   );
 
-  return { service, queue, workingSet, realtime, column, store, tableView };
+  return { service, queue, tab, realtime, column, store, tableView };
 };
 
 describe('OutreachAiColumnRunService', () => {
@@ -102,17 +102,17 @@ describe('OutreachAiColumnRunService', () => {
     const state = await service.startRun({
       workspaceId: 'ws',
       projectId: 'project',
-      subject: 'person',
+      tab: 'people',
       previewId: 'preview-1',
     });
 
-    expect(state.total).toBe(3);
-    expect(state.done).toBe(1);
+    expect(state.total).toBe(2);
+    expect(state.done).toBe(0);
     expect(state.units.flat()).toEqual(['b', 'c']);
     expect(queue.add).toHaveBeenCalledTimes(1);
   });
 
-  it('should only process the first N working-set rows when rowLimit is set', async () => {
+  it('should only process the first N unfilled rows when rowLimit is set', async () => {
     const { service, queue } = setup({
       rows: [
         buildRow('a'),
@@ -126,13 +126,69 @@ describe('OutreachAiColumnRunService', () => {
     const state = await service.startRun({
       workspaceId: 'ws',
       projectId: 'project',
-      subject: 'person',
+      tab: 'people',
       previewId: 'preview-1',
       rowLimit: 3,
     });
 
     expect(state.total).toBe(3);
     expect(state.units.flat()).toEqual(['a', 'b', 'c']);
+    expect(queue.add).toHaveBeenCalledTimes(1);
+  });
+
+  it('should skip a filled head when rowLimit caps unfilled rows', async () => {
+    const { service, queue } = setup({
+      rows: [
+        buildRow('a', { isCeo: true }),
+        buildRow('b', { isCeo: true }),
+        buildRow('c'),
+        buildRow('d'),
+        buildRow('e'),
+      ],
+    });
+
+    const state = await service.startRun({
+      workspaceId: 'ws',
+      projectId: 'project',
+      tab: 'people',
+      previewId: 'preview-1',
+      rowLimit: 3,
+    });
+
+    expect(state.total).toBe(3);
+    expect(state.units.flat()).toEqual(['c', 'd', 'e']);
+    expect(queue.add).toHaveBeenCalledTimes(1);
+  });
+
+  it('should limit the run to chat_upserts row ids from the cache', async () => {
+    const { service, queue } = setup({
+      rows: [buildRow('a'), buildRow('b'), buildRow('c')],
+    });
+    const chatWrites = {
+      read: jest.fn(async () => ['b', 'c']),
+    };
+
+    (
+      service as unknown as {
+        chatTabWritesService: typeof chatWrites;
+      }
+    ).chatTabWritesService = chatWrites;
+
+    const state = await service.startRun({
+      workspaceId: 'ws',
+      projectId: 'project',
+      tab: 'people',
+      previewId: 'preview-1',
+      rowScope: 'chat_upserts',
+      threadId: 'thread-1',
+    });
+
+    expect(chatWrites.read).toHaveBeenCalledWith(
+      'thread-1',
+      'project',
+      'people',
+    );
+    expect(state.units.flat()).toEqual(['b', 'c']);
     expect(queue.add).toHaveBeenCalledTimes(1);
   });
 
@@ -159,7 +215,7 @@ describe('OutreachAiColumnRunService', () => {
     const state = await service.startRun({
       workspaceId: 'ws',
       projectId: 'project',
-      subject: 'person',
+      tab: 'people',
       previewId: 'preview-1',
       onlyViewMatches: true,
     });
@@ -169,7 +225,7 @@ describe('OutreachAiColumnRunService', () => {
   });
 
   it('should write a failed marker, not a value, for rows the model could not answer', async () => {
-    const evaluate = jest.fn(async (chunkRows: OutreachWorkingSetRow[]) => ({
+    const evaluate = jest.fn(async (chunkRows: OutreachTabRow[]) => ({
       results: chunkRows.map((row) => ({
         id: row.id,
         name: row.name,
@@ -179,7 +235,7 @@ describe('OutreachAiColumnRunService', () => {
       })),
       usage: {
         engine: 'openai',
-        model: 'gpt-4o-mini',
+        model: 'gpt-6-luna',
         calls: 2,
         webSearchCalls: 0,
         inputTokens: 20,
@@ -188,21 +244,21 @@ describe('OutreachAiColumnRunService', () => {
         durationMs: 5,
       },
     }));
-    const { service, workingSet } = setup({
+    const { service, tab } = setup({
       rows: [buildRow('a'), buildRow('b')],
       evaluate,
     });
     const started = await service.startRun({
       workspaceId: 'ws',
       projectId: 'project',
-      subject: 'person',
+      tab: 'people',
       previewId: 'preview-1',
     });
 
     await service.processChunk(started.runId);
 
     const written = (
-      workingSet.writeOtherFields.mock.calls as unknown as Array<
+      tab.writeOtherFields.mock.calls as unknown as Array<
         [{ valuesByRowId: Map<string, Record<string, unknown>> }]
       >
     )[0][0].valuesByRowId;
@@ -225,7 +281,7 @@ describe('OutreachAiColumnRunService', () => {
   });
 
   it('should stop the run when every row fails because credits are exhausted', async () => {
-    const evaluate = jest.fn(async (chunkRows: OutreachWorkingSetRow[]) => ({
+    const evaluate = jest.fn(async (chunkRows: OutreachTabRow[]) => ({
       results: chunkRows.map((row) => ({
         id: row.id,
         name: row.name,
@@ -235,7 +291,7 @@ describe('OutreachAiColumnRunService', () => {
       })),
       usage: {
         engine: 'openai',
-        model: 'gpt-4o-mini',
+        model: 'gpt-6-luna',
         calls: 0,
         webSearchCalls: 0,
         inputTokens: 0,
@@ -251,7 +307,7 @@ describe('OutreachAiColumnRunService', () => {
     const started = await service.startRun({
       workspaceId: 'ws',
       projectId: 'project',
-      subject: 'person',
+      tab: 'people',
       previewId: 'preview-1',
     });
 
@@ -270,7 +326,7 @@ describe('OutreachAiColumnRunService', () => {
     await service.startRun({
       workspaceId: 'ws',
       projectId: 'project',
-      subject: 'person',
+      tab: 'people',
       previewId: 'preview-1',
     });
 
@@ -278,7 +334,7 @@ describe('OutreachAiColumnRunService', () => {
       service.startRun({
         workspaceId: 'ws',
         projectId: 'project',
-        subject: 'person',
+        tab: 'people',
         previewId: 'preview-1',
       }),
     ).rejects.toThrow('already running');
@@ -289,7 +345,7 @@ describe('OutreachAiColumnRunService', () => {
     const first = await service.startRun({
       workspaceId: 'ws',
       projectId: 'project',
-      subject: 'person',
+      tab: 'people',
       previewId: 'preview-1',
     });
     const key = `outreach-ai-column-run:${first.runId}`;
@@ -305,7 +361,7 @@ describe('OutreachAiColumnRunService', () => {
     const second = await service.startRun({
       workspaceId: 'ws',
       projectId: 'project',
-      subject: 'person',
+      tab: 'people',
       previewId: 'preview-1',
     });
 
@@ -320,7 +376,7 @@ describe('OutreachAiColumnRunService', () => {
     const started = await service.startRun({
       workspaceId: 'ws',
       projectId: 'project',
-      subject: 'person',
+      tab: 'people',
       previewId: 'preview-1',
     });
     const key = `outreach-ai-column-run:${started.runId}`;
@@ -339,7 +395,7 @@ describe('OutreachAiColumnRunService', () => {
     const started = await service.startRun({
       workspaceId: 'ws',
       projectId: 'project',
-      subject: 'person',
+      tab: 'people',
       previewId: 'preview-1',
     });
 
@@ -359,15 +415,15 @@ describe('OutreachAiColumnRunService', () => {
   });
 
   it('should end the run as failed, not leave it running, when a chunk throws', async () => {
-    const { service, workingSet } = setup({ rows: [buildRow('a')] });
+    const { service, tab } = setup({ rows: [buildRow('a')] });
     const started = await service.startRun({
       workspaceId: 'ws',
       projectId: 'project',
-      subject: 'person',
+      tab: 'people',
       previewId: 'preview-1',
     });
 
-    workingSet.writeOtherFields.mockRejectedValueOnce(
+    tab.writeOtherFields.mockRejectedValueOnce(
       new Error('invalid input syntax for type uuid'),
     );
     await service.processChunk(started.runId);

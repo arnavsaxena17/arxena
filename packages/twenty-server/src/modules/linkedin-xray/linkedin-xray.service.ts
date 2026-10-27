@@ -424,7 +424,7 @@ export class LinkedinXrayService {
 
     const openai = new OpenAI({ apiKey });
     const completion = await openai.chat.completions.create({
-      model: process.env.ARX_LINKEDIN_XRAY_PARSE_MODEL ?? 'gpt-4o-mini',
+      model: process.env.ARX_LINKEDIN_XRAY_PARSE_MODEL ?? 'gpt-6-luna',
       temperature: 0,
       response_format: { type: 'json_object' },
       messages: [

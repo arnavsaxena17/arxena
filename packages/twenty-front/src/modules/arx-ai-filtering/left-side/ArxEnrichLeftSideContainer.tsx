@@ -131,7 +131,7 @@ export const ModalNavElementContainer = () => {
       selectedMetadataFields: [],
       filterDescription: '',
       prompt: '',
-      selectedModel: 'gpt4omini',
+      selectedModel: 'gpt6luna',
       bestOf: 1,
       includeResume: false,
     };

@@ -1853,7 +1853,7 @@ export const getOutreachLogicFunctionDefinitions = (
       id: ids.classifyAndUpsertLocalPlacesId,
       name: OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME,
       description:
-        'Classify unique Google Maps place names with gpt-4o-mini (isMultiOutlet, numberOutlets, confidence), keep multi-outlet brands (default ≥7 outlets), upsert Companies. Pass places JSON array or placesFilePath — no Bright Data re-fetch.',
+        'Classify unique Google Maps place names with gpt-6-luna (isMultiOutlet, numberOutlets, confidence), keep multi-outlet brands (default ≥7 outlets), upsert Companies. Pass places JSON array or placesFilePath — no Bright Data re-fetch.',
       sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
         OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME,
       ),

@@ -956,6 +956,13 @@ export const SEARCH_PEOPLE_INDEX_INPUT_DESCRIPTOR: readonly McpInputFieldDescrip
       description: 'Pagination offset',
       required: false,
     },
+    {
+      key: 'projectId',
+      type: 'string',
+      description:
+        'Outreach project id. On Find, pass so results write to the project tab; omit only for preview or export-only.',
+      required: false,
+    },
   ] as const;
 
 /** Descriptor for search_companies_index tool input (free_company_dataset, then std_company_data_scores). */
@@ -1004,6 +1011,13 @@ export const SEARCH_COMPANIES_INDEX_INPUT_DESCRIPTOR: readonly McpInputFieldDesc
       description: 'Pagination offset',
       required: false,
     },
+    {
+      key: 'projectId',
+      type: 'string',
+      description:
+        'Outreach project id. On Find, pass so results write to the project tab; omit only for preview or export-only.',
+      required: false,
+    },
   ] as const;
 
 /** Descriptor for resolve_company_from_raw_name (std_company_data_scores CompanyCollector parity). */
@@ -1045,6 +1059,13 @@ export const SEARCH_WIKIDATA_COMPANIES_INPUT_DESCRIPTOR: readonly McpInputFieldD
       key: 'limit',
       type: 'number',
       description: 'Max name-search candidates when using name (default 5)',
+      required: false,
+    },
+    {
+      key: 'projectId',
+      type: 'string',
+      description:
+        'Outreach project id. On Find, pass so results write to the project tab; omit only for preview or export-only.',
       required: false,
     },
   ] as const;
@@ -1325,6 +1346,13 @@ export const SEARCH_APOLLO_PEOPLE_INPUT_DESCRIPTOR: readonly McpInputFieldDescri
       description: 'Results per page (default 25; Apollo max 100)',
       required: false,
     },
+    {
+      key: 'projectId',
+      type: 'string',
+      description:
+        'Outreach project id. On Find, pass so results write to the project tab; omit only for preview or export-only.',
+      required: false,
+    },
   ] as const;
 
 /** Descriptor for search_apollo_companies tool input. */
@@ -1360,6 +1388,13 @@ export const SEARCH_APOLLO_COMPANIES_INPUT_DESCRIPTOR: readonly McpInputFieldDes
       description: 'Results per page (default 10)',
       required: false,
     },
+    {
+      key: 'projectId',
+      type: 'string',
+      description:
+        'Outreach project id. On Find, pass so results write to the project tab; omit only for preview or export-only.',
+      required: false,
+    },
   ] as const;
 
 /** Descriptor for search_linkedin_people tool input. */
@@ -1368,14 +1403,15 @@ export const SEARCH_LINKEDIN_PEOPLE_INPUT_DESCRIPTOR: readonly McpInputFieldDesc
     {
       key: 'searchType',
       type: 'string',
-      description: 'One of: classic, sales_navigator, recruiter',
-      required: true,
+      description:
+        'One of: classic, sales_navigator, recruiter. Optional: omitted, the server uses the account’s best seat. Pass the searchType generate_linkedin_query_set returned.',
+      required: false,
     },
     {
       key: 'searchParameters',
       type: 'object',
       description:
-        'LinkedIn search parameters. Classic: flat ID arrays (location/industry). Sales Navigator: include/exclude objects; use role (not job_title) for titles. Recruiter: role/location as object arrays. Optional when url is provided.',
+        'LinkedIn search parameters in the shape of searchType, facets as ids. Prefer one queries[].searchParameters from generate_linkedin_query_set. Optional when url is provided.',
       required: false,
     },
     {
@@ -1424,6 +1460,63 @@ export const SEARCH_LINKEDIN_PEOPLE_INPUT_DESCRIPTOR: readonly McpInputFieldDesc
       description: 'Maximum number of results to return',
       required: false,
     },
+    {
+      key: 'projectId',
+      type: 'string',
+      description:
+        'Outreach project id. On Find, pass so results write to the project tab; omit only for preview or export-only.',
+      required: false,
+    },
+  ] as const;
+
+const HARVEST_SEARCH_PAGING_FIELDS: readonly McpInputFieldDescriptor[] = [
+  {
+    key: 'page',
+    type: 'number',
+    description:
+      'Page to start from (25 rows a page, up to 100). Pass paging.nextPage from the previous call to continue.',
+    required: false,
+  },
+  {
+    key: 'limit',
+    type: 'number',
+    description:
+      'Records to fetch this call (default 25, max 250). Billed at $0.004 per record returned.',
+    required: false,
+  },
+  {
+    key: 'projectId',
+    type: 'string',
+    description:
+      'Outreach project id. On Find, pass so results write to the project tab; omit only for preview or export-only.',
+    required: false,
+  },
+];
+
+/** Descriptor for search_harvest_leads tool input. */
+export const SEARCH_HARVEST_LEADS_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
+  [
+    {
+      key: 'searchParameters',
+      type: 'object',
+      description:
+        'Harvest lead-search filters, usually one queries[i].searchParameters from generate_linkedin_query_set with provider harvest. Text: search, currentJobTitles, locations, companyHeadquarterLocations. Ids or URLs: currentCompanies, industryIds, seniorityLevelIds, functionIds, companyHeadcount. Lists may be arrays. salesNavUrl runs a pasted Sales Navigator people URL.',
+      required: true,
+    },
+    ...HARVEST_SEARCH_PAGING_FIELDS,
+  ] as const;
+
+/** Descriptor for search_harvest_accounts tool input. */
+export const SEARCH_HARVEST_ACCOUNTS_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
+  [
+    {
+      key: 'searchParameters',
+      type: 'object',
+      description:
+        'Harvest account-search filters, usually one queries[i].searchParameters from generate_linkedin_query_set with provider harvest and category companies. search, headquarterLocations (text), industryIds, companyHeadcount (1-10, 11-50, 51-200, 201-500, 501-1000, 1001-5000, 5001-10000, 10001+), companyHeadcountGrowth ("min-max"), annualRevenue ("min-max;USD", millions), departmentHeadcount ("min-max;Engineering"), jobOpportunities ("HIRING_ON_LINKEDIN"), fortune.',
+      required: true,
+    },
+    ...HARVEST_SEARCH_PAGING_FIELDS,
   ] as const;
 
 /** Descriptor for search_linkedin_with_query tool input. */
@@ -1474,7 +1567,7 @@ export const SEARCH_LINKEDIN_COMPANIES_INPUT_DESCRIPTOR: readonly McpInputFieldD
       key: 'searchType',
       type: 'string',
       description:
-        'One of: classic, sales_navigator. Optional when url is provided.',
+        'One of: classic, sales_navigator. Optional: omitted, the server uses the account’s best seat. Ignored when url is provided.',
       required: false,
     },
     {
@@ -1508,6 +1601,13 @@ export const SEARCH_LINKEDIN_COMPANIES_INPUT_DESCRIPTOR: readonly McpInputFieldD
       key: 'limit',
       type: 'number',
       description: 'Maximum number of results to return',
+      required: false,
+    },
+    {
+      key: 'projectId',
+      type: 'string',
+      description:
+        'Outreach project id. On Find, pass so results write to the project tab; omit only for preview or export-only.',
       required: false,
     },
   ] as const;
@@ -1601,6 +1701,13 @@ export const SEARCH_LINKEDIN_FROM_URL_INPUT_DESCRIPTOR: readonly McpInputFieldDe
       description: 'Maximum number of results to return',
       required: false,
     },
+    {
+      key: 'projectId',
+      type: 'string',
+      description:
+        'Outreach project id. On Find, pass so results write to the project tab; omit only for preview or export-only.',
+      required: false,
+    },
   ] as const;
 
 /** Descriptor for search_linkedin_continue tool input (next page of profiles/results). */
@@ -1637,6 +1744,13 @@ export const SEARCH_LINKEDIN_CONTINUE_INPUT_DESCRIPTOR: readonly McpInputFieldDe
       type: 'number',
       description:
         'With maxPages: stop once this many rows are collected (default 1000)',
+      required: false,
+    },
+    {
+      key: 'projectId',
+      type: 'string',
+      description:
+        'Outreach project id. On Find, pass so results write to the project tab; omit only for preview or export-only.',
       required: false,
     },
   ] as const;
@@ -1706,6 +1820,34 @@ export const GENERATE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR: readonly McpInputFiel
       type: 'string',
       description: 'Raw natural language search requirement',
       required: true,
+    },
+    {
+      key: 'category',
+      type: 'string',
+      description:
+        'people (default) or companies: which search the returned searchParameters are for',
+      required: false,
+    },
+    {
+      key: 'provider',
+      type: 'string',
+      description:
+        'unipile (default: the user’s LinkedIn account) or harvest (paid Sales Navigator search, no LinkedIn seat needed). harvest returns parameters for search_harvest_leads / search_harvest_accounts and ignores searchType.',
+      required: false,
+    },
+    {
+      key: 'searchType',
+      type: 'string',
+      description:
+        'classic, sales_navigator or recruiter (people only). Optional: omitted, the account’s best seat. A seat the account lacks is rejected.',
+      required: false,
+    },
+    {
+      key: 'account_id',
+      type: 'string',
+      description:
+        'LinkedIn Unipile account ID used to resolve facet ids (optional; resolved from auth token if omitted)',
+      required: false,
     },
     {
       key: 'queryIpLocation',
@@ -1881,17 +2023,6 @@ export const GENERATE_LINKEDIN_QUERY_BATCH_INPUT_DESCRIPTOR: readonly McpInputFi
       type: 'number',
       description: 'Optional temperature for LLM',
       required: false,
-    },
-  ] as const;
-
-/** Descriptor for validate_linkedin_query_set tool input. */
-export const VALIDATE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR: readonly McpInputFieldDescriptor[] =
-  [
-    {
-      key: 'querySet',
-      type: 'object',
-      description: 'Query set to validate',
-      required: true,
     },
   ] as const;
 

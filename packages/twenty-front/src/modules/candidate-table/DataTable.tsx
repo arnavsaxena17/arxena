@@ -1350,7 +1350,7 @@ export const DataTable = forwardRef<
   // Wrap in () => value so jotai does not treat the function as an updater
   // (which would call applyGeneratedSorts(null) and store undefined).
   // Outreach People embeds DataTable with a synthetic projectId and registers its
-  // own working-set refresh — do not overwrite or clear that on mount/unmount.
+  // own tab refresh — do not overwrite or clear that on mount/unmount.
   useEffect(() => {
     if (!isBackendBackedDataTableProjectId(projectId)) {
       return;

@@ -411,7 +411,7 @@ export class ResumeReadParseUploadService {
         { workspaceId, feature: 'RESUME_PARSE', keySource: 'platform' },
         this.openaiClient,
         {
-          model: 'gpt-4o-mini',
+          model: 'gpt-6-luna',
           messages: [
             {
               role: 'system',

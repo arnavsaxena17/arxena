@@ -325,7 +325,7 @@ export const OutreachPeoplePanel = ({
     };
   }, [setChatSearchQuery, tableInstanceId]);
 
-  const companiesByWorkingSetId = useMemo(() => {
+  const companiesByTabId = useMemo(() => {
     const map: Record<string, OutreachCompanyRow> = {};
 
     for (const company of companies) {
@@ -336,7 +336,7 @@ export const OutreachPeoplePanel = ({
   }, [companies]);
 
   const selectedCompany = isDefined(selectedCompanyId)
-    ? companiesByWorkingSetId[selectedCompanyId]
+    ? companiesByTabId[selectedCompanyId]
     : undefined;
 
   const filteredPeople = useMemo(() => {
@@ -373,7 +373,7 @@ export const OutreachPeoplePanel = ({
   }, [people, searchQuery, selectedCompany, selectedCompanyId, stageFilter]);
 
   // The candidate drawer and Cmd+K actions resolve the selected row from
-  // searchResultsState, so keep it mirrored to the visible working set.
+  // searchResultsState, so keep it mirrored to the visible tab.
   useLayoutEffect(() => {
     setSearchResults(
       filteredPeople.map((person) =>
@@ -463,7 +463,7 @@ export const OutreachPeoplePanel = ({
   ]);
 
   // Cmd+K delete (and other actions) call dataTableRefreshFunctionState; point it
-  // at the outreach working-set refresh instead of candidate-table project fetch.
+  // at the outreach tab refresh instead of candidate-table project fetch.
   useEffect(() => {
     setDataTableRefreshFunction(() => async () => {
       await Promise.all([
@@ -495,7 +495,7 @@ export const OutreachPeoplePanel = ({
       withEditableCells(
         appendOutreachRawJsonColumns(
           getOutreachPeopleTableColumns({
-            companiesByWorkingSetId,
+            companiesByTabId,
             ownerNameByCandidateId,
             onOpenPerson: handleOpenPerson,
           }),
@@ -506,7 +506,7 @@ export const OutreachPeoplePanel = ({
     [
       withEditableCells,
       columnLayout,
-      companiesByWorkingSetId,
+      companiesByTabId,
       handleOpenPerson,
       ownerNameByCandidateId,
       people,
@@ -691,9 +691,7 @@ export const OutreachPeoplePanel = ({
         title={withCount('Enroll in outreach', selectedPeople.length)}
         Icon={IconUserPlus}
         disabled={selectedPeople.length === 0 || isPersisting}
-        onClick={() =>
-          enrollSelectedPeople(selectedPeople, companiesByWorkingSetId)
-        }
+        onClick={() => enrollSelectedPeople(selectedPeople, companiesByTabId)}
       />
       <OutreachViewBarIconAction
         title={withCount('Start outreach', selectedCandidateIds.length)}
@@ -743,7 +741,7 @@ export const OutreachPeoplePanel = ({
         actions={actions}
       />
       <OutreachAiColumnProgressBar
-        run={aiColumnRun?.subject === 'company' ? null : aiColumnRun}
+        run={aiColumnRun?.tab === 'companies' ? null : aiColumnRun}
         projectId={projectId}
       />
       <OutreachAiViewBar

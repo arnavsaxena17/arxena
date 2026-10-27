@@ -8,7 +8,7 @@ const document = (brightId: string) => ({
 });
 
 const plan = {
-  planId: 'plan-1',
+  listId: 'plan-1',
   workspaceId: 'workspace-1',
   entity: 'company',
   rawQuery: 'hospitals in Mumbai',
@@ -177,7 +177,7 @@ describe('BrightDataLudicrousSearchService', () => {
       {} as never,
       {
         execute: jest.fn(async () => ({
-          planId: 'plan-1',
+          listId: 'plan-1',
           entity: 'company',
           documents: [],
           fetchedDocuments: [
@@ -188,11 +188,11 @@ describe('BrightDataLudicrousSearchService', () => {
           shardReports: [],
         })),
       } as never,
-      { load: jest.fn(async () => ({ planId: 'plan-1' })) } as never,
+      { load: jest.fn(async () => ({ listId: 'plan-1' })) } as never,
       { save } as never,
     );
 
-    await service.executePlan({ workspaceId: 'workspace-1', planId: 'plan-1' });
+    await service.executePlan({ workspaceId: 'workspace-1', listId: 'plan-1' });
 
     expect(save).toHaveBeenCalledWith(
       expect.objectContaining({

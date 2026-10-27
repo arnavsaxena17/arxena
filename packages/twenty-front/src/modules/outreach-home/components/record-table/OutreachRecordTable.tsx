@@ -41,13 +41,13 @@ import {
 import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
 
 // Mirrors the Twenty RecordTable look (32px rows, light cell borders, sticky
-// header + label identifier column) for outreach working-set rows, which are
+// header + label identifier column) for outreach tab rows, which are
 // partly ephemeral (Redis cache) and so cannot go through the metadata-driven
 // RecordTable.
 
 const CHECKBOX_COLUMN_WIDTH = 32;
 
-// Working sets reach thousands of rows; rendering them all makes every sort,
+// Tabs reach thousands of rows; rendering them all makes every sort,
 // selection or click re-render the whole table. Rows have a fixed height, so
 // only the window in view (plus overscan) is mounted and spacer rows keep the
 // scroll height.

@@ -281,6 +281,7 @@ export {
   resolveOutreachConfigSendWindowDays,
   resolveOutreachConfigIcpSpecString,
   resolveOutreachConfigExperimentConfigString,
+  resolveOutreachConfigPersonaGuidance,
   mergeLegacyProjectFieldsIntoConfig,
   applyOutreachConfigPatch,
   buildProjectConfigUpdate,

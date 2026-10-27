@@ -31,7 +31,7 @@ const buildService = (verdicts: RecordVerdict[]) => {
     verdicts,
     stats: {
       engine: 'openai',
-      model: 'gpt-4o-mini',
+      model: 'gpt-6-luna',
       calls: 1,
       retriedRecords: 0,
       durationMs: 5,

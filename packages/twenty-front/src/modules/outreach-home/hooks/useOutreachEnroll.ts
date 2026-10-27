@@ -48,7 +48,7 @@ export const useOutreachEnroll = () => {
   const enrollSelectedPeople = useCallback(
     async (
       people: OutreachPersonRow[],
-      companiesByWorkingSetId?: Record<string, OutreachCompanyRow>,
+      companiesByTabId?: Record<string, OutreachCompanyRow>,
     ) => {
       if (!isDefined(projectId)) {
         enqueueErrorSnackBar({
@@ -90,7 +90,7 @@ export const useOutreachEnroll = () => {
           continue;
         }
 
-        const ephemeralCompany = companiesByWorkingSetId?.[person.companyId];
+        const ephemeralCompany = companiesByTabId?.[person.companyId];
 
         if (isDefined(ephemeralCompany)) {
           const cacheKey = ephemeralCompany.domain || ephemeralCompany.name;

@@ -6,120 +6,60 @@ routes:
   - when: |-
       Filter / classify / enrich the people or companies in the list ("who is a CEO", "revenue of each", "employees in each")
     hint: |-
-      . Never re-search or page `find_many_*` for the list; the skill reads the project working set. On the People tab this is always a person column, also for questions about their companies (revenue, headcount, industry). Apply a table filter or sort only when the user asks to narrow or order the rows ("only the CEOs", "biggest first"); a plain question about data needs none.
+      . Never re-search or page `find_many_*` for the list; the skill reads the project tab. On the People tab this is always a person column, also for questions about their companies (revenue, headcount, industry). Apply a table filter or sort only when the user asks to narrow or order the rows ("only the CEOs", "biggest first"); a plain question about data needs none.
   - when: |-
       Preview / draft the first LinkedIn message (opener) the people in the list would get once their connection request is accepted ("sample first message for each", "what would we send them after they accept")
+    sections: [sample-message]
     hint: |-
-      . Do not look for a workflow template or enrolled candidates; list rows need no enrollment. The skill's "Sample LinkedIn message" section uses `preview_sample_message_column`; nothing is sent.
+      . Do not look for a workflow template or enrolled candidates; list rows need no enrollment. The `sample-message` section uses `preview_sample_message_column`; nothing is sent.
+parts:
+  - filter-and-sort
+  - sample-message
+defaultSections:
+  - filter-and-sort
 ---
 # AI Filter & Enrich Skill
 
-Use this skill when the user wants to **filter, classify, or enrich the people or companies they are already looking at** by adding an AI-computed column. Examples:
+Add an AI-computed column to filter, classify or enrich the people or companies the user is already looking at ("who is a CEO", "revenue of each", "mark which are in fintech").
 
-- "filter these names in terms of who is a CEO"
-- "what are the revenues of each of these companies"
-- "number of employees in each company in the list"
-- "mark which of these are in fintech", "what department is each person in"
-
-**Authentic / real / worthy / validate / clean up fakes** on the People tab is not this skill: `load_skills(["validate-profiles"])` (fetch full profiles, then fitment). Do not design an authenticity column on name, title and company alone.
-
-Do **not** use `sourcing` to re-source the list, and do **not** page through `find_many_*` to read it. The list the user means is the **project working set**. Do **not** design the column's data types yourself: the server does that with the AI filtering design call.
-
-**Sourcing a list against criteria** is a fitment column, not a designed one: pass `fitment` to `preview_ai_column` instead of `description`, as the `sourcing` skill's `scoring` section describes. The columns `fitmentOutcome`, `fitmentScore` and `fitmentReason` are computed in code.
+Authentic / real / worthy / clean up fakes is `validate-profiles`, never an authenticity column on name, title and company. Do not re-source with `sourcing` and do not page `find_many_*`: the list is the **project tab**. Sourcing against criteria is a fitment column: pass `fitment` to `preview_ai_column` instead of `description` (`scoring`); `fitmentOutcome`, `fitmentScore` and `fitmentReason` are computed in code.
 
 ## Flow (always in this order)
 
-1. **Scope = the tab the user is on.** The browsing context has `activeTab` (people when it is missing).
-   - **People tab:** "these / the list / each" means the **people**: `subject: "person"` and `tab: "people"` everywhere. Questions about the people's **companies** ("revenues of each of these companies", "employees in each company", "which are in fintech") are still person columns about the person's **employer**; the server handles that. Do not switch to `subject: "company"` and do not ask where the companies come from.
-   - **Companies tab:** "these / each" means the **companies** of the project: `subject: "company"` and `tab: "companies"`. The rows are the CRM companies tagged to the project plus the ephemeral Find list, merged. A company question here is a company column, with the same preview, run and filter/sort steps.
-2. **Check what already exists first.** Call `get_outreach_working_set({ projectId, subject, limit: 1 })`: its `aiColumns` lists the AI columns already on the table (key, label, type, how many rows are filled). If the data the user wants is already there (an "Is CEO" column for "who is a CEO", an employee-count column for "companies over 500 employees"), **reuse it**: do not preview or run a new column (it costs money); go straight to the filter/sort step. Only add a column when nothing existing answers the request. **To count or to choose a cut-off, never page rows**: call `get_outreach_working_set({ projectId, subject, limit: 1, summarize: ["brandCategory", "employeesOnLinkedin"], onlyViewMatches: true })`. It returns value counts (yes/no and label columns) or min, quartiles and max (number columns) over ALL rows, or only the rows of the applied view with `onlyViewMatches`. Use the keys listed in `aiColumns` and the row fields (name, domain, industry, employees, or any otherFields key). Beyond that, look at a page of rows only if you need to see them, never everything: `get_outreach_working_set({ projectId, subject, limit: 10 })`. It merges the ephemeral Find list on the project with the CRM people attached to it and returns `total`, `rows` and a `cursor`. Never fetch more than the page you need.
-3. **Preview on ~10 rows with the user's own words**: `preview_ai_column({ projectId, subject, description: "<what the user asked, in their words>" })`. The server designs the column with the AI filtering design call: the column name, the **typed fields** (`boolean`, `integer`, `number`, `enum` with ordered values, `text`), the prompt, which row fields the model reads, and the model (jev for decisions the row can answer, web search for facts that are not on the row). Pass `filter` only when the user asks for a specific design.
-   Show the user: the column name(s) **with their types** (and enum values), the 10 results as a small table, the model that ran (`usage.engine`, `usage.model`), tokens and the estimated cost of the full run. If `typeWarnings` is not empty, say what it says and call `preview_ai_column` again with a more specific `description` (for example "revenue as a number in USD" or "company size as one of 1-50, 51-200, 201-1000, 1000+").
-4. **Run without asking when it is cheap.** The preview returns `needsApproval` and `autoRunLimitUsd`. If `needsApproval` is false (the estimated full-run cost is within the limit, or the engine reports no cost), go straight to the run. If it is true, ask once: `ask_questions` — "Run for all {total} rows (~$X)?" — options: Run for all / Adjust the column / Cancel, then pass the amount they approved as `approvedCostUsd`. `run_ai_column` refuses a run over the limit without it, so this cannot be skipped by mistake.
-   **Pre-approved list build.** When the user already approved an enrichment cap for a list build (see **Scored lists** in the `sourcing` skill), do not ask again: pass that cap as `approvedCostUsd` on every run and stay inside it.
-5. **Run — scope matters**:
-   - **Limited / test / "first N" / regenerate N**: `run_ai_column({ projectId, subject, previewId, rowLimit: N })`. `rowLimit` is the first N rows of the working set in table order. **Always pass `rowLimit` unless the user explicitly said all rows / everyone / run for all.** `rerunAll: false` alone is not a limit — it still fills every empty row in the project.
-   - **Full run (the user asked for all rows)**: `run_ai_column({ projectId, subject, previewId })` with **no** `rowLimit` (add `onlyViewMatches: true` to run only the applied table view). Starts a background job; values land in `otherFields` with a progress bar. The call waits for the run (`waitSeconds`, default 150); if `status` is still `"running"`, call `get_ai_column_run_status({ runId })` once (it waits two minutes) and never more than once a minute; `cancel_ai_column_run({ runId })` stops and keeps filled rows. One column run per project at a time.
-   If rows failed (rate limit etc.), call `run_ai_column` again with the **same** `previewId` (and the same `rowLimit` if used): it skips rows that are already answered. Failed rows show a red "Failed" tag. Pass `rerunAll: true` only when the user wants every in-scope row recomputed. The previewId lasts one hour; after that, preview again.
-6. **Report**: the new column name(s) and types, rows answered / failed, the engine and model that ran, tokens and cost from `usage` (`inputTokens`, `outputTokens`, `estimatedCostUsd`; jev reports no tokens or cost, say so), and a few sample rows. For a yes/no filter also say how many matched. Tell the user the column can be sorted and filtered in the table header (numbers by comparison, labels by value).
+1. **Scope = the tab the user is on.** The browsing context has `activeTab` (people when missing). Pass `tab: "people"` or `tab: "companies"` on every call.
+   - **People tab:** "these / the list / each" means the people. Questions about their **companies** ("revenues of each of these companies", "which are in fintech") are still people-tab columns about the person's employer; the server handles that. Do not switch tabs and do not ask where the companies come from.
+   - **Companies tab:** "these / each" means the project's companies (CRM companies tagged to the project plus the Find list, merged).
+2. **Reuse before you create.** `get_outreach_tab({ projectId, tab, limit: 1 })` returns `aiColumns` (key, label, type, rows filled). If a column already answers the request, do not preview or run a new one (it costs money): go to filter and sort. Source columns count too (Headquarters Country, Employees On Linkedin, Size Band, Industry, About, Specialties are on every Bright Data row): filter on them instead of asking a model. To count or choose a cut-off, never page rows: `get_outreach_tab({ ..., limit: 1, summarize: ["<column key>"], onlyViewMatches: true })` returns value counts or min, quartiles and max over all rows. Page rows (`limit: 10`) only to see a few.
+3. **Row scope when the tab already has other rows.** After a write that returns `writtenRowIds`, or when a preview's `selection` shows `chatUpsertedCount < tabTotal`, ask once with `ask_questions` before the first preview or run:
+   - **This chat's upserts only** (recommended on a non-empty project): `rowScope: "chat_upserts"` (or pass `rowIds` / `writtenRowIds`).
+   - **Existing unfilled rows too:** `rowScope: "unfilled"` (or omit it).
+   - **All rows including re-score:** `rowScope: "all"` and `rerunAll: true`.
+   On an empty tab skip the ask. Never invent `apply_table_view` filters to mean "empty column" or "this chat's rows".
+4. **Preview on ~10 rows in the user's own words:** `preview_ai_column({ projectId, tab, description: "<what the user asked>", rowScope? })`. The server designs the column (name, types, prompt, model); pass `filter` only when the user asks for a specific design. Show the column name(s) with types, the 10 results as a small table, `usage.engine`, and the estimated full-run cost. If `typeWarnings` is not empty, preview again with a more specific `description` ("revenue as a number in USD", "size as one of 1-50, 51-200, 201-1000, 1000+").
+5. **Approve only when needed.** The preview returns `needsApproval` and `autoRunLimitUsd`. If `needsApproval` is false, run. If true, ask once ("Run for all {total} rows (~$X)?": Run for all / Adjust the column / Cancel) and pass the approved amount as `approvedCostUsd`; `run_ai_column` refuses without it. A cap already approved for a list build (`scoring`) is passed as `approvedCostUsd` with no new ask.
+6. **Run, scope matters.**
+   - **"First N", a test, regenerate N:** `run_ai_column({ projectId, tab, previewId, rowLimit: N, rowScope? })`. Always pass `rowLimit` unless the user said all rows: `rerunAll: false` alone is not a limit and fills every empty row in scope.
+   - **All rows in scope:** the same call with no `rowLimit` (add `onlyViewMatches: true` for the applied view only). It waits for the run (`waitSeconds`, default 150); if `status` is still `"running"`, call `get_ai_column_run_status({ runId })` once (it waits two minutes), never more than once a minute. `cancel_ai_column_run({ runId })` stops and keeps filled rows. One run per project at a time.
+   - **Failed rows** (rate limit etc.): call again with the same `previewId`, `rowLimit` and `rowScope`; answered rows are skipped. `rerunAll: true` only when the user wants every in-scope row recomputed. A `previewId` lasts one hour.
+7. **Report** the column name(s) and types, rows answered and failed, `usage` (`engine`, tokens, `estimatedCostUsd`; jev reports none, say so), a few sample rows, and for a yes/no filter how many matched.
+8. **Filter and sort only when the request asks for it** (`filter-and-sort` section), after the column is filled.
 
-7. **Filter and sort, only when the request asks for it** (see the next section): once the column is filled, call `generate_table_view({ projectId, tab: <the active tab>, description: "<the user's request in their words>" })`, then `apply_table_view` with its result unchanged.
+Tools: `learn_tools({ toolNames: ["get_outreach_tab", "preview_ai_column", "preview_sample_message_column", "run_ai_column", "get_ai_column_run_status", "cancel_ai_column_run", "remove_ai_column", "generate_table_view", "apply_table_view"] })` once, before the first call.
 
-Tools: `learn_tools({ toolNames: ["get_outreach_working_set", "preview_ai_column", "preview_sample_message_column", "run_ai_column", "get_ai_column_run_status", "cancel_ai_column_run", "remove_ai_column", "generate_table_view", "apply_table_view"] })` once, before the first call.
+## One column per fact
 
-## Remove / undo a column
+The table never holds two columns for the same fact (two store counts, two revenues, two "in India" flags). Filters and sorts use the one existing column.
 
-- **Delete named columns:** `remove_ai_column({ projectId, subject, columnKeys: ["isCeo"] })` strips the value keys and `otherFields.aiColumns` meta from every working-set row (ephemeral + CRM). Prefer keys from `get_outreach_working_set.aiColumns`. This does **not** restore earlier cell values if the column was reused and overwritten.
-- **Undo this chat's AI column work:** the Ask AI side panel **Undo** control (or the `undoChatOutreach` mutation) removes every column this thread's successful `run_ai_column` calls wrote and clears any `apply_table_view` it applied. It does not undo upserts, enrollments, sends, or profile fetches.
+- If a column exists but its values are weak, incomplete or from a worse engine, preview again with a description that says to fill or update it (the server reuses its key and type) and run with `rerunAll: true` or `onlyViewMatches`. Do not add a sibling.
+- The preview returns `reusedColumns` and `duplicateWarnings`. If `duplicateWarnings` is not empty, do not run: preview again so the field reuses the existing key, unless it is a genuinely different fact (say why in one line).
+- A new threshold or category list is not a new fact: change the filter on the existing column.
 
-## One column per fact: reuse before you create
+## Remove / undo
 
-The table must never hold two columns for the same fact (two store counts, two revenues, two brand categories, two "in India" flags). Filters and sorts always use the one existing column for a fact.
-
-1. **List before you design.** Before any `preview_ai_column`, read `aiColumns` from `get_outreach_working_set` (key, label, type, how many rows are filled) and write down, in one line, which existing column answers each thing the user needs. Source data columns count too: Headquarters Country, Headquarters City, Employees On Linkedin, Linkedin Followers, Size Band, Industry, About, Specialties are already on every Bright Data row, so use them (filter on Headquarters Country = IN) rather than asking a model.
-2. **Fill or improve an existing column, do not add a sibling.** If a column exists but its values are weak, incomplete or came from a worse engine, call `preview_ai_column` again with a description that says to fill or update that column (the server then reuses its exact key and type), and run it with `rerunAll: true` or `onlyViewMatches` on the rows that need it. The preview returns `reusedColumns` (existing keys it will fill) and `duplicateWarnings` (a new field that looks like an existing column). If `duplicateWarnings` is not empty, do not run: preview again so the field reuses the existing key, unless it is a genuinely different fact (then say why in one line).
-3. **Create a new column only when no existing column holds the fact**, and name it so it cannot be confused with an existing one. A new threshold or a new category list is not a new fact: change the filter on the existing column.
-4. **Filter on the existing column.** `generate_table_view` and `apply_table_view` use the same column for the same fact every time; never filter on an older duplicate.
-
-## Filter and sort: is it needed?
-
-Adding a column and filtering or sorting the table are different things. Decide from the user's words:
-
-| The user says | Add column | Filter / sort |
-| --- | --- | --- |
-| "what are the revenues of each of these companies", "number of employees in each company" | yes | **no** — they want the data, not a narrower table |
-| "filter these names in terms of who is a CEO", "only the CEOs", "show me who is in fintech", "keep those over 500 employees" | yes, if the column does not exist | **filter** |
-| "sort by revenue", "largest companies first", "top 10 by employees" | yes, if the column does not exist | **sort** |
-| "CEOs of companies over 500 employees, biggest first" | yes | filter **and** sort |
-| "clear the filter", "show everyone again" | no | `apply_table_view({ clear: true })` |
-
-- If the wording is genuinely unclear (for example "which of these are big companies?"), ask one question: "Add it as a column only, or also filter the table to the big ones?"
-- Wait until `run_ai_column` has finished (or at least filled the first chunk) before `generate_table_view`: the filter can only use columns that exist. If the run is still going, check `get_ai_column_run_status` first.
-- `generate_table_view` decides too: it returns `needsFilter` and `needsSort`. If both are false, do not apply anything and say that no filter or sort was needed.
-- It only uses the columns the table really has, and returns how many rows match (`matchCount` of `total`). Show the filters, the sort and the count to the user in one line. When the user explicitly asked to filter or sort, apply it right away; do not ask again.
-- `apply_table_view` stores the view for the project and shows it above the table for everyone (a bar with the filters, the sort and a Clear button). Pass the `filters` and `sort` from `generate_table_view` **unchanged**; never invent a `columnId`.
-- Yes/no columns filter on Yes / No, label columns on their values, number columns by comparison (>, ≥, <, ≤, =), and a sort on a number column is numeric. This is why the column type matters.
-
-## Sample first LinkedIn message column
-
-When the user wants to **see what the first LinkedIn message would look like** for the people in the list ("draft the first message for these", "show me sample openers", "what would we send them after they accept"), add a **Sample LinkedIn message** column. It is the same column flow, with its own tool for the preview.
-
-1. Preview: `preview_sample_message_column({ projectId, rowLimit: N, include: { ... } })` instead of `preview_ai_column` (N = what the user asked for). Drafts use the seeded opener prompt and agent; nothing is sent.
-2. Choose `include` from what the user asked. Omit it for the defaults. Each flag is a context section:
-   - `senderProfile`, `prospectEnrichment`, `profile`, `posts`, `chatHistory`: **on** by default. Set one to `false` only when the user asks to leave it out.
-   - `profile` makes one live LinkedIn lookup per row; `posts` and `chatHistory` only exist for people already enrolled in the sequence (Find-list rows skip them).
-   - `companyNews`: Adds a web-search lookup per company (cached for 30 days).
-3. **Persist scope**:
-   - User said first N / regenerate N / test / sample: `run_ai_column({ projectId, subject: "person", previewId, rowLimit: N })` with the **same N**. Do **not** omit `rowLimit`. Clearing a few empty cells and calling run without `rowLimit` will fill every empty person in the project.
-   - User explicitly said all rows / everyone / run for all: ask once (cost), then `run_ai_column({ projectId, subject: "person", previewId })` with **no** `rowLimit`.
-4. Messages land in `otherFields.sampleLinkedinMessage` (**Sample LinkedIn message** column). Opener only — not follow-ups or replies.
-
-## What the server decides (so you do not)
-
-- **Types**: yes/no → `boolean`; counts (employees) → `integer`; money, revenue, ratios, scores → `number` with the unit in the name (for example `companyRevenueUsd`); buckets or ranges → `enum`; `text` only for what cannot be structured. Numbers are stored as numbers and enums as one of their values, so the table can sort and filter them.
-- **Model**: `jev` for boolean or enum decisions the row can answer; OpenAI web search (gpt-4o-mini) for facts outside the row (revenue, headcount, funding), run once per distinct company and copied to every person who works there; gpt-4o-mini otherwise. jev only runs when the jev gateway key is configured, so report `usage.engine`, not what was planned.
-- **No credible answer**: a number stays empty and a label or text answers "unknown". It is never guessed.
-
-## Where the column is stored
-
-The answer is written as a **new key in `otherFields`** of every row, next to existing keys, never replacing them:
-
-- ephemeral Find list rows (People / Companies tabs, per project): `otherFields[columnKey] = value`
-- CRM people already attached to the project (candidate) and CRM companies tagged to the project (`company.projectIds`): the same key via an `otherFields` merge patch
-
-`otherFields.aiColumns[columnKey]` holds the header label, the type and the row status (`ok` or `failed`). Both stores are updated by `run_ai_column`. Do not call `upsert_outreach_target_people` / `upsert_outreach_target_companies` or any `update_*` tool to write it.
+`remove_ai_column({ projectId, tab, columnKeys: ["isCeo"] })` strips the values and `otherFields.aiColumns` meta from every tab row; take keys from `aiColumns`. It does not restore values the column overwrote. To undo this chat's column work, the user uses the Ask AI panel **Undo** control; it does not undo upserts, enrollments, sends or profile fetches.
 
 ## Do not
 
-- Hand-design column types, or put revenue / headcount into a `text` column
-- Use `subject: "company"` for a question asked on the People tab (it is a person column about the employer), or `subject: "person"` on the Companies tab; or ask where the companies should come from
-- Load every person or company into the conversation, loop `find_many_*`, or call `get_object_metadata` to find the title field
-- Ask before a column run that is within the auto-run limit, or skip the approval above it (`run_ai_column` refuses without `approvedCostUsd`)
-- Call `run_ai_column` without `rowLimit` when the user only asked for first N / a test / regenerate N (that processes every empty row)
-- Invent revenue or headcount when the web search returns nothing
-- Create CRM Company / Person records or enroll anyone as part of a filter or enrichment
-- Create a column for a fact an existing column already holds (see **One column per fact**), or filter on a duplicate
-- Skip `learn_tools` before the first call
-- Apply a filter or sort when the user only asked for data, or apply one built from a column that does not exist
-- Call `remove_ai_column` unless the user asked to delete / undo / drop the column (or to undo this chat's column work)
-- Score profile authenticity or worthiness from snapshot fields alone — use `validate-profiles` instead
+- Create CRM Company / Person records, enroll anyone, or write the column with `update_*` tools: `run_ai_column` writes it into `otherFields` for both the Find list and the CRM rows
+- Invent revenue or headcount when the web search returns nothing (a number stays empty, a label says "unknown")
+- Call `remove_ai_column` unless the user asked to delete, undo or drop the column

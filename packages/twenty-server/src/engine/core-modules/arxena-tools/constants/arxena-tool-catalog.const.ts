@@ -204,7 +204,19 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
     name: 'search_linkedin_people',
     label: 'Search Linkedin People',
     description:
-      'Search LinkedIn people (classic / sales_navigator / recruiter). Sales Navigator needs include/exclude objects and role (not classic flat arrays or job_title).',
+      'Search LinkedIn people (classic / sales_navigator / recruiter). searchType defaults to the account’s seat; pass searchParameters from generate_linkedin_query_set.',
+  },
+  {
+    name: 'search_harvest_leads',
+    label: 'Search Harvest Leads',
+    description:
+      'Paid ($0.004/record) Sales Navigator people search through Harvest, no LinkedIn seat needed; filters from generate_linkedin_query_set with provider harvest.',
+  },
+  {
+    name: 'search_harvest_accounts',
+    label: 'Search Harvest Accounts',
+    description:
+      'Paid ($0.004/record) Sales Navigator company search through Harvest: headcount, growth, revenue, hiring.',
   },
   {
     name: 'search_linkedin_companies',
@@ -306,17 +318,13 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
   {
     name: 'generate_linkedin_query_set',
     label: 'Generate Linkedin Query Set',
-    description: 'Generate Linkedin Query Set.',
+    description:
+      'Generate LinkedIn searches from a natural-language brief: per-mode searchParameters with facet ids resolved, ready for search_linkedin_people or search_linkedin_companies.',
   },
   {
     name: 'generate_linkedin_query_batch',
     label: 'Generate Linkedin Query Batch',
     description: 'Generate Linkedin Query Batch.',
-  },
-  {
-    name: 'validate_linkedin_query_set',
-    label: 'Validate Linkedin Query Set',
-    description: 'Validate Linkedin Query Set.',
   },
   {
     name: 'check_contact_availability',
@@ -454,13 +462,13 @@ export const ARXENA_TOOL_CATALOG: readonly ArxenaToolCatalogEntry[] = [
     name: 'search_bright_data_business',
     label: 'Search Bright Data Business',
     description:
-      'Bright Data Business Search for companies or people from a raw natural-language request. Default ludicrous: first call returns a budget (planId, match counts per slice, expected accuracy, cost at $0.002 per record); call again with planId and maxBudgetUsd (max $10) after the user confirms. The result has counts and a summary, never the records. Pass mode instant with entity company and a bare domain/URL (e.g. stripe.com) to look up one company by website host (rows are filtered to that domain). Records are fetched with the full view and kept for 30 days under the planId (call again with planId + projectId to write them at no charge). Pass projectId to write the Outreach tab. For a targeted company + position lookup ("CEO of Burger King India") pass autoExecute true with maxBudgetUsd and targetCount: it plans and fetches in one call, with no estimate or confirmation.',
+      'Bright Data Business Search for companies or people from a raw natural-language request. Default ludicrous: first call returns a budget (listId, match counts per slice, expected accuracy, cost at $0.002 per record); call again with listId and maxBudgetUsd (max $10) after the user confirms. The result has counts and a summary, never the records. On Find, pass projectId on the fetch so the Outreach tab is written — do not attach afterward. Pick the mode by input: ludicrous for a set described by attributes (it has no URL, website or domain field); instant only with entity company and a bare domain/URL (e.g. stripe.com) to look up one company by website host. For one person by LinkedIn URL or name use fetch_profiles; a company LinkedIn URL is not supported. Records are kept 30 days under the listId (call again with listId + projectId to write them at no charge if the fetch omitted projectId). For a targeted company + position lookup ("CEO of Burger King India") pass autoExecute true with maxBudgetUsd and targetCount.',
   },
   {
     name: 'outreach_list',
     label: 'Search Result Lists',
     description:
-      'Search results live in lists (every search tool returns a listId and counts, never rows). Actions: list, summary, peek (max 10 rows), export (CSV link to give the user), dedupe (against crm or other lists), attach (show on a project tab), save_to_crm (create CRM Company / Person records tagged to a project, never enrolled), delete. Lists last 30 days (paid sources) or 7 (free), extended when used. Never read a whole list into the chat.',
+      'Overflow for search result lists (listId). Find searches with projectId already write the project tab. Actions: list, summary, peek (max 10), export (CSV), dedupe (crm or lists), attach (a list already on that project is skipped), save_to_crm (bag overflow; prefer save_outreach_targets_to_crm once rows are on the tab), delete. Lists last 30 days (paid) or 7 (free). Never read a whole list into the chat.',
   },
   {
     name: 'search_local_businesses',

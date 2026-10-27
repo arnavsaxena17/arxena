@@ -15,15 +15,15 @@ import {
   readCellText,
 } from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
 import {
-  type OutreachWorkingSetRow,
-  OutreachWorkingSetService,
-} from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+  type OutreachTabRow,
+  OutreachTabService,
+} from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
 import {
   AiColumnRunIdInputZodSchema,
   ApplyOutreachTableViewInputZodSchema,
   GetAiColumnRunStatusInputZodSchema,
   GenerateOutreachTableViewInputZodSchema,
-  GetOutreachWorkingSetInputZodSchema,
+  GetOutreachTabInputZodSchema,
   PreviewOutreachAiColumnInputZodSchema,
   RemoveOutreachAiColumnInputZodSchema,
   RunOutreachAiColumnInputZodSchema,
@@ -38,7 +38,7 @@ const errorMessage = (error: unknown): string =>
 
 const MAX_SUMMARY_VALUES = 30;
 
-const readRowValue = (row: OutreachWorkingSetRow, key: string): unknown => {
+const readRowValue = (row: OutreachTabRow, key: string): unknown => {
   const otherValue = row.otherFields[key];
 
   if (otherValue !== undefined) {
@@ -52,9 +52,9 @@ const quantile = (sorted: number[], fraction: number): number =>
   sorted[Math.min(sorted.length - 1, Math.floor(fraction * sorted.length))];
 
 // Counts and distributions over every row, so the agent never has to page
-// through the working set just to tally it.
-export const summarizeWorkingSetRows = (
-  rows: OutreachWorkingSetRow[],
+// through the tab just to tally it.
+export const summarizeOutreachTabRows = (
+  rows: OutreachTabRow[],
   keys: string[],
 ): Record<string, unknown> =>
   Object.fromEntries(
@@ -113,13 +113,13 @@ export const summarizeWorkingSetRows = (
   );
 
 @Injectable()
-export class GetOutreachWorkingSetTool implements Tool {
-  description = `Read a small page of the project's working set: the ephemeral Find list (People / Companies tabs) merged with the CRM people attached to the project. Use it for "these / the list / each" requests instead of find_many_* or a new search. Returns total, aiColumns (the AI columns that already exist on these rows: key, label, type, filled — reuse them instead of adding a new column), rows (id, source, name, title, companyName, otherFields…) and nextCursor. Keep limit at 10. To count or to choose a cut-off, pass summarize with column keys: it returns value counts (yes/no and label columns) or min, quartiles and max (number columns) over ALL rows, optionally only the rows of the applied view (onlyViewMatches), so never page through rows to tally them.`;
+export class GetOutreachTabTool implements Tool {
+  description = `Read a small page of the project's People or Companies tab: ephemeral Find rows merged with CRM records tagged to the project. Use it for "these / the list / each" instead of find_many_* or a new search. Returns total, aiColumns (key, label, type, filled — reuse instead of adding a column), rows (id, source, name, title, companyName, otherFields…) and nextCursor. Keep limit at 10. To count or choose a cut-off, pass summarize with column keys: value counts (yes/no and labels) or min/quartiles/max (numbers) over ALL rows, or only the applied view with onlyViewMatches — never page rows to tally them.`;
 
-  inputSchema = GetOutreachWorkingSetInputZodSchema;
+  inputSchema = GetOutreachTabInputZodSchema;
 
   constructor(
-    private readonly outreachWorkingSetService: OutreachWorkingSetService,
+    private readonly outreachTabService: OutreachTabService,
     private readonly outreachTableViewService: OutreachTableViewService,
   ) {}
 
@@ -127,27 +127,27 @@ export class GetOutreachWorkingSetTool implements Tool {
     parameters: ToolInput,
     context: ToolExecutionContext,
   ): Promise<ToolOutput> {
-    const parsed = GetOutreachWorkingSetInputZodSchema.safeParse(parameters);
+    const parsed = GetOutreachTabInputZodSchema.safeParse(parameters);
 
     if (!parsed.success) {
       return {
         success: false,
-        message: 'Invalid get_outreach_working_set input',
+        message: 'Invalid get_outreach_tab input',
         error: parsed.error.message,
       };
     }
 
     const { summarize, onlyViewMatches, ...pageInput } = parsed.data;
-    const page = await this.outreachWorkingSetService.getPage({
+    const page = await this.outreachTabService.getPage({
       workspaceId: context.workspaceId,
       ...pageInput,
     });
 
-    if (page.total === 0 && parsed.data.subject === 'company') {
+    if (page.total === 0 && parsed.data.tab === 'companies') {
       return {
         success: false,
         message:
-          'This project has no companies (no CRM companies tagged to it, no ephemeral list). If the user is on the People tab, call again with subject "person": questions about their companies are person columns about the employer.',
+          'This project has no companies (no CRM companies tagged to it, no ephemeral list). If the user is on the People tab, call again with tab "people": questions about their companies are people-tab columns about the employer.',
         error: 'empty_companies_tab',
       };
     }
@@ -156,17 +156,17 @@ export class GetOutreachWorkingSetTool implements Tool {
     let summarizedRows: number | undefined;
 
     if (summarize !== undefined && summarize.length > 0) {
-      const allRows = await this.outreachWorkingSetService.getAll({
+      const allRows = await this.outreachTabService.getAll({
         workspaceId: context.workspaceId,
         projectId: parsed.data.projectId,
-        subject: parsed.data.subject,
+        tab: parsed.data.tab,
       });
       const view =
         onlyViewMatches === true
           ? await this.outreachTableViewService.get({
               workspaceId: context.workspaceId,
               projectId: parsed.data.projectId,
-              tab: parsed.data.subject === 'person' ? 'people' : 'companies',
+              tab: parsed.data.tab,
             })
           : null;
       const rows =
@@ -178,13 +178,13 @@ export class GetOutreachWorkingSetTool implements Tool {
               ),
             );
 
-      summaries = summarizeWorkingSetRows(rows, summarize);
+      summaries = summarizeOutreachTabRows(rows, summarize);
       summarizedRows = rows.length;
     }
 
     return {
       success: true,
-      message: `Returned ${page.rows.length} of ${page.total} ${parsed.data.subject} row(s).`,
+      message: `Returned ${page.rows.length} of ${page.total} ${parsed.data.tab} row(s).`,
       result:
         summaries === undefined ? page : { ...page, summarizedRows, summaries },
     };
@@ -193,7 +193,7 @@ export class GetOutreachWorkingSetTool implements Tool {
 
 @Injectable()
 export class PreviewOutreachAiColumnTool implements Tool {
-  description = `Preview an AI column (filter or enrichment) on up to 10 rows of the project working set. Pass the user's request as description: the server designs the typed columns (boolean, integer, number, enum, text) with the AI filtering design call, picks the model (jev for decisions from row fields, web search for outside facts) and returns the design so you can show the types. Nothing is saved. Returns the rows with their values, a previewId, token usage and an estimated cost for the full run. Then call run_ai_column without asking when needsApproval is false (the estimated full-run cost is at or under autoRunLimitUsd, or the engine reports no cost). When needsApproval is true, ask the user once and pass approvedCostUsd to run_ai_column. Load the ai-filter-enrich skill first.
+  description = `Preview an AI column (filter or enrichment) on up to 10 rows of the project tab. Pass the user's request as description: the server designs the typed columns (boolean, integer, number, enum, text) with the AI filtering design call, picks the model (jev for decisions from row fields, web search for outside facts) and returns the design so you can show the types. Nothing is saved. Returns the rows with their values, a previewId, token usage and an estimated cost for the full run. Then call run_ai_column without asking when needsApproval is false (the estimated full-run cost is at or under autoRunLimitUsd, or the engine reports no cost). When needsApproval is true, ask the user once and pass approvedCostUsd to run_ai_column. Load the ai-filter-enrich skill first.
 
 For sourcing a list pass fitment instead of description: { stage, criteria: [{ key, description, mustHave, weight }] }. The model answers pass, fail or unknown per criterion; the columns fitmentOutcome, fitmentScore and fitmentReason are computed in code against the server's fitment threshold (a request may raise it with minimumScore, never lower it). stage "snapshot" for rows a search just returned (unknown means profile fetch, not fail); stage "profile" once the full profile is on the row. To rescore at the profile stage run again with rerunAll true.`;
 
@@ -221,16 +221,24 @@ For sourcing a list pass fitment instead of description: { stage, criteria: [{ k
       const preview = await this.outreachAiColumnService.preview({
         workspaceId: context.workspaceId,
         projectId: parsed.data.projectId,
-        subject: parsed.data.subject,
+        tab: parsed.data.tab,
         filter: parsed.data.filter,
         description: parsed.data.description,
         fitment: parsed.data.fitment,
         rowLimit: parsed.data.rowLimit,
+        rowIds: parsed.data.rowIds,
+        rowScope: parsed.data.rowScope,
+        threadId: context.threadId,
       });
+      const selectionNote =
+        preview.selection.chatUpsertedCount > 0 &&
+        preview.selection.chatUpsertedCount < preview.selection.tabTotal
+          ? ` Tab has ${preview.selection.tabTotal} rows; this chat upserted ${preview.selection.chatUpsertedCount}; ${preview.selection.unfilledForColumns} unfilled in scope. Ask once whether to score chat upserts only, unfilled too, or all (rerunAll).`
+          : '';
 
       return {
         success: true,
-        message: `Previewed ${preview.rows.length} of ${preview.total} row(s). Ask the user before running for all.`,
+        message: `Previewed ${preview.rows.length} of ${preview.total} row(s). Ask the user before running for all.${selectionNote}`,
         result: preview,
       };
     } catch (error) {
@@ -245,7 +253,7 @@ For sourcing a list pass fitment instead of description: { stage, criteria: [{ k
 
 @Injectable()
 export class RunOutreachAiColumnTool implements Tool {
-  description = `Run a previewed AI column as a background job on the AI filtering queue; writes each answer into the row's otherFields (ephemeral + CRM) in chunks with a progress bar. Call after the preview. No confirmation is needed while the estimate is within the auto-run limit; above it the call is refused (cost_approval_required) until approvedCostUsd carries what the user approved. Pass rowLimit to touch only the first N working-set rows (table order) — required for tests / "first N" / regenerate-N. Omit rowLimit ONLY when the user explicitly asked to run for all rows. Without rowLimit, every unfilled row is processed (rerunAll false still skips already-filled). Waits for the run (waitSeconds, default 150, max 240) and returns as soon as it is done; if it is still running, call get_ai_column_run_status ONCE with waitSeconds 120 and never check more often than once a minute: every check is a full model step. Same previewId again retries only missing/failed rows unless rerunAll is true.`;
+  description = `Run a previewed AI column as a background job on the AI filtering queue; writes each answer into the row's otherFields (ephemeral + CRM) in chunks with a progress bar. Call after the preview. No confirmation is needed while the estimate is within the auto-run limit; above it the call is refused (cost_approval_required) until approvedCostUsd carries what the user approved. Pass rowLimit to touch only the first N unfilled rows (table order; filled rows are skipped before the cap) — required for tests / "first N" / regenerate-N. Omit rowLimit ONLY when the user explicitly asked to run for all rows. Without rowLimit, every unfilled row in scope is processed (rerunAll false still skips already-filled). Use rowScope chat_upserts (or rowIds) to limit to this chat's upserts; unfilled for the whole tab; all + rerunAll to re-score. Waits for the run (waitSeconds, default 150, max 240) and returns as soon as it is done; if it is still running, call get_ai_column_run_status ONCE with waitSeconds 120 and never check more often than once a minute: every check is a full model step. Same previewId again retries only missing/failed rows unless rerunAll is true.`;
 
   inputSchema = RunOutreachAiColumnInputZodSchema;
 
@@ -278,6 +286,7 @@ export class RunOutreachAiColumnTool implements Tool {
       const started = await this.outreachAiColumnRunService.startRun({
         workspaceId: context.workspaceId,
         ...parsed.data,
+        threadId: context.threadId,
       });
       const run = await this.outreachAiColumnRunService.waitForRun(
         started.runId,
@@ -447,13 +456,11 @@ export class CancelOutreachAiColumnRunTool implements Tool {
 
 @Injectable()
 export class RemoveOutreachAiColumnTool implements Tool {
-  description = `Remove AI column(s) from every row in the project working set (ephemeral Find list + CRM). Deletes the value keys and otherFields.aiColumns meta. Use when the user asks to delete / undo / drop a column by name or key. Does not restore previous cell values if the column was reused and overwritten.`;
+  description = `Remove AI column(s) from every row in the project tab (ephemeral Find list + CRM). Deletes the value keys and otherFields.aiColumns meta. Use when the user asks to delete / undo / drop a column by name or key. Does not restore previous cell values if the column was reused and overwritten.`;
 
   inputSchema = RemoveOutreachAiColumnInputZodSchema;
 
-  constructor(
-    private readonly outreachWorkingSetService: OutreachWorkingSetService,
-  ) {}
+  constructor(private readonly outreachTabService: OutreachTabService) {}
 
   async execute(
     parameters: ToolInput,
@@ -470,7 +477,7 @@ export class RemoveOutreachAiColumnTool implements Tool {
     }
 
     try {
-      const removed = await this.outreachWorkingSetService.removeAiColumns({
+      const removed = await this.outreachTabService.removeAiColumns({
         workspaceId: context.workspaceId,
         ...parsed.data,
       });

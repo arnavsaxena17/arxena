@@ -9,7 +9,8 @@ import {
   OutreachPeopleCacheService,
 } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
 import { OutreachCompaniesCacheService } from 'src/engine/core-modules/outreach-command/services/outreach-companies-cache.service';
-import { OutreachWorkingSetService } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+import { ChatTabWritesService } from 'src/engine/core-modules/outreach-command/services/chat-tab-writes.service';
+import { OutreachTabService } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
 import { mergeOutreachOtherFields } from 'src/engine/core-modules/outreach-command/utils/merge-outreach-other-fields.util';
 import { resolvePeopleCompanyIds } from 'src/engine/core-modules/outreach-command/utils/resolve-people-company-ids.util';
 import { isDeprioritisedPerson } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/outreach-people-deprioritisation.util';
@@ -143,7 +144,8 @@ Prefer mode=merge. Pass projectId from the outreachCommand browsing context.`;
   constructor(
     private readonly outreachPeopleCacheService: OutreachPeopleCacheService,
     private readonly outreachCompaniesCacheService: OutreachCompaniesCacheService,
-    private readonly outreachWorkingSetService: OutreachWorkingSetService,
+    private readonly outreachTabService: OutreachTabService,
+    private readonly chatTabWritesService: ChatTabWritesService,
   ) {}
 
   async execute(
@@ -178,11 +180,37 @@ Prefer mode=merge. Pass projectId from the outreachCommand browsing context.`;
       input.projectId,
     );
     const existing = existingPayload?.people ?? [];
+    const existingIds = new Set(existing.map((person) => person.id));
 
     const next =
       input.mode === 'replace'
         ? mergePeople([], incoming)
         : mergePeople(existing, incoming);
+
+    const nextByKey = new Map(
+      next.map((person) => [personDedupeKey(person), person]),
+    );
+    const writtenRowIds: string[] = [];
+    let createdCount = 0;
+    let updatedCount = 0;
+
+    for (const person of incoming) {
+      const row =
+        nextByKey.get(personDedupeKey(person)) ??
+        next.find((candidate) => candidate.id === person.id);
+
+      if (!isDefined(row) || writtenRowIds.includes(row.id)) {
+        continue;
+      }
+
+      writtenRowIds.push(row.id);
+
+      if (existingIds.has(row.id)) {
+        updatedCount += 1;
+      } else {
+        createdCount += 1;
+      }
+    }
 
     await this.outreachPeopleCacheService.set(
       context.workspaceId,
@@ -190,12 +218,19 @@ Prefer mode=merge. Pass projectId from the outreachCommand browsing context.`;
       next,
     );
 
-    await this.outreachWorkingSetService
+    await this.outreachTabService
       .syncPeopleFound({
         workspaceId: context.workspaceId,
         projectId: input.projectId,
       })
       .catch(() => undefined);
+
+    await this.chatTabWritesService.append(
+      context.threadId,
+      input.projectId,
+      'people',
+      writtenRowIds,
+    );
 
     return {
       success: true,
@@ -205,6 +240,9 @@ Prefer mode=merge. Pass projectId from the outreachCommand browsing context.`;
         mode: input.mode,
         writtenCount: incoming.length,
         totalCount: next.length,
+        writtenRowIds,
+        createdCount,
+        updatedCount,
         people: next.slice(0, 25).map((person) => ({
           id: person.id,
           name: person.name,

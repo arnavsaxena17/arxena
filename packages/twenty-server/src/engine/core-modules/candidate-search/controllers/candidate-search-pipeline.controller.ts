@@ -959,7 +959,7 @@ ${questionsText}
 Generate answers to the clarification questions above.`;
 
       const completion = await openaiClient.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: 'gpt-6-luna',
         messages: [
           {
             role: 'system',
@@ -1171,7 +1171,7 @@ ${JSON.stringify({
 Compare the model outputs above and determine which model performs best.`;
 
       const completion = await openaiClient.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: 'gpt-6-luna',
         messages: [
           {
             role: 'system',

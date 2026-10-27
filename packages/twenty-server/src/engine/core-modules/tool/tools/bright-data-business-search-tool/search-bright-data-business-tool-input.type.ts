@@ -9,12 +9,12 @@ export const SearchBrightDataBusinessToolInputZodSchema = z.object({
     .optional()
     .default('ludicrous')
     .describe(
-      'Default ludicrous: plans structured sharded queries and bills $0.002 per record. Pass instant only for company lookup by domain (bare host or URL, no spaces); the tool filters to that website host. smart is ignored',
+      'Default ludicrous: a set described by attributes, planned into structured sharded queries, billed $0.002 per record. Pass instant only with entity company for a lookup by website (bare host or URL, no spaces); the tool filters to that website host. Any other instant call runs as ludicrous. smart is ignored',
     ),
   query: z
     .string()
     .describe(
-      'Raw natural-language request, or for mode instant a bare domain/URL (e.g. stripe.com). Ludicrous may be longer; instant max 200 characters',
+      'Raw natural-language request, or for mode instant a bare domain/URL (e.g. stripe.com). Not a LinkedIn URL. Ludicrous may be longer; instant max 200 characters',
     ),
   limit: z.number().min(1).max(1000).optional(),
   offset: z.number().min(0).optional(),
@@ -25,11 +25,11 @@ export const SearchBrightDataBusinessToolInputZodSchema = z.object({
     .describe(
       'When set with a workspace, merge hits into the outreach ephemeral tab',
     ),
-  planId: z
+  listId: z
     .string()
     .optional()
     .describe(
-      'Ludicrous only. Plan id returned by the estimate call. Pass it after the user confirms the budget to fetch the records',
+      'Ludicrous only. listId returned by the estimate call. Pass it after the user confirms the budget to fetch the records',
     ),
   maxBudgetUsd: z
     .number()
@@ -37,7 +37,7 @@ export const SearchBrightDataBusinessToolInputZodSchema = z.object({
     .max(10)
     .optional()
     .describe(
-      'Ludicrous only. Spend cap in USD for this query, at most 10. Required together with planId',
+      'Ludicrous only. Spend cap in USD for this query, at most 10. Required together with listId',
     ),
   targetCount: z
     .number()

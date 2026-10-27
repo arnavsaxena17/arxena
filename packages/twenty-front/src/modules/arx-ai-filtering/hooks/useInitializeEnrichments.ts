@@ -18,7 +18,7 @@ const SAMPLE_ENRICHMENTS = [
     selectedMetadataFields: ['resume', 'linkedinProfile'],
     filterDescription: 'Extract technical skills from candidate profiles',
     prompt: 'Analyze the candidate profile and extract their technical skills, experience level, and expertise areas.',
-    selectedModel: 'gpt4omini',
+    selectedModel: 'gpt6luna',
     bestOf: 1
   },
   {
@@ -31,7 +31,7 @@ const SAMPLE_ENRICHMENTS = [
     selectedMetadataFields: ['resume', 'linkedinProfile', 'coverLetter'],
     filterDescription: 'Assess cultural fit and soft skills',
     prompt: 'Evaluate the candidate\'s cultural fit, communication style, and team orientation based on their profile.',
-    selectedModel: 'gpt4omini',
+    selectedModel: 'gpt6luna',
     bestOf: 1
   },
   {
@@ -44,7 +44,7 @@ const SAMPLE_ENRICHMENTS = [
     selectedMetadataFields: ['resume', 'linkedinProfile'],
     filterDescription: 'Extract salary expectations and benefits preferences',
     prompt: 'Analyze the candidate profile to determine their salary expectations and benefits preferences.',
-    selectedModel: 'gpt4omini',
+    selectedModel: 'gpt6luna',
     bestOf: 1
   }
 ];
@@ -72,7 +72,7 @@ export const useInitializeEnrichments = () => {
           selectedMetadataFields: [],
           filterDescription: '',
           prompt: '',
-          selectedModel: 'gpt4omini',
+          selectedModel: 'gpt6luna',
           bestOf: 1,
           includeResume: false,
         };

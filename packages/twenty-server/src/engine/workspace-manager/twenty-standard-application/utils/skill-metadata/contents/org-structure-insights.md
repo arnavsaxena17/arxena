@@ -135,6 +135,16 @@ Label budget / vendor ownership as a **best guess**. Honest not-found for named 
 - Budget / vendor: technology + infrastructure (or finance) positions by key; then people via `nodeKey`
 - Named person: fuzzy name via node people; say which node key/headline they sit on
 
+## Promoter-owned and family groups
+
+Indian family groups break the usual reading of titles. Apply when the company is a promoter-owned group (family name on the group, several listed or unlisted entities, a Chairman or MD with the promoter surname).
+
+- "Group HR", "Group CHRO" or "President – Group HR" often sits at the holding company or a shared-services entity and may outrank an operating company's CHRO. Do not read the word "Group" as junior.
+- HR and finance heads at these groups often report to a family member (Chairman, MD, Vice Chairman, a surname match), not to a professional CEO. A promoter family member is not a professional executive: label them and keep them out of the buying committee unless they are the budget owner.
+- A surname match on a Director or MD node is a promoter signal, not proof. Cite the node and say "likely promoter".
+- Several entities can employ one person; match the node's company, not the group name.
+- Professional CEO under a promoter: the real decision may still sit above them. Say so as a best guess, never as a reporting fact.
+
 ## Output
 
 - Canvas turns: node keys + headlines you sent to `highlight_org_chart`, plus a one-line why

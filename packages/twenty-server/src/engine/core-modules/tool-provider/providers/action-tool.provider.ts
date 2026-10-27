@@ -31,7 +31,7 @@ import { DraftEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/dr
 import { SendEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/send-email-tool';
 import { HttpTool } from 'src/engine/core-modules/tool/tools/http-tool/http-tool';
 import {
-  GetOutreachWorkingSetTool,
+  GetOutreachTabTool,
   PreviewOutreachAiColumnTool,
   GetOutreachAiColumnRunStatusTool,
   CancelOutreachAiColumnRunTool,
@@ -41,13 +41,11 @@ import {
   RunOutreachAiColumnTool,
 } from 'src/engine/core-modules/tool/tools/outreach-ai-column-tool/outreach-ai-column-tools';
 import { PreviewSampleMessageColumnTool } from 'src/engine/core-modules/tool/tools/outreach-sample-message-tool/preview-sample-message-column-tool';
-import { UpsertOutreachTargetCompaniesTool } from 'src/engine/core-modules/tool/tools/outreach-target-companies-tool/upsert-outreach-target-companies-tool';
 import { SaveOutreachTargetsToCrmTool } from 'src/engine/core-modules/tool/tools/outreach-save-to-crm-tool/save-outreach-targets-to-crm-tool';
 import { FindRoleAtCompaniesTool } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/find-role-at-companies-tool';
 import { GetSourcingLedgerTool } from 'src/engine/core-modules/tool/tools/sourcing-ledger-tool/get-sourcing-ledger-tool';
 import { FetchProfilesTool } from 'src/engine/core-modules/tool/tools/fetch-profiles-tool/fetch-profiles-tool';
 import { StartOutreachTool } from 'src/engine/core-modules/tool/tools/outreach-start-tool/start-outreach-tool';
-import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
 import { NavigateAppTool } from 'src/engine/core-modules/tool/tools/navigate-tool/navigate-app-tool';
 import { HighlightOrgChartTool } from 'src/engine/core-modules/tool/tools/highlight-org-chart-tool/highlight-org-chart-tool';
 import { ExtractJsonPathsTool } from 'src/engine/core-modules/tool/tools/output-navigation-tool/extract-json-paths-tool';
@@ -74,8 +72,6 @@ export class ActionToolProvider implements ToolProvider {
     private readonly sendFilesTool: SendFilesTool,
     private readonly navigateAppTool: NavigateAppTool,
     private readonly highlightOrgChartTool: HighlightOrgChartTool,
-    private readonly upsertOutreachTargetCompaniesTool: UpsertOutreachTargetCompaniesTool,
-    private readonly upsertOutreachTargetPeopleTool: UpsertOutreachTargetPeopleTool,
     private readonly inspectOutreachSpreadsheetTool: InspectOutreachSpreadsheetTool,
     private readonly importOutreachSpreadsheetTool: ImportOutreachSpreadsheetTool,
     private readonly saveOutreachTargetsToCrmTool: SaveOutreachTargetsToCrmTool,
@@ -83,7 +79,7 @@ export class ActionToolProvider implements ToolProvider {
     private readonly findRoleAtCompaniesTool: FindRoleAtCompaniesTool,
     private readonly fetchProfilesTool: FetchProfilesTool,
     private readonly getSourcingLedgerTool: GetSourcingLedgerTool,
-    private readonly getOutreachWorkingSetTool: GetOutreachWorkingSetTool,
+    private readonly getOutreachTabTool: GetOutreachTabTool,
     private readonly previewOutreachAiColumnTool: PreviewOutreachAiColumnTool,
     private readonly runOutreachAiColumnTool: RunOutreachAiColumnTool,
     private readonly getOutreachAiColumnRunStatusTool: GetOutreachAiColumnRunStatusTool,
@@ -108,11 +104,6 @@ export class ActionToolProvider implements ToolProvider {
       ['send_files', this.sendFilesTool],
       ['navigate_app', this.navigateAppTool],
       ['highlight_org_chart', this.highlightOrgChartTool],
-      [
-        'upsert_outreach_target_companies',
-        this.upsertOutreachTargetCompaniesTool,
-      ],
-      ['upsert_outreach_target_people', this.upsertOutreachTargetPeopleTool],
       ['inspect_outreach_spreadsheet', this.inspectOutreachSpreadsheetTool],
       ['import_outreach_spreadsheet', this.importOutreachSpreadsheetTool],
       ['save_outreach_targets_to_crm', this.saveOutreachTargetsToCrmTool],
@@ -120,7 +111,7 @@ export class ActionToolProvider implements ToolProvider {
       ['find_role_at_companies', this.findRoleAtCompaniesTool],
       ['fetch_profiles', this.fetchProfilesTool],
       ['get_sourcing_ledger', this.getSourcingLedgerTool],
-      ['get_outreach_working_set', this.getOutreachWorkingSetTool],
+      ['get_outreach_tab', this.getOutreachTabTool],
       ['preview_ai_column', this.previewOutreachAiColumnTool],
       ['run_ai_column', this.runOutreachAiColumnTool],
       ['get_ai_column_run_status', this.getOutreachAiColumnRunStatusTool],
@@ -234,24 +225,6 @@ export class ActionToolProvider implements ToolProvider {
 
     descriptors.push(
       this.buildDescriptor(
-        'upsert_outreach_target_companies',
-        this.upsertOutreachTargetCompaniesTool,
-        includeSchemas,
-        context.locale,
-      ),
-    );
-
-    descriptors.push(
-      this.buildDescriptor(
-        'upsert_outreach_target_people',
-        this.upsertOutreachTargetPeopleTool,
-        includeSchemas,
-        context.locale,
-      ),
-    );
-
-    descriptors.push(
-      this.buildDescriptor(
         'inspect_outreach_spreadsheet',
         this.inspectOutreachSpreadsheetTool,
         includeSchemas,
@@ -297,8 +270,8 @@ export class ActionToolProvider implements ToolProvider {
 
     descriptors.push(
       this.buildDescriptor(
-        'get_outreach_working_set',
-        this.getOutreachWorkingSetTool,
+        'get_outreach_tab',
+        this.getOutreachTabTool,
         includeSchemas,
         context.locale,
       ),

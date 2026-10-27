@@ -4,7 +4,7 @@ import {
   OutreachTableViewService,
   readCellText,
 } from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
-import { type OutreachWorkingSetRow } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+import { type OutreachTabRow } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
 
 const aiColumns = {
   isCeo: { label: 'Is CEO', type: 'boolean', status: 'ok' },
@@ -21,7 +21,7 @@ const row = (
   id: string,
   title: string,
   otherFields: Record<string, unknown>,
-): OutreachWorkingSetRow => ({
+): OutreachTabRow => ({
   id,
   source: 'crm',
   name: `Person ${id}`,

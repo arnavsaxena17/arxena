@@ -69,7 +69,7 @@ const SAMPLE_ENRICHMENTS = [
       },
     ],
     selectedMetadataFields: ['location_name'],
-    selectedModel: 'gpt4omini',
+    selectedModel: 'gpt6luna',
     bestOf: 1,
   },
   {
@@ -97,7 +97,7 @@ const SAMPLE_ENRICHMENTS = [
       },
     ],
     selectedMetadataFields: ['jobTitle'],
-    selectedModel: 'gpt4omini',
+    selectedModel: 'gpt6luna',
     bestOf: 1,
   },
 ];

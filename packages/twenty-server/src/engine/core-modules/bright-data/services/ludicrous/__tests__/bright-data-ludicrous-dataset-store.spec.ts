@@ -4,7 +4,7 @@ import {
 } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-dataset-store.service';
 
 const DATASET: BrightDataLudicrousDataset = {
-  planId: 'plan-1',
+  listId: 'plan-1',
   entity: 'company',
   documents: [{ brightId: 'a', data: { name: 'Wow! Momo' } }],
   fetchedDocuments: [

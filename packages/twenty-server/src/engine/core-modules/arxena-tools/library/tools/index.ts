@@ -5,6 +5,7 @@ import { candidateSearchTools } from './candidate-search-tools';
 import { candidateTools } from './candidate-tools';
 import { companyTools } from './company-tools';
 import { esIndexSearchTools } from './es-index-search-tools';
+import { harvestSearchTools } from './harvest-search-tools';
 import { internalTools } from './internal-tools';
 import { projectTools } from './project-tools';
 import { linkedinSearchTools } from './linkedin-search-tools';
@@ -33,6 +34,7 @@ export const publicTools: McpTool[] = [
   ...esIndexSearchTools,
   ...candidateSearchTools,
   ...linkedinSearchTools,
+  ...harvestSearchTools,
   ...wikidataTools,
   ...arxChatTools,
   ...shortlistCvsentTools,

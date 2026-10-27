@@ -1,4 +1,4 @@
-import { type OutreachWorkingSetRow } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+import { type OutreachTabRow } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
 import { readRowProfile } from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/profile-row-fields.util';
 
 // What happened in a sourcing run, kept so a shortfall can be explained from
@@ -77,7 +77,7 @@ export type SourcingFunnel = {
 };
 
 const outcomeOf = (
-  row: OutreachWorkingSetRow,
+  row: OutreachTabRow,
 ): 'pass' | 'unknown' | 'fail' | undefined => {
   const value =
     row.otherFields.fitmentOutcome ?? row.otherFields.fitment_outcome;
@@ -88,7 +88,7 @@ const outcomeOf = (
 };
 
 export const computeSourcingFunnel = (
-  rows: OutreachWorkingSetRow[],
+  rows: OutreachTabRow[],
 ): SourcingFunnel => {
   const funnel: SourcingFunnel = {
     rows: rows.length,

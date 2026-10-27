@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 
 import { isNonEmptyString } from '@sniptt/guards';
+import { resolveOutreachConfigPersonaGuidance } from 'twenty-shared/arx';
 import { isDefined, isValidUuid } from 'twenty-shared/utils';
 import { type FindOptionsWhere, type ObjectLiteral } from 'typeorm';
 
@@ -58,6 +59,11 @@ type CandidateRecord = RecordWithId & {
   peopleId?: string | null;
   outreachWorkspaceMemberId?: string | null;
   outreachProspectEnrichment?: unknown;
+  projectId?: string | null;
+};
+
+type ProjectRecord = RecordWithId & {
+  outreachConfig?: unknown;
 };
 
 type PersonRecord = RecordWithId & {
@@ -106,7 +112,7 @@ export class OutreachSampleMessageService implements OutreachSampleMessageDrafte
   }): Promise<OutreachSampleMessageDraft> {
     const include = { ...DEFAULT_INCLUDE, ...(requestedInclude ?? {}) };
     const warnings: string[] = [];
-    const { candidate, person, member } = await this.loadRecords({
+    const { candidate, person, member, project } = await this.loadRecords({
       workspaceId,
       candidateId: prospect.candidateId,
       needsMember: include.senderProfile,
@@ -172,6 +178,10 @@ export class OutreachSampleMessageService implements OutreachSampleMessageDrafte
       prospect.name;
     const variant = pickOutreachOpenerVariant(openerSeed);
     const shape = pickOutreachOpenerShape(openerSeed);
+    // Same project text the seeded sequencer reads; Find-list rows have none.
+    const personaGuidance = resolveOutreachConfigPersonaGuidance(
+      project?.outreachConfig,
+    );
     const prospectEnrichmentJson = hasEnrichment
       ? JSON.stringify(enrichment)
       : this.buildRowSummary(prospect);
@@ -186,6 +196,7 @@ export class OutreachSampleMessageService implements OutreachSampleMessageDrafte
           // Only pass the news section when the flag is on, so the prompt stays
           // identical to the seeded opener otherwise.
           companyNews: include.companyNews ? (companyNews ?? '') : undefined,
+          personaGuidance,
           openerSeed,
           variant,
           shape,
@@ -199,7 +210,15 @@ export class OutreachSampleMessageService implements OutreachSampleMessageDrafte
     let message = draft.message;
     let tier = draft.tier;
     let hookUsed = draft.hookUsed;
-    let validation = validateOutreachOpenerMessage(message, variant);
+    // Persona guidance may set its own ask, so the A/B ask check is skipped.
+    const validationOptions = {
+      checkAskVariant: !isNonEmptyString(personaGuidance),
+    };
+    let validation = validateOutreachOpenerMessage(
+      message,
+      variant,
+      validationOptions,
+    );
 
     // Two retries with the failed checks fed back into the prompt, then hold.
     for (
@@ -212,7 +231,11 @@ export class OutreachSampleMessageService implements OutreachSampleMessageDrafte
       message = draft.message;
       tier = draft.tier ?? tier;
       hookUsed = draft.hookUsed ?? hookUsed;
-      validation = validateOutreachOpenerMessage(message, variant);
+      validation = validateOutreachOpenerMessage(
+        message,
+        variant,
+        validationOptions,
+      );
     }
 
     if (!isNonEmptyString(message.trim()) || !validation.ok) {
@@ -263,9 +286,10 @@ export class OutreachSampleMessageService implements OutreachSampleMessageDrafte
     candidate: CandidateRecord | null;
     person: PersonRecord | null;
     member: RecordWithId | null;
+    project: ProjectRecord | null;
   }> {
     if (!isNonEmptyString(candidateId)) {
-      return { candidate: null, person: null, member: null };
+      return { candidate: null, person: null, member: null, project: null };
     }
 
     if (!isValidUuid(candidateId)) {
@@ -295,7 +319,7 @@ export class OutreachSampleMessageService implements OutreachSampleMessageDrafte
           );
         };
 
-        // Working-set CRM rows are keyed by candidate id; a miss means the
+        // CRM tab rows are keyed by candidate id; a miss means the
         // row is not enrolled, which is fine.
         const candidate = await findOne<CandidateRecord>(
           'candidate',
@@ -303,11 +327,12 @@ export class OutreachSampleMessageService implements OutreachSampleMessageDrafte
         );
 
         if (!isDefined(candidate)) {
-          return { candidate: null, person: null, member: null };
+          return { candidate: null, person: null, member: null, project: null };
         }
 
         const peopleId = candidate.peopleId?.trim() ?? '';
         const memberId = candidate.outreachWorkspaceMemberId?.trim() ?? '';
+        const projectId = candidate.projectId?.trim() ?? '';
 
         return {
           candidate,
@@ -318,6 +343,9 @@ export class OutreachSampleMessageService implements OutreachSampleMessageDrafte
             needsMember && isNonEmptyString(memberId)
               ? await findOne<RecordWithId>('workspaceMember', memberId)
               : null,
+          project: isNonEmptyString(projectId)
+            ? await findOne<ProjectRecord>('project', projectId)
+            : null,
         };
       },
       buildSystemAuthContext(workspaceId),

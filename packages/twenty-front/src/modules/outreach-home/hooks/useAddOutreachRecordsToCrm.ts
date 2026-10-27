@@ -202,10 +202,10 @@ export const useAddOutreachRecordsToCrm = () => {
   const addPeopleToCrm = useCallback(
     async ({
       people,
-      companiesByWorkingSetId,
+      companiesByTabId,
     }: {
       people: OutreachPersonRow[];
-      companiesByWorkingSetId?: Record<string, OutreachCompanyRow>;
+      companiesByTabId?: Record<string, OutreachCompanyRow>;
     }) => {
       if (people.length === 0) {
         enqueueErrorSnackBar({
@@ -236,7 +236,7 @@ export const useAddOutreachRecordsToCrm = () => {
           const sequenceFields = mapPersonStageToCandidate(person.stage);
 
           let crmCompanyId: string | null = null;
-          const ephemeralCompany = companiesByWorkingSetId?.[person.companyId];
+          const ephemeralCompany = companiesByTabId?.[person.companyId];
 
           if (isDefined(ephemeralCompany)) {
             const cacheKey = ephemeralCompany.domain || ephemeralCompany.name;

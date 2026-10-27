@@ -72,6 +72,7 @@ export class AiGenerateTextController {
         maxOutputTokens: modelConfig.maxOutputTokens,
       },
     });
+    console.log('result in generate-text controller', result);
 
     return {
       text: result.text,

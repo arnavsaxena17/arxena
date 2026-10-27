@@ -16,7 +16,7 @@ export class OpenAIDriver implements LLMChatModelDriver {
     }
 
     this.chatModel = new ChatOpenAI({
-      model: 'gpt-4o-mini',
+      model: 'gpt-6-luna',
       apiKey,
     }).bind({
       response_format: {

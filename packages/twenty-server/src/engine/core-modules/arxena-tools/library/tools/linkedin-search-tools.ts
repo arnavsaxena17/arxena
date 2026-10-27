@@ -28,7 +28,6 @@ import {
   SEARCH_LINKEDIN_PEOPLE_INPUT_DESCRIPTOR,
   SEARCH_LINKEDIN_POSTS_INPUT_DESCRIPTOR,
   LIST_LINKEDIN_RELATIONS_INPUT_DESCRIPTOR,
-  VALIDATE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR,
 } from '../utils/McpToolSchemas';
 
 import { callRestAPI, callRestAPIGet } from '../api/rest-client';
@@ -159,7 +158,7 @@ export const linkedinSearchTools: McpTool[] = [
     definition: {
       name: 'search_linkedin_people',
       description:
-        'Search LinkedIn profiles (people) via Unipile. Use search_linkedin_parameters first to resolve facet IDs. Supports classic, sales_navigator, and recruiter. For sales_navigator use include/exclude objects (role/industry/location) — never classic flat arrays or job_title. Pass searchParameters for direct search, or query + assistantThreadId for the full candidate-search flow. Use search_linkedin_continue for the next page.',
+        "Search LinkedIn profiles (people) via Unipile. For a brief, pass one entry of generate_linkedin_query_set's queries[].searchParameters with the searchType it returned. searchType is optional: omitted, it is the account's best seat; a seat the account lacks is rejected with the modes it has. Use search_linkedin_continue for the next page.",
       inputSchema: (() => {
         const baseSchema = descriptorToInputSchema(
           SEARCH_LINKEDIN_PEOPLE_INPUT_DESCRIPTOR,
@@ -247,19 +246,17 @@ export const linkedinSearchTools: McpTool[] = [
         );
       }
 
-      const endpoint =
-        searchType === 'sales_navigator'
-          ? 'search/sales-navigator/people'
-          : searchType === 'recruiter'
-            ? 'search/recruiter/people'
-            : 'search/people';
-
+      // The server defaults searchType to the account's seat and rejects a
+      // mode the account does not have
       return callRestAPI(
         config.baseUrl,
         config.apiToken,
         'linkedin-search',
-        endpoint,
-        effectiveSearchParameters,
+        'search/auto/people',
+        {
+          ...(searchType ? { searchType } : {}),
+          searchParameters: effectiveSearchParameters,
+        },
         buildLinkedInSearchQueryParams({ account_id, cursor, limit }),
       );
     },
@@ -269,7 +266,7 @@ export const linkedinSearchTools: McpTool[] = [
     definition: {
       name: 'search_linkedin_companies',
       description:
-        'Search for companies on LinkedIn. Supports classic and sales_navigator search types.',
+        "Search for companies on LinkedIn (classic or sales_navigator). For a brief, pass one entry of generate_linkedin_query_set's queries[].searchParameters (category companies). searchType is optional: omitted, it is the account's best seat; a seat the account lacks is rejected.",
       inputSchema: (() => {
         const baseSchema = descriptorToInputSchema(
           SEARCH_LINKEDIN_COMPANIES_INPUT_DESCRIPTOR,
@@ -335,17 +332,15 @@ export const linkedinSearchTools: McpTool[] = [
         throw new Error('Either url or searchParameters must be provided');
       }
 
-      const endpoint =
-        searchType === 'sales_navigator'
-          ? 'search/sales-navigator/companies'
-          : 'search/companies';
-
       return callRestAPI(
         config.baseUrl,
         config.apiToken,
         'linkedin-search',
-        endpoint,
-        searchParameters,
+        'search/auto/companies',
+        {
+          ...(searchType ? { searchType } : {}),
+          searchParameters,
+        },
         buildLinkedInSearchQueryParams({ account_id, cursor, limit }),
       );
     },
@@ -600,22 +595,55 @@ export const linkedinSearchTools: McpTool[] = [
     definition: {
       name: 'generate_linkedin_query_set',
       description:
-        'Generate LinkedIn search query set from natural language requirement using full orchestrator (runs all 4 agents: parse, master lists, primary query, factoring). IMPORTANT: Do not call this tool multiple times with the same rawRequirement - results are cached and duplicate calls will be skipped. Only call once per unique requirement.',
-      inputSchema: descriptorToInputSchema(
-        GENERATE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR,
-      ),
+        "Generate LinkedIn searches from a natural-language brief: builds the query set (term limits enforced), then maps it for the provider. unipile (default): the searchType's shape with facet ids resolved for this account; pass each queries[i].searchParameters with that searchType to search_linkedin_people (or search_linkedin_companies). harvest: Harvest Sales Navigator filters; pass each to the returned tool (search_harvest_leads or search_harvest_accounts). Call once per unique rawRequirement.",
+      inputSchema: (() => {
+        const baseSchema = descriptorToInputSchema(
+          GENERATE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR,
+        );
+        return {
+          ...baseSchema,
+          properties: {
+            ...baseSchema.properties,
+            category: {
+              ...baseSchema.properties.category,
+              enum: ['people', 'companies'],
+            },
+            provider: {
+              ...baseSchema.properties.provider,
+              enum: ['unipile', 'harvest'],
+            },
+            searchType: {
+              ...baseSchema.properties.searchType,
+              enum: ['classic', 'sales_navigator', 'recruiter'],
+            },
+          },
+        };
+      })(),
     },
     handler: async (args, config) => {
-      const { rawRequirement, queryIpLocation, model, temperature, verbose } =
-        args as {
-          rawRequirement: string;
-          queryIpLocation?: string;
-          model?: string;
-          temperature?: number;
-          verbose?: boolean;
-        };
+      const {
+        rawRequirement,
+        category,
+        provider,
+        searchType,
+        account_id,
+        queryIpLocation,
+        model,
+        temperature,
+        verbose,
+      } = args as {
+        rawRequirement: string;
+        category?: 'people' | 'companies';
+        provider?: 'unipile' | 'harvest';
+        searchType?: string;
+        account_id?: string;
+        queryIpLocation?: string;
+        model?: string;
+        temperature?: number;
+        verbose?: boolean;
+      };
 
-      return callRestAPI(
+      const generated = (await callRestAPI(
         config.baseUrl,
         config.apiToken,
         'linkedin-query-generation',
@@ -627,7 +655,48 @@ export const linkedinSearchTools: McpTool[] = [
           temperature,
           verbose,
         },
-      );
+      )) as Record<string, unknown>;
+
+      const querySet = generated?.final_query_set;
+      if (!querySet) {
+        return generated;
+      }
+
+      // A missing LinkedIn account or an unavailable searchType must not
+      // lose the generated query set, so the error travels with it
+      try {
+        const parameters = (
+          provider === 'harvest'
+            ? await callRestAPI(
+                config.baseUrl,
+                config.apiToken,
+                'harvest-search',
+                'query-set/parameters',
+                { querySet, category: category ?? 'people' },
+              )
+            : await callRestAPI(
+                config.baseUrl,
+                config.apiToken,
+                'linkedin-search',
+                'query-set/parameters',
+                {
+                  querySet,
+                  category: category ?? 'people',
+                  ...(searchType ? { searchType } : {}),
+                  requirement: rawRequirement,
+                },
+                account_id ? { account_id } : undefined,
+              )
+        ) as Record<string, unknown>;
+
+        return { ...generated, ...parameters };
+      } catch (error) {
+        return {
+          ...generated,
+          searchParametersError:
+            error instanceof Error ? error.message : String(error),
+        };
+      }
     },
   },
 
@@ -807,30 +876,6 @@ export const linkedinSearchTools: McpTool[] = [
           queryIpLocation,
           model,
           temperature,
-        },
-      );
-    },
-  },
-
-  {
-    definition: {
-      name: 'validate_linkedin_query_set',
-      description:
-        'Validate query set against LinkedIn limits (max 6 terms per field, max 10 combined terms).',
-      inputSchema: descriptorToInputSchema(
-        VALIDATE_LINKEDIN_QUERY_SET_INPUT_DESCRIPTOR,
-      ),
-    },
-    handler: async (args, config) => {
-      const { querySet } = args as { querySet: Record<string, unknown> };
-
-      return callRestAPI(
-        config.baseUrl,
-        config.apiToken,
-        'linkedin-query-generation',
-        'validate',
-        {
-          querySet,
         },
       );
     },

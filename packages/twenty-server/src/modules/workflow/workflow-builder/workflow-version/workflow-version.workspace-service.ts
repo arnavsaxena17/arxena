@@ -604,6 +604,7 @@ export class WorkflowVersionWorkspaceService {
               'candidate',
             ]),
             chatCreatedAt: resolveFieldId('chatMessage', ['createdAt']),
+            projectRecordId: resolveFieldId('project', ['id']),
             ...(options.pinSenderByWarmOverlap
               ? { workspaceMemberId: resolveFieldId('workspaceMember', ['id']) }
               : {}),

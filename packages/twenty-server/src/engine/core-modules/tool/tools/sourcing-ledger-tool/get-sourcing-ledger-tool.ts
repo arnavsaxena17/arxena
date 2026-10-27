@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { OutreachListService } from 'src/engine/core-modules/outreach-list/services/outreach-list.service';
 import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
-import { OutreachWorkingSetService } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+import { OutreachTabService } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
 import { computeSourcingFunnel } from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';
@@ -91,7 +91,7 @@ export class GetSourcingLedgerTool implements Tool {
 
   constructor(
     private readonly sourcingLedgerService: SourcingLedgerService,
-    private readonly outreachWorkingSetService: OutreachWorkingSetService,
+    private readonly outreachTabService: OutreachTabService,
     private readonly outreachListService: OutreachListService,
   ) {}
 
@@ -114,10 +114,10 @@ export class GetSourcingLedgerTool implements Tool {
 
     try {
       const [rows, lists] = await Promise.all([
-        this.outreachWorkingSetService.getAll({
+        this.outreachTabService.getAll({
           workspaceId,
           projectId,
-          subject: 'person',
+          tab: 'people',
         }),
         this.outreachListService.list(workspaceId),
       ]);

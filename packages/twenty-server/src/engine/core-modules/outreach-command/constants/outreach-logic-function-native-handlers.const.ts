@@ -362,7 +362,7 @@ export const main = async (params: {
 };
 `;
 
-const CLASSIFY_AND_UPSERT_LOCAL_PLACES_HANDLER = `// Native GTM action: ClassifyAndUpsertLocalPlacesService (gpt-4o-mini per company name).
+const CLASSIFY_AND_UPSERT_LOCAL_PLACES_HANDLER = `// Native GTM action: ClassifyAndUpsertLocalPlacesService (gpt-6-luna per company name).
 // Workflow/Test/executeOneLogicFunction run the server executor, not this sandbox.
 export const main = async (params: {
   places?: unknown[];

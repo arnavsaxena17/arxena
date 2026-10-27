@@ -1,7 +1,7 @@
 import { SearchBrightDataBusinessTool } from 'src/engine/core-modules/tool/tools/bright-data-business-search-tool/search-bright-data-business-tool';
 
 const run = {
-  planId: 'list-1',
+  listId: 'list-1',
   entity: 'company',
   documents: [
     {
@@ -63,7 +63,7 @@ describe('SearchBrightDataBusinessTool project from context', () => {
   const fetch = {
     entity: 'company',
     query: 'qsr',
-    planId: 'list-1',
+    listId: 'list-1',
     maxBudgetUsd: 1,
   };
 

@@ -884,7 +884,7 @@ export class WorkspaceImportLegacyService {
       return upperValue;
     }
 
-    // TextDocument → TEXT_DOCUMENT, gpt4omini → GPT4OMINI
+    // TextDocument → TEXT_DOCUMENT, gpt6luna → GPT6LUNA
     const screamingSnakeValue = stringValue
       .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
       .replace(/[\s-]+/g, '_')

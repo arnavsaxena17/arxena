@@ -13,7 +13,7 @@ import { getCreateCompanyWhenAddingNewPersonCodeStepLogicFunctionDefinitions } f
 @Command({
   name: 'upgrade:2-25:ensure-classify-and-upsert-local-places-logic-function',
   description:
-    'Seed classify-and-upsert-local-places native logic function (gpt-4o-mini multi-outlet place filter + company upsert)',
+    'Seed classify-and-upsert-local-places native logic function (gpt-6-luna multi-outlet place filter + company upsert)',
 })
 export class EnsureClassifyAndUpsertLocalPlacesLogicFunctionCommand extends ProvisionedWorkspaceCommandRunner {
   constructor(

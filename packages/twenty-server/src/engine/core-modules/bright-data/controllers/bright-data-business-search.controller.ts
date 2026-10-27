@@ -70,7 +70,7 @@ export class BrightDataBusinessSearchController {
           offset: body.offset,
           view: body.view,
           projectId: body.projectId,
-          planId: body.planId,
+          listId: body.listId,
           maxBudgetUsd: body.maxBudgetUsd,
           targetCount: body.targetCount,
           autoExecute: body.autoExecute,

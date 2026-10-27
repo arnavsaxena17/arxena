@@ -12,7 +12,7 @@ import { type OutreachMainTab } from '@/outreach-home/types/outreach-home.types'
 import { TAB_LIST_GAP } from '@/ui/layout/tab-list/constants/TabListGap';
 import { TAB_LIST_HEIGHT } from '@/ui/layout/tab-list/constants/TabListHeight';
 
-// Same chrome as the Twenty TabList, but controlled by the working-set hook
+// Same chrome as the Twenty TabList, but controlled by the tab hook
 // (activeTab lives there, not in a tab-list component state).
 const StyledTabsRow = styled.div`
   box-sizing: border-box;

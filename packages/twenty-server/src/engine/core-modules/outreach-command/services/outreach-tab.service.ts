@@ -10,13 +10,12 @@ import { OutreachCompaniesCacheService } from 'src/engine/core-modules/outreach-
 import { OutreachPeopleCacheService } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
 import { resolvePeopleCompanyIds } from 'src/engine/core-modules/outreach-command/utils/resolve-people-company-ids.util';
 import { buildPeopleFoundValues } from 'src/engine/core-modules/outreach-command/utils/outreach-people-found.util';
+import { type OutreachTableTab } from 'src/engine/core-modules/outreach-command/utils/outreach-cache-realtime.constants';
 import { stripAiColumnKeys } from 'src/engine/core-modules/outreach-command/utils/strip-ai-column-keys.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 
-export type OutreachWorkingSetSubject = 'person' | 'company';
-
-export type OutreachWorkingSetRow = {
+export type OutreachTabRow = {
   // Ephemeral id, or the CRM candidate id for enrolled people.
   id: string;
   source: 'ephemeral' | 'crm';
@@ -42,11 +41,11 @@ export type OutreachExistingAiColumn = {
   filled: number;
 };
 
-export type OutreachWorkingSetPage = {
+export type OutreachTabPage = {
   total: number;
   // AI columns already on these rows: reuse them before adding a new one
   aiColumns: OutreachExistingAiColumn[];
-  rows: OutreachWorkingSetRow[];
+  rows: OutreachTabRow[];
   nextCursor: string | null;
 };
 
@@ -157,7 +156,7 @@ const normalizeLinkedinKey = (linkedinUrl: string): string =>
 // Merges the ephemeral Find list (Redis, per project) with the CRM records
 // that belong to the project, so AI columns see the same rows as the tabs.
 @Injectable()
-export class OutreachWorkingSetService {
+export class OutreachTabService {
   constructor(
     private readonly outreachPeopleCacheService: OutreachPeopleCacheService,
     private readonly outreachCompaniesCacheService: OutreachCompaniesCacheService,
@@ -167,17 +166,17 @@ export class OutreachWorkingSetService {
   async getPage({
     workspaceId,
     projectId,
-    subject,
+    tab,
     limit,
     cursor,
   }: {
     workspaceId: string;
     projectId: string;
-    subject: OutreachWorkingSetSubject;
+    tab: OutreachTableTab;
     limit: number;
     cursor?: string;
-  }): Promise<OutreachWorkingSetPage> {
-    const all = await this.getAll({ workspaceId, projectId, subject });
+  }): Promise<OutreachTabPage> {
+    const all = await this.getAll({ workspaceId, projectId, tab });
     const offset = Math.max(0, Number.parseInt(cursor ?? '0', 10) || 0);
     const pageSize = Math.min(Math.max(1, limit), MAX_PAGE_SIZE);
     const rows = all.slice(offset, offset + pageSize);
@@ -191,9 +190,7 @@ export class OutreachWorkingSetService {
     };
   }
 
-  private collectAiColumns(
-    rows: OutreachWorkingSetRow[],
-  ): OutreachExistingAiColumn[] {
+  private collectAiColumns(rows: OutreachTabRow[]): OutreachExistingAiColumn[] {
     const columns = new Map<string, OutreachExistingAiColumn>();
 
     for (const row of rows) {
@@ -229,13 +226,13 @@ export class OutreachWorkingSetService {
   async getAll({
     workspaceId,
     projectId,
-    subject,
+    tab,
   }: {
     workspaceId: string;
     projectId: string;
-    subject: OutreachWorkingSetSubject;
-  }): Promise<OutreachWorkingSetRow[]> {
-    return subject === 'person'
+    tab: OutreachTableTab;
+  }): Promise<OutreachTabRow[]> {
+    return tab === 'people'
       ? this.getPeople(workspaceId, projectId)
       : this.getCompanies(workspaceId, projectId);
   }
@@ -243,16 +240,16 @@ export class OutreachWorkingSetService {
   async getRowsByIds({
     workspaceId,
     projectId,
-    subject,
+    tab,
     ids,
   }: {
     workspaceId: string;
     projectId: string;
-    subject: OutreachWorkingSetSubject;
+    tab: OutreachTableTab;
     ids: string[];
-  }): Promise<OutreachWorkingSetRow[]> {
+  }): Promise<OutreachTabRow[]> {
     const wanted = new Set(ids);
-    const all = await this.getAll({ workspaceId, projectId, subject });
+    const all = await this.getAll({ workspaceId, projectId, tab });
 
     return all.filter((row) => wanted.has(row.id));
   }
@@ -262,23 +259,23 @@ export class OutreachWorkingSetService {
   async writeOtherFields(args: {
     workspaceId: string;
     projectId: string;
-    subject: OutreachWorkingSetSubject;
+    tab: OutreachTableTab;
     valuesByRowId: Map<string, Record<string, unknown>>;
   }): Promise<{ ephemeralUpdated: number; crmUpdated: number }> {
     return this.enqueueOtherFieldsWrite(args, 'merge');
   }
 
   // Drops AI column value keys and their aiColumns meta from every row in
-  // the project working set (ephemeral Find list + CRM).
+  // the project tab (ephemeral Find list + CRM).
   async removeAiColumns({
     workspaceId,
     projectId,
-    subject,
+    tab,
     columnKeys,
   }: {
     workspaceId: string;
     projectId: string;
-    subject: OutreachWorkingSetSubject;
+    tab: OutreachTableTab;
     columnKeys: string[];
   }): Promise<{
     ephemeralUpdated: number;
@@ -299,7 +296,7 @@ export class OutreachWorkingSetService {
       };
     }
 
-    const rows = await this.getAll({ workspaceId, projectId, subject });
+    const rows = await this.getAll({ workspaceId, projectId, tab });
     const valuesByRowId = new Map<string, Record<string, unknown>>();
 
     for (const row of rows) {
@@ -322,7 +319,7 @@ export class OutreachWorkingSetService {
     }
 
     const written = await this.enqueueOtherFieldsWrite(
-      { workspaceId, projectId, subject, valuesByRowId },
+      { workspaceId, projectId, tab, valuesByRowId },
       'replace',
     );
 
@@ -337,7 +334,7 @@ export class OutreachWorkingSetService {
     args: {
       workspaceId: string;
       projectId: string;
-      subject: OutreachWorkingSetSubject;
+      tab: OutreachTableTab;
       valuesByRowId: Map<string, Record<string, unknown>>;
     },
     mode: 'merge' | 'replace',
@@ -345,7 +342,7 @@ export class OutreachWorkingSetService {
     // Each write reads and rewrites the whole ephemeral list, so concurrent
     // writes to one project (25 companies finishing together) would overwrite
     // each other; they run one after another instead.
-    const key = `${args.workspaceId}:${args.projectId}:${args.subject}`;
+    const key = `${args.workspaceId}:${args.projectId}:${args.tab}`;
     const previous = this.writeQueues.get(key) ?? Promise.resolve();
     const run = previous
       .catch(() => undefined)
@@ -368,12 +365,12 @@ export class OutreachWorkingSetService {
     {
       workspaceId,
       projectId,
-      subject,
+      tab,
       valuesByRowId,
     }: {
       workspaceId: string;
       projectId: string;
-      subject: OutreachWorkingSetSubject;
+      tab: OutreachTableTab;
       valuesByRowId: Map<string, Record<string, unknown>>;
     },
     mode: 'merge' | 'replace' = 'merge',
@@ -382,7 +379,7 @@ export class OutreachWorkingSetService {
       return { ephemeralUpdated: 0, crmUpdated: 0 };
     }
 
-    if (subject === 'company') {
+    if (tab === 'companies') {
       return {
         ephemeralUpdated: await this.writeEphemeralCompanies(
           workspaceId,
@@ -390,11 +387,7 @@ export class OutreachWorkingSetService {
           valuesByRowId,
           mode,
         ),
-        crmUpdated: await this.writeCompanies(
-          workspaceId,
-          valuesByRowId,
-          mode,
-        ),
+        crmUpdated: await this.writeCompanies(workspaceId, valuesByRowId, mode),
       };
     }
 
@@ -489,7 +482,7 @@ export class OutreachWorkingSetService {
     await this.writeOtherFields({
       workspaceId,
       projectId,
-      subject: 'company',
+      tab: 'companies',
       valuesByRowId,
     });
 
@@ -499,7 +492,7 @@ export class OutreachWorkingSetService {
   private async getPeople(
     workspaceId: string,
     projectId: string,
-  ): Promise<OutreachWorkingSetRow[]> {
+  ): Promise<OutreachTabRow[]> {
     const crmRows = await this.getCrmPeople(workspaceId, projectId);
     const crmLinkedinKeys = new Set(
       crmRows
@@ -510,7 +503,7 @@ export class OutreachWorkingSetService {
       workspaceId,
       projectId,
     );
-    const ephemeralRows: OutreachWorkingSetRow[] = (payload?.people ?? [])
+    const ephemeralRows: OutreachTabRow[] = (payload?.people ?? [])
       .filter((person) => {
         const key = normalizeLinkedinKey(person.linkedinUrl);
 
@@ -535,14 +528,14 @@ export class OutreachWorkingSetService {
   private async getCompanies(
     workspaceId: string,
     projectId: string,
-  ): Promise<OutreachWorkingSetRow[]> {
+  ): Promise<OutreachTabRow[]> {
     const crmRows = await this.getCrmCompanies(workspaceId, projectId);
     const crmKeys = new Set(crmRows.map(companyIdentityKey));
     const payload = await this.outreachCompaniesCacheService.get(
       workspaceId,
       projectId,
     );
-    const ephemeralRows: OutreachWorkingSetRow[] = (payload?.companies ?? [])
+    const ephemeralRows: OutreachTabRow[] = (payload?.companies ?? [])
       .filter((company) => !crmKeys.has(companyIdentityKey(company)))
       .map((company) => ({
         id: company.id,
@@ -562,7 +555,7 @@ export class OutreachWorkingSetService {
   async getCrmCompanies(
     workspaceId: string,
     projectId: string,
-  ): Promise<OutreachWorkingSetRow[]> {
+  ): Promise<OutreachTabRow[]> {
     const authContext = buildSystemAuthContext(workspaceId);
 
     return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
@@ -603,7 +596,7 @@ export class OutreachWorkingSetService {
   private async getCrmPeople(
     workspaceId: string,
     projectId: string,
-  ): Promise<OutreachWorkingSetRow[]> {
+  ): Promise<OutreachTabRow[]> {
     const authContext = buildSystemAuthContext(workspaceId);
 
     return this.globalWorkspaceOrmManager.executeInWorkspaceContext(

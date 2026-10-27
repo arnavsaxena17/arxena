@@ -6,11 +6,17 @@ import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twent
 import {
   JEV_EVALUATE_URL,
   JEV_MODEL_ID,
+  JEV_OPENROUTER_MODEL_ID,
 } from 'src/engine/metadata-modules/ai/ai-evaluation/constants/jev.const';
 import {
   type JevEvaluateRequest,
   type JevEvaluateResponse,
 } from 'src/engine/metadata-modules/ai/ai-evaluation/types/jev-evaluation.type';
+import {
+  fromOpenRouterAnswers,
+  toOpenRouterQuestions,
+  type OpenRouterDecisionAnswer,
+} from 'src/engine/metadata-modules/ai/ai-evaluation/utils/map-openrouter-jev-decisions.util';
 import {
   AiException,
   AiExceptionCode,
@@ -37,16 +43,13 @@ export class JevEvaluationService {
 
     if (!isDefined(apiKey)) {
       throw new AiException(
-        'AI_GATEWAY_API_KEY is required to use TypeSafe Jev evaluation.',
+        'OPENROUTER_API_KEY is required to use TypeSafe Jev evaluation.',
         AiExceptionCode.AGENT_EXECUTION_FAILED,
       );
     }
 
-    const body: JevEvaluateRequest = {
-      model: request.model ?? JEV_MODEL_ID,
-      state: request.state,
-      questions: request.questions,
-    };
+    const model = request.model ?? JEV_OPENROUTER_MODEL_ID;
+    const wireModel = model === JEV_MODEL_ID ? JEV_OPENROUTER_MODEL_ID : model;
 
     const response = await fetch(JEV_EVALUATE_URL, {
       method: 'POST',
@@ -54,7 +57,11 @@ export class JevEvaluationService {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        model: wireModel,
+        state: request.state,
+        questions: toOpenRouterQuestions(request.questions),
+      }),
     });
 
     if (!response.ok) {
@@ -70,11 +77,28 @@ export class JevEvaluationService {
       );
     }
 
-    return (await response.json()) as JevEvaluateResponse;
+    const body = (await response.json()) as {
+      model?: string;
+      answers?: Record<string, OpenRouterDecisionAnswer>;
+      usage?: JevEvaluateResponse['usage'];
+    };
+
+    if (!isDefined(body.answers)) {
+      throw new AiException(
+        'Jev evaluation returned no answers',
+        AiExceptionCode.AGENT_EXECUTION_FAILED,
+      );
+    }
+
+    return {
+      model: body.model ?? wireModel,
+      answers: fromOpenRouterAnswers(body.answers),
+      usage: body.usage,
+    };
   }
 
   private getApiKey(): string | undefined {
-    const configuredApiKey = this.twentyConfigService.get('AI_GATEWAY_API_KEY');
+    const configuredApiKey = this.twentyConfigService.get('OPENROUTER_API_KEY');
 
     if (isDefined(configuredApiKey) && configuredApiKey.trim() !== '') {
       return configuredApiKey.trim();

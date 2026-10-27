@@ -11,6 +11,7 @@ describe('UpsertOutreachTargetPeopleTool', () => {
         }),
       } as never,
       { syncPeopleFound: jest.fn().mockResolvedValue({ updated: 0 }) } as never,
+      { append: jest.fn().mockResolvedValue(undefined) } as never,
     );
 
     // the shape outreach_list attach sends: companyId is always ''

@@ -34,7 +34,7 @@ type PromptExecutionResult<T> = {
 export class SearchModelsService {
   private readonly logger = new Logger(SearchModelsService.name);
   private readonly openai: OpenAI;
-  private readonly modelName = process.env.SEARCH_MODELS_OPENAI_MODEL || 'gpt-4o-mini';
+  private readonly modelName = process.env.SEARCH_MODELS_OPENAI_MODEL || 'gpt-6-luna';
 
   constructor() {
     this.openai = new OpenAI({

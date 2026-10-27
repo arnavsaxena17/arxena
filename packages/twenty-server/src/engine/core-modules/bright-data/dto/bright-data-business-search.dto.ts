@@ -45,7 +45,7 @@ export class BrightDataBusinessSearchDto {
 
   @IsOptional()
   @IsString()
-  planId?: string;
+  listId?: string;
 
   @IsOptional()
   @IsNumber()

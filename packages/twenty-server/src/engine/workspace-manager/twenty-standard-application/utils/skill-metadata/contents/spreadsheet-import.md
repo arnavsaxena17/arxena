@@ -12,7 +12,7 @@ routes:
 
 Use this skill when the user attaches a `.xlsx` / `.xls` / `.csv` and wants its rows in the Outreach **Companies** and/or **People** tabs ("import this sheet", "upload these leads into project X", "create a project from this file").
 
-The rows land in the project's **ephemeral lists** (Companies / People tabs), exactly like search results. Nothing is written to the CRM; that only happens later through Add to CRM / Enroll. Never read the sheet yourself, never paste rows into `upsert_outreach_target_*`: the server parses every row.
+The rows land in the project's **ephemeral lists** (Companies / People tabs), exactly like search results. Nothing is written to the CRM; that only happens later through Add to CRM / Enroll. Never read the sheet yourself or paste rows into chat: the server parses every row.
 
 ## Flow (always in this order)
 

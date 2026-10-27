@@ -1,9 +1,5 @@
 ## Source: Apollo
 
-### Limits and exhaustion
-
-The cap for this source is not documented here yet. Treat a page or batch that adds no new rows (all duplicates) as exhausted, and report that.
-
 <!-- search-apollo-people-source-section:start -->
 ### Source — Apollo (`search_apollo_people`)
 
@@ -15,10 +11,10 @@ Best for firmographic people search with contact data. Available in the `prospec
 
 ```
 search_apollo_people({
-  "person_titles": ["software engineer", "backend engineer"],
-  "person_locations": ["New York, NY"],
-  "q_organization_keywords": "fintech",
-  "page_size": 25
+  "personTitles": ["software engineer", "backend engineer"],
+  "personLocations": ["New York, NY"],
+  "keywords": "fintech",
+  "perPage": 25
 })
 ```
 
@@ -37,11 +33,11 @@ Best for firmographic company search. Available in the `prospecting` pack.
 
 ```
 search_apollo_companies({
-  "q_organization_keywords": "fintech",
-  "organization_num_employees": ["51", "200"],
-  "organization_locations": ["Mumbai, India"],
-  "page_size": 25
+  "organizationName": "fintech",
+  "organizationLocations": ["Mumbai, India"],
+  "perPage": 25
 })
 ```
+
 
 <!-- search-apollo-companies-source-section:end -->

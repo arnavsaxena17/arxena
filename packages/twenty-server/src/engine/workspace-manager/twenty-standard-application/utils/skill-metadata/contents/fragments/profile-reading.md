@@ -1,10 +1,7 @@
-- **Headline versus position.** The headline is free text the person edits: "Open to work", "Founder | Investor | Speaker". The current position in the experience list is the better evidence of title and employer. When they disagree, trust the position and note the headline.
-- **Current role.** A role with no end date or "Present" is current. A profile whose latest role ended more than a year ago and shows nothing newer is probably stale.
-- **Several roles at once.** Advisor, board member and founder of a side venture can sit beside the main job. Pick the main one by employment type, start date and company size.
-- **Employer names.** Free text. The brand, the legal entity and the parent can all appear for one company. "Self-employed", "Freelance", "Stealth" and "Confidential" are not employers.
-- **Title inflation.** Small firms and startups hand out large titles ("Co-founder and CEO" of a three-person company). Weigh company size and scope as well as the label.
-- **Former and honorary.** "Ex-", "Former", "Past" and a role with an end date are not current. Check them before you count a title.
-- **Places.** The profile location is where the person lives, not where the company is headquartered. "Greater Mumbai Area", "Bengaluru" and "Bangalore" are the same place; normalize spellings before you filter.
-- **Weak-profile signals.** No photo, very few connections, no experience detail, a brand-new account with a senior title, an employer with no company page, or years of experience far too few for the title. For ordinary fitment these are signals, not proof: lower the score, do not fail the row on one alone.
-- **Authenticity / worthiness.** At full-profile scoring for people (validate / clean up / worthy, or a scored people list), treat these as must-have fails (not worthy): under 100 connections (under 10 = useless, 10–100 = very poor; 100–500 = okay, 500+ = good), no activity or a dormant shell, and a thin unfilled profile (no photo, empty about, little experience). One soft signal alone is not enough; two or more quality gates failing, or a clearly fake or placeholder profile, fails the row. ICP and the user's rubric stay their own criteria.
-- **What a snapshot hides.** Skills, full job history, education and the about text are usually only on the full profile. Mark them unknown at the snapshot stage.
+- **Headline versus position.** Trust the current position in experience over the free-text headline when they disagree.
+- **Current role.** No end date or "Present" is current. Latest role ended over a year ago with nothing newer is probably stale. "Ex-" / "Former" / ended roles are not current.
+- **Employer names.** Brand, legal entity and parent can all appear. "Self-employed", "Freelance", "Stealth", "Confidential" are not employers.
+- **Places.** Profile location is where the person lives, not company HQ. Normalize spellings ("Bengaluru" / "Bangalore").
+- **Weak-profile signals.** No photo, few connections, thin experience, brand-new senior title: lower the score, do not fail on one alone. Worthiness must-haves are separate (`worthiness-gates`).
+- **Qualified specialists.** Count experience from the qualification date (MD, DM, CA) when shown; otherwise unknown. Never guess age from a photo.
+- **What a snapshot hides.** Skills, full history, education, about: unknown at snapshot stage.

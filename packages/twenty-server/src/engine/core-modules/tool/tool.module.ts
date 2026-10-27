@@ -21,7 +21,7 @@ import { FetchProfilesService } from 'src/engine/core-modules/tool/tools/fetch-p
 import { FetchProfilesTool } from 'src/engine/core-modules/tool/tools/fetch-profiles-tool/fetch-profiles-tool';
 import { GetSourcingLedgerTool } from 'src/engine/core-modules/tool/tools/sourcing-ledger-tool/get-sourcing-ledger-tool';
 import {
-  GetOutreachWorkingSetTool,
+  GetOutreachTabTool,
   PreviewOutreachAiColumnTool,
   GetOutreachAiColumnRunStatusTool,
   CancelOutreachAiColumnRunTool,
@@ -49,6 +49,7 @@ import { AgentEntity } from 'src/engine/metadata-modules/ai/ai-agent/entities/ag
 import { HttpTool } from 'src/engine/core-modules/tool/tools/http-tool/http-tool';
 import { GetLocalBusinessDetailsTool } from 'src/engine/core-modules/tool/tools/local-business-data-tool/get-local-business-details-tool';
 import { OutreachListTool } from 'src/engine/core-modules/tool/tools/outreach-list-tool/outreach-list-tool';
+import { WriteOutreachListRowsToProjectTabService } from 'src/engine/core-modules/tool/tools/outreach-list-tool/write-outreach-list-rows-to-project-tab.service';
 import {
   ImportOutreachSpreadsheetTool,
   InspectOutreachSpreadsheetTool,
@@ -129,6 +130,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     SearchLocalBusinessesTool,
     SearchBrightDataBusinessTool,
     OutreachListTool,
+    WriteOutreachListRowsToProjectTabService,
     GetLocalBusinessDetailsTool,
     ResolveCompanyFromRawNameTool,
     EmailComposerService,
@@ -151,7 +153,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     GoogleResultExtractionService,
     CandidateJudgeService,
     LinkedinProfileResolverService,
-    GetOutreachWorkingSetTool,
+    GetOutreachTabTool,
     PreviewOutreachAiColumnTool,
     RunOutreachAiColumnTool,
     GetOutreachAiColumnRunStatusTool,
@@ -190,6 +192,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     SearchLocalBusinessesTool,
     SearchBrightDataBusinessTool,
     OutreachListTool,
+    WriteOutreachListRowsToProjectTabService,
     GetLocalBusinessDetailsTool,
     ResolveCompanyFromRawNameTool,
     EmailComposerService,
@@ -207,7 +210,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     FindRoleAtCompaniesTool,
     FetchProfilesTool,
     GetSourcingLedgerTool,
-    GetOutreachWorkingSetTool,
+    GetOutreachTabTool,
     PreviewOutreachAiColumnTool,
     RunOutreachAiColumnTool,
     GetOutreachAiColumnRunStatusTool,

@@ -158,6 +158,7 @@ import { SyncStandardSkillsCommand } from 'src/database/commands/upgrade-version
 import { RenameSearchSkillToSourcingCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000184-rename-search-skill-to-sourcing.command';
 import { SyncSearchPeopleForCompanyIcpDescriptionCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000185-sync-search-people-for-company-icp-description.command';
 import { AddCompanyGoogleMapsLinkCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000186-add-company-google-maps-link.command';
+import { ResyncOutreachSequencerPersonaGuidanceCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000187-resync-outreach-sequencer-persona-guidance.command';
 import { AddOutreachDraftTemplatesCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000183-add-outreach-draft-templates.command';
 import { AddGenerateSampleLinkedinMessageCommandMenuItemsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000182-add-generate-sample-linkedin-message-command-menu-items.command';
 import { StandardSkillSyncService } from 'src/database/commands/upgrade-version-command/common/standard-skill-sync.service';
@@ -375,6 +376,7 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     RenameSearchSkillToSourcingCommand,
     SyncSearchPeopleForCompanyIcpDescriptionCommand,
     AddCompanyGoogleMapsLinkCommand,
+    ResyncOutreachSequencerPersonaGuidanceCommand,
   ],
 })
 export class V2_25_UpgradeVersionCommandModule {}

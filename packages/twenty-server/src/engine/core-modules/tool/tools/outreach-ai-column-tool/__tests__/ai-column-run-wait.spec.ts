@@ -38,7 +38,7 @@ describe('waiting for an AI column run', () => {
     );
 
     await tool.execute(
-      { projectId: 'p', previewId: 'v', subject: 'person' },
+      { projectId: 'p', previewId: 'v', tab: 'people' },
       context,
     );
 
@@ -53,7 +53,7 @@ describe('waiting for an AI column run', () => {
     );
 
     await tool.execute(
-      { projectId: 'p', previewId: 'v', subject: 'person', waitSeconds: 30 },
+      { projectId: 'p', previewId: 'v', tab: 'people', waitSeconds: 30 },
       context,
     );
 
@@ -124,7 +124,7 @@ describe('cost approval for a full run', () => {
 
     return { service, tool };
   };
-  const input = { projectId: 'p', previewId: 'v', subject: 'person' };
+  const input = { projectId: 'p', previewId: 'v', tab: 'people' };
 
   it('should run at once when the estimate is under the limit', async () => {
     const { service, tool } = build(2.2);

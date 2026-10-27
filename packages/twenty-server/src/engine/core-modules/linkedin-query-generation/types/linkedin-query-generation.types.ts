@@ -92,19 +92,27 @@ export interface SplittingStrategy {
   distribution_logic: string;
 }
 
-export interface OrchestratorResult {
+export type QuerySetValidation = {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+};
+
+export type OrchestratorResult = {
   parsed_requirement: ParsedRequirement;
   master_lists: MasterLists;
   primary_query: PrimaryQuery;
   factored_query?: FactoredQuery;
   splitting_strategy: SplittingStrategy;
   final_query_set: SearchQuerySet;
-      metadata: {
-        processing_time_ms: number;
-        agent1_time_ms: number;
-        agent2_time_ms: number;
-        agent3_time_ms: number;
-        agent4_time_ms: number;
-        total_queries_generated: number;
-      };
-}
+  // Post-enforce check; generate already splits to LinkedIn term limits
+  validation: QuerySetValidation;
+  metadata: {
+    processing_time_ms: number;
+    agent1_time_ms: number;
+    agent2_time_ms: number;
+    agent3_time_ms: number;
+    agent4_time_ms: number;
+    total_queries_generated: number;
+  };
+};

@@ -18,7 +18,7 @@ const person = (
 });
 
 describe('matchesOutreachPeopleQueueFilter', () => {
-  it('should keep All as the full working set', () => {
+  it('should keep All as the full tab', () => {
     expect(
       matchesOutreachPeopleQueueFilter(
         person({ id: '2', name: 'B', stage: 'QUEUED' }),

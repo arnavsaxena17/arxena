@@ -5,7 +5,7 @@
 // queue job runs, with a real model. Skipped unless AI_FILTER_LIVE_EVAL=1.
 //
 //   AI_FILTER_LIVE_EVAL=1 npx jest ai-filter-eval --config=jest.config.mjs
-//   AI_FILTER_EVAL_MODELS=gpt4omini,gpt4o,typesafe-ai/jev   # compare models
+//   AI_FILTER_EVAL_MODELS=gpt6luna,gpt4o,typesafe-ai/jev   # compare models
 //   (default: each seeded step's own model)
 //
 // The golden sets are synthetic and labelled against the contexts in campaign-context.ts;

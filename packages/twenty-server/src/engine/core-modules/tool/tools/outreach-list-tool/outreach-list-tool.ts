@@ -4,27 +4,25 @@ import { isNonEmptyString } from '@sniptt/guards';
 
 import { BrightDataLudicrousSearchService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-search.service';
 import { fromBrightDataDocument } from 'src/engine/core-modules/outreach-list/utils/outreach-list-normalizers.util';
-import { type OutreachEphemeralCompany } from 'src/engine/core-modules/outreach-command/services/outreach-companies-cache.service';
-import { type OutreachEphemeralPerson } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
 import { SaveOutreachTargetsToCrmService } from 'src/engine/core-modules/outreach-command/services/save-outreach-targets-to-crm.service';
 import {
   OUTREACH_LIST_MAX_ROWS,
   OUTREACH_LIST_PEEK_MAX_ROWS,
 } from 'src/engine/core-modules/outreach-list/outreach-list.constants';
-import {
-  type OutreachListDocument,
-  type OutreachListRow,
-} from 'src/engine/core-modules/outreach-list/outreach-list.types';
+import { type OutreachListDocument } from 'src/engine/core-modules/outreach-list/outreach-list.types';
 import {
   aggregateOutreachListRows,
   OutreachListService,
 } from 'src/engine/core-modules/outreach-list/services/outreach-list.service';
 import {
+  outreachListRowToEphemeralCompany,
+  outreachListRowToEphemeralPerson,
+} from 'src/engine/core-modules/outreach-list/utils/outreach-list-to-ephemeral.util';
+import {
   OutreachListToolInputZodSchema,
   type OutreachListToolInput,
 } from 'src/engine/core-modules/tool/tools/outreach-list-tool/outreach-list-tool-input.type';
-import { UpsertOutreachTargetCompaniesTool } from 'src/engine/core-modules/tool/tools/outreach-target-companies-tool/upsert-outreach-target-companies-tool';
-import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
+import { WriteOutreachListRowsToProjectTabService } from 'src/engine/core-modules/tool/tools/outreach-list-tool/write-outreach-list-rows-to-project-tab.service';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
@@ -32,47 +30,11 @@ import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
 
 const DEFAULT_BATCH_ROWS = OUTREACH_LIST_MAX_ROWS;
 
-const companyOtherFields = (row: OutreachListRow): Record<string, unknown> => ({
-  ...(row.otherFields ?? {}),
-  ...(row.linkedinUrl ? { linkedinUrl: row.linkedinUrl } : {}),
-});
-
-const toEphemeralCompany = (row: OutreachListRow): OutreachEphemeralCompany => {
-  const otherFields = companyOtherFields(row);
-
-  return {
-    id: row.key,
-    name: row.name,
-    domain: row.domain,
-    industry: row.industry,
-    employees: row.size,
-    segment: '',
-    icpFit: '',
-    status: 'new',
-    ...(Object.keys(otherFields).length > 0 ? { otherFields } : {}),
-  };
-};
-
-const toEphemeralPerson = (row: OutreachListRow): OutreachEphemeralPerson => ({
-  id: row.key,
-  name: row.name,
-  title: row.title,
-  headline: row.title,
-  summary: row.about,
-  companyId: '',
-  companyName: row.companyName,
-  linkedinUrl: row.linkedinUrl,
-  warmPath: '—',
-  stage: 'queued',
-  email: row.email,
-  ...(row.otherFields ? { otherFields: row.otherFields } : {}),
-});
-
 @Injectable()
 export class OutreachListTool implements Tool {
   private readonly logger = new Logger(OutreachListTool.name);
 
-  description = `Work with search results held in a list. Every search tool (Bright Data, Apollo, LinkedIn, Exa) puts its results in a list and returns only a listId and counts, never the rows. Lists are temporary: 30 days when any source was paid, otherwise 7, extended each time they are used. actions: list (all lists), summary (counts), peek (at most ${OUTREACH_LIST_PEEK_MAX_ROWS} rows), export (CSV download link with every row), dedupe (flag or remove rows already in the CRM or in other lists), attach (show rows on a project's Companies / People tab), save_to_crm (create CRM Company / Person records, tagged to a project, never enrolled), delete. Never read a whole list into the conversation; give the user the export link.`;
+  description = `Work with search result lists (overflow when a Find search had no projectId, or for export / dedupe). Search tools with projectId already write the project tab. Lists are temporary: 30 days when any source was paid, otherwise 7. actions: list, summary, peek (at most ${OUTREACH_LIST_PEEK_MAX_ROWS} rows), export (CSV link), dedupe (against crm or lists), attach (a list already on that project is skipped), save_to_crm (bag overflow; prefer save_outreach_targets_to_crm once rows are on the tab), delete. Never read a whole list into the conversation.`;
 
   inputSchema = OutreachListToolInputZodSchema;
 
@@ -80,8 +42,7 @@ export class OutreachListTool implements Tool {
     private readonly outreachListService: OutreachListService,
     private readonly brightDataLudicrousSearchService: BrightDataLudicrousSearchService,
     private readonly saveOutreachTargetsToCrmService: SaveOutreachTargetsToCrmService,
-    private readonly upsertOutreachTargetCompaniesTool: UpsertOutreachTargetCompaniesTool,
-    private readonly upsertOutreachTargetPeopleTool: UpsertOutreachTargetPeopleTool,
+    private readonly writeOutreachListRowsToProjectTabService: WriteOutreachListRowsToProjectTabService,
   ) {}
 
   async execute(
@@ -276,7 +237,7 @@ export class OutreachListTool implements Tool {
     };
   }
 
-  // Shows list rows on a project's Companies / People tab, in batches.
+  // Overflow only: show list rows on a project tab when the search had no projectId.
   private async attach(
     input: OutreachListToolInput,
     document: OutreachListDocument,
@@ -311,69 +272,42 @@ export class OutreachListTool implements Tool {
     }
 
     const offset = input.offset ?? 0;
-    const batch = document.rows.slice(
+    const written = await this.writeOutreachListRowsToProjectTabService.write({
+      workspaceId: document.meta.workspaceId,
+      listId: document.meta.id,
+      projectId,
+      entity: document.meta.entity,
+      rows: document.rows,
+      context,
       offset,
-      offset + (input.limit ?? DEFAULT_BATCH_ROWS),
-    );
+      limit: input.limit ?? DEFAULT_BATCH_ROWS,
+    });
 
-    if (batch.length === 0) {
-      return this.fail('No rows at that offset');
-    }
-
-    let written: ToolOutput;
-
-    if (document.meta.entity === 'company') {
-      written = await this.upsertOutreachTargetCompaniesTool.execute(
-        {
-          projectId,
-          mode: 'merge',
-          companies: batch.map(toEphemeralCompany),
-        },
-        context,
-      );
-    } else {
-      written = await this.upsertOutreachTargetPeopleTool.execute(
-        {
-          projectId,
-          mode: 'merge',
-          people: batch.map(toEphemeralPerson),
-        },
-        context,
-      );
-    }
-
-    // The upsert tools return failure as a value, so check it
-    if (!written.success) {
+    if (written.error) {
       return this.fail('Could not write to the project tab', written.error);
     }
 
-    await this.outreachListService.update(
-      document.meta.workspaceId,
-      document.meta.id,
-      (current) => {
-        if (!current.meta.projectIds.includes(projectId)) {
-          current.meta.projectIds.push(projectId);
-        }
-      },
-    );
+    if (written.written === 0) {
+      return this.fail('No rows at that offset');
+    }
 
     return {
       success: true,
-      message: `Showing ${batch.length} row(s) on the project tab`,
+      message: `Showing ${written.written} row(s) on the project tab`,
       result: {
         listId: document.meta.id,
-        attached: batch.length,
+        attached: written.written,
         nextOffset:
-          offset + batch.length < document.rows.length
-            ? offset + batch.length
+          offset + written.written < document.rows.length
+            ? offset + written.written
             : null,
         note: `The project tabs keep at most ${OUTREACH_LIST_MAX_ROWS} rows each.`,
       },
     };
   }
 
-  // Step two of list building: turn rows into plain CRM Company / Person
-  // records. Companies are tagged to the project; nothing is enrolled.
+  // Bag overflow: turn list rows into CRM records. Prefer
+  // save_outreach_targets_to_crm once rows are already on the tab.
   private async saveToCrm(
     input: OutreachListToolInput,
     document: OutreachListDocument,
@@ -398,8 +332,10 @@ export class OutreachListTool implements Tool {
       return this.fail('No rows at that offset');
     }
 
-    const companies = isCompany ? batch.map(toEphemeralCompany) : [];
-    const people = isCompany ? [] : batch.map(toEphemeralPerson);
+    const companies = isCompany
+      ? batch.map(outreachListRowToEphemeralCompany)
+      : [];
+    const people = isCompany ? [] : batch.map(outreachListRowToEphemeralPerson);
     const outcome = await this.saveOutreachTargetsToCrmService.saveRows({
       workspaceId: document.meta.workspaceId,
       projectId: input.projectId ?? '',

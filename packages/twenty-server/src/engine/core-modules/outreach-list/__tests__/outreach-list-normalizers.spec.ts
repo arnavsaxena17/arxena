@@ -120,11 +120,184 @@ describe('normalizeToolOutputToListRows', () => {
     expect(normalized?.rows[0].name).toBe('Burger Co');
   });
 
+  it('should route Harvest leads into a paid people list with their cost', () => {
+    const normalized = normalizeToolOutputToListRows(
+      'search_harvest_leads',
+      {
+        searchParameters: { currentJobTitles: ['Plant Manager'] },
+        page: 2,
+        limit: 25,
+        projectId: 'project-1',
+      },
+      {
+        items: [
+          {
+            id: 'ACw1',
+            firstName: 'Asha',
+            lastName: 'Rao',
+            linkedinUrl: 'https://www.linkedin.com/in/asha',
+            location: 'Mumbai, India',
+            currentPositions: [
+              { title: 'Plant Manager', companyName: 'Arvind' },
+            ],
+          },
+        ],
+        costUsd: 0.004,
+      },
+    );
+
+    expect(normalized).toMatchObject({
+      entity: 'people',
+      source: 'harvest',
+      label: 'Plant Manager',
+      spentUsd: 0.004,
+      signatureArgs: {
+        searchParameters: { currentJobTitles: ['Plant Manager'] },
+      },
+    });
+    expect(normalized?.rows[0]).toMatchObject({
+      name: 'Asha Rao',
+      title: 'Plant Manager',
+      companyName: 'Arvind',
+      linkedinUrl: 'https://www.linkedin.com/in/asha',
+      location: 'Mumbai, India',
+    });
+  });
+
+  it('should read a raw Harvest lead with a nested location', () => {
+    const normalized = normalizeToolOutputToListRows(
+      'search_harvest_leads',
+      { searchParameters: { currentJobTitles: ['Plant Manager'] } },
+      {
+        items: [
+          {
+            id: 'ACw2',
+            firstName: 'Ravi',
+            lastName: 'Iyer',
+            linkedinUrl: 'https://www.linkedin.com/in/ravi',
+            location: { linkedinText: 'Chennai, India' },
+            currentPositions: [{ title: 'Plant Head', companyName: 'TVS' }],
+          },
+        ],
+      },
+    );
+
+    expect(normalized?.rows[0]).toMatchObject({
+      name: 'Ravi Iyer',
+      title: 'Plant Head',
+      companyName: 'TVS',
+      location: 'Chennai, India',
+    });
+  });
+
+  it('should read a nested Harvest account location', () => {
+    const normalized = normalizeToolOutputToListRows(
+      'search_harvest_accounts',
+      { searchParameters: { search: 'software' } },
+      {
+        items: [
+          {
+            id: '1035',
+            name: 'Microsoft',
+            location: { linkedinText: 'Redmond, Washington' },
+          },
+        ],
+      },
+    );
+
+    expect(normalized?.rows[0]?.location).toBe('Redmond, Washington');
+  });
+
+  it('should route Harvest accounts into a company list', () => {
+    const normalized = normalizeToolOutputToListRows(
+      'search_harvest_accounts',
+      { searchParameters: { search: 'software' } },
+      {
+        items: [
+          {
+            id: '1035',
+            name: 'Microsoft',
+            linkedinUrl: 'https://www.linkedin.com/company/1035',
+            industry: 'Software Development',
+            employeeCountRange: '10001+',
+          },
+        ],
+        costUsd: 0.004,
+      },
+    );
+
+    expect(normalized?.entity).toBe('company');
+    expect(normalized?.rows[0]).toMatchObject({
+      name: 'Microsoft',
+      size: '10001+',
+      source: 'harvest',
+    });
+  });
+
   it('should return null for unknown shapes so output is left alone', () => {
     expect(
       normalizeToolOutputToListRows('search_apollo_people', {}, { result: {} }),
     ).toBeNull();
     expect(isOutreachListSourceTool('find_many_companies')).toBe(false);
+    expect(isOutreachListSourceTool('search_people_index')).toBe(true);
+    expect(isOutreachListSourceTool('search_wikidata_companies')).toBe(true);
+  });
+
+  it('should route people index hits into a people list without projectId in the signature', () => {
+    const normalized = normalizeToolOutputToListRows(
+      'search_people_index',
+      { jobTitle: 'CEO', projectId: 'proj-1', limit: 10 },
+      {
+        result: {
+          items: [
+            {
+              full_name: 'Ada Lovelace',
+              job_title: 'CEO',
+              job_company_name: 'Analytical Engines',
+              linkedin_url: 'https://www.linkedin.com/in/ada',
+            },
+          ],
+        },
+      },
+    );
+
+    expect(normalized?.entity).toBe('people');
+    expect(normalized?.rows[0]).toMatchObject({
+      name: 'Ada Lovelace',
+      title: 'CEO',
+      companyName: 'Analytical Engines',
+      source: 'other',
+    });
+    expect(normalized?.signatureArgs).toEqual({ jobTitle: 'CEO' });
+  });
+
+  it('should route Wikidata companies into a company list', () => {
+    const normalized = normalizeToolOutputToListRows(
+      'search_wikidata_companies',
+      { domain: 'dow.com', projectId: 'proj-1' },
+      {
+        result: {
+          companies: [
+            {
+              wikidataId: 'Q123',
+              companyName: 'Dow',
+              companyDomain: 'dow.com',
+              website: 'https://www.dow.com',
+              industry: 'Chemicals',
+              employeeCount: 35000,
+            },
+          ],
+        },
+      },
+    );
+
+    expect(normalized?.entity).toBe('company');
+    expect(normalized?.rows[0]).toMatchObject({
+      name: 'Dow',
+      domain: 'dow.com',
+      size: '35000',
+      source: 'other',
+    });
   });
 
   it('should map a Bright Data company document', () => {

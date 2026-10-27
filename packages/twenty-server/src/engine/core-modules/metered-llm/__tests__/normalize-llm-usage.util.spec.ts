@@ -111,9 +111,9 @@ describe('countResponsesWebSearchCalls', () => {
 
 describe('stripModelSnapshotSuffix', () => {
   it.each([
-    ['gpt-4o-mini-2024-07-18', 'gpt-4o-mini'],
+    ['gpt-6-luna-2024-07-18', 'gpt-6-luna'],
     ['claude-sonnet-4-20250514', 'claude-sonnet-4'],
-    ['gpt-4o-mini', 'gpt-4o-mini'],
+    ['gpt-6-luna', 'gpt-6-luna'],
   ])('should turn %s into %s', (input, expected) => {
     expect(stripModelSnapshotSuffix(input)).toBe(expected);
   });

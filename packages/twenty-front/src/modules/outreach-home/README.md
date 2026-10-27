@@ -1,12 +1,12 @@
 # Outreach shell
 
-Live working-set UI for the post-signup outreach loop. CRM-committed metrics live on the seeded native dashboard.
+Live tab UI for the post-signup outreach loop. CRM-committed metrics live on the seeded native dashboard.
 
 ## Execution spine (ephemeral targets → Candidate + Project)
 
 | Layer | Role |
 | --- | --- |
-| **Ephemeral companies** | Redis cache keyed by `projectId` (`GET/PUT /outreach-command/cache/companies`) — Ask AI / discovery working set. Writes emit `outreach-cache-updated` on `/general-socket` (`outreach-project-{projectId}` room) so the Companies tab refreshes without polling. |
+| **Ephemeral companies** | Redis cache keyed by `projectId` (`GET/PUT /outreach-command/cache/companies`) — Ask AI / discovery tab. Writes emit `outreach-cache-updated` on `/general-socket` (`outreach-project-{projectId}` room) so the Companies tab refreshes without polling. |
 | **Ephemeral people** | Redis cache keyed by `projectId` (`GET/PUT /outreach-command/cache/people`) via `upsert_outreach_target_people` — Ask AI search hits until user confirms CRM. Same socket event refreshes the People tab. |
 | **Candidate** | Per-project outreach spine (`projectId` = Project.id); Workflow B/C trigger unit |
 | **Company (CRM)** | Shared account — created **only when** people are enrolled / added to CRM |
@@ -26,7 +26,7 @@ Workflow topology:
 
 | Surface | Path | Role |
 | --- | --- | --- |
-| Working set | `/outreach-home?projectId=` | Companies (ephemeral) / People / Workflow + Ask AI |
+| Tab | `/outreach-home?projectId=` | Companies (ephemeral) / People / Workflow + Ask AI |
 | CRM dashboard | `/object/dashboard/:id` (**Outreach**) | Funnel / coverage / stage / channel / speed / outcomes / **workflow control**. Prefilled on workspace create; existing workspaces: `upgrade:2-25:prefill-gtm-command-dashboard` and `upgrade:2-25:sync-outreach-workflow-control-dashboard`. |
 
 Ask AI stays closed on `/outreach-home` until the user opens it from the nav chat icon or **+ New chat**. Chrome is two rows: **PageHeader** (`Outreach` + project picker / pause-resume / Menu) and **main tabs** (Companies / People / Setup). Switch projects via the header Project picker; create projects via Menu → Add New Project. Candidate Sequencer still auto-binds **`Outreach — Candidate Sequencer`** via `useOutreachWorkflowEmbed` when the Project has no `outreachWorkflowId`.

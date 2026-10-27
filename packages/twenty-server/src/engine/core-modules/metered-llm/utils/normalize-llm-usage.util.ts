@@ -80,6 +80,6 @@ export const countResponsesWebSearchCalls = (
 ): number =>
   (output ?? []).filter((item) => item.type === 'web_search_call').length;
 
-// Dated snapshots such as gpt-4o-mini-2024-07-18 are priced as their base model
+// Dated snapshots such as gpt-6-luna-2024-07-18 are priced as their base model
 export const stripModelSnapshotSuffix = (model: string): string =>
   model.replace(/-\d{4}-\d{2}-\d{2}$/, '').replace(/-\d{8}$/, '');

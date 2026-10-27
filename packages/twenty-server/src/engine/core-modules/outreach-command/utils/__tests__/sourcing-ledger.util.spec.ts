@@ -1,4 +1,4 @@
-import { type OutreachWorkingSetRow } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+import { type OutreachTabRow } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
 import { computeSourcingFunnel } from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
 
 const profile = (source: 'bright_data' | 'harvest') => ({
@@ -11,7 +11,7 @@ const row = (
   id: string,
   linkedinUrl: string | undefined,
   otherFields: Record<string, unknown> = {},
-): OutreachWorkingSetRow => ({
+): OutreachTabRow => ({
   id,
   source: 'ephemeral',
   name: id,

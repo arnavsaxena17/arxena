@@ -4,6 +4,7 @@ import {
 } from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-catalog.const';
 import { Injectable, Logger } from '@nestjs/common';
 
+import { isNonEmptyString } from '@sniptt/guards';
 import { ToolCategory } from 'twenty-shared/ai';
 import { isDefined } from 'twenty-shared/utils';
 
@@ -33,6 +34,7 @@ import { type ToolProvider } from 'src/engine/core-modules/tool-provider/interfa
 import { type ToolProviderContext } from 'src/engine/core-modules/tool-provider/interfaces/tool-provider-context.type';
 import { type ToolDescriptor } from 'src/engine/core-modules/tool-provider/types/tool-descriptor.type';
 import { type ToolIndexEntry } from 'src/engine/core-modules/tool-provider/types/tool-index-entry.type';
+import { WriteOutreachListRowsToProjectTabService } from 'src/engine/core-modules/tool/tools/outreach-list-tool/write-outreach-list-rows-to-project-tab.service';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/workspace.type';
@@ -83,6 +85,7 @@ export class ArxenaToolProvider implements ToolProvider {
     private readonly apiKeyService: ApiKeyService,
     private readonly outreachListService: OutreachListService,
     private readonly arxenaInProcessRestTransportService: ArxenaInProcessRestTransportService,
+    private readonly writeOutreachListRowsToProjectTabService: WriteOutreachListRowsToProjectTabService,
   ) {}
 
   async isAvailable(_context: ToolProviderContext): Promise<boolean> {
@@ -255,7 +258,7 @@ export class ArxenaToolProvider implements ToolProvider {
           toolName,
           args,
           parsed,
-          context.workspaceId,
+          context,
         );
 
         if (isDefined(listed)) {
@@ -290,16 +293,18 @@ export class ArxenaToolProvider implements ToolProvider {
 
   // Search results never go back to the model. Providers that return rows are
   // routed into a list (Redis + S3 backup) and the model gets the listId and
-  // counts; the user reads the rows in the list, a project tab or an export.
+  // counts. With projectId the project tab is written too — no attach needed.
   private async routeResultsToList(
     toolName: string,
     args: Record<string, unknown>,
     parsed: object,
-    workspaceId: string,
+    context: ArxenaToolExecutionContext,
   ): Promise<Record<string, unknown> | undefined> {
     if (!isOutreachListSourceTool(toolName)) {
       return undefined;
     }
+
+    const workspaceId = context.workspaceId;
 
     try {
       const normalized = normalizeToolOutputToListRows(toolName, args, parsed);
@@ -327,8 +332,28 @@ export class ArxenaToolProvider implements ToolProvider {
         source: normalized.source,
         rows: normalized.rows,
         query: normalized.label || undefined,
+        spentUsd: normalized.spentUsd,
       });
       const paging = this.extractPaging(parsed);
+      const projectId = isNonEmptyString(args.projectId)
+        ? args.projectId.trim()
+        : '';
+      let ephemeralWritten = 0;
+      let ephemeralError: string | undefined;
+
+      if (projectId !== '') {
+        const tab = await this.writeOutreachListRowsToProjectTabService.write({
+          workspaceId,
+          listId: outcome.listId,
+          projectId,
+          entity: normalized.entity,
+          rows: normalized.rows,
+          context: { workspaceId },
+        });
+
+        ephemeralWritten = tab.written;
+        ephemeralError = tab.error;
+      }
 
       return {
         listId: outcome.listId,
@@ -339,9 +364,20 @@ export class ArxenaToolProvider implements ToolProvider {
         added: outcome.added,
         duplicates: outcome.duplicates,
         total: outcome.total,
+        ephemeralWritten,
+        ...(normalized.spentUsd !== undefined
+          ? { costUsd: normalized.spentUsd }
+          : {}),
+        ...(ephemeralError
+          ? {
+              ephemeralError: `Could not write to the project tab: ${ephemeralError}. The rows are still in the list (listId); retry with outreach_list attach.`,
+            }
+          : {}),
         ...paging,
         nextStep:
-          'The rows are in the list, not in this result. Use the outreach_list tool: summary, peek (max 10 rows), export (CSV link for the user), dedupe, attach (show on a project tab) or save_to_crm. Do not try to read the rows.',
+          projectId !== '' && ephemeralWritten > 0
+            ? 'Records were written to the project tab and kept in the list (listId). To create CRM records call save_outreach_targets_to_crm with the same projectId. Use get_outreach_tab to read the tab.'
+            : 'No projectId was given, so nothing was written to a project. The records are kept in the list (listId). Ask which project to use, then outreach_list attach (show on the tab) or save_outreach_targets_to_crm after attach. Do not try to read the rows.',
       };
     } catch (error) {
       this.logger.warn(

@@ -1144,9 +1144,9 @@ const getAllFieldsData = (
           },
           {
             color: 'turquoise',
-            label: 'gpt-4o-mini',
+            label: 'gpt-6-luna',
             position: 2,
-            value: 'GPT4OMINI',
+            value: 'GPT6LUNA',
           },
           {
             color: 'turquoise',

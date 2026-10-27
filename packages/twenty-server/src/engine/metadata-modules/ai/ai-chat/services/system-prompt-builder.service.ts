@@ -387,7 +387,7 @@ export class SystemPromptBuilderService {
         ];
 
     return [
-      'LinkedIn for this user. Use only these searchType values.',
+      'LinkedIn for this user. Use only these searchType values; omit searchType to use the preferred one.',
       ...lines,
     ].join('\n');
   }

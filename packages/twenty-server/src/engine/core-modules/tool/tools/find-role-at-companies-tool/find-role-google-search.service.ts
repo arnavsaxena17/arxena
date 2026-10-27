@@ -239,16 +239,16 @@ export class FindRoleGoogleSearchService {
     variants,
     titles,
     roles,
-    country,
+    location,
   }: {
     variants: string[];
     titles: string[];
     roles: string[];
-    country?: string;
+    location?: string;
   }): string[] {
     const orGroup = (terms: string[]) =>
       `(${terms.map((term) => `"${term}"`).join(' OR ')})`;
-    const countryTerm = isNonEmptyString(country) ? country : null;
+    const locationTerm = isNonEmptyString(location) ? location : null;
     const build = (parts: Array<string | null>) =>
       parts.filter((part): part is string => part !== null).join(' ');
     const linkedin = 'site:linkedin.com/in';
@@ -262,13 +262,13 @@ export class FindRoleGoogleSearchService {
       );
     const queries = [
       ...naturalQueries,
-      build([linkedin, `"${variants[0]}"`, orGroup(titles), countryTerm]),
+      build([linkedin, `"${variants[0]}"`, orGroup(titles), locationTerm]),
       build([linkedin, `"${variants[0]}"`, orGroup(roles)]),
     ];
 
     if (variants.length > 1) {
       queries.push(
-        build([linkedin, `"${variants[1]}"`, orGroup(titles), countryTerm]),
+        build([linkedin, `"${variants[1]}"`, orGroup(titles), locationTerm]),
       );
     }
 
@@ -279,7 +279,7 @@ export class FindRoleGoogleSearchService {
     variants: string[];
     titles: string[];
     roles: string[];
-    country?: string;
+    location?: string;
   }): Promise<GoogleCompanySearchResult> {
     if (!this.isConfigured()) {
       throw new Error('BRIGHT_DATA_API_KEY is not set');

@@ -218,14 +218,14 @@ export class BrightDataPersonFitFilterService {
     company,
     alternateNames,
     roles,
-    country,
+    location,
     candidates,
   }: {
     workspaceId: string;
     company: string;
     alternateNames: string[];
     roles: string[];
-    country?: string;
+    location?: string;
     candidates: PersonToJudge[];
   }): Promise<Map<string, PersonJudgement>> {
     return this.judgeAll({
@@ -233,10 +233,10 @@ export class BrightDataPersonFitFilterService {
         targetCompany: company,
         alsoKnownAs: alternateNames,
         wantedRoles: roles,
-        targetCountry: country ?? null,
+        targetLocation: location ?? null,
       },
       withCompanyAndRole: true,
-      country,
+      location,
       people: candidates,
     });
   }
@@ -350,12 +350,12 @@ export class BrightDataPersonFitFilterService {
   private async judgeAll({
     search,
     withCompanyAndRole,
-    country,
+    location,
     people,
   }: {
     search: Record<string, unknown>;
     withCompanyAndRole: boolean;
-    country?: string;
+    location?: string;
     people: PersonToJudge[];
   }): Promise<Map<string, PersonJudgement>> {
     const judgements = new Map<string, PersonJudgement>();
@@ -408,10 +408,10 @@ export class BrightDataPersonFitFilterService {
         // a higher bar rejects more, not fewer
         questions[`p${index}__fits`] = noul(
           withCompanyAndRole
-            ? `For ${subject}: does the person fit the search${country ? `, including being based in ${country}` : ''}? A missing location is not a mismatch; say yes when the evidence is too thin to rule the person out.`
+            ? `For ${subject}: does the person fit the search${location ? `, including being based in ${location}` : ''}? A missing location is not a mismatch; say yes when the evidence is too thin to rule the person out.`
             : `For ${subject}: does the person match what \`search.query\` asks for (the place, the kind of company or industry, the kind of role)? A missing field is not a mismatch; say yes when the evidence is too thin to rule the person out.`,
           'Fits, or the evidence is too thin to say otherwise.',
-          'Clearly does not fit: another country, an unrelated industry, an unrelated role.',
+          'Clearly does not fit: another location, an unrelated industry, an unrelated role.',
         );
         // a person read from a search result alone has no profile to judge
         if (isDefined(person.profile)) {

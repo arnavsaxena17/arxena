@@ -96,7 +96,9 @@ describe('selectSkillSections', () => {
     expect(content).toContain('## People');
     expect(content).not.toContain('## Companies');
     expect(content).not.toContain('## People by company');
-    expect(content).toContain('Not loaded: companies, people-by-company');
+    expect(content).toContain(
+      'Not loaded: companies, places, people-by-company',
+    );
     expect(content.length).toBeLessThan(searchContent.length);
   });
 
@@ -130,11 +132,18 @@ describe('sourcing skill section sizes', () => {
   // A bundle is re-sent on every model step after it is loaded, so each route
   // has its own budget and must stay far cheaper than the whole skill
   it.each([
-    [['people'], 5_400],
-    [['companies'], 6_000],
-    [['people-by-company'], 3_900],
-    [['playbook-scored-list'], 4_400],
-    [['playbook-company-first'], 4_700],
+    [['people'], 5_700],
+    [['companies'], 6_300],
+    [['people-by-company'], 4_400],
+    [['scoring', 'playbook-shortfall'], 5_800],
+    [['playbook-company-first'], 5_500],
+    [['playbook-large-list'], 5_000],
+    [['for-recruiting'], 4_800],
+    [['for-sales'], 4_600],
+    [['inbound-applicants'], 5_100],
+    [['people', 'for-recruiting'], 7_200],
+    [['companies', 'for-sales'], 7_600],
+    [['people-by-company', 'for-recruiting'], 5_900],
   ])('should keep the bundle for %j under %i tokens', (sections, budget) => {
     expect(tokens(sections)).toBeLessThanOrEqual(budget);
   });
@@ -152,6 +161,27 @@ describe('sourcing skill section sizes', () => {
     expect(
       resolveSkillSections('sourcing', ['people', 'src-bright-data-people']),
     ).toEqual(['people', 'src-bright-data-people']);
+  });
+
+  it('should bring the sections the new routes require', () => {
+    expect(resolveSkillSections('sourcing', ['playbook-large-list'])).toEqual(
+      expect.arrayContaining(['query-planning', 'playbook-shortfall']),
+    );
+    expect(resolveSkillSections('sourcing', ['for-recruiting'])).toEqual(
+      expect.arrayContaining(['rubrics', 'playbook-recruiting-admission']),
+    );
+    expect(resolveSkillSections('sourcing', ['for-sales'])).toEqual(
+      expect.arrayContaining(['rubrics', 'playbook-sales-admission']),
+    );
+    expect(resolveSkillSections('sourcing', ['inbound-applicants'])).toContain(
+      'scoring',
+    );
+  });
+
+  it('should keep Naukri out of a bundle that does not name it', () => {
+    expect(resolveSkillSections('sourcing', ['for-recruiting'])).not.toContain(
+      'src-naukri',
+    );
   });
 
   it('should keep a single source out of an unrelated bundle', () => {
@@ -247,7 +277,7 @@ describe('skill front matter and playbooks', () => {
 
   it('should resolve a shared fragment into every skill that includes it', () => {
     const sentence =
-      'Boolean title strings ("(VP OR Head) AND Sales NOT assistant")';
+      'Pick the mode by what the request gives you: a description of a set, or an identifier.';
 
     expect(getSkillContent('sourcing')).toContain(sentence);
     expect(getSkillContent('sourcing').split(sentence).length - 1).toBe(2);

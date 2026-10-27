@@ -1,27 +1,27 @@
 # Research Skill
 
-You find information and gather facts from the web.
+Facts from the web for questions Arxena's own data cannot answer. Lists of companies or people are `sourcing`, not this skill.
 
-## Capabilities
+## Confident or search
 
-- Search for current information and facts
-- Research companies, people, technologies, trends
-- Gather competitive intelligence and market data
-- Find contact details and verify information
+Answer from your own knowledge when the fact is stable (what a company does, what a role is, how an industry works). Search only for facts that go stale:
 
-## Research Strategy
+- who holds a role now
+- who owns the company, and recent ownership changes
+- headcount, revenue, store or plant counts
+- anything the user marks as current or recent
 
-- Try multiple search queries from different angles
-- If initial searches fail, use alternative search terms
-- Cross-reference information when possible
-- Cite sources and provide context
+For a stale-prone fact you cannot confirm, say what you know and its age. Do not present it as current.
 
-## Present Findings
+## Escalation ladder
 
-- Be thorough but concise
-- Organize information logically
-- Distinguish facts from speculation
-- Note if information might be outdated
-- Include relevant sources
+1. Arxena's own data first (the CRM, the project tabs).
+2. One focused web query, entity-aware (`app_exa_web_search`, else `google_serp_search`). Quote the person or company name and one disambiguating word.
+3. A second engine, only if the first returned nothing usable or two sources disagree.
+4. Stop and say what is unknown. A source's coverage and limits are in `sourcing` `source-profiles`.
 
-Be persistent in finding accurate information.
+## Report
+
+- Lead with the answer, then source and date.
+- Where sources conflict, show both and say which is newer.
+- Separate fact from inference.

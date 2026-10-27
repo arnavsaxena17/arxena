@@ -61,6 +61,7 @@ import {
   OUTREACH_WF_FIELD,
   OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID,
   OUTREACH_WF_MEMBER_STEP_ID,
+  OUTREACH_WF_PROJECT_STEP_ID,
   OUTREACH_WF_ERROR_HANDLING,
   type OutreachWfFindRecordFilter,
   gtmWfAiAgentStep,
@@ -91,6 +92,8 @@ import {
   gtmWfMemberSenderProfile,
   gtmWfMemberStep,
   gtmWfMemberId,
+  gtmWfProjectPersonaGuidance,
+  gtmWfProjectStep,
   gtmWfSelectIsValue,
   gtmWfSendLinkedInMessageStep,
   gtmWfSendEmailStep,
@@ -734,6 +737,7 @@ const linkedinDraftPrompt = (
     prospectPostsText: `{{${IDS.fetchPostsAccept}.text}}`,
     chatHistory: `{{${IDS.fetchMessages}.text}}`,
     calendarSlots: `{{${IDS.acceptCalendar}.text}}`,
+    personaGuidance: gtmWfProjectPersonaGuidance(),
     // Deterministic shape/variant from candidate id after chip resolve.
     ...(kind === 'opener' ? { openerSeed: gtmWfFindId(findId) } : {}),
     kind,
@@ -2282,6 +2286,7 @@ const queuedBranchSteps = ({
                 `Name: ${gtmWfFindField(IDS.queuedFind, 'name')}`,
                 `Title: ${gtmWfFindField(IDS.queuedPersonFind, OUTREACH_WF_FIELD.jobTitlePath)}`,
               ].join('\n'),
+              personaGuidance: gtmWfProjectPersonaGuidance(),
             }),
             agentId: OUTREACH_WF_AGENT_QUALIFY,
             outputSchema: OUTREACH_WF_AI_QUALIFY_OUTPUT,
@@ -2647,6 +2652,7 @@ const queuedBranchSteps = ({
                   // are not hydrated by AI agent Test).
                   prospectEnrichmentJson: prospectEnrichment(IDS.queuedFind),
                   prospectProfileText: `{{${IDS.queuedFetchProfile}.text}}`,
+                  personaGuidance: gtmWfProjectPersonaGuidance(),
                 }),
                 agentId: OUTREACH_WF_AGENT_LINKEDIN,
                 outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
@@ -2692,6 +2698,7 @@ const queuedBranchSteps = ({
                           IDS.queuedFind,
                         ),
                         prospectProfileText: `{{${IDS.queuedFetchProfile}.text}}`,
+                        personaGuidance: gtmWfProjectPersonaGuidance(),
                       }),
                       agentId: OUTREACH_WF_AGENT_LINKEDIN,
                       outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
@@ -3320,13 +3327,17 @@ export const buildCandidateSequencerGraph = (
         ]
       : []),
     gtmWfMemberStep(
-      [IDS.stageRouter],
+      [OUTREACH_WF_PROJECT_STEP_ID],
       pinSenderByWarmOverlap
         ? {
             pinnedMemberIdTemplate: `{{${IDS.selectMember}.workspaceMemberId}}`,
           }
         : {},
     ),
+    gtmWfProjectStep({
+      candidateFindId: IDS.routeFind,
+      nextStepIds: [IDS.stageRouter],
+    }),
     gtmWfMultiIfElseStep({
       id: IDS.stageRouter,
       name: 'Route by outreach stage',
@@ -3430,7 +3441,7 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
           },
         ],
         subject: 'person',
-        selectedModel: 'gpt4omini',
+        selectedModel: 'gpt6luna',
         keepField: 'keep',
         selectedMetadataFields: [
           'name',
@@ -3595,7 +3606,7 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
         name: 'Classify parameters',
         approveLabel: 'Preview classifier',
         contextTemplate:
-          'Classify unique Google Maps place names with gpt-4o-mini (AI Agent), keep multi-outlet brands, upsert Companies. Does not re-fetch Bright Data — pass consolidated places JSON path.',
+          'Classify unique Google Maps place names with gpt-6-luna (AI Agent), keep multi-outlet brands, upsert Companies. Does not re-fetch Bright Data — pass consolidated places JSON path.',
         detailsTemplate:
           'Default minOutlets=7. maxCompanies blank = all unique names. Preview runs one AI Agent classify before bulk.',
         extraFields: [
@@ -3639,7 +3650,7 @@ export const OUTREACH_WORKFLOW_GRAPH_TEMPLATES: Array<{
       }),
       gtmWfAiAgentStep({
         id: IDS.localPlacesPreviewAgent,
-        name: 'Preview place classify (gpt-4o-mini)',
+        name: 'Preview place classify (gpt-6-luna)',
         prompt: `Classify this company / place name for multi-outlet brand screening.
 
 Company name: {{${IDS.localPlacesParams}.previewCompanyName}}
@@ -3654,7 +3665,7 @@ Return JSON with companyName, isMultiOutlet, numberOutlets, confidence, reasonin
         name: 'Confirm bulk classify + upsert',
         approveLabel: 'Run bulk classify and upsert',
         contextTemplate: `Preview: {{${IDS.localPlacesPreviewAgent}.companyName}} isMultiOutlet={{${IDS.localPlacesPreviewAgent}.isMultiOutlet}} outlets={{${IDS.localPlacesPreviewAgent}.numberOutlets}} confidence={{${IDS.localPlacesPreviewAgent}.confidence}}.`,
-        detailsTemplate: `Bulk will read {{${IDS.localPlacesParams}.placesFilePath}}, classify each unique name with gpt-4o-mini, keep isMultiOutlet && outlets≥{{${IDS.localPlacesParams}.minOutlets}}, upsert into project {{${IDS.localPlacesParams}.projectId}}.`,
+        detailsTemplate: `Bulk will read {{${IDS.localPlacesParams}.placesFilePath}}, classify each unique name with gpt-6-luna, keep isMultiOutlet && outlets≥{{${IDS.localPlacesParams}.minOutlets}}, upsert into project {{${IDS.localPlacesParams}.projectId}}.`,
         nextStepIds: [IDS.localPlacesConfirmIf],
       }),
       gtmWfIfElseStep({
@@ -3744,7 +3755,7 @@ Return JSON with companyName, isMultiOutlet, numberOutlets, confidence, reasonin
           },
         ],
         subject: 'person',
-        selectedModel: 'gpt4omini',
+        selectedModel: 'gpt6luna',
         keepField: 'keep',
         selectedMetadataFields: [
           'name',

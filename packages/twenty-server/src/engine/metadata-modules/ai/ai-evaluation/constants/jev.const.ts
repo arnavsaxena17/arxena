@@ -8,7 +8,11 @@ export const JEV_MODEL_ALIASES = [
   'typesafe/jev-1.13',
 ] as const;
 
-export const JEV_EVALUATE_URL = 'https://ai-gateway.vercel.sh/v1/evaluate';
+// OpenRouter decisions endpoint (same path as JevDecisionsService)
+export const JEV_EVALUATE_URL = 'https://openrouter.ai/api/alpha/decisions';
+
+// Wire model id for OpenRouter; UI / isJevModelId still use JEV_MODEL_ID aliases
+export const JEV_OPENROUTER_MODEL_ID = 'typesafe/jev-1.13';
 
 // Threshold for mapping Jev boolean probabilities to true/false
 export const JEV_BOOLEAN_PROBABILITY_THRESHOLD = 0.5;

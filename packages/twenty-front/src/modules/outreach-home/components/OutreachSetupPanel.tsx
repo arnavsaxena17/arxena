@@ -19,6 +19,7 @@ import { OutreachSendWindowDayPicker } from '@/outreach-home/components/Outreach
 import { OutreachSetupSectionCard } from '@/outreach-home/components/OutreachSetupSectionCard';
 import { OutreachSetupTeamSendingSection } from '@/outreach-home/components/OutreachSetupTeamSendingSection';
 import { OutreachSetupDraftMessagesSection } from '@/outreach-home/components/OutreachSetupDraftMessagesSection';
+import { OutreachSetupPersonaGuidanceSection } from '@/outreach-home/components/OutreachSetupPersonaGuidanceSection';
 import { OutreachSetupSenderProfileSection } from '@/outreach-home/components/OutreachSetupSenderProfileSection';
 import {
   type OutreachPersonRow,
@@ -282,6 +283,9 @@ type OutreachSetupPanelProps = {
   maxPersonasPerCompany: number;
   isSavingOutreachPolicy: boolean;
   onSaveOutreachPolicy: (input: OutreachPolicyInput) => Promise<void>;
+  personaGuidance: string;
+  isSavingPersonaGuidance: boolean;
+  onSavePersonaGuidance: (personaGuidance: string) => Promise<void>;
   onFindCompanies: () => void;
   onFindPeople: () => void;
 };
@@ -301,6 +305,9 @@ export const OutreachSetupPanel = ({
   maxPersonasPerCompany,
   isSavingOutreachPolicy,
   onSaveOutreachPolicy,
+  personaGuidance,
+  isSavingPersonaGuidance,
+  onSavePersonaGuidance,
   onFindCompanies,
   onFindPeople,
 }: OutreachSetupPanelProps) => {
@@ -529,6 +536,13 @@ export const OutreachSetupPanel = ({
         </OutreachSetupSectionCard>
 
         <OutreachSetupSenderProfileSection />
+
+        <OutreachSetupPersonaGuidanceSection
+          hasProject={hasProject}
+          personaGuidance={personaGuidance}
+          isSaving={isSavingPersonaGuidance}
+          onSave={onSavePersonaGuidance}
+        />
 
         <OutreachSetupDraftMessagesSection people={people} />
 

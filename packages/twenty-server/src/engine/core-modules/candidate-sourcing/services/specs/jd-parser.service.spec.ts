@@ -108,11 +108,11 @@ describe('JDParserService', () => {
     expect(meteredLlmService.openAiChatCompletion).toHaveBeenCalledWith(
       { workspaceId: 'ws-1', feature: 'JD_PARSE', keySource: 'platform' },
       mockOpenAI,
-      expect.objectContaining({ model: 'gpt-4o-mini' }),
+      expect.objectContaining({ model: 'gpt-6-luna' }),
     );
     expect(mockOpenAI.chat.completions.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        model: 'gpt-4o-mini',
+        model: 'gpt-6-luna',
         messages: [
           { role: 'system', content: expect.stringContaining('Extract the following details') },
           { role: 'user', content: mockJdText },

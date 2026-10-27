@@ -2,6 +2,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 
 import type { SuperImposeHarvestQueryParams } from 'src/engine/core-modules/org-chart/types/super-impose.types';
+import {
+  getHarvestNextPage,
+  HARVEST_SEARCH_MAX_PAGE,
+  HARVEST_SEARCH_MAX_RECORDS_PER_CALL,
+  HARVEST_SEARCH_PATHS,
+  type HarvestSearchKind,
+} from 'src/engine/core-modules/org-chart/utils/harvest-search-params.util';
+import { isHarvestCompanyNameMatch } from 'src/engine/core-modules/org-chart/utils/harvest-company-name-match.util';
 
 type HarvestLeadItem = Record<string, unknown>;
 type HarvestProfileResponse = Record<string, unknown>;
@@ -43,6 +51,93 @@ export class HarvestLinkedinService {
       location: input.location,
       limit: input.limit,
     });
+  }
+
+  // Sales Navigator lead or account search from `page` on, until `limit`
+  // records or the last page. Records are billed, so `limit` is capped.
+  async searchSalesNavigatorCollection(input: {
+    kind: HarvestSearchKind;
+    query: Record<string, string>;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    items: HarvestLeadItem[];
+    firstPage: number;
+    lastPage: number;
+    nextPage: number | null;
+    totalElements?: number;
+    totalPages?: number;
+  }> {
+    const limit = Math.max(
+      1,
+      Math.min(HARVEST_SEARCH_MAX_RECORDS_PER_CALL, input.limit ?? 25),
+    );
+    const firstPage = Math.max(
+      1,
+      Math.min(HARVEST_SEARCH_MAX_PAGE, Math.floor(input.page ?? 1)),
+    );
+    const items: HarvestLeadItem[] = [];
+    let page = firstPage;
+    let lastPage = firstPage;
+    let nextPage: number | null = firstPage;
+    let pagination: HarvestPagination | null = null;
+
+    while (nextPage !== null && items.length < limit) {
+      page = nextPage;
+      const searchParams = new URLSearchParams({
+        ...input.query,
+        page: String(page),
+      });
+      const json = await this.getJson(
+        `${this.getBaseUrl()}${HARVEST_SEARCH_PATHS[input.kind]}?${searchParams.toString()}`,
+      );
+      const pageItems = this.extractLeadItems(json);
+      pagination = this.extractPagination(json) ?? pagination;
+      items.push(...pageItems);
+      lastPage = page;
+      nextPage = getHarvestNextPage(
+        page,
+        pagination?.totalPages,
+        pageItems.length,
+      );
+    }
+
+    this.logger.log(
+      `Harvest ${input.kind} search pages=${firstPage}-${lastPage} rows=${items.length} total=${pagination?.totalElements ?? 'unknown'}`,
+    );
+
+    // Rows past `limit` on the last page were already fetched; keep them
+    // rather than pay for them again on the next call
+    return {
+      items,
+      firstPage,
+      lastPage,
+      nextPage,
+      totalElements: pagination?.totalElements,
+      totalPages: pagination?.totalPages,
+    };
+  }
+
+  // The LinkedIn URL of the company Harvest's keyword search ranks first,
+  // only when its name matches; Harvest filters employers by URL or id
+  async findCompanyLinkedinUrl(
+    companyName: string,
+  ): Promise<{ name: string; linkedinUrl: string } | null> {
+    const trimmed = companyName.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    const result = await this.searchCompanies({ search: trimmed, limit: 5 });
+    const match = result.items.find((item) =>
+      isHarvestCompanyNameMatch(trimmed, String(item.name ?? '')),
+    );
+    const rawUrl = match?.linkedinUrl ?? match?.url;
+    const linkedinUrl = typeof rawUrl === 'string' ? rawUrl.trim() : '';
+
+    return match && linkedinUrl
+      ? { name: String(match.name), linkedinUrl }
+      : null;
   }
 
   async searchJobs(input: {
@@ -752,7 +847,13 @@ export class HarvestLinkedinService {
       },
     });
     if (!response.ok) {
-      throw new Error(`Harvest request failed with status ${response.status}`);
+      // Harvest explains a 400 (bad filter value) in the body
+      const detail = await response.text().catch(() => '');
+      throw new Error(
+        `Harvest request failed with status ${response.status}${
+          detail ? `: ${detail.slice(0, 300)}` : ''
+        }`,
+      );
     }
     return response.json();
   }

@@ -77,7 +77,7 @@ export const STANDARD_FLAT_SKILL_METADATA_BUILDERS_BY_SKILL_NAME = {
     name: 'research',
     label: 'Research',
     description:
-      'Finding general facts from the web — prefer `search` when sourcing target companies or people',
+      'Finding general facts from the web — prefer `sourcing` when sourcing target companies or people',
     icon: 'IconSearch',
   }),
   'code-interpreter': createStandardSkillBuilder({

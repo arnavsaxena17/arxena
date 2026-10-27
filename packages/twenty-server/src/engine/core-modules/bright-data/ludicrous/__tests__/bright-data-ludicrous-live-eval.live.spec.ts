@@ -129,7 +129,7 @@ describeLive('bright data ludicrous live eval', () => {
   it('plans, estimates, executes and compares against instant', async () => {
     process.env.BRIGHT_DATA_API_KEY = readEnv('BRIGHT_DATA_API_KEY');
     const openai = createOpenAI({ apiKey: readEnv('OPENAI_API_KEY') });
-    const modelId = process.env.EVAL_PLANNER_MODEL ?? 'gpt-4o-mini';
+    const modelId = process.env.EVAL_PLANNER_MODEL ?? 'gpt-6-luna';
     const search = new BrightDataBusinessSearchService();
     const ledger = { records: 0 };
     const plans = new Map<string, BrightDataLudicrousPlan>();
@@ -144,7 +144,7 @@ describeLive('bright data ludicrous live eval', () => {
     };
     const store = {
       save: async (plan: BrightDataLudicrousPlan) => {
-        plans.set(plan.planId, plan);
+        plans.set(plan.listId, plan);
       },
     };
     // EVAL_JUDGE_PROVIDER=openrouter judges with typesafe/jev-router
@@ -156,7 +156,7 @@ describeLive('bright data ludicrous live eval', () => {
             baseURL: 'https://openrouter.ai/api/v1',
             supportsStructuredOutputs: true,
           })(process.env.EVAL_JUDGE_MODEL ?? 'typesafe/jev-router')
-        : openai(process.env.EVAL_JUDGE_MODEL ?? 'gpt-4o-mini');
+        : openai(process.env.EVAL_JUDGE_MODEL ?? 'gpt-6-luna');
     const judge = {
       // Stand-in for Jev: hard constraints are free, wording goes to an LLM
       judge: async ({

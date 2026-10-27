@@ -34,7 +34,7 @@ const buildModel = (
   }) as AiModelConfig;
 
 const MODELS: Record<string, AiModelConfig> = {
-  'openai/gpt-4o-mini': buildModel({ modelId: 'openai/gpt-4o-mini' }),
+  'openai/gpt-6-luna': buildModel({ modelId: 'openai/gpt-6-luna' }),
   'openai/zero-priced': buildModel({
     modelId: 'openai/zero-priced',
     inputCostPerMillionTokens: 0,
@@ -95,13 +95,13 @@ describe('MeteredLlmService', () => {
 
     it('should return the completion untouched and bill tokens at the model price', async () => {
       const completion = {
-        model: 'gpt-4o-mini',
+        model: 'gpt-6-luna',
         usage: { prompt_tokens: 1000, completion_tokens: 500 },
       };
       const { client, create } = buildClient(completion);
 
       const result = await service.openAiChatCompletion(CONTEXT, client, {
-        model: 'gpt-4o-mini',
+        model: 'gpt-6-luna',
         messages: [],
       });
 
@@ -113,7 +113,7 @@ describe('MeteredLlmService', () => {
           feature: 'AI_BACKGROUND',
           quantity: 1500,
           userWorkspaceId: 'uw-1',
-          resourceContext: 'openai/gpt-4o-mini',
+          resourceContext: 'openai/gpt-6-luna',
         }),
       );
       // 1000 x $0.15/M + 500 x $0.60/M
@@ -130,7 +130,7 @@ describe('MeteredLlmService', () => {
       });
 
       await service.openAiChatCompletion(CONTEXT, client, {
-        model: 'gpt-4o-mini',
+        model: 'gpt-6-luna',
         messages: [],
       });
 
@@ -144,7 +144,7 @@ describe('MeteredLlmService', () => {
       });
 
       await service.openAiChatCompletion(CONTEXT, client, {
-        model: 'gpt-4o-mini-2024-07-18',
+        model: 'gpt-6-luna-2024-07-18',
         messages: [],
       });
 
@@ -159,7 +159,7 @@ describe('MeteredLlmService', () => {
       await service.openAiChatCompletion(
         { ...CONTEXT, keySource: 'workspace' },
         client,
-        { model: 'gpt-4o-mini', messages: [] },
+        { model: 'gpt-6-luna', messages: [] },
       );
 
       expect(assertCanSpend).toHaveBeenCalledWith(
@@ -202,7 +202,7 @@ describe('MeteredLlmService', () => {
       await service.openAiChatCompletion(
         { ...CONTEXT, keySource: 'platform' },
         client,
-        { model: 'gpt-4o-mini', messages: [] },
+        { model: 'gpt-6-luna', messages: [] },
       );
 
       expect(record.mock.calls[0][0].treatment).toBeUndefined();
@@ -239,7 +239,7 @@ describe('MeteredLlmService', () => {
 
       await expect(
         service.openAiChatCompletion(CONTEXT, client, {
-          model: 'gpt-4o-mini',
+          model: 'gpt-6-luna',
           messages: [],
         }),
       ).rejects.toThrow('Credits exhausted');
@@ -253,7 +253,7 @@ describe('MeteredLlmService', () => {
 
       await expect(
         service.openAiChatCompletion(CONTEXT, client, {
-          model: 'gpt-4o-mini',
+          model: 'gpt-6-luna',
           messages: [],
         }),
       ).resolves.toBe(completion);
@@ -280,7 +280,7 @@ describe('MeteredLlmService', () => {
       for await (const chunk of service.openAiChatCompletionStream(
         CONTEXT,
         client,
-        { model: 'gpt-4o-mini', messages: [] },
+        { model: 'gpt-6-luna', messages: [] },
       )) {
         chunks.push(chunk);
       }
@@ -314,7 +314,7 @@ describe('MeteredLlmService', () => {
       for await (const _chunk of service.openAiChatCompletionStream(
         CONTEXT,
         client,
-        { model: 'gpt-4o-mini', messages: [] },
+        { model: 'gpt-6-luna', messages: [] },
       )) {
         break;
       }
@@ -336,7 +336,7 @@ describe('MeteredLlmService', () => {
       for await (const _chunk of service.openAiChatCompletionStream(
         CONTEXT,
         client,
-        { model: 'gpt-4o-mini', messages: [] },
+        { model: 'gpt-6-luna', messages: [] },
       )) {
         // drain
       }
@@ -355,7 +355,7 @@ describe('MeteredLlmService', () => {
       const client = { responses: { create } } as unknown as OpenAI;
 
       await service.openAiResponse(CONTEXT, client, {
-        model: 'gpt-4o-mini',
+        model: 'gpt-6-luna',
         input: 'hi',
       });
 

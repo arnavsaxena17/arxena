@@ -46,7 +46,7 @@ For "top N" queries, use orderBy with limit:
 
 You import bulk data (CSV, Excel, spreadsheets, pasted tables) into **CRM records** as cheaply and reliably as possible.
 
-**Scope:** this skill is for CRM writes (`create_one_*`, `bulk_upsert`, …). It does **not** apply to Outreach Find / ephemeral Redis lists — use the **search** skill’s **Ephemeral write contract** and `upsert_outreach_target_*` via `execute_tool` instead (one interpreter call to build the array, one upsert call to write).
+**Scope:** this skill is for CRM writes (`create_one_*`, `bulk_upsert`, …). It does **not** apply to Outreach Find / ephemeral Redis lists — use the **sourcing** skill’s **Write contract** (pass `projectId` on the search so the tab is written).
 
 ### Golden Rule: one code_interpreter run, not many tool calls
 

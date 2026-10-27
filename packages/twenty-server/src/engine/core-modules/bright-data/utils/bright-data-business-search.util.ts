@@ -70,7 +70,7 @@ export const planBrightDataBusinessSearchPages = ({
 
   if (mode !== 'ludicrous' && Math.max(0, offset ?? 0) >= maxResults) {
     throw new Error(
-      `${mode} mode only returns the first ${maxResults} results (offset + limit <= ${maxResults}). Use ludicrous mode (estimate, then planId and maxBudgetUsd) to fetch more.`,
+      `${mode} mode only returns the first ${maxResults} results (offset + limit <= ${maxResults}). Use ludicrous mode (estimate, then listId and maxBudgetUsd) to fetch more.`,
     );
   }
 

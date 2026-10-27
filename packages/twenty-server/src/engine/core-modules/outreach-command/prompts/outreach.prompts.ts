@@ -31,6 +31,7 @@ import {
   pickOutreachOpenerShape,
   pickOutreachOpenerVariant,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-opener-assignment.util';
+import { formatOutreachPersonaGuidanceForPrompt } from 'src/engine/core-modules/outreach-command/utils/outreach-persona-guidance.util';
 
 export const OUTREACH_DONT_RESPOND_SENTINEL = '#DONTRESPOND#';
 
@@ -114,6 +115,20 @@ export const OUTREACH_QUALIFY_OPENER_HOOK_CONTRACT_V2 =
 export const OUTREACH_QUALIFY_COMPANY_FIT_RULE =
   'COMPANY FIT: score 0-2 and go=false for single-outlet shops, one-unit franchisees, and sole proprietors with no multi-location or multi-channel footprint, unless the sender brief names them as ICP. Multi-location, multi-channel, or group-level roles score on role match as usual.';
 
+export const buildOutreachPersonaGuidanceLine = (personaGuidance?: string) =>
+  `PERSONA_GUIDANCE (from the client, for this project): ${formatOutreachPersonaGuidanceForPrompt(personaGuidance)}`;
+
+export const OUTREACH_QUALIFY_PERSONA_RULE =
+  'PERSONA: when PERSONA_GUIDANCE is not (none), set segment to the exact name of the one persona it describes that best fits this prospect by title, seniority and function, or "default" when none fits. Otherwise segment is a short label of your own.';
+
+// Opener: the client's ask for a persona replaces the A/B ask rule.
+export const OUTREACH_OPENER_PERSONA_RULE =
+  'PERSONA: when PERSONA_GUIDANCE is not (none), use the persona named in the prospect segment (or the closest fit for their title) and follow its angle, topics, tone and ask. On those points it overrides the ASK rule, the examples and the default topics. Length, format, one-question and never-invent rules still apply.';
+
+// Connection note and cold follow-ups keep their own ask type (FU3 has none).
+export const OUTREACH_CADENCE_PERSONA_RULE =
+  "PERSONA: when PERSONA_GUIDANCE is not (none), use the persona named in the prospect segment (or the closest fit for their title) and follow its angle, topics and tone. Keep this message's ask type, length and format rules.";
+
 export const OUTREACH_QUALIFY_JSON_KEYS =
   '{ "go", "score", "segment", "reason", "first_name", "honorific", "company_short", "industry_phrase", "hooks", "likely_systems", "matching_problem_statement", "referral_source", "opener_hook" }';
 
@@ -149,6 +164,7 @@ export const buildOutreachOpenerPrompt = ({
   companyNews,
   priorEngagement,
   segmentHypotheses,
+  personaGuidance,
   variant,
   shape,
   openerSeed,
@@ -166,6 +182,8 @@ export const buildOutreachOpenerPrompt = ({
   priorEngagement?: string;
   // Observations the sender has actually made running businesses like this one.
   segmentHypotheses?: string;
+  // Project persona text from Setup (outreachConfig.personaGuidance).
+  personaGuidance?: string;
   variant: OutreachOpenerVariant;
   shape: OutreachOpenerShape;
   // Workflow chips stay unresolved until rewrite; then pickers fill the markers.
@@ -196,6 +214,7 @@ export const buildOutreachOpenerPrompt = ({
       : []),
     `Prior engagement by sender: ${priorEngagement?.trim() || '(none)'}`,
     `Sender observations for this segment: ${segmentHypotheses?.trim() || '(none)'}`,
+    buildOutreachPersonaGuidanceLine(personaGuidance),
     '',
     'PICK THE STRONGEST TIER THAT HAS REAL MATERIAL. Never invent material.',
     'Tier 1: a recent post, news item, or activity (PROSPECT opener_hook with source post, news or activity, or an item in Prospect posts or Company news). Use one fact, close to their own words.',
@@ -205,6 +224,7 @@ export const buildOutreachOpenerPrompt = ({
     '',
     shapeRule,
     askRule,
+    OUTREACH_OPENER_PERSONA_RULE,
     ...(deferAssignment && isDefined(openerSeed)
       ? [
           `${OUTREACH_OPENER_SEED_MARKER_PREFIX}${openerSeed}${OUTREACH_OPENER_SEED_MARKER_SUFFIX}`,
@@ -250,6 +270,7 @@ const OUTREACH_OPENER_ASK_WORDS =
 export const validateOutreachOpenerMessage = (
   message: string,
   variant: OutreachOpenerVariant,
+  { checkAskVariant = true }: { checkAskVariant?: boolean } = {},
 ): { ok: boolean; problems: string[] } => {
   const text = message.trim();
   const problems: string[] = [];
@@ -291,7 +312,11 @@ export const validateOutreachOpenerMessage = (
     problems.push('opens with flattery or congratulations');
   }
 
-  if (variant === 'question' && OUTREACH_OPENER_ASK_WORDS.test(text)) {
+  if (
+    checkAskVariant &&
+    variant === 'question' &&
+    OUTREACH_OPENER_ASK_WORDS.test(text)
+  ) {
     problems.push('asks for a demo or meeting, question variant must not');
   }
 
@@ -379,16 +404,19 @@ export const buildOutreachQualifyProspectPrompt = ({
   profile,
   posts,
   crm,
+  personaGuidance,
 }: {
   senderJson: string;
   profile: string;
   posts?: string;
   crm?: string;
+  personaGuidance?: string;
 }): string =>
   [
     buildOutreachSharedSenderContextPrompt(senderJson),
     '',
     'Decide whether to contact this person for the sender offer and extract hooks.',
+    buildOutreachPersonaGuidanceLine(personaGuidance),
     // Prefer full fetch-linkedin-profile {{step.text}} (human-readable).
     `prospect_profile: ${formatOutreachProspectProfileForLlm(profile) || '(none)'}`,
     `posts: ${(posts ?? '').trim() || '(none)'}`,
@@ -400,6 +428,7 @@ export const buildOutreachQualifyProspectPrompt = ({
     'OPENER_HOOK: prefer a recent post, activity, or news fact; else a company-level fact (industry/scale/channels).',
     'problem is a topic to ask about, never a claim that they have that problem.',
     'Do not invent a problem from the post.',
+    OUTREACH_QUALIFY_PERSONA_RULE,
     `Return JSON only: ${OUTREACH_QUALIFY_JSON_KEYS}`,
     `${OUTREACH_QUALIFY_HOOKS_CONTRACT}. ${OUTREACH_QUALIFY_OPENER_HOOK_CONTRACT_V2} honorific and referral_source may be null.`,
   ].join('\n');
@@ -408,10 +437,12 @@ export const buildOutreachConnectionNotePrompt = ({
   senderJson,
   prospectEnrichmentJson,
   prospectProfileText,
+  personaGuidance,
 }: {
   senderJson: string;
   prospectEnrichmentJson: string;
   prospectProfileText?: string;
+  personaGuidance?: string;
 }): string =>
   [
     'You draft a linkedin connection request message on behalf of the sender described below.',
@@ -437,6 +468,8 @@ export const buildOutreachConnectionNotePrompt = ({
     `prospect_profile: ${formatOutreachProspectProfileForLlm(prospectProfileText) || '(none)'}`,
     'VARIANT A (cold): S1 hook from hooks[0]; S2 one line from ## one_liner (or ## proof_points); S3 "Would be glad to connect."',
     'VARIANT B (referral_source set): open with referral, then as A, close "Look forward to connecting here."',
+    buildOutreachPersonaGuidanceLine(personaGuidance),
+    OUTREACH_CADENCE_PERSONA_RULE,
     'Output the note only.',
     '',
     OUTREACH_HUMANIZER_RULES,
@@ -473,6 +506,7 @@ export const buildOutreachFirstMessagePrompt = ({
   connectionNote,
   priorEngagement,
   segmentHypotheses,
+  personaGuidance,
   openerSeed,
   variant,
   shape,
@@ -490,6 +524,7 @@ export const buildOutreachFirstMessagePrompt = ({
   connectionNote?: string;
   priorEngagement?: string;
   segmentHypotheses?: string;
+  personaGuidance?: string;
   // Candidate id (or workflow chip). Drives deterministic shape/variant picks.
   openerSeed?: string;
   variant?: OutreachOpenerVariant;
@@ -518,6 +553,7 @@ export const buildOutreachFirstMessagePrompt = ({
       companyNews,
       priorEngagement,
       segmentHypotheses,
+      personaGuidance,
       variant: resolvedVariant,
       shape: resolvedShape,
       openerSeed: deferAssignment ? seed : undefined,
@@ -565,6 +601,8 @@ export const buildOutreachFirstMessagePrompt = ({
     buildOutreachSharedSenderContextPrompt(senderJson),
     '',
     kindRules,
+    buildOutreachPersonaGuidanceLine(personaGuidance),
+    OUTREACH_CADENCE_PERSONA_RULE,
     `prospect: ${formatOutreachProspectEnrichmentForLlm(prospectEnrichmentJson) || '(none)'}`,
     `prospect_profile: ${formatOutreachProspectProfileForLlm(prospectProfileText) || '(none)'}`,
     `prospect_posts: ${formatOutreachProspectPostsForLlm(prospectPostsText) || '(none)'}`,

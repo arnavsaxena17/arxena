@@ -1822,21 +1822,12 @@ export class ConfigVariables {
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.LLM,
     isSensitive: true,
-    description: 'API key for OpenRouter (openai-compatible gateway)',
+    description:
+      'API key for OpenRouter (openai-compatible gateway and TypeSafe Jev decisions)',
     type: ConfigVariableType.STRING,
   })
   @IsOptional()
   OPENROUTER_API_KEY?: string;
-
-  @ConfigVariablesMetadata({
-    group: ConfigVariablesGroup.LLM,
-    isSensitive: true,
-    description:
-      'API key for Vercel AI Gateway (used for TypeSafe Jev evaluation models)',
-    type: ConfigVariableType.STRING,
-  })
-  @IsOptional()
-  AI_GATEWAY_API_KEY?: string;
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.LLM,

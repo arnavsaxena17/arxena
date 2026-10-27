@@ -9,7 +9,7 @@ describe('collectOutreachMutationsFromChatParts', () => {
           toolName: 'run_ai_column',
           arguments: {
             projectId: 'project-1',
-            subject: 'person',
+            tab: 'people',
             previewId: 'preview-1',
           },
         },
@@ -34,7 +34,7 @@ describe('collectOutreachMutationsFromChatParts', () => {
       },
       {
         toolName: 'run_ai_column',
-        toolInput: { projectId: 'project-1', subject: 'person' },
+        toolInput: { projectId: 'project-1', tab: 'people' },
         toolOutput: { success: false, result: { columnKeys: ['ignored'] } },
       },
     ]);
@@ -42,7 +42,7 @@ describe('collectOutreachMutationsFromChatParts', () => {
     expect(result.columnRemovals).toEqual([
       {
         projectId: 'project-1',
-        subject: 'person',
+        tab: 'people',
         columnKeys: ['isCeo'],
       },
     ]);

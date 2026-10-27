@@ -7,19 +7,19 @@ export type OutreachCacheKind =
   | 'aiColumn'
   | 'tableView';
 
+export type OutreachTableTab = 'people' | 'companies';
+
 export type OutreachAiColumnRunProgress = {
   runId: string;
   label: string;
-  // Older servers omit it: those runs were always for people.
-  subject?: 'person' | 'company';
+  // Which table the column belongs to, so only that tab shows the progress.
+  tab: OutreachTableTab;
   status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
   total: number;
   done: number;
   failed: number;
   error?: string;
 };
-
-export type OutreachTableTab = 'people' | 'companies';
 
 export type OutreachTableFilter =
   | { columnId: string; kind: 'values'; values: string[] }

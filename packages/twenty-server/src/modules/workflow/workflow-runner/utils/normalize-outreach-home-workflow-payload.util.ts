@@ -1,6 +1,6 @@
 import { isPlainObject, isValidUuid } from 'twenty-shared/utils';
 
-// Outreach People HotTable rows use person/working-set id as `id` and stash the
+// Outreach People HotTable rows use person/tab id as `id` and stash the
 // real CRM candidate under `candidateId`. Manual Candidate Sequencer runs must
 // bind workflowRun.candidateId (and step {{trigger.id}}) to the CRM candidate.
 export const normalizeOutreachHomeWorkflowPayload = (

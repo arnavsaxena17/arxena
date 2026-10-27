@@ -56,10 +56,10 @@ const isRateLimitError = (error: unknown): boolean => {
 // Mapping from frontend model values to actual OpenAI model names
 const MODEL_MAPPING: Record<string, string> = {
   gpt35turbo: 'gpt-3.5-turbo',
-  gpt51chatlatest: 'gpt-4o-mini',
+  gpt51chatlatest: 'gpt-6-luna',
   gpt54mini: 'gpt-5.4-mini',
   gpt4o: 'gpt-4o',
-  gpt4omini: 'gpt-4o-mini',
+  gpt6luna: 'gpt-6-luna',
   gpt4ominisearchpreview: 'gpt-4o-mini-search-preview',
   jev: JEV_MODEL_ID,
   'typesafe-ai/jev': JEV_MODEL_ID,
@@ -90,7 +90,7 @@ export class AiFilteringProcessorService {
    */
   private mapModelName(frontendModel: string): string {
     const mappedModel =
-      MODEL_MAPPING[frontendModel] || frontendModel || 'gpt-4o-mini';
+      MODEL_MAPPING[frontendModel] || frontendModel || 'gpt-6-luna';
 
     if (frontendModel && !MODEL_MAPPING[frontendModel]) {
     } else if (frontendModel && MODEL_MAPPING[frontendModel]) {
@@ -276,13 +276,13 @@ export class AiFilteringProcessorService {
           !canUseJevForFilterFields(aiFilter.fields)
         ) {
           console.warn(
-            `Jev selected for filter ${aiFilter.modelName} but it is not configured or fields are not all boolean/enum; falling back to gpt-4o-mini`,
+            `Jev selected for filter ${aiFilter.modelName} but it is not configured or fields are not all boolean/enum; falling back to gpt-6-luna`,
           );
 
           return this.getOpenAIResponse(
             aiFilter.prompt,
             userInput,
-            'gpt4omini',
+            'gpt6luna',
             aiFilter.fields,
             workspaceId,
           );

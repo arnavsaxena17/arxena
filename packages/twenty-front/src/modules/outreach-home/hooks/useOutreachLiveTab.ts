@@ -172,7 +172,7 @@ const outreachPersonSignature = (people: OutreachPersonRow[]): string =>
 const isOutreachMainTab = (value: string | null): value is OutreachMainTab =>
   value === 'companies' || value === 'people' || value === 'setup';
 
-export const useOutreachLiveWorkingSet = () => {
+export const useOutreachLiveTab = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const projectIdFromQuery = searchParams.get(OUTREACH_PROJECT_ID_QUERY_PARAM);
 
@@ -415,7 +415,7 @@ export const useOutreachLiveWorkingSet = () => {
     void refreshCrmCompanies();
   }, [refreshCrmCompanies]);
 
-  const refreshCompaniesWorkingSet = useCallback(async () => {
+  const refreshCompaniesTab = useCallback(async () => {
     await Promise.all([refreshCompaniesCache(), refreshCrmCompanies()]);
   }, [refreshCompaniesCache, refreshCrmCompanies]);
 
@@ -764,7 +764,7 @@ export const useOutreachLiveWorkingSet = () => {
     [refreshProjectCandidates, refetchJourneySummary],
   );
 
-  const refreshPeopleWorkingSet = useCallback(async () => {
+  const refreshPeopleTab = useCallback(async () => {
     await Promise.all([
       refreshPeopleCache(),
       refreshProjectCandidates(),
@@ -794,7 +794,7 @@ export const useOutreachLiveWorkingSet = () => {
         return;
       }
 
-      void refreshPeopleWorkingSet();
+      void refreshPeopleTab();
       void refreshCrmCompanies();
       window.setTimeout(() => {
         setAiColumnRun((current) =>
@@ -802,7 +802,7 @@ export const useOutreachLiveWorkingSet = () => {
         );
       }, 10000);
     },
-    [refreshPeopleWorkingSet, refreshCrmCompanies],
+    [refreshPeopleTab, refreshCrmCompanies],
   );
 
   const [aiTableViews, setAiTableViews] = useState<{
@@ -1221,8 +1221,8 @@ export const useOutreachLiveWorkingSet = () => {
     softDeletePeople,
     undoSoftDeletePeople,
     undoableDeletedPersonCount,
-    refreshPeopleWorkingSet,
-    refreshCompaniesWorkingSet,
+    refreshPeopleTab,
+    refreshCompaniesTab,
     aiColumnRun,
     aiTableViews,
     parsedIcp,

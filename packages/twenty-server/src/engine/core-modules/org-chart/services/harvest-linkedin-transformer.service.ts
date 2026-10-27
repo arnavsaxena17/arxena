@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { CandidateTableRow } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
+import { readHarvestLeadFields } from 'src/engine/core-modules/org-chart/utils/harvest-lead-fields.util';
 
 /**
  * Harvest API LeadShort schema (from /linkedin/lead-search):
@@ -64,31 +65,23 @@ export class HarvestLinkedinTransformerService {
     index: number;
   }): CandidateTableRow {
     const { lead, profile } = input;
+    const leadFields = readHarvestLeadFields(lead);
 
     const fullName =
       this.pickString(profile, ['name', 'fullName', 'full_name', 'displayName']) ??
-      this.pickString(lead, ['name', 'fullName', 'full_name', 'displayName']);
+      (leadFields.fullName || undefined);
     const firstName =
       this.pickString(profile, ['firstName', 'first_name']) ??
-      this.pickString(lead, ['firstName', 'first_name']) ??
-      '';
+      leadFields.firstName;
     const lastName =
       this.pickString(profile, ['lastName', 'last_name']) ??
-      this.pickString(lead, ['lastName', 'last_name']) ??
-      '';
+      leadFields.lastName;
     const stableName =
       fullName ?? `${firstName} ${lastName}`.trim() ?? '';
 
     const linkedinUrl =
       this.pickString(profile, ['linkedinUrl', 'linkedin_url']) ??
-      this.pickString(lead, [
-        'linkedinUrl',
-        'linkedin_url',
-        'profileUrl',
-        'profile_url',
-        'url',
-      ]) ??
-      '';
+      leadFields.linkedinUrl;
 
     const matchingExperience = profile
       ? this.findExperienceMatchingCompany(profile, {
@@ -100,16 +93,11 @@ export class HarvestLinkedinTransformerService {
     const headline =
       this.pickString(profile, ['headline']) ??
       matchingExperience?.position ??
-      this.pickFirstString(lead.currentPositions, 'title') ??
-      this.pickString(lead, ['title', 'headline', 'position']) ??
-      '';
+      leadFields.title;
 
     const leadCompanyLinkedinUrl =
-      this.pickFirstString(lead.currentPositions, 'companyLinkedinUrl') ??
-      input.companyLinkedinUrl;
-    const leadCompanyName =
-      this.pickFirstString(lead.currentPositions, 'companyName') ??
-      input.companyName;
+      leadFields.companyLinkedinUrl || input.companyLinkedinUrl;
+    const leadCompanyName = leadFields.companyName || input.companyName;
 
     const profileLocationParsed = this.readObjectKey(
       profile?.location,
@@ -118,9 +106,8 @@ export class HarvestLinkedinTransformerService {
 
     const locationName =
       this.pickStringFromObjectKey(profile?.location, 'linkedinText') ??
-      this.pickStringFromObjectKey(lead.location, 'linkedinText') ??
+      (leadFields.location || undefined) ??
       this.pickString(profile, ['locationName']) ??
-      this.pickString(lead, ['location', 'locationName']) ??
       '';
 
     const locationCountry =
@@ -137,12 +124,7 @@ export class HarvestLinkedinTransformerService {
 
     const profilePictureUrl =
       this.pickString(profile, ['photo', 'pictureUrl', 'profile_picture_url']) ??
-      this.pickString(lead, [
-        'pictureUrl',
-        'profile_picture_url',
-        'profilePictureUrl',
-      ]) ??
-      '';
+      leadFields.pictureUrl;
 
     const harvestExperience = profile ? this.extractExperience(profile) : null;
 
@@ -230,17 +212,6 @@ export class HarvestLinkedinTransformerService {
     return typeof inner === 'string' && inner.trim().length > 0
       ? inner.trim()
       : undefined;
-  }
-
-  private pickFirstString(value: unknown, key: string): string | undefined {
-    if (!Array.isArray(value)) return undefined;
-    for (const entry of value) {
-      const inner = this.readObjectKey(entry, key);
-      if (typeof inner === 'string' && inner.trim().length > 0) {
-        return inner.trim();
-      }
-    }
-    return undefined;
   }
 
   private extractExperience(

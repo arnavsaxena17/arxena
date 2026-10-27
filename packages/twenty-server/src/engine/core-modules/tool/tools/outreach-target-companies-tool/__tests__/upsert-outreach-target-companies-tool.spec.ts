@@ -6,9 +6,13 @@ describe('UpsertOutreachTargetCompaniesTool', () => {
       get: jest.fn(async () => ({ companies: existing })),
       set: jest.fn(async () => undefined),
     };
-    const tool = new UpsertOutreachTargetCompaniesTool(cache as never);
+    const chatWrites = { append: jest.fn(async () => undefined) };
+    const tool = new UpsertOutreachTargetCompaniesTool(
+      cache as never,
+      chatWrites as never,
+    );
 
-    return { tool, cache };
+    return { tool, cache, chatWrites };
   };
   const context = { workspaceId: 'ws' } as never;
 

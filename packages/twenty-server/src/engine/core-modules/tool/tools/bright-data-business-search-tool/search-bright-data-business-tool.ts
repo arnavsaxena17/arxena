@@ -66,10 +66,10 @@ export class SearchBrightDataBusinessTool implements Tool {
 
   description = `Search Bright Data Business Search for companies or people with a raw natural-language request.
 Default mode is ludicrous (billed $0.002 per returned record, max $10 per query). It works in two steps:
-1. Call without planId. This plans several structured queries and spends a few cents sampling them. You get planId, per-slice match counts, expected accuracy and the cost of fetching N records. Show the user the numbers and ask which budget to fetch. Nothing is fetched yet.
-2. After the user confirms, call again with planId and maxBudgetUsd (and optionally targetCount, projectId). Records are fetched slice by slice and rows Jev marks irrelevant are dropped.
-Ludicrous is the default. Pass mode "instant" only for company lookup by domain (bare host or URL such as stripe.com); the tool keeps rows whose website/domain matches that host. smart is ignored. Records are fetched with view full.
-Ludicrous results never contain the records, only counts and a summary; they go to the project tab and a saved dataset. Fetched records are kept in a list (listId = planId, 30 days); use the outreach_list tool to attach them to a project tab or save them to the CRM, or call again with the same planId and a projectId. Pass projectId to merge hits into the Outreach Companies or People tab. Do not create CRM records. Omit projectId on instant domain lookup for a preview with previewRows / companies.`;
+1. Call without listId. This plans several structured queries and spends a few cents sampling them. You get listId, per-slice match counts, expected accuracy and the cost of fetching N records. Show the user the numbers and ask which budget to fetch. Nothing is fetched yet.
+2. After the user confirms, call again with listId and maxBudgetUsd (and optionally targetCount, projectId). Records are fetched slice by slice and rows Jev marks irrelevant are dropped.
+Pick the mode by input. Ludicrous (default) is for a set described by attributes (title, employer, industry, location, size, funding); it has no URL, website or domain field. Instant is a raw string lookup, only for one company by website: entity company and a bare host such as stripe.com; the tool keeps rows whose website/domain matches that host. Any other instant call runs as ludicrous. For one person by LinkedIn URL or name use fetch_profiles; a company LinkedIn URL is not supported. smart is ignored. Records are fetched with view full.
+Ludicrous results never contain the records, only counts and a summary. On Find, pass projectId on the fetch so hits write the Outreach tab — do not call outreach_list attach afterward. Fetched records are also kept in a list (listId, 30 days) for export or for attach only when projectId was omitted. Do not create CRM records (use save_outreach_targets_to_crm). Omit projectId on instant domain lookup for a preview with previewRows / companies.`;
 
   inputSchema = SearchBrightDataBusinessToolInputZodSchema;
 
@@ -161,6 +161,13 @@ Ludicrous results never contain the records, only counts and a summary; they go 
           matched: search.matched,
           count: documents.length,
           ephemeralWritten: ephemeral.written,
+          writtenRowIds: ephemeral.writtenRowIds,
+          createdCount: ephemeral.createdCount,
+          updatedCount: ephemeral.updatedCount,
+          totalCountHint:
+            ephemeral.written > 0
+              ? "Use get_outreach_tab for the tab total; writtenRowIds are this chat's upserts from this call."
+              : undefined,
           previewRows: this.buildPreviewRows(input, filteredSearch),
           companies:
             input.entity === 'company'
@@ -216,19 +223,19 @@ Ludicrous results never contain the records, only counts and a summary; they go 
     try {
       const workspaceId = context.workspaceId;
 
-      if (isNonEmptyString(input.planId)) {
+      if (isNonEmptyString(input.listId)) {
         // Records for this plan may already be paid for (a chat that lost the
         // output, or no project at fetch time): reuse them, never buy twice.
         const existing =
           await this.brightDataLudicrousSearchService.loadDataset({
             workspaceId,
-            planId: input.planId,
+            listId: input.listId,
           });
         const run =
           existing ??
           (await this.brightDataLudicrousSearchService.executePlan({
             workspaceId,
-            planId: input.planId,
+            listId: input.listId,
             maxBudgetUsd: input.maxBudgetUsd,
             targetCount: input.targetCount ?? input.limit,
           }));
@@ -266,7 +273,7 @@ Ludicrous results never contain the records, only counts and a summary; they go 
           query: input.query.trim(),
           awaitingConfirmation: true,
           nextStep:
-            'Show the user the slices, counts and cost options, then call again with planId and the maxBudgetUsd they choose.',
+            'Show the user the slices, counts and cost options, then call again with listId and the maxBudgetUsd they choose.',
           ...summary,
         },
       };
@@ -289,7 +296,7 @@ Ludicrous results never contain the records, only counts and a summary; they go 
   ): Promise<ToolOutput> {
     const documents = documentsForProjectTab(run);
     const search = {
-      reqId: run.planId,
+      reqId: run.listId,
       matched: run.documents.length,
       mode: 'ludicrous' as const,
       coveragePercent: 100,
@@ -305,11 +312,11 @@ Ludicrous results never contain the records, only counts and a summary; they go 
       isNonEmptyString(input.projectId) &&
       ephemeral.written > 0
     ) {
-      await this.linkListToProject(run.planId, input.projectId, context);
+      await this.linkListToProject(run.listId, input.projectId, context);
     }
 
     // Records never go back to the model. They are in the project tab and in
-    // the dataset store (planId), so the conversation only gets counts. This
+    // the dataset store (listId), so the conversation only gets counts. This
     // keeps tool output tiny and stops rows being truncated or re-pasted.
     return {
       success: true,
@@ -317,8 +324,7 @@ Ludicrous results never contain the records, only counts and a summary; they go 
       result: {
         entity: input.entity,
         mode: 'ludicrous',
-        planId: run.planId,
-        listId: run.planId,
+        listId: run.listId,
         list: list
           ? {
               name: list.name,
@@ -333,6 +339,9 @@ Ludicrous results never contain the records, only counts and a summary; they go 
         count: run.documents.length,
         fetchedCount: documents.length,
         ephemeralWritten: ephemeral.written,
+        writtenRowIds: ephemeral.writtenRowIds,
+        createdCount: ephemeral.createdCount,
+        updatedCount: ephemeral.updatedCount,
         ...(ephemeral.error
           ? {
               ephemeralError: `Could not write to the project tab: ${ephemeral.error}. The rows are still in the list (listId); retry with outreach_list attach.`,
@@ -345,8 +354,8 @@ Ludicrous results never contain the records, only counts and a summary; they go 
           : {}),
         shardReports: run.shardReports,
         nextStep: hasProject
-          ? 'Records were written to the project tab and kept in the list (listId). To create CRM Company / Person records call outreach_list with action save_to_crm and the same projectId.'
-          : 'No projectId was given, so nothing was written to a project. The records are kept in the list (listId) for 30 days. Ask the user which project to use, then call outreach_list with action attach (to show them on the project tab) or save_to_crm (to create CRM records).',
+          ? 'Records were written to the project tab and kept in the list (listId). To create CRM records call save_outreach_targets_to_crm with the same projectId. Use get_outreach_tab to read the tab.'
+          : 'No projectId was given, so nothing was written to a project. The records are kept in the list (listId) for 30 days. Ask which project to use, then outreach_list attach (show on the tab) or attach then save_outreach_targets_to_crm.',
         summary: aggregateBrightDataDocuments(input.entity, run.documents),
       },
     };
@@ -390,7 +399,7 @@ Ludicrous results never contain the records, only counts and a summary; they go 
     try {
       return await this.outreachListService.ingest({
         workspaceId: context.workspaceId,
-        listId: run.planId,
+        listId: run.listId,
         name: `Bright Data ${input.entity === 'company' ? 'companies' : 'people'}: ${input.query.trim().slice(0, 60)}`,
         entity: input.entity,
         source: 'bright_data',
@@ -485,12 +494,53 @@ Ludicrous results never contain the records, only counts and a summary; they go 
     input: SearchBrightDataBusinessToolInput,
     search: Awaited<ReturnType<BrightDataBusinessSearchService['search']>>,
     context: ToolExecutionContext,
-  ): Promise<{ written: number; total: number; error?: string }> {
+  ): Promise<{
+    written: number;
+    total: number;
+    writtenRowIds: string[];
+    createdCount: number;
+    updatedCount: number;
+    error?: string;
+  }> {
     if (!isNonEmptyString(input.projectId) || !context.workspaceId) {
-      return { written: 0, total: 0 };
+      return {
+        written: 0,
+        total: 0,
+        writtenRowIds: [],
+        createdCount: 0,
+        updatedCount: 0,
+      };
     }
 
     const projectId = input.projectId;
+    const emptyWrite = {
+      writtenRowIds: [] as string[],
+      createdCount: 0,
+      updatedCount: 0,
+    };
+    const readWriteMeta = (output: {
+      success: boolean;
+      result?: unknown;
+      error?: string;
+    }) => {
+      const result =
+        typeof output.result === 'object' && output.result !== null
+          ? (output.result as Record<string, unknown>)
+          : {};
+      const writtenRowIds = Array.isArray(result.writtenRowIds)
+        ? result.writtenRowIds.filter(
+            (id): id is string => typeof id === 'string',
+          )
+        : [];
+
+      return {
+        writtenRowIds,
+        createdCount:
+          typeof result.createdCount === 'number' ? result.createdCount : 0,
+        updatedCount:
+          typeof result.updatedCount === 'number' ? result.updatedCount : 0,
+      };
+    };
 
     if (input.entity === 'company') {
       const companies = search.documents
@@ -499,7 +549,7 @@ Ludicrous results never contain the records, only counts and a summary; they go 
       const batch = companies.slice(0, MAX_ROWS_PER_PROJECT_TAB);
 
       if (batch.length === 0) {
-        return { written: 0, total: companies.length };
+        return { written: 0, total: companies.length, ...emptyWrite };
       }
 
       const output = await this.upsertOutreachTargetCompaniesTool.execute(
@@ -508,8 +558,17 @@ Ludicrous results never contain the records, only counts and a summary; they go 
       );
 
       return output.success
-        ? { written: batch.length, total: companies.length }
-        : { written: 0, total: companies.length, error: output.error };
+        ? {
+            written: batch.length,
+            total: companies.length,
+            ...readWriteMeta(output),
+          }
+        : {
+            written: 0,
+            total: companies.length,
+            ...emptyWrite,
+            error: output.error,
+          };
     }
 
     const people = await this.markDeprioritised(
@@ -520,7 +579,7 @@ Ludicrous results never contain the records, only counts and a summary; they go 
     const batch = people.slice(0, MAX_ROWS_PER_PROJECT_TAB);
 
     if (batch.length === 0) {
-      return { written: 0, total: people.length };
+      return { written: 0, total: people.length, ...emptyWrite };
     }
 
     const output = await this.upsertOutreachTargetPeopleTool.execute(
@@ -529,7 +588,16 @@ Ludicrous results never contain the records, only counts and a summary; they go 
     );
 
     return output.success
-      ? { written: batch.length, total: people.length }
-      : { written: 0, total: people.length, error: output.error };
+      ? {
+          written: batch.length,
+          total: people.length,
+          ...readWriteMeta(output),
+        }
+      : {
+          written: 0,
+          total: people.length,
+          ...emptyWrite,
+          error: output.error,
+        };
   }
 }

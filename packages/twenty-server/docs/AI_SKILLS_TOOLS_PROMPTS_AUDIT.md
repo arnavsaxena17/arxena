@@ -21,7 +21,7 @@ Two source locations, one DB copy per workspace (22 skills after merging).
 |---|---|---|---|
 | search (5 parts: preamble, companies, list-building, people, linkedin-harvest) | `twenty-shared/src/outreach/skills` | ~15,400 | company and people sourcing, Bright Data, LinkedIn, Harvest |
 | outreach | same | ~4,400 | harvest, enrol, sequencers, messaging |
-| ai-filter-enrich | same | ~3,600 | AI columns over the working set |
+| ai-filter-enrich | same | ~3,600 | AI columns over the tab |
 | org-structure-insights | same | ~2,000 | org chart lookups |
 | setup | same | ~1,700 | ICP and send preferences |
 | spreadsheet-import | same | ~1,100 | import CSV/Excel into project tabs |
@@ -103,7 +103,7 @@ passes those names to `learn_tools`, and nothing checks that they exist.
 ## 3. How the tasks actually run (chat `493be3f7`)
 
 1. `load_skills(["search"])`: 14k tokens, of which about 3k apply to the task.
-2. `learn_tools` ×2, `get_outreach_working_set`, `extract_json_paths`.
+2. `learn_tools` ×2, `get_outreach_tab`, `extract_json_paths`.
 3. Five parallel `search_bright_data_business` calls, each of which runs a
    planner LLM call, probes shards, bills, judges relevance.
 4. Verify, retry with legal/parent names by hand (3 more calls), verify again.
@@ -150,7 +150,7 @@ Each skill gets front matter:
 name: find-people-at-companies
 description: CEO / MD / founder / any role at named companies
 triggers: ["get the CEO of each company", "founders of these"]
-tools: [search_bright_data_business, google_serp_search, get_outreach_working_set]
+tools: [search_bright_data_business, google_serp_search, get_outreach_tab]
 sections: [...]
 ```
 
@@ -180,7 +180,7 @@ edited a standard skill; handle by treating an edited copy as an override.
 The "Role at named companies" recipe is a fixed procedure the model re-runs by
 hand. Make it one server tool:
 
-`find_role_at_companies({companies[], roles[], country, sources})`
+`find_role_at_companies({companies[], roles[], location, sources})`
 
 - Expands roles in code (a synonym table: CEO, Chief Executive Officer,
   Managing Director, MD, Founder, Owner, …), so the user's wording is never

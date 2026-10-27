@@ -302,7 +302,7 @@ export class CandidateSearchController {
         enrichmentId: enrichmentId,
         estimatedTokens: 1000, // Mock value
         cost: 0.01, // Mock value
-        model: enrichment.selectedModel || 'gpt-4o-mini',
+        model: enrichment.selectedModel || 'gpt-6-luna',
       };
 
       return tokenAnalysis;

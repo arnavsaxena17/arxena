@@ -4,14 +4,14 @@ import { isDefined } from 'twenty-shared/utils';
 
 import { collectOutreachMutationsFromChatParts } from 'src/engine/core-modules/outreach-command/utils/collect-outreach-mutations-from-chat-parts.util';
 import { OutreachTableViewService } from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
-import { OutreachWorkingSetService } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+import { OutreachTabService } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
 import { type AgentMessageEntity } from 'src/engine/metadata-modules/ai/ai-agent-execution/entities/agent-message.entity';
 
 export type UndoChatOutreachResult = {
   threadId: string;
   columnsRemoved: Array<{
     projectId: string;
-    subject: string;
+    tab: string;
     columnKeys: string[];
     rowsTouched: number;
     ephemeralUpdated: number;
@@ -24,7 +24,7 @@ export type UndoChatOutreachResult = {
 @Injectable()
 export class UndoChatOutreachService {
   constructor(
-    private readonly outreachWorkingSetService: OutreachWorkingSetService,
+    private readonly outreachTabService: OutreachTabService,
     private readonly outreachTableViewService: OutreachTableViewService,
   ) {}
 
@@ -43,16 +43,16 @@ export class UndoChatOutreachService {
     const columnsRemoved: UndoChatOutreachResult['columnsRemoved'] = [];
 
     for (const removal of mutations.columnRemovals) {
-      const written = await this.outreachWorkingSetService.removeAiColumns({
+      const written = await this.outreachTabService.removeAiColumns({
         workspaceId,
         projectId: removal.projectId,
-        subject: removal.subject,
+        tab: removal.tab,
         columnKeys: removal.columnKeys,
       });
 
       columnsRemoved.push({
         projectId: removal.projectId,
-        subject: removal.subject,
+        tab: removal.tab,
         columnKeys: written.columnKeys,
         rowsTouched: written.rowsTouched,
         ephemeralUpdated: written.ephemeralUpdated,

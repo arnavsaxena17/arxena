@@ -85,7 +85,7 @@ export type BrightDataLudicrousSampleDocument = {
 };
 
 export type BrightDataLudicrousPlan = {
-  planId: string;
+  listId: string;
   workspaceId: string;
   entity: BrightDataLudicrousEntity;
   rawQuery: string;
@@ -136,7 +136,7 @@ export type BrightDataLudicrousFetchedDocument =
   };
 
 export type BrightDataLudicrousRunResult = {
-  planId: string;
+  listId: string;
   entity: BrightDataLudicrousEntity;
   // Rows the relevance filter kept. The chat count and summary use this.
   documents: BrightDataLudicrousSampleDocument[];

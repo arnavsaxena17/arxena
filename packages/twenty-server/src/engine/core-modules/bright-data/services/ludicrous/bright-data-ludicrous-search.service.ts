@@ -19,7 +19,7 @@ import { BrightDataLudicrousPlannerService } from 'src/engine/core-modules/brigh
 import { BrightDataLudicrousPlanStoreService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-plan-store.service';
 
 export type BrightDataLudicrousBudgetSummary = {
-  planId: string;
+  listId: string;
   entity: BrightDataLudicrousEntity;
   intentSummary: string;
   shards: Array<{
@@ -68,7 +68,7 @@ export const summarizeBrightDataLudicrousPlan = (
       : 0;
 
   return {
-    planId: plan.planId,
+    listId: plan.listId,
     entity: plan.entity,
     intentSummary: plan.intentSummary,
     shards: plan.estimates.map((estimate) => ({
@@ -115,13 +115,13 @@ export class BrightDataLudicrousSearchService {
 
   async executePlan(input: {
     workspaceId: string;
-    planId: string;
+    listId: string;
     maxBudgetUsd?: number;
     targetCount?: number;
     userWorkspaceId?: string | null;
     excludeBrightIds?: string[];
   }): Promise<BrightDataLudicrousRunResult> {
-    const plan = await this.planStore.load(input.planId, input.workspaceId);
+    const plan = await this.planStore.load(input.listId, input.workspaceId);
     const result = await this.executor.execute({ ...input, plan });
 
     await this.saveDataset(input.workspaceId, result);
@@ -130,8 +130,8 @@ export class BrightDataLudicrousSearchService {
   }
 
   // Already-paid records for a plan, or undefined when none were kept
-  async loadDataset(input: { planId: string; workspaceId: string }) {
-    return this.datasetStore.load(input.planId, input.workspaceId);
+  async loadDataset(input: { listId: string; workspaceId: string }) {
+    return this.datasetStore.load(input.listId, input.workspaceId);
   }
 
   private async saveDataset(

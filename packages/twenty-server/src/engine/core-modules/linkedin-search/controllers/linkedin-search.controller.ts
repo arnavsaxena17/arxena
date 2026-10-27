@@ -9,7 +9,19 @@ import {
   Param,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import {
+  parseWorkspaceMemberLinkedinProfile,
+  workspaceMemberLinkedinProfileMatchesAccountId,
+  type LinkedInSearchType,
+} from 'twenty-shared';
+
+import { LinkedinParameterResolver } from 'src/engine/core-modules/candidate-search/utils/linkedin-parameter-resolver.util';
+import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
+import { NoPermissionGuard } from 'src/engine/guards/no-permission.guard';
+import type { SearchQuerySet } from 'src/engine/core-modules/linkedin-query-generation/types/linkedin-query-generation.types';
+
 import { WorkspaceMemberUnipileService } from '../../arx-chat/services/workspace-member-unipile.service';
 import { WorkspaceQueryService } from '../../workspace-modifications/workspace-modifications.service';
 import { LinkedInSearchService } from '../services/linkedin-search.service';
@@ -34,7 +46,24 @@ import {
   isPeopleLinkedInSearchUrl,
   type LinkedInSearchUrlCategory,
 } from '../utils/classify-linkedin-search-url.util';
+import {
+  formatUnavailableLinkedinSearchModeMessage,
+  isLinkedinSearchMode,
+  resolveLinkedinSearchMode,
+  type LinkedinSearchCategory,
+  type LinkedinSearchModeAvailability,
+} from '../utils/linkedin-search-mode.util';
+import {
+  mapLinkedinQuerySetToSearchParameters,
+  splitLinkedinFacetDisplay,
+} from '../utils/map-linkedin-query-set-to-search-parameters.util';
 import { type UnipileUserRelationsList } from '../utils/unipile-user-relations.util';
+
+type ResolvedLinkedinSearchMode = {
+  accountId: string;
+  mode: LinkedInSearchType;
+  availability: LinkedinSearchModeAvailability;
+};
 
 @Controller('linkedin-search')
 export class LinkedInSearchController {
@@ -44,6 +73,7 @@ export class LinkedInSearchController {
     private readonly linkedInSearchService: LinkedInSearchService,
     private readonly workspaceQueryService: WorkspaceQueryService,
     private readonly workspaceMemberUnipileService: WorkspaceMemberUnipileService,
+    private readonly linkedinParameterResolver: LinkedinParameterResolver,
   ) {}
 
   /**
@@ -155,6 +185,413 @@ export class LinkedInSearchController {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  // Seats come from the stored workspace member profile (`linkedinProfile.me`)
+  // of the member who owns the account, so no Unipile call is made here
+  private async findStoredLinkedinProfile(
+    accountId: string,
+    headers: any,
+  ): Promise<unknown> {
+    const apiToken = this.extractApiToken(headers);
+    if (!apiToken) {
+      return null;
+    }
+
+    try {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      if (!workspaceId) {
+        return null;
+      }
+
+      const profiles =
+        await this.workspaceQueryService.listWorkspaceMemberLinkedinUnipileProfiles(
+          workspaceId,
+        );
+      const owner = profiles.find(
+        (profile) => profile.linkedinUnipileAccountId === accountId,
+      );
+      const stored = parseWorkspaceMemberLinkedinProfile(
+        owner?.linkedinProfile,
+      );
+
+      // A profile fetched for an earlier account says nothing about this one
+      return workspaceMemberLinkedinProfileMatchesAccountId(stored, accountId)
+        ? stored
+        : null;
+    } catch (error) {
+      this.logger.warn(
+        `LinkedIn search mode: stored profile lookup failed for account ${accountId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+
+      return null;
+    }
+  }
+
+  private async resolveSearchModeOrThrow(
+    accountId: string | undefined,
+    headers: any,
+    category: LinkedinSearchCategory,
+    requestedSearchType: unknown,
+  ): Promise<ResolvedLinkedinSearchMode> {
+    if (
+      requestedSearchType !== undefined &&
+      requestedSearchType !== null &&
+      !isLinkedinSearchMode(requestedSearchType)
+    ) {
+      throw new HttpException(
+        `searchType must be one of classic, sales_navigator, recruiter (got "${String(requestedSearchType)}")`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const resolvedAccountId = await this.getAccountId(accountId, headers);
+    const linkedinProfile = await this.findStoredLinkedinProfile(
+      resolvedAccountId,
+      headers,
+    );
+    const resolution = resolveLinkedinSearchMode({
+      requested: requestedSearchType ?? undefined,
+      linkedinProfile,
+      category,
+    });
+
+    if (!resolution.ok) {
+      throw new HttpException(
+        formatUnavailableLinkedinSearchModeMessage(
+          resolution.requested,
+          category,
+          resolution.availability,
+        ),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return {
+      accountId: resolvedAccountId,
+      mode: resolution.mode,
+      availability: resolution.availability,
+    };
+  }
+
+  private toSearchBody(
+    searchParameters: Record<string, unknown> | undefined,
+  ): Record<string, unknown> {
+    const { api: _api, category: _category, ...rest } = searchParameters ?? {};
+
+    return splitLinkedinFacetDisplay(rest).searchParameters;
+  }
+
+  /**
+   * Which search modes the account can use, from its stored seats
+   */
+  @Get('search-modes')
+  @UseGuards(JwtAuthGuard, NoPermissionGuard)
+  async getSearchModes(
+    @Query('category') category: string | undefined,
+    @Query('account_id') accountId: string | undefined,
+    @Headers() headers?: any,
+  ): Promise<{
+    accountId: string;
+    category: LinkedinSearchCategory;
+    defaultMode: LinkedInSearchType;
+    available: LinkedInSearchType[];
+    known: boolean;
+  }> {
+    const resolvedCategory: LinkedinSearchCategory =
+      category === 'companies' ? 'companies' : 'people';
+    const resolved = await this.resolveSearchModeOrThrow(
+      accountId,
+      headers || {},
+      resolvedCategory,
+      undefined,
+    );
+
+    return {
+      accountId: resolved.accountId,
+      category: resolvedCategory,
+      defaultMode: resolved.mode,
+      available: resolved.availability.available,
+      known: resolved.availability.known,
+    };
+  }
+
+  /**
+   * People search where searchType is optional: it defaults to the account's
+   * best seat and is rejected with 400 when the account lacks that seat
+   */
+  @Post('search/auto/people')
+  @UseGuards(JwtAuthGuard, NoPermissionGuard)
+  async searchPeopleAuto(
+    @Body()
+    body: {
+      searchType?: LinkedInSearchType;
+      searchParameters?: Record<string, unknown>;
+    },
+    @Query('account_id') accountId: string | undefined,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: number,
+    @Headers() headers?: any,
+  ): Promise<LinkedInSearchResponse & { searchType: LinkedInSearchType }> {
+    const { accountId: resolvedAccountId, mode } =
+      await this.resolveSearchModeOrThrow(
+        accountId,
+        headers || {},
+        'people',
+        body?.searchType,
+      );
+    const request = this.toSearchBody(body?.searchParameters);
+    const options = { cursor, limit };
+
+    this.logger.log(
+      `Searching people on LinkedIn (${mode}) for account: ${resolvedAccountId}`,
+    );
+
+    try {
+      const result =
+        mode === 'sales_navigator'
+          ? await this.linkedInSearchService.searchPeopleSalesNavigator(
+              request as Omit<
+                LinkedInSalesNavigatorPeopleSearchRequest,
+                'api' | 'category'
+              >,
+              resolvedAccountId,
+              options,
+            )
+          : mode === 'recruiter'
+            ? await this.linkedInSearchService.searchPeopleRecruiter(
+                request as Omit<
+                  LinkedInRecruiterPeopleSearchRequest,
+                  'api' | 'category'
+                >,
+                resolvedAccountId,
+                options,
+              )
+            : await this.linkedInSearchService.searchPeopleClassic(
+                request as Omit<
+                  LinkedInClassicPeopleSearchRequest,
+                  'api' | 'category'
+                >,
+                resolvedAccountId,
+                options,
+              );
+
+      return { ...result, searchType: mode };
+    } catch (error) {
+      this.logger.error(`LinkedIn ${mode} people search failed`, error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error.message || `LinkedIn ${mode} people search failed`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Company search where searchType is optional (classic or sales_navigator)
+   */
+  @Post('search/auto/companies')
+  @UseGuards(JwtAuthGuard, NoPermissionGuard)
+  async searchCompaniesAuto(
+    @Body()
+    body: {
+      searchType?: LinkedInSearchType;
+      searchParameters?: Record<string, unknown>;
+    },
+    @Query('account_id') accountId: string | undefined,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: number,
+    @Headers() headers?: any,
+  ): Promise<LinkedInSearchResponse & { searchType: LinkedInSearchType }> {
+    const { accountId: resolvedAccountId, mode } =
+      await this.resolveSearchModeOrThrow(
+        accountId,
+        headers || {},
+        'companies',
+        body?.searchType,
+      );
+    const request = this.toSearchBody(body?.searchParameters);
+    const options = { cursor, limit };
+
+    this.logger.log(
+      `Searching companies on LinkedIn (${mode}) for account: ${resolvedAccountId}`,
+    );
+
+    try {
+      const result =
+        mode === 'sales_navigator'
+          ? await this.linkedInSearchService.searchCompaniesSalesNavigator(
+              request as Omit<
+                LinkedInSalesNavigatorCompaniesSearchRequest,
+                'api' | 'category'
+              >,
+              resolvedAccountId,
+              options,
+            )
+          : await this.linkedInSearchService.searchCompanies(
+              request as Omit<
+                LinkedInClassicCompaniesSearchRequest,
+                'api' | 'category'
+              >,
+              resolvedAccountId,
+              options,
+            );
+
+      return { ...result, searchType: mode };
+    } catch (error) {
+      this.logger.error(`LinkedIn ${mode} company search failed`, error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error.message || `LinkedIn ${mode} company search failed`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Turn a generated query set (names) into searchParameters for one mode,
+   * with facet names resolved to LinkedIn ids for this account
+   */
+  @Post('query-set/parameters')
+  @UseGuards(JwtAuthGuard, NoPermissionGuard)
+  async buildQuerySetParameters(
+    @Body()
+    body: {
+      querySet: SearchQuerySet;
+      category?: LinkedinSearchCategory;
+      searchType?: LinkedInSearchType;
+      requirement?: string;
+    },
+    @Query('account_id') accountId: string | undefined,
+    @Headers() headers?: any,
+  ): Promise<{
+    searchType: LinkedInSearchType;
+    category: LinkedinSearchCategory;
+    available: LinkedInSearchType[];
+    queries: Array<{
+      id: string;
+      label: string;
+      searchParameters: Record<string, unknown>;
+      display: Record<string, unknown>;
+      unresolved?: string[];
+    }>;
+  }> {
+    if (!Array.isArray(body?.querySet?.search_query_set)) {
+      throw new HttpException(
+        'querySet.search_query_set is required (the final_query_set from generate)',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const category: LinkedinSearchCategory =
+      body.category === 'companies' ? 'companies' : 'people';
+    const {
+      accountId: resolvedAccountId,
+      mode,
+      availability,
+    } = await this.resolveSearchModeOrThrow(
+      accountId,
+      headers || {},
+      category,
+      body.searchType,
+    );
+
+    const unresolvedQueries = mapLinkedinQuerySetToSearchParameters({
+      querySet: body.querySet,
+      mode,
+      category,
+      requirement: body.requirement,
+    });
+
+    const queries = [];
+    for (const query of unresolvedQueries) {
+      queries.push(
+        await this.resolveQuerySetFacets(query, mode, resolvedAccountId),
+      );
+    }
+
+    return {
+      searchType: mode,
+      category,
+      available: availability.available,
+      queries,
+    };
+  }
+
+  private async resolveQuerySetFacets(
+    query: {
+      id: string;
+      label: string;
+      searchParameters: Record<string, unknown>;
+    },
+    mode: LinkedInSearchType,
+    accountId: string,
+  ): Promise<{
+    id: string;
+    label: string;
+    searchParameters: Record<string, unknown>;
+    display: Record<string, unknown>;
+    unresolved?: string[];
+  }> {
+    // Recruiter takes companies as keyword objects, not facet ids
+    const isRecruiter = mode === 'recruiter';
+    const { company: recruiterCompany, ...withoutCompany } =
+      query.searchParameters;
+    const toResolve = isRecruiter ? withoutCompany : query.searchParameters;
+
+    const resolved = (await this.linkedinParameterResolver.resolveParameterIds(
+      toResolve,
+      accountId,
+      query.id,
+    )) as Record<string, unknown>;
+    const { searchParameters, display } = splitLinkedinFacetDisplay({
+      ...resolved,
+      ...(isRecruiter && recruiterCompany !== undefined
+        ? { company: recruiterCompany }
+        : {}),
+    });
+
+    // A facet the resolver could not match is dropped; say which, so the
+    // agent can report it instead of silently widening the search
+    const unresolved = ['location', 'industry', 'company'].filter(
+      (key) =>
+        toResolve[key] !== undefined && searchParameters[key] === undefined,
+    );
+
+    // Classic keeps an unmatched employer as a keyword filter, as the
+    // candidate search does
+    const companyNames = query.searchParameters.company;
+    if (
+      mode === 'classic' &&
+      unresolved.includes('company') &&
+      Array.isArray(companyNames) &&
+      typeof companyNames[0] === 'string'
+    ) {
+      const advancedKeywords =
+        typeof searchParameters.advanced_keywords === 'object' &&
+        searchParameters.advanced_keywords !== null
+          ? (searchParameters.advanced_keywords as Record<string, unknown>)
+          : {};
+      searchParameters.advanced_keywords = {
+        ...advancedKeywords,
+        company: companyNames[0],
+      };
+    }
+
+    return {
+      id: query.id,
+      label: query.label,
+      searchParameters,
+      display,
+      ...(unresolved.length > 0 ? { unresolved } : {}),
+    };
   }
 
   private extractSearchUrl(body: { url?: string }): string | undefined {

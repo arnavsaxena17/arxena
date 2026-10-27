@@ -7,6 +7,7 @@ import {
   type OutreachEphemeralCompany,
   OutreachCompaniesCacheService,
 } from 'src/engine/core-modules/outreach-command/services/outreach-companies-cache.service';
+import { ChatTabWritesService } from 'src/engine/core-modules/outreach-command/services/chat-tab-writes.service';
 import { mergeOutreachOtherFields } from 'src/engine/core-modules/outreach-command/utils/merge-outreach-other-fields.util';
 import {
   type UpsertOutreachTargetCompaniesInput,
@@ -97,6 +98,7 @@ Prefer mode=merge. Pass projectId from the outreachCommand browsing context.`;
 
   constructor(
     private readonly outreachCompaniesCacheService: OutreachCompaniesCacheService,
+    private readonly chatTabWritesService: ChatTabWritesService,
   ) {}
 
   async execute(
@@ -124,9 +126,16 @@ Prefer mode=merge. Pass projectId from the outreachCommand browsing context.`;
     const existing = existingPayload?.companies ?? [];
 
     let next: OutreachEphemeralCompany[];
+    const writtenRowIds: string[] = [];
+    let createdCount = 0;
+    let updatedCount = 0;
 
     if (input.mode === 'replace') {
       next = dedupeCompanies(incoming);
+      for (const company of next) {
+        writtenRowIds.push(company.id);
+        createdCount += 1;
+      }
     } else {
       const byKey = new Map<string, OutreachEphemeralCompany>();
 
@@ -143,13 +152,22 @@ Prefer mode=merge. Pass projectId from the outreachCommand browsing context.`;
           company.otherFields,
         );
 
-        byKey.set(key, {
+        const merged: OutreachEphemeralCompany = {
           ...(previous ?? company),
           ...company,
           // Keep stable id when merging into an existing row
           id: previous?.id ?? company.id ?? randomUUID(),
           ...(otherFields !== undefined ? { otherFields } : {}),
-        });
+        };
+
+        byKey.set(key, merged);
+        writtenRowIds.push(merged.id);
+
+        if (previous !== undefined) {
+          updatedCount += 1;
+        } else {
+          createdCount += 1;
+        }
       }
 
       next = [...byKey.values()];
@@ -161,6 +179,15 @@ Prefer mode=merge. Pass projectId from the outreachCommand browsing context.`;
       next,
     );
 
+    const uniqueWrittenRowIds = [...new Set(writtenRowIds)];
+
+    await this.chatTabWritesService.append(
+      context.threadId,
+      input.projectId,
+      'companies',
+      uniqueWrittenRowIds,
+    );
+
     return {
       success: true,
       message: `Wrote ${incoming.length} company(ies) to Companies tab (${input.mode}). Total now ${next.length} for project ${input.projectId}.`,
@@ -169,6 +196,9 @@ Prefer mode=merge. Pass projectId from the outreachCommand browsing context.`;
         mode: input.mode,
         writtenCount: incoming.length,
         totalCount: next.length,
+        writtenRowIds: uniqueWrittenRowIds,
+        createdCount,
+        updatedCount,
         companies: next.slice(0, 25).map((company) => ({
           id: company.id,
           name: company.name,

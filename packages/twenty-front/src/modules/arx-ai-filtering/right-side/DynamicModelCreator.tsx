@@ -193,7 +193,7 @@ const DynamicModelCreator: React.FC<DynamicModelCreatorProps> = ({
           prompt: config.prompt,
           fields: config.fields || [],
           selectedMetadataFields: config.selectedMetadataFields || [],
-          selectedModel: config.selectedModel || 'gpt4omini',
+          selectedModel: config.selectedModel || 'gpt6luna',
           bestOf: config.bestOf || 1,
         });
         updateEnrichment(normalized);

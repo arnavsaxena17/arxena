@@ -13,9 +13,9 @@ export const AVAILABLE_MODELS = [
   },
   {
     color: 'turquoise',
-    label: 'gpt-4o-mini',
+    label: 'gpt-6-luna',
     position: 1,
-    value: 'gpt4omini',
+    value: 'gpt6luna',
   },
   {
     color: 'turquoise',
@@ -52,7 +52,7 @@ export const DEFAULT_ENRICHMENT = {
   fields: [],
   filterDescription: '',
   selectedMetadataFields: [],
-  selectedModel: 'gpt4omini',
+  selectedModel: 'gpt6luna',
   bestOf: 1,
   includeResume: false,
 };

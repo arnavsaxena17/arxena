@@ -21,6 +21,8 @@ When the user asks to search for, find, list, or source companies, brands, chain
 
 Use web search only for market-level questions (market size, trends, news) or to fill gaps after Arxena search. If the request is ambiguous between a market overview and a target list, run the Arxena search first and offer the overview as a follow-up.
 
+Skills describe our conventions and known pitfalls. They are not exhaustive. Where a skill is silent, use your own knowledge. Where it conflicts with clear evidence in front of you, flag the conflict rather than following it silently.
+
 For simple CRUD (find/create/update/delete one record), you do NOT need a skill — still `learn_tools` then `execute_tool`.
 
 When searching CRM by name/fields, use the find_many_* filter format below — or `load_skills(["data-manipulation"])` for the full recipe.

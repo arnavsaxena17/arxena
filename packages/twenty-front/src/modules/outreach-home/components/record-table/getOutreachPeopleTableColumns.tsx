@@ -81,11 +81,11 @@ const getRunStatusLabel = (person: OutreachPersonRow) =>
     : '';
 
 export const getOutreachPeopleTableColumns = ({
-  companiesByWorkingSetId,
+  companiesByTabId,
   ownerNameByCandidateId = {},
   onOpenPerson,
 }: {
-  companiesByWorkingSetId: Record<string, OutreachCompanyRow>;
+  companiesByTabId: Record<string, OutreachCompanyRow>;
   ownerNameByCandidateId?: Record<string, string>;
   onOpenPerson: (person: OutreachPersonRow) => void;
 }): OutreachRecordTableColumn<OutreachPersonRow>[] => [
@@ -123,7 +123,7 @@ export const getOutreachPeopleTableColumns = ({
           name={person.companyName}
           avatarType="squared"
           avatarUrl={getLogoUrlFromDomainName(
-            companiesByWorkingSetId[person.companyId]?.domain,
+            companiesByTabId[person.companyId]?.domain,
             REACT_APP_SERVER_BASE_URL,
           )}
         />

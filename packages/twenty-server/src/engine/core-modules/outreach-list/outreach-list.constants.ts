@@ -8,6 +8,7 @@ export const OUTREACH_LIST_FREE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 // Sources that bill per record
 export const OUTREACH_LIST_PAID_SOURCES: readonly OutreachListSource[] = [
   'bright_data',
+  'harvest',
 ];
 
 export const OUTREACH_LIST_MAX_ROWS = 20_000;

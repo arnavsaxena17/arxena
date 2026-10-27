@@ -14,10 +14,16 @@ Search returns snapshots. Profile fetch turns a snapshot's LinkedIn URL into the
 | `sourcing.md` | head | always: vocabulary, funnel, destinations, source order, result lists, write contract |
 | `sourcing-people.md`, `-companies.md`, `-people-by-company.md` | search types | by route |
 | `sourcing-playbook-scored-list.md`, `-playbook-company-first.md`, `-playbook-shortfall.md` | playbooks (the first two bring the shortfall one) | by route |
-| `sourcing-scoring.md` | scoring | with scored list |
-| `sourcing-know-profiles.md`, `-know-seniority.md` | knowledge | on demand |
+| `sourcing-scoring.md` | scoring: fitment, worthiness, climb rules, approvals | with scored list / inbound |
+| `sourcing-for-recruiting.md`, `-for-sales.md` | purpose: candidates for a role, or prospects. Each brings `rubrics` and its admission playbook | by purpose |
+| `sourcing-rubrics.md` | rubric archetypes (`title-led`, `company-led`, `skill-led`, `scale-led`, `candidate-led`) and how weights turn into a score | with a purpose |
+| `sourcing-query-planning.md` | queries, variants, probe, then scale (brings shortfall / title synonyms) | with large list |
+| `sourcing-playbook-large-list.md` | about 1,000 rows or more (brings query planning and shortfall) | by route |
+| `sourcing-playbook-recruiting-admission.md`, `-sales-admission.md` | what puts someone on the core list (the People tab) | with a purpose |
+| `sourcing-inbound-applicants.md` | applicants to a posting (no tool reads them yet) | by route |
+| `sourcing-src-naukri.md` | Naukri Resdex and Hiring through the Chrome extension | when named |
 | `sourcing-src-<source>.md` | one per source | people and companies bring Bright Data; the rest only when named or as a fallback |
-| `fragments/profile-reading.md`, `title-seniority.md`, `fitment-rules.md` | shared text | included in the sections above and readable from server prompts with `getSkillFragment(name)` |
+| `fragments/profile-reading.md`, `title-seniority.md`, `fitment-rules.md`, `evidence-ladder.md`, `later-checks.md`, `worthiness-gates.md`, `bright-data-ludicrous-budget.md`, `admission-shared.md`, `boolean-title-strings.md` | shared text | included in the sections above and readable from server prompts with `getSkillFragment(name)` |
 
 Front matter on `sourcing.md` lists `parts` (order and names), `requires` (a section brings others) and `defaultSections` (used when `load_skills` gets no `sections`). A part `x` is the file `sourcing-x.md`.
 
@@ -32,6 +38,19 @@ Front matter on `sourcing.md` lists `parts` (order and names), `requires` (a sec
 
 Create `sourcing-src-<name>.md`, add `src-<name>` to `parts`, add a row to **Source order** in the head, and put any provider marker comments around its text.
 
+## Purpose, evidence and approvals
+
+- **Purpose.** The head asks the agent to decide recruiting or sales from the project and the request, and to load `for-recruiting` or `for-sales`. The core list is the People tab in both.
+- **Later checks.** Pay, notice, age, willingness and proof are not on profiles. The head says to list them in the brief and never score them: an unknown must-have fails a row at the profile stage, so scoring them would fail every row.
+- **Age.** Ignored unless the user states a hard cap more than once. Then only Naukri's native filter is used. LinkedIn is never filtered on age, because the only proxy (first-job or education year) drops people who leave those dates out.
+- **Evidence levels.** Snapshot, full profile, CV (`fragments/evidence-ladder.md`). Only `snapshot` and `profile` exist as fitment stages; Naukri and CV rows are scored as `profile`. A CV stage would need a code change in `fitment-score.util.ts` and is not built.
+- **Approvals by effect.** Reads, fetches and enrichment inside the caps approved once need no yes. Going past a cap, sending a CV, a profile or a shortlist outside the project, messaging, enrolling, saving to the CRM and deleting do (`sourcing-scoring.md`).
+- **Naukri.** Ask AI cannot start a crawl: the extension bridge tools (`resdex_crawl` and the others in `extension-bridge-tools.ts`) are not in `ARXENA_TOOL_CATALOG`. The skill tells the user what to run; the uploaded rows reach the People tab through `/candidate-sourcing/upload-profiles`.
+
+## Evals
+
+`src/engine/metadata-modules/ai/ai-chat/__tests__/sourcing-eval/` holds scenario files (a requirement, scripted user replies, expected tool calls and a constraint map), a runner that gives the real skill text and a real model stubbed tools, and a live spec gated by `SOURCING_LIVE_EVAL=1`. It tests what the agent chooses, not what the sources return, so tool results are fixed stubs. See its `README.md`.
+
 ## Open items
 
 Facts only the team has; the drafts are in the files, please correct and extend:
@@ -39,8 +58,12 @@ Facts only the team has; the drafts are in the files, please correct and extend:
 - `src-linkedin`: Unipile schema, result types, endpoints, guardrails, costs, the 1,000-result cap and how to slice queries, rate limits.
 - `src-harvest`: Sales Navigator and People API fields; which are snapshot fields and which need a profile fetch.
 - `src-serp`: query patterns that work, cost.
-- `know-profiles`, `know-seniority`: drafts from general knowledge. Add industry, function and geography guidance (for instance a `know-industry-<x>` part per industry).
+- Title / profile knowledge lives in `fragments/title-seniority.md` (via shortfall) and `fragments/profile-reading.md` + `worthiness-gates.md` (via scoring). Add industry guidance as a new part when needed (`know-industry-<x>`).
 - Per source: which fields can be filtered, which come on the snapshot, which only on the full profile.
+- `src-naukri`: limits, the Resdex filters the extension sets (only titles and companies were seen in `deliverResdexQuery`), and whether the extension tools should be exposed to chat.
+- `inbound-applicants`: Unipile Classic job-posting and applicant endpoints are unverified and no tool reads them.
+- Rubric archetype names are a proposal.
+- Measured yields per stage: they depend on the exact query wording, so the skill measures them with a probe instead of stating them.
 
 ## Fitment scoring
 
@@ -61,9 +84,11 @@ The agreed brief is written once with `get_sourcing_ledger({ projectId, brief })
 ## Keeping the context small
 
 Every model step re-reads the whole conversation, so steps are the cost.
+
 - `run_ai_column` waits for the run (`waitSeconds`, default 150, max 240) and `get_ai_column_run_status` waits too (default 120). The skill says to check at most once a minute. Real chats averaged 10 to 50 polls per run before this.
 - `search_linkedin_continue` takes `maxPages` (up to 50) and `maxRows` (default 1000) and follows the cursor on the server. The result carries `autoContinue` (pages, rows, why it stopped) and the cursor to carry on from. A failing page keeps the pages already read.
-- Rows stay out of the chat: `summarize`, `outreach_list` `peek` (10 rows at most), no `code_interpreter` or `extract_json_paths` on a list.
+- Rows stay out of the chat: `get_outreach_tab` `summarize`, `outreach_list` `peek` (10 rows at most, overflow only), no `code_interpreter` or `extract_json_paths` on a list.
+- Find writes: pass `projectId` on the search so the tab is written; do not `outreach_list` `attach` afterward. Attach is overflow when the search had no `projectId`.
 
 ## When there are not enough results
 
@@ -83,4 +108,3 @@ Three env variables, one per kind of yes/no, because a wrong answer costs differ
 - Ledger entries for searches whose list is not attached to the project. Bright Data fetches that write straight to a tab may be among them; I did not check.
 - `ask_questions` over MCP (text fallback) and the CORE trim of sourcing text.
 - Generating the Source order table from config.
-- Renaming stored rows: run `upgrade:2-25:rename-search-skill-to-sourcing`.

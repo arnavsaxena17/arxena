@@ -20,6 +20,9 @@ export type OutreachConfig = {
   sendWindowDays?: string | null;
   icpSpec?: OutreachProjectIcpSpec | null;
   experimentConfig?: OutreachConfigExperiment | null;
+  // Free text: which personas the client targets and how each should be
+  // messaged. Fed into the sequencer qualify and draft prompts.
+  personaGuidance?: string | null;
   updatedAt?: string | null;
 };
 
@@ -32,6 +35,7 @@ export const DEFAULT_OUTREACH_CONFIG_VALUES: Omit<OutreachConfig, 'v'> = {
   sendWindowDays: '0,1,2,3,4,5,6',
   icpSpec: null,
   experimentConfig: null,
+  personaGuidance: null,
 };
 
 const readString = (
@@ -157,6 +161,7 @@ export const parseOutreachConfig = (value: unknown): OutreachConfig | null => {
     sendWindowDays: readString(record, 'sendWindowDays'),
     icpSpec: parseIcpSpecObject(record.icpSpec),
     experimentConfig: parseExperimentConfigObject(record.experimentConfig),
+    personaGuidance: readString(record, 'personaGuidance'),
     updatedAt: readString(record, 'updatedAt'),
   };
 };
@@ -245,6 +250,9 @@ export const resolveOutreachConfigExperimentConfigString = (
   return flatFallback ?? null;
 };
 
+export const resolveOutreachConfigPersonaGuidance = (config: unknown): string =>
+  parseOutreachConfig(config)?.personaGuidance?.trim() ?? '';
+
 export const mergeLegacyProjectFieldsIntoConfig = ({
   existingConfig,
   maxPersonasPerCompany,
@@ -302,6 +310,9 @@ export const mergeLegacyProjectFieldsIntoConfig = ({
       parsedExisting?.experimentConfig ??
       parseExperimentConfigObject(experimentConfig) ??
       DEFAULT_OUTREACH_CONFIG_VALUES.experimentConfig,
+    personaGuidance:
+      parsedExisting?.personaGuidance ??
+      DEFAULT_OUTREACH_CONFIG_VALUES.personaGuidance,
     updatedAt: new Date().toISOString(),
   };
 };
@@ -332,6 +343,7 @@ export const applyOutreachConfigPatch = ({
     sendWindowDays: base.sendWindowDays ?? '0,1,2,3,4,5,6',
     icpSpec: base.icpSpec ?? null,
     experimentConfig: base.experimentConfig ?? null,
+    personaGuidance: base.personaGuidance?.trim() || null,
     updatedAt: base.updatedAt ?? nowIso,
   };
 };

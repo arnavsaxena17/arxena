@@ -95,7 +95,7 @@ export class StageWiseClassification {
 
     try {
       const completion = await openAIclient.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: 'gpt-6-luna',
         messages: messagesToLLM,
         response_format: toOpenAiJsonSchemaResponseFormat(
           conversationStageSchema,

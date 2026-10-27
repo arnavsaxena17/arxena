@@ -79,7 +79,7 @@ export const matchesOutreachPeopleQueueFilter = (
   }
 };
 
-// All = full working set; enrolled (CRM stage) float to the top so progress
+// All = full tab; enrolled (CRM stage) float to the top so progress
 // is not buried under Redis discovery rows that stay Queued.
 export const resolveOutreachPeopleQueueRows = (
   people: OutreachPersonRow[],

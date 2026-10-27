@@ -42,7 +42,10 @@ export const DEFAULT_FILTER_BATCH_SIZE = 10;
 const MAX_CONCURRENCY = 100;
 const MAX_BATCH_SIZE = 25;
 const OPENAI_ATTEMPTS = 4;
-const OPENAI_FALLBACK_MODEL = 'gpt-4o-mini';
+// Default non-web chat model (OpenRouter). Web-search columns still use
+// gpt-6-luna on OpenAI for the Responses API web_search tool.
+const OPENAI_FALLBACK_MODEL = 'deepseek/deepseek-v4-flash-0731';
+const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 // Rows in flight for a web lookup. Each provider has its own, lower limit, so
 // this only has to be wide enough to keep every provider of the chain busy.
 const DEFAULT_WEB_CONCURRENCY = 32;
@@ -50,19 +53,25 @@ const WEB_SEARCH_CALL_USD = 0.025;
 
 // USD per 1M tokens (input, output).
 const PRICE_PER_MILLION_TOKENS: Record<string, [number, number]> = {
-  'gpt-4o-mini': [0.15, 0.6],
+  'gpt-6-luna': [0.15, 0.6],
   'gpt-4o': [2.5, 10],
+  'deepseek/deepseek-v4-flash-0731': [0.044, 0.133],
 };
 
 const OPENAI_MODEL_ALIASES: Record<string, string> = {
   gpt35turbo: 'gpt-3.5-turbo',
-  gpt51chatlatest: 'gpt-4o-mini',
+  gpt51chatlatest: 'gpt-6-luna',
   gpt54mini: 'gpt-5.4-mini',
   gpt4o: 'gpt-4o',
-  gpt4omini: 'gpt-4o-mini',
-  // Web search runs on gpt-4o-mini through the Responses API web_search tool.
-  gpt4ominisearchpreview: 'gpt-4o-mini',
+  gpt6luna: OPENAI_FALLBACK_MODEL,
+  deepseek: OPENAI_FALLBACK_MODEL,
+  'deepseek-v4-flash-0731': OPENAI_FALLBACK_MODEL,
+  // Web search runs on gpt-6-luna through the Responses API web_search tool.
+  gpt4ominisearchpreview: 'gpt-6-luna',
 };
+
+const usesOpenRouter = (model: string): boolean =>
+  model.startsWith('deepseek/') || model === 'deepseek';
 
 const clamp = (value: number | undefined, fallback: number, max: number) =>
   typeof value === 'number' && Number.isFinite(value) && value >= 1
@@ -124,6 +133,7 @@ const sleep = (milliseconds: number) =>
 export class AiFilterEngineService {
   private readonly logger = new Logger(AiFilterEngineService.name);
   private openAiClient: OpenAI | null = null;
+  private openRouterClient: OpenAI | null = null;
   private readonly providerLimiters = new Map<WebSearchProviderId, Sema>();
 
   constructor(
@@ -278,8 +288,7 @@ export class AiFilterEngineService {
 
   protected getOpenAiClient(): OpenAI {
     if (!this.openAiClient) {
-      const apiKey =
-        process.env.OPENAI_API_KEY?.trim();
+      const apiKey = process.env.OPENAI_API_KEY?.trim();
 
       if (!apiKey) {
         throw new Error('OPENAI_API_KEY is required for the AI filter.');
@@ -289,6 +298,31 @@ export class AiFilterEngineService {
     }
 
     return this.openAiClient;
+  }
+
+  private getOpenRouterClient(): OpenAI {
+    if (!this.openRouterClient) {
+      const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+
+      if (!apiKey) {
+        throw new Error(
+          'OPENROUTER_API_KEY is required for DeepSeek AI column runs.',
+        );
+      }
+
+      this.openRouterClient = new OpenAI({
+        apiKey,
+        baseURL: OPENROUTER_BASE_URL,
+      });
+    }
+
+    return this.openRouterClient;
+  }
+
+  private getChatClient(model: string): OpenAI {
+    return usesOpenRouter(model)
+      ? this.getOpenRouterClient()
+      : this.getOpenAiClient();
   }
 
   private resolveOpenAiModel(model: string): string {
@@ -462,7 +496,9 @@ export class AiFilterEngineService {
       return response.output_text;
     }
 
-    const completion = await this.getOpenAiClient().chat.completions.create({
+    const completion = await this.getChatClient(
+      stats.model,
+    ).chat.completions.create({
       model: stats.model,
       temperature: 0,
       messages: [
@@ -630,7 +666,9 @@ export class AiFilterEngineService {
       stats.groundedSearches += 1;
       stats.groundedSearchCostUsd += evidence.costUsd;
 
-      const completion = await this.getOpenAiClient().chat.completions.create({
+      const completion = await this.getChatClient(
+        stats.model,
+      ).chat.completions.create({
         model: stats.model,
         temperature: 0,
         messages: [
@@ -673,7 +711,9 @@ export class AiFilterEngineService {
     spec: FilterSpec;
     stats: FilterRunStats;
   }): Promise<string> {
-    const completion = await this.getOpenAiClient().chat.completions.create({
+    const completion = await this.getChatClient(
+      stats.model,
+    ).chat.completions.create({
       model: stats.model,
       temperature: 0,
       max_tokens: 40,

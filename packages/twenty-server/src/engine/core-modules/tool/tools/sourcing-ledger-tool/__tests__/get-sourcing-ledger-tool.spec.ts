@@ -1,4 +1,4 @@
-import { type OutreachWorkingSetRow } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+import { type OutreachTabRow } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
 import { type SourcingLedgerEvent } from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
 import { GetSourcingLedgerTool } from 'src/engine/core-modules/tool/tools/sourcing-ledger-tool/get-sourcing-ledger-tool';
 
@@ -11,7 +11,7 @@ const profile = {
 const row = (
   id: string,
   otherFields: Record<string, unknown>,
-): OutreachWorkingSetRow => ({
+): OutreachTabRow => ({
   id,
   source: 'ephemeral',
   name: id,

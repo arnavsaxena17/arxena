@@ -114,11 +114,11 @@ export class BrightDataLudicrousPlannerService {
 
     const fields = BRIGHT_DATA_LUDICROUS_DEFAULT_VIEW_FIELDS[input.entity];
     const rubric = toRubric(generated.rubric);
-    const planId = randomUUID();
+    const listId = randomUUID();
     const { estimates, sampleDocuments, estimateCostUsd } =
       await this.probeShards({
         input,
-        planId,
+        listId,
         shards,
         fields,
         generated,
@@ -149,7 +149,7 @@ export class BrightDataLudicrousPlannerService {
     );
 
     const plan: BrightDataLudicrousPlan = {
-      planId,
+      listId,
       workspaceId: input.workspaceId,
       entity: input.entity,
       rawQuery: input.rawQuery,
@@ -206,7 +206,7 @@ export class BrightDataLudicrousPlannerService {
     });
 
     return [
-      `Bright Data plan ${plan.planId} (${plan.entity})`,
+      `Bright Data plan ${plan.listId} (${plan.entity})`,
       `  raw query: ${plan.rawQuery}`,
       `  intent: ${plan.intentSummary}`,
       `  relevance: ${plan.relevanceCriteria}`,
@@ -400,14 +400,14 @@ export class BrightDataLudicrousPlannerService {
 
   private async probeShards({
     input,
-    planId,
+    listId,
     shards,
     fields,
     generated,
     rubric,
   }: {
     input: BrightDataLudicrousEstimateInput;
-    planId: string;
+    listId: string;
     shards: BrightDataLudicrousShard[];
     fields: string[];
     generated: BrightDataLudicrousPlanLlmOutput;
@@ -461,7 +461,7 @@ export class BrightDataLudicrousPlannerService {
               workspaceId: input.workspaceId,
               recordCount: page.documents.length,
               entity: input.entity,
-              planId,
+              listId,
               userWorkspaceId: input.userWorkspaceId,
             });
 

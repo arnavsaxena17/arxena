@@ -31,7 +31,7 @@ export class CleanupService {
       const userPrompt = QueryCleanupPrompts.getUserPrompt(rawQuery);
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: 'gpt-6-luna',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },

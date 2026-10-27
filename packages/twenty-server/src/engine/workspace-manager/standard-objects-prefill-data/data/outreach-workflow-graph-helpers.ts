@@ -8,6 +8,9 @@ export const OUTREACH_WF_ERROR_HANDLING = {
 
 export const OUTREACH_WF_MEMBER_STEP_ID =
   'b8e1d001-4a11-4c11-8c11-000000000001';
+// Candidate's project, loaded once above the stage router (persona guidance).
+export const OUTREACH_WF_PROJECT_STEP_ID =
+  'b8e1d002-4a11-4c11-8c11-000000000001';
 /** Separate member path for "no company name" so IF_ELSE skip does not kill the company path join. */
 export const OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID =
   'c7a10007-4a11-4c11-8c11-000000000001';
@@ -25,6 +28,7 @@ export const OUTREACH_WF_FIELD = {
   candidateId: '__FIELD_candidate.id__',
   personId: '__FIELD_person.id__',
   workspaceMemberId: '__FIELD_workspaceMember.id__',
+  projectRecordId: '__FIELD_project.id__',
   chatCandidateId: '__FIELD_chatMessage.candidateId__',
   chatCreatedAt: '__FIELD_chatMessage.createdAt__',
   outreachSequenceStage: '__FIELD_candidate.outreachSequenceStage__',
@@ -388,6 +392,10 @@ export const gtmWfMemberEmail = (
 export const gtmWfMemberSenderProfile = (
   memberStepId: string = OUTREACH_WF_MEMBER_STEP_ID,
 ) => v(memberStepId, 'first.outreachSenderProfile');
+
+export const gtmWfProjectPersonaGuidance = (
+  projectStepId: string = OUTREACH_WF_PROJECT_STEP_ID,
+) => v(projectStepId, 'first.outreachConfig.personaGuidance');
 
 export const gtmWfFindId = (findStepId: string) => v(findStepId, 'first.id');
 
@@ -1592,6 +1600,23 @@ export const gtmWfMemberStep = (
           filterLabel: 'Id',
         }
       : {}),
+    nextStepIds,
+  });
+
+export const gtmWfProjectStep = ({
+  candidateFindId,
+  nextStepIds,
+}: {
+  candidateFindId: string;
+  nextStepIds: string[];
+}): StepBase =>
+  gtmWfFindRecordsStep({
+    id: OUTREACH_WF_PROJECT_STEP_ID,
+    name: 'Load project',
+    objectName: 'project',
+    fieldMetadataId: OUTREACH_WF_FIELD.projectRecordId,
+    filterValue: gtmWfFindField(candidateFindId, 'projectId'),
+    filterLabel: 'Id',
     nextStepIds,
   });
 

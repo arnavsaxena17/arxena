@@ -3,6 +3,10 @@ import {
   buildBrightDataPersonOtherFields,
 } from 'src/engine/core-modules/bright-data/utils/bright-data-business-search.util';
 import {
+  readHarvestLeadFields,
+  readHarvestLocationText,
+} from 'src/engine/core-modules/org-chart/utils/harvest-lead-fields.util';
+import {
   type OutreachListEntity,
   type OutreachListRow,
   type OutreachListSource,
@@ -167,6 +171,33 @@ const fromLinkedinPerson = (item: UnknownRecord) => {
   });
 };
 
+const fromHarvestLead = (item: UnknownRecord) => {
+  const lead = readHarvestLeadFields(item);
+
+  return buildOutreachListRow('people', 'harvest', {
+    id: lead.id,
+    name:
+      lead.fullName ||
+      [lead.firstName, lead.lastName].filter(Boolean).join(' '),
+    title: lead.title,
+    companyName: lead.companyName,
+    linkedinUrl: lead.linkedinUrl,
+    location: lead.location,
+  });
+};
+
+const fromHarvestAccount = (item: UnknownRecord) =>
+  buildOutreachListRow('company', 'harvest', {
+    id: pick(item, ['id']),
+    name: pick(item, ['name']),
+    website: pick(item, ['website']),
+    linkedinUrl: pick(item, ['linkedinUrl']),
+    industry: pick(item, ['industry']),
+    location: readHarvestLocationText(item.location),
+    size: pick(item, ['employeeCountRange', 'employeeDisplayCount']),
+    about: pick(item, ['description']),
+  });
+
 const fromExaResult = (
   entity: OutreachListEntity,
   result: UnknownRecord,
@@ -203,6 +234,8 @@ export type NormalizedToolOutput = {
   // every page of one search lands in the same list
   signatureArgs: Record<string, unknown>;
   label: string;
+  // What the provider billed for these rows, added to the list's spend
+  spentUsd?: number;
 };
 
 const PAGING_ARGUMENTS = new Set([
@@ -214,6 +247,8 @@ const PAGING_ARGUMENTS = new Set([
   'cursor',
   'start',
   'numResults',
+  // Destination only — same search must share one list across projects
+  'projectId',
 ]);
 
 const withoutPaging = (
@@ -234,8 +269,13 @@ export const OUTREACH_LIST_SOURCE_TOOLS = [
   'search_linkedin_people',
   'search_linkedin_from_url',
   'search_linkedin_continue',
+  'search_harvest_leads',
+  'search_harvest_accounts',
   'exa_web_search',
   'app_exa_web_search',
+  'search_people_index',
+  'search_companies_index',
+  'search_wikidata_companies',
 ] as const;
 
 export const isOutreachListSourceTool = (toolName: string): boolean =>
@@ -324,6 +364,48 @@ export const normalizeToolOutputToListRows = (
       : null;
   }
 
+  if (
+    toolName === 'search_harvest_leads' ||
+    toolName === 'search_harvest_accounts'
+  ) {
+    const items = isRecord(root) ? arrayAt(root, ['items']) : [];
+    const isCompany = toolName === 'search_harvest_accounts';
+    const rows = compact(
+      items
+        .filter(isRecord)
+        .map(isCompany ? fromHarvestAccount : fromHarvestLead),
+    );
+    const costUsd =
+      isRecord(root) && typeof root.costUsd === 'number' ? root.costUsd : 0;
+    const filters = Object.fromEntries(
+      Object.entries(
+        isRecord(args.searchParameters) ? args.searchParameters : {},
+      ).map(([key, value]) => [
+        key,
+        Array.isArray(value) ? value.map(asText).join(', ') : value,
+      ]),
+    );
+
+    return rows.length > 0
+      ? {
+          entity: isCompany ? 'company' : 'people',
+          source: 'harvest',
+          rows,
+          signatureArgs,
+          label:
+            label ||
+            asText(
+              filters.search ??
+                filters.currentJobTitles ??
+                filters.headquarterLocations ??
+                filters.locations ??
+                '',
+            ),
+          spentUsd: costUsd,
+        }
+      : null;
+  }
+
   if (toolName === 'exa_web_search' || toolName === 'app_exa_web_search') {
     const results = isRecord(root) ? arrayAt(root, ['results']) : [];
     const entity: OutreachListEntity =
@@ -337,7 +419,97 @@ export const normalizeToolOutputToListRows = (
       : null;
   }
 
+  if (toolName === 'search_people_index') {
+    const items = isRecord(root) ? arrayAt(root, ['items']) : [];
+    const rows = compact(items.filter(isRecord).map(fromPeopleIndexItem));
+
+    return rows.length > 0
+      ? {
+          entity: 'people',
+          source: 'other',
+          rows,
+          signatureArgs,
+          label: label || asText(args.personName ?? args.jobTitle ?? ''),
+        }
+      : null;
+  }
+
+  if (toolName === 'search_companies_index') {
+    const items = isRecord(root) ? arrayAt(root, ['items']) : [];
+    const rows = compact(items.filter(isRecord).map(fromCompaniesIndexItem));
+
+    return rows.length > 0
+      ? {
+          entity: 'company',
+          source: 'other',
+          rows,
+          signatureArgs,
+          label: label || asText(args.companyName ?? args.query ?? ''),
+        }
+      : null;
+  }
+
+  if (toolName === 'search_wikidata_companies') {
+    const companies = isRecord(root) ? arrayAt(root, ['companies']) : [];
+    const rows = compact(companies.filter(isRecord).map(fromWikidataCompany));
+
+    return rows.length > 0
+      ? {
+          entity: 'company',
+          source: 'other',
+          rows,
+          signatureArgs,
+          label: label || asText(args.name ?? args.domain ?? ''),
+        }
+      : null;
+  }
+
   return null;
+};
+
+const fromPeopleIndexItem = (item: UnknownRecord) =>
+  buildOutreachListRow('people', 'other', {
+    id: pick(item, ['id', '_id']),
+    name: pick(item, ['full_name', 'name']),
+    title: pick(item, ['job_title', 'title']),
+    companyName: pick(item, ['job_company_name', 'company_name']),
+    linkedinUrl: pick(item, ['linkedin_url', 'linkedinUrl']),
+    location: pick(item, ['location_name', 'location']),
+    country: pick(item, ['country']),
+  });
+
+const fromCompaniesIndexItem = (item: UnknownRecord) =>
+  buildOutreachListRow('company', 'other', {
+    id: pick(item, ['id']),
+    name: pick(item, ['name']),
+    website: pick(item, ['website']),
+    domain: pick(item, ['website']),
+    linkedinUrl: pick(item, ['linkedin_url']),
+    industry: pick(item, ['industry']),
+    location: pick(item, ['location_name', 'locality']),
+    country: pick(item, ['country']),
+    size: pick(item, ['size']),
+  });
+
+const fromWikidataCompany = (company: UnknownRecord) => {
+  const headquarters = isRecord(company.headquarters)
+    ? company.headquarters
+    : {};
+
+  return buildOutreachListRow('company', 'other', {
+    id: pick(company, ['wikidataId']),
+    name: pick(company, ['companyName', 'legalName']),
+    website: pick(company, ['website']),
+    domain: pick(company, ['companyDomain', 'website']),
+    industry: pick(company, ['industry']),
+    location: pick(headquarters, ['label', 'city']),
+    country: pick(company, ['country']) || pick(headquarters, ['country']),
+    size:
+      typeof company.employeeCount === 'number'
+        ? String(company.employeeCount)
+        : '',
+    about: pick(company, ['description']),
+  });
 };
 
 const text = (value: unknown): string => asText(value);

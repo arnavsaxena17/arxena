@@ -261,7 +261,7 @@ export class JDParserService {
         { workspaceId, feature: 'JD_PARSE', keySource: 'platform' },
         this.openai,
         {
-        model: 'gpt-4o-mini',
+        model: 'gpt-6-luna',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: enrichedJdText },

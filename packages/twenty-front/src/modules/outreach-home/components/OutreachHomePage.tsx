@@ -4,7 +4,10 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { useStore } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { buildProjectConfigUpdate } from 'twenty-shared/arx';
+import {
+  buildProjectConfigUpdate,
+  resolveOutreachConfigPersonaGuidance,
+} from 'twenty-shared/arx';
 import { isDefined } from 'twenty-shared/utils';
 import { Loader } from 'twenty-ui/feedback';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
@@ -26,7 +29,7 @@ import { OutreachRunProgressHeader } from '@/outreach-home/components/OutreachRu
 import { OutreachSetupPanel } from '@/outreach-home/components/OutreachSetupPanel';
 import { OutreachStatusBanners } from '@/outreach-home/components/OutreachStatusBanners';
 import { OUTREACH_PROJECT_ID_QUERY_PARAM } from '@/outreach-home/constants/outreach-command.constants';
-import { useOutreachLiveWorkingSet } from '@/outreach-home/hooks/useOutreachLiveWorkingSet';
+import { useOutreachLiveTab } from '@/outreach-home/hooks/useOutreachLiveTab';
 import { useOutreachWorkflowEmbed } from '@/outreach-home/hooks/useOutreachWorkflowEmbed';
 import {
   isSameOutreachContext,
@@ -137,8 +140,8 @@ const OutreachHomePageContent = () => {
     selectedPersonId,
     setSelectedPersonId,
     peopleTableInstanceId,
-    refreshPeopleWorkingSet,
-    refreshCompaniesWorkingSet,
+    refreshPeopleTab,
+    refreshCompaniesTab,
     aiColumnRun,
     aiTableViews,
     appendPeople,
@@ -150,7 +153,7 @@ const OutreachHomePageContent = () => {
     softDeletePeople,
     undoSoftDeletePeople,
     undoableDeletedPersonCount,
-  } = useOutreachLiveWorkingSet();
+  } = useOutreachLiveTab();
   const isSetupTab = activeTab === 'setup';
   const { openAskAiPageWithPreprompt } = useOpenAskAiPageWithPreprompt();
   const { updateOneRecord } = useUpdateOneRecord();
@@ -166,6 +169,7 @@ const OutreachHomePageContent = () => {
   const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
   const [isSavingSendSchedule, setIsSavingSendSchedule] = useState(false);
   const [isSavingOutreachPolicy, setIsSavingOutreachPolicy] = useState(false);
+  const [isSavingPersonaGuidance, setIsSavingPersonaGuidance] = useState(false);
   const [isUpdatingOutreachStatus, setIsUpdatingOutreachStatus] =
     useState(false);
   const { workflowRunId } = useOutreachWorkflowEmbed({
@@ -411,6 +415,38 @@ const OutreachHomePageContent = () => {
     }
   };
 
+  const handleSavePersonaGuidance = async (personaGuidance: string) => {
+    if (!isDefined(activeProjectId)) {
+      enqueueErrorSnackBar({
+        message: 'Create or select a GTM project before saving personas.',
+      });
+      return;
+    }
+
+    setIsSavingPersonaGuidance(true);
+
+    try {
+      await updateOneRecord({
+        objectNameSingular: 'project',
+        idToUpdate: activeProjectId,
+        updateOneRecordInput: {
+          ...buildProjectConfigUpdate({
+            existingConfig: projectSettings.outreachConfig,
+            patch: { personaGuidance },
+          }),
+        },
+      });
+      enqueueSuccessSnackBar({ message: 'Message personas saved' });
+    } catch (error) {
+      enqueueErrorSnackBar({
+        message:
+          error instanceof Error ? error.message : 'Failed to save personas.',
+      });
+    } finally {
+      setIsSavingPersonaGuidance(false);
+    }
+  };
+
   const updateOutreachStatus = useCallback(
     async (action: 'pause' | 'resume') => {
       if (!isDefined(activeProjectId)) {
@@ -587,7 +623,7 @@ const OutreachHomePageContent = () => {
                   onSelectPersonId={setSelectedPersonId}
                   tableInstanceId={peopleTableInstanceId}
                   isLoading={peopleLoading}
-                  onRefresh={refreshPeopleWorkingSet}
+                  onRefresh={refreshPeopleTab}
                   aiColumnRun={aiColumnRun}
                   aiTableView={aiTableViews.people}
                   appendPeople={appendPeople}
@@ -606,7 +642,7 @@ const OutreachHomePageContent = () => {
                   onSelectCompanyId={setSelectedCompanyId}
                   onViewCompanyPeople={handleViewCompanyPeople}
                   isLoading={companiesLoading}
-                  onRefresh={refreshCompaniesWorkingSet}
+                  onRefresh={refreshCompaniesTab}
                   appendCompanies={appendCompanies}
                   softDeleteCompanies={softDeleteCompanies}
                   undoSoftDeleteCompanies={undoSoftDeleteCompanies}
@@ -636,6 +672,11 @@ const OutreachHomePageContent = () => {
                       }
                       isSavingOutreachPolicy={isSavingOutreachPolicy}
                       onSaveOutreachPolicy={handleSaveOutreachPolicy}
+                      personaGuidance={resolveOutreachConfigPersonaGuidance(
+                        projectSettings.outreachConfig,
+                      )}
+                      isSavingPersonaGuidance={isSavingPersonaGuidance}
+                      onSavePersonaGuidance={handleSavePersonaGuidance}
                       onFindCompanies={handleFindCompanies}
                       onFindPeople={handleFindPeople}
                     />

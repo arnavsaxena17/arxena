@@ -7,6 +7,7 @@ import {
 } from 'src/engine/core-modules/outreach-command/utils/chat-message-turns.util';
 import { flattenFatOutreachSenderProfile } from 'src/engine/core-modules/outreach-command/utils/flatten-fat-outreach-sender-profile.util';
 import { applyOutreachOpenerSeedRewrite } from 'src/engine/core-modules/outreach-command/utils/outreach-opener-assignment.util';
+import { rewriteAroundOutreachPersonaGuidance } from 'src/engine/core-modules/outreach-command/utils/outreach-persona-guidance.util';
 
 // Leave workflow template chips alone so resolveInput can still substitute them.
 export const isUnresolvedWorkflowTemplate = (value: string): boolean =>
@@ -787,7 +788,7 @@ const formatOutreachOpenerHookLines = (value: unknown): string[] => {
 // After resolveInput, objects land as JSON.stringify inside labeled sections.
 // Rewrite those sections so the model sees prose instead of raw dumps.
 // Also fills deferred opener shape/ask markers once the candidate id chip resolves.
-export const rewriteOutreachResolvedPromptSections = (
+const rewriteOutreachResolvedPromptSectionsShielded = (
   prompt: string,
 ): string => {
   if (
@@ -942,6 +943,12 @@ export const rewriteOutreachResolvedPromptSections = (
 
   return applyOutreachOpenerSeedRewrite(result);
 };
+
+export const rewriteOutreachResolvedPromptSections = (prompt: string): string =>
+  rewriteAroundOutreachPersonaGuidance(
+    prompt,
+    rewriteOutreachResolvedPromptSectionsShielded,
+  );
 
 const extractSectionValue = (
   text: string,

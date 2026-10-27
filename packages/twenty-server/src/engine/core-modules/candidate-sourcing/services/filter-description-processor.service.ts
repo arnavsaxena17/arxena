@@ -272,7 +272,7 @@ Guidelines:
             },
             this.openai,
             {
-              model: 'gpt-4o-mini',
+              model: 'gpt-6-luna',
               messages,
               response_format: toOpenAiJsonSchemaResponseFormat(
                 AIFilterModelSchema,
@@ -429,7 +429,7 @@ REUSE RULE: the table must not hold two columns for the same fact. When a reques
           { workspaceId, feature: 'FILTER_DESCRIPTION', keySource: 'platform' },
           this.openai,
           {
-            model: 'gpt-4o-mini',
+            model: 'gpt-6-luna',
             messages: [
               { role: 'system' as const, content: systemPrompt },
               { role: 'user' as const, content: `Request: ${description}` },
@@ -548,7 +548,7 @@ Write the summary as one short sentence, for example "Is CEO is Yes, Company emp
           { workspaceId, feature: 'FILTER_DESCRIPTION', keySource: 'platform' },
           this.openai,
           {
-            model: 'gpt-4o-mini',
+            model: 'gpt-6-luna',
             messages: [
               { role: 'system' as const, content: systemPrompt },
               { role: 'user' as const, content: `Request: ${description}` },

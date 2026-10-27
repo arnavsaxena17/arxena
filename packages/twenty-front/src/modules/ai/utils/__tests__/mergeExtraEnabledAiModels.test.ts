@@ -3,7 +3,7 @@ import { mergeExtraEnabledAiModels } from '@/ai/utils/mergeExtraEnabledAiModels'
 describe('mergeExtraEnabledAiModels', () => {
   const catalog = [
     { modelId: 'openai/gpt-4.1' },
-    { modelId: 'openai/gpt-4o-mini' },
+    { modelId: 'openai/gpt-6-luna' },
     { modelId: 'openrouter/deepseek/deepseek-v4-flash-0731' },
   ];
 
@@ -18,12 +18,12 @@ describe('mergeExtraEnabledAiModels', () => {
 
     expect(
       mergeExtraEnabledAiModels(enabled, catalog, [
-        'openai/gpt-4o-mini',
+        'openai/gpt-6-luna',
         'openrouter/deepseek/deepseek-v4-flash-0731',
       ]),
     ).toEqual([
       { modelId: 'openai/gpt-4.1' },
-      { modelId: 'openai/gpt-4o-mini' },
+      { modelId: 'openai/gpt-6-luna' },
       { modelId: 'openrouter/deepseek/deepseek-v4-flash-0731' },
     ]);
   });
@@ -31,11 +31,11 @@ describe('mergeExtraEnabledAiModels', () => {
   it('does not duplicate extras that are already enabled', () => {
     const enabled = [
       { modelId: 'openai/gpt-4.1' },
-      { modelId: 'openai/gpt-4o-mini' },
+      { modelId: 'openai/gpt-6-luna' },
     ];
 
     expect(
-      mergeExtraEnabledAiModels(enabled, catalog, ['openai/gpt-4o-mini']),
+      mergeExtraEnabledAiModels(enabled, catalog, ['openai/gpt-6-luna']),
     ).toEqual(enabled);
   });
 

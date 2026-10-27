@@ -399,7 +399,7 @@ export class AgentAsyncExecutorService {
 
           if (!this.jevEvaluationService.isConfigured()) {
             throw new AiException(
-              'AI_GATEWAY_API_KEY is required to run agents with TypeSafe Jev.',
+              'OPENROUTER_API_KEY is required to run agents with TypeSafe Jev.',
               AiExceptionCode.AGENT_EXECUTION_FAILED,
             );
           }

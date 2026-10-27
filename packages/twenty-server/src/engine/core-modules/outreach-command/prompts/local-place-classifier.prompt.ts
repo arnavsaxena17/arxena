@@ -1,4 +1,4 @@
-export const LOCAL_PLACE_CLASSIFIER_MODEL_ID = 'openai/gpt-4o-mini';
+export const LOCAL_PLACE_CLASSIFIER_MODEL_ID = 'openai/gpt-6-luna';
 
 export const LOCAL_PLACE_CLASSIFIER_SYSTEM_PROMPT = `You classify Google Maps place / business names for multi-outlet brand screening.
 

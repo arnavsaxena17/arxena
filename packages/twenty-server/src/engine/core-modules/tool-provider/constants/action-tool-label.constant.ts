@@ -13,13 +13,11 @@ export const ACTION_TOOL_IDS = [
   'send_files',
   'navigate_app',
   'highlight_org_chart',
-  'upsert_outreach_target_companies',
-  'upsert_outreach_target_people',
   'inspect_outreach_spreadsheet',
   'import_outreach_spreadsheet',
   'save_outreach_targets_to_crm',
   'start_outreach',
-  'get_outreach_working_set',
+  'get_outreach_tab',
   'find_role_at_companies',
   'fetch_profiles',
   'get_sourcing_ledger',
@@ -63,12 +61,6 @@ export const ACTION_TOOL_LABELS: Record<ActionToolId, ActionToolLabel> = {
   highlight_org_chart: {
     label: i18nLabel(msg`Highlight Org Chart`),
   },
-  upsert_outreach_target_companies: {
-    label: i18nLabel(msg`Upsert GTM Target Companies`),
-  },
-  upsert_outreach_target_people: {
-    label: i18nLabel(msg`Upsert GTM Target People`),
-  },
   inspect_outreach_spreadsheet: {
     label: i18nLabel(msg`Inspect Outreach Spreadsheet`),
   },
@@ -84,8 +76,8 @@ export const ACTION_TOOL_LABELS: Record<ActionToolId, ActionToolLabel> = {
   find_role_at_companies: {
     label: i18nLabel(msg`Find Role At Companies`),
   },
-  get_outreach_working_set: {
-    label: i18nLabel(msg`Get Outreach Working Set`),
+  get_outreach_tab: {
+    label: i18nLabel(msg`Get Outreach Tab`),
   },
   preview_sample_message_column: {
     label: i18nLabel(msg`Preview Sample Message Column`),

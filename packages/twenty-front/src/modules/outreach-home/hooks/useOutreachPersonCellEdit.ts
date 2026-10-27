@@ -220,17 +220,17 @@ export const useOutreachPersonCellEdit = ({
 
         // AI sample-message column is camelCase; candidate-sourcing
         // update-candidate-field-value snake_cases keys, so write via the
-        // working-set path that preserves camelCase.
+        // tab path that preserves camelCase.
         if (isOtherField && key === SAMPLE_LINKEDIN_MESSAGE_KEY) {
           if (!projectId) {
             throw new Error('Open an Outreach project first');
           }
 
           await axios.post(
-            `${REACT_APP_SERVER_BASE_URL}/outreach-command/working-set/patch-other-fields`,
+            `${REACT_APP_SERVER_BASE_URL}/outreach-command/tab/patch-other-fields`,
             {
               projectId,
-              subject: 'person',
+              tab: 'people',
               rowId: person.candidateId,
               values: buildSampleMessagePatchValues(person, value),
             },

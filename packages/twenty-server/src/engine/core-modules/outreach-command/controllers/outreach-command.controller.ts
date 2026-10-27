@@ -34,8 +34,9 @@ import {
   type SaveOutreachTargetsToCrmInput,
   SaveOutreachTargetsToCrmService,
 } from 'src/engine/core-modules/outreach-command/services/save-outreach-targets-to-crm.service';
-import { OutreachWorkingSetService } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+import { OutreachTabService } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
 import { OutreachTableViewService } from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
+import { type OutreachTableTab } from 'src/engine/core-modules/outreach-command/utils/outreach-cache-realtime.constants';
 import { SearchPeopleForCompanyService } from 'src/engine/core-modules/outreach-command/services/search-people-for-company.service';
 import { OutreachWorkspaceProfileProvisioningService } from 'src/engine/core-modules/outreach-command/services/outreach-workspace-profile-provisioning.service';
 import {
@@ -86,7 +87,7 @@ export class OutreachCommandController {
     private readonly outreachAiColumnRunService: OutreachAiColumnRunService,
     private readonly outreachMemberAssignmentService: OutreachMemberAssignmentService,
     private readonly outreachTableViewService: OutreachTableViewService,
-    private readonly outreachWorkingSetService: OutreachWorkingSetService,
+    private readonly outreachTabService: OutreachTabService,
     private readonly saveOutreachTargetsToCrmService: SaveOutreachTargetsToCrmService,
   ) {}
 
@@ -109,7 +110,7 @@ export class OutreachCommandController {
 
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-    const rows = await this.outreachWorkingSetService.getCrmCompanies(
+    const rows = await this.outreachTabService.getCrmCompanies(
       workspaceId,
       projectId,
     );
@@ -148,7 +149,7 @@ export class OutreachCommandController {
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
 
-    return this.outreachWorkingSetService.syncPeopleFound({
+    return this.outreachTabService.syncPeopleFound({
       workspaceId,
       projectId: body.projectId,
     });
@@ -614,7 +615,7 @@ export class OutreachCommandController {
     @Body()
     body: {
       projectId?: string;
-      subject?: 'person' | 'company';
+      tab?: OutreachTableTab;
       columnKeys?: string[];
     },
     @Req() request: { headers?: { authorization?: string } },
@@ -627,7 +628,8 @@ export class OutreachCommandController {
 
     const projectId = body?.projectId;
     const columnKeys = Array.isArray(body?.columnKeys) ? body.columnKeys : [];
-    const subject = body?.subject === 'company' ? 'company' : 'person';
+    const tab: OutreachTableTab =
+      body?.tab === 'companies' ? 'companies' : 'people';
 
     if (!isDefined(projectId) || projectId === 'project-id') {
       throw new HttpException('projectId is required', HttpStatus.BAD_REQUEST);
@@ -640,10 +642,10 @@ export class OutreachCommandController {
     try {
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const removed = await this.outreachWorkingSetService.removeAiColumns({
+      const removed = await this.outreachTabService.removeAiColumns({
         workspaceId,
         projectId,
-        subject,
+        tab,
         columnKeys,
       });
 
@@ -661,12 +663,12 @@ export class OutreachCommandController {
     }
   }
 
-  @Post('working-set/patch-other-fields')
-  async patchWorkingSetOtherFields(
+  @Post('tab/patch-other-fields')
+  async patchTabOtherFields(
     @Body()
     body: {
       projectId?: string;
-      subject?: 'person' | 'company';
+      tab?: OutreachTableTab;
       rowId?: string;
       values?: Record<string, unknown>;
     },
@@ -680,7 +682,8 @@ export class OutreachCommandController {
 
     const projectId = body?.projectId;
     const rowId = body?.rowId;
-    const subject = body?.subject === 'company' ? 'company' : 'person';
+    const tab: OutreachTableTab =
+      body?.tab === 'companies' ? 'companies' : 'people';
     const values =
       typeof body?.values === 'object' && body.values !== null
         ? body.values
@@ -701,10 +704,10 @@ export class OutreachCommandController {
     try {
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const written = await this.outreachWorkingSetService.writeOtherFields({
+      const written = await this.outreachTabService.writeOtherFields({
         workspaceId,
         projectId,
-        subject,
+        tab,
         valuesByRowId: new Map([[rowId, values]]),
       });
 
@@ -714,11 +717,9 @@ export class OutreachCommandController {
         throw error;
       }
 
-      this.logger.error('Patch working-set otherFields failed', error);
+      this.logger.error('Patch tab otherFields failed', error);
       throw new HttpException(
-        error instanceof Error
-          ? error.message
-          : 'Patch working-set otherFields failed',
+        error instanceof Error ? error.message : 'Patch tab otherFields failed',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -768,13 +769,13 @@ export class OutreachCommandController {
     try {
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
-      const workingSet = await this.outreachWorkingSetService.getAll({
+      const tab = await this.outreachTabService.getAll({
         workspaceId,
         projectId,
-        subject: 'person',
+        tab: 'people',
       });
       const selectedIds = new Set([...candidateIds, ...personIds]);
-      const rowIds = workingSet
+      const rowIds = tab
         .filter((row) => selectedIds.has(row.id))
         .map((row) => row.id);
 

@@ -38,6 +38,7 @@ import {
   OrchestratorResult,
   ParsedRequirement,
   PrimaryQuery,
+  QuerySetValidation,
   SearchQuery,
   SearchQuerySet,
 } from 'src/engine/core-modules/linkedin-query-generation/types/linkedin-query-generation.types';
@@ -57,7 +58,7 @@ export class LinkedinQueryGenerationService {
   private readonly defaultModel =
     process.env.SEARCH_QUERY_GENERATOR_MODEL ||
     process.env.SEARCH_MODELS_OPENAI_MODEL ||
-    'gpt-4o-mini';
+    'gpt-6-luna';
 
   constructor(
     @Optional()
@@ -70,15 +71,24 @@ export class LinkedinQueryGenerationService {
   ): Promise<ParsedRequirement> {
     console.log(`Running Agent 1 with raw requirement: ${rawRequirement}`);
     const systemPrompt = AGENT1_SYSTEM_PROMPT;
-    const userPrompt = buildAgent1UserPrompt(rawRequirement, options?.queryIpLocation);
-    
+    const userPrompt = buildAgent1UserPrompt(
+      rawRequirement,
+      options?.queryIpLocation,
+    );
+
     if (options?.verbose) {
       console.log('[LinkedinQueryGeneration] Agent 1 - Input:', {
         rawRequirement,
         queryIpLocation: options?.queryIpLocation,
       });
-      console.log('[LinkedinQueryGeneration] Agent 1 - System Prompt:', systemPrompt);
-      console.log('[LinkedinQueryGeneration] Agent 1 - User Prompt:', userPrompt);
+      console.log(
+        '[LinkedinQueryGeneration] Agent 1 - System Prompt:',
+        systemPrompt,
+      );
+      console.log(
+        '[LinkedinQueryGeneration] Agent 1 - User Prompt:',
+        userPrompt,
+      );
     }
 
     const response = await this.callLlm(systemPrompt, userPrompt, options, {
@@ -89,7 +99,10 @@ export class LinkedinQueryGenerationService {
     const parsed = response as ParsedRequirement;
 
     if (options?.verbose) {
-      console.log('[LinkedinQueryGeneration] Agent 1 - Output:', JSON.stringify(parsed, null, 2));
+      console.log(
+        '[LinkedinQueryGeneration] Agent 1 - Output:',
+        JSON.stringify(parsed, null, 2),
+      );
     }
 
     return parsed;
@@ -99,18 +112,28 @@ export class LinkedinQueryGenerationService {
     parsedRequirement: ParsedRequirement,
     options?: LlmOptions,
   ): Promise<MasterLists> {
-
-    console.log(`Running Agent 2 with parsed requirement: ${JSON.stringify(parsedRequirement, null, 2)}`);
+    console.log(
+      `Running Agent 2 with parsed requirement: ${JSON.stringify(parsedRequirement, null, 2)}`,
+    );
     const systemPrompt = getAgent2SystemPrompt(parsedRequirement.query_type);
-    const userPrompt = buildAgent2UserPrompt(parsedRequirement, options?.queryIpLocation);
-    
+    const userPrompt = buildAgent2UserPrompt(
+      parsedRequirement,
+      options?.queryIpLocation,
+    );
+
     if (options?.verbose) {
       console.log('[LinkedinQueryGeneration] Agent 2 - Input:', {
         parsedRequirement: JSON.stringify(parsedRequirement, null, 2),
         queryIpLocation: options?.queryIpLocation,
       });
-      console.log('[LinkedinQueryGeneration] Agent 2 - System Prompt:', systemPrompt);
-      console.log('[LinkedinQueryGeneration] Agent 2 - User Prompt:', userPrompt);
+      console.log(
+        '[LinkedinQueryGeneration] Agent 2 - System Prompt:',
+        systemPrompt,
+      );
+      console.log(
+        '[LinkedinQueryGeneration] Agent 2 - User Prompt:',
+        userPrompt,
+      );
     }
 
     const response = await this.callLlm(systemPrompt, userPrompt, options, {
@@ -123,18 +146,20 @@ export class LinkedinQueryGenerationService {
       ...parsed,
       keywords: {
         ...parsed.keywords,
-        grouped_concepts: parsed.keywords.grouped_concepts.reduce<Record<string, string[]>>(
-          (acc, { concept, terms }) => {
-            acc[concept] = terms;
-            return acc;
-          },
-          {},
-        ),
+        grouped_concepts: parsed.keywords.grouped_concepts.reduce<
+          Record<string, string[]>
+        >((acc, { concept, terms }) => {
+          acc[concept] = terms;
+          return acc;
+        }, {}),
       },
     };
 
     if (options?.verbose) {
-      console.log('[LinkedinQueryGeneration] Agent 2 - Output:', JSON.stringify(masterLists, null, 2));
+      console.log(
+        '[LinkedinQueryGeneration] Agent 2 - Output:',
+        JSON.stringify(masterLists, null, 2),
+      );
     }
 
     return masterLists;
@@ -151,15 +176,21 @@ export class LinkedinQueryGenerationService {
       masterLists,
       options?.queryIpLocation,
     );
-    
+
     if (options?.verbose) {
       console.log('[LinkedinQueryGeneration] Agent 3 - Input:', {
         parsedRequirement: JSON.stringify(parsedRequirement, null, 2),
         masterLists: JSON.stringify(masterLists, null, 2),
         queryIpLocation: options?.queryIpLocation,
       });
-      console.log('[LinkedinQueryGeneration] Agent 3 - System Prompt:', systemPrompt);
-      console.log('[LinkedinQueryGeneration] Agent 3 - User Prompt:', userPrompt);
+      console.log(
+        '[LinkedinQueryGeneration] Agent 3 - System Prompt:',
+        systemPrompt,
+      );
+      console.log(
+        '[LinkedinQueryGeneration] Agent 3 - User Prompt:',
+        userPrompt,
+      );
     }
 
     const response = await this.callLlm(systemPrompt, userPrompt, options, {
@@ -171,7 +202,10 @@ export class LinkedinQueryGenerationService {
     const parsed = result.primary_query;
 
     if (options?.verbose) {
-      console.log('[LinkedinQueryGeneration] Agent 3 - Output:', JSON.stringify(parsed, null, 2));
+      console.log(
+        '[LinkedinQueryGeneration] Agent 3 - Output:',
+        JSON.stringify(parsed, null, 2),
+      );
     }
 
     return parsed;
@@ -188,15 +222,21 @@ export class LinkedinQueryGenerationService {
       primaryQuery,
       options?.queryIpLocation,
     );
-    
+
     if (options?.verbose) {
       console.log('[LinkedinQueryGeneration] Agent 4 - Input:', {
         parsedRequirement: JSON.stringify(parsedRequirement, null, 2),
         primaryQuery: JSON.stringify(primaryQuery, null, 2),
         queryIpLocation: options?.queryIpLocation,
       });
-      console.log('[LinkedinQueryGeneration] Agent 4 - System Prompt:', systemPrompt);
-      console.log('[LinkedinQueryGeneration] Agent 4 - User Prompt:', userPrompt);
+      console.log(
+        '[LinkedinQueryGeneration] Agent 4 - System Prompt:',
+        systemPrompt,
+      );
+      console.log(
+        '[LinkedinQueryGeneration] Agent 4 - User Prompt:',
+        userPrompt,
+      );
     }
 
     const response = await this.callLlm(systemPrompt, userPrompt, options, {
@@ -207,7 +247,10 @@ export class LinkedinQueryGenerationService {
     const parsed = response as FactoredQuery;
 
     if (options?.verbose) {
-      console.log('[LinkedinQueryGeneration] Agent 4 - Output:', JSON.stringify(parsed, null, 2));
+      console.log(
+        '[LinkedinQueryGeneration] Agent 4 - Output:',
+        JSON.stringify(parsed, null, 2),
+      );
     }
 
     return parsed;
@@ -215,7 +258,10 @@ export class LinkedinQueryGenerationService {
 
   async generateSearchQuerySet(
     rawRequirement: string,
-    options?: LlmOptions & { verbose?: boolean; sendEvent?: (event: string, data: Record<string, unknown>) => void },
+    options?: LlmOptions & {
+      verbose?: boolean;
+      sendEvent?: (event: string, data: Record<string, unknown>) => void;
+    },
   ): Promise<OrchestratorResult> {
     const startTime = Date.now();
     const sendEvent = options?.sendEvent;
@@ -232,10 +278,18 @@ export class LinkedinQueryGenerationService {
     });
 
     const agent1Start = Date.now();
-    const parsedRequirement = await this.runAgent1(rawRequirement, streamingOptions);
-    this.logger.log(`Parsed requirement: ${JSON.stringify(parsedRequirement, null, 2)}`);
+    const parsedRequirement = await this.runAgent1(
+      rawRequirement,
+      streamingOptions,
+    );
+    this.logger.log(
+      `Parsed requirement: ${JSON.stringify(parsedRequirement, null, 2)}`,
+    );
     if (options?.verbose) {
-      console.log('[LinkedinQueryGeneration] Stage 1 - Parsed requirement:', JSON.stringify(parsedRequirement, null, 2));
+      console.log(
+        '[LinkedinQueryGeneration] Stage 1 - Parsed requirement:',
+        JSON.stringify(parsedRequirement, null, 2),
+      );
     }
     const agent1Time = Date.now() - agent1Start;
 
@@ -248,10 +302,16 @@ export class LinkedinQueryGenerationService {
     });
 
     const agent2Start = Date.now();
-    const masterLists = await this.runAgent2(parsedRequirement, streamingOptions);
+    const masterLists = await this.runAgent2(
+      parsedRequirement,
+      streamingOptions,
+    );
     this.logger.log(`Master lists: ${JSON.stringify(masterLists, null, 2)}`);
     if (options?.verbose) {
-      console.log('[LinkedinQueryGeneration] Stage 2 - Master lists:', JSON.stringify(masterLists, null, 2));
+      console.log(
+        '[LinkedinQueryGeneration] Stage 2 - Master lists:',
+        JSON.stringify(masterLists, null, 2),
+      );
     }
     const agent2Time = Date.now() - agent2Start;
 
@@ -271,7 +331,10 @@ export class LinkedinQueryGenerationService {
     );
     this.logger.log(`Primary query: ${JSON.stringify(primaryQuery, null, 2)}`);
     if (options?.verbose) {
-      console.log('[LinkedinQueryGeneration] Stage 3 - Primary query:', JSON.stringify(primaryQuery, null, 2));
+      console.log(
+        '[LinkedinQueryGeneration] Stage 3 - Primary query:',
+        JSON.stringify(primaryQuery, null, 2),
+      );
     }
     const agent3Time = Date.now() - agent3Start;
 
@@ -289,9 +352,14 @@ export class LinkedinQueryGenerationService {
       primaryQuery,
       streamingOptions,
     );
-    this.logger.log(`Factored query: ${JSON.stringify(factoredQuery, null, 2)}`);
+    this.logger.log(
+      `Factored query: ${JSON.stringify(factoredQuery, null, 2)}`,
+    );
     if (options?.verbose) {
-      console.log('[LinkedinQueryGeneration] Stage 4 - Factored query:', JSON.stringify(factoredQuery, null, 2));
+      console.log(
+        '[LinkedinQueryGeneration] Stage 4 - Factored query:',
+        JSON.stringify(factoredQuery, null, 2),
+      );
     }
     const agent4Time = Date.now() - agent4Start;
 
@@ -307,20 +375,35 @@ export class LinkedinQueryGenerationService {
     const query_set = this.enforceLinkedInLimits({
       search_query_set: [factoredQuery.factored_query],
     });
-    
+    const validation = this.validateQuerySet(query_set);
+
     // Create splitting strategy metadata
     const splitting_strategy = {
       strategy_type: factoredQuery.recommended_strategy,
-      strategy_description: factoredQuery.splitting_reason || 'Deterministic splitting based on term limits',
+      strategy_description:
+        factoredQuery.splitting_reason ||
+        'Deterministic splitting based on term limits',
       number_of_queries: query_set.search_query_set.length,
       distribution_logic: `Split factored expressions into groups of max 5 OR terms per query so total terms per field stay within 6`,
     };
-    
-    this.logger.log(`Splitting strategy: ${JSON.stringify(splitting_strategy, null, 2)}`);
+
+    this.logger.log(
+      `Splitting strategy: ${JSON.stringify(splitting_strategy, null, 2)}`,
+    );
     this.logger.log(`Query set: ${JSON.stringify(query_set, null, 2)}`);
     if (options?.verbose) {
-      console.log('[LinkedinQueryGeneration] Stage 5 - Splitting strategy:', JSON.stringify(splitting_strategy, null, 2));
-      console.log('[LinkedinQueryGeneration] Stage 5 - Query set:', JSON.stringify(query_set, null, 2));
+      console.log(
+        '[LinkedinQueryGeneration] Stage 5 - Splitting strategy:',
+        JSON.stringify(splitting_strategy, null, 2),
+      );
+      console.log(
+        '[LinkedinQueryGeneration] Stage 5 - Query set:',
+        JSON.stringify(query_set, null, 2),
+      );
+      console.log(
+        '[LinkedinQueryGeneration] Stage 5 - Validation:',
+        JSON.stringify(validation, null, 2),
+      );
     }
 
     sendEvent?.('status', {
@@ -334,6 +417,10 @@ export class LinkedinQueryGenerationService {
       type: 'query_set',
       data: query_set,
     });
+    sendEvent?.('message', {
+      type: 'validation',
+      data: validation,
+    });
 
     const totalTime = Date.now() - startTime;
 
@@ -341,7 +428,9 @@ export class LinkedinQueryGenerationService {
       this.logger.log(
         `Generated ${query_set.search_query_set.length} queries in ${totalTime}ms`,
       );
-      console.log(`[LinkedinQueryGeneration] Generated ${query_set.search_query_set.length} queries in ${totalTime}ms`);
+      console.log(
+        `[LinkedinQueryGeneration] Generated ${query_set.search_query_set.length} queries in ${totalTime}ms`,
+      );
     }
 
     return {
@@ -351,6 +440,7 @@ export class LinkedinQueryGenerationService {
       factored_query: factoredQuery,
       splitting_strategy,
       final_query_set: query_set,
+      validation,
       metadata: {
         processing_time_ms: totalTime,
         agent1_time_ms: agent1Time,
@@ -386,11 +476,7 @@ export class LinkedinQueryGenerationService {
     return results;
   }
 
-  validateQuerySet(querySet: SearchQuerySet): {
-    valid: boolean;
-    errors: string[];
-    warnings: string[];
-  } {
+  validateQuerySet(querySet: SearchQuerySet): QuerySetValidation {
     const errors: string[] = [];
     const warnings: string[] = [];
 
@@ -428,15 +514,21 @@ export class LinkedinQueryGenerationService {
       }
 
       if (query.keywords === '') {
-        warnings.push(`Query ${queryNumber}: keywords is empty string (use null)`);
+        warnings.push(
+          `Query ${queryNumber}: keywords is empty string (use null)`,
+        );
       }
 
       if (query.job_title === '') {
-        warnings.push(`Query ${queryNumber}: job_title is empty string (use null)`);
+        warnings.push(
+          `Query ${queryNumber}: job_title is empty string (use null)`,
+        );
       }
 
       if (!query.keywords && !query.job_title) {
-        errors.push(`Query ${queryNumber}: keywords and job_title are both null`);
+        errors.push(
+          `Query ${queryNumber}: keywords and job_title are both null`,
+        );
       }
     });
 
@@ -470,11 +562,7 @@ export class LinkedinQueryGenerationService {
       keywordsTerms.length + jobTitleTerms.length <= 10;
 
     // If within limits, return as-is
-    if (
-      keywordsWithinLimit &&
-      jobTitleWithinLimit &&
-      combinedWithinLimit
-    ) {
+    if (keywordsWithinLimit && jobTitleWithinLimit && combinedWithinLimit) {
       return [
         {
           ...query,
@@ -560,10 +648,10 @@ export class LinkedinQueryGenerationService {
 
   private extractOrTerms(orExpression: string): string[] {
     const terms: string[] = [];
-    
+
     // Split by OR, handling quoted terms and spaces
     const parts = orExpression.split(/\s+OR\s+/i);
-    
+
     for (const part of parts) {
       const trimmed = part.trim();
       if (trimmed) {
@@ -580,14 +668,24 @@ export class LinkedinQueryGenerationService {
 
   private splitFactoredQuery(
     query: SearchQuery,
-    keywordsFactored: { andPart: string; andTerms: string[]; orTerms: string[] } | null,
-    jobTitleFactored: { andPart: string; andTerms: string[]; orTerms: string[] } | null,
+    keywordsFactored: {
+      andPart: string;
+      andTerms: string[];
+      orTerms: string[];
+    } | null,
+    jobTitleFactored: {
+      andPart: string;
+      andTerms: string[];
+      orTerms: string[];
+    } | null,
   ): SearchQuery[] {
     const queries: SearchQuery[] = [];
 
     // Check which fields need splitting
-    const keywordsNeedsSplitting = keywordsFactored && keywordsFactored.orTerms.length > 6;
-    const jobTitleNeedsSplitting = jobTitleFactored && jobTitleFactored.orTerms.length > 6;
+    const keywordsNeedsSplitting =
+      keywordsFactored && keywordsFactored.orTerms.length > 6;
+    const jobTitleNeedsSplitting =
+      jobTitleFactored && jobTitleFactored.orTerms.length > 6;
 
     if (keywordsNeedsSplitting && jobTitleNeedsSplitting) {
       const keywordsAnchorTerms = keywordsFactored!.andTerms.length || 1;
@@ -604,12 +702,12 @@ export class LinkedinQueryGenerationService {
         jobTitleFactored!.orTerms,
         maxJobTitleOrTermsPerGroup,
       );
-      
+
       for (const keywordGroup of keywordsGroups) {
         for (const jobTitleGroup of jobTitleGroups) {
-          const keywordsExpression = `${keywordsFactored!.andPart} AND (${keywordGroup.map(term => /\s/.test(term) ? `"${term}"` : term).join(' OR ')})`;
-          const jobTitleExpression = `${jobTitleFactored!.andPart} AND (${jobTitleGroup.map(term => /\s/.test(term) ? `"${term}"` : term).join(' OR ')})`;
-          
+          const keywordsExpression = `${keywordsFactored!.andPart} AND (${keywordGroup.map((term) => (/\s/.test(term) ? `"${term}"` : term)).join(' OR ')})`;
+          const jobTitleExpression = `${jobTitleFactored!.andPart} AND (${jobTitleGroup.map((term) => (/\s/.test(term) ? `"${term}"` : term)).join(' OR ')})`;
+
           queries.push({
             ...query,
             keywords: keywordsExpression,
@@ -626,10 +724,10 @@ export class LinkedinQueryGenerationService {
         keywordsFactored!.orTerms,
         maxOrTermsPerGroup,
       );
-      
+
       for (const group of orTermGroups) {
-        const factoredExpression = `${keywordsFactored!.andPart} AND (${group.map(term => /\s/.test(term) ? `"${term}"` : term).join(' OR ')})`;
-        
+        const factoredExpression = `${keywordsFactored!.andPart} AND (${group.map((term) => (/\s/.test(term) ? `"${term}"` : term)).join(' OR ')})`;
+
         queries.push({
           ...query,
           keywords: factoredExpression,
@@ -645,10 +743,10 @@ export class LinkedinQueryGenerationService {
         jobTitleFactored!.orTerms,
         maxOrTermsPerGroup,
       );
-      
+
       for (const group of orTermGroups) {
-        const factoredExpression = `${jobTitleFactored!.andPart} AND (${group.map(term => /\s/.test(term) ? `"${term}"` : term).join(' OR ')})`;
-        
+        const factoredExpression = `${jobTitleFactored!.andPart} AND (${group.map((term) => (/\s/.test(term) ? `"${term}"` : term)).join(' OR ')})`;
+
         queries.push({
           ...query,
           keywords: query.keywords,
@@ -679,10 +777,14 @@ export class LinkedinQueryGenerationService {
         // Complex factored expression still exceeds limits — simplify to the anchor (AND) terms only.
         const simplifiedKeywords = keywordsFactored
           ? this.termsToExpression(keywordsFactored.andTerms.slice(0, 6))
-          : this.termsToExpression(this.extractTerms(query.keywords).slice(0, 6));
+          : this.termsToExpression(
+              this.extractTerms(query.keywords).slice(0, 6),
+            );
         const simplifiedJobTitle = jobTitleFactored
           ? this.termsToExpression(jobTitleFactored.andTerms.slice(0, 6))
-          : this.termsToExpression(this.extractTerms(query.job_title ?? null).slice(0, 6));
+          : this.termsToExpression(
+              this.extractTerms(query.job_title ?? null).slice(0, 6),
+            );
         queries.push({
           ...query,
           keywords: simplifiedKeywords,
@@ -795,7 +897,7 @@ export class LinkedinQueryGenerationService {
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      response_format: toOpenAiJsonSchemaResponseFormat(schema, name)
+      response_format: toOpenAiJsonSchemaResponseFormat(schema, name),
       // ...(supportsStructuredOutputs
       //   ? { response_format: toOpenAiJsonSchemaResponseFormat(schema, name) }
       //   : {}),
@@ -857,7 +959,8 @@ export class LinkedinQueryGenerationService {
     }
 
     const terms: string[] = [];
-    const tokenRegex = /"[^"]+"|'[^']+'|\(|\)|\bAND\b|\bOR\b|\bNOT\b|[^\s()]+/gi;
+    const tokenRegex =
+      /"[^"]+"|'[^']+'|\(|\)|\bAND\b|\bOR\b|\bNOT\b|[^\s()]+/gi;
     const rawTokens = expression.match(tokenRegex) || [];
     let buffer: string[] = [];
 

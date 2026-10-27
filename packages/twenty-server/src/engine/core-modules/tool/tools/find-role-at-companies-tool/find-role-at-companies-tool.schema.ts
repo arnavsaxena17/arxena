@@ -13,7 +13,7 @@ export const FindRoleAtCompaniesInputZodSchema = z.object({
           .string()
           .optional()
           .describe(
-            'Row id of this company on the Companies tab (from get_outreach_working_set). When set with projectId, the found people are linked to that row and its "People found" column is updated, including when nobody is found.',
+            'Row id of this company on the Companies tab (from get_outreach_tab). When set with projectId, the found people are linked to that row and its "People found" column is updated, including when nobody is found.',
           ),
         name: z
           .string()
@@ -33,7 +33,7 @@ export const FindRoleAtCompaniesInputZodSchema = z.object({
     .max(FIND_ROLE_AT_COMPANIES_MAX_COMPANIES)
     .optional()
     .describe(
-      'Companies to look up, one entry each. Leave out and set fromProject to look up the project\'s own companies without typing them.',
+      "Companies to look up, one entry each. Leave out and set fromProject to look up the project's own companies without typing them.",
     ),
   fromProject: z
     .boolean()
@@ -45,7 +45,7 @@ export const FindRoleAtCompaniesInputZodSchema = z.object({
     .boolean()
     .default(false)
     .describe(
-      'With fromProject: only the rows shown by the Companies tab\'s applied view (its filters and AI columns).',
+      "With fromProject: only the rows shown by the Companies tab's applied view (its filters and AI columns).",
     ),
   onlyFailed: z
     .boolean()
@@ -66,10 +66,12 @@ export const FindRoleAtCompaniesInputZodSchema = z.object({
     .describe(
       'Roles the user asked for, in their words (CEO, MD, managing director, founder, owner, CFO, ...). Each is classified by the job-title taxonomy service, which supplies the matching titles. Pass every role the user named.',
     ),
-  country: z
+  location: z
     .string()
     .optional()
-    .describe('Country name to narrow the search, e.g. "India". Never a city.'),
+    .describe(
+      'Where the people should be based: city, state/region, or country, e.g. "Mumbai", "Maharashtra", or "India".',
+    ),
   sources: z
     .array(z.enum(['bright_data', 'google']))
     .default(['bright_data', 'google'])

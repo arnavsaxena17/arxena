@@ -74,7 +74,7 @@ export class JobDescriptionService {
       );
 
       const completion = await openaiClient.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: 'gpt-6-luna',
         messages: [
           { role: 'system', content: prompt.system },
           { role: 'user', content: prompt.user },

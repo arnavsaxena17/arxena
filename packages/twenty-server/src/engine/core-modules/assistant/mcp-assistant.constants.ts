@@ -1,5 +1,5 @@
 export const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
-export const OPENAI_MCP_MODEL = 'gpt-4o-mini';
+export const OPENAI_MCP_MODEL = 'gpt-6-luna';
 export const MAX_TOKENS = 4096;
 export const MAX_TOOL_ROUNDS = 10;
 

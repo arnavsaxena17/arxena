@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 
 import { randomUUID } from 'crypto';
@@ -40,10 +40,16 @@ import {
   type OutreachSampleMessageInclude,
 } from 'src/engine/core-modules/outreach-command/types/outreach-sample-message.types';
 import {
-  type OutreachWorkingSetRow,
-  type OutreachWorkingSetSubject,
-  OutreachWorkingSetService,
-} from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+  type OutreachTabRow,
+  OutreachTabService,
+} from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
+import { ChatTabWritesService } from 'src/engine/core-modules/outreach-command/services/chat-tab-writes.service';
+import { type AiColumnRowScope } from 'src/engine/core-modules/outreach-command/types/ai-column-row-scope.type';
+import { isAiColumnFilled } from 'src/engine/core-modules/outreach-command/utils/ai-column-filled.util';
+import {
+  filterSubjectFromTab,
+  type OutreachTableTab,
+} from 'src/engine/core-modules/outreach-command/utils/outreach-cache-realtime.constants';
 
 // The engine's field spec already covers boolean, enum, text, number, integer.
 export type OutreachAiColumnField = FilterFieldSpec;
@@ -96,7 +102,7 @@ export type PreviewState = {
   previewId: string;
   workspaceId: string;
   projectId: string;
-  subject: OutreachWorkingSetSubject;
+  tab: OutreachTableTab;
   filter: OutreachAiColumnFilter;
   previewedRows: Record<string, OutreachAiColumnRowResult>;
   // What a full run is expected to cost; run_ai_column asks for approval above
@@ -155,7 +161,7 @@ export const isWebSearchModel = (model: string): boolean =>
   /search|web/i.test(model);
 
 export const toRecordForModel = (
-  row: OutreachWorkingSetRow,
+  row: OutreachTabRow,
 ): { id: string } & Record<string, unknown> => ({
   id: row.id,
   // buildRecordText reads person-identity fields (jobTitle, jobCompanyName,
@@ -229,7 +235,7 @@ export type ExistingAiColumn = {
 };
 
 export const readExistingAiColumns = (
-  rows: OutreachWorkingSetRow[],
+  rows: OutreachTabRow[],
 ): ExistingAiColumn[] => {
   const columns = new Map<string, ExistingAiColumn>();
 
@@ -385,16 +391,16 @@ const detectTypeWarnings = (
 // Web lookups about a person's employer (revenue, headcount) are made once per
 // company and copied to every person who works there.
 export const shouldGroupByCompany = (
-  subject: OutreachWorkingSetSubject,
+  tab: OutreachTableTab,
   filter: OutreachAiColumnFilter,
 ): boolean =>
-  subject === 'person' &&
+  tab === 'people' &&
   isWebSearchModel(filter.selectedModel) &&
   filter.selectedMetadataFields.some((field) =>
     ['companyName', 'jobCompanyName'].includes(field),
   );
 
-export const companyGroupKey = (row: OutreachWorkingSetRow): string => {
+export const companyGroupKey = (row: OutreachTabRow): string => {
   const key = (row.companyName ?? '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ')
@@ -411,29 +417,31 @@ export class OutreachAiColumnService {
   constructor(
     @InjectCacheStorage(CacheStorageNamespace.EngineOutreachCommand)
     private readonly cache: CacheStorageService,
-    private readonly outreachWorkingSetService: OutreachWorkingSetService,
+    private readonly outreachTabService: OutreachTabService,
     private readonly aiFilterEngineService: AiFilterEngineService,
     private readonly filterDescriptionProcessorService: FilterDescriptionProcessorService,
     // The drafter lives in ToolModule, which imports this module (cycle).
     private readonly moduleRef: ModuleRef,
+    @Optional()
+    private readonly chatTabWritesService?: ChatTabWritesService,
   ) {}
 
   // Types are decided by the description LLM (the original AI filtering
   // design call), not hand-written by the chat agent.
   async designFilter({
     description,
-    subject,
+    tab,
     workspaceId,
     existingColumns = [],
   }: {
     description: string;
-    subject: OutreachWorkingSetSubject;
+    tab: OutreachTableTab;
     workspaceId: string;
     existingColumns?: ExistingAiColumn[];
   }): Promise<OutreachAiColumnFilter> {
     const design = await this.filterDescriptionProcessorService.designColumn({
       description,
-      subject,
+      subject: filterSubjectFromTab(tab),
       workspaceId,
       existingColumns,
     });
@@ -466,12 +474,12 @@ export class OutreachAiColumnService {
       name: design.columnName,
       prompt: design.prompt,
       // jev for decisions the row can answer, web search for outside facts,
-      // gpt-4o-mini for everything else.
+      // deepseek flash for everything else.
       selectedModel: design.needsWebSearch
         ? 'gpt4ominisearchpreview'
         : decidedFromRow
           ? 'jev'
-          : 'gpt4omini',
+          : 'deepseek',
       fields,
       // The model must always be able to tell which row it is answering for.
       selectedMetadataFields: [
@@ -483,15 +491,18 @@ export class OutreachAiColumnService {
   async preview({
     workspaceId,
     projectId,
-    subject,
+    tab,
     filter,
     description,
     fitment,
     rowLimit,
+    rowIds,
+    rowScope,
+    threadId,
   }: {
     workspaceId: string;
     projectId: string;
-    subject: OutreachWorkingSetSubject;
+    tab: OutreachTableTab;
     filter?: OutreachAiColumnFilter;
     description?: string;
     fitment?: {
@@ -501,6 +512,9 @@ export class OutreachAiColumnService {
       minimumScore?: number;
     };
     rowLimit?: number;
+    rowIds?: string[];
+    rowScope?: AiColumnRowScope;
+    threadId?: string;
   }): Promise<{
     previewId: string;
     total: number;
@@ -516,6 +530,12 @@ export class OutreachAiColumnService {
     // run_ai_column); under it the agent runs without asking
     autoRunLimitUsd: number;
     needsApproval: boolean;
+    selection: {
+      tabTotal: number;
+      chatUpsertedCount: number;
+      scopedCount: number;
+      unfilledForColumns: number;
+    };
     fitment?: {
       stage: FitmentSetup['stage'];
       threshold: number;
@@ -524,15 +544,35 @@ export class OutreachAiColumnService {
       unknown: number;
     };
   }> {
-    const all = await this.outreachWorkingSetService.getAll({
+    const all = await this.outreachTabService.getAll({
       workspaceId,
       projectId,
-      subject,
+      tab,
     });
 
-    if (all.length === 0 && subject === 'company') {
+    if (all.length === 0 && tab === 'companies') {
       throw new Error(
-        'This project has no companies: no CRM companies tagged to it and no ephemeral Find list. If the user is on the People tab, call again with subject "person": the column then describes each person\'s company.',
+        'This project has no companies: no CRM companies tagged to it and no ephemeral Find list. If the user is on the People tab, call again with tab "people": the column then describes each person\'s company.',
+      );
+    }
+
+    const chatUpsertedIds =
+      (await this.chatTabWritesService?.read(threadId, projectId, tab)) ?? [];
+    const scopedIds = await this.resolvePreviewRowIds({
+      rowIds,
+      rowScope,
+      chatUpsertedIds,
+      threadId,
+    });
+    const scoped = isDefined(scopedIds)
+      ? all.filter((row) => scopedIds.has(row.id))
+      : all;
+
+    if (isDefined(scopedIds) && scoped.length === 0) {
+      throw new Error(
+        rowScope === 'chat_upserts'
+          ? "No rows from this chat's upserts are on this project tab. Search or upsert first, or use rowScope unfilled."
+          : 'None of the selected rows are on this project tab',
       );
     }
 
@@ -542,7 +582,7 @@ export class OutreachAiColumnService {
       (isDefined(description)
         ? await this.designFilter({
             description,
-            subject,
+            tab,
             workspaceId,
             existingColumns: readExistingAiColumns(all),
           })
@@ -552,16 +592,20 @@ export class OutreachAiColumnService {
       throw new Error('Pass a description of the column (or a filter).');
     }
 
-    const groupByCompany = shouldGroupByCompany(subject, resolvedFilter);
+    const columnKeys = resolvedFilter.fields.map((field) => field.name);
+    const unfilledForColumns = scoped.filter(
+      (row) => !isAiColumnFilled(row, columnKeys),
+    ).length;
+    const groupByCompany = shouldGroupByCompany(tab, resolvedFilter);
     const sample = this.pickPreviewSample(
-      all,
+      scoped,
       resolvedFilter,
       Math.min(rowLimit ?? PREVIEW_ROW_LIMIT, PREVIEW_ROW_LIMIT),
       groupByCompany,
     );
     const { results, usage } = await this.evaluateRows(
       sample,
-      subject,
+      tab,
       resolvedFilter,
       workspaceId,
     );
@@ -570,10 +614,10 @@ export class OutreachAiColumnService {
     const remaining = groupByCompany
       ? Math.max(
           0,
-          new Set(all.map(companyGroupKey)).size -
+          new Set(scoped.map(companyGroupKey)).size -
             new Set(sample.map(companyGroupKey)).size,
         )
-      : Math.max(0, all.length - sample.length);
+      : Math.max(0, scoped.length - sample.length);
     const perRowCost =
       usage.estimatedCostUsd !== null && sample.length > 0
         ? usage.estimatedCostUsd / sample.length
@@ -584,7 +628,7 @@ export class OutreachAiColumnService {
       previewId,
       workspaceId,
       projectId,
-      subject,
+      tab,
       filter: resolvedFilter,
       previewedRows: Object.fromEntries(
         results
@@ -599,7 +643,7 @@ export class OutreachAiColumnService {
 
     return {
       previewId,
-      total: all.length,
+      total: scoped.length,
       filter: resolvedFilter,
       columns: resolvedFilter.fields.map((field) => ({
         key: field.name,
@@ -618,6 +662,12 @@ export class OutreachAiColumnService {
       ),
       rows: results,
       usage,
+      selection: {
+        tabTotal: all.length,
+        chatUpsertedCount: chatUpsertedIds.length,
+        scopedCount: scoped.length,
+        unfilledForColumns,
+      },
       ...(isDefined(resolvedFilter.fitment)
         ? {
             fitment: {
@@ -629,8 +679,40 @@ export class OutreachAiColumnService {
         : {}),
       estimatedRunCostUsd,
       autoRunLimitUsd: getAiColumnAutoRunMaxUsd(),
-      needsApproval: needsCostApproval({ estimatedCostUsd: estimatedRunCostUsd }),
+      needsApproval: needsCostApproval({
+        estimatedCostUsd: estimatedRunCostUsd,
+      }),
     };
+  }
+
+  private async resolvePreviewRowIds({
+    rowIds,
+    rowScope,
+    chatUpsertedIds,
+    threadId,
+  }: {
+    rowIds?: string[];
+    rowScope?: AiColumnRowScope;
+    chatUpsertedIds: string[];
+    threadId?: string;
+  }): Promise<Set<string> | undefined> {
+    if (isDefined(rowIds) && rowIds.length > 0) {
+      return new Set(rowIds);
+    }
+
+    if (rowScope !== 'chat_upserts') {
+      return undefined;
+    }
+
+    if (chatUpsertedIds.length === 0) {
+      throw new Error(
+        isDefined(threadId)
+          ? 'No upserted rows remembered for this chat on this tab. Search or upsert first, pass writtenRowIds as rowIds, or use rowScope unfilled.'
+          : 'rowScope chat_upserts needs a chat thread (or pass writtenRowIds as rowIds).',
+      );
+    }
+
+    return new Set(chatUpsertedIds);
   }
 
   async getPreviewState(previewId: string): Promise<PreviewState | undefined> {
@@ -653,7 +735,7 @@ export class OutreachAiColumnService {
       previewId,
       workspaceId,
       projectId,
-      subject: 'person',
+      tab: 'people',
       filter: {
         name: 'Sample LinkedIn message',
         prompt: 'Draft the first LinkedIn message for this prospect.',
@@ -678,16 +760,21 @@ export class OutreachAiColumnService {
 
   // The preview should show real answers, so rows that carry data for the
   // fields the model will read come first; thin rows only fill what is left.
+  // Prefer rows still missing the AI column keys when those columns already
+  // exist on the tab (reuse / gap-fill previews).
   private pickPreviewSample(
-    rows: OutreachWorkingSetRow[],
+    rows: OutreachTabRow[],
     filter: OutreachAiColumnFilter,
     limit: number,
     distinctCompanies: boolean,
-  ): OutreachWorkingSetRow[] {
+  ): OutreachTabRow[] {
+    const columnKeys = filter.fields.map((field) => field.name);
+    const unfilled = rows.filter((row) => !isAiColumnFilled(row, columnKeys));
+    const pool = unfilled.length > 0 ? unfilled : rows;
     const dataFields = filter.selectedMetadataFields.filter(
       (field) => field !== 'name',
     );
-    const filledFieldCount = (row: OutreachWorkingSetRow): number => {
+    const filledFieldCount = (row: OutreachTabRow): number => {
       const record = toRecordForModel(row);
 
       return dataFields.filter((field) => {
@@ -699,7 +786,7 @@ export class OutreachAiColumnService {
       }).length;
     };
 
-    const ranked = rows
+    const ranked = pool
       .map((row, index) => ({ row, index, filled: filledFieldCount(row) }))
       .sort((a, b) => b.filled - a.filled || a.index - b.index)
       .map(({ row }) => row);
@@ -726,8 +813,8 @@ export class OutreachAiColumnService {
   }
 
   async evaluateRows(
-    rows: OutreachWorkingSetRow[],
-    subject: OutreachWorkingSetSubject,
+    rows: OutreachTabRow[],
+    tab: OutreachTableTab,
     filter: OutreachAiColumnFilter,
     workspaceId: string,
   ): Promise<{
@@ -743,12 +830,12 @@ export class OutreachAiColumnService {
       );
     }
 
-    if (!shouldGroupByCompany(subject, filter)) {
-      return this.runEngine(rows, subject, filter);
+    if (!shouldGroupByCompany(tab, filter)) {
+      return this.runEngine(rows, tab, filter);
     }
 
     // One web lookup per employer, copied to everyone who works there.
-    const membersByKey = new Map<string, OutreachWorkingSetRow[]>();
+    const membersByKey = new Map<string, OutreachTabRow[]>();
 
     for (const row of rows) {
       const key = companyGroupKey(row);
@@ -758,7 +845,7 @@ export class OutreachAiColumnService {
 
     const { results, usage } = await this.runEngine(
       [...membersByKey.values()].map((members) => members[0]),
-      subject,
+      tab,
       filter,
     );
     const resultByKey = new Map(
@@ -780,7 +867,7 @@ export class OutreachAiColumnService {
 
   // Rows are drafted a few at a time: each can cost a live profile fetch.
   private async draftSampleMessages(
-    rows: OutreachWorkingSetRow[],
+    rows: OutreachTabRow[],
     filter: OutreachAiColumnFilter,
     include: OutreachSampleMessageInclude,
     workspaceId: string,
@@ -811,7 +898,7 @@ export class OutreachAiColumnService {
                 workspaceId,
                 include,
                 prospect: {
-                  // CRM working-set rows are keyed by candidate id.
+                  // CRM tab rows are keyed by candidate id.
                   candidateId: row.source === 'crm' ? row.id : undefined,
                   name: row.name,
                   title: row.title,
@@ -868,8 +955,8 @@ export class OutreachAiColumnService {
   }
 
   private async runEngine(
-    rows: OutreachWorkingSetRow[],
-    subject: OutreachWorkingSetSubject,
+    rows: OutreachTabRow[],
+    tab: OutreachTableTab,
     filter: OutreachAiColumnFilter,
   ): Promise<{
     results: OutreachAiColumnRowResult[];
@@ -885,7 +972,7 @@ export class OutreachAiColumnService {
         : undefined;
     const spec: FilterSpec = {
       name: filter.name,
-      subject,
+      subject: filterSubjectFromTab(tab),
       criteria: filter.prompt,
       fields: isDefined(fitment)
         ? buildFitmentModelFields(fitment.criteria)

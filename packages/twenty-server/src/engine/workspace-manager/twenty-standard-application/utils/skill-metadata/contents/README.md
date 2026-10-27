@@ -34,7 +34,9 @@ the skill is split into sections.
 ## Shared text
 Put a passage used by more than one skill in `fragments/<name>.md` and include
 it with `{{include: name}}` on a line of its own. Includes are resolved when the
-package is built and do not nest.
+package is built and do not nest. Do not add orphan parts that nothing
+`requires` or routes into — fold knowledge into a loaded section (e.g. profile
+reading into `scoring`, title synonyms into `playbook-shortfall`).
 
 ## Sourcing providers
 Facts about a sourcing provider (tools, cost, caps, blind spots, source order,

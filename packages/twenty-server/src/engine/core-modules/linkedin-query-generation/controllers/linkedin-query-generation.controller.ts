@@ -1,27 +1,27 @@
 import {
-    Body,
-    Controller,
-    HttpException,
-    HttpStatus,
-    Logger,
-    Post,
+  Body,
+  Controller,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Post,
 } from '@nestjs/common';
 
 import {
-    GenerateQuerySetBatchDto,
-    GenerateQuerySetDto,
-    RunAgent1Dto,
-    RunAgent2Dto,
-    RunAgent3Dto,
-    RunAgent5Dto,
-    ValidateQuerySetDto,
+  GenerateQuerySetBatchDto,
+  GenerateQuerySetDto,
+  RunAgent1Dto,
+  RunAgent2Dto,
+  RunAgent3Dto,
+  RunAgent5Dto,
+  ValidateQuerySetDto,
 } from 'src/engine/core-modules/linkedin-query-generation/dto/linkedin-query-generation.dto';
 import { LinkedinQueryGenerationService } from 'src/engine/core-modules/linkedin-query-generation/services/linkedin-query-generation.service';
 import {
-    FactoredQuery,
-    MasterLists,
-    OrchestratorResult,
-    ParsedRequirement
+  FactoredQuery,
+  MasterLists,
+  OrchestratorResult,
+  ParsedRequirement,
 } from 'src/engine/core-modules/linkedin-query-generation/types/linkedin-query-generation.types';
 
 @Controller('linkedin-query-generation')
@@ -35,11 +35,14 @@ export class LinkedinQueryGenerationController {
   @Post('agent1/parse')
   async runAgent1(@Body() body: RunAgent1Dto): Promise<ParsedRequirement> {
     try {
-      return await this.linkedinQueryGenerationService.runAgent1(body.rawRequirement, {
-        queryIpLocation: body.queryIpLocation,
-        model: body.model,
-        temperature: body.temperature,
-      });
+      return await this.linkedinQueryGenerationService.runAgent1(
+        body.rawRequirement,
+        {
+          queryIpLocation: body.queryIpLocation,
+          model: body.model,
+          temperature: body.temperature,
+        },
+      );
     } catch (error) {
       this.logger.error('Agent 1 parsing failed', error.stack || error);
       throw new HttpException(
@@ -109,7 +112,9 @@ export class LinkedinQueryGenerationController {
   }
 
   @Post('generate')
-  async generate(@Body() body: GenerateQuerySetDto): Promise<OrchestratorResult> {
+  async generate(
+    @Body() body: GenerateQuerySetDto,
+  ): Promise<OrchestratorResult> {
     try {
       return await this.linkedinQueryGenerationService.generateSearchQuerySet(
         body.rawRequirement,
@@ -145,7 +150,10 @@ export class LinkedinQueryGenerationController {
         },
       );
     } catch (error) {
-      this.logger.error('Batch query set generation failed', error.stack || error);
+      this.logger.error(
+        'Batch query set generation failed',
+        error.stack || error,
+      );
       throw new HttpException(
         error.message || 'Batch query set generation failed',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
@@ -153,12 +161,10 @@ export class LinkedinQueryGenerationController {
     }
   }
 
+  // Programmatic check for hand-built/edited query sets. Agent path uses
+  // generate, which already enforces limits and returns validation.
   @Post('validate')
-  validate(@Body() body: ValidateQuerySetDto): {
-    valid: boolean;
-    errors: string[];
-    warnings: string[];
-  } {
+  validate(@Body() body: ValidateQuerySetDto) {
     return this.linkedinQueryGenerationService.validateQuerySet(body.querySet);
   }
 }

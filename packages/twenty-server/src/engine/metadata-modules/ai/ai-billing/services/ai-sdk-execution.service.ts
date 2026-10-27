@@ -41,6 +41,7 @@ export class AiSdkExecutionService {
     try {
       result = await generateObject(params.options);
 
+      console.log('result in generateObject', result);
       return result;
     } finally {
       void this.billUsage({

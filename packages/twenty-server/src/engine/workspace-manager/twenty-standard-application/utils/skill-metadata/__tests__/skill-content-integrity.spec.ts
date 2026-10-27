@@ -15,16 +15,19 @@ const CHARACTERS_PER_TOKEN = 4;
 // A ratchet, not a target: a skill is re-sent on every model step after it is
 // loaded, so growing past its budget needs a deliberate change here.
 const SKILL_TOKEN_BUDGETS: Record<string, number> = {
-  // Raised from 16_500 for the Google SERP rows the source registry adds to
-  // both provider maps (SERP was in the source order but no provider map)
-  sourcing: 16_700,
+  // Raised from 16_500 for purpose sections (recruiting, sales), rubrics, query
+  // planning, the large-list, escalation and admission playbooks, Naukri and
+  // inbound applicants. A route loads far less (see skill-library.spec.ts).
+  // Raised to 22_500 for intent-glossary, source-profiles and entity-resolution,
+  // offset by dropping the placeholder source caps and generic requirement lists
+  sourcing: 22_500,
   outreach: 4_700,
   'workflow-building': 4_500,
-  'ai-filter-enrich': 4_500,
+  'ai-filter-enrich': 3_200,
   'dashboard-building': 3_000,
   'workspace-demo-seeding': 3_000,
   'data-manipulation': 3_000,
-  'org-structure-insights': 2_500,
+  'org-structure-insights': 3_000,
   'code-interpreter': 2_000,
   setup: 2_000,
   'view-building': 1_500,
@@ -36,7 +39,7 @@ const SKILL_TOKEN_BUDGETS: Record<string, number> = {
   'metadata-building': 1_000,
   xlsx: 1_000,
   'custom-objects-cleanup': 1_000,
-  research: 500,
+  research: 600,
 };
 
 // A playbook is one short single-purpose instruction, so it needs no budget

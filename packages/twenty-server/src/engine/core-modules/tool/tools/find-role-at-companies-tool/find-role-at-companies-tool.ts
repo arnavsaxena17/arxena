@@ -71,7 +71,7 @@ import {
   OutreachTableViewService,
   readCellText,
 } from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
-import { OutreachWorkingSetService } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+import { OutreachTabService } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
 import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';
@@ -287,7 +287,7 @@ export class FindRoleAtCompaniesTool implements Tool {
     private readonly linkedinProfileResolverService: LinkedinProfileResolverService,
     private readonly upsertOutreachTargetPeopleTool: UpsertOutreachTargetPeopleTool,
     private readonly titleExpansionService: TitleExpansionService,
-    private readonly outreachWorkingSetService: OutreachWorkingSetService,
+    private readonly outreachTabService: OutreachTabService,
     private readonly outreachTableViewService: OutreachTableViewService,
   ) {}
 
@@ -422,10 +422,10 @@ export class FindRoleAtCompaniesTool implements Tool {
       return "Pass companies, or set fromProject with a projectId to look up the project's Companies tab";
     }
 
-    const rows = await this.outreachWorkingSetService.getAll({
+    const rows = await this.outreachTabService.getAll({
       workspaceId,
       projectId: input.projectId,
-      subject: 'company',
+      tab: 'companies',
     });
     const view = input.onlyViewMatches
       ? await this.outreachTableViewService.get({
@@ -551,7 +551,7 @@ export class FindRoleAtCompaniesTool implements Tool {
             this.searchBrightData({
               variants,
               titles,
-              country: input.country,
+              location: input.location,
               maxBudgetUsd: input.maxBudgetUsd,
               workspaceId,
               roles: input.roles,
@@ -569,7 +569,7 @@ export class FindRoleAtCompaniesTool implements Tool {
               variants,
               titles,
               roles: input.roles,
-              country: input.country,
+              location: input.location,
             }),
           )
             .then((result) => {
@@ -670,7 +670,7 @@ export class FindRoleAtCompaniesTool implements Tool {
         company: company.name,
         alternateNames,
         roles: input.roles,
-        country: input.country,
+        location: input.location,
         candidates,
         sourceErrors,
       }),
@@ -825,7 +825,7 @@ export class FindRoleAtCompaniesTool implements Tool {
   private async searchBrightData({
     variants,
     titles,
-    country,
+    location,
     maxBudgetUsd,
     workspaceId,
     roles,
@@ -833,7 +833,7 @@ export class FindRoleAtCompaniesTool implements Tool {
   }: {
     variants: string[];
     titles: string[];
-    country?: string;
+    location?: string;
     maxBudgetUsd: number;
     workspaceId: string;
     roles: string[];
@@ -846,7 +846,7 @@ export class FindRoleAtCompaniesTool implements Tool {
       0,
       MAX_VARIANTS_PER_BRIGHT_DATA_SEARCH,
     )) {
-      const rawQuery = `${titles.join(', ')} of ${variant}${isNonEmptyString(country) ? ` ${country}` : ''}`;
+      const rawQuery = `${titles.join(', ')} of ${variant}${isNonEmptyString(location) ? ` ${location}` : ''}`;
       const { result } =
         await this.brightDataLudicrousSearchService.searchNaturalLanguage({
           workspaceId,
@@ -1015,7 +1015,7 @@ export class FindRoleAtCompaniesTool implements Tool {
     company,
     alternateNames,
     roles,
-    country,
+    location,
     candidates,
     sourceErrors,
   }: {
@@ -1023,7 +1023,7 @@ export class FindRoleAtCompaniesTool implements Tool {
     company: string;
     alternateNames: string[];
     roles: string[];
-    country?: string;
+    location?: string;
     candidates: Candidate[];
     sourceErrors: string[];
   }): Promise<Map<string, PersonJudgement>> {
@@ -1037,7 +1037,7 @@ export class FindRoleAtCompaniesTool implements Tool {
         company,
         alternateNames,
         roles,
-        country,
+        location,
         candidates: unique.map((candidate) => ({
           id: candidate.id,
           name: candidate.name,
@@ -1449,10 +1449,10 @@ export class FindRoleAtCompaniesTool implements Tool {
     }
 
     try {
-      await this.outreachWorkingSetService.writeOtherFields({
+      await this.outreachTabService.writeOtherFields({
         workspaceId,
         projectId: input.projectId,
-        subject: 'company',
+        tab: 'companies',
         valuesByRowId: new Map([
           [
             outcome.companyRowId,

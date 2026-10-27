@@ -4,6 +4,7 @@ export type OutreachListSource =
   | 'bright_data'
   | 'apollo'
   | 'linkedin'
+  | 'harvest'
   | 'exa'
   | 'other';
 

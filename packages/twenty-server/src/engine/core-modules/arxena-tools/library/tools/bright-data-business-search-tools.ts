@@ -19,7 +19,7 @@ export const brightDataBusinessSearchTools: McpTool[] = [
       name: 'search_bright_data_business',
       title: 'Search Bright Data business',
       description:
-        'Bright Data Business Search for companies or people from a raw natural-language request. Default ludicrous; billed at $0.002 per returned record (max $10 per query) and works in two steps. Step 1: call WITHOUT planId. The server plans several structured queries and samples them for a few cents, then returns planId, per-slice match counts, expected accuracy and the cost of fetching N records; nothing is fetched yet. Show these numbers to the user and ask which budget to spend. Step 2: after the user confirms, call again with planId and maxBudgetUsd (optionally targetCount, projectId). Pass mode instant with entity company and a bare domain (e.g. stripe.com) to look up one company by website. The ludicrous result never contains the records, only counts and a summary; they go to the project tab and a saved dataset. Fetched records are saved server-side under the planId for 30 days: if no project was known, call again with the same planId and a projectId to write them at no charge. Pass projectId so results are written to the Outreach tab; do not upsert those rows again. Requires BRIGHT_DATA_API_KEY.',
+        'Bright Data Business Search for companies or people from a raw natural-language request. Default ludicrous; billed at $0.002 per returned record (max $10 per query) and works in two steps. Step 1: call WITHOUT listId. The server plans several structured queries and samples them for a few cents, then returns listId, per-slice match counts, expected accuracy and the cost of fetching N records; nothing is fetched yet. Show these numbers to the user and ask which budget to spend. Step 2: after the user confirms, call again with listId and maxBudgetUsd (optionally targetCount, projectId). Pick the mode by input: ludicrous for a set described by attributes (it has no URL, website or domain field); instant only with entity company and a bare domain (e.g. stripe.com) to look up one company by website. For one person by LinkedIn URL or name use fetch_profiles; a company LinkedIn URL is not supported. The ludicrous result never contains the records, only counts and a summary; they go to the project tab and a saved dataset. Fetched records are saved server-side under the listId for 30 days: if no project was known, call again with the same listId and a projectId to write them at no charge. Pass projectId so results are written to the Outreach tab; do not upsert those rows again. Requires BRIGHT_DATA_API_KEY.',
       annotations: { readOnlyHint: false },
       inputSchema: {
         type: 'object',
@@ -38,7 +38,7 @@ export const brightDataBusinessSearchTools: McpTool[] = [
             type: 'string',
             enum: ['ludicrous', 'instant'],
             description:
-              'Default ludicrous. Pass instant only for company lookup by domain (bare host, no spaces).',
+              'Default ludicrous, for a set described by attributes. Pass instant only with entity company for a lookup by website (bare host, no spaces); any other instant call runs as ludicrous.',
           },
           limit: {
             type: 'number',
@@ -49,10 +49,10 @@ export const brightDataBusinessSearchTools: McpTool[] = [
             description:
               'Outreach project id. When set, mapped rows are merged into the Companies or People tab.',
           },
-          planId: {
+          listId: {
             type: 'string',
             description:
-              'Ludicrous only. planId returned by the estimate call. Pass it, with maxBudgetUsd, once the user confirms the budget.',
+              'Ludicrous only. listId returned by the estimate call. Pass it, with maxBudgetUsd, once the user confirms the budget.',
           },
           maxBudgetUsd: {
             type: 'number',
@@ -97,7 +97,7 @@ export const brightDataBusinessSearchTools: McpTool[] = [
           projectId: hasNonEmptyString(args.projectId)
             ? args.projectId
             : undefined,
-          planId: hasNonEmptyString(args.planId) ? args.planId : undefined,
+          listId: hasNonEmptyString(args.listId) ? args.listId : undefined,
           maxBudgetUsd:
             args.autoExecute === true
               ? Math.min(
@@ -120,7 +120,7 @@ export const brightDataBusinessSearchTools: McpTool[] = [
       name: 'outreach_list',
       title: 'Search result lists',
       description:
-        'Work with search results held in a list. Every search tool (Bright Data, Apollo, LinkedIn, Exa) puts its results in a list and returns only a listId and counts. Lists are temporary: 30 days when a source was paid, otherwise 7, extended each time they are used. actions: list (all lists), summary (counts), peek (max 10 rows), export (CSV download link, give it to the user), dedupe (against crm or lists; remove drops matches), attach (show rows on a project tab, needs projectId), save_to_crm (create CRM Company / Person records tagged to projectId, never enrolled; works in batches using offset (up to 20,000 rows a call)), delete. Never read a whole list into the conversation.',
+        'Overflow for search result lists (listId). Find searches with projectId already write the project tab. Lists last 30 days when a source was paid, otherwise 7. actions: list, summary, peek (max 10), export (CSV), dedupe (crm or lists), attach (a list already on that project is skipped), save_to_crm (bag overflow; prefer save_outreach_targets_to_crm once rows are on the tab), delete. Never read a whole list into the conversation.',
       annotations: { readOnlyHint: false },
       inputSchema: {
         type: 'object',

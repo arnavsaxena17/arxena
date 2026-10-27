@@ -14,7 +14,7 @@ const enrichmentSpec = (overrides: Partial<FilterSpec> = {}): FilterSpec => ({
     },
     { name: 'source', type: 'text' },
   ],
-  model: 'gpt4omini',
+  model: 'gpt6luna',
   metadataFields: ['name', 'companyName'],
   allowUnknown: true,
   ...overrides,

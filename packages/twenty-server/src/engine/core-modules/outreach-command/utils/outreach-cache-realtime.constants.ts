@@ -7,11 +7,13 @@ export type OutreachCacheKind =
   | 'aiColumn'
   | 'tableView';
 
+export type OutreachTableTab = 'people' | 'companies';
+
 export type OutreachAiColumnRunProgress = {
   runId: string;
   label: string;
   // Which table the column belongs to, so only that tab shows the progress.
-  subject: 'person' | 'company';
+  tab: OutreachTableTab;
   status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
   total: number;
   done: number;
@@ -19,7 +21,10 @@ export type OutreachAiColumnRunProgress = {
   error?: string;
 };
 
-export type OutreachTableTab = 'people' | 'companies';
+// AI filter engine / workflow FilterSubject uses singular entity names.
+export const filterSubjectFromTab = (
+  tab: OutreachTableTab,
+): 'person' | 'company' => (tab === 'people' ? 'person' : 'company');
 
 export type OutreachTableFilter =
   | { columnId: string; kind: 'values'; values: string[] }

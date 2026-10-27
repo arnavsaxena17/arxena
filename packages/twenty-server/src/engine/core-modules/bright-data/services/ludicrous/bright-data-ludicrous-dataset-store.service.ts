@@ -13,7 +13,7 @@ export type BrightDataLudicrousDataset = BrightDataLudicrousRunResult & {
 };
 
 // Records are paid for ($0.002 each) the moment they are fetched, so the run
-// result is kept here by planId. A later call can write the same rows to a
+// result is kept here by listId. A later call can write the same rows to a
 // project, export them or re-open them without buying them again, even if the
 // chat lost the tool output or no project was known at fetch time.
 @Injectable()
@@ -23,13 +23,13 @@ export class BrightDataLudicrousDatasetStoreService {
     private readonly cache: CacheStorageService,
   ) {}
 
-  private key(planId: string): string {
-    return `bright-data-ludicrous-dataset:${planId}`;
+  private key(listId: string): string {
+    return `bright-data-ludicrous-dataset:${listId}`;
   }
 
   async save(dataset: BrightDataLudicrousDataset): Promise<void> {
     await this.cache.set(
-      this.key(dataset.planId),
+      this.key(dataset.listId),
       dataset,
       BRIGHT_DATA_DATASET_TTL_MS,
     );
@@ -37,11 +37,11 @@ export class BrightDataLudicrousDatasetStoreService {
 
   // A dataset belongs to the workspace that paid for it
   async load(
-    planId: string,
+    listId: string,
     workspaceId: string,
   ): Promise<BrightDataLudicrousDataset | undefined> {
     const dataset = await this.cache.get<BrightDataLudicrousDataset>(
-      this.key(planId),
+      this.key(listId),
     );
 
     if (!dataset || dataset.workspaceId !== workspaceId) {

@@ -1,17 +1,17 @@
 import { z } from 'zod';
 
-const subjectSchema = z
-  .enum(['person', 'company'])
-  .default('person')
+const tabSchema = z
+  .enum(['people', 'companies'])
+  .default('people')
   .describe(
-    "Default and almost always: person (the People tab rows; also for questions about the people's companies, using companyName). company only when the user is on the Companies tab.",
+    "The project table tab. Default people (also for questions about those people's companies). companies only when the user is on the Companies tab.",
   );
 
-export const GetOutreachWorkingSetInputZodSchema = z.object({
+export const GetOutreachTabInputZodSchema = z.object({
   projectId: z
     .string()
     .describe('Project id from the outreachCommand browsing context'),
-  subject: subjectSchema,
+  tab: tabSchema,
   limit: z
     .number()
     .int()
@@ -38,9 +38,7 @@ export const GetOutreachWorkingSetInputZodSchema = z.object({
     ),
 });
 
-export type GetOutreachWorkingSetInput = z.infer<
-  typeof GetOutreachWorkingSetInputZodSchema
->;
+export type GetOutreachTabInput = z.infer<typeof GetOutreachTabInputZodSchema>;
 
 const fieldSchema = z.object({
   name: z
@@ -65,7 +63,7 @@ export const OutreachAiColumnFilterZodSchema = z.object({
   selectedModel: z
     .string()
     .describe(
-      'jev (boolean filters from fields on the row), gpt4omini, gpt4ominisearchpreview (web search: revenue, headcount), gpt4o',
+      'jev (boolean filters from fields on the row), deepseek (default chat), gpt4ominisearchpreview (web search: revenue, headcount), gpt4o',
     ),
   fields: z.array(fieldSchema).min(1).max(4),
   selectedMetadataFields: z
@@ -131,7 +129,7 @@ export type OutreachAiColumnFitmentInput = z.infer<
 export const PreviewOutreachAiColumnInputZodSchema = z
   .object({
     projectId: z.string(),
-    subject: subjectSchema,
+    tab: tabSchema,
     description: z
       .string()
       .min(3)
@@ -146,6 +144,19 @@ export const PreviewOutreachAiColumnInputZodSchema = z
       "Score the rows against the user's criteria: pass, fail or unknown per criterion, then a score and an outcome computed in code against the server's fitment threshold. Use instead of description for sourcing a list. Needs no design call.",
     ),
     rowLimit: z.number().int().min(1).max(10).default(10),
+    rowIds: z
+      .array(z.string().min(1))
+      .max(5000)
+      .optional()
+      .describe(
+        "Only these row ids. Prefer rowScope chat_upserts when scoping to this chat's writes.",
+      ),
+    rowScope: z
+      .enum(['chat_upserts', 'unfilled', 'all'])
+      .optional()
+      .describe(
+        'chat_upserts: only rows this chat upserted. unfilled/all: whole tab (preview prefers unfilled samples).',
+      ),
   })
   .refine(
     (input) =>
@@ -188,7 +199,7 @@ export const RunOutreachAiColumnInputZodSchema = z.object({
     .describe(
       'The most the user approved for this run, in USD. Needed only when the preview says needsApproval; pass the amount they agreed to (or the enrichment cap they approved once for the whole list build).',
     ),
-  subject: subjectSchema,
+  tab: tabSchema,
   previewId: z
     .string()
     .describe('previewId from preview_ai_column. Only after user confirmed.'),
@@ -204,7 +215,8 @@ export const RunOutreachAiColumnInputZodSchema = z.object({
     .describe(
       'true runs only the rows that match the filters of the view currently applied to the project table (apply_table_view), so rows an earlier filter already ruled out are not paid for. Default false: every row.',
     ),
-  // Caps how many working-set rows (in table order) are touched. Omit only for an explicit full run.
+  // Caps how many still-unfilled rows (in table order) are touched. Omit only
+  // for an explicit full run.
   rowLimit: z
     .number()
     .int()
@@ -212,7 +224,20 @@ export const RunOutreachAiColumnInputZodSchema = z.object({
     .max(100)
     .optional()
     .describe(
-      'Only process the first N rows of the working set (table order). Use for tests / "first N" / regenerate-N. Omit ONLY when the user explicitly asked to run for all rows.',
+      'Only process the first N unfilled rows of the selection (table order; already-filled rows are skipped before the cap). Use for tests / "first N" / regenerate-N. Omit ONLY when the user explicitly asked to run for all rows. With rerunAll, first N of the selection including filled.',
+    ),
+  rowIds: z
+    .array(z.string().min(1))
+    .max(5000)
+    .optional()
+    .describe(
+      "Only these row ids (after view filter). Prefer rowScope chat_upserts when scoping to this chat's writes.",
+    ),
+  rowScope: z
+    .enum(['chat_upserts', 'unfilled', 'all'])
+    .optional()
+    .describe(
+      'chat_upserts: only rows this chat upserted (server-remembered). unfilled: every still-empty row on the tab (default when omitted). all: every row in scope; pair with rerunAll to re-score filled ones.',
     ),
 });
 
@@ -228,11 +253,6 @@ export const GetAiColumnRunStatusInputZodSchema =
   AiColumnRunIdInputZodSchema.extend({
     waitSeconds: waitSecondsSchema(AI_COLUMN_DEFAULT_STATUS_WAIT_SECONDS),
   });
-
-const tabSchema = z
-  .enum(['people', 'companies'])
-  .default('people')
-  .describe('The table tab. Default people.');
 
 export const GenerateOutreachTableViewInputZodSchema = z.object({
   projectId: z.string(),
@@ -292,13 +312,15 @@ export const ApplyOutreachTableViewInputZodSchema = z.object({
 });
 
 export const RemoveOutreachAiColumnInputZodSchema = z.object({
-  projectId: z.string().describe('Project id from the outreach browsing context'),
-  subject: subjectSchema,
+  projectId: z
+    .string()
+    .describe('Project id from the outreach browsing context'),
+  tab: tabSchema,
   columnKeys: z
     .array(z.string().min(1))
     .min(1)
     .describe(
-      'AI column keys to remove from every working-set row (value + aiColumns meta). Use keys from get_outreach_working_set.aiColumns.',
+      'AI column keys to remove from every tab row (value + aiColumns meta). Use keys from get_outreach_tab.aiColumns.',
     ),
 });
 

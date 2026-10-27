@@ -9,6 +9,8 @@ const LIST_ROUTED_TOOL_NAMES = new Set([
   'search_linkedin_people',
   'search_linkedin_from_url',
   'search_linkedin_continue',
+  'search_harvest_leads',
+  'search_harvest_accounts',
 ]);
 
 export const truncateToolResult = (

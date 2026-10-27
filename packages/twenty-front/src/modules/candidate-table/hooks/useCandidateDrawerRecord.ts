@@ -20,7 +20,7 @@ import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomState
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 
 // Candidate drawer rows come from several sources (CRM candidate fetch,
-// candidate-table rows, outreach working-set rows) with different shapes.
+// candidate-table rows, outreach tab rows) with different shapes.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type CandidateDrawerData = any;
 

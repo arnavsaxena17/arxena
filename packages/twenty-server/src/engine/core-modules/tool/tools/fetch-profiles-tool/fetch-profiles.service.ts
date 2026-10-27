@@ -22,7 +22,7 @@ import {
 } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/linkedin-profile-resolver.service';
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
 import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
-import { OutreachWorkingSetService } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+import { OutreachTabService } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
 import { HarvestLinkedinService } from 'src/engine/core-modules/org-chart/services/harvest-linkedin.service';
 
 // Bright Data takes many URLs in one request; a few requests run side by side
@@ -137,7 +137,7 @@ export class FetchProfilesService {
   private readonly logger = new Logger(FetchProfilesService.name);
 
   constructor(
-    private readonly outreachWorkingSetService: OutreachWorkingSetService,
+    private readonly outreachTabService: OutreachTabService,
     private readonly brightDataBusinessSearchService: BrightDataBusinessSearchService,
     private readonly brightDataProfileScrapeService: BrightDataLinkedinProfileScrapeService,
     private readonly harvestLinkedinService: HarvestLinkedinService,
@@ -153,10 +153,10 @@ export class FetchProfilesService {
     const startedAt = Date.now();
     const deadline = startedAt + (input.timeBudgetMs ?? DEFAULT_TIME_BUDGET_MS);
     const outcomes = input.outcomes ?? ['pass', 'unknown'];
-    const rows = await this.outreachWorkingSetService.getAll({
+    const rows = await this.outreachTabService.getAll({
       workspaceId: input.workspaceId,
       projectId: input.projectId,
-      subject: 'person',
+      tab: 'people',
     });
     const skipped = {
       noLinkedinUrl: 0,
@@ -733,10 +733,10 @@ export class FetchProfilesService {
       return;
     }
 
-    await this.outreachWorkingSetService.writeOtherFields({
+    await this.outreachTabService.writeOtherFields({
       workspaceId: input.workspaceId,
       projectId: input.projectId,
-      subject: 'person',
+      tab: 'people',
       valuesByRowId: new Map(
         [...records].map(([rowId, record]) => [
           rowId,
@@ -754,10 +754,10 @@ export class FetchProfilesService {
       return;
     }
 
-    await this.outreachWorkingSetService.writeOtherFields({
+    await this.outreachTabService.writeOtherFields({
       workspaceId: input.workspaceId,
       projectId: input.projectId,
-      subject: 'person',
+      tab: 'people',
       valuesByRowId: new Map(
         [...profiles].map(([rowId, profile]) => [
           rowId,

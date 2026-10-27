@@ -8,13 +8,12 @@ type AttachOutreachListOptions = {
   projectId: string;
 };
 
-// Re-runnable repair/convenience: show a list (or an old Bright Data dataset,
-// by its plan id) on a project's Companies / People tab.
-//   node dist/command/command.js outreach-list:attach -w <workspace> -l <listId|planId> -p <projectId>
+// Re-runnable repair/convenience: show a list (or an old Bright Data dataset)
+// on a project's Companies / People tab.
+//   node dist/command/command.js outreach-list:attach -w <workspace> -l <listId> -p <projectId>
 @Command({
   name: 'outreach-list:attach',
-  description:
-    'Show an outreach list (or a saved Bright Data plan id) on a project tab',
+  description: 'Show an outreach list on a project tab',
 })
 export class AttachOutreachListCommand extends CommandRunner {
   constructor(private readonly outreachListTool: OutreachListTool) {

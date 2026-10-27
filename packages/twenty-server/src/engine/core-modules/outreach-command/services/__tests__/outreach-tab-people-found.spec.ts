@@ -1,4 +1,4 @@
-import { OutreachWorkingSetService } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+import { OutreachTabService } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
 
 const buildService = ({
   companies,
@@ -9,7 +9,7 @@ const buildService = ({
 }) => {
   const setCompanies = jest.fn().mockResolvedValue(undefined);
   const setPeople = jest.fn().mockResolvedValue(undefined);
-  const service = new OutreachWorkingSetService(
+  const service = new OutreachTabService(
     {
       get: jest.fn().mockResolvedValue({ people }),
       set: setPeople,
@@ -27,7 +27,7 @@ const buildService = ({
   return { service, setCompanies, setPeople };
 };
 
-describe('OutreachWorkingSetService.syncPeopleFound', () => {
+describe('OutreachTabService.syncPeopleFound', () => {
   it('should fill People found for companies that already have people', async () => {
     const { service, setCompanies, setPeople } = buildService({
       companies: [

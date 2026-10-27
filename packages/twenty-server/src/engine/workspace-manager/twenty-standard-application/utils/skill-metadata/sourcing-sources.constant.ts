@@ -52,12 +52,8 @@ export type SourcingSource = {
 export const SOURCING_ALWAYS_LEARNED_TOOLS: Readonly<
   Record<SourcingEntity, readonly string[]>
 > = {
-  people: ['upsert_outreach_target_people'],
-  companies: [
-    'plan-local-business-city-coverage',
-    'fetch-and-upsert-local-businesses',
-    'upsert_outreach_target_companies',
-  ],
+  people: ['get_outreach_tab'],
+  companies: ['get_outreach_tab'],
 };
 
 export const SOURCING_SOURCES: readonly SourcingSource[] = [
@@ -75,7 +71,7 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
     people: {
       tools: '`search_bright_data_business` (`entity: "people"`)',
       bestFor:
-        'Plain-language people sets ("MD or CEO of QSR restaurants in India"), budgeted ludicrous mode by default ({{fact: bright-data.costPerRecord}}/record), not a pasted LinkedIn URL or a taxonomy filter',
+        'People sets described by title, employer, industry, skills or location ("MD or CEO of QSR restaurants in India"), ludicrous, budgeted at {{fact: bright-data.costPerRecord}}/record. Not for one person by LinkedIn URL or name (use `fetch_profiles`)',
       requires: '`BRIGHT_DATA_API_KEY` set',
       learnTools: ['search_bright_data_business'],
       markerPrefix: 'search-bright-data-people',
@@ -85,7 +81,7 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
     companies: {
       tools: '`search_bright_data_business` (`entity: "company"`)',
       bestFor:
-        'Plain-language company sets (ludicrous, {{fact: bright-data.costPerRecord}}/record); **or** look up one company by domain with `mode: "instant"` and a bare host (`stripe.com`) — see domain recipe in the Bright Data companies source',
+        'Company sets described by industry, location, size or funding (ludicrous, {{fact: bright-data.costPerRecord}}/record); **or** one company by website with `mode: "instant"` and a bare host (`stripe.com`). Not a company LinkedIn URL',
       requires: '`BRIGHT_DATA_API_KEY` set',
       learnTools: ['search_bright_data_business'],
       markerPrefix: 'search-bright-data-companies',
@@ -170,18 +166,17 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
     label: 'Harvest',
     rank: 4,
     people: {
-      tools: 'People API (`dataSource: "harvest"`)',
-      bestFor:
-        'People search without LinkedIn; taxonomy-backed role/function/grade',
+      tools: '`search_harvest_leads`',
+      bestFor: 'Sales Navigator people filters without a seat; paid',
       requires: 'Harvest configured',
       learnTools: [],
-      orderLabel: 'Harvest People API',
+      orderLabel: 'Harvest',
       section: 'src-harvest',
     },
     companies: {
-      tools: 'People API (`dataSource: "harvest"`)',
+      tools: '`search_harvest_accounts`',
       bestFor:
-        'Company discovery *via people* — find companies where people match a role',
+        'Sales Navigator company filters: headcount, growth, revenue, hiring; paid',
       requires: 'Harvest configured',
       learnTools: [],
       orderLabel: 'Harvest',
@@ -189,12 +184,9 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
     },
     profile: {
       name: 'Harvest',
-      strongFor: 'People without a LinkedIn session',
-      blindSpots: 'No company search',
-      limit: {
-        standing: 'heuristic',
-        text: 'cap unknown, stop when the last batch is over 80% duplicates',
-      },
+      strongFor: 'Sales Navigator filters without a LinkedIn seat',
+      blindSpots: '$0.004 per record; no lead or account lists',
+      limit: { standing: 'firm', text: '2,500 per search (100 pages of 25)' },
     },
   },
   {
@@ -287,6 +279,22 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
       requires: 'Elasticsearch index',
       learnTools: ['search_companies_index'],
       markerPrefix: 'search-companies-index',
+    },
+  },
+  {
+    key: 'google-maps',
+    label: 'Google Maps',
+    facts: {
+      costPerThousand: '$1.50',
+      costPerRecord: '$0.0015',
+    },
+    companies: {
+      tools:
+        '`plan-local-business-city-coverage`, `fetch-and-upsert-local-businesses`',
+      bestFor:
+        'Outlets you can walk into across a city (hotels, restaurants, clinics, stores); Bright Data Google Maps, about {{fact: google-maps.costPerThousand}} per 1,000 records. Load `places`',
+      requires: '`BRIGHT_DATA_API_KEY` set',
+      learnTools: [],
     },
   },
   {

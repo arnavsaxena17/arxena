@@ -234,7 +234,7 @@ export class CandidateSearchHandlerService {
   ) {
     const { tokenAccumulator, accumulateTokens } =
       this.createTokenAccumulator();
-    const model = 'gpt-4o-mini';
+    const model = 'gpt-6-luna';
 
     try {
       this.throwIfAborted(abortSignal);

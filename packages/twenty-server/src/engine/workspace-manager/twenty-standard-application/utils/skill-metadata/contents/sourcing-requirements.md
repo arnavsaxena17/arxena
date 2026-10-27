@@ -15,21 +15,26 @@ State the brief in a few lines, ask only what is missing in one batch (at most f
 
 ### By kind of request
 
-**Population** ("software engineers who know React in Mumbai"). Needs a role or skill, an industry, a geography, a seniority band, a count. Defaults: current roles only; the workspace HQ country when none is given. Traps: a skill is not a title; one title spans several levels ("engineer"). Ask: the count; the seniority band if the title spans levels.
-
-**Named role at named companies** ("the CEO of each company"). Needs the companies (the project's, or pasted), the roles in the user's words, a country. Defaults: every role they named and no others; up to three people per company; the company's HQ country. Traps: brand against legal name; "MD" as managing director or medical doctor; "leaders" and "decision makers" name no role. Ask: which roles, only if they said "leaders" or similar. Never ask which companies when the project has them.
-
-**Company list** ("QSR restaurants in India"). Needs the industry, the geography, a size band, the unit, the count. Defaults: companies headquartered in the country; exclude those already in the project. Traps: chains against single outlets; India HQ against India presence; brands against legal entities. Ask: the unit and the count.
-
-**Scored list of about N** ("60 multi-store Indian consumer brands that run digital marketing"). A company or population request plus a rubric. Needs each criterion's threshold and its evidence ("20 or more stores" is read from what). Defaults: stated attributes are must-haves; the fitment threshold is the server's. Ask: thresholds the user did not state; the caps, once; the count.
-
-**Look-alikes of a seed list** ("more like these"). Needs the seed (the working set or pasted URLs) and which attributes make them alike. Default: match the industry, size band and geography the seeds share. Ask: which attributes, only if the seeds differ on them.
-
-**Expand or refresh an existing list.** Read the earlier brief from `get_sourcing_ledger` and reuse its criteria. Default: skip everyone already in the list or the CRM. Ask: how many more.
+| Kind | Example | Defaults | Ask only |
+| --- | --- | --- | --- |
+| Population | "React engineers in Mumbai" | Current roles; the workspace HQ country when none is given | The count; the seniority band if the title spans levels |
+| Named role at named companies | "the CEO of each company" | Every role named and no others; up to three per company; the company's HQ country | Which roles, only for "leaders" or similar. Never which companies when the project has them |
+| Company list | "QSR restaurants in India" | Headquartered in the country; skip those already in the project | The unit and the count |
+| Scored list of about N | "60 multi-store Indian brands that run digital marketing" | Stated attributes are must-haves; the server's fitment threshold | Thresholds not stated and the evidence each is read from ("20 or more stores" from what); the caps, once; the count |
+| Look-alikes of seeds | "more like these" | The industry, size band and geography the seeds share | Which attributes, only if the seeds differ on them |
+| Expand or refresh a list | "find more" | The earlier brief from `get_sourcing_ledger`; skip everyone already in the list or the CRM | How many more |
 
 ### Ambiguous terms
 
-When a word has two readings, ask what it means before spending anything, with the likely readings as options and the likelier one recommended. Do not ask about a word you can resolve from the workspace ICP or the project.
+Settle them with the intake gate and glossary (`intent-glossary`).
+
+### Age, later checks, conflicts
+
+{{include: later-checks}}
+
+- **Conflicts in the brief.** When two parts contradict each other or the market (a two-week joiner, "rejects experienced folks" against 15 to 18 years), name each one in the brief and ask once, with a recommended option. Do not relax anything silently.
+- **A requirement already in the ledger.** If `get_sourcing_ledger` shows an earlier brief with the same role, experience and pay, say you recognise it, reuse its criteria and ask once whether it is the same. Run no paid search before the answer, and never rerun an identical query.
+- **Thin coverage.** For roles whose profiles are rare (doctors, plant staff), say what you do not know about coverage and probe first (`query-planning`).
 
 ### Never ask
 

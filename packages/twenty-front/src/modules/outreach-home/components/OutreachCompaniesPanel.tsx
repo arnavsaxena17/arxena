@@ -543,7 +543,7 @@ export const OutreachCompaniesPanel = ({
         actions={actions}
       />
       <OutreachAiColumnProgressBar
-        run={aiColumnRun?.subject === 'company' ? aiColumnRun : null}
+        run={aiColumnRun?.tab === 'companies' ? aiColumnRun : null}
         projectId={projectId}
       />
       <OutreachAiViewBar

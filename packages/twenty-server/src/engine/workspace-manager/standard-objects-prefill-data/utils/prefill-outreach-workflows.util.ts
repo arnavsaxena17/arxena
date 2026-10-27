@@ -23,7 +23,11 @@ import {
 } from 'src/engine/core-modules/outreach-command/prompts/outreach-seeded-agent-schemas';
 
 import { getOutreachLogicFunctionIds } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-logic-functions.util';
-import { OUTREACH_WORKFLOW_GRAPH_TEMPLATES } from 'src/engine/workspace-manager/standard-objects-prefill-data/data/outreach-workflow-graphs';
+import {
+  buildCandidateSequencerGraph,
+  inferOutreachSequencerGraphOptionsFromSteps,
+  OUTREACH_WORKFLOW_GRAPH_TEMPLATES,
+} from 'src/engine/workspace-manager/standard-objects-prefill-data/data/outreach-workflow-graphs';
 
 import {
   OUTREACH_WORKFLOW_NAMES_TO_DEACTIVATE,
@@ -1062,6 +1066,7 @@ export const prefillOutreachWorkflows = async ({
   applicationId,
   replaceExistingDrafts = false,
   onlyGraphNames,
+  preserveSequencerGraphOptions = false,
 }: {
   entityManager: EntityManager;
   workspaceId: string;
@@ -1070,6 +1075,10 @@ export const prefillOutreachWorkflows = async ({
   replaceExistingDrafts?: boolean;
   // Re-seeding one reshaped graph must not rewrite the other seeded templates.
   onlyGraphNames?: readonly string[];
+  // Rebuild each Candidate Sequencer version with the Edit Workflow options
+  // inferred from its own steps (manual templates, HITL, channels…) instead
+  // of the defaults.
+  preserveSequencerGraphOptions?: boolean;
 }) => {
   const prefillIds = getOutreachWorkflowPrefillIds(workspaceId);
   const lfIds = getOutreachLogicFunctionIds(workspaceId);
@@ -1148,6 +1157,20 @@ export const prefillOutreachWorkflows = async ({
     fieldNames: ['createdAt'],
   });
 
+  const projectRecordIdFieldId = await loadFieldMetadataId({
+    entityManager,
+    workspaceId,
+    objectName: 'project',
+    fieldNames: ['id'],
+  });
+
+  const workspaceMemberIdFieldId = await loadFieldMetadataId({
+    entityManager,
+    workspaceId,
+    objectName: 'workspaceMember',
+    fieldNames: ['id'],
+  });
+
   const harvestProjectId = await upsertHarvestProject({
     entityManager,
     schemaName,
@@ -1172,6 +1195,9 @@ export const prefillOutreachWorkflows = async ({
     [OUTREACH_WF_FIELD.createdAt]: createdAtFieldId,
     [OUTREACH_WF_FIELD.chatCandidateId]: chatCandidateFieldId,
     [OUTREACH_WF_FIELD.chatCreatedAt]: chatCreatedAtFieldId,
+    [OUTREACH_WF_FIELD.projectRecordId]: projectRecordIdFieldId,
+    // Only the pinSenderByWarmOverlap sequencer variant filters on member id.
+    [OUTREACH_WF_FIELD.workspaceMemberId]: workspaceMemberIdFieldId,
   };
 
   for (const [token, idKey] of Object.entries(LF_TOKEN_TO_ID_KEY)) {
@@ -1189,7 +1215,8 @@ export const prefillOutreachWorkflows = async ({
   const existingRows = (await entityManager.query(
     `
       SELECT w.name, w.id as "workflowId", wv.id as "workflowVersionId",
-             w."coreWorkflowId", wv."coreWorkflowVersionId", wv.status
+             w."coreWorkflowId", wv."coreWorkflowVersionId", wv.status,
+             wv.steps
       FROM ${schemaName}.workflow w
       INNER JOIN ${schemaName}."workflowVersion" wv ON wv."workflowId" = w.id
       WHERE w."deletedAt" IS NULL
@@ -1205,6 +1232,7 @@ export const prefillOutreachWorkflows = async ({
     coreWorkflowId: string;
     coreWorkflowVersionId: string;
     status: string;
+    steps: unknown;
   }>;
 
   const existingByName = new Map<
@@ -1246,6 +1274,33 @@ export const prefillOutreachWorkflows = async ({
     const steps = substituteTokens(graph.steps, replacements);
     const position = index + 3;
 
+    const graphForVersion = (
+      version: (typeof existingVersions)[number] | undefined,
+    ): { trigger: unknown; steps: unknown } => {
+      if (
+        !preserveSequencerGraphOptions ||
+        graph.name !== SEEDED_OUTREACH_WORKFLOW.candidateSequencer.name ||
+        !isDefined(version)
+      ) {
+        return { trigger, steps };
+      }
+
+      const versionSteps =
+        typeof version.steps === 'string'
+          ? JSON.parse(version.steps)
+          : version.steps;
+      const rebuilt = buildCandidateSequencerGraph(
+        inferOutreachSequencerGraphOptionsFromSteps(
+          Array.isArray(versionSteps) ? versionSteps : [],
+        ),
+      );
+
+      return {
+        trigger: substituteTokens(rebuilt.trigger, replacements),
+        steps: substituteTokens(rebuilt.steps, replacements),
+      };
+    };
+
     // replaceExistingDrafts rewrites live DRAFT + ACTIVE graphs. ARCHIVED stays
     // put. If every DRAFT is soft-deleted, revive the stable draft id (insert
     // orIgnore used to no-op on that collision and leave ACTIVE stale).
@@ -1259,11 +1314,13 @@ export const prefillOutreachWorkflows = async ({
       const existingWorkflow = existingVersions[0];
 
       for (const version of [...draftVersions, ...activeVersions]) {
+        const versionGraph = graphForVersion(version);
+
         versionRows.push({
           _update: true,
           id: version.workflowVersionId,
-          trigger: JSON.stringify(trigger),
-          steps: JSON.stringify(steps),
+          trigger: JSON.stringify(versionGraph.trigger),
+          steps: JSON.stringify(versionGraph.steps),
           coreWorkflowVersionId: version.coreWorkflowVersionId,
           workflowId: version.workflowId,
           coreWorkflowId: version.coreWorkflowId,
@@ -1274,13 +1331,15 @@ export const prefillOutreachWorkflows = async ({
           coreVersionRows.push({
             _update: true,
             id: version.coreWorkflowVersionId,
-            triggers: [trigger],
-            steps,
+            triggers: [versionGraph.trigger],
+            steps: versionGraph.steps,
           });
         }
       }
 
       if (draftVersions.length === 0) {
+        // The revived draft starts from the live version's options.
+        const revivedGraph = graphForVersion(activeVersions[0]);
         const draftWorkflowVersionId = v5(
           `gtmOutreachWorkflowVersionDraft:${slug}:${workspaceId}`,
           OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
@@ -1295,8 +1354,8 @@ export const prefillOutreachWorkflows = async ({
           id: draftWorkflowVersionId,
           name: 'v1',
           graphName: graph.name,
-          trigger: JSON.stringify(trigger),
-          steps: JSON.stringify(steps),
+          trigger: JSON.stringify(revivedGraph.trigger),
+          steps: JSON.stringify(revivedGraph.steps),
           status: 'DRAFT',
           position,
           workflowId: existingWorkflow.workflowId,
@@ -1313,8 +1372,8 @@ export const prefillOutreachWorkflows = async ({
             OUTREACH_WORKFLOW_PREFILL_ID_NAMESPACE,
           ),
           applicationId,
-          triggers: [trigger],
-          steps,
+          triggers: [revivedGraph.trigger],
+          steps: revivedGraph.steps,
           status: 'DRAFT',
           workflowId: existingWorkflow.coreWorkflowId,
         });

@@ -1,11 +1,11 @@
 import { FetchProfilesService } from 'src/engine/core-modules/tool/tools/fetch-profiles-tool/fetch-profiles.service';
-import { type OutreachWorkingSetRow } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+import { type OutreachTabRow } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
 
 const row = (
   id: string,
   linkedinUrl: string | undefined,
   otherFields: Record<string, unknown> = {},
-): OutreachWorkingSetRow => ({
+): OutreachTabRow => ({
   id,
   source: 'ephemeral',
   name: `Person ${id}`,
@@ -26,7 +26,7 @@ const build = ({
   resolver = undefined as { resolve: jest.Mock } | undefined,
   judge = undefined as jest.Mock | undefined,
 }: {
-  rows: OutreachWorkingSetRow[];
+  rows: OutreachTabRow[];
   search?: jest.Mock;
   resolver?: { resolve: jest.Mock };
   judge?: jest.Mock;

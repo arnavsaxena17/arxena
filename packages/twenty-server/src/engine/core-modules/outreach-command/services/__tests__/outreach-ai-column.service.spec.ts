@@ -8,10 +8,10 @@ import {
   toRecordForModel,
   wholeRecordFields,
 } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column.service';
-import { type OutreachWorkingSetRow } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+import { type OutreachTabRow } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
 
 describe('toRecordForModel', () => {
-  const person: OutreachWorkingSetRow = {
+  const person: OutreachTabRow = {
     id: 'p1',
     source: 'ephemeral',
     name: 'Jorge Areosa',
@@ -58,7 +58,7 @@ describe('toRecordForModel', () => {
 
 describe('wholeRecordFields', () => {
   it('should send every field the row has, not only the designed ones', () => {
-    const company: OutreachWorkingSetRow = {
+    const company: OutreachTabRow = {
       id: 'c1',
       source: 'ephemeral',
       name: 'Acme Stores',
@@ -73,7 +73,7 @@ describe('wholeRecordFields', () => {
         storeCountIndia: 120,
         empty: '',
       },
-    } as OutreachWorkingSetRow;
+    } as OutreachTabRow;
     const fields = wholeRecordFields({
       records: [toRecordForModel(company)],
       preferredFields: ['name'],
@@ -175,7 +175,7 @@ describe('existing AI columns', () => {
           },
         },
       },
-    ] as unknown as OutreachWorkingSetRow[];
+    ] as unknown as OutreachTabRow[];
 
     expect(readExistingAiColumns(rows)).toEqual([
       {
@@ -216,7 +216,7 @@ describe('fitment columns', () => {
       title: 'Founder',
       otherFields: {},
     },
-  ] as OutreachWorkingSetRow[];
+  ] as OutreachTabRow[];
 
   const buildService = () => {
     const run = jest.fn(async (_records: unknown[], spec: FilterSpec) => ({
@@ -285,7 +285,7 @@ describe('fitment columns', () => {
     const preview = await service.preview({
       workspaceId: 'w',
       projectId: 'proj',
-      subject: 'person',
+      tab: 'people',
       fitment: { stage: 'snapshot', criteria },
     });
     const spec = run.mock.calls[0][1];
@@ -319,7 +319,7 @@ describe('fitment columns', () => {
     await service.preview({
       workspaceId: 'w',
       projectId: 'proj',
-      subject: 'person',
+      tab: 'people',
       fitment: { stage: 'profile', criteria },
     });
 

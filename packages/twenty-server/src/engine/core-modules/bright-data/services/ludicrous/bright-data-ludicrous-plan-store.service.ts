@@ -13,26 +13,26 @@ export class BrightDataLudicrousPlanStoreService {
     private readonly cache: CacheStorageService,
   ) {}
 
-  private key(planId: string): string {
-    return `bright-data-ludicrous-plan:${planId}`;
+  private key(listId: string): string {
+    return `bright-data-ludicrous-plan:${listId}`;
   }
 
   async save(plan: BrightDataLudicrousPlan): Promise<void> {
-    await this.cache.set(this.key(plan.planId), plan, BRIGHT_DATA_PLAN_TTL_MS);
+    await this.cache.set(this.key(plan.listId), plan, BRIGHT_DATA_PLAN_TTL_MS);
   }
 
   // A plan belongs to the workspace that paid for its estimate
   async load(
-    planId: string,
+    listId: string,
     workspaceId: string,
   ): Promise<BrightDataLudicrousPlan> {
     const plan = await this.cache.get<BrightDataLudicrousPlan>(
-      this.key(planId),
+      this.key(listId),
     );
 
     if (!plan || plan.workspaceId !== workspaceId) {
       throw new Error(
-        `Bright Data plan ${planId} was not found or has expired; run the estimate again`,
+        `Bright Data plan ${listId} was not found or has expired; run the estimate again`,
       );
     }
 

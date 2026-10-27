@@ -15,7 +15,7 @@ const baseSpec = (overrides: Partial<FilterSpec> = {}): FilterSpec => ({
   criteria: 'Senior sales leaders',
   fields,
   keepField: 'keep',
-  model: 'gpt4omini',
+  model: 'gpt6luna',
   metadataFields: ['name', 'title'],
   ...overrides,
 });
@@ -82,7 +82,7 @@ describe('AiFilterEngineService', () => {
       expect(
         service.resolveEngine(baseSpec({ model: 'typesafe-ai/jev' })),
       ).toBe('jev');
-      expect(service.resolveEngine(baseSpec({ model: 'gpt4omini' }))).toBe(
+      expect(service.resolveEngine(baseSpec({ model: 'gpt6luna' }))).toBe(
         'openai',
       );
       expect(

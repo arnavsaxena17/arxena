@@ -1,18 +1,18 @@
-import { type OutreachWorkingSetRow } from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
-import { summarizeWorkingSetRows } from 'src/engine/core-modules/tool/tools/outreach-ai-column-tool/outreach-ai-column-tools';
+import { type OutreachTabRow } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
+import { summarizeOutreachTabRows } from 'src/engine/core-modules/tool/tools/outreach-ai-column-tool/outreach-ai-column-tools';
 
 const row = (
   id: string,
   otherFields: Record<string, unknown>,
-): OutreachWorkingSetRow =>
+): OutreachTabRow =>
   ({
     id,
     source: 'ephemeral',
     name: `Company ${id}`,
     otherFields,
-  }) as OutreachWorkingSetRow;
+  }) as OutreachTabRow;
 
-describe('summarizeWorkingSetRows', () => {
+describe('summarizeOutreachTabRows', () => {
   const rows = [
     row('a', {
       brandCategory: 'Food',
@@ -33,7 +33,7 @@ describe('summarizeWorkingSetRows', () => {
   ];
 
   it('should count values of label and yes/no columns over all rows', () => {
-    const summary = summarizeWorkingSetRows(rows, ['brandCategory', 'inIndia']);
+    const summary = summarizeOutreachTabRows(rows, ['brandCategory', 'inIndia']);
 
     expect(summary.brandCategory).toMatchObject({
       filled: 3,
@@ -46,7 +46,7 @@ describe('summarizeWorkingSetRows', () => {
   });
 
   it('should give a distribution for number columns so a cut-off can be chosen', () => {
-    const summary = summarizeWorkingSetRows(rows, ['employeesOnLinkedin']);
+    const summary = summarizeOutreachTabRows(rows, ['employeesOnLinkedin']);
 
     expect(summary.employeesOnLinkedin).toMatchObject({
       filled: 4,

@@ -184,7 +184,7 @@ export class BrightDataLudicrousExecutorService {
               workspaceId: plan.workspaceId,
               recordCount: page.length,
               entity: plan.entity,
-              planId: plan.planId,
+              listId: plan.listId,
               userWorkspaceId: input.userWorkspaceId,
             });
 
@@ -334,7 +334,7 @@ export class BrightDataLudicrousExecutorService {
     if (isToolIoLoggingEnabled()) {
       this.logger.log(
         [
-          `Bright Data run ${plan.planId}: kept ${finalDocuments.length} of ${kept.length} record(s), budget $${budgetUsd}`,
+          `Bright Data run ${plan.listId}: kept ${finalDocuments.length} of ${kept.length} record(s), budget $${budgetUsd}`,
           ...reports.map(
             (report) =>
               `  ${report.shardKey}: ${truncateForLog(report, 400).replace(/\s+/g, ' ')}`,
@@ -344,7 +344,7 @@ export class BrightDataLudicrousExecutorService {
     }
 
     return {
-      planId: plan.planId,
+      listId: plan.listId,
       entity: plan.entity,
       documents: finalDocuments,
       fetchedDocuments,

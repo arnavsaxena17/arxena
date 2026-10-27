@@ -9,7 +9,7 @@ import {
   CommandMenuItemAvailabilityType as CommandMenuItemAvailabilityTypeEnum,
 } from '~/generated-metadata/graphql';
 
-// Outreach People rows keep person/working-set id as `id`; Candidate Sequencer
+// Outreach People rows keep person/tab id as `id`; Candidate Sequencer
 // and other candidate MANUAL workflows need the CRM candidate id.
 const toCandidateWorkflowPayload = (
   selectedRecord: ObjectRecord,

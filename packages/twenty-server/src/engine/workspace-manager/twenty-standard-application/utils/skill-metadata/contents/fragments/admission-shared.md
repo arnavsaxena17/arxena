@@ -1,0 +1,1 @@
+Shared closing gates: **no duplicate** — not already in the CRM or in another list of the project (`outreach_list` `dedupe`; for sales also not a customer or an open deal); **exclusions** — not on the user's exclusion list (and not at an employer named as off limits when recruiting). Later checks stay open in the report; do not fail a row for them.

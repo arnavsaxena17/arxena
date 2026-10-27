@@ -25,14 +25,17 @@ import {
   OutreachTableViewService,
   readCellText,
 } from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
+import { ChatTabWritesService } from 'src/engine/core-modules/outreach-command/services/chat-tab-writes.service';
 import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
 import { computeSourcingFunnel } from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
 import { OutreachCacheRealtimeService } from 'src/engine/core-modules/outreach-command/services/outreach-cache-realtime.service';
 import {
-  type OutreachWorkingSetRow,
-  type OutreachWorkingSetSubject,
-  OutreachWorkingSetService,
-} from 'src/engine/core-modules/outreach-command/services/outreach-working-set.service';
+  type OutreachTabRow,
+  OutreachTabService,
+} from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
+import { type AiColumnRowScope } from 'src/engine/core-modules/outreach-command/types/ai-column-row-scope.type';
+import { isAiColumnFilled } from 'src/engine/core-modules/outreach-command/utils/ai-column-filled.util';
+import { type OutreachTableTab } from 'src/engine/core-modules/outreach-command/utils/outreach-cache-realtime.constants';
 
 export const OUTREACH_AI_COLUMN_CHUNK_JOB_NAME =
   'ProcessOutreachAiColumnChunkJob';
@@ -52,7 +55,7 @@ type RunState = {
   runId: string;
   workspaceId: string;
   projectId: string;
-  subject: OutreachWorkingSetSubject;
+  tab: OutreachTableTab;
   previewId: string;
   filter: OutreachAiColumnFilter;
   status: OutreachAiColumnRunStatus;
@@ -77,7 +80,7 @@ type RunState = {
   finishedAt?: string;
 };
 
-type RowSnapshot = Record<string, OutreachWorkingSetRow>;
+type RowSnapshot = Record<string, OutreachTabRow>;
 
 // CacheStorageService takes milliseconds.
 const RUN_TTL_MS = 24 * 60 * 60 * 1000;
@@ -116,11 +119,13 @@ export class OutreachAiColumnRunService {
     @InjectMessageQueue(MessageQueue.aiFilteringQueue)
     private readonly messageQueueService: MessageQueueService,
     private readonly outreachAiColumnService: OutreachAiColumnService,
-    private readonly outreachWorkingSetService: OutreachWorkingSetService,
+    private readonly outreachTabService: OutreachTabService,
     private readonly outreachCacheRealtimeService: OutreachCacheRealtimeService,
     private readonly outreachTableViewService: OutreachTableViewService,
     @Optional()
     private readonly sourcingLedgerService?: SourcingLedgerService,
+    @Optional()
+    private readonly chatTabWritesService?: ChatTabWritesService,
   ) {}
 
   async startSampleLinkedinMessageForSelection({
@@ -148,7 +153,7 @@ export class OutreachAiColumnRunService {
     return this.startRun({
       workspaceId,
       projectId,
-      subject: 'person',
+      tab: 'people',
       previewId,
       rerunAll: true,
       rowIds,
@@ -158,21 +163,25 @@ export class OutreachAiColumnRunService {
   async startRun({
     workspaceId,
     projectId,
-    subject,
+    tab,
     previewId,
     rerunAll,
     onlyViewMatches,
     rowLimit,
     rowIds,
+    rowScope,
+    threadId,
   }: {
     workspaceId: string;
     projectId: string;
-    subject: OutreachWorkingSetSubject;
+    tab: OutreachTableTab;
     previewId: string;
     rerunAll?: boolean;
     onlyViewMatches?: boolean;
     rowLimit?: number;
     rowIds?: string[];
+    rowScope?: AiColumnRowScope;
+    threadId?: string;
   }): Promise<RunState> {
     const preview =
       await this.outreachAiColumnService.getPreviewState(previewId);
@@ -181,7 +190,7 @@ export class OutreachAiColumnRunService {
       !isDefined(preview) ||
       preview.workspaceId !== workspaceId ||
       preview.projectId !== projectId ||
-      preview.subject !== subject
+      preview.tab !== tab
     ) {
       throw new Error(
         'Preview not found or expired. Call preview_ai_column again before running.',
@@ -210,10 +219,10 @@ export class OutreachAiColumnRunService {
       );
     }
 
-    const workingSet = await this.outreachWorkingSetService.getAll({
+    const rows = await this.outreachTabService.getAll({
       workspaceId,
       projectId,
-      subject,
+      tab,
     });
     // Rows outside the applied view stay untouched and unpaid for.
     const view =
@@ -221,79 +230,72 @@ export class OutreachAiColumnRunService {
         ? await this.outreachTableViewService.get({
             workspaceId,
             projectId,
-            tab: subject === 'person' ? 'people' : 'companies',
+            tab,
           })
         : null;
     const viewMatched = isDefined(view)
-      ? workingSet.filter((row) =>
+      ? rows.filter((row) =>
           view.filters.every((filter) =>
             matchesTableFilter(readCellText(row, filter.columnId), filter),
           ),
         )
-      : workingSet;
+      : rows;
+    const scopedRowIds = await this.resolveScopedRowIds({
+      threadId,
+      projectId,
+      tab,
+      rowIds,
+      rowScope,
+    });
     const rowIdSet =
-      isDefined(rowIds) && rowIds.length > 0 ? new Set(rowIds) : null;
+      isDefined(scopedRowIds) && scopedRowIds.length > 0
+        ? new Set(scopedRowIds)
+        : null;
     const selectionMatched = isDefined(rowIdSet)
       ? viewMatched.filter((row) => rowIdSet.has(row.id))
       : viewMatched;
 
     if (isDefined(rowIdSet) && selectionMatched.length === 0) {
-      throw new Error('None of the selected people are in this project list');
+      throw new Error(
+        rowScope === 'chat_upserts'
+          ? "No rows from this chat's upserts are on this project tab. Search or upsert first, or use rowScope unfilled."
+          : 'None of the selected people are in this project list',
+      );
     }
 
-    // First N of the (view-/selection-filtered) working set — not "first N empty".
-    const all =
-      isDefined(rowLimit) && rowLimit > 0
-        ? selectionMatched.slice(0, rowLimit)
-        : selectionMatched;
     const columnKeys = preview.filter.fields.map((field) => field.name);
-    // Rows that already hold every key are skipped, so a re-run only pays
-    // for rows that failed or were added since.
-    const aiColumnStatus = (
-      row: OutreachWorkingSetRow,
-      key: string,
-    ): unknown => {
-      const meta = row.otherFields.aiColumns;
-      const entry =
-        typeof meta === 'object' && meta !== null
-          ? (meta as Record<string, unknown>)[key]
-          : undefined;
-
-      return typeof entry === 'object' && entry !== null
-        ? (entry as Record<string, unknown>).status
-        : undefined;
-    };
     // "ok" with an empty value means "no credible answer": already answered,
     // so a retry does not pay for it again. Failed rows have no "ok" marker.
-    const isFilled = (row: OutreachWorkingSetRow): boolean =>
-      columnKeys.every(
-        (key) =>
-          aiColumnStatus(row, key) === 'ok' ||
-          (row.otherFields[key] !== undefined && row.otherFields[key] !== null),
-      );
-    const filledIds = new Set(
-      rerunAll === true ? [] : all.filter(isFilled).map((row) => row.id),
-    );
+    const isFilled = (row: OutreachTabRow): boolean =>
+      isAiColumnFilled(row, columnKeys);
+    // Skip filled first (unless rerunAll / rowScope all), then apply rowLimit
+    // — first N unfilled of the view-/selection-filtered tab.
+    const includeFilled = rerunAll === true || rowScope === 'all';
+    const candidates = includeFilled
+      ? selectionMatched
+      : selectionMatched.filter((row) => !isFilled(row));
+    const all =
+      isDefined(rowLimit) && rowLimit > 0
+        ? candidates.slice(0, rowLimit)
+        : candidates;
+    const filledIds = new Set<string>();
     const precomputedIds = all
       .filter((row) => isDefined(preview.previewedRows[row.id]))
-      .filter((row) => !filledIds.has(row.id))
       .map((row) => row.id);
     const precomputed = new Set(precomputedIds);
-    const pending = all.filter(
-      (row) => !precomputed.has(row.id) && !filledIds.has(row.id),
-    );
-    const units = this.buildUnits(pending, subject, preview.filter);
+    const pending = all.filter((row) => !precomputed.has(row.id));
+    const units = this.buildUnits(pending, tab, preview.filter);
     const state: RunState = {
       runId: randomUUID(),
       workspaceId,
       projectId,
-      subject,
+      tab,
       previewId,
       filter: preview.filter,
       status: 'queued',
       total: all.length,
-      done: filledIds.size,
-      answered: filledIds.size,
+      done: 0,
+      answered: 0,
       failed: 0,
       units,
       unitCursor: 0,
@@ -401,7 +403,7 @@ export class OutreachAiColumnRunService {
     if (evaluateRows.length > 0) {
       const evaluated = await this.outreachAiColumnService.evaluateRows(
         evaluateRows,
-        state.subject,
+        state.tab,
         state.filter,
         state.workspaceId,
       );
@@ -410,10 +412,10 @@ export class OutreachAiColumnRunService {
       state.usage = this.mergeUsage(state.usage, evaluated.usage);
     }
 
-    const written = await this.outreachWorkingSetService.writeOtherFields({
+    const written = await this.outreachTabService.writeOtherFields({
       workspaceId: state.workspaceId,
       projectId: state.projectId,
-      subject: state.subject,
+      tab: state.tab,
       valuesByRowId: this.buildValues(state, results),
     });
 
@@ -543,11 +545,11 @@ export class OutreachAiColumnRunService {
   }
 
   private buildUnits(
-    pending: OutreachWorkingSetRow[],
-    subject: OutreachWorkingSetSubject,
+    pending: OutreachTabRow[],
+    tab: OutreachTableTab,
     filter: OutreachAiColumnFilter,
   ): string[][] {
-    if (!shouldGroupByCompany(subject, filter)) {
+    if (!shouldGroupByCompany(tab, filter)) {
       return pending.map((row) => [row.id]);
     }
 
@@ -665,10 +667,10 @@ export class OutreachAiColumnRunService {
     }
 
     try {
-      const rows = await this.outreachWorkingSetService.getAll({
+      const rows = await this.outreachTabService.getAll({
         workspaceId: state.workspaceId,
         projectId: state.projectId,
-        subject: state.subject,
+        tab: state.tab,
       });
       const { outcomes } = computeSourcingFunnel(rows);
 
@@ -702,7 +704,7 @@ export class OutreachAiColumnRunService {
     this.outreachCacheRealtimeService.notifyAiColumnProgress(state.projectId, {
       runId: state.runId,
       label: state.filter.name,
-      subject: state.subject,
+      tab: state.tab,
       status: state.status,
       total: state.total,
       done: state.done,
@@ -729,5 +731,47 @@ export class OutreachAiColumnRunService {
 
   private activeKey(workspaceId: string, projectId: string): string {
     return `outreach-ai-column-active:${workspaceId}:${projectId}`;
+  }
+
+  private async resolveScopedRowIds({
+    threadId,
+    projectId,
+    tab,
+    rowIds,
+    rowScope,
+  }: {
+    threadId?: string;
+    projectId: string;
+    tab: OutreachTableTab;
+    rowIds?: string[];
+    rowScope?: AiColumnRowScope;
+  }): Promise<string[] | undefined> {
+    if (isDefined(rowIds) && rowIds.length > 0) {
+      return rowIds;
+    }
+
+    if (rowScope !== 'chat_upserts') {
+      return undefined;
+    }
+
+    if (!isDefined(this.chatTabWritesService)) {
+      throw new Error(
+        'rowScope chat_upserts is unavailable. Pass rowIds from the upsert result, or use rowScope unfilled.',
+      );
+    }
+
+    const cached = await this.chatTabWritesService.read(
+      threadId,
+      projectId,
+      tab,
+    );
+
+    if (cached.length === 0) {
+      throw new Error(
+        'No upserted rows remembered for this chat on this tab. Search or upsert first, pass writtenRowIds as rowIds, or use rowScope unfilled.',
+      );
+    }
+
+    return cached;
   }
 }

@@ -10,7 +10,7 @@ import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
 
 @Injectable()
 export class PreviewSampleMessageColumnTool implements Tool {
-  description = `Preview a "Sample LinkedIn message" AI column: a draft of the first LinkedIn message (the opener sent after a prospect accepts the connection) for each person in the project working set, written with the same prompt and agent as the seeded Candidate Sequencer. Nothing is sent. Choose the context with include flags: senderProfile, prospectEnrichment, profile (one live Unipile call per row), posts, chatHistory, companyNews (off by default; adds a cached web-search lookup). Previews up to 5 rows and returns the drafts plus a previewId. Show the drafts, ask the user whether to run it for all rows, and only then call run_ai_column with the previewId: the messages then appear in a new table column. Do not use for follow-ups or replies.`;
+  description = `Preview a "Sample LinkedIn message" AI column: a draft of the first LinkedIn message (the opener sent after a prospect accepts the connection) for each person in the project tab, written with the same prompt and agent as the seeded Candidate Sequencer. Nothing is sent. Choose the context with include flags: senderProfile, prospectEnrichment, profile (one live Unipile call per row), posts, chatHistory, companyNews (off by default; adds a cached web-search lookup). Previews up to 5 rows and returns the drafts plus a previewId. Show the drafts, ask the user whether to run it for all rows, and only then call run_ai_column with the previewId: the messages then appear in a new table column. Do not use for follow-ups or replies.`;
 
   inputSchema = PreviewSampleMessageColumnInputZodSchema;
 
@@ -37,7 +37,7 @@ export class PreviewSampleMessageColumnTool implements Tool {
       const preview = await this.outreachAiColumnService.preview({
         workspaceId: context.workspaceId,
         projectId: parsed.data.projectId,
-        subject: 'person',
+        tab: 'people',
         rowLimit: parsed.data.rowLimit,
         filter: {
           name: 'Sample LinkedIn message',

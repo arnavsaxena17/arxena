@@ -3,6 +3,7 @@ import {
   buildProjectConfigUpdate,
   mergeLegacyProjectFieldsIntoConfig,
   parseOutreachConfig,
+  resolveOutreachConfigPersonaGuidance,
   resolveOutreachConfigSendWindowStart,
 } from '../outreachConfig';
 
@@ -62,5 +63,31 @@ describe('outreachConfig', () => {
   it('returns null for invalid config input', () => {
     expect(parseOutreachConfig(null)).toBeNull();
     expect(parseOutreachConfig('nope')).toBeNull();
+  });
+
+  it('keeps persona guidance across unrelated patches', () => {
+    const { outreachConfig: withGuidance } = buildProjectConfigUpdate({
+      existingConfig: buildDefaultOutreachConfig(),
+      patch: { personaGuidance: '  CFOs: lead with margin.  ' },
+    });
+    const { outreachConfig: afterSchedulePatch } = buildProjectConfigUpdate({
+      existingConfig: withGuidance,
+      patch: { sendTimezone: 'Europe/London' },
+    });
+
+    expect(withGuidance.personaGuidance).toBe('CFOs: lead with margin.');
+    expect(resolveOutreachConfigPersonaGuidance(afterSchedulePatch)).toBe(
+      'CFOs: lead with margin.',
+    );
+  });
+
+  it('clears persona guidance when saved empty', () => {
+    const { outreachConfig } = buildProjectConfigUpdate({
+      existingConfig: { v: 1, personaGuidance: 'CFOs: lead with margin.' },
+      patch: { personaGuidance: '   ' },
+    });
+
+    expect(outreachConfig.personaGuidance).toBeNull();
+    expect(resolveOutreachConfigPersonaGuidance(outreachConfig)).toBe('');
   });
 });
