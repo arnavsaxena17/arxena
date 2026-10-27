@@ -29,7 +29,7 @@ const SKILL_TOKEN_BUDGETS: Record<string, number> = {
   'data-manipulation': 3_000,
   'org-structure-insights': 3_000,
   'code-interpreter': 2_000,
-  setup: 2_000,
+  setup: 800,
   'view-building': 1_500,
   'view-filters-and-sorts': 1_500,
   'spreadsheet-import': 1_500,

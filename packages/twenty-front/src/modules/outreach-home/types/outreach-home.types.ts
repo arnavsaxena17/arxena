@@ -203,65 +203,16 @@ export const buildOutreachContextPrompt = (
     `icpSpec: ${context.icpSpecSummary ?? 'none'}`,
     `channels: LinkedIn=${context.linkedinConnected} Gmail=${context.gmailConnected} WhatsApp=${context.whatsappConnected}`,
     'Target companies on /outreach-home are ephemeral (Find destination per projectId), not CRM membership.',
-    'When the user asks to find/fetch/add/build target companies: load_skills(["search"]), search, then upsert_outreach_target_companies({ projectId, mode: "merge", companies }) before ending the turn. Do not stop at a chat-only list.',
+    'When the user asks to find/fetch/add/build target companies: load_skills(["sourcing"]), search, then upsert_outreach_target_companies({ projectId, mode: "merge", companies }) before ending the turn. Do not stop at a chat-only list.',
     'Do NOT create CRM Company records for the Companies tab unless the user confirms Save to CRM (save_outreach_targets_to_crm, no enrollment) or enrolls people.',
     'Target people on the People tab are ephemeral (Find destination) until the user selects rows and confirms Add to CRM / Enroll.',
-    'When the user asks to find/fetch/search people (target titles, MD/CEO, etc.) for this campaign: load_skills(["search"]), search, then upsert_outreach_target_people({ projectId, mode: "merge", people }) before ending the turn.',
+    'When the user asks to find/fetch/search people (target titles, MD/CEO, etc.) for this campaign: load_skills(["sourcing"]), search, then upsert_outreach_target_people({ projectId, mode: "merge", people }) before ending the turn.',
     'Do NOT create_candidate / create_one_person / create_one_candidate for the People tab. Enrollment writes happen only after explicit user confirmation (Add to CRM / Enroll).',
     'When the user confirms Save to CRM for the tab rows: save_outreach_targets_to_crm({ projectId, target, companyIds?, personIds? }). It writes Company / Person only, never a Candidate.',
     'When enrolling people (user confirmed), upsert shared CRM Company + Candidate with projectId = this projectId.',
     'Prefer Candidate+Project execution; Person holds stop/compliance memory.',
     'When the user says "start outreach" for enrolled people: learn_tools({toolNames:["start_outreach"]}) then start_outreach({ projectId, candidateIds: selectedCandidateIds }); whole table with nothing selected: startAllQueuedInProject=true.',
     'Respect send windows, daily caps, stop-on-reply, and approval gates when editing steps.',
-  ].join('\n');
-};
-
-export type IcpOnboardingKickoffInput = {
-  workspaceCompany: OutreachWorkspaceCompany;
-  projectId: string | null;
-  projectName: string | null;
-  proposedIcp?: IcpSpec | null;
-};
-
-export const buildIcpOnboardingKickoffPrompt = (
-  input: IcpOnboardingKickoffInput,
-): string => {
-  const company = input.workspaceCompany;
-  const projectLabel = input.projectName
-    ? `"${input.projectName}"`
-    : input.projectId
-      ? `this project`
-      : 'a new project';
-
-  const companyBlurb = [
-    `We're ${company.name} (${company.domain})`,
-    company.industry ? `in ${company.industry}` : null,
-    company.employeeRange ? `${company.employeeRange} people` : null,
-    company.hq ? `HQ ${company.hq} ` : null,
-  ]
-    .filter(Boolean)
-    .join(', ');
-
-  const proposedIcp = input.proposedIcp;
-  const draftLines = proposedIcp
-    ? [
-        '',
-        'Current ICP draft:',
-        proposedIcp.targetTitles.length > 0
-          ? `- Target titles: ${proposedIcp.targetTitles.join(', ')}`
-          : null,
-        proposedIcp.locations.length > 0
-          ? `- Locations: ${proposedIcp.locations.join(', ')}`
-          : null,
-      ].filter(Boolean)
-    : [];
-
-  return [
-    `Hey — help me set up ICP and outreach preferences for ${projectLabel}.`,
-    companyBlurb +
-      '. Walk me through who we should reach (target titles and locations), send mode (approval vs auto), and caps — ask questions as we go.',
-    'When we agree, save the default ICP as icpSpec JSON on the Workspace (Setup Save or Regenerate ICP: targetTitles + locations only). Only write Project.icpSpec if I ask for a project-specific override.',
-    ...draftLines,
   ].join('\n');
 };
 
@@ -278,7 +229,7 @@ export const buildFindCompaniesSendPrompt = (
     input.icpSpecSummary
       ? `Effective ICP JSON: ${input.icpSpecSummary}`
       : 'Use the workspace ICP target titles and locations if present.',
-    'load_skills(["search"]), search, then upsert_outreach_target_companies({ projectId, mode: "merge", companies }) before ending.',
+    'load_skills(["sourcing"]), search, then upsert_outreach_target_companies({ projectId, mode: "merge", companies }) before ending.',
     'Do not create CRM Company records for the Companies tab.',
   ]
     .filter(Boolean)
@@ -298,31 +249,8 @@ export const buildFindPeopleSendPrompt = (
     input.icpSpecSummary
       ? `Effective ICP JSON: ${input.icpSpecSummary}`
       : 'Use workspace ICP target titles and locations.',
-    'load_skills(["search"]), search, then upsert_outreach_target_people({ projectId, mode: "merge", people }) before ending.',
+    'load_skills(["sourcing"]), search, then upsert_outreach_target_people({ projectId, mode: "merge", people }) before ending.',
     'Do not create enrollment records until I confirm Add to CRM / Enroll.',
-  ]
-    .filter(Boolean)
-    .join('\n');
-};
-
-export type RegenerateIcpSendPromptInput = {
-  workspaceCompany: OutreachWorkspaceCompany;
-  currentIcpSpec: string | null;
-};
-
-export const buildRegenerateIcpSendPrompt = (
-  input: RegenerateIcpSendPromptInput,
-): string => {
-  const company = input.workspaceCompany;
-
-  return [
-    `Regenerate only the workspace default ICP for ${company.name}${
-      company.domain ? ` (${company.domain})` : ''
-    }.`,
-    company.industry ? `Industry: ${company.industry}.` : null,
-    company.summary ? `Company summary: ${company.summary}` : null,
-    'load_skills(["setup"]), then persist icpSpec on the Workspace via Setup Regenerate ICP or Setup Save (targetTitles and locations only).',
-    'Do not write Project.icpSpec unless I ask for a project-specific override.',
   ]
     .filter(Boolean)
     .join('\n');
