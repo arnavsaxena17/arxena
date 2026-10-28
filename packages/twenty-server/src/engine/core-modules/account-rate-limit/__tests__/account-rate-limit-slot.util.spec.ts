@@ -1,4 +1,8 @@
-import { MS_PER_DAY, MS_PER_FIVE_MINUTES, MS_PER_MINUTE } from 'twenty-shared/arx';
+import {
+  MS_PER_DAY,
+  MS_PER_FIVE_MINUTES,
+  MS_PER_MINUTE,
+} from 'twenty-shared/arx';
 
 import {
   computeReservedSlotMs,
@@ -86,7 +90,7 @@ describe('account rate limit slot reservation', () => {
     ).toEqual([0, 0, MS_PER_DAY, MS_PER_DAY]);
   });
 
-  it('only counts day-cap slots at or before now when combining with paced windows', () => {
+  it('spills paced slots past the day cap into the next day', () => {
     expect(
       reserveSequentialWaits(
         [
@@ -104,7 +108,30 @@ describe('account rate limit slot reservation', () => {
         4,
         0,
       ),
-    ).toEqual([0, 300_000, 600_000, 900_000]);
+    ).toEqual([0, 300_000, MS_PER_DAY, MS_PER_DAY + 300_000]);
+  });
+
+  it('spreads a connection-request flood across days at the daily limit', () => {
+    const waits = reserveSequentialWaits(
+      [
+        {
+          windowMs: MS_PER_FIVE_MINUTES,
+          limit: 1,
+          pace: true,
+        },
+        {
+          windowMs: MS_PER_DAY,
+          limit: 20,
+          pace: false,
+        },
+      ],
+      21,
+      0,
+    );
+
+    expect(waits[0]).toBe(0);
+    expect(waits[19]).toBe(19 * MS_PER_FIVE_MINUTES);
+    expect(waits[20]).toBe(MS_PER_DAY);
   });
 
   it('returns remaining wait for an existing reservation without booking another slot', () => {

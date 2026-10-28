@@ -37,15 +37,18 @@ export const nextSlotForWindowMs = (
     return Math.max(now, last + pacingIntervalMs(window.windowMs, limit));
   }
 
-  const activeScores = scores.filter((score) => score <= now);
+  // Day/week caps count past and future holds so a bulk start that would
+  // exceed the daily (or weekly) budget spills into later days instead of
+  // packing every slot onto today via the short paced window alone.
+  const reservedScores = [...scores].sort((left, right) => left - right);
 
-  if (activeScores.length < limit) {
+  if (reservedScores.length < limit) {
     return now;
   }
 
   return Math.max(
     now,
-    activeScores[activeScores.length - limit] + window.windowMs,
+    reservedScores[reservedScores.length - limit] + window.windowMs,
   );
 };
 
@@ -54,7 +57,8 @@ export const computeReservedSlotMs = (
   now: number,
 ): number =>
   windows.reduce(
-    (scheduled, window) => Math.max(scheduled, nextSlotForWindowMs(window, now)),
+    (scheduled, window) =>
+      Math.max(scheduled, nextSlotForWindowMs(window, now)),
     now,
   );
 
@@ -105,17 +109,16 @@ export const RESERVE_MULTI_WINDOW_SLOT_LUA = `
             end
           end
         else
-          local activeScores = {}
+          -- Cap windows (day/week): count every hold in the window, including
+          -- future reservations, so overflow spills past the daily budget.
+          local reservedScores = {}
           for j = 1, #packed, 2 do
-            local score = tonumber(packed[j + 1])
-            if score <= now then
-              activeScores[#activeScores + 1] = score
-            end
+            reservedScores[#reservedScores + 1] = tonumber(packed[j + 1])
           end
-          table.sort(activeScores)
-          local count = #activeScores
+          table.sort(reservedScores)
+          local count = #reservedScores
           if count >= limit then
-            nextSlot = activeScores[count - limit + 1] + window
+            nextSlot = reservedScores[count - limit + 1] + window
             if nextSlot < now then
               nextSlot = now
             end

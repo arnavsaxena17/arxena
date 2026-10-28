@@ -38,21 +38,24 @@ describe('withAcquiredAccountRateLimit', () => {
     'message',
     'inmail',
     'endpoint',
-  ] as const)('keeps the %s slot after a successful Unipile call', async (method) => {
-    const { limiter, redisService } = createLimiter(
-      jest.fn().mockResolvedValue({ acquired: true, waitMs: 0 }),
-    );
-    registerAccountRateLimiter(limiter);
+  ] as const)(
+    'keeps the %s slot after a successful Unipile call',
+    async (method) => {
+      const { limiter, redisService } = createLimiter(
+        jest.fn().mockResolvedValue({ acquired: true, waitMs: 0 }),
+      );
+      registerAccountRateLimiter(limiter);
 
-    await expect(
-      withAcquiredAccountRateLimit(
-        { provider: 'linkedin', accountId: 'acc-1', method },
-        async () => 'sent',
-      ),
-    ).resolves.toBe('sent');
+      await expect(
+        withAcquiredAccountRateLimit(
+          { provider: 'linkedin', accountId: 'acc-1', method },
+          async () => 'sent',
+        ),
+      ).resolves.toBe('sent');
 
-    expect(redisService.removeMemberFromWindows).not.toHaveBeenCalled();
-  });
+      expect(redisService.removeMemberFromWindows).not.toHaveBeenCalled();
+    },
+  );
 
   it('releases the slot when the Unipile call fails before send', async () => {
     const { limiter, redisService } = createLimiter(
@@ -77,6 +80,7 @@ describe('withAcquiredAccountRateLimit', () => {
       [
         'linkedin:acc-1:connection_request:5m',
         'linkedin:acc-1:connection_request:day',
+        'linkedin:acc-1:endpoint:day',
       ],
       expect.any(String),
     );

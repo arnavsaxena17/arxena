@@ -443,8 +443,9 @@ export class AccountRateLimiterService implements OnModuleInit {
       if (waitMs > maxInProcessWaitMs) {
         // Keep the reserved future slot so deferred waiters stay spaced
         // instead of all waking at the same instant (thundering herd).
-        // Usage / day-cap counts only scores <= now, so future holds do not
-        // inflate live quota. Ghost cleanup releases the hold if the run stops.
+        // Usage metrics still split used (<= now) vs reserved (future); day /
+        // week caps count all holds so bulk queues spill across days.
+        // Ghost cleanup releases the hold if the run stops.
         throw new AccountRateLimitDeferredError({
           waitMs,
           accountId: params.accountId,
