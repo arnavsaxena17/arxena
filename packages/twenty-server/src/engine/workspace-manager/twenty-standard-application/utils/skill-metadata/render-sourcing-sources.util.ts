@@ -10,6 +10,9 @@ import {
 const SOURCES_BLOCK_PATTERN =
   /^\{\{sources: ([a-z-]+)(?: ([a-z0-9-]+))?\}\}$/gm;
 const FACT_PATTERN = /\{\{fact: ([a-z0-9-]+)\.([a-zA-Z]+)\}\}/g;
+// Inline, so a routing table cell can name a source; `default` is the
+// top-ranked source for the entity
+const SOURCE_PATTERN = /\{\{source: ([a-z0-9-]+) ([a-z]+)\}\}/g;
 
 const ENTITIES: readonly SourcingEntity[] = ['people', 'companies'];
 
@@ -181,19 +184,52 @@ export const renderSourcingFacts = (content: string): string =>
     return fact;
   });
 
+const findDefaultSource = (entity: SourcingEntity): SourcingSource => {
+  const [source] = SOURCING_SOURCES.filter(
+    (entry) => entry.rank !== undefined && entry[entity] !== undefined,
+  ).sort((first, second) => (first.rank ?? 0) - (second.rank ?? 0));
+
+  if (source === undefined) {
+    throw new Error(`No ranked sourcing source for "${entity}"`);
+  }
+
+  return source;
+};
+
+export const renderSourcingSourceNames = (content: string): string =>
+  content.replace(SOURCE_PATTERN, (token, key: string, entity: string) => {
+    if (!isEntity(entity)) {
+      throw new Error(`Unknown sourcing entity: ${token}`);
+    }
+
+    const source =
+      key === 'default' ? findDefaultSource(entity) : findSource(key);
+    const use = source[entity];
+
+    if (use === undefined) {
+      throw new Error(`Sourcing source "${source.key}" has no ${entity} use`);
+    }
+
+    return use.section === undefined
+      ? source.label
+      : `${source.label} (\`${use.section}\`)`;
+  });
+
 // Blocks first, so the facts they quote are filled in with the rest
 export const renderSourcingSources = (content: string): string =>
   renderSourcingFacts(
-    content.replace(
-      SOURCES_BLOCK_PATTERN,
-      (line, block: string, argument: string | undefined) => {
-        const rendered = renderBlock(block, argument);
+    renderSourcingSourceNames(
+      content.replace(
+        SOURCES_BLOCK_PATTERN,
+        (line, block: string, argument: string | undefined) => {
+          const rendered = renderBlock(block, argument);
 
-        if (rendered === undefined) {
-          throw new Error(`Unknown sourcing block: ${line}`);
-        }
+          if (rendered === undefined) {
+            throw new Error(`Unknown sourcing block: ${line}`);
+          }
 
-        return rendered;
-      },
+          return rendered;
+        },
+      ),
     ),
   );

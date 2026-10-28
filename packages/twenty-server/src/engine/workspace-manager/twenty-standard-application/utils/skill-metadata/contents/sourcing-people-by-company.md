@@ -2,12 +2,13 @@
 
 A role at companies already named, or already on the project. **One call for the whole list.** No estimate, no provider question, no second search, and no loop over companies. The tool searches every company and returns the matching people (up to 3 verified people per company). The agent does not search.
 
-`learn_tools(["find_role_at_companies", "get_outreach_tab"])` once, then follow the steps.
+`learn_tools(["find_role_at_companies", "get_outreach_tab", "ask_questions"])` once, then follow the steps.
 
 1. **Which companies.** Do not read the companies and type them back: the tool reads them itself.
    - "All the companies", "these", "the project's companies": `fromProject: true` with `projectId` and no `companies`. Companies already marked Found are skipped (`rerunFound: true` pays for them again). Up to 500 per call, in one call. People are saved to the tab as each company finishes.
    - "Filtered" or "selected" means the rows shown on the Companies tab: add `onlyViewMatches: true`. If the view filter does not narrow the list but the user named a criterion (a city, "HQed in Mumbai", revenue), read the AI column that answers it with `get_outreach_tab`, then pass the companies you keep as an explicit `companies` list.
-   - Say in one line how many companies you took and which you left out and why. Ask a question only if no tab or column can tell you.
+   - Say in one line how many companies you took and which you left out and why. When the user named the companies or said all or filtered, that is the list: no question.
+   - When you chose the subset (narrowed by a column, or built it in `playbook-company-first`), confirm it before the call with `ask_questions`: **Yes, these {N}** (recommended), **Edit the list**, **Cancel**. Call only after a yes.
 2. **One call.** `find_role_at_companies({ fromProject: true, projectId, roles, location })`, or with an explicit `companies: [{ id, name, alternateNames? }]` list (up to 50 per call; more than 50: batches of 50, all the calls in one step). The tool limits itself to 50 lookups at a time across calls.
    - `roles`: every role the user named, in their words (`["CEO", "MD", "founder"]`). Never drop one and never add one they did not ask for.
    - `id` (explicit list): the company's row id from `get_outreach_tab`. It links the found people to that company and fills the company's "People found" column, including when nobody is found.

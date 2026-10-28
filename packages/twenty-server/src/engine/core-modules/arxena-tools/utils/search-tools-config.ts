@@ -1,17 +1,30 @@
 // Pure provider-flag helpers shared by the server and the MCP process.
 
-export const SEARCH_APOLLO_PEOPLE_TOOL_NAME = 'search_apollo_people';
-export const SEARCH_APOLLO_COMPANIES_TOOL_NAME = 'search_apollo_companies';
-export const SEARCH_PEOPLE_INDEX_TOOL_NAME = 'search_people_index';
-export const SEARCH_FIND_CANDIDATE_INTERNAL_TOOL_NAME =
-  'find_candidate_in_arxena_internal';
-export const SEARCH_EXA_TOOL_NAME = 'exa_web_search';
-export const SEARCH_EXA_APP_TOOL_NAME = 'app_exa_web_search';
-export const SEARCH_SERP_TOOL_NAME = 'google_serp_search';
-export const SEARCH_COMPANIES_INDEX_TOOL_NAME = 'search_companies_index';
-export const SEARCH_WIKIDATA_COMPANIES_TOOL_NAME = 'search_wikidata_companies';
-export const SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME =
-  'search_bright_data_business';
+export {
+  SEARCH_APOLLO_COMPANIES_TOOL_NAME,
+  SEARCH_APOLLO_PEOPLE_TOOL_NAME,
+  SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME,
+  SEARCH_COMPANIES_INDEX_TOOL_NAME,
+  SEARCH_EXA_APP_TOOL_NAME,
+  SEARCH_EXA_TOOL_NAME,
+  SEARCH_FIND_CANDIDATE_INTERNAL_TOOL_NAME,
+  SEARCH_PEOPLE_INDEX_TOOL_NAME,
+  SEARCH_SERP_TOOL_NAME,
+  SEARCH_WIKIDATA_COMPANIES_TOOL_NAME,
+} from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-names.const';
+
+import {
+  SEARCH_APOLLO_COMPANIES_TOOL_NAME,
+  SEARCH_APOLLO_PEOPLE_TOOL_NAME,
+  SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME,
+  SEARCH_COMPANIES_INDEX_TOOL_NAME,
+  SEARCH_EXA_APP_TOOL_NAME,
+  SEARCH_EXA_TOOL_NAME,
+  SEARCH_FIND_CANDIDATE_INTERNAL_TOOL_NAME,
+  SEARCH_PEOPLE_INDEX_TOOL_NAME,
+  SEARCH_SERP_TOOL_NAME,
+  SEARCH_WIKIDATA_COMPANIES_TOOL_NAME,
+} from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-names.const';
 
 export type SearchToolsConfig = {
   isSearchApolloPeopleEnabled: boolean;

@@ -16,9 +16,9 @@ const CHARACTERS_PER_TOKEN = 4;
 // loaded, so growing past its budget needs a deliberate change here.
 const SKILL_TOKEN_BUDGETS: Record<string, number> = {
   // Raised from 16_500 for purpose sections (recruiting, sales), rubrics, query
-  // planning, the large-list, escalation and admission playbooks, Naukri and
+  // planning, the large-list and escalation playbooks, Naukri and
   // inbound applicants. A route loads far less (see skill-library.spec.ts).
-  // Raised to 22_500 for intent-glossary, source-profiles and entity-resolution,
+  // Raised to 22_500 for intent-glossary and source-profiles,
   // offset by dropping the placeholder source caps and generic requirement lists
   sourcing: 22_500,
   outreach: 4_700,

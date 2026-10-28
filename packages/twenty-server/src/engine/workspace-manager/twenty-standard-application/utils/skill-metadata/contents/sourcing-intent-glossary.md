@@ -2,15 +2,6 @@
 
 What clients say against what they mean. Each entry has a default; the exception says when to ask or deviate. Not in this list means your own reading is fine. Add entries when a real request is misread, with the worked example.
 
-### Intake gate
-
-Before the first paid call, sort the request:
-
-| | Cheap (one reading free, or a small estimate) | Expensive (a large estimate, or a paid fetch follows) |
-| --- | --- | --- |
-| **Clear** | Run it; state the assumptions in one line | State the estimate and the cap once, then run |
-| **Ambiguous** | Run the cheapest reading, show it, ask which was meant | Dipstick (`query-planning`), then ask with what it showed. Never ask a bare question a dipstick could answer |
-
 ### Says → means
 
 | Client says | Default | Exception / when to ask |

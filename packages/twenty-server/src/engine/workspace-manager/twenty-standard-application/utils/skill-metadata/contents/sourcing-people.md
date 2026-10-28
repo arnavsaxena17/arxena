@@ -16,7 +16,7 @@ Do not `create_candidate` on Find or on Save to CRM. Write and Save to CRM follo
 `find_candidate_in_arxena_internal` looks up one existing person. It does not create a record.
 <!-- search-find-candidate-internal-learn-tools-line:end -->
 
-Dedup across sources before writing: LinkedIn URL, else name plus current company; name alone never matches (`entity-resolution`).
+The server dedupes on one key per row: public LinkedIn URL (never Sales Navigator), else name plus company. `against: "lists"` checks every list in the workspace. The CRM check uses the LinkedIn URL only: a row without one counts as new and `save_outreach_targets_to_crm` skips it.
 
 ### People constraints
 

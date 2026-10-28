@@ -1,3 +1,8 @@
+import {
+  OUTREACH_LIST_TOOL_NAME,
+  SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME,
+} from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-names.const';
+
 import { callRestAPI } from '../api/rest-client';
 import { McpTool } from '../types/tool-types';
 
@@ -16,10 +21,10 @@ const AUTO_EXECUTE_MAX_BUDGET_USD = 0.1;
 export const brightDataBusinessSearchTools: McpTool[] = [
   {
     definition: {
-      name: 'search_bright_data_business',
+      name: SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME,
       title: 'Search Bright Data business',
       description:
-        'Bright Data Business Search for companies or people from a raw natural-language request. Default ludicrous; billed at $0.002 per returned record (max $10 per query) and works in two steps. Step 1: call WITHOUT listId. The server plans several structured queries and samples them for a few cents, then returns listId, per-slice match counts, expected accuracy and the cost of fetching N records; nothing is fetched yet. Show these numbers to the user and ask which budget to spend. Step 2: after the user confirms, call again with listId and maxBudgetUsd (optionally targetCount, projectId). Pick the mode by input: ludicrous for a set described by attributes (it has no URL, website or domain field); instant only with entity company and a bare domain (e.g. stripe.com) to look up one company by website. For one person by LinkedIn URL or name use fetch_profiles; a company LinkedIn URL is not supported. The ludicrous result never contains the records, only counts and a summary; they go to the project tab and a saved dataset. Fetched records are saved server-side under the listId for 30 days: if no project was known, call again with the same listId and a projectId to write them at no charge. Pass projectId so results are written to the Outreach tab; do not upsert those rows again. Requires BRIGHT_DATA_API_KEY.',
+        'Bright Data Business Search for companies or people from a raw natural-language request. Default ludicrous; billed at $0.002 per returned record (max $10 per query) and works in two steps. Step 1: call WITHOUT listId. The server plans several structured queries and samples them for a few cents, then returns listId, per-slice match counts, expected accuracy and the cost of fetching N records; nothing is fetched yet. Show these numbers to the user and ask which budget to spend. Step 2: after the user confirms, call again with listId and maxBudgetUsd (optionally targetCount, projectId). Pick the mode by input: ludicrous for a set described by attributes (it has no URL, website or domain field). instant sends one raw string with no estimate: a company website (bare host, e.g. stripe.com) or a company or person LinkedIn URL is a lookup cut to the exact match and written to the tab; any other short literal ("Smita Jatia Westlife") is a probe of up to 25 fuzzy preview rows (about $0.05), never written, to check a name or what a phrase returns before a ludicrous estimate. The ludicrous result never contains the records, only counts and a summary; they go to the project tab and a saved dataset. Fetched records are saved server-side under the listId for 30 days: if no project was known, call again with the same listId and a projectId to write them at no charge. Pass projectId so results are written to the Outreach tab; do not upsert those rows again. Requires BRIGHT_DATA_API_KEY.',
       annotations: { readOnlyHint: false },
       inputSchema: {
         type: 'object',
@@ -32,17 +37,18 @@ export const brightDataBusinessSearchTools: McpTool[] = [
           query: {
             type: 'string',
             description:
-              'Raw natural-language request, or for mode instant a bare domain/URL (e.g. stripe.com). Not a LinkedIn URL.',
+              'Raw natural-language request; for mode instant a bare domain (stripe.com), a LinkedIn URL or a short literal (max 200 characters).',
           },
           mode: {
             type: 'string',
             enum: ['ludicrous', 'instant'],
             description:
-              'Default ludicrous, for a set described by attributes. Pass instant only with entity company for a lookup by website (bare host, no spaces); any other instant call runs as ludicrous.',
+              'Default ludicrous, for a set described by attributes. instant: a website or LinkedIn URL lookup (exact match, written), or a probe of any other short string (preview only, max 25 rows).',
           },
           limit: {
             type: 'number',
-            description: 'Target relevant-record count',
+            description:
+              'Target relevant-record count. Instant probe: rows to preview (default 10, max 25).',
           },
           projectId: {
             type: 'string',
@@ -89,10 +95,7 @@ export const brightDataBusinessSearchTools: McpTool[] = [
         args.entity,
         {
           query: args.query.trim(),
-          mode:
-            args.mode === 'instant' && args.entity === 'company'
-              ? 'instant'
-              : 'ludicrous',
+          mode: args.mode === 'instant' ? 'instant' : 'ludicrous',
           limit: toOptionalNumber(args.limit),
           projectId: hasNonEmptyString(args.projectId)
             ? args.projectId
@@ -117,7 +120,7 @@ export const brightDataBusinessSearchTools: McpTool[] = [
   },
   {
     definition: {
-      name: 'outreach_list',
+      name: OUTREACH_LIST_TOOL_NAME,
       title: 'Search result lists',
       description:
         'Overflow for search result lists (listId). Find searches with projectId already write the project tab. Lists last 30 days when a source was paid, otherwise 7. actions: list, summary, peek (max 10), export (CSV), dedupe (crm or lists), attach (a list already on that project is skipped), save_to_crm (bag overflow; prefer save_outreach_targets_to_crm once rows are on the tab), delete. Never read a whole list into the conversation.',

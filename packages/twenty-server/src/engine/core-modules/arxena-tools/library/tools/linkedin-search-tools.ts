@@ -1,3 +1,11 @@
+import {
+  GENERATE_LINKEDIN_QUERY_SET_TOOL_NAME,
+  SEARCH_LINKEDIN_COMPANIES_TOOL_NAME,
+  SEARCH_LINKEDIN_CONTINUE_TOOL_NAME,
+  SEARCH_LINKEDIN_PARAMETERS_TOOL_NAME,
+  SEARCH_LINKEDIN_PEOPLE_TOOL_NAME,
+} from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-names.const';
+
 import { collectLinkedinSearchPages } from '../utils/collect-linkedin-search-pages';
 import {
   CHECK_CONTACT_AVAILABILITY_FROM_APOLLO_INPUT_DESCRIPTOR,
@@ -156,7 +164,7 @@ export const linkedinSearchTools: McpTool[] = [
 
   {
     definition: {
-      name: 'search_linkedin_people',
+      name: SEARCH_LINKEDIN_PEOPLE_TOOL_NAME,
       description:
         "Search LinkedIn profiles (people) via Unipile. For a brief, pass one entry of generate_linkedin_query_set's queries[].searchParameters with the searchType it returned. searchType is optional: omitted, it is the account's best seat; a seat the account lacks is rejected with the modes it has. Use search_linkedin_continue for the next page.",
       inputSchema: (() => {
@@ -264,7 +272,7 @@ export const linkedinSearchTools: McpTool[] = [
 
   {
     definition: {
-      name: 'search_linkedin_companies',
+      name: SEARCH_LINKEDIN_COMPANIES_TOOL_NAME,
       description:
         "Search for companies on LinkedIn (classic or sales_navigator). For a brief, pass one entry of generate_linkedin_query_set's queries[].searchParameters (category companies). searchType is optional: omitted, it is the account's best seat; a seat the account lacks is rejected.",
       inputSchema: (() => {
@@ -435,7 +443,7 @@ export const linkedinSearchTools: McpTool[] = [
 
   {
     definition: {
-      name: 'search_linkedin_continue',
+      name: SEARCH_LINKEDIN_CONTINUE_TOOL_NAME,
       description:
         'Fetch the next page of LinkedIn search results (profiles, companies, etc.) using the cursor from a prior search_linkedin_* response. Pass maxPages (up to 50) to follow the cursor on the server and get all those pages in this one call; the rows go to the list as one batch. Use it for any search longer than a page: one call with maxPages 40 replaces 40 model steps. The result says how many pages were read and why it stopped (autoContinue), plus the cursor to carry on from.',
       inputSchema: descriptorToInputSchema(
@@ -516,7 +524,7 @@ export const linkedinSearchTools: McpTool[] = [
 
   {
     definition: {
-      name: 'search_linkedin_parameters',
+      name: SEARCH_LINKEDIN_PARAMETERS_TOOL_NAME,
       description:
         "Get LinkedIn search parameters (locations, industries, companies, schools, job titles, skills). For Sales Navigator: use LEAD_LISTS / ACCOUNT_LISTS to list the connected account's people and company lists (keywords optional — omit to return all), then pass returned ids into search_linkedin_people lead_lists or search_linkedin_companies account_lists.",
       inputSchema: (() => {
@@ -593,7 +601,7 @@ export const linkedinSearchTools: McpTool[] = [
 
   {
     definition: {
-      name: 'generate_linkedin_query_set',
+      name: GENERATE_LINKEDIN_QUERY_SET_TOOL_NAME,
       description:
         "Generate LinkedIn searches from a natural-language brief: builds the query set (term limits enforced), then maps it for the provider. unipile (default): the searchType's shape with facet ids resolved for this account; pass each queries[i].searchParameters with that searchType to search_linkedin_people (or search_linkedin_companies). harvest: Harvest Sales Navigator filters; pass each to the returned tool (search_harvest_leads or search_harvest_accounts). Call once per unique rawRequirement.",
       inputSchema: (() => {

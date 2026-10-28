@@ -168,10 +168,10 @@ describe('sourcing skill section sizes', () => {
       expect.arrayContaining(['query-planning', 'playbook-shortfall']),
     );
     expect(resolveSkillSections('sourcing', ['for-recruiting'])).toEqual(
-      expect.arrayContaining(['rubrics', 'playbook-recruiting-admission']),
+      expect.arrayContaining(['rubrics']),
     );
     expect(resolveSkillSections('sourcing', ['for-sales'])).toEqual(
-      expect.arrayContaining(['rubrics', 'playbook-sales-admission']),
+      expect.arrayContaining(['rubrics']),
     );
     expect(resolveSkillSections('sourcing', ['inbound-applicants'])).toContain(
       'scoring',
@@ -277,7 +277,7 @@ describe('skill front matter and playbooks', () => {
 
   it('should resolve a shared fragment into every skill that includes it', () => {
     const sentence =
-      'Pick the mode by what the request gives you: a description of a set, or an identifier.';
+      'Pick the mode by what the request gives you: a description of a set, or an identifier or short literal.';
 
     expect(getSkillContent('sourcing')).toContain(sentence);
     expect(getSkillContent('sourcing').split(sentence).length - 1).toBe(2);

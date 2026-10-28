@@ -16,8 +16,10 @@ import {
   mapBrightDataPersonToSearchItem,
   aggregateBrightDataDocuments,
   filterBrightDataDocumentsByDomain,
-  parseBrightDataDomainLookupQuery,
+  filterBrightDataDocumentsByLinkedinUrl,
+  parseBrightDataInstantLookupQuery,
   type BrightDataBusinessSearchDocument,
+  type BrightDataInstantLookup,
 } from 'src/engine/core-modules/bright-data/utils/bright-data-business-search.util';
 import {
   SearchBrightDataBusinessToolInputZodSchema,
@@ -60,6 +62,11 @@ const documentsForProjectTab = (
 // OutreachCompaniesCacheService / OutreachPeopleCacheService keep this many
 const MAX_ROWS_PER_PROJECT_TAB = OUTREACH_LIST_MAX_ROWS;
 
+const INSTANT_LOOKUP_DEFAULT_LIMIT = 20;
+// A probe is a look, not a fetch: 25 rows cost at most $0.05
+const INSTANT_PROBE_DEFAULT_LIMIT = 10;
+const INSTANT_PROBE_MAX_LIMIT = 25;
+
 @Injectable()
 export class SearchBrightDataBusinessTool implements Tool {
   private readonly logger = new Logger(SearchBrightDataBusinessTool.name);
@@ -68,8 +75,11 @@ export class SearchBrightDataBusinessTool implements Tool {
 Default mode is ludicrous (billed $0.002 per returned record, max $10 per query). It works in two steps:
 1. Call without listId. This plans several structured queries and spends a few cents sampling them. You get listId, per-slice match counts, expected accuracy and the cost of fetching N records. Show the user the numbers and ask which budget to fetch. Nothing is fetched yet.
 2. After the user confirms, call again with listId and maxBudgetUsd (and optionally targetCount, projectId). Records are fetched slice by slice and rows Jev marks irrelevant are dropped.
-Pick the mode by input. Ludicrous (default) is for a set described by attributes (title, employer, industry, location, size, funding); it has no URL, website or domain field. Instant is a raw string lookup, only for one company by website: entity company and a bare host such as stripe.com; the tool keeps rows whose website/domain matches that host. Any other instant call runs as ludicrous. For one person by LinkedIn URL or name use fetch_profiles; a company LinkedIn URL is not supported. smart is ignored. Records are fetched with view full.
-Ludicrous results never contain the records, only counts and a summary. On Find, pass projectId on the fetch so hits write the Outreach tab — do not call outreach_list attach afterward. Fetched records are also kept in a list (listId, 30 days) for export or for attach only when projectId was omitted. Do not create CRM records (use save_outreach_targets_to_crm). Omit projectId on instant domain lookup for a preview with previewRows / companies.`;
+Pick the mode by input. Ludicrous (default) is for a set described by attributes (title, employer, industry, location, size, funding); it has no URL, website or domain field. Instant sends one raw string (max 200 characters) with no planner and no estimate:
+- Lookup: a company website (entity company, bare host such as stripe.com), a company LinkedIn URL (entity company) or a person's LinkedIn profile URL (entity people). Rows are cut to the exact match and written to the tab.
+- Probe: any other short literal ("Smita Jatia Westlife", "CFO fintech Bengaluru"). limit defaults to 10, max 25 (about $0.05). Fuzzy token matches, returned as previewRows only, never written; matched is Bright Data's total for the string, not a count of fits. Use it to check a name or see what a phrase returns before a ludicrous estimate.
+smart is ignored. Records are fetched with view full.
+Ludicrous results never contain the records, only counts and a summary. On Find, pass projectId on the fetch so hits write the Outreach tab — do not call outreach_list attach afterward. Fetched records are also kept in a list (listId, 30 days) for export or for attach only when projectId was omitted. Do not create CRM records (use save_outreach_targets_to_crm). Omit projectId on an instant lookup for a preview with previewRows.`;
 
   inputSchema = SearchBrightDataBusinessToolInputZodSchema;
 
@@ -98,17 +108,13 @@ Ludicrous results never contain the records, only counts and a summary. On Find,
       };
     }
 
-    // Instant is only for company-by-domain (see sourcing skill recipe).
-    // Everything else stays on the ludicrous planner.
-    const wantsInstantDomainLookup =
-      parsed.data.mode === 'instant' &&
-      parsed.data.entity === 'company' &&
-      parseBrightDataDomainLookupQuery(parsed.data.query) !== null;
+    // smart is not offered; everything that is not instant goes to the planner
     const input = {
       ...parsed.data,
-      mode: wantsInstantDomainLookup
-        ? ('instant' as const)
-        : ('ludicrous' as const),
+      mode:
+        parsed.data.mode === 'instant'
+          ? ('instant' as const)
+          : ('ludicrous' as const),
       // The project the user is on, so a fetch still writes its tab when the
       // model omits it. An estimate ignores projectId.
       projectId: isNonEmptyString(parsed.data.projectId)
@@ -128,17 +134,36 @@ Ludicrous results never contain the records, only counts and a summary. On Find,
       return this.executeLudicrous(input, context);
     }
 
+    const lookup = parseBrightDataInstantLookupQuery(input.entity, input.query);
+
+    return lookup === null
+      ? this.executeInstantProbe(input)
+      : this.executeInstantLookup(input, lookup, context);
+  }
+
+  // A domain or LinkedIn URL names one entity: cut the fuzzy rows to the exact
+  // match and write it to the tab like any other search
+  private async executeInstantLookup(
+    input: SearchBrightDataBusinessToolInput,
+    lookup: BrightDataInstantLookup,
+    context: ToolExecutionContext,
+  ): Promise<ToolOutput> {
     try {
-      const domainHost = parseBrightDataDomainLookupQuery(input.query);
       const search = await this.brightDataBusinessSearchService.search({
         ...input,
         // Instant ranks by tokens; a small page is enough once we filter
-        limit: input.limit ?? 20,
+        limit: input.limit ?? INSTANT_LOOKUP_DEFAULT_LIMIT,
       });
       const documents =
-        domainHost !== null
-          ? filterBrightDataDocumentsByDomain(search.documents, domainHost)
-          : search.documents;
+        lookup.kind === 'domain'
+          ? filterBrightDataDocumentsByDomain(
+              search.documents,
+              lookup.domainHost,
+            )
+          : filterBrightDataDocumentsByLinkedinUrl(
+              search.documents,
+              lookup.linkedinUrlKey,
+            );
       const filteredSearch = { ...search, documents };
       const ephemeral = await this.persistEphemeral(
         input,
@@ -149,14 +174,17 @@ Ludicrous results never contain the records, only counts and a summary. On Find,
       return {
         success: true,
         message:
-          domainHost !== null
-            ? `Found ${documents.length} company record(s) for domain ${domainHost}`
-            : `Found ${documents.length} ${input.entity} record(s)`,
+          lookup.kind === 'domain'
+            ? `Found ${documents.length} company record(s) for domain ${lookup.domainHost}`
+            : `Found ${documents.length} ${input.entity} record(s) for LinkedIn URL ${lookup.linkedinUrlKey}`,
         result: {
           entity: input.entity,
           mode: search.mode,
+          lookup: lookup.kind,
           query: input.query.trim(),
-          ...(domainHost !== null ? { domainHost } : {}),
+          ...(lookup.kind === 'domain'
+            ? { domainHost: lookup.domainHost }
+            : { linkedinUrl: lookup.linkedinUrlKey }),
           reqId: search.reqId,
           matched: search.matched,
           count: documents.length,
@@ -181,6 +209,50 @@ Ludicrous results never contain the records, only counts and a summary. On Find,
       };
     } catch (error) {
       this.logger.error('Bright Data business search failed', error);
+
+      return {
+        success: false,
+        message: 'Failed to search Bright Data',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  // A raw query with no identifier: a cheap look at what instant returns. The
+  // rows are fuzzy token matches, so they are shown, never written to the tab.
+  private async executeInstantProbe(
+    input: SearchBrightDataBusinessToolInput,
+  ): Promise<ToolOutput> {
+    const previewInput = { ...input, projectId: undefined };
+
+    try {
+      const search = await this.brightDataBusinessSearchService.search({
+        ...previewInput,
+        limit: Math.min(
+          input.limit ?? INSTANT_PROBE_DEFAULT_LIMIT,
+          INSTANT_PROBE_MAX_LIMIT,
+        ),
+      });
+
+      return {
+        success: true,
+        message: `Instant probe returned ${search.documents.length} ${input.entity} record(s); not written to the tab`,
+        result: {
+          entity: input.entity,
+          mode: search.mode,
+          lookup: 'probe',
+          query: input.query.trim(),
+          reqId: search.reqId,
+          // Bright Data's match total for the raw string, not a count of fits
+          matched: search.matched,
+          count: search.documents.length,
+          spentUsd: search.costUsd,
+          ephemeralWritten: 0,
+          previewRows: this.buildPreviewRows(previewInput, search),
+        },
+      };
+    } catch (error) {
+      this.logger.error('Bright Data instant probe failed', error);
 
       return {
         success: false,

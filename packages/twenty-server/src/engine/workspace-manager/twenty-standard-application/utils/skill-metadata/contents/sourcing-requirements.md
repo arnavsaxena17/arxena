@@ -19,14 +19,14 @@ State the brief in a few lines, ask only what is missing in one batch (at most f
 | --- | --- | --- | --- |
 | Population | "React engineers in Mumbai" | Current roles; the workspace HQ country when none is given | The count; the seniority band if the title spans levels |
 | Named role at named companies | "the CEO of each company" | Every role named and no others; up to three per company; the company's HQ country | Which roles, only for "leaders" or similar. Never which companies when the project has them |
-| Company list | "QSR restaurants in India" | Headquartered in the country; skip those already in the project | The unit and the count |
+| Company list | "QSR restaurants in India" | Headquartered in the country; skip those already in the project's unexpired lists or the CRM | The unit and the count |
 | Scored list of about N | "60 multi-store Indian brands that run digital marketing" | Stated attributes are must-haves; the server's fitment threshold | Thresholds not stated and the evidence each is read from ("20 or more stores" from what); the caps, once; the count |
 | Look-alikes of seeds | "more like these" | The industry, size band and geography the seeds share | Which attributes, only if the seeds differ on them |
 | Expand or refresh a list | "find more" | The earlier brief from `get_sourcing_ledger`; skip everyone already in the list or the CRM | How many more |
 
 ### Ambiguous terms
 
-Settle them with the intake gate and glossary (`intent-glossary`).
+Settle them with the intake gate above and `intent-glossary`.
 
 ### Age, later checks, conflicts
 

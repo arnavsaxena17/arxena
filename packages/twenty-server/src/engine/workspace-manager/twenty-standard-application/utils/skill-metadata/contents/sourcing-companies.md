@@ -10,7 +10,7 @@ Write and Save to CRM follow **Result lists** and **Write contract** in the head
 
 {{sources: learn-tools companies}}
 
-Dedup across sources: domain, then LinkedIn company URL, then name plus city (`entity-resolution`).
+The server dedupes on one key per row: domain, else LinkedIn company URL, else name alone (same-name companies without either merge). `against: "lists"` checks every list in the workspace. The CRM check uses the domain only: a row without one counts as new.
 
 ### Companies constraints
 

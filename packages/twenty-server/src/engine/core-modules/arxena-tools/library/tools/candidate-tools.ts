@@ -9,6 +9,8 @@ import {
   mutationToUpdateOnePerson,
 } from 'twenty-shared/graphql';
 
+import { SEARCH_FIND_CANDIDATE_INTERNAL_TOOL_NAME } from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-names.const';
+
 import { executeGraphQL } from '../api/graphql-client';
 import { callRestAPI } from '../api/rest-client';
 import { McpTool } from '../types/tool-types';
@@ -48,7 +50,9 @@ export const candidateTools: McpTool[] = [
       name: 'list_candidates_for_project',
       description:
         'List candidates for a specific job. Optionally filter by status. Returns names, contact info, and current status of each candidate.',
-      inputSchema: descriptorToInputSchema(LIST_CANDIDATES_FOR_JOB_INPUT_DESCRIPTOR),
+      inputSchema: descriptorToInputSchema(
+        LIST_CANDIDATES_FOR_JOB_INPUT_DESCRIPTOR,
+      ),
     },
     handler: async (args, config) => {
       const projectId = args.projectId as string;
@@ -89,7 +93,7 @@ export const candidateTools: McpTool[] = [
 
   {
     definition: {
-      name: 'find_candidate_in_arxena_internal',
+      name: SEARCH_FIND_CANDIDATE_INTERNAL_TOOL_NAME,
       description:
         'Search for a candidate in the Arxena Internal Database by name, email, or phone number across all jobs. Returns matching candidates with their job associations. At least one search parameter is required. Use this before updating a candidate.',
       inputSchema: descriptorToInputSchema(FIND_CANDIDATE_INPUT_DESCRIPTOR),
@@ -101,7 +105,9 @@ export const candidateTools: McpTool[] = [
       const limit = typeof args.limit === 'number' ? args.limit : 20;
 
       if (!name && !email && !phone) {
-        throw new Error('At least one of name, email, or phone must be provided.');
+        throw new Error(
+          'At least one of name, email, or phone must be provided.',
+        );
       }
 
       const orConditions: unknown[] = [];
@@ -109,7 +115,9 @@ export const candidateTools: McpTool[] = [
       if (name) {
         const { firstName, lastName } = parseName(name);
         if (firstName) {
-          orConditions.push({ name: { firstName: { like: `%${firstName}%` } } });
+          orConditions.push({
+            name: { firstName: { like: `%${firstName}%` } },
+          });
         }
         if (lastName) {
           orConditions.push({ name: { lastName: { like: `%${lastName}%` } } });
@@ -119,10 +127,13 @@ export const candidateTools: McpTool[] = [
         orConditions.push({ emails: { primaryEmail: { eq: email } } });
       }
       if (phone) {
-        orConditions.push({ phones: { primaryPhoneNumber: { like: `%${phone}%` } } });
+        orConditions.push({
+          phones: { primaryPhoneNumber: { like: `%${phone}%` } },
+        });
       }
 
-      const filter = orConditions.length > 1 ? { or: orConditions } : orConditions[0];
+      const filter =
+        orConditions.length > 1 ? { or: orConditions } : orConditions[0];
 
       const data = await executeGraphQL(
         config.baseUrl,
@@ -161,8 +172,11 @@ export const candidateTools: McpTool[] = [
   {
     definition: {
       name: 'get_candidate_details_in_arxena_internal',
-      description: 'Get full details for a specific candidate by their candidate ID.',
-      inputSchema: descriptorToInputSchema(GET_CANDIDATE_DETAILS_INPUT_DESCRIPTOR),
+      description:
+        'Get full details for a specific candidate by their candidate ID.',
+      inputSchema: descriptorToInputSchema(
+        GET_CANDIDATE_DETAILS_INPUT_DESCRIPTOR,
+      ),
     },
     handler: async (args, config) => {
       const candidateId = args.candidateId as string;
@@ -282,7 +296,9 @@ export const candidateTools: McpTool[] = [
       name: 'update_candidate_status',
       description:
         'Update the recruitment pipeline status of a candidate. Valid statuses: SCREENING, INTERESTED, NOT_INTERESTED, NOT_FIT, CV_SENT, CV_RECEIVED, RECRUITER_INTERVIEW, CLIENT_INTERVIEW, NEGOTIATION.',
-      inputSchema: descriptorToInputSchema(UPDATE_CANDIDATE_STATUS_INPUT_DESCRIPTOR),
+      inputSchema: descriptorToInputSchema(
+        UPDATE_CANDIDATE_STATUS_INPUT_DESCRIPTOR,
+      ),
     },
     handler: async (args, config) => {
       const candidateId = args.candidateId as string;
@@ -305,7 +321,9 @@ export const candidateTools: McpTool[] = [
       name: 'update_candidate_phone',
       description:
         "Update the phone number for a candidate. Finds the associated person record and updates it. Use find_candidate first to get the candidate ID if you don't have it.",
-      inputSchema: descriptorToInputSchema(UPDATE_CANDIDATE_PHONE_INPUT_DESCRIPTOR),
+      inputSchema: descriptorToInputSchema(
+        UPDATE_CANDIDATE_PHONE_INPUT_DESCRIPTOR,
+      ),
     },
     handler: async (args, config) => {
       const candidateId = args.candidateId as string;
@@ -327,7 +345,9 @@ export const candidateTools: McpTool[] = [
 
       const peopleId = candidates[0].peopleId;
       if (!peopleId) {
-        throw new Error(`Candidate ${candidateId} has no associated person record`);
+        throw new Error(
+          `Candidate ${candidateId} has no associated person record`,
+        );
       }
 
       // Step 2: Update the person's phone number
@@ -347,7 +367,9 @@ export const candidateTools: McpTool[] = [
         },
       );
 
-      const result = personData as { updatePerson: { id: string; city?: string } };
+      const result = personData as {
+        updatePerson: { id: string; city?: string };
+      };
       return {
         success: true,
         personId: peopleId,
@@ -362,7 +384,9 @@ export const candidateTools: McpTool[] = [
       name: 'update_candidate_salary',
       description:
         'Update the salary or salary expectation for a candidate using custom field values. Use get_candidate_fields_for_project first to see available field names for the job.',
-      inputSchema: descriptorToInputSchema(UPDATE_CANDIDATE_SALARY_INPUT_DESCRIPTOR),
+      inputSchema: descriptorToInputSchema(
+        UPDATE_CANDIDATE_SALARY_INPUT_DESCRIPTOR,
+      ),
     },
     handler: async (args, config) => {
       const candidateId = args.candidateId as string;
@@ -385,7 +409,9 @@ export const candidateTools: McpTool[] = [
     definition: {
       name: 'update_candidate_remarks',
       description: 'Update the remarks/notes field on a candidate record.',
-      inputSchema: descriptorToInputSchema(UPDATE_CANDIDATE_REMARKS_INPUT_DESCRIPTOR),
+      inputSchema: descriptorToInputSchema(
+        UPDATE_CANDIDATE_REMARKS_INPUT_DESCRIPTOR,
+      ),
     },
     handler: async (args, config) => {
       const candidateId = args.candidateId as string;
@@ -410,7 +436,9 @@ export const candidateTools: McpTool[] = [
     definition: {
       name: 'get_candidates_by_project_id',
       description: 'Get candidates linked to a job.',
-      inputSchema: descriptorToInputSchema(GET_CANDIDATES_BY_JOB_ID_INPUT_DESCRIPTOR),
+      inputSchema: descriptorToInputSchema(
+        GET_CANDIDATES_BY_JOB_ID_INPUT_DESCRIPTOR,
+      ),
     },
     handler: async (args, config) => {
       const body = args as Record<string, unknown>;
@@ -430,7 +458,9 @@ export const candidateTools: McpTool[] = [
       description:
         'Upload candidate profiles to a project(e.g. from Naukri, LinkedIn search, or JSON). Pass candidates array, projectId, jobName, and data_source. Progress is reported via SSE; table updates when processing completes.',
       inputSchema: (() => {
-        const baseSchema = descriptorToInputSchema(UPLOAD_PROFILES_INPUT_DESCRIPTOR);
+        const baseSchema = descriptorToInputSchema(
+          UPLOAD_PROFILES_INPUT_DESCRIPTOR,
+        );
         return {
           ...baseSchema,
           properties: {
@@ -438,7 +468,8 @@ export const candidateTools: McpTool[] = [
             candidates: {
               type: 'array',
               items: { type: 'object' },
-              description: 'Array of candidate profile objects (structure depends on data_source)',
+              description:
+                'Array of candidate profile objects (structure depends on data_source)',
             },
           },
         };
@@ -446,7 +477,13 @@ export const candidateTools: McpTool[] = [
     },
     handler: async (args, config) => {
       const body = args as Record<string, unknown>;
-      return callRestAPI(config.baseUrl, config.apiToken, 'candidate-sourcing', 'upload-profiles', body);
+      return callRestAPI(
+        config.baseUrl,
+        config.apiToken,
+        'candidate-sourcing',
+        'upload-profiles',
+        body,
+      );
     },
   },
 
@@ -456,7 +493,9 @@ export const candidateTools: McpTool[] = [
       description:
         'Upload a batch of candidate profiles for processing and saving to a job. Use after fetching from a source; processing is queued and table updates when done.',
       inputSchema: (() => {
-        const baseSchema = descriptorToInputSchema(POST_CANDIDATES_INPUT_DESCRIPTOR);
+        const baseSchema = descriptorToInputSchema(
+          POST_CANDIDATES_INPUT_DESCRIPTOR,
+        );
         return {
           ...baseSchema,
           properties: {
@@ -464,7 +503,8 @@ export const candidateTools: McpTool[] = [
             data: {
               type: 'array',
               items: { type: 'object' },
-              description: 'Array of candidate profile objects (PersonCandidateDraft shape)',
+              description:
+                'Array of candidate profile objects (PersonCandidateDraft shape)',
             },
           },
         };
@@ -472,19 +512,34 @@ export const candidateTools: McpTool[] = [
     },
     handler: async (args, config) => {
       const body = args as Record<string, unknown>;
-      return callRestAPI(config.baseUrl, config.apiToken, 'candidate-sourcing', 'post-candidates', body);
+      return callRestAPI(
+        config.baseUrl,
+        config.apiToken,
+        'candidate-sourcing',
+        'post-candidates',
+        body,
+      );
     },
   },
 
   {
     definition: {
       name: 'refresh_table_data',
-      description: 'Request a refresh of table data for the recruiter. Kept for backward compatibility; other mechanisms may handle sync.',
+      description:
+        'Request a refresh of table data for the recruiter. Kept for backward compatibility; other mechanisms may handle sync.',
       inputSchema: descriptorToInputSchema(REFRESH_TABLE_DATA_INPUT_DESCRIPTOR),
     },
     handler: async (args, config) => {
-      const body = (args?.recruiterId != null ? { recruiterId: args.recruiterId } : {}) as Record<string, unknown>;
-      return callRestAPI(config.baseUrl, config.apiToken, 'candidate-sourcing', 'refresh-table-data', body);
+      const body = (
+        args?.recruiterId != null ? { recruiterId: args.recruiterId } : {}
+      ) as Record<string, unknown>;
+      return callRestAPI(
+        config.baseUrl,
+        config.apiToken,
+        'candidate-sourcing',
+        'refresh-table-data',
+        body,
+      );
     },
   },
 
@@ -494,7 +549,9 @@ export const candidateTools: McpTool[] = [
       description:
         'Queue AI filter processing for candidates in a job. Pass projectId and aiFilters (or enrichments). Selected record IDs and object metadata are optional.',
       inputSchema: (() => {
-        const baseSchema = descriptorToInputSchema(PROCESS_AI_FILTERS_INPUT_DESCRIPTOR);
+        const baseSchema = descriptorToInputSchema(
+          PROCESS_AI_FILTERS_INPUT_DESCRIPTOR,
+        );
         return {
           ...baseSchema,
           properties: {
@@ -512,7 +569,8 @@ export const candidateTools: McpTool[] = [
             selectedRecordIds: {
               type: 'array',
               items: { type: 'string' },
-              description: 'Candidate/record IDs to apply filters to (optional)',
+              description:
+                'Candidate/record IDs to apply filters to (optional)',
             },
             availableSortDefinitions: {
               type: 'array',
@@ -530,7 +588,13 @@ export const candidateTools: McpTool[] = [
     },
     handler: async (args, config) => {
       const body = args as Record<string, unknown>;
-      return callRestAPI(config.baseUrl, config.apiToken, 'candidate-sourcing', 'process-ai-filters', body);
+      return callRestAPI(
+        config.baseUrl,
+        config.apiToken,
+        'candidate-sourcing',
+        'process-ai-filters',
+        body,
+      );
     },
   },
 
@@ -540,7 +604,9 @@ export const candidateTools: McpTool[] = [
       description:
         'Convert a natural-language filter description into a filter config (selected metadata fields and conditions). Use before applying filters to table data.',
       inputSchema: (() => {
-        const baseSchema = descriptorToInputSchema(PROCESS_FILTER_DESCRIPTION_INPUT_DESCRIPTOR);
+        const baseSchema = descriptorToInputSchema(
+          PROCESS_FILTER_DESCRIPTION_INPUT_DESCRIPTOR,
+        );
         return {
           ...baseSchema,
           properties: {
@@ -548,7 +614,8 @@ export const candidateTools: McpTool[] = [
             otherFieldKeys: {
               type: 'array',
               items: { type: 'object' },
-              description: 'Available candidate otherFields keys for validation (optional)',
+              description:
+                'Available candidate otherFields keys for validation (optional)',
             },
           },
         };
@@ -556,7 +623,13 @@ export const candidateTools: McpTool[] = [
     },
     handler: async (args, config) => {
       const body = args as Record<string, unknown>;
-      return callRestAPI(config.baseUrl, config.apiToken, 'candidate-sourcing', 'process-filter-description', body);
+      return callRestAPI(
+        config.baseUrl,
+        config.apiToken,
+        'candidate-sourcing',
+        'process-filter-description',
+        body,
+      );
     },
   },
 ];

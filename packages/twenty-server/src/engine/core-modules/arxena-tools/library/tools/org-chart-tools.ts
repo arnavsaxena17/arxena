@@ -1,3 +1,5 @@
+import { SEARCH_SERP_TOOL_NAME } from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-names.const';
+
 import {
   GET_ORG_CHART_INPUT_DESCRIPTOR,
   GET_ORG_CHART_NODE_PEOPLE_INPUT_DESCRIPTOR,
@@ -411,7 +413,7 @@ export const orgChartTools: McpTool[] = [
 
   {
     definition: {
-      name: 'google_serp_search',
+      name: SEARCH_SERP_TOOL_NAME,
       description:
         'Google organic web search (title, url, snippet) via Bright Data SERP. Use after get_org_chart_node_people to corroborate named people or public facts. Pass a focused query; not a people index and not a substitute for stored org-chart profiles.',
       inputSchema: descriptorToInputSchema(GOOGLE_SERP_SEARCH_INPUT_DESCRIPTOR),

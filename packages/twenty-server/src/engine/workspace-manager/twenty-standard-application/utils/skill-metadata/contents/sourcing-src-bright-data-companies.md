@@ -9,11 +9,11 @@
 
 {{include: bright-data-modes}}
 
-### Instant recipe — one company by website or domain
+### Instant recipe — one company by website or LinkedIn URL
 
-Use this when the user gives a domain or company website ("who is stripe.com", "enrich notion.so", "look up https://www.abfrl.com"). Instant usually ranks the right company first, and the tool keeps only rows whose `website` / `domain` host matches.
+Use this when the user gives a domain, website or LinkedIn company URL ("who is stripe.com", "enrich notion.so", "look up linkedin.com/company/abfrl"). The tool keeps only rows whose website host, or LinkedIn URL, matches.
 
-1. Normalize to a bare host or URL with **no spaces** (`stripe.com`, `https://stripe.com`). Do not wrap it in a sentence.
+1. Pass the bare host or URL with **no spaces** (`stripe.com`, `https://www.linkedin.com/company/abfrl`). Do not wrap it in a sentence.
 2. Call once (no estimate, no budget ask):
 
 ```
@@ -25,7 +25,7 @@ search_bright_data_business({
 })
 ```
 
-3. The result's `domainHost`, `count`, and `companies` / `previewRows` are already domain-filtered. If `count` is 0, say so and try Wikidata (`search_wikidata_companies`). Do not retry on ludicrous with the domain as the query: it has no domain field.
+3. `count` and `companies` / `previewRows` are already filtered. If `count` is 0, say so, try an instant probe on the company name, then Wikidata (`search_wikidata_companies`). Never retry on ludicrous with the domain or URL: it has no such field.
 4. Report name, domain, industry, LinkedIn URL, size. On Outreach Find the tab is written; with no project the result shows `previewRows` only.
 
 ### Ludicrous query

@@ -10,6 +10,8 @@ System facts the model cannot know. Each line is tagged **firm** (measured or se
 - **Location**: where the person lives, not company HQ. Reasonably current.
 - **Company size, revenue, store counts**: heuristic, treat as a band, not a figure. A web column beats the profile when it matters.
 - **Skills**: self-declared. Evidence only when an experience entry backs them.
+- **Blank fields**: unknown, never empty. A source that does not preview a field has not said it is empty; take it from the other source.
+- **Disagreement on a must-have**: score the more recent source (full profile over snapshot, experience over headline) and name the conflict in the reason.
 
 ### Web search routing
 

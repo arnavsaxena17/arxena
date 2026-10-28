@@ -2,6 +2,16 @@
 // MCP execute_tool endpoint so Nest action tools and Arxena search tools hit
 // the real backend (tab, Bright Data, LinkedIn, AI columns).
 
+import {
+  GENERATE_LINKEDIN_QUERY_SET_TOOL_NAME,
+  OUTREACH_LIST_TOOL_NAME,
+  SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME,
+  SEARCH_LINKEDIN_COMPANIES_TOOL_NAME,
+  SEARCH_LINKEDIN_CONTINUE_TOOL_NAME,
+  SEARCH_LINKEDIN_PARAMETERS_TOOL_NAME,
+  SEARCH_LINKEDIN_PEOPLE_TOOL_NAME,
+} from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-names.const';
+
 export const LIVE_BACKEND = process.env.SOURCING_EVAL_LIVE_BACKEND === '1';
 
 const CAP_ROWS = 25;
@@ -58,8 +68,8 @@ export const LIVE_CAPPED_SETUP_NOTE = [
 ].join(' ');
 
 const LIVE_ALLOWLIST = new Set([
-  'search_bright_data_business',
-  'outreach_list',
+  SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME,
+  OUTREACH_LIST_TOOL_NAME,
   'get_outreach_tab',
   'get_sourcing_ledger',
   'find_role_at_companies',
@@ -69,11 +79,11 @@ const LIVE_ALLOWLIST = new Set([
   'get_ai_column_run_status',
   'generate_table_view',
   'apply_table_view',
-  'search_linkedin_people',
-  'search_linkedin_companies',
-  'search_linkedin_continue',
-  'search_linkedin_parameters',
-  'generate_linkedin_query_set',
+  SEARCH_LINKEDIN_PEOPLE_TOOL_NAME,
+  SEARCH_LINKEDIN_COMPANIES_TOOL_NAME,
+  SEARCH_LINKEDIN_CONTINUE_TOOL_NAME,
+  SEARCH_LINKEDIN_PARAMETERS_TOOL_NAME,
+  GENERATE_LINKEDIN_QUERY_SET_TOOL_NAME,
 ]);
 
 export const isLiveAllowlisted = (toolName: string): boolean =>
@@ -335,7 +345,7 @@ export const executeLiveTool = async (
 
   let args = withProjectId(rawArgs, config.projectId);
 
-  if (toolName === 'search_bright_data_business') {
+  if (toolName === SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME) {
     const capped = capBrightData(args, state);
 
     if ('error' in capped) {

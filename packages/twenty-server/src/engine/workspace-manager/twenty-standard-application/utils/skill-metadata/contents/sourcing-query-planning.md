@@ -11,10 +11,10 @@ Break the request into queries before the first search, then measure before you 
 
 ### Dipstick
 
-Use when the request is ambiguous and the full run is expensive (`intent-glossary`). It is process, not knowledge: the model will not do it by default.
+Use when the request is ambiguous and the full run is expensive (the intake gate). It is process, not knowledge: the model will not do it by default.
 
 1. Run 2 to 4 cheap probes of about 20 to 100 rows, one per reading of the ambiguity (a title variant, an industry term, HQ against presence). Independent probes go in the same step.
-2. Read the yield, not the rows (`get_sourcing_ledger`, `summarize`). Note what the market looks like: how many rows, how many duplicates, which titles and employers dominate.
+2. Read the yield, not the rows (`get_sourcing_ledger`, `get_outreach_tab` with `summarize`). Note what the market looks like: how many rows, how many duplicates, which titles and employers dominate.
 3. Ask the user once, with that insight and a recommended option ("Mumbai fintech heads return 40 rows; 'India' returns 900 and mostly operations roles. Which did you mean?").
 
 ### Probe, then scale

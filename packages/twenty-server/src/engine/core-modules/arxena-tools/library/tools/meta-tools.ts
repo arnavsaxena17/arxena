@@ -1,5 +1,5 @@
 import { MCP_TOOL_DESCRIPTIONS } from 'src/engine/core-modules/arxena-tools/constants/mcp-tool-descriptions.const';
-import { ARXENA_INTERNAL_TOOL_NAMES } from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-catalog.const';
+import { ARXENA_INTERNAL_TOOL_NAMES } from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-listing.const';
 import { getDisabledSearchToolNames } from 'src/engine/core-modules/arxena-tools/utils/search-tools-config';
 import { truncateToolResult } from '../auth';
 

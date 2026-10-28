@@ -205,11 +205,11 @@ export const buildOutreachContextPrompt = (
     'Target companies on /outreach-home are ephemeral (Find destination per projectId), not CRM membership.',
     'When the user asks to find/fetch/add/build target companies: load_skills(["sourcing"]), search, then upsert_outreach_target_companies({ projectId, mode: "merge", companies }) before ending the turn. Do not stop at a chat-only list.',
     'Do NOT create CRM Company records for the Companies tab unless the user confirms Save to CRM (save_outreach_targets_to_crm, no enrollment) or enrolls people.',
-    'Target people on the People tab are ephemeral (Find destination) until the user selects rows and confirms Add to CRM / Enroll.',
+    'Target people on the People tab are ephemeral (Find destination) until the user selects rows and confirms Enroll (upload-profiles → Person + Candidate).',
     'When the user asks to find/fetch/search people (target titles, MD/CEO, etc.) for this campaign: load_skills(["sourcing"]), search, then upsert_outreach_target_people({ projectId, mode: "merge", people }) before ending the turn.',
-    'Do NOT create_candidate / create_one_person / create_one_candidate for the People tab. Enrollment writes happen only after explicit user confirmation (Add to CRM / Enroll).',
-    'When the user confirms Save to CRM for the tab rows: save_outreach_targets_to_crm({ projectId, target, companyIds?, personIds? }). It writes Company / Person only, never a Candidate.',
-    'When enrolling people (user confirmed), upsert shared CRM Company + Candidate with projectId = this projectId.',
+    'Do NOT create_candidate / create_one_person / create_one_candidate for the People tab. Enrollment writes happen only after explicit user confirmation (Enroll).',
+    'When the user confirms Save to CRM on the Companies tab: save_outreach_targets_to_crm({ projectId, target: "companies", companyIds? }). People tab has no Save to CRM — use Enroll.',
+    'When enrolling people (user confirmed), upsert shared CRM Person + Candidate with projectId = this projectId (upload-profiles). Assign owner on discovery rows enrolls first, then pins outreachWorkspaceMemberId.',
     'Prefer Candidate+Project execution; Person holds stop/compliance memory.',
     'When the user says "start outreach" for enrolled people: learn_tools({toolNames:["start_outreach"]}) then start_outreach({ projectId, candidateIds: selectedCandidateIds }); whole table with nothing selected: startAllQueuedInProject=true.',
     'Respect send windows, daily caps, stop-on-reply, and approval gates when editing steps.',
@@ -250,7 +250,7 @@ export const buildFindPeopleSendPrompt = (
       ? `Effective ICP JSON: ${input.icpSpecSummary}`
       : 'Use workspace ICP target titles and locations.',
     'load_skills(["sourcing"]), search, then upsert_outreach_target_people({ projectId, mode: "merge", people }) before ending.',
-    'Do not create enrollment records until I confirm Add to CRM / Enroll.',
+    'Do not create enrollment records until I confirm Enroll.',
   ]
     .filter(Boolean)
     .join('\n');

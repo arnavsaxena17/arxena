@@ -1,6 +1,6 @@
 ## For sales
 
-The request is prospects: companies that fit, then the people who decide at them. Not hiring salespeople — Sales Rep, AE, BDR, field sales and sales executive are `for-recruiting`. The core list is the project's People tab, with the companies on the Companies tab. Load this section, then `rubrics` and `playbook-sales-admission`.
+The request is prospects: companies that fit, then the people who decide at them. Not hiring salespeople — Sales Rep, AE, BDR, field sales and sales executive are `for-recruiting`. The core list is the project's People tab, with the companies on the Companies tab. Load this section, then `rubrics`.
 
 ### The brief, in sales terms
 
@@ -12,8 +12,7 @@ The request is prospects: companies that fit, then the people who decide at them
 
 ### Rules
 
-- A person whose company fails the company criteria does not count.
-- Companies first by default. A named role at named companies is `people-by-company`.
+- A person counts only when their company passes the company criteria, they hold a role the user named now, fitment passes, and they are not a customer, an open deal, in another list or on the exclusion list.
+- Companies first by default; the track comes from the Plan table.
 - The rubric is usually `company-led` (`rubrics`).
 - Contact details are contact enrichment, a different job, and not part of sourcing.
-- Dedupe against the CRM before the count: a customer or an open deal is not a new prospect.

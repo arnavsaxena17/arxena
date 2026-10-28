@@ -1,3 +1,5 @@
+import { isNonEmptyString } from '@sniptt/guards';
+
 import type { CompanySearchHit } from 'src/engine/core-modules/company-api/company-api.types';
 import type { OutreachEphemeralCompany } from 'src/engine/core-modules/outreach-command/services/outreach-companies-cache.service';
 import type { OutreachEphemeralPerson } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
@@ -163,6 +165,84 @@ export const filterBrightDataDocumentsByDomain = (
     return websiteHost(website) === want;
   });
 };
+
+// linkedin.com/<section>/<slug>, lowercased, so www., query strings, trailing
+// paths and locale subdomains (in.linkedin.com) all compare equal
+const linkedinUrlKey = (url: string): string | null => {
+  const trimmed = url.trim();
+
+  if (!trimmed || /\s/.test(trimmed)) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(
+      /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`,
+    );
+    const host = parsed.hostname.toLowerCase();
+
+    if (host !== 'linkedin.com' && !host.endsWith('.linkedin.com')) {
+      return null;
+    }
+
+    const [section, slug] = parsed.pathname
+      .split('/')
+      .filter((segment) => segment !== '');
+
+    if (!isNonEmptyString(section) || !isNonEmptyString(slug)) {
+      return null;
+    }
+
+    return `linkedin.com/${section.toLowerCase()}/${decodeURIComponent(slug).toLowerCase()}`;
+  } catch {
+    return null;
+  }
+};
+
+const LINKEDIN_LOOKUP_SECTION: Record<BrightDataBusinessSearchEntity, string> =
+  {
+    company: 'company',
+    people: 'in',
+  };
+
+export type BrightDataInstantLookup =
+  | { kind: 'domain'; domainHost: string }
+  | { kind: 'linkedinUrl'; linkedinUrlKey: string };
+
+// An instant query that names one entity, so its rows can be cut to the exact
+// match. Anything else sent to instant is a probe.
+export const parseBrightDataInstantLookupQuery = (
+  entity: BrightDataBusinessSearchEntity,
+  query: string,
+): BrightDataInstantLookup | null => {
+  const linkedinKey = linkedinUrlKey(query);
+
+  if (linkedinKey !== null) {
+    return linkedinKey.startsWith(
+      `linkedin.com/${LINKEDIN_LOOKUP_SECTION[entity]}/`,
+    )
+      ? { kind: 'linkedinUrl', linkedinUrlKey: linkedinKey }
+      : null;
+  }
+
+  if (entity !== 'company') {
+    return null;
+  }
+
+  const domainHost = parseBrightDataDomainLookupQuery(query);
+
+  return domainHost === null ? null : { kind: 'domain', domainHost };
+};
+
+// Instant is fuzzy: a profile URL also returns people with similar slugs
+export const filterBrightDataDocumentsByLinkedinUrl = (
+  documents: BrightDataBusinessSearchDocument[],
+  wantedKey: string,
+): BrightDataBusinessSearchDocument[] =>
+  documents.filter(
+    (document) =>
+      linkedinUrlKey(readString(document.data, 'url')) === wantedKey,
+  );
 
 export const mapBrightDataCompanyToSearchHit = (
   document: BrightDataBusinessSearchDocument,

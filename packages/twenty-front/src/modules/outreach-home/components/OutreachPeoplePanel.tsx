@@ -11,7 +11,6 @@ import { Loader } from 'twenty-ui/feedback';
 import {
   IconArrowBackUp,
   IconArrowUp,
-  IconDatabase,
   IconDownload,
   IconFileImport,
   IconFilterOff,
@@ -53,7 +52,6 @@ import {
 import { OutreachTableEmptyState } from '@/outreach-home/components/record-table/OutreachTableEmptyState';
 import { OutreachAssignMemberSelect } from '@/outreach-home/components/OutreachAssignMemberSelect';
 import { useOutreachAssignment } from '@/outreach-home/hooks/useOutreachAssignment';
-import { useSaveOutreachTargetsToCrm } from '@/outreach-home/hooks/useSaveOutreachTargetsToCrm';
 import { useOutreachTablePresentation } from '@/outreach-home/hooks/useOutreachTablePresentation';
 import { useOutreachEnroll } from '@/outreach-home/hooks/useOutreachEnroll';
 import { useOutreachProjectJourneySummary } from '@/outreach-home/hooks/useOutreachProjectJourneySummary';
@@ -164,8 +162,6 @@ export const OutreachPeoplePanel = ({
     onRefresh,
     updateEphemeralPerson,
   });
-  const { isSaving: isPersisting, saveTargetsToCrm } =
-    useSaveOutreachTargetsToCrm();
   const {
     columnLayout,
     persistLayout,
@@ -179,8 +175,12 @@ export const OutreachPeoplePanel = ({
     view: aiTableView,
     persistFilters,
   });
-  const { enrollSelectedPeople, promoteDeferredCandidate } =
-    useOutreachEnroll();
+  const {
+    enrollSelectedPeople,
+    enrollAndResolveCandidateIds,
+    promoteDeferredCandidate,
+    isEnrolling,
+  } = useOutreachEnroll();
   const { isStopping, stopOutreachForCandidates } = useStopOutreach();
   const { isStarting, startSequencerOnCandidateIds } =
     useStartOutreachSequencerOnCandidates();
@@ -436,6 +436,52 @@ export const OutreachPeoplePanel = ({
     .map((person) => person.candidateId)
     .filter((candidateId): candidateId is string => isDefined(candidateId));
 
+  const handleAssignOwner = useCallback(
+    async (memberId: string) => {
+      const candidateIds = await enrollAndResolveCandidateIds(
+        selectedPeople,
+        companiesByTabId,
+      );
+
+      if (candidateIds.length === 0) {
+        return;
+      }
+
+      await assignToMember(candidateIds, memberId);
+      await onRefresh?.();
+    },
+    [
+      assignToMember,
+      companiesByTabId,
+      enrollAndResolveCandidateIds,
+      onRefresh,
+      selectedPeople,
+    ],
+  );
+
+  const handleSplitOwners = useCallback(
+    async (mode: 'balanced' | 'round_robin') => {
+      const candidateIds = await enrollAndResolveCandidateIds(
+        selectedPeople,
+        companiesByTabId,
+      );
+
+      if (candidateIds.length === 0) {
+        return;
+      }
+
+      await splitAcrossTeam(candidateIds, mode);
+      await onRefresh?.();
+    },
+    [
+      companiesByTabId,
+      enrollAndResolveCandidateIds,
+      onRefresh,
+      selectedPeople,
+      splitAcrossTeam,
+    ],
+  );
+
   const handleRefresh = useCallback(async () => {
     if (isRefreshing) {
       return;
@@ -677,21 +723,14 @@ export const OutreachPeoplePanel = ({
       />
       <OutreachViewBarDivider />
       <OutreachViewBarIconAction
-        title={withCount('Save selected to CRM', selectedPeople.length)}
-        Icon={IconDatabase}
-        disabled={selectedPeople.length === 0 || isPersisting}
-        onClick={() => {
-          void saveTargetsToCrm({
-            target: 'people',
-            personIds: selectedPeople.map((person) => person.id),
-          });
-        }}
-      />
-      <OutreachViewBarIconAction
         title={withCount('Enroll in outreach', selectedPeople.length)}
         Icon={IconUserPlus}
-        disabled={selectedPeople.length === 0 || isPersisting}
-        onClick={() => enrollSelectedPeople(selectedPeople, companiesByTabId)}
+        disabled={selectedPeople.length === 0 || isEnrolling}
+        onClick={() => {
+          void enrollSelectedPeople(selectedPeople, companiesByTabId).then(() =>
+            onRefresh?.(),
+          );
+        }}
       />
       <OutreachViewBarIconAction
         title={withCount('Start outreach', selectedCandidateIds.length)}
@@ -711,13 +750,13 @@ export const OutreachPeoplePanel = ({
       />
       <OutreachAssignMemberSelect
         members={assignmentMembers}
-        selectedCount={selectedCandidateIds.length}
-        disabled={isAssigning}
+        selectedCount={selectedPeople.length}
+        disabled={isAssigning || isEnrolling}
         onAssign={(memberId) => {
-          void assignToMember(selectedCandidateIds, memberId);
+          void handleAssignOwner(memberId);
         }}
         onSplit={(mode) => {
-          void splitAcrossTeam(selectedCandidateIds, mode);
+          void handleSplitOwners(mode);
         }}
       />
       {isDefined(deferredCandidateId) && (
@@ -754,7 +793,7 @@ export const OutreachPeoplePanel = ({
       {people.length === 0 ? (
         <OutreachTableEmptyState
           title="No target people yet"
-          description="Use Setup → Find people (Ask AI) to discover target roles at companies on this project. They stay here until you Add to CRM or Enroll."
+          description="Use Setup → Find people (Ask AI) to discover target roles at companies on this project. They stay here until you Enroll."
         />
       ) : filteredPeople.length === 0 ? (
         <OutreachTableEmptyState

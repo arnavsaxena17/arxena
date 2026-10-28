@@ -60,6 +60,15 @@ describe('renderSourcingSources', () => {
     expect(ranks[0]).toBe(1);
   });
 
+  it('should name the top-ranked source as the default', () => {
+    expect(renderSourcingSources('{{source: default people}}')).toBe(
+      'Bright Data (`src-bright-data-people`)',
+    );
+    expect(renderSourcingSources('{{source: google-maps companies}}')).toBe(
+      'Google Maps',
+    );
+  });
+
   it('should fill in facts', () => {
     expect(renderSourcingFacts('{{fact: bright-data.costPerRecord}}')).toBe(
       '$0.002',
@@ -73,6 +82,12 @@ describe('renderSourcingSources', () => {
     expect(() =>
       renderSourcingSources('{{sources: provider-map places}}'),
     ).toThrow('Unknown sourcing block');
+    expect(() => renderSourcingSources('{{source: default places}}')).toThrow(
+      'Unknown sourcing entity',
+    );
+    expect(() => renderSourcingSources('{{source: wikidata people}}')).toThrow(
+      'has no people use',
+    );
     expect(() => renderSourcingFacts('{{fact: nope.cost}}')).toThrow(
       'Unknown sourcing source',
     );
@@ -82,7 +97,9 @@ describe('renderSourcingSources', () => {
   });
 
   it('should leave no placeholder in the sourcing skill', () => {
-    expect(getSkillContent('sourcing')).not.toMatch(/\{\{(sources|fact):/);
+    expect(getSkillContent('sourcing')).not.toMatch(
+      /\{\{(sources|source|fact):/,
+    );
   });
 });
 

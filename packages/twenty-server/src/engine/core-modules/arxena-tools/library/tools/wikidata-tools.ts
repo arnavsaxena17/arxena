@@ -1,3 +1,5 @@
+import { SEARCH_WIKIDATA_COMPANIES_TOOL_NAME } from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-names.const';
+
 import { callRestAPIGet } from '../api/rest-client';
 import { McpTool } from '../types/tool-types';
 import { descriptorToInputSchema } from '../utils/input-schema';
@@ -6,7 +8,7 @@ import { SEARCH_WIKIDATA_COMPANIES_INPUT_DESCRIPTOR } from '../utils/McpToolSche
 export const wikidataTools: McpTool[] = [
   {
     definition: {
-      name: 'search_wikidata_companies',
+      name: SEARCH_WIKIDATA_COMPANIES_TOOL_NAME,
       description:
         'Fetch structured company details from Wikidata. Prefer domain/URL lookup (official website P856). Falls back to company name search. Returns HQ, industry, employees, executives, stock listing, and Wikidata/Wikipedia IDs.',
       inputSchema: descriptorToInputSchema(
@@ -20,14 +22,11 @@ export const wikidataTools: McpTool[] = [
         limit?: number;
       };
 
-      const hasDomain =
-        typeof domain === 'string' && domain.trim().length > 0;
+      const hasDomain = typeof domain === 'string' && domain.trim().length > 0;
       const hasName = typeof name === 'string' && name.trim().length > 0;
 
       if (!hasDomain && !hasName) {
-        throw new Error(
-          'Provide at least one of: domain (preferred) or name.',
-        );
+        throw new Error('Provide at least one of: domain (preferred) or name.');
       }
 
       if (hasDomain) {

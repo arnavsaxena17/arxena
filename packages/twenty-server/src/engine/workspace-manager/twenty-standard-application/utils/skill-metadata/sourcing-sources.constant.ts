@@ -3,6 +3,25 @@
 // (render-sourcing-sources.util.ts), so a fact about a source is written once.
 // Strings may use {{fact: source-key.name}} to quote another entry's fact.
 
+import {
+  GENERATE_LINKEDIN_QUERY_SET_TOOL_NAME,
+  RESOLVE_COMPANY_FROM_RAW_NAME_TOOL_NAME,
+  SEARCH_APOLLO_COMPANIES_TOOL_NAME,
+  SEARCH_APOLLO_PEOPLE_TOOL_NAME,
+  SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME,
+  SEARCH_COMPANIES_INDEX_TOOL_NAME,
+  SEARCH_EXA_APP_TOOL_NAME,
+  SEARCH_EXA_TOOL_NAME,
+  SEARCH_HARVEST_ACCOUNTS_TOOL_NAME,
+  SEARCH_HARVEST_LEADS_TOOL_NAME,
+  SEARCH_LINKEDIN_COMPANIES_TOOL_NAME,
+  SEARCH_LINKEDIN_PARAMETERS_TOOL_NAME,
+  SEARCH_LINKEDIN_PEOPLE_TOOL_NAME,
+  SEARCH_PEOPLE_INDEX_TOOL_NAME,
+  SEARCH_SERP_TOOL_NAME,
+  SEARCH_WIKIDATA_COMPANIES_TOOL_NAME,
+} from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-names.const';
+
 export type SourcingEntity = 'people' | 'companies';
 
 // How much a stated limit can be trusted: measured or set in code, experience,
@@ -69,21 +88,21 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
     limits:
       'One query returns at most {{fact: bright-data.maxRows}} rows (`limit` up to 100, `offset` up to 1,000). The planner splits a request into slices to get past that; the estimate shows `fetchableRecords` per slice, and a slice with none left is exhausted. Billing is {{fact: bright-data.costPerRecord}} per returned record and a primary query is capped at {{fact: bright-data.queryCap}}. Running the same query again returns only rows already in the list: more rows need different title words, cities or size bands.',
     people: {
-      tools: '`search_bright_data_business` (`entity: "people"`)',
+      tools: `\`${SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME}\` (\`entity: "people"\`)`,
       bestFor:
-        'People sets described by title, employer, industry, skills or location ("MD or CEO of QSR restaurants in India"), ludicrous, budgeted at {{fact: bright-data.costPerRecord}}/record. Not for one person by LinkedIn URL or name (use `fetch_profiles`)',
+        'People sets described by title, employer, industry, skills or location ("MD or CEO of QSR restaurants in India"), ludicrous, budgeted at {{fact: bright-data.costPerRecord}}/record; **or** one person by LinkedIn URL, or a quick probe of a name, with `mode: "instant"`',
       requires: '`BRIGHT_DATA_API_KEY` set',
-      learnTools: ['search_bright_data_business'],
+      learnTools: [SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME],
       markerPrefix: 'search-bright-data-people',
       orderLabel: 'Bright Data people',
       section: 'src-bright-data-people',
     },
     companies: {
-      tools: '`search_bright_data_business` (`entity: "company"`)',
+      tools: `\`${SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME}\` (\`entity: "company"\`)`,
       bestFor:
-        'Company sets described by industry, location, size or funding (ludicrous, {{fact: bright-data.costPerRecord}}/record); **or** one company by website with `mode: "instant"` and a bare host (`stripe.com`). Not a company LinkedIn URL',
+        'Company sets described by industry, location, size or funding (ludicrous, {{fact: bright-data.costPerRecord}}/record); **or** one company by website (`stripe.com`) or LinkedIn URL, or a quick probe of a name, with `mode: "instant"`',
       requires: '`BRIGHT_DATA_API_KEY` set',
-      learnTools: ['search_bright_data_business'],
+      learnTools: [SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME],
       markerPrefix: 'search-bright-data-companies',
       orderLabel: 'Bright Data companies',
       section: 'src-bright-data-companies',
@@ -103,21 +122,21 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
     label: 'Google SERP',
     rank: 2,
     people: {
-      tools: '`google_serp_search`',
+      tools: `\`${SEARCH_SERP_TOOL_NAME}\``,
       bestFor:
         'A company name plus designation ("plant head Clariant Chemicals"); names and snippets, often without a LinkedIn URL',
       requires: 'Google SERP enabled (server config)',
-      learnTools: ['google_serp_search'],
+      learnTools: [SEARCH_SERP_TOOL_NAME],
       markerPrefix: 'search-serp-people',
       orderLabel: 'Google SERP people results',
       section: 'src-serp',
     },
     companies: {
-      tools: '`google_serp_search`',
+      tools: `\`${SEARCH_SERP_TOOL_NAME}\``,
       bestFor:
         "A company's LinkedIn page, to find its LinkedIn URL; confirm the name matches",
       requires: 'Google SERP enabled (server config)',
-      learnTools: ['google_serp_search'],
+      learnTools: [SEARCH_SERP_TOOL_NAME],
       markerPrefix: 'search-serp-companies',
       orderLabel: 'Google SERP',
       section: 'src-serp',
@@ -134,22 +153,22 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
     label: 'LinkedIn / Unipile',
     rank: 3,
     people: {
-      tools: '`search_linkedin_people`',
+      tools: `\`${SEARCH_LINKEDIN_PEOPLE_TOOL_NAME}\``,
       bestFor: 'Live LinkedIn people (classic / Sales Nav / Recruiter)',
       requires: 'Connected LinkedIn Unipile account',
-      learnTools: ['search_linkedin_people'],
+      learnTools: [SEARCH_LINKEDIN_PEOPLE_TOOL_NAME],
       orderLabel: 'LinkedIn via Unipile',
       section: 'src-linkedin',
     },
     companies: {
-      tools: '`search_linkedin_companies`',
+      tools: `\`${SEARCH_LINKEDIN_COMPANIES_TOOL_NAME}\``,
       bestFor:
         'Live LinkedIn company results; `has_job_offers`, geo/industry facets',
       requires: 'Connected LinkedIn Unipile account',
       learnTools: [
-        'search_linkedin_companies',
-        'search_linkedin_parameters',
-        'generate_linkedin_query_set',
+        SEARCH_LINKEDIN_COMPANIES_TOOL_NAME,
+        SEARCH_LINKEDIN_PARAMETERS_TOOL_NAME,
+        GENERATE_LINKEDIN_QUERY_SET_TOOL_NAME,
       ],
       orderLabel: 'LinkedIn via Unipile',
       section: 'src-linkedin',
@@ -166,7 +185,7 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
     label: 'Harvest',
     rank: 4,
     people: {
-      tools: '`search_harvest_leads`',
+      tools: `\`${SEARCH_HARVEST_LEADS_TOOL_NAME}\``,
       bestFor: 'Sales Navigator people filters without a seat; paid',
       requires: 'Harvest configured',
       learnTools: [],
@@ -174,7 +193,7 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
       section: 'src-harvest',
     },
     companies: {
-      tools: '`search_harvest_accounts`',
+      tools: `\`${SEARCH_HARVEST_ACCOUNTS_TOOL_NAME}\``,
       bestFor:
         'Sales Navigator company filters: headcount, growth, revenue, hiring; paid',
       requires: 'Harvest configured',
@@ -194,21 +213,21 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
     label: 'Apollo',
     rank: 5,
     people: {
-      tools: '`search_apollo_people`',
+      tools: `\`${SEARCH_APOLLO_PEOPLE_TOOL_NAME}\``,
       bestFor:
         'Firmographic people search: title, company, headcount, location, keywords; emails/phones',
       requires: 'Apollo connected (server config)',
-      learnTools: ['search_apollo_people'],
+      learnTools: [SEARCH_APOLLO_PEOPLE_TOOL_NAME],
       markerPrefix: 'search-apollo-people',
       orderLabel: 'Apollo',
       section: 'src-apollo',
     },
     companies: {
-      tools: '`search_apollo_companies`',
+      tools: `\`${SEARCH_APOLLO_COMPANIES_TOOL_NAME}\``,
       bestFor:
         'Firmographic company search: industry, headcount, location, keywords; richest company metadata',
       requires: 'Apollo connected (server config)',
-      learnTools: ['search_apollo_companies'],
+      learnTools: [SEARCH_APOLLO_COMPANIES_TOOL_NAME],
       markerPrefix: 'search-apollo-companies',
       orderLabel: 'Apollo',
       section: 'src-apollo',
@@ -224,18 +243,18 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
     key: 'exa',
     label: 'Exa',
     people: {
-      tools: '`exa_web_search`',
+      tools: `\`${SEARCH_EXA_TOOL_NAME}\``,
       bestFor: 'Web/AI search for hard-to-find people; `category: "people"`',
       requires: '`EXA_API_KEY` set',
-      learnTools: ['exa_web_search'],
+      learnTools: [SEARCH_EXA_TOOL_NAME],
       markerPrefix: 'search-exa-people',
     },
     companies: {
-      tools: '`app_exa_web_search` (preloaded) or `exa_web_search`',
+      tools: `\`${SEARCH_EXA_APP_TOOL_NAME}\` (preloaded) or \`${SEARCH_EXA_TOOL_NAME}\``,
       bestFor:
         'Web/AI search for hard-to-find or new companies; `category: "company"`',
       requires: '`EXA_API_KEY` set',
-      learnTools: ['exa_web_search'],
+      learnTools: [SEARCH_EXA_TOOL_NAME],
       markerPrefix: 'search-exa-companies',
     },
     profile: {
@@ -249,11 +268,11 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
     key: 'wikidata',
     label: 'Wikidata',
     companies: {
-      tools: '`search_wikidata_companies`',
+      tools: `\`${SEARCH_WIKIDATA_COMPANIES_TOOL_NAME}\``,
       bestFor:
         'Fallback facts for a known domain/URL when Bright Data instant domain lookup returns nothing (HQ, industry, employees, CEO)',
       requires: 'Public Wikidata API (no key)',
-      learnTools: ['search_wikidata_companies'],
+      learnTools: [SEARCH_WIKIDATA_COMPANIES_TOOL_NAME],
       markerPrefix: 'search-wikidata-companies',
     },
     profile: {
@@ -267,17 +286,17 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
     key: 'internal-index',
     label: 'Internal index',
     people: {
-      tools: '`search_people_index`',
+      tools: `\`${SEARCH_PEOPLE_INDEX_TOOL_NAME}\``,
       bestFor: 'Dedupe against people already in the workspace',
       requires: 'Elasticsearch index',
-      learnTools: ['search_people_index'],
+      learnTools: [SEARCH_PEOPLE_INDEX_TOOL_NAME],
       markerPrefix: 'search-people-index',
     },
     companies: {
-      tools: '`search_companies_index`',
+      tools: `\`${SEARCH_COMPANIES_INDEX_TOOL_NAME}\``,
       bestFor: 'Free-text company search across ES indices',
       requires: 'Elasticsearch index',
-      learnTools: ['search_companies_index'],
+      learnTools: [SEARCH_COMPANIES_INDEX_TOOL_NAME],
       markerPrefix: 'search-companies-index',
     },
   },
@@ -301,11 +320,11 @@ export const SOURCING_SOURCES: readonly SourcingSource[] = [
     key: 'raw-name-resolver',
     label: 'Raw → std name',
     companies: {
-      tools: '`resolve_company_from_raw_name`',
+      tools: `\`${RESOLVE_COMPANY_FROM_RAW_NAME_TOOL_NAME}\``,
       bestFor:
         'Standardize a messy employer string to one best company profile (`std_company_data_scores`)',
       requires: 'Elasticsearch (`ES_ENDPOINT`)',
-      learnTools: ['resolve_company_from_raw_name'],
+      learnTools: [RESOLVE_COMPANY_FROM_RAW_NAME_TOOL_NAME],
     },
   },
   {

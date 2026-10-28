@@ -485,6 +485,18 @@ export class OutreachProjectOutreachControlService {
             ? currentStage
             : 'QUEUED';
 
+          // Sequencer watches candidate.upserted with startOutreach=true.
+          // Re-start after a FAILED run must flip false→true or the update
+          // is a no-op and no new run is enqueued.
+          if (isCandidateFlagTrue(candidate, 'startOutreach')) {
+            await candidateRepository.update(
+              candidate.id,
+              buildCandidateFlagsPatchUpdate(candidate, {
+                startOutreach: false,
+              }),
+            );
+          }
+
           await candidateRepository.update(candidate.id, {
             ...buildCandidateFlagsPatchUpdate(candidate, {
               startOutreach: true,
