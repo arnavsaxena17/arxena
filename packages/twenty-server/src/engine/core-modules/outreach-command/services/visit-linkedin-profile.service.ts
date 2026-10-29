@@ -207,8 +207,8 @@ export class VisitLinkedinProfileService {
       );
     }
 
-    // notify=true marks the visit on LinkedIn; empty sections keep the call light.
-    // Cache is bypassed inside fetchLinkedinUserProfile when notify is true.
+    // notify=true marks the visit on LinkedIn on cache miss; empty sections
+    // keep the Unipile call light and are not written to the profile cache.
     const profile =
       await this.linkedinUnipileRequestService.fetchLinkedinUserProfile(
         resolved.accountId,

@@ -5,7 +5,7 @@ import { ApifyLinkedInCompanyProfileTransformerService } from 'src/engine/core-m
 import { LinkedInHtmlParserService } from 'src/engine/core-modules/linkedin-search/services/linkedin-html-parser.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
-import { UnipileSearchResultsCacheService } from 'src/engine/core-modules/linkedin-search/services/unipile-search-results-cache.service';
+import { ProviderQueryCacheService } from 'src/engine/core-modules/cache-storage/services/provider-query-cache.service';
 import { UnipileV2AccountResolver } from 'src/engine/core-modules/linkedin-search/services/unipile-v2-account.resolver';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
@@ -55,10 +55,11 @@ describe('LinkedInSearchService.getRelations', () => {
         },
         { provide: UnipileV2AccountResolver, useValue: {} },
         {
-          provide: UnipileSearchResultsCacheService,
+          provide: ProviderQueryCacheService,
           useValue: {
             getOrFetch: (
-              _input: unknown,
+              _prefix: unknown,
+              _parts: unknown,
               fetcher: () => Promise<unknown>,
             ) => fetcher(),
           },

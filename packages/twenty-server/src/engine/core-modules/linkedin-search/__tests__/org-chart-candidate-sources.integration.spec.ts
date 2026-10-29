@@ -2,14 +2,14 @@ import { Test } from '@nestjs/testing';
 import { ApifyService } from 'src/engine/core-modules/apify/services/apify.service';
 import { ApifyLinkedInCompanyProfileTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/apify-linkedin-company-profile-transformer.service';
 import {
-    LinkedInSearchTransformerService,
-    type CandidateTableRow,
+  LinkedInSearchTransformerService,
+  type CandidateTableRow,
 } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/linkedin-search-transformer.service';
 import { DataProcessingUtils } from 'src/engine/core-modules/candidate-sourcing/utils/data-processing.utils';
 import { LinkedInHtmlParserService } from 'src/engine/core-modules/linkedin-search/services/linkedin-html-parser.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
-import { UnipileSearchResultsCacheService } from 'src/engine/core-modules/linkedin-search/services/unipile-search-results-cache.service';
+import { ProviderQueryCacheService } from 'src/engine/core-modules/cache-storage/services/provider-query-cache.service';
 import { UnipileV2AccountResolver } from 'src/engine/core-modules/linkedin-search/services/unipile-v2-account.resolver';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
 import type { LinkedInPeopleSearchResult } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
@@ -34,10 +34,7 @@ const ORG_CHART_CANDIDATE_SHAPE_KEYS = [
   'source',
 ] as const;
 
-function assertOrgChartTableRow(
-  row: CandidateTableRow,
-  context: string,
-): void {
+function assertOrgChartTableRow(row: CandidateTableRow, context: string): void {
   for (const key of ORG_CHART_CANDIDATE_SHAPE_KEYS) {
     expect(row).toHaveProperty(key);
   }
@@ -64,9 +61,7 @@ function assertOrgChartTableRow(
   console.log(`[org-chart-candidate-sources] ${context} ok: name=${row.name}`);
 }
 
-function minimalUnipilePeopleResult(
-  id: string,
-): LinkedInPeopleSearchResult {
+function minimalUnipilePeopleResult(id: string): LinkedInPeopleSearchResult {
   return {
     object: 'SearchResult',
     type: 'PEOPLE',
@@ -156,7 +151,9 @@ describe('Org chart candidate sources (integration-style: real transformers, moc
   let apifyService: jest.Mocked<
     Pick<
       ApifyService,
-      'isConfigured' | 'runActorAndListDatasetItems' | 'runActorAndListDatasetItemsDetailed'
+      | 'isConfigured'
+      | 'runActorAndListDatasetItems'
+      | 'runActorAndListDatasetItemsDetailed'
     >
   >;
   let linkedInSearchTransformer: LinkedInSearchTransformerService;
@@ -167,7 +164,9 @@ describe('Org chart candidate sources (integration-style: real transformers, moc
     const apifyMock: jest.Mocked<
       Pick<
         ApifyService,
-        'isConfigured' | 'runActorAndListDatasetItems' | 'runActorAndListDatasetItemsDetailed'
+        | 'isConfigured'
+        | 'runActorAndListDatasetItems'
+        | 'runActorAndListDatasetItemsDetailed'
       >
     > = {
       isConfigured: jest.fn().mockReturnValue(true),
@@ -199,10 +198,11 @@ describe('Org chart candidate sources (integration-style: real transformers, moc
         { provide: UnipileV2AccountResolver, useValue: {} },
         { provide: LinkedinUnipileRequestService, useValue: {} },
         {
-          provide: UnipileSearchResultsCacheService,
+          provide: ProviderQueryCacheService,
           useValue: {
             getOrFetch: (
-              _input: unknown,
+              _prefix: unknown,
+              _parts: unknown,
               fetcher: () => Promise<unknown>,
             ) => fetcher(),
           },
@@ -216,7 +216,9 @@ describe('Org chart candidate sources (integration-style: real transformers, moc
     apifyLinkedInTransformer = moduleRef.get(
       ApifyLinkedInCompanyProfileTransformerService,
     );
-    harvestLinkedinTransformer = moduleRef.get(HarvestLinkedinTransformerService);
+    harvestLinkedinTransformer = moduleRef.get(
+      HarvestLinkedinTransformerService,
+    );
   });
 
   it('Unipile-shaped LinkedInPeopleSearchResult → table format matches org-chart candidate contract', () => {
@@ -251,12 +253,14 @@ describe('Org chart candidate sources (integration-style: real transformers, moc
   });
 
   it('LinkedInSearchService.fetchCompanyEmployeesViaApifyActor uses the transformer and returns the same contract', async () => {
-    const rows = await linkedInSearchService.fetchCompanyEmployeesViaApifyActor({
-      linkedinCompanyUrl: COMPANY_LI,
-      maxItems: 50,
-      defaultCompanyName: 'Acme Corp',
-      companyLinkedinUrl: COMPANY_LI,
-    });
+    const rows = await linkedInSearchService.fetchCompanyEmployeesViaApifyActor(
+      {
+        linkedinCompanyUrl: COMPANY_LI,
+        maxItems: 50,
+        defaultCompanyName: 'Acme Corp',
+        companyLinkedinUrl: COMPANY_LI,
+      },
+    );
 
     expect(apifyService.isConfigured).toHaveBeenCalled();
     expect(apifyService.runActorAndListDatasetItemsDetailed).toHaveBeenCalled();
@@ -300,33 +304,35 @@ describe('Org chart candidate sources (integration-style: real transformers, moc
   });
 
   it('Harvest transformer returns org-chart-compatible candidate rows', () => {
-    const current = harvestLinkedinTransformer.transformCurrentLeadsToCandidates(
-      [
-        {
-          name: 'Sara Jain',
-          title: 'Head of HR',
-          linkedinUrl: 'https://www.linkedin.com/in/sarajain',
-          location: 'Mumbai',
-        },
-      ],
-      'Acme',
-      COMPANY_LI,
-    );
-    const past = harvestLinkedinTransformer.transformPastLeadsWithProfilesToCandidates(
-      [
-        {
-          name: 'Rohan Mehta',
-          title: 'Product Manager',
-          linkedinUrl: 'https://www.linkedin.com/in/rohanmehta',
-          location: 'Pune',
-          org_harvest_profile: {
-            experience: [{ companyName: 'Acme', title: 'Product Manager' }],
+    const current =
+      harvestLinkedinTransformer.transformCurrentLeadsToCandidates(
+        [
+          {
+            name: 'Sara Jain',
+            title: 'Head of HR',
+            linkedinUrl: 'https://www.linkedin.com/in/sarajain',
+            location: 'Mumbai',
           },
-        },
-      ],
-      'Acme',
-      COMPANY_LI,
-    );
+        ],
+        'Acme',
+        COMPANY_LI,
+      );
+    const past =
+      harvestLinkedinTransformer.transformPastLeadsWithProfilesToCandidates(
+        [
+          {
+            name: 'Rohan Mehta',
+            title: 'Product Manager',
+            linkedinUrl: 'https://www.linkedin.com/in/rohanmehta',
+            location: 'Pune',
+            org_harvest_profile: {
+              experience: [{ companyName: 'Acme', title: 'Product Manager' }],
+            },
+          },
+        ],
+        'Acme',
+        COMPANY_LI,
+      );
 
     expect(current).toHaveLength(1);
     expect(past).toHaveLength(1);
@@ -334,6 +340,8 @@ describe('Org chart candidate sources (integration-style: real transformers, moc
     assertOrgChartTableRow(past[0], 'harvest-past');
     expect(current[0].source).toBe('harvest');
     expect(past[0].source).toBe('harvest');
-    expect((past[0] as Record<string, unknown>).org_harvest_experience).toBeDefined();
+    expect(
+      (past[0] as Record<string, unknown>).org_harvest_experience,
+    ).toBeDefined();
   });
 });

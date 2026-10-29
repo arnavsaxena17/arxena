@@ -59,17 +59,17 @@ import {
   type UnipileLinkedinSnapshotRawAccount,
 } from '../utils/unipile-linkedin-snapshot.cache';
 import type { MemberLinkedinUnipileConnectionService } from './member-linkedin-unipile-connection.service';
-import type { LinkedinProfileCacheService } from './linkedin-profile-cache.service';
+import {
+  LINKEDIN_USER_POSTS_CACHE_PREFIX,
+  LINKEDIN_USER_PROFILE_CACHE_PREFIX,
+} from 'src/engine/core-modules/cache-storage/constants/linkedin-provider-query-cache.const';
+import { ProviderQueryCacheService } from 'src/engine/core-modules/cache-storage/services/provider-query-cache.service';
 import { RawFetchArchiveService } from 'src/engine/core-modules/raw-fetch-archive/raw-fetch-archive.service';
 import type { WorkspaceMemberUnipileService } from './workspace-member-unipile.service';
 
 const getMemberLinkedinUnipileConnectionService = () =>
   require('./member-linkedin-unipile-connection.service')
     .MemberLinkedinUnipileConnectionService as typeof import('./member-linkedin-unipile-connection.service').MemberLinkedinUnipileConnectionService;
-
-const getLinkedinProfileCacheService = () =>
-  require('./linkedin-profile-cache.service')
-    .LinkedinProfileCacheService as typeof import('./linkedin-profile-cache.service').LinkedinProfileCacheService;
 
 const getWorkspaceMemberUnipileService = () =>
   require('./workspace-member-unipile.service')
@@ -111,8 +111,7 @@ export class LinkedinUnipileRequestService {
     @Inject(forwardRef(getWorkspaceMemberUnipileService))
     private readonly workspaceMemberUnipileService?: WorkspaceMemberUnipileService,
     @Optional()
-    @Inject(forwardRef(getLinkedinProfileCacheService))
-    private readonly linkedinProfileCacheService?: LinkedinProfileCacheService,
+    private readonly providerQueryCache?: ProviderQueryCacheService,
     @Optional()
     private readonly rawFetchArchiveService?: RawFetchArchiveService,
   ) {
@@ -998,18 +997,25 @@ export class LinkedinUnipileRequestService {
       return null;
     }
 
-    // notify=true must hit Unipile so LinkedIn records the visit; SN/Recruiter
-    // profiles also skip the classic cache.
-    const shouldBypassCache =
-      options?.notify === true ||
-      options?.viewerScoped === true ||
-      isDefined(options?.linkedinApi);
+    // Viewer-relative and SN/Recruiter profiles stay off the shared slug cache.
+    // notify=true (View LinkedIn profile) may still read cache; sparse notify
+    // responses are not written so they don't poison full-profile entries.
+    const shouldBypassCacheRead =
+      options?.viewerScoped === true || isDefined(options?.linkedinApi);
+    const sections = options?.linkedinSections ?? ['*'];
+    const shouldWriteCache =
+      options?.notify !== true &&
+      options?.viewerScoped !== true &&
+      !isDefined(options?.linkedinApi) &&
+      sections.length > 0;
 
-    if (!shouldBypassCache) {
-      const cachedProfile =
-        await this.linkedinProfileCacheService?.getLinkedinUserProfile<
-          Record<string, unknown>
-        >(trimmedIdentifier);
+    if (!shouldBypassCacheRead && this.providerQueryCache) {
+      const cachedProfile = await this.providerQueryCache.get<
+        Record<string, unknown>
+      >(LINKEDIN_USER_PROFILE_CACHE_PREFIX, {
+        slug: trimmedIdentifier.toLowerCase(),
+      });
+
       if (cachedProfile) {
         this.logger.log(
           `fetchLinkedinUserProfile cache HIT for ${trimmedIdentifier}`,
@@ -1021,7 +1027,6 @@ export class LinkedinUnipileRequestService {
     const queryParams = new URLSearchParams({
       account_id: trimmedAccountId,
     });
-    const sections = options?.linkedinSections ?? ['*'];
     if (sections.length > 0) {
       queryParams.append('linkedin_sections', sections.join(','));
     }
@@ -1052,7 +1057,7 @@ export class LinkedinUnipileRequestService {
           ),
       )) as Record<string, unknown>;
 
-      if (profile && this.linkedinProfileCacheService && !shouldBypassCache) {
+      if (profile && this.providerQueryCache && shouldWriteCache) {
         const cacheKeys = this.collectLinkedinUserProfileCacheKeys(
           trimmedIdentifier,
           profile,
@@ -1060,8 +1065,9 @@ export class LinkedinUnipileRequestService {
 
         await Promise.all(
           cacheKeys.map((cacheKey) =>
-            this.linkedinProfileCacheService?.saveLinkedinUserProfile(
-              cacheKey,
+            this.providerQueryCache?.set(
+              LINKEDIN_USER_PROFILE_CACHE_PREFIX,
+              { slug: cacheKey.toLowerCase() },
               profile,
             ),
           ),
@@ -1140,12 +1146,14 @@ export class LinkedinUnipileRequestService {
       isDefined(options?.cursor) ||
       options?.isCompany === true;
 
-    if (!shouldBypassCache && this.linkedinProfileCacheService) {
+    if (!shouldBypassCache && this.providerQueryCache) {
       for (const cacheKey of uniqueCacheKeys) {
-        const cachedPosts =
-          await this.linkedinProfileCacheService.getLinkedinUserPosts<
-            Record<string, unknown>
-          >(cacheKey);
+        const cachedPosts = await this.providerQueryCache.get<
+          Record<string, unknown>
+        >(LINKEDIN_USER_POSTS_CACHE_PREFIX, {
+          slug: cacheKey.toLowerCase(),
+        });
+
         if (cachedPosts) {
           this.logger.log(`fetchLinkedinUserPosts cache HIT for ${cacheKey}`);
           return cachedPosts;
@@ -1186,15 +1194,12 @@ export class LinkedinUnipileRequestService {
           ),
       )) as Record<string, unknown>;
 
-      if (
-        postsPayload &&
-        this.linkedinProfileCacheService &&
-        !shouldBypassCache
-      ) {
+      if (postsPayload && this.providerQueryCache && !shouldBypassCache) {
         await Promise.all(
           uniqueCacheKeys.map((cacheKey) =>
-            this.linkedinProfileCacheService?.saveLinkedinUserPosts(
-              cacheKey,
+            this.providerQueryCache?.set(
+              LINKEDIN_USER_POSTS_CACHE_PREFIX,
+              { slug: cacheKey.toLowerCase() },
               postsPayload,
             ),
           ),
@@ -1503,7 +1508,7 @@ export class LinkedinUnipileRequestService {
     )) as Record<string, unknown>;
   }
 
-  // notify=true so LinkedIn records a profile view; empty sections keep the call light
+  // notify=true so LinkedIn records a profile view on cache miss; empty sections keep the call light
   async visitLinkedinProfileNotify(
     accountId: string,
     identifier: string,

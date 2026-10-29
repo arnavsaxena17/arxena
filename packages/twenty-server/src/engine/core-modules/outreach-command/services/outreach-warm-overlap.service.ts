@@ -4,8 +4,9 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
-import { LinkedinProfileCacheService } from 'src/engine/core-modules/arx-chat/services/linkedin-profile-cache.service';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
+import { LINKEDIN_VIEWER_FACTS_CACHE_PREFIX } from 'src/engine/core-modules/cache-storage/constants/linkedin-provider-query-cache.const';
+import { ProviderQueryCacheService } from 'src/engine/core-modules/cache-storage/services/provider-query-cache.service';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
 import {
   extractWarmProfileFacts,
@@ -34,7 +35,7 @@ export class OutreachWarmOverlapService {
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
     @Optional()
-    private readonly linkedinProfileCacheService?: LinkedinProfileCacheService,
+    private readonly providerQueryCache?: ProviderQueryCacheService,
   ) {}
 
   // One profile fetch per seat, serialized, never the people search. A seat
@@ -178,11 +179,14 @@ export class OutreachWarmOverlapService {
     accountId: string;
     identifier: string;
   }): Promise<CachedViewerFacts> {
-    const cached =
-      await this.linkedinProfileCacheService?.getViewerScopedProfileFacts<CachedViewerFacts>(
-        accountId,
-        identifier,
-      );
+    const cacheParts = {
+      accountId: accountId.trim(),
+      publicIdentifier: identifier.trim().toLowerCase(),
+    };
+    const cached = await this.providerQueryCache?.get<CachedViewerFacts>(
+      LINKEDIN_VIEWER_FACTS_CACHE_PREFIX,
+      cacheParts,
+    );
 
     if (isDefined(cached)) {
       return cached;
@@ -204,9 +208,9 @@ export class OutreachWarmOverlapService {
       profile: extractWarmProfileFacts(profile),
     };
 
-    await this.linkedinProfileCacheService?.saveViewerScopedProfileFacts(
-      accountId,
-      identifier,
+    await this.providerQueryCache?.set(
+      LINKEDIN_VIEWER_FACTS_CACHE_PREFIX,
+      cacheParts,
       facts,
     );
 

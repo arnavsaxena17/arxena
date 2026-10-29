@@ -1,11 +1,11 @@
 import { Test } from '@nestjs/testing';
 import { ApifyService } from 'src/engine/core-modules/apify/services/apify.service';
 import { LinkedinUnipileRequestService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile-request.service';
+import { ProviderQueryCacheService } from 'src/engine/core-modules/cache-storage/services/provider-query-cache.service';
 import { ApifyLinkedInCompanyProfileTransformerService } from 'src/engine/core-modules/candidate-sourcing/services/data-sources/apify-linkedin-company-profile-transformer.service';
 import { LinkedInHtmlParserService } from 'src/engine/core-modules/linkedin-search/services/linkedin-html-parser.service';
 import { LinkedInSearchService } from 'src/engine/core-modules/linkedin-search/services/linkedin-search.service';
 import { LinkedInSessionTrackerService } from 'src/engine/core-modules/linkedin-search/services/linkedin-session-tracker.service';
-import { UnipileSearchResultsCacheService } from 'src/engine/core-modules/linkedin-search/services/unipile-search-results-cache.service';
 import { UnipileV2AccountResolver } from 'src/engine/core-modules/linkedin-search/services/unipile-v2-account.resolver';
 import type { LinkedInSearchResponse } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-response.type';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
@@ -36,7 +36,7 @@ describe('LinkedInSearchService Unipile search cache', () => {
         { provide: UnipileV2AccountResolver, useValue: {} },
         { provide: LinkedinUnipileRequestService, useValue: {} },
         {
-          provide: UnipileSearchResultsCacheService,
+          provide: ProviderQueryCacheService,
           useValue: { getOrFetch },
         },
       ],
@@ -63,6 +63,7 @@ describe('LinkedInSearchService Unipile search cache', () => {
     expect(result).toBe(cachedResponse);
     expect(getOrFetch).toHaveBeenCalledTimes(1);
     expect(getOrFetch).toHaveBeenCalledWith(
+      'unipile-search:v1',
       {
         accountId: 'acct-1',
         searchRequest,

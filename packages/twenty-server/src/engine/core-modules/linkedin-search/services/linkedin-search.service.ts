@@ -57,8 +57,10 @@ import { LinkedInHtmlParserService } from './linkedin-html-parser.service';
 import { LinkedInSessionTrackerService } from './linkedin-session-tracker.service';
 import { RawFetchArchiveService } from 'src/engine/core-modules/raw-fetch-archive/raw-fetch-archive.service';
 
-import { UnipileSearchResultsCacheService } from './unipile-search-results-cache.service';
+import { ProviderQueryCacheService } from 'src/engine/core-modules/cache-storage/services/provider-query-cache.service';
 import { UnipileV2AccountResolver } from './unipile-v2-account.resolver';
+
+const UNIPILE_SEARCH_CACHE_PREFIX = 'unipile-search:v1';
 
 /** Default Apify actor: LinkedIn company profile / employee scraper (console id). Override via APIFY_LINKEDIN_COMPANY_PROFILE_ACTOR_ID. */
 export const LINKEDIN_COMPANY_PROFILE_SCRAPER_ACTOR_ID =
@@ -159,7 +161,7 @@ export class LinkedInSearchService {
     private readonly apifyLinkedInCompanyProfileTransformer: ApifyLinkedInCompanyProfileTransformerService,
     private readonly unipileV2AccountResolver: UnipileV2AccountResolver,
     private readonly linkedinUnipileRequestService: LinkedinUnipileRequestService,
-    private readonly unipileSearchResultsCache: UnipileSearchResultsCacheService,
+    private readonly providerQueryCache: ProviderQueryCacheService,
     @Optional()
     private readonly rawFetchArchiveService?: RawFetchArchiveService,
   ) {
@@ -193,14 +195,22 @@ export class LinkedInSearchService {
     } = {},
   ): Promise<LinkedInSearchResponse> {
     try {
-      return await this.unipileSearchResultsCache.getOrFetch(
+      const fetcher = () =>
+        this.executeUnipileSearch(searchRequest, accountId, options);
+
+      if (!accountId.trim()) {
+        return fetcher();
+      }
+
+      return await this.providerQueryCache.getOrFetch(
+        UNIPILE_SEARCH_CACHE_PREFIX,
         {
-          accountId,
+          accountId: accountId.trim(),
           searchRequest,
-          cursor: options.cursor,
+          cursor: options.cursor?.trim() || undefined,
           limit: options.limit,
         },
-        () => this.executeUnipileSearch(searchRequest, accountId, options),
+        fetcher,
       );
     } catch (error) {
       this.logger.error(`LinkedIn search failed exception: ${error}`);

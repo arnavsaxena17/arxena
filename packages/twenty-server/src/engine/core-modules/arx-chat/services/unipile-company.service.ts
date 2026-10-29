@@ -3,7 +3,8 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import { withAcquiredAccountRateLimit } from 'src/engine/core-modules/account-rate-limit/acquire-account-rate-limit.util';
 import { isAccountRateLimitDeferredError } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-deferred.error';
 import { RawFetchArchiveService } from 'src/engine/core-modules/raw-fetch-archive/raw-fetch-archive.service';
-import { LinkedinProfileCacheService } from './linkedin-profile-cache.service';
+import { LINKEDIN_COMPANY_PROFILE_CACHE_PREFIX } from 'src/engine/core-modules/cache-storage/constants/linkedin-provider-query-cache.const';
+import { ProviderQueryCacheService } from 'src/engine/core-modules/cache-storage/services/provider-query-cache.service';
 
 export type UnipileCompanyProfileDto = {
   id?: string;
@@ -76,9 +77,7 @@ function extractPublicIdentifier(linkedinUrlOrSlug: string): string | null {
   const trimmed = linkedinUrlOrSlug.trim();
   if (!trimmed) return null;
 
-  const match = trimmed.match(
-    /linkedin\.com\/company\/([^/?]+)/i,
-  );
+  const match = trimmed.match(/linkedin\.com\/company\/([^/?]+)/i);
   if (match) {
     return decodeURIComponent(match[1]);
   }
@@ -90,7 +89,7 @@ export class UnipileCompanyService {
   private readonly logger = new Logger(UnipileCompanyService.name);
 
   constructor(
-    private readonly linkedinProfileCacheService: LinkedinProfileCacheService,
+    private readonly providerQueryCache: ProviderQueryCacheService,
     @Optional()
     private readonly rawFetchArchiveService?: RawFetchArchiveService,
   ) {}
@@ -98,8 +97,12 @@ export class UnipileCompanyService {
   isConfigured(): boolean {
     const url = process.env.UNIPILE_API_URL;
     const token = process.env.UNIPILE_ACCESS_TOKEN;
-    return typeof url === 'string' && url.length > 0 &&
-      typeof token === 'string' && token.length > 0;
+    return (
+      typeof url === 'string' &&
+      url.length > 0 &&
+      typeof token === 'string' &&
+      token.length > 0
+    );
   }
 
   extractPublicIdentifier(linkedinUrlOrSlug: string): string | null {
@@ -116,10 +119,11 @@ export class UnipileCompanyService {
 
     const slug = publicIdentifier.trim();
 
-    const cached =
-      await this.linkedinProfileCacheService.getLinkedinCompanyProfile<UnipileCompanyProfileDto>(
-        slug,
-      );
+    const cached = await this.providerQueryCache.get<UnipileCompanyProfileDto>(
+      LINKEDIN_COMPANY_PROFILE_CACHE_PREFIX,
+      { slug: slug.toLowerCase() },
+    );
+
     if (cached) {
       this.logger.log(`LinkedIn company profile cached for ${slug}`);
       return cached;
@@ -191,27 +195,43 @@ export class UnipileCompanyService {
           typeof raw.public_identifier === 'string'
             ? raw.public_identifier
             : undefined,
-        employee_count: typeof raw.employee_count === 'number' ? raw.employee_count : undefined,
-        description: typeof raw.description === 'string' ? raw.description : undefined,
+        employee_count:
+          typeof raw.employee_count === 'number'
+            ? raw.employee_count
+            : undefined,
+        description:
+          typeof raw.description === 'string' ? raw.description : undefined,
         tagline: typeof raw.tagline === 'string' ? raw.tagline : undefined,
         logo: typeof raw.logo === 'string' ? raw.logo : undefined,
-        logo_large: typeof raw.logo_large === 'string' ? raw.logo_large : undefined,
+        logo_large:
+          typeof raw.logo_large === 'string' ? raw.logo_large : undefined,
         website: typeof raw.website === 'string' ? raw.website : undefined,
         name: typeof raw.name === 'string' ? raw.name : undefined,
-        profile_url: typeof raw.profile_url === 'string' ? raw.profile_url : undefined,
-        followers_count: typeof raw.followers_count === 'number' ? raw.followers_count : undefined,
+        profile_url:
+          typeof raw.profile_url === 'string' ? raw.profile_url : undefined,
+        followers_count:
+          typeof raw.followers_count === 'number'
+            ? raw.followers_count
+            : undefined,
         locations: Array.isArray(raw.locations) ? raw.locations : undefined,
         industry: Array.isArray(raw.industry) ? raw.industry : undefined,
         activities: Array.isArray(raw.activities) ? raw.activities : undefined,
       };
 
-      await this.linkedinProfileCacheService.saveLinkedinCompanyProfile(slug, profile);
+      await this.providerQueryCache.set(
+        LINKEDIN_COMPANY_PROFILE_CACHE_PREFIX,
+        { slug: slug.toLowerCase() },
+        profile,
+      );
       return profile;
     } catch (error) {
       if (isAccountRateLimitDeferredError(error)) {
         throw error;
       }
-      this.logger.error(`Unipile company profile fetch failed for ${slug}`, error);
+      this.logger.error(
+        `Unipile company profile fetch failed for ${slug}`,
+        error,
+      );
       return null;
     }
   }

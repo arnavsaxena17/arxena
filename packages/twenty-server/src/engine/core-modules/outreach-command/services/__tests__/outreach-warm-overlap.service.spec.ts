@@ -49,14 +49,16 @@ const buildService = ({
     } as never,
     { fetchLinkedinUserProfile } as never,
     {
-      getViewerScopedProfileFacts: async (account: string, slug: string) =>
-        cache.get(`${account}:${slug}`) ?? null,
-      saveViewerScopedProfileFacts: async (
-        account: string,
-        slug: string,
+      get: async (
+        _prefix: string,
+        parts: { accountId: string; publicIdentifier: string },
+      ) => cache.get(`${parts.accountId}:${parts.publicIdentifier}`) ?? null,
+      set: async (
+        _prefix: string,
+        parts: { accountId: string; publicIdentifier: string },
         facts: unknown,
       ) => {
-        cache.set(`${account}:${slug}`, facts);
+        cache.set(`${parts.accountId}:${parts.publicIdentifier}`, facts);
       },
     } as never,
   );
