@@ -6,7 +6,7 @@ routes:
   - when: |-
       Find companies or people / LinkedIn / Harvest / Sales Nav / places on a map
     hint: |-
-      . Pass `sections`: always add `for-recruiting` (candidates for a role) or `for-sales` (prospects you sell to — not a Sales Rep / AE / BDR hire) to the search type: `["people", "for-recruiting"]`. The search type is `["people"]` for a population, `["companies"]` for companies, `["places"]` for places on a map (outlets across a city), `["people-by-company"]` for a role at companies already named. Add `industry-search` when the request names an industry, sector or segment. A scored list of about N adds `scoring` and `playbook-shortfall` to those `sections`, and also `load_skills(["ai-filter-enrich"])`. Add `for-recruiting` or `for-sales`, and `playbook-large-list` for about 1,000 rows or more.
+      . Pass `sections`: always add `for-recruiting` (candidates for a role) or `for-sales` (prospects you sell to — not a Sales Rep / AE / BDR hire) to the search type: `["people", "for-recruiting"]`. The search type is `["people"]` for a population, `["companies"]` for companies, `["places"]` for places on a map (outlets across a city), `["people-by-company"]` for a role at companies already named. Add `industry-search` when the request names an industry, sector or segment. A scored list of about N adds `scoring` and `playbook-shortfall` to those `sections`, and also `load_skills(["ai-filter-enrich"])`. Add `for-recruiting` or `for-sales`, and `query-planning` for about 1,000 rows or more.
 parts:
   - companies
   - places
@@ -14,7 +14,6 @@ parts:
   - people-by-company
   - industry-search
   - industry-labels
-  - title-search
   - playbook-company-first
   - playbook-shortfall
   - requirements
@@ -23,7 +22,6 @@ parts:
   - for-sales
   - rubrics
   - query-planning
-  - playbook-large-list
   - inbound-applicants
   - src-bright-data-people
   - src-bright-data-companies
@@ -38,11 +36,10 @@ parts:
   - source-profiles
 requires:
   companies: [src-bright-data-companies]
-  people: [src-bright-data-people, title-search]
+  people: [src-bright-data-people]
   places: [src-bright-data-companies]
   requirements: [intent-glossary]
   playbook-company-first: [people-by-company, playbook-shortfall, industry-search]
-  playbook-large-list: [query-planning, playbook-shortfall]
   query-planning: [playbook-shortfall]
   for-recruiting: [rubrics]
   for-sales: [rubrics]
@@ -118,10 +115,10 @@ Pick the path and say it, with the reason, in one line. If that section is not a
 | Places on a map: outlets you can walk into | `places` | {{source: google-maps companies}} |
 | A role at companies already named or already on the project | `people-by-company` | `find_people_by_company` |
 | Companies or people in an industry, sector or segment | `industry-search` with the search type | Arxena index, then {{source: default companies}} |
-| People filtered by their current job title | `title-search` (comes with `people`) | {{source: default people}} |
+| People filtered by their current job title | `people` (its job title search) | {{source: default people}} |
 | A role across an industry, no companies named (prospects by default) | `playbook-company-first` | {{source: default companies}}, then `find_people_by_company` |
 | About N rows that must clear a rubric | `scoring` and `playbook-shortfall` (the loop is in `scoring`) | The search type's |
-| About 1,000 rows or more | `playbook-large-list` | The search type's |
+| About 1,000 rows or more | `query-planning` (its large-list steps; brings `playbook-shortfall`) | The search type's |
 | Applicants to a job posting | `inbound-applicants` | None: the rows are on the People tab |
 | Candidates for a role (Sales Rep, AE, BDR, field sales included) | `for-recruiting`, then `rubrics` | — |
 | Prospects you sell to (not hiring a salesperson) | `for-sales`, then `rubrics` | — |

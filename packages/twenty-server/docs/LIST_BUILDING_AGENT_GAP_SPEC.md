@@ -15,7 +15,7 @@ Most of the parts exist. What is missing is the frame around them.
 - **Not built at all:** probes as a tool, reconcile/conflict handling, off-limits lists, per-persona export, a run-level budget guard, a pilot checkpoint, workers and a residual queue.
 - **Built but not wired in:** JD parsing (`parse_job_description`, `job_brief_understanding` in the candidate-search module) and LinkedIn per-account rate limits (`account-rate-limit`, already applied to Unipile search).
 
-Recommendation: do not add the spec's 20+ tools one to one. Grow the existing tools (`get_sourcing_ledger`, `find_people_by_company`, `get_outreach_tab`, the company search tools, `parse_job_description`) and add three new ones (`plan_update`, `probe`, `export_list`). Section 4 maps each spec tool to its home.
+Recommendation: do not add the spec's 20+ tools one to one. Add **no new tools**. Every spec tool fits into an existing one with a small change: `get_sourcing_ledger` (plan, stats, diagnosis), `find_people_by_company`, `get_outreach_tab` (filters, group-by), `apply_table_view` (bulk status), `outreach_list` (persona export), the company and people search tools (lenses, probes), `resolve_company_from_raw_name` and `parse_job_description`. The one new piece is the `budget_guard` **service**, which the paid tools call and the model only reads. Section 4 maps each spec tool to its home.
 
 ### Unit of work
 
@@ -56,8 +56,8 @@ Size: S (days), M (a week or two), L (more).
 
 | § | Spec | Today | Change | Size |
 | --- | --- | --- | --- | --- |
-| 2 | Infer persona and target type (candidate pool, incumbent, decision-maker); one question at most | `for-recruiting` / `for-sales` decided by rule; no target type | Add `persona` and `targetType` to the plan; `classify-brief` text in the skill | S |
-| 2 | Unbounded brief gets a proposed scope; tiny brief gets an expected size | Dipstick and estimate exist for populations only | `probe` tool (count) + scope card in Stage A | M |
+| 2 | Infer persona and target type (candidate pool, incumbent, decision-maker); one question at most | `for-recruiting` / `for-sales` decided by rule; no target type | Add `persona` and `targetType` to the plan; brief types in `requirements` | S |
+| 2 | Unbounded brief gets a proposed scope; tiny brief gets an expected size | Dipstick and estimate exist for populations only | Count probe on the existing searches (section 4) + scope card in Stage A | M |
 | 3 | Five brief types with plan templates | Six request types of a different cut (population, named role, company list, scored list, look-alike, expand) | Replace `requestType` enum with the spec's five types; keep population / look-alike as separate tracks outside this agent | S |
 | 3 | Terminal states `found`, `none_found`, `ambiguous`, `unresolvable`, `excluded` with reason | `matched`, `related_role_only`, `no_match`, `source_error` on the company row only | New pair state (section 5.1). Map: matched→found, related_role_only→found at rung 3 or ambiguous by plan, no_match→none_found+reason, source_error→retry, then none_found(`source_error`). Add unresolvable and excluded | M |
 | 3 | Run ends when no pair is non-terminal | Ends when the target count is met or stop rules fire | Ledger funnel becomes pair-based; `playbook-shortfall` stop rules apply to Stage A only | M |
@@ -73,17 +73,17 @@ Size: S (days), M (a week or two), L (more).
 | 4 | Workers in batches of 20-50, residual queue, verifier; resumable from state | One call does 500 companies with internal concurrency; skips Found rows on rerun (partly resumable) | Run the pair loop as a background job; residual queue as pair state; verifier sample | L |
 | 5 | Cascade: cache → internal index → Bright Data → SERP → company site → LinkedIn; stop at first confident | Bright Data and Google in parallel always; no cache, index, site or LinkedIn | Rewrite the lookup as a cascade (section 5.2) | M |
 | 5 | Conflicts marked, both citations kept | Duplicates merged by LinkedIn URL; disagreements not kept | `reconcile` inside the lookup | M |
-| 5 | Probes (count, exists, fresh) precede pulls | Ludicrous estimate and instant probe only | `probe` tool | M |
+| 5 | Probes (count, exists, fresh) precede pulls | Ludicrous estimate, instant probe, SERP and index search exist; no freshness signal | Probe recipe in the skill + `freshness` on lookup and profile results | S |
 | 5 | Every evidence item: source, query, date, snippet | Judge note on the person; fitment reason one line | Evidence records (section 5.1) | M |
 | 6 | `budget_guard` enforced in tools; model reads, never raises | Per-call caps (`maxBudgetUsd`, `approvedCostUsd`); no run-level cap, no LinkedIn per-day cap for sourcing found | Run budget in the plan, checked by each paid tool | M |
 | 7 | Phase-gated skills | `sourcing` sections loaded by route; no phase gate | Re-cut sections (section 6) | M |
 | 8 | `plan`, `company`, `pair`, `person`, `evidence`, `ledger`, `lists` | Ledger + lists in Redis; rows in tab `otherFields` | Durable run state (section 5.1) | L |
 | 8 | Prior-run cache by company + role within a freshness window | None across projects | Cache keyed by company id + role class | M |
-| 8a | `matrix_stats`, `query_rows`, `bulk_update`, `aggregate` | `get_outreach_tab` summarize / limit / onlyViewMatches; `apply_table_view` | Extend `get_outreach_tab`; add `bulk_update` | M |
+| 8a | `matrix_stats`, `query_rows`, `bulk_update`, `aggregate` | `get_outreach_tab` summarize / limit / onlyViewMatches; `apply_table_view` | Extend `get_outreach_tab`; `setStatus` on `apply_table_view` | M |
 | 9 | Four-rung ladder, size-aware, rung recorded, plan sets max rung by persona | Rungs 1+2 merged; rung 3 reported; no size awareness | `ladder` input and `rungUsed` output | M |
 | 9 | Confidence high only on two agreeing sources or one fresh primary; stale = unverified | No confidence field; staleness only in skill text | Confidence computed in code | S |
 | 9 | Tiers strong / possible / stretch (exec search) | Fitment score only | Tier from fitment + rung + freshness | S |
-| 10 | Coverage line first; persona exports; excluded tab | Report written by the model from ledger counts | `export_list(persona)` + coverage from pair state | M |
+| 10 | Coverage line first; persona exports; excluded tab | Report written by the model from ledger counts | Persona export on `outreach_list` + coverage from pair state | M |
 | 12 | Off-limits and CRM checked at write time | CRM dedupe on demand, domain only; no off-limits list | Exclusion lists in the plan; checked in the People-tab write path | M |
 | 13 | Golden set of 30 briefs, metrics per section 13 | 12 live scenarios, quality and path graders | New company × role scenarios and metric graders | M |
 
@@ -91,15 +91,15 @@ Size: S (days), M (a week or two), L (more).
 
 | Spec tool | Home | Change |
 | --- | --- | --- |
-| `plan_get` / `plan_update` | **New** `plan_update`; `get_sourcing_ledger` returns the plan | The ledger `brief` grows into the plan (section 5.1). Versioned; each update appends an event |
-| `resolve_company` | `resolve_company_from_raw_name` + Bright Data instant | Wrap both behind one call that returns `matchConfidence` and `alternates[]` (subsidiary, group, homonym); used by spreadsheet import and `discover_companies` |
+| `plan_get` / `plan_update` | `get_sourcing_ledger` | The `brief` input grows into a `plan` input with the section 5.1 fields, accepting partial updates; each update appends a versioned event. The tool already returns the latest brief, so it returns the current plan the same way |
+| `resolve_company` | `resolve_company_from_raw_name` | Return `matchConfidence` and `alternates[]` (subsidiary, group, homonym); used by spreadsheet import (calling the service directly) and by the company searches for upload lenses. Bright Data instant stays its own lookup |
 | `search_companies` / `discover_companies` | **Existing company search tools**, no new tool: `search_companies_index` (shallow, fast, little company detail), topped up by `search_bright_data_business` (`entity: "company"`) for completeness and detail; also Harvest accounts, Apollo, Wikidata, SERP | Add an optional `lens: { kind, label }` input to each company search. The tool tags the rows it writes with that `lensId` and status `candidate`, and logs the lens in the ledger. Skill text: index first for a cheap pool, Bright Data for completeness and fields |
 | `merge_pool` | On append, in the list store | Dedupe already happens on append (domain, then LinkedIn URL, then name). Add a group/legal-entity key and keep every `lensId` on merge, so an index row topped up by Bright Data is one company with both lenses |
 | `enrich_company` | Enrichment collector + AI columns | Expose collector as cheap-first enrichment for pool rows; status → `enriched` |
 | `score_companies` / `filter_companies` | Fitment AI column with `tab: "companies"` | Add hard/soft criterion kinds; hard fails only on evidence; unknown → `review` bucket; status → `filtered` |
 | `lens_stats` | `get_sourcing_ledger` | Per lens: candidates, unique, qualified, sampled precision, cost |
-| `propose_peers` | **Skill text first** (`peer-set-for-search`), tool later | The model proposes peers; they enter the pool as a `peer` lens |
-| `probe` | **New** `probe({ type, target, source })`, built on the search tools | Parts already exist inside the searches: the ludicrous estimate (counts per slice, sample precision), the instant probe (up to 25 preview rows, never written) and the dipstick recipe in `query-planning`. A separate tool keeps probes from ever writing rows or starting a paid pull, and gives one input shape for the three types: `count` (ludicrous estimate or index hit count), `exists` (SERP "role at company"), `fresh` (SERP snippet date or Bright Data record date). The search tools keep their own estimate step |
+| `propose_peers` | **Skill text** (`company-list`, peer-set entry mode) | The model proposes peers; they enter the pool as a `peer` lens |
+| `probe` | The existing searches | `count`: the Bright Data ludicrous estimate (a call without `listId` writes nothing) or the `search_companies_index` hit count. `exists`: `google_serp_search` for a role at a company, with a no-write flag if it can write today. `fresh`: a new `freshness` field (record or snippet date) on `find_people_by_company` and `fetch_profiles` results. The Bright Data instant probe (up to 25 preview rows, never written) covers a quick look. The recipe lives in the skill (`query-planning` dipstick) |
 | `find_people_by_company` | `find_people_by_company` (renamed from `find_role_at_companies`, decision 3) | Cascade, ladder, confidence, pair state, evidence, ledger (section 5.2) |
 | `linkedin_search` | `search_linkedin_*`, `generate_linkedin_query_set`, or Harvest | Runs only if the user picked it at the start (section 5.8). The user's own account always runs in slow mode on the account limiter |
 | `fetch_page` | Raw fetch archive / web search | Use inside the cascade's company-site step |
@@ -109,13 +109,13 @@ Size: S (days), M (a week or two), L (more).
 | `enrich_contact` | `enrich-contact.service.ts` | Expose for sales export; provenance per field |
 | `matrix_get/put`, `matrix_stats` | `get_sourcing_ledger` (stats) + `get_outreach_tab` (rows) | Pair counts by state, rung, source; cost; top causes |
 | `query_rows`, `aggregate` | `get_outreach_tab` | Already has `summarize` and a row cap. Add `filter` (field predicates), `fields`, `groupBy` + metric |
-| `bulk_update` | **New** or `apply_table_view`-style tool | Apply a status change to every row matching a filter, with a reason; logged and reversible |
+| `bulk_update` | `apply_table_view` | Add `setStatus` + `reason`: reuse the filter compiler, show `matchCount` before writing, apply the status to every matching row, log it so it can be undone. Most statuses are set in code by the company fitment column; this is for user-driven rules. If views must stay read-only, put `setStatus` on `outreach_list` instead |
 | `ledger_log` | Written by tools, not by the model | Each paid tool appends `call` events (tool, source, query, hypothesis, results, new unique, cost) |
 | `dedupe` | `outreach_list dedupe` + write-path check | Add off-limits companies and people |
 | `calibrate` | `ask_questions` | A mixed sample shown with accept/reject + reason; answers written to the plan |
 | `ask_user` | `ask_questions` | No change |
 | `budget_guard` | **New service**, read by a field on `get_sourcing_ledger` | Run caps per source, LinkedIn per run and per day; tools refuse past the cap |
-| `export` | **New** `export_list({ persona, format })` | Section 5.6 |
+| `export` | `outreach_list` `export` (already builds a CSV with `buildOutreachListCsv`) | Today it exports one list by `listId`. Add `projectId` + `tab` + `persona`: persona columns, the coverage line first, excluded rows apart (section 5.6) |
 | `parse_jd` | **Existing** `parse_job_description` + `job_brief_understanding` (`candidate-search/services/job-description.service.ts`, schema `candidate-search/schemas/job-description.schema.ts`) | Extend the schema and expose it to the sourcing skill (section 5.5) |
 
 ## 5. Changes in detail
@@ -181,7 +181,7 @@ File: `tool/tools/find-role-at-companies-tool/find-role-at-companies-tool.ts` (1
 ### 5.6 Outputs and exclusions
 
 - **Coverage line** generated from pair state, never from memory: "31 of 40 companies covered; 5 none found (reasons attached); 4 need your review", then reasons and sources.
-- **`export_list({ persona, format })`**: exec search long list (one row per candidate, grouped by company, tier then fit) or sales sheet (one row per company, person, rung, confidence, contact with provenance, source links). Sheet and CRM-ready CSV. Excluded rows on a separate tab. Each row links to its evidence.
+- **Persona export** (`outreach_list` `export` with `projectId`, `tab` and `persona`): exec search long list (one row per candidate, grouped by company, tier then fit) or sales sheet (one row per company, person, rung, confidence, contact with provenance, source links). Sheet and CRM-ready CSV. Excluded rows on a separate tab. Each row links to its evidence.
 - **Exclusions**: off-limits companies and people and a CRM export in the plan, checked in the People-tab write path (`upsertOutreachTargetPeopleTool` / `outreach-tab.service.ts`) so an excluded person cannot reach a tab or an export. The current CRM check uses the domain only; add LinkedIn URL and name + company for people.
 
 ### 5.7 Guardrails and cost
@@ -256,7 +256,7 @@ Two kinds of search need knowledge the model does not reliably have: how industr
 | --- | --- | --- | --- |
 | `industry-search` | `contents/sourcing-industry-search.md` | The route hint says to add it whenever the request names an industry, sector or segment; `playbook-company-first` also brings it | 900 |
 | `industry-labels` | `contents/sourcing-industry-labels.md` (includes `fragments/linkedin-industries.md`) | On demand: `industry-search` tells the model to load it when it is unsure of the exact labels for a sector | 1,800 |
-| `title-search` | `contents/sourcing-title-search.md` | Always with `people` (`requires`) | 600 |
+| Job title search | Merged into `contents/sourcing-people.md` | Always with `people` | 600 |
 
 Same pattern for later knowledge: put it in a part, keep it scoped to a route, and add a token budget for that route in `skill-library.spec.ts`. Skill text is served from code, so no workspace sync command is needed.
 
@@ -284,41 +284,88 @@ Same pattern for later knowledge: put it in a part, keep it scoped to a route, a
 - The sources constant (`sourcing-sources.constant.ts`) still lists the internal index as a people source for dedupe; mark it companies-only for search, per the source table in 5.8.
 - When Classic is used for a title search, the cascade should send its rows to profile fetch before they count, rather than leaving that to the skill text.
 
-## 6. Skills: spec skill → current section
+## 6. Skills: final parts
 
-All under `workspace-manager/twenty-standard-application/utils/skill-metadata/contents/`. The `sourcing` skill keeps its head + parts structure; the change is new parts and a phase order.
+All under `workspace-manager/twenty-standard-application/utils/skill-metadata/contents/`. The `sourcing` skill keeps its head + parts structure. The spec's skills are clubbed into existing parts wherever they always load together or do the same job, so the skill ends with **28 parts, 2 of them new** (`company-list`, `jd-to-rubrics`), instead of the 35 the spec's list would give.
 
-| Spec skill | Current | Action |
-| --- | --- | --- |
-| `classify-brief` | `sourcing.md` intake gate, `sourcing-requirements.md` "By kind of request" | New part `classify-brief`: the five brief types, persona, target type, plan template per type |
-| `scope-and-size` | `sourcing-query-planning.md` dipstick | Fold dipstick into it; uses `probe` |
-| `write-rubric` | `sourcing-rubrics.md`, `fragments/fitment-rules.md`, `later-checks.md` | Keep; add company rubric (hard/soft) next to person rubric |
-| `resolve-companies` | `sourcing-src-bright-data-companies.md` instant recipe | New part |
-| `find-companies-by-description` | `sourcing-companies.md`, Bright Data ludicrous section | Rename/extend; add Indian turnover and filings guidance |
-| `company-discovery-lenses` | `industry-search` (added) covers the industry lens | Extend with the other lenses |
-| `company-enrichment-and-filtering` | `ai-filter-enrich.md` (cheap cut first) | New part; keep `ai-filter-enrich` as the column mechanics |
-| `peer-set-for-search` | `sourcing-people-by-company.md` "Pool size", `for-recruiting` | New part |
-| `calibrate-with-samples` | `sourcing-playbook-company-first.md` step 2 | Replace whole-list confirm with sample calibration |
-| `source-routing` | `sourcing.md` source order + `{{sources: source-order}}` | Most routing moves into code; the part explains the cascade and overrides |
-| `serp-probing` | `sourcing-src-serp.md` (7 lines) | Expand |
-| `title-ladder` | `fragments/title-seniority.md`, shortfall title synonyms, `title-search` (added) | Add rungs, size bands and the persona max rung to `title-search` |
-| `read-messy-profiles` | `fragments/profile-reading.md` | Keep, expose as a part |
-| `linkedin-last-resort` | `sourcing-src-linkedin.md` | Rename to `linkedin-slow-mode`; load only when the user picked LinkedIn or Harvest |
-| (new) `choose-sources` | `sourcing.md` "Provider" and "Source order" | New part loaded at plan time: how to ask the source question, what to show per source, how the choice is stored |
-| `reconcile-evidence` | `sourcing-source-profiles.md` "Staleness by field" | New part |
-| `diagnose-and-adjust` | `sourcing-playbook-shortfall.md` | Re-cut around stage-tagged causes; shortfall moves under it for Stage A |
-| `coverage-and-export` | report steps scattered in sections | New part |
-| `jd-to-rubrics` | none | New part |
+### Final parts
+
+| Group | Part | Holds | Status |
+| --- | --- | --- | --- |
+| Head | `sourcing.md` | Vocabulary, routing, source order, result lists, write contract | Existing |
+| Plan | `requirements` | The brief: the five brief types, persona, target type, scope and expected size, the source question at the start (section 5.8), what to ask and what to decide | Extended |
+| Plan | `intent-glossary` | What a client's word usually means | Existing |
+| Plan | `query-planning` | Probes (count, exists, fresh), sizing, slicing, variants, and large lists of about 1,000 rows or more | Extended |
+| Plan | `rubrics` | Person rubric archetypes, plus the company rubric (hard and soft criteria) | Extended |
+| Plan | `jd-to-rubrics` | Reading a JD into the person rubric, the company rubric and a peer set; the JD card | **New** |
+| Search types | `companies` | Calling the company search tools | Existing |
+| Search types | `places` | Places on a map | Existing |
+| Search types | `people` | Calling the people search tools, now including which sources filter the current job title | Extended |
+| Search types | `people-by-company` | Calling `find_people_by_company`: pilot, then the batch job | Extended |
+| Search types | `inbound-applicants` | Applicants to a posting | Existing |
+| Run playbooks | `playbook-company-first` | The whole company × role run in order (plan, Stage A, pilot, batches, checkpoints), the spec's §11 text, and at the end the coverage line and persona export | Extended |
+| Run playbooks | `company-list` | Stage A: entry modes, lenses, cheap-first filtering, calibration, freeze (see below) | **New** |
+| Run playbooks | `playbook-shortfall` | Why results fell short, by stage-tagged cause, and the one change to make next | Extended |
+| Detail | `industry-search` | Industry lens: label mapping, sources cheapest first, kinds of industry search | Existing (added this week) |
+| Detail | `industry-labels` | The LinkedIn V2 label list, loaded on demand | Existing (added this week) |
+| Detail | `scoring` | Fitment, profile reading, worthiness, approvals | Existing |
+| Detail | `source-profiles` | What each source covers and gets wrong; staleness by field; plus conflict and confidence rules | Extended |
+| Detail | `for-recruiting` | Candidates for a role | Existing |
+| Detail | `for-sales` | Prospects you sell to | Existing |
+| Sources | `src-bright-data-people`, `src-bright-data-companies`, `src-harvest`, `src-apollo`, `src-exa`, `src-wikidata`, `src-naukri` | One part per source, loaded only when that source is picked | Existing |
+| Sources | `src-linkedin` | Adds slow mode and the account limits | Extended |
+| Sources | `src-serp` | Adds probing and the four LinkedIn URL lookups | Extended |
+
+Removed as separate parts (done Oct 29): `title-search` (into `people`, since it always loaded with it) and `playbook-large-list` (into `query-planning`, which that route always loaded). A request for either old section name is reported back as unknown, so the model reloads with the new one.
+
+### Where each spec skill went
+
+| Spec skill | Part |
+| --- | --- |
+| `classify-brief`, `scope-and-size`, (new) `choose-sources` | `requirements` (scope and size also use the probe recipe in `query-planning`) |
+| `write-rubric` | `rubrics` |
+| `jd-to-rubrics` | `jd-to-rubrics` |
+| `resolve-companies`, `company-discovery-lenses`, `find-companies-by-description`, `company-enrichment-and-filtering`, `peer-set-for-search`, `calibrate-with-samples` | `company-list` |
+| `source-routing` | Mostly code (the cascade); the explanation stays in the head file's source order |
+| `serp-probing` | `src-serp` |
+| `title-ladder` | `people` (current-title rules) and `fragments/title-seniority.md` (synonyms), with the rungs, size bands and persona max rung added |
+| `read-messy-profiles` | `fragments/profile-reading.md`, already included in `scoring` |
+| `linkedin-last-resort` | `src-linkedin`, loaded only when the user picked LinkedIn or Harvest |
+| `reconcile-evidence` | `source-profiles` |
+| `diagnose-and-adjust` | `playbook-shortfall` |
+| `coverage-and-export` | `playbook-company-first` |
+
+### Kept separate on purpose
+
+- `industry-labels` apart from `industry-search`: the 1,800-token list loads only when needed.
+- `jd-to-rubrics` apart from `rubrics`: `rubrics` loads with every recruiting or sales search, and the JD text would be re-sent on every step.
+- `for-recruiting` and `for-sales`: a run is only ever one of them.
+- `src-*`: one per source, so only the picked sources load.
+- `people-by-company`: still loaded alone for "a role at named companies".
+- Outside `sourcing`: `spreadsheet-import` (the upload entry mode in `company-list` hands off to it), `ai-filter-enrich` (column mechanics for the filter step) and `validate-profiles` stay their own skills.
 
 Also:
 
-- Add a route in `sourcing.md` Plan table: "A role at a set of companies (any brief type)" → `company-role-run`, a new top-level playbook that replaces `playbook-company-first` + `people-by-company` for this agent and lists the phases in order.
-- `sourcing-people-by-company.md` currently tells the model "no estimate, no second search, no loop" and to call for all companies at once. Change to: pilot, checkpoint, then start the batch job.
-- Update `docs/SOURCING_SKILLS.md` and the token budgets in `skill-library.spec.ts` / `skill-content-integrity.spec.ts`; skill sync command for existing workspaces.
+- `sourcing-people-by-company.md` currently tells the model "no estimate, no second search, no loop" and to call for all companies at once. Change to: pilot, checkpoint, then start the batch job. It stays the part that explains how to call `find_people_by_company`.
+- Update `docs/SOURCING_SKILLS.md` and the token budgets in `skill-library.spec.ts` / `skill-content-integrity.spec.ts`. No workspace sync command is needed: skill text is served from code.
+
+### Stage A in two parts
+
+The spec lists seven skills for building and confirming the company list. They are steps of one phase, not separate jobs, and none of them is a tool. Splitting them would mean several loads for one phase and the same rules repeated in each. They collapse into two parts, plus the detail parts that already exist:
+
+| Part | Covers | Replaces |
+| --- | --- | --- |
+| `playbook-company-first` (existing, extended; the name stays) | The whole company × role run in order: plan and source choice, Stage A (via `company-list`), the 10-company pilot, batches, checkpoints at 50% and completion, coverage report. Holds the spec's §11 text (mission, unit of work, loop, invariants) | The spec's `company-role-run` playbook |
+| `company-list` (new; brought in by `playbook-company-first` through `requires`) | Stage A from start to finish. **Entry modes:** upload (resolve each company with `resolve_company_from_raw_name`: subsidiary, group, same name, dead domain), described segment, peer set. **Lenses:** description, industry (details in `industry-search`), peers, look-alike, supply chain, seed expansion, revenue band, each tagged on the existing company searches. **Filtering:** cheap hard filters first, then paid enrichment; hard criteria fail only on evidence; unknown goes to review; turnover with currency, year and source. **Calibration:** about 10 mixed companies, accept or reject with a reason, rubric updated. **Freeze:** confirmed rows, list version | `resolve-companies`, `company-discovery-lenses`, `find-companies-by-description`, `company-enrichment-and-filtering`, `peer-set-for-search`, `calibrate-with-samples` |
+| `industry-search`, `industry-labels` (existing) | Detail for the industry lens | — |
+| `companies`, `src-bright-data-companies` (existing) | How to call the company search tools | — |
+| `ai-filter-enrich` (existing skill) | Mechanics of the enrichment and fitment columns used by the filter step | — |
+
+Loading: `company-list` comes only with `playbook-company-first`, so a plain company search ("QSR brands in India") does not pay for it. Give the `["playbook-company-first"]` route a new token budget once the part is written.
 
 ## 7. System prompt
 
-The spec's §11 prompt is skill-sized, not system-prompt-sized. `core.md` is shared by every Ask AI intent, so put the §11 text in the `company-role-run` part (mission, unit of work, loop, routing stance, checkpoints, invariants) and add only one routing line to `core.md` and the `sourcing` skill `routes`: "A role at companies, a company list then people, or a pasted JD → `load_skills(["sourcing"], sections: ["company-role-run"])`".
+The spec's §11 prompt is skill-sized, not system-prompt-sized. `core.md` is shared by every Ask AI intent, so put the §11 text in the extended `playbook-company-first` part (mission, unit of work, loop, routing stance, checkpoints, invariants) and add only one routing line to `core.md` and the `sourcing` skill `routes`: "A role at companies, a company list then people, or a pasted JD → `load_skills(["sourcing"], sections: ["playbook-company-first"])`".
 
 ## 8. Decisions (settled Oct 29, 2026)
 
@@ -341,7 +388,7 @@ These override anything earlier in this doc that says otherwise.
 | 12 | Which data sources | **The user picks the sources at the start of each run** (multi-select, only available sources, pre-selected from the last run) | Section 5.8. Enforced by the tools from the plan. Their own LinkedIn always runs in slow mode. Resolves the clash between decisions 8 and 10: the Sales Nav revenue filter runs only if Harvest or the user's LinkedIn was picked |
 | 13 | JD parsing | **Reuse** `parse_job_description` / `job_brief_understanding` | Extend the schema, no new tool (section 5.5) |
 | 14 | Company discovery | **No new tool.** `search_companies_index` (shallow, fast) topped up by Bright Data | A `lens` tag on the existing searches (section 4) |
-| 15 | New tools | `plan_update`, `probe`, `export_list` | Section 4 |
+| 15 | New tools | **None.** Plan on `get_sourcing_ledger`, probes on the existing searches, export on `outreach_list`, bulk status on `apply_table_view`. Keep the `budget_guard` service | Section 4 |
 
 Still open from spec §13: which Bright Data datasets to use and how fresh they are for Indian companies, and who owns the LinkedIn account risk for the high-value step.
 
@@ -360,10 +407,10 @@ Aligned with spec §13.
 **Phase 2: described segments**
 - Lens tags on company searches (index, then Bright Data top-up), lens stats, company status pipeline, cheap-first filter, unknown bucket, structured turnover, calibration, freeze (5.3).
 - Contact enrichment in the sales export; CRM dedupe at write time.
-- `probe` tool; `budget_guard` run caps.
+- Probe recipe + `freshness` field; `budget_guard` run caps.
 
 **Phase 3: exec search**
-- `parse_jd` + JD card; peer sets; tiers; off-limits lists; exec search export; candidate-pool target type with more people per company.
+- Extend `parse_job_description` + JD card; peer sets; tiers; off-limits lists; exec search export; candidate-pool target type with more people per company.
 
 **Phase 4: LinkedIn and Harvest as user-picked sources**
 - Harvest and own-LinkedIn steps in the cascade, run only when picked, with slow mode (section 5.8); residual subagent and verifier if the evals show a residual.

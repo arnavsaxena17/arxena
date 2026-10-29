@@ -12,15 +12,13 @@ Search returns snapshots. Profile fetch turns a snapshot's LinkedIn URL into the
 | File | Section | Loaded |
 | --- | --- | --- |
 | `sourcing.md` | head | always: vocabulary, funnel, destinations, source order, result lists, write contract |
-| `sourcing-people.md`, `-companies.md`, `-people-by-company.md` | search types | by route |
+| `sourcing-people.md`, `-companies.md`, `-people-by-company.md` | search types; `people` also holds the job title search (which sources filter the current title) | by route |
 | `sourcing-industry-search.md`, `-industry-labels.md` | industry searches: label mapping, source order, kinds of search; the full LinkedIn V2 label list (`fragments/linkedin-industries.md`) | `industry-search` by route and with company-first; `industry-labels` on demand |
-| `sourcing-title-search.md` | which sources filter the current job title and how to write titles for each | with `people` |
 | `sourcing-playbook-scored-list.md`, `-playbook-company-first.md`, `-playbook-shortfall.md` | playbooks (the first two bring the shortfall one) | by route |
 | `sourcing-scoring.md` | scoring: fitment, worthiness, climb rules, approvals | with scored list / inbound |
 | `sourcing-for-recruiting.md`, `-for-sales.md` | purpose: candidates for a role, or prospects. Each brings `rubrics` and its admission playbook | by purpose |
 | `sourcing-rubrics.md` | rubric archetypes (`title-led`, `company-led`, `skill-led`, `scale-led`, `candidate-led`) and how weights turn into a score | with a purpose |
-| `sourcing-query-planning.md` | queries, variants, probe, then scale (brings shortfall / title synonyms) | with large list |
-| `sourcing-playbook-large-list.md` | about 1,000 rows or more (brings query planning and shortfall) | by route |
+| `sourcing-query-planning.md` | queries, variants, probe, then scale; large lists of about 1,000 rows or more (brings shortfall / title synonyms) | by route, for large lists and probes |
 | `sourcing-playbook-recruiting-admission.md`, `-sales-admission.md` | what puts someone on the core list (the People tab) | with a purpose |
 | `sourcing-inbound-applicants.md` | applicants to a posting (no tool reads them yet) | by route |
 | `sourcing-src-naukri.md` | Naukri Resdex and Hiring through the Chrome extension | when named |

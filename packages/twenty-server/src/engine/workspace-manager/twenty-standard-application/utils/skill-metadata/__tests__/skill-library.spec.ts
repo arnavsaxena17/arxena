@@ -132,13 +132,13 @@ describe('sourcing skill section sizes', () => {
   // A bundle is re-sent on every model step after it is loaded, so each route
   // has its own budget and must stay far cheaper than the whole skill
   it.each([
-    // people brings title-search; company-first brings industry-search
+    // people holds the job title search; company-first brings industry-search
     [['people'], 6_400],
     [['companies'], 6_300],
     [['people-by-company'], 4_400],
     [['scoring', 'playbook-shortfall'], 5_800],
     [['playbook-company-first'], 6_400],
-    [['playbook-large-list'], 5_000],
+    [['query-planning'], 5_000],
     [['for-recruiting'], 4_800],
     [['for-sales'], 4_600],
     [['inbound-applicants'], 5_100],
@@ -153,7 +153,6 @@ describe('sourcing skill section sizes', () => {
     expect(resolveSkillSections('sourcing')).toEqual([
       'people',
       'src-bright-data-people',
-      'title-search',
       'companies',
       'src-bright-data-companies',
     ]);
@@ -162,12 +161,12 @@ describe('sourcing skill section sizes', () => {
   it('should add the sections a section requires, once', () => {
     expect(
       resolveSkillSections('sourcing', ['people', 'src-bright-data-people']),
-    ).toEqual(['people', 'src-bright-data-people', 'title-search']);
+    ).toEqual(['people', 'src-bright-data-people']);
   });
 
   it('should bring the sections the new routes require', () => {
-    expect(resolveSkillSections('sourcing', ['playbook-large-list'])).toEqual(
-      expect.arrayContaining(['query-planning', 'playbook-shortfall']),
+    expect(resolveSkillSections('sourcing', ['query-planning'])).toEqual(
+      expect.arrayContaining(['playbook-shortfall']),
     );
     expect(resolveSkillSections('sourcing', ['for-recruiting'])).toEqual(
       expect.arrayContaining(['rubrics']),
