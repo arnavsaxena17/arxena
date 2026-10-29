@@ -135,9 +135,10 @@ describe('sourcing skill section sizes', () => {
     // people holds the job title search; company-first brings industry-search
     [['people'], 6_400],
     [['companies'], 6_300],
-    [['people-by-company'], 4_400],
+    // people-by-company holds the pilot, background run and final states
+    [['people-by-company'], 4_700],
     [['scoring', 'playbook-shortfall'], 5_800],
-    [['playbook-company-first'], 6_400],
+    [['playbook-company-first'], 6_700],
     [['query-planning'], 5_000],
     [['for-recruiting'], 4_800],
     [['for-sales'], 4_600],

@@ -1,203 +1,115 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { createHash } from 'crypto';
 import { appendFileSync } from 'fs';
 
 import { isNonEmptyString } from '@sniptt/guards';
+
 import { isDefined } from 'twenty-shared/utils';
 
-import { BrightDataLudicrousSearchService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-search.service';
-import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
-import { BRIGHT_DATA_COST_PER_RECORD_USD } from 'src/engine/core-modules/bright-data/ludicrous/constants/bright-data-ludicrous-pricing.const';
-import { mapBrightDataPersonToSearchItem } from 'src/engine/core-modules/bright-data/utils/bright-data-business-search.util';
-import {
-  buildCompanyVariants,
-  matchesAnyCompanyVariant,
-  textMentionsAnyCompanyVariant,
-} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/company-name-variants.util';
 import {
   FindPeopleByCompanyInputZodSchema,
   type FindPeopleByCompanyInput,
   FIND_PEOPLE_BY_COMPANY_MAX_PROJECT_COMPANIES,
 } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool.schema';
-import {
-  FindPeopleGoogleSearchService,
-  type GoogleCompanySearchResult,
-} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-google-search.service';
-import { type GoogleSerpOrganicItem } from 'src/engine/core-modules/org-chart/utils/map-google-serp-organic.util';
-import {
-  personNamesMatch,
-  personNamesRoughlyMatch,
-} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/person-name-matching.util';
-import { LinkedinProfileResolverService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/linkedin-profile-resolver.service';
-import {
-  normalizeLinkedinProfileUrl,
-  parseLinkedinSerpResult,
-} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/parse-linkedin-serp-result.util';
-import {
-  GoogleResultExtractionService,
-  type ExtractedPerson,
-} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/google-result-extraction.service';
-import { packLinkedinUrlLookupQueries } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/linkedin-url-lookup-query.util';
-import {
-  getRequestedRoleOrder,
-  scoreRoleMatch,
-  titleContainsWord,
-} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/role-title-matching.util';
-import { type TitleClass } from 'src/engine/core-modules/title-taxonomy/title-class.type';
-import {
-  TitleExpansionService,
-  type ResolvedRoles,
-} from 'src/engine/core-modules/title-taxonomy/title-expansion.service';
-import {
-  BrightDataPersonFitFilterService,
-  type PersonJudgement,
-} from 'src/engine/core-modules/bright-data/services/bright-data-person-fit-filter.service';
+
+import { normalizeLinkedinProfileUrl } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/parse-linkedin-serp-result.util';
+import { TitleExpansionService } from 'src/engine/core-modules/title-taxonomy/title-expansion.service';
 import { brightDataRecordToPersonOtherFields } from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/bright-data-person-row-fields.util';
+
+import { PROFILE_FIELD_KEY } from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/profile-row-fields.util';
+import { buildDeprioritisationFields } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/outreach-people-deprioritisation.util';
 import {
-  PROFILE_FIELD_KEY,
-  type RowProfile,
-} from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/profile-row-fields.util';
-import {
-  buildDeprioritisationFields,
-  type DeprioritisationReason,
-} from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/outreach-people-deprioritisation.util';
-import {
-  buildPeopleFoundValues,
-  type OutreachPeopleFoundLabel,
+  buildPairStateValues,
+  pairKeyOf,
+  readPairStates,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-people-found.util';
+import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
+import {
+  computePairFunnel,
+  type SourcingBrief,
+  SOURCING_PLAN_DEFAULTS,
+} from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
+import { isChunkedRunTerminal } from 'src/engine/core-modules/outreach-command/utils/chunked-run.util';
+import {
+  FIND_PEOPLE_COMPANIES_PER_CHUNK,
+  FindPeopleRunService,
+  type FindPeopleRunState,
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-run.service';
+
 import {
   matchesTableFilter,
   OutreachTableViewService,
   readCellText,
 } from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
+
 import { OutreachTabService } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
+
 import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
+
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
+
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';
+
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
+
 import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
 
-// The input is capped at 25 companies, so the default runs them all at once
-type FindPeopleByCompanyTarget = NonNullable<
-  FindPeopleByCompanyInput['companies']
->[number];
-// The input once the companies are known, whether given or read from the project
-type ResolvedInput = Omit<FindPeopleByCompanyInput, 'companies'> & {
-  companies: FindPeopleByCompanyTarget[];
+import {
+  type CompanyOutcome,
+  type FindPeopleByCompanyTarget,
+  type FindPeoplePlan,
+  type ResolvedInput,
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company.types';
+import {
+  FindPeopleCascadeService,
+  getCompanyConcurrency,
+  toId,
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-cascade.service';
+
+// The lookup's own source names against the keys the brief stores
+const SOURCE_KEY_BY_LOOKUP_SOURCE: Record<'bright_data' | 'google', string> = {
+  bright_data: 'bright-data',
+  google: 'serp',
 };
 
-// Bright Data's SERP limit is 1,000 requests/min on an unfunded account and
-// higher once funded (docs.brightdata.com/general/usage-monitoring/serp-rate-limit);
-// a company sends about 5 queries, so 50 at a time stays inside it
-const DEFAULT_COMPANY_CONCURRENCY = 50;
-// A lookup that could not complete (source_error) is run again before the
-// model sees it, so a blip or a laptop wake-up does not cost a model round
-const DEFAULT_COMPANY_LOOKUP_RETRIES = 2;
-const COMPANY_RETRY_BACKOFF_MS = [5_000, 15_000];
-const MAX_VARIANTS_PER_BRIGHT_DATA_SEARCH = 2;
-const BRIGHT_DATA_CANDIDATES_PER_SEARCH = 5;
-const MAX_PEOPLE_PER_COMPANY = 3;
-const MAX_REJECTED_PER_COMPANY = 3;
-const MAX_TITLES_IN_QUERY = 8;
-const MAX_NAMES_TO_RESOLVE = 5;
+// Without a brief the lookup keeps related roles, as it always has
+const DEFAULT_MAX_RUNG = 3;
 
-// web = a person named in a page Google returned, then looked up on LinkedIn
-type Source = 'bright_data' | 'google' | 'web';
+const countBy = <TItem>(
+  items: TItem[],
+  keyOf: (item: TItem) => string,
+): Record<string, number> => {
+  const counts: Record<string, number> = {};
 
-type Candidate = {
-  id: string;
-  name: string;
-  title: string;
-  companyName: string;
-  linkedinUrl: string;
-  // Free text the company can be checked against when there is no company field
-  evidenceText: string;
-  source: Source;
-  // True when the URL was recovered from a post by this person
-  linkedinUrlDerivedFromPost?: boolean;
-  location?: string;
-  // The full provider record, so the fake-profile screen can read education
-  // and experience
-  rawProfile?: Record<string, unknown>;
+  for (const item of items) {
+    counts[keyOf(item)] = (counts[keyOf(item)] ?? 0) + 1;
+  }
+
+  return counts;
 };
 
-type VerifiedCandidate = Candidate & {
-  sources: Source[];
-  roleScore: 1 | 2;
-  verdict?: PersonJudgement;
+const mergeCounts = <TKey extends string>(
+  first: Partial<Record<TKey, number>>,
+  second: Record<string, number>,
+): Partial<Record<TKey, number>> => {
+  const merged: Record<string, number> = { ...first };
+
+  for (const [key, value] of Object.entries(second)) {
+    merged[key] = (merged[key] ?? 0) + value;
+  }
+
+  return merged as Partial<Record<TKey, number>>;
 };
 
-type RejectedCandidate = {
-  name: string;
-  title: string;
-  companyOnProfile: string;
-  reason: 'company_mismatch' | 'role_mismatch';
-  // The judge's reason, when it ruled
-  note?: string;
+// "51-200", "1,001-5,000", "10001+" or "120": the top of the band, so a
+// company is small only when it cannot be larger
+const parseEmployeeCount = (value: string | undefined): number | undefined => {
+  const numbers = (value ?? '').replace(/,/g, '').match(/\d+/g)?.map(Number);
+
+  return isDefined(numbers) && numbers.length > 0
+    ? Math.max(...numbers)
+    : undefined;
 };
-
-type CompanyOutcome = {
-  company: string;
-  // Companies-tab row id the lookup was asked for, when the caller gave one
-  companyRowId?: string;
-  status: 'matched' | 'related_role_only' | 'no_match' | 'source_error';
-  people: Array<{
-    name: string;
-    title: string;
-    companyOnProfile: string;
-    linkedinUrl: string;
-    sources: Source[];
-    roleMatch: 'exact' | 'related';
-    // related = works at a parent, operator or brand linked to the company asked about
-    companyRelation?: 'related';
-    note?: string;
-    linkedinUrlDerivedFromPost?: boolean;
-    deprioritisedReasons: DeprioritisationReason[];
-    // The full profile, when the source returned one: stored on the row so the
-    // profile fetch skips this person
-    profile?: RowProfile;
-    // Raw Bright Data person document — same fields written as fetch_profiles
-    rawProfile?: Record<string, unknown>;
-  }>;
-  rejected: RejectedCandidate[];
-  sourceErrors: string[];
-  spentUsd: number;
-};
-
-const PEOPLE_FOUND_LABEL_BY_STATUS: Record<
-  CompanyOutcome['status'],
-  OutreachPeopleFoundLabel
-> = {
-  matched: 'Found',
-  related_role_only: 'Related role only',
-  no_match: 'Not found',
-  source_error: 'Lookup failed',
-};
-
-const getCompanyConcurrency = (): number => {
-  const configured = Number(process.env.FIND_ROLE_COMPANY_CONCURRENCY);
-
-  return Number.isInteger(configured) && configured > 0
-    ? configured
-    : DEFAULT_COMPANY_CONCURRENCY;
-};
-
-const getCompanyLookupRetries = (): number => {
-  const configured = Number(process.env.FIND_ROLE_COMPANY_LOOKUP_RETRIES);
-
-  return Number.isInteger(configured) && configured >= 0
-    ? configured
-    : DEFAULT_COMPANY_LOOKUP_RETRIES;
-};
-
-const EMPTY_GOOGLE_RESULT: GoogleCompanySearchResult = {
-  results: [],
-  errors: [],
-};
-
-const toId = (value: string): string =>
-  createHash('sha1').update(value).digest('hex');
 
 // the upsert is a read-modify-write on the project's cached list, so writes
 // from companies finishing at the same time (and from parallel tool calls)
@@ -220,33 +132,6 @@ const runExclusivelyPerProject = async <TResult>(
   });
 
   return next;
-};
-
-// One limit for the whole process: parallel tool calls share it, so 11 calls
-// of 25 companies do not become 275 simultaneous lookups that all time out
-let activeLookups = 0;
-const waitingLookups: Array<() => void> = [];
-
-const withGlobalLookupSlot = async <TResult>(
-  task: () => Promise<TResult>,
-): Promise<TResult> => {
-  if (activeLookups >= getCompanyConcurrency()) {
-    await new Promise<void>((resolve) => waitingLookups.push(resolve));
-  } else {
-    activeLookups += 1;
-  }
-
-  try {
-    return await task();
-  } finally {
-    const next = waitingLookups.shift();
-
-    if (isDefined(next)) {
-      next();
-    } else {
-      activeLookups -= 1;
-    }
-  }
 };
 
 const runWithConcurrency = async <TItem, TResult>(
@@ -274,21 +159,19 @@ const runWithConcurrency = async <TItem, TResult>(
 export class FindPeopleByCompanyTool implements Tool {
   private readonly logger = new Logger(FindPeopleByCompanyTool.name);
 
-  description = `Find the people who hold given roles (CEO, MD, founder, owner, ...) at named companies, in one call. Pass the companies and the roles in the user's words. The tool looks each role up in the job-title taxonomy service (function, grade and the curated titles for it), searches Bright Data people and Google (LinkedIn profiles) in parallel, checks that every person works at that company and holds the role, merges duplicates by LinkedIn URL, and, when nobody is found that way, reads the pages Google returns for names and looks each name up on LinkedIn (a person with a name but no profile found comes back with an empty linkedinUrl), and returns a short table per company with a status: matched, related_role_only (deputy / vice / acting) or no_match, plus rejected rows with the reason. With projectId the verified people are written to the People tab. Use for requests like "get the CEO of each company"; do not use it to build a large people list.`;
+  description = `Find the people who hold given roles (CEO, MD, head of e-commerce, ...) at named companies: one company x role pair each, each ending in a final state. Pass the companies (or fromProject) and the roles in the user's words. The plan comes from the project's brief (get_sourcing_ledger): the data sources the user picked, the title ladder (maxRung), the confidence to stop at and the spend cap per pair. Per company it runs a cascade, cheapest first: a found answer from an earlier run, then Bright Data people, then (only if no one is confident yet) Google, the pages it returns and the company's own leadership page; every person is checked against the company and the role. Each company returns terminalState found / none_found (reason no_such_role, profile_gaps, budget, source_error) / ambiguous / unresolvable, with the rung used, and people with confidence, freshness and evidence. With projectId the people are written to the People tab and the pair state to the company row. Pass pilotSize 10 on a project's first lookup; more than 25 companies start a background run that returns a runId to read progress with. Use for requests like "get the CEO of each company"; do not use it to build a large people list.`;
 
   inputSchema = FindPeopleByCompanyInputZodSchema;
 
   constructor(
-    private readonly brightDataLudicrousSearchService: BrightDataLudicrousSearchService,
-    private readonly googleSearchService: FindPeopleGoogleSearchService,
-    private readonly brightDataBusinessSearchService: BrightDataBusinessSearchService,
-    private readonly googleResultExtractionService: GoogleResultExtractionService,
-    private readonly personFitFilterService: BrightDataPersonFitFilterService,
-    private readonly linkedinProfileResolverService: LinkedinProfileResolverService,
+    private readonly findPeopleCascadeService: FindPeopleCascadeService,
     private readonly upsertOutreachTargetPeopleTool: UpsertOutreachTargetPeopleTool,
     private readonly titleExpansionService: TitleExpansionService,
     private readonly outreachTabService: OutreachTabService,
     private readonly outreachTableViewService: OutreachTableViewService,
+    // Optional so the tool still runs inline where these are not wired (tests)
+    private readonly sourcingLedgerService?: SourcingLedgerService,
+    private readonly findPeopleRunService?: FindPeopleRunService,
   ) {}
 
   async execute(
@@ -313,10 +196,21 @@ export class FindPeopleByCompanyTool implements Tool {
       };
     }
 
-    const resolved = await this.resolveCompanies(
-      parsed.data,
-      context.workspaceId,
-    );
+    if (isNonEmptyString(parsed.data.runId)) {
+      return this.readRun(parsed.data, context.workspaceId);
+    }
+
+    const planned = await this.applyPlan(parsed.data, context.workspaceId);
+
+    if (typeof planned === 'string') {
+      return {
+        success: false,
+        message: 'Failed to find roles at companies',
+        error: planned,
+      };
+    }
+
+    const resolved = await this.resolveCompanies(planned, context.workspaceId);
 
     if (typeof resolved === 'string') {
       return {
@@ -326,8 +220,131 @@ export class FindPeopleByCompanyTool implements Tool {
       };
     }
 
-    const input = { ...parsed.data, companies: resolved };
+    const isPilot = isDefined(planned.pilotSize);
+    const companies = isPilot ? resolved.slice(0, planned.pilotSize) : resolved;
+
+    // More than one chunk of the project's own companies runs in the
+    // background, so a long list survives the chat turn and can be resumed
+    if (
+      !isPilot &&
+      isNonEmptyString(planned.projectId) &&
+      companies.length > FIND_PEOPLE_COMPANIES_PER_CHUNK &&
+      isDefined(this.findPeopleRunService)
+    ) {
+      return this.startRun({ ...planned, companies }, context);
+    }
+
+    const input = { ...planned, companies };
     const startedAt = Date.now();
+    const { outcomes, written } = await this.processCompanies(input, context);
+
+    this.logger.log(
+      `find_people_by_company: ${outcomes.length} companies in ${Date.now() - startedAt}ms (concurrency ${getCompanyConcurrency()})`,
+    );
+
+    if (isPilot && isNonEmptyString(input.projectId)) {
+      await this.recordCheckpoint(
+        context.workspaceId,
+        input.projectId,
+        'pilot',
+      );
+    }
+
+    return this.reportOutcomes(input, outcomes, written, {
+      ...(isPilot && {
+        pilot: {
+          done: companies.length,
+          remaining: resolved.length - companies.length,
+        },
+      }),
+    });
+  }
+
+  // The plan comes from the latest brief; an explicit input wins and is
+  // logged. Sources the user did not pick are dropped here, before any spend.
+  private async applyPlan(
+    input: FindPeopleByCompanyInput,
+    workspaceId: string,
+  ): Promise<(FindPeopleByCompanyInput & { plan: FindPeoplePlan }) | string> {
+    const brief = isNonEmptyString(input.projectId)
+      ? await this.readBrief(workspaceId, input.projectId)
+      : undefined;
+    const allowedByBrief = brief?.sources;
+    const sources = isDefined(allowedByBrief)
+      ? input.sources.filter((source) =>
+          allowedByBrief.includes(SOURCE_KEY_BY_LOOKUP_SOURCE[source]),
+        )
+      : input.sources;
+
+    if (sources.length === 0) {
+      return `The user did not pick a people source this lookup can use (picked: ${(allowedByBrief ?? []).join(', ')}). Ask whether to add Bright Data or Google search.`;
+    }
+
+    const maxRung =
+      input.maxRung ??
+      brief?.ladder?.maxRung ??
+      (isDefined(brief?.persona)
+        ? SOURCING_PLAN_DEFAULTS.maxRungByPersona[brief.persona]
+        : DEFAULT_MAX_RUNG);
+    const plan: FindPeoplePlan = {
+      maxRung,
+      minConfidence:
+        input.minConfidence ??
+        brief?.thresholds?.minConfidence ??
+        SOURCING_PLAN_DEFAULTS.minConfidence,
+      freshnessDays:
+        brief?.thresholds?.freshnessDays ??
+        SOURCING_PLAN_DEFAULTS.freshnessDays,
+      perPairUsd:
+        input.maxBudgetUsd ??
+        brief?.capsUsd?.perPair ??
+        SOURCING_PLAN_DEFAULTS.perPairUsd,
+      confidential: brief?.confidential ?? false,
+    };
+    const overrides = [
+      isDefined(input.maxRung) &&
+        isDefined(brief?.ladder?.maxRung) &&
+        input.maxRung !== brief.ladder.maxRung &&
+        `maxRung ${input.maxRung} (brief ${brief.ladder.maxRung})`,
+      isDefined(input.maxBudgetUsd) &&
+        isDefined(brief?.capsUsd?.perPair) &&
+        `maxBudgetUsd ${input.maxBudgetUsd} (brief ${brief.capsUsd.perPair})`,
+    ].filter(isNonEmptyString);
+
+    if (overrides.length > 0) {
+      this.logger.log(
+        `find_people_by_company overrides the brief: ${overrides.join(', ')}`,
+      );
+    }
+
+    return { ...input, sources, plan };
+  }
+
+  private async readBrief(
+    workspaceId: string,
+    projectId: string,
+  ): Promise<SourcingBrief | undefined> {
+    const events =
+      (await this.sourcingLedgerService
+        ?.read(workspaceId, projectId)
+        .catch(() => [])) ?? [];
+    const latest = [...events]
+      .reverse()
+      .find((event) => event.kind === 'brief');
+
+    return latest?.kind === 'brief' ? latest : undefined;
+  }
+
+  // One code path for the inline call and for every background chunk: look
+  // each company up, then save its people and its pair state as soon as it
+  // finishes, so nothing is lost if the run is cut short
+  async processCompanies(
+    input: ResolvedInput,
+    context: ToolExecutionContext,
+  ): Promise<{
+    outcomes: CompanyOutcome[];
+    written: { count: number; error?: string };
+  }> {
     const resolvedRoles = await this.titleExpansionService.resolveRoles(
       input.roles,
     );
@@ -339,21 +356,22 @@ export class FindPeopleByCompanyTool implements Tool {
       input.companies,
       getCompanyConcurrency(),
       async (company) => {
-        const outcome = await this.lookupCompanyWithRetries(
-          company,
-          input,
-          resolvedRoles,
-          context.workspaceId,
-        );
+        const outcome =
+          company.unresolvable === true
+            ? this.unresolvableOutcome(company, input)
+            : await this.findPeopleCascadeService.lookupPair(
+                company,
+                input,
+                resolvedRoles,
+                context.workspaceId,
+              );
 
         outcome.companyRowId = company.id;
         this.logOutcome(input, outcome);
 
-        // save each company's people as soon as they are found instead of
-        // after the whole batch, so nothing is lost if the call is cut short
         const written = await this.persist(input, [outcome], context);
 
-        await this.recordPeopleFound(input, outcome, context.workspaceId);
+        await this.recordPairState(input, outcome, context.workspaceId);
 
         writeResult.count += written.count;
         if (isDefined(written.error)) {
@@ -364,54 +382,291 @@ export class FindPeopleByCompanyTool implements Tool {
       },
     );
 
-    this.logger.log(
-      `find_people_by_company: ${outcomes.length} companies in ${Date.now() - startedAt}ms (concurrency ${getCompanyConcurrency()})`,
-    );
-
-    const written = {
-      count: writeResult.count,
-      error: writeResult.errors[0],
+    return {
+      outcomes,
+      written: { count: writeResult.count, error: writeResult.errors[0] },
     };
+  }
+
+  // A company the import could not identify is not looked up: the spend would
+  // go on a guess
+  private unresolvableOutcome(
+    company: FindPeopleByCompanyTarget,
+    input: ResolvedInput,
+  ): CompanyOutcome {
+    return {
+      company: company.name,
+      status: 'no_match',
+      people: [],
+      rejected: [],
+      sourceErrors: [],
+      spentUsd: 0,
+      terminalState: 'unresolvable',
+      reason: 'company not identified from the input',
+      sourcesUsed: [],
+      titlesTried: input.roles,
+    };
+  }
+
+  private reportOutcomes(
+    input: ResolvedInput,
+    outcomes: CompanyOutcome[],
+    written: { count: number; error?: string },
+    extra: Record<string, unknown> = {},
+  ): ToolOutput {
     const spentUsd = outcomes.reduce(
       (total, outcome) => total + outcome.spentUsd,
       0,
     );
-    const count = (status: CompanyOutcome['status']) =>
-      outcomes.filter((outcome) => outcome.status === status).length;
+    const byState = countBy(outcomes, (outcome) => outcome.terminalState);
+    const count = (state: string) => byState[state] ?? 0;
 
     return {
       success: true,
-      message: `Matched ${count('matched')} of ${outcomes.length} companies (${count('related_role_only')} related role only, ${count('no_match')} no match, ${count('source_error')} lookup failed), Bright Data spend $${spentUsd.toFixed(3)}`,
+      message: `${count('found')} of ${outcomes.length} companies found (${count('none_found')} none found, ${count('ambiguous')} ambiguous, ${count('unresolvable')} unresolvable), spend $${spentUsd.toFixed(3)}`,
       result: {
         roles: input.roles,
-        companies: outcomes.map(({ spentUsd: _spent, ...outcome }) => outcome),
+        plan: input.plan,
+        companies: outcomes.map(({ spentUsd: _spent, ...outcome }) => ({
+          ...outcome,
+          people: outcome.people.map(
+            ({ rawProfile: _raw, profile: _profile, ...person }) => person,
+          ),
+        })),
         summary: {
-          matched: count('matched'),
-          relatedRoleOnly: count('related_role_only'),
-          noMatch: count('no_match'),
-          sourceError: count('source_error'),
+          found: count('found'),
+          noneFound: count('none_found'),
+          ambiguous: count('ambiguous'),
+          unresolvable: count('unresolvable'),
+          excluded: count('excluded'),
         },
-        // companies with nobody found, and whether that is a real miss or a
-        // lookup that could not complete (worth running again)
+        // companies with nobody kept, and why: a real miss, a lookup that
+        // could not complete (worth running again), the budget or the rung
         withoutResults: outcomes
           .filter((outcome) => outcome.people.length === 0)
           .map((outcome) => ({
             company: outcome.company,
-            reason: outcome.status,
+            terminalState: outcome.terminalState,
+            reason: outcome.reason,
             sourceErrors: outcome.sourceErrors,
           })),
         spentUsd: Number(spentUsd.toFixed(4)),
         written: written.count,
         ...(isDefined(written.error) && { writeError: written.error }),
+        ...extra,
       },
     };
+  }
+
+  private async startRun(
+    input: ResolvedInput,
+    context: ToolExecutionContext,
+  ): Promise<ToolOutput> {
+    const runService = this.findPeopleRunService as FindPeopleRunService;
+    const { companies, ...rest } = input;
+
+    try {
+      const run = await runService.start({
+        workspaceId: context.workspaceId,
+        projectId: input.projectId as string,
+        input: rest,
+        companies,
+        userId: context.userId,
+        userWorkspaceId: context.userWorkspaceId,
+        threadId: context.threadId,
+      });
+      const state =
+        (await runService.waitForRun(run.runId, input.waitSeconds * 1000)) ??
+        run;
+
+      return this.runOutput(state);
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to start the people lookup',
+        error: this.describe(error),
+      };
+    }
+  }
+
+  private async readRun(
+    input: FindPeopleByCompanyInput,
+    workspaceId: string,
+  ): Promise<ToolOutput> {
+    const runService = this.findPeopleRunService;
+    const runId = input.runId as string;
+
+    if (!isDefined(runService)) {
+      return {
+        success: false,
+        message: 'Background runs are not available',
+        error: 'no run service',
+      };
+    }
+
+    const state = input.cancel
+      ? await runService.cancel(runId)
+      : await runService.waitForRun(runId, input.waitSeconds * 1000);
+
+    if (!isDefined(state) || state.workspaceId !== workspaceId) {
+      return {
+        success: false,
+        message: 'Run not found',
+        error: `No people lookup run ${runId} (runs are kept 24 hours)`,
+      };
+    }
+
+    return this.runOutput(state);
+  }
+
+  private async runOutput(state: FindPeopleRunState): Promise<ToolOutput> {
+    const summary = this.findPeopleRunService?.summarize(state);
+    const pairs = isChunkedRunTerminal(state)
+      ? computePairFunnel(
+          await this.outreachTabService.getAll({
+            workspaceId: state.workspaceId,
+            projectId: state.projectId,
+            tab: 'companies',
+          }),
+        )
+      : undefined;
+
+    return {
+      success: state.status !== 'failed',
+      message: isChunkedRunTerminal(state)
+        ? `Run ${state.status}: ${pairs?.coverageLine ?? ''}`
+        : `Running: ${state.done} of ${state.total} companies looked up. Call again with runId "${state.runId}" to read progress.`,
+      result: { ...summary, ...(isDefined(pairs) && { pairs }) },
+    };
+  }
+
+  // One chunk of a background run; the job calls it and it queues the next
+  async processRunChunk(runId: string): Promise<void> {
+    const runService = this.findPeopleRunService;
+    const state = await runService?.getRun(runId);
+
+    if (
+      !isDefined(runService) ||
+      !isDefined(state) ||
+      isChunkedRunTerminal(state)
+    ) {
+      return;
+    }
+
+    if (state.cancelRequested) {
+      await runService.finish(state, 'cancelled');
+
+      return;
+    }
+
+    const chunk = state.companies.slice(
+      state.cursor,
+      state.cursor + FIND_PEOPLE_COMPANIES_PER_CHUNK,
+    );
+    const context: ToolExecutionContext = {
+      workspaceId: state.workspaceId,
+      projectId: state.projectId,
+      userId: state.userId,
+      userWorkspaceId: state.userWorkspaceId,
+      threadId: state.threadId,
+    };
+
+    try {
+      await runService.save({ ...state, status: 'running' });
+
+      const { outcomes, written } = await this.processCompanies(
+        { ...state.input, companies: chunk },
+        context,
+      );
+      const latest = (await runService.getRun(runId)) ?? state;
+
+      if (latest.status === 'cancelled') {
+        return;
+      }
+
+      const next: FindPeopleRunState = {
+        ...latest,
+        status: 'running',
+        cursor: state.cursor + chunk.length,
+        done: state.done + outcomes.length,
+        byState: mergeCounts(
+          state.byState,
+          countBy(outcomes, (outcome) => outcome.terminalState),
+        ),
+        spentUsd:
+          state.spentUsd +
+          outcomes.reduce((total, outcome) => total + outcome.spentUsd, 0),
+        written: state.written + written.count,
+        errors: isDefined(written.error)
+          ? [...state.errors, written.error]
+          : state.errors,
+      };
+
+      if (!next.halfwayReported && next.done * 2 >= next.total) {
+        next.halfwayReported = true;
+        await this.recordCheckpoint(
+          next.workspaceId,
+          next.projectId,
+          'halfway',
+          runId,
+        );
+      }
+
+      if (next.cursor >= next.total) {
+        await runService.finish(next, 'completed');
+        await this.recordCheckpoint(
+          next.workspaceId,
+          next.projectId,
+          'complete',
+          runId,
+        );
+
+        return;
+      }
+
+      await runService.save(next);
+      await runService.enqueueChunk(runId);
+    } catch (error) {
+      await runService.finish(state, 'failed', this.describe(error));
+    }
+  }
+
+  private async recordCheckpoint(
+    workspaceId: string,
+    projectId: string,
+    stage: 'pilot' | 'halfway' | 'complete',
+    runId?: string,
+  ): Promise<void> {
+    if (!isDefined(this.sourcingLedgerService)) {
+      return;
+    }
+
+    try {
+      const companyRows = await this.outreachTabService.getAll({
+        workspaceId,
+        projectId,
+        tab: 'companies',
+      });
+
+      await this.sourcingLedgerService.append(workspaceId, projectId, {
+        kind: 'checkpoint',
+        at: new Date().toISOString(),
+        stage,
+        ...(isDefined(runId) && { runId }),
+        pairs: computePairFunnel(companyRows),
+      });
+    } catch (error) {
+      this.logger.warn(
+        `find_people_by_company: could not record the ${stage} checkpoint: ${this.describe(error)}`,
+      );
+    }
   }
 
   // The model can pass the companies, or ask for the project's own so it
   // never has to copy hundreds of names and ids through its output. Returns an
   // error text when there is nothing to look up.
   private async resolveCompanies(
-    input: FindPeopleByCompanyInput,
+    input: FindPeopleByCompanyInput & { plan: FindPeoplePlan },
     workspaceId: string,
   ): Promise<FindPeopleByCompanyTarget[] | string> {
     if (isDefined(input.companies)) {
@@ -436,6 +691,19 @@ export class FindPeopleByCompanyTool implements Tool {
       : null;
     const peopleFoundOf = (row: (typeof rows)[number]): unknown =>
       row.otherFields.peopleFound;
+    const pairKey = pairKeyOf(input.roles);
+    const pairOf = (row: (typeof rows)[number]) =>
+      readPairStates(row.otherFields)[pairKey];
+    const failed = (row: (typeof rows)[number]): boolean =>
+      pairOf(row)?.reason === 'source_error' ||
+      peopleFoundOf(row) === 'Lookup failed';
+    // A pair in a final state is done for these roles; a failed lookup is not
+    // final. Rows from before pair states keep the old Found check.
+    const done = (row: (typeof rows)[number]): boolean => {
+      const pair = pairOf(row);
+
+      return isDefined(pair) ? !failed(row) : peopleFoundOf(row) === 'Found';
+    };
     const selected = rows
       .filter((row) =>
         isDefined(view)
@@ -445,921 +713,31 @@ export class FindPeopleByCompanyTool implements Tool {
           : true,
       )
       .filter((row) =>
-        input.onlyFailed
-          ? peopleFoundOf(row) === PEOPLE_FOUND_LABEL_BY_STATUS.source_error
-          : input.rerunFound ||
-            peopleFoundOf(row) !== PEOPLE_FOUND_LABEL_BY_STATUS.matched,
+        input.onlyFailed ? failed(row) : input.rerunFound || !done(row),
       )
       .filter((row) => isNonEmptyString(row.name));
 
     if (selected.length === 0) {
       return input.onlyFailed
         ? 'No companies on the project have a failed lookup'
-        : 'No companies left to look up on the project (none match, or all are already Found; set rerunFound to run them again)';
+        : 'No companies left to look up on the project for these roles (none match, or all already have a final state; set rerunFound to run them again)';
     }
 
     return selected
       .slice(0, FIND_PEOPLE_BY_COMPANY_MAX_PROJECT_COMPANIES)
-      .map((row) => ({ id: row.id, name: row.name as string }));
-  }
-
-  // The slot is released while waiting, so a retrying company does not hold
-  // back the others. Nothing was verified when the status is source_error, so
-  // the last attempt simply replaces the earlier ones (spend is added up).
-  private async lookupCompanyWithRetries(
-    company: FindPeopleByCompanyTarget,
-    input: ResolvedInput,
-    resolvedRoles: ResolvedRoles,
-    workspaceId: string,
-  ): Promise<CompanyOutcome> {
-    const maxRetries = getCompanyLookupRetries();
-    let spentUsd = 0;
-    let outcome: CompanyOutcome | undefined;
-
-    for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
-      if (attempt > 0) {
-        const backoff =
-          COMPANY_RETRY_BACKOFF_MS[
-            Math.min(attempt - 1, COMPANY_RETRY_BACKOFF_MS.length - 1)
-          ];
-
-        await new Promise((resolve) =>
-          setTimeout(resolve, backoff + Math.random() * 2_000),
-        );
-      }
-
-      outcome = await withGlobalLookupSlot(() =>
-        this.lookupCompany(company, input, resolvedRoles, workspaceId),
-      ).catch(
-        (error): CompanyOutcome => ({
-          company: company.name,
-          status: 'source_error',
-          people: [],
-          rejected: [],
-          sourceErrors: [
-            error instanceof Error ? error.message : String(error),
-          ],
-          spentUsd: 0,
-        }),
-      );
-      spentUsd += outcome.spentUsd;
-
-      if (outcome.status !== 'source_error') {
-        break;
-      }
-
-      this.logger.warn(
-        `find_people_by_company "${company.name}": lookup failed (attempt ${attempt + 1}/${maxRetries + 1}): ${outcome.sourceErrors.join('; ')}`,
-      );
-    }
-
-    return { ...(outcome as CompanyOutcome), spentUsd };
-  }
-
-  private async lookupCompany(
-    company: FindPeopleByCompanyTarget,
-    input: ResolvedInput,
-    resolvedRoles: ResolvedRoles,
-    workspaceId: string,
-  ): Promise<CompanyOutcome> {
-    const variants = buildCompanyVariants(
-      company.name,
-      company.alternateNames ?? [],
-    );
-    const titles = resolvedRoles.searchTitles.slice(0, MAX_TITLES_IN_QUERY);
-    const sourceErrors: string[] = [];
-    let spentUsd = 0;
-    // Where the time went, so a slow run can be traced to a stage
-    const stageMilliseconds: Record<string, number> = {};
-    const startedAt = Date.now();
-    const timed = async <TResult>(
-      stage: string,
-      task: () => Promise<TResult>,
-    ): Promise<TResult> => {
-      const stageStartedAt = Date.now();
-
-      try {
-        return await task();
-      } finally {
-        stageMilliseconds[stage] = Date.now() - stageStartedAt;
-      }
-    };
-
-    const [brightDataCandidates, google] = await Promise.all([
-      input.sources.includes('bright_data')
-        ? timed('bright_data', () =>
-            this.searchBrightData({
-              variants,
-              titles,
-              location: input.location,
-              maxBudgetUsd: input.maxBudgetUsd,
-              workspaceId,
-              roles: input.roles,
-              requestedClasses: resolvedRoles.requestedClasses,
-            }).catch((error) => {
-              sourceErrors.push(`bright_data: ${this.describe(error)}`);
-
-              return { candidates: [] as Candidate[], spentUsd: 0 };
-            }),
-          )
-        : { candidates: [] as Candidate[], spentUsd: 0 },
-      input.sources.includes('google')
-        ? timed('google', () =>
-            this.googleSearchService.searchCompany({
-              variants,
-              titles,
-              roles: input.roles,
-              location: input.location,
-            }),
-          )
-            .then((result) => {
-              sourceErrors.push(
-                ...result.errors.map((error) => `google: ${error}`),
-              );
-
-              return result;
-            })
-            .catch((error) => {
-              sourceErrors.push(`google: ${this.describe(error)}`);
-
-              return EMPTY_GOOGLE_RESULT;
-            })
-        : EMPTY_GOOGLE_RESULT,
-    ]);
-    spentUsd += brightDataCandidates.spentUsd;
-
-    // The model reads the raw Google results into name, job title, company and
-    // profile; what comes after only enriches and checks those fields
-    const extracted = await timed('extract', () =>
-      this.extractPeople({
-        company: company.name,
-        variants,
-        roles: input.roles,
-        results: google.results,
-        workspaceId,
-        sourceErrors,
-      }),
-    );
-    const alternateNames = company.alternateNames ?? [];
-    const extractedCandidates = extracted
-      .filter((person) => person.isCurrentRole)
-      .map((person) =>
-        this.toCandidate(
-          person,
-          isNonEmptyString(person.linkedinUrl) ? 'google' : 'web',
-        ),
-      );
-
-    // Who is worth a paid lookup is decided by name and title matching; the
-    // model reads each person once, after the profiles are in
-    const worthLookingUp = (candidate: Candidate): boolean =>
-      this.worthLookingUp(candidate, variants);
-    const toEnrich = extractedCandidates.filter(
-      (candidate) =>
-        isNonEmptyString(candidate.linkedinUrl) && worthLookingUp(candidate),
-    );
-    const toResolve = extractedCandidates
-      .filter(
-        (candidate) =>
-          !isNonEmptyString(candidate.linkedinUrl) &&
-          isNonEmptyString(candidate.title) &&
-          worthLookingUp(candidate),
-      )
-      .slice(0, MAX_NAMES_TO_RESOLVE);
-
-    // Both need Bright Data, and neither waits for the other
-    const [enrichment, named] = await timed('lookup', () =>
-      Promise.all([
-        input.sources.includes('bright_data')
-          ? this.enrichGoogleCandidates({
-              googleCandidates: toEnrich,
-              knownCandidates: brightDataCandidates.candidates,
-              maxSpendUsd: input.maxBudgetUsd - brightDataCandidates.spentUsd,
-            }).catch((error) => {
-              sourceErrors.push(`google_enrichment: ${this.describe(error)}`);
-
-              return { candidates: [] as Candidate[], spentUsd: 0 };
-            })
-          : { candidates: [] as Candidate[], spentUsd: 0 },
-        this.resolveNamedPeople({ candidates: toResolve, variants }),
-      ]),
-    );
-    const enrichedById = new Map(
-      enrichment.candidates.map((candidate) => [candidate.id, candidate]),
-    );
-    const resolvedIds = new Set(toResolve.map((candidate) => candidate.id));
-
-    spentUsd += enrichment.spentUsd + named.spentUsd;
-    sourceErrors.push(
-      ...named.errors.map((error) => `linkedin_lookup: ${error}`),
-    );
-
-    // One reading, on what the profiles themselves say: company, role, place
-    // and whether the profile is real. A profile found by name alone has to
-    // be told apart from a namesake.
-    const candidates = [
-      ...brightDataCandidates.candidates,
-      ...extractedCandidates
-        .filter((candidate) => !resolvedIds.has(candidate.id))
-        .map((candidate) => enrichedById.get(candidate.id) ?? candidate),
-      ...named.candidates,
-    ];
-    const verdicts = await timed('judge', () =>
-      this.judgeCandidates({
-        workspaceId,
-        company: company.name,
-        alternateNames,
-        roles: input.roles,
-        location: input.location,
-        candidates,
-        sourceErrors,
-      }),
-    );
-    const { verified, rejected } = await this.verify({
-      candidates,
-      variants,
-      roles: input.roles,
-      requestedClasses: resolvedRoles.requestedClasses,
-      verdicts,
-    });
-    const topPeople = (await this.mergeDuplicates(verified, workspaceId)).slice(
-      0,
-      MAX_PEOPLE_PER_COMPANY,
-    );
-    // nobody found while a source failed is not a miss: the answer is unknown
-    const sourceFailed = sourceErrors.some((error) =>
-      /deadline|fetch failed|timed out|aborted|HTTP (429|5\d\d)\b|non-JSON|rate/i.test(
-        error,
-      ),
-    );
-    const status: CompanyOutcome['status'] = topPeople.some(
-      (person) => person.roleScore === 2,
-    )
-      ? 'matched'
-      : topPeople.length > 0
-        ? 'related_role_only'
-        : sourceFailed
-          ? 'source_error'
-          : 'no_match';
-
-    this.logger.log(
-      `find_people_by_company timing "${company.name}": ${Object.entries(
-        stageMilliseconds,
-      )
-        .map(
-          ([stage, milliseconds]) =>
-            `${stage} ${(milliseconds / 1000).toFixed(1)}s`,
-        )
-        .join(' | ')} | total ${((Date.now() - startedAt) / 1000).toFixed(1)}s`,
-    );
-    this.logger.log(
-      `find_people_by_company "${company.name}": ${status}, ${verified.length} verified, ${rejected.length} rejected, $${spentUsd.toFixed(3)}`,
-    );
-
-    const deprioritisedByPerson = topPeople.map((person) =>
-      this.deprioritisationReasons(person.verdict),
-    );
-
-    return {
-      company: company.name,
-      status,
-      people: topPeople.map((person, index) => ({
-        deprioritisedReasons: deprioritisedByPerson[index],
-        name: person.name,
-        title: person.title,
-        companyOnProfile: person.companyName,
-        linkedinUrl: person.linkedinUrl,
-        sources: person.sources,
-        roleMatch: person.roleScore === 2 ? 'exact' : 'related',
-        ...(person.verdict?.company === 'related' && {
-          companyRelation: 'related' as const,
-        }),
-        ...(isNonEmptyString(this.noteOf(person.verdict)) && {
-          note: this.noteOf(person.verdict),
-        }),
-        ...(person.linkedinUrlDerivedFromPost === true && {
-          linkedinUrlDerivedFromPost: true,
-        }),
-        ...this.profileOf(person),
-        ...(isDefined(person.rawProfile)
-          ? { rawProfile: person.rawProfile }
-          : {}),
-      })),
-      rejected: rejected.slice(0, MAX_REJECTED_PER_COMPANY),
-      sourceErrors: [...new Set(sourceErrors)],
-      spentUsd,
-    };
-  }
-
-  // Two rows the model reads as one person (a spelling slip, initials, one with
-  // a profile URL and one without) become one row that keeps the URL
-  private async mergeDuplicates(
-    verified: VerifiedCandidate[],
-    workspaceId: string,
-  ): Promise<VerifiedCandidate[]> {
-    if (verified.length < 2) {
-      return verified;
-    }
-
-    const duplicates = await this.personFitFilterService
-      .findDuplicates({
-        workspaceId,
-        people: verified.map((person) => ({
-          id: person.id,
-          name: person.name,
-          title: person.title,
-          company: person.companyName,
-          linkedinUrl: person.linkedinUrl,
-        })),
-      })
-      .catch(() => new Map<string, string>());
-
-    if (duplicates.size === 0) {
-      return verified;
-    }
-
-    const byId = new Map(verified.map((person) => [person.id, person]));
-
-    for (const [duplicateId, keptId] of duplicates) {
-      const duplicate = byId.get(duplicateId);
-      const kept = byId.get(keptId);
-
-      if (!isDefined(duplicate) || !isDefined(kept)) {
-        continue;
-      }
-
-      kept.sources = [...new Set([...kept.sources, ...duplicate.sources])];
-      kept.roleScore = Math.max(kept.roleScore, duplicate.roleScore) as 1 | 2;
-    }
-
-    return verified.filter((person) => !duplicates.has(person.id));
-  }
-
-  // Rows that fail a check are still written, but below the rest of the table
-  private deprioritisationReasons(
-    verdict: PersonJudgement | undefined,
-  ): DeprioritisationReason[] {
-    if (!isDefined(verdict)) {
-      return [];
-    }
-
-    const reasons: DeprioritisationReason[] = [];
-
-    if (
-      !verdict.fitsSearch ||
-      verdict.company !== 'same' ||
-      verdict.role !== 'exact'
-    ) {
-      reasons.push('query_mismatch');
-    }
-
-    if (verdict.likelyFake) {
-      reasons.push('likely_fake_profile');
-    }
-
-    return reasons;
-  }
-
-  // Tries the first names one at a time and stops at the first that yields a
-  // verified person, so a brand that fails is retried under its legal name
-  private async searchBrightData({
-    variants,
-    titles,
-    location,
-    maxBudgetUsd,
-    workspaceId,
-    roles,
-    requestedClasses,
-  }: {
-    variants: string[];
-    titles: string[];
-    location?: string;
-    maxBudgetUsd: number;
-    workspaceId: string;
-    roles: string[];
-    requestedClasses: TitleClass[];
-  }): Promise<{ candidates: Candidate[]; spentUsd: number }> {
-    const candidates: Candidate[] = [];
-    let spentUsd = 0;
-
-    for (const variant of variants.slice(
-      0,
-      MAX_VARIANTS_PER_BRIGHT_DATA_SEARCH,
-    )) {
-      const rawQuery = `${titles.join(', ')} of ${variant}${isNonEmptyString(location) ? ` ${location}` : ''}`;
-      const { result } =
-        await this.brightDataLudicrousSearchService.searchNaturalLanguage({
-          workspaceId,
-          entity: 'people',
-          rawQuery,
-          maxBudgetUsd,
-          targetCount: BRIGHT_DATA_CANDIDATES_PER_SEARCH,
-        });
-
-      spentUsd += result.spentUsd;
-
-      for (const document of result.documents) {
-        const item = mapBrightDataPersonToSearchItem(document);
-        const name = typeof item.name === 'string' ? item.name : '';
-
-        if (name === '') {
-          continue;
-        }
-
-        candidates.push({
-          id: document.brightId,
-          name,
-          title: typeof item.title === 'string' ? item.title : '',
-          companyName:
-            typeof item.companyName === 'string' ? item.companyName : '',
-          linkedinUrl: typeof item.url === 'string' ? item.url : '',
-          evidenceText: '',
-          source: 'bright_data',
-          location: typeof item.location === 'string' ? item.location : '',
-          rawProfile: document.data,
-        });
-      }
-
-      const { verified } = await this.verify({
-        candidates,
-        variants,
-        roles,
-        requestedClasses,
-      });
-
-      if (verified.length > 0) {
-        break;
-      }
-    }
-
-    return { candidates, spentUsd };
-  }
-
-  // The model reads the raw results; if it is unavailable the LinkedIn result
-  // titles are split by pattern instead, so a model outage costs accuracy, not
-  // the whole Google source
-  private async extractPeople({
-    company,
-    variants,
-    roles,
-    results,
-    workspaceId,
-    sourceErrors,
-  }: {
-    company: string;
-    variants: string[];
-    roles: string[];
-    results: GoogleSerpOrganicItem[];
-    workspaceId: string;
-    sourceErrors: string[];
-  }): Promise<ExtractedPerson[]> {
-    if (results.length === 0) {
-      return [];
-    }
-
-    try {
-      return await this.googleResultExtractionService.extract({
-        workspaceId,
-        company,
-        roles,
-        results,
-      });
-    } catch (error) {
-      sourceErrors.push(
-        `google_extraction: ${this.describe(error)} (read LinkedIn titles by pattern instead)`,
-      );
-
-      return results.flatMap((item): ExtractedPerson[] => {
-        const person = parseLinkedinSerpResult(item);
-
-        if (person === null) {
-          return [];
-        }
-
-        // "Name - Company" has no title: the part after the dash is the company
-        const titleIsCompany =
-          person.companyName === '' &&
-          matchesAnyCompanyVariant(variants, person.title) &&
-          !roles.some((role) => titleContainsWord(person.title, role));
-
-        return [
-          {
-            name: person.name,
-            jobTitle: titleIsCompany ? '' : person.title,
-            companyName: titleIsCompany ? person.title : person.companyName,
-            location: '',
-            isCurrentRole: true,
-            evidence: `${item.title} ${person.snippet}`,
-            linkedinUrl: person.linkedinUrl,
-            sourceUrl: item.url,
-          },
-        ];
-      });
-    }
-  }
-
-  // The employer the results state, or, when they state none, the words the
-  // person was read from
-  private isAtCompany(variants: string[], person: ExtractedPerson): boolean {
-    return isNonEmptyString(person.companyName)
-      ? matchesAnyCompanyVariant(variants, person.companyName)
-      : textMentionsAnyCompanyVariant(variants, person.evidence);
-  }
-
-  private toCandidate(person: ExtractedPerson, source: Source): Candidate {
-    return {
-      id: toId(
-        isNonEmptyString(person.linkedinUrl)
-          ? normalizeLinkedinProfileUrl(person.linkedinUrl)
-          : `${person.name}|${person.companyName}`,
-      ),
-      name: person.name,
-      title: person.jobTitle,
-      companyName: person.companyName,
-      linkedinUrl: person.linkedinUrl,
-      evidenceText: person.evidence,
-      source,
-      linkedinUrlDerivedFromPost: person.linkedinUrlDerivedFromPost,
-    };
-  }
-
-  // A Bright Data record already holds the profile; keep it when it has enough
-  // to judge a person on, so no second fetch is paid for
-  private profileOf(person: VerifiedCandidate): { profile?: RowProfile } {
-    if (!isDefined(person.rawProfile)) {
-      return {};
-    }
-
-    const { profile } = brightDataRecordToPersonOtherFields(person.rawProfile);
-
-    return isDefined(profile) ? { profile } : {};
-  }
-
-  private noteOf(verdict: PersonJudgement | undefined): string {
-    if (!isDefined(verdict)) {
-      return '';
-    }
-
-    return [
-      verdict.company === 'related' ? verdict.companyNote : '',
-      verdict.roleNote,
-    ]
-      .filter(isNonEmptyString)
-      .join(' ');
-  }
-
-  // A model rules on every candidate against the company asked about; if it is
-  // unavailable the candidates are checked by name matching instead
-  private async judgeCandidates({
-    workspaceId,
-    company,
-    alternateNames,
-    roles,
-    location,
-    candidates,
-    sourceErrors,
-  }: {
-    workspaceId: string;
-    company: string;
-    alternateNames: string[];
-    roles: string[];
-    location?: string;
-    candidates: Candidate[];
-    sourceErrors: string[];
-  }): Promise<Map<string, PersonJudgement>> {
-    const unique = [
-      ...new Map(candidates.map((candidate) => [candidate.id, candidate])),
-    ].map(([, candidate]) => candidate);
-
-    try {
-      return await this.personFitFilterService.judge({
-        workspaceId,
-        company,
-        alternateNames,
-        roles,
-        location,
-        candidates: unique.map((candidate) => ({
-          id: candidate.id,
-          name: candidate.name,
-          title: candidate.title,
-          company: candidate.companyName,
-          location: candidate.location ?? '',
-          evidence: candidate.evidenceText,
-          profile: candidate.rawProfile,
-        })),
-      });
-    } catch (error) {
-      sourceErrors.push(
-        `candidate_judge: ${this.describe(error)} (checked by name matching instead)`,
-      );
-
-      return new Map();
-    }
-  }
-
-  // Worth a paid Bright Data lookup only when the company on the result
-  // matches by name. A person at a parent or operator is still read by the
-  // judge, from the company and title their own result states.
-  private worthLookingUp(candidate: Candidate, variants: string[]): boolean {
-    return isNonEmptyString(candidate.companyName)
-      ? matchesAnyCompanyVariant(variants, candidate.companyName)
-      : textMentionsAnyCompanyVariant(variants, candidate.evidenceText);
-  }
-
-  // A name with a LinkedIn URL can be contacted, a name alone cannot, so every
-  // person found without a profile is chased to one. A person whose profile is
-  // not found is still returned, with no URL, rather than dropped.
-  private async resolveNamedPeople({
-    candidates,
-    variants,
-  }: {
-    candidates: Candidate[];
-    variants: string[];
-  }): Promise<{
-    candidates: Candidate[];
-    spentUsd: number;
-    errors: string[];
-  }> {
-    const resolutions = await Promise.all(
-      candidates.map((candidate) =>
-        this.linkedinProfileResolverService.resolve({
-          name: candidate.name,
-          // The employer their own results state comes first: a person at a
-          // parent or operator is found under that name, not the target's
-          companyNames: [candidate.companyName, ...variants],
-        }),
-      ),
-    );
-
-    return {
-      spentUsd: resolutions.reduce(
-        (total, resolution) => total + resolution.spentUsd,
-        0,
-      ),
-      // Only a name that ended with no profile is reported; a retried failure
-      // that then succeeded is not an error
-      errors: resolutions.flatMap((resolution) =>
-        resolution.profiles.length === 0 ? resolution.errors : [],
-      ),
-      candidates: candidates.flatMap((candidate, index) => {
-        const { profiles } = resolutions[index];
-
-        // No profile: the name is still returned, as a lead without a URL
-        if (profiles.length === 0) {
-          return [candidate];
-        }
-
-        return profiles.map(
-          (profile): Candidate => ({
-            id: toId(normalizeLinkedinProfileUrl(profile.linkedinUrl)),
-            name: candidate.name,
-            // What the profile says wins over what a result said
-            title: profile.title || candidate.title,
-            companyName: profile.companyName,
-            linkedinUrl: profile.linkedinUrl,
-            evidenceText: [
-              candidate.evidenceText,
-              profile.evidence !== '' ? `profile: ${profile.evidence}` : '',
-              profile.sameNameProfileCount !== null
-                ? `${profile.sameNameProfileCount} Bright Data profiles carry exactly this name`
-                : '',
-            ]
-              .filter(isNonEmptyString)
-              .join(' | '),
-            source: 'web',
-            linkedinUrlDerivedFromPost: profile.derivedFromPost,
-          }),
-        );
-      }),
-    };
-  }
-
-  // Looks the Google-found LinkedIn profiles up in Bright Data (instant mode,
-  // several profile URLs per query). A profile it does not know keeps the
-  // title and company parsed from the Google result.
-  private async enrichGoogleCandidates({
-    googleCandidates,
-    knownCandidates,
-    maxSpendUsd,
-  }: {
-    googleCandidates: Candidate[];
-    knownCandidates: Candidate[];
-    maxSpendUsd: number;
-  }): Promise<{ candidates: Candidate[]; spentUsd: number }> {
-    // Profiles the people search already returned are not paid for twice
-    const alreadyKnown = new Set(
-      knownCandidates
-        .filter((candidate) => isNonEmptyString(candidate.linkedinUrl))
-        .map((candidate) => normalizeLinkedinProfileUrl(candidate.linkedinUrl)),
-    );
-    const urls = googleCandidates
-      .map((candidate) => candidate.linkedinUrl)
-      .filter(
-        (url) =>
-          isNonEmptyString(url) &&
-          !alreadyKnown.has(normalizeLinkedinProfileUrl(url)),
-      );
-    const maxRecords = Math.floor(
-      maxSpendUsd / BRIGHT_DATA_COST_PER_RECORD_USD,
-    );
-
-    if (urls.length === 0 || maxRecords <= 0) {
-      return { candidates: googleCandidates, spentUsd: 0 };
-    }
-
-    const enrichedByUrl = new Map<string, Candidate>();
-    let spentUsd = 0;
-    let recordsLeft = maxRecords;
-    // Each batch is a separate request, so they can run together
-    const batches = await Promise.all(
-      packLinkedinUrlLookupQueries(urls.slice(0, maxRecords)).map((batch) =>
-        this.brightDataBusinessSearchService
-          .search({
-            entity: 'people',
-            mode: 'instant',
-            query: batch.join(' '),
-            limit: batch.length,
-          })
-          .catch(() => null),
-      ),
-    );
-
-    for (const batch of batches) {
-      if (batch === null) {
-        continue;
-      }
-
-      for (const document of batch.documents) {
-        if (recordsLeft <= 0) {
-          break;
-        }
-
-        recordsLeft -= 1;
-        spentUsd += BRIGHT_DATA_COST_PER_RECORD_USD;
-
-        const item = mapBrightDataPersonToSearchItem(document);
-        const url = typeof item.url === 'string' ? item.url : '';
-
-        if (url === '') {
-          continue;
-        }
-
-        enrichedByUrl.set(normalizeLinkedinProfileUrl(url), {
-          id: document.brightId,
-          name: typeof item.name === 'string' ? item.name : '',
-          title: typeof item.title === 'string' ? item.title : '',
-          companyName:
-            typeof item.companyName === 'string' ? item.companyName : '',
-          linkedinUrl: url,
-          evidenceText: '',
-          source: 'google',
-          location: typeof item.location === 'string' ? item.location : '',
-          rawProfile: document.data,
-        });
-      }
-    }
-
-    return {
-      spentUsd,
-      candidates: googleCandidates.map((candidate) => {
-        const enriched = enrichedByUrl.get(
-          normalizeLinkedinProfileUrl(candidate.linkedinUrl),
-        );
-
-        if (!isDefined(enriched)) {
-          return candidate;
-        }
+      .map((row) => {
+        const employees = parseEmployeeCount(row.employees);
 
         return {
-          ...candidate,
-          name: enriched.name || candidate.name,
-          title: enriched.title || candidate.title,
-          // An empty company means the profile has none to check against, so
-          // the Google text stays the evidence
-          companyName: enriched.companyName || candidate.companyName,
-          location: enriched.location,
-          rawProfile: enriched.rawProfile,
-        };
-      }),
-    };
-  }
-
-  private async verify({
-    candidates,
-    variants,
-    roles,
-    requestedClasses,
-    verdicts = new Map<string, PersonJudgement>(),
-  }: {
-    candidates: Candidate[];
-    variants: string[];
-    roles: string[];
-    requestedClasses: TitleClass[];
-    verdicts?: Map<string, PersonJudgement>;
-  }): Promise<{
-    verified: VerifiedCandidate[];
-    rejected: RejectedCandidate[];
-  }> {
-    const byKey = new Map<string, VerifiedCandidate>();
-    const rejected: RejectedCandidate[] = [];
-    // One taxonomy call for every title seen at this company; null means the
-    // service is down and the roles as typed are all there is to compare with
-    const titleClasses = await this.titleExpansionService.classifyTitles(
-      candidates.map((candidate) => candidate.title),
-    );
-
-    for (const candidate of candidates) {
-      const verdict = verdicts.get(candidate.id);
-      // The judge's reading comes first. Where it has none, or cannot tell the
-      // company ("unknown"), the names are matched as text: a result with no
-      // company in its title is checked against the words it was read from.
-      const companyMatches =
-        isDefined(verdict) && verdict.company !== 'unknown'
-          ? verdict.company === 'same' || verdict.company === 'related'
-          : matchesAnyCompanyVariant(variants, candidate.companyName) ||
-            (candidate.companyName === '' &&
-              textMentionsAnyCompanyVariant(variants, candidate.evidenceText));
-      const roleScore = isDefined(verdict)
-        ? ({ exact: 2, related: 1, none: 0 } as const)[verdict.role]
-        : scoreRoleMatch({
-            title: candidate.title,
-            roles,
-            requestedClasses,
-            candidateClass:
-              titleClasses?.get(candidate.title.trim().toLowerCase()) ?? null,
-          });
-
-      if (!companyMatches || roleScore === 0) {
-        rejected.push({
-          name: candidate.name,
-          title: candidate.title,
-          companyOnProfile: candidate.companyName,
-          reason: companyMatches ? 'role_mismatch' : 'company_mismatch',
-          ...(isDefined(verdict) && {
-            note: companyMatches ? verdict.roleNote : verdict.companyNote,
+          id: row.id,
+          name: row.name as string,
+          ...(isNonEmptyString(row.domain) && { domain: row.domain }),
+          ...(isDefined(employees) && { employees }),
+          ...(row.otherFields.status === 'unresolvable' && {
+            unresolvable: true,
           }),
-        });
-        continue;
-      }
-
-      const key = isNonEmptyString(candidate.linkedinUrl)
-        ? normalizeLinkedinProfileUrl(candidate.linkedinUrl)
-        : `${candidate.name.toLowerCase()}|${candidate.companyName.toLowerCase()}`;
-      // One person read twice, once with a profile URL and once without, under
-      // a one-letter spelling slip
-      const existing =
-        byKey.get(key) ??
-        [...byKey.values()].find(
-          (other) =>
-            (!isNonEmptyString(other.linkedinUrl) ||
-              !isNonEmptyString(candidate.linkedinUrl)) &&
-            personNamesRoughlyMatch(other.name, candidate.name),
-        );
-
-      if (isDefined(existing)) {
-        if (
-          !isNonEmptyString(existing.linkedinUrl) &&
-          isNonEmptyString(candidate.linkedinUrl)
-        ) {
-          existing.linkedinUrl = candidate.linkedinUrl;
-          existing.name = candidate.name;
-        }
-
-        if (!existing.sources.includes(candidate.source)) {
-          existing.sources.push(candidate.source);
-        }
-
-        continue;
-      }
-
-      byKey.set(key, {
-        ...candidate,
-        sources: [candidate.source],
-        roleScore,
-        verdict,
+        };
       });
-    }
-
-    const verified = [...byKey.values()].sort(
-      (first, second) =>
-        second.roleScore - first.roleScore ||
-        // The company asked about before one linked to it
-        Number(second.verdict?.company !== 'related') -
-          Number(first.verdict?.company !== 'related') ||
-        second.sources.length - first.sources.length ||
-        getRequestedRoleOrder(first.title, roles) -
-          getRequestedRoleOrder(second.title, roles),
-    );
-
-    return {
-      verified,
-      // A person can be rejected on one record and verified on another (a
-      // profile with no title, then the same person on a page that gives it)
-      rejected: rejected.filter(
-        (entry) =>
-          !verified.some((person) => personNamesMatch(person.name, entry.name)),
-      ),
-    };
   }
 
   private otherFieldsOf(
@@ -1382,6 +760,10 @@ export class FindPeopleByCompanyTool implements Tool {
             foundVia: 'find_people_by_company',
           }
         : {}),
+      confidence: person.confidence,
+      freshness: person.freshness,
+      rungUsed: person.rungUsed,
+      evidence: person.evidence,
     };
 
     return Object.keys(otherFields).length > 0 ? { otherFields } : {};
@@ -1434,9 +816,10 @@ export class FindPeopleByCompanyTool implements Tool {
       : { count: 0, error: output.error };
   }
 
-  // Writes the per-company result to the Companies tab, so companies with
-  // nobody found (or a lookup that failed) are visible, not just the hits.
-  private async recordPeopleFound(
+  // Writes the pair state to the company row, so companies with nobody
+  // found (or a lookup that failed) are visible, not just the hits, and a
+  // resumed run knows which pairs are done
+  private async recordPairState(
     input: ResolvedInput,
     outcome: CompanyOutcome,
     workspaceId: string,
@@ -1449,6 +832,14 @@ export class FindPeopleByCompanyTool implements Tool {
     }
 
     try {
+      const [row] = await this.outreachTabService.getRowsByIds({
+        workspaceId,
+        projectId: input.projectId,
+        tab: 'companies',
+        ids: [outcome.companyRowId],
+      });
+      const previous = readPairStates(row?.otherFields)[pairKeyOf(input.roles)];
+
       await this.outreachTabService.writeOtherFields({
         workspaceId,
         projectId: input.projectId,
@@ -1456,17 +847,33 @@ export class FindPeopleByCompanyTool implements Tool {
         valuesByRowId: new Map([
           [
             outcome.companyRowId,
-            buildPeopleFoundValues(
-              PEOPLE_FOUND_LABEL_BY_STATUS[outcome.status],
-              outcome.people.length,
-            ),
+            buildPairStateValues(row?.otherFields, {
+              roles: input.roles,
+              terminalState: outcome.terminalState,
+              ...(isDefined(outcome.reason) && { reason: outcome.reason }),
+              ...(isDefined(outcome.rungUsed) && {
+                rungUsed: outcome.rungUsed,
+              }),
+              sourcesUsed: outcome.sourcesUsed,
+              titlesTried: outcome.titlesTried,
+              costUsd: Number(
+                ((previous?.costUsd ?? 0) + outcome.spentUsd).toFixed(4),
+              ),
+              attempts: (previous?.attempts ?? 0) + 1,
+              personKeys: outcome.people.map((person) =>
+                isNonEmptyString(person.linkedinUrl)
+                  ? normalizeLinkedinProfileUrl(person.linkedinUrl)
+                  : person.name,
+              ),
+              updatedAt: new Date().toISOString(),
+            }),
           ],
         ]),
       });
     } catch (error) {
-      // the status column is a convenience; never fail the lookup over it
+      // the state column is a convenience for the table; the lookup stands
       this.logger.warn(
-        `find_people_by_company: could not record status for "${outcome.company}": ${this.describe(error)}`,
+        `find_people_by_company: could not record the pair state for "${outcome.company}": ${this.describe(error)}`,
       );
     }
   }
@@ -1487,6 +894,11 @@ export class FindPeopleByCompanyTool implements Tool {
           projectId: input.projectId,
           company: outcome.company,
           status: outcome.status,
+          terminalState: outcome.terminalState,
+          reason: outcome.reason,
+          rungUsed: outcome.rungUsed,
+          sourcesUsed: outcome.sourcesUsed,
+          spentUsd: outcome.spentUsd,
           people: outcome.people.length,
           sourceErrors: outcome.sourceErrors,
           rejected: outcome.rejected.map((entry) => entry.name),

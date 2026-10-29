@@ -1,35 +1,33 @@
 ## People by company
 
-A role at companies already named, or already on the project. **One call for the whole list.** No estimate, no provider question, no second search, and no loop over companies. The tool searches every company and returns the matching people (up to 3 verified people per company). The agent does not search.
+A role at companies already named, or already on the project. The unit of work is the company × role pair: the run is done when every pair has a final state, not when a list reaches a size. `find_people_by_company` searches each company itself, cheapest source first (a found answer from an earlier run, Bright Data, then Google and the company's own pages), stops at the plan's confidence, and writes each pair's state on the company row. You do not search companies one by one.
 
-`learn_tools(["find_people_by_company", "get_outreach_tab", "ask_questions"])` once, then follow the steps.
+`learn_tools(["find_people_by_company", "get_outreach_tab", "get_sourcing_ledger", "ask_questions"])` once, then follow the steps.
 
-1. **Which companies.** Do not read the companies and type them back: the tool reads them itself.
-   - "All the companies", "these", "the project's companies": `fromProject: true` with `projectId` and no `companies`. Companies already marked Found are skipped (`rerunFound: true` pays for them again). Up to 500 per call, in one call. People are saved to the tab as each company finishes.
-   - "Filtered" or "selected" means the rows shown on the Companies tab: add `onlyViewMatches: true`. If the view filter does not narrow the list but the user named a criterion (a city, "HQed in Mumbai", revenue), read the AI column that answers it with `get_outreach_tab`, then pass the companies you keep as an explicit `companies` list.
-   - Say in one line how many companies you took and which you left out and why. When the user named the companies or said all or filtered, that is the list: no question.
-   - When you chose the subset (narrowed by a column, or built it in `playbook-company-first`), confirm it before the call with `ask_questions`: **Yes, these {N}** (recommended), **Edit the list**, **Cancel**. Call only after a yes.
-2. **One call.** `find_people_by_company({ fromProject: true, projectId, roles, location })`, or with an explicit `companies: [{ id, name, alternateNames? }]` list (up to 50 per call; more than 50: batches of 50, all the calls in one step). The tool limits itself to 50 lookups at a time across calls.
-   - `roles`: every role the user named, in their words (`["CEO", "MD", "founder"]`). Never drop one and never add one they did not ask for.
-   - `id` (explicit list): the company's row id from `get_outreach_tab`. It links the found people to that company and fills the company's "People found" column, including when nobody is found.
-   - `alternateNames` (explicit list only): legal or parent names you know, because profiles list the employer, not the brand.
-   - `location` is where the people should be based: city, state/region, or country (e.g. `"Mumbai"`, `"Maharashtra"`, `"India"`). Pass the place the user named; do not widen a city to its country. `projectId` writes the verified people to the People tab.
-3. **Read `status` per company**, then act once. Keep every verified match; do not stop at the first person, and never broaden the roles.
+1. **The plan is the brief.** Before the first lookup, the brief holds the roles, `persona`, the sources the user picked (`requirements`), and anything the user said about the title ladder: `ladder.maxRung` (1 the title as typed, 2 equivalents, 3 a related role or one level down, 4 the owner or MD of a small company; sales defaults to 4, exec search to 2) and `capsUsd.perPair` (default $0.10). The tool reads it; do not repeat it in the call unless the user overrides it.
+2. **Which companies.** Do not read the companies and type them back: the tool reads them itself.
+   - "All the companies", "these", "the project's companies": `fromProject: true` with `projectId` and no `companies`. Pairs already in a final state for these roles are skipped (`rerunFound: true` pays for them again; `onlyFailed: true` reruns only failed lookups). Rows the import marked unresolvable are not searched.
+   - "Filtered" or "selected" means the rows shown on the Companies tab: add `onlyViewMatches: true`. If the view filter does not narrow the list but the user named a criterion, read the column that answers it with `get_outreach_tab`, then pass the companies you keep as an explicit `companies` list (`{ id, name, domain?, employees?, alternateNames? }`).
+   - Say in one line how many companies you took and which you left out and why. When you chose the subset yourself, confirm it first with `ask_questions`: **Yes, these {N}** (recommended), **Edit the list**, **Cancel**.
+3. **Pilot.** On the first lookup of a project, call with `pilotSize: 10`. Show the pilot in a short table (company, person, title, rung, confidence, state) and ask once whether the role reading and the rung are right. Adjust the brief if the user corrects them.
+4. **The rest.** Call again without `pilotSize`. More than 25 companies start a background run: the call returns a `runId` and progress. Read it with `find_people_by_company({ runId })` (it waits up to `waitSeconds`), never more than once a minute; report at 50% and at completion. `cancel: true` with the `runId` stops it and keeps what was found.
+5. **Read each pair's `terminalState`**, then act once:
 
-   | `status` | Means | Next |
+   | `terminalState` | Means | Next |
    | --- | --- | --- |
-   | `matched` | Someone holds the role | Keep all matches |
-   | `related_role_only` | A deputy, vice or acting holder | Report apart |
-   | `no_match` | Searched, nothing verified | Once more with an explicit list and any `alternateNames` you know |
-   | `source_error` | The lookup did not complete: unknown | Once more with `fromProject: true, onlyFailed: true` |
+   | `found` | Someone holds the role at or above the plan's confidence; `rungUsed` says how close the title is | Keep. Flag rung 3 and 4 in the report |
+   | `ambiguous` | Only low-confidence people, or a questionable company match (parent, brand, namesake) | Ask the user, with the people and the reason |
+   | `none_found` | Searched; `reason` says why: `no_such_role`, `profile_gaps`, `budget` | Report with the reason. `budget`: offer a higher `capsUsd.perPair`. Rerun only with new `alternateNames` |
+   | `none_found` + `source_error` | The lookup did not complete | Once more with `fromProject: true, onlyFailed: true` |
+   | `unresolvable` | The company could not be identified from the input | Ask for a domain or the legal name |
 
-   `rejected` lists people found who do not belong; they are not written to the tab.
-4. **Profiles.** Bright Data matches arrive with their profile stored on the row. A person found only by Google has a name and a LinkedIn URL at most: run `fetch_profiles` before scoring.
-5. **Report in one short table**: company, person, title, LinkedIn URL, source; then the related-role-only and no-match companies and the spend.
+   `rejected` lists people found who do not belong, including people above the plan's rung; they are not written to the tab. Each kept person has `confidence`, `freshness` and `evidence` (source, query, date, snippet).
+6. **Profiles.** Bright Data matches arrive with their profile stored on the row. A person found only by Google has a name and a LinkedIn URL at most: run `fetch_profiles` before scoring.
+7. **Report from data**: start with the coverage line from `get_sourcing_ledger` (`pairs.coverageLine`), then one short table (company, person, title, rung, confidence, source), then the companies without a person and why, and the spend.
 
 ### Pool size
 
-The tool returns up to 3 people per company, so N companies give at most 3N people. Name the pool in your report. If the target is larger (two named companies and a target of 30), say so before the call, build peer companies with `playbook-company-first`, and ask once whether to widen to peers.
+The tool keeps up to 3 people per company, so N companies give at most 3N people. Name the pool in your report. If the target is larger (two named companies and a target of 30), say so before the call, build peer companies with `playbook-company-first`, and ask once whether to widen to peers.
 
 ### Only when the user names LinkedIn or Harvest
 

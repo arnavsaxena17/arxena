@@ -18,7 +18,7 @@ import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
 import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
 
-const normalizeDomain = (domain: string): string =>
+export const normalizeDomain = (domain: string): string =>
   domain
     .trim()
     .toLowerCase()

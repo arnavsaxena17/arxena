@@ -21,7 +21,7 @@ export class ResolveCompanyFromRawNameTool implements Tool {
   ) {}
 
   description =
-    'Resolve a raw / messy company name to a standardized company profile from the std_company_data_scores Elasticsearch index (name, id, website, LinkedIn URL, headcount).';
+    'Resolve a raw / messy company name to a standardized company profile from the std_company_data_scores Elasticsearch index (name, id, website, LinkedIn URL, headcount). Each result has matchConfidence (high / medium / low) and up to two alternates (name, website, LinkedIn URL, size): on medium or low, check the alternates for a subsidiary, parent group or same-name company before trusting the match.';
   inputSchema = ResolveCompanyFromRawNameToolInputZodSchema;
 
   async execute(
@@ -74,14 +74,18 @@ export class ResolveCompanyFromRawNameTool implements Tool {
           : await this.companyNameResolverService.resolveMany(companyNames);
 
       const resolvedCount = results.filter((result) => result.resolved).length;
+      const highConfidenceCount = results.filter(
+        (result) => result.matchConfidence === 'high',
+      ).length;
 
       return {
         success: true,
-        message: `Resolved ${resolvedCount}/${results.length} company name(s)`,
+        message: `Resolved ${resolvedCount}/${results.length} company name(s), ${highConfidenceCount} with high confidence`,
         result: {
           index: this.companyNameResolverService.getIndexName(),
           count: results.length,
           resolvedCount,
+          highConfidenceCount,
           results,
         },
       };

@@ -22,7 +22,9 @@ const SKILL_TOKEN_BUDGETS: Record<string, number> = {
   // offset by dropping the placeholder source caps and generic requirement lists
   // Raised to 25_000 for industry-search, industry-labels (the LinkedIn
   // industry taxonomy, loaded on demand) and the job title search in people
-  sourcing: 25_000,
+  // Raised to 26_000 for the data-source question, the company x role
+  // pilot and background run, and pair final states
+  sourcing: 26_000,
   outreach: 4_700,
   'workflow-building': 4_500,
   'ai-filter-enrich': 3_200,

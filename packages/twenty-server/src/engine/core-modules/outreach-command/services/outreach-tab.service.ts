@@ -190,7 +190,7 @@ export class OutreachTabService {
     };
   }
 
-  private collectAiColumns(rows: OutreachTabRow[]): OutreachExistingAiColumn[] {
+  collectAiColumns(rows: OutreachTabRow[]): OutreachExistingAiColumn[] {
     const columns = new Map<string, OutreachExistingAiColumn>();
 
     for (const row of rows) {

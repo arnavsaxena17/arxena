@@ -27,6 +27,20 @@ export const FindPeopleByCompanyInputZodSchema = z.object({
           .describe(
             'Other names the company trades or is registered under: legal name, parent, brand, e.g. ["Graviss Foods"]. Used to match profiles; add them when the brand differs from the employer on LinkedIn.',
           ),
+        domain: z
+          .string()
+          .optional()
+          .describe(
+            'The company\'s website host, e.g. "tatapower.com". Adds a search of its leadership page.',
+          ),
+        employees: z
+          .number()
+          .int()
+          .min(0)
+          .optional()
+          .describe(
+            'Employee count, when known. A small company may have no holder of a functional role, so the owner or MD is tried when the plan allows rung 4.',
+          ),
       }),
     )
     .min(1)
@@ -87,9 +101,53 @@ export const FindPeopleByCompanyInputZodSchema = z.object({
   maxBudgetUsd: z
     .number()
     .min(0.005)
-    .max(0.1)
-    .default(0.03)
-    .describe('Bright Data spend cap per company in USD'),
+    .max(1)
+    .optional()
+    .describe(
+      "Spend cap for one company x role pair in USD, across every source. Defaults to the brief's capsUsd.perPair, else 0.10. A company that reaches it ends as none_found with reason budget.",
+    ),
+  maxRung: z
+    .union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)])
+    .optional()
+    .describe(
+      "Highest title rung a person may be kept at: 1 the title as typed, 2 equivalent titles, 3 a related role or one level down, 4 the owner or MD of a small company. Defaults to the brief's ladder, else 3. Pass it only with a reason the user gave.",
+    ),
+  minConfidence: z
+    .enum(['high', 'medium', 'low'])
+    .optional()
+    .describe(
+      "Stop looking once a person reaches this confidence. Defaults to the brief's threshold, else medium.",
+    ),
+  pilotSize: z
+    .number()
+    .int()
+    .min(1)
+    .max(FIND_PEOPLE_BY_COMPANY_MAX_COMPANIES)
+    .optional()
+    .describe(
+      'Look up only this many companies now and return, so the user can check the role reading and the rung before the rest run. Use 10 on the first lookup of a project.',
+    ),
+  waitSeconds: z
+    .number()
+    .int()
+    .min(0)
+    .max(300)
+    .default(150)
+    .describe(
+      'More companies than one batch start a background run; the call waits this long for it, then returns its runId and progress.',
+    ),
+  runId: z
+    .string()
+    .optional()
+    .describe(
+      'A background run from an earlier call: returns its progress (waiting up to waitSeconds) instead of starting a lookup. Ignores the other inputs.',
+    ),
+  cancel: z
+    .boolean()
+    .default(false)
+    .describe(
+      'With runId: stop the run. Companies already looked up keep their results.',
+    ),
 });
 
 export type FindPeopleByCompanyInput = z.infer<

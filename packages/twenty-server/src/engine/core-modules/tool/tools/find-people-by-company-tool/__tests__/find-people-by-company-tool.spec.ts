@@ -1,6 +1,7 @@
 import { isDefined } from 'twenty-shared/utils';
 
 import { FindPeopleByCompanyTool } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool';
+import { FindPeopleCascadeService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-cascade.service';
 import { parseLinkedinSerpResult } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/parse-linkedin-serp-result.util';
 import { FindPeopleGoogleSearchService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-google-search.service';
 
@@ -47,7 +48,10 @@ const buildTool = ({
   judge,
   projectRows = [],
   tableView = null,
+  brightDataSpentUsd = 0.004,
 }: {
+  // What each Bright Data people search bills
+  brightDataSpentUsd?: number;
   // Rows the project's Companies tab holds, for fromProject
   projectRows?: Array<{
     id: string;
@@ -81,7 +85,7 @@ const buildTool = ({
   upsertSucceeds?: boolean;
 }) => {
   const searchNaturalLanguage = jest.fn().mockResolvedValue({
-    result: { documents: brightDataDocuments, spentUsd: 0.004 },
+    result: { documents: brightDataDocuments, spentUsd: brightDataSpentUsd },
   });
   const requestSerpGoogleJson = jest.fn().mockResolvedValue({ organic });
   const search = jest.fn().mockResolvedValue({ documents: enrichedDocuments });
@@ -198,7 +202,7 @@ const buildTool = ({
     .fn()
     .mockResolvedValue(projectRows.map((row) => ({ otherFields: {}, ...row })));
   const getTableView = jest.fn().mockResolvedValue(tableView);
-  const tool = new FindPeopleByCompanyTool(
+  const cascade = new FindPeopleCascadeService(
     { searchNaturalLanguage } as never,
     new FindPeopleGoogleSearchService({
       isConfigured: () => true,
@@ -211,9 +215,17 @@ const buildTool = ({
       findDuplicates: findDuplicatesMock,
     } as never,
     { resolve } as never,
+    taxonomy as never,
+  );
+  const tool = new FindPeopleByCompanyTool(
+    cascade,
     { execute: upsert } as never,
     taxonomy as never,
-    { writeOtherFields, getAll } as never,
+    {
+      writeOtherFields,
+      getAll,
+      getRowsByIds: jest.fn().mockResolvedValue([]),
+    } as never,
     { get: getTableView } as never,
   );
 
@@ -235,7 +247,7 @@ const buildTool = ({
 const context = { workspaceId: 'workspace-id' };
 
 describe('FindPeopleByCompanyTool', () => {
-  it('should merge a person found by both sources and write them once', async () => {
+  it('should merge a person found by both sources when the plan asks for high confidence', async () => {
     const { tool, upsert } = buildTool({
       brightDataDocuments: [
         buildBrightDataDocument({
@@ -258,6 +270,7 @@ describe('FindPeopleByCompanyTool', () => {
         companies: [{ name: 'Monginis' }],
         roles: ['MD'],
         projectId: 'project-id',
+        minConfidence: 'high',
       },
       context,
     );
@@ -267,8 +280,98 @@ describe('FindPeopleByCompanyTool', () => {
     expect(company.status).toBe('matched');
     expect(company.people).toHaveLength(1);
     expect(company.people[0].sources).toEqual(['bright_data', 'google']);
+    expect(company.people[0].confidence).toBe('high');
+    expect(company.terminalState).toBe('found');
     expect(upsert).toHaveBeenCalledTimes(1);
     expect(upsert.mock.calls[0][0].people).toHaveLength(1);
+  });
+
+  it('should not ask Google when Bright Data already holds a confident match', async () => {
+    const { tool, requestSerpGoogleJson } = buildTool({
+      brightDataDocuments: [
+        buildBrightDataDocument({
+          name: 'Amruta Kawre',
+          current_title: 'Managing Director',
+          current_company_name: 'Monginis Foods Pvt. Ltd.',
+          url: 'https://in.linkedin.com/in/amruta-kawre',
+        }),
+      ],
+      organic: [
+        {
+          title: 'Amruta Kawre - Managing Director - Monginis | LinkedIn',
+          link: 'https://www.linkedin.com/in/amruta-kawre/',
+        },
+      ],
+    });
+
+    const output = await tool.execute(
+      { companies: [{ name: 'Monginis' }], roles: ['MD'] },
+      context,
+    );
+    const company = (output.result as { companies: Array<Record<string, any>> })
+      .companies[0];
+
+    expect(requestSerpGoogleJson).not.toHaveBeenCalled();
+    expect(company.sourcesUsed).toEqual(['bright_data']);
+    expect(company.terminalState).toBe('found');
+    expect(company.people[0].confidence).toBe('medium');
+    expect(company.people[0].evidence[0]).toMatchObject({
+      source: 'bright_data',
+      url: 'https://in.linkedin.com/in/amruta-kawre',
+    });
+  });
+
+  it('should end the pair as none_found with reason budget when the cap is spent', async () => {
+    const { tool, requestSerpGoogleJson } = buildTool({
+      brightDataDocuments: [],
+      brightDataSpentUsd: 0.05,
+      organic: [],
+    });
+
+    const output = await tool.execute(
+      {
+        companies: [{ name: 'Monginis' }],
+        roles: ['MD'],
+        maxBudgetUsd: 0.05,
+      },
+      context,
+    );
+    const company = (output.result as { companies: Array<Record<string, any>> })
+      .companies[0];
+
+    expect(requestSerpGoogleJson).not.toHaveBeenCalled();
+    expect(company.terminalState).toBe('none_found');
+    expect(company.reason).toBe('budget');
+  });
+
+  it('should keep a related role out when the plan allows only rung 2', async () => {
+    const { tool, upsert } = buildTool({
+      brightDataDocuments: [
+        buildBrightDataDocument({
+          name: 'Deputy Person',
+          current_title: 'Deputy Managing Director',
+          current_company_name: 'Monginis Foods Pvt. Ltd.',
+          url: 'https://in.linkedin.com/in/deputy-person',
+        }),
+      ],
+      organic: [],
+    });
+
+    const output = await tool.execute(
+      {
+        companies: [{ name: 'Monginis' }],
+        roles: ['MD'],
+        projectId: 'project-id',
+        maxRung: 2,
+      },
+      context,
+    );
+    const company = (output.result as { companies: Array<Record<string, any>> })
+      .companies[0];
+
+    expect(company.people).toHaveLength(0);
+    expect(company.terminalState).toBe('none_found');
+    expect(upsert).not.toHaveBeenCalled();
   });
 
   it('should link found people to the company row and record Found on it', async () => {

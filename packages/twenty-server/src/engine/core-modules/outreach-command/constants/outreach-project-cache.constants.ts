@@ -4,4 +4,7 @@ export const OUTREACH_PROJECT_CACHE_FILE_NAMESPACE =
 
 export const OUTREACH_PROJECT_CACHE_TTL_MS = 3 * 30 * 24 * 60 * 60 * 1000; // 3 months
 
-export type OutreachProjectCacheKind = 'people' | 'companies';
+export type OutreachProjectCacheKind =
+  | 'people'
+  | 'companies'
+  | 'sourcing-ledger';

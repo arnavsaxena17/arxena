@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { isDefined } from 'twenty-shared/utils';
 import { type z } from 'zod';
 
 import {
@@ -9,11 +10,7 @@ import {
 } from 'src/engine/core-modules/outreach-command/utils/ai-column-cost-limit.util';
 import { OutreachAiColumnService } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column.service';
 import { OutreachAiColumnRunService } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column-run.service';
-import {
-  matchesTableFilter,
-  OutreachTableViewService,
-  readCellText,
-} from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
+import { OutreachTableViewService } from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
 import {
   type OutreachTabRow,
   OutreachTabService,
@@ -28,6 +25,13 @@ import {
   RemoveOutreachAiColumnInputZodSchema,
   RunOutreachAiColumnInputZodSchema,
 } from 'src/engine/core-modules/tool/tools/outreach-ai-column-tool/outreach-ai-column-tool.schema';
+import {
+  filterOutreachTabRows,
+  findUnknownOutreachTabKeys,
+  groupOutreachTabRows,
+  normalizeOutreachTabFilters,
+  pickOutreachTabFields,
+} from 'src/engine/core-modules/tool/tools/outreach-ai-column-tool/query-outreach-tab-rows.util';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
@@ -114,7 +118,12 @@ export const summarizeOutreachTabRows = (
 
 @Injectable()
 export class GetOutreachTabTool implements Tool {
-  description = `Read a small page of the project's People or Companies tab: ephemeral Find rows merged with CRM records tagged to the project. Use it for "these / the list / each" instead of find_many_* or a new search. Returns total, aiColumns (key, label, type, filled — reuse instead of adding a column), rows (id, source, name, title, companyName, otherFields…) and nextCursor. Keep limit at 10. To count or choose a cut-off, pass summarize with column keys: value counts (yes/no and labels) or min/quartiles/max (numbers) over ALL rows, or only the applied view with onlyViewMatches — never page rows to tally them.`;
+  description = `Read the project's People or Companies tab (ephemeral Find rows merged with CRM records tagged to the project) without reading every row. Use it for "these / the list / each" instead of find_many_* or a new search. Returns total, aiColumns (key, label, type, filled — reuse instead of adding a column), rows (id, source, name, title, companyName, otherFields…), nextCursor and truncated. Keep limit at 10; rows are a sample, never page them to count.
+- groupBy (one or two keys): row counts per value or value pair, e.g. ["finalState", "rung"]. Use it for any "how many by …" question; it returns no rows unless fields is passed.
+- filter (apply_table_view filter shape): restrict rows, groupBy and summarize to matching rows, e.g. [{ columnId: "turnover", kind: "condition", operator: "empty", value: "" }, { columnId: "location", kind: "condition", operator: "contains", value: "Gujarat" }]. matchCount is the rows that pass.
+- fields: return only these keys on each row (plus id) when you need to look at a few rows.
+- summarize: value counts (yes/no and labels) or min/quartiles/max (numbers) for choosing a cut-off.
+- onlyViewMatches: only the rows of the view applied to the table.`;
 
   inputSchema = GetOutreachTabInputZodSchema;
 
@@ -137,13 +146,24 @@ export class GetOutreachTabTool implements Tool {
       };
     }
 
-    const { summarize, onlyViewMatches, ...pageInput } = parsed.data;
-    const page = await this.outreachTabService.getPage({
+    const {
+      projectId,
+      tab,
+      limit,
+      cursor,
+      summarize,
+      onlyViewMatches,
+      filter,
+      fields,
+      groupBy,
+    } = parsed.data;
+    const allRows = await this.outreachTabService.getAll({
       workspaceId: context.workspaceId,
-      ...pageInput,
+      projectId,
+      tab,
     });
 
-    if (page.total === 0 && parsed.data.tab === 'companies') {
+    if (allRows.length === 0 && tab === 'companies') {
       return {
         success: false,
         message:
@@ -152,41 +172,88 @@ export class GetOutreachTabTool implements Tool {
       };
     }
 
-    let summaries: Record<string, unknown> | undefined;
-    let summarizedRows: number | undefined;
-
-    if (summarize !== undefined && summarize.length > 0) {
-      const allRows = await this.outreachTabService.getAll({
-        workspaceId: context.workspaceId,
-        projectId: parsed.data.projectId,
-        tab: parsed.data.tab,
-      });
-      const view =
-        onlyViewMatches === true
-          ? await this.outreachTableViewService.get({
-              workspaceId: context.workspaceId,
-              projectId: parsed.data.projectId,
-              tab: parsed.data.tab,
-            })
-          : null;
-      const rows =
-        view === null
-          ? allRows
-          : allRows.filter((row) =>
-              view.filters.every((filter) =>
-                matchesTableFilter(readCellText(row, filter.columnId), filter),
-              ),
-            );
-
-      summaries = summarizeOutreachTabRows(rows, summarize);
-      summarizedRows = rows.length;
-    }
+    const view =
+      onlyViewMatches === true
+        ? await this.outreachTableViewService.get({
+            workspaceId: context.workspaceId,
+            projectId,
+            tab,
+          })
+        : null;
+    const filters = normalizeOutreachTabFilters(filter ?? []);
+    const matchedRows = filterOutreachTabRows(
+      filterOutreachTabRows(allRows, view?.filters ?? []),
+      filters,
+    );
+    const isQuery = isDefined(view) || filters.length > 0;
+    const offset = Math.max(0, Number.parseInt(cursor ?? '0', 10) || 0);
+    const pageRows = matchedRows.slice(offset, offset + limit);
+    const next = offset + pageRows.length;
+    // A group count answers the question; rows would only fill the context.
+    const includeRows = !isDefined(groupBy) || isDefined(fields);
+    const grouped = isDefined(groupBy)
+      ? groupOutreachTabRows(matchedRows, groupBy)
+      : undefined;
+    const summaries =
+      isDefined(summarize) && summarize.length > 0
+        ? summarizeOutreachTabRows(matchedRows, summarize)
+        : undefined;
+    const unknownKeys = [
+      ...new Set([
+        ...findUnknownOutreachTabKeys(allRows, [
+          ...filters.map((tableFilter) => tableFilter.columnId),
+          ...(groupBy ?? []),
+        ]),
+        ...findUnknownOutreachTabKeys(allRows, fields ?? [], {
+          includeRowProperties: true,
+        }),
+      ]),
+    ];
+    const truncated = includeRows && next < matchedRows.length;
+    const messageParts = [
+      includeRows
+        ? `Returned ${pageRows.length} of ${matchedRows.length} ${isQuery ? 'matching ' : ''}${tab} row(s)${isQuery ? ` (tab total ${allRows.length})` : ''}.`
+        : `Counted ${matchedRows.length} of ${allRows.length} ${tab} row(s).`,
+      ...(truncated
+        ? [
+            'The rows are a sample: use groupBy or summarize to count the rest, never page to tally.',
+          ]
+        : []),
+      ...(isDefined(grouped)
+        ? [
+            `${grouped.distinctGroups} group(s)${grouped.otherGroupsRowCount > 0 ? `, the largest ${grouped.groups.length} listed` : ''}.`,
+          ]
+        : []),
+    ];
 
     return {
       success: true,
-      message: `Returned ${page.rows.length} of ${page.total} ${parsed.data.tab} row(s).`,
-      result:
-        summaries === undefined ? page : { ...page, summarizedRows, summaries },
+      message: messageParts.join(' '),
+      result: {
+        total: allRows.length,
+        ...(isQuery ? { matchCount: matchedRows.length } : {}),
+        aiColumns: this.outreachTabService.collectAiColumns(allRows),
+        ...(includeRows
+          ? {
+              rows: isDefined(fields)
+                ? pickOutreachTabFields(pageRows, fields)
+                : pageRows,
+              nextCursor: truncated ? String(next) : null,
+              truncated,
+            }
+          : {}),
+        ...(isDefined(grouped) ? grouped : {}),
+        ...(isDefined(summaries)
+          ? { summarizedRows: matchedRows.length, summaries }
+          : {}),
+        ...(unknownKeys.length > 0
+          ? {
+              warnings: [
+                `No row has ${unknownKeys.map((key) => `"${key}"`).join(', ')}; check the key against aiColumns.`,
+              ],
+            }
+          : {}),
+      },
     };
   }
 }

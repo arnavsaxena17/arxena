@@ -65,16 +65,49 @@ describe('SourcingLedgerService', () => {
     await expect(service.append('w', 'p', stop('x'))).resolves.toBeUndefined();
   });
 
-  it('should keep only the latest 100 events', async () => {
+  it('should keep only the latest 200 events', async () => {
     const service = new SourcingLedgerService(buildCache() as never);
 
-    for (let index = 0; index < 105; index += 1) {
+    for (let index = 0; index < 205; index += 1) {
       await service.append('w', 'p', stop(String(index)));
     }
 
     const events = await service.read('w', 'p');
 
-    expect(events).toHaveLength(100);
+    expect(events).toHaveLength(200);
     expect(becauseOf(events[0])).toBe('5');
+  });
+
+  it('should restore the ledger from the S3 copy on a cache miss', async () => {
+    const backup = {
+      read: jest.fn(async () => [stop('restored')]),
+      write: jest.fn(async () => undefined),
+    };
+    const service = new SourcingLedgerService(
+      buildCache() as never,
+      backup as never,
+    );
+
+    const events = await service.read('w', 'p');
+
+    expect(events.map(becauseOf)).toEqual(['restored']);
+    expect(backup.read).toHaveBeenCalledWith('w', 'sourcing-ledger', 'p');
+  });
+
+  it('should back each append up to S3', async () => {
+    const backup = {
+      read: jest.fn(async () => undefined),
+      write: jest.fn(async () => undefined),
+    };
+    const service = new SourcingLedgerService(
+      buildCache() as never,
+      backup as never,
+    );
+
+    await service.append('w', 'p', stop('one'));
+
+    expect(backup.write).toHaveBeenCalledWith('w', 'sourcing-ledger', 'p', [
+      stop('one'),
+    ]);
   });
 });

@@ -2,13 +2,20 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { Client } from '@elastic/elasticsearch';
 import { isNonEmptyString } from '@sniptt/guards';
+import { isDefined } from 'twenty-shared/utils';
 
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { buildResolveCompanyFromRawNameQuery } from 'src/engine/core-modules/org-chart/utils/build-resolve-company-from-raw-name-query.util';
 import { cleanRawCompanyName } from 'src/engine/core-modules/org-chart/utils/clean-raw-company-name.util';
 import {
-  pickBestCompanyNameHit,
+  companyMatchConfidence,
+  companyNameDistance,
+  type CompanyMatchConfidence,
+} from 'src/engine/core-modules/org-chart/utils/company-match-confidence.util';
+import {
+  rankCompanyNameHits,
   type CompanyNameResolverEsHit,
+  type PickedCompanyNameHit,
 } from 'src/engine/core-modules/org-chart/utils/pick-best-company-name-hit.util';
 
 const COMPANY_NAME_RESOLVER_SOURCE_FIELDS = [
@@ -28,6 +35,14 @@ const COMPANY_NAME_RESOLVER_SOURCE_FIELDS = [
 const DEFAULT_RESOLVE_SIZE = 20;
 const DEFAULT_CONCURRENCY = 5;
 const MAX_BATCH_SIZE = 50;
+const ALTERNATE_COUNT = 2;
+
+export type ResolvedCompanyAlternate = {
+  name: string;
+  website: string | null;
+  linkedinUrl: string | null;
+  size: string | null;
+};
 
 export type ResolvedCompanyFromRawName = {
   rawCompanyName: string;
@@ -45,7 +60,37 @@ export type ResolvedCompanyFromRawName = {
   corporateScore: number | null;
   isOrgChart: boolean | string | null;
   editDistance: number | null;
+  matchConfidence: CompanyMatchConfidence | null;
+  alternates: ResolvedCompanyAlternate[];
+  // True when Elasticsearch failed, so "not resolved" means "unknown", not
+  // "no such company".
+  lookupFailed: boolean;
   durationMs: number;
+};
+
+// The index holds duplicate rows of one company; they are not alternates.
+const companyIdentityKey = (hit: PickedCompanyNameHit): string =>
+  hit.source.linkedin_url?.trim().toLowerCase() ||
+  hit.source.id ||
+  hit.source.name?.trim().toLowerCase() ||
+  '';
+
+const distinctCompanyHits = (
+  hits: PickedCompanyNameHit[],
+): PickedCompanyNameHit[] => {
+  const seen = new Set<string>();
+
+  return hits.filter((hit) => {
+    const key = companyIdentityKey(hit);
+
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+
+    return true;
+  });
 };
 
 @Injectable()
@@ -121,9 +166,11 @@ export class CompanyNameResolverService {
       });
 
       const hits = (response.hits?.hits ?? []) as CompanyNameResolverEsHit[];
-      const picked = pickBestCompanyNameHit(cleanedQuery, hits);
+      const [picked, ...runnersUp] = distinctCompanyHits(
+        rankCompanyNameHits(cleanedQuery, hits),
+      );
 
-      if (!picked) {
+      if (!isDefined(picked)) {
         return this.emptyResult({
           rawCompanyName: trimmedRaw,
           cleanedQuery,
@@ -132,6 +179,12 @@ export class CompanyNameResolverService {
       }
 
       const source = picked.source;
+      const alternates = runnersUp.slice(0, ALTERNATE_COUNT);
+      const corporateScore =
+        typeof source.corporate_score === 'number'
+          ? source.corporate_score
+          : null;
+      const runnerUp = alternates[0];
 
       return {
         rawCompanyName: trimmedRaw,
@@ -147,12 +200,32 @@ export class CompanyNameResolverService {
           typeof source.count_org === 'number' ? source.count_org : null,
         size: source.size ?? null,
         founded: source.founded ?? null,
-        corporateScore:
-          typeof source.corporate_score === 'number'
-            ? source.corporate_score
-            : null,
+        corporateScore,
         isOrgChart: source.is_org_chart ?? null,
         editDistance: picked.editDistance,
+        matchConfidence: companyMatchConfidence({
+          cleanedQuery,
+          nameDistance: companyNameDistance(
+            cleanedQuery,
+            source.name ?? '',
+            picked.editDistance,
+          ),
+          corporateScore,
+          runnerUpNameDistance: isDefined(runnerUp)
+            ? companyNameDistance(
+                cleanedQuery,
+                runnerUp.source.name ?? '',
+                runnerUp.editDistance,
+              )
+            : null,
+        }),
+        alternates: alternates.map((alternate) => ({
+          name: alternate.source.name ?? '',
+          website: alternate.source.website ?? null,
+          linkedinUrl: alternate.source.linkedin_url ?? null,
+          size: alternate.source.size ?? null,
+        })),
+        lookupFailed: false,
         durationMs: Date.now() - startedAt,
       };
     } catch (error) {
@@ -161,11 +234,14 @@ export class CompanyNameResolverService {
         error instanceof Error ? error.stack : String(error),
       );
 
-      return this.emptyResult({
-        rawCompanyName: trimmedRaw,
-        cleanedQuery,
-        durationMs: Date.now() - startedAt,
-      });
+      return {
+        ...this.emptyResult({
+          rawCompanyName: trimmedRaw,
+          cleanedQuery,
+          durationMs: Date.now() - startedAt,
+        }),
+        lookupFailed: true,
+      };
     }
   }
 
@@ -227,6 +303,9 @@ export class CompanyNameResolverService {
       corporateScore: null,
       isOrgChart: null,
       editDistance: null,
+      matchConfidence: null,
+      alternates: [],
+      lookupFailed: false,
       durationMs,
     };
   }

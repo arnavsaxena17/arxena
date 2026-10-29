@@ -25,56 +25,42 @@ export type PickedCompanyNameHit = {
   editDistance: number;
 };
 
+const hasName = (
+  hit: CompanyNameResolverEsHit,
+): hit is CompanyNameResolverEsHit & {
+  _source: CompanyNameResolverHitSource & { name: string };
+} =>
+  isDefined(hit._source) &&
+  typeof hit._source.name === 'string' &&
+  hit._source.name.trim().length > 0;
+
+// Closest name first, then highest count_org; the sort is stable so equal
+// hits keep their Elasticsearch order (the Python collector's tie-break).
+export const rankCompanyNameHits = (
+  cleanedCompanyName: string,
+  hits: CompanyNameResolverEsHit[],
+  limit: number = hits.length,
+): PickedCompanyNameHit[] =>
+  hits
+    .filter(hasName)
+    .map((hit) => ({
+      source: hit._source,
+      editDistance: levenshteinDistance(
+        cleanedCompanyName.toLowerCase(),
+        hit._source.name.toLowerCase(),
+      ),
+    }))
+    .sort(
+      (left, right) =>
+        left.editDistance - right.editDistance ||
+        Number(right.source.count_org ?? 0) -
+          Number(left.source.count_org ?? 0),
+    )
+    .slice(0, Math.max(0, limit));
+
 // Port of Python CompanyCollector.run_query best-hit selection
 export const pickBestCompanyNameHit = (
   cleanedCompanyName: string,
   hits: CompanyNameResolverEsHit[],
-): PickedCompanyNameHit | null => {
-  const hitsWithName = hits.filter(
-    (
-      hit,
-    ): hit is CompanyNameResolverEsHit & {
-      _source: CompanyNameResolverHitSource & { name: string };
-    } =>
-      isDefined(hit._source) &&
-      typeof hit._source.name === 'string' &&
-      hit._source.name.trim().length > 0,
-  );
-
-  if (hitsWithName.length === 0) {
-    return null;
-  }
-
-  const distances = hitsWithName.map((hit) => ({
-    hit,
-    editDistance: levenshteinDistance(
-      cleanedCompanyName.toLowerCase(),
-      hit._source.name.toLowerCase(),
-    ),
-  }));
-
-  const minimumDistance = Math.min(
-    ...distances.map((entry) => entry.editDistance),
-  );
-
-  const closestHits = distances.filter(
-    (entry) => entry.editDistance === minimumDistance,
-  );
-
-  let bestHit = closestHits[0].hit;
-  let bestCountOrg = Number(bestHit._source.count_org ?? 0);
-
-  for (const entry of closestHits.slice(1)) {
-    const countOrg = Number(entry.hit._source.count_org ?? 0);
-
-    if (countOrg > bestCountOrg) {
-      bestHit = entry.hit;
-      bestCountOrg = countOrg;
-    }
-  }
-
-  return {
-    source: bestHit._source,
-    editDistance: minimumDistance,
-  };
-};
+): PickedCompanyNameHit | null =>
+  rankCompanyNameHits(cleanedCompanyName, hits, 1)[0] ?? null;

@@ -240,11 +240,15 @@ export class FindPeopleGoogleSearchService {
     titles,
     roles,
     location,
+    domain,
   }: {
     variants: string[];
     titles: string[];
     roles: string[];
     location?: string;
+    // The company's own site: its leadership page often names the role
+    // holder before LinkedIn does
+    domain?: string;
   }): string[] {
     const orGroup = (terms: string[]) =>
       `(${terms.map((term) => `"${term}"`).join(' OR ')})`;
@@ -272,6 +276,20 @@ export class FindPeopleGoogleSearchService {
       );
     }
 
+    const host = isNonEmptyString(domain)
+      ? domain
+          .trim()
+          .replace(/^https?:\/\//i, '')
+          .replace(/^www\./i, '')
+          .split('/')[0]
+      : '';
+
+    if (host.length > 0) {
+      queries.push(
+        build([`site:${host}`, '(leadership OR team OR management)']),
+      );
+    }
+
     return [...new Set(queries)];
   }
 
@@ -280,6 +298,7 @@ export class FindPeopleGoogleSearchService {
     titles: string[];
     roles: string[];
     location?: string;
+    domain?: string;
   }): Promise<GoogleCompanySearchResult> {
     if (!this.isConfigured()) {
       throw new Error('BRIGHT_DATA_API_KEY is not set');

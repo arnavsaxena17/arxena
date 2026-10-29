@@ -122,6 +122,9 @@ const PEOPLE_FOUND_TAG_COLORS: Record<string, TagColor> = {
   Found: 'green',
   'Related role only': 'orange',
   'Not found': 'gray',
+  Ambiguous: 'yellow',
+  Unresolvable: 'purple',
+  Excluded: 'gray',
   'Lookup failed': 'red',
 };
 

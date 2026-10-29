@@ -5,7 +5,13 @@ import { z } from 'zod';
 import { OutreachListService } from 'src/engine/core-modules/outreach-list/services/outreach-list.service';
 import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
 import { OutreachTabService } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
-import { computeSourcingFunnel } from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
+import {
+  computePairFunnel,
+  computeSourcingFunnel,
+  mergeSourcingBrief,
+  type SourcingBrief,
+} from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
+import { SOURCING_SOURCES } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/sourcing-sources.constant';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
@@ -13,6 +19,11 @@ import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
 
 const MAX_SEARCHES = 15;
 const MAX_EVENTS = 20;
+
+const SOURCE_KEYS = SOURCING_SOURCES.map((source) => source.key) as [
+  string,
+  ...string[],
+];
 
 const BriefZodSchema = z.object({
   requestType: z
@@ -53,6 +64,12 @@ const BriefZodSchema = z.object({
     .object({
       fetch: z.number().min(0).optional(),
       enrich: z.number().min(0).optional(),
+      perPair: z
+        .number()
+        .min(0.005)
+        .max(1)
+        .optional()
+        .describe('Spend cap for one company x role lookup across all sources'),
     })
     .optional(),
   destination: z.string().max(200).optional(),
@@ -60,6 +77,43 @@ const BriefZodSchema = z.object({
     .array(z.string().max(200))
     .max(10)
     .describe('Defaults you chose and told the user about instead of asking'),
+  persona: z.enum(['sales', 'exec_search']).optional(),
+  targetType: z
+    .enum(['decision_maker', 'incumbent', 'candidate_pool'])
+    .optional(),
+  roles: z.array(z.string().min(1)).max(10).optional(),
+  ladder: z
+    .object({
+      maxRung: z.union([
+        z.literal(1),
+        z.literal(2),
+        z.literal(3),
+        z.literal(4),
+      ]),
+    })
+    .optional()
+    .describe(
+      'Highest title rung a person may be found at: 1 the title as typed, 2 equivalent titles, 3 a related role or one level down, 4 the owner or MD of a small company. Default 4 for sales, 2 for exec search.',
+    ),
+  thresholds: z
+    .object({
+      minConfidence: z.enum(['high', 'medium', 'low']).optional(),
+      freshnessDays: z.number().int().min(1).max(3650).optional(),
+    })
+    .optional(),
+  sources: z
+    .array(z.enum(SOURCE_KEYS))
+    .min(1)
+    .optional()
+    .describe(
+      'The data sources the user picked at the start. Search tools for any other source refuse while this brief stands.',
+    ),
+  confidential: z
+    .boolean()
+    .optional()
+    .describe(
+      'Client-confidential project: no workspace cache reads or writes',
+    ),
 });
 
 export const GetSourcingLedgerInputZodSchema = z.object({
@@ -71,9 +125,11 @@ export const GetSourcingLedgerInputZodSchema = z.object({
     .max(100000)
     .optional()
     .describe('How many people the user asked for: adds the shortfall'),
-  brief: BriefZodSchema.optional().describe(
-    'Write the brief once the requirements are settled (before the first search): what was asked, the criteria, the caps and the defaults you chose. The final report quotes it.',
-  ),
+  brief: BriefZodSchema.partial()
+    .optional()
+    .describe(
+      'Write the brief once the requirements are settled (before the first search): what was asked, the criteria, the caps, the sources the user picked and the defaults you chose. A later brief is merged over the latest one, so pass only what changed. The final report quotes it.',
+    ),
   stoppedBecause: z
     .string()
     .max(300)
@@ -85,7 +141,7 @@ export const GetSourcingLedgerInputZodSchema = z.object({
 
 @Injectable()
 export class GetSourcingLedgerTool implements Tool {
-  description = `The sourcing run so far, as one small table built from data and not from memory: every search behind the project's lists (source, query, rows returned, duplicates, spend), every scoring run and profile fetch (counts and cost), and the funnel now (rows, with a LinkedIn URL, with a profile, pass / unknown / fail, qualified = passed on the full profile, awaiting a profile). Pass target to get the shortfall and what the pipeline can still add. Pass brief once, when the requirements are settled. Call it before deciding whether to search again, after you lose track of what ran, and when you stop short: pass stoppedBecause then, and write the final report from this result. Searches appear once their list is attached to the project.`;
+  description = `The sourcing run so far, as one small table built from data and not from memory: every search behind the project's lists (source, query, rows returned, duplicates, spend), every scoring run and profile fetch (counts and cost), and the funnel now (rows, with a LinkedIn URL, with a profile, pass / unknown / fail, qualified = passed on the full profile, awaiting a profile). For a company x role run it also returns the pairs: counts by final state (found, none_found, ambiguous, unresolvable, excluded), by rung and by source, cost, top reasons, and the coverage line to open the report with. Pass target to get the shortfall and what the pipeline can still add. Pass brief once, when the requirements are settled. Call it before deciding whether to search again, after you lose track of what ran, and when you stop short: pass stoppedBecause then, and write the final report from this result. Searches appear once their list is attached to the project.`;
 
   inputSchema = GetSourcingLedgerInputZodSchema;
 
@@ -113,21 +169,46 @@ export class GetSourcingLedgerTool implements Tool {
     const { workspaceId } = context;
 
     try {
-      const [rows, lists] = await Promise.all([
+      const [rows, companyRows, lists] = await Promise.all([
         this.outreachTabService.getAll({
           workspaceId,
           projectId,
           tab: 'people',
         }),
+        this.outreachTabService.getAll({
+          workspaceId,
+          projectId,
+          tab: 'companies',
+        }),
         this.outreachListService.list(workspaceId),
       ]);
       const funnel = computeSourcingFunnel(rows);
+      const pairFunnel = computePairFunnel(companyRows);
 
       if (brief !== undefined) {
+        const previous = [
+          ...(await this.sourcingLedgerService.read(workspaceId, projectId)),
+        ]
+          .reverse()
+          .find((event) => event.kind === 'brief');
+        const {
+          kind: _kind,
+          at: _at,
+          ...previousBrief
+        } = previous ?? {
+          kind: 'brief',
+          at: '',
+        };
+
         await this.sourcingLedgerService.append(workspaceId, projectId, {
           kind: 'brief',
           at: new Date().toISOString(),
-          ...brief,
+          ...mergeSourcingBrief(
+            previous === undefined
+              ? undefined
+              : (previousBrief as SourcingBrief),
+            brief as Partial<SourcingBrief>,
+          ),
         });
       }
 
@@ -187,12 +268,15 @@ export class GetSourcingLedgerTool implements Tool {
 
       return {
         success: true,
-        message: shortfall
-          ? `${funnel.qualified} of ${shortfall.target} qualified; ${funnel.awaitingProfile} await a profile (about ${shortfall.expectedFromAwaitingProfile} more expected).`
-          : `${funnel.qualified} qualified; ${funnel.awaitingProfile} await a profile.`,
+        message:
+          (pairFunnel.pairs > 0 ? `${pairFunnel.coverageLine} ` : '') +
+          (shortfall
+            ? `${funnel.qualified} of ${shortfall.target} qualified; ${funnel.awaitingProfile} await a profile (about ${shortfall.expectedFromAwaitingProfile} more expected).`
+            : `${funnel.qualified} qualified; ${funnel.awaitingProfile} await a profile.`),
         result: {
           ...(latestBrief ? { brief: latestBrief } : {}),
           funnel,
+          ...(pairFunnel.pairs > 0 ? { pairs: pairFunnel } : {}),
           ...(shortfall ? { shortfall } : {}),
           searches,
           searchesNotShown: Math.max(0, projectLists.length - MAX_SEARCHES),

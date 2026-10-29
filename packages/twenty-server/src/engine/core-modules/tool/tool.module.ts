@@ -35,6 +35,9 @@ import { SaveOutreachTargetsToCrmTool } from 'src/engine/core-modules/tool/tools
 import { TitleTaxonomyModule } from 'src/engine/core-modules/title-taxonomy/title-taxonomy.module';
 import { FindPeopleByCompanyTool } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool';
 import { CandidateJudgeService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/candidate-judge.service';
+import { FindPeopleCascadeService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-cascade.service';
+import { FindPeopleRunService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-run.service';
+import { ProcessFindPeopleChunkJob } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/process-find-people-chunk.job';
 import { FindPeopleGoogleSearchService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-google-search.service';
 import { LinkedinProfileResolverService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/linkedin-profile-resolver.service';
 import { GoogleResultExtractionService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/google-result-extraction.service';
@@ -149,6 +152,9 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     FetchProfilesService,
     FetchProfilesTool,
     GetSourcingLedgerTool,
+    FindPeopleCascadeService,
+    FindPeopleRunService,
+    ProcessFindPeopleChunkJob,
     FindPeopleGoogleSearchService,
     GoogleResultExtractionService,
     CandidateJudgeService,

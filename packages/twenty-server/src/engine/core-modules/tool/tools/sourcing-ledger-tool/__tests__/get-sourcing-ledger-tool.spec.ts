@@ -135,6 +135,7 @@ describe('GetSourcingLedgerTool', () => {
       kind: 'brief',
       at: expect.any(String),
       ...brief,
+      version: 1,
     });
     expect((output.result as { brief: { target: number } }).brief.target).toBe(
       60,

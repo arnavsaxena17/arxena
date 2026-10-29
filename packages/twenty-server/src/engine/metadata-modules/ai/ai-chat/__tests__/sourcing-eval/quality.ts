@@ -3,6 +3,11 @@ import {
   fetchTabForQuality,
 } from 'src/engine/metadata-modules/ai/ai-chat/__tests__/sourcing-eval/live-tools';
 import { type ToolCall } from 'src/engine/metadata-modules/ai/ai-chat/__tests__/sourcing-eval/run-scenario';
+import { type OutreachTabRow } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
+import {
+  computePairFunnel,
+  type SourcingPairFunnel,
+} from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
 
 export type QualityReport = {
   companies: TabSlice;
@@ -15,6 +20,13 @@ export type QualityReport = {
     fitmentPassCount: number;
     enrichmentKeys: string[];
     enrichmentFillRates: Record<string, number>;
+  };
+  // Company x role runs: how many pairs reached a final state, how many kept
+  // people carry evidence, and the cost per company found (sample of 25)
+  pairs: {
+    funnel: SourcingPairFunnel;
+    terminalStateRate: number;
+    peopleWithEvidenceRate: number;
   };
   behaviorNotes: string[];
 };
@@ -215,10 +227,33 @@ export const buildQualityReport = async (
     );
   }
 
+  const pairFunnel = computePairFunnel(
+    companies.sampleRows.map((row) => ({
+      ...(row as Partial<OutreachTabRow>),
+      id: typeof row.id === 'string' ? row.id : '',
+      source: 'ephemeral',
+      name: textOf(row, 'name'),
+      otherFields: asRecord(row.otherFields),
+    })),
+  );
+
   return {
     companies,
     people,
     rankedShortlist,
+    pairs: {
+      funnel: pairFunnel,
+      terminalStateRate:
+        pairFunnel.companies > 0
+          ? (pairFunnel.companies - pairFunnel.notLookedUp) /
+            pairFunnel.companies
+          : 0,
+      peopleWithEvidenceRate: rate(peopleRows, (row) => {
+        const evidence = asRecord(row.otherFields).evidence;
+
+        return Array.isArray(evidence) && evidence.length > 0;
+      }),
+    },
     heuristics: {
       peopleCount: peopleRows.length,
       salesRepTitleRate: rate(peopleRows, (row) =>
@@ -257,6 +292,13 @@ export const renderQualityReport = (report: QualityReport): string => {
     ...Object.entries(report.heuristics.enrichmentFillRates).map(
       ([key, value]) => `- Enrichment fill ${key}: ${percent(value)}`,
     ),
+    '',
+    '## Company x role pairs (sample ≤25)',
+    `- Coverage: ${report.pairs.funnel.coverageLine}`,
+    `- Companies with a final state: ${percent(report.pairs.terminalStateRate)}`,
+    `- People with evidence: ${percent(report.pairs.peopleWithEvidenceRate)}`,
+    `- Cost per company found: ${report.pairs.funnel.costPerFoundUsd === null ? '—' : `$${report.pairs.funnel.costPerFoundUsd}`}`,
+    `- By rung: ${JSON.stringify(report.pairs.funnel.byRung)} | by source: ${JSON.stringify(report.pairs.funnel.bySource)}`,
     '',
     '## Behavior notes',
     ...report.behaviorNotes.map((line) => `- ${line}`),

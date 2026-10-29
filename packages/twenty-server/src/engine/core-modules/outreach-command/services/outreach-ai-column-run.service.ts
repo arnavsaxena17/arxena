@@ -27,6 +27,12 @@ import {
 } from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
 import { ChatTabWritesService } from 'src/engine/core-modules/outreach-command/services/chat-tab-writes.service';
 import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
+import {
+  CHUNKED_RUN_TERMINAL_STATUSES,
+  type ChunkedRunStatus,
+  isChunkedRunStalled,
+  waitForChunkedRun,
+} from 'src/engine/core-modules/outreach-command/utils/chunked-run.util';
 import { computeSourcingFunnel } from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
 import { OutreachCacheRealtimeService } from 'src/engine/core-modules/outreach-command/services/outreach-cache-realtime.service';
 import {
@@ -44,12 +50,7 @@ export type OutreachAiColumnChunkJobData = {
   runId: string;
 };
 
-export type OutreachAiColumnRunStatus =
-  | 'queued'
-  | 'running'
-  | 'completed'
-  | 'failed'
-  | 'cancelled';
+export type OutreachAiColumnRunStatus = ChunkedRunStatus;
 
 type RunState = {
   runId: string;
@@ -87,27 +88,12 @@ const RUN_TTL_MS = 24 * 60 * 60 * 1000;
 // Rows evaluated per queue job. Small enough that other AI filtering jobs on
 // the same queue are never blocked for long, large enough to batch writes.
 const UNITS_PER_CHUNK = 20;
-const WAIT_POLL_MS = 1000;
-// A chunk takes seconds. No progress for this long means the job was lost
-// (for example the worker restarted), so the run must not block the project.
-const STALL_AFTER_MS = 2 * 60 * 1000;
-const TERMINAL_STATUSES: OutreachAiColumnRunStatus[] = [
-  'completed',
-  'failed',
-  'cancelled',
-];
-
-const isStalled = (state: RunState): boolean =>
-  !TERMINAL_STATUSES.includes(state.status) &&
-  Date.now() - Date.parse(state.updatedAt ?? state.startedAt) > STALL_AFTER_MS;
+const isStalled = (state: RunState): boolean => isChunkedRunStalled(state);
 
 const isQuotaError = (message: string | undefined): boolean =>
   /credit_balance_exhausted|insufficient_quota|credits are exhausted/i.test(
     message ?? '',
   );
-
-const sleep = (milliseconds: number) =>
-  new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 @Injectable()
 export class OutreachAiColumnRunService {
@@ -212,7 +198,7 @@ export class OutreachAiColumnRunService {
       );
     } else if (
       isDefined(activeRun) &&
-      !TERMINAL_STATUSES.includes(activeRun.status)
+      !CHUNKED_RUN_TERMINAL_STATUSES.includes(activeRun.status)
     ) {
       throw new Error(
         `A column ("${activeRun.filter.name}") is already running for this project (${activeRun.done}/${activeRun.total}). Wait for it to finish or cancel it first.`,
@@ -334,7 +320,10 @@ export class OutreachAiColumnRunService {
   async processChunk(runId: string): Promise<void> {
     const state = await this.getRun(runId);
 
-    if (!isDefined(state) || TERMINAL_STATUSES.includes(state.status)) {
+    if (
+      !isDefined(state) ||
+      CHUNKED_RUN_TERMINAL_STATUSES.includes(state.status)
+    ) {
       return;
     }
 
@@ -476,7 +465,10 @@ export class OutreachAiColumnRunService {
   async cancelRun(runId: string): Promise<RunState | undefined> {
     const state = await this.getRun(runId);
 
-    if (!isDefined(state) || TERMINAL_STATUSES.includes(state.status)) {
+    if (
+      !isDefined(state) ||
+      CHUNKED_RUN_TERMINAL_STATUSES.includes(state.status)
+    ) {
       return state;
     }
 
@@ -507,17 +499,7 @@ export class OutreachAiColumnRunService {
   }
 
   async waitForRun(runId: string, maxWaitMs: number): Promise<RunState> {
-    const deadline = Date.now() + maxWaitMs;
-    let state = await this.getRun(runId);
-
-    while (
-      isDefined(state) &&
-      !TERMINAL_STATUSES.includes(state.status) &&
-      Date.now() < deadline
-    ) {
-      await sleep(WAIT_POLL_MS);
-      state = await this.getRun(runId);
-    }
+    const state = await waitForChunkedRun(() => this.getRun(runId), maxWaitMs);
 
     if (!isDefined(state)) {
       throw new Error('Run not found or expired.');

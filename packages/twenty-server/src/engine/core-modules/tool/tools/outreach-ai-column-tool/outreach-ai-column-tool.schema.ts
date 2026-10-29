@@ -7,6 +7,30 @@ const tabSchema = z
     "The project table tab. Default people (also for questions about those people's companies). companies only when the user is on the Companies tab.",
   );
 
+const tableFilterSchema = z.union([
+  z.object({
+    columnId: z.string(),
+    kind: z.literal('values'),
+    values: z.array(z.string()),
+  }),
+  z.object({
+    columnId: z.string(),
+    kind: z.literal('condition'),
+    operator: z.enum([
+      'contains',
+      'notContains',
+      'equals',
+      'empty',
+      'notEmpty',
+      'greaterThan',
+      'greaterThanOrEqual',
+      'lessThan',
+      'lessThanOrEqual',
+    ]),
+    value: z.string(),
+  }),
+]);
+
 export const GetOutreachTabInputZodSchema = z.object({
   projectId: z
     .string()
@@ -28,13 +52,36 @@ export const GetOutreachTabInputZodSchema = z.object({
     .max(12)
     .optional()
     .describe(
-      'Column keys (otherFields keys such as brandCategory, or name, domain, industry, employees) to summarize over ALL rows: yes/no and label columns return value counts, number columns return count, min, quartiles and max. Use this to count and to choose a cut-off instead of paging rows.',
+      'Column keys (otherFields keys such as brandCategory, or name, domain, industry, employees) to summarize over ALL rows (or only those passing onlyViewMatches and filter): yes/no and label columns return value counts, number columns return count, min, quartiles and max. Use this to count and to choose a cut-off instead of paging rows.',
     ),
   onlyViewMatches: z
     .boolean()
     .optional()
     .describe(
-      'With summarize: only count rows that match the filters of the view currently applied to the table.',
+      'Only rows that match the filters of the view currently applied to the table. Applies to rows, filter, groupBy and summarize.',
+    ),
+  filter: z
+    .array(tableFilterSchema)
+    .max(12)
+    .optional()
+    .describe(
+      'Row predicates, all must match. Same shape as apply_table_view filters. columnId is an otherFields key (finalState, turnover) or a built-in column (name, title, company, location, domain, industry, employees). Yes/no columns compare as "Yes" / "No"; empty and notEmpty find unknowns. total stays the whole tab; matchCount is the rows that pass.',
+    ),
+  fields: z
+    .array(z.string().min(1))
+    .min(1)
+    .max(12)
+    .optional()
+    .describe(
+      'Return only these keys on each row (plus id), instead of the whole row with every otherFields value.',
+    ),
+  groupBy: z
+    .array(z.string().min(1))
+    .min(1)
+    .max(2)
+    .optional()
+    .describe(
+      'One or two column keys: returns the row count per value, or per value pair (for example ["finalState", "rung"]), over every row that passes onlyViewMatches and filter. Rows are left out unless fields is also passed.',
     ),
 });
 
@@ -264,30 +311,6 @@ export const GenerateOutreachTableViewInputZodSchema = z.object({
       'The user\'s request in their own words (for example "show only the CEOs of companies over 500 employees, biggest first"). The server decides whether a filter and/or a sort is needed at all.',
     ),
 });
-
-const tableFilterSchema = z.union([
-  z.object({
-    columnId: z.string(),
-    kind: z.literal('values'),
-    values: z.array(z.string()),
-  }),
-  z.object({
-    columnId: z.string(),
-    kind: z.literal('condition'),
-    operator: z.enum([
-      'contains',
-      'notContains',
-      'equals',
-      'empty',
-      'notEmpty',
-      'greaterThan',
-      'greaterThanOrEqual',
-      'lessThan',
-      'lessThanOrEqual',
-    ]),
-    value: z.string(),
-  }),
-]);
 
 export const ApplyOutreachTableViewInputZodSchema = z.object({
   projectId: z.string(),

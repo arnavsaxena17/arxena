@@ -10,8 +10,25 @@ Settle the brief before the first search, with as few questions as the request a
 - **Caps** in USD (fetch and enrichment), once.
 - **Destination** (the project; it is in the browsing context).
 - **Assumptions**: the defaults you chose. Say them to the user in one line.
+- **Data sources**: which sources the user lets this run use (below).
+- For a role at a set of companies, also: **persona** (`sales`: decision-makers to sell to; `exec_search`: candidates or the incumbent) and **target type** (`decision_maker`, `incumbent`, `candidate_pool`). Decide both from the wording; ask only when a wrong guess would waste the run.
 
-State the brief in a few lines, ask only what is missing in one batch (at most four questions, each with a recommended option; free text is always allowed), then call `get_sourcing_ledger` with `brief` so the final report can quote it.
+State the brief in a few lines, ask only what is missing in one batch (at most four questions, each with a recommended option; free text is always allowed), then call `get_sourcing_ledger` with `brief` so the final report can quote it. A later `brief` is merged over the latest one: pass only what changed.
+
+### Data sources
+
+Ask once, at the start, in the same `ask_questions` batch: "Which data sources should I use for this search?" Multi-select, with cost and speed on each option. Offer only sources the workspace has on, and a LinkedIn account only when one is connected. Pre-select the last run's choice (`brief.sources` from `get_sourcing_ledger`); the first time, pre-select the Arxena index, Bright Data and Google search.
+
+| Option | Key | Companies | People | Cost / speed |
+| --- | --- | --- | --- | --- |
+| Arxena index | `internal-index` | Yes | No | Free, instant, shallow |
+| Bright Data | `bright-data` | Yes | Yes | $0.002 per record |
+| Google search (also reads company sites) | `serp` | LinkedIn URLs | LinkedIn URLs | Per query, fast |
+| Harvest (Sales Navigator filters, not the user's account) | `harvest` | Yes | Yes | Paid per call |
+| My LinkedIn (Sales Navigator / Classic / Recruiter) | `linkedin` | Yes | Yes | Free, slow, uses the account's daily limits |
+| Apollo, Exa, Wikidata (when on) | `apollo`, `exa`, `wikidata` | Varies | Varies | Per source |
+
+Record the answer as `brief.sources` with the keys. It binds the run: a search tool for a source not picked refuses, and `find_people_by_company` skips it. Ask again only when the brief changes or the picked sources clearly cannot cover it; say what is missing.
 
 ### By kind of request
 
