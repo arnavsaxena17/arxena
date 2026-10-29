@@ -13,6 +13,8 @@ Search returns snapshots. Profile fetch turns a snapshot's LinkedIn URL into the
 | --- | --- | --- |
 | `sourcing.md` | head | always: vocabulary, funnel, destinations, source order, result lists, write contract |
 | `sourcing-people.md`, `-companies.md`, `-people-by-company.md` | search types | by route |
+| `sourcing-industry-search.md`, `-industry-labels.md` | industry searches: label mapping, source order, kinds of search; the full LinkedIn V2 label list (`fragments/linkedin-industries.md`) | `industry-search` by route and with company-first; `industry-labels` on demand |
+| `sourcing-title-search.md` | which sources filter the current job title and how to write titles for each | with `people` |
 | `sourcing-playbook-scored-list.md`, `-playbook-company-first.md`, `-playbook-shortfall.md` | playbooks (the first two bring the shortfall one) | by route |
 | `sourcing-scoring.md` | scoring: fitment, worthiness, climb rules, approvals | with scored list / inbound |
 | `sourcing-for-recruiting.md`, `-for-sales.md` | purpose: candidates for a role, or prospects. Each brings `rubrics` and its admission playbook | by purpose |
@@ -67,11 +69,11 @@ Facts only the team has; the drafts are in the files, please correct and extend:
 
 ## Fitment scoring
 
-`preview_ai_column` takes `fitment: { stage, criteria, minimumScore? }`. The model gives pass, fail or unknown per criterion; `scoreFitment` (`candidate-sourcing/services/fitment/`) computes `fitmentScore`, `fitmentOutcome` and `fitmentReason`. The bar is `SOURCING_FITMENT_THRESHOLD` (default 0.5; `0.6`, `60` and `60%` all work). A request may raise it, never lower it. Callers: the AI column, Bright Data ludicrous relevance filtering (`probabilityThreshold` on the filter spec), and the person fit filter used by `find_role_at_companies` and Bright Data people search. `CandidateJudgeService` has no caller (orphan).
+`preview_ai_column` takes `fitment: { stage, criteria, minimumScore? }`. The model gives pass, fail or unknown per criterion; `scoreFitment` (`candidate-sourcing/services/fitment/`) computes `fitmentScore`, `fitmentOutcome` and `fitmentReason`. The bar is `SOURCING_FITMENT_THRESHOLD` (default 0.5; `0.6`, `60` and `60%` all work). A request may raise it, never lower it. Callers: the AI column, Bright Data ludicrous relevance filtering (`probabilityThreshold` on the filter spec), and the person fit filter used by `find_people_by_company` and Bright Data people search. `CandidateJudgeService` has no caller (orphan).
 
 ## Profile fetch
 
-`fetch_profiles` fetches the full profile of every person on the People tab who needs one (default: fitment outcome pass or unknown, has a LinkedIn URL, no profile yet). Bright Data in parallel batches of 20 (4 at once), then Harvest for the misses; about a minute per call, resumable (`remaining`). The result is one `profile` value per row: `source`, `fetchedAt`, `fieldsPresent` and compact headline, about, experience, education, followers, connections, photo, location. `find_role_at_companies` stores the same value for people Bright Data returned with a profile, so they are not fetched twice.
+`fetch_profiles` fetches the full profile of every person on the People tab who needs one (default: fitment outcome pass or unknown, has a LinkedIn URL, no profile yet). Bright Data in parallel batches of 20 (4 at once), then Harvest for the misses; about a minute per call, resumable (`remaining`). The result is one `profile` value per row: `source`, `fetchedAt`, `fieldsPresent` and compact headline, about, experience, education, followers, connections, photo, location. `find_people_by_company` stores the same value for people Bright Data returned with a profile, so they are not fetched twice.
 
 ## Asking the user
 

@@ -1,4 +1,4 @@
-import { GoogleResultExtractionService } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/google-result-extraction.service';
+import { GoogleResultExtractionService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/google-result-extraction.service';
 
 jest.mock(
   'src/engine/metadata-modules/ai/ai-billing/services/ai-sdk-execution.service',

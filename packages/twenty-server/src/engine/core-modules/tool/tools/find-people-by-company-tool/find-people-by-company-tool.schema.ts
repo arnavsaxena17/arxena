@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
-export const FIND_ROLE_AT_COMPANIES_MAX_COMPANIES = 50;
+export const FIND_PEOPLE_BY_COMPANY_MAX_COMPANIES = 50;
 // Companies read from the project by the tool itself are not typed by the
 // model, so the cap is about run length, not output size
-export const FIND_ROLE_AT_COMPANIES_MAX_PROJECT_COMPANIES = 500;
+export const FIND_PEOPLE_BY_COMPANY_MAX_PROJECT_COMPANIES = 500;
 
-export const FindRoleAtCompaniesInputZodSchema = z.object({
+export const FindPeopleByCompanyInputZodSchema = z.object({
   companies: z
     .array(
       z.object({
@@ -30,7 +30,7 @@ export const FindRoleAtCompaniesInputZodSchema = z.object({
       }),
     )
     .min(1)
-    .max(FIND_ROLE_AT_COMPANIES_MAX_COMPANIES)
+    .max(FIND_PEOPLE_BY_COMPANY_MAX_COMPANIES)
     .optional()
     .describe(
       "Companies to look up, one entry each. Leave out and set fromProject to look up the project's own companies without typing them.",
@@ -39,7 +39,7 @@ export const FindRoleAtCompaniesInputZodSchema = z.object({
     .boolean()
     .default(false)
     .describe(
-      `Take the companies from the project's Companies tab (needs projectId, up to ${FIND_ROLE_AT_COMPANIES_MAX_PROJECT_COMPANIES}) instead of listing them. Use this for "all companies in this project" / "the filtered ones": the tool reads the rows, skips those already Found, and runs them all in one call. Ignored when companies is given.`,
+      `Take the companies from the project's Companies tab (needs projectId, up to ${FIND_PEOPLE_BY_COMPANY_MAX_PROJECT_COMPANIES}) instead of listing them. Use this for "all companies in this project" / "the filtered ones": the tool reads the rows, skips those already Found, and runs them all in one call. Ignored when companies is given.`,
     ),
   onlyViewMatches: z
     .boolean()
@@ -92,6 +92,6 @@ export const FindRoleAtCompaniesInputZodSchema = z.object({
     .describe('Bright Data spend cap per company in USD'),
 });
 
-export type FindRoleAtCompaniesInput = z.infer<
-  typeof FindRoleAtCompaniesInputZodSchema
+export type FindPeopleByCompanyInput = z.infer<
+  typeof FindPeopleByCompanyInputZodSchema
 >;

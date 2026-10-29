@@ -11,7 +11,7 @@ export const OUTREACH_PEOPLE_FOUND_LABELS: OutreachPeopleFoundLabel[] = [
   'Lookup failed',
 ];
 
-const PEOPLE_FOUND_MODEL = 'find_role_at_companies';
+const PEOPLE_FOUND_MODEL = 'find_people_by_company';
 
 // The otherFields write for a company row's "People found" / "People count"
 // columns, in the shape the table reads for AI columns.

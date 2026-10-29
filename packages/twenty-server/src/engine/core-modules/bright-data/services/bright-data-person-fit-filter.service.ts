@@ -203,7 +203,7 @@ const runPool = async <TItem>(
   );
 };
 
-// Every people path (find role at companies, Bright Data search) judges people
+// Every people path (find_people_by_company, Bright Data search) judges people
 // with Jev (typesafe/jev-1.13 on OpenRouter): does the person fit the search, is
 // the profile real, and is this row the same person as another. A batch the
 // model fails on is skipped: nobody is rejected, flagged or merged on a guess.

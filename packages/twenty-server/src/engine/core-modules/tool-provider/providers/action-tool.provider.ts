@@ -42,7 +42,7 @@ import {
 } from 'src/engine/core-modules/tool/tools/outreach-ai-column-tool/outreach-ai-column-tools';
 import { PreviewSampleMessageColumnTool } from 'src/engine/core-modules/tool/tools/outreach-sample-message-tool/preview-sample-message-column-tool';
 import { SaveOutreachTargetsToCrmTool } from 'src/engine/core-modules/tool/tools/outreach-save-to-crm-tool/save-outreach-targets-to-crm-tool';
-import { FindRoleAtCompaniesTool } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/find-role-at-companies-tool';
+import { FindPeopleByCompanyTool } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool';
 import { GetSourcingLedgerTool } from 'src/engine/core-modules/tool/tools/sourcing-ledger-tool/get-sourcing-ledger-tool';
 import { FetchProfilesTool } from 'src/engine/core-modules/tool/tools/fetch-profiles-tool/fetch-profiles-tool';
 import { StartOutreachTool } from 'src/engine/core-modules/tool/tools/outreach-start-tool/start-outreach-tool';
@@ -76,7 +76,7 @@ export class ActionToolProvider implements ToolProvider {
     private readonly importOutreachSpreadsheetTool: ImportOutreachSpreadsheetTool,
     private readonly saveOutreachTargetsToCrmTool: SaveOutreachTargetsToCrmTool,
     private readonly startOutreachTool: StartOutreachTool,
-    private readonly findRoleAtCompaniesTool: FindRoleAtCompaniesTool,
+    private readonly findPeopleByCompanyTool: FindPeopleByCompanyTool,
     private readonly fetchProfilesTool: FetchProfilesTool,
     private readonly getSourcingLedgerTool: GetSourcingLedgerTool,
     private readonly getOutreachTabTool: GetOutreachTabTool,
@@ -108,7 +108,7 @@ export class ActionToolProvider implements ToolProvider {
       ['import_outreach_spreadsheet', this.importOutreachSpreadsheetTool],
       ['save_outreach_targets_to_crm', this.saveOutreachTargetsToCrmTool],
       ['start_outreach', this.startOutreachTool],
-      ['find_role_at_companies', this.findRoleAtCompaniesTool],
+      ['find_people_by_company', this.findPeopleByCompanyTool],
       ['fetch_profiles', this.fetchProfilesTool],
       ['get_sourcing_ledger', this.getSourcingLedgerTool],
       ['get_outreach_tab', this.getOutreachTabTool],
@@ -261,8 +261,8 @@ export class ActionToolProvider implements ToolProvider {
 
     descriptors.push(
       this.buildDescriptor(
-        'find_role_at_companies',
-        this.findRoleAtCompaniesTool,
+        'find_people_by_company',
+        this.findPeopleByCompanyTool,
         includeSchemas,
         context.locale,
       ),

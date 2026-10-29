@@ -1,8 +1,8 @@
 import { isDefined } from 'twenty-shared/utils';
 
-import { FindRoleAtCompaniesTool } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/find-role-at-companies-tool';
-import { parseLinkedinSerpResult } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/parse-linkedin-serp-result.util';
-import { FindRoleGoogleSearchService } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/find-role-google-search.service';
+import { FindPeopleByCompanyTool } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool';
+import { parseLinkedinSerpResult } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/parse-linkedin-serp-result.util';
+import { FindPeopleGoogleSearchService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-google-search.service';
 
 // the request-rate limiter would stall tests that run on fake timers
 process.env.FIND_ROLE_SERP_REQUESTS_PER_MINUTE = '0';
@@ -198,9 +198,9 @@ const buildTool = ({
     .fn()
     .mockResolvedValue(projectRows.map((row) => ({ otherFields: {}, ...row })));
   const getTableView = jest.fn().mockResolvedValue(tableView);
-  const tool = new FindRoleAtCompaniesTool(
+  const tool = new FindPeopleByCompanyTool(
     { searchNaturalLanguage } as never,
-    new FindRoleGoogleSearchService({
+    new FindPeopleGoogleSearchService({
       isConfigured: () => true,
       requestSerpGoogleJson,
     } as never),
@@ -234,7 +234,7 @@ const buildTool = ({
 
 const context = { workspaceId: 'workspace-id' };
 
-describe('FindRoleAtCompaniesTool', () => {
+describe('FindPeopleByCompanyTool', () => {
   it('should merge a person found by both sources and write them once', async () => {
     const { tool, upsert } = buildTool({
       brightDataDocuments: [
@@ -436,7 +436,7 @@ describe('FindRoleAtCompaniesTool', () => {
   });
 });
 
-describe('FindRoleAtCompaniesTool taxonomy use', () => {
+describe('FindPeopleByCompanyTool taxonomy use', () => {
   it('should search with the titles the taxonomy supplies', async () => {
     const { tool, searchNaturalLanguage, requestSerpGoogleJson } = buildTool({
       brightDataDocuments: [],
@@ -486,7 +486,7 @@ describe('FindRoleAtCompaniesTool taxonomy use', () => {
   });
 });
 
-describe('FindRoleAtCompaniesTool Google enrichment', () => {
+describe('FindPeopleByCompanyTool Google enrichment', () => {
   const organic = [
     {
       title:
@@ -637,7 +637,7 @@ describe('FindRoleAtCompaniesTool Google enrichment', () => {
   });
 });
 
-describe('FindRoleAtCompaniesTool concurrency and retries', () => {
+describe('FindPeopleByCompanyTool concurrency and retries', () => {
   // The suite runs on fake timers; these tests wait on real delays
   const savedConcurrency = process.env.FIND_ROLE_COMPANY_CONCURRENCY;
 
@@ -783,7 +783,7 @@ describe('FindRoleAtCompaniesTool concurrency and retries', () => {
   });
 });
 
-describe('FindRoleAtCompaniesTool Google queries', () => {
+describe('FindPeopleByCompanyTool Google queries', () => {
   const decodedQueries = (calls: Array<[string]>) =>
     calls.map(([url]) =>
       decodeURIComponent(new URL(url).searchParams.get('q') ?? ''),
@@ -906,7 +906,7 @@ describe('FindRoleAtCompaniesTool Google queries', () => {
   });
 });
 
-describe('FindRoleAtCompaniesTool model extraction', () => {
+describe('FindPeopleByCompanyTool model extraction', () => {
   const aboutPage = {
     title: 'About us',
     link: 'https://99pancakes.in/pages/about-us',
@@ -1138,7 +1138,7 @@ describe('FindRoleAtCompaniesTool model extraction', () => {
   });
 });
 
-describe('FindRoleAtCompaniesTool judged by a model', () => {
+describe('FindPeopleByCompanyTool judged by a model', () => {
   const hardcastleResults = [
     {
       title:
@@ -1394,7 +1394,7 @@ describe('FindRoleAtCompaniesTool judged by a model', () => {
   });
 });
 
-describe('FindRoleAtCompaniesTool companies read from the project', () => {
+describe('FindPeopleByCompanyTool companies read from the project', () => {
   const rows = [
     { id: 'c1', name: 'Alpha' },
     { id: 'c2', name: 'Beta', otherFields: { peopleFound: 'Found' } },

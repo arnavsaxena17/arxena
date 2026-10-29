@@ -30,16 +30,16 @@ export type LiveCapState = {
   brightDataCompanyFetches: number;
   brightDataPeopleFetches: number;
   linkedInRows: number;
-  findRoleCalls: number;
-  findRoleOnlyFailedCalls: number;
+  findPeopleCalls: number;
+  findPeopleOnlyFailedCalls: number;
 };
 
 export const createLiveCapState = (): LiveCapState => ({
   brightDataCompanyFetches: 0,
   brightDataPeopleFetches: 0,
   linkedInRows: 0,
-  findRoleCalls: 0,
-  findRoleOnlyFailedCalls: 0,
+  findPeopleCalls: 0,
+  findPeopleOnlyFailedCalls: 0,
 });
 
 export const readLiveToolConfig = (): LiveToolConfig | null => {
@@ -63,8 +63,8 @@ export const readLiveToolConfig = (): LiveToolConfig | null => {
 };
 
 export const LIVE_CAPPED_SETUP_NOTE = [
-  `Live capped eval: projectId is fixed. Bright Data company fetch ≤${CAP_ROWS} rows / $${BD_MAX_BUDGET_USD}; Bright Data people fetch ≤${CAP_ROWS} / $${BD_MAX_BUDGET_USD}; LinkedIn ≤${CAP_ROWS} rows total; find_role_at_companies ≤${CAP_ROWS} companies and maxBudgetUsd ≤$${FIND_ROLE_MAX_BUDGET_PER_COMPANY_USD} per company (one full call + one onlyFailed); AI columns rowLimit ≤${AI_COLUMN_ROW_LIMIT}.`,
-  'Prefer company-first: Bright Data companies → enrich oncology manufacture → find_role_at_companies for sales/medical/territory/field reps → score and rank a shortlist of about 25.',
+  `Live capped eval: projectId is fixed. Bright Data company fetch ≤${CAP_ROWS} rows / $${BD_MAX_BUDGET_USD}; Bright Data people fetch ≤${CAP_ROWS} / $${BD_MAX_BUDGET_USD}; LinkedIn ≤${CAP_ROWS} rows total; find_people_by_company ≤${CAP_ROWS} companies and maxBudgetUsd ≤$${FIND_ROLE_MAX_BUDGET_PER_COMPANY_USD} per company (one full call + one onlyFailed); AI columns rowLimit ≤${AI_COLUMN_ROW_LIMIT}.`,
+  'Prefer company-first: Bright Data companies → enrich oncology manufacture → find_people_by_company for sales/medical/territory/field reps → score and rank a shortlist of about 25.',
 ].join(' ');
 
 const LIVE_ALLOWLIST = new Set([
@@ -72,7 +72,7 @@ const LIVE_ALLOWLIST = new Set([
   OUTREACH_LIST_TOOL_NAME,
   'get_outreach_tab',
   'get_sourcing_ledger',
-  'find_role_at_companies',
+  'find_people_by_company',
   'fetch_profiles',
   'preview_ai_column',
   'run_ai_column',
@@ -266,19 +266,22 @@ const capFindRole = async (
   const onlyFailed = args.onlyFailed === true;
 
   if (onlyFailed) {
-    if (state.findRoleOnlyFailedCalls >= 1) {
-      return { error: 'Live cap: only one find_role onlyFailed retry allowed' };
-    }
-
-    state.findRoleOnlyFailedCalls += 1;
-  } else {
-    if (state.findRoleCalls >= 1) {
+    if (state.findPeopleOnlyFailedCalls >= 1) {
       return {
-        error: 'Live cap: only one full find_role_at_companies call allowed',
+        error:
+          'Live cap: only one find_people_by_company onlyFailed retry allowed',
       };
     }
 
-    state.findRoleCalls += 1;
+    state.findPeopleOnlyFailedCalls += 1;
+  } else {
+    if (state.findPeopleCalls >= 1) {
+      return {
+        error: 'Live cap: only one full find_people_by_company call allowed',
+      };
+    }
+
+    state.findPeopleCalls += 1;
   }
 
   let companies = Array.isArray(args.companies)
@@ -365,7 +368,7 @@ export const executeLiveTool = async (
     }
 
     args = capped;
-  } else if (toolName === 'find_role_at_companies') {
+  } else if (toolName === 'find_people_by_company') {
     const capped = await capFindRole(args, state, config);
 
     if ('error' in capped) {

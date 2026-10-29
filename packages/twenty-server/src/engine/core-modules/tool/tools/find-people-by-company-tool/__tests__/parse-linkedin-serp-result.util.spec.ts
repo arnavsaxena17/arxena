@@ -2,7 +2,7 @@ import {
   linkedinProfileUrlFromPostUrl,
   normalizeLinkedinProfileUrl,
   parseLinkedinSerpResult,
-} from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/parse-linkedin-serp-result.util';
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/parse-linkedin-serp-result.util';
 
 describe('parseLinkedinSerpResult', () => {
   it('should split name, title and company', () => {

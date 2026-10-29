@@ -6,12 +6,15 @@ routes:
   - when: |-
       Find companies or people / LinkedIn / Harvest / Sales Nav / places on a map
     hint: |-
-      . Pass `sections`: always add `for-recruiting` (candidates for a role) or `for-sales` (prospects you sell to — not a Sales Rep / AE / BDR hire) to the search type: `["people", "for-recruiting"]`. The search type is `["people"]` for a population, `["companies"]` for companies, `["places"]` for places on a map (outlets across a city), `["people-by-company"]` for a role at companies already named. A scored list of about N adds `scoring` and `playbook-shortfall` to those `sections`, and also `load_skills(["ai-filter-enrich"])`. Add `for-recruiting` or `for-sales`, and `playbook-large-list` for about 1,000 rows or more.
+      . Pass `sections`: always add `for-recruiting` (candidates for a role) or `for-sales` (prospects you sell to — not a Sales Rep / AE / BDR hire) to the search type: `["people", "for-recruiting"]`. The search type is `["people"]` for a population, `["companies"]` for companies, `["places"]` for places on a map (outlets across a city), `["people-by-company"]` for a role at companies already named. Add `industry-search` when the request names an industry, sector or segment. A scored list of about N adds `scoring` and `playbook-shortfall` to those `sections`, and also `load_skills(["ai-filter-enrich"])`. Add `for-recruiting` or `for-sales`, and `playbook-large-list` for about 1,000 rows or more.
 parts:
   - companies
   - places
   - people
   - people-by-company
+  - industry-search
+  - industry-labels
+  - title-search
   - playbook-company-first
   - playbook-shortfall
   - requirements
@@ -35,10 +38,10 @@ parts:
   - source-profiles
 requires:
   companies: [src-bright-data-companies]
-  people: [src-bright-data-people]
+  people: [src-bright-data-people, title-search]
   places: [src-bright-data-companies]
   requirements: [intent-glossary]
-  playbook-company-first: [people-by-company, playbook-shortfall]
+  playbook-company-first: [people-by-company, playbook-shortfall, industry-search]
   playbook-large-list: [query-planning, playbook-shortfall]
   query-planning: [playbook-shortfall]
   for-recruiting: [rubrics]
@@ -96,7 +99,7 @@ Then state the brief, ask what is missing in one batch (at most four questions, 
 The user waits on every step. Fewer, bigger steps beat careful small ones.
 
 - No narration between calls. Run independent calls in the same step. Never one call per company or per person: every sourcing tool takes the whole list.
-- Ask once, up front: target count, caps, rubric. After a yes, do not ask again before spending inside the caps. One exception: a company list you built or narrowed is confirmed before `find_role_at_companies` (`playbook-company-first`).
+- Ask once, up front: target count, caps, rubric. After a yes, do not ask again before spending inside the caps. One exception: a company list you built or narrowed is confirmed before `find_people_by_company` (`playbook-company-first`).
 - Score the whole list with one `run_ai_column` after one 10-row preview. Do not preview twice. Status checks follow `ai-filter-enrich`.
 - A long LinkedIn search is one `search_linkedin_continue` call with `maxPages` (up to 50), not a call per page.
 - Fetch profiles only for rows the snapshot leaves undecided, with `fetch_profiles`; call again only while `remaining` is above 0.
@@ -113,8 +116,10 @@ Pick the path and say it, with the reason, in one line. If that section is not a
 | Mid-level or plant-level roles | `people`, and `src-naukri` when the user has the Naukri extension connected | {{source: default people}}; Naukri rows arrive on the tab |
 | Companies | `companies` | {{source: default companies}} |
 | Places on a map: outlets you can walk into | `places` | {{source: google-maps companies}} |
-| A role at companies already named or already on the project | `people-by-company` | `find_role_at_companies` |
-| A role across an industry, no companies named (prospects by default) | `playbook-company-first` | {{source: default companies}}, then `find_role_at_companies` |
+| A role at companies already named or already on the project | `people-by-company` | `find_people_by_company` |
+| Companies or people in an industry, sector or segment | `industry-search` with the search type | Arxena index, then {{source: default companies}} |
+| People filtered by their current job title | `title-search` (comes with `people`) | {{source: default people}} |
+| A role across an industry, no companies named (prospects by default) | `playbook-company-first` | {{source: default companies}}, then `find_people_by_company` |
 | About N rows that must clear a rubric | `scoring` and `playbook-shortfall` (the loop is in `scoring`) | The search type's |
 | About 1,000 rows or more | `playbook-large-list` | The search type's |
 | Applicants to a job posting | `inbound-applicants` | None: the rows are on the People tab |
@@ -144,7 +149,7 @@ Follow the loaded section, then these rules.
 
 Use the default source in the Plan table unless the user names another provider (Apollo, LinkedIn / Sales Navigator, Harvest, Exa, a pasted Sales Navigator or LinkedIn search URL) or the request needs a feature only that provider has (a named Sales Nav list, facet ids). The Bright Data `src-*` sections say which mode to use: ludicrous for a described set, instant for a website or LinkedIn URL lookup or a quick probe of a short literal. Do not pick Apollo because it is listed first. Fall back only if the default errors or returns nothing, and say so.
 
-`people-by-company` is one `find_role_at_companies` call for the whole company list. No estimate and no provider question. The tool searches every company and returns the matching people. Do not search those companies yourself and do not loop them.
+`people-by-company` is one `find_people_by_company` call for the whole company list. No estimate and no provider question. The tool searches every company and returns the matching people. Do not search those companies yourself and do not loop them.
 
 
 

@@ -33,11 +33,11 @@ import {
 import { UpsertOutreachTargetCompaniesTool } from 'src/engine/core-modules/tool/tools/outreach-target-companies-tool/upsert-outreach-target-companies-tool';
 import { SaveOutreachTargetsToCrmTool } from 'src/engine/core-modules/tool/tools/outreach-save-to-crm-tool/save-outreach-targets-to-crm-tool';
 import { TitleTaxonomyModule } from 'src/engine/core-modules/title-taxonomy/title-taxonomy.module';
-import { FindRoleAtCompaniesTool } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/find-role-at-companies-tool';
-import { CandidateJudgeService } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/candidate-judge.service';
-import { FindRoleGoogleSearchService } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/find-role-google-search.service';
-import { LinkedinProfileResolverService } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/linkedin-profile-resolver.service';
-import { GoogleResultExtractionService } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/google-result-extraction.service';
+import { FindPeopleByCompanyTool } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool';
+import { CandidateJudgeService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/candidate-judge.service';
+import { FindPeopleGoogleSearchService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-google-search.service';
+import { LinkedinProfileResolverService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/linkedin-profile-resolver.service';
+import { GoogleResultExtractionService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/google-result-extraction.service';
 import { AiBillingModule } from 'src/engine/metadata-modules/ai/ai-billing/ai-billing.module';
 import { AiModelsModule } from 'src/engine/metadata-modules/ai/ai-models/ai-models.module';
 import { StartOutreachTool } from 'src/engine/core-modules/tool/tools/outreach-start-tool/start-outreach-tool';
@@ -145,11 +145,11 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     ImportOutreachSpreadsheetTool,
     SaveOutreachTargetsToCrmTool,
     StartOutreachTool,
-    FindRoleAtCompaniesTool,
+    FindPeopleByCompanyTool,
     FetchProfilesService,
     FetchProfilesTool,
     GetSourcingLedgerTool,
-    FindRoleGoogleSearchService,
+    FindPeopleGoogleSearchService,
     GoogleResultExtractionService,
     CandidateJudgeService,
     LinkedinProfileResolverService,
@@ -207,7 +207,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     ImportOutreachSpreadsheetTool,
     SaveOutreachTargetsToCrmTool,
     StartOutreachTool,
-    FindRoleAtCompaniesTool,
+    FindPeopleByCompanyTool,
     FetchProfilesTool,
     GetSourcingLedgerTool,
     GetOutreachTabTool,

@@ -2,7 +2,7 @@ import {
   buildCompanyVariants,
   matchesAnyCompanyVariant,
   textMentionsAnyCompanyVariant,
-} from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/company-name-variants.util';
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/company-name-variants.util';
 
 describe('buildCompanyVariants', () => {
   it('should add the name without its country word and the alternates', () => {

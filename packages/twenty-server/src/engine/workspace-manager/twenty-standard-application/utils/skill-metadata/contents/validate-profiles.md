@@ -16,7 +16,7 @@ Score people **already on the People tab** as worthy or not. Do not re-source. F
 
 1. **Scope.** `tab: "people"`, `projectId` and the project ICP (`icpSpec`, target titles, geography, seniority) from browsing context. The ICP is the fit criteria; the worthiness gates below are always must-haves here.
 2. **Tools once:** `learn_tools({ toolNames: ["get_outreach_tab", "fetch_profiles", "preview_ai_column", "run_ai_column", "get_ai_column_run_status", "generate_table_view", "apply_table_view", "ask_questions"] })`.
-3. **Reuse profiles on the rows.** Check the People set for a `profile` column. Rows that have one (from `find_role_at_companies` or a prior fetch), especially `profile.source === "bright_data"`, are ready to score. Never pay again for them.
+3. **Reuse profiles on the rows.** Check the People set for a `profile` column. Rows that have one (from `find_people_by_company` or a prior fetch), especially `profile.source === "bright_data"`, are ready to score. Never pay again for them.
 4. **Fetch only the gaps, Bright Data only.** `fetch_profiles({ projectId, rowLimit: 500, sources: ["bright_data"] })` for rows still missing `profile`; call again while `remaining` > 0 and ask once for spend if needed. It looks people up by LinkedIn URL first, then by name and company (then Google); a match needs the name and company to agree. `resolvedLinkedinUrls` says how many were found each way. Never pass `refresh: true`, never add Harvest, never omit `sources` (that enables Harvest).
 5. **Score full profiles** with `stage: "profile"` and `rerunAll: true` after a fetch or when profiles were already on the rows. Rows still without a profile are unknown, not fail.
 

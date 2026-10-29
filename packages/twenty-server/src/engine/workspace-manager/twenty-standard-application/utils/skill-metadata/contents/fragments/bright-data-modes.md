@@ -10,5 +10,5 @@
 | A description of companies or people | ludicrous |
 | A website, or a LinkedIn company or profile URL | instant lookup |
 | A name, or name and company, to check | instant probe; for rows already on the tab, `fetch_profiles` stores the profile |
-| A role at named companies | `find_role_at_companies` |
+| A role at named companies | `find_people_by_company` |
 | A Sales Navigator or LinkedIn search URL | `src-linkedin` |

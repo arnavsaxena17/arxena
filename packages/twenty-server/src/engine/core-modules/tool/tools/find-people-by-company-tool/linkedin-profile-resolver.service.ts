@@ -5,15 +5,17 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { BRIGHT_DATA_COST_PER_RECORD_USD } from 'src/engine/core-modules/bright-data/ludicrous/constants/bright-data-ludicrous-pricing.const';
 import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
 import { mapBrightDataPersonToSearchItem } from 'src/engine/core-modules/bright-data/utils/bright-data-business-search.util';
-import { type GoogleSerpOrganicItem } from 'src/engine/core-modules/org-chart/utils/map-google-serp-organic.util';
-import { FindRoleGoogleSearchService } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/find-role-google-search.service';
+import {
+  type GoogleSerpOrganicItem,
+  mapGoogleSerpOrganicResults,
+} from 'src/engine/core-modules/org-chart/utils/map-google-serp-organic.util';
+import { FindPeopleGoogleSearchService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-google-search.service';
 import {
   linkedinProfileUrlFromPostUrl,
   normalizeLinkedinProfileUrl,
   parseLinkedinSerpResult,
-} from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/parse-linkedin-serp-result.util';
-import { personNamesMatch } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/person-name-matching.util';
-import { mapGoogleSerpOrganicResults } from 'src/engine/core-modules/org-chart/utils/map-google-serp-organic.util';
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/parse-linkedin-serp-result.util';
+import { personNamesMatch } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/person-name-matching.util';
 
 const BRIGHT_DATA_NAME_LOOKUP_LIMIT = 5;
 const MAX_COMPANY_NAMES = 3;
@@ -53,7 +55,7 @@ const shortest = (names: string[]): string =>
 export class LinkedinProfileResolverService {
   constructor(
     private readonly brightDataBusinessSearchService: BrightDataBusinessSearchService,
-    private readonly googleSearchService: FindRoleGoogleSearchService,
+    private readonly googleSearchService: FindPeopleGoogleSearchService,
   ) {}
 
   async resolve({

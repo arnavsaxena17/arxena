@@ -1,7 +1,7 @@
 import {
   personNamesMatch,
   personNamesRoughlyMatch,
-} from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/person-name-matching.util';
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/person-name-matching.util';
 
 describe('personNamesMatch', () => {
   it('should match the same name with different case, honorifics and accents', () => {

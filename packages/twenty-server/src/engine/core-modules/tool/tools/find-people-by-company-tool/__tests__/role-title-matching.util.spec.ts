@@ -1,7 +1,7 @@
 import {
   getRequestedRoleOrder,
   scoreRoleMatch,
-} from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/role-title-matching.util';
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/role-title-matching.util';
 import { type TitleClass } from 'src/engine/core-modules/title-taxonomy/title-class.type';
 
 const CEO_CLASS: TitleClass = {

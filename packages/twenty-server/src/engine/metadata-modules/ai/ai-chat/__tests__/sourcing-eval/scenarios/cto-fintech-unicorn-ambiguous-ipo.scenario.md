@@ -15,7 +15,7 @@ expect:
   plan_assertions:
     - ask_questions is called before any paid fetch
     - the rubric names an archetype from sourcing-rubrics (candidate-led or company-led)
-    - find_role_at_companies is called once for the named companies, and the plan says peer companies are needed to reach the target
+    - find_people_by_company is called once for the named companies, and the plan says peer companies are needed to reach the target
     - age is not used as a filter on any source, and the assumptions line says the age cap was ignored
     - no fitment criterion is about age, pay or notice period (they are later checks)
 judge:

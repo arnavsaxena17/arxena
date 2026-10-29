@@ -60,7 +60,7 @@ const SCHEMA_HINTS: Record<string, string> = {
   run_ai_column:
     '{ projectId, tab, previewId, rowLimit?, rowIds?, rowScope?: chat_upserts|unfilled|all, rerunAll?, approvedCostUsd? }',
   fetch_profiles: '{ projectId, rowLimit? }',
-  find_role_at_companies:
+  find_people_by_company:
     '{ projectId, fromProject?, companies?: [{ id, name, alternateNames? }], roles, location, maxBudgetUsd?, onlyFailed? }',
   search_bright_data_business:
     '{ entity: "people" | "company", query, projectId (required on Find), mode?, listId?, maxBudgetUsd?, targetCount?, autoExecute? }',
@@ -144,7 +144,7 @@ const stubResult = (
         duplicates: 10,
         total: 90,
       });
-    case 'find_role_at_companies':
+    case 'find_people_by_company':
       return { companies: 2, matched: 2, people: 4, status: 'matched' };
     case 'fetch_profiles':
       return { fetched: 80, remaining: 0 };

@@ -1,7 +1,7 @@
 import {
   packLinkedinUrlLookupQueries,
   toShortLinkedinProfileUrl,
-} from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/linkedin-url-lookup-query.util';
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/linkedin-url-lookup-query.util';
 
 describe('toShortLinkedinProfileUrl', () => {
   it('should drop the country host, scheme and trailing slash', () => {

@@ -14,7 +14,7 @@ import { OutreachTabService } from 'src/engine/core-modules/outreach-command/ser
 import { mergeOutreachOtherFields } from 'src/engine/core-modules/outreach-command/utils/merge-outreach-other-fields.util';
 import { resolvePeopleCompanyIds } from 'src/engine/core-modules/outreach-command/utils/resolve-people-company-ids.util';
 import { isDeprioritisedPerson } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/outreach-people-deprioritisation.util';
-import { personNamesRoughlyMatch } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/person-name-matching.util';
+import { personNamesRoughlyMatch } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/person-name-matching.util';
 import {
   type UpsertOutreachTargetPeopleInput,
   UpsertOutreachTargetPeopleInputZodSchema,

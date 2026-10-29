@@ -13,7 +13,7 @@ expect:
   must_not_call: [create_candidate, create_one_company, save_outreach_targets_to_crm]
   max_questions: 4
   plan_assertions:
-    - find_role_at_companies is called once for the named companies, and the plan says peer companies are needed to reach the target
+    - find_people_by_company is called once for the named companies, and the plan says peer companies are needed to reach the target
     - fetch_profiles is not called before the brief is stated
     - age is not classified as pass or fail at the snapshot stage
     - age is not used as a filter on any source, and the assumptions line says the age cap was ignored

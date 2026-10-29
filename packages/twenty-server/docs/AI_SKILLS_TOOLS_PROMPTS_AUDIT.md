@@ -180,7 +180,7 @@ edited a standard skill; handle by treating an edited copy as an override.
 The "Role at named companies" recipe is a fixed procedure the model re-runs by
 hand. Make it one server tool:
 
-`find_role_at_companies({companies[], roles[], location, sources})`
+`find_people_by_company({companies[], roles[], location, sources})`
 
 - Expands roles in code (a synonym table: CEO, Chief Executive Officer,
   Managing Director, MD, Founder, Owner, …), so the user's wording is never
@@ -235,7 +235,7 @@ tokens).
 1. Token breakdown logging and CI budgets (small, gives the baseline).
 2. Manifest and generated routing/catalog, with the tool-name checks (low risk, fixes drift).
 3. Split `search`, add section loading (largest immediate token saving).
-4. `find_role_at_companies` with Bright Data + SERP (fixes the quality problem from the example chat).
+4. `find_people_by_company` with Bright Data + SERP (fixes the quality problem from the example chat).
 5. Serve skills from code and retire the sync commands.
 6. Search-intent compiler and removal of the unused parsers.
 7. Registry unification and removal of the HTTP loop.
@@ -266,7 +266,7 @@ tokens).
 | 1. Manifest per skill | Partly: CI checks for tool names and token budgets exist (`skill-content-integrity.spec.ts`); front-matter manifest and generated routing/catalog not built |
 | 2. Serve standard skills from code | Done for content: `SkillService` overlays the code version on stored standard skills, so edits ship with the build. Names and descriptions still come from the database; new standard skills still need a backfill command |
 | 3. Split `search`, load by section | Done: `load_skills({skillNames, sections})`, sections `companies`, `list-building`, `people`, `linkedin-harvest`; role lookup loads about 5.5k tokens instead of 15.4k |
-| 4. `find_role_at_companies` | Done: native action tool, Bright Data + Google in parallel, company and title verification, writes the People tab. Not yet run against live Bright Data |
+| 4. `find_people_by_company` | Done: native action tool, Bright Data + Google in parallel, company and title verification, writes the People tab. Not yet run against live Bright Data |
 | 5. One search-intent compiler | Not started |
 | 6. One registry, no HTTP loop | Not started |
 | 7. Layering rules in CI | Token budgets per skill and per section only |
@@ -316,7 +316,7 @@ command: the server registers it, derives its identifier from the name, routes t
 it, and serves it from the file even before the workspace has a stored row.
 Playbooks default to a 1,500-token cap. How to write one: `skills/README.md`.
 
-First playbook: `find-role-at-companies` (about 640 tokens). Moving "Role at named
+First playbook: `find-people-by-company` (about 640 tokens). Moving "Role at named
 companies" out of the `search` skill took the role lookup from about 5,500 tokens
 of context to about 640.
 

@@ -12,7 +12,7 @@ import {
 import {
   isLinkedinProfileUrl,
   normalizeLinkedinProfileUrl,
-} from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/parse-linkedin-serp-result.util';
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/parse-linkedin-serp-result.util';
 
 // Bright Data's SERP did not fail more under load (strictly one at a time it
 // failed about as often), so the cap only has to stop a runaway
@@ -104,7 +104,7 @@ const pauseRequestSlots = (milliseconds: number): void => {
 };
 
 @Injectable()
-export class FindRoleGoogleSearchService {
+export class FindPeopleGoogleSearchService {
   private active = 0;
   private readonly waiting: Array<() => void> = [];
 

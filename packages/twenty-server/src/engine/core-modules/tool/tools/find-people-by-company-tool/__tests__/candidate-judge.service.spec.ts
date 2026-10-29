@@ -1,4 +1,4 @@
-import { CandidateJudgeService } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/candidate-judge.service';
+import { CandidateJudgeService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/candidate-judge.service';
 
 jest.mock(
   'src/engine/metadata-modules/ai/ai-billing/services/ai-sdk-execution.service',

@@ -29,7 +29,7 @@ const SOURCE_TOOLS = new Set([
   'search_apollo_people',
   'search_apollo_companies',
   'exa_web_search',
-  'find_role_at_companies',
+  'find_people_by_company',
 ]);
 
 const FITMENT_TOOLS = new Set(['preview_ai_column', 'run_ai_column']);
@@ -77,7 +77,7 @@ const describeCall = (call: ToolCall): string => {
       }`;
     case 'search_bright_data_business':
       return `entity=${String(args.entity)} query="${String(args.query ?? '').slice(0, 160)}"`;
-    case 'find_role_at_companies':
+    case 'find_people_by_company':
       return `roles=${JSON.stringify(args.roles)} fromProject=${String(args.fromProject)} companies=${
         Array.isArray(args.companies) ? args.companies.length : 'none'
       }`;
@@ -119,17 +119,19 @@ const inferTrack = (calls: ToolCall[]): string => {
   );
   const companySearch = searches.some((call) => call.args.entity === 'company');
   const peopleSearch = searches.some((call) => call.args.entity === 'people');
-  const findRole = calls.some((call) => call.tool === 'find_role_at_companies');
+  const findPeople = calls.some(
+    (call) => call.tool === 'find_people_by_company',
+  );
   const linkedinPeople = calls.some(
     (call) => call.tool === 'search_linkedin_people',
   );
 
-  if (companySearch && findRole) {
-    return 'company-first: companies, then find_role_at_companies';
+  if (companySearch && findPeople) {
+    return 'company-first: companies, then find_people_by_company';
   }
 
-  if (findRole) {
-    return 'people-by-company: find_role_at_companies';
+  if (findPeople) {
+    return 'people-by-company: find_people_by_company';
   }
 
   if (companySearch && !peopleSearch) {

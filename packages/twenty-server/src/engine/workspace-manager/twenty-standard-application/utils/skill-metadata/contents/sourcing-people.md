@@ -1,6 +1,6 @@
 ## People
 
-A population is this section: a title, a skill, an industry, a city, or "all software engineers who know React in SaaS companies in Mumbai". Do not call `find_role_at_companies` and do not look up each person at each company. A role at companies already named loads `people-by-company`.
+A population is this section: a title, a skill, an industry, a city, or "all software engineers who know React in SaaS companies in Mumbai". Do not call `find_people_by_company` and do not look up each person at each company. A role at companies already named loads `people-by-company`.
 
 ### Provider map (choose by intent)
 

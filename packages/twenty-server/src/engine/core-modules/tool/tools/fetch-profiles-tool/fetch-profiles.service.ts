@@ -19,7 +19,7 @@ import { profileMatchesCompany } from 'src/engine/core-modules/tool/tools/fetch-
 import {
   LinkedinProfileResolverService,
   type ResolvedLinkedinProfile,
-} from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/linkedin-profile-resolver.service';
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/linkedin-profile-resolver.service';
 import { normalizeLinkedInUrl } from 'src/engine/core-modules/candidate-sourcing/utils/linkedin-url.utils';
 import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
 import { OutreachTabService } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
@@ -227,7 +227,7 @@ export class FetchProfilesService {
     const targets = [...withUrl, ...withoutUrl];
     const resolvedLinkedinUrls = { businessSearch: 0, google: 0 };
     const profiles = new Map<string, RowProfile>();
-    // Bright Data also keeps the provider record so row columns match find_role
+    // Bright Data also keeps the provider record so row columns match find_people_by_company
     const brightDataRecords = new Map<string, Record<string, unknown>>();
     const fetched = { brightData: 0, harvest: 0 };
     const lookupErrors: {

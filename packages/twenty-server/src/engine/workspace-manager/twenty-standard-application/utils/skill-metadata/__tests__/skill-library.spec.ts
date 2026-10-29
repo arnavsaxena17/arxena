@@ -132,16 +132,17 @@ describe('sourcing skill section sizes', () => {
   // A bundle is re-sent on every model step after it is loaded, so each route
   // has its own budget and must stay far cheaper than the whole skill
   it.each([
-    [['people'], 5_700],
+    // people brings title-search; company-first brings industry-search
+    [['people'], 6_400],
     [['companies'], 6_300],
     [['people-by-company'], 4_400],
     [['scoring', 'playbook-shortfall'], 5_800],
-    [['playbook-company-first'], 5_500],
+    [['playbook-company-first'], 6_400],
     [['playbook-large-list'], 5_000],
     [['for-recruiting'], 4_800],
     [['for-sales'], 4_600],
     [['inbound-applicants'], 5_100],
-    [['people', 'for-recruiting'], 7_200],
+    [['people', 'for-recruiting'], 7_400],
     [['companies', 'for-sales'], 7_600],
     [['people-by-company', 'for-recruiting'], 5_900],
   ])('should keep the bundle for %j under %i tokens', (sections, budget) => {
@@ -152,6 +153,7 @@ describe('sourcing skill section sizes', () => {
     expect(resolveSkillSections('sourcing')).toEqual([
       'people',
       'src-bright-data-people',
+      'title-search',
       'companies',
       'src-bright-data-companies',
     ]);
@@ -160,7 +162,7 @@ describe('sourcing skill section sizes', () => {
   it('should add the sections a section requires, once', () => {
     expect(
       resolveSkillSections('sourcing', ['people', 'src-bright-data-people']),
-    ).toEqual(['people', 'src-bright-data-people']);
+    ).toEqual(['people', 'src-bright-data-people', 'title-search']);
   });
 
   it('should bring the sections the new routes require', () => {
@@ -228,7 +230,7 @@ describe('skill front matter and playbooks', () => {
   it('should auto-register playbook files with front matter', () => {
     expect(listPlaybookNames()).toEqual(['validate-profiles']);
     expect(listRoutedSkillNames()).toContain('validate-profiles');
-    expect(listRoutedSkillNames()).not.toContain('find-role-at-companies');
+    expect(listRoutedSkillNames()).not.toContain('find-people-by-company');
   });
 
   it('should keep every playbook short', () => {
@@ -250,7 +252,7 @@ describe('skill front matter and playbooks', () => {
     expect(lines).toHaveLength(routeCount);
     expect(lines[0]).toContain('load_skills(["setup"])');
     expect(lines.join('\n')).toContain('load_skills(["sourcing"])');
-    expect(lines.join('\n')).not.toContain('find-role-at-companies');
+    expect(lines.join('\n')).not.toContain('find-people-by-company');
   });
 
   it('should add a surface suffix at the {suffix} marker or at the end', () => {

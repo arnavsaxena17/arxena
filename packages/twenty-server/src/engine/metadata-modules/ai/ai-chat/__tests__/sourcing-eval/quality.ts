@@ -178,9 +178,9 @@ export const buildQualityReport = async (
   const behaviorNotes: string[] = [];
   const called = new Set(calls.map((call) => call.tool));
 
-  if (calls.some((call) => call.tool === 'find_role_at_companies')) {
+  if (calls.some((call) => call.tool === 'find_people_by_company')) {
     behaviorNotes.push(
-      'used find_role_at_companies (company-first people step)',
+      'used find_people_by_company (company-first people step)',
     );
   }
 

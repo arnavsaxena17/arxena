@@ -64,7 +64,7 @@ Hard caps (enforced in `live-tools.ts`, not trusted to the model):
 - Bright Data company: ≤25 rows, ≤$0.05, one successful fetch
 - Bright Data people: ≤25 rows, ≤$0.05, one successful fetch
 - LinkedIn people/companies/continue: ≤25 rows cumulative
-- `find_role_at_companies`: ≤25 companies, `maxBudgetUsd` ≤$0.04 per company, one full call + one `onlyFailed`
+- `find_people_by_company`: ≤25 companies, `maxBudgetUsd` ≤$0.04 per company, one full call + one `onlyFailed`
 - `preview_ai_column` / `run_ai_column` / `fetch_profiles`: `rowLimit` ≤25
 
 Inspect: `adhoc.path.md` (behavior) and `adhoc.quality.md` (tab enrichment + ranked shortlist).

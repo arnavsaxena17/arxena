@@ -1,15 +1,15 @@
-import { FindRoleGoogleSearchService } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/find-role-google-search.service';
+import { FindPeopleGoogleSearchService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-google-search.service';
 
 // the request-rate limiter would stall tests that run on fake timers
 process.env.FIND_ROLE_SERP_REQUESTS_PER_MINUTE = '0';
 
 const build = (requestSerpGoogleJson: jest.Mock) =>
-  new FindRoleGoogleSearchService({
+  new FindPeopleGoogleSearchService({
     isConfigured: () => true,
     requestSerpGoogleJson,
   } as never);
 
-describe('FindRoleGoogleSearchService', () => {
+describe('FindPeopleGoogleSearchService', () => {
   beforeEach(() => {
     jest.useRealTimers();
   });

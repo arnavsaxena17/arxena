@@ -1,4 +1,4 @@
-import { LinkedinProfileResolverService } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/linkedin-profile-resolver.service';
+import { LinkedinProfileResolverService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/linkedin-profile-resolver.service';
 
 const brightDataDocument = (data: Record<string, unknown>) => ({
   brightId: `bright-${String(data.name)}`,

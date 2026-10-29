@@ -14,36 +14,36 @@ import {
   buildCompanyVariants,
   matchesAnyCompanyVariant,
   textMentionsAnyCompanyVariant,
-} from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/company-name-variants.util';
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/company-name-variants.util';
 import {
-  FindRoleAtCompaniesInputZodSchema,
-  type FindRoleAtCompaniesInput,
-  FIND_ROLE_AT_COMPANIES_MAX_PROJECT_COMPANIES,
-} from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/find-role-at-companies-tool.schema';
+  FindPeopleByCompanyInputZodSchema,
+  type FindPeopleByCompanyInput,
+  FIND_PEOPLE_BY_COMPANY_MAX_PROJECT_COMPANIES,
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool.schema';
 import {
-  FindRoleGoogleSearchService,
+  FindPeopleGoogleSearchService,
   type GoogleCompanySearchResult,
-} from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/find-role-google-search.service';
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-google-search.service';
 import { type GoogleSerpOrganicItem } from 'src/engine/core-modules/org-chart/utils/map-google-serp-organic.util';
 import {
   personNamesMatch,
   personNamesRoughlyMatch,
-} from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/person-name-matching.util';
-import { LinkedinProfileResolverService } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/linkedin-profile-resolver.service';
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/person-name-matching.util';
+import { LinkedinProfileResolverService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/linkedin-profile-resolver.service';
 import {
   normalizeLinkedinProfileUrl,
   parseLinkedinSerpResult,
-} from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/parse-linkedin-serp-result.util';
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/parse-linkedin-serp-result.util';
 import {
   GoogleResultExtractionService,
   type ExtractedPerson,
-} from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/google-result-extraction.service';
-import { packLinkedinUrlLookupQueries } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/linkedin-url-lookup-query.util';
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/google-result-extraction.service';
+import { packLinkedinUrlLookupQueries } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/linkedin-url-lookup-query.util';
 import {
   getRequestedRoleOrder,
   scoreRoleMatch,
   titleContainsWord,
-} from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/role-title-matching.util';
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/role-title-matching.util';
 import { type TitleClass } from 'src/engine/core-modules/title-taxonomy/title-class.type';
 import {
   TitleExpansionService,
@@ -79,12 +79,12 @@ import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.
 import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
 
 // The input is capped at 25 companies, so the default runs them all at once
-type FindRoleAtCompany = NonNullable<
-  FindRoleAtCompaniesInput['companies']
+type FindPeopleByCompanyTarget = NonNullable<
+  FindPeopleByCompanyInput['companies']
 >[number];
 // The input once the companies are known, whether given or read from the project
-type ResolvedInput = Omit<FindRoleAtCompaniesInput, 'companies'> & {
-  companies: FindRoleAtCompany[];
+type ResolvedInput = Omit<FindPeopleByCompanyInput, 'companies'> & {
+  companies: FindPeopleByCompanyTarget[];
 };
 
 // Bright Data's SERP limit is 1,000 requests/min on an unfunded account and
@@ -271,16 +271,16 @@ const runWithConcurrency = async <TItem, TResult>(
 };
 
 @Injectable()
-export class FindRoleAtCompaniesTool implements Tool {
-  private readonly logger = new Logger(FindRoleAtCompaniesTool.name);
+export class FindPeopleByCompanyTool implements Tool {
+  private readonly logger = new Logger(FindPeopleByCompanyTool.name);
 
   description = `Find the people who hold given roles (CEO, MD, founder, owner, ...) at named companies, in one call. Pass the companies and the roles in the user's words. The tool looks each role up in the job-title taxonomy service (function, grade and the curated titles for it), searches Bright Data people and Google (LinkedIn profiles) in parallel, checks that every person works at that company and holds the role, merges duplicates by LinkedIn URL, and, when nobody is found that way, reads the pages Google returns for names and looks each name up on LinkedIn (a person with a name but no profile found comes back with an empty linkedinUrl), and returns a short table per company with a status: matched, related_role_only (deputy / vice / acting) or no_match, plus rejected rows with the reason. With projectId the verified people are written to the People tab. Use for requests like "get the CEO of each company"; do not use it to build a large people list.`;
 
-  inputSchema = FindRoleAtCompaniesInputZodSchema;
+  inputSchema = FindPeopleByCompanyInputZodSchema;
 
   constructor(
     private readonly brightDataLudicrousSearchService: BrightDataLudicrousSearchService,
-    private readonly googleSearchService: FindRoleGoogleSearchService,
+    private readonly googleSearchService: FindPeopleGoogleSearchService,
     private readonly brightDataBusinessSearchService: BrightDataBusinessSearchService,
     private readonly googleResultExtractionService: GoogleResultExtractionService,
     private readonly personFitFilterService: BrightDataPersonFitFilterService,
@@ -295,7 +295,7 @@ export class FindRoleAtCompaniesTool implements Tool {
     parameters: ToolInput,
     context: ToolExecutionContext,
   ): Promise<ToolOutput> {
-    const parsed = FindRoleAtCompaniesInputZodSchema.safeParse(parameters);
+    const parsed = FindPeopleByCompanyInputZodSchema.safeParse(parameters);
 
     if (!parsed.success) {
       return {
@@ -365,7 +365,7 @@ export class FindRoleAtCompaniesTool implements Tool {
     );
 
     this.logger.log(
-      `find_role_at_companies: ${outcomes.length} companies in ${Date.now() - startedAt}ms (concurrency ${getCompanyConcurrency()})`,
+      `find_people_by_company: ${outcomes.length} companies in ${Date.now() - startedAt}ms (concurrency ${getCompanyConcurrency()})`,
     );
 
     const written = {
@@ -411,9 +411,9 @@ export class FindRoleAtCompaniesTool implements Tool {
   // never has to copy hundreds of names and ids through its output. Returns an
   // error text when there is nothing to look up.
   private async resolveCompanies(
-    input: FindRoleAtCompaniesInput,
+    input: FindPeopleByCompanyInput,
     workspaceId: string,
-  ): Promise<FindRoleAtCompany[] | string> {
+  ): Promise<FindPeopleByCompanyTarget[] | string> {
     if (isDefined(input.companies)) {
       return input.companies;
     }
@@ -459,7 +459,7 @@ export class FindRoleAtCompaniesTool implements Tool {
     }
 
     return selected
-      .slice(0, FIND_ROLE_AT_COMPANIES_MAX_PROJECT_COMPANIES)
+      .slice(0, FIND_PEOPLE_BY_COMPANY_MAX_PROJECT_COMPANIES)
       .map((row) => ({ id: row.id, name: row.name as string }));
   }
 
@@ -467,7 +467,7 @@ export class FindRoleAtCompaniesTool implements Tool {
   // back the others. Nothing was verified when the status is source_error, so
   // the last attempt simply replaces the earlier ones (spend is added up).
   private async lookupCompanyWithRetries(
-    company: FindRoleAtCompany,
+    company: FindPeopleByCompanyTarget,
     input: ResolvedInput,
     resolvedRoles: ResolvedRoles,
     workspaceId: string,
@@ -509,7 +509,7 @@ export class FindRoleAtCompaniesTool implements Tool {
       }
 
       this.logger.warn(
-        `find_role_at_companies "${company.name}": lookup failed (attempt ${attempt + 1}/${maxRetries + 1}): ${outcome.sourceErrors.join('; ')}`,
+        `find_people_by_company "${company.name}": lookup failed (attempt ${attempt + 1}/${maxRetries + 1}): ${outcome.sourceErrors.join('; ')}`,
       );
     }
 
@@ -517,7 +517,7 @@ export class FindRoleAtCompaniesTool implements Tool {
   }
 
   private async lookupCompany(
-    company: FindRoleAtCompany,
+    company: FindPeopleByCompanyTarget,
     input: ResolvedInput,
     resolvedRoles: ResolvedRoles,
     workspaceId: string,
@@ -703,7 +703,7 @@ export class FindRoleAtCompaniesTool implements Tool {
           : 'no_match';
 
     this.logger.log(
-      `find_role_at_companies timing "${company.name}": ${Object.entries(
+      `find_people_by_company timing "${company.name}": ${Object.entries(
         stageMilliseconds,
       )
         .map(
@@ -713,7 +713,7 @@ export class FindRoleAtCompaniesTool implements Tool {
         .join(' | ')} | total ${((Date.now() - startedAt) / 1000).toFixed(1)}s`,
     );
     this.logger.log(
-      `find_role_at_companies "${company.name}": ${status}, ${verified.length} verified, ${rejected.length} rejected, $${spentUsd.toFixed(3)}`,
+      `find_people_by_company "${company.name}": ${status}, ${verified.length} verified, ${rejected.length} rejected, $${spentUsd.toFixed(3)}`,
     );
 
     const deprioritisedByPerson = topPeople.map((person) =>
@@ -1379,7 +1379,7 @@ export class FindRoleAtCompaniesTool implements Tool {
         ? {
             sourceCompanyId: outcome.companyRowId,
             sourceCompanyName: outcome.company,
-            foundVia: 'find_role_at_companies',
+            foundVia: 'find_people_by_company',
           }
         : {}),
     };
@@ -1466,7 +1466,7 @@ export class FindRoleAtCompaniesTool implements Tool {
     } catch (error) {
       // the status column is a convenience; never fail the lookup over it
       this.logger.warn(
-        `find_role_at_companies: could not record status for "${outcome.company}": ${this.describe(error)}`,
+        `find_people_by_company: could not record status for "${outcome.company}": ${this.describe(error)}`,
       );
     }
   }

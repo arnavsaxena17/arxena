@@ -9,7 +9,7 @@ import {
 } from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/profile-row-fields.util';
 
 // One path for every Bright Data person record → People-tab otherFields.
-// Used by find_role_at_companies (people search) and fetch_profiles (URL scrape).
+// Used by find_people_by_company (people search) and fetch_profiles (URL scrape).
 export const brightDataRecordToPersonOtherFields = (
   record: Record<string, unknown>,
   options?: { fetchedAt?: string },

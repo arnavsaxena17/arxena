@@ -7,8 +7,8 @@ import { type GoogleSerpOrganicItem } from 'src/engine/core-modules/org-chart/ut
 import {
   isLinkedinProfileUrl,
   linkedinProfileUrlFromPostUrl,
-} from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/parse-linkedin-serp-result.util';
-import { personNamesMatch } from 'src/engine/core-modules/tool/tools/find-role-at-companies-tool/person-name-matching.util';
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/parse-linkedin-serp-result.util';
+import { personNamesMatch } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/person-name-matching.util';
 import { AI_TELEMETRY_CONFIG } from 'src/engine/metadata-modules/ai/ai-models/constants/ai-telemetry.const';
 import {
   AiSdkExecutionService,

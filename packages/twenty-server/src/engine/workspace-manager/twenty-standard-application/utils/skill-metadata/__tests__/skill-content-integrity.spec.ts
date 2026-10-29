@@ -20,7 +20,9 @@ const SKILL_TOKEN_BUDGETS: Record<string, number> = {
   // inbound applicants. A route loads far less (see skill-library.spec.ts).
   // Raised to 22_500 for intent-glossary and source-profiles,
   // offset by dropping the placeholder source caps and generic requirement lists
-  sourcing: 22_500,
+  // Raised to 25_000 for industry-search, industry-labels (the LinkedIn
+  // industry taxonomy, loaded on demand) and title-search
+  sourcing: 25_000,
   outreach: 4_700,
   'workflow-building': 4_500,
   'ai-filter-enrich': 3_200,

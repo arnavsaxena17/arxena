@@ -10,7 +10,7 @@ expect:
   must_not_call: [create_candidate, save_outreach_targets_to_crm]
   max_questions: 4
   plan_assertions:
-    - track is company-first (Bright Data companies, then find_role_at_companies or people search)
+    - track is company-first (Bright Data companies, then find_people_by_company or people search)
     - oncology manufacture is handled as company enrichment or a must-have employer criterion, not ignored
     - fitment rubric includes sales-rep role and Mumbai location as must-haves when scoring people
     - a shortlist is ranked via fitmentScore and/or generate_table_view / apply_table_view
@@ -46,7 +46,7 @@ Track: company-first (oncology pharma companies, then sales/medical/territory/fi
 ## Constraint map
 | Constraint | Class | Expected handling |
 | --- | --- | --- |
-| Sales rep family titles | SEARCH + SNAPSHOT / find_role | Roles list or people query |
+| Sales rep family titles | SEARCH + SNAPSHOT / find_people_by_company | Roles list or people query |
 | Pharma + oncology manufacture | COMPANY ENRICH or SEARCH | Company list first, enrich or filter oncology |
 | Mumbai | SNAPSHOT / PROFILE | Reps based in Mumbai |
 | Target ~25 | BRIEF | Ask once, then stop at threshold |

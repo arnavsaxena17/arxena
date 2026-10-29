@@ -37,7 +37,7 @@ const readRequestsPerMinute = (): number => {
 };
 
 // One limiter per category and mode for the whole process, so every caller
-// (fetch_profiles, find_role, the ludicrous planner) shares one budget
+// (fetch_profiles, find_people_by_company, the ludicrous planner) shares one budget
 const rateLimiters = new Map<string, BrightDataRequestRateLimiter>();
 
 const rateLimiterFor = (

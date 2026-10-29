@@ -9,17 +9,17 @@ describe('standard playbook skills', () => {
   } as never);
   const skills = Object.values(maps.byUniversalIdentifier);
 
-  it('should not register find-role-at-companies', () => {
+  it('should not register find-people-by-company', () => {
     expect(
-      skills.find((skill) => skill?.name === 'find-role-at-companies'),
+      skills.find((skill) => skill?.name === 'find-people-by-company'),
     ).toBeUndefined();
   });
 
   it('should derive the same universal identifier from the name every time', () => {
-    expect(getPlaybookUniversalIdentifier('find-role-at-companies')).toBe(
-      getPlaybookUniversalIdentifier('find-role-at-companies'),
+    expect(getPlaybookUniversalIdentifier('find-people-by-company')).toBe(
+      getPlaybookUniversalIdentifier('find-people-by-company'),
     );
-    expect(getPlaybookUniversalIdentifier('find-role-at-companies')).not.toBe(
+    expect(getPlaybookUniversalIdentifier('find-people-by-company')).not.toBe(
       getPlaybookUniversalIdentifier('another-playbook'),
     );
   });
