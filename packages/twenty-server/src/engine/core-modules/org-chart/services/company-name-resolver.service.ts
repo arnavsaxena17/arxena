@@ -1,12 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { Client } from '@elastic/elasticsearch';
 import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 
+import { ProviderQueryCacheService } from 'src/engine/core-modules/cache-storage/services/provider-query-cache.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { buildResolveCompanyFromRawNameQuery } from 'src/engine/core-modules/org-chart/utils/build-resolve-company-from-raw-name-query.util';
 import { cleanRawCompanyName } from 'src/engine/core-modules/org-chart/utils/clean-raw-company-name.util';
+
+const COMPANY_NAME_RESOLVER_CACHE_PREFIX = 'company-name-resolver:v1';
 import {
   companyMatchConfidence,
   companyNameDistance,
@@ -99,7 +102,11 @@ export class CompanyNameResolverService {
   private readonly client: Client | null;
   private readonly indexName: string;
 
-  constructor(private readonly environmentService: EnvironmentService) {
+  constructor(
+    private readonly environmentService: EnvironmentService,
+    @Optional()
+    private readonly providerQueryCache?: ProviderQueryCacheService,
+  ) {
     const endpoint = this.environmentService.get('ES_ENDPOINT');
 
     this.indexName = this.environmentService.get('COMPANIES_SCORES_ES_INDEX');
@@ -157,8 +164,33 @@ export class CompanyNameResolverService {
       });
     }
 
+    const run = () =>
+      this.resolveFromRawCompanyNameUncached({
+        trimmedRaw,
+        cleanedQuery,
+        startedAt,
+      });
+
+    if (!this.providerQueryCache) {
+      return run();
+    }
+
+    return this.providerQueryCache.getOrFetch(
+      COMPANY_NAME_RESOLVER_CACHE_PREFIX,
+      { index: this.indexName, cleanedQuery: cleanedQuery.toLowerCase() },
+      run,
+    );
+  }
+
+  private async resolveFromRawCompanyNameUncached(input: {
+    trimmedRaw: string;
+    cleanedQuery: string;
+    startedAt: number;
+  }): Promise<ResolvedCompanyFromRawName> {
+    const { trimmedRaw, cleanedQuery, startedAt } = input;
+
     try {
-      const response = await this.client.search({
+      const response = await this.client!.search({
         index: this.indexName,
         size: DEFAULT_RESOLVE_SIZE,
         _source: [...COMPANY_NAME_RESOLVER_SOURCE_FIELDS],

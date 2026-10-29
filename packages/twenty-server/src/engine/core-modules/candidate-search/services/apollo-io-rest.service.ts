@@ -12,7 +12,10 @@ import axios, { AxiosInstance, isAxiosError } from 'axios';
 
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
+import { ProviderQueryCacheService } from 'src/engine/core-modules/cache-storage/services/provider-query-cache.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
+
+const APOLLO_PEOPLE_SEARCH_CACHE_PREFIX = 'apollo-people-search:v1';
 import { RawFetchArchiveService } from 'src/engine/core-modules/raw-fetch-archive/raw-fetch-archive.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 
@@ -121,6 +124,8 @@ export class ApolloIoRestService {
     private readonly engineCandidateSearchCache: CacheStorageService,
     @Optional()
     private readonly rawFetchArchiveService?: RawFetchArchiveService,
+    @Optional()
+    private readonly providerQueryCache?: ProviderQueryCacheService,
   ) {
     this.client = axios.create({
       baseURL: APOLLO_API_BASE,
@@ -452,6 +457,22 @@ export class ApolloIoRestService {
    * @see https://docs.apollo.io/reference/people-api-search.md
    */
   async peopleSearch(
+    input: ApolloPeopleSearchParams,
+  ): Promise<Record<string, unknown>> {
+    const run = () => this.peopleSearchUncached(input);
+
+    if (!this.providerQueryCache) {
+      return run();
+    }
+
+    return this.providerQueryCache.getOrFetch(
+      APOLLO_PEOPLE_SEARCH_CACHE_PREFIX,
+      input,
+      run,
+    );
+  }
+
+  private async peopleSearchUncached(
     input: ApolloPeopleSearchParams,
   ): Promise<Record<string, unknown>> {
     const apiKey = this.assertConfigured();

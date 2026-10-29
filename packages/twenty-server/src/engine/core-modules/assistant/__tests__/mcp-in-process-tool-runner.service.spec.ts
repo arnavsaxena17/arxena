@@ -20,8 +20,8 @@ describe('McpInProcessToolRunnerService', () => {
     };
     const toolCallCache = {
       buildKey: jest.fn().mockReturnValue('cache-key'),
-      getCachedToolResult: jest.fn().mockReturnValue(null),
-      cacheToolResult: jest.fn(),
+      getCachedToolResult: jest.fn().mockResolvedValue(null),
+      cacheToolResult: jest.fn().mockResolvedValue(undefined),
     };
 
     const service = new McpInProcessToolRunnerService(

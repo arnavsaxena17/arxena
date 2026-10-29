@@ -7,6 +7,7 @@ import {
 import { BRIGHT_DATA_LUDICROUS_MAX_RETRIES } from 'src/engine/core-modules/bright-data/ludicrous/constants/bright-data-ludicrous-pricing.const';
 import { type BrightDataLudicrousQuery } from 'src/engine/core-modules/bright-data/ludicrous/types/bright-data-ludicrous.types';
 import { assertValidLudicrousQuery } from 'src/engine/core-modules/bright-data/ludicrous/utils/bright-data-ludicrous-query.util';
+import { ProviderQueryCacheService } from 'src/engine/core-modules/cache-storage/services/provider-query-cache.service';
 import { RawFetchArchiveService } from 'src/engine/core-modules/raw-fetch-archive/raw-fetch-archive.service';
 import { costForRecordsUsd } from 'src/engine/core-modules/bright-data/ludicrous/utils/bright-data-ludicrous-pricing.util';
 import {
@@ -18,6 +19,9 @@ import {
   type BrightDataBusinessSearchMode,
   type BrightDataBusinessSearchView,
 } from 'src/engine/core-modules/bright-data/utils/bright-data-business-search.util';
+
+const BRIGHT_DATA_SEARCH_CACHE_PREFIX = 'bright-data-search:v1';
+const BRIGHT_DATA_SEARCH_PAGE_CACHE_PREFIX = 'bright-data-search-page:v1';
 
 const BRIGHT_DATA_SEARCH_URL = 'https://api.brightdata.com/search';
 const RETRY_BASE_DELAY_MS = 500;
@@ -111,6 +115,8 @@ export class BrightDataBusinessSearchService {
   constructor(
     @Optional()
     private readonly rawFetchArchiveService?: RawFetchArchiveService,
+    @Optional()
+    private readonly providerQueryCache?: ProviderQueryCacheService,
   ) {}
 
   private get apiKey(): string | undefined {
@@ -136,6 +142,34 @@ export class BrightDataBusinessSearchService {
 
     const mode = normalizeBrightDataBusinessSearchMode(input.mode);
     const query = this.prepareQuery(input, mode);
+    const run = () => this.searchUncached(key, input, mode, query);
+
+    if (!this.providerQueryCache) {
+      return run();
+    }
+
+    // workspaceId scopes archival only; same query is the same paid answer
+    return this.providerQueryCache.getOrFetch(
+      BRIGHT_DATA_SEARCH_CACHE_PREFIX,
+      {
+        entity: input.entity,
+        mode,
+        query,
+        limit: input.limit,
+        offset: input.offset,
+        view: input.view ?? 'full',
+        fields: input.fields,
+      },
+      run,
+    );
+  }
+
+  private async searchUncached(
+    apiKey: string,
+    input: BrightDataBusinessSearchInput,
+    mode: BrightDataBusinessSearchMode,
+    query: string | BrightDataLudicrousQuery,
+  ): Promise<BrightDataBusinessSearchResult> {
     const pages = planBrightDataBusinessSearchPages({
       mode,
       limit: input.limit,
@@ -148,7 +182,7 @@ export class BrightDataBusinessSearchService {
 
     for (const page of pages) {
       const response = await this.fetchPage({
-        apiKey: key,
+        apiKey,
         entity: input.entity,
         mode,
         query,
@@ -207,26 +241,38 @@ export class BrightDataBusinessSearchService {
     }
 
     const validated = assertValidLudicrousQuery({ entity, query });
-    const response = await this.fetchPage({
-      apiKey: key,
-      entity,
-      mode: 'ludicrous',
-      query: validated,
-      offset,
-      limit,
-      view: 'full',
-      fields,
-      workspaceId,
-    });
+    const run = async (): Promise<BrightDataBusinessSearchResult> => {
+      const response = await this.fetchPage({
+        apiKey: key,
+        entity,
+        mode: 'ludicrous',
+        query: validated,
+        offset,
+        limit,
+        view: 'full',
+        fields,
+        workspaceId,
+      });
 
-    return {
-      reqId: response.reqId,
-      matched: response.matched ?? 0,
-      coveragePercent: response.coveragePercent,
-      mode: 'ludicrous',
-      documents: response.documents,
-      costUsd: costForRecordsUsd(response.documents.length),
+      return {
+        reqId: response.reqId,
+        matched: response.matched ?? 0,
+        coveragePercent: response.coveragePercent,
+        mode: 'ludicrous',
+        documents: response.documents,
+        costUsd: costForRecordsUsd(response.documents.length),
+      };
     };
+
+    if (!this.providerQueryCache) {
+      return run();
+    }
+
+    return this.providerQueryCache.getOrFetch(
+      BRIGHT_DATA_SEARCH_PAGE_CACHE_PREFIX,
+      { entity, query: validated, offset, limit, fields },
+      run,
+    );
   }
 
   private prepareQuery(

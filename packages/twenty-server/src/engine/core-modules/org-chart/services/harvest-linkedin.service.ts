@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
+import { ProviderQueryCacheService } from 'src/engine/core-modules/cache-storage/services/provider-query-cache.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 
 import type { SuperImposeHarvestQueryParams } from 'src/engine/core-modules/org-chart/types/super-impose.types';
@@ -10,6 +11,9 @@ import {
   type HarvestSearchKind,
 } from 'src/engine/core-modules/org-chart/utils/harvest-search-params.util';
 import { isHarvestCompanyNameMatch } from 'src/engine/core-modules/org-chart/utils/harvest-company-name-match.util';
+
+const HARVEST_SEARCH_CACHE_PREFIX = 'harvest-search:v1';
+const HARVEST_SALES_NAV_CACHE_PREFIX = 'harvest-sales-nav:v1';
 
 type HarvestLeadItem = Record<string, unknown>;
 type HarvestProfileResponse = Record<string, unknown>;
@@ -28,7 +32,11 @@ export class HarvestLinkedinService {
   private static readonly DEFAULT_HARVEST_CONCURRENCY = 5;
   private static readonly MAX_HARVEST_CONCURRENCY = 40;
 
-  constructor(private readonly environmentService: EnvironmentService) {}
+  constructor(
+    private readonly environmentService: EnvironmentService,
+    @Optional()
+    private readonly providerQueryCache?: ProviderQueryCacheService,
+  ) {}
 
   isConfigured(): boolean {
     const apiKey = this.getApiKey();
@@ -76,6 +84,43 @@ export class HarvestLinkedinService {
       1,
       Math.min(HARVEST_SEARCH_MAX_PAGE, Math.floor(input.page ?? 1)),
     );
+    const run = () =>
+      this.searchSalesNavigatorCollectionUncached({
+        ...input,
+        limit,
+        page: firstPage,
+      });
+
+    if (!this.providerQueryCache) {
+      return run();
+    }
+
+    return this.providerQueryCache.getOrFetch(
+      HARVEST_SALES_NAV_CACHE_PREFIX,
+      {
+        kind: input.kind,
+        query: input.query,
+        page: firstPage,
+        limit,
+      },
+      run,
+    );
+  }
+
+  private async searchSalesNavigatorCollectionUncached(input: {
+    kind: HarvestSearchKind;
+    query: Record<string, string>;
+    page: number;
+    limit: number;
+  }): Promise<{
+    items: HarvestLeadItem[];
+    firstPage: number;
+    lastPage: number;
+    nextPage: number | null;
+    totalElements?: number;
+    totalPages?: number;
+  }> {
+    const { limit, page: firstPage } = input;
     const items: HarvestLeadItem[] = [];
     let page = firstPage;
     let lastPage = firstPage;
@@ -653,6 +698,36 @@ export class HarvestLinkedinService {
     items: HarvestLeadItem[];
   }> {
     const limit = Math.max(1, Math.min(100, input.limit ?? 20));
+    const run = () => this.searchPaginatedCollectionUncached({ ...input, limit });
+
+    if (!this.providerQueryCache) {
+      return run();
+    }
+
+    return this.providerQueryCache.getOrFetch(
+      HARVEST_SEARCH_CACHE_PREFIX,
+      { ...input, limit },
+      run,
+    );
+  }
+
+  private async searchPaginatedCollectionUncached(input: {
+    path: string;
+    search?: string;
+    location?: string;
+    company?: string;
+    datePosted?: number;
+    postedLimit?: string;
+    sortBy?: string;
+    contentType?: string;
+    limit: number;
+  }): Promise<{
+    total: number;
+    pageSize: number;
+    totalPages: number;
+    items: HarvestLeadItem[];
+  }> {
+    const { limit } = input;
     const firstPage = await this.fetchCollectionPage({
       ...input,
       page: 1,

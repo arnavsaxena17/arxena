@@ -1,14 +1,18 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 
+import { ProviderQueryCacheService } from 'src/engine/core-modules/cache-storage/services/provider-query-cache.service';
 import {
   WIKIDATA_API_BASE_URL,
   WIKIDATA_PROPERTY,
   WIKIDATA_REQUEST_TIMEOUT_MS,
   WIKIDATA_USER_AGENT,
 } from 'src/engine/core-modules/wikidata/constants/wikidata.constants';
+
+const WIKIDATA_DOMAIN_CACHE_PREFIX = 'wikidata-domain:v1';
+const WIKIDATA_NAME_CACHE_PREFIX = 'wikidata-name:v1';
 import {
   type WikidataCompanyProfile,
   type WikidataCompanySearchResult,
@@ -43,6 +47,11 @@ type WbGetEntitiesResponse = {
 export class WikidataCompanySearchService {
   private readonly logger = new Logger(WikidataCompanySearchService.name);
 
+  constructor(
+    @Optional()
+    private readonly providerQueryCache?: ProviderQueryCacheService,
+  ) {}
+
   async searchByDomain(
     domainOrUrl: string,
   ): Promise<WikidataCompanySearchResult> {
@@ -61,25 +70,37 @@ export class WikidataCompanySearchService {
       };
     }
 
-    const candidateIds = await this.resolveCandidateEntityIds({
-      domain: normalizedDomain,
-      websiteUrlVariants,
-    });
-
-    const companies = await this.buildProfilesFromEntityIds(
-      candidateIds,
-      normalizedDomain,
-    );
-
-    return {
-      query: {
-        input: domainOrUrl,
-        normalizedDomain,
+    const run = async (): Promise<WikidataCompanySearchResult> => {
+      const candidateIds = await this.resolveCandidateEntityIds({
+        domain: normalizedDomain,
         websiteUrlVariants,
-      },
-      companies,
-      candidateCount: candidateIds.length,
+      });
+
+      const companies = await this.buildProfilesFromEntityIds(
+        candidateIds,
+        normalizedDomain,
+      );
+
+      return {
+        query: {
+          input: domainOrUrl,
+          normalizedDomain,
+          websiteUrlVariants,
+        },
+        companies,
+        candidateCount: candidateIds.length,
+      };
     };
+
+    if (!this.providerQueryCache) {
+      return run();
+    }
+
+    return this.providerQueryCache.getOrFetch(
+      WIKIDATA_DOMAIN_CACHE_PREFIX,
+      { domain: normalizedDomain, websiteUrlVariants },
+      run,
+    );
   }
 
   async searchByName(
@@ -101,25 +122,37 @@ export class WikidataCompanySearchService {
       };
     }
 
-    const searchHits = await this.wbSearchEntities(trimmedName, limit);
-    const candidateIds = searchHits
-      .map((hit) => hit.id)
-      .filter((id): id is string => isNonEmptyString(id));
+    const run = async (): Promise<WikidataCompanySearchResult> => {
+      const searchHits = await this.wbSearchEntities(trimmedName, limit);
+      const candidateIds = searchHits
+        .map((hit) => hit.id)
+        .filter((id): id is string => isNonEmptyString(id));
 
-    const companies = await this.buildProfilesFromEntityIds(
-      candidateIds,
-      trimmedName,
-    );
+      const companies = await this.buildProfilesFromEntityIds(
+        candidateIds,
+        trimmedName,
+      );
 
-    return {
-      query: {
-        input: companyName,
-        normalizedDomain: null,
-        websiteUrlVariants: [],
-      },
-      companies,
-      candidateCount: candidateIds.length,
+      return {
+        query: {
+          input: companyName,
+          normalizedDomain: null,
+          websiteUrlVariants: [],
+        },
+        companies,
+        candidateCount: candidateIds.length,
+      };
     };
+
+    if (!this.providerQueryCache) {
+      return run();
+    }
+
+    return this.providerQueryCache.getOrFetch(
+      WIKIDATA_NAME_CACHE_PREFIX,
+      { name: trimmedName.toLowerCase(), limit },
+      run,
+    );
   }
 
   private async buildProfilesFromEntityIds(

@@ -45,7 +45,10 @@ export class McpInProcessToolRunnerService {
     );
 
     const cacheKey = this.toolCallCache.buildKey(name, args);
-    const cachedResult = this.toolCallCache.getCachedToolResult(cacheKey);
+    const cachedResult = await this.toolCallCache.getCachedToolResult(
+      cacheKey,
+      name,
+    );
     if (cachedResult !== null) {
       this.logger.log(
         `Returning cached result for ${name} (duplicate call detected)`,
@@ -102,7 +105,7 @@ export class McpInProcessToolRunnerService {
         });
         this.logger.log(`Produced unresolved search parameters...`);
         const result = JSON.stringify(unresolvedSearchParams);
-        this.toolCallCache.cacheToolResult(cacheKey, result);
+        await this.toolCallCache.cacheToolResult(cacheKey, result, name);
         return result;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -175,7 +178,11 @@ export class McpInProcessToolRunnerService {
           error: errorMessage,
         });
 
-        this.toolCallCache.cacheToolResult(cacheKey, toolErrorResult);
+        await this.toolCallCache.cacheToolResult(
+          cacheKey,
+          toolErrorResult,
+          name,
+        );
 
         return toolErrorResult;
       }
@@ -194,7 +201,7 @@ export class McpInProcessToolRunnerService {
           : {}),
         ...(result.response?.error ? { error: result.response.error } : {}),
       });
-      this.toolCallCache.cacheToolResult(cacheKey, toolResult);
+      await this.toolCallCache.cacheToolResult(cacheKey, toolResult, name);
       return toolResult;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

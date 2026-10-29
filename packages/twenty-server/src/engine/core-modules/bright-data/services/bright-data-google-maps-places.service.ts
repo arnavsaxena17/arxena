@@ -1,11 +1,14 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 
+import { ProviderQueryCacheService } from 'src/engine/core-modules/cache-storage/services/provider-query-cache.service';
 import { RawFetchArchiveService } from 'src/engine/core-modules/raw-fetch-archive/raw-fetch-archive.service';
 
 import type {
   BrightDataGoogleMapsDiscoverByLocationInput,
   BrightDataGoogleMapsPlaceRecord,
 } from 'src/engine/core-modules/bright-data/types/bright-data-google-maps-place.types';
+
+const BRIGHT_DATA_GOOGLE_MAPS_CACHE_PREFIX = 'bright-data-google-maps:v1';
 
 const BRIGHT_DATA_DATASET_SCRAPE_URL =
   'https://api.brightdata.com/datasets/v3/scrape';
@@ -27,6 +30,8 @@ export class BrightDataGoogleMapsPlacesService {
   constructor(
     @Optional()
     private readonly rawFetchArchiveService?: RawFetchArchiveService,
+    @Optional()
+    private readonly providerQueryCache?: ProviderQueryCacheService,
   ) {}
 
   private get apiKey(): string | undefined {
@@ -81,6 +86,22 @@ export class BrightDataGoogleMapsPlacesService {
       return [];
     }
 
+    const run = () => this.discoverByLocationUncached(normalized);
+
+    if (!this.providerQueryCache) {
+      return run();
+    }
+
+    return this.providerQueryCache.getOrFetch(
+      BRIGHT_DATA_GOOGLE_MAPS_CACHE_PREFIX,
+      { datasetId: this.datasetId, inputs: normalized },
+      run,
+    );
+  }
+
+  private async discoverByLocationUncached(
+    normalized: BrightDataGoogleMapsDiscoverByLocationInput[],
+  ): Promise<BrightDataGoogleMapsPlaceRecord[]> {
     const records: BrightDataGoogleMapsPlaceRecord[] = [];
 
     for (

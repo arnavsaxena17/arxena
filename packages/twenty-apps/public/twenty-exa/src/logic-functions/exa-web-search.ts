@@ -1,3 +1,5 @@
+import { createHash } from 'crypto';
+
 import Exa from 'exa-js';
 import { chargeCredits } from 'twenty-sdk/billing';
 import { defineLogicFunction } from 'twenty-sdk/define';
@@ -21,6 +23,8 @@ const MICRO_CREDITS_PER_DOLLAR = 1_000_000;
 const EXA_BASE_COST_DOLLARS = 0.007;
 const EXA_COST_PER_ADDITIONAL_RESULT_DOLLARS = 0.001;
 
+const EXA_QUERY_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
 type ExaSearchResult = {
   title: string;
   url: string;
@@ -32,6 +36,65 @@ type HandlerResult = {
   message: string;
   result?: ExaSearchResult[];
   error?: string;
+};
+
+const queryCache = new Map<
+  string,
+  { expiresAt: number; result: HandlerResult }
+>();
+
+const buildQueryCacheKey = (
+  query: string,
+  numResults: number,
+  category: string | undefined,
+): string =>
+  createHash('sha256')
+    .update(
+      JSON.stringify({
+        query: query.trim().toLowerCase(),
+        numResults,
+        category: category ?? '',
+      }),
+    )
+    .digest('hex');
+
+const readQueryCache = (key: string): HandlerResult | undefined => {
+  const cached = queryCache.get(key);
+
+  if (!cached) {
+    return undefined;
+  }
+
+  if (cached.expiresAt <= Date.now()) {
+    queryCache.delete(key);
+
+    return undefined;
+  }
+
+  return cached.result;
+};
+
+const writeQueryCache = (key: string, result: HandlerResult): void => {
+  if (result.success !== true) {
+    return;
+  }
+
+  queryCache.set(key, {
+    expiresAt: Date.now() + EXA_QUERY_CACHE_TTL_MS,
+    result,
+  });
+
+  if (queryCache.size <= 500) {
+    return;
+  }
+
+  const now = Date.now();
+
+  for (const [cacheKey, entry] of queryCache.entries()) {
+    if (entry.expiresAt <= now) {
+      queryCache.delete(cacheKey);
+    }
+  }
 };
 
 const computeMicroCredits = (numResults: number): number => {
@@ -59,6 +122,12 @@ const handler = async (
   const query = parameters.query;
   const numResults = parameters.numResults ?? DEFAULT_NUM_RESULTS;
   const category = parameters.category;
+  const cacheKey = buildQueryCacheKey(query, numResults, category);
+  const cached = readQueryCache(cacheKey);
+
+  if (cached) {
+    return cached;
+  }
 
   try {
     const exa = new Exa(apiKey);
@@ -91,11 +160,15 @@ const handler = async (
       resourceContext: 'exa',
     });
 
-    return {
+    const handlerResult: HandlerResult = {
       success: true,
       message: `Found ${results.length} results for "${query}"${category ? ` (category: ${category})` : ''}`,
       result: results,
     };
+
+    writeQueryCache(cacheKey, handlerResult);
+
+    return handlerResult;
   } catch (error) {
     return {
       success: false,

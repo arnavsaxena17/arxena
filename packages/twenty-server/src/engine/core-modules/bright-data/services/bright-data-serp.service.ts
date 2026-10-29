@@ -4,9 +4,12 @@ import { connect } from 'net';
 
 import { Injectable, Logger, Optional } from '@nestjs/common';
 
+import { ProviderQueryCacheService } from 'src/engine/core-modules/cache-storage/services/provider-query-cache.service';
 import { RawFetchArchiveService } from 'src/engine/core-modules/raw-fetch-archive/raw-fetch-archive.service';
 
 import { Agent, ProxyAgent } from 'undici';
+
+const BRIGHT_DATA_SERP_CACHE_PREFIX = 'bright-data-serp:v1';
 
 import type {
   BrightDataDatasetSnapshotItem,
@@ -106,6 +109,8 @@ export class BrightDataSerpService {
   constructor(
     @Optional()
     private readonly rawFetchArchiveService?: RawFetchArchiveService,
+    @Optional()
+    private readonly providerQueryCache?: ProviderQueryCacheService,
   ) {}
 
   private get apiKey(): string | undefined {
@@ -331,6 +336,28 @@ export class BrightDataSerpService {
   private readonly queryCooldownUntil = new Map<string, number>();
 
   async requestSerpJson(
+    searchUrl: string,
+    options: BrightDataSerpRequestOptions = {},
+  ): Promise<BrightDataSerpGoogleJson> {
+    const cacheParts = {
+      searchUrl,
+      dataFormat: options.dataFormat ?? '',
+      imgFormat: options.imgFormat ?? '',
+    };
+    const run = () => this.requestSerpJsonUncached(searchUrl, options);
+
+    if (!this.providerQueryCache) {
+      return run();
+    }
+
+    return this.providerQueryCache.getOrFetch(
+      BRIGHT_DATA_SERP_CACHE_PREFIX,
+      cacheParts,
+      run,
+    );
+  }
+
+  private async requestSerpJsonUncached(
     searchUrl: string,
     options: BrightDataSerpRequestOptions = {},
   ): Promise<BrightDataSerpGoogleJson> {

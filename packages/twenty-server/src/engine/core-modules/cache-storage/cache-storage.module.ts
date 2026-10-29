@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { cacheStorageModuleFactory } from 'src/engine/core-modules/cache-storage/cache-storage.module-factory';
 import { FlushCacheCommand } from 'src/engine/core-modules/cache-storage/commands/flush-cache.command';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
+import { ProviderQueryCacheService } from 'src/engine/core-modules/cache-storage/services/provider-query-cache.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 
@@ -26,9 +27,14 @@ import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twent
       },
       inject: [CACHE_MANAGER],
     })),
+    ProviderQueryCacheService,
     FlushCacheCommand,
   ],
-  exports: [...Object.values(CacheStorageNamespace), FlushCacheCommand],
+  exports: [
+    ...Object.values(CacheStorageNamespace),
+    ProviderQueryCacheService,
+    FlushCacheCommand,
+  ],
 })
 export class CacheStorageModule implements OnModuleDestroy {
   constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {}

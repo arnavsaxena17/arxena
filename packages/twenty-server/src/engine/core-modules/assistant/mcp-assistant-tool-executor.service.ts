@@ -290,7 +290,10 @@ export class McpAssistantToolExecutorService {
       effectiveArgs = { ...effectiveArgs, searchType };
     }
     const cacheKey = this.toolCallCache.buildKey(name, effectiveArgs);
-    const cachedResult = this.toolCallCache.getCachedToolResult(cacheKey);
+    const cachedResult = await this.toolCallCache.getCachedToolResult(
+      cacheKey,
+      name,
+    );
     if (cachedResult !== null) {
       this.logger.log(
         `Skipping duplicate ${name} call (already executed in this session)`,
@@ -336,10 +339,10 @@ export class McpAssistantToolExecutorService {
           hasContent: !!result.content,
           rawResult: result,
         });
-        this.toolCallCache.cacheToolResult(cacheKey, fallback);
+        await this.toolCallCache.cacheToolResult(cacheKey, fallback, name);
         return { textContent: fallback, fromCache: false };
       }
-      this.toolCallCache.cacheToolResult(cacheKey, textContent);
+      await this.toolCallCache.cacheToolResult(cacheKey, textContent, name);
       this.logger.log(
         `MCP tool "${name}" result (first 300 chars): ${textContent.slice(0, 300)}`,
       );
