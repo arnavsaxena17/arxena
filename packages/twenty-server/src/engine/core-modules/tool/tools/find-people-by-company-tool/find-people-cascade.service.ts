@@ -404,6 +404,8 @@ export class FindPeopleCascadeService {
               location: input.location,
               candidates,
               sourceErrors,
+              website: company.domain,
+              industry: company.industry,
             }),
           )
         : new Map<string, PersonJudgement>();
@@ -542,6 +544,8 @@ export class FindPeopleCascadeService {
                   location: input.location,
                   candidates: unjudged,
                   sourceErrors,
+                  website: company.domain,
+                  industry: company.industry,
                 }),
               )
             : new Map<string, PersonJudgement>();
@@ -994,6 +998,8 @@ export class FindPeopleCascadeService {
     location,
     candidates,
     sourceErrors,
+    website,
+    industry,
   }: {
     workspaceId: string;
     company: string;
@@ -1002,6 +1008,8 @@ export class FindPeopleCascadeService {
     location?: string;
     candidates: Candidate[];
     sourceErrors: string[];
+    website?: string;
+    industry?: string;
   }): Promise<Map<string, PersonJudgement>> {
     const unique = [
       ...new Map(candidates.map((candidate) => [candidate.id, candidate])),
@@ -1014,6 +1022,8 @@ export class FindPeopleCascadeService {
         alternateNames,
         roles,
         location,
+        website,
+        industry,
         candidates: unique.map((candidate) => ({
           id: candidate.id,
           name: candidate.name,

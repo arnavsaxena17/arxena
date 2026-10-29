@@ -33,6 +33,12 @@ export const FindPeopleByCompanyInputZodSchema = z.object({
           .describe(
             'The company\'s website host, e.g. "tatapower.com". Adds a search of its leadership page.',
           ),
+        industry: z
+          .string()
+          .optional()
+          .describe(
+            "The company's industry, when known. With domain it tells namesakes apart (two companies called Plum).",
+          ),
         employees: z
           .number()
           .int()

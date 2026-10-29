@@ -55,6 +55,31 @@ describe('bright data business search util', () => {
     expect(kept).toEqual([apparelCompany]);
   });
 
+  it('keeps the page with the largest following when several list the same site', () => {
+    const dummy = {
+      brightId: 'dummy',
+      data: {
+        name: 'Mamaearth Dummy',
+        website: 'mamaearth.in',
+        linkedin_followers: 35,
+        employees_in_linkedin: 1,
+      },
+    };
+    const real = {
+      brightId: 'real',
+      data: {
+        name: 'Mamaearth',
+        website: 'https://mamaearth.in/',
+        linkedin_followers: '222,003',
+        employees_in_linkedin: 1800,
+      },
+    };
+
+    expect(
+      filterBrightDataDocumentsByDomain([dummy, real], 'mamaearth.in'),
+    ).toEqual([real]);
+  });
+
   it('normalizes mode case, defaults to ludicrous and rejects unknown modes', () => {
     expect(normalizeBrightDataBusinessSearchMode('Smart')).toBe('smart');
     expect(normalizeBrightDataBusinessSearchMode()).toBe('ludicrous');

@@ -65,7 +65,7 @@ export type PersonToCompare = {
 
 const FAKE_SIGNALS = `likelyFake: true when the profile looks fabricated, impersonated or generated filler rather than a coherent real professional. Strong signals, especially combined: a stub profile (no photo, no education, no work history beyond one bare line, no followers or activity) that claims a top role (MD, CEO, Founder, Owner) at a large, well-known company; a lowercase, sloppy or gibberish name or headline; education ending recently while experience at a top firm started years earlier; elite firms (Egon Zehnder, Korn Ferry, McKinsey, Goldman, ...) listed as self-employed or freelance; an About text that is a company brochure or generic LLM English; company HQ pasted as the person's location; overlapping full-time roles at competing firms. A thin profile alone is not fake (juniors, small-business owners, people who rarely use LinkedIn), but a thin profile claiming a top role at a big brand is suspicious. A full, coherent career history is not fake.`;
 
-const COMPANY_AND_ROLE_RULES = `company: how the company on the profile relates to the target company. same = the target itself or the same business under another name (brand, trade name, legal name, regional unit). related = a parent, subsidiary, group company, joint venture, master franchisee or licensee, or the operator of the target's brand. different = clearly an unrelated business or a namesake. unknown = no company and nothing connects them. If you are not sure two companies are linked, unknown, never related.
+const COMPANY_AND_ROLE_RULES = `company: how the company on the profile relates to the target company. same = the target itself or the same business under another name (brand, trade name, legal name, regional unit). related = a parent, subsidiary, group company, joint venture, master franchisee or licensee, or the operator of the target's brand. different = clearly an unrelated business or a namesake. unknown = no company and nothing connects them. If you are not sure two companies are linked, unknown, never related. When search.targetWebsite or search.targetIndustry is given, a company with the same name in another industry, or whose profile points to another website, is a namesake: different.
 role: does the person hold one of the wanted roles now? exact = the wanted role or the same position under another title (CEO = chief executive officer = MD and CEO; founder & CEO is a CEO). related = a nearby senior role: deputy, vice, acting, executive chair, co-founder or founder when not asked for, another C-suite officer. none = any other role, a former role, or no role stated.`;
 
 const countOf = (value: unknown): number =>
@@ -213,13 +213,15 @@ export class BrightDataPersonFitFilterService {
 
   constructor(private readonly jevDecisionsService: JevDecisionsService) {}
 
-  // Find role at companies: company, role, location and fake in one pass
+  // find_people_by_company: company, role, location and fake in one pass
   async judge({
     company,
     alternateNames,
     roles,
     location,
     candidates,
+    website,
+    industry,
   }: {
     workspaceId: string;
     company: string;
@@ -227,6 +229,10 @@ export class BrightDataPersonFitFilterService {
     roles: string[];
     location?: string;
     candidates: PersonToJudge[];
+    // Short brand names collide (Plum the skincare brand, Plum the benefits
+    // platform): the site and industry tell namesakes apart
+    website?: string;
+    industry?: string;
   }): Promise<Map<string, PersonJudgement>> {
     return this.judgeAll({
       search: {
@@ -234,6 +240,8 @@ export class BrightDataPersonFitFilterService {
         alsoKnownAs: alternateNames,
         wantedRoles: roles,
         targetLocation: location ?? null,
+        ...(website !== undefined && { targetWebsite: website }),
+        ...(industry !== undefined && { targetIndustry: industry }),
       },
       withCompanyAndRole: true,
       location,

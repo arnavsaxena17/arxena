@@ -74,7 +74,7 @@ export const ACTION_TOOL_LABELS: Record<ActionToolId, ActionToolLabel> = {
     label: i18nLabel(msg`Start Outreach`),
   },
   find_people_by_company: {
-    label: i18nLabel(msg`Find Role At Companies`),
+    label: i18nLabel(msg`Find People By Company`),
   },
   get_outreach_tab: {
     label: i18nLabel(msg`Get Outreach Tab`),

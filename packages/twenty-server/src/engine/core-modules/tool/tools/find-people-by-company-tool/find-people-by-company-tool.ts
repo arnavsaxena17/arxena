@@ -270,6 +270,13 @@ export class FindPeopleByCompanyTool implements Tool {
       ? await this.readBrief(workspaceId, input.projectId)
       : undefined;
     const allowedByBrief = brief?.sources;
+
+    // The source choice is the user's, at the start of a run: the agent skips
+    // the question when it is only skill text, so a project lookup waits for it
+    if (isNonEmptyString(input.projectId) && !isDefined(allowedByBrief)) {
+      return 'The user has not picked the data sources for this run. Ask once with ask_questions (requirements: Data sources), record the answer with get_sourcing_ledger({ projectId, brief: { sources } }), then call again.';
+    }
+
     const sources = isDefined(allowedByBrief)
       ? input.sources.filter((source) =>
           allowedByBrief.includes(SOURCE_KEY_BY_LOOKUP_SOURCE[source]),
@@ -427,11 +434,45 @@ export class FindPeopleByCompanyTool implements Tool {
       result: {
         roles: input.roles,
         plan: input.plan,
-        companies: outcomes.map(({ spentUsd: _spent, ...outcome }) => ({
-          ...outcome,
-          people: outcome.people.map(
-            ({ rawProfile: _raw, profile: _profile, ...person }) => person,
-          ),
+        // What the model needs to decide and report; the evidence, the
+        // profile and the reasons stay on the rows, so ten companies fit in
+        // one reply without paging through the output
+        companies: outcomes.map((outcome) => ({
+          company: outcome.company,
+          ...(isNonEmptyString(outcome.companyRowId) && {
+            companyRowId: outcome.companyRowId,
+          }),
+          status: outcome.status,
+          terminalState: outcome.terminalState,
+          ...(isDefined(outcome.reason) && { reason: outcome.reason }),
+          ...(isDefined(outcome.rungUsed) && { rungUsed: outcome.rungUsed }),
+          sourcesUsed: outcome.sourcesUsed,
+          people: outcome.people.map((person) => ({
+            name: person.name,
+            title: person.title,
+            companyOnProfile: person.companyOnProfile,
+            linkedinUrl: person.linkedinUrl,
+            sources: person.sources,
+            roleMatch: person.roleMatch,
+            rungUsed: person.rungUsed,
+            confidence: person.confidence,
+            ...(person.companyRelation === 'related' && {
+              companyRelation: 'related',
+            }),
+            ...(isNonEmptyString(person.note) && { note: person.note }),
+            ...(person.linkedinUrlDerivedFromPost === true && {
+              linkedinUrlDerivedFromPost: true,
+            }),
+            evidence: person.evidence.slice(0, 1),
+          })),
+          rejected: outcome.rejected.map((entry) => ({
+            name: entry.name,
+            title: entry.title,
+            companyOnProfile: entry.companyOnProfile,
+            reason: entry.reason,
+            ...(isNonEmptyString(entry.note) && { note: entry.note }),
+          })),
+          sourceErrors: outcome.sourceErrors.slice(0, 2),
         })),
         summary: {
           found: count('found'),
@@ -732,6 +773,7 @@ export class FindPeopleByCompanyTool implements Tool {
           id: row.id,
           name: row.name as string,
           ...(isNonEmptyString(row.domain) && { domain: row.domain }),
+          ...(isNonEmptyString(row.industry) && { industry: row.industry }),
           ...(isDefined(employees) && { employees }),
           ...(row.otherFields.status === 'unresolvable' && {
             unresolvable: true,

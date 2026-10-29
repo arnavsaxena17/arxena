@@ -44,9 +44,9 @@ const buildCache = () => {
 };
 
 const build = ({
-  briefSources,
+  briefSources = ['bright-data', 'serp'],
   rowCount = 3,
-}: { briefSources?: string[]; rowCount?: number } = {}) => {
+}: { briefSources?: string[] | null; rowCount?: number } = {}) => {
   const rows = Array.from({ length: rowCount }, (_, index) => ({
     id: `row-${index}`,
     name: `Company${index}`,
@@ -107,6 +107,19 @@ const build = ({
 };
 
 describe('FindPeopleByCompanyTool plan', () => {
+  it('should wait for the user to pick sources before a project lookup', async () => {
+    const { tool, lookupPair } = build({ briefSources: null });
+
+    const output = await tool.execute(
+      { fromProject: true, projectId: 'p', roles: ['Head of E-commerce'] },
+      context,
+    );
+
+    expect(output.success).toBe(false);
+    expect(output.error).toMatch(/not picked the data sources/);
+    expect(lookupPair).not.toHaveBeenCalled();
+  });
+
   it('should drop the sources the user did not pick', async () => {
     const { tool, lookupPair } = build({ briefSources: ['bright-data'] });
 

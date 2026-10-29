@@ -227,6 +227,22 @@ const buildTool = ({
       getRowsByIds: jest.fn().mockResolvedValue([]),
     } as never,
     { get: getTableView } as never,
+    // A project lookup needs the user's source choice in the brief
+    {
+      read: jest.fn().mockResolvedValue([
+        {
+          kind: 'brief',
+          at: 't',
+          requestType: 'named_role',
+          target: null,
+          who: 'x',
+          criteria: [],
+          assumptions: [],
+          sources: ['bright-data', 'serp'],
+        },
+      ]),
+      append: jest.fn(),
+    } as never,
   );
 
   return {

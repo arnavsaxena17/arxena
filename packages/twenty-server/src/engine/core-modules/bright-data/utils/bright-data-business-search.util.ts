@@ -151,19 +151,54 @@ export const parseBrightDataDomainLookupQuery = (
 };
 
 // Instant NL search ranks by tokens, so "stripe.com" also returns Stripes etc.
+// Several LinkedIn pages can list the same website (a store, a test page, a
+// regional unit): a domain names one company, so only the page with the
+// largest following is kept
 export const filterBrightDataDocumentsByDomain = (
   documents: BrightDataBusinessSearchDocument[],
   domainHost: string,
 ): BrightDataBusinessSearchDocument[] => {
   const want = domainHost.replace(/^www\./, '').toLowerCase();
-
-  return documents.filter((document) => {
+  const sizeOf = (document: BrightDataBusinessSearchDocument): number[] => [
+    readNumberLoose(document.data, 'linkedin_followers') ??
+      readNumberLoose(document.data, 'followers') ??
+      0,
+    readNumberLoose(document.data, 'employees_in_linkedin') ?? 0,
+  ];
+  const matches = documents.filter((document) => {
     const website =
       readString(document.data, 'website') ||
       readString(document.data, 'domain');
 
     return websiteHost(website) === want;
   });
+
+  return [...matches]
+    .sort((first, second) => {
+      const [firstFollowers, firstEmployees] = sizeOf(first);
+      const [secondFollowers, secondEmployees] = sizeOf(second);
+
+      return (
+        secondFollowers - firstFollowers || secondEmployees - firstEmployees
+      );
+    })
+    .slice(0, 1);
+};
+
+// Provider numbers arrive as numbers or numeric strings
+const readNumberLoose = (
+  record: Record<string, unknown>,
+  key: string,
+): number | undefined => {
+  const value = record[key];
+  const parsed =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string'
+        ? Number(value.replace(/,/g, ''))
+        : Number.NaN;
+
+  return Number.isFinite(parsed) ? parsed : undefined;
 };
 
 // linkedin.com/<section>/<slug>, lowercased, so www., query strings, trailing
