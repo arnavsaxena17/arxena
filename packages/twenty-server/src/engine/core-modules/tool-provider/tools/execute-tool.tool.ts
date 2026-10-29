@@ -62,7 +62,7 @@ export const createExecuteToolTool = (
   inputSchema: executeToolInputSchema,
   execute: async (parameters: ExecuteToolInput): Promise<ToolOutput> => {
     const { toolName, arguments: args = {} } = parameters;
-
+    console.log('executeToolTool', toolName, args);
     if (options?.excludeTools?.has(toolName)) {
       return {
         success: false,
