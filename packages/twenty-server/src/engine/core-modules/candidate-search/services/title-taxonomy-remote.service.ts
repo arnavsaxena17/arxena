@@ -23,6 +23,19 @@ export type TitleTaxonomyManualBooleanQueriesResponse = {
   items?: TitleTaxonomyManualBooleanQueryItem[];
 };
 
+/** Plain titles for one function, ordered by how often the dataset uses them. */
+export type TitleTaxonomySimilarTitlesResponse = {
+  status?: string;
+  title?: string;
+  std_function?: string;
+  std_function_root?: string;
+  std_grade?: string;
+  source?: 'std_function' | 'std_function_root' | 'none';
+  count?: number;
+  titles?: string[];
+  boolean_query?: string;
+};
+
 export type TitleTaxonomySearchKeywordsResponse = {
   query?: string;
   boolean_query?: string;
@@ -424,6 +437,38 @@ export class TitleTaxonomyRemoteService {
         include_empty: query?.includeEmpty ? 'true' : undefined,
       },
     );
+  }
+
+  /**
+   * GET /api/title-taxonomy/similar-titles — every title the taxonomy files
+   * under a function (root fallback), most common in the dataset first.
+   *
+   * Null when the service cannot be reached, so callers can tell "no titles"
+   * from "no answer".
+   */
+  async getSimilarTitles(query: {
+    title?: string;
+    functionId?: string;
+    functionRoot?: string;
+    maxTitles?: number;
+  }): Promise<string[] | null> {
+    const json =
+      await this.fetchTitleTaxonomyJson<TitleTaxonomySimilarTitlesResponse>(
+        '/api/title-taxonomy/similar-titles',
+        {
+          title: query.title,
+          function: query.functionId,
+          function_root: query.functionRoot,
+          max_titles:
+            query.maxTitles !== undefined ? String(query.maxTitles) : undefined,
+        },
+      );
+
+    if (json === null) {
+      return null;
+    }
+
+    return Array.isArray(json.titles) ? json.titles : [];
   }
 
   /**

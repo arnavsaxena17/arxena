@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { TitleTaxonomyRemoteService } from 'src/engine/core-modules/candidate-search/services/title-taxonomy-remote.service';
-import { extractTitleTermsFromBooleanQuery } from 'src/engine/core-modules/title-taxonomy/extract-title-terms-from-boolean-query.util';
 import { type TitleClass } from 'src/engine/core-modules/title-taxonomy/title-class.type';
 import { titleFamilyFallbackTitles } from 'src/engine/core-modules/title-taxonomy/title-family-fallback.util';
 
@@ -46,6 +45,7 @@ export class TitleExpansionService {
     string,
     CacheEntry<string | null>
   >();
+  private readonly similarTitlesCache = new Map<string, CacheEntry<string[]>>();
 
   constructor(
     private readonly titleTaxonomyRemoteService: TitleTaxonomyRemoteService,
@@ -62,7 +62,7 @@ export class TitleExpansionService {
     }
 
     if (classes === null) {
-      // The taxonomy gives rung 2 its curated titles. Without it, a small
+      // The taxonomy gives rung 2 its similar titles. Without it, a small
       // curated family list keeps rung 2 working, so "VP Engineering" still
       // searches "Head of Engineering" and "CTO".
       return {
@@ -91,12 +91,12 @@ export class TitleExpansionService {
           .filter((query) => query.length > 0),
       ),
     ];
-    const curatedTitles = await Promise.all(
-      requestedClasses.map((titleClass) => this.getCuratedTitles(titleClass)),
+    const similarTitles = await Promise.all(
+      requestedClasses.map((titleClass) => this.getSimilarTitles(titleClass)),
     );
 
     return {
-      searchTitles: this.unique([...roles, ...curatedTitles.flat()]),
+      searchTitles: this.unique([...roles, ...similarTitles.flat()]),
       requestedClasses,
       taxonomyAvailable: true,
       titleExpressions,
@@ -105,9 +105,9 @@ export class TitleExpansionService {
     };
   }
 
-  // The titles as typed plus the curated titles of the function and grade they
-  // fall in. Titles the taxonomy cannot classify, or whose function has no plain
-  // title list, come back unchanged.
+  // The titles as typed plus the taxonomy's similar titles for the function and
+  // grade they fall in, most common in the dataset first. Titles the taxonomy
+  // cannot classify come back unchanged.
   async expandTitles(
     titles: string[],
     { maxTitles = 12 }: { maxTitles?: number } = {},
@@ -251,13 +251,28 @@ export class TitleExpansionService {
     return query ?? null;
   }
 
-  private async getCuratedTitles(titleClass: TitleClass): Promise<string[]> {
-    const query = await this.getCuratedQuery(titleClass);
+  private async getSimilarTitles(titleClass: TitleClass): Promise<string[]> {
+    const key = `${titleClass.functionId}|${titleClass.functionRoot ?? ''}`;
+    const cached = this.similarTitlesCache.get(key);
 
-    // An AND expression is a boolean filter, not a title list: "VP
-    // Manufacturing" is in it but never written out, so its words must not be
-    // turned into titles.
-    return query === null ? [] : extractTitleTermsFromBooleanQuery(query);
+    if (cached !== undefined && Date.now() - cached.storedAt < CACHE_TTL_MS) {
+      return cached.value;
+    }
+
+    // The taxonomy keeps a plain title list per function (ordered by how often
+    // the dataset uses each title), so nothing has to be reverse-engineered out
+    // of a boolean expression. That matters for AND filters, which name a role
+    // without ever writing it out as a title: "VP Manufacturing" is in the
+    // curated expression but is not a title anyone can be searched by.
+    const titles =
+      (await this.titleTaxonomyRemoteService.getSimilarTitles({
+        functionId: titleClass.functionId,
+        functionRoot: titleClass.functionRoot ?? undefined,
+      })) ?? [];
+
+    this.similarTitlesCache.set(key, { value: titles, storedAt: Date.now() });
+
+    return titles;
   }
 
   private combineExpressions(expressions: string[]): string {

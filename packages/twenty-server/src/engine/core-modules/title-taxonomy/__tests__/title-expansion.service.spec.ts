@@ -17,7 +17,10 @@ const classification = (
 
 const buildService = (
   overrides: Partial<
-    Record<'classifyTitles' | 'getManualBooleanQueries', jest.Mock>
+    Record<
+      'classifyTitles' | 'getManualBooleanQueries' | 'getSimilarTitles',
+      jest.Mock
+    >
   > = {},
 ) => {
   const remote = {
@@ -34,6 +37,12 @@ const buildService = (
         },
       ],
     })),
+    getSimilarTitles: jest.fn(async () => [
+      'managing director',
+      'chief executive officer',
+      'ceo',
+      'co founder',
+    ]),
     ...overrides,
   };
 
@@ -44,7 +53,7 @@ const buildService = (
 };
 
 describe('TitleExpansionService', () => {
-  it('should add the curated titles of the roles function after the roles as typed', async () => {
+  it('should add the taxonomy similar titles after the roles as typed', async () => {
     const { service } = buildService();
 
     const resolved = await service.resolveRoles(['MD', 'CEO']);
@@ -53,15 +62,26 @@ describe('TitleExpansionService', () => {
     expect(resolved.searchTitles.slice(0, 2)).toEqual(['md', 'ceo']);
     expect(resolved.searchTitles).toEqual(
       expect.arrayContaining([
-        'chief executive',
         'managing director',
-        'founder',
+        'chief executive officer',
+        'co founder',
       ]),
     );
     expect(resolved.requestedClasses).toHaveLength(1);
   });
 
-  it('should keep a curated AND expression as a boolean filter, not as titles', async () => {
+  it('should ask the taxonomy for the titles of the classified function, not the typed words', async () => {
+    const { service, remote } = buildService();
+
+    await service.resolveRoles(['Chief Executive']);
+
+    expect(remote.getSimilarTitles).toHaveBeenCalledWith({
+      functionId: 'ceo',
+      functionRoot: 'ceo',
+    });
+  });
+
+  it('should keep an AND expression as a boolean filter and still take the plain titles', async () => {
     const { service } = buildService({
       classifyTitles: jest.fn(async (titles: string[]) =>
         titles.map((title) => ({
@@ -78,6 +98,11 @@ describe('TitleExpansionService', () => {
           },
         ],
       })),
+      getSimilarTitles: jest.fn(async () => [
+        'manufacturing',
+        'production manager',
+        'plant',
+      ]),
     });
 
     const resolved = await service.resolveRoles(['Head of Manufacturing']);
@@ -86,17 +111,35 @@ describe('TitleExpansionService', () => {
       '(manufacturing OR production OR plant) AND',
     );
     expect(resolved.titleExpressions).toHaveLength(1);
-    // "VP Manufacturing" is in the boolean; it must not be invented as a title
-    expect(resolved.searchTitles).toEqual(['head of manufacturing']);
+    // "VP Manufacturing" is in the boolean filter; the titles are the ones the
+    // taxonomy actually files under manufacturing.
+    expect(resolved.searchTitles).toEqual([
+      'head of manufacturing',
+      'manufacturing',
+      'production manager',
+      'plant',
+    ]);
   });
 
-  it('should ask for the curated queries once per function and grade', async () => {
+  it('should keep the roles as typed when the similar titles call fails', async () => {
+    const { service } = buildService({
+      getSimilarTitles: jest.fn(async () => null),
+    });
+
+    const resolved = await service.resolveRoles(['MD', 'CEO']);
+
+    expect(resolved.taxonomyAvailable).toBe(true);
+    expect(resolved.searchTitles).toEqual(['md', 'ceo']);
+  });
+
+  it('should ask for the curated query and the similar titles once per function', async () => {
     const { service, remote } = buildService();
 
     await service.resolveRoles(['MD', 'CEO']);
     await service.resolveRoles(['MD', 'CEO']);
 
     expect(remote.getManualBooleanQueries).toHaveBeenCalledTimes(1);
+    expect(remote.getSimilarTitles).toHaveBeenCalledTimes(1);
     expect(remote.classifyTitles).toHaveBeenCalledTimes(1);
   });
 

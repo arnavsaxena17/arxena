@@ -65,6 +65,7 @@ TRANSLATION_QA_REPORT.md
 .playwright-cli/
 output/playwright/
 screenshots/
+browser-screenshots/
 !**/public/screenshots/
 !**/assets/screenshots/
 
