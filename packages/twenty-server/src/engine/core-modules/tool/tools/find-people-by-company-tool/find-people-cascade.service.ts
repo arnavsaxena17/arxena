@@ -1102,6 +1102,7 @@ export class FindPeopleCascadeService {
           const { result } = await withBrightDataPeopleSlot(() =>
             this.brightDataLudicrousSearchService.searchNaturalLanguage({
               workspaceId,
+              projectId: 'find-people-by-company',
               entity: 'people',
               rawQuery,
               maxBudgetUsd: budgetPerVariant,

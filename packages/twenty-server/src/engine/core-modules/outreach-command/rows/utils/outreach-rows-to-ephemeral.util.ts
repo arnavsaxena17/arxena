@@ -1,14 +1,14 @@
 import { type OutreachEphemeralCompany } from 'src/engine/core-modules/outreach-command/services/outreach-companies-cache.service';
 import { type OutreachEphemeralPerson } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
-import { type OutreachListRow } from 'src/engine/core-modules/outreach-list/outreach-list.types';
+import { type OutreachRow } from 'src/engine/core-modules/outreach-command/rows/outreach-rows.types';
 
-const companyOtherFields = (row: OutreachListRow): Record<string, unknown> => ({
+const companyOtherFields = (row: OutreachRow): Record<string, unknown> => ({
   ...(row.otherFields ?? {}),
   ...(row.linkedinUrl ? { linkedinUrl: row.linkedinUrl } : {}),
 });
 
-export const outreachListRowToEphemeralCompany = (
-  row: OutreachListRow,
+export const outreachRowToEphemeralCompany = (
+  row: OutreachRow,
 ): OutreachEphemeralCompany => {
   const otherFields = companyOtherFields(row);
 
@@ -25,8 +25,8 @@ export const outreachListRowToEphemeralCompany = (
   };
 };
 
-export const outreachListRowToEphemeralPerson = (
-  row: OutreachListRow,
+export const outreachRowToEphemeralPerson = (
+  row: OutreachRow,
 ): OutreachEphemeralPerson => ({
   id: row.key,
   name: row.name,

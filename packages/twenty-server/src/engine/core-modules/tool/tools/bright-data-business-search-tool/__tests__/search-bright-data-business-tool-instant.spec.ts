@@ -30,8 +30,15 @@ const buildTool = (documents: Array<Record<string, unknown>>) => {
     loadDataset: jest.fn(async () => undefined),
     executePlan: jest.fn(),
     estimate: jest.fn(),
+    getPlan: jest.fn(),
+    searchNaturalLanguage: jest.fn(),
   };
-  const upsertCompanies = { execute: jest.fn() };
+  const upsertCompanies = {
+    execute: jest.fn(async () => ({
+      success: true,
+      result: { writtenRowIds: ['row-1'], createdCount: 1, updatedCount: 0 },
+    })),
+  };
   const upsertPeople = {
     execute: jest.fn(async () => ({
       success: true,
@@ -43,10 +50,15 @@ const buildTool = (documents: Array<Record<string, unknown>>) => {
     ludicrous as never,
     upsertCompanies as never,
     upsertPeople as never,
-    {} as never,
   );
 
-  return { tool, businessSearch, ludicrous, upsertPeople, upsertCompanies };
+  return {
+    tool,
+    businessSearch,
+    ludicrous,
+    upsertPeople,
+    upsertCompanies,
+  };
 };
 
 const context = { workspaceId: 'workspace-1', projectId: 'project-1' };
@@ -85,7 +97,7 @@ describe('SearchBrightDataBusinessTool instant', () => {
     ]);
   });
 
-  it('should show probe rows without writing the tab, even with a project', async () => {
+  it('should write probe rows to the tab, flagged probe', async () => {
     const { tool, businessSearch, upsertPeople } = buildTool([
       smita,
       lookalike,
@@ -96,7 +108,23 @@ describe('SearchBrightDataBusinessTool instant', () => {
       context,
     );
 
-    expect(upsertPeople.execute).not.toHaveBeenCalled();
+    expect(upsertPeople.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projectId: 'project-1',
+        people: [
+          expect.objectContaining({
+            name: 'Smita Jatia',
+            otherFields: expect.objectContaining({ probe: true }),
+          }),
+          expect.objectContaining({
+            name: 'Smita J',
+            otherFields: expect.objectContaining({ probe: true }),
+          }),
+        ],
+      }),
+      context,
+    );
+    // The search itself still runs without a project; the write happens after
     expect(businessSearch.search).toHaveBeenCalledWith(
       expect.objectContaining({ projectId: undefined }),
     );
@@ -105,12 +133,14 @@ describe('SearchBrightDataBusinessTool instant', () => {
         lookup: 'probe',
         count: 2,
         matched: 4_200,
-        ephemeralWritten: 0,
+        ephemeralWritten: 2,
+        probe: true,
         previewRows: expect.arrayContaining([
           expect.objectContaining({ name: 'Smita Jatia' }),
         ]),
       }),
     );
+    expect(output.result).not.toHaveProperty('listId');
   });
 
   it('should cut a profile URL lookup to the exact match and write it', async () => {
@@ -138,8 +168,10 @@ describe('SearchBrightDataBusinessTool instant', () => {
         linkedinUrl: 'linkedin.com/in/smita-jatia',
         count: 1,
         ephemeralWritten: 1,
+        probe: false,
       }),
     );
+    expect(output.result).not.toHaveProperty('listId');
   });
 
   it('should match a company LinkedIn URL on the record URL, not the website', async () => {
@@ -153,10 +185,6 @@ describe('SearchBrightDataBusinessTool instant', () => {
         },
       },
     ]);
-    upsertCompanies.execute.mockResolvedValue({
-      success: true,
-      result: { writtenRowIds: ['row-1'], createdCount: 1, updatedCount: 0 },
-    } as never);
 
     const output = await tool.execute(
       {

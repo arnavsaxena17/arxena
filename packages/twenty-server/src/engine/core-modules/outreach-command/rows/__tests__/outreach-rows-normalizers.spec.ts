@@ -1,15 +1,15 @@
 import {
-  buildEmptyListShape,
+  buildEmptyTabShape,
   fromBrightDataDocument,
-  isOutreachListSourceTool,
-  normalizeToolOutputToListRows,
-} from 'src/engine/core-modules/outreach-list/utils/outreach-list-normalizers.util';
+  isOutreachTabSourceTool,
+  normalizeToolOutputToTabRows,
+} from 'src/engine/core-modules/outreach-command/rows/utils/outreach-rows-normalizers.util';
 import {
-  buildOutreachListRowKey,
+  buildOutreachRowKey,
   normalizeDomain,
   normalizeLinkedinUrl,
-} from 'src/engine/core-modules/outreach-list/utils/outreach-list-keys.util';
-import { buildOutreachListCsv } from 'src/engine/core-modules/outreach-list/utils/outreach-list-csv.util';
+} from 'src/engine/core-modules/outreach-command/rows/utils/outreach-rows-keys.util';
+import { buildOutreachRowsCsv } from 'src/engine/core-modules/outreach-command/rows/utils/outreach-rows-csv.util';
 
 describe('outreach list keys', () => {
   it('should treat the same website written differently as one company', () => {
@@ -17,7 +17,7 @@ describe('outreach list keys', () => {
       'wowmomo.com',
     );
     expect(
-      buildOutreachListRowKey('company', {
+      buildOutreachRowKey('company', {
         domain: '',
         website: 'http://wowmomo.com/',
         linkedinUrl: '',
@@ -39,9 +39,9 @@ describe('outreach list keys', () => {
   });
 });
 
-describe('normalizeToolOutputToListRows', () => {
+describe('normalizeToolOutputToTabRows', () => {
   it('should read the nested Apollo organizations shape', () => {
-    const normalized = normalizeToolOutputToListRows(
+    const normalized = normalizeToolOutputToTabRows(
       'search_apollo_companies',
       { organizationName: 'restaurant', page: 2 },
       {
@@ -75,7 +75,7 @@ describe('normalizeToolOutputToListRows', () => {
   });
 
   it('should use the public LinkedIn url for people, not the lead link', () => {
-    const normalized = normalizeToolOutputToListRows(
+    const normalized = normalizeToolOutputToTabRows(
       'search_linkedin_people',
       {},
       {
@@ -99,7 +99,7 @@ describe('normalizeToolOutputToListRows', () => {
   });
 
   it('should route a pasted company search url into a company list', () => {
-    const normalized = normalizeToolOutputToListRows(
+    const normalized = normalizeToolOutputToTabRows(
       'search_linkedin_from_url',
       { url: 'https://www.linkedin.com/sales/search/company?page=3' },
       {
@@ -122,7 +122,7 @@ describe('normalizeToolOutputToListRows', () => {
   });
 
   it('should route Harvest leads into a paid people list with their cost', () => {
-    const normalized = normalizeToolOutputToListRows(
+    const normalized = normalizeToolOutputToTabRows(
       'search_harvest_leads',
       {
         searchParameters: { currentJobTitles: ['Plant Manager'] },
@@ -166,7 +166,7 @@ describe('normalizeToolOutputToListRows', () => {
   });
 
   it('should read a raw Harvest lead with a nested location', () => {
-    const normalized = normalizeToolOutputToListRows(
+    const normalized = normalizeToolOutputToTabRows(
       'search_harvest_leads',
       { searchParameters: { currentJobTitles: ['Plant Manager'] } },
       {
@@ -192,7 +192,7 @@ describe('normalizeToolOutputToListRows', () => {
   });
 
   it('should read a nested Harvest account location', () => {
-    const normalized = normalizeToolOutputToListRows(
+    const normalized = normalizeToolOutputToTabRows(
       'search_harvest_accounts',
       { searchParameters: { search: 'software' } },
       {
@@ -210,7 +210,7 @@ describe('normalizeToolOutputToListRows', () => {
   });
 
   it('should route Harvest accounts into a company list', () => {
-    const normalized = normalizeToolOutputToListRows(
+    const normalized = normalizeToolOutputToTabRows(
       'search_harvest_accounts',
       { searchParameters: { search: 'software' } },
       {
@@ -237,15 +237,15 @@ describe('normalizeToolOutputToListRows', () => {
 
   it('should return null for unknown shapes so output is left alone', () => {
     expect(
-      normalizeToolOutputToListRows('search_apollo_people', {}, { result: {} }),
+      normalizeToolOutputToTabRows('search_apollo_people', {}, { result: {} }),
     ).toBeNull();
-    expect(isOutreachListSourceTool('find_many_companies')).toBe(false);
-    expect(isOutreachListSourceTool('search_people_index')).toBe(true);
-    expect(isOutreachListSourceTool('search_wikidata_companies')).toBe(true);
+    expect(isOutreachTabSourceTool('find_many_companies')).toBe(false);
+    expect(isOutreachTabSourceTool('search_people_index')).toBe(true);
+    expect(isOutreachTabSourceTool('search_wikidata_companies')).toBe(true);
   });
 
   it('should route people index hits into a people list without projectId in the signature', () => {
-    const normalized = normalizeToolOutputToListRows(
+    const normalized = normalizeToolOutputToTabRows(
       'search_people_index',
       { jobTitle: 'CEO', projectId: 'proj-1', limit: 10 },
       {
@@ -273,7 +273,7 @@ describe('normalizeToolOutputToListRows', () => {
   });
 
   it('should route Wikidata companies into a company list', () => {
-    const normalized = normalizeToolOutputToListRows(
+    const normalized = normalizeToolOutputToTabRows(
       'search_wikidata_companies',
       { domain: 'dow.com', projectId: 'proj-1' },
       {
@@ -380,9 +380,9 @@ describe('normalizeToolOutputToListRows', () => {
   });
 });
 
-describe('buildEmptyListShape', () => {
+describe('buildEmptyTabShape', () => {
   it('records a zero-row search so the frontier counts it as attempted', () => {
-    const shape = buildEmptyListShape(
+    const shape = buildEmptyTabShape(
       'search_harvest_leads',
       { currentJobTitles: ['Plant Head'], limit: 25 },
       { searchResults: [], paging: { total: 0 } },
@@ -400,7 +400,7 @@ describe('buildEmptyListShape', () => {
   });
 
   it('ignores request metadata arrays on a zero-result response', () => {
-    const shape = buildEmptyListShape(
+    const shape = buildEmptyTabShape(
       'search_linkedin_people',
       {
         searchParameters: {
@@ -420,7 +420,7 @@ describe('buildEmptyListShape', () => {
 
   it('does not turn an unrecognised response with rows into an empty list', () => {
     expect(
-      buildEmptyListShape(
+      buildEmptyTabShape(
         'search_harvest_leads',
         { currentJobTitles: ['Plant Head'] },
         { unexpected: [{ name: 'Acme' }] },
@@ -429,7 +429,7 @@ describe('buildEmptyListShape', () => {
   });
 });
 
-describe('buildOutreachListCsv', () => {
+describe('buildOutreachRowsCsv', () => {
   it('should neutralise formulas, quote commas and include every row', () => {
     const rows = [
       fromBrightDataDocument('company', {
@@ -441,7 +441,7 @@ describe('buildOutreachListCsv', () => {
         data: { name: 'Beta, Inc', website: 'https://b.com' },
       }),
     ].filter((row) => row !== null);
-    const csv = buildOutreachListCsv('company', rows);
+    const csv = buildOutreachRowsCsv('company', rows);
 
     expect(csv).toContain("'=cmd|calc");
     expect(csv).toContain('"Beta, Inc"');

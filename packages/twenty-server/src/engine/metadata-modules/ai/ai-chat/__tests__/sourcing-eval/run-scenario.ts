@@ -63,10 +63,10 @@ const SCHEMA_HINTS: Record<string, string> = {
   find_people_by_company:
     '{ projectId, fromProject?, companies?: [{ id, name, alternateNames? }], roles, location, maxBudgetUsd?, onlyFailed? }',
   search_bright_data_business:
-    '{ entity: "people" | "company", query, projectId (required on Find), mode?, listId?, maxBudgetUsd?, targetCount?, autoExecute? }',
+    '{ entity: "people" | "company", query, projectId (required), mode?, execute?, maxBudgetUsd?, targetCount?, autoExecute? }',
   google_serp_search: '{ query }',
-  outreach_list:
-    '{ action: "summary" | "peek" | "dedupe" | "attach" | "export" | "list" | "delete", listId, projectId?, against?, remove?, limit? } — attach only when search had no projectId',
+  outreach_tab:
+    '{ action: "export" | "dedupe", projectId, tab: "companies" | "people", against?: "crm", remove? }',
   get_outreach_tab: '{ projectId, tab?, summarize?, limit? }',
   generate_table_view: '{ projectId, tab, description }',
   apply_table_view: '{ projectId, tab, filters?, sort?, clear? }',
@@ -75,7 +75,7 @@ const SCHEMA_HINTS: Record<string, string> = {
   search_linkedin_companies:
     '{ searchType?, searchParameters, projectId?, limit?, account_id? }',
   search_linkedin_continue:
-    '{ listId?, cursor?, maxPages?, limit?, projectId? }',
+    '{ cursor?, maxPages?, limit?, projectId? }',
   search_linkedin_parameters: '{ parameterType, query }',
   generate_linkedin_query_set:
     '{ rawRequirement, category?, provider?, searchType?, account_id? }',
@@ -86,21 +86,34 @@ const SCHEMA_HINTS: Record<string, string> = {
   exa_web_search: '{ query, category?, projectId? }',
 };
 
-const listSearchStub = (
-  listId: string,
+const tabSearchStub = (
   args: Record<string, unknown>,
   counts: { fetched: number; added: number; duplicates: number; total: number },
 ): Record<string, unknown> => {
   const hasProject =
     typeof args.projectId === 'string' && args.projectId.trim().length > 0;
 
+  if (!hasProject) {
+    return {
+      error:
+        'projectId is required. Open the project whose tab should receive the rows, then retry.',
+      fetched: counts.fetched,
+      added: 0,
+      duplicates: 0,
+      total: 0,
+      ephemeralWritten: 0,
+      nextStep:
+        'Nothing was written. Open or name a project, then run the search again.',
+    };
+  }
+
   return {
-    listId,
     ...counts,
-    ephemeralWritten: hasProject ? counts.added : 0,
-    nextStep: hasProject
-      ? 'Records were written to the project tab. Do not call outreach_list attach. Use get_outreach_tab; save_outreach_targets_to_crm only if the user asks to save.'
-      : 'No projectId was given. Ask which project, then outreach_list attach.',
+    newUnique: counts.added,
+    alreadyKnown: 0,
+    ephemeralWritten: counts.added,
+    nextStep:
+      'Records were written to the project tab. Use get_outreach_tab; save_outreach_targets_to_crm only if the user asks to save.',
   };
 };
 
@@ -121,13 +134,53 @@ const stubResult = (
         shortfall: { short: 0 },
         searches: [],
       };
-    case 'search_bright_data_business':
-      return listSearchStub('list_1', args, {
-        fetched: 300,
-        added: 280,
-        duplicates: 20,
-        total: 280,
-      });
+    case 'search_bright_data_business': {
+      const hasProject =
+        typeof args.projectId === 'string' && args.projectId.trim().length > 0;
+
+      if (args.execute === true || args.autoExecute === true) {
+        return {
+          projectId: args.projectId,
+          count: 40,
+          fetchedCount: 280,
+          ephemeralWritten: hasProject ? 280 : 0,
+          spentUsd: 0.56,
+          budgetUsd: 5,
+          reused: false,
+          nextStep:
+            'Records were written to the project tab. Use get_outreach_tab; save_outreach_targets_to_crm only if the user asks to save.',
+        };
+      }
+
+      return {
+        projectId: args.projectId,
+        awaitingConfirmation: true,
+        intentSummary: 'The segment described in the request',
+        shards: [
+          {
+            key: 'canonical',
+            rationale: 'Canonical industry label',
+            matched: 300,
+            coveragePercent: 100,
+            fetchableRecords: 300,
+            estimatedCostUsd: 0.6,
+            samplePrecision: 0.8,
+          },
+        ],
+        totalFetchableRecords: 300,
+        estimatedUniqueRecords: 280,
+        estimatedAccurateRecords: 220,
+        estimatedCostUsd: 0.56,
+        estimateCostUsd: 0.02,
+        maxBudgetUsd: 10,
+        budgetOptions: [],
+        message: 'About 280 records are reachable; the estimate cost $0.02.',
+        probeRowsWritten: 30,
+        probeRowsTotal: 30,
+        nextStep:
+          'Show the user the slices, counts and cost options, then call again with execute: true and the maxBudgetUsd they choose.',
+      };
+    }
     case 'google_serp_search':
       return { results: [{ title: 'Name - Role - Company', snippet: '...' }] };
     case 'search_linkedin_people':
@@ -138,7 +191,7 @@ const stubResult = (
     case 'search_people_index':
     case 'search_companies_index':
     case 'search_wikidata_companies':
-      return listSearchStub('list_2', args, {
+      return tabSearchStub(args, {
         fetched: 100,
         added: 90,
         duplicates: 10,
@@ -163,8 +216,19 @@ const stubResult = (
         total: 280,
         summary: { fitmentOutcome: { pass: 40, unknown: 120, fail: 120 } },
       };
-    case 'outreach_list':
-      return { ok: true, total: 280, duplicatesAgainstCrm: 12 };
+    case 'outreach_tab':
+      return {
+        ok: true,
+        projectId: args.projectId,
+        tab: args.tab,
+        matched: 12,
+        removed: args.remove === true ? 12 : 0,
+        total: args.remove === true ? 268 : 280,
+        files:
+          args.action === 'export'
+            ? [{ filename: 'companies.csv', url: 'https://example.test/csv' }]
+            : undefined,
+      };
     default:
       return { ok: true };
   }

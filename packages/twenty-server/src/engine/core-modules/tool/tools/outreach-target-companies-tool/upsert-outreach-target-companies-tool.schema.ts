@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { OUTREACH_LIST_MAX_ROWS } from 'src/engine/core-modules/outreach-list/outreach-list.constants';
+import { OUTREACH_TAB_MAX_ROWS } from 'src/engine/core-modules/outreach-command/constants/outreach-tab.constants';
 
 export const OutreachEphemeralCompanyInputZodSchema = z.object({
   id: z
@@ -50,7 +50,7 @@ export const UpsertOutreachTargetCompaniesInputZodSchema = z.object({
   companies: z
     .array(OutreachEphemeralCompanyInputZodSchema)
     .min(1)
-    .max(OUTREACH_LIST_MAX_ROWS)
+    .max(OUTREACH_TAB_MAX_ROWS)
     .describe('Target companies to write to the ephemeral Companies tab'),
 });
 

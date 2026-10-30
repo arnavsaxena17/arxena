@@ -13,8 +13,12 @@ export type BrightDataBusinessSearchView = 'full' | 'summary' | 'id_only';
 export type BrightDataBusinessSearchDocument = {
   brightId: string;
   data: Record<string, unknown>;
-  // Jev verdict for this row. Omitted when the row was not scored.
-  relevant?: boolean;
+  // Jev verdict for this row. Omitted or null when the row was not scored.
+  relevant?: boolean | null;
+  // A sampled row from an estimate or an instant probe, not a fetched row.
+  probe?: boolean;
+  // The slice that returned a sampled row.
+  shardKey?: string;
 };
 
 export const BRIGHT_DATA_BUSINESS_SEARCH_MAX_QUERY_LENGTH = 200;
@@ -72,7 +76,7 @@ export const planBrightDataBusinessSearchPages = ({
 
   if (mode !== 'ludicrous' && Math.max(0, offset ?? 0) >= maxResults) {
     throw new Error(
-      `${mode} mode only returns the first ${maxResults} results (offset + limit <= ${maxResults}). Use ludicrous mode (estimate, then listId and maxBudgetUsd) to fetch more.`,
+      `${mode} mode only returns the first ${maxResults} results (offset + limit <= ${maxResults}). Use ludicrous mode (estimate, then execute and maxBudgetUsd) to fetch more.`,
     );
   }
 
@@ -367,12 +371,19 @@ export const buildBrightDataCompanyOtherFields = (
 
 const mergeBrightDataOtherFields = (
   base: Record<string, unknown>,
-  document: Pick<BrightDataBusinessSearchDocument, 'relevant'>,
+  document: Pick<
+    BrightDataBusinessSearchDocument,
+    'relevant' | 'probe' | 'shardKey'
+  >,
 ): Record<string, unknown> | undefined => {
   const otherFields = {
     ...base,
     ...(typeof document.relevant === 'boolean'
       ? { relevant: document.relevant }
+      : {}),
+    ...(typeof document.probe === 'boolean' ? { probe: document.probe } : {}),
+    ...(isNonEmptyString(document.shardKey)
+      ? { shardKey: document.shardKey }
       : {}),
   };
 

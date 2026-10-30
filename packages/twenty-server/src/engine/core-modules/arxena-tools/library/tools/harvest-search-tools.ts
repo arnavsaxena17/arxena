@@ -24,7 +24,7 @@ export const harvestSearchTools: McpTool[] = [
     definition: {
       name: SEARCH_HARVEST_LEADS_TOOL_NAME,
       description:
-        'Paid ($0.004 per record) LinkedIn Sales Navigator people search through Harvest; no LinkedIn seat needed. Pass queries[i].searchParameters from generate_linkedin_query_set with provider harvest. Returns listId, counts, costUsd and paging.nextPage.',
+        'Paid ($0.004 per record) LinkedIn Sales Navigator people search through Harvest; no LinkedIn seat needed. Pass queries[i].searchParameters from generate_linkedin_query_set with provider harvest. Writes the project tab (projectId required) and returns counts, costUsd and paging.nextPage.',
       inputSchema: descriptorToInputSchema(
         SEARCH_HARVEST_LEADS_INPUT_DESCRIPTOR,
       ),
@@ -45,7 +45,7 @@ export const harvestSearchTools: McpTool[] = [
     definition: {
       name: SEARCH_HARVEST_ACCOUNTS_TOOL_NAME,
       description:
-        'Paid ($0.004 per record) LinkedIn Sales Navigator company search through Harvest: headcount and growth, revenue, department headcount, hiring. Pass queries[i].searchParameters from generate_linkedin_query_set with provider harvest and category companies. Returns listId, counts, costUsd and paging.nextPage.',
+        'Paid ($0.004 per record) LinkedIn Sales Navigator company search through Harvest: headcount and growth, revenue, department headcount, hiring. Pass queries[i].searchParameters from generate_linkedin_query_set with provider harvest and category companies. Writes the project tab (projectId required) and returns counts, costUsd and paging.nextPage.',
       inputSchema: descriptorToInputSchema(
         SEARCH_HARVEST_ACCOUNTS_INPUT_DESCRIPTOR,
       ),

@@ -10,7 +10,7 @@ routes:
 ---
 # Spreadsheet Import Skill
 
-The rows of an attached `.xlsx` / `.xls` / `.csv` land in the project's **ephemeral lists** (Companies / People tabs), exactly like search results. Nothing is written to the CRM; that only happens later through Add to CRM / Enroll. Do not paste rows into chat.
+The rows of an attached `.xlsx` / `.xls` / `.csv` land in the project's **Companies / People tabs**, exactly like search results. Nothing is written to the CRM; that only happens later through Add to CRM / Enroll. Do not paste rows into chat.
 
 ## Flow (always in this order)
 

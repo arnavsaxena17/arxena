@@ -40,6 +40,8 @@ import { SearchPostsService } from 'src/engine/core-modules/outreach-command/ser
 import { UploadProfilesService } from 'src/engine/core-modules/outreach-command/services/upload-profiles.service';
 import { UploadProfilesWorkflowResumeService } from 'src/engine/core-modules/outreach-command/services/upload-profiles-workflow-resume.service';
 import { SaveOutreachTargetsToCrmService } from 'src/engine/core-modules/outreach-command/services/save-outreach-targets-to-crm.service';
+import { OutreachTabDedupeService } from 'src/engine/core-modules/outreach-command/services/outreach-tab-dedupe.service';
+import { OutreachTabExportService } from 'src/engine/core-modules/outreach-command/services/outreach-tab-export.service';
 import { UpsertCompaniesService } from 'src/engine/core-modules/outreach-command/services/upsert-companies.service';
 import { EnrichContactService } from 'src/engine/core-modules/outreach-command/services/enrich-contact.service';
 import { CreateReferralCandidateService } from 'src/engine/core-modules/outreach-command/services/create-referral-candidate.service';
@@ -217,6 +219,8 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     UploadProfilesService,
     UploadProfilesWorkflowResumeService,
     SaveOutreachTargetsToCrmService,
+    OutreachTabDedupeService,
+    OutreachTabExportService,
     UpsertCompaniesService,
     EnrichContactService,
     GetCalendarAvailabilityService,
@@ -298,6 +302,8 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     OutreachSenderProfileService,
     QualifyProspectService,
     LinkedinSelectionFetchService,
+    OutreachTabDedupeService,
+    OutreachTabExportService,
   ],
 })
 export class OutreachCommandModule {}

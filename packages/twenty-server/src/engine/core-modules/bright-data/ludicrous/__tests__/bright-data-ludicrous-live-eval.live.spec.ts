@@ -144,7 +144,7 @@ describeLive('bright data ludicrous live eval', () => {
     };
     const store = {
       save: async (plan: BrightDataLudicrousPlan) => {
-        plans.set(plan.listId, plan);
+        plans.set(plan.projectId, plan);
       },
     };
     // EVAL_JUDGE_PROVIDER=openrouter judges with typesafe/jev-router
@@ -265,6 +265,7 @@ describeLive('bright data ludicrous live eval', () => {
       ledger.records = 0;
       const plan = await planner.createPlan({
         workspaceId: 'eval',
+        projectId: 'eval-project',
         entity: evalCase.entity,
         rawQuery: evalCase.raw,
       });

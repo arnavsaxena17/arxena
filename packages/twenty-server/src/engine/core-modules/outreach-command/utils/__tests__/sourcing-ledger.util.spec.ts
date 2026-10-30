@@ -406,7 +406,7 @@ describe('computeSourcingFrontier', () => {
         { source: 'bright-data', query: 'plant heads', entity: 'people' },
         { source: 'serp', query: 'plant head Surat', entity: 'people' },
       ],
-      lists: [
+      searches: [
         list,
         {
           ...list,
@@ -423,7 +423,7 @@ describe('computeSourcingFrontier', () => {
     expect(frontier?.complete).toBe(false);
     expect(frontier?.planned[0]).toMatchObject({
       attempted: true,
-      listIds: ['l1'],
+      searchIds: ['l1'],
       fetched: 120,
       newUnique: 80,
       alreadyKnown: 20,
@@ -439,7 +439,7 @@ describe('computeSourcingFrontier', () => {
       queries: [
         { source: 'internal-index', query: 'plant head', entity: 'people' },
       ],
-      lists: [
+      searches: [
         {
           id: 'l3',
           sources: ['other'],
@@ -458,7 +458,7 @@ describe('computeSourcingFrontier', () => {
   it('reports that coverage cannot be proven without a query plan', () => {
     const frontier = computeSourcingFrontier({
       coverage: 'exhaustive',
-      lists: [],
+      searches: [],
     });
 
     expect(frontier?.complete).toBe(false);

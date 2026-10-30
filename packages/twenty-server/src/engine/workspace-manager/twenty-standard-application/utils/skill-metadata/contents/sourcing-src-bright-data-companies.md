@@ -26,7 +26,7 @@ search_bright_data_business({
 ```
 
 3. `count` and `companies` / `previewRows` are already filtered. If `count` is 0, say so, try an instant probe on the company name, then Wikidata (`search_wikidata_companies`). Never retry on ludicrous with the domain or URL: it has no such field.
-4. Report name, domain, industry, LinkedIn URL, size. On Outreach Find the tab is written; with no project the result shows `previewRows` only.
+4. Report name, domain, industry, LinkedIn URL, size. On Outreach Find the tab is written. A project is required; without one the tool refuses.
 
 ### Ludicrous query
 
@@ -65,16 +65,16 @@ search_bright_data_business({
   "query": "Apparel brands in India"
 })
 
-// 3. after the user confirms $2
+// 2. after the user confirms $2
 search_bright_data_business({
   "entity": "company",
   "query": "Apparel brands in India",
-  "listId": "<listId from step 1>",
+  "execute": true,
   "maxBudgetUsd": 2,
   "targetCount": 1000
 })
 ```
 
-With no project (an MCP client, not on Find), keep the estimate and approval, then return the rows in chat instead of writing them.
+A project is required: the estimate and the fetch both write that project's tab.
 
 <!-- search-bright-data-companies-source-section:end -->

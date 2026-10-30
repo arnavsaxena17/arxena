@@ -91,8 +91,8 @@ Every model step re-reads the whole conversation, so steps are the cost.
 
 - `run_ai_column` waits for the run (`waitSeconds`, default 150, max 240) and `get_ai_column_run_status` waits too (default 120). The skill says to check at most once a minute. Real chats averaged 10 to 50 polls per run before this.
 - `search_linkedin_continue` takes `maxPages` (up to 50) and `maxRows` (default 1000) and follows the cursor on the server. The result carries `autoContinue` (pages, rows, why it stopped) and the cursor to carry on from. A failing page keeps the pages already read.
-- Rows stay out of the chat: `get_outreach_tab` `summarize`, `outreach_list` `peek` (10 rows at most, overflow only), no `code_interpreter` or `extract_json_paths` on a list.
-- Find writes: pass `projectId` on the search so the tab is written; do not `outreach_list` `attach` afterward. Attach is overflow when the search had no `projectId`.
+- Rows stay out of the chat: `get_outreach_tab` `summarize` and a 10-row sample at most; no `code_interpreter` or `extract_json_paths` on the tab.
+- Find writes: pass `projectId` on the search so the tab is written. A project is required; there is no attach.
 
 ## When there are not enough results
 

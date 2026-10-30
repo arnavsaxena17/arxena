@@ -14,7 +14,7 @@ describe('UpsertOutreachTargetPeopleTool', () => {
       { append: jest.fn().mockResolvedValue(undefined) } as never,
     );
 
-    // the shape outreach_list attach sends: companyId is always ''
+    // the shape a project-tab write sends: companyId is always ''
     await tool.execute(
       {
         projectId: 'project-1',

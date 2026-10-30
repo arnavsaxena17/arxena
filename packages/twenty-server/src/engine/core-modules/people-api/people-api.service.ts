@@ -614,6 +614,7 @@ export class PeopleApiService {
       const { summary, result } =
         await this.brightDataLudicrousSearchService.searchNaturalLanguage({
           workspaceId: options.workspaceId,
+          projectId: 'people-api',
           entity: 'people',
           rawQuery: query,
           maxBudgetUsd: body.maxBudgetUsd ?? 1,

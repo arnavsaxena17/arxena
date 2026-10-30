@@ -4,7 +4,7 @@
 
 import {
   GENERATE_LINKEDIN_QUERY_SET_TOOL_NAME,
-  OUTREACH_LIST_TOOL_NAME,
+  OUTREACH_TAB_TOOL_NAME,
   SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME,
   SEARCH_LINKEDIN_COMPANIES_TOOL_NAME,
   SEARCH_LINKEDIN_CONTINUE_TOOL_NAME,
@@ -69,7 +69,7 @@ export const LIVE_CAPPED_SETUP_NOTE = [
 
 const LIVE_ALLOWLIST = new Set([
   SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME,
-  OUTREACH_LIST_TOOL_NAME,
+  OUTREACH_TAB_TOOL_NAME,
   'get_outreach_tab',
   'get_sourcing_ledger',
   'find_people_by_company',
@@ -185,17 +185,12 @@ const capBrightData = (
   state: LiveCapState,
 ): Record<string, unknown> | { error: string } => {
   const entity = String(args.entity ?? '');
-  const isFetch =
-    typeof args.listId === 'string' ||
-    args.autoExecute === true ||
-    typeof args.maxBudgetUsd === 'number';
+  const isFetch = args.execute === true || args.autoExecute === true;
 
   if (!isFetch) {
-    // Estimate: strip projectId so nothing is written yet
-    const { projectId: _projectId, ...estimateArgs } = args;
-
+    // Estimate: writes probe rows to the disposable project tab
     return {
-      ...estimateArgs,
+      ...args,
       limit: Math.min(numberOr(args.limit, CAP_ROWS), CAP_ROWS),
     };
   }
@@ -382,12 +377,8 @@ export const executeLiveTool = async (
     toolName === 'fetch_profiles'
   ) {
     args = withProjectId(capAiColumn(args), config.projectId);
-  } else if (toolName === 'outreach_list' && args.action === 'attach') {
-    args = {
-      ...args,
-      limit: Math.min(numberOr(args.limit, CAP_ROWS), CAP_ROWS),
-      projectId: config.projectId,
-    };
+  } else if (toolName === 'outreach_tab') {
+    args = { ...args, projectId: config.projectId };
   }
 
   // eslint-disable-next-line no-console

@@ -83,7 +83,6 @@ const GENERATED_TOOL_PATTERN =
 
 // Backticked names that look like tools but are not tool names
 const NON_TOOL_NAMES: Record<string, string> = {
-  save_to_crm: 'an action value of outreach_list, not a tool',
   exa_web_search: 'resolved to app_exa_web_search by the tool name resolver',
   linkedin_followers: 'a Bright Data field name',
 };

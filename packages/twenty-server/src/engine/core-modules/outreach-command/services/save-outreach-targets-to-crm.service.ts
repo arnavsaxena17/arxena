@@ -14,7 +14,7 @@ import {
   type OutreachEphemeralPerson,
   OutreachPeopleCacheService,
 } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
-import { OUTREACH_LIST_MAX_ROWS } from 'src/engine/core-modules/outreach-list/outreach-list.constants';
+import { OUTREACH_TAB_MAX_ROWS } from 'src/engine/core-modules/outreach-command/constants/outreach-tab.constants';
 import { UpsertCompaniesService } from 'src/engine/core-modules/outreach-command/services/upsert-companies.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
@@ -45,7 +45,7 @@ export type SaveOutreachTargetsToCrmResult = {
   crmPersonIdByEphemeralId: Record<string, string>;
 };
 
-const MAX_ROWS_PER_CALL = OUTREACH_LIST_MAX_ROWS;
+const MAX_ROWS_PER_CALL = OUTREACH_TAB_MAX_ROWS;
 
 const normalizeLinkedinUrl = (linkedinUrl: string): string =>
   linkedinUrl

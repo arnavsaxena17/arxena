@@ -5,7 +5,7 @@ import {
   type RestRequest,
   type RestTransport,
 } from 'src/engine/core-modules/arxena-tools/library/api/rest-client';
-import { OutreachListTool } from 'src/engine/core-modules/tool/tools/outreach-list-tool/outreach-list-tool';
+import { OutreachTabTool } from 'src/engine/core-modules/tool/tools/outreach-tab-tool/outreach-tab-tool';
 import { SearchBrightDataBusinessTool } from 'src/engine/core-modules/tool/tools/bright-data-business-search-tool/search-bright-data-business-tool';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
@@ -40,14 +40,16 @@ export class ArxenaInProcessRestTransportService {
       this.moduleRef
         .get(SearchBrightDataBusinessTool, { strict: false })
         .execute({ ...request.body, entity: 'people' }, context),
-    'POST outreach-list/run': (request, context) =>
+    'POST outreach-tab/run': (request, context) =>
       this.moduleRef
-        .get(OutreachListTool, { strict: false })
+        .get(OutreachTabTool, { strict: false })
         .execute({ ...request.body }, context),
   };
 
   isEnabled(): boolean {
-    return process.env.ARXENA_IN_PROCESS_TOOLS?.trim().toLowerCase() !== 'false';
+    return (
+      process.env.ARXENA_IN_PROCESS_TOOLS?.trim().toLowerCase() !== 'false'
+    );
   }
 
   getRouteKeys(): string[] {
@@ -61,7 +63,9 @@ export class ArxenaInProcessRestTransportService {
 
     return async (request) => {
       const route =
-        this.routes[`${request.method} ${request.pathPrefix}/${request.endpoint}`];
+        this.routes[
+          `${request.method} ${request.pathPrefix}/${request.endpoint}`
+        ];
 
       if (route === undefined) {
         return { handled: false };

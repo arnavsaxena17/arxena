@@ -7,14 +7,14 @@ import {
   readHarvestLocationText,
 } from 'src/engine/core-modules/org-chart/utils/harvest-lead-fields.util';
 import {
-  type OutreachListEntity,
-  type OutreachListRow,
-  type OutreachListSource,
-} from 'src/engine/core-modules/outreach-list/outreach-list.types';
+  type OutreachEntity,
+  type OutreachRow,
+  type OutreachSource,
+} from 'src/engine/core-modules/outreach-command/rows/outreach-rows.types';
 import {
-  buildOutreachListRowKey,
+  buildOutreachRowKey,
   normalizeDomain,
-} from 'src/engine/core-modules/outreach-list/utils/outreach-list-keys.util';
+} from 'src/engine/core-modules/outreach-command/rows/utils/outreach-rows-keys.util';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -59,12 +59,12 @@ const arrayAt = (value: unknown, path: string[]): unknown[] => {
   return Array.isArray(current) ? current : [];
 };
 
-export const buildOutreachListRow = (
-  entity: OutreachListEntity,
-  source: OutreachListSource,
-  partial: Partial<Omit<OutreachListRow, 'key' | 'source' | 'addedAt'>>,
-): OutreachListRow | null => {
-  const row: OutreachListRow = {
+export const buildOutreachRow = (
+  entity: OutreachEntity,
+  source: OutreachSource,
+  partial: Partial<Omit<OutreachRow, 'key' | 'source' | 'addedAt'>>,
+): OutreachRow | null => {
+  const row: OutreachRow = {
     key: '',
     id: partial.id ?? '',
     name: partial.name ?? '',
@@ -92,13 +92,13 @@ export const buildOutreachListRow = (
     row.domain = normalizeDomain(row.website);
   }
 
-  row.key = buildOutreachListRowKey(entity, row);
+  row.key = buildOutreachRowKey(entity, row);
 
   return row;
 };
 
 const fromApolloOrganization = (organization: UnknownRecord) =>
-  buildOutreachListRow('company', 'apollo', {
+  buildOutreachRow('company', 'apollo', {
     id: pick(organization, ['id']),
     name: pick(organization, ['name']),
     website: pick(organization, ['website_url', 'primary_domain']),
@@ -121,7 +121,7 @@ const fromApolloPerson = (person: UnknownRecord) => {
       .filter(Boolean)
       .join(' ');
 
-  return buildOutreachListRow('people', 'apollo', {
+  return buildOutreachRow('people', 'apollo', {
     id: pick(person, ['id']),
     name,
     title: pick(person, ['title', 'jobTitle', 'headline']),
@@ -138,7 +138,7 @@ const fromApolloPerson = (person: UnknownRecord) => {
 };
 
 const fromLinkedinCompany = (item: UnknownRecord) =>
-  buildOutreachListRow('company', 'linkedin', {
+  buildOutreachRow('company', 'linkedin', {
     id: pick(item, ['id']),
     name: pick(item, ['name']),
     website: pick(item, ['website', 'website_url']),
@@ -154,7 +154,7 @@ const fromLinkedinCompany = (item: UnknownRecord) =>
 const fromLinkedinPerson = (item: UnknownRecord) => {
   const position = firstRecord(item.current_positions);
 
-  return buildOutreachListRow('people', 'linkedin', {
+  return buildOutreachRow('people', 'linkedin', {
     id: pick(item, ['id', 'member_urn']),
     name:
       pick(item, ['name']) ||
@@ -174,7 +174,7 @@ const fromLinkedinPerson = (item: UnknownRecord) => {
 const fromHarvestLead = (item: UnknownRecord) => {
   const lead = readHarvestLeadFields(item);
 
-  return buildOutreachListRow('people', 'harvest', {
+  return buildOutreachRow('people', 'harvest', {
     id: lead.id,
     name:
       lead.fullName ||
@@ -187,7 +187,7 @@ const fromHarvestLead = (item: UnknownRecord) => {
 };
 
 const fromHarvestAccount = (item: UnknownRecord) =>
-  buildOutreachListRow('company', 'harvest', {
+  buildOutreachRow('company', 'harvest', {
     id: pick(item, ['id']),
     name: pick(item, ['name']),
     website: pick(item, ['website']),
@@ -199,16 +199,16 @@ const fromHarvestAccount = (item: UnknownRecord) =>
   });
 
 const fromExaResult = (
-  entity: OutreachListEntity,
+  entity: OutreachEntity,
   result: UnknownRecord,
-): OutreachListRow | null => {
+): OutreachRow | null => {
   const url = pick(result, ['url']);
   const title = pick(result, ['title']);
 
   if (entity === 'company') {
     const host = normalizeDomain(url);
 
-    return buildOutreachListRow('company', 'exa', {
+    return buildOutreachRow('company', 'exa', {
       id: pick(result, ['id']) || url,
       // Page titles read "Name | tagline"; the part before the separator is the name
       name: title.split(/\s[|\-–—]\s/)[0] || host,
@@ -218,7 +218,7 @@ const fromExaResult = (
     });
   }
 
-  return buildOutreachListRow('people', 'exa', {
+  return buildOutreachRow('people', 'exa', {
     id: pick(result, ['id']) || url,
     name: title.split(/\s[|\-–—]\s/)[0],
     linkedinUrl: url.includes('linkedin.com/in/') ? url : '',
@@ -227,9 +227,9 @@ const fromExaResult = (
 };
 
 export type NormalizedToolOutput = {
-  entity: OutreachListEntity;
-  source: OutreachListSource;
-  rows: OutreachListRow[];
+  entity: OutreachEntity;
+  source: OutreachSource;
+  rows: OutreachRow[];
   // Arguments that identify the search; paging arguments are left out so
   // every page of one search lands in the same list
   signatureArgs: Record<string, unknown>;
@@ -258,8 +258,8 @@ const withoutPaging = (
     Object.entries(args).filter(([key]) => !PAGING_ARGUMENTS.has(key)),
   );
 
-const compact = (rows: Array<OutreachListRow | null>): OutreachListRow[] =>
-  rows.filter((row): row is OutreachListRow => row !== null);
+const compact = (rows: Array<OutreachRow | null>): OutreachRow[] =>
+  rows.filter((row): row is OutreachRow => row !== null);
 
 const textOfFilter = (value: unknown): string => {
   if (typeof value === 'string') {
@@ -310,7 +310,7 @@ const labelOf = (args: Record<string, unknown>): string => {
 // exhaustive loop would ask for it again.
 const EMPTY_LIST_SHAPES: Record<
   string,
-  { source: OutreachListSource; entity: OutreachListEntity }
+  { source: OutreachSource; entity: OutreachEntity }
 > = {
   search_apollo_companies: { source: 'apollo', entity: 'company' },
   search_apollo_people: { source: 'apollo', entity: 'people' },
@@ -358,7 +358,7 @@ const hasNonEmptyArray = (value: unknown, depth = 0): boolean => {
   );
 };
 
-export const buildEmptyListShape = (
+export const buildEmptyTabShape = (
   toolName: string,
   args: Record<string, unknown>,
   output: unknown,
@@ -389,7 +389,7 @@ export const buildEmptyListShape = (
 };
 
 // Tools whose results are routed into a list instead of the conversation
-export const OUTREACH_LIST_SOURCE_TOOLS = [
+export const OUTREACH_TAB_SOURCE_TOOLS = [
   'search_apollo_companies',
   'search_apollo_people',
   'search_linkedin_companies',
@@ -405,12 +405,12 @@ export const OUTREACH_LIST_SOURCE_TOOLS = [
   'search_wikidata_companies',
 ] as const;
 
-export const isOutreachListSourceTool = (toolName: string): boolean =>
-  (OUTREACH_LIST_SOURCE_TOOLS as readonly string[]).includes(toolName);
+export const isOutreachTabSourceTool = (toolName: string): boolean =>
+  (OUTREACH_TAB_SOURCE_TOOLS as readonly string[]).includes(toolName);
 
 // `output` is the parsed JSON the tool returned. Returns null when the shape
 // is not recognised, so the caller leaves the original output untouched.
-export const normalizeToolOutputToListRows = (
+export const normalizeToolOutputToTabRows = (
   toolName: string,
   args: Record<string, unknown>,
   output: unknown,
@@ -529,7 +529,7 @@ export const normalizeToolOutputToListRows = (
 
   if (toolName === 'exa_web_search' || toolName === 'app_exa_web_search') {
     const results = isRecord(root) ? arrayAt(root, ['results']) : [];
-    const entity: OutreachListEntity =
+    const entity: OutreachEntity =
       args.category === 'people' ? 'people' : 'company';
     const rows = compact(
       results.filter(isRecord).map((result) => fromExaResult(entity, result)),
@@ -589,7 +589,7 @@ export const normalizeToolOutputToListRows = (
 };
 
 const fromPeopleIndexItem = (item: UnknownRecord) =>
-  buildOutreachListRow('people', 'other', {
+  buildOutreachRow('people', 'other', {
     id: pick(item, ['id', '_id']),
     name: pick(item, ['full_name', 'name']),
     title: pick(item, ['job_title', 'title']),
@@ -600,7 +600,7 @@ const fromPeopleIndexItem = (item: UnknownRecord) =>
   });
 
 const fromCompaniesIndexItem = (item: UnknownRecord) =>
-  buildOutreachListRow('company', 'other', {
+  buildOutreachRow('company', 'other', {
     id: pick(item, ['id']),
     name: pick(item, ['name']),
     website: pick(item, ['website']),
@@ -617,7 +617,7 @@ const fromWikidataCompany = (company: UnknownRecord) => {
     ? company.headquarters
     : {};
 
-  return buildOutreachListRow('company', 'other', {
+  return buildOutreachRow('company', 'other', {
     id: pick(company, ['wikidataId']),
     name: pick(company, ['companyName', 'legalName']),
     website: pick(company, ['website']),
@@ -637,10 +637,12 @@ const text = (value: unknown): string => asText(value);
 
 // Bright Data business search documents (company and people views)
 const brightDataOtherFields = (
-  entity: OutreachListEntity,
+  entity: OutreachEntity,
   document: {
     data: Record<string, unknown>;
-    relevant?: boolean;
+    relevant?: boolean | null;
+    probe?: boolean;
+    shardKey?: string;
   },
 ): { otherFields?: Record<string, unknown> } => {
   const otherFields = {
@@ -650,23 +652,29 @@ const brightDataOtherFields = (
     ...(typeof document.relevant === 'boolean'
       ? { relevant: document.relevant }
       : {}),
+    ...(typeof document.probe === 'boolean' ? { probe: document.probe } : {}),
+    ...(typeof document.shardKey === 'string' && document.shardKey !== ''
+      ? { shardKey: document.shardKey }
+      : {}),
   };
 
   return Object.keys(otherFields).length > 0 ? { otherFields } : {};
 };
 
 export const fromBrightDataDocument = (
-  entity: OutreachListEntity,
+  entity: OutreachEntity,
   document: {
     brightId: string;
     data: Record<string, unknown>;
-    relevant?: boolean;
+    relevant?: boolean | null;
+    probe?: boolean;
+    shardKey?: string;
   },
-): OutreachListRow | null => {
+): OutreachRow | null => {
   const data = document.data;
 
   if (entity === 'people') {
-    return buildOutreachListRow('people', 'bright_data', {
+    return buildOutreachRow('people', 'bright_data', {
       id: document.brightId,
       name: text(data.name),
       title: text(data.current_title),
@@ -683,7 +691,7 @@ export const fromBrightDataDocument = (
   const sizeFrom = text(data.company_size_from);
   const sizeTo = text(data.company_size_to);
 
-  return buildOutreachListRow('company', 'bright_data', {
+  return buildOutreachRow('company', 'bright_data', {
     id: document.brightId,
     name: text(data.name),
     website: text(data.website) || text(data.domain),

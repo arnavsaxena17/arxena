@@ -5,7 +5,6 @@ import { randomUUID } from 'crypto';
 import { isDefined } from 'twenty-shared/utils';
 import { z } from 'zod';
 
-import { OutreachListService } from 'src/engine/core-modules/outreach-list/services/outreach-list.service';
 import { SourcingBudgetService } from 'src/engine/core-modules/outreach-command/services/sourcing-budget.service';
 import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
 import { OutreachTabService } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
@@ -16,6 +15,7 @@ import {
   mergeSourcingBrief,
   normalizeSourcingBriefDraft,
   type SourcingBrief,
+  type SourcingLedgerEvent,
 } from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
 import { SOURCING_SOURCES } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/sourcing-sources.constant';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
@@ -120,7 +120,7 @@ const BriefZodSchema = z.object({
     .max(50)
     .optional()
     .describe(
-      'Planned (source, query) pairs for an exhaustive population run. The ledger compares them with the lists that ran and returns the unattempted ones',
+      'Planned (source, query) pairs for an exhaustive population run. The ledger compares them with the searches that ran and returns the unattempted ones',
     ),
   destination: z.string().max(200).optional(),
   assumptions: z
@@ -210,14 +210,13 @@ export const GetSourcingLedgerInputZodSchema = z.object({
 
 @Injectable()
 export class GetSourcingLedgerTool implements Tool {
-  description = `The sourcing run so far, as one small table built from data and not from memory: every search behind the project's lists (source, query, rows returned, in-query duplicates, rows new to the tab, rows already there, spend), every scoring run and profile fetch, and the funnel now (rows, with a LinkedIn URL, with a profile, pass / unknown / fail, qualified = passed on the full profile, awaiting a profile). For a company x role run it returns the pairs for the requested roles: counts by final state (found, none_found, ambiguous, unresolvable, excluded), by rung and by source, cost, top reasons, and the coverage line. For an exhaustive run it also returns the frontier: each planned query, whether it ran, and the unattempted ones; and the run budget (cap, spent, remaining). Pass target to get the shortfall, roles to measure one role set, and brief once when the requirements are settled, including coverage "exhaustive", universe, queries and capsUsd.run. Call it before deciding whether to search again and when you stop short: pass stoppedBecause then, and write the final report from this result. Pass newRun to start a new budget window for a new exhaustive run; raising a cap mid-run keeps the spend. Searches appear once their list is attached to the project.`;
+  description = `The sourcing run so far, as one small table built from data and not from memory: every search recorded for the project (source, query, rows returned, in-query duplicates, rows new to the tab, rows already there, spend), every scoring run and profile fetch, and the funnel now (rows, with a LinkedIn URL, with a profile, pass / unknown / fail, qualified = passed on the full profile, awaiting a profile). For a company x role run it returns the pairs for the requested roles: counts by final state (found, none_found, ambiguous, unresolvable, excluded), by rung and by source, cost, top reasons, and the coverage line. For an exhaustive run it also returns the frontier: each planned query, whether it ran, and the unattempted ones; and the run budget (cap, spent, remaining). Pass target to get the shortfall, roles to measure one role set, and brief once when the requirements are settled, including coverage "exhaustive", universe, queries and capsUsd.run. Call it before deciding whether to search again and when you stop short: pass stoppedBecause then, and write the final report from this result. Pass newRun to start a new budget window for a new exhaustive run; raising a cap mid-run keeps the spend. Searches appear once they run.`;
 
   inputSchema = GetSourcingLedgerInputZodSchema;
 
   constructor(
     private readonly sourcingLedgerService: SourcingLedgerService,
     private readonly outreachTabService: OutreachTabService,
-    private readonly outreachListService: OutreachListService,
     // Optional so the tool still reads where no budget store is wired (tests)
     @Optional()
     private readonly sourcingBudgetService?: SourcingBudgetService,
@@ -253,7 +252,7 @@ export class GetSourcingLedgerTool implements Tool {
     const { workspaceId } = context;
 
     try {
-      const [rows, companyRows, lists] = await Promise.all([
+      const [rows, companyRows, ledgerEvents] = await Promise.all([
         this.outreachTabService.getAll({
           workspaceId,
           projectId,
@@ -264,7 +263,7 @@ export class GetSourcingLedgerTool implements Tool {
           projectId,
           tab: 'companies',
         }),
-        this.outreachListService.list(workspaceId),
+        this.sourcingLedgerService.read(workspaceId, projectId),
       ]);
       const funnel = computeSourcingFunnel(rows);
 
@@ -333,54 +332,49 @@ export class GetSourcingLedgerTool implements Tool {
         latestEvent?.kind === 'brief' ? latestEvent : undefined;
       const roleSet = parsed.data.roles ?? latestBrief?.roles;
       const pairFunnel = computePairFunnel(companyRows, { roles: roleSet });
-      const projectLists = lists.filter((meta) =>
-        meta.projectIds.includes(projectId),
+      const searchEvents = ledgerEvents.filter(
+        (event): event is Extract<SourcingLedgerEvent, { kind: 'search' }> =>
+          event.kind === 'search',
       );
-      const searches = projectLists.slice(0, MAX_SEARCHES).map((meta) => {
-        const fetched = meta.fetched ?? meta.rowCount;
-        const duplicates = meta.duplicates ?? 0;
-        const newUnique = meta.newUnique;
-        const alreadyKnown = meta.alreadyKnown;
+      const recentSearches = [...searchEvents].reverse().slice(0, MAX_SEARCHES);
+      const searches = recentSearches.map((event) => {
         const runDuplicateShare =
-          fetched > 0 && newUnique !== undefined
-            ? Number(((fetched - newUnique) / fetched).toFixed(2))
+          event.fetched > 0
+            ? Number(
+                ((event.fetched - event.newUnique) / event.fetched).toFixed(2),
+              )
             : undefined;
 
         return {
-          listId: meta.id,
-          source: meta.sources.join('+'),
-          entity: meta.entity,
-          query: meta.query ?? meta.name,
-          fetched,
-          // Within this list only
-          duplicates,
+          source: event.source,
+          entity: event.entity,
+          query: event.query,
+          fetched: event.fetched,
+          duplicates: event.duplicates,
           duplicateShare:
-            fetched > 0 ? Number((duplicates / fetched).toFixed(2)) : 0,
-          // Against rows earlier queries already put on the tab
-          ...(newUnique !== undefined ? { newUnique } : {}),
-          ...(alreadyKnown !== undefined ? { alreadyKnown } : {}),
+            event.fetched > 0
+              ? Number((event.duplicates / event.fetched).toFixed(2))
+              : 0,
+          newUnique: event.newUnique,
+          alreadyKnown: event.alreadyKnown,
           ...(runDuplicateShare !== undefined && { runDuplicateShare }),
-          rowsInList: meta.rowCount,
-          spentUsd: Number(meta.spentUsd.toFixed(3)),
+          spentUsd: Number(event.spentUsd.toFixed(3)),
         };
       });
-      const listsWithNewRows = projectLists.filter(
-        (meta) => meta.newUnique !== undefined,
-      );
       const dedupe =
-        listsWithNewRows.length === 0
+        searchEvents.length === 0
           ? undefined
           : (() => {
-              const fetched = listsWithNewRows.reduce(
-                (sum, meta) => sum + (meta.fetched ?? meta.rowCount),
+              const fetched = searchEvents.reduce(
+                (sum, event) => sum + event.fetched,
                 0,
               );
-              const newUnique = listsWithNewRows.reduce(
-                (sum, meta) => sum + (meta.newUnique ?? 0),
+              const newUnique = searchEvents.reduce(
+                (sum, event) => sum + event.newUnique,
                 0,
               );
-              const alreadyKnown = listsWithNewRows.reduce(
-                (sum, meta) => sum + (meta.alreadyKnown ?? 0),
+              const alreadyKnown = searchEvents.reduce(
+                (sum, event) => sum + event.alreadyKnown,
                 0,
               );
 
@@ -409,15 +403,15 @@ export class GetSourcingLedgerTool implements Tool {
               coverage: latestBrief?.coverage,
               universe: latestBrief?.universe,
               queries: latestBrief?.queries,
-              lists: projectLists.map((meta) => ({
-                id: meta.id,
-                sources: meta.sources,
-                entity: meta.entity,
-                query: meta.query,
-                fetched: meta.fetched,
-                newUnique: meta.newUnique,
-                alreadyKnown: meta.alreadyKnown,
-                spentUsd: meta.spentUsd,
+              searches: searchEvents.map((event, index) => ({
+                id: `search-${index}`,
+                sources: [event.source],
+                entity: event.entity,
+                query: event.query,
+                fetched: event.fetched,
+                newUnique: event.newUnique,
+                alreadyKnown: event.alreadyKnown,
+                spentUsd: event.spentUsd,
               })),
             })
           : undefined;
@@ -502,10 +496,10 @@ export class GetSourcingLedgerTool implements Tool {
           ...(dedupe !== undefined ? { dedupe } : {}),
           ...(shortfall ? { shortfall } : {}),
           searches,
-          searchesNotShown: Math.max(0, projectLists.length - MAX_SEARCHES),
+          searchesNotShown: Math.max(0, searchEvents.length - MAX_SEARCHES),
           searchSpendUsd: Number(
-            projectLists
-              .reduce((sum, meta) => sum + meta.spentUsd, 0)
+            searchEvents
+              .reduce((sum, event) => sum + event.spentUsd, 0)
               .toFixed(3),
           ),
           events: events.slice(-MAX_EVENTS),

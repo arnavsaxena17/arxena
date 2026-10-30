@@ -1,7 +1,5 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 
-import { randomUUID } from 'crypto';
-
 import { isNonEmptyString } from '@sniptt/guards';
 import { type LanguageModel } from 'ai';
 import { isDefined } from 'twenty-shared/utils';
@@ -59,6 +57,8 @@ const TAXONOMY_MAX_TITLES_PER_SHARD = 12;
 
 export type BrightDataLudicrousEstimateInput = {
   workspaceId: string;
+  // The project is the plan handle; one active plan per project and entity
+  projectId: string;
   entity: BrightDataLudicrousEntity;
   rawQuery: string;
   targetCount?: number;
@@ -139,11 +139,10 @@ export class BrightDataLudicrousPlannerService {
 
     const fields = BRIGHT_DATA_LUDICROUS_DEFAULT_VIEW_FIELDS[input.entity];
     const rubric = toRubric(generated.rubric);
-    const listId = randomUUID();
     const { estimates, sampleDocuments, estimateCostUsd } =
       await this.probeShards({
         input,
-        listId,
+        projectId: input.projectId,
         shards,
         fields,
         generated,
@@ -174,7 +173,7 @@ export class BrightDataLudicrousPlannerService {
     );
 
     const plan: BrightDataLudicrousPlan = {
-      listId,
+      projectId: input.projectId,
       workspaceId: input.workspaceId,
       entity: input.entity,
       rawQuery: input.rawQuery,
@@ -231,7 +230,7 @@ export class BrightDataLudicrousPlannerService {
     });
 
     return [
-      `Bright Data plan ${plan.listId} (${plan.entity})`,
+      `Bright Data plan project=${plan.projectId} (${plan.entity})`,
       `  raw query: ${plan.rawQuery}`,
       `  intent: ${plan.intentSummary}`,
       `  relevance: ${plan.relevanceCriteria}`,
@@ -461,14 +460,14 @@ export class BrightDataLudicrousPlannerService {
 
   private async probeShards({
     input,
-    listId,
+    projectId,
     shards,
     fields,
     generated,
     rubric,
   }: {
     input: BrightDataLudicrousEstimateInput;
-    listId: string;
+    projectId: string;
     shards: BrightDataLudicrousShard[];
     fields: string[];
     generated: BrightDataLudicrousPlanLlmOutput;
@@ -522,7 +521,7 @@ export class BrightDataLudicrousPlannerService {
               workspaceId: input.workspaceId,
               recordCount: page.documents.length,
               entity: input.entity,
-              listId,
+              projectId,
               userWorkspaceId: input.userWorkspaceId,
             });
 
@@ -564,7 +563,21 @@ export class BrightDataLudicrousPlannerService {
         }
 
         spentRecords += result.page.documents.length;
-        sampleDocuments[result.shard.key] = result.page.documents;
+        // Keep the judge's per-row verdict with the sample, so a probe row can
+        // be written to the tab with relevant=Yes/No instead of a bare match.
+        const relevantById = new Map(
+          result.judgement.verdicts.map((verdict) => [
+            verdict.brightId,
+            verdict.relevant,
+          ]),
+        );
+        sampleDocuments[result.shard.key] = result.page.documents.map(
+          (document) => ({
+            ...document,
+            relevant: relevantById.get(document.brightId) ?? null,
+            shardKey: result.shard.key,
+          }),
+        );
 
         // Zero-match shards are kept in the report but never fetched
         const fetchable = fetchableRecordsForMatched(result.page.matched);

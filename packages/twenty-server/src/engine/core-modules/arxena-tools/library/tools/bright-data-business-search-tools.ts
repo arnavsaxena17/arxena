@@ -1,5 +1,5 @@
 import {
-  OUTREACH_LIST_TOOL_NAME,
+  OUTREACH_TAB_TOOL_NAME,
   SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME,
 } from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-names.const';
 
@@ -24,7 +24,7 @@ export const brightDataBusinessSearchTools: McpTool[] = [
       name: SEARCH_BRIGHT_DATA_BUSINESS_TOOL_NAME,
       title: 'Search Bright Data business',
       description:
-        'Bright Data Business Search for companies or people from a raw natural-language request. Default ludicrous; billed at $0.002 per returned record (max $10 per query) and works in two steps. Step 1: call WITHOUT listId. The server plans several structured queries and samples them for a few cents, then returns listId, per-slice match counts, expected accuracy and the cost of fetching N records; nothing is fetched yet. Show these numbers to the user and ask which budget to spend. Step 2: after the user confirms, call again with listId and maxBudgetUsd (optionally targetCount, projectId). Pick the mode by input: ludicrous for a set described by attributes (it has no URL, website or domain field). instant sends one raw string with no estimate: a company website (bare host, e.g. stripe.com) or a company or person LinkedIn URL is a lookup cut to the exact match and written to the tab; any other short literal ("Smita Jatia Westlife") is a probe of up to 25 fuzzy preview rows (about $0.05), never written, to check a name or what a phrase returns before a ludicrous estimate. The ludicrous result never contains the records, only counts and a summary; they go to the project tab and a saved dataset. Fetched records are saved server-side under the listId for 30 days: if no project was known, call again with the same listId and a projectId to write them at no charge. Pass projectId so results are written to the Outreach tab; do not upsert those rows again. Requires BRIGHT_DATA_API_KEY.',
+        'Bright Data Business Search for companies or people from a raw natural-language request. Default ludicrous; billed at $0.002 per returned record (max $10 per query) and works in two steps. Step 1: call without execute. The server plans several structured queries and samples them for a few cents, writes the sampled rows to the project tab as probes, and returns per-slice match counts, expected accuracy and the cost of fetching N records. Show these numbers to the user and ask which budget to spend. Step 2: after the user confirms, call again with execute: true and maxBudgetUsd (optionally targetCount). Every result is written to the project tab; a project is required. instant sends one raw string with no estimate: a website or LinkedIn URL is a lookup cut to the exact match; any other short literal is a probe of up to 25 rows, written to the tab with otherFields.probe=true. The ludicrous result never contains the records, only counts and a summary. Requires BRIGHT_DATA_API_KEY.',
       annotations: { readOnlyHint: false },
       inputSchema: {
         type: 'object',
@@ -53,12 +53,12 @@ export const brightDataBusinessSearchTools: McpTool[] = [
           projectId: {
             type: 'string',
             description:
-              'Outreach project id. When set, mapped rows are merged into the Companies or People tab.',
+              'Required. The project whose Companies or People tab receives every result.',
           },
-          listId: {
-            type: 'string',
+          execute: {
+            type: 'boolean',
             description:
-              'Ludicrous only. listId returned by the estimate call. Pass it, with maxBudgetUsd, once the user confirms the budget.',
+              'Ludicrous only. Omitted: estimate and write probes. True: fetch the project active estimate within maxBudgetUsd.',
           },
           maxBudgetUsd: {
             type: 'number',
@@ -100,7 +100,7 @@ export const brightDataBusinessSearchTools: McpTool[] = [
           projectId: hasNonEmptyString(args.projectId)
             ? args.projectId
             : undefined,
-          listId: hasNonEmptyString(args.listId) ? args.listId : undefined,
+          execute: args.execute === true ? true : undefined,
           maxBudgetUsd:
             args.autoExecute === true
               ? Math.min(
@@ -120,95 +120,59 @@ export const brightDataBusinessSearchTools: McpTool[] = [
   },
   {
     definition: {
-      name: OUTREACH_LIST_TOOL_NAME,
-      title: 'Search result lists',
+      name: OUTREACH_TAB_TOOL_NAME,
+      title: 'Export or dedupe a project tab',
       description:
-        'Overflow for search result lists (listId). Find searches with projectId already write the project tab. Lists last 30 days when a source was paid, otherwise 7. actions: list, summary, peek (max 10), export (CSV), dedupe (crm or lists), attach (a list already on that project is skipped), save_to_crm (bag overflow; prefer save_outreach_targets_to_crm once rows are on the tab), delete. Never read a whole list into the conversation.',
+        'Export a project Companies or People tab as CSV, or dedupe it against the CRM. There is no list: the tab is the result store. Pass projectId and tab. dedupe marks matched rows with otherFields.inCrm, or removes them with remove: true. Never read the whole tab into the conversation.',
       annotations: { readOnlyHint: false },
       inputSchema: {
         type: 'object',
         properties: {
           action: {
             type: 'string',
-            enum: [
-              'list',
-              'summary',
-              'peek',
-              'export',
-              'dedupe',
-              'attach',
-              'save_to_crm',
-              'delete',
-            ],
-            description: 'What to do with the list',
-          },
-          listId: {
-            type: 'string',
-            description: 'List id from a search result',
-          },
-          offset: {
-            type: 'number',
-            description: 'peek / attach / save_to_crm: first row',
-          },
-          limit: {
-            type: 'number',
-            description: 'peek max 10; attach and save_to_crm max 20000',
-          },
-          against: {
-            type: 'string',
-            enum: ['crm', 'lists'],
-            description: 'dedupe target',
-          },
-          remove: {
-            type: 'boolean',
-            description: 'dedupe: drop matching rows',
+            enum: ['export', 'dedupe'],
+            description: 'export the tab as CSV, or dedupe it against the CRM',
           },
           projectId: {
             type: 'string',
+            description: 'Required. The project whose tab to act on',
+          },
+          tab: {
+            type: 'string',
+            enum: ['companies', 'people'],
+            description: 'Which project tab to export or dedupe',
+          },
+          against: {
+            type: 'string',
+            enum: ['crm'],
+            description: 'dedupe only: compare with existing CRM records',
+          },
+          remove: {
+            type: 'boolean',
             description:
-              'attach / save_to_crm: project to tag rows to. Ask the user when unknown',
+              'dedupe only: drop matching rows instead of only marking them',
           },
         },
-        required: ['action'],
+        required: ['action', 'tab'],
       },
     },
-    handler: async (args, config) => {
-      const actions = [
-        'list',
-        'summary',
-        'peek',
-        'export',
-        'dedupe',
-        'attach',
-        'save_to_crm',
-        'delete',
-      ];
-
-      if (typeof args.action !== 'string' || !actions.includes(args.action)) {
-        throw new Error(`action must be one of: ${actions.join(', ')}`);
-      }
-
-      return callRestAPI(
+    handler: async (args, config) =>
+      callRestAPI(
         config.baseUrl,
         config.apiToken,
-        'outreach-list',
+        'outreach-tab',
         'run',
         {
           action: args.action,
-          listId: hasNonEmptyString(args.listId)
-            ? args.listId.trim()
-            : undefined,
-          offset: toOptionalNumber(args.offset),
-          limit: toOptionalNumber(args.limit),
-          against: hasNonEmptyString(args.against) ? args.against : undefined,
-          remove: typeof args.remove === 'boolean' ? args.remove : undefined,
           projectId: hasNonEmptyString(args.projectId)
             ? args.projectId.trim()
             : undefined,
+          tab: args.tab,
+          against: hasNonEmptyString(args.against) ? args.against : undefined,
+          remove: typeof args.remove === 'boolean' ? args.remove : undefined,
         },
         undefined,
         BRIGHT_DATA_BUSINESS_SEARCH_TIMEOUT_MS,
-      );
-    },
+      ),
   },
 ];

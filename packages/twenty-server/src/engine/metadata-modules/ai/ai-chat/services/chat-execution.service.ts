@@ -918,7 +918,7 @@ export class ChatExecutionService {
     const lastUserMessage = messages[lastUserIndex];
     const note =
       browsingContextType === 'outreachCommand'
-        ? 'When the user asks to find/fetch/add/build target companies or people for this campaign, follow the rules below and the search skill write contract: pass projectId on every Find search so results write the ephemeral Companies or People tab. Do not call outreach_list attach after a search that already had projectId. Never create CRM Candidates until the user confirms Add to CRM / Enroll. Do not stop at a chat-only list. If projectId is missing or none, ask_questions which project — never guess from a similar name.'
+        ? 'When the user asks to find/fetch/add/build target companies or people for this campaign, follow the rules below and the search skill write contract: pass projectId on every Find search so results write the ephemeral Companies or People tab. A project is required: never run a Find without one. Never create CRM Candidates until the user confirms Add to CRM / Enroll. Do not stop at a chat-only list. If projectId is missing or none, ask_questions which project — never guess from a similar name.'
         : browsingContextType === 'orgChart'
           ? 'When the user asks to find, show, or highlight people or teams on this org chart, load org-structure-insights and call highlight_org_chart for this companyId. Only use this context if the user asks about the current chart.'
           : 'Only use this if the user explicitly asks about the current page, record, or view. Do not call any tools based on this context.';
@@ -1024,13 +1024,13 @@ export class ChatExecutionService {
       'When the user asks to find/fetch/add/build target companies:',
       '1. load_skills(["sourcing"]) with sections: ["companies"]',
       '2. Search providers per the sourcing skill (Bright Data default)',
-      '3. Write to the Companies tab before ending the turn: pass projectId on the search (Bright Data, Apollo, LinkedIn, index, Wikidata, Exa). The search writes the tab. Use outreach_list attach only when the search had no projectId.',
+      '3. Write to the Companies tab before ending the turn: pass projectId on the search (Bright Data, Apollo, LinkedIn, index, Wikidata, Exa). The search writes the tab; a project is required, so ask which project before searching if it is missing.',
       'Do NOT create CRM Company records for the Companies tab. Only create CRM Company when Save to CRM / enrolling people.',
       'Target people on the People tab are ephemeral (Find) until the user selects rows and confirms Add to CRM / Enroll.',
       'When the user asks to find/fetch/search people (target titles, MD/CEO, personas) for this campaign:',
       '1. load_skills(["sourcing"]) with sections: ["people"] (or ["people-by-company"] when employers are already named)',
       '2. Search using companies from this project when relevant',
-      '3. Write to the People tab before ending the turn: pass projectId on the search. The search writes the tab. Use outreach_list attach only when the search had no projectId.',
+      '3. Write to the People tab before ending the turn: pass projectId on the search. The search writes the tab; a project is required, so ask which project before searching if it is missing.',
       'Do NOT create_candidate / create_one_person / create_one_candidate for the People tab. CRM Candidate writes only after explicit user confirmation.',
       'When the user confirms they want the Companies / People tab rows saved to the CRM (not enrolled): learn_tools({toolNames:["save_outreach_targets_to_crm"]}) then save_outreach_targets_to_crm({ projectId, target: "companies" | "people" | "both", companyIds?, personIds? }). Omit ids to save the whole tab; pass selectedPersonIds / selected company ids for selected rows. It creates Company / Person records only, never a Candidate.',
       'When the user says "start outreach" (selected people, a named person, or the whole table) and the prospects are already enrolled:',

@@ -5,4 +5,4 @@ Applicants to a job posting are inbound rows: they chose to apply, so no search 
 - No tool reads job applicants in this skill yet. If the user asks for applicants, say so, and offer a search for similar candidates.
 - Applicants that reach the project by upload appear on the People tab with a LinkedIn Premium Jobs source. Score them against the posting's rubric. Do not run a search for them.
 - An applicant's answers to screening questions are not profile facts. Treat them as later checks (same rule as in `requirements`).
-- Dedupe applicants against earlier searches (`outreach_list` `dedupe`, `against: "lists"`) before counting; searches whose lists have expired are not checked.
+- Dedupe applicants against the CRM (`outreach_tab` `dedupe`, `tab: "people"`) before counting.

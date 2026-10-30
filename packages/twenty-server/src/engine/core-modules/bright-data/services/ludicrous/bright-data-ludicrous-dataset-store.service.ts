@@ -13,9 +13,9 @@ export type BrightDataLudicrousDataset = BrightDataLudicrousRunResult & {
 };
 
 // Records are paid for ($0.002 each) the moment they are fetched, so the run
-// result is kept here by listId. A later call can write the same rows to a
-// project, export them or re-open them without buying them again, even if the
-// chat lost the tool output or no project was known at fetch time.
+// result is kept per project and entity. A later fetch can reuse the same rows
+// without buying them again. A new estimate clears it, because a changed query
+// must not return the previous query's rows.
 @Injectable()
 export class BrightDataLudicrousDatasetStoreService {
   constructor(
@@ -23,25 +23,30 @@ export class BrightDataLudicrousDatasetStoreService {
     private readonly cache: CacheStorageService,
   ) {}
 
-  private key(listId: string): string {
-    return `bright-data-ludicrous-dataset:${listId}`;
+  private key(workspaceId: string, projectId: string, entity: string): string {
+    return `bright-data-ludicrous-dataset:${workspaceId}:${projectId}:${entity}`;
   }
 
   async save(dataset: BrightDataLudicrousDataset): Promise<void> {
     await this.cache.set(
-      this.key(dataset.listId),
+      this.key(dataset.workspaceId, dataset.projectId, dataset.entity),
       dataset,
       BRIGHT_DATA_DATASET_TTL_MS,
     );
   }
 
   // A dataset belongs to the workspace that paid for it
-  async load(
-    listId: string,
-    workspaceId: string,
-  ): Promise<BrightDataLudicrousDataset | undefined> {
+  async load({
+    workspaceId,
+    projectId,
+    entity,
+  }: {
+    workspaceId: string;
+    projectId: string;
+    entity: string;
+  }): Promise<BrightDataLudicrousDataset | undefined> {
     const dataset = await this.cache.get<BrightDataLudicrousDataset>(
-      this.key(listId),
+      this.key(workspaceId, projectId, entity),
     );
 
     if (!dataset || dataset.workspaceId !== workspaceId) {
@@ -49,5 +54,17 @@ export class BrightDataLudicrousDatasetStoreService {
     }
 
     return dataset;
+  }
+
+  async clear({
+    workspaceId,
+    projectId,
+    entity,
+  }: {
+    workspaceId: string;
+    projectId: string;
+    entity: string;
+  }): Promise<void> {
+    await this.cache.del(this.key(workspaceId, projectId, entity));
   }
 }

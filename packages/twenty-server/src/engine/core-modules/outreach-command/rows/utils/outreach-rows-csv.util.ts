@@ -1,9 +1,9 @@
 import {
-  type OutreachListEntity,
-  type OutreachListRow,
-} from 'src/engine/core-modules/outreach-list/outreach-list.types';
+  type OutreachEntity,
+  type OutreachRow,
+} from 'src/engine/core-modules/outreach-command/rows/outreach-rows.types';
 
-const COMPANY_COLUMNS: Array<[string, keyof OutreachListRow]> = [
+const COMPANY_COLUMNS: Array<[string, keyof OutreachRow]> = [
   ['name', 'name'],
   ['website', 'website'],
   ['domain', 'domain'],
@@ -17,7 +17,7 @@ const COMPANY_COLUMNS: Array<[string, keyof OutreachListRow]> = [
   ['in_crm', 'inCrm'],
 ];
 
-const PEOPLE_COLUMNS: Array<[string, keyof OutreachListRow]> = [
+const PEOPLE_COLUMNS: Array<[string, keyof OutreachRow]> = [
   ['name', 'name'],
   ['title', 'title'],
   ['company', 'companyName'],
@@ -29,9 +29,9 @@ const PEOPLE_COLUMNS: Array<[string, keyof OutreachListRow]> = [
   ['in_crm', 'inCrm'],
 ];
 
-export const OUTREACH_LIST_CSV_COLUMNS: Record<
-  OutreachListEntity,
-  Array<[string, keyof OutreachListRow]>
+export const OUTREACH_ROWS_CSV_COLUMNS: Record<
+  OutreachEntity,
+  Array<[string, keyof OutreachRow]>
 > = { company: COMPANY_COLUMNS, people: PEOPLE_COLUMNS };
 
 // Leading =, +, - and @ make spreadsheets run the cell as a formula
@@ -41,18 +41,19 @@ const escapeCell = (value: string): string => {
   return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 };
 
-export const buildOutreachListCsv = (
-  entity: OutreachListEntity,
-  rows: OutreachListRow[],
+export const buildOutreachRowsCsv = (
+  entity: OutreachEntity,
+  rows: OutreachRow[],
 ): string => {
-  const columns = OUTREACH_LIST_CSV_COLUMNS[entity];
+  const columns = OUTREACH_ROWS_CSV_COLUMNS[entity];
   const lines = [columns.map(([header]) => header).join(',')];
 
   for (const row of rows) {
     lines.push(
       columns
         .map(([, field]) => {
-          const value = row[field];
+          // The CSV columns are scalar fields; otherFields is never one of them
+          const value = row[field] as string | boolean | null | undefined;
 
           return escapeCell(
             typeof value === 'boolean' ? (value ? 'yes' : 'no') : (value ?? ''),

@@ -23,6 +23,6 @@ export const GENERATE_LINKEDIN_QUERY_SET_TOOL_NAME =
   'generate_linkedin_query_set';
 export const SEARCH_HARVEST_LEADS_TOOL_NAME = 'search_harvest_leads';
 export const SEARCH_HARVEST_ACCOUNTS_TOOL_NAME = 'search_harvest_accounts';
-export const OUTREACH_LIST_TOOL_NAME = 'outreach_list';
+export const OUTREACH_TAB_TOOL_NAME = 'outreach_tab';
 export const RESOLVE_COMPANY_FROM_RAW_NAME_TOOL_NAME =
   'resolve_company_from_raw_name';

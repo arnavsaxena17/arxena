@@ -27,6 +27,18 @@ const build = (
 ) => {
   const events: SourcingLedgerEvent[] = [
     {
+      kind: 'search',
+      at: 't',
+      source: 'bright_data',
+      entity: 'people',
+      query: 'plant heads',
+      fetched: 150,
+      duplicates: 30,
+      newUnique: 120,
+      alreadyKnown: 0,
+      spentUsd: 0.3,
+    },
+    {
       kind: 'profile_fetch',
       at: 't',
       requested: 4,
@@ -52,25 +64,9 @@ const build = (
     row('d', { fitmentOutcome: 'pass' }),
     row('e', { fitmentOutcome: 'unknown' }),
   ];
-  const lists = [
-    {
-      id: 'l1',
-      sources: ['bright_data'],
-      entity: 'people',
-      query: 'plant heads',
-      name: 'x',
-      rowCount: 120,
-      fetched: 150,
-      duplicates: 30,
-      spentUsd: 0.3,
-      projectIds: ['p1'],
-    },
-    { id: 'l2', sources: ['linkedin'], projectIds: ['other'], spentUsd: 5 },
-  ];
   const tool = new GetSourcingLedgerTool(
     { append, read: jest.fn(async () => events) } as never,
     { getAll: jest.fn(async () => rows) } as never,
-    { list: jest.fn(async () => lists) } as never,
     budget as never,
   );
 
@@ -86,7 +82,7 @@ describe('GetSourcingLedgerTool', () => {
     const result = output.result as {
       funnel: { qualified: number; awaitingProfile: number };
       shortfall: { short: number; expectedFromAwaitingProfile: number };
-      searches: Array<{ listId: string; duplicateShare: number }>;
+      searches: Array<{ query: string; duplicateShare: number }>;
       searchSpendUsd: number;
     };
 
@@ -95,7 +91,7 @@ describe('GetSourcingLedgerTool', () => {
     expect(result.shortfall.short).toBe(8);
     // 2 of the 3 people with a profile qualified; 2 people still await one
     expect(result.shortfall.expectedFromAwaitingProfile).toBe(1);
-    expect(result.searches.map((search) => search.listId)).toEqual(['l1']);
+    expect(result.searches.map((search) => search.query)).toEqual(['plant heads']);
     expect(result.searches[0].duplicateShare).toBe(0.2);
     expect(result.searchSpendUsd).toBe(0.3);
   });

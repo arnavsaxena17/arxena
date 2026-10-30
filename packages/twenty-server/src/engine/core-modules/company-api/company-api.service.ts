@@ -103,6 +103,7 @@ export class CompanyApiService {
       const { summary, result } =
         await this.brightDataLudicrousSearchService.searchNaturalLanguage({
           workspaceId: options.workspaceId,
+          projectId: 'company-api',
           entity: 'company',
           rawQuery: query,
           maxBudgetUsd: body.maxBudgetUsd ?? 1,

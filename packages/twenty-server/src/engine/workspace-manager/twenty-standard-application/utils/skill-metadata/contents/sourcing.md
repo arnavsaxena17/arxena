@@ -136,7 +136,7 @@ The destination (Find, Save to CRM, Start outreach) comes from the system prompt
 
 ## Learn
 
-One `learn_tools` call, with only the tools the loaded section names. Add `outreach_list` only for overflow (search had no `projectId`, export, or dedupe). Add `find_many_projects` and `ask_questions` only when `projectId` is missing; `ask_questions` also when the loaded section confirms a list. Do not learn tools from a section that was not loaded.
+One `learn_tools` call, with only the tools the loaded section names. Add `outreach_tab` only for export or dedupe. Add `find_many_projects` and `ask_questions` only when `projectId` is missing; `ask_questions` also when the loaded section confirms a company set. Do not learn tools from a section that was not loaded.
 
 ## Execute
 
@@ -162,13 +162,12 @@ The order we prefer, not a list to try in turn. Use the first source that has th
 
 Exa (`src-exa`) and Wikidata (`src-wikidata`) are for niche public people and for company look-ups the sources above do not cover. Naukri (`src-naukri`) is not in the order: the user runs it from the extension and its rows arrive on the tab.
 
-### Result lists
+### Results
 
-Search results never come back as rows. A search writes a list and returns only a `listId`, counts (`fetched`, `added`, `duplicates`, `total`, `ephemeralWritten`), paging and a `nextStep`; on Find the tab is written (`ephemeralWritten` > 0). Never read rows into the chat: no `code_interpreter`, no `extract_json_paths`, no pasting names. `get_outreach_tab` with `summarize`, `filter` or `groupBy`, and a `limit` of 10 when you need a sample.
+Search results never come back as rows. Every search writes the project tab directly and returns counts (`fetched`, `added`, `duplicates`, `total`, `ephemeralWritten`) plus a `nextStep`. A search requires a project; the project is the only handle. Never read rows into the chat: no `code_interpreter`, no `extract_json_paths`, no pasting names. `get_outreach_tab` with `summarize`, `filter` or `groupBy`, and a `limit` of 10 when you need a sample.
 
-A list is temporary (Redis plus an S3 backup): 30 days when any source was paid (Bright Data), otherwise 7, extended each time it is used. Pages of one search append to the same list and duplicates are dropped.
 
-`outreach_list` (overflow only): `summary`, `peek` (at most 10 rows), `export`, `dedupe` (`against: "crm"` or `"lists"`), `attach` (a list already on the project is skipped), `list`, `delete`. Prefer `save_outreach_targets_to_crm` once rows are on the tab. For "find me N": fetch, `dedupe` against the CRM, report the counts, and offer export or save. Do neither without a yes.
+`outreach_tab`: `export` (a CSV of the project tab) and `dedupe` (`against: "crm"`, `remove: true` to drop matches). Use `get_outreach_tab` for `summary` and a 10-row sample. Prefer `save_outreach_targets_to_crm` once rows are on the tab. For "find me N": fetch, `dedupe` against the CRM, report the counts, and offer export or save. Do neither without a yes.
 
 ### Write contract
 

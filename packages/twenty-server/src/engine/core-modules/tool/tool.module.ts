@@ -53,13 +53,12 @@ import { OutreachSampleMessageService } from 'src/engine/core-modules/tool/tools
 import { AgentEntity } from 'src/engine/metadata-modules/ai/ai-agent/entities/agent.entity';
 import { HttpTool } from 'src/engine/core-modules/tool/tools/http-tool/http-tool';
 import { GetLocalBusinessDetailsTool } from 'src/engine/core-modules/tool/tools/local-business-data-tool/get-local-business-details-tool';
-import { OutreachListTool } from 'src/engine/core-modules/tool/tools/outreach-list-tool/outreach-list-tool';
-import { WriteOutreachListRowsToProjectTabService } from 'src/engine/core-modules/tool/tools/outreach-list-tool/write-outreach-list-rows-to-project-tab.service';
+import { OutreachTabTool } from 'src/engine/core-modules/tool/tools/outreach-tab-tool/outreach-tab-tool';
+import { WriteSearchRowsToProjectTabService } from 'src/engine/core-modules/tool/tools/outreach-tab-tool/write-search-rows-to-project-tab.service';
 import {
   ImportOutreachSpreadsheetTool,
   InspectOutreachSpreadsheetTool,
 } from 'src/engine/core-modules/tool/tools/outreach-spreadsheet-import-tool/outreach-spreadsheet-import-tool';
-import { OutreachListModule } from 'src/engine/core-modules/outreach-list/outreach-list.module';
 import { SearchBrightDataBusinessTool } from 'src/engine/core-modules/tool/tools/bright-data-business-search-tool/search-bright-data-business-tool';
 import { SearchLocalBusinessesTool } from 'src/engine/core-modules/tool/tools/local-business-data-tool/search-local-businesses-tool';
 import { ResolveCompanyFromRawNameTool } from 'src/engine/core-modules/tool/tools/company-name-resolver-tool/resolve-company-from-raw-name-tool';
@@ -100,7 +99,6 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     CalendarEventCreationManagerModule,
     TypeOrmModule.forFeature([FileEntity, ConnectedAccountEntity, AgentEntity]),
     ApplicationModule,
-    OutreachListModule,
     FeatureFlagModule,
     FileModule,
     JwtModule,
@@ -134,8 +132,8 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     SendWhatsappMessageTool,
     SearchLocalBusinessesTool,
     SearchBrightDataBusinessTool,
-    OutreachListTool,
-    WriteOutreachListRowsToProjectTabService,
+    OutreachTabTool,
+    WriteSearchRowsToProjectTabService,
     GetLocalBusinessDetailsTool,
     ResolveCompanyFromRawNameTool,
     EmailComposerService,
@@ -201,8 +199,8 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     SendWhatsappMessageTool,
     SearchLocalBusinessesTool,
     SearchBrightDataBusinessTool,
-    OutreachListTool,
-    WriteOutreachListRowsToProjectTabService,
+    OutreachTabTool,
+    WriteSearchRowsToProjectTabService,
     GetLocalBusinessDetailsTool,
     ResolveCompanyFromRawNameTool,
     EmailComposerService,

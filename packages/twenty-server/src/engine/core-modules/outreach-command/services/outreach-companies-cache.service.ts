@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { OUTREACH_LIST_MAX_ROWS } from 'src/engine/core-modules/outreach-list/outreach-list.constants';
+import { OUTREACH_TAB_MAX_ROWS } from 'src/engine/core-modules/outreach-command/constants/outreach-tab.constants';
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
@@ -8,7 +8,7 @@ import { OUTREACH_PROJECT_CACHE_TTL_MS } from 'src/engine/core-modules/outreach-
 import { OutreachCacheRealtimeService } from 'src/engine/core-modules/outreach-command/services/outreach-cache-realtime.service';
 import { OutreachProjectCacheBackupService } from 'src/engine/core-modules/outreach-command/services/outreach-project-cache-backup.service';
 
-const MAX_COMPANIES_PER_PROJECT = OUTREACH_LIST_MAX_ROWS;
+const MAX_COMPANIES_PER_PROJECT = OUTREACH_TAB_MAX_ROWS;
 
 export type OutreachEphemeralCompany = {
   id: string;

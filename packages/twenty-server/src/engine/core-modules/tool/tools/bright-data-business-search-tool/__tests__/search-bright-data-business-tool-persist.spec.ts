@@ -16,7 +16,6 @@ const buildTool = (upsertResult: {
     {} as never,
     upsertCompanies as never,
     { execute: jest.fn() } as never,
-    {} as never,
   );
 
   return { tool, upsertCompanies };
@@ -24,7 +23,7 @@ const buildTool = (upsertResult: {
 
 type Persist = (
   input: Record<string, unknown>,
-  search: Record<string, unknown>,
+  documents: Array<Record<string, unknown>>,
   context: Record<string, unknown>,
 ) => Promise<{
   written: number;
@@ -51,7 +50,7 @@ describe('SearchBrightDataBusinessTool project tab write', () => {
 
     const outcome = await (
       tool as unknown as { persistEphemeral: Persist }
-    ).persistEphemeral(input, { documents }, context);
+    ).persistEphemeral(input, documents, context);
     const sent = (
       upsertCompanies.execute.mock.calls[0] as unknown as [
         { companies: unknown[] },
@@ -73,7 +72,7 @@ describe('SearchBrightDataBusinessTool project tab write', () => {
 
     const outcome = await (
       tool as unknown as { persistEphemeral: Persist }
-    ).persistEphemeral(input, { documents }, context);
+    ).persistEphemeral(input, documents, context);
 
     expect(outcome.written).toBe(0);
     expect(outcome.writtenRowIds).toEqual([]);

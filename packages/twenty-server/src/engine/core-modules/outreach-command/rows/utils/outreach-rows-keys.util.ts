@@ -1,7 +1,7 @@
 import {
-  type OutreachListEntity,
-  type OutreachListRow,
-} from 'src/engine/core-modules/outreach-list/outreach-list.types';
+  type OutreachEntity,
+  type OutreachRow,
+} from 'src/engine/core-modules/outreach-command/rows/outreach-rows.types';
 
 export const normalizeDomain = (value: string): string => {
   const trimmed = value.trim().toLowerCase();
@@ -46,10 +46,10 @@ const normalizeText = (value: string): string =>
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim();
 
-export const buildOutreachListRowKey = (
-  entity: OutreachListEntity,
+export const buildOutreachRowKey = (
+  entity: OutreachEntity,
   row: Pick<
-    OutreachListRow,
+    OutreachRow,
     'domain' | 'website' | 'linkedinUrl' | 'name' | 'companyName'
   >,
 ): string => {

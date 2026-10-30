@@ -1,4 +1,4 @@
-import { OutreachListTool } from 'src/engine/core-modules/tool/tools/outreach-list-tool/outreach-list-tool';
+import { OutreachTabTool } from 'src/engine/core-modules/tool/tools/outreach-tab-tool/outreach-tab-tool';
 import { SearchBrightDataBusinessTool } from 'src/engine/core-modules/tool/tools/bright-data-business-search-tool/search-bright-data-business-tool';
 import { ArxenaInProcessRestTransportService } from 'src/engine/core-modules/arxena-tools/services/arxena-in-process-rest-transport.service';
 
@@ -12,18 +12,18 @@ const buildService = () => {
   const searchTool = {
     execute: jest.fn(async () => ({ success: true, message: 'search' })),
   };
-  const listTool = {
-    execute: jest.fn(async () => ({ success: true, message: 'list' })),
+  const tabTool = {
+    execute: jest.fn(async () => ({ success: true, message: 'tab' })),
   };
   const moduleRef = {
     get: jest.fn((token: unknown) =>
-      token === SearchBrightDataBusinessTool ? searchTool : listTool,
+      token === SearchBrightDataBusinessTool ? searchTool : tabTool,
     ),
   };
 
   return {
     searchTool,
-    listTool,
+    tabTool,
     service: new ArxenaInProcessRestTransportService(moduleRef as never),
   };
 };
@@ -53,18 +53,18 @@ describe('ArxenaInProcessRestTransportService', () => {
     );
   });
 
-  it('should answer outreach_list by calling the tool', async () => {
-    const { service, listTool } = buildService();
+  it('should answer outreach_tab by calling the tool', async () => {
+    const { service, tabTool } = buildService();
 
     await service.forContext(CONTEXT)!({
       method: 'POST',
-      pathPrefix: 'outreach-list',
+      pathPrefix: 'outreach-tab',
       endpoint: 'run',
-      body: { action: 'summary', listId: 'list-id' },
+      body: { action: 'export', tab: 'companies' },
     });
 
-    expect(listTool.execute).toHaveBeenCalledWith(
-      { action: 'summary', listId: 'list-id' },
+    expect(tabTool.execute).toHaveBeenCalledWith(
+      { action: 'export', tab: 'companies' },
       CONTEXT,
     );
   });
@@ -88,7 +88,7 @@ describe('ArxenaInProcessRestTransportService', () => {
     await expect(
       service.forContext(CONTEXT)!({
         method: 'GET',
-        pathPrefix: 'outreach-list',
+        pathPrefix: 'outreach-tab',
         endpoint: 'run',
       }),
     ).resolves.toEqual({ handled: false });

@@ -16,19 +16,15 @@ import {
 } from 'src/engine/core-modules/arxena-tools/utils/search-tools-config.util';
 import { ArxenaInProcessRestTransportService } from 'src/engine/core-modules/arxena-tools/services/arxena-in-process-rest-transport.service';
 import { ArxenaMcpBridgeService } from 'src/engine/core-modules/arxena-tools/services/arxena-mcp-bridge.service';
-import { createHash } from 'crypto';
 
-import { v5 } from 'uuid';
-
-import { OUTREACH_LIST_FILE_NAMESPACE } from 'src/engine/core-modules/outreach-list/outreach-list.constants';
-import { OutreachListService } from 'src/engine/core-modules/outreach-list/services/outreach-list.service';
 import { SourcingBudgetService } from 'src/engine/core-modules/outreach-command/services/sourcing-budget.service';
+import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
 import { sourceKeyOfTool } from 'src/engine/core-modules/tool-provider/utils/sourcing-source-guard.util';
 import {
-  buildEmptyListShape,
-  isOutreachListSourceTool,
-  normalizeToolOutputToListRows,
-} from 'src/engine/core-modules/outreach-list/utils/outreach-list-normalizers.util';
+  buildEmptyTabShape,
+  isOutreachTabSourceTool,
+  normalizeToolOutputToTabRows,
+} from 'src/engine/core-modules/outreach-command/rows/utils/outreach-rows-normalizers.util';
 import { ApiKeyService } from 'src/engine/core-modules/api-key/services/api-key.service';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { type ApiKeyWorkspaceAuthContext } from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
@@ -37,7 +33,7 @@ import { type ToolProvider } from 'src/engine/core-modules/tool-provider/interfa
 import { type ToolProviderContext } from 'src/engine/core-modules/tool-provider/interfaces/tool-provider-context.type';
 import { type ToolDescriptor } from 'src/engine/core-modules/tool-provider/types/tool-descriptor.type';
 import { type ToolIndexEntry } from 'src/engine/core-modules/tool-provider/types/tool-index-entry.type';
-import { WriteOutreachListRowsToProjectTabService } from 'src/engine/core-modules/tool/tools/outreach-list-tool/write-outreach-list-rows-to-project-tab.service';
+import { WriteSearchRowsToProjectTabService } from 'src/engine/core-modules/tool/tools/outreach-tab-tool/write-search-rows-to-project-tab.service';
 import { type ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { AuthProviderEnum } from 'src/engine/core-modules/workspace/types/workspace.type';
@@ -89,9 +85,9 @@ export class ArxenaToolProvider implements ToolProvider {
     private readonly twentyConfigService: TwentyConfigService,
     private readonly accessTokenService: AccessTokenService,
     private readonly apiKeyService: ApiKeyService,
-    private readonly outreachListService: OutreachListService,
+    private readonly sourcingLedgerService: SourcingLedgerService,
     private readonly arxenaInProcessRestTransportService: ArxenaInProcessRestTransportService,
-    private readonly writeOutreachListRowsToProjectTabService: WriteOutreachListRowsToProjectTabService,
+    private readonly writeSearchRowsToProjectTabService: WriteSearchRowsToProjectTabService,
     @Optional()
     private readonly sourcingBudgetService?: SourcingBudgetService,
   ) {}
@@ -287,7 +283,7 @@ export class ArxenaToolProvider implements ToolProvider {
         (result as { isError?: boolean }).isError === true;
 
       if (!isError) {
-        const listed = await this.routeResultsToList(
+        const listed = await this.routeResultsToTab(
           toolName,
           args,
           parsed,
@@ -295,7 +291,7 @@ export class ArxenaToolProvider implements ToolProvider {
         );
 
         if (isDefined(listed)) {
-          await this.recordListSpend(listed, context);
+          await this.recordSearchSpend(listed, context);
 
           return {
             success: true,
@@ -327,15 +323,15 @@ export class ArxenaToolProvider implements ToolProvider {
   }
 
   // Search results never go back to the model. Providers that return rows are
-  // routed into a list (Redis + S3 backup) and the model gets the listId and
-  // counts. With projectId the project tab is written too — no attach needed.
-  private async routeResultsToList(
+  // written to the project tab and recorded as a search event; the model gets
+  // counts, paging and a next step. A project is required.
+  private async routeResultsToTab(
     toolName: string,
     args: Record<string, unknown>,
     parsed: object,
     context: ArxenaToolExecutionContext,
   ): Promise<Record<string, unknown> | undefined> {
-    if (!isOutreachListSourceTool(toolName)) {
+    if (!isOutreachTabSourceTool(toolName)) {
       return undefined;
     }
 
@@ -343,110 +339,101 @@ export class ArxenaToolProvider implements ToolProvider {
 
     try {
       const normalized =
-        normalizeToolOutputToListRows(toolName, args, parsed) ??
-        buildEmptyListShape(toolName, args, parsed);
+        normalizeToolOutputToTabRows(toolName, args, parsed) ??
+        buildEmptyTabShape(toolName, args, parsed);
 
       if (!isDefined(normalized)) {
         return undefined;
       }
 
-      const signature = createHash('sha1')
-        .update(
-          JSON.stringify([
-            workspaceId,
-            normalized.source,
-            normalized.entity,
-            normalized.signatureArgs,
-          ]),
-        )
-        .digest('hex');
-      const listId = v5(signature, OUTREACH_LIST_FILE_NAMESPACE);
-      const outcome = await this.outreachListService.ingest({
-        workspaceId,
-        listId,
-        name: `${normalized.source} ${normalized.entity === 'company' ? 'companies' : 'people'}: ${normalized.label.slice(0, 60) || toolName}`,
-        entity: normalized.entity,
-        source: normalized.source,
-        rows: normalized.rows,
-        query: normalized.label || undefined,
-        spentUsd: normalized.spentUsd,
-      });
       const paging = this.extractPaging(parsed);
       const projectId = isNonEmptyString(args.projectId)
         ? args.projectId.trim()
         : '';
-      let ephemeralWritten = 0;
-      let ephemeralError: string | undefined;
-      let createdCount = 0;
-      let updatedCount = 0;
-      const emptyResult = normalized.rows.length === 0;
 
-      if (projectId !== '' && emptyResult) {
-        // A zero-row search still counts as attempted, so link its empty list
-        // to the project; the frontier reads the list, not the tab
-        await this.outreachListService
-          .update(workspaceId, outcome.listId, (current) => {
-            if (!current.meta.projectIds.includes(projectId)) {
-              current.meta.projectIds.push(projectId);
-            }
-          })
-          .catch(() => undefined);
-      } else if (projectId !== '') {
-        const tab = await this.writeOutreachListRowsToProjectTabService.write({
-          workspaceId,
-          listId: outcome.listId,
-          projectId,
+      if (projectId === '') {
+        return {
+          error:
+            'projectId is required. Open the project whose tab should receive the rows, then retry.',
           entity: normalized.entity,
-          rows: normalized.rows,
-          context: { workspaceId },
-        });
-
-        ephemeralWritten = tab.written;
-        createdCount = tab.createdCount;
-        updatedCount = tab.updatedCount;
-        ephemeralError = tab.error;
+          source: normalized.source,
+          fetched: normalized.rows.length,
+          added: 0,
+          duplicates: 0,
+          total: 0,
+          ephemeralWritten: 0,
+          ...paging,
+          nextStep:
+            'Nothing was written. Open or name a project, then run the search again.',
+        };
       }
 
-      let nextStep =
-        'No projectId was given, so nothing was written to a project. The records are kept in the list (listId). Ask which project to use, then outreach_list attach (show on the tab) or save_outreach_targets_to_crm after attach. Do not try to read the rows.';
+      const rows = normalized.rows;
+      const uniqueKeys = new Set(
+        rows.map((row) =>
+          (
+            row.domain ||
+            row.linkedinUrl ||
+            row.email ||
+            row.name ||
+            ''
+          ).toLowerCase(),
+        ),
+      );
+      const duplicates = Math.max(0, rows.length - uniqueKeys.size);
+      const tab =
+        rows.length === 0
+          ? { written: 0, total: 0, createdCount: 0, updatedCount: 0 }
+          : await this.writeSearchRowsToProjectTabService.write({
+              projectId,
+              entity: normalized.entity,
+              rows,
+              context: { workspaceId },
+            });
 
-      if (projectId !== '') {
-        nextStep = emptyResult
-          ? 'The search returned no rows. It is recorded in the list (listId) and linked to the project so coverage counts it as attempted; the tab is unchanged.'
-          : ephemeralWritten > 0
-            ? 'Records were written to the project tab and kept in the list (listId). To create CRM records call save_outreach_targets_to_crm with the same projectId. Use get_outreach_tab to read the tab.'
-            : 'The search returned rows but none reached the project tab. They are kept in the list (listId); check ephemeralError and retry outreach_list attach.';
-      }
+      await this.sourcingLedgerService.append(workspaceId, projectId, {
+        kind: 'search',
+        at: new Date().toISOString(),
+        source: normalized.source,
+        entity: normalized.entity,
+        query: normalized.label || toolName,
+        fetched: rows.length,
+        duplicates,
+        newUnique: tab.createdCount,
+        alreadyKnown: tab.updatedCount,
+        spentUsd: normalized.spentUsd ?? 0,
+      });
+
+      const emptyResult = rows.length === 0;
+      const nextStep = emptyResult
+        ? 'The search returned no rows. It is recorded for coverage; the tab is unchanged.'
+        : tab.error === undefined
+          ? 'Records were written to the project tab. To create CRM records call save_outreach_targets_to_crm with the same projectId. Use get_outreach_tab to read the tab.'
+          : `The search returned rows but the tab write failed: ${tab.error}. Retry the search.`;
 
       return {
-        listId: outcome.listId,
-        name: outcome.name,
-        entity: outcome.entity,
+        entity: normalized.entity,
         source: normalized.source,
-        fetched: normalized.rows.length,
-        added: outcome.added,
-        duplicates: outcome.duplicates,
+        fetched: rows.length,
+        added: tab.written,
+        duplicates,
         // Rows new to the project tab vs rows that merged into one already
         // there: the overlap with earlier queries in the same run
-        newUnique: createdCount,
-        alreadyKnown: updatedCount,
+        newUnique: tab.createdCount,
+        alreadyKnown: tab.updatedCount,
         ...(emptyResult && { emptyResult: true }),
-        total: outcome.total,
-        ephemeralWritten,
+        total: tab.written,
+        ephemeralWritten: tab.written,
         ...(normalized.spentUsd !== undefined
           ? { costUsd: normalized.spentUsd }
           : {}),
-        ...(ephemeralError
-          ? {
-              ephemeralError: `Could not write to the project tab: ${ephemeralError}. The rows are still in the list (listId); retry with outreach_list attach.`,
-            }
-          : {}),
+        ...(tab.error !== undefined && { ephemeralError: tab.error }),
         ...paging,
         nextStep,
       };
     } catch (error) {
       this.logger.warn(
-        `Could not route ${toolName} results to a list: ${
+        `Could not route ${toolName} results to the project tab: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );
@@ -457,7 +444,7 @@ export class ArxenaToolProvider implements ToolProvider {
 
   // The provider reports what it billed; add it to the run's spend so the
   // next paid tool sees the smaller remainder
-  private async recordListSpend(
+  private async recordSearchSpend(
     listed: Record<string, unknown>,
     context: ArxenaToolExecutionContext,
   ): Promise<void> {

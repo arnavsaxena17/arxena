@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
+import { isNonEmptyString } from '@sniptt/guards';
+
 import {
   BRIGHT_DATA_ESTIMATE_BUDGET_USD,
   BRIGHT_DATA_MAX_BUDGET_PER_QUERY_USD,
@@ -18,8 +20,11 @@ import { BrightDataLudicrousExecutorService } from 'src/engine/core-modules/brig
 import { BrightDataLudicrousPlannerService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-planner.service';
 import { BrightDataLudicrousPlanStoreService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-plan-store.service';
 
+const normalizeQuery = (value: string): string =>
+  value.trim().toLowerCase().replace(/\s+/g, ' ');
+
 export type BrightDataLudicrousBudgetSummary = {
-  listId: string;
+  projectId: string;
   entity: BrightDataLudicrousEntity;
   intentSummary: string;
   shards: Array<{
@@ -68,7 +73,7 @@ export const summarizeBrightDataLudicrousPlan = (
       : 0;
 
   return {
-    listId: plan.listId,
+    projectId: plan.projectId,
     entity: plan.entity,
     intentSummary: plan.intentSummary,
     shards: plan.estimates.map((estimate) => ({
@@ -103,6 +108,7 @@ export class BrightDataLudicrousSearchService {
 
   async estimate(input: {
     workspaceId: string;
+    projectId: string;
     entity: BrightDataLudicrousEntity;
     rawQuery: string;
     targetCount?: number;
@@ -110,18 +116,54 @@ export class BrightDataLudicrousSearchService {
   }): Promise<BrightDataLudicrousBudgetSummary> {
     const plan = await this.planner.createPlan(input);
 
+    // A new estimate replaces the project's active plan. Drop the dataset from
+    // the previous query so a fetch cannot return rows the user did not ask for.
+    // A failed clear must not fail the estimate; the worst case is that a
+    // later fetch sees the previous dataset and reuses it.
+    try {
+      await this.datasetStore.clear({
+        workspaceId: input.workspaceId,
+        projectId: input.projectId,
+        entity: input.entity,
+      });
+    } catch {
+      // best effort
+    }
+
     return summarizeBrightDataLudicrousPlan(plan);
+  }
+
+  // The paid estimate samples, for writing probe rows to the project tab
+  async getPlan(input: {
+    workspaceId: string;
+    projectId: string;
+    entity: BrightDataLudicrousEntity;
+  }): Promise<BrightDataLudicrousPlan> {
+    return this.planStore.load(input);
   }
 
   async executePlan(input: {
     workspaceId: string;
-    listId: string;
+    projectId: string;
+    entity: BrightDataLudicrousEntity;
+    // The fetch call's query, checked against the active estimate's query
+    rawQuery?: string;
     maxBudgetUsd?: number;
     targetCount?: number;
     userWorkspaceId?: string | null;
     excludeBrightIds?: string[];
   }): Promise<BrightDataLudicrousRunResult> {
-    const plan = await this.planStore.load(input.listId, input.workspaceId);
+    const plan = await this.planStore.load(input);
+
+    if (
+      isNonEmptyString(input.rawQuery) &&
+      normalizeQuery(input.rawQuery) !== normalizeQuery(plan.rawQuery)
+    ) {
+      throw new Error(
+        'The active estimate is for a different query; run the estimate again before the fetch',
+      );
+    }
+
     const result = await this.executor.execute({ ...input, plan });
 
     await this.saveDataset(input.workspaceId, result);
@@ -129,9 +171,13 @@ export class BrightDataLudicrousSearchService {
     return result;
   }
 
-  // Already-paid records for a plan, or undefined when none were kept
-  async loadDataset(input: { listId: string; workspaceId: string }) {
-    return this.datasetStore.load(input.listId, input.workspaceId);
+  // Already-paid records for this project and entity, or undefined when none
+  async loadDataset(input: {
+    workspaceId: string;
+    projectId: string;
+    entity: BrightDataLudicrousEntity;
+  }) {
+    return this.datasetStore.load(input);
   }
 
   private async saveDataset(
@@ -158,6 +204,7 @@ export class BrightDataLudicrousSearchService {
   // then fetch inside maxBudgetUsd without a confirmation step.
   async searchNaturalLanguage(input: {
     workspaceId: string;
+    projectId: string;
     entity: BrightDataLudicrousEntity;
     rawQuery: string;
     maxBudgetUsd?: number;

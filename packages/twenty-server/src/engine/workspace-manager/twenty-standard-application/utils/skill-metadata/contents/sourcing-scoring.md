@@ -10,7 +10,7 @@
 3. **Fetch profiles** for rows the snapshot cannot decide — the rows the plan marks for a profile fetch, not every unknown row (**When to fetch**; `fetch_profiles`, `rowLimit` up to 500; failed rows never climb). Bright Data Business Search by LinkedIn URL first, slow scrape for misses, then Harvest; store in `profile`. Skip people `find_people_by_company` already returned with a profile. Call again while `remaining` is above 0. Do not fetch to answer a later check.
 4. **Enrich** only for a criterion that needs outside data. Cheaper cut first: a fact on the row, then a size proxy, then one web column. Employer facts that can fail many rows go before step 3; person facts after. Never build a column for a fact the web does not hold.
 5. **Score full profiles** with `stage: "profile"` and `rerunAll: true`, including worthiness when the tab is people. A fetched row counts only when `fitmentOutcome` is pass at this stage. A snapshot passing every must-have and worthiness gate also counts.
-6. **Read the yield, not the rows.** `get_outreach_tab` with `summarize: ["fitmentOutcome", "fitmentScore"]`; `outreach_list` `peek` for a few borderlines.
+6. **Read the yield, not the rows.** `get_outreach_tab` with `summarize: ["fitmentOutcome", "fitmentScore"]`; a 10-row `get_outreach_tab` sample for a few borderlines.
 
 If the yield is low, fix the query before fetching more. Change one thing at a time and say what you changed.
 

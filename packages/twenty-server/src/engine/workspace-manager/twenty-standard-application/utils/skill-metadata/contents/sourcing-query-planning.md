@@ -8,7 +8,7 @@ Break the request into queries before the first search, then measure before you 
 2. **One query = title words + industry + geography.** Expand titles with the synonym ladders in `playbook-shortfall` (loaded with this path). State the city list you expand to ("tier 1 = Mumbai, Delhi NCR, Bangalore, Hyderabad, Chennai, Pune, Kolkata, Ahmedabad").
 3. **Slice a big request** by city and title band so each slice stays under the source's cap (see its "Limits and exhaustion").
 4. **Variants.** Write two or three versions of the main query that differ by one word or phrase (a synonym, the industry term, with or without a skill word). One word can change the yield a lot, so do not assume.
-5. **Exhaustive: record the plan.** Write the queries you will run into the brief (`get_sourcing_ledger` `brief.queries`: source, query, slice, entity) before the first search. Run every one. The ledger's `coverage.frontier.unattempted` is the stop condition, not the target; a query counts only once its list is attached to the project.
+5. **Exhaustive: record the plan.** Write the queries you will run into the brief (`get_sourcing_ledger` `brief.queries`: source, query, slice, entity) before the first search. Run every one. The ledger's `coverage.frontier.unattempted` is the stop condition, not the target; a query counts only once its rows are on the project tab.
 
 ### Dipstick
 
@@ -20,8 +20,9 @@ Use when the request is ambiguous and the full run is expensive (the intake gate
 
 ### Probe, then scale
 
-- Run each variant once with a small budget (about 100 rows). Independent variants go in the same step.
-- Score the probe rows at the snapshot stage with one column. Compare the variants on rows returned, the share that pass or are unknown, and duplicates.
+- **Bright Data: the estimate is the probe** (5 rows/slice, ~$0.01; `samplePrecision`). Fund slices that clear the bar; filter `probe` = No when counting.
+- **LinkedIn/SERP: one page per variant.**
+- Score probes with one column. Compare the variants on rows returned, the share that pass or are unknown, and duplicates.
 - Scale the variant with the best share. Say in one line which word change made the difference.
 - Quote only yields you measured. If the probe shows the reachable pool is far below the target, say so and ask (widen, relax a nice-to-have, add a source, raise the cap) before the full spend.
 - A probe counts against the cap the user approved once. It needs no new approval.
@@ -40,7 +41,7 @@ About 1,000 rows or more. One query will not reach it, and rows keep arriving wh
 
 ### Keep the aggregate clean
 
-Every query appends to the project's lists. Duplicates drop on append; `outreach_list` `dedupe` against the CRM before counting. Score each batch as it lands, so the count toward the target is always current.
+Every query appends to the project tab. Duplicates drop on merge; `outreach_tab` `dedupe` against the CRM before counting. Score each batch as it lands, so the count toward the target is always current.
 
 ### Evidence
 

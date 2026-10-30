@@ -407,6 +407,20 @@ export const mergeSourcingBrief = (
 export type SourcingLedgerEvent =
   | ({ kind: 'brief'; at: string } & SourcingBrief)
   | {
+      // One search that wrote rows to the project tab. This replaces the old
+      // per-list metadata used for the ledger, coverage and spend.
+      kind: 'search';
+      at: string;
+      source: string;
+      entity: 'company' | 'people';
+      query: string;
+      fetched: number;
+      duplicates: number;
+      newUnique: number;
+      alreadyKnown: number;
+      spentUsd: number;
+    }
+  | {
       kind: 'score';
       at: string;
       stage: 'snapshot' | 'profile';
@@ -696,8 +710,8 @@ export const computePairFunnel = (
   };
 };
 
-// A list as the frontier needs it: what ran, where, and what was new
-export type SourcingFrontierList = {
+// A search as the frontier needs it: what ran, where, and what was new
+export type SourcingFrontierSearch = {
   id: string;
   sources: string[];
   entity?: string;
@@ -710,9 +724,9 @@ export type SourcingFrontierList = {
 
 export type SourcingFrontierItem = SourcingQueryPlan & {
   attempted: boolean;
-  listIds: string[];
+  searchIds: string[];
   fetched: number;
-  // Null when the list never reached a project tab, so the count is unknown
+  // Null when the search never reached a project tab, so the count is unknown
   newUnique: number | null;
   alreadyKnown: number | null;
   spentUsd: number;
@@ -724,7 +738,7 @@ export type SourcingFrontier = {
   planned: SourcingFrontierItem[];
   attempted: number;
   unattempted: number;
-  // Lists that ran but were not in the plan: scope creep, or a query the
+  // Searches that ran but were not in the plan: scope creep, or a query the
   // agent rewrote instead of running the planned one
   unplannedSearches: number;
   complete: boolean;
@@ -752,7 +766,7 @@ const queryMatches = (planned: string, actual: string): boolean => {
   return left === right || left.includes(right) || right.includes(left);
 };
 
-// The index and Wikidata lists are stored as "other" because the list source
+// The index and Wikidata searches are stored as "other" because the source
 // type predates them; their query text keeps them apart from each other
 const SOURCE_ALIASES: Record<string, string[]> = {
   'internal-index': ['other'],
@@ -772,19 +786,19 @@ const sourceMatches = (planned: string | undefined, sources: string[]) => {
   return sources.some((source) => keys.includes(normalizeSourceKey(source)));
 };
 
-// The planned query matrix against the lists that actually ran. A planned
-// query counts only when a list with its source and text is attached to the
+// The planned query matrix against the searches that actually ran. A planned
+// query counts only when a search with its source and text was recorded on the
 // project, so a failure is not mistaken for coverage.
 export const computeSourcingFrontier = ({
   coverage,
   universe,
   queries,
-  lists,
+  searches,
 }: {
   coverage?: SourcingCoverage;
   universe?: SourcingUniverse;
   queries?: SourcingQueryPlan[];
-  lists: SourcingFrontierList[];
+  searches: SourcingFrontierSearch[];
 }): SourcingFrontier | undefined => {
   const mode = coverage ?? 'best_effort';
 
@@ -796,34 +810,37 @@ export const computeSourcingFrontier = ({
   }
 
   const plannedQueries = queries ?? [];
-  const usedListIds = new Set<string>();
+  const usedSearchIds = new Set<string>();
   const planned: SourcingFrontierItem[] = plannedQueries.map((query) => {
-    const matched = lists.filter(
-      (list) =>
-        sourceMatches(query.source, list.sources) &&
-        (query.entity === undefined || list.entity === query.entity) &&
-        queryMatches(query.query, list.query ?? ''),
+    const matched = searches.filter(
+      (search) =>
+        sourceMatches(query.source, search.sources) &&
+        (query.entity === undefined || search.entity === query.entity) &&
+        queryMatches(query.query, search.query ?? ''),
     );
 
-    matched.forEach((list) => usedListIds.add(list.id));
+    matched.forEach((search) => usedSearchIds.add(search.id));
 
-    const sum = (value: (list: SourcingFrontierList) => number | undefined) =>
-      matched.reduce((total, list) => total + (value(list) ?? 0), 0);
-    const newUnique = matched.some((list) => list.newUnique !== undefined)
-      ? sum((list) => list.newUnique)
+    const sum = (
+      value: (search: SourcingFrontierSearch) => number | undefined,
+    ) => matched.reduce((total, search) => total + (value(search) ?? 0), 0);
+    const newUnique = matched.some((search) => search.newUnique !== undefined)
+      ? sum((search) => search.newUnique)
       : null;
-    const alreadyKnown = matched.some((list) => list.alreadyKnown !== undefined)
-      ? sum((list) => list.alreadyKnown)
+    const alreadyKnown = matched.some(
+      (search) => search.alreadyKnown !== undefined,
+    )
+      ? sum((search) => search.alreadyKnown)
       : null;
 
     return {
       ...query,
       attempted: matched.length > 0,
-      listIds: matched.map((list) => list.id),
-      fetched: sum((list) => list.fetched),
+      searchIds: matched.map((search) => search.id),
+      fetched: sum((search) => search.fetched),
       newUnique,
       alreadyKnown,
-      spentUsd: Number(sum((list) => list.spentUsd).toFixed(4)),
+      spentUsd: Number(sum((search) => search.spentUsd).toFixed(4)),
     };
   });
 
@@ -838,8 +855,8 @@ export const computeSourcingFrontier = ({
       ...(entity !== undefined && { entity }),
     }));
   const unattempted = unattemptedQueries.length;
-  const unplannedSearches = lists.filter(
-    (list) => !usedListIds.has(list.id),
+  const unplannedSearches = searches.filter(
+    (search) => !usedSearchIds.has(search.id),
   ).length;
   // No planned queries is not "everything ran": it is no proof at all
   const complete = planned.length > 0 && unattempted === 0;

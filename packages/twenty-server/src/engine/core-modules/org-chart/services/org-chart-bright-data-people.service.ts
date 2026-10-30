@@ -43,6 +43,7 @@ export class OrgChartBrightDataPeopleService {
         ? (
             await this.brightDataLudicrousSearchService.searchNaturalLanguage({
               workspaceId: input.workspaceId,
+              projectId: 'org-chart',
               entity: 'people',
               rawQuery: request,
               maxBudgetUsd: input.maxBudgetUsd ?? 0.5,

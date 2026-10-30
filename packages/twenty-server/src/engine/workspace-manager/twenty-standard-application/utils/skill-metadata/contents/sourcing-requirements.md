@@ -23,7 +23,7 @@ Ask coverage and its run cap as one question; they replace the target count on a
 - `best_effort` stops at the target. `exhaustive` stops when every planned query ran and every company x role pair is terminal, or `capsUsd.run` is spent.
 - Exhaustive needs a bounded universe (`universe {kind, count}`): the project list, a saved view, a frozen lens set. If the user cannot bound it, propose a scope and count first. A second exhaustive run on the same project starts with `newRun: true`; raising a cap mid-run keeps the spend.
 - Exhaustive runs every planned source and query; a fallback chain is best effort, not coverage.
-- Population exhaustive: write `queries[]` (source, query, slice, entity) before the first search; the ledger returns `coverage.frontier.unattempted`. A query counts only once its list is attached, so plan list-writing searches (index, Bright Data, LinkedIn, Harvest, Apollo); a SERP probe is a step inside one, not a planned query.
+- Population exhaustive: write `queries[]` (source, query, slice, entity) before the first search; the ledger returns `coverage.frontier.unattempted`. A query counts only once its rows are on the project tab, so plan tab-writing searches (index, Bright Data, LinkedIn, Harvest, Apollo); a SERP probe is a step inside one, not a planned query.
 - Company-first exhaustive: the universe is the confirmed company list; `pairs` is the coverage, one per company × role. Do not ask for a row target. A named industry in a named country is a universe even without the word "all": offer all (with a cap) and top N, and never default silently to a slice.
 - Report coverage first, from the ledger. Never say MECE unless the universe was frozen and every planned query ran.
 

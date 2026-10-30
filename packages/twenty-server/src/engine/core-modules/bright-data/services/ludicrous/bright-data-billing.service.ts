@@ -35,13 +35,13 @@ export class BrightDataBillingService {
     workspaceId,
     recordCount,
     entity,
-    listId,
+    projectId,
     userWorkspaceId,
   }: {
     workspaceId: string;
     recordCount: number;
     entity: 'company' | 'people';
-    listId?: string;
+    projectId?: string;
     userWorkspaceId?: string | null;
   }): Promise<{ chargedUsd: number }> {
     if (recordCount <= 0) {
@@ -57,13 +57,13 @@ export class BrightDataBillingService {
       quantity: recordCount,
       providerCostUsd,
       userWorkspaceId: userWorkspaceId ?? null,
-      resourceId: listId ?? null,
+      resourceId: projectId ?? null,
       resourceContext: `bright_data_${entity}`,
-      metadata: { entity, listId, chargedUsd },
+      metadata: { entity, projectId, chargedUsd },
     });
 
     this.logger.log(
-      `Billed ${recordCount} Bright Data ${entity} record(s) = $${chargedUsd.toFixed(3)} workspace=${workspaceId} list=${listId ?? '-'}`,
+      `Billed ${recordCount} Bright Data ${entity} record(s) = $${chargedUsd.toFixed(3)} workspace=${workspaceId} project=${projectId ?? '-'}`,
     );
 
     return { chargedUsd };

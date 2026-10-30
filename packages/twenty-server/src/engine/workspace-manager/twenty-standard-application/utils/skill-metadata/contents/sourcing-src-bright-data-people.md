@@ -41,16 +41,16 @@ search_bright_data_business({
   "query": "MD or CEO of QSR restaurants in India"
 })
 
-// 3. after the user confirms $2
+// 2. after the user confirms $2
 search_bright_data_business({
   "entity": "people",
   "query": "MD or CEO of QSR restaurants in India",
-  "listId": "<listId from step 1>",
+  "execute": true,
   "maxBudgetUsd": 2,
   "targetCount": 1000
 })
 ```
 
-With no project (an MCP client, not on Find), keep the estimate and approval, then return the rows in chat instead of writing them.
+A project is required: the estimate and the fetch both write that project's tab.
 
 <!-- search-bright-data-people-source-section:end -->

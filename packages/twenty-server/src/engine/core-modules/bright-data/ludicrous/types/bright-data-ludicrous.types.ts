@@ -82,10 +82,15 @@ export type BrightDataLudicrousShardEstimate = {
 export type BrightDataLudicrousSampleDocument = {
   brightId: string;
   data: Record<string, unknown>;
+  // The judge's verdict on this sampled row; null when it was not scored
+  relevant?: boolean | null;
+  // The slice that returned it, so a probe row can be traced to its query
+  shardKey?: string;
 };
 
 export type BrightDataLudicrousPlan = {
-  listId: string;
+  // The project is the plan's identity: one active plan per project and entity
+  projectId: string;
   workspaceId: string;
   entity: BrightDataLudicrousEntity;
   rawQuery: string;
@@ -136,7 +141,7 @@ export type BrightDataLudicrousFetchedDocument =
   };
 
 export type BrightDataLudicrousRunResult = {
-  listId: string;
+  projectId: string;
   entity: BrightDataLudicrousEntity;
   // Rows the relevance filter kept. The chat count and summary use this.
   documents: BrightDataLudicrousSampleDocument[];

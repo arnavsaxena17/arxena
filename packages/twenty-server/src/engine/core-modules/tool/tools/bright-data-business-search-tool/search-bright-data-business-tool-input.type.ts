@@ -9,7 +9,7 @@ export const SearchBrightDataBusinessToolInputZodSchema = z.object({
     .optional()
     .default('ludicrous')
     .describe(
-      'Default ludicrous: a set described by attributes, planned into structured sharded queries, billed $0.002 per record. instant: one raw string. A website/domain (company) or LinkedIn URL is a lookup cut to the exact match and written; any other string is a probe of up to 25 preview rows, never written. smart is ignored',
+      'Default ludicrous: a set described by attributes, planned into structured sharded queries, billed $0.002 per record. instant: one raw string. A website/domain (company) or LinkedIn URL is a lookup cut to the exact match; any other string is a probe of up to 25 rows. All rows are written to the project tab. smart is ignored',
     ),
   query: z
     .string()
@@ -23,13 +23,13 @@ export const SearchBrightDataBusinessToolInputZodSchema = z.object({
     .string()
     .optional()
     .describe(
-      'When set with a workspace, merge hits into the outreach ephemeral tab',
+      'Required. The Outreach project whose tab receives every result. Defaults to the project the user is on; without one the search is refused',
     ),
-  listId: z
-    .string()
+  execute: z
+    .boolean()
     .optional()
     .describe(
-      'Ludicrous only. listId returned by the estimate call. Pass it after the user confirms the budget to fetch the records',
+      'Ludicrous only. False or omitted runs the estimate (writes the sampled rows to the tab as probes). True fetches the project’s active estimate within maxBudgetUsd',
     ),
   maxBudgetUsd: z
     .number()
@@ -37,7 +37,7 @@ export const SearchBrightDataBusinessToolInputZodSchema = z.object({
     .max(10)
     .optional()
     .describe(
-      'Ludicrous only. Spend cap in USD for this query, at most 10. Required together with listId',
+      'Ludicrous only. Spend cap in USD for the fetch, at most 10. Used with execute: true',
     ),
   targetCount: z
     .number()
@@ -49,7 +49,7 @@ export const SearchBrightDataBusinessToolInputZodSchema = z.object({
     .boolean()
     .optional()
     .describe(
-      'Ludicrous only. Skip the confirmation step and fetch within maxBudgetUsd straight away. Used by workflow steps, which cannot pause',
+      'Ludicrous only. Estimate and fetch in one call within maxBudgetUsd. Used by workflow steps, which cannot pause',
     ),
   industries: z
     .array(z.string())

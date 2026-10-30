@@ -26,17 +26,14 @@ const buildProvider = () => {
       .mockResolvedValue({ token: 'api-key-token' }),
   };
 
-  const outreachListService = {
-    ingest: jest
-      .fn()
-      .mockImplementation(async ({ listId, name, entity, rows }) => ({
-        listId,
-        name,
-        entity,
-        added: rows.length,
-        duplicates: 0,
-        total: rows.length,
-      })),
+  const sourcingLedgerService = { append: jest.fn(async () => undefined) };
+  const writeService = {
+    write: jest.fn(async ({ rows }: { rows: unknown[]; projectId?: string }) => ({
+      written: rows.length,
+      total: rows.length,
+      createdCount: rows.length,
+      updatedCount: 0,
+    })),
   };
 
   const provider = new ArxenaToolProvider(
@@ -44,14 +41,15 @@ const buildProvider = () => {
     twentyConfigService as never,
     accessTokenService as never,
     apiKeyService as never,
-    outreachListService as never,
+    sourcingLedgerService as never,
     { forContext: jest.fn(() => undefined) } as never,
-    { write: jest.fn() } as never,
+    writeService as never,
   );
 
   return {
     provider,
-    outreachListService,
+    sourcingLedgerService,
+    writeService,
     arxenaMcpBridgeService,
     accessTokenService,
     apiKeyService,
@@ -60,6 +58,7 @@ const buildProvider = () => {
 
 const apiKeyContext = {
   workspaceId: 'workspace-id',
+  projectId: 'project-1',
   authContext: { type: 'apiKey', apiKey: { id: 'api-key-id' } },
 } as unknown as ToolProviderContext;
 
@@ -171,7 +170,7 @@ describe('ArxenaToolProvider token resolution', () => {
   });
 });
 
-describe('ArxenaToolProvider list routing', () => {
+describe('ArxenaToolProvider tab routing', () => {
   const linkedinItems = Array.from({ length: 5 }, (_, index) => ({
     id: `member-${index}`,
     name: `Person ${index}`,
@@ -181,9 +180,8 @@ describe('ArxenaToolProvider list routing', () => {
     current_positions: [{ role: 'CEO', company: `Company ${index}` }],
   }));
 
-  it('should return only a list id and counts for LinkedIn people results', async () => {
-    const { provider, arxenaMcpBridgeService, outreachListService } =
-      buildProvider();
+  it('should write LinkedIn people results to the tab and return counts', async () => {
+    const { provider, arxenaMcpBridgeService, writeService } = buildProvider();
 
     arxenaMcpBridgeService.callTool.mockResolvedValueOnce({
       content: [
@@ -206,16 +204,16 @@ describe('ArxenaToolProvider list routing', () => {
     );
     const result = output.result as Record<string, unknown>;
 
-    expect(outreachListService.ingest).toHaveBeenCalledTimes(1);
+    expect(writeService.write).toHaveBeenCalledTimes(1);
     expect(result.total).toBe(5);
+    expect(result.newUnique).toBe(5);
     expect(result.cursor).toBe('full-cursor');
     expect(JSON.stringify(output)).not.toContain('Person 1');
     expect(JSON.stringify(output).length).toBeLessThan(1500);
   });
 
-  it('should keep every page of one search in the same list', async () => {
-    const { provider, arxenaMcpBridgeService, outreachListService } =
-      buildProvider();
+  it('should write every page of one search to the same project tab', async () => {
+    const { provider, arxenaMcpBridgeService, writeService } = buildProvider();
     const page = (cursor: string) => ({
       content: [
         {
@@ -244,14 +242,14 @@ describe('ArxenaToolProvider list routing', () => {
       apiKeyContext,
     );
 
-    const [first, second] = outreachListService.ingest.mock.calls;
+    const [first, second] = writeService.write.mock.calls;
 
-    expect(first[0].listId).toBe(second[0].listId);
+    expect(first[0].projectId).toBe('project-1');
+    expect(second[0].projectId).toBe('project-1');
   });
 
-  it('should leave output untouched for tools that are not list sources', async () => {
-    const { provider, arxenaMcpBridgeService, outreachListService } =
-      buildProvider();
+  it('should leave output untouched for tools that are not search sources', async () => {
+    const { provider, arxenaMcpBridgeService, writeService } = buildProvider();
 
     arxenaMcpBridgeService.callTool.mockResolvedValueOnce({
       content: [
@@ -265,7 +263,7 @@ describe('ArxenaToolProvider list routing', () => {
       apiKeyContext,
     );
 
-    expect(outreachListService.ingest).not.toHaveBeenCalled();
+    expect(writeService.write).not.toHaveBeenCalled();
     expect(JSON.stringify(output)).toContain('Person 1');
   });
 });

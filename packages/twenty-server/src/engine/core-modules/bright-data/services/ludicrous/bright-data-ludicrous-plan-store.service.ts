@@ -6,6 +6,8 @@ import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decora
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 
+// One active plan per project and entity. The project IS the plan handle: the
+// estimate writes it, the fetch reads it, and no list or plan id is exposed.
 @Injectable()
 export class BrightDataLudicrousPlanStoreService {
   constructor(
@@ -13,26 +15,34 @@ export class BrightDataLudicrousPlanStoreService {
     private readonly cache: CacheStorageService,
   ) {}
 
-  private key(listId: string): string {
-    return `bright-data-ludicrous-plan:${listId}`;
+  private key(workspaceId: string, projectId: string, entity: string): string {
+    return `bright-data-ludicrous-plan:${workspaceId}:${projectId}:${entity}`;
   }
 
   async save(plan: BrightDataLudicrousPlan): Promise<void> {
-    await this.cache.set(this.key(plan.listId), plan, BRIGHT_DATA_PLAN_TTL_MS);
+    await this.cache.set(
+      this.key(plan.workspaceId, plan.projectId, plan.entity),
+      plan,
+      BRIGHT_DATA_PLAN_TTL_MS,
+    );
   }
 
-  // A plan belongs to the workspace that paid for its estimate
-  async load(
-    listId: string,
-    workspaceId: string,
-  ): Promise<BrightDataLudicrousPlan> {
+  async load({
+    workspaceId,
+    projectId,
+    entity,
+  }: {
+    workspaceId: string;
+    projectId: string;
+    entity: string;
+  }): Promise<BrightDataLudicrousPlan> {
     const plan = await this.cache.get<BrightDataLudicrousPlan>(
-      this.key(listId),
+      this.key(workspaceId, projectId, entity),
     );
 
     if (!plan || plan.workspaceId !== workspaceId) {
       throw new Error(
-        `Bright Data plan ${listId} was not found or has expired; run the estimate again`,
+        'Bright Data estimate was not found or has expired for this project; run the estimate again',
       );
     }
 
