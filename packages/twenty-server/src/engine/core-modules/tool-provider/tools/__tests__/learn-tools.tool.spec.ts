@@ -231,10 +231,11 @@ describe('createLearnToolsTool', () => {
         name: 'find_many_people',
         description: 'Search people',
         inputArgKeys: ['limit', 'select', 'name'],
+        inputShape: expect.stringContaining('limit?: number'),
         compositeFilterHints: {
           name: expect.stringContaining('firstName|lastName'),
         },
-        schemaNote: expect.stringContaining('Full inputSchema spilled'),
+        schemaNote: expect.stringContaining('inputShape above is the call contract'),
       },
     ]);
     expect(result.tools[0]).not.toHaveProperty('inputSchema');

@@ -5,6 +5,7 @@ import {
   type SourcingSource,
   type SourcingSourceUse,
 } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/sourcing-sources.constant';
+import { SOURCE_CAPABILITIES } from 'src/engine/workspace-manager/twenty-standard-application/utils/skill-metadata/sourcing-source-capabilities.constant';
 
 // A generated block sits on a line of its own, like an include
 const SOURCES_BLOCK_PATTERN =
@@ -106,6 +107,40 @@ const renderLearnTools = (entity: SourcingEntity): string => {
   ].join('\n');
 };
 
+// Which picked source can filter on which field; the table a question should be
+// built from instead of a filter the source does not have
+const renderCapabilities = (entity: 'company' | 'person'): string => {
+  const labels = new Map(
+    SOURCING_SOURCES.map((source) => [source.key, source.label]),
+  );
+  const byField = new Map<string, { label: string; sources: string[] }>();
+
+  for (const capability of SOURCE_CAPABILITIES.filter(
+    (entry) => entry.entity === entity,
+  )) {
+    for (const field of capability.searchable) {
+      const entry = byField.get(field.field) ?? {
+        label: field.label,
+        sources: [],
+      };
+
+      entry.sources.push(labels.get(capability.key) ?? capability.key);
+      byField.set(field.field, entry);
+    }
+  }
+
+  return [
+    '| Field | Filterable on |',
+    '| --- | --- |',
+    ...[...byField.values()].map(
+      (entry) =>
+        `| ${entry.label} | ${[...new Set(entry.sources)].join(', ')} |`,
+    ),
+  ]
+    .filter((line) => line.length > 0)
+    .join('\n');
+};
+
 const orderCell = (use: SourcingSourceUse | undefined): string =>
   use?.orderLabel === undefined
     ? '—'
@@ -164,6 +199,19 @@ const renderBlock = (
 
   if (block === 'source-profiles' && argument === undefined) {
     return renderSourceProfiles();
+  }
+
+  if (block === 'capabilities') {
+    const entity =
+      argument === 'people' || argument === 'person'
+        ? 'person'
+        : argument === 'companies' || argument === 'company'
+          ? 'company'
+          : undefined;
+
+    if (entity !== undefined) {
+      return renderCapabilities(entity);
+    }
   }
 
   if (block === 'limits' && argument !== undefined) {

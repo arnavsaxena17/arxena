@@ -163,6 +163,8 @@ export class BrightDataLudicrousSearchService {
     maxBudgetUsd?: number;
     targetCount?: number;
     userWorkspaceId?: string | null;
+    titleExpression?: string;
+    industryLabels?: string[];
   }): Promise<{
     summary: BrightDataLudicrousBudgetSummary;
     result: BrightDataLudicrousRunResult;

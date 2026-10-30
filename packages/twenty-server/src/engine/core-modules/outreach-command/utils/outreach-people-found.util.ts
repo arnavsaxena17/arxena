@@ -130,3 +130,70 @@ export const buildPairStateValues = (
     [pairKeyOf(pair.roles)]: pair,
   },
 });
+
+// The company-level "People found" label, rolled up from its role pairs. A
+// company where only the CEO was found says "Found" on the row, but the pairs
+// show the manufacturing head as none_found; the report reads the pairs.
+export const rollupPeopleFoundLabel = (
+  pairs: FindPeoplePairState[],
+): OutreachPeopleFoundLabel => {
+  if (pairs.length === 0) {
+    return 'Not found';
+  }
+
+  if (
+    pairs.some(
+      (pair) => pair.terminalState === 'found' && (pair.rungUsed ?? 1) <= 2,
+    )
+  ) {
+    return 'Found';
+  }
+
+  if (pairs.some((pair) => pair.terminalState === 'found')) {
+    return 'Related role only';
+  }
+
+  if (pairs.some((pair) => pair.terminalState === 'ambiguous')) {
+    return 'Ambiguous';
+  }
+
+  if (pairs.every((pair) => pair.terminalState === 'unresolvable')) {
+    return 'Unresolvable';
+  }
+
+  if (pairs.some((pair) => pair.terminalState === 'excluded')) {
+    return 'Excluded';
+  }
+
+  if (
+    pairs.every(
+      (pair) =>
+        pair.terminalState === 'none_found' && pair.reason === 'source_error',
+    )
+  ) {
+    return 'Lookup failed';
+  }
+
+  return 'Not found';
+};
+
+// One write for every company x role pair, so a company row never holds a
+// pair for one role from this run and a stale one for another.
+export const buildPairStatesValues = (
+  otherFields: Record<string, unknown> | null | undefined,
+  pairs: FindPeoplePairState[],
+): Record<string, unknown> => {
+  const merged = { ...readPairStates(otherFields) };
+
+  for (const pair of pairs) {
+    merged[pairKeyOf(pair.roles)] = pair;
+  }
+
+  const allPairs = Object.values(merged);
+  const peopleCount = new Set(allPairs.flatMap((pair) => pair.personKeys)).size;
+
+  return {
+    ...buildPeopleFoundValues(rollupPeopleFoundLabel(allPairs), peopleCount),
+    findPeoplePairs: merged,
+  };
+};

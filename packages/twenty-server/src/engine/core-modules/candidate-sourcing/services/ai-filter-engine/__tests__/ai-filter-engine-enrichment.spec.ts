@@ -149,7 +149,7 @@ describe('AiFilterEngineService enrichment columns', () => {
 
     const { verdicts, stats } = await service.run(
       rows,
-      enrichmentSpec({ webSearch: true }),
+      enrichmentSpec({ webSearch: true, model: 'gpt-4o' }),
     );
 
     expect(chatCreate).not.toHaveBeenCalled();
@@ -191,7 +191,7 @@ describe('AiFilterEngineService enrichment columns', () => {
 
       const { verdicts, stats } = await service.run(
         [rows[0]],
-        enrichmentSpec({ webSearch: true }),
+        enrichmentSpec({ webSearch: true, model: 'gpt-4o' }),
       );
 
       expect(search).not.toHaveBeenCalled();
@@ -258,7 +258,7 @@ describe('AiFilterEngineService enrichment columns', () => {
 
       const { stats } = await service.run(
         [rows[0]],
-        enrichmentSpec({ webSearch: true }),
+        enrichmentSpec({ webSearch: true, model: 'gpt-4o' }),
       );
 
       expect(search).not.toHaveBeenCalled();
@@ -279,7 +279,7 @@ describe('AiFilterEngineService enrichment columns', () => {
 
       const { verdicts, stats } = await service.run(
         [rows[0]],
-        enrichmentSpec({ webSearch: true }),
+        enrichmentSpec({ webSearch: true, model: 'gpt-4o' }),
       );
 
       expect(search).toHaveBeenCalledWith('acme employees', {
@@ -306,7 +306,7 @@ describe('AiFilterEngineService enrichment columns', () => {
 
       const { verdicts, stats } = await service.run(
         [rows[0]],
-        enrichmentSpec({ webSearch: true }),
+        enrichmentSpec({ webSearch: true, model: 'gpt-4o' }),
       );
 
       expect(verdicts[0].answers).toMatchObject({ employees: 900 });
@@ -325,7 +325,7 @@ describe('AiFilterEngineService enrichment columns', () => {
 
       const { verdicts } = await service.run(
         [rows[0]],
-        enrichmentSpec({ webSearch: true }),
+        enrichmentSpec({ webSearch: true, model: 'gpt-4o' }),
       );
 
       expect(responsesCreate).not.toHaveBeenCalled();
@@ -348,7 +348,7 @@ describe('AiFilterEngineService enrichment columns', () => {
 
       const { stats } = await service.run(
         [rows[0]],
-        enrichmentSpec({ webSearch: true }),
+        enrichmentSpec({ webSearch: true, model: 'gpt-4o' }),
       );
 
       expect(completeStructured).not.toHaveBeenCalled();
@@ -391,7 +391,7 @@ describe('AiFilterEngineService enrichment columns', () => {
 
       const { verdicts, stats } = await service.run(
         [rows[0]],
-        enrichmentSpec({ webSearch: true }),
+        enrichmentSpec({ webSearch: true, model: 'gpt-4o' }),
       );
 
       expect(responsesCreate).not.toHaveBeenCalled();
@@ -426,7 +426,7 @@ describe('AiFilterEngineService enrichment columns', () => {
 
       const { verdicts, stats } = await service.run(
         [rows[0]],
-        enrichmentSpec({ webSearch: true }),
+        enrichmentSpec({ webSearch: true, model: 'gpt-4o' }),
       );
 
       expect(responsesCreate).toHaveBeenCalledTimes(1);
@@ -459,7 +459,7 @@ describe('AiFilterEngineService enrichment columns', () => {
 
       const { verdicts, stats } = await service.run(
         [rows[0]],
-        enrichmentSpec({ webSearch: true }),
+        enrichmentSpec({ webSearch: true, model: 'gpt-4o' }),
       );
 
       expect(verdicts[0].answers).toMatchObject({ employees: 900 });
@@ -492,7 +492,7 @@ describe('AiFilterEngineService enrichment columns', () => {
 
       const { verdicts, stats } = await service.run(
         [rows[0]],
-        enrichmentSpec({ webSearch: true }),
+        enrichmentSpec({ webSearch: true, model: 'gpt-4o' }),
       );
 
       expect(completeStructured).toHaveBeenCalledTimes(1);
@@ -525,7 +525,7 @@ describe('AiFilterEngineService enrichment columns', () => {
 
       const { verdicts } = await service.run(
         [rows[0]],
-        enrichmentSpec({ webSearch: true }),
+        enrichmentSpec({ webSearch: true, model: 'gpt-4o' }),
       );
 
       expect(responsesCreate).not.toHaveBeenCalled();

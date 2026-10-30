@@ -55,6 +55,11 @@ export type OutreachListMeta = {
   batches?: number;
   fetched?: number;
   duplicates?: number;
+  // Rows that created a new row on the project tab and rows that merged into
+  // one already there. The second is the cross-query overlap the in-list
+  // `duplicates` cannot see.
+  newUnique?: number;
+  alreadyKnown?: number;
   // Paid sources (Bright Data) keep the list 30 days, free ones 7. Reads and
   // writes extend it; an expired list is gone from Redis and ignored on S3.
   paid: boolean;

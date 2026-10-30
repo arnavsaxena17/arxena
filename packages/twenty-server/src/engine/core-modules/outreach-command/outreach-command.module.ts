@@ -79,6 +79,7 @@ import { OutreachAiColumnRunService } from 'src/engine/core-modules/outreach-com
 import { OutreachTableViewService } from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
 import { OutreachAiColumnService } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column.service';
 import { ChatTabWritesService } from 'src/engine/core-modules/outreach-command/services/chat-tab-writes.service';
+import { SourcingBudgetService } from 'src/engine/core-modules/outreach-command/services/sourcing-budget.service';
 import { SourcingLedgerService } from 'src/engine/core-modules/outreach-command/services/sourcing-ledger.service';
 import { OutreachTabService } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
 import { UndoChatOutreachService } from 'src/engine/core-modules/outreach-command/services/undo-chat-outreach.service';
@@ -161,6 +162,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     OutreachTabService,
     UndoChatOutreachService,
     SourcingLedgerService,
+    SourcingBudgetService,
     ChatTabWritesService,
     OutreachAiColumnService,
     OutreachAiColumnRunService,
@@ -255,6 +257,7 @@ import { OutreachCacheRealtimeModule } from 'src/engine/core-modules/outreach-co
     OutreachTabService,
     UndoChatOutreachService,
     SourcingLedgerService,
+    SourcingBudgetService,
     ChatTabWritesService,
     OutreachAiColumnService,
     OutreachAiColumnRunService,

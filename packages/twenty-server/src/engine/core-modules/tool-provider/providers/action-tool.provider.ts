@@ -44,6 +44,8 @@ import { PreviewSampleMessageColumnTool } from 'src/engine/core-modules/tool/too
 import { SaveOutreachTargetsToCrmTool } from 'src/engine/core-modules/tool/tools/outreach-save-to-crm-tool/save-outreach-targets-to-crm-tool';
 import { FindPeopleByCompanyTool } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool';
 import { GetSourcingLedgerTool } from 'src/engine/core-modules/tool/tools/sourcing-ledger-tool/get-sourcing-ledger-tool';
+import { GetSourceCapabilitiesTool } from 'src/engine/core-modules/tool/tools/source-capabilities-tool/get-source-capabilities-tool';
+import { GetScoringPlanTool } from 'src/engine/core-modules/tool/tools/source-capabilities-tool/get-scoring-plan-tool';
 import { FetchProfilesTool } from 'src/engine/core-modules/tool/tools/fetch-profiles-tool/fetch-profiles-tool';
 import { StartOutreachTool } from 'src/engine/core-modules/tool/tools/outreach-start-tool/start-outreach-tool';
 import { NavigateAppTool } from 'src/engine/core-modules/tool/tools/navigate-tool/navigate-app-tool';
@@ -79,6 +81,8 @@ export class ActionToolProvider implements ToolProvider {
     private readonly findPeopleByCompanyTool: FindPeopleByCompanyTool,
     private readonly fetchProfilesTool: FetchProfilesTool,
     private readonly getSourcingLedgerTool: GetSourcingLedgerTool,
+    private readonly getSourceCapabilitiesTool: GetSourceCapabilitiesTool,
+    private readonly getScoringPlanTool: GetScoringPlanTool,
     private readonly getOutreachTabTool: GetOutreachTabTool,
     private readonly previewOutreachAiColumnTool: PreviewOutreachAiColumnTool,
     private readonly runOutreachAiColumnTool: RunOutreachAiColumnTool,
@@ -111,6 +115,8 @@ export class ActionToolProvider implements ToolProvider {
       ['find_people_by_company', this.findPeopleByCompanyTool],
       ['fetch_profiles', this.fetchProfilesTool],
       ['get_sourcing_ledger', this.getSourcingLedgerTool],
+      ['get_source_capabilities', this.getSourceCapabilitiesTool],
+      ['get_scoring_plan', this.getScoringPlanTool],
       ['get_outreach_tab', this.getOutreachTabTool],
       ['preview_ai_column', this.previewOutreachAiColumnTool],
       ['run_ai_column', this.runOutreachAiColumnTool],
@@ -290,6 +296,24 @@ export class ActionToolProvider implements ToolProvider {
       this.buildDescriptor(
         'get_sourcing_ledger',
         this.getSourcingLedgerTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'get_source_capabilities',
+        this.getSourceCapabilitiesTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'get_scoring_plan',
+        this.getScoringPlanTool,
         includeSchemas,
         context.locale,
       ),

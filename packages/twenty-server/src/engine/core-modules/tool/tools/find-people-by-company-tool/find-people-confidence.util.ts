@@ -70,6 +70,11 @@ export const freshnessOf = (
 const independentSourceCount = (sources: string[]): number =>
   new Set(sources.map((source) => (source === 'web' ? 'google' : source))).size;
 
+// A paid provider record with title and company is a primary source; Google
+// and a page it returned are one, weaker, source.
+const hasPrimarySource = (sources: string[]): boolean =>
+  sources.some((source) => source === 'bright_data' || source === 'harvest');
+
 // High needs two independent sources agreeing on the person, or one fresh
 // profile read by the judge. Without the judge (it failed, or it was not
 // asked) one source reaches medium only with a Bright Data record whose
@@ -104,19 +109,19 @@ export const confidenceOf = ({
       return 'high';
     }
 
-    return sources.includes('bright_data') ? 'medium' : 'low';
+    return hasPrimarySource(sources) ? 'medium' : 'low';
   }
 
   if (
     exactRole &&
     !relatedCompany &&
     (independentSourceCount(sources) >= 2 ||
-      (freshness === 'current' && sources.includes('bright_data')))
+      (freshness === 'current' && hasPrimarySource(sources)))
   ) {
     return 'high';
   }
 
-  return hasLinkedinUrl || sources.includes('bright_data') ? 'medium' : 'low';
+  return hasLinkedinUrl || hasPrimarySource(sources) ? 'medium' : 'low';
 };
 
 export const rungOf = ({

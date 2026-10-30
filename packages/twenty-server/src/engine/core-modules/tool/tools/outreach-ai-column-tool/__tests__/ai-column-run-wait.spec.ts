@@ -113,13 +113,14 @@ describe('cost approval for a full run', () => {
     estimatedPerRowUsd:
       estimatedRunCostUsd === null ? null : estimatedRunCostUsd / 100,
   });
-  const build = (estimatedRunCostUsd: number | null) => {
+  const build = (estimatedRunCostUsd: number | null, budget?: unknown) => {
     const service = buildService();
     const tool = new RunOutreachAiColumnTool(
       service as never,
       {
         getPreviewState: jest.fn(async () => previewState(estimatedRunCostUsd)),
       } as never,
+      budget as never,
     );
 
     return { service, tool };
@@ -168,5 +169,26 @@ describe('cost approval for a full run', () => {
     await tool.execute(input, context);
 
     expect(service.startRun).toHaveBeenCalled();
+  });
+
+  it('should refuse a column the run budget cannot cover', async () => {
+    const budget = {
+      check: jest.fn(async () => ({
+        allowed: false,
+        message: 'The run budget of $1.00 is spent ($1.00).',
+        status: { spentUsd: 1, exhausted: true },
+      })),
+      recordSpend: jest.fn(),
+    };
+    const { service, tool } = build(2.2, budget);
+
+    const output = await tool.execute(input, context);
+
+    expect(service.startRun).not.toHaveBeenCalled();
+    expect(output).toMatchObject({
+      success: false,
+      error: 'run_budget_exhausted',
+    });
+    expect(output.message).toContain('run budget');
   });
 });

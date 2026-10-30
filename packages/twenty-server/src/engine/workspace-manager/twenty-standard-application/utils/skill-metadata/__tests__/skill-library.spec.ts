@@ -130,22 +130,24 @@ describe('sourcing skill section sizes', () => {
     );
 
   // A bundle is re-sent on every model step after it is loaded, so each route
-  // has its own budget and must stay far cheaper than the whole skill
+  // has its own budget and must stay far cheaper than the whole skill. Raised
+  // for the coverage contract: exhaustive vs best effort, the run cap and the
+  // query frontier.
   it.each([
     // people holds the job title search; company-first brings industry-search
-    [['people'], 6_400],
-    [['companies'], 6_300],
+    [['people'], 6_750],
+    [['companies'], 6_650],
     // people-by-company holds the pilot, background run and final states
-    [['people-by-company'], 4_700],
-    [['scoring', 'playbook-shortfall'], 5_800],
-    [['playbook-company-first'], 6_700],
-    [['query-planning'], 5_000],
+    [['people-by-company'], 5_000],
+    [['scoring', 'playbook-shortfall'], 6_250],
+    [['playbook-company-first'], 10_950],
+    [['query-planning'], 5_400],
     [['for-recruiting'], 4_800],
     [['for-sales'], 4_600],
-    [['inbound-applicants'], 5_100],
-    [['people', 'for-recruiting'], 7_400],
+    [['inbound-applicants'], 5_450],
+    [['people', 'for-recruiting'], 7_700],
     [['companies', 'for-sales'], 7_600],
-    [['people-by-company', 'for-recruiting'], 5_900],
+    [['people-by-company', 'for-recruiting'], 5_950],
   ])('should keep the bundle for %j under %i tokens', (sections, budget) => {
     expect(tokens(sections)).toBeLessThanOrEqual(budget);
   });

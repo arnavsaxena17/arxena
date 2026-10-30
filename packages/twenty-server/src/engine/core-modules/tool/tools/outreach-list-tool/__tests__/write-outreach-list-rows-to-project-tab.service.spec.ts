@@ -48,7 +48,12 @@ describe('WriteOutreachListRowsToProjectTabService', () => {
       context: { workspaceId: 'ws-1' },
     });
 
-    expect(outcome).toEqual({ written: 0, total: 1 });
+    expect(outcome).toEqual({
+      written: 0,
+      total: 1,
+      createdCount: 0,
+      updatedCount: 0,
+    });
     expect(upsertCompanies.execute).not.toHaveBeenCalled();
   });
 
@@ -62,7 +67,12 @@ describe('WriteOutreachListRowsToProjectTabService', () => {
       context: { workspaceId: 'ws-1' },
     });
 
-    expect(outcome).toEqual({ written: 2, total: 2 });
+    expect(outcome).toEqual({
+      written: 2,
+      total: 2,
+      createdCount: 0,
+      updatedCount: 0,
+    });
     expect(upsertCompanies.execute).toHaveBeenCalledWith(
       expect.objectContaining({
         projectId: 'proj-1',
@@ -96,7 +106,44 @@ describe('WriteOutreachListRowsToProjectTabService', () => {
       context: { workspaceId: 'ws-1' },
     });
 
-    expect(outcome).toEqual({ written: 0, total: 1, error: 'tab full' });
+    expect(outcome).toEqual({
+      written: 0,
+      total: 1,
+      createdCount: 0,
+      updatedCount: 0,
+      error: 'tab full',
+    });
     expect(update).not.toHaveBeenCalled();
+  });
+
+  it('should keep the new and already-known row counts on the list', async () => {
+    upsertCompanies.execute.mockResolvedValueOnce({
+      success: true,
+      result: { createdCount: 1, updatedCount: 1 },
+    });
+
+    const outcome = await service.write({
+      workspaceId: 'ws-1',
+      listId: 'list-1',
+      projectId: 'proj-1',
+      entity: 'company',
+      rows: [companyRow('Acme', 'acme.com'), companyRow('Beta', 'beta.com')],
+      context: { workspaceId: 'ws-1' },
+    });
+
+    expect(outcome.createdCount).toBe(1);
+    expect(outcome.updatedCount).toBe(1);
+
+    const current = {
+      meta: {
+        projectIds: [] as string[],
+        newUnique: 2,
+        alreadyKnown: 3,
+      },
+    };
+
+    (update.mock.calls[0][2] as (document: typeof current) => void)(current);
+    expect(current.meta.newUnique).toBe(3);
+    expect(current.meta.alreadyKnown).toBe(4);
   });
 });

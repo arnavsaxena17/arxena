@@ -58,6 +58,17 @@ const PRICE_PER_MILLION_TOKENS: Record<string, [number, number]> = {
   'deepseek/deepseek-v4-flash-0731': [0.044, 0.133],
 };
 
+// The workspace's fast model, from the environment, for aliases that used to
+// hardcode an OpenAI model this key may not have
+const resolveFastChatModel = (): string => {
+  const configured = (process.env.AI_MODELS_DEFAULT_FAST ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0)[0];
+
+  return (configured ?? OPENAI_FALLBACK_MODEL).replace(/^openrouter\//, '');
+};
+
 const OPENAI_MODEL_ALIASES: Record<string, string> = {
   gpt35turbo: 'gpt-3.5-turbo',
   gpt51chatlatest: 'gpt-6-luna',
@@ -66,8 +77,6 @@ const OPENAI_MODEL_ALIASES: Record<string, string> = {
   gpt6luna: OPENAI_FALLBACK_MODEL,
   deepseek: OPENAI_FALLBACK_MODEL,
   'deepseek-v4-flash-0731': OPENAI_FALLBACK_MODEL,
-  // Web search runs on gpt-6-luna through the Responses API web_search tool.
-  gpt4ominisearchpreview: 'gpt-6-luna',
 };
 
 const usesOpenRouter = (model: string): boolean =>
@@ -330,6 +339,13 @@ export class AiFilterEngineService {
       return OPENAI_FALLBACK_MODEL;
     }
 
+    // The web-search column alias used to mean an OpenAI web model this
+    // workspace may not have; it now follows AI_MODELS_DEFAULT_FAST and is
+    // answered from the SERP chain instead
+    if (model === 'gpt4ominisearchpreview') {
+      return resolveFastChatModel();
+    }
+
     return OPENAI_MODEL_ALIASES[model] ?? model ?? OPENAI_FALLBACK_MODEL;
   }
 
@@ -468,6 +484,13 @@ export class AiFilterEngineService {
         return grounded;
       }
 
+      // The Responses web_search tool needs an OpenAI model. When the run is on
+      // the workspace's OpenRouter model, the SERP chain above is the answer
+      // path; calling OpenAI here only produces a model-not-found failure.
+      if (usesOpenRouter(stats.model)) {
+        return null;
+      }
+
       const response = await this.withProviderLimit('openai', () =>
         this.getOpenAiClient().responses.create({
           model: stats.model,
@@ -496,25 +519,43 @@ export class AiFilterEngineService {
       return response.output_text;
     }
 
-    const completion = await this.getChatClient(
-      stats.model,
-    ).chat.completions.create({
-      model: stats.model,
-      temperature: 0,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
-      response_format: {
-        type: 'json_schema',
-        json_schema: { name: 'filter_results', strict: true, schema },
-      },
-    });
+    const completion = await this.withOptionalTemperature((temperature) =>
+      this.getChatClient(stats.model).chat.completions.create({
+        model: stats.model,
+        ...(temperature !== undefined && { temperature }),
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user },
+        ],
+        response_format: {
+          type: 'json_schema',
+          json_schema: { name: 'filter_results', strict: true, schema },
+        },
+      }),
+    );
 
     stats.inputTokens += completion.usage?.prompt_tokens ?? 0;
     stats.outputTokens += completion.usage?.completion_tokens ?? 0;
 
     return completion.choices[0]?.message?.content;
+  }
+
+  // Reasoning-style models reject a fixed temperature with a 400; the answer is
+  // the same either way, so retry once without it instead of failing the column
+  private async withOptionalTemperature<TResult>(
+    request: (temperature: number | undefined) => Promise<TResult>,
+  ): Promise<TResult> {
+    try {
+      return await request(0);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+
+      if (!/temperature/i.test(message)) {
+        throw error;
+      }
+
+      return request(undefined);
+    }
   }
 
   private countProviderAnswer(
@@ -666,26 +707,26 @@ export class AiFilterEngineService {
       stats.groundedSearches += 1;
       stats.groundedSearchCostUsd += evidence.costUsd;
 
-      const completion = await this.getChatClient(
-        stats.model,
-      ).chat.completions.create({
-        model: stats.model,
-        temperature: 0,
-        messages: [
-          {
-            role: 'system',
-            content: `${system}\n\nAnswer only from the WEB EVIDENCE below, which is web search output for the query "${evidence.query}". Prefer the most recent figure. When the evidence holds no credible answer, leave the field empty (null for numbers, "unknown" for text and lists). Never guess.`,
+      const completion = await this.withOptionalTemperature((temperature) =>
+        this.getChatClient(stats.model).chat.completions.create({
+          model: stats.model,
+          ...(temperature !== undefined && { temperature }),
+          messages: [
+            {
+              role: 'system',
+              content: `${system}\n\nAnswer only from the WEB EVIDENCE below, which is web search output for the query "${evidence.query}". Prefer the most recent figure. When the evidence holds no credible answer, leave the field empty (null for numbers, "unknown" for text and lists). Never guess.`,
+            },
+            {
+              role: 'user',
+              content: `${user}\n\nWEB EVIDENCE\n${evidence.text}`,
+            },
+          ],
+          response_format: {
+            type: 'json_schema',
+            json_schema: { name: 'filter_results', strict: true, schema },
           },
-          {
-            role: 'user',
-            content: `${user}\n\nWEB EVIDENCE\n${evidence.text}`,
-          },
-        ],
-        response_format: {
-          type: 'json_schema',
-          json_schema: { name: 'filter_results', strict: true, schema },
-        },
-      });
+        }),
+      );
 
       stats.inputTokens += completion.usage?.prompt_tokens ?? 0;
       stats.outputTokens += completion.usage?.completion_tokens ?? 0;
@@ -711,21 +752,23 @@ export class AiFilterEngineService {
     spec: FilterSpec;
     stats: FilterRunStats;
   }): Promise<string> {
-    const completion = await this.getChatClient(
-      stats.model,
-    ).chat.completions.create({
-      model: stats.model,
-      temperature: 0,
-      max_tokens: 40,
-      messages: [
-        {
-          role: 'system',
-          content:
-            'Write one Google search query of at most 12 words that would surface the answer to the task for the record. Name the company or person explicitly. Reply with the query only.',
-        },
-        { role: 'user', content: `Task:\n${spec.criteria.trim()}\n\n${user}` },
-      ],
-    });
+    const completion = await this.withOptionalTemperature((temperature) =>
+      this.getChatClient(stats.model).chat.completions.create({
+        model: stats.model,
+        ...(temperature !== undefined && { temperature }),
+        // A reasoning-style fast model spends tens of tokens thinking before
+        // it writes the query; a 40-token cap returns null with finish "length"
+        max_tokens: 400,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'Write one Google search query of at most 12 words that would surface the answer to the task for the record. Name the company or person explicitly. Reply with the query only.',
+          },
+          { role: 'user', content: `Task:\n${spec.criteria.trim()}\n\n${user}` },
+        ],
+      }),
+    );
 
     stats.inputTokens += completion.usage?.prompt_tokens ?? 0;
     stats.outputTokens += completion.usage?.completion_tokens ?? 0;

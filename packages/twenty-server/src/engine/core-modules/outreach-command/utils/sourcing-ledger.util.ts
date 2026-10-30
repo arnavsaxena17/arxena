@@ -1,6 +1,7 @@
 import { type OutreachTabRow } from 'src/engine/core-modules/outreach-command/services/outreach-tab.service';
 import { readRowProfile } from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/profile-row-fields.util';
 import {
+  pairKeyOf,
   type FindPeoplePairState,
   type FindPeopleTerminalState,
   readPairStates,
@@ -16,9 +17,35 @@ export type SourcingRequestType =
   | 'look_alike'
   | 'expand';
 
+// best_effort stops at the target; exhaustive stops when the universe is
+// covered or the run cap is hit. It changes the stop rule and the report, so
+// it is part of the plan, not a phrase in the chat.
+export type SourcingCoverage = 'best_effort' | 'exhaustive';
+
+// What "everything" means for an exhaustive run. A run without one is not
+// exhaustive, it is unbounded.
+export type SourcingUniverse = {
+  kind?: 'project' | 'view' | 'list' | 'lens_set' | 'other';
+  count?: number;
+  note?: string;
+};
+
+// One planned (source, query) pair. Population exhaustive runs write these
+// before the first search; the ledger compares them with the lists that
+// actually ran, so an unattempted query is visible instead of forgotten.
+export type SourcingQueryPlan = {
+  source?: string;
+  query: string;
+  slice?: string;
+  role?: string;
+  entity?: 'company' | 'people';
+};
+
 // What was agreed before the search started, so the final report can quote it
 export type SourcingBrief = {
   requestType: SourcingRequestType;
+  // The brief as the user wrote it, when it arrived as prose
+  briefText?: string;
   // How many the user asked for; null when they did not say
   target: number | null;
   // Who or what is wanted, in the user's words
@@ -27,8 +54,20 @@ export type SourcingBrief = {
   geography?: string;
   exclusions?: string;
   // Spend the user approved, in USD. perPair caps one company x role lookup
-  // across every source
-  capsUsd?: { fetch?: number; enrich?: number; perPair?: number };
+  // across every source; run caps the whole run. The paid tools read it, they
+  // never raise it.
+  capsUsd?: {
+    fetch?: number;
+    enrich?: number;
+    perPair?: number;
+    run?: number;
+  };
+  coverage?: SourcingCoverage;
+  universe?: SourcingUniverse;
+  queries?: SourcingQueryPlan[];
+  // Server-set: identifies the budget window. A new run cap starts a new one,
+  // so a second run is not blocked by the first run's spend.
+  budgetRunId?: string;
   destination?: string;
   // Defaults the agent chose and told the user about, instead of asking
   assumptions: string[];
@@ -60,6 +99,270 @@ export type SourcingTargetType =
 
 export type SourcingConfidence = 'high' | 'medium' | 'low';
 
+const PERSONA_ALIASES: Record<string, SourcingPersona> = {
+  sales: 'sales',
+  sales_prospect: 'sales',
+  'sales-prospect': 'sales',
+  prospect: 'sales',
+  prospects: 'sales',
+  'for-sales': 'sales',
+  for_sales: 'sales',
+  exec_search: 'exec_search',
+  'exec-search': 'exec_search',
+  exec: 'exec_search',
+  recruiting: 'exec_search',
+  recruitment: 'exec_search',
+  hiring: 'exec_search',
+  candidate: 'exec_search',
+  candidates: 'exec_search',
+  'for-recruiting': 'exec_search',
+  for_recruiting: 'exec_search',
+};
+
+const COVERAGE_ALIASES: Record<string, SourcingCoverage> = {
+  best_effort: 'best_effort',
+  'best-effort': 'best_effort',
+  'best effort': 'best_effort',
+  best: 'best_effort',
+  default: 'best_effort',
+  standard: 'best_effort',
+  exhaustive: 'exhaustive',
+  complete: 'exhaustive',
+  'complete coverage': 'exhaustive',
+  'complete-coverage': 'exhaustive',
+  full: 'exhaustive',
+  all: 'exhaustive',
+  mece: 'exhaustive',
+  'no gaps': 'exhaustive',
+  'no-gaps': 'exhaustive',
+};
+
+const REQUEST_TYPE_ALIASES: Record<string, SourcingRequestType> = {
+  population: 'population',
+  named_role: 'named_role',
+  'named-role': 'named_role',
+  role: 'named_role',
+  role_at_companies: 'named_role',
+  company_list: 'company_list',
+  'company-list': 'company_list',
+  companies: 'company_list',
+  company_first: 'company_list',
+  'company-first': 'company_list',
+  'role-plus-industry-country': 'company_list',
+  role_plus_industry_country: 'company_list',
+  role_at_industry: 'company_list',
+  scored_list: 'scored_list',
+  'scored-list': 'scored_list',
+  look_alike: 'look_alike',
+  'look-alike': 'look_alike',
+  lookalike: 'look_alike',
+  expand: 'expand',
+};
+
+const asTrimmedString = (value: unknown): string | undefined =>
+  typeof value === 'string' && value.trim().length > 0
+    ? value.trim()
+    : undefined;
+
+// "queries": ["CEO at Acme", { source, query, slice }] and the older
+// "queryPlan" name all become the same list. A query with no text is dropped
+// rather than left to match every list.
+const normalizeQueryPlan = (
+  value: unknown,
+): SourcingQueryPlan[] | undefined => {
+  const items = Array.isArray(value)
+    ? value
+    : typeof value === 'string'
+      ? [value]
+      : undefined;
+
+  if (items === undefined) {
+    return undefined;
+  }
+
+  const queries = items
+    .map((item): SourcingQueryPlan | undefined => {
+      if (typeof item === 'string') {
+        const query = asTrimmedString(item);
+
+        return query === undefined ? undefined : { query };
+      }
+
+      if (typeof item !== 'object' || item === null || Array.isArray(item)) {
+        return undefined;
+      }
+
+      const record = item as Record<string, unknown>;
+      const query = asTrimmedString(record.query ?? record.q);
+      const entity =
+        record.entity === 'company' || record.entity === 'people'
+          ? record.entity
+          : undefined;
+
+      return query === undefined
+        ? undefined
+        : {
+            query,
+            ...(asTrimmedString(record.source) !== undefined && {
+              source: asTrimmedString(record.source),
+            }),
+            ...(asTrimmedString(record.slice) !== undefined && {
+              slice: asTrimmedString(record.slice),
+            }),
+            ...(asTrimmedString(record.role) !== undefined && {
+              role: asTrimmedString(record.role),
+            }),
+            ...(entity !== undefined && { entity }),
+          };
+    })
+    .filter((query): query is SourcingQueryPlan => query !== undefined);
+
+  return queries.length > 0 ? queries.slice(0, 50) : undefined;
+};
+
+const normalizeUniverse = (value: unknown): SourcingUniverse | undefined => {
+  if (typeof value === 'string') {
+    const note = asTrimmedString(value);
+
+    return note === undefined ? undefined : { kind: 'other', note };
+  }
+
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return undefined;
+  }
+
+  const record = value as Record<string, unknown>;
+  const kinds = ['project', 'view', 'list', 'lens_set', 'other'];
+  const kind = kinds.includes(String(record.kind))
+    ? (record.kind as SourcingUniverse['kind'])
+    : undefined;
+  const count = Number(record.count);
+  const note = asTrimmedString(record.note);
+
+  return {
+    ...(kind !== undefined && { kind }),
+    ...(Number.isFinite(count) && count >= 0 && { count }),
+    ...(note !== undefined && { note }),
+  };
+};
+
+// Tools receive what the model wrote, not what the schema wished for: a prose
+// brief, one role as a string, "sales_prospect" for persona. Accept those
+// shapes and normalise them, so a near-correct call is not a failed call.
+export const normalizeSourcingBriefDraft = (
+  value: unknown,
+): Partial<SourcingBrief> | undefined => {
+  if (typeof value === 'string') {
+    const text = value.trim();
+
+    return text.length > 0
+      ? { briefText: text, who: text.slice(0, 300), requestType: 'named_role' }
+      : undefined;
+  }
+
+  if (typeof value !== 'object' || value === null) {
+    return undefined;
+  }
+
+  const draft: Record<string, unknown> = {
+    ...(value as Record<string, unknown>),
+  };
+
+  if (typeof draft.roles === 'string') {
+    draft.roles = draft.roles
+      .split(',')
+      .map((role) => role.trim())
+      .filter((role) => role.length > 0);
+  }
+
+  if (typeof draft.persona === 'string') {
+    const persona = PERSONA_ALIASES[draft.persona.trim().toLowerCase()];
+
+    if (persona !== undefined) {
+      draft.persona = persona;
+    }
+  }
+
+  if (typeof draft.requestType === 'string') {
+    const requestType =
+      REQUEST_TYPE_ALIASES[draft.requestType.trim().toLowerCase()];
+
+    if (requestType !== undefined) {
+      draft.requestType = requestType;
+    }
+  }
+
+  if (typeof draft.sources === 'string') {
+    draft.sources = [draft.sources];
+  }
+
+  if (typeof draft.coverage === 'string') {
+    const coverage = COVERAGE_ALIASES[draft.coverage.trim().toLowerCase()];
+
+    if (coverage !== undefined) {
+      draft.coverage = coverage;
+    }
+  }
+
+  if (
+    typeof draft.capsUsd === 'object' &&
+    draft.capsUsd !== null &&
+    !Array.isArray(draft.capsUsd)
+  ) {
+    const caps = { ...(draft.capsUsd as Record<string, unknown>) };
+
+    for (const key of ['fetch', 'enrich', 'perPair', 'run']) {
+      const value = caps[key];
+
+      if (
+        typeof value === 'string' &&
+        value.trim().length > 0 &&
+        Number.isFinite(Number(value))
+      ) {
+        caps[key] = Number(value);
+      }
+    }
+
+    draft.capsUsd = caps;
+  }
+
+  const queries = normalizeQueryPlan(draft.queries ?? draft.queryPlan);
+
+  if (queries !== undefined) {
+    draft.queries = queries;
+  }
+
+  // The brief schema is an array of must/nice criteria and an array of
+  // assumptions. A model that writes one prose string or a by-area object is
+  // normalized here, so the report does not have to defend against it.
+  if (typeof draft.assumptions === 'string') {
+    draft.assumptions = [draft.assumptions];
+  }
+
+  if (typeof draft.criteria === 'string') {
+    draft.criteria = [{ description: draft.criteria, mustHave: true }];
+  } else if (
+    typeof draft.criteria === 'object' &&
+    draft.criteria !== null &&
+    !Array.isArray(draft.criteria)
+  ) {
+    draft.criteria = Object.entries(
+      draft.criteria as Record<string, unknown>,
+    ).map(([key, value]) => ({
+      description: `${key}: ${typeof value === 'string' ? value : JSON.stringify(value)}`,
+      mustHave: true,
+    }));
+  }
+
+  const universe = normalizeUniverse(draft.universe);
+
+  if (universe !== undefined) {
+    draft.universe = universe;
+  }
+
+  return draft as Partial<SourcingBrief>;
+};
+
 export const SOURCING_PLAN_DEFAULTS = {
   minConfidence: 'medium' as SourcingConfidence,
   freshnessDays: 365,
@@ -88,6 +391,10 @@ export const mergeSourcingBrief = (
     ...defined,
     ...((previous?.capsUsd !== undefined || defined.capsUsd !== undefined) && {
       capsUsd: { ...previous?.capsUsd, ...defined.capsUsd },
+    }),
+    ...((previous?.universe !== undefined ||
+      defined.universe !== undefined) && {
+      universe: { ...previous?.universe, ...defined.universe },
     }),
     ...((previous?.thresholds !== undefined ||
       defined.thresholds !== undefined) && {
@@ -215,9 +522,11 @@ export const computeSourcingFunnel = (
 
 export type SourcingPairFunnel = {
   companies: number;
+  // One pair is expected per company for the role set being measured
+  expectedPairs: number;
   pairs: number;
   byState: Record<FindPeopleTerminalState, number>;
-  // Companies with no pair yet for any role
+  // Companies with no pair yet for this role set
   notLookedUp: number;
   byRung: Record<string, number>;
   bySource: Record<string, number>;
@@ -226,6 +535,8 @@ export type SourcingPairFunnel = {
   // Share of pairs found, of those that reached a state
   resolutionRate: number;
   costPerFoundUsd: number | null;
+  // The role set the line was computed for, when one was given
+  roleKey?: string;
   coverageLine: string;
 };
 
@@ -237,10 +548,26 @@ const TERMINAL_STATES: FindPeopleTerminalState[] = [
   'excluded',
 ];
 
-// Built from the company rows, never from memory, so the report is right
-// after a compaction or a resumed run
-export const computePairFunnel = (
-  companyRows: OutreachTabRow[],
+// Counts a set of company x role pairs. One pair is one company and one
+// role, so a four-role company contributes four pairs and a CEO found no
+// longer hides a missing head of manufacturing.
+export type SourcingPairFunnelInput = Pick<
+  FindPeoplePairState,
+  'terminalState' | 'reason' | 'rungUsed' | 'sourcesUsed' | 'costUsd'
+>;
+
+export const summarizePairStates = (
+  pairStates: SourcingPairFunnelInput[],
+  {
+    companies,
+    expectedPairs,
+    notLookedUpCompanies,
+  }: {
+    companies: number;
+    expectedPairs: number;
+    // When the role set is unknown, a company with no pair is what is missing
+    notLookedUpCompanies?: number;
+  },
 ): SourcingPairFunnel => {
   const byState = Object.fromEntries(
     TERMINAL_STATES.map((state) => [state, 0]),
@@ -248,48 +575,38 @@ export const computePairFunnel = (
   const byRung: Record<string, number> = {};
   const bySource: Record<string, number> = {};
   const reasons = new Map<string, number>();
-  let pairs = 0;
-  let notLookedUp = 0;
   let costUsd = 0;
 
-  for (const row of companyRows) {
-    const states: FindPeoplePairState[] = Object.values(
-      readPairStates(row.otherFields),
-    );
+  for (const pair of pairStates) {
+    byState[pair.terminalState] = (byState[pair.terminalState] ?? 0) + 1;
+    costUsd += pair.costUsd ?? 0;
 
-    if (states.length === 0) {
-      notLookedUp += 1;
-      continue;
+    if (pair.rungUsed !== undefined) {
+      byRung[`rung${pair.rungUsed}`] =
+        (byRung[`rung${pair.rungUsed}`] ?? 0) + 1;
     }
 
-    for (const pair of states) {
-      pairs += 1;
-      byState[pair.terminalState] = (byState[pair.terminalState] ?? 0) + 1;
-      costUsd += pair.costUsd ?? 0;
+    for (const source of pair.sourcesUsed ?? []) {
+      bySource[source] = (bySource[source] ?? 0) + 1;
+    }
 
-      if (pair.rungUsed !== undefined) {
-        byRung[`rung${pair.rungUsed}`] =
-          (byRung[`rung${pair.rungUsed}`] ?? 0) + 1;
-      }
+    if (pair.terminalState !== 'found') {
+      const reason = `${pair.terminalState}${pair.reason ? `: ${pair.reason}` : ''}`;
 
-      for (const source of pair.sourcesUsed ?? []) {
-        bySource[source] = (bySource[source] ?? 0) + 1;
-      }
-
-      if (pair.terminalState !== 'found') {
-        const reason = `${pair.terminalState}${pair.reason ? `: ${pair.reason}` : ''}`;
-
-        reasons.set(reason, (reasons.get(reason) ?? 0) + 1);
-      }
+      reasons.set(reason, (reasons.get(reason) ?? 0) + 1);
     }
   }
 
+  const pairs = pairStates.length;
   const found = byState.found;
   const review = byState.ambiguous;
   const missing = byState.none_found + byState.unresolvable;
+  const notLookedUp =
+    notLookedUpCompanies ?? Math.max(0, expectedPairs - pairs);
 
   return {
-    companies: companyRows.length,
+    companies,
+    expectedPairs,
     pairs,
     byState,
     notLookedUp,
@@ -303,9 +620,246 @@ export const computePairFunnel = (
     resolutionRate: pairs > 0 ? Number((found / pairs).toFixed(2)) : 0,
     costPerFoundUsd: found > 0 ? Number((costUsd / found).toFixed(4)) : null,
     coverageLine:
-      `${found} of ${pairs} covered; ${missing} none found (reasons attached); ${review} need your review` +
-      (byState.excluded > 0 ? `; ${byState.excluded} excluded` : '') +
-      (notLookedUp > 0 ? `; ${notLookedUp} companies not looked up yet` : '') +
-      '.',
+      notLookedUpCompanies === undefined
+        ? `${found} of ${expectedPairs} company x role pairs covered; ${missing} none found (reasons attached); ${review} need your review` +
+          (byState.excluded > 0 ? `; ${byState.excluded} excluded` : '') +
+          (notLookedUp > 0 ? `; ${notLookedUp} pairs not looked up yet` : '') +
+          '.'
+        : `${found} of ${pairs} covered; ${missing} none found (reasons attached); ${review} need your review` +
+          (byState.excluded > 0 ? `; ${byState.excluded} excluded` : '') +
+          (notLookedUp > 0
+            ? `; ${notLookedUp} companies not looked up yet`
+            : '') +
+          '.',
+  };
+};
+
+// Built from the company rows, never from memory, so the report is right
+// after a compaction or a resumed run. Pass roles to measure one role set:
+// without it the line mixes every company x role pair the project has seen.
+export const computePairFunnel = (
+  companyRows: OutreachTabRow[],
+  options: { roles?: string[] } = {},
+): SourcingPairFunnel => {
+  const roleKeys =
+    options.roles !== undefined && options.roles.length > 0
+      ? [...new Set(options.roles.map((role) => pairKeyOf([role])))]
+      : undefined;
+  const roleKey =
+    options.roles !== undefined && options.roles.length > 0
+      ? pairKeyOf(options.roles)
+      : undefined;
+  const selected: FindPeoplePairState[] = [];
+  let companiesWithoutPairs = 0;
+
+  for (const row of companyRows) {
+    const pairs = readPairStates(row.otherFields);
+
+    if (roleKeys === undefined) {
+      const values = Object.values(pairs);
+
+      if (values.length === 0) {
+        companiesWithoutPairs += 1;
+      }
+      selected.push(...values);
+      continue;
+    }
+
+    for (const key of roleKeys) {
+      const pair =
+        pairs[key] ??
+        Object.values(pairs).find(
+          (candidate) =>
+            candidate.roles.length === 1 && pairKeyOf(candidate.roles) === key,
+        );
+
+      if (pair !== undefined) {
+        selected.push(pair);
+      }
+    }
+  }
+
+  const funnel = summarizePairStates(selected, {
+    companies: companyRows.length,
+    expectedPairs:
+      roleKeys === undefined
+        ? selected.length
+        : companyRows.length * roleKeys.length,
+    ...(roleKeys === undefined && {
+      notLookedUpCompanies: companiesWithoutPairs,
+    }),
+  });
+
+  return {
+    ...funnel,
+    ...(roleKey !== undefined && { roleKey }),
+  };
+};
+
+// A list as the frontier needs it: what ran, where, and what was new
+export type SourcingFrontierList = {
+  id: string;
+  sources: string[];
+  entity?: string;
+  query?: string;
+  fetched?: number;
+  newUnique?: number;
+  alreadyKnown?: number;
+  spentUsd: number;
+};
+
+export type SourcingFrontierItem = SourcingQueryPlan & {
+  attempted: boolean;
+  listIds: string[];
+  fetched: number;
+  // Null when the list never reached a project tab, so the count is unknown
+  newUnique: number | null;
+  alreadyKnown: number | null;
+  spentUsd: number;
+};
+
+export type SourcingFrontier = {
+  coverage: SourcingCoverage;
+  universe?: SourcingUniverse;
+  planned: SourcingFrontierItem[];
+  attempted: number;
+  unattempted: number;
+  // Lists that ran but were not in the plan: scope creep, or a query the
+  // agent rewrote instead of running the planned one
+  unplannedSearches: number;
+  complete: boolean;
+  unattemptedQueries: SourcingQueryPlan[];
+  coverageLine: string;
+};
+
+const normalizeSourceKey = (value: string): string =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[-_\s]/g, '');
+
+const normalizeQueryText = (value: string): string =>
+  value.trim().toLowerCase().replace(/\s+/g, ' ');
+
+const queryMatches = (planned: string, actual: string): boolean => {
+  const left = normalizeQueryText(planned);
+  const right = normalizeQueryText(actual);
+
+  if (left.length === 0 || right.length === 0) {
+    return false;
+  }
+
+  return left === right || left.includes(right) || right.includes(left);
+};
+
+// The index and Wikidata lists are stored as "other" because the list source
+// type predates them; their query text keeps them apart from each other
+const SOURCE_ALIASES: Record<string, string[]> = {
+  'internal-index': ['other'],
+  wikidata: ['other'],
+};
+
+const sourceMatches = (planned: string | undefined, sources: string[]) => {
+  if (planned === undefined) {
+    return true;
+  }
+
+  const keys = [
+    normalizeSourceKey(planned),
+    ...(SOURCE_ALIASES[planned] ?? []).map(normalizeSourceKey),
+  ];
+
+  return sources.some((source) => keys.includes(normalizeSourceKey(source)));
+};
+
+// The planned query matrix against the lists that actually ran. A planned
+// query counts only when a list with its source and text is attached to the
+// project, so a failure is not mistaken for coverage.
+export const computeSourcingFrontier = ({
+  coverage,
+  universe,
+  queries,
+  lists,
+}: {
+  coverage?: SourcingCoverage;
+  universe?: SourcingUniverse;
+  queries?: SourcingQueryPlan[];
+  lists: SourcingFrontierList[];
+}): SourcingFrontier | undefined => {
+  const mode = coverage ?? 'best_effort';
+
+  if (
+    mode !== 'exhaustive' &&
+    (queries === undefined || queries.length === 0)
+  ) {
+    return undefined;
+  }
+
+  const plannedQueries = queries ?? [];
+  const usedListIds = new Set<string>();
+  const planned: SourcingFrontierItem[] = plannedQueries.map((query) => {
+    const matched = lists.filter(
+      (list) =>
+        sourceMatches(query.source, list.sources) &&
+        (query.entity === undefined || list.entity === query.entity) &&
+        queryMatches(query.query, list.query ?? ''),
+    );
+
+    matched.forEach((list) => usedListIds.add(list.id));
+
+    const sum = (value: (list: SourcingFrontierList) => number | undefined) =>
+      matched.reduce((total, list) => total + (value(list) ?? 0), 0);
+    const newUnique = matched.some((list) => list.newUnique !== undefined)
+      ? sum((list) => list.newUnique)
+      : null;
+    const alreadyKnown = matched.some((list) => list.alreadyKnown !== undefined)
+      ? sum((list) => list.alreadyKnown)
+      : null;
+
+    return {
+      ...query,
+      attempted: matched.length > 0,
+      listIds: matched.map((list) => list.id),
+      fetched: sum((list) => list.fetched),
+      newUnique,
+      alreadyKnown,
+      spentUsd: Number(sum((list) => list.spentUsd).toFixed(4)),
+    };
+  });
+
+  const attempted = planned.filter((query) => query.attempted).length;
+  const unattemptedQueries = planned
+    .filter((query) => !query.attempted)
+    .map(({ source, query, slice, role, entity }) => ({
+      ...(source !== undefined && { source }),
+      query,
+      ...(slice !== undefined && { slice }),
+      ...(role !== undefined && { role }),
+      ...(entity !== undefined && { entity }),
+    }));
+  const unattempted = unattemptedQueries.length;
+  const unplannedSearches = lists.filter(
+    (list) => !usedListIds.has(list.id),
+  ).length;
+  // No planned queries is not "everything ran": it is no proof at all
+  const complete = planned.length > 0 && unattempted === 0;
+
+  return {
+    coverage: mode,
+    ...(universe !== undefined && { universe }),
+    planned,
+    attempted,
+    unattempted,
+    unplannedSearches,
+    complete,
+    unattemptedQueries,
+    coverageLine:
+      planned.length === 0
+        ? 'No query plan recorded, so coverage cannot be proven.'
+        : `${attempted} of ${planned.length} planned searches attempted; ${unattempted} not yet` +
+          (unplannedSearches > 0
+            ? `; ${unplannedSearches} unplanned searches`
+            : '') +
+          '.',
   };
 };

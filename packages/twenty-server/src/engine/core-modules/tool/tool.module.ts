@@ -20,6 +20,8 @@ import { SendEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/sen
 import { FetchProfilesService } from 'src/engine/core-modules/tool/tools/fetch-profiles-tool/fetch-profiles.service';
 import { FetchProfilesTool } from 'src/engine/core-modules/tool/tools/fetch-profiles-tool/fetch-profiles-tool';
 import { GetSourcingLedgerTool } from 'src/engine/core-modules/tool/tools/sourcing-ledger-tool/get-sourcing-ledger-tool';
+import { GetSourceCapabilitiesTool } from 'src/engine/core-modules/tool/tools/source-capabilities-tool/get-source-capabilities-tool';
+import { GetScoringPlanTool } from 'src/engine/core-modules/tool/tools/source-capabilities-tool/get-scoring-plan-tool';
 import {
   GetOutreachTabTool,
   PreviewOutreachAiColumnTool,
@@ -152,6 +154,8 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     FetchProfilesService,
     FetchProfilesTool,
     GetSourcingLedgerTool,
+    GetSourceCapabilitiesTool,
+    GetScoringPlanTool,
     FindPeopleCascadeService,
     FindPeopleRunService,
     ProcessFindPeopleChunkJob,
@@ -216,6 +220,8 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     FindPeopleByCompanyTool,
     FetchProfilesTool,
     GetSourcingLedgerTool,
+    GetSourceCapabilitiesTool,
+    GetScoringPlanTool,
     GetOutreachTabTool,
     PreviewOutreachAiColumnTool,
     RunOutreachAiColumnTool,

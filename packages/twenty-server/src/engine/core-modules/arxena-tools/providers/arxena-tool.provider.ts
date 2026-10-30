@@ -2,7 +2,7 @@ import {
   ARXENA_INTERNAL_TOOL_NAMES,
   ARXENA_TOOL_CATALOG,
 } from 'src/engine/core-modules/arxena-tools/constants/arxena-tool-catalog.const';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 import { ToolCategory } from 'twenty-shared/ai';
@@ -22,7 +22,10 @@ import { v5 } from 'uuid';
 
 import { OUTREACH_LIST_FILE_NAMESPACE } from 'src/engine/core-modules/outreach-list/outreach-list.constants';
 import { OutreachListService } from 'src/engine/core-modules/outreach-list/services/outreach-list.service';
+import { SourcingBudgetService } from 'src/engine/core-modules/outreach-command/services/sourcing-budget.service';
+import { sourceKeyOfTool } from 'src/engine/core-modules/tool-provider/utils/sourcing-source-guard.util';
 import {
+  buildEmptyListShape,
   isOutreachListSourceTool,
   normalizeToolOutputToListRows,
 } from 'src/engine/core-modules/outreach-list/utils/outreach-list-normalizers.util';
@@ -50,6 +53,9 @@ export type ArxenaToolExecutionContext = Pick<
   | 'actorContext'
   | 'projectId'
 >;
+
+// Sources that bill per call or per record and must ask the run budget first
+const PAID_SOURCE_KEYS = new Set(['bright-data', 'harvest', 'apollo', 'serp']);
 
 const extractTextFromMcpResult = (result: unknown): string => {
   if (!isDefined(result) || typeof result !== 'object') {
@@ -86,6 +92,8 @@ export class ArxenaToolProvider implements ToolProvider {
     private readonly outreachListService: OutreachListService,
     private readonly arxenaInProcessRestTransportService: ArxenaInProcessRestTransportService,
     private readonly writeOutreachListRowsToProjectTabService: WriteOutreachListRowsToProjectTabService,
+    @Optional()
+    private readonly sourcingBudgetService?: SourcingBudgetService,
   ) {}
 
   async isAvailable(_context: ToolProviderContext): Promise<boolean> {
@@ -225,6 +233,31 @@ export class ArxenaToolProvider implements ToolProvider {
       };
     }
 
+    const sourceKey = sourceKeyOfTool(toolName);
+
+    if (
+      sourceKey !== undefined &&
+      PAID_SOURCE_KEYS.has(sourceKey) &&
+      isNonEmptyString(context.projectId)
+    ) {
+      const budget = await this.sourcingBudgetService?.check({
+        workspaceId: context.workspaceId,
+        projectId: context.projectId,
+        // No per-call estimate is available here; this refuses once the run
+        // cap is spent, before another paid call goes out
+        estimatedUsd: 0,
+        tool: toolName,
+      });
+
+      if (isDefined(budget) && !budget.allowed) {
+        return {
+          success: false,
+          message: `Arxena tool ${toolName} refused by the run budget`,
+          error: budget.message,
+        };
+      }
+    }
+
     try {
       // Handlers expect a workspace member id; a userWorkspaceId is a different id
       const result = await this.arxenaMcpBridgeService.callTool(
@@ -262,6 +295,8 @@ export class ArxenaToolProvider implements ToolProvider {
         );
 
         if (isDefined(listed)) {
+          await this.recordListSpend(listed, context);
+
           return {
             success: true,
             message: `Arxena tool ${toolName} completed`,
@@ -307,7 +342,9 @@ export class ArxenaToolProvider implements ToolProvider {
     const workspaceId = context.workspaceId;
 
     try {
-      const normalized = normalizeToolOutputToListRows(toolName, args, parsed);
+      const normalized =
+        normalizeToolOutputToListRows(toolName, args, parsed) ??
+        buildEmptyListShape(toolName, args, parsed);
 
       if (!isDefined(normalized)) {
         return undefined;
@@ -340,8 +377,21 @@ export class ArxenaToolProvider implements ToolProvider {
         : '';
       let ephemeralWritten = 0;
       let ephemeralError: string | undefined;
+      let createdCount = 0;
+      let updatedCount = 0;
+      const emptyResult = normalized.rows.length === 0;
 
-      if (projectId !== '') {
+      if (projectId !== '' && emptyResult) {
+        // A zero-row search still counts as attempted, so link its empty list
+        // to the project; the frontier reads the list, not the tab
+        await this.outreachListService
+          .update(workspaceId, outcome.listId, (current) => {
+            if (!current.meta.projectIds.includes(projectId)) {
+              current.meta.projectIds.push(projectId);
+            }
+          })
+          .catch(() => undefined);
+      } else if (projectId !== '') {
         const tab = await this.writeOutreachListRowsToProjectTabService.write({
           workspaceId,
           listId: outcome.listId,
@@ -352,7 +402,20 @@ export class ArxenaToolProvider implements ToolProvider {
         });
 
         ephemeralWritten = tab.written;
+        createdCount = tab.createdCount;
+        updatedCount = tab.updatedCount;
         ephemeralError = tab.error;
+      }
+
+      let nextStep =
+        'No projectId was given, so nothing was written to a project. The records are kept in the list (listId). Ask which project to use, then outreach_list attach (show on the tab) or save_outreach_targets_to_crm after attach. Do not try to read the rows.';
+
+      if (projectId !== '') {
+        nextStep = emptyResult
+          ? 'The search returned no rows. It is recorded in the list (listId) and linked to the project so coverage counts it as attempted; the tab is unchanged.'
+          : ephemeralWritten > 0
+            ? 'Records were written to the project tab and kept in the list (listId). To create CRM records call save_outreach_targets_to_crm with the same projectId. Use get_outreach_tab to read the tab.'
+            : 'The search returned rows but none reached the project tab. They are kept in the list (listId); check ephemeralError and retry outreach_list attach.';
       }
 
       return {
@@ -363,6 +426,11 @@ export class ArxenaToolProvider implements ToolProvider {
         fetched: normalized.rows.length,
         added: outcome.added,
         duplicates: outcome.duplicates,
+        // Rows new to the project tab vs rows that merged into one already
+        // there: the overlap with earlier queries in the same run
+        newUnique: createdCount,
+        alreadyKnown: updatedCount,
+        ...(emptyResult && { emptyResult: true }),
         total: outcome.total,
         ephemeralWritten,
         ...(normalized.spentUsd !== undefined
@@ -374,10 +442,7 @@ export class ArxenaToolProvider implements ToolProvider {
             }
           : {}),
         ...paging,
-        nextStep:
-          projectId !== '' && ephemeralWritten > 0
-            ? 'Records were written to the project tab and kept in the list (listId). To create CRM records call save_outreach_targets_to_crm with the same projectId. Use get_outreach_tab to read the tab.'
-            : 'No projectId was given, so nothing was written to a project. The records are kept in the list (listId). Ask which project to use, then outreach_list attach (show on the tab) or save_outreach_targets_to_crm after attach. Do not try to read the rows.',
+        nextStep,
       };
     } catch (error) {
       this.logger.warn(
@@ -388,6 +453,31 @@ export class ArxenaToolProvider implements ToolProvider {
 
       return undefined;
     }
+  }
+
+  // The provider reports what it billed; add it to the run's spend so the
+  // next paid tool sees the smaller remainder
+  private async recordListSpend(
+    listed: Record<string, unknown>,
+    context: ArxenaToolExecutionContext,
+  ): Promise<void> {
+    const costUsd = listed.costUsd;
+
+    if (
+      typeof costUsd !== 'number' ||
+      costUsd <= 0 ||
+      !isNonEmptyString(context.projectId)
+    ) {
+      return;
+    }
+
+    await this.sourcingBudgetService
+      ?.recordSpend({
+        workspaceId: context.workspaceId,
+        projectId: context.projectId,
+        usd: costUsd,
+      })
+      .catch(() => undefined);
   }
 
   // Small paging fields the model needs to ask for the next page

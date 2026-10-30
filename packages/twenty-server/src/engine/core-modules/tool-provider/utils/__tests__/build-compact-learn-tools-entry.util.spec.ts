@@ -74,4 +74,69 @@ describe('buildCompactLearnToolsEntry', () => {
     expect(compactEntry.compositeFilterHints?.jobTitle).toBeUndefined();
     expect(compactEntry).not.toHaveProperty('inputSchema');
   });
+
+  it('renders a teachable input shape with nested keys, arrays and enums', () => {
+    const compactEntry = buildCompactLearnToolsEntry({
+      name: 'find_people_by_company',
+      inputSchema: {
+        type: 'object',
+        required: ['roles'],
+        properties: {
+          roles: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Roles the user asked for',
+          },
+          companies: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['name'],
+              properties: {
+                id: { type: 'string' },
+                name: { type: 'string' },
+                alternateNames: { type: 'array', items: { type: 'string' } },
+                employees: { type: 'number' },
+              },
+            },
+          },
+          maxRung: {
+            anyOf: [
+              { type: 'number', enum: [1, 2, 3, 4] },
+              { type: 'null' },
+            ],
+          },
+          persona: { type: 'string', enum: ['sales', 'exec_search'] },
+          pilotSize: { type: 'number', description: 'Look up only this many' },
+        },
+      },
+    });
+
+    expect(compactEntry.inputShape).toContain('roles: string[]');
+    expect(compactEntry.inputShape).toContain(
+      'companies?: {id?: string, name: string, alternateNames?: string[], employees?: number}[]',
+    );
+    expect(compactEntry.inputShape).toContain('maxRung?: 1|2|3|4');
+    expect(compactEntry.inputShape).toContain('persona?: "sales"|"exec_search"');
+    expect(compactEntry.inputShape).toContain('pilotSize?: number — Look up only this many');
+    expect(compactEntry.schemaNote).toContain('inputShape above is the call contract');
+  });
+
+  it('never renders a shape longer than the compact budget', () => {
+    const properties = Object.fromEntries(
+      Array.from({ length: 200 }, (_, index) => [
+        `argument${index}`,
+        {
+          type: 'object',
+          properties: { nested: { type: 'string', description: 'x'.repeat(60) } },
+        },
+      ]),
+    );
+    const compactEntry = buildCompactLearnToolsEntry({
+      name: 'huge',
+      inputSchema: { type: 'object', properties },
+    });
+
+    expect((compactEntry.inputShape ?? '').length).toBeLessThanOrEqual(1801);
+  });
 });

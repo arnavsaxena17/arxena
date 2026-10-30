@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 
 import { isDefined } from 'twenty-shared/utils';
 import { type z } from 'zod';
@@ -10,6 +10,7 @@ import {
 } from 'src/engine/core-modules/outreach-command/utils/ai-column-cost-limit.util';
 import { OutreachAiColumnService } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column.service';
 import { OutreachAiColumnRunService } from 'src/engine/core-modules/outreach-command/services/outreach-ai-column-run.service';
+import { SourcingBudgetService } from 'src/engine/core-modules/outreach-command/services/sourcing-budget.service';
 import { OutreachTableViewService } from 'src/engine/core-modules/outreach-command/services/outreach-table-view.service';
 import {
   type OutreachTabRow,
@@ -327,6 +328,9 @@ export class RunOutreachAiColumnTool implements Tool {
   constructor(
     private readonly outreachAiColumnRunService: OutreachAiColumnRunService,
     private readonly outreachAiColumnService: OutreachAiColumnService,
+    // Optional so the tool still runs where no budget store is wired (tests)
+    @Optional()
+    private readonly sourcingBudgetService?: SourcingBudgetService,
   ) {}
 
   async execute(
@@ -343,10 +347,10 @@ export class RunOutreachAiColumnTool implements Tool {
       };
     }
 
-    const blocked = await this.checkCostApproval(parsed.data);
+    const approval = await this.checkCostApproval(parsed.data, context);
 
-    if (blocked !== null) {
-      return blocked;
+    if (approval.blocked !== null) {
+      return approval.blocked;
     }
 
     try {
@@ -360,11 +364,29 @@ export class RunOutreachAiColumnTool implements Tool {
         parsed.data.waitSeconds * 1000,
       );
       const summary = this.outreachAiColumnRunService.summarize(run);
+      const usage = (
+        run as {
+          usage?: { estimatedCostUsd?: number | null } | null;
+        }
+      )?.usage;
+      const spentUsd =
+        usage?.estimatedCostUsd ?? approval.estimatedCostUsd ?? undefined;
+      const runBudget =
+        isDefined(spentUsd) && spentUsd > 0
+          ? await this.sourcingBudgetService?.recordSpend({
+              workspaceId: context.workspaceId,
+              projectId: parsed.data.projectId,
+              usd: spentUsd,
+            })
+          : undefined;
 
       return {
         success: run.status !== 'failed',
         message: describeRun(summary),
-        result: summary,
+        result: {
+          ...summary,
+          ...(runBudget?.runCapUsd !== undefined && { runBudget }),
+        },
       };
     } catch (error) {
       return {
@@ -379,37 +401,69 @@ export class RunOutreachAiColumnTool implements Tool {
   // runs at once, over it the user is asked once and the amount is passed back.
   private async checkCostApproval(
     input: z.infer<typeof RunOutreachAiColumnInputZodSchema>,
-  ): Promise<ToolOutput | null> {
+    context: ToolExecutionContext,
+  ): Promise<{
+    blocked: ToolOutput | null;
+    estimatedCostUsd?: number;
+  }> {
     const preview = await this.outreachAiColumnService.getPreviewState(
       input.previewId,
     );
 
     if (!preview) {
-      return null;
+      return { blocked: null };
     }
 
-    const estimatedCostUsd = estimateRunCostUsd({
-      estimatedRunCostUsd: preview.estimatedRunCostUsd,
-      estimatedPerRowUsd: preview.estimatedPerRowUsd,
-      rowLimit: input.rowLimit,
-    });
+    const estimatedCostUsd =
+      estimateRunCostUsd({
+        estimatedRunCostUsd: preview.estimatedRunCostUsd,
+        estimatedPerRowUsd: preview.estimatedPerRowUsd,
+        rowLimit: input.rowLimit,
+      }) ?? undefined;
+    // A column whose engine reports no cost never blocks, even when the run
+    // cap is spent
+    const budget =
+      isDefined(estimatedCostUsd) && estimatedCostUsd > 0
+        ? await this.sourcingBudgetService?.check({
+            workspaceId: context.workspaceId,
+            projectId: input.projectId,
+            estimatedUsd: estimatedCostUsd,
+            tool: 'run_ai_column',
+          })
+        : undefined;
+
+    if (isDefined(budget) && !budget.allowed) {
+      return {
+        blocked: {
+          success: false,
+          message:
+            budget.message ?? 'The run budget does not cover this column',
+          error: 'run_budget_exhausted',
+          result: { estimatedCostUsd },
+        },
+        estimatedCostUsd,
+      };
+    }
 
     if (
       !needsCostApproval({
-        estimatedCostUsd,
+        estimatedCostUsd: estimatedCostUsd ?? null,
         approvedCostUsd: input.approvedCostUsd,
       })
     ) {
-      return null;
+      return { blocked: null, estimatedCostUsd };
     }
 
     const limit = getAiColumnAutoRunMaxUsd();
 
     return {
-      success: false,
-      message: `This run is estimated at about $${(estimatedCostUsd ?? 0).toFixed(2)}, over the $${limit.toFixed(2)} that runs without asking. Ask the user once to approve it (up to that amount, or the enrichment cap they approved for the whole list build), then call run_ai_column again with approvedCostUsd set to the amount they approved.`,
-      error: 'cost_approval_required',
-      result: { estimatedCostUsd, autoRunLimitUsd: limit },
+      blocked: {
+        success: false,
+        message: `This run is estimated at about $${(estimatedCostUsd ?? 0).toFixed(2)}, over the $${limit.toFixed(2)} that runs without asking. Ask the user once to approve it (up to that amount, or the enrichment cap they approved for the whole list build), then call run_ai_column again with approvedCostUsd set to the amount they approved.`,
+        error: 'cost_approval_required',
+        result: { estimatedCostUsd, autoRunLimitUsd: limit },
+      },
+      estimatedCostUsd,
     };
   }
 }

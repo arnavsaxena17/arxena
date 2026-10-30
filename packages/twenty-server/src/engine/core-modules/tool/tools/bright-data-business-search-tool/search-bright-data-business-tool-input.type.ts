@@ -51,6 +51,13 @@ export const SearchBrightDataBusinessToolInputZodSchema = z.object({
     .describe(
       'Ludicrous only. Skip the confirmation step and fetch within maxBudgetUsd straight away. Used by workflow steps, which cannot pause',
     ),
+  industries: z
+    .array(z.string())
+    .max(8)
+    .optional()
+    .describe(
+      'Company only. Exact LinkedIn industry labels resolved with get_source_capabilities, e.g. ["Glass, Ceramics and Concrete Manufacturing"]. When set, the planner must use them instead of guessing a broader label. Do not pass made-up categories such as Fintech.',
+    ),
 });
 
 export type SearchBrightDataBusinessToolInput = z.infer<

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { createHash } from 'crypto';
 
@@ -9,6 +9,11 @@ import { isDefined } from 'twenty-shared/utils';
 import { BrightDataLudicrousSearchService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-search.service';
 
 import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
+import { HarvestLinkedinService } from 'src/engine/core-modules/org-chart/services/harvest-linkedin.service';
+import {
+  HARVEST_COST_PER_RECORD_USD,
+  splitHarvestTitleList,
+} from 'src/engine/core-modules/org-chart/utils/harvest-search-params.util';
 
 import { BRIGHT_DATA_COST_PER_RECORD_USD } from 'src/engine/core-modules/bright-data/ludicrous/constants/bright-data-ludicrous-pricing.const';
 
@@ -58,6 +63,7 @@ import {
   TitleExpansionService,
   type ResolvedRoles,
 } from 'src/engine/core-modules/title-taxonomy/title-expansion.service';
+import { expandRoleWithFamilyFallback } from 'src/engine/core-modules/title-taxonomy/title-family-fallback.util';
 
 import {
   BrightDataPersonFitFilterService,
@@ -71,7 +77,12 @@ import { type DeprioritisationReason } from 'src/engine/core-modules/tool/tools/
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
-import { pairKeyOf } from 'src/engine/core-modules/outreach-command/utils/outreach-people-found.util';
+import {
+  type FindPeopleNoneFoundReason,
+  type FindPeopleRung,
+  type FindPeopleTerminalState,
+  pairKeyOf,
+} from 'src/engine/core-modules/outreach-command/utils/outreach-people-found.util';
 import {
   confidenceOf,
   freshnessOf,
@@ -83,10 +94,12 @@ import { type SourcingConfidence } from 'src/engine/core-modules/outreach-comman
 import {
   type Candidate,
   type FindPeopleEvidence,
+  type FindPeopleRoleState,
   type CompanyOutcome,
   type FindPeopleByCompanyTarget,
   type RejectedCandidate,
   type ResolvedInput,
+  type RoleMatch,
   type Source,
   type VerifiedCandidate,
 } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company.types';
@@ -101,7 +114,9 @@ const DEFAULT_COMPANY_LOOKUP_RETRIES = 2;
 const COMPANY_RETRY_BACKOFF_MS = [5_000, 15_000];
 const MAX_VARIANTS_PER_BRIGHT_DATA_SEARCH = 2;
 const BRIGHT_DATA_CANDIDATES_PER_SEARCH = 5;
-const MAX_PEOPLE_PER_COMPANY = 3;
+// Harvest bills $0.004 a record; five is a $0.02 step, not the whole pair cap
+const HARVEST_CANDIDATES_PER_SEARCH = 5;
+const MIN_PEOPLE_PER_COMPANY = 3;
 const MAX_REJECTED_PER_COMPANY = 3;
 const MAX_TITLES_IN_QUERY = 8;
 const MAX_NAMES_TO_RESOLVE = 5;
@@ -113,6 +128,86 @@ const CACHE_TTL_MS = 365 * 24 * 60 * 60 * 1000;
 // owner / MD pass (rung 4) runs only at or below it
 const SMALL_COMPANY_EMPLOYEES = 200;
 const OWNER_ROLES = ['Owner', 'Founder', 'Managing Director', 'Promoter'];
+
+const isSource = (value: string): value is Source =>
+  value === 'bright_data' ||
+  value === 'google' ||
+  value === 'web' ||
+  value === 'harvest';
+
+// One person per role, and at least the old three for a role that returns
+// several people. A four-role query must not lose a role to the slice.
+const maxPeoplePerCompany = (roles: string[]): number =>
+  Math.max(MIN_PEOPLE_PER_COMPANY, roles.length);
+
+// The function words a role is about, e.g. "engineering" from "VP Engineering",
+// widened with the role's curated family ("technology", "cto", "works", "unit")
+const functionWordsOf = (roles: string[]): string[] => [
+  ...new Set(
+    roles
+      .flatMap((role) => expandRoleWithFamilyFallback(role))
+      .flatMap((title) => title.toLowerCase().split(/[^a-z]+/))
+      .filter((word) => word.length >= 4 && !ROLE_FILLER_WORDS.has(word))
+      .map((word) => word.slice(0, Math.max(4, word.length - 2))),
+  ),
+];
+
+// True when the title or the profile says the person runs the function asked
+// for. The owner of a small company counts only when they do.
+const leadsRequestedFunction = (
+  person: { title: string; rawProfile?: unknown },
+  roles: string[],
+  { includeAbout = false }: { includeAbout?: boolean } = {},
+): boolean => {
+  const words = functionWordsOf(roles);
+
+  if (words.length === 0) {
+    return true;
+  }
+
+  // Titles and the about line only: a degree in "engineering" is not a job
+  const profile = isDefined(person.rawProfile)
+    ? (person.rawProfile as Record<string, unknown>)
+    : {};
+  const experience = Array.isArray(profile.experience)
+    ? profile.experience.map((entry) =>
+        typeof entry === 'object' && entry !== null
+          ? `${String((entry as Record<string, unknown>).title ?? '')} ${String((entry as Record<string, unknown>).company ?? '')}`
+          : '',
+      )
+    : [];
+  const text = [
+    person.title,
+    ...(includeAbout && typeof profile.about === 'string'
+      ? [profile.about.slice(0, 400)]
+      : []),
+    ...experience.slice(0, 6),
+  ]
+    .join(' ')
+    .toLowerCase();
+
+  return words.some((word) => text.includes(word));
+};
+// Words that say nothing about the function a role covers
+const ROLE_FILLER_WORDS = new Set([
+  'vice',
+  'president',
+  'head',
+  'director',
+  'chief',
+  'officer',
+  'senior',
+  'lead',
+  'leader',
+  'manager',
+  'managing',
+  'general',
+  'gm',
+  'the',
+  'and',
+  'for',
+  'all',
+]);
 const MAX_EVIDENCE_SNIPPET_LENGTH = 300;
 
 export const getCompanyConcurrency = (): number => {
@@ -166,6 +261,35 @@ const withGlobalLookupSlot = async <TResult>(
   }
 };
 
+// Two searches per company (brand and legal name) would double the paid calls
+// in flight; this keeps the same ceiling the company concurrency had before
+let activeBrightDataSearches = 0;
+const waitingBrightDataSearches: Array<() => void> = [];
+
+const withBrightDataPeopleSlot = async <TResult>(
+  task: () => Promise<TResult>,
+): Promise<TResult> => {
+  if (activeBrightDataSearches >= getCompanyConcurrency()) {
+    await new Promise<void>((resolve) =>
+      waitingBrightDataSearches.push(resolve),
+    );
+  } else {
+    activeBrightDataSearches += 1;
+  }
+
+  try {
+    return await task();
+  } finally {
+    const next = waitingBrightDataSearches.shift();
+
+    if (isDefined(next)) {
+      next();
+    } else {
+      activeBrightDataSearches -= 1;
+    }
+  }
+};
+
 @Injectable()
 export class FindPeopleCascadeService {
   private readonly logger = new Logger(FindPeopleCascadeService.name);
@@ -181,6 +305,9 @@ export class FindPeopleCascadeService {
     // Optional so the service still runs where no cache is wired (tests)
     @InjectCacheStorage(CacheStorageNamespace.EngineOutreachCommand)
     private readonly cache?: CacheStorageService,
+    // Optional: a workspace without Harvest keys simply skips the last step
+    @Optional()
+    private readonly harvestLinkedinService?: HarvestLinkedinService,
   ) {}
 
   // The whole pair: a found answer from an earlier run is reused inside the
@@ -201,7 +328,12 @@ export class FindPeopleCascadeService {
         .catch(() => undefined);
 
       if (isDefined(cached) && cached.terminalState === 'found') {
-        return { ...cached, spentUsd: 0, sourcesUsed: ['cache'] };
+        return {
+          ...cached,
+          spentUsd: 0,
+          sourcesUsed: ['cache'],
+          sourcesAttempted: ['cache'],
+        };
       }
     }
 
@@ -235,13 +367,27 @@ export class FindPeopleCascadeService {
         { ownerPass: true },
       );
       const spentUsd = outcome.spentUsd + owners.spentUsd;
+      // A small company's owner only stands in for the role when they run that
+      // function: a founder CEO at a fintech is not the VP of Engineering
+      const ownersLeadsFunction = owners.people.filter((person) =>
+        leadsRequestedFunction(person, input.roles, { includeAbout: true }),
+      );
 
       outcome =
-        owners.people.length > 0
+        ownersLeadsFunction.length > 0
           ? {
               ...owners,
+              people: ownersLeadsFunction,
               spentUsd,
-              sourcesUsed: [...outcome.sourcesUsed, ...owners.sourcesUsed],
+              sourcesUsed: [
+                ...new Set([...outcome.sourcesUsed, ...owners.sourcesUsed]),
+              ],
+              sourcesAttempted: [
+                ...new Set([
+                  ...(outcome.sourcesAttempted ?? []),
+                  ...(owners.sourcesAttempted ?? []),
+                ]),
+              ],
               titlesTried: [...outcome.titlesTried, ...owners.titlesTried],
             }
           : { ...outcome, spentUsd };
@@ -314,7 +460,9 @@ export class FindPeopleCascadeService {
           terminalState: 'none_found',
           reason: 'source_error',
           sourcesUsed: [],
+          sourcesAttempted: [],
           titlesTried: [],
+          roleStates: [],
         }),
       );
       spentUsd += outcome.spentUsd;
@@ -348,7 +496,10 @@ export class FindPeopleCascadeService {
     const titles = resolvedRoles.searchTitles.slice(0, MAX_TITLES_IN_QUERY);
     const query = `${titles.join(', ')} at ${company.name}`;
     const sourceErrors: string[] = [];
-    const sourcesUsed: Source[] = [];
+    // What actually put a kept person on the row. What was *asked* is kept
+    // apart: a source that ran and returned nobody is not a source that worked,
+    // and the ledger should not read it as one.
+    const sourcesAttempted: Source[] = [];
     let spentUsd = 0;
     // Where the time went, so a slow run can be traced to a stage
     const stageMilliseconds: Record<string, number> = {};
@@ -376,8 +527,7 @@ export class FindPeopleCascadeService {
             location: input.location,
             maxBudgetUsd: budgetLeft(),
             workspaceId,
-            roles: input.roles,
-            requestedClasses: resolvedRoles.requestedClasses,
+            titleExpression: resolvedRoles.booleanTitleExpression,
           }).catch((error) => {
             sourceErrors.push(`bright_data: ${this.describe(error)}`);
 
@@ -389,7 +539,7 @@ export class FindPeopleCascadeService {
     spentUsd += brightDataCandidates.spentUsd;
 
     if (input.sources.includes('bright_data')) {
-      sourcesUsed.push('bright_data');
+      sourcesAttempted.push('bright_data');
     }
 
     let candidates: Candidate[] = [...brightDataCandidates.candidates];
@@ -406,6 +556,7 @@ export class FindPeopleCascadeService {
               sourceErrors,
               website: company.domain,
               industry: company.industry,
+              criteria: input.plan.criteria,
             }),
           )
         : new Map<string, PersonJudgement>();
@@ -414,8 +565,10 @@ export class FindPeopleCascadeService {
       variants,
       roles: input.roles,
       requestedClasses: resolvedRoles.requestedClasses,
+      roleClasses: resolvedRoles.roleClasses,
       verdicts,
     });
+    ({ verified, rejected } = this.splitByCriteria(verified, rejected));
     const confidentEnough = (people: VerifiedCandidate[]): boolean =>
       people.some(
         (person) =>
@@ -426,18 +579,26 @@ export class FindPeopleCascadeService {
           ),
       );
     let budgetExhausted = false;
+    // FIND_ROLE_GOOGLE_TRIGGER=no_person asks Google only when Bright Data put
+    // nobody forward; the default keeps the confidence rule and the recall it
+    // buys at small companies
+    const googleWorthAsking =
+      process.env.FIND_ROLE_GOOGLE_TRIGGER === 'no_person'
+        ? verified.length === 0
+        : !confidentEnough(verified);
 
-    if (input.sources.includes('google') && !confidentEnough(verified)) {
+    if (input.sources.includes('google') && googleWorthAsking) {
       if (budgetLeft() <= 0) {
         budgetExhausted = true;
       } else {
-        sourcesUsed.push('google');
+        sourcesAttempted.push('google');
 
         const google = await timed('google', () =>
           this.googleSearchService.searchCompany({
             variants,
             titles,
             roles: input.roles,
+            titleExpressions: resolvedRoles.titleExpressions,
             location: input.location,
             domain: company.domain,
           }),
@@ -546,6 +707,7 @@ export class FindPeopleCascadeService {
                   sourceErrors,
                   website: company.domain,
                   industry: company.industry,
+                  criteria: input.plan.criteria,
                 }),
               )
             : new Map<string, PersonJudgement>();
@@ -557,15 +719,91 @@ export class FindPeopleCascadeService {
           variants,
           roles: input.roles,
           requestedClasses: resolvedRoles.requestedClasses,
+          roleClasses: resolvedRoles.roleClasses,
           verdicts,
         }));
+        ({ verified, rejected } = this.splitByCriteria(verified, rejected));
       }
     }
 
-    const topPeople = (await this.mergeDuplicates(verified, workspaceId)).slice(
-      0,
-      MAX_PEOPLE_PER_COMPANY,
-    );
+    // Harvest is last: it is paid and slower (Sales Navigator filters on
+    // Harvest's own accounts), so it runs only when the cheaper sources left
+    // nobody at the plan's confidence.
+    if (
+      input.sources.includes('harvest') &&
+      !confidentEnough(verified) &&
+      budgetLeft() >= HARVEST_COST_PER_RECORD_USD
+    ) {
+      if (!isDefined(this.harvestLinkedinService)) {
+        sourceErrors.push('harvest: Harvest is not available in this server');
+      } else if (!this.harvestLinkedinService.isConfigured()) {
+        sourceErrors.push('harvest: HARVEST_API_KEY is not set');
+      } else {
+        sourcesAttempted.push('harvest');
+
+        const harvest = await timed('harvest', () =>
+          this.searchHarvest({
+            variants,
+            titles,
+            titleExpression: resolvedRoles.booleanTitleExpression,
+            location: input.location,
+            maxBudgetUsd: budgetLeft(),
+          }).catch((error) => {
+            sourceErrors.push(`harvest: ${this.describe(error)}`);
+
+            return {
+              candidates: [] as Candidate[],
+              spentUsd: 0,
+              errors: [] as string[],
+            };
+          }),
+        );
+
+        spentUsd += harvest.spentUsd;
+        sourceErrors.push(...harvest.errors);
+
+        if (harvest.candidates.length > 0) {
+          const harvestVerdicts = await timed('judge', () =>
+            this.judgeCandidates({
+              workspaceId,
+              company: company.name,
+              alternateNames,
+              roles: input.roles,
+              location: input.location,
+              candidates: harvest.candidates,
+              sourceErrors,
+              website: company.domain,
+              industry: company.industry,
+              criteria: input.plan.criteria,
+            }),
+          );
+
+          verdicts = new Map([...verdicts, ...harvestVerdicts]);
+          candidates = [...candidates, ...harvest.candidates];
+          ({ verified, rejected } = await this.verify({
+            candidates,
+            variants,
+            roles: input.roles,
+            requestedClasses: resolvedRoles.requestedClasses,
+            roleClasses: resolvedRoles.roleClasses,
+            verdicts,
+          }));
+          ({ verified, rejected } = this.splitByCriteria(verified, rejected));
+        }
+      }
+    }
+
+    const topPeople = (await this.mergeDuplicates(verified, workspaceId))
+      // A rung-3 keep is a nearby role, but it must still be about the same
+      // work: the judge calls a chief product officer "related" to a VP of
+      // engineering, and that is not the person the user asked for
+      .filter(
+        (person) =>
+          person.roleScore === 2 ||
+          ownerPass ||
+          leadsRequestedFunction(person, input.roles),
+      )
+      .slice(0, maxPeoplePerCompany(input.roles));
     // nobody found while a source failed is not a miss: the answer is unknown
     const sourceFailed = sourceErrors.some((error) =>
       /deadline|fetch failed|timed out|aborted|HTTP (429|5\d\d)\b|non-JSON|rate/i.test(
@@ -598,6 +836,7 @@ export class FindPeopleCascadeService {
         roleMatch: (person.roleScore === 2 ? 'exact' : 'related') as
           | 'exact'
           | 'related',
+        roleMatches: person.roleMatches,
         ...(person.verdict?.company === 'related' && {
           companyRelation: 'related' as const,
         }),
@@ -617,6 +856,12 @@ export class FindPeopleCascadeService {
           roles: input.roles,
           ownerPass,
         }),
+        ...((person.verdict?.criteria ?? []).length > 0 && {
+          criteria: person.verdict?.criteria,
+        }),
+        ...((person.verdict?.criteria ?? []).some(
+          (criterion) => criterion.verdict === 'unknown',
+        ) && { criteriaUnknown: true }),
         confidence: this.confidenceOfCandidate(
           person,
           input.plan.freshnessDays,
@@ -654,8 +899,19 @@ export class FindPeopleCascadeService {
         .join(' | ')} | total ${((Date.now() - startedAt) / 1000).toFixed(1)}s`,
     );
     this.logger.log(
-      `find_people_by_company "${company.name}": ${terminalState}${reason ? ` (${reason})` : ''}, ${verified.length} verified, ${rejected.length} rejected, sources ${sourcesUsed.join(' > ') || 'none'}, $${spentUsd.toFixed(3)}`,
+      `find_people_by_company "${company.name}": ${terminalState}${reason ? ` (${reason})` : ''}, ${verified.length} verified, ${rejected.length} rejected, sources ${sourcesAttempted.join(' > ') || 'none'}, $${spentUsd.toFixed(3)}`,
     );
+
+    const sourcesUsed = [
+      ...new Set(kept.flatMap((person) => person.sources.filter(isSource))),
+    ];
+    const roleStates = this.roleStatesOf({
+      roles: input.roles,
+      people: kept,
+      terminalState,
+      reason,
+      rejectedCount: rejected.length,
+    });
 
     return {
       company: company.name,
@@ -687,7 +943,9 @@ export class FindPeopleCascadeService {
           | 4,
       }),
       sourcesUsed,
+      sourcesAttempted: [...new Set(sourcesAttempted)],
       titlesTried: titles,
+      roleStates,
     };
   }
 
@@ -770,6 +1028,13 @@ export class FindPeopleCascadeService {
 
       kept.sources = [...new Set([...kept.sources, ...duplicate.sources])];
       kept.roleScore = Math.max(kept.roleScore, duplicate.roleScore) as 1 | 2;
+      kept.roleMatches = [
+        ...new Map(
+          [...(kept.roleMatches ?? []), ...(duplicate.roleMatches ?? [])].map(
+            (match) => [match.role, match],
+          ),
+        ).values(),
+      ];
     }
 
     return verified.filter((person) => !duplicates.has(person.id));
@@ -808,33 +1073,62 @@ export class FindPeopleCascadeService {
     location,
     maxBudgetUsd,
     workspaceId,
-    roles,
-    requestedClasses,
+    titleExpression,
   }: {
     variants: string[];
     titles: string[];
     location?: string;
     maxBudgetUsd: number;
     workspaceId: string;
-    roles: string[];
-    requestedClasses: TitleClass[];
+    titleExpression?: string;
   }): Promise<{ candidates: Candidate[]; spentUsd: number }> {
     const candidates: Candidate[] = [];
     let spentUsd = 0;
-
-    for (const variant of variants.slice(
+    const searchedVariants = variants.slice(
       0,
       MAX_VARIANTS_PER_BRIGHT_DATA_SEARCH,
-    )) {
-      const rawQuery = `${titles.join(', ')} of ${variant}${isNonEmptyString(location) ? ` ${location}` : ''}`;
-      const { result } =
-        await this.brightDataLudicrousSearchService.searchNaturalLanguage({
-          workspaceId,
-          entity: 'people',
-          rawQuery,
-          maxBudgetUsd,
-          targetCount: BRIGHT_DATA_CANDIDATES_PER_SEARCH,
-        });
+    );
+    // The brand and its legal name are two independent searches: run them
+    // together, each inside its share of the pair's cap, so a company costs one
+    // round trip instead of two. A variant that fails does not lose the other.
+    const budgetPerVariant =
+      maxBudgetUsd / Math.max(searchedVariants.length, 1);
+    const errors: unknown[] = [];
+    const results = await Promise.all(
+      searchedVariants.map(async (variant) => {
+        const rawQuery = `${titles.join(', ')} of ${variant}${isNonEmptyString(location) ? ` ${location}` : ''}`;
+
+        try {
+          const { result } = await withBrightDataPeopleSlot(() =>
+            this.brightDataLudicrousSearchService.searchNaturalLanguage({
+              workspaceId,
+              entity: 'people',
+              rawQuery,
+              maxBudgetUsd: budgetPerVariant,
+              targetCount: BRIGHT_DATA_CANDIDATES_PER_SEARCH,
+              ...(isNonEmptyString(titleExpression) && { titleExpression }),
+            }),
+          );
+
+          return result;
+        } catch (error) {
+          errors.push(error);
+
+          return undefined;
+        }
+      }),
+    );
+
+    // Every variant failing is a source_error, not an empty answer: the pair
+    // is retried and reported that way
+    if (results.every((result) => !isDefined(result)) && errors.length > 0) {
+      throw errors[0];
+    }
+
+    for (const result of results) {
+      if (!isDefined(result)) {
+        continue;
+      }
 
       spentUsd += result.spentUsd;
 
@@ -859,20 +1153,139 @@ export class FindPeopleCascadeService {
           rawProfile: document.data,
         });
       }
+    }
 
-      const { verified } = await this.verify({
-        candidates,
-        variants,
-        roles,
-        requestedClasses,
-      });
+    return { candidates, spentUsd };
+  }
 
-      if (verified.length > 0) {
+  // Harvest Sales Navigator lead search. Employers filter by LinkedIn URL, so
+  // the company is resolved first. A factored boolean title expression goes in
+  // `search`; a plain OR list becomes `currentJobTitles`, which is what Harvest
+  // filters exactly.
+  private async searchHarvest({
+    variants,
+    titles,
+    titleExpression,
+    location,
+    maxBudgetUsd,
+  }: {
+    variants: string[];
+    titles: string[];
+    titleExpression?: string;
+    location?: string;
+    maxBudgetUsd: number;
+  }): Promise<{
+    candidates: Candidate[];
+    spentUsd: number;
+    errors: string[];
+  }> {
+    const harvest = this.harvestLinkedinService;
+
+    if (!isDefined(harvest)) {
+      return { candidates: [], spentUsd: 0, errors: [] };
+    }
+
+    const maxRecords = Math.max(
+      1,
+      Math.min(
+        HARVEST_CANDIDATES_PER_SEARCH,
+        Math.floor(maxBudgetUsd / HARVEST_COST_PER_RECORD_USD),
+      ),
+    );
+    let companyLinkedinUrl: string | null = null;
+
+    for (const variant of variants.slice(0, 2)) {
+      const match = await harvest
+        .findCompanyLinkedinUrl(variant)
+        .catch(() => null);
+
+      if (isNonEmptyString(match?.linkedinUrl)) {
+        companyLinkedinUrl = match.linkedinUrl;
         break;
       }
     }
 
-    return { candidates, spentUsd };
+    if (companyLinkedinUrl === null) {
+      return {
+        candidates: [],
+        spentUsd: 0,
+        errors: ['harvest: could not resolve the company LinkedIn URL'],
+      };
+    }
+
+    const expression =
+      (titleExpression ?? '').trim() !== ''
+        ? (titleExpression as string)
+        : `(${titles.join(' OR ')})`;
+    const titleList = splitHarvestTitleList(expression);
+    const query: Record<string, string> = {
+      currentCompanies: companyLinkedinUrl,
+      ...(titleList !== null && titleList.length > 0
+        ? { currentJobTitles: titleList.join(',') }
+        : { search: expression }),
+      ...(isNonEmptyString(location) ? { locations: location } : {}),
+    };
+    const result = await harvest.searchSalesNavigatorCollection({
+      kind: 'leads',
+      query,
+      limit: maxRecords,
+    });
+    const candidates = result.items.flatMap((item, index) => {
+      const record = item as Record<string, unknown>;
+      const firstName =
+        typeof record.firstName === 'string' ? record.firstName : '';
+      const lastName =
+        typeof record.lastName === 'string' ? record.lastName : '';
+      const headline =
+        typeof record.headline === 'string' ? record.headline : '';
+      const name =
+        `${firstName} ${lastName}`.trim() ||
+        (typeof record.name === 'string' ? record.name : '');
+      const position =
+        Array.isArray(record.currentPositions) &&
+        typeof record.currentPositions[0] === 'object' &&
+        record.currentPositions[0] !== null
+          ? (record.currentPositions[0] as Record<string, unknown>)
+          : {};
+      const title =
+        typeof position.title === 'string' ? position.title : headline;
+      const companyName =
+        typeof position.companyName === 'string' ? position.companyName : '';
+      const linkedinUrl =
+        typeof record.linkedinUrl === 'string' ? record.linkedinUrl : '';
+      const itemLocation =
+        typeof record.location === 'string'
+          ? record.location
+          : typeof record.location === 'object' && record.location !== null
+            ? String(
+                (record.location as Record<string, unknown>).linkedinText ?? '',
+              )
+            : '';
+
+      if (name === '') {
+        return [];
+      }
+
+      return [
+        {
+          id: `harvest:${linkedinUrl || `${name}|${index}`}`,
+          name,
+          title,
+          companyName,
+          linkedinUrl,
+          evidenceText: headline,
+          source: 'harvest' as const,
+          location: itemLocation,
+          rawProfile: record,
+        },
+      ];
+    });
+    const spentUsd = Math.min(
+      candidates.length * HARVEST_COST_PER_RECORD_USD,
+      maxBudgetUsd,
+    );
+
+    return { candidates, spentUsd, errors: [] };
   }
 
   // The model reads the raw results; if it is unavailable the LinkedIn result
@@ -931,6 +1344,7 @@ export class FindPeopleCascadeService {
             isCurrentRole: true,
             evidence: `${item.title} ${person.snippet}`,
             linkedinUrl: person.linkedinUrl,
+            linkedinUrlDerivedFromPost: false,
             sourceUrl: item.url,
           },
         ];
@@ -946,6 +1360,25 @@ export class FindPeopleCascadeService {
       : textMentionsAnyCompanyVariant(variants, person.evidence);
   }
 
+  // A result whose "title" is the employer's name tells us nothing about the
+  // person; keeping it would let the judge read the role off the wrong field
+  private cleanTitle(title: string, companyName: string): string {
+    const normalized = (value: string): string =>
+      value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/\b(limited|ltd|pvt|private|inc|llp|plc)\b/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    const candidate = normalized(title);
+
+    if (candidate === '' || candidate === normalized(companyName)) {
+      return '';
+    }
+
+    return title;
+  }
+
   private toCandidate(person: ExtractedPerson, source: Source): Candidate {
     return {
       id: toId(
@@ -954,7 +1387,7 @@ export class FindPeopleCascadeService {
           : `${person.name}|${person.companyName}`,
       ),
       name: person.name,
-      title: person.jobTitle,
+      title: this.cleanTitle(person.jobTitle, person.companyName),
       companyName: person.companyName,
       linkedinUrl: person.linkedinUrl,
       evidenceText: person.evidence,
@@ -1000,6 +1433,7 @@ export class FindPeopleCascadeService {
     sourceErrors,
     website,
     industry,
+    criteria,
   }: {
     workspaceId: string;
     company: string;
@@ -1010,6 +1444,7 @@ export class FindPeopleCascadeService {
     sourceErrors: string[];
     website?: string;
     industry?: string;
+    criteria?: string[];
   }): Promise<Map<string, PersonJudgement>> {
     const unique = [
       ...new Map(candidates.map((candidate) => [candidate.id, candidate])),
@@ -1024,6 +1459,7 @@ export class FindPeopleCascadeService {
         location,
         website,
         industry,
+        criteria,
         candidates: unique.map((candidate) => ({
           id: candidate.id,
           name: candidate.name,
@@ -1230,17 +1666,56 @@ export class FindPeopleCascadeService {
     };
   }
 
+  // A stated person criterion the profile shows the person lacks rejects them;
+  // one the profile does not settle keeps them, marked, so the user decides
+  private splitByCriteria(
+    verified: VerifiedCandidate[],
+    rejected: RejectedCandidate[],
+  ): { verified: VerifiedCandidate[]; rejected: RejectedCandidate[] } {
+    const mismatched = verified.filter((person) =>
+      (person.verdict?.criteria ?? []).some(
+        (criterion) => criterion.verdict === 'mismatch',
+      ),
+    );
+
+    if (mismatched.length === 0) {
+      return { verified, rejected };
+    }
+
+    const mismatchedIds = new Set(mismatched.map((person) => person.id));
+
+    return {
+      verified: verified.filter((person) => !mismatchedIds.has(person.id)),
+      rejected: [
+        ...rejected,
+        ...mismatched.map((person) => ({
+          name: person.name,
+          title: person.title,
+          companyOnProfile: person.companyName,
+          reason: 'criteria_mismatch' as const,
+          note: (person.verdict?.criteria ?? [])
+            .filter((criterion) => criterion.verdict === 'mismatch')
+            .map((criterion) => criterion.criterion)
+            .join('; ')
+            .slice(0, 160),
+        })),
+      ],
+    };
+  }
+
   private async verify({
     candidates,
     variants,
     roles,
     requestedClasses,
+    roleClasses,
     verdicts = new Map<string, PersonJudgement>(),
   }: {
     candidates: Candidate[];
     variants: string[];
     roles: string[];
     requestedClasses: TitleClass[];
+    roleClasses?: Record<string, TitleClass | null>;
     verdicts?: Map<string, PersonJudgement>;
   }): Promise<{
     verified: VerifiedCandidate[];
@@ -1265,15 +1740,23 @@ export class FindPeopleCascadeService {
           : matchesAnyCompanyVariant(variants, candidate.companyName) ||
             (candidate.companyName === '' &&
               textMentionsAnyCompanyVariant(variants, candidate.evidenceText));
+      const candidateClass =
+        titleClasses?.get(candidate.title.trim().toLowerCase()) ?? null;
       const roleScore = isDefined(verdict)
         ? ({ exact: 2, related: 1, none: 0 } as const)[verdict.role]
         : scoreRoleMatch({
             title: candidate.title,
             roles,
             requestedClasses,
-            candidateClass:
-              titleClasses?.get(candidate.title.trim().toLowerCase()) ?? null,
+            candidateClass,
           });
+      const roleMatches = this.roleMatchesOf({
+        title: candidate.title,
+        roles,
+        roleClasses,
+        candidateClass,
+        roleScore,
+      });
 
       if (!companyMatches || roleScore === 0) {
         rejected.push({
@@ -1315,6 +1798,15 @@ export class FindPeopleCascadeService {
           existing.sources.push(candidate.source);
         }
 
+        const mergedMatches = new Map(
+          [...(existing.roleMatches ?? []), ...roleMatches].map((match) => [
+            match.role,
+            match,
+          ]),
+        );
+
+        existing.roleMatches = [...mergedMatches.values()];
+
         continue;
       }
 
@@ -1322,6 +1814,7 @@ export class FindPeopleCascadeService {
         ...candidate,
         sources: [candidate.source],
         roleScore,
+        roleMatches,
         verdict,
       });
     }
@@ -1346,6 +1839,144 @@ export class FindPeopleCascadeService {
           !verified.some((person) => personNamesMatch(person.name, entry.name)),
       ),
     };
+  }
+
+  // One state per requested role. A company with a CEO and no plant head is
+  // found for the CEO pair and none_found for the manufacturing pair, so the
+  // coverage line cannot hide the missing role.
+  private roleStatesOf({
+    roles,
+    people,
+    terminalState,
+    reason,
+    rejectedCount,
+  }: {
+    roles: string[];
+    people: CompanyOutcome['people'];
+    terminalState: FindPeopleTerminalState;
+    reason?: string;
+    rejectedCount: number;
+  }): FindPeopleRoleState[] {
+    const keyOf = (person: CompanyOutcome['people'][number]): string =>
+      isNonEmptyString(person.linkedinUrl)
+        ? normalizeLinkedinProfileUrl(person.linkedinUrl)
+        : person.name;
+
+    return roles.map((role) => {
+      const matched = people.filter((person) =>
+        (person.roleMatches ?? []).some(
+          (match) =>
+            match.role.trim().toLowerCase() === role.trim().toLowerCase(),
+        ),
+      );
+
+      if (matched.length > 0) {
+        return {
+          role,
+          terminalState: 'found' as const,
+          rungUsed: Math.min(
+            ...matched.map((person) => person.rungUsed),
+          ) as FindPeopleRung,
+          personKeys: [...new Set(matched.map(keyOf))],
+          sourcesUsed: [
+            ...new Set(matched.flatMap((person) => person.sources)),
+          ],
+          peopleCount: matched.length,
+        };
+      }
+
+      const reasonForRole: FindPeopleNoneFoundReason | string =
+        reason === 'source_error' || reason === 'budget'
+          ? reason
+          : rejectedCount > 0
+            ? 'profile_gaps'
+            : 'no_such_role';
+
+      if (terminalState === 'unresolvable') {
+        return {
+          role,
+          terminalState,
+          ...(reason !== undefined && { reason }),
+          personKeys: [],
+          sourcesUsed: [],
+          peopleCount: 0,
+        };
+      }
+
+      if (terminalState === 'ambiguous') {
+        return {
+          role,
+          terminalState,
+          reason: reason ?? 'low_confidence',
+          personKeys: [],
+          sourcesUsed: [],
+          peopleCount: 0,
+        };
+      }
+
+      if (terminalState === 'excluded') {
+        return {
+          role,
+          terminalState,
+          ...(reason !== undefined && { reason }),
+          personKeys: [],
+          sourcesUsed: [],
+          peopleCount: 0,
+        };
+      }
+
+      return {
+        role,
+        terminalState: 'none_found' as const,
+        reason: reasonForRole,
+        personKeys: [],
+        sourcesUsed: [],
+        peopleCount: 0,
+      };
+    });
+  }
+
+  // The specific roles a title satisfies. The taxonomy class is shared by a
+  // function and grade, so "VP Manufacturing" matches "Head of Manufacturing"
+  // even though it contains none of its words. A judge-only match with no text
+  // or class match is assigned to the first requested role so every kept person
+  // counts once.
+  private roleMatchesOf({
+    title,
+    roles,
+    roleClasses,
+    candidateClass,
+    roleScore,
+  }: {
+    title: string;
+    roles: string[];
+    roleClasses: Record<string, TitleClass | null> | undefined;
+    candidateClass: TitleClass | null;
+    roleScore: 0 | 1 | 2;
+  }): RoleMatch[] {
+    const matches: RoleMatch[] = [];
+
+    for (const role of roles) {
+      const roleClass = roleClasses?.[role.trim().toLowerCase()] ?? null;
+      const score = scoreRoleMatch({
+        title,
+        roles: [role],
+        requestedClasses: roleClass === null ? [] : [roleClass],
+        candidateClass,
+      });
+
+      if (score === 2) {
+        matches.push({ role, score: 2 });
+      } else if (score === 1) {
+        matches.push({ role, score: 1 });
+      }
+    }
+
+    if (matches.length > 0 || roles.length === 0 || roleScore === 0) {
+      return matches;
+    }
+
+    return [{ role: roles[0], score: roleScore }];
   }
 
   private describe(error: unknown): string {

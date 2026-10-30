@@ -71,8 +71,8 @@ export type SourcingSource = {
 export const SOURCING_ALWAYS_LEARNED_TOOLS: Readonly<
   Record<SourcingEntity, readonly string[]>
 > = {
-  people: ['get_outreach_tab'],
-  companies: ['get_outreach_tab'],
+  people: ['get_outreach_tab', 'get_source_capabilities', 'get_scoring_plan'],
+  companies: ['get_outreach_tab', 'get_source_capabilities', 'get_scoring_plan'],
 };
 
 export const SOURCING_SOURCES: readonly SourcingSource[] = [

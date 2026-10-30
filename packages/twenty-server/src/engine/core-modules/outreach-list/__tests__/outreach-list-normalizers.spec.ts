@@ -1,4 +1,5 @@
 import {
+  buildEmptyListShape,
   fromBrightDataDocument,
   isOutreachListSourceTool,
   normalizeToolOutputToListRows,
@@ -376,6 +377,55 @@ describe('normalizeToolOutputToListRows', () => {
         { school: 'Indira Gandhi National Open University', degree: '' },
       ],
     });
+  });
+});
+
+describe('buildEmptyListShape', () => {
+  it('records a zero-row search so the frontier counts it as attempted', () => {
+    const shape = buildEmptyListShape(
+      'search_harvest_leads',
+      { currentJobTitles: ['Plant Head'], limit: 25 },
+      { searchResults: [], paging: { total: 0 } },
+    );
+
+    expect(shape).toMatchObject({
+      source: 'harvest',
+      entity: 'people',
+      rows: [],
+      label: 'Plant Head',
+    });
+    expect(shape?.signatureArgs).toEqual({
+      currentJobTitles: ['Plant Head'],
+    });
+  });
+
+  it('ignores request metadata arrays on a zero-result response', () => {
+    const shape = buildEmptyListShape(
+      'search_linkedin_people',
+      {
+        searchParameters: {
+          role: { include: ['14'] },
+          company: { include: ['1441'] },
+        },
+      },
+      {
+        items: [],
+        config: { params: { role: { include: ['14'] } } },
+      },
+    );
+
+    expect(shape?.source).toBe('linkedin');
+    expect(shape?.rows).toEqual([]);
+  });
+
+  it('does not turn an unrecognised response with rows into an empty list', () => {
+    expect(
+      buildEmptyListShape(
+        'search_harvest_leads',
+        { currentJobTitles: ['Plant Head'] },
+        { unexpected: [{ name: 'Acme' }] },
+      ),
+    ).toBeUndefined();
   });
 });
 

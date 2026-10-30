@@ -48,10 +48,13 @@ const buildTool = ({
   judge,
   projectRows = [],
   tableView = null,
+  harvest,
   brightDataSpentUsd = 0.004,
 }: {
   // What each Bright Data people search bills
   brightDataSpentUsd?: number;
+  // Harvest lead-search rows, when the test wants the last cascade step
+  harvest?: { items: Array<Record<string, unknown>> };
   // Rows the project's Companies tab holds, for fromProject
   projectRows?: Array<{
     id: string;
@@ -202,6 +205,21 @@ const buildTool = ({
     .fn()
     .mockResolvedValue(projectRows.map((row) => ({ otherFields: {}, ...row })));
   const getTableView = jest.fn().mockResolvedValue(tableView);
+  const harvestService = harvest
+    ? {
+        isConfigured: () => true,
+        findCompanyLinkedinUrl: jest.fn(async () => ({
+          name: 'Acme',
+          linkedinUrl: 'https://www.linkedin.com/company/acme',
+        })),
+        searchSalesNavigatorCollection: jest.fn(async () => ({
+          items: harvest.items,
+          firstPage: 1,
+          lastPage: 1,
+          nextPage: null,
+        })),
+      }
+    : undefined;
   const cascade = new FindPeopleCascadeService(
     { searchNaturalLanguage } as never,
     new FindPeopleGoogleSearchService({
@@ -216,6 +234,8 @@ const buildTool = ({
     } as never,
     { resolve } as never,
     taxonomy as never,
+    undefined,
+    harvestService as never,
   );
   const tool = new FindPeopleByCompanyTool(
     cascade,
@@ -577,6 +597,79 @@ describe('FindPeopleByCompanyTool taxonomy use', () => {
         ),
       ),
     ).toBe(true);
+  });
+
+  it('should use Harvest when it is the last source and the user picked it', async () => {
+    const { tool } = buildTool({
+      brightDataDocuments: [],
+      organic: [],
+      harvest: {
+        items: [
+          {
+            firstName: 'Asha',
+            lastName: 'Rao',
+            headline: 'Head of Procurement at Acme',
+            linkedinUrl: 'https://www.linkedin.com/in/asha-rao-harvest',
+            currentPositions: [
+              { title: 'Head of Procurement', companyName: 'Acme' },
+            ],
+          },
+        ],
+      },
+    });
+
+    const output = await tool.execute(
+      {
+        companies: [{ name: 'Acme' }],
+        roles: ['Head of Procurement'],
+        sources: ['harvest'],
+      },
+      { workspaceId: 'workspace-id' },
+    );
+    const company = (output.result as { companies: Array<Record<string, any>> })
+      .companies[0];
+
+    expect(company.people[0].sources).toContain('harvest');
+    expect(company.people[0].name).toBe('Asha Rao');
+    expect(company.sourcesAttempted).toContain('harvest');
+  });
+
+  it('should report one state per requested role, not one for the company', async () => {
+    const { tool } = buildTool({
+      brightDataDocuments: [
+        buildBrightDataDocument({
+          name: 'Sanjay Goyal',
+          current_title: 'Managing Director',
+          current_company_name: 'Acme Pvt Ltd',
+          url: 'https://www.linkedin.com/in/sanjay-goyal-role',
+        }),
+      ],
+      organic: [],
+    });
+
+    const output = await tool.execute(
+      {
+        companies: [{ name: 'Acme' }],
+        roles: ['CEO', 'Head of Manufacturing'],
+      },
+      { workspaceId: 'workspace-id' },
+    );
+    const company = (output.result as { companies: Array<Record<string, any>> })
+      .companies[0];
+
+    expect(company.roleStates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ role: 'CEO', terminalState: 'found' }),
+        expect.objectContaining({
+          role: 'Head of Manufacturing',
+          terminalState: 'none_found',
+        }),
+      ]),
+    );
+    expect(
+      (output.result as { pairs: { expectedPairs: number; found: number } })
+        .pairs,
+    ).toMatchObject({ expectedPairs: 2 });
   });
 
   it('should accept a Managing Director when the taxonomy says it is the requested function', async () => {

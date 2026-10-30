@@ -91,4 +91,52 @@ describe('UpsertOutreachTargetCompaniesTool', () => {
     });
     expect(saved[0].otherFields.linkedinUrl).toBe('https://l.in/c/wow');
   });
+
+  it('should merge the same company when one row has a domain and the other does not', async () => {
+    const { tool, cache } = buildTool([
+      {
+        id: 'a',
+        name: 'Propelld',
+        domain: 'propelld.com',
+        industry: 'Financial Services',
+        employees: '120',
+        segment: '',
+        icpFit: '',
+        status: 'new',
+      },
+    ]);
+
+    await tool.execute(
+      {
+        projectId: 'p',
+        mode: 'merge',
+        companies: [{ name: 'propelld', domain: '', employees: '130' }],
+      },
+      context as never,
+    );
+
+    const saved = cache.set.mock.calls[0][2] as Array<Record<string, unknown>>;
+
+    expect(saved).toHaveLength(1);
+    expect(saved[0].name).toBe('propelld');
+    expect(saved[0].domain).toBe('propelld.com');
+    expect(saved[0].employees).toBe('130');
+  });
+
+  it('should strip trademarks from a company name', async () => {
+    const { tool, cache } = buildTool([]);
+
+    await tool.execute(
+      {
+        projectId: 'p',
+        mode: 'merge',
+        companies: [{ name: 'Pice®', domain: 'pice.co' }],
+      },
+      context as never,
+    );
+
+    const saved = cache.set.mock.calls[0][2] as Array<Record<string, unknown>>;
+
+    expect(saved[0].name).toBe('Pice');
+  });
 });

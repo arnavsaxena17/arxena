@@ -25,6 +25,46 @@ const BATCH_SIZE = 8;
 const MAX_BATCHES = 25;
 const CONCURRENT_CALLS = 4;
 const MAX_PAIRS = 60;
+const MAX_CRITERIA = 4;
+
+// Jev is called for every company batch; 50 companies in flight would open
+// hundreds of connections at once and the endpoint throttles them. One shared
+// window keeps the pipe full without the retry storm.
+const DEFAULT_JEV_CONCURRENCY = 12;
+const MAX_JEV_CONCURRENCY = 32;
+
+const getJevConcurrency = (): number => {
+  const configured = Number(process.env.JEV_CONCURRENCY);
+
+  return Number.isInteger(configured) && configured > 0
+    ? Math.min(configured, MAX_JEV_CONCURRENCY)
+    : DEFAULT_JEV_CONCURRENCY;
+};
+
+let activeJevCalls = 0;
+const waitingJevCalls: Array<() => void> = [];
+
+const withJevSlot = async <TResult>(
+  task: () => Promise<TResult>,
+): Promise<TResult> => {
+  if (activeJevCalls >= getJevConcurrency()) {
+    await new Promise<void>((resolve) => waitingJevCalls.push(resolve));
+  } else {
+    activeJevCalls += 1;
+  }
+
+  try {
+    return await task();
+  } finally {
+    const next = waitingJevCalls.shift();
+
+    if (isDefined(next)) {
+      next();
+    } else {
+      activeJevCalls -= 1;
+    }
+  }
+};
 
 export type PersonToJudge = {
   id: string;
@@ -41,11 +81,18 @@ export type PersonToJudge = {
 export type CompanyRelation = 'same' | 'related' | 'different' | 'unknown';
 export type RoleFit = 'exact' | 'related' | 'none';
 
+export type CriterionVerdict = {
+  criterion: string;
+  verdict: 'match' | 'unknown' | 'mismatch';
+};
+
 export type PersonJudgement = {
   company: CompanyRelation;
   companyNote: string;
   role: RoleFit;
   roleNote: string;
+  // The user's stated person criteria, read from the profile or evidence
+  criteria?: CriterionVerdict[];
   // True when the person matches the search (the place, the company, the role)
   fitsSearch: boolean;
   likelyFake: boolean;
@@ -222,6 +269,7 @@ export class BrightDataPersonFitFilterService {
     candidates,
     website,
     industry,
+    criteria,
   }: {
     workspaceId: string;
     company: string;
@@ -233,7 +281,14 @@ export class BrightDataPersonFitFilterService {
     // platform): the site and industry tell namesakes apart
     website?: string;
     industry?: string;
+    // What the user said the person must have, read from work history
+    criteria?: string[];
   }): Promise<Map<string, PersonJudgement>> {
+    const wantedCriteria = (criteria ?? [])
+      .map((criterion) => criterion.trim())
+      .filter((criterion) => criterion.length > 0)
+      .slice(0, MAX_CRITERIA);
+
     return this.judgeAll({
       search: {
         targetCompany: company,
@@ -242,8 +297,10 @@ export class BrightDataPersonFitFilterService {
         targetLocation: location ?? null,
         ...(website !== undefined && { targetWebsite: website }),
         ...(industry !== undefined && { targetIndustry: industry }),
+        ...(wantedCriteria.length > 0 && { wantedCriteria }),
       },
       withCompanyAndRole: true,
+      criteria: wantedCriteria,
       location,
       people: candidates,
     });
@@ -358,11 +415,13 @@ export class BrightDataPersonFitFilterService {
   private async judgeAll({
     search,
     withCompanyAndRole,
+    criteria = [],
     location,
     people,
   }: {
     search: Record<string, unknown>;
     withCompanyAndRole: boolean;
+    criteria?: string[];
     location?: string;
     people: PersonToJudge[];
   }): Promise<Map<string, PersonJudgement>> {
@@ -412,6 +471,21 @@ export class BrightDataPersonFitFilterService {
           };
         }
 
+        criteria.forEach((criterion, criterionIndex) => {
+          questions[`p${index}__criterion${criterionIndex}`] = {
+            type: 'choice',
+            instructions: `For ${subject}: does the person's work history or profile show \`search.wantedCriteria[${criterionIndex}]\`? Judge what the profile states (companies, titles, about, evidence), not what could be inferred from the company alone.`,
+            criteria: {
+              match:
+                'The profile or evidence shows it: a role, company or description that is that thing.',
+              unknown:
+                'The profile does not say, or says too little to judge. Unknown is not a mismatch.',
+              mismatch:
+                'The profile shows the person has not done it, or did something clearly different.',
+            },
+          };
+        });
+
         // Asked as "fits" so the fitment threshold reads the right way round:
         // a higher bar rejects more, not fewer
         questions[`p${index}__fits`] = noul(
@@ -432,10 +506,12 @@ export class BrightDataPersonFitFilterService {
       });
 
       try {
-        const answers = await this.jevDecisionsService.decide({
-          state: { search, people: records },
-          questions,
-        });
+        const answers = await withJevSlot(() =>
+          this.jevDecisionsService.decide({
+            state: { search, people: records },
+            questions,
+          }),
+        );
 
         batch.forEach((person, index) => {
           const company = answers[`p${index}__company`]?.choice;
@@ -447,6 +523,22 @@ export class BrightDataPersonFitFilterService {
           const fake = isDefined(person.profile)
             ? isTrue(answers[`p${index}__fake`], getFakeProfileThreshold())
             : false;
+          const criterionVerdicts: CriterionVerdict[] = criteria.map(
+            (criterion, criterionIndex) => {
+              const answer = String(
+                answers[`p${index}__criterion${criterionIndex}`]?.choice ?? '',
+              );
+              const verdict: CriterionVerdict['verdict'] = [
+                'match',
+                'unknown',
+                'mismatch',
+              ].includes(answer)
+                ? (answer as CriterionVerdict['verdict'])
+                : 'unknown';
+
+              return { criterion, verdict };
+            },
+          );
 
           if (fits === undefined && fake === undefined) {
             return;
@@ -470,6 +562,9 @@ export class BrightDataPersonFitFilterService {
             roleNote: '',
             fitsSearch: fits !== false,
             likelyFake: fake === true,
+            ...(criterionVerdicts.length > 0 && {
+              criteria: criterionVerdicts,
+            }),
             fitment: scorePersonFitment({
               fits,
               company: companyRelation,

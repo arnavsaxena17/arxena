@@ -81,6 +81,10 @@ Money is the one thing a column run needs approval for, and it is enforced in co
 
 The agreed brief is written once with `get_sourcing_ledger({ projectId, brief })` and comes back with every later call, so the shortfall report can quote it.
 
+## Coverage
+
+The brief carries `coverage: "best_effort" | "exhaustive"`, `universe {kind, count}` and, for population runs, `queries [{source, query, slice, entity}]`. `capsUsd.run` is the total the run may spend; `budgetRunId` is server-set and identifies its spend window (`newRun: true` starts a new one). `find_people_by_company` refuses an exhaustive run without a run cap, looks up only the companies the remaining cap covers and returns `deferredByBudget` for the rest. `get_sourcing_ledger` returns the run's `budget` and a `coverage` object: pair-based for company x role runs, query-based for population runs (`frontier.attempted / unattemptedQueries`). A planned query counts only when a list with its source and text is attached to the project; index and Wikidata lists are stored as `other`, so the frontier aliases them. LinkedIn and Sales Navigator list metadata carries facet ids, not the natural-language query, so a planned LinkedIn query may show as unattempted: plan one query per LinkedIn source or read that list as unplanned. The list meta now keeps `newUnique` and `alreadyKnown`, and the ledger reports the run's cross-query duplicate share. The run cap covers searches, the per-company lookup and AI column runs; `fetch_profiles` still uses its call-level limit. Spend lives in the outreach cache, so a Redis flush resets the counter while the cap remains.
+
 ## Keeping the context small
 
 Every model step re-reads the whole conversation, so steps are the cost.

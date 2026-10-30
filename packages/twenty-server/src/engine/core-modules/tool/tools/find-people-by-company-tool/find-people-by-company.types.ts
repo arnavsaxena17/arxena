@@ -7,7 +7,10 @@ import {
   type FindPeopleRung,
   type FindPeopleTerminalState,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-people-found.util';
-import { type SourcingConfidence } from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
+import {
+  type SourcingConfidence,
+  type SourcingCoverage,
+} from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
 import { type PersonFreshness } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-confidence.util';
 
 // The input is capped at 25 companies, so the default runs them all at once
@@ -30,7 +33,14 @@ export type FindPeoplePlan = {
   freshnessDays: number;
   // Spend cap for one company x role pair, across every source
   perPairUsd: number;
+  // Total cap for the run; an exhaustive run cannot start without one
+  runCapUsd?: number;
+  coverage: SourcingCoverage;
+  // Set by the ledger when the run cap was written; scopes the spend counter
+  budgetRunId?: string;
   confidential: boolean;
+  // Person criteria the user stated, judged from the profile or the evidence
+  criteria: string[];
 };
 
 // One piece of evidence behind a person, so any row can be audited
@@ -43,7 +53,12 @@ export type FindPeopleEvidence = {
 };
 
 // web = a person named in a page Google returned, then looked up on LinkedIn
-export type Source = 'bright_data' | 'google' | 'web';
+export type Source = 'bright_data' | 'google' | 'web' | 'harvest';
+
+// A role the person matches, with the rung score that made the match. One
+// person can hold more than one requested role ("MD" and "CEO"), so this is a
+// list, not a single value.
+export type RoleMatch = { role: string; score: 1 | 2 };
 
 export type Candidate = {
   id: string;
@@ -65,6 +80,7 @@ export type Candidate = {
 export type VerifiedCandidate = Candidate & {
   sources: Source[];
   roleScore: 1 | 2;
+  roleMatches?: RoleMatch[];
   verdict?: PersonJudgement;
 };
 
@@ -72,9 +88,21 @@ export type RejectedCandidate = {
   name: string;
   title: string;
   companyOnProfile: string;
-  reason: 'company_mismatch' | 'role_mismatch';
+  reason: 'company_mismatch' | 'role_mismatch' | 'criteria_mismatch';
   // The judge's reason, when it ruled
   note?: string;
+};
+
+// One company x role pair. A company with four roles has four of these, so a
+// CEO found is not reported as coverage for the head of manufacturing.
+export type FindPeopleRoleState = {
+  role: string;
+  terminalState: FindPeopleTerminalState;
+  reason?: FindPeopleNoneFoundReason | string;
+  rungUsed?: FindPeopleRung;
+  personKeys: string[];
+  sourcesUsed: Array<Source | 'cache'>;
+  peopleCount: number;
 };
 
 export type CompanyOutcome = {
@@ -89,6 +117,8 @@ export type CompanyOutcome = {
     linkedinUrl: string;
     sources: Source[];
     roleMatch: 'exact' | 'related';
+    // Every requested role this person satisfies
+    roleMatches?: RoleMatch[];
     // related = works at a parent, operator or brand linked to the company asked about
     companyRelation?: 'related';
     note?: string;
@@ -102,6 +132,12 @@ export type CompanyOutcome = {
     rungUsed: FindPeopleRung;
     confidence: SourcingConfidence;
     freshness: PersonFreshness;
+    // A stated criterion the profile did not settle (kept, not rejected)
+    criteriaUnknown?: boolean;
+    criteria?: Array<{
+      criterion: string;
+      verdict: 'match' | 'unknown' | 'mismatch';
+    }>;
     evidence: FindPeopleEvidence[];
   }>;
   rejected: RejectedCandidate[];
@@ -111,7 +147,13 @@ export type CompanyOutcome = {
   terminalState: FindPeopleTerminalState;
   reason?: FindPeopleNoneFoundReason | string;
   rungUsed?: FindPeopleRung;
-  // Sources asked, in cascade order; cache when the answer was reused
+  // Sources that put a kept person on the row; cache when the answer was
+  // reused. Empty when the pair found nobody.
   sourcesUsed: Array<Source | 'cache'>;
+  // Sources whose step ran, in cascade order, whether or not it returned
+  // anyone: what the pair cost, not what it got
+  sourcesAttempted: Array<Source | 'cache'>;
   titlesTried: string[];
+  // One state per requested role, in the order the user gave them
+  roleStates?: FindPeopleRoleState[];
 };

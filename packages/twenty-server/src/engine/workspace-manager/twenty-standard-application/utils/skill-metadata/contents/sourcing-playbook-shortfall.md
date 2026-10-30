@@ -2,6 +2,8 @@
 
 You are short when `get_sourcing_ledger({ projectId, target })` shows `shortfall.short` above what `expectedFromAwaitingProfile` will cover. Never fill the gap with rows that failed, with unknown rows, or by lowering the fitment threshold or a must-have.
 
+In exhaustive mode this target view is not the stop condition. Stop when `coverage.frontier.unattempted` is empty and every company x role pair is terminal, or `capsUsd.run` is spent. The stop rules below apply to best effort; in exhaustive, use them to retire one query, then run the next planned one.
+
 ### Order of moves
 
 One change per round, and say what you changed in one line.

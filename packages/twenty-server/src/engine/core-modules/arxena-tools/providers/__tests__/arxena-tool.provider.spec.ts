@@ -46,6 +46,7 @@ const buildProvider = () => {
     apiKeyService as never,
     outreachListService as never,
     { forContext: jest.fn(() => undefined) } as never,
+    { write: jest.fn() } as never,
   );
 
   return {

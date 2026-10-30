@@ -10,6 +10,11 @@ import {
   type GoogleSerpOrganicItem,
 } from 'src/engine/core-modules/org-chart/utils/map-google-serp-organic.util';
 import {
+  isGoogleTitleClauseUsable,
+  MAX_GOOGLE_TITLE_CLAUSES,
+  toGoogleTitleClause,
+} from 'src/engine/core-modules/title-taxonomy/title-boolean.util';
+import {
   isLinkedinProfileUrl,
   normalizeLinkedinProfileUrl,
 } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/parse-linkedin-serp-result.util';
@@ -144,6 +149,12 @@ export class FindPeopleGoogleSearchService {
       'FIND_ROLE_SERP_HEDGE_DELAY_MS',
       isSerpAsync() ? 0 : DEFAULT_HEDGE_DELAY_MS,
     );
+    // A zero delay fires a second attempt next to every healthy one, doubling
+    // the paid SERP load for no gain; a short pause keeps the hedge for the
+    // queries that are actually slow
+    const effectiveHedgeDelayMs = isSerpAsync()
+      ? 0
+      : Math.max(hedgeDelayMs, 750);
 
     return new Promise((resolve, reject) => {
       const controllers: AbortController[] = [];
@@ -216,7 +227,7 @@ export class FindPeopleGoogleSearchService {
 
         // Nothing back yet: start a backup beside this attempt
         if (started < maxAttempts && hedgeDelayMs > 0) {
-          hedgeTimer = setTimeout(startAttempt, hedgeDelayMs);
+          hedgeTimer = setTimeout(startAttempt, effectiveHedgeDelayMs);
         }
       };
 
@@ -239,12 +250,17 @@ export class FindPeopleGoogleSearchService {
     variants,
     titles,
     roles,
+    titleExpressions,
     location,
     domain,
   }: {
     variants: string[];
     titles: string[];
     roles: string[];
+    // Curated function x grade boolean queries from the title taxonomy, one
+    // per role class. Google gets them with AND removed, so "VP
+    // Manufacturing" is found for "Head of Manufacturing".
+    titleExpressions?: string[];
     location?: string;
     // The company's own site: its leadership page often names the role
     // holder before LinkedIn does
@@ -264,8 +280,16 @@ export class FindPeopleGoogleSearchService {
           ROLE_SEARCH_WORDS[role.trim().toLowerCase()] ?? role,
         ]),
       );
+    const booleanQueries = (titleExpressions ?? [])
+      .slice(0, MAX_GOOGLE_TITLE_CLAUSES)
+      .map((expression) => toGoogleTitleClause(expression))
+      .filter(isGoogleTitleClauseUsable)
+      .map((clause) =>
+        build([linkedin, `"${variants[0]}"`, `(${clause})`, locationTerm]),
+      );
     const queries = [
       ...naturalQueries,
+      ...booleanQueries,
       build([linkedin, `"${variants[0]}"`, orGroup(titles), locationTerm]),
       build([linkedin, `"${variants[0]}"`, orGroup(roles)]),
     ];
@@ -297,6 +321,7 @@ export class FindPeopleGoogleSearchService {
     variants: string[];
     titles: string[];
     roles: string[];
+    titleExpressions?: string[];
     location?: string;
     domain?: string;
   }): Promise<GoogleCompanySearchResult> {

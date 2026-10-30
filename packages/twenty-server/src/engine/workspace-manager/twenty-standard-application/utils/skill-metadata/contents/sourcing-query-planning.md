@@ -8,6 +8,7 @@ Break the request into queries before the first search, then measure before you 
 2. **One query = title words + industry + geography.** Expand titles with the synonym ladders in `playbook-shortfall` (loaded with this path). State the city list you expand to ("tier 1 = Mumbai, Delhi NCR, Bangalore, Hyderabad, Chennai, Pune, Kolkata, Ahmedabad").
 3. **Slice a big request** by city and title band so each slice stays under the source's cap (see its "Limits and exhaustion").
 4. **Variants.** Write two or three versions of the main query that differ by one word or phrase (a synonym, the industry term, with or without a skill word). One word can change the yield a lot, so do not assume.
+5. **Exhaustive: record the plan.** Write the queries you will run into the brief (`get_sourcing_ledger` `brief.queries`: source, query, slice, entity) before the first search. Run every one. The ledger's `coverage.frontier.unattempted` is the stop condition, not the target; a query counts only once its list is attached to the project.
 
 ### Dipstick
 

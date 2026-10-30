@@ -1,6 +1,6 @@
 ## Source: Harvest
 
-Harvest runs LinkedIn Sales Navigator people and company searches on its own accounts: no LinkedIn seat needed, $0.004 per record returned. Use it when the user names Harvest, or when the request needs Sales Navigator filters and the LinkedIn status lists no `sales_navigator`. Learn `generate_linkedin_query_set` and `search_harvest_leads` (people) or `search_harvest_accounts` (companies).
+Harvest runs LinkedIn Sales Navigator people and company searches on its own accounts: no LinkedIn seat needed, $0.004 per record returned. Use it when the user names Harvest, or when the request needs Sales Navigator filters and the LinkedIn status lists no `sales_navigator`. For a role at companies, `find_people_by_company` runs Harvest itself when the brief includes it; do not loop `search_harvest_leads` per company. Learn `generate_linkedin_query_set` and `search_harvest_leads` (people) or `search_harvest_accounts` (companies) for a population search.
 
 ### Spend
 

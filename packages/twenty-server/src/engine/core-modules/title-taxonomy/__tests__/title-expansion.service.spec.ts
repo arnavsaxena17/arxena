@@ -16,7 +16,9 @@ const classification = (
 });
 
 const buildService = (
-  overrides: Partial<Record<'classifyTitles' | 'getManualBooleanQueries', jest.Mock>> = {},
+  overrides: Partial<
+    Record<'classifyTitles' | 'getManualBooleanQueries', jest.Mock>
+  > = {},
 ) => {
   const remote = {
     classifyTitles: jest.fn(async (titles: string[]) =>
@@ -50,9 +52,42 @@ describe('TitleExpansionService', () => {
     expect(resolved.taxonomyAvailable).toBe(true);
     expect(resolved.searchTitles.slice(0, 2)).toEqual(['md', 'ceo']);
     expect(resolved.searchTitles).toEqual(
-      expect.arrayContaining(['chief executive', 'managing director', 'founder']),
+      expect.arrayContaining([
+        'chief executive',
+        'managing director',
+        'founder',
+      ]),
     );
     expect(resolved.requestedClasses).toHaveLength(1);
+  });
+
+  it('should keep a curated AND expression as a boolean filter, not as titles', async () => {
+    const { service } = buildService({
+      classifyTitles: jest.fn(async (titles: string[]) =>
+        titles.map((title) => ({
+          ...classification(title, 'manufacturing'),
+          function: { id: 'manufacturing' },
+          function_root: { id: 'engineering' },
+        })),
+      ),
+      getManualBooleanQueries: jest.fn(async () => ({
+        items: [
+          {
+            boolean_query:
+              '(manufacturing OR production OR plant) AND (head OR director OR VP OR president)',
+          },
+        ],
+      })),
+    });
+
+    const resolved = await service.resolveRoles(['Head of Manufacturing']);
+
+    expect(resolved.booleanTitleExpression).toContain(
+      '(manufacturing OR production OR plant) AND',
+    );
+    expect(resolved.titleExpressions).toHaveLength(1);
+    // "VP Manufacturing" is in the boolean; it must not be invented as a title
+    expect(resolved.searchTitles).toEqual(['head of manufacturing']);
   });
 
   it('should ask for the curated queries once per function and grade', async () => {
@@ -82,10 +117,12 @@ describe('TitleExpansionService', () => {
 
     const resolved = await service.resolveRoles(['MD', 'CEO']);
 
-    expect(resolved).toEqual({
+    expect(resolved).toMatchObject({
       searchTitles: ['md', 'ceo'],
       requestedClasses: [],
       taxonomyAvailable: false,
+      titleExpressions: [],
+      booleanTitleExpression: '',
     });
     expect(await service.classifyTitles(['Managing Director'])).toBeNull();
   });

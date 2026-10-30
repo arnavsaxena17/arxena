@@ -19,6 +19,10 @@ import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/to
 export type WriteOutreachListRowsToProjectTabResult = {
   written: number;
   total: number;
+  // Rows that created a tab row vs merged into one already there. The second
+  // is the overlap with earlier queries in the same run.
+  createdCount: number;
+  updatedCount: number;
   error?: string;
 };
 
@@ -43,7 +47,12 @@ export class WriteOutreachListRowsToProjectTabService {
     const { workspaceId, listId, projectId, entity, rows, context } = input;
 
     if (!isNonEmptyString(projectId) || rows.length === 0) {
-      return { written: 0, total: rows.length };
+      return {
+        written: 0,
+        total: rows.length,
+        createdCount: 0,
+        updatedCount: 0,
+      };
     }
 
     const offset = input.offset ?? 0;
@@ -51,7 +60,12 @@ export class WriteOutreachListRowsToProjectTabService {
     const batch = rows.slice(offset, offset + limit);
 
     if (batch.length === 0) {
-      return { written: 0, total: rows.length };
+      return {
+        written: 0,
+        total: rows.length,
+        createdCount: 0,
+        updatedCount: 0,
+      };
     }
 
     const output =
@@ -77,16 +91,38 @@ export class WriteOutreachListRowsToProjectTabService {
       return {
         written: 0,
         total: rows.length,
+        createdCount: 0,
+        updatedCount: 0,
         error: output.error ?? output.message,
       };
     }
+
+    const result =
+      typeof output.result === 'object' && output.result !== null
+        ? (output.result as { createdCount?: unknown; updatedCount?: unknown })
+        : {};
+    const createdCount =
+      typeof result.createdCount === 'number' ? result.createdCount : 0;
+    const updatedCount =
+      typeof result.updatedCount === 'number' ? result.updatedCount : 0;
 
     await this.outreachListService.update(workspaceId, listId, (current) => {
       if (!current.meta.projectIds.includes(projectId)) {
         current.meta.projectIds.push(projectId);
       }
+
+      // Kept on the list so the ledger can show the overlap with earlier
+      // queries, not only the duplicates inside this one
+      current.meta.newUnique = (current.meta.newUnique ?? 0) + createdCount;
+      current.meta.alreadyKnown =
+        (current.meta.alreadyKnown ?? 0) + updatedCount;
     });
 
-    return { written: batch.length, total: rows.length };
+    return {
+      written: batch.length,
+      total: rows.length,
+      createdCount,
+      updatedCount,
+    };
   }
 }

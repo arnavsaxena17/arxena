@@ -44,11 +44,20 @@ export const PromiseRejectionEffect = () => {
         error?.networkError?.name === 'AbortError' ||
         error?.name === 'AbortError';
 
-      if (!isAbortError) {
-        enqueueErrorSnackBar(
-          error instanceof Error ? { message: error.message } : {},
-        );
+      if (isAbortError) {
+        // Aborted requests are expected: Apollo cancels in-flight fetches when
+        // a query is torn down (route change, unmount, deduplicated refetch).
+        // The abort reason can still surface here as an unhandled rejection
+        // even though the request was cancelled on purpose. It is noise, not
+        // an app error: keep it out of the console and out of Sentry.
+        event.preventDefault();
+
+        return;
       }
+
+      enqueueErrorSnackBar(
+        error instanceof Error ? { message: error.message } : {},
+      );
 
       try {
         const { captureException } = await import('@sentry/react');

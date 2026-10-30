@@ -261,6 +261,133 @@ const withoutPaging = (
 const compact = (rows: Array<OutreachListRow | null>): OutreachListRow[] =>
   rows.filter((row): row is OutreachListRow => row !== null);
 
+const textOfFilter = (value: unknown): string => {
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+
+  if (Array.isArray(value)) {
+    return value
+      .map(textOfFilter)
+      .filter((item) => item.length > 0)
+      .join(', ');
+  }
+
+  if (typeof value !== 'object' || value === null) {
+    return '';
+  }
+
+  const record = value as Record<string, unknown>;
+
+  return textOfFilter(
+    record.keywords ?? record.title ?? record.query ?? record.include ?? '',
+  );
+};
+
+const labelOf = (args: Record<string, unknown>): string => {
+  const searchParameters = isRecord(args.searchParameters)
+    ? args.searchParameters
+    : undefined;
+  const value =
+    args.organizationName ??
+    args.q_keywords ??
+    args.keywords ??
+    args.query ??
+    args.search ??
+    args.currentJobTitles ??
+    args.companyName ??
+    args.jobTitle;
+  const fromParameters =
+    searchParameters?.keywords ??
+    searchParameters?.advanced_keywords ??
+    searchParameters?.role;
+
+  return textOfFilter(value ?? fromParameters ?? '');
+};
+
+// A search that returns no rows still ran. Without a zero-row list the
+// frontier cannot tell it from a query that was never attempted, so the
+// exhaustive loop would ask for it again.
+const EMPTY_LIST_SHAPES: Record<
+  string,
+  { source: OutreachListSource; entity: OutreachListEntity }
+> = {
+  search_apollo_companies: { source: 'apollo', entity: 'company' },
+  search_apollo_people: { source: 'apollo', entity: 'people' },
+  search_linkedin_companies: { source: 'linkedin', entity: 'company' },
+  search_linkedin_people: { source: 'linkedin', entity: 'people' },
+  search_linkedin_from_url: { source: 'linkedin', entity: 'people' },
+  search_harvest_leads: { source: 'harvest', entity: 'people' },
+  search_harvest_accounts: { source: 'harvest', entity: 'company' },
+  search_people_index: { source: 'other', entity: 'people' },
+  search_companies_index: { source: 'other', entity: 'company' },
+  search_wikidata_companies: { source: 'other', entity: 'company' },
+};
+
+// A shape the normalizer does not recognise must not be turned into an empty
+// list: only a response that actually holds no array items is a zero result
+// Request metadata can hold non-empty arrays on a zero-result response, so it
+// must not be mistaken for rows
+const NON_RESULT_KEYS = new Set([
+  'config',
+  'params',
+  'paging',
+  'pagination',
+  'searchParameters',
+  'filters',
+  'query',
+  'metadata',
+]);
+
+const hasNonEmptyArray = (value: unknown, depth = 0): boolean => {
+  if (depth > 4) {
+    return false;
+  }
+
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  return Object.entries(value).some(
+    ([key, item]) =>
+      !NON_RESULT_KEYS.has(key) && hasNonEmptyArray(item, depth + 1),
+  );
+};
+
+export const buildEmptyListShape = (
+  toolName: string,
+  args: Record<string, unknown>,
+  output: unknown,
+): NormalizedToolOutput | undefined => {
+  if (hasNonEmptyArray(output)) {
+    return undefined;
+  }
+
+  const shape =
+    toolName === 'exa_web_search' || toolName === 'app_exa_web_search'
+      ? {
+          source: 'exa' as const,
+          entity:
+            args.category === 'people'
+              ? ('people' as const)
+              : ('company' as const),
+        }
+      : EMPTY_LIST_SHAPES[toolName];
+
+  return shape === undefined
+    ? undefined
+    : {
+        ...shape,
+        rows: [],
+        signatureArgs: withoutPaging(args),
+        label: labelOf(args),
+      };
+};
+
 // Tools whose results are routed into a list instead of the conversation
 export const OUTREACH_LIST_SOURCE_TOOLS = [
   'search_apollo_companies',
@@ -291,13 +418,7 @@ export const normalizeToolOutputToListRows = (
   const root =
     isRecord(output) && isRecord(output.result) ? output.result : output;
   const signatureArgs = withoutPaging(args);
-  const label = asText(
-    args.organizationName ??
-      args.q_keywords ??
-      args.keywords ??
-      args.query ??
-      '',
-  );
+  const label = labelOf(args);
 
   if (toolName === 'search_apollo_companies') {
     const organizations = isRecord(root)

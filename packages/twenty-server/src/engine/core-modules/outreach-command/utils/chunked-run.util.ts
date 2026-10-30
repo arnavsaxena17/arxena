@@ -17,7 +17,9 @@ export const CHUNKED_RUN_TERMINAL_STATUSES: ChunkedRunStatus[] = [
 // A chunk takes seconds to a few minutes. No progress for longer means the job
 // was lost (for example the worker restarted), so the run must not block the
 // project.
-export const CHUNKED_RUN_STALL_AFTER_MS = 2 * 60 * 1000;
+// A 25-company chunk has its own deadline per company, so a busy chunk can run
+// well past two minutes; the run itself now saves progress every few companies
+export const CHUNKED_RUN_STALL_AFTER_MS = 6 * 60 * 1000;
 
 const WAIT_POLL_MS = 1000;
 

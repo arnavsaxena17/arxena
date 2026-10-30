@@ -1,4 +1,9 @@
-import { BadRequestException, UseFilters, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Logger,
+  UseFilters,
+  UseGuards,
+} from '@nestjs/common';
 import { Args, Mutation, Parent, Query, ResolveField } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -82,6 +87,8 @@ const getHMACKey = (email?: string, key?: string | null) => {
 @MetadataResolver(() => UserEntity)
 @UseFilters(PermissionsGraphqlApiExceptionFilter)
 export class UserResolver {
+  private readonly logger = new Logger(UserResolver.name);
+
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
@@ -297,14 +304,21 @@ export class UserResolver {
       });
 
     const toWorkspaceMemberDtoArgs =
-      workspaceMemberEntities.map<ToWorkspaceMemberDtoArgs>(
+      workspaceMemberEntities.flatMap<ToWorkspaceMemberDtoArgs>(
         (workspaceMemberEntity) => {
           const userWorkspace = userWorkspacesByUserIdMap.get(
             workspaceMemberEntity.userId,
           );
 
           if (!isDefined(userWorkspace)) {
-            throw new Error('UserEntity workspace not found');
+            // Orphaned workspace member: the user row is gone but the
+            // workspace member survived. Skipping it keeps currentUser
+            // resolvable for every other member of the workspace.
+            this.logger.warn(
+              `Skipping workspace member ${workspaceMemberEntity.id} in workspace ${workspace.id}: no user workspace for user ${workspaceMemberEntity.userId}`,
+            );
+
+            return [];
           }
 
           const userWorkspaceRoles = rolesByUserWorkspacesMap.get(
@@ -312,14 +326,20 @@ export class UserResolver {
           );
 
           if (!isDefined(userWorkspaceRoles)) {
-            throw new Error('UserEntity workspace roles not found');
+            this.logger.warn(
+              `Skipping workspace member ${workspaceMemberEntity.id} in workspace ${workspace.id}: no roles for user workspace ${userWorkspace.id}`,
+            );
+
+            return [];
           }
 
-          return {
-            userWorkspace,
-            userWorkspaceRoles,
-            workspaceMemberEntity,
-          };
+          return [
+            {
+              userWorkspace,
+              userWorkspaceRoles,
+              workspaceMemberEntity,
+            },
+          ];
         },
       );
 

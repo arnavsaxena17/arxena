@@ -86,6 +86,13 @@ export const FindPeopleByCompanyInputZodSchema = z.object({
     .describe(
       'Roles the user asked for, in their words (CEO, MD, managing director, founder, owner, CFO, ...). Each is classified by the job-title taxonomy service, which supplies the matching titles. Pass every role the user named.',
     ),
+  criteria: z
+    .array(z.string().min(1).max(200))
+    .max(4)
+    .optional()
+    .describe(
+      'What the user said the person must have, one line each, in their words, e.g. "payments or lending platform experience". Read from the profile or the evidence: a person whose profile shows they have not done it is rejected; one the profile does not settle is kept and marked. Take these from the request and the brief; do not invent them.',
+    ),
   location: z
     .string()
     .optional()
@@ -93,10 +100,10 @@ export const FindPeopleByCompanyInputZodSchema = z.object({
       'Where the people should be based: city, state/region, or country, e.g. "Mumbai", "Maharashtra", or "India".',
     ),
   sources: z
-    .array(z.enum(['bright_data', 'google']))
+    .array(z.enum(['bright_data', 'google', 'harvest']))
     .default(['bright_data', 'google'])
     .describe(
-      'bright_data = Bright Data people database, google = Google search of LinkedIn profiles. Both by default; results are merged.',
+      'bright_data = Bright Data people database, google = Google search of LinkedIn profiles, harvest = Harvest Sales Navigator lead search (paid, $0.004 a record). Results are merged. Harvest runs only after Bright Data and Google found no one at the plan confidence.',
     ),
   projectId: z
     .string()

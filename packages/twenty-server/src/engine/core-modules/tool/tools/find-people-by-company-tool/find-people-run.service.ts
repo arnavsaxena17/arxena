@@ -50,6 +50,10 @@ export type FindPeopleRunState = {
   errors: string[];
   halfwayReported: boolean;
   cancelRequested: boolean;
+  // Companies left out because the run cap could not cover them. They are not
+  // looked up and not failed: a higher cap can pick them up.
+  deferredByBudget?: number;
+  budgetExhausted?: boolean;
   // The caller's identity, so the background writes run as the same member
   userId?: string;
   userWorkspaceId?: string;
@@ -208,6 +212,11 @@ export class FindPeopleRunService {
       byState: state.byState,
       spentUsd: Number(state.spentUsd.toFixed(4)),
       written: state.written,
+      ...(state.deferredByBudget !== undefined &&
+        state.deferredByBudget > 0 && {
+          deferredByBudget: state.deferredByBudget,
+        }),
+      ...(state.budgetExhausted === true && { budgetExhausted: true }),
       ...(state.errors.length > 0 && { errors: state.errors.slice(-5) }),
       ...(isDefined(state.error) && { error: state.error }),
     };

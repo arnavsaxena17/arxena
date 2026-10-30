@@ -1,4 +1,5 @@
 import { type TitleClass } from 'src/engine/core-modules/title-taxonomy/title-class.type';
+import { expandRoleWithFamilyFallback } from 'src/engine/core-modules/title-taxonomy/title-family-fallback.util';
 
 // A title with one of these does not hold the role itself
 const DISQUALIFYING_PREFIX =
@@ -36,8 +37,14 @@ const expandRole = (role: string): string[] => {
   return [role, ...spelledOut, ...shortForms];
 };
 
-const titleHoldsRole = (title: string, role: string): boolean =>
-  expandRole(role).some((form) => titleContainsWord(title, form));
+const titleHoldsRole = (
+  title: string,
+  role: string,
+  { useFamilyFallback }: { useFamilyFallback: boolean },
+): boolean =>
+  [...expandRole(role), ...(useFamilyFallback ? expandRoleWithFamilyFallback(role) : [])]
+    .filter((form, index, forms) => forms.indexOf(form) === index)
+    .some((form) => titleContainsWord(title, form));
 
 export const titleContainsWord = (title: string, word: string): boolean =>
   word.trim() !== '' &&
@@ -74,7 +81,12 @@ export const scoreRoleMatch = ({
         requested.functionId === candidateClass.functionId &&
         (requested.grade === null || requested.grade === candidateClass.grade),
     );
-  const containsTypedRole = roles.some((role) => titleHoldsRole(title, role));
+  // With no taxonomy answer there are no curated classes to compare, so the
+  // role's curated family stands in for them
+  const useFamilyFallback = requestedClasses.length === 0;
+  const containsTypedRole = roles.some((role) =>
+    titleHoldsRole(title, role, { useFamilyFallback }),
+  );
 
   if (!sameClass && !containsTypedRole) {
     return 0;
@@ -89,7 +101,9 @@ export const getRequestedRoleOrder = (
   title: string,
   roles: string[],
 ): number => {
-  const index = roles.findIndex((role) => titleHoldsRole(title, role));
+  const index = roles.findIndex((role) =>
+    titleHoldsRole(title, role, { useFamilyFallback: false }),
+  );
 
   return index === -1 ? roles.length : index;
 };

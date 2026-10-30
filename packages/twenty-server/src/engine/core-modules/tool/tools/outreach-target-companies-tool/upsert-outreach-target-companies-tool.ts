@@ -28,12 +28,16 @@ export const normalizeDomain = (domain: string): string =>
     .split('?')[0];
 
 const normalizeName = (name: string): string =>
-  name
-    .trim()
+  cleanCompanyName(name)
     .toLowerCase()
     .replace(/\b(inc|llc|ltd|corp|co|pvt|private|limited)\b\.?/g, '')
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
+
+// Row names arrive from providers with trademarks and case differences: Pice®
+// and PICE, or one row with a domain and the same company without one
+export const cleanCompanyName = (name: string): string =>
+  name.replace(/[®™©]/g, '').replace(/\s+/g, ' ').trim();
 
 export const companyDedupeKey = (company: {
   name: string;
@@ -74,7 +78,7 @@ export const toEphemeralCompany = (company: {
   otherFields?: Record<string, unknown>;
 }): OutreachEphemeralCompany => ({
   id: buildEphemeralId(company),
-  name: company.name.trim(),
+  name: cleanCompanyName(company.name),
   domain: normalizeDomain(company.domain ?? ''),
   industry: company.industry ?? '',
   employees: company.employees ?? '',
@@ -138,13 +142,26 @@ Prefer mode=merge. Pass projectId from the outreachCommand browsing context.`;
       }
     } else {
       const byKey = new Map<string, OutreachEphemeralCompany>();
+      // A company seen once with a domain and once without is one company:
+      // the name finds the row the domain already owns
+      const keyByCompanyName = new Map<string, string>();
 
       for (const company of existing) {
-        byKey.set(companyDedupeKey(company), company);
+        const key = companyDedupeKey(company);
+
+        byKey.set(key, company);
+        keyByCompanyName.set(`name:${normalizeName(company.name)}`, key);
       }
 
       for (const company of incoming) {
-        const key = companyDedupeKey(company);
+        const nameKey = `name:${normalizeName(company.name)}`;
+        const ownKey = companyDedupeKey(company);
+        const namedKey = keyByCompanyName.get(nameKey);
+        const key =
+          namedKey !== undefined &&
+          (ownKey.startsWith('name:') || namedKey.startsWith('name:'))
+            ? namedKey
+            : ownKey;
         const previous = byKey.get(key);
 
         const otherFields = mergeOutreachOtherFields(
@@ -155,12 +172,23 @@ Prefer mode=merge. Pass projectId from the outreachCommand browsing context.`;
         const merged: OutreachEphemeralCompany = {
           ...(previous ?? company),
           ...company,
+          // An empty field from a thinner source does not erase what the row
+          // already knows
+          ...(previous !== undefined &&
+            !isNonEmptyString(company.domain) && {
+              domain: previous.domain,
+            }),
+          ...(previous !== undefined &&
+            !isNonEmptyString(company.industry) && {
+              industry: previous.industry,
+            }),
           // Keep stable id when merging into an existing row
           id: previous?.id ?? company.id ?? randomUUID(),
           ...(otherFields !== undefined ? { otherFields } : {}),
         };
 
         byKey.set(key, merged);
+        keyByCompanyName.set(nameKey, key);
         writtenRowIds.push(merged.id);
 
         if (previous !== undefined) {
@@ -215,9 +243,20 @@ const dedupeCompanies = (
   companies: OutreachEphemeralCompany[],
 ): OutreachEphemeralCompany[] => {
   const byKey = new Map<string, OutreachEphemeralCompany>();
+  const keyByCompanyName = new Map<string, string>();
 
   for (const company of companies) {
-    byKey.set(companyDedupeKey(company), company);
+    const nameKey = `name:${normalizeName(company.name)}`;
+    const ownKey = companyDedupeKey(company);
+    const namedKey = keyByCompanyName.get(nameKey);
+    const key =
+      namedKey !== undefined &&
+      (ownKey.startsWith('name:') || namedKey.startsWith('name:'))
+        ? namedKey
+        : ownKey;
+
+    byKey.set(key, { ...(byKey.get(key) ?? company), ...company });
+    keyByCompanyName.set(nameKey, key);
   }
 
   return [...byKey.values()];

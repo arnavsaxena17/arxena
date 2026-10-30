@@ -4,6 +4,12 @@
 
 {{sources: provider-map companies}}
 
+### What each source can filter on
+
+{{sources: capabilities companies}}
+
+Call `get_source_capabilities({ sources, entity: "company", want: [...], term, rawQuery })` before the plan questions: it returns the fields above with their allowed values, the fields no picked source has and the nearest stand-in, and ready-to-send question options. Never offer a filter a source does not have.
+
 ### learn_tools (companies)
 
 Write and Save to CRM follow **Result lists** and **Write contract** in the head of this skill.

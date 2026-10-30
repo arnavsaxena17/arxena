@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import { toOpenAiJsonSchemaResponseFormat } from 'src/engine/core-modules/llm-chat-model/utils/to-openai-json-schema-format.util';
 import { MeteredLlmService } from 'src/engine/core-modules/metered-llm/metered-llm.service';
 import { z } from 'zod';
+import { OUTREACH_AI_COLUMN_DEFAULT_CHAT_MODEL } from 'src/engine/core-modules/outreach-command/constants/outreach-ai-column-model.const';
 
 // Available input fields that candidates can have
 const AVAILABLE_FIELDS = [
@@ -195,9 +196,58 @@ export type AIFilterModel = z.infer<typeof AIFilterModelSchema>;
 
 @Injectable()
 export class FilterDescriptionProcessorService {
+  // "gpt-6-luna" and other reasoning-style models reject a fixed temperature
+  // with a 400; retry once without it rather than failing the whole design
+  private async withOptionalTemperature<TResult>(
+    request: (temperature: number | undefined) => Promise<TResult>,
+  ): Promise<TResult> {
+    try {
+      return await request(0);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+
+      if (!/temperature/i.test(message)) {
+        throw error;
+      }
+
+      return request(undefined);
+    }
+  }
+
   private readonly logger = new Logger(FilterDescriptionProcessorService.name);
   private openai: OpenAI;
+  private openRouter: OpenAI | undefined;
   private semaphore: Sema;
+
+  // The design call used to be pinned to an OpenAI model this workspace may not
+  // have. AI_MODELS_DEFAULT_FAST now decides, and an OpenRouter slug is sent to
+  // the OpenRouter endpoint instead of OpenAI.
+  private resolveDesignModel(): string {
+    const configured = (process.env.OUTREACH_AI_COLUMN_DESIGN_MODEL ?? '').trim();
+    const fast =
+      (process.env.AI_MODELS_DEFAULT_FAST ?? '')
+        .split(',')
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0)[0] ?? '';
+
+    return (configured || fast || OUTREACH_AI_COLUMN_DEFAULT_CHAT_MODEL).replace(
+      /^openrouter\//,
+      '',
+    );
+  }
+
+  private getDesignClient(model: string): OpenAI {
+    if (!model.includes('/')) {
+      return this.openai;
+    }
+
+    this.openRouter ??= new OpenAI({
+      apiKey: process.env.OPENROUTER_API_KEY,
+      baseURL: 'https://openrouter.ai/api/v1',
+    });
+
+    return this.openRouter;
+  }
 
   constructor(private readonly meteredLlmService: MeteredLlmService) {
     this.openai = new OpenAI({
@@ -216,6 +266,7 @@ export class FilterDescriptionProcessorService {
     filterDescription: string,
     workspaceId: string,
   ): Promise<AIFilterModel> {
+    const model = this.resolveDesignModel();
     await this.semaphore.acquire();
 
     try {
@@ -264,22 +315,24 @@ Guidelines:
 
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-          const completion = await this.meteredLlmService.openAiChatCompletion(
-            {
-              workspaceId,
-              feature: 'FILTER_DESCRIPTION',
-              keySource: 'platform',
-            },
-            this.openai,
-            {
-              model: 'gpt-6-luna',
-              messages,
-              response_format: toOpenAiJsonSchemaResponseFormat(
-                AIFilterModelSchema,
-                'ai_filter_model',
-              ),
-              temperature: 0,
-            },
+          const completion = await this.withOptionalTemperature((temperature) =>
+            this.meteredLlmService.openAiChatCompletion(
+              {
+                workspaceId,
+                feature: 'FILTER_DESCRIPTION',
+                keySource: 'platform',
+              },
+              this.getDesignClient(model),
+              {
+                model,
+                messages,
+                response_format: toOpenAiJsonSchemaResponseFormat(
+                  AIFilterModelSchema,
+                  'ai_filter_model',
+                ),
+                ...(temperature !== undefined && { temperature }),
+              },
+            ),
           );
 
           const message = completion.choices[0]?.message;
@@ -382,6 +435,7 @@ Guidelines:
       filled: number;
     }>;
   }): Promise<OutreachColumnDesign> {
+    const model = this.resolveDesignModel();
     if (description.trim().length === 0) {
       throw new Error('Column description cannot be empty');
     }
@@ -425,21 +479,23 @@ REUSE RULE: the table must not hold two columns for the same fact. When a reques
       try {
         // chat.completions.create + manual zod parse: the installed SDK has no
         // chat.completions.parse (it lives under beta there).
-        const completion = await this.meteredLlmService.openAiChatCompletion(
-          { workspaceId, feature: 'FILTER_DESCRIPTION', keySource: 'platform' },
-          this.openai,
-          {
-            model: 'gpt-6-luna',
-            messages: [
-              { role: 'system' as const, content: systemPrompt },
-              { role: 'user' as const, content: `Request: ${description}` },
-            ],
-            response_format: toOpenAiJsonSchemaResponseFormat(
-              ColumnDesignSchema,
-              'outreach_column_design',
-            ),
-            temperature: 0,
-          },
+        const completion = await this.withOptionalTemperature((temperature) =>
+          this.meteredLlmService.openAiChatCompletion(
+            { workspaceId, feature: 'FILTER_DESCRIPTION', keySource: 'platform' },
+            this.getDesignClient(model),
+            {
+              model,
+              messages: [
+                { role: 'system' as const, content: systemPrompt },
+                { role: 'user' as const, content: `Request: ${description}` },
+              ],
+              response_format: toOpenAiJsonSchemaResponseFormat(
+                ColumnDesignSchema,
+                'outreach_column_design',
+              ),
+              ...(temperature !== undefined && { temperature }),
+            },
+          ),
         );
         const message = completion.choices[0]?.message;
 
@@ -508,6 +564,7 @@ REUSE RULE: the table must not hold two columns for the same fact. When a reques
     columns: OutreachTableViewColumnInfo[];
     workspaceId: string;
   }): Promise<OutreachTableViewDesign> {
+    const model = this.resolveDesignModel();
     if (description.trim().length === 0) {
       throw new Error('View description cannot be empty');
     }
@@ -544,21 +601,23 @@ Write the summary as one short sentence, for example "Is CEO is Yes, Company emp
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        const completion = await this.meteredLlmService.openAiChatCompletion(
-          { workspaceId, feature: 'FILTER_DESCRIPTION', keySource: 'platform' },
-          this.openai,
-          {
-            model: 'gpt-6-luna',
-            messages: [
-              { role: 'system' as const, content: systemPrompt },
-              { role: 'user' as const, content: `Request: ${description}` },
-            ],
-            response_format: toOpenAiJsonSchemaResponseFormat(
-              TableViewDesignSchema,
-              'outreach_table_view_design',
-            ),
-            temperature: 0,
-          },
+        const completion = await this.withOptionalTemperature((temperature) =>
+          this.meteredLlmService.openAiChatCompletion(
+            { workspaceId, feature: 'FILTER_DESCRIPTION', keySource: 'platform' },
+            this.getDesignClient(model),
+            {
+              model,
+              messages: [
+                { role: 'system' as const, content: systemPrompt },
+                { role: 'user' as const, content: `Request: ${description}` },
+              ],
+              response_format: toOpenAiJsonSchemaResponseFormat(
+                TableViewDesignSchema,
+                'outreach_table_view_design',
+              ),
+              ...(temperature !== undefined && { temperature }),
+            },
+          ),
         );
         const message = completion.choices[0]?.message;
 

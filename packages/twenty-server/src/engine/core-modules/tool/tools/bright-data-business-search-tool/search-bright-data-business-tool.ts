@@ -5,6 +5,7 @@ import { isDefined } from 'twenty-shared/utils';
 
 import { OUTREACH_LIST_MAX_ROWS } from 'src/engine/core-modules/outreach-list/outreach-list.constants';
 import { OutreachListService } from 'src/engine/core-modules/outreach-list/services/outreach-list.service';
+import { SourcingBudgetService } from 'src/engine/core-modules/outreach-command/services/sourcing-budget.service';
 import { fromBrightDataDocument } from 'src/engine/core-modules/outreach-list/utils/outreach-list-normalizers.util';
 import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
 import { type BrightDataLudicrousRunResult } from 'src/engine/core-modules/bright-data/ludicrous/types/bright-data-ludicrous.types';
@@ -91,6 +92,8 @@ Ludicrous results never contain the records, only counts and a summary. On Find,
     private readonly outreachListService: OutreachListService,
     @Optional()
     private readonly personFitFilterService?: BrightDataPersonFitFilterService,
+    @Optional()
+    private readonly sourcingBudgetService?: SourcingBudgetService,
   ) {}
 
   async execute(
@@ -170,6 +173,14 @@ Ludicrous results never contain the records, only counts and a summary. On Find,
         filteredSearch,
         context,
       );
+      const runBudget =
+        isNonEmptyString(input.projectId) && search.costUsd > 0
+          ? await this.sourcingBudgetService?.recordSpend({
+              workspaceId: context.workspaceId,
+              projectId: input.projectId,
+              usd: search.costUsd,
+            })
+          : undefined;
 
       return {
         success: true,
@@ -192,6 +203,9 @@ Ludicrous results never contain the records, only counts and a summary. On Find,
           writtenRowIds: ephemeral.writtenRowIds,
           createdCount: ephemeral.createdCount,
           updatedCount: ephemeral.updatedCount,
+          newUnique: ephemeral.createdCount,
+          alreadyKnown: ephemeral.updatedCount,
+          ...(runBudget?.runCapUsd !== undefined && { runBudget }),
           totalCountHint:
             ephemeral.written > 0
               ? "Use get_outreach_tab for the tab total; writtenRowIds are this chat's upserts from this call."
@@ -303,6 +317,26 @@ Ludicrous results never contain the records, only counts and a summary. On Find,
             workspaceId,
             listId: input.listId,
           });
+
+        if (!isDefined(existing)) {
+          const budget = await this.sourcingBudgetService?.check({
+            workspaceId,
+            ...(isNonEmptyString(input.projectId) && {
+              projectId: input.projectId,
+            }),
+            estimatedUsd: input.maxBudgetUsd ?? 10,
+            tool: 'Bright Data fetch',
+          });
+
+          if (isDefined(budget) && !budget.allowed) {
+            return {
+              success: false,
+              message: 'Bright Data fetch refused by the run budget',
+              error: budget.message,
+            };
+          }
+        }
+
         const run =
           existing ??
           (await this.brightDataLudicrousSearchService.executePlan({
@@ -318,6 +352,23 @@ Ludicrous results never contain the records, only counts and a summary. On Find,
       }
 
       if (input.autoExecute === true) {
+        const budget = await this.sourcingBudgetService?.check({
+          workspaceId,
+          ...(isNonEmptyString(input.projectId) && {
+            projectId: input.projectId,
+          }),
+          estimatedUsd: input.maxBudgetUsd ?? 10,
+          tool: 'Bright Data fetch',
+        });
+
+        if (isDefined(budget) && !budget.allowed) {
+          return {
+            success: false,
+            message: 'Bright Data fetch refused by the run budget',
+            error: budget.message,
+          };
+        }
+
         const { result } =
           await this.brightDataLudicrousSearchService.searchNaturalLanguage({
             workspaceId,
@@ -325,6 +376,10 @@ Ludicrous results never contain the records, only counts and a summary. On Find,
             rawQuery: input.query.trim(),
             maxBudgetUsd: input.maxBudgetUsd,
             targetCount: input.targetCount ?? input.limit,
+            ...(input.entity === 'company' &&
+              isDefined(input.industries) && {
+                industryLabels: input.industries,
+              }),
           });
 
         return this.buildLudicrousRunOutput(input, result, context);
@@ -335,6 +390,10 @@ Ludicrous results never contain the records, only counts and a summary. On Find,
         entity: input.entity,
         rawQuery: input.query.trim(),
         targetCount: input.targetCount ?? input.limit,
+        ...(input.entity === 'company' &&
+          isDefined(input.industries) && {
+            industryLabels: input.industries,
+          }),
       });
 
       return {
@@ -385,7 +444,29 @@ Ludicrous results never contain the records, only counts and a summary. On Find,
       ephemeral.written > 0
     ) {
       await this.linkListToProject(run.listId, input.projectId, context);
+      // The ledger reads these to separate a new row from a row an earlier
+      // query already put on the tab
+      await this.outreachListService
+        .update(context.workspaceId, run.listId, (current) => {
+          current.meta.newUnique =
+            (current.meta.newUnique ?? 0) + ephemeral.createdCount;
+          current.meta.alreadyKnown =
+            (current.meta.alreadyKnown ?? 0) + ephemeral.updatedCount;
+        })
+        .catch(() => undefined);
     }
+
+    const runBudget =
+      !reused && run.spentUsd > 0 && isNonEmptyString(input.projectId)
+        ? await this.sourcingBudgetService?.recordSpend({
+            workspaceId: context.workspaceId,
+            projectId: input.projectId,
+            usd: run.spentUsd,
+          })
+        : await this.sourcingBudgetService?.getStatus(
+            context.workspaceId,
+            input.projectId ?? '',
+          );
 
     // Records never go back to the model. They are in the project tab and in
     // the dataset store (listId), so the conversation only gets counts. This
@@ -408,6 +489,7 @@ Ludicrous results never contain the records, only counts and a summary. On Find,
         reused,
         spentUsd: reused ? 0 : run.spentUsd,
         budgetUsd: run.budgetUsd,
+        ...(runBudget?.runCapUsd !== undefined && { runBudget }),
         count: run.documents.length,
         fetchedCount: documents.length,
         ephemeralWritten: ephemeral.written,

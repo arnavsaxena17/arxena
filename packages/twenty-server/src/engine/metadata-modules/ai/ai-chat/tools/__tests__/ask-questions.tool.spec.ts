@@ -28,14 +28,39 @@ describe('ask_questions tool', () => {
     });
   });
 
-  it('rejects fewer than two options', () => {
+  it('accepts one option, so a near-miss question is not lost', () => {
     const result = askQuestionsInputSchema.safeParse({
       questions: [
         { header: 'h', question: 'q', options: [{ label: 'only one' }] },
       ],
     });
 
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
+  });
+
+  it('fills a missing label from the description instead of failing', async () => {
+    const tool = createAskQuestionsTool();
+    const input = askQuestionsInputSchema.parse({
+      questions: [
+        {
+          header: 'Company fetch',
+          question: 'Which budget?',
+          options: [
+            { description: 'Fetch all ~372 records (~$0.74).', isRecommended: true },
+            { label: 'Refine query first' },
+          ],
+        },
+      ],
+    });
+
+    const output = await tool.execute(input);
+
+    expect(output.result.questions[0].options[0].label).toBe(
+      'Fetch all ~372 records',
+    );
+    expect(output.result.questions[0].options[1].label).toBe(
+      'Refine query first',
+    );
   });
 
   it('rejects zero questions', () => {
@@ -77,8 +102,9 @@ describe('ask_questions tool', () => {
     expect(result.success).toBe(false);
   });
 
-  it('rejects more than one recommended option', () => {
-    const result = askQuestionsInputSchema.safeParse({
+  it('keeps only the first recommended option', async () => {
+    const tool = createAskQuestionsTool();
+    const input = askQuestionsInputSchema.parse({
       questions: [
         {
           header: 'h',
@@ -91,7 +117,12 @@ describe('ask_questions tool', () => {
       ],
     });
 
-    expect(result.success).toBe(false);
+    const output = await tool.execute(input);
+
+    expect(output.result.questions[0].options.map((option) => option.isRecommended)).toEqual([
+      true,
+      false,
+    ]);
   });
 
   it('accepts a valid multi-question payload', () => {

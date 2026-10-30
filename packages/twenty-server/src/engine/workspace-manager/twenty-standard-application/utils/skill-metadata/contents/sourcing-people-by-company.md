@@ -1,16 +1,16 @@
 ## People by company
 
-A role at companies already named, or already on the project. The unit of work is the company × role pair: the run is done when every pair has a final state, not when a list reaches a size. `find_people_by_company` searches each company itself, cheapest source first (a found answer from an earlier run, Bright Data, then Google and the company's own pages), stops at the plan's confidence, and writes each pair's state on the company row. You do not search companies one by one.
+A role at companies already named, or already on the project. The unit of work is the company × role pair: the run is done when every pair has a final state, not when a list reaches a size. `find_people_by_company` searches each company itself, cheapest source first (a found answer from an earlier run, Bright Data, then Google and the company's own pages, then Harvest when the user picked it), stops at the plan's confidence, and writes one state per company × role pair on the company row. You do not search companies one by one.
 
 `learn_tools(["find_people_by_company", "get_outreach_tab", "get_sourcing_ledger", "ask_questions"])` once, then follow the steps.
 
-1. **The plan is the brief.** Before the first lookup, the brief holds the roles, `persona`, the sources the user picked (`requirements`), and anything the user said about the title ladder: `ladder.maxRung` (1 the title as typed, 2 equivalents, 3 a related role or one level down, 4 the owner or MD of a small company; sales defaults to 4, exec search to 2) and `capsUsd.perPair` (default $0.10). The tool reads it; do not repeat it in the call unless the user overrides it.
+1. **The plan is the brief.** Before the first lookup, the brief holds the roles, `persona`, the sources the user picked (`requirements`), `coverage`, and anything the user said about the title ladder: `ladder.maxRung` (1 the title as typed, 2 equivalents, 3 a related role or one level down, 4 the owner or MD of a small company; sales defaults to 4, exec search to 2), `capsUsd.perPair` (default $0.10) and, for exhaustive, `capsUsd.run`. `maxBudgetUsd` is the per-pair cap (max $1), never the run cap; the run cap is read from the brief. The tool reads it; do not repeat it in the call unless the user overrides it. Pass `criteria` with every person attribute the user stated, in their words ("payments or lending platform experience"): the tool judges it on each profile, rejects a person the profile shows lacks it, and keeps one the profile does not settle (`criteriaUnknown`).
 2. **Which companies.** Do not read the companies and type them back: the tool reads them itself.
    - "All the companies", "these", "the project's companies": `fromProject: true` with `projectId` and no `companies`. Pairs already in a final state for these roles are skipped (`rerunFound: true` pays for them again; `onlyFailed: true` reruns only failed lookups). Rows the import marked unresolvable are not searched.
    - "Filtered" or "selected" means the rows shown on the Companies tab: add `onlyViewMatches: true`. If the view filter does not narrow the list but the user named a criterion, read the column that answers it with `get_outreach_tab`, then pass the companies you keep as an explicit `companies` list (`{ id, name, domain?, employees?, alternateNames? }`).
-   - Say in one line how many companies you took and which you left out and why. When you chose the subset yourself, confirm it first with `ask_questions`: **Yes, these {N}** (recommended), **Edit the list**, **Cancel**.
+   - Say in one line how many companies you took and which you left out and why. When you chose the subset yourself, confirm it first with `ask_questions`: **Yes, these {N}** (recommended), **Edit the list**, **Cancel**. Keep the confirmation short: the count, the criteria, and at most 10 names. Do not page a 100-row list into the chat to show it.
 3. **Pilot.** On the first lookup of a project, call with `pilotSize: 10`. Show the pilot in a short table (company, person, title, rung, confidence, state) and ask once whether the role reading and the rung are right. Adjust the brief if the user corrects them.
-4. **The rest.** Call again without `pilotSize`. More than 25 companies start a background run: the call returns a `runId` and progress. Read it with `find_people_by_company({ runId })` (it waits up to `waitSeconds`), never more than once a minute; report at 50% and at completion. `cancel: true` with the `runId` stops it and keeps what was found.
+4. **The rest.** Call again without `pilotSize`. More than 25 companies start a background run: the call returns a `runId` and progress. Read it with `find_people_by_company({ runId })` (it waits up to `waitSeconds`), never more than once a minute; report at 50% and at completion. `cancel: true` with the `runId` stops it and keeps what was found. An exhaustive run does not stop at a target; it stops when every pair is terminal or `capsUsd.run` is spent. If the result has `deferredByBudget`, report it and ask once whether to raise the cap.
 5. **Read each pair's `terminalState`**, then act once:
 
    | `terminalState` | Means | Next |
@@ -23,15 +23,16 @@ A role at companies already named, or already on the project. The unit of work i
 
    `rejected` lists people found who do not belong, including people above the plan's rung; they are not written to the tab. Each kept person has `confidence`, `freshness` and `evidence` (source, query, date, snippet).
 6. **Profiles.** Bright Data matches arrive with their profile stored on the row. A person found only by Google has a name and a LinkedIn URL at most: run `fetch_profiles` before scoring.
-7. **Report from data**: start with the coverage line from `get_sourcing_ledger` (`pairs.coverageLine`), then one short table (company, person, title, rung, confidence, source), then the companies without a person and why, and the spend.
+7. **Report in the same turn.** The tool result already carries the summary, the pairs and `withoutResults`: write the report from it. Never end a turn on "let me pull the details" — a spilled file is not a reason to stop.
+8. **Report from data**: start with the coverage line from `get_sourcing_ledger` (`pairs.coverageLine`, pass `projectId` and `roles`), which counts company × role pairs, then one short table (company, role, person, title, rung, confidence, source), then the pairs without a person and why, the spend, and the budget left. A company with the CEO found and the manufacturing head none_found is one covered pair and one none_found pair, not "covered". If coverage is exhaustive, quote the universe and the deferred count; if it is best effort, say so.
 
 ### Pool size
 
-The tool keeps up to 3 people per company, so N companies give at most 3N people. Name the pool in your report. If the target is larger (two named companies and a target of 30), say so before the call, build peer companies with `playbook-company-first`, and ask once whether to widen to peers.
+The tool keeps up to 3 people per company, or one per role when more roles were asked, so N companies give at most max(3, roles) x N people. Name the pool in your report. If the target is larger (two named companies and a target of 30), say so before the call, build peer companies with `playbook-company-first`, and ask once whether to widen to peers.
 
-### Only when the user names LinkedIn or Harvest
+### Only when the user names LinkedIn
 
-The default path does not issue these. Use them only when the user names that provider for this lookup.
+The default path does not issue these. Use them only when the user names that provider for this lookup. Harvest is already a step in the cascade when it was picked; do not call it per company.
 
 **LinkedIn, role at one company.** `generate_linkedin_query_set` with the role and company as the brief returns the payload for the account's mode (`src-linkedin`). By hand, resolve the company id first and do not invent ids. `searchParameters` for the account's `searchType`:
 
@@ -44,23 +45,4 @@ The default path does not issue these. Use them only when the user names that pr
 { "role": [{ "keywords": "Head of Engineering", "priority": "MUST_HAVE", "scope": "CURRENT" }], "company": [{ "keywords": "Acme" }] }
 ```
 
-**Harvest, a role at a named company.** One natural-language string, or `companyName` when the code is already known. `dataSource` is `"harvest"`. No `harvest_*` tool names.
 
-```json
-{
-  "naturalLanguage": "Head of Engineering at Acme",
-  "dataSource": "harvest",
-  "limit": 20
-}
-```
-
-```json
-{
-  "dataSource": "harvest",
-  "stdFunction": "engineering",
-  "stdGrade": "leadership",
-  "companyName": "Acme",
-  "country": "United States",
-  "limit": 20
-}
-```

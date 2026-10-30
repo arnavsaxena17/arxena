@@ -31,6 +31,20 @@ const TAXONOMY_BY_LOWERCASE = new Map(
 
 // `industry` only matches LinkedIn's own industry names. A made-up one such as
 // "Fintech" matches nothing, so unknown phrases become specialty keywords.
+// A multi-word phrase is kept as an industry: the full LinkedIn taxonomy is
+// larger than the prompt hint, and treating "Glass, Ceramics and Concrete
+// Manufacturing" as a specialty would search the about text instead of the
+// company's own industry label.
+// The full LinkedIn taxonomy is larger than the prompt hint, so a label that
+// reads like one ("Glass, Ceramics and Concrete Manufacturing") is kept as an
+// industry. A business-model phrase ("quick service restaurant") is not: it
+// belongs in the about/specialties text.
+const INDUSTRY_SUFFIX =
+  /\b(manufacturing|services|retail|wholesale|industry|industries|technology|technologies|education|construction|utilities|mining|agriculture|farming|forestry|transportation|storage|logistics|hospitality)\b/i;
+
+const looksLikeIndustryLabel = (phrase: string): boolean =>
+  INDUSTRY_SUFFIX.test(phrase);
+
 export const splitIndustriesByTaxonomy = (
   phrases: string[],
 ): { industries: string[]; keywords: string[] } => {
@@ -42,6 +56,8 @@ export const splitIndustriesByTaxonomy = (
 
     if (known !== undefined) {
       industries.push(known);
+    } else if (looksLikeIndustryLabel(phrase)) {
+      industries.push(phrase);
     } else {
       keywords.push(phrase);
     }

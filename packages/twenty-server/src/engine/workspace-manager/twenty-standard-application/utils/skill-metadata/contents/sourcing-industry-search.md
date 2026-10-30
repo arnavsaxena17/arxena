@@ -15,21 +15,22 @@ Each company page picks **one** industry, and the company chooses it, so a segme
 
   Add the old (V1) label wherever one exists.
 - **A label alone is weak evidence.** It is chosen by the company and is broad. Pair it with product words found in the about and specialties text, then score segment fit from what the company sells.
+- **Ask which sub-segments when the words name a parent.** "Glass manufacturing" spans float/architectural, container and packaging, glassware, automotive, fibre and scientific, and processing/tempering. The label covers all of them; the user may only want some. Ask once, with "all segments" as the recommended option, and carry the answer into the segment filter.
 - **Some words are not industries.** "Sales", "D2C", "startup", "MNC" and "listed" are channels or attributes, never industry labels. Score them as criteria.
 - **Say the label list in one line** in the plan, so the user can correct it before any paid search.
 
 ### Sources, cheapest first
 
-Use only the sources the user picked for this run.
+Use only the sources the user picked for this run, and only those whose tool is in the catalog: a source switched off in this workspace is not a step, so skip its row rather than looking for it.
 
 | Step | Source | How the industry is matched |
 | --- | --- | --- |
-| 1 | Arxena index (`search_companies_index`, `industry`) | Free and fast, but shallow: name, website, LinkedIn URL, industry, size. Build the first pool here. Companies only |
-| 2 | Bright Data companies (`search_bright_data_business`, `entity: "company"`) | `industry` is a text field (bag of words); the planner also matches about and specialties. Use it to top up the pool and to get the fields filtering needs. Estimate first |
+| 1 | Arxena index, when on (`search_companies_index`, `industry`) | Free and fast, but shallow: name, website, LinkedIn URL, industry, size. A cheap first pool. Companies only |
+| 2 | Bright Data companies (`search_bright_data_business`, `entity: "company"`) | `industry` is a text field (bag of words); the planner also matches about and specialties. Pass the resolved label(s) as `industries` so the planner cannot broaden the segment. The pool, and the fields filtering needs. Estimate first |
 | 3 | Harvest or the user's Sales Navigator | Industry facet by id; resolve the ids with `generate_linkedin_query_set`. Can be multi-select |
 | 4 | Apollo, Exa, Wikidata | Only when the workspace has them switched on |
 
-Go to the next step only when the pool is not adequate. That means it is far below the expected size from the probe, or it lacks a field the company rubric needs (size, location, about). Say which of the two it was.
+Start at the first row whose tool you have. Go to the next step only when the pool is not adequate. That means it is far below the expected size from the probe, or it lacks a field the company rubric needs (size, location, about). Say which of the two it was.
 
 ### By kind of search
 

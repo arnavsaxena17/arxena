@@ -29,7 +29,7 @@ import {
 import { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-registry.service';
 import { type AiModelConfig } from 'src/engine/metadata-modules/ai/ai-models/types/ai-model-config.type';
 
-type LlmProvider = 'openai' | 'anthropic';
+type LlmProvider = 'openai' | 'anthropic' | 'openrouter';
 
 type ChatCompletionParams = OpenAI.Chat.ChatCompletionCreateParamsNonStreaming;
 type ChatCompletionStreamParams = Omit<
@@ -66,7 +66,8 @@ export class MeteredLlmService {
     params: ChatCompletionParams,
     options?: OpenAI.RequestOptions,
   ): Promise<OpenAI.Chat.ChatCompletion> {
-    const pricing = this.resolvePricedModel(context, 'openai', params.model);
+    const provider = this.resolveChatProvider(params.model);
+    const pricing = this.resolvePricedModel(context, provider, params.model);
 
     await this.assertCanSpend(context);
 
@@ -75,7 +76,7 @@ export class MeteredLlmService {
     await this.billTokens({
       context,
       pricing,
-      provider: 'openai',
+      provider,
       usage: normalizeOpenAiChatUsage(completion.usage),
     });
 
@@ -265,6 +266,20 @@ export class MeteredLlmService {
       });
 
     return stream;
+  }
+
+  // A model routed through OpenRouter is priced from the openrouter registry
+  // entry, not from the OpenAI one (which would be unpriced)
+  private resolveChatProvider(model: string): LlmProvider {
+    try {
+      this.aiModelRegistryService.getEffectiveModelConfig(
+        `openrouter/${model}`,
+      );
+
+      return 'openrouter';
+    } catch {
+      return 'openai';
+    }
   }
 
   private getTreatmentOverride(context: MeteringContext) {

@@ -64,7 +64,17 @@ export type BrightDataLudicrousEstimateInput = {
   targetCount?: number;
   modelId?: string;
   userWorkspaceId?: string | null;
+  // A boolean title filter from the job-title taxonomy. When set, it replaces
+  // the planner's title list for people searches, so a role that is a function
+  // x grade (Head of Manufacturing -> VP Manufacturing) is matched as a class.
+  titleExpression?: string;
+  // LinkedIn industry labels resolved by the sources skill. When set, the
+  // planner may not substitute a broader or made-up label.
+  industryLabels?: string[];
 };
+
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const toRubric = (
   rubric: BrightDataLudicrousPlanLlmOutput['rubric'],
@@ -100,7 +110,22 @@ export class BrightDataLudicrousPlannerService {
 
     const generated = await this.generateShards(input);
 
-    await this.addTaxonomyTitles(input.entity, generated);
+    // A role set resolved by the taxonomy is a boolean title filter, not a
+    // list of words: it keeps "VP Manufacturing" when the user said "Head of
+    // Manufacturing". The planner still writes relevanceCriteria, but code
+    // owns the title filter.
+    if (input.entity === 'people' && isNonEmptyString(input.titleExpression)) {
+      this.applyTitleExpression(generated, input.titleExpression);
+    } else {
+      await this.addTaxonomyTitles(input.entity, generated);
+    }
+
+    // The industry label is the one thing the planner most often broadens or
+    // invents. When the sources skill has resolved it, it is code-owned too.
+    if (input.entity === 'company' && (input.industryLabels?.length ?? 0) > 0) {
+      this.applyIndustryLabels(generated, input.industryLabels ?? []);
+    }
+
     const { shards, compileErrors } = this.compileShards(
       input.entity,
       generated,
@@ -225,6 +250,42 @@ export class BrightDataLudicrousPlannerService {
   // curated titles for the same function and grade (for a CEO: chief executive,
   // managing director, founder, president). A user-written boolean title string
   // is never touched. Planning must not fail because the taxonomy is down.
+  private applyTitleExpression(
+    generated: BrightDataLudicrousPlanLlmOutput,
+    expression: string,
+  ): void {
+    for (const shard of generated.shards) {
+      shard.filter.booleanTitleExpression = expression;
+      shard.filter.titles = [];
+    }
+
+    this.logger.log(
+      `Bright Data planner: taxonomy title expression replaces the planner's titles (${expression.length} chars)`,
+    );
+  }
+
+  private applyIndustryLabels(
+    generated: BrightDataLudicrousPlanLlmOutput,
+    labels: string[],
+  ): void {
+    const unique = [...new Set(labels.map((label) => label.trim()))].filter(
+      (label) => label.length > 0,
+    );
+
+    for (const shard of generated.shards) {
+      shard.filter.industries = unique;
+    }
+
+    // The relevance judge must accept the same industry the query asks for;
+    // otherwise a correct row can be sampled as "wrong industry" and the
+    // estimate reads 0% precision.
+    generated.rubric.industryIncludePatterns = unique.map(escapeRegExp);
+
+    this.logger.log(
+      `Bright Data planner: industry label${unique.length === 1 ? '' : 's'} forced to ${unique.join(', ')}`,
+    );
+  }
+
   private async addTaxonomyTitles(
     entity: BrightDataLudicrousEntity,
     generated: BrightDataLudicrousPlanLlmOutput,

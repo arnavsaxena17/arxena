@@ -21,6 +21,8 @@ export const ACTION_TOOL_IDS = [
   'find_people_by_company',
   'fetch_profiles',
   'get_sourcing_ledger',
+  'get_source_capabilities',
+  'get_scoring_plan',
   'preview_sample_message_column',
   'preview_ai_column',
   'run_ai_column',
@@ -84,6 +86,12 @@ export const ACTION_TOOL_LABELS: Record<ActionToolId, ActionToolLabel> = {
   },
   get_sourcing_ledger: {
     label: i18nLabel(msg`Get Sourcing Ledger`),
+  },
+  get_source_capabilities: {
+    label: i18nLabel(msg`Get Source Capabilities`),
+  },
+  get_scoring_plan: {
+    label: i18nLabel(msg`Get Scoring Plan`),
   },
   fetch_profiles: {
     label: i18nLabel(msg`Fetch Profiles`),

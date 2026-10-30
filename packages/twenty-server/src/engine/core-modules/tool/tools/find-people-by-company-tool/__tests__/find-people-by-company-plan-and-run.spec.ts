@@ -16,6 +16,7 @@ const foundOutcome = (company: string): CompanyOutcome => ({
       linkedinUrl: `https://www.linkedin.com/in/${company.toLowerCase()}`,
       sources: ['bright_data'],
       roleMatch: 'exact',
+      roleMatches: [{ role: 'Head of E-commerce', score: 2 }],
       deprioritisedReasons: [],
       rungUsed: 1,
       confidence: 'medium',
@@ -29,7 +30,18 @@ const foundOutcome = (company: string): CompanyOutcome => ({
   terminalState: 'found',
   rungUsed: 1,
   sourcesUsed: ['bright_data'],
+  sourcesAttempted: ['bright_data'],
   titlesTried: ['Head of E-commerce'],
+  roleStates: [
+    {
+      role: 'Head of E-commerce',
+      terminalState: 'found',
+      rungUsed: 1,
+      personKeys: [`https://www.linkedin.com/in/${company.toLowerCase()}`],
+      sourcesUsed: ['bright_data'],
+      peopleCount: 1,
+    },
+  ],
 });
 
 const buildCache = () => {
@@ -46,7 +58,12 @@ const buildCache = () => {
 const build = ({
   briefSources = ['bright-data', 'serp'],
   rowCount = 3,
-}: { briefSources?: string[] | null; rowCount?: number } = {}) => {
+  briefExtra = {},
+}: {
+  briefSources?: string[] | null;
+  rowCount?: number;
+  briefExtra?: Record<string, unknown>;
+} = {}) => {
   const rows = Array.from({ length: rowCount }, (_, index) => ({
     id: `row-${index}`,
     name: `Company${index}`,
@@ -54,8 +71,9 @@ const build = ({
     employees: index === 0 ? '11-50' : '1,001-5,000',
     otherFields: index === 1 ? { status: 'unresolvable' } : {},
   }));
-  const lookupPair = jest.fn(async (company: { name: string }) =>
-    foundOutcome(company.name),
+  const lookupPair = jest.fn(
+    async (company: { name: string }, _input?: { sources?: string[] }) =>
+      foundOutcome(company.name),
   );
   const events: SourcingLedgerEvent[] = briefSources
     ? [
@@ -68,6 +86,7 @@ const build = ({
           criteria: [],
           assumptions: [],
           sources: briefSources,
+          ...briefExtra,
         },
       ]
     : [];
@@ -87,6 +106,12 @@ const build = ({
   const writeOtherFields = jest
     .fn()
     .mockResolvedValue({ ephemeralUpdated: 1, crmUpdated: 0 });
+  const budget = {
+    configure: jest.fn(async () => undefined),
+    getStatus: jest.fn() as jest.Mock,
+    recordSpend: jest.fn(async () => undefined),
+  };
+  budget.getStatus.mockResolvedValue({ spentUsd: 0, exhausted: false });
   const tool = new FindPeopleByCompanyTool(
     { lookupPair } as never,
     { execute: jest.fn().mockResolvedValue({ success: true }) } as never,
@@ -101,9 +126,19 @@ const build = ({
     { get: jest.fn().mockResolvedValue(null) } as never,
     ledger as never,
     runService,
+    undefined,
+    budget as never,
   );
 
-  return { tool, lookupPair, ledger, queue, runService, writeOtherFields };
+  return {
+    tool,
+    lookupPair,
+    ledger,
+    queue,
+    runService,
+    writeOtherFields,
+    budget,
+  };
 };
 
 describe('FindPeopleByCompanyTool plan', () => {
@@ -128,7 +163,7 @@ describe('FindPeopleByCompanyTool plan', () => {
       context,
     );
 
-    expect(lookupPair.mock.calls[0][1].sources).toEqual(['bright_data']);
+    expect(lookupPair.mock.calls[0]?.[1]?.sources).toEqual(['bright_data']);
   });
 
   it('should refuse when the user picked no people source it can use', async () => {
@@ -270,5 +305,80 @@ describe('FindPeopleByCompanyTool pilot and run', () => {
 
     expect((cancelled.result as { status: string }).status).toBe('cancelled');
     expect(lookupPair).toHaveBeenCalledTimes(24);
+  });
+});
+
+describe('FindPeopleByCompanyTool exhaustive budget', () => {
+  it('should refuse an exhaustive run without a run cap', async () => {
+    const { tool, lookupPair } = build({
+      briefExtra: { coverage: 'exhaustive' },
+    });
+
+    const output = await tool.execute(
+      { fromProject: true, projectId: 'p', roles: ['Head of E-commerce'] },
+      context,
+    );
+
+    expect(output.success).toBe(false);
+    expect(output.error).toMatch(/run cap/);
+    expect(lookupPair).not.toHaveBeenCalled();
+  });
+
+  it('should look up only what the run cap covers and defer the rest', async () => {
+    const { tool, lookupPair, budget } = build({
+      rowCount: 4,
+      briefExtra: {
+        coverage: 'exhaustive',
+        capsUsd: { run: 0.03, perPair: 0.01 },
+      },
+    });
+    budget.getStatus.mockResolvedValue({
+      runCapUsd: 0.03,
+      spentUsd: 0,
+      remainingUsd: 0.03,
+      exhausted: false,
+    });
+
+    const output = await tool.execute(
+      { fromProject: true, projectId: 'p', roles: ['Head of E-commerce'] },
+      context,
+    );
+    const result = output.result as {
+      deferredByBudget: number;
+      budget: { runCapUsd: number; spentUsd: number };
+    };
+
+    // The second company is marked unresolvable, so two of the three
+    // affordable rows reach the cascade
+    expect(lookupPair).toHaveBeenCalledTimes(2);
+    expect(result.deferredByBudget).toBe(1);
+    expect(result.budget.runCapUsd).toBe(0.03);
+    expect(budget.recordSpend).toHaveBeenCalledWith(
+      expect.objectContaining({ workspaceId: 'w', projectId: 'p', usd: 0.02 }),
+    );
+  });
+
+  it('should refuse when the run cap is already spent', async () => {
+    const { tool, lookupPair, budget } = build({
+      briefExtra: {
+        coverage: 'exhaustive',
+        capsUsd: { run: 0.01, perPair: 0.01 },
+      },
+    });
+    budget.getStatus.mockResolvedValue({
+      runCapUsd: 0.01,
+      spentUsd: 0.01,
+      remainingUsd: 0,
+      exhausted: true,
+    });
+
+    const output = await tool.execute(
+      { fromProject: true, projectId: 'p', roles: ['Head of E-commerce'] },
+      context,
+    );
+
+    expect(output.success).toBe(false);
+    expect(output.error).toMatch(/run budget of \$0.01 is spent/);
+    expect(lookupPair).not.toHaveBeenCalled();
   });
 });

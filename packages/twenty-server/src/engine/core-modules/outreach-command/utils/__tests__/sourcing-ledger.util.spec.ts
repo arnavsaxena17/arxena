@@ -2,8 +2,10 @@ import { type OutreachTabRow } from 'src/engine/core-modules/outreach-command/se
 import { type FindPeoplePairState } from 'src/engine/core-modules/outreach-command/utils/outreach-people-found.util';
 import {
   computePairFunnel,
+  computeSourcingFrontier,
   computeSourcingFunnel,
   mergeSourcingBrief,
+  normalizeSourcingBriefDraft,
 } from 'src/engine/core-modules/outreach-command/utils/sourcing-ledger.util';
 
 const profile = (source: 'bright_data' | 'harvest') => ({
@@ -169,5 +171,297 @@ describe('mergeSourcingBrief', () => {
 
     expect(brief).not.toHaveProperty('capsUsd');
     expect(brief).not.toHaveProperty('thresholds');
+  });
+
+  it('should keep the coverage intent and replace the query plan', () => {
+    const first = mergeSourcingBrief(undefined, {
+      who: 'plant heads in Gujarat',
+      coverage: 'exhaustive',
+      universe: { kind: 'project', count: 443 },
+      queries: [{ source: 'bright-data', query: 'plant head' }],
+      capsUsd: { run: 40 },
+    });
+    const second = mergeSourcingBrief(first, {
+      queries: [{ source: 'serp', query: 'works manager' }],
+      universe: { note: 'after the list freeze' },
+    });
+
+    expect(second.coverage).toBe('exhaustive');
+    expect(second.capsUsd?.run).toBe(40);
+    expect(second.universe).toEqual({
+      kind: 'project',
+      count: 443,
+      note: 'after the list freeze',
+    });
+    expect(second.queries).toEqual([
+      { source: 'serp', query: 'works manager' },
+    ]);
+  });
+});
+
+describe('normalizeSourcingBriefDraft', () => {
+  it('turns a prose brief into briefText', () => {
+    const draft = normalizeSourcingBriefDraft(
+      'VP Engineering at fintech startups in Bangalore',
+    );
+
+    expect(draft?.briefText).toBe(
+      'VP Engineering at fintech startups in Bangalore',
+    );
+    expect(draft?.who).toContain('VP Engineering');
+    expect(draft?.requestType).toBe('named_role');
+  });
+
+  it('accepts one role as a string, persona aliases and a single source', () => {
+    const draft = normalizeSourcingBriefDraft({
+      roles: 'VP Engineering, Head of Engineering',
+      persona: 'sales_prospect',
+      sources: 'bright-data',
+      requestType: 'role_at_companies',
+    });
+
+    expect(draft?.roles).toEqual(['VP Engineering', 'Head of Engineering']);
+    expect(draft?.persona).toBe('sales');
+    expect(draft?.sources).toEqual(['bright-data']);
+    expect(draft?.requestType).toBe('named_role');
+  });
+
+  it('maps a role plus industry and country to company_list', () => {
+    const draft = normalizeSourcingBriefDraft({
+      requestType: 'role-plus-industry-country',
+    });
+
+    expect(draft?.requestType).toBe('company_list');
+  });
+
+  it('normalizes a criteria object and a prose assumptions line', () => {
+    const draft = normalizeSourcingBriefDraft({
+      criteria: { company: 'glass manufacturer, not a trader' },
+      assumptions: 'all glass segments; any size',
+    });
+
+    expect(draft?.criteria).toEqual([
+      {
+        description: 'company: glass manufacturer, not a trader',
+        mustHave: true,
+      },
+    ]);
+    expect(draft?.assumptions).toEqual(['all glass segments; any size']);
+  });
+
+  it('ignores a value that is not a brief', () => {
+    expect(normalizeSourcingBriefDraft('')).toBeUndefined();
+    expect(normalizeSourcingBriefDraft(null)).toBeUndefined();
+    expect(normalizeSourcingBriefDraft(42)).toBeUndefined();
+  });
+
+  it('keeps a valid object as it is', () => {
+    const draft = normalizeSourcingBriefDraft({
+      persona: 'exec_search',
+      requestType: 'named_role',
+      target: 40,
+    });
+
+    expect(draft).toMatchObject({
+      persona: 'exec_search',
+      requestType: 'named_role',
+      target: 40,
+    });
+  });
+
+  it('normalises the coverage aliases and a run cap written as a string', () => {
+    const exhaustive = normalizeSourcingBriefDraft({
+      coverage: 'MECE',
+      capsUsd: { run: '25', perPair: '0.1' },
+    });
+    const bestEffort = normalizeSourcingBriefDraft({ coverage: 'best-effort' });
+
+    expect(exhaustive?.coverage).toBe('exhaustive');
+    expect(exhaustive?.capsUsd).toEqual({ run: 25, perPair: 0.1 });
+    expect(bestEffort?.coverage).toBe('best_effort');
+  });
+
+  it('normalises a query plan from strings or objects', () => {
+    const draft = normalizeSourcingBriefDraft({
+      queryPlan: [
+        'plant heads in Gujarat',
+        {
+          source: 'bright-data',
+          query: 'plant head',
+          slice: 'Surat',
+          entity: 'people',
+        },
+        { query: '   ' },
+      ],
+    });
+
+    expect(draft?.queries).toEqual([
+      { query: 'plant heads in Gujarat' },
+      {
+        source: 'bright-data',
+        query: 'plant head',
+        slice: 'Surat',
+        entity: 'people',
+      },
+    ]);
+  });
+
+  it('accepts a universe written as a sentence', () => {
+    const draft = normalizeSourcingBriefDraft({
+      universe: 'the 40 companies on the Companies tab',
+    });
+
+    expect(draft?.universe).toEqual({
+      kind: 'other',
+      note: 'the 40 companies on the Companies tab',
+    });
+  });
+});
+
+describe('computePairFunnel per-role pairs', () => {
+  it('counts a company with one role found and one role missing as two pairs', () => {
+    const funnel = computePairFunnel(
+      [
+        company('a', [
+          pair({ roles: ['CEO'], rungUsed: 1 }),
+          pair({
+            roles: ['Head of Manufacturing'],
+            terminalState: 'none_found',
+            reason: 'no_such_role',
+            personKeys: [],
+          }),
+        ]),
+      ],
+      { roles: ['CEO', 'Head of Manufacturing'] },
+    );
+
+    expect(funnel.expectedPairs).toBe(2);
+    expect(funnel.pairs).toBe(2);
+    expect(funnel.byState).toMatchObject({ found: 1, none_found: 1 });
+    expect(funnel.notLookedUp).toBe(0);
+    expect(funnel.coverageLine).toContain(
+      '1 of 2 company x role pairs covered',
+    );
+    expect(funnel.coverageLine).toContain('1 none found');
+  });
+
+  it('counts a role a company never looked up as a missing pair', () => {
+    const funnel = computePairFunnel(
+      [company('a', [pair({ roles: ['CEO'] })])],
+      { roles: ['CEO', 'Head of Manufacturing'] },
+    );
+
+    expect(funnel.expectedPairs).toBe(2);
+    expect(funnel.pairs).toBe(1);
+    expect(funnel.notLookedUp).toBe(1);
+    expect(funnel.coverageLine).toContain('1 pairs not looked up yet');
+  });
+});
+
+describe('computePairFunnel role scoping', () => {
+  it('counts only the pair for the requested roles', () => {
+    const funnel = computePairFunnel(
+      [
+        company('a', [
+          pair({ roles: ['CEO'] }),
+          pair({
+            roles: ['CTO'],
+            terminalState: 'none_found',
+            reason: 'no_such_role',
+            personKeys: [],
+          }),
+        ]),
+        company('b', [pair({ roles: ['CEO'] })]),
+      ],
+      { roles: ['CTO'] },
+    );
+
+    expect(funnel.roleKey).toBe('cto');
+    expect(funnel.expectedPairs).toBe(2);
+    expect(funnel.pairs).toBe(1);
+    expect(funnel.byState.none_found).toBe(1);
+    // b has a CEO pair but no CTO pair, so it is not covered for this role
+    expect(funnel.notLookedUp).toBe(1);
+    expect(funnel.coverageLine).toContain('1 pairs not looked up yet');
+  });
+});
+
+describe('computeSourcingFrontier', () => {
+  const list = {
+    id: 'l1',
+    sources: ['bright_data'],
+    entity: 'people',
+    query: 'plant heads in Gujarat',
+    fetched: 120,
+    newUnique: 80,
+    alreadyKnown: 20,
+    spentUsd: 0.24,
+  };
+
+  it('separates attempted, unattempted and unplanned searches', () => {
+    const frontier = computeSourcingFrontier({
+      coverage: 'exhaustive',
+      universe: { kind: 'project', count: 1 },
+      queries: [
+        { source: 'bright-data', query: 'plant heads', entity: 'people' },
+        { source: 'serp', query: 'plant head Surat', entity: 'people' },
+      ],
+      lists: [
+        list,
+        {
+          ...list,
+          id: 'l2',
+          query: 'unplanned query',
+          newUnique: 10,
+        },
+      ],
+    });
+
+    expect(frontier?.attempted).toBe(1);
+    expect(frontier?.unattempted).toBe(1);
+    expect(frontier?.unplannedSearches).toBe(1);
+    expect(frontier?.complete).toBe(false);
+    expect(frontier?.planned[0]).toMatchObject({
+      attempted: true,
+      listIds: ['l1'],
+      fetched: 120,
+      newUnique: 80,
+      alreadyKnown: 20,
+    });
+    expect(frontier?.unattemptedQueries).toEqual([
+      { source: 'serp', query: 'plant head Surat', entity: 'people' },
+    ]);
+  });
+
+  it('matches an index query to the list stored as "other"', () => {
+    const frontier = computeSourcingFrontier({
+      coverage: 'exhaustive',
+      queries: [
+        { source: 'internal-index', query: 'plant head', entity: 'people' },
+      ],
+      lists: [
+        {
+          id: 'l3',
+          sources: ['other'],
+          entity: 'people',
+          query: 'plant head',
+          fetched: 20,
+          spentUsd: 0,
+        },
+      ],
+    });
+
+    expect(frontier?.attempted).toBe(1);
+    expect(frontier?.complete).toBe(true);
+  });
+
+  it('reports that coverage cannot be proven without a query plan', () => {
+    const frontier = computeSourcingFrontier({
+      coverage: 'exhaustive',
+      lists: [],
+    });
+
+    expect(frontier?.complete).toBe(false);
+    expect(frontier?.coverageLine).toContain('No query plan recorded');
   });
 });

@@ -19,7 +19,12 @@ const row = (
   otherFields,
 });
 
-const build = () => {
+const build = (
+  budget = {
+    configure: jest.fn(async () => undefined),
+    getStatus: jest.fn(async () => ({ spentUsd: 0, exhausted: false })),
+  },
+) => {
   const events: SourcingLedgerEvent[] = [
     {
       kind: 'profile_fetch',
@@ -66,9 +71,10 @@ const build = () => {
     { append, read: jest.fn(async () => events) } as never,
     { getAll: jest.fn(async () => rows) } as never,
     { list: jest.fn(async () => lists) } as never,
+    budget as never,
   );
 
-  return { tool, append };
+  return { tool, append, budget };
 };
 
 const context = { workspaceId: 'w' } as never;
@@ -140,6 +146,104 @@ describe('GetSourcingLedgerTool', () => {
     expect((output.result as { brief: { target: number } }).brief.target).toBe(
       60,
     );
+  });
+
+  it('should persist an exhaustive plan, its run cap and the frontier', async () => {
+    const budget = {
+      configure: jest.fn(async () => undefined),
+      getStatus: jest.fn(async () => ({
+        runCapUsd: 10,
+        spentUsd: 1,
+        remainingUsd: 9,
+        exhausted: false,
+      })),
+    };
+    const { tool } = build(budget);
+    const output = await tool.execute(
+      {
+        projectId: 'p1',
+        brief: {
+          coverage: 'exhaustive',
+          universe: { kind: 'project', count: 120 },
+          capsUsd: { run: 10 },
+          queries: [
+            { source: 'bright-data', query: 'plant heads' },
+            { source: 'serp', query: 'plant head Surat' },
+          ],
+        },
+      },
+      context,
+    );
+    const result = output.result as {
+      brief: { coverage: string; budgetRunId: string };
+      coverage: {
+        mode: string;
+        frontier: {
+          attempted: number;
+          unattempted: number;
+          unattemptedQueries: unknown[];
+        };
+      };
+      budget: { runCapUsd: number; spentUsd: number; remainingUsd: number };
+    };
+
+    expect(result.brief.coverage).toBe('exhaustive');
+    expect(result.brief.budgetRunId).toEqual(expect.any(String));
+    expect(result.coverage.mode).toBe('exhaustive');
+    expect(result.coverage.frontier.attempted).toBe(1);
+    expect(result.coverage.frontier.unattempted).toBe(1);
+    expect(result.coverage.frontier.unattemptedQueries).toEqual([
+      { source: 'serp', query: 'plant head Surat' },
+    ]);
+    expect(result.budget).toMatchObject({
+      runCapUsd: 10,
+      spentUsd: 1,
+      remainingUsd: 9,
+    });
+    expect(budget.configure).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'w',
+        projectId: 'p1',
+        runCapUsd: 10,
+        budgetRunId: expect.any(String),
+      }),
+    );
+  });
+
+  it('should keep the budget window when the cap is raised, and reset only on newRun', async () => {
+    const budget = {
+      configure: jest.fn(async () => undefined),
+      getStatus: jest.fn(async () => ({ spentUsd: 0, exhausted: false })),
+    };
+    const { tool } = build(budget);
+    const readBudgetRunId = async (payload: Record<string, unknown>) => {
+      const output = await tool.execute(
+        {
+          projectId: 'p1',
+          brief: { coverage: 'exhaustive', ...payload },
+        },
+        context,
+      );
+
+      return (output.result as { brief: { budgetRunId: string } }).brief
+        .budgetRunId;
+    };
+
+    const first = await readBudgetRunId({ capsUsd: { run: 10 } });
+    const raised = await readBudgetRunId({ capsUsd: { run: 20 } });
+    const newRun = await tool.execute(
+      {
+        projectId: 'p1',
+        newRun: true,
+        brief: { capsUsd: { run: 20 } },
+      },
+      context,
+    );
+    const reset = (newRun.result as { brief: { budgetRunId: string } }).brief
+      .budgetRunId;
+
+    expect(raised).toBe(first);
+    expect(reset).not.toBe(first);
   });
 
   it('should refuse a brief with a non-existing request type', async () => {

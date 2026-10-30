@@ -32,6 +32,8 @@ export const canonicalSkillName = (name: string): string =>
 type Library = {
   bodies: Map<string, string>;
   frontMatter: Map<string, SkillFrontMatter>;
+  // Shared blocks a skill includes, read on their own by other callers
+  fragments: Map<string, string>;
   // Files that are parts of a longer skill, not skills of their own
   partFileNames: Set<string>;
 };
@@ -122,7 +124,7 @@ const loadLibrary = (): Library => {
     }
   }
 
-  return { bodies, frontMatter, partFileNames };
+  return { bodies, frontMatter, fragments: readFragments(), partFileNames };
 };
 
 const getLibrary = (): Library => (library ??= loadLibrary());

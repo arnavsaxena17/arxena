@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { TitleTaxonomyRemoteService } from 'src/engine/core-modules/candidate-search/services/title-taxonomy-remote.service';
 import { extractTitleTermsFromBooleanQuery } from 'src/engine/core-modules/title-taxonomy/extract-title-terms-from-boolean-query.util';
 import { type TitleClass } from 'src/engine/core-modules/title-taxonomy/title-class.type';
+import { titleFamilyFallbackTitles } from 'src/engine/core-modules/title-taxonomy/title-family-fallback.util';
 
 export type ResolvedRoles = {
   // Titles to search with: the roles as typed, then the taxonomy's titles
@@ -10,6 +11,16 @@ export type ResolvedRoles = {
   // What the requested roles are, per the taxonomy; empty when it has no answer
   requestedClasses: TitleClass[];
   taxonomyAvailable: boolean;
+  // The curated boolean query for each requested function x grade. Sources
+  // that understand a boolean title filter (Bright Data, Harvest, Sales Nav)
+  // use these instead of a list of words, so "VP Manufacturing" matches the
+  // same class as "Head of Manufacturing".
+  titleExpressions?: string[];
+  // The same queries OR-ed, for a single boolean field
+  booleanTitleExpression?: string;
+  // The taxonomy class of each role as typed, keyed by lowercased role, so a
+  // person can be assigned to the role they actually match
+  roleClasses?: Record<string, TitleClass | null>;
 };
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
@@ -18,6 +29,8 @@ const CURATED_GRADE_FALLBACK = 'leadership';
 const UNCLASSIFIED = 'unclassified';
 
 type CacheEntry<TValue> = { value: TValue; storedAt: number };
+
+type CuratedQueryKind = 'std_function' | 'std_function_root';
 
 // The one place that asks the arxena-site job-title taxonomy (Python) what a
 // role is and which titles belong to it, instead of each search path keeping
@@ -29,9 +42,9 @@ export class TitleExpansionService {
     string,
     CacheEntry<TitleClass | null>
   >();
-  private readonly curatedTitlesCache = new Map<
+  private readonly curatedQueryCache = new Map<
     string,
-    CacheEntry<string[]>
+    CacheEntry<string | null>
   >();
 
   constructor(
@@ -40,12 +53,25 @@ export class TitleExpansionService {
 
   async resolveRoles(roles: string[]): Promise<ResolvedRoles> {
     const classes = await this.classifyTitles(roles);
+    const roleClasses: Record<string, TitleClass | null> = {};
+
+    for (const role of roles) {
+      const key = role.trim().toLowerCase();
+
+      roleClasses[key] = classes?.get(key) ?? null;
+    }
 
     if (classes === null) {
+      // The taxonomy gives rung 2 its curated titles. Without it, a small
+      // curated family list keeps rung 2 working, so "VP Engineering" still
+      // searches "Head of Engineering" and "CTO".
       return {
-        searchTitles: this.unique(roles),
+        searchTitles: this.unique(titleFamilyFallbackTitles(roles)),
         requestedClasses: [],
         taxonomyAvailable: false,
+        titleExpressions: [],
+        booleanTitleExpression: '',
+        roleClasses,
       };
     }
 
@@ -54,16 +80,28 @@ export class TitleExpansionService {
         (titleClass): titleClass is TitleClass => titleClass !== null,
       ),
     );
-    const curatedTitles = await Promise.all(
-      requestedClasses.map((titleClass) =>
-        this.getCuratedTitles(titleClass),
+    const queries = await Promise.all(
+      requestedClasses.map((titleClass) => this.getCuratedQuery(titleClass)),
+    );
+    // Keep the operators uppercase: Google and Harvest read AND/OR as words.
+    const titleExpressions = [
+      ...new Set(
+        queries
+          .map((query) => query?.trim() ?? '')
+          .filter((query) => query.length > 0),
       ),
+    ];
+    const curatedTitles = await Promise.all(
+      requestedClasses.map((titleClass) => this.getCuratedTitles(titleClass)),
     );
 
     return {
       searchTitles: this.unique([...roles, ...curatedTitles.flat()]),
       requestedClasses,
       taxonomyAvailable: true,
+      titleExpressions,
+      booleanTitleExpression: this.combineExpressions(titleExpressions),
+      roleClasses,
     };
   }
 
@@ -73,7 +111,13 @@ export class TitleExpansionService {
   async expandTitles(
     titles: string[],
     { maxTitles = 12 }: { maxTitles?: number } = {},
-  ): Promise<{ titles: string[]; added: string[]; taxonomyAvailable: boolean }> {
+  ): Promise<{
+    titles: string[];
+    added: string[];
+    taxonomyAvailable: boolean;
+    booleanTitleExpression: string;
+    titleExpressions: string[];
+  }> {
     const typed = this.unique(titles);
     const resolved = await this.resolveRoles(typed);
     const expanded = resolved.searchTitles.slice(
@@ -85,6 +129,8 @@ export class TitleExpansionService {
       titles: expanded,
       added: expanded.filter((title) => !typed.includes(title)),
       taxonomyAvailable: resolved.taxonomyAvailable,
+      booleanTitleExpression: resolved.booleanTitleExpression ?? '',
+      titleExpressions: resolved.titleExpressions ?? [],
     };
   }
 
@@ -111,11 +157,12 @@ export class TitleExpansionService {
       return result;
     }
 
-    const responses = await this.titleTaxonomyRemoteService.classifyTitles(missing);
+    const responses =
+      await this.titleTaxonomyRemoteService.classifyTitles(missing);
 
     if (responses === null || responses.length !== missing.length) {
       this.logger.warn(
-        'Job title taxonomy unavailable; falling back to the roles as typed',
+        'Job title taxonomy unavailable; using the roles as typed plus their curated family titles',
       );
 
       return null;
@@ -129,7 +176,8 @@ export class TitleExpansionService {
         functionId !== UNCLASSIFIED
           ? {
               functionId,
-              functionRoot: response.function_root?.id?.trim().toLowerCase() ?? null,
+              functionRoot:
+                response.function_root?.id?.trim().toLowerCase() ?? null,
               grade: response.grade?.id?.trim().toLowerCase() ?? null,
             }
           : null;
@@ -144,33 +192,76 @@ export class TitleExpansionService {
     return result;
   }
 
-  private async getCuratedTitles(titleClass: TitleClass): Promise<string[]> {
-    const root = titleClass.functionRoot ?? titleClass.functionId;
+  // The curated boolean query for a function x grade pair, straight from the
+  // arxena-site taxonomy. The specific function is preferred over its root:
+  // "manufacturing" has a clean manufacturing query, while the engineering
+  // root would also match engineers.
+  private async getCuratedQuery(
+    titleClass: TitleClass,
+  ): Promise<string | null> {
     const grade = titleClass.grade ?? CURATED_GRADE_FALLBACK;
-    const key = `${root}|${grade}`;
-    const cached = this.curatedTitlesCache.get(key);
+    const key = `${titleClass.functionId}|${titleClass.functionRoot}|${grade}`;
+    const cached = this.curatedQueryCache.get(key);
 
     if (cached !== undefined && Date.now() - cached.storedAt < CACHE_TTL_MS) {
       return cached.value;
     }
 
-    const response = await this.titleTaxonomyRemoteService.getManualBooleanQueries({
-      kind: 'std_function_root',
-      label: root,
+    const specific = await this.fetchCuratedQuery({
+      kind: 'std_function',
+      label: titleClass.functionId,
       stdGrade: grade,
     });
+    const byRoot =
+      specific === null &&
+      titleClass.functionRoot !== null &&
+      titleClass.functionRoot !== titleClass.functionId
+        ? await this.fetchCuratedQuery({
+            kind: 'std_function_root',
+            label: titleClass.functionRoot,
+            stdGrade: grade,
+          })
+        : null;
+    const value = specific ?? byRoot;
 
-    if (response === null) {
-      return [];
-    }
+    this.curatedQueryCache.set(key, { value, storedAt: Date.now() });
 
-    const titles = (response.items ?? []).flatMap((item) =>
-      extractTitleTermsFromBooleanQuery(item.boolean_query ?? ''),
-    );
+    return value;
+  }
 
-    this.curatedTitlesCache.set(key, { value: titles, storedAt: Date.now() });
+  private async fetchCuratedQuery({
+    kind,
+    label,
+    stdGrade,
+  }: {
+    kind: CuratedQueryKind;
+    label: string;
+    stdGrade: string;
+  }): Promise<string | null> {
+    const response =
+      await this.titleTaxonomyRemoteService.getManualBooleanQueries({
+        kind,
+        label,
+        stdGrade,
+      });
+    const query = (response?.items ?? [])
+      .map((item) => item.boolean_query?.trim() ?? '')
+      .find((item) => item.length > 0);
 
-    return titles;
+    return query ?? null;
+  }
+
+  private async getCuratedTitles(titleClass: TitleClass): Promise<string[]> {
+    const query = await this.getCuratedQuery(titleClass);
+
+    // An AND expression is a boolean filter, not a title list: "VP
+    // Manufacturing" is in it but never written out, so its words must not be
+    // turned into titles.
+    return query === null ? [] : extractTitleTermsFromBooleanQuery(query);
+  }
+
+  private combineExpressions(expressions: string[]): string {
+    return expressions.map((expression) => `(${expression})`).join(' OR ');
   }
 
   private uniqueClasses(classes: TitleClass[]): TitleClass[] {
@@ -192,7 +283,9 @@ export class TitleExpansionService {
   private unique(values: string[]): string[] {
     return [
       ...new Set(
-        values.map((value) => value.trim().toLowerCase()).filter((v) => v !== ''),
+        values
+          .map((value) => value.trim().toLowerCase())
+          .filter((v) => v !== ''),
       ),
     ];
   }

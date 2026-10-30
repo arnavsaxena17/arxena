@@ -14,6 +14,7 @@ const outcome = (overrides: Partial<CompanyOutcome> = {}): CompanyOutcome => ({
   terminalState: 'none_found',
   reason: 'no_such_role',
   sourcesUsed: ['bright_data', 'google'],
+  sourcesAttempted: ['bright_data', 'google'],
   titlesTried: ['Head of Procurement'],
   ...overrides,
 });
@@ -141,7 +142,14 @@ describe('FindPeopleCascadeService.lookupPair', () => {
       outcome({
         terminalState: 'found',
         status: 'matched',
-        people: [person],
+        people: [
+          {
+            ...person,
+            rawProfile: {
+              about: 'Founder at Acme; runs procurement and supply chain',
+            },
+          },
+        ],
         rungUsed: 4,
         spentUsd: 0.01,
         sourcesUsed: ['bright_data'],
@@ -165,6 +173,36 @@ describe('FindPeopleCascadeService.lookupPair', () => {
     expect(lookup.mock.calls[1][1].plan.perPairUsd).toBeCloseTo(0.08);
     expect(result.terminalState).toBe('found');
     expect(result.rungUsed).toBe(4);
+    expect(result.spentUsd).toBeCloseTo(0.03);
+  });
+
+  it('should not count a small company founder who does not run the function', async () => {
+    const { service, lookup } = build();
+
+    lookup.mockResolvedValueOnce(outcome()).mockResolvedValueOnce(
+      outcome({
+        terminalState: 'found',
+        status: 'matched',
+        // A founder with nothing about procurement on the profile
+        people: [
+          { ...person, rawProfile: { about: 'Founder at a design studio' } },
+        ],
+        rungUsed: 4,
+        spentUsd: 0.01,
+        sourcesUsed: ['bright_data'],
+        titlesTried: ['Owner', 'Founder'],
+      }),
+    );
+
+    const result = await service.lookupPair(
+      { name: 'Acme', employees: 40 },
+      input(),
+      roles,
+      'w',
+    );
+
+    expect(result.terminalState).toBe('none_found');
+    // the owner pass was still paid for
     expect(result.spentUsd).toBeCloseTo(0.03);
   });
 
