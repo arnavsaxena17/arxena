@@ -17,6 +17,9 @@ describe('BrightDataSerpService', () => {
     delete process.env.BRIGHT_DATA_FSERP_PROXY_PASSWORD;
     delete process.env.BRIGHT_DATA_FSERP_PROXY_HOST;
     delete process.env.BRIGHT_DATA_FSERP_PROXY_PORT;
+    delete process.env.BRIGHT_DATA_ACCOUNT_ID;
+    // One attempt per query unless a test is about retries
+    process.env.BRIGHT_DATA_SERP_MAX_ATTEMPTS = '1';
     service = new BrightDataSerpService();
   });
 
@@ -287,6 +290,25 @@ describe('BrightDataSerpService', () => {
       expect(result).toBe(answer);
     });
 
+    it('should try a route last after Bright Data refused this IP', async () => {
+      const api = jest
+        .fn()
+        .mockRejectedValueOnce(
+          new Error(
+            'Bright Data SERP failed: HTTP 407 (upstream): client_10030: IP is not whitelisted',
+          ),
+        )
+        .mockResolvedValue(answer);
+      const proxy = jest.fn().mockResolvedValue(answer);
+      const configured = configureRoutes(api, proxy);
+
+      await configured.requestSerpJson(searchUrl);
+      await configured.requestSerpJson(`${searchUrl}&page=2`);
+
+      expect(api).toHaveBeenCalledTimes(1);
+      expect(proxy).toHaveBeenCalledTimes(2);
+    });
+
     it('should throw the last error when every route fails', async () => {
       const api = jest.fn().mockRejectedValue(new Error('fetch failed'));
       const proxy = jest.fn().mockRejectedValue(new Error('HTTP 502 upstream'));
@@ -348,6 +370,34 @@ describe('BrightDataSerpService', () => {
       expect(api).toHaveBeenCalledTimes(2);
 
       jest.useRealTimers();
+    });
+
+    it('should retry a transient failure after the cooldown', async () => {
+      jest.useFakeTimers();
+      process.env.BRIGHT_DATA_SERP_MAX_ATTEMPTS = '3';
+
+      const api = jest
+        .fn()
+        .mockRejectedValueOnce(new Error('HTTP 502 (upstream)'))
+        .mockResolvedValueOnce(answer);
+      const result = withApi(api).requestSerpJson(searchUrl);
+
+      await jest.advanceTimersByTimeAsync(17_000);
+      await expect(result).resolves.toBe(answer);
+      expect(api).toHaveBeenCalledTimes(2);
+
+      jest.useRealTimers();
+    });
+
+    it('should not retry when the zone refuses the request', async () => {
+      process.env.BRIGHT_DATA_SERP_MAX_ATTEMPTS = '3';
+
+      const api = jest.fn().mockRejectedValue(new Error('HTTP 407 (upstream)'));
+
+      await expect(withApi(api).requestSerpJson(searchUrl)).rejects.toThrow(
+        'HTTP 407',
+      );
+      expect(api).toHaveBeenCalledTimes(1);
     });
 
     it('should stop waiting for a shared query when the caller aborts', async () => {

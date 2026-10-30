@@ -65,8 +65,29 @@ const isRouteFailure = (error: unknown): boolean =>
     error.message,
   );
 
+// The zone refused who we are (bad credentials, no balance, or this machine's
+// IP missing from the zone's allowlist). Every query on that route fails the
+// same way until the zone settings change, so no retry can help.
+const isRouteRefusal = (error: unknown): boolean =>
+  error instanceof Error &&
+  /HTTP (401|402|403|407)\b|Proxy response \((401|402|403|407)\)|ip_forbidden|client_10030|not whitelisted/i.test(
+    error.message,
+  );
+
+// A failure that often clears on its own: Google not rendering in time (502
+// expect_element), Bright Data throttling (429), or a dropped connection
+const isTransientFailure = (error: unknown): boolean =>
+  error instanceof Error &&
+  !isRouteRefusal(error) &&
+  /HTTP (429|5\d\d)\b|ECONNRESET|EPIPE|UND_ERR_SOCKET|UND_ERR_CONNECT_TIMEOUT|other side closed|non-JSON reply/i.test(
+    error.message,
+  );
+
 // Bright Data: wait at least 15 seconds before sending a failed query again
 const QUERY_COOLDOWN_MS = 16_000;
+
+// A refused route is tried last, not first, for this long
+const ROUTE_REFUSAL_PENALTY_MS = 5 * 60_000;
 
 // Stop waiting for a shared request when this caller is aborted; the request
 // itself carries on for the other callers
@@ -224,6 +245,14 @@ export class BrightDataSerpService {
     return Number(process.env.BRIGHT_DATA_REQUEST_TIMEOUT_MS ?? 90_000);
   }
 
+  // Attempts per query across transient failures, each after the cooldown
+  private get serpMaxAttempts(): number {
+    return Math.max(
+      1,
+      Number(process.env.BRIGHT_DATA_SERP_MAX_ATTEMPTS ?? 3) || 1,
+    );
+  }
+
   private get datasetScrapeTimeoutMs(): number {
     return Number(process.env.BRIGHT_DATA_DATASET_SCRAPE_TIMEOUT_MS ?? 360_000);
   }
@@ -334,6 +363,7 @@ export class BrightDataSerpService {
     Promise<BrightDataSerpGoogleJson>
   >();
   private readonly queryCooldownUntil = new Map<string, number>();
+  private readonly routeRefusedUntil = new Map<string, number>();
 
   async requestSerpJson(
     searchUrl: string,
@@ -378,7 +408,25 @@ export class BrightDataSerpService {
       }
 
       try {
-        return await this.requestSerpJsonOverRoutes(searchUrl, sharedOptions);
+        for (let attempt = 1; ; attempt++) {
+          try {
+            return await this.requestSerpJsonOverRoutes(
+              searchUrl,
+              sharedOptions,
+            );
+          } catch (error) {
+            if (attempt >= this.serpMaxAttempts || !isTransientFailure(error)) {
+              throw error;
+            }
+
+            this.logger.warn(
+              `Bright Data SERP attempt ${attempt} failed, retrying in ${QUERY_COOLDOWN_MS / 1000}s: ${error instanceof Error ? error.message : String(error)}`,
+            );
+            await new Promise((resolve) =>
+              setTimeout(resolve, QUERY_COOLDOWN_MS),
+            );
+          }
+        }
       } catch (error) {
         this.queryCooldownUntil.set(queryKey, Date.now() + QUERY_COOLDOWN_MS);
         this.pruneQueryCooldowns();
@@ -451,11 +499,23 @@ export class BrightDataSerpService {
       });
     }
 
+    // Routes refused recently go last, keeping their relative order
+    const now = Date.now();
+    const isPenalized = (name: string) =>
+      (this.routeRefusedUntil.get(name) ?? 0) > now;
+
+    routes.sort(
+      (left, right) =>
+        Number(isPenalized(left.name)) - Number(isPenalized(right.name)),
+    );
+
     let lastError: unknown;
 
     for (const [index, route] of routes.entries()) {
       try {
         const result = await route.run();
+
+        this.routeRefusedUntil.delete(route.name);
 
         await this.rawFetchArchiveService?.archive({
           provider: 'serp',
@@ -468,6 +528,19 @@ export class BrightDataSerpService {
         return result;
       } catch (error) {
         lastError = error;
+
+        if (isRouteRefusal(error)) {
+          if (!isPenalized(route.name)) {
+            this.logger.error(
+              `${route.name} refused by Bright Data, trying it last for the next ${ROUTE_REFUSAL_PENALTY_MS / 60_000} min. Check the zone's credentials and IP allowlist: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          }
+
+          this.routeRefusedUntil.set(
+            route.name,
+            Date.now() + ROUTE_REFUSAL_PENALTY_MS,
+          );
+        }
 
         if (
           options.signal?.aborted === true ||
@@ -639,26 +712,38 @@ export class BrightDataSerpService {
         dispatcher,
       } as RequestInit);
     } catch (error) {
-      const cause = (error as { cause?: unknown })?.cause as
-        | {
-            code?: string;
-            message?: string;
-            address?: string;
-            port?: number;
-            errors?: Array<{ code?: string; address?: string; port?: number }>;
-          }
+      type FetchCause = {
+        code?: string;
+        message?: string;
+        address?: string;
+        port?: number;
+        errors?: Array<{ code?: string; address?: string; port?: number }>;
+        cause?: unknown;
+      };
+      // A refused proxy tunnel nests its reason ("Proxy response (407)") one
+      // level below a "Request was cancelled" with code 0
+      let cause = (error as { cause?: unknown })?.cause as
+        | FetchCause
         | undefined;
+
+      while (
+        cause?.cause !== undefined &&
+        cause.cause !== null &&
+        typeof cause.cause === 'object'
+      ) {
+        cause = cause.cause as FetchCause;
+      }
+
       const attempts = (cause?.errors ?? [])
         .map((attempt) =>
           `${attempt.address ?? '?'}:${attempt.port ?? '?'} ${attempt.code ?? ''}`.trim(),
         )
         .join(', ');
       const detail = [
-        cause?.code ??
-          (cause?.message !== undefined && cause.message !== ''
-            ? cause.message
-            : undefined) ??
-          (error as Error)?.name ??
+        [cause?.code, cause?.message]
+          .filter((part) => part !== undefined && part !== '')
+          .join(': ') ||
+          (error as Error)?.name ||
           'unknown',
         attempts !== '' ? attempts : undefined,
         cause?.address !== undefined
@@ -736,11 +821,13 @@ export class BrightDataSerpService {
     const rawText = await response.text();
 
     if (!response.ok) {
-      this.logger.warn(
-        `Bright Data SERP proxy HTTP ${response.status}: ${rawText.slice(0, 300)}`,
-      );
+      const reason =
+        response.headers.get('x-brd-err-msg') ??
+        response.headers.get('x-brd-error') ??
+        rawText.slice(0, 300);
+
       throw new Error(
-        `Bright Data SERP failed: HTTP ${response.status} ${response.statusText}`,
+        `Bright Data SERP failed: HTTP ${response.status} ${response.statusText}: ${reason}`,
       );
     }
 
@@ -912,8 +999,17 @@ export class BrightDataSerpService {
       parsed.status_code >= 400 &&
       !Array.isArray(parsed.organic)
     ) {
+      const headers = (parsed as { headers?: Record<string, unknown> }).headers;
+      const reason = [
+        headers?.['x-brd-err-msg'],
+        headers?.['x-brd-error'],
+        headers?.['proxy-status'],
+      ].find(
+        (value): value is string => typeof value === 'string' && value !== '',
+      );
+
       throw new Error(
-        `Bright Data SERP failed: HTTP ${parsed.status_code} (upstream)`,
+        `Bright Data SERP failed: HTTP ${parsed.status_code} (upstream)${reason !== undefined ? `: ${reason.slice(0, 300)}` : ''}`,
       );
     }
 
