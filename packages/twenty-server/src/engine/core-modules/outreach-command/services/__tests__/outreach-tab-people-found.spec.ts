@@ -53,6 +53,11 @@ describe('OutreachTabService.syncPeopleFound', () => {
       'c1',
       'c1',
     ]);
+    // only the relinked row is named, so the tab upserts it instead of
+    // refetching the list
+    expect(setPeople.mock.calls[0][3]).toEqual({
+      writtenRows: [expect.objectContaining({ id: 'p2' })],
+    });
     // nothing says Ghost Co was searched, so it stays blank
     expect(written[1].otherFields).toBeUndefined();
   });
@@ -72,5 +77,58 @@ describe('OutreachTabService.syncPeopleFound', () => {
 
     expect(result.updated).toBe(0);
     expect(setCompanies).not.toHaveBeenCalled();
+  });
+});
+
+describe('OutreachTabService.getAll (people)', () => {
+  const buildReadService = (people: Array<Record<string, unknown>>) => {
+    const repository = { find: jest.fn().mockResolvedValue([]) };
+
+    return new OutreachTabService(
+      { get: jest.fn().mockResolvedValue({ people }), set: jest.fn() } as never,
+      {
+        get: jest.fn().mockResolvedValue({ companies: [] }),
+        set: jest.fn(),
+      } as never,
+      {
+        executeInWorkspaceContext: (callback: () => unknown) => callback(),
+        getRepository: jest.fn().mockResolvedValue(repository),
+      } as never,
+    );
+  };
+
+  it('should collapse duplicate people rows on read', async () => {
+    const service = buildReadService([
+      {
+        id: 'google-row',
+        name: 'Naveen Srivastava',
+        companyName: 'Jubilant FoodWorks',
+        linkedinUrl: 'https://in.linkedin.com/in/naveen-supplychain-strategy',
+        title: '',
+        warmPath: '—',
+        stage: 'queued',
+        email: '',
+      },
+      {
+        id: 'harvest-row',
+        name: 'Naveen Srivastava',
+        companyName: 'Jubilant FoodWorks Ltd.',
+        linkedinUrl:
+          'https://www.linkedin.com/in/ACwAAAOe40MBPIme-JeJEEBEnnp0xtsjypwL6ks',
+        title: '',
+        warmPath: '—',
+        stage: 'queued',
+        email: '',
+      },
+    ]);
+
+    const rows = await service.getAll({
+      workspaceId: 'w',
+      projectId: 'p',
+      tab: 'people',
+    });
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0].id).toBe('google-row');
   });
 });

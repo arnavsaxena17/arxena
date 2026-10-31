@@ -26,7 +26,9 @@ export const TITLE_FAMILY_FALLBACKS: readonly TitleFamilyFallback[] = [
   },
   {
     id: 'plant-head',
-    match: /\b(plant|factory|works|unit head|site head|manufacturing)\b/,
+    // In industrial companies the plant's top role is written "Operations
+    // Head" as often as "Manufacturing Head"; both are the same role there.
+    match: /\b(plant|factory|works|unit head|site head|manufacturing|production)\b/,
     equivalents: [
       'Plant Head',
       'Plant Manager',
@@ -35,6 +37,9 @@ export const TITLE_FAMILY_FALLBACKS: readonly TitleFamilyFallback[] = [
       'Unit Head',
       'Site Head',
       'Manufacturing Head',
+      'Production Head',
+      'Operations Head',
+      'Head of Operations',
       'General Manager Operations',
     ],
   },
@@ -53,7 +58,9 @@ export const TITLE_FAMILY_FALLBACKS: readonly TitleFamilyFallback[] = [
   },
   {
     id: 'supply-chain',
-    match: /\b(supply chain|scm|logistics|warehouse|distribution)\b/,
+    // Logistics is a child function, not a synonym. Including it here made a
+    // "Head of Supply Chain" search return logistics and procurement heads.
+    match: /\b(supply chain|scm)\b/,
     equivalents: [
       'Head of Supply Chain',
       'Supply Chain Head',
@@ -61,8 +68,20 @@ export const TITLE_FAMILY_FALLBACKS: readonly TitleFamilyFallback[] = [
       'Director Supply Chain',
       'Chief Supply Chain Officer',
       'SCM Head',
-      'Head of Logistics',
+      'Supply Chain Management Head',
       'General Manager Supply Chain',
+    ],
+  },
+  {
+    id: 'logistics',
+    match: /\b(logistics|freight|transportation|warehouse|distribution)\b/,
+    equivalents: [
+      'Head of Logistics',
+      'Logistics Head',
+      'VP Logistics',
+      'Director Logistics',
+      'General Manager Logistics',
+      'Logistics Manager',
     ],
   },
   {
@@ -106,7 +125,7 @@ export const TITLE_FAMILY_FALLBACKS: readonly TitleFamilyFallback[] = [
   },
 ];
 
-const MAX_EQUIVALENTS_PER_ROLE = 8;
+const MAX_EQUIVALENTS_PER_ROLE = 12;
 
 const LEADERSHIP_WORD =
   /\b(vp|vice president|head|director|chief|president|general manager|gm|manager|lead|leader|coo|cfo|cto|chro|cro)\b/;

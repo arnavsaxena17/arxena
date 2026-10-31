@@ -1,5 +1,7 @@
 import {
+  closestRequestedRole,
   getRequestedRoleOrder,
+  isLeadershipCandidateTitle,
   scoreRoleMatch,
 } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/role-title-matching.util';
 import { type TitleClass } from 'src/engine/core-modules/title-taxonomy/title-class.type';
@@ -87,6 +89,109 @@ describe('scoreRoleMatch', () => {
     expect(score('General Manager Human Resources', HR_CLASS)).toBe(0);
   });
 
+  it('should reject a sibling function in role scope and keep it in family scope', () => {
+    const SUPPLY_CHAIN_CLASS: TitleClass = {
+      functionId: 'supply chain',
+      functionRoot: 'supply chain',
+      grade: 'leadership',
+    };
+    const LOGISTICS_CLASS: TitleClass = {
+      functionId: 'logistics',
+      functionRoot: 'supply chain',
+      grade: 'leadership',
+    };
+    const PROCUREMENT_CLASS: TitleClass = {
+      functionId: 'procurement',
+      functionRoot: 'supply chain',
+      grade: 'leadership',
+    };
+    const scoreFor = (
+      title: string,
+      candidateClass: TitleClass,
+      scope: 'role' | 'family' = 'role',
+    ) =>
+      scoreRoleMatch({
+        title,
+        roles: ['Head of Supply Chain'],
+        requestedClasses: [SUPPLY_CHAIN_CLASS],
+        candidateClass,
+        scope,
+      });
+
+    // Role scope: logistics/procurement lead different functions, not the
+    // supply chain role the user asked for.
+    expect(scoreFor('Head of Logistics', LOGISTICS_CLASS)).toBe(0);
+    expect(scoreFor('Head of Procurement', PROCUREMENT_CLASS)).toBe(0);
+    // Family/coverage scope keeps the related rung.
+    expect(scoreFor('Head of Logistics', LOGISTICS_CLASS, 'family')).toBe(1);
+    expect(scoreFor('Head of Procurement', PROCUREMENT_CLASS, 'family')).toBe(
+      1,
+    );
+    // The exact function still outranks the sibling
+    expect(scoreFor('Head of Supply Chain', SUPPLY_CHAIN_CLASS)).toBe(2);
+    // Naming the child function in the request makes it relevant again.
+    expect(
+      scoreRoleMatch({
+        title: 'Head of Logistics',
+        roles: ['Head of Supply Chain & Logistics'],
+        requestedClasses: [SUPPLY_CHAIN_CLASS, PROCUREMENT_CLASS],
+        candidateClass: LOGISTICS_CLASS,
+      }),
+    ).toBe(1);
+  });
+
+  it('should accept an industrial operations head for a manufacturing request, not the reverse', () => {
+    const MANUFACTURING_CLASS: TitleClass = {
+      functionId: 'manufacturing',
+      functionRoot: 'engineering',
+      grade: 'leadership',
+    };
+    const OPERATIONS_CLASS: TitleClass = {
+      functionId: 'operations',
+      functionRoot: 'operations',
+      grade: 'leadership',
+    };
+
+    expect(
+      scoreRoleMatch({
+        title: 'Head of Operations',
+        roles: ['Head of Manufacturing'],
+        requestedClasses: [MANUFACTURING_CLASS],
+        candidateClass: OPERATIONS_CLASS,
+      }),
+    ).toBe(2);
+    // Directional: operations is broader, so it must not collapse to manufacturing
+    expect(
+      scoreRoleMatch({
+        title: 'Head of Manufacturing',
+        roles: ['Head of Operations'],
+        requestedClasses: [OPERATIONS_CLASS],
+        candidateClass: MANUFACTURING_CLASS,
+      }),
+    ).toBe(0);
+  });
+
+  it('should not treat another root as a sibling', () => {
+    const SUPPLY_CHAIN_CLASS: TitleClass = {
+      functionId: 'supply chain',
+      functionRoot: 'supply chain',
+      grade: 'leadership',
+    };
+
+    expect(
+      scoreRoleMatch({
+        title: 'Head of Sales',
+        roles: ['Head of Supply Chain'],
+        requestedClasses: [SUPPLY_CHAIN_CLASS],
+        candidateClass: {
+          functionId: 'sales',
+          functionRoot: 'sales',
+          grade: 'leadership',
+        },
+      }),
+    ).toBe(0);
+  });
+
   it('should reject a same-function title of a different grade', () => {
     expect(score('Chief of Staff', { ...CEO_CLASS, grade: 'entry' })).toBe(0);
   });
@@ -126,4 +231,66 @@ describe('getRequestedRoleOrder', () => {
     );
     expect(getRequestedRoleOrder('Head of Sales', ROLES)).toBe(ROLES.length);
   });
+});
+
+describe('role attribution across requested roles', () => {
+  it('should match a role written in the other word order', () => {
+    expect(
+      scoreRoleMatch({
+        title: 'Head of Procurement',
+        roles: ['Procurement Head'],
+        requestedClasses: [],
+        candidateClass: null,
+      }),
+    ).toBe(2);
+  });
+
+  it('should not match a bare grade word to every role', () => {
+    expect(
+      scoreRoleMatch({
+        title: 'Head of Sales',
+        roles: ['Procurement Head'],
+        requestedClasses: [],
+        candidateClass: null,
+      }),
+    ).toBe(0);
+  });
+
+  it('should file a judge-kept person under the role their title is closest to', () => {
+    expect(
+      closestRequestedRole('Chief Procurement Officer', [
+        'Head of Supply Chain',
+        'Procurement Head',
+      ]),
+    ).toBe('Procurement Head');
+  });
+
+  it('should fall back to the role whose query found the person on a tie', () => {
+    expect(
+      closestRequestedRole(
+        'Vice President',
+        ['Head of Supply Chain', 'Procurement Head'],
+        'Procurement Head',
+      ),
+    ).toBe('Procurement Head');
+  });
+});
+
+describe('isLeadershipCandidateTitle', () => {
+  it.each([
+    'Head of Procurement',
+    'Associate Director - Supply Chain',
+    'Chief Executive Officer',
+    'Senior Manager Procurement',
+    '',
+  ])('should look up %p', (title) => {
+    expect(isLeadershipCandidateTitle(title)).toBe(true);
+  });
+
+  it.each(['Assistant Manager', 'Operations Manager', 'Procurement Executive'])(
+    'should not pay to look up %p',
+    (title) => {
+      expect(isLeadershipCandidateTitle(title)).toBe(false);
+    },
+  );
 });

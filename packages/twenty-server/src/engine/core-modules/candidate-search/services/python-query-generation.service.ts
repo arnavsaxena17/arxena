@@ -15,6 +15,12 @@ export type PythonQueryInput = {
   /** Country/region names for LinkedIn location filter (e.g. ["india"]). */
   locations?: string[];
   top_n_terms?: number;
+  /**
+   * role = the function named; family = the whole root subtree. Org-chart
+   * function-root lookups pass family explicitly so they keep every child
+   * function even if they also send a function list.
+   */
+  scope?: 'role' | 'family';
 };
 
 @Injectable()
@@ -59,6 +65,7 @@ export class PythonQueryGenerationService {
         function_root: [{ name: trimmed, exclude: false }],
         company_names: [],
         raw_job_titles: [],
+        scope: 'family',
         ...(typeof options?.topNTerms === 'number' && options.topNTerms > 0
           ? { top_n_terms: options.topNTerms }
           : { top_n_terms: 8 }),
@@ -116,6 +123,7 @@ export class PythonQueryGenerationService {
         function_root: input.function_root ?? [],
         company_names: input.company_names ?? [],
         raw_job_titles: input.raw_job_titles ?? [],
+        ...(input.scope ? { scope: input.scope } : {}),
         ...(Array.isArray(input.locations) && input.locations.length > 0
           ? { locations: input.locations }
           : {}),
@@ -162,6 +170,7 @@ export class PythonQueryGenerationService {
         function_root: input.function_root ?? [],
         company_names: input.company_names ?? [],
         raw_job_titles: input.raw_job_titles ?? [],
+        ...(input.scope ? { scope: input.scope } : {}),
         ...(Array.isArray(input.locations) && input.locations.length > 0
           ? { locations: input.locations }
           : {}),

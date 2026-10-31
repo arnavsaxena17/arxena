@@ -61,7 +61,7 @@ Use what the evidence says and what you reliably know about these companies. If 
 
 2. role: does the candidate hold one of the wanted roles now?
 - exact: the wanted role or the same position under another title (CEO = chief executive officer = group CEO = MD and CEO; managing director = MD = whole-time director and CEO). A title that holds the wanted role together with others is exact: Founder & CEO is a CEO, Chairman & Managing Director is a managing director.
-- related: a nearby senior role: deputy, vice, acting, executive chair, co-founder or founder when it was not asked for, another C-suite officer.
+- related: a nearby senior role: deputy, vice, acting, executive chair, co-founder or founder when it was not asked for, another C-suite officer. When the wanted role joins two functions ("Head of Supply Chain & Logistics"), a title that leads either of them ("Head of Logistics", "Head of Procurement") is related, not none. When the wanted role names one function, a title that leads a different function in the same department is not related: "Head of Logistics" is none for "Head of Supply Chain". An explicitly equivalent title is exact (an industrial "Head of Operations" for "Head of Manufacturing").
 - none: any other role, a former role, or no role stated.
 Put the reason in roleNote, in one short sentence.
 

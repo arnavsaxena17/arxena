@@ -2,8 +2,10 @@ import { z } from 'zod';
 
 export const OutreachTabToolInputZodSchema = z.object({
   action: z
-    .enum(['export', 'dedupe'])
-    .describe('export the tab as CSV, or dedupe it against the CRM'),
+    .enum(['export', 'dedupe', 'remove'])
+    .describe(
+      'export the tab as CSV, dedupe it (against the CRM and itself), or remove exact rows',
+    ),
   projectId: z
     .string()
     .optional()
@@ -12,7 +14,7 @@ export const OutreachTabToolInputZodSchema = z.object({
     ),
   tab: z
     .enum(['companies', 'people'])
-    .describe('Which project tab to export or dedupe'),
+    .describe('Which project tab to export, dedupe or remove from'),
   against: z
     .enum(['crm'])
     .optional()
@@ -22,6 +24,12 @@ export const OutreachTabToolInputZodSchema = z.object({
     .optional()
     .describe(
       'dedupe only: drop the matching rows instead of only marking them',
+    ),
+  rowIds: z
+    .array(z.string())
+    .optional()
+    .describe(
+      'remove only: the exact row ids to drop from the tab (ids come from get_outreach_tab). Use this to delete one ephemeral row',
     ),
 });
 

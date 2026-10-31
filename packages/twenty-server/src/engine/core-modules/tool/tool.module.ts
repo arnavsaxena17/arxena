@@ -19,6 +19,8 @@ import { EmailComposerService } from 'src/engine/core-modules/tool/tools/email-t
 import { SendEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/send-email-tool';
 import { FetchProfilesService } from 'src/engine/core-modules/tool/tools/fetch-profiles-tool/fetch-profiles.service';
 import { FetchProfilesTool } from 'src/engine/core-modules/tool/tools/fetch-profiles-tool/fetch-profiles-tool';
+import { ResolveLinkedinUrlTool } from 'src/engine/core-modules/tool/tools/resolve-linkedin-url-tool/resolve-linkedin-url-tool';
+import { WriteLinkedinUrlTool } from 'src/engine/core-modules/tool/tools/write-linkedin-url-tool/write-linkedin-url-tool';
 import { GetSourcingLedgerTool } from 'src/engine/core-modules/tool/tools/sourcing-ledger-tool/get-sourcing-ledger-tool';
 import { GetSourceCapabilitiesTool } from 'src/engine/core-modules/tool/tools/source-capabilities-tool/get-source-capabilities-tool';
 import { GetScoringPlanTool } from 'src/engine/core-modules/tool/tools/source-capabilities-tool/get-scoring-plan-tool';
@@ -35,12 +37,15 @@ import {
 import { UpsertOutreachTargetCompaniesTool } from 'src/engine/core-modules/tool/tools/outreach-target-companies-tool/upsert-outreach-target-companies-tool';
 import { SaveOutreachTargetsToCrmTool } from 'src/engine/core-modules/tool/tools/outreach-save-to-crm-tool/save-outreach-targets-to-crm-tool';
 import { TitleTaxonomyModule } from 'src/engine/core-modules/title-taxonomy/title-taxonomy.module';
+import { TheOfficialBoardModule } from 'src/engine/core-modules/theofficialboard/theofficialboard.module';
+import { TheOrgModule } from 'src/engine/core-modules/theorg/theorg.module';
 import { FindPeopleByCompanyTool } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool';
 import { CandidateJudgeService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/candidate-judge.service';
 import { FindPeopleCascadeService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-cascade.service';
 import { FindPeopleRunService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-run.service';
 import { ProcessFindPeopleChunkJob } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/process-find-people-chunk.job';
 import { FindPeopleGoogleSearchService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-google-search.service';
+import { FindPeopleSerpSourcesService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-serp-sources.service';
 import { LinkedinProfileResolverService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/linkedin-profile-resolver.service';
 import { GoogleResultExtractionService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/google-result-extraction.service';
 import { AiBillingModule } from 'src/engine/metadata-modules/ai/ai-billing/ai-billing.module';
@@ -111,6 +116,10 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     forwardRef(() => BrightDataModule),
     LocalBusinessDataModule,
     OrgChartModule,
+    // TheOrg / The Official Board people for the SERP-side sources; both read
+    // BrightDataModule, which already refers back here
+    forwardRef(() => TheOrgModule),
+    forwardRef(() => TheOfficialBoardModule),
     // WorkflowRunner → executor actions → ToolModule → OutreachCommand (cycle)
     forwardRef(() => OutreachCommandModule),
   ],
@@ -151,6 +160,8 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     FindPeopleByCompanyTool,
     FetchProfilesService,
     FetchProfilesTool,
+    ResolveLinkedinUrlTool,
+    WriteLinkedinUrlTool,
     GetSourcingLedgerTool,
     GetSourceCapabilitiesTool,
     GetScoringPlanTool,
@@ -158,6 +169,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     FindPeopleRunService,
     ProcessFindPeopleChunkJob,
     FindPeopleGoogleSearchService,
+    FindPeopleSerpSourcesService,
     GoogleResultExtractionService,
     CandidateJudgeService,
     LinkedinProfileResolverService,
@@ -217,6 +229,8 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     StartOutreachTool,
     FindPeopleByCompanyTool,
     FetchProfilesTool,
+    ResolveLinkedinUrlTool,
+    WriteLinkedinUrlTool,
     GetSourcingLedgerTool,
     GetSourceCapabilitiesTool,
     GetScoringPlanTool,

@@ -58,6 +58,10 @@ export type FindPeopleRunState = {
   userId?: string;
   userWorkspaceId?: string;
   threadId?: string;
+  // The chat turn and tool call that started the run, so the provider
+  // requests its chunks make are logged under them
+  turnId?: string;
+  toolCallId?: string;
   startedAt: string;
   updatedAt?: string;
   finishedAt?: string;

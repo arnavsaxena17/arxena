@@ -23,15 +23,41 @@ export const resolveGoogleSerpResultLimit = (limit?: number): number => {
   return Math.min(MAX_GOOGLE_SERP_RESULT_LIMIT, Math.floor(limit));
 };
 
+export type GoogleSerpSearchUrlOptions = {
+  // Google market ("in", "ae", "us"). Without it Bright Data's egress country
+  // decides the market, which changes per request, so the same query can be
+  // answered with a different country's results each time.
+  country?: string;
+  // Ask Bright Data for Google's AI Overview. It is slower (~5-10 s) and only
+  // some queries return one, so callers opt in per query, not per run.
+  aiOverview?: boolean;
+  // The AI Overview zone answers with parsed JSON only when brd_json=1 is on
+  // the Google URL; the normal SERP API route sets the format in the body
+  brdJson?: boolean;
+};
+
 export const buildGoogleSerpSearchUrl = (
   query: string,
   limit: number,
+  options: GoogleSerpSearchUrlOptions = {},
 ): string => {
   const searchParams = new URLSearchParams({
     q: query,
     hl: 'en',
     num: String(limit),
   });
+
+  if (isNonEmptyString(options.country)) {
+    searchParams.set('gl', options.country);
+  }
+
+  if (options.aiOverview === true) {
+    searchParams.set('brd_ai_overview', '2');
+  }
+
+  if (options.brdJson === true) {
+    searchParams.set('brd_json', '1');
+  }
 
   return `https://www.google.com/search?${searchParams.toString()}`;
 };

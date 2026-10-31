@@ -13,14 +13,12 @@ import {
 } from 'src/engine/core-modules/outreach-command/services/outreach-companies-cache.service';
 import { OutreachSpreadsheetMappingService } from 'src/engine/core-modules/outreach-command/services/outreach-spreadsheet-mapping.service';
 import { OutreachPeopleCacheService } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
+import { mergePeople } from 'src/engine/core-modules/outreach-command/utils/merge-people.util';
 import {
   companyDedupeKey,
   toEphemeralCompany,
 } from 'src/engine/core-modules/tool/tools/outreach-target-companies-tool/upsert-outreach-target-companies-tool';
-import {
-  personDedupeKey,
-  toEphemeralPerson,
-} from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
+import { toEphemeralPerson } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
 import {
   ImportOutreachSpreadsheetInputZodSchema,
   InspectOutreachSpreadsheetInputZodSchema,
@@ -510,37 +508,23 @@ Use only after inspect_outreach_spreadsheet and the user's confirmation of the p
         ? ((await this.outreachPeopleCacheService.get(workspaceId, projectId))
             ?.people ?? [])
         : [];
-    const byKey = new Map(
-      existing.map((person) => [personDedupeKey(person), person]),
-    );
-
-    for (const person of people) {
-      const incoming = toEphemeralPerson({
+    // Same identity keys as every other writer: a spreadsheet row is the same
+    // person as a search row when the URL, the email or name + employer match
+    const incoming = people.map((person) =>
+      toEphemeralPerson({
         name: person.name,
         title: person.title,
         linkedinUrl: person.linkedinUrl,
         email: person.email,
         companyName: person.companyName,
         companyId: companyIdByName.get(person.companyName) ?? '',
-      });
-      const key = personDedupeKey(incoming);
-      const previous = byKey.get(key);
+      }),
+    );
+    const next = mergePeople(existing, incoming);
 
-      byKey.set(key, {
-        ...(previous ?? incoming),
-        ...incoming,
-        id: previous?.id ?? incoming.id,
-        ...(previous?.otherFields !== undefined
-          ? { otherFields: previous.otherFields }
-          : {}),
-      });
-    }
+    await this.outreachPeopleCacheService.set(workspaceId, projectId, next);
 
-    await this.outreachPeopleCacheService.set(workspaceId, projectId, [
-      ...byKey.values(),
-    ]);
-
-    return byKey.size;
+    return next.length;
   }
 }
 

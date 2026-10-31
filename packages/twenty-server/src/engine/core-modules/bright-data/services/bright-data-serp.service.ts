@@ -4,6 +4,10 @@ import { connect } from 'net';
 
 import { Injectable, Logger, Optional } from '@nestjs/common';
 
+import {
+  ProviderCallLogService,
+  trackProviderCall,
+} from 'src/engine/core-modules/provider-call-log/services/provider-call-log.service';
 import { ProviderQueryCacheService } from 'src/engine/core-modules/cache-storage/services/provider-query-cache.service';
 import { RawFetchArchiveService } from 'src/engine/core-modules/raw-fetch-archive/raw-fetch-archive.service';
 
@@ -55,15 +59,29 @@ export type BrightDataDatasetScrapeInput = {
   tbm?: string;
 };
 
-// A route that cannot be reached, or whose zone credentials or account are
-// refused, is worth another route. An answer from Bright Data itself (a 502 for
-// a query Google rejected, a 429 "this query recently failed, wait 15 s") is
-// not: the next route would send the same query at once and hit the same lock.
-const isRouteFailure = (error: unknown): boolean =>
+// Bright Data scraped the page and threw it away: Google answered with a
+// captcha or an interstitial (x-brd-error-code captcha) or a body its parser
+// would not accept (expect_body / reject_body), so a 502 came back with an
+// empty body. That is per-zone luck — a different zone gets a different exit IP
+// and usually a clean page — so the same query is worth sending to the next
+// route straight away. Measured Oct 2026: ~1 in 4 queries in a parallel burst,
+// and the fallback zone answered a fair share of those.
+const isRejectedSerpAnswer = (error: unknown): boolean =>
   error instanceof Error &&
-  /HTTP (401|402|403|407)\b|aborted|fetch failed|timed out|ECONN|ENOTFOUND|ETIMEDOUT|socket/i.test(
+  /x-brd-error-code|captcha|expect_body|reject_body|redirect location was rejected|response body was rejected|Unexpected Status/i.test(
     error.message,
   );
+
+// A route that cannot be reached, or whose zone credentials or account are
+// refused, is worth another route. A 429 "this query recently failed" is not:
+// that cooldown is kept per account, not per zone, so the next route would send
+// the same query at once and hit the same lock.
+const isRouteFailure = (error: unknown): boolean =>
+  error instanceof Error &&
+  (isRejectedSerpAnswer(error) ||
+    /HTTP (401|402|403|407)\b|aborted|fetch failed|timed out|ECONN|ENOTFOUND|ETIMEDOUT|socket/i.test(
+      error.message,
+    ));
 
 // The zone refused who we are (bad credentials, no balance, or this machine's
 // IP missing from the zone's allowlist). Every query on that route fails the
@@ -73,6 +91,13 @@ const isRouteRefusal = (error: unknown): boolean =>
   /HTTP (401|402|403|407)\b|Proxy response \((401|402|403|407)\)|ip_forbidden|client_10030|not whitelisted/i.test(
     error.message,
   );
+
+// Bright Data says which way the scrape went in a header; a log line that only
+// repeats "redirect location was rejected" hides the reason (captcha)
+const describeSerpErrorCode = (code: string | null | undefined): string =>
+  code === null || code === undefined || code.trim() === ''
+    ? ''
+    : ` (${code.trim()})`;
 
 // A failure that often clears on its own: Google not rendering in time (502
 // expect_element), Bright Data throttling (429), or a dropped connection
@@ -132,6 +157,8 @@ export class BrightDataSerpService {
     private readonly rawFetchArchiveService?: RawFetchArchiveService,
     @Optional()
     private readonly providerQueryCache?: ProviderQueryCacheService,
+    @Optional()
+    private readonly providerCallLog?: ProviderCallLogService,
   ) {}
 
   private get apiKey(): string | undefined {
@@ -301,6 +328,94 @@ export class BrightDataSerpService {
     options?: BrightDataSerpRequestOptions,
   ): Promise<BrightDataSerpGoogleJson> {
     return this.requestSerpJson(searchUrl, options);
+  }
+
+  /**
+   * One SERP request in a caller-named zone, straight through the API key.
+   *
+   * The AI Overview zone (`serp_ai_overview`) has its own proxy password and
+   * answers with `ai_overview` + `organic` only when Google shows an overview;
+   * a miss is an empty body, not an organic-only page. It is a supplementary
+   * pass, so it bypasses the shared proxy route and its cache: an empty answer
+   * must be retried, never replayed.
+   */
+  async requestSerpGoogleJsonInZone(
+    searchUrl: string,
+    zone: string,
+    options: { signal?: AbortSignal; timeoutMs?: number } = {},
+  ): Promise<BrightDataSerpGoogleJson> {
+    return trackProviderCall(
+      this.providerCallLog,
+      {
+        provider: 'bright-data-serp-zone',
+        operation: `serp-zone:${zone}`,
+        request: { zone, url: searchUrl },
+      },
+      () => this.requestSerpGoogleJsonInZoneUncached(searchUrl, zone, options),
+    );
+  }
+
+  private async requestSerpGoogleJsonInZoneUncached(
+    searchUrl: string,
+    zone: string,
+    options: { signal?: AbortSignal; timeoutMs?: number },
+  ): Promise<BrightDataSerpGoogleJson> {
+    const key = this.apiKey;
+
+    if (key === undefined) {
+      throw new Error('BRIGHT_DATA_API_KEY is not set');
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(
+      () => controller.abort(),
+      options.timeoutMs ?? this.requestTimeoutMs,
+    );
+    const abortFromCaller = () => controller.abort();
+
+    if (options.signal?.aborted === true) {
+      controller.abort();
+    }
+
+    options.signal?.addEventListener('abort', abortFromCaller, { once: true });
+
+    try {
+      const response = await this.fetchWithCause(BRIGHT_DATA_REQUEST_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${key}`,
+        },
+        body: JSON.stringify({
+          zone,
+          url: searchUrl,
+          format: 'raw',
+        }),
+        signal: controller.signal,
+      });
+      const rawText = await response.text();
+
+      if (!response.ok) {
+        const reason =
+          response.headers.get('x-brd-err-msg') ??
+          rawText.slice(0, 300);
+
+        throw new Error(
+          `Bright Data SERP zone ${zone} failed: HTTP ${response.status} ${response.statusText}: ${reason}`,
+        );
+      }
+
+      if (rawText.trim() === '') {
+        throw new Error(
+          `Bright Data SERP zone ${zone} returned an empty page (no AI Overview)`,
+        );
+      }
+
+      return this.readSerpBody(rawText);
+    } finally {
+      clearTimeout(timeout);
+      options.signal?.removeEventListener('abort', abortFromCaller);
+    }
   }
 
   /**
@@ -827,7 +942,7 @@ export class BrightDataSerpService {
         rawText.slice(0, 300);
 
       throw new Error(
-        `Bright Data SERP failed: HTTP ${response.status} ${response.statusText}: ${reason}`,
+        `Bright Data SERP failed: HTTP ${response.status} ${response.statusText}: ${reason}${describeSerpErrorCode(response.headers.get('x-brd-error-code'))}`,
       );
     }
 

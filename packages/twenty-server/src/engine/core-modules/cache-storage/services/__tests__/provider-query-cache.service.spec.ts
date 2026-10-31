@@ -143,4 +143,94 @@ describe('ProviderQueryCacheService', () => {
     });
     await expect(service.get('peek:v1', { id: 'b' })).resolves.toBeUndefined();
   });
+
+  it('keeps the request next to the response in the S3 copy', async () => {
+    await service.getOrFetch('test:v1', { q: 'parts' }, async () => ({
+      rows: [1],
+    }));
+
+    const [content] = [...s3.values()];
+
+    expect(JSON.parse(content)).toMatchObject({
+      parts: { q: 'parts' },
+      value: { rows: [1] },
+    });
+  });
+
+  describe('provider call log', () => {
+    const record = jest.fn();
+    let loggedService: ProviderQueryCacheService;
+
+    beforeEach(() => {
+      record.mockClear();
+      loggedService = new ProviderQueryCacheService(
+        cache as never,
+        fileStorage as never,
+        { record } as never,
+      );
+    });
+
+    it('logs a fetch, then a Redis hit, then an S3 hit for one request', async () => {
+      const fetcher = jest.fn().mockResolvedValue({ documents: [1, 2] });
+
+      await loggedService.getOrFetch(
+        'bright-data-search:v1',
+        { q: 'a' },
+        fetcher,
+      );
+      await loggedService.getOrFetch(
+        'bright-data-search:v1',
+        { q: 'a' },
+        fetcher,
+      );
+      store.clear();
+      await loggedService.getOrFetch(
+        'bright-data-search:v1',
+        { q: 'a' },
+        fetcher,
+      );
+
+      expect(record.mock.calls.map(([entry]) => entry.cacheStatus)).toEqual([
+        'fetched',
+        'redis_hit',
+        's3_hit',
+      ]);
+      expect(record.mock.calls[0][0]).toMatchObject({
+        provider: 'bright-data-search',
+        operation: 'bright-data-search:v1',
+        request: { q: 'a' },
+        response: { documents: [1, 2] },
+      });
+      expect(record.mock.calls[0][0].responseLocation).toMatch(
+        /^provider-query-cache\/bright_data_search_v1\/[0-9a-f]{64}\.json$/,
+      );
+    });
+
+    it('logs a failed fetch as an error with no response location', async () => {
+      await expect(
+        loggedService.getOrFetch('harvest:v1', { q: 'x' }, async () => {
+          throw new Error('HTTP 502');
+        }),
+      ).rejects.toThrow('HTTP 502');
+
+      expect(record).toHaveBeenCalledWith(
+        expect.objectContaining({
+          cacheStatus: 'error',
+          errorMessage: 'HTTP 502',
+          responseLocation: undefined,
+        }),
+      );
+    });
+
+    it('logs set as a fetch and get only when it hits', async () => {
+      await loggedService.get('unipile:v1', { id: 'a' });
+      await loggedService.set('unipile:v1', { id: 'a' }, { items: [] });
+      await loggedService.get('unipile:v1', { id: 'a' });
+
+      expect(record.mock.calls.map(([entry]) => entry.cacheStatus)).toEqual([
+        'fetched',
+        'redis_hit',
+      ]);
+    });
+  });
 });

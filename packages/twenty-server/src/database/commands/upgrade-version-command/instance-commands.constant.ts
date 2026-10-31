@@ -141,6 +141,7 @@ import { AddExperimentToWorkflowVersionStatusFastInstanceCommand } from './2-25/
 import { AddWorkspaceCompanyIcpColumnsFastInstanceCommand } from './2-25/2-25-instance-command-fast-1785600000108-add-workspace-company-icp-columns';
 import { AddAgentToolConfigsColumnFastInstanceCommand } from './2-25/2-25-instance-command-fast-1785600000135-add-agent-tool-configs-column';
 import { AddWorkspaceBillingTreatmentOverridesFastInstanceCommand } from './2-25/2-25-instance-command-fast-1785600000180-add-workspace-billing-treatment-overrides';
+import { CreateProviderCallCoreTableFastInstanceCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-instance-command-fast-1793432153731-create-provider-call-core-table';
 
 export const INSTANCE_COMMANDS = [
   AddViewFieldGroupIdIndexOnViewFieldFastInstanceCommand,
@@ -284,4 +285,5 @@ export const INSTANCE_COMMANDS = [
   AddWorkspaceCompanyIcpColumnsFastInstanceCommand,
   AddAgentToolConfigsColumnFastInstanceCommand,
   AddWorkspaceBillingTreatmentOverridesFastInstanceCommand,
+  CreateProviderCallCoreTableFastInstanceCommand,
 ];

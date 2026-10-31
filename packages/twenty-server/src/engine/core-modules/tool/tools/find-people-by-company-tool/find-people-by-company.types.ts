@@ -1,7 +1,7 @@
 import { type RowProfile } from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/profile-row-fields.util';
 import { type PersonJudgement } from 'src/engine/core-modules/bright-data/services/bright-data-person-fit-filter.service';
 import { type FindPeopleByCompanyInput } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool.schema';
-import { type DeprioritisationReason } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/outreach-people-deprioritisation.util';
+import { type DeprioritisationReason } from 'src/engine/core-modules/outreach-command/utils/outreach-people-deprioritisation.util';
 import {
   type FindPeopleNoneFoundReason,
   type FindPeopleRung,
@@ -69,9 +69,17 @@ export type Candidate = {
   // Free text the company can be checked against when there is no company field
   evidenceText: string;
   source: Source;
+  // The site behind a SERP-side source when it was not Google itself (TheOrg,
+  // The Official Board), so the row's evidence can name where it was listed
+  provider?: 'theorg' | 'officialboard';
   // True when the URL was recovered from a post by this person
   linkedinUrlDerivedFromPost?: boolean;
   location?: string;
+  // The query that returned this person, so a per-role fan-out keeps its
+  // evidence attributable to the role it was run for
+  query?: string;
+  // The role whose query returned this person
+  queriedRole?: string;
   // The full provider record, so the fake-profile screen can read education
   // and experience
   rawProfile?: Record<string, unknown>;

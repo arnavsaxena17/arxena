@@ -7,7 +7,12 @@ import { type QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialE
 
 import { projectIdsHasProject } from 'src/engine/core-modules/outreach-command/utils/project-ids.util';
 import { OutreachCompaniesCacheService } from 'src/engine/core-modules/outreach-command/services/outreach-companies-cache.service';
-import { OutreachPeopleCacheService } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
+import {
+  OutreachPeopleCacheService,
+  type OutreachEphemeralPerson,
+} from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
+import { compactPeople } from 'src/engine/core-modules/outreach-command/utils/merge-people.util';
+import { normalizeLinkedinProfileKey } from 'src/engine/core-modules/outreach-command/utils/person-identity.util';
 import { resolvePeopleCompanyIds } from 'src/engine/core-modules/outreach-command/utils/resolve-people-company-ids.util';
 import { buildPeopleFoundValues } from 'src/engine/core-modules/outreach-command/utils/outreach-people-found.util';
 import { type OutreachTableTab } from 'src/engine/core-modules/outreach-command/utils/outreach-cache-realtime.constants';
@@ -145,13 +150,7 @@ const companyIdentityKey = (company: {
 };
 
 const normalizeLinkedinKey = (linkedinUrl: string): string =>
-  linkedinUrl
-    .trim()
-    .toLowerCase()
-    .replace(/^https?:\/\//, '')
-    .replace(/^www\./, '')
-    .replace(/\/+$/, '')
-    .split('?')[0];
+  normalizeLinkedinProfileKey(linkedinUrl);
 
 // Merges the ephemeral Find list (Redis, per project) with the CRM records
 // that belong to the project, so AI columns see the same rows as the tabs.
@@ -253,6 +252,69 @@ export class OutreachTabService {
 
     return all.filter((row) => wanted.has(row.id));
   }
+
+  // Writes a resolved LinkedIn URL onto one ephemeral People row, with the
+  // evidence that justified it. The row keeps its other fields; the resolution
+  // is recorded under otherFields.linkedinResolution so a later profile fetch,
+  // or a person reading the tab, can see how the URL was found and whether the
+  // role is current or past. CRM-backed rows are not touched: saving to the CRM
+  // is a separate, confirmed action.
+  async updateEphemeralPersonLinkedinUrl({
+    workspaceId,
+    projectId,
+    personId,
+    linkedinUrl,
+    relation,
+    evidence,
+    source,
+  }: {
+    workspaceId: string;
+    projectId: string;
+    personId: string;
+    linkedinUrl: string;
+    relation: 'current' | 'past' | 'unknown';
+    evidence?: string;
+    source?: 'bright_data' | 'google';
+  }): Promise<OutreachEphemeralPerson | null> {
+    const payload = await this.outreachPeopleCacheService.get(
+      workspaceId,
+      projectId,
+    );
+    const people = payload?.people ?? [];
+    const existing = people.find((person) => person.id === personId);
+
+    if (!isDefined(existing)) {
+      return null;
+    }
+
+    const updated: OutreachEphemeralPerson = {
+      ...existing,
+      linkedinUrl,
+      otherFields: {
+        ...existing.otherFields,
+        linkedinResolution: {
+          linkedinUrl,
+          relation,
+          source: source ?? '',
+          evidence: evidence ?? '',
+          resolvedAt: new Date().toISOString(),
+        },
+      },
+    };
+    const nextPeople = people.map((person) =>
+      person.id === personId ? updated : person,
+    );
+
+    await this.outreachPeopleCacheService.set(
+      workspaceId,
+      projectId,
+      nextPeople,
+      { writtenRows: [updated] },
+    );
+
+    return updated;
+  }
+
 
   // Adds each row's new keys next to its existing otherFields, on the
   // ephemeral list and on the CRM candidate.
@@ -436,16 +498,19 @@ export class OutreachTabService {
     );
 
     // save the link on the people too, so the People tab can scope by company
-    if (
-      linkedPeople.some(
-        (person, index) =>
-          person.companyId !== peoplePayload.people[index].companyId,
-      )
-    ) {
+    const linkedRows = linkedPeople.filter(
+      (person, index) =>
+        person.companyId !== peoplePayload.people[index].companyId,
+    );
+
+    if (linkedRows.length > 0) {
       await this.outreachPeopleCacheService.set(
         workspaceId,
         projectId,
         linkedPeople,
+        // Name the rows this relinked, or the tab refetches the whole list
+        // right after the write that just streamed a row into it
+        { writtenRows: linkedRows },
       );
     }
 
@@ -503,7 +568,10 @@ export class OutreachTabService {
       workspaceId,
       projectId,
     );
-    const ephemeralRows: OutreachTabRow[] = (payload?.people ?? [])
+    // A cache written before the identity keys were shared can still hold
+    // duplicates; the read path compacts them so the tab never shows two rows
+    // for one person.
+    const ephemeralRows: OutreachTabRow[] = compactPeople(payload?.people ?? [])
       .filter((person) => {
         const key = normalizeLinkedinKey(person.linkedinUrl);
 
@@ -685,7 +753,9 @@ export class OutreachTabService {
       return 0;
     }
 
-    let updated = 0;
+    // Name the rows this patch changed, so the tab upserts them instead of
+    // re-reading the whole list after every cell edit
+    const writtenRows: OutreachEphemeralPerson[] = [];
     const people = payload.people.map((person) => {
       const values = valuesByRowId.get(person.id);
 
@@ -693,19 +763,26 @@ export class OutreachTabService {
         return person;
       }
 
-      updated += 1;
-
-      return {
+      const next = {
         ...person,
         otherFields: this.applyOtherFields(person.otherFields, values, mode),
       };
+
+      writtenRows.push(next);
+
+      return next;
     });
 
-    if (updated > 0) {
-      await this.outreachPeopleCacheService.set(workspaceId, projectId, people);
+    if (writtenRows.length > 0) {
+      await this.outreachPeopleCacheService.set(
+        workspaceId,
+        projectId,
+        people,
+        { writtenRows },
+      );
     }
 
-    return updated;
+    return writtenRows.length;
   }
 
   private async writeEphemeralCompanies(

@@ -1,3 +1,5 @@
+import { type OutreachPersonRow } from '@/outreach-home/types/outreach-home.types';
+
 export const OUTREACH_CACHE_UPDATED_EVENT = 'outreach-cache-updated';
 
 export type OutreachCacheKind =
@@ -59,6 +61,9 @@ export type OutreachCacheUpdatedPayload = {
   kind: OutreachCacheKind;
   aiColumnRun?: OutreachAiColumnRunProgress;
   tableView?: OutreachTableView;
+  // The rows the write touched, when it could name them. Absent means the
+  // client must refetch: rows may have been removed, not only added
+  rows?: OutreachPersonRow[];
 };
 
 export const outreachProjectCacheRoom = (projectId: string): string =>

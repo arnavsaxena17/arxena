@@ -1,12 +1,18 @@
 import { isDefined } from 'twenty-shared/utils';
 
 import { FindPeopleByCompanyTool } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool';
-import { FindPeopleCascadeService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-cascade.service';
+import {
+  FindPeopleCascadeService,
+  getCompanyStaggerMs,
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-cascade.service';
 import { parseLinkedinSerpResult } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/parse-linkedin-serp-result.util';
 import { FindPeopleGoogleSearchService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-google-search.service';
 
 // the request-rate limiter would stall tests that run on fake timers
 process.env.FIND_ROLE_SERP_REQUESTS_PER_MINUTE = '0';
+// the start stagger is a real delay, so it would stall every multi-company
+// test on fake timers. The pacing tests set their own value
+process.env.FIND_ROLE_COMPANY_STAGGER_MS = '0';
 
 type ExtractedPersonFixture = Partial<{
   name: string;
@@ -50,9 +56,17 @@ const buildTool = ({
   tableView = null,
   harvest,
   brightDataSpentUsd = 0.004,
+  serpSources,
 }: {
   // What each Bright Data people search bills
   brightDataSpentUsd?: number;
+  // TheOrg / The Official Board people, when the test wants the SERP-side
+  // sources switched on
+  serpSources?: {
+    enabled?: boolean;
+    errors?: string[];
+    candidates: Array<Record<string, unknown>>;
+  };
   // Harvest lead-search rows, when the test wants the last cascade step
   harvest?: { items: Array<Record<string, unknown>> };
   // Rows the project's Companies tab holds, for fromProject
@@ -111,16 +125,29 @@ const buildTool = ({
       : { functionId: 'other', functionRoot: 'other', grade: 'leadership' };
   };
   const taxonomy = {
-    resolveRoles: jest.fn(async (roles: string[]) => ({
-      searchTitles: [
-        ...roles.map((role) => role.toLowerCase()),
-        'chief executive',
-      ],
-      requestedClasses: roles
-        .map((role) => titleClass(role))
-        .filter((value) => value !== null),
-      taxonomyAvailable: true,
-    })),
+    // Loosely typed: the tool takes the taxonomy service as an injected
+    // dependency, and each test resolves only the fields it asserts on
+    resolveRoles: jest.fn(
+      async (roles: string[]): Promise<Record<string, unknown>> => ({
+        roles: [] as string[],
+        rolePlans: [] as never[],
+        searchTitles: [
+          ...roles.map((role) => role.toLowerCase()),
+          'chief executive',
+        ],
+        requestedClasses: roles
+          .map((role) => titleClass(role))
+          .filter((value) => value !== null),
+        taxonomyAvailable: true,
+        titleExpressions: [] as string[],
+        googleTitleExpressions: [] as string[],
+        booleanTitleExpression: '',
+        roleClasses: {} as Record<
+          string,
+          { functionId: string; functionRoot: string; grade: string } | null
+        >,
+      }),
+    ),
     classifyTitles: jest.fn(async (titles: string[]) => {
       return new Map(
         titles.map((title) => [title.trim().toLowerCase(), titleClass(title)]),
@@ -220,6 +247,16 @@ const buildTool = ({
         })),
       }
     : undefined;
+  const serpSourcesFetch = jest.fn(async () => ({
+    candidates: serpSources?.candidates ?? [],
+    errors: serpSources?.errors ?? [],
+  }));
+  const serpSourcesService = serpSources
+    ? {
+        isEnabled: () => serpSources.enabled !== false,
+        fetchPeople: serpSourcesFetch,
+      }
+    : undefined;
   const cascade = new FindPeopleCascadeService(
     { searchNaturalLanguage } as never,
     new FindPeopleGoogleSearchService({
@@ -236,6 +273,7 @@ const buildTool = ({
     taxonomy as never,
     undefined,
     harvestService as never,
+    serpSourcesService as never,
   );
   const tool = new FindPeopleByCompanyTool(
     cascade,
@@ -277,6 +315,7 @@ const buildTool = ({
     upsert,
     taxonomy,
     writeOtherFields,
+    serpSourcesFetch,
   };
 };
 
@@ -320,6 +359,68 @@ describe('FindPeopleByCompanyTool', () => {
     expect(company.terminalState).toBe('found');
     expect(upsert).toHaveBeenCalledTimes(1);
     expect(upsert.mock.calls[0][0].people).toHaveLength(1);
+  });
+
+  it('should add TheOrg people beside the Google SERP results when the source is on', async () => {
+    const { tool, serpSourcesFetch } = buildTool({
+      brightDataDocuments: [],
+      organic: [],
+      extractedPeople: [],
+      serpSources: {
+        candidates: [
+          {
+            id: 'theorg-1',
+            name: 'Rahul Mehta',
+            title: 'Managing Director',
+            companyName: 'Monginis',
+            linkedinUrl: '',
+            evidenceText:
+              'Listed on TheOrg as Managing Director at Monginis Foods Pvt. Ltd.: https://theorg.com/org/monginis',
+            source: 'google',
+            provider: 'theorg',
+          },
+        ],
+      },
+    });
+
+    const output = await tool.execute(
+      {
+        companies: [{ name: 'Monginis' }],
+        roles: ['Managing Director'],
+        projectId: 'project-id',
+      },
+      context,
+    );
+    const company = (output.result as { companies: Array<Record<string, any>> })
+      .companies[0];
+
+    // Counted under the SERP source, but the row says where it was listed
+    expect(company.people).toHaveLength(1);
+    expect(company.people[0].sources).toEqual(['google']);
+    expect(company.people[0].evidence[0].source).toBe('theorg');
+    expect(serpSourcesFetch).toHaveBeenCalledWith(
+      expect.objectContaining({ companyName: 'Monginis' }),
+    );
+  });
+
+  it('should not ask the SERP-side sources when they are switched off', async () => {
+    const { tool, serpSourcesFetch } = buildTool({
+      brightDataDocuments: [],
+      organic: [],
+      extractedPeople: [],
+      serpSources: { enabled: false, candidates: [] },
+    });
+
+    await tool.execute(
+      {
+        companies: [{ name: 'Monginis' }],
+        roles: ['Managing Director'],
+        projectId: 'project-id',
+      },
+      context,
+    );
+
+    expect(serpSourcesFetch).not.toHaveBeenCalled();
   });
 
   it('should not ask Google when Bright Data already holds a confident match', async () => {
@@ -597,6 +698,40 @@ describe('FindPeopleByCompanyTool taxonomy use', () => {
         ),
       ),
     ).toBe(true);
+  });
+
+  it('should keep Bright Data rawQuery to company when a manual boolean title filter is set', async () => {
+    const { tool, searchNaturalLanguage, taxonomy } = buildTool({
+      brightDataDocuments: [],
+      organic: [],
+    });
+    const titleExpression =
+      '(CEO OR "chief executive" OR "managing director" OR founder)';
+
+    taxonomy.resolveRoles.mockResolvedValue({
+      searchTitles: ['md', 'chief executive'],
+      requestedClasses: [
+        { functionId: 'ceo', functionRoot: 'ceo', grade: 'leadership' },
+      ],
+      taxonomyAvailable: true,
+      titleExpressions: [titleExpression],
+      booleanTitleExpression: titleExpression,
+      roleClasses: {
+        md: { functionId: 'ceo', functionRoot: 'ceo', grade: 'leadership' },
+      },
+    });
+
+    await tool.execute(
+      { companies: [{ name: 'Acme' }], roles: ['MD'], location: 'India' },
+      { workspaceId: 'workspace-id' },
+    );
+
+    const call = searchNaturalLanguage.mock.calls[0][0];
+
+    expect(call.rawQuery).toBe('people at Acme India');
+    expect(call.rawQuery).not.toContain('md');
+    expect(call.rawQuery).not.toContain('chief executive');
+    expect(call.titleExpression).toBe(titleExpression);
   });
 
   it('should use Harvest when it is the last source and the user picked it', async () => {
@@ -995,13 +1130,123 @@ describe('FindPeopleByCompanyTool concurrency and retries', () => {
   });
 });
 
+describe('FindPeopleByCompanyTool start pacing', () => {
+  const savedStagger = process.env.FIND_ROLE_COMPANY_STAGGER_MS;
+
+  beforeEach(() => {
+    jest.useRealTimers();
+    delete process.env.FIND_ROLE_COMPANY_STAGGER_MS;
+  });
+
+  afterEach(() => {
+    if (savedStagger === undefined) {
+      delete process.env.FIND_ROLE_COMPANY_STAGGER_MS;
+    } else {
+      process.env.FIND_ROLE_COMPANY_STAGGER_MS = savedStagger;
+    }
+    jest.useFakeTimers();
+  });
+
+  it('should space the starts the configured amount apart', () => {
+    process.env.FIND_ROLE_COMPANY_STAGGER_MS = '1000';
+
+    expect(getCompanyStaggerMs(5)).toBe(1000);
+  });
+
+  it('should use the default spacing when the variable is unset', () => {
+    expect(getCompanyStaggerMs(3)).toBe(2500);
+  });
+
+  it('should treat an empty variable as unset, not as zero', () => {
+    process.env.FIND_ROLE_COMPANY_STAGGER_MS = '';
+
+    expect(getCompanyStaggerMs(3)).toBe(2500);
+  });
+
+  it('should let the operator switch the spacing off', () => {
+    process.env.FIND_ROLE_COMPANY_STAGGER_MS = '0';
+
+    expect(getCompanyStaggerMs(9)).toBe(0);
+  });
+
+  it('should not space a negative value', () => {
+    process.env.FIND_ROLE_COMPANY_STAGGER_MS = '-500';
+
+    expect(getCompanyStaggerMs(4)).toBe(0);
+  });
+
+  it('should have nothing to space with one company', () => {
+    expect(getCompanyStaggerMs(1)).toBe(0);
+    expect(getCompanyStaggerMs(0)).toBe(0);
+  });
+
+  it('should cap the whole spread rather than pay it per company', () => {
+    process.env.FIND_ROLE_COMPANY_STAGGER_MS = '2500';
+
+    // 100 companies would otherwise spread over 247s
+    expect(getCompanyStaggerMs(100)).toBeCloseTo(30_000 / 99, 5);
+  });
+
+  it('should start the pairs apart so the tab fills row by row', async () => {
+    process.env.FIND_ROLE_COMPANY_STAGGER_MS = '40';
+
+    const { tool, searchNaturalLanguage } = buildTool({
+      brightDataDocuments: [],
+      organic: [],
+    });
+    // The first start per company, whatever the variants of its query
+    const firstStartByQuery = new Map<string, number>();
+
+    searchNaturalLanguage.mockImplementation(
+      async ({ rawQuery }: { rawQuery: string }) => {
+        if (!firstStartByQuery.has(rawQuery)) {
+          firstStartByQuery.set(rawQuery, Date.now());
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 120));
+
+        return { result: { documents: [], spentUsd: 0 } };
+      },
+    );
+
+    await tool.execute(
+      {
+        companies: Array.from({ length: 3 }, (_, index) => ({
+          name: `Company ${index}`,
+        })),
+        roles: ['CEO'],
+      },
+      context,
+    );
+
+    const starts = [...firstStartByQuery.values()].sort(
+      (left, right) => left - right,
+    );
+    // A company's brand and legal-name searches start together, so cluster
+    // the starts into companies before counting them
+    const companyStarts: number[] = [];
+
+    for (const start of starts) {
+      const previous = companyStarts[companyStarts.length - 1];
+
+      if (previous === undefined || start - previous > 25) {
+        companyStarts.push(start);
+      }
+    }
+
+    expect(companyStarts).toHaveLength(3);
+    // Two gaps of 40ms: the last pair starts after the first, not with it
+    expect(companyStarts[2] - companyStarts[0]).toBeGreaterThanOrEqual(70);
+  });
+});
+
 describe('FindPeopleByCompanyTool Google queries', () => {
   const decodedQueries = (calls: Array<[string]>) =>
     calls.map(([url]) =>
       decodeURIComponent(new URL(url).searchParams.get('q') ?? ''),
     );
 
-  it('should run the plain query a person would type plus two LinkedIn queries', async () => {
+  it('should run the plain query a person would type plus one LinkedIn query', async () => {
     const { tool, requestSerpGoogleJson } = buildTool({
       brightDataDocuments: [],
       organic: [],
@@ -1014,12 +1259,13 @@ describe('FindPeopleByCompanyTool Google queries', () => {
 
     const queries = decodedQueries(requestSerpGoogleJson.mock.calls);
 
-    expect(queries).toHaveLength(3);
+    // "MD" is already in the title list, so the roles-as-typed query would
+    // ask the same question twice and is not sent
+    expect(queries).toHaveLength(2);
     expect(queries).toContain('Acme managing director');
     expect(queries).toContain(
       'site:linkedin.com/in "Acme" ("md" OR "chief executive") India',
     );
-    expect(queries).toContain('site:linkedin.com/in "Acme" ("MD")');
   });
 
   it('should run one plain query per requested role', async () => {

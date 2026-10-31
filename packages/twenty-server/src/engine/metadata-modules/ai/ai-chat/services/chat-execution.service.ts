@@ -190,6 +190,7 @@ export class ChatExecutionService {
       userId,
       userWorkspaceId,
       threadId,
+      turnId,
       // Search tools write the project tab when the model omits projectId
       projectId:
         browsingContext?.type === 'outreachCommand' &&

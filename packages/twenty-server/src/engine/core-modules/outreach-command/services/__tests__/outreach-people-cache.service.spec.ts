@@ -78,9 +78,25 @@ describe('OutreachPeopleCacheService', () => {
         people: [person],
       }),
     );
+    // No written rows given, so listeners refetch instead of applying a delta
     expect(notifyProjectCacheUpdated).toHaveBeenCalledWith(
       'project-1',
       'people',
+      undefined,
+    );
+  });
+
+  it('should hand the written rows to the event so the client can apply a delta', async () => {
+    const second = { ...person, id: 'person-2', name: 'Grace Hopper' };
+
+    await service.set('workspace-1', 'project-1', [person, second], {
+      writtenRows: [second],
+    });
+
+    expect(notifyProjectCacheUpdated).toHaveBeenCalledWith(
+      'project-1',
+      'people',
+      [second],
     );
   });
 
@@ -109,12 +125,39 @@ describe('OutreachPeopleCacheService', () => {
     );
   });
 
+  it('should collapse duplicate rows before writing them', async () => {
+    const harvestRow = {
+      ...person,
+      id: 'harvest-row',
+      name: 'Naveen Srivastava',
+      companyName: 'Jubilant FoodWorks Ltd.',
+      linkedinUrl:
+        'https://www.linkedin.com/in/ACwAAAOe40MBPIme-JeJEEBEnnp0xtsjypwL6ks',
+    };
+    const googleRow = {
+      ...person,
+      id: 'google-row',
+      name: 'Naveen Srivastava',
+      companyName: 'Jubilant FoodWorks',
+      linkedinUrl: 'https://in.linkedin.com/in/naveen-supplychain-strategy',
+    };
+
+    await service.set('workspace-1', 'project-1', [harvestRow, googleRow]);
+
+    expect(backupWrite).toHaveBeenCalledWith(
+      'workspace-1',
+      'people',
+      'project-1',
+      expect.objectContaining({
+        people: [expect.objectContaining({ id: 'harvest-row' })],
+      }),
+    );
+  });
+
   it('should clear Redis and S3 on delete', async () => {
     await service.delete('workspace-1', 'project-1');
 
-    expect(cacheDel).toHaveBeenCalledWith(
-      'gtm-people:workspace-1:project-1',
-    );
+    expect(cacheDel).toHaveBeenCalledWith('gtm-people:workspace-1:project-1');
     expect(backupRemove).toHaveBeenCalledWith(
       'workspace-1',
       'people',

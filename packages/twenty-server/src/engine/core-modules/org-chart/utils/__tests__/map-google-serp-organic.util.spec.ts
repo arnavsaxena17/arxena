@@ -18,6 +18,18 @@ describe('map-google-serp-organic.util', () => {
     );
   });
 
+  it('pins the market and asks for the AI Overview when asked', () => {
+    const url = buildGoogleSerpSearchUrl('Acme procurement head', 10, {
+      country: 'in',
+      aiOverview: true,
+      brdJson: true,
+    });
+
+    expect(url).toContain('gl=in');
+    expect(url).toContain('brd_ai_overview=2');
+    expect(url).toContain('brd_json=1');
+  });
+
   it('maps organic title, url, and snippet and skips incomplete rows', () => {
     expect(
       mapGoogleSerpOrganicResults(

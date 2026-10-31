@@ -1,9 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import {
   buildEvidence,
   type ArxWebSearchEvidence,
 } from 'src/engine/core-modules/arx-web-search/utils/extract-serp-evidence.util';
+import {
+  ProviderCallLogService,
+  trackProviderCall,
+} from 'src/engine/core-modules/provider-call-log/services/provider-call-log.service';
 
 const PERPLEXITY_SEARCH_URL = 'https://api.perplexity.ai/search';
 const REQUEST_TIMEOUT_MS = 20_000;
@@ -63,6 +67,11 @@ export class PerplexitySearchService {
   private readonly logger = new Logger(PerplexitySearchService.name);
   private nextSonarSlotAt = 0;
 
+  constructor(
+    @Optional()
+    private readonly providerCallLog?: ProviderCallLogService,
+  ) {}
+
   private get apiKey(): string | undefined {
     return process.env.PERPLEXITY_API_KEY?.trim() || undefined;
   }
@@ -81,6 +90,20 @@ export class PerplexitySearchService {
 
   // Null on any failure or empty answer so the caller can try the next provider.
   async search(query: string): Promise<ArxWebSearchEvidence | null> {
+    return trackProviderCall(
+      this.providerCallLog,
+      {
+        provider: 'perplexity',
+        operation: 'perplexity:search',
+        request: { query },
+      },
+      () => this.searchUncached(query),
+    );
+  }
+
+  private async searchUncached(
+    query: string,
+  ): Promise<ArxWebSearchEvidence | null> {
     const key = this.apiKey;
 
     if (!key) {
@@ -177,7 +200,23 @@ export class PerplexitySearchService {
 
   // One Sonar call: live web search plus a JSON answer that follows the given
   // schema. Null on any failure or empty answer so the caller can fall back.
-  async completeStructured({
+  async completeStructured(request: {
+    system: string;
+    user: string;
+    schema: Record<string, unknown>;
+  }): Promise<PerplexityStructuredCompletion | null> {
+    return trackProviderCall(
+      this.providerCallLog,
+      {
+        provider: 'perplexity',
+        operation: 'perplexity:sonar',
+        request: { system: request.system, user: request.user },
+      },
+      () => this.completeStructuredUncached(request),
+    );
+  }
+
+  private async completeStructuredUncached({
     system,
     user,
     schema,

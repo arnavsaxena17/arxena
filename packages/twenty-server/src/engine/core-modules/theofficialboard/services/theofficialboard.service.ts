@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { JSDOM } from 'jsdom';
 
@@ -6,6 +6,10 @@ import { BrightDataResidentialProxyService } from 'src/engine/core-modules/brigh
 import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/services/bright-data-serp.service';
 import { BrightDataUnlockerService } from 'src/engine/core-modules/bright-data/services/bright-data-unlocker.service';
 import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
+import {
+  ProviderCallLogService,
+  trackProviderCall,
+} from 'src/engine/core-modules/provider-call-log/services/provider-call-log.service';
 import type {
   TheOfficialBoardCandidate,
   TheOfficialBoardCompanyResponse,
@@ -40,6 +44,8 @@ export class TheOfficialBoardService {
     private readonly brightDataSerpService: BrightDataSerpService,
     private readonly brightDataUnlockerService: BrightDataUnlockerService,
     private readonly brightDataResidentialProxyService: BrightDataResidentialProxyService,
+    @Optional()
+    private readonly providerCallLog?: ProviderCallLogService,
   ) {}
 
   private get userAgent(): string {
@@ -167,7 +173,21 @@ export class TheOfficialBoardService {
     return location;
   }
 
+  // One logged request per page, whichever route (unlocker, residential
+  // proxy, direct) ended up answering it
   private async fetchText(url: string): Promise<string> {
+    return trackProviderCall(
+      this.providerCallLog,
+      {
+        provider: 'theofficialboard',
+        operation: 'theofficialboard:page',
+        request: { url },
+      },
+      () => this.fetchTextUncached(url),
+    );
+  }
+
+  private async fetchTextUncached(url: string): Promise<string> {
     const headers = {
       'user-agent': this.userAgent,
       accept:

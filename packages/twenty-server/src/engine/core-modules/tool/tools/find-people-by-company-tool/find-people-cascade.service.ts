@@ -6,6 +6,7 @@ import { isNonEmptyString } from '@sniptt/guards';
 
 import { isDefined } from 'twenty-shared/utils';
 
+import { withProviderCallContext } from 'src/engine/core-modules/provider-call-log/storage/provider-call-context.storage';
 import { BrightDataLudicrousSearchService } from 'src/engine/core-modules/bright-data/services/ludicrous/bright-data-ludicrous-search.service';
 
 import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
@@ -20,6 +21,11 @@ import { BRIGHT_DATA_COST_PER_RECORD_USD } from 'src/engine/core-modules/bright-
 import { mapBrightDataPersonToSearchItem } from 'src/engine/core-modules/bright-data/utils/bright-data-business-search.util';
 
 import {
+  isOpaqueLinkedinId,
+  linkedinUrlsAreComparable,
+} from 'src/engine/core-modules/outreach-command/utils/person-identity.util';
+
+import {
   buildCompanyVariants,
   matchesAnyCompanyVariant,
   textMentionsAnyCompanyVariant,
@@ -29,6 +35,11 @@ import {
   FindPeopleGoogleSearchService,
   type GoogleCompanySearchResult,
 } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-google-search.service';
+
+import {
+  FindPeopleSerpSourcesService,
+  type SerpSourcePeople,
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-serp-sources.service';
 
 import { type GoogleSerpOrganicItem } from 'src/engine/core-modules/org-chart/utils/map-google-serp-organic.util';
 
@@ -53,6 +64,8 @@ import { packLinkedinUrlLookupQueries } from 'src/engine/core-modules/tool/tools
 
 import {
   getRequestedRoleOrder,
+  closestRequestedRole,
+  isLeadershipCandidateTitle,
   scoreRoleMatch,
   titleContainsWord,
 } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/role-title-matching.util';
@@ -64,6 +77,11 @@ import {
   type ResolvedRoles,
 } from 'src/engine/core-modules/title-taxonomy/title-expansion.service';
 import { expandRoleWithFamilyFallback } from 'src/engine/core-modules/title-taxonomy/title-family-fallback.util';
+import {
+  buildRoleSearches,
+  cellStage,
+  tieredSearchesOf,
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/role-search-plan.util';
 
 import {
   BrightDataPersonFitFilterService,
@@ -73,7 +91,7 @@ import {
 import { brightDataRecordToPersonOtherFields } from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/bright-data-person-row-fields.util';
 
 import { type RowProfile } from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/profile-row-fields.util';
-import { type DeprioritisationReason } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/outreach-people-deprioritisation.util';
+import { type DeprioritisationReason } from 'src/engine/core-modules/outreach-command/utils/outreach-people-deprioritisation.util';
 import { InjectCacheStorage } from 'src/engine/core-modules/cache-storage/decorators/cache-storage.decorator';
 import { CacheStorageService } from 'src/engine/core-modules/cache-storage/services/cache-storage.service';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
@@ -108,6 +126,15 @@ import {
 // higher once funded (docs.brightdata.com/general/usage-monitoring/serp-rate-limit);
 // a company sends about 5 queries, so 50 at a time stays inside it
 const DEFAULT_COMPANY_CONCURRENCY = 50;
+// A run that admits every company at once finishes in one burst: the rows all
+// reach the People tab within a few seconds of each other, at the end, so the
+// tab fills in a single paint instead of row by row. Spacing the starts keeps
+// the lookups overlapping (the run is barely longer) while rows arrive a few
+// seconds apart.
+const DEFAULT_COMPANY_STAGGER_MS = 2_500;
+// The whole spread, so a long list does not pay the stagger on every company
+// and hold a background chunk's queue slot for minutes
+const MAX_COMPANY_STAGGER_WINDOW_MS = 30_000;
 // A lookup that could not complete (source_error) is run again before the
 // model sees it, so a blip or a laptop wake-up does not cost a model round
 const DEFAULT_COMPANY_LOOKUP_RETRIES = 2;
@@ -117,6 +144,7 @@ const BRIGHT_DATA_CANDIDATES_PER_SEARCH = 5;
 // Harvest bills $0.004 a record; five is a $0.02 step, not the whole pair cap
 const HARVEST_CANDIDATES_PER_SEARCH = 5;
 const MIN_PEOPLE_PER_COMPANY = 3;
+const MAX_PEOPLE_PER_ROLE = 3;
 const MAX_REJECTED_PER_COMPANY = 3;
 const MAX_TITLES_IN_QUERY = 8;
 const MAX_NAMES_TO_RESOLVE = 5;
@@ -135,10 +163,39 @@ const isSource = (value: string): value is Source =>
   value === 'web' ||
   value === 'harvest';
 
-// One person per role, and at least the old three for a role that returns
-// several people. A four-role query must not lose a role to the slice.
-const maxPeoplePerCompany = (roles: string[]): number =>
-  Math.max(MIN_PEOPLE_PER_COMPANY, roles.length);
+// The best few people for each requested role, in rank order. One company-wide
+// slice let a role with many holders push every other role's people off the
+// row (five supply chain heads left no place for the procurement head). A
+// person serving two roles is kept once.
+export const selectPeoplePerRole = <
+  TPerson extends { roleMatches?: RoleMatch[] },
+>(
+  ranked: TPerson[],
+  roles: string[],
+): TPerson[] => {
+  const kept = new Set<TPerson>();
+
+  for (const role of roles) {
+    ranked
+      .filter((person) =>
+        (person.roleMatches ?? []).some((match) => match.role === role),
+      )
+      .slice(0, MAX_PEOPLE_PER_ROLE)
+      .forEach((person) => kept.add(person));
+  }
+
+  // A person the role matcher tied to no requested role still fills the row up
+  // to the old minimum
+  for (const person of ranked) {
+    if (kept.size >= MIN_PEOPLE_PER_COMPANY) {
+      break;
+    }
+
+    kept.add(person);
+  }
+
+  return ranked.filter((person) => kept.has(person));
+};
 
 // The function words a role is about, e.g. "engineering" from "VP Engineering",
 // widened with the role's curated family ("technology", "cto", "works", "unit")
@@ -218,6 +275,30 @@ export const getCompanyConcurrency = (): number => {
     : DEFAULT_COMPANY_CONCURRENCY;
 };
 
+// How long to wait between starting one company and the next. A single
+// company has nothing to spread, and an empty variable means "unset" rather
+// than the 0 that `Number('')` would give, so 0 stays an explicit opt-out.
+export const getCompanyStaggerMs = (companyCount: number): number => {
+  const configured = process.env.FIND_ROLE_COMPANY_STAGGER_MS;
+  const parsed =
+    isNonEmptyString(configured) && Number.isFinite(Number(configured))
+      ? Number(configured)
+      : NaN;
+
+  const staggerMs = Number.isFinite(parsed)
+    ? Math.max(parsed, 0)
+    : DEFAULT_COMPANY_STAGGER_MS;
+
+  if (staggerMs === 0 || companyCount <= 1) {
+    return 0;
+  }
+
+  return (
+    Math.min(staggerMs * (companyCount - 1), MAX_COMPANY_STAGGER_WINDOW_MS) /
+    (companyCount - 1)
+  );
+};
+
 const getCompanyLookupRetries = (): number => {
   const configured = Number(process.env.FIND_ROLE_COMPANY_LOOKUP_RETRIES);
 
@@ -228,6 +309,7 @@ const getCompanyLookupRetries = (): number => {
 
 const EMPTY_GOOGLE_RESULT: GoogleCompanySearchResult = {
   results: [],
+  aiOverviewTexts: [],
   errors: [],
 };
 
@@ -308,6 +390,10 @@ export class FindPeopleCascadeService {
     // Optional: a workspace without Harvest keys simply skips the last step
     @Optional()
     private readonly harvestLinkedinService?: HarvestLinkedinService,
+    // Optional: TheOrg / The Official Board are asked only where they are
+    // wired and switched on, and are skipped like Harvest otherwise
+    @Optional()
+    private readonly serpSourcesService?: FindPeopleSerpSourcesService,
   ) {}
 
   // The whole pair: a found answer from an earlier run is reused inside the
@@ -320,7 +406,11 @@ export class FindPeopleCascadeService {
     workspaceId: string,
   ): Promise<CompanyOutcome> {
     const cacheKey = this.cacheKeyOf(workspaceId, company, input.roles);
-    const useCache = !input.plan.confidential && isDefined(this.cache);
+    // rerunFound is the "redo the search" switch: answering it from the cache
+    // handed back the previous run's rows, so a re-run with new code, a new
+    // source or a new title list could never surface anybody new
+    const useCache =
+      !input.plan.confidential && !input.rerunFound && isDefined(this.cache);
 
     if (useCache) {
       const cached = await this.cache
@@ -446,7 +536,15 @@ export class FindPeopleCascadeService {
       }
 
       outcome = await withGlobalLookupSlot(() =>
-        this.lookupCompany(company, input, resolvedRoles, workspaceId, options),
+        withProviderCallContext({ subject: company.name }, () =>
+          this.lookupCompany(
+            company,
+            input,
+            resolvedRoles,
+            workspaceId,
+            options,
+          ),
+        ),
       ).catch(
         (error): CompanyOutcome => ({
           company: company.name,
@@ -501,6 +599,7 @@ export class FindPeopleCascadeService {
     // and the ledger should not read it as one.
     const sourcesAttempted: Source[] = [];
     let spentUsd = 0;
+    let budgetExhausted = false;
     // Where the time went, so a slow run can be traced to a stage
     const stageMilliseconds: Record<string, number> = {};
     const startedAt = Date.now();
@@ -511,35 +610,81 @@ export class FindPeopleCascadeService {
       const stageStartedAt = Date.now();
 
       try {
-        return await task();
+        // Every provider request inside the stage is logged under it
+        return await withProviderCallContext({ stage }, task);
       } finally {
         stageMilliseconds[stage] = Date.now() - stageStartedAt;
       }
     };
-    const budgetLeft = () => input.plan.perPairUsd - spentUsd;
+    // One search per role class: the per-pair cap is per company x role, so a
+    // four-role company may spend four caps, and one class serving two roles
+    // gets both
+    const roleSearches = buildRoleSearches(resolvedRoles, input.roles);
+    const companyBudgetUsd =
+      input.plan.perPairUsd * Math.max(roleSearches.length, 1);
+    const budgetLeft = () => companyBudgetUsd - spentUsd;
     const alternateNames = company.alternateNames ?? [];
 
-    const brightDataCandidates = input.sources.includes('bright_data')
-      ? await timed('bright_data', () =>
-          this.searchBrightData({
-            variants,
-            titles,
-            location: input.location,
-            maxBudgetUsd: budgetLeft(),
-            workspaceId,
-            titleExpression: resolvedRoles.booleanTitleExpression,
-          }).catch((error) => {
-            sourceErrors.push(`bright_data: ${this.describe(error)}`);
-
-            return { candidates: [] as Candidate[], spentUsd: 0 };
-          }),
-        )
-      : { candidates: [] as Candidate[], spentUsd: 0 };
-
-    spentUsd += brightDataCandidates.spentUsd;
+    const brightDataCandidates: { candidates: Candidate[]; spentUsd: number } =
+      {
+        candidates: [],
+        spentUsd: 0,
+      };
 
     if (input.sources.includes('bright_data')) {
       sourcesAttempted.push('bright_data');
+
+      for (const search of roleSearches) {
+        // A lower tier is asked only when the one above found nobody
+        const tiers = tieredSearchesOf(search);
+
+        for (const { titles: tierTitles, tier } of tiers) {
+          if (budgetLeft() <= 0) {
+            budgetExhausted = true;
+            break;
+          }
+
+          const shareUsd = Math.min(
+            input.plan.perPairUsd * Math.max(search.roles.length, 1),
+            budgetLeft(),
+          );
+          let found = 0;
+
+          try {
+            const result = await timed(
+              cellStage({ familyKey: search.key, source: 'bright_data', tier }),
+              () =>
+                this.searchBrightData({
+                  variants,
+                  titles: tierTitles,
+                  location: input.location,
+                  maxBudgetUsd: shareUsd,
+                  workspaceId,
+                  titleExpression: search.titleExpression ?? undefined,
+                }),
+            );
+
+            brightDataCandidates.spentUsd += result.spentUsd;
+            spentUsd += result.spentUsd;
+            found = result.candidates.length;
+
+            for (const candidate of result.candidates) {
+              candidate.query =
+                search.titleExpression ??
+                `${tierTitles.join(', ')} at ${company.name}`;
+              candidate.queriedRole = search.roles[0];
+
+              brightDataCandidates.candidates.push(candidate);
+            }
+          } catch (error) {
+            sourceErrors.push(`bright_data: ${this.describe(error)}`);
+          }
+
+          if (found > 0) {
+            break;
+          }
+        }
+      }
     }
 
     let candidates: Candidate[] = [...brightDataCandidates.candidates];
@@ -578,14 +723,18 @@ export class FindPeopleCascadeService {
             input.plan.minConfidence,
           ),
       );
-    let budgetExhausted = false;
     // FIND_ROLE_GOOGLE_TRIGGER=no_person asks Google only when Bright Data put
     // nobody forward; the default keeps the confidence rule and the recall it
     // buys at small companies
+    // A redo (rerunFound) asks every chosen source: stopping at the first
+    // confident one meant a re-run never reached the source that had found
+    // the other holders last time
+    const askEverySource = input.rerunFound === true;
     const googleWorthAsking =
-      process.env.FIND_ROLE_GOOGLE_TRIGGER === 'no_person'
+      askEverySource ||
+      (process.env.FIND_ROLE_GOOGLE_TRIGGER === 'no_person'
         ? verified.length === 0
-        : !confidentEnough(verified);
+        : !confidentEnough(verified));
 
     if (input.sources.includes('google') && googleWorthAsking) {
       if (budgetLeft() <= 0) {
@@ -593,28 +742,42 @@ export class FindPeopleCascadeService {
       } else {
         sourcesAttempted.push('google');
 
-        const google = await timed('google', () =>
-          this.googleSearchService.searchCompany({
-            variants,
-            titles,
-            roles: input.roles,
-            titleExpressions: resolvedRoles.titleExpressions,
-            location: input.location,
-            domain: company.domain,
-          }),
-        )
-          .then((result) => {
-            sourceErrors.push(
-              ...result.errors.map((error) => `google: ${error}`),
-            );
+        // TheOrg and The Official Board publish a company's leadership as
+        // structured people, so they are asked beside the Google queries, not
+        // through them: the pair waits no longer than the slower of the two
+        const [google, serpSources] = await Promise.all([
+          timed(cellStage({ familyKey: 'all', source: 'google' }), () =>
+            this.googleSearchService
+              .searchCompany({
+                variants,
+                titles,
+                roles: input.roles,
+                // Google gets the clause trimmed to its own word budget; a
+                // >30-word root clause used to be dropped outright
+                titleExpressions:
+                  resolvedRoles.googleTitleExpressions ??
+                  resolvedRoles.titleExpressions,
+                location: input.location,
+                domain: company.domain,
+              })
+              .then((result) => {
+                sourceErrors.push(
+                  ...result.errors.map((error) => `google: ${error}`),
+                );
 
-            return result;
-          })
-          .catch((error) => {
-            sourceErrors.push(`google: ${this.describe(error)}`);
+                return result;
+              })
+              .catch((error) => {
+                sourceErrors.push(`google: ${this.describe(error)}`);
 
-            return EMPTY_GOOGLE_RESULT;
-          });
+                return EMPTY_GOOGLE_RESULT;
+              }),
+          ),
+          timed(cellStage({ familyKey: 'all', source: 'serp_sources' }), () =>
+            this.searchSerpSources({ company, variants }),
+          ),
+        ]);
+        sourceErrors.push(...serpSources.errors);
 
         // The model reads the raw Google results into name, job title,
         // company and profile; what comes after only enriches and checks them
@@ -624,6 +787,7 @@ export class FindPeopleCascadeService {
             variants,
             roles: input.roles,
             results: google.results,
+            aiOverviewTexts: google.aiOverviewTexts,
             workspaceId,
             sourceErrors,
           }),
@@ -687,6 +851,9 @@ export class FindPeopleCascadeService {
           ...extractedCandidates
             .filter((candidate) => !resolvedIds.has(candidate.id))
             .map((candidate) => enrichedById.get(candidate.id) ?? candidate),
+          // Already name + title at the company, so they skip the reading step
+          // and go straight to the judge with the rest
+          ...serpSources.candidates,
           ...named.candidates,
         ];
         // The Bright Data people were already read; only the new ones go to
@@ -728,10 +895,10 @@ export class FindPeopleCascadeService {
 
     // Harvest is last: it is paid and slower (Sales Navigator filters on
     // Harvest's own accounts), so it runs only when the cheaper sources left
-    // nobody at the plan's confidence.
+    // nobody at the plan's confidence, or on a redo.
     if (
       input.sources.includes('harvest') &&
-      !confidentEnough(verified) &&
+      (askEverySource || !confidentEnough(verified)) &&
       budgetLeft() >= HARVEST_COST_PER_RECORD_USD
     ) {
       if (!isDefined(this.harvestLinkedinService)) {
@@ -741,25 +908,66 @@ export class FindPeopleCascadeService {
       } else {
         sourcesAttempted.push('harvest');
 
-        const harvest = await timed('harvest', () =>
-          this.searchHarvest({
-            variants,
-            titles,
-            titleExpression: resolvedRoles.booleanTitleExpression,
-            location: input.location,
-            maxBudgetUsd: budgetLeft(),
-          }).catch((error) => {
-            sourceErrors.push(`harvest: ${this.describe(error)}`);
+        // One lead search per role class, like Bright Data: the merged
+        // boolean represented only the first class
+        const harvest: {
+          candidates: Candidate[];
+          spentUsd: number;
+          errors: string[];
+        } = { candidates: [], spentUsd: 0, errors: [] };
 
-            return {
-              candidates: [] as Candidate[],
-              spentUsd: 0,
-              errors: [] as string[],
-            };
-          }),
-        );
+        for (const search of roleSearches) {
+          const tiers = tieredSearchesOf(search);
 
-        spentUsd += harvest.spentUsd;
+          for (const { titles: tierTitles, tier } of tiers) {
+            if (budgetLeft() < HARVEST_COST_PER_RECORD_USD) {
+              budgetExhausted = true;
+              break;
+            }
+
+            const shareUsd = Math.min(
+              input.plan.perPairUsd * Math.max(search.roles.length, 1),
+              budgetLeft(),
+            );
+            const result = await timed(
+              cellStage({ familyKey: search.key, source: 'harvest', tier }),
+              () =>
+                this.searchHarvest({
+                  variants,
+                  titles: tierTitles,
+                  titleExpression: search.titleExpression ?? undefined,
+                  location: input.location,
+                  maxBudgetUsd: shareUsd,
+                }).catch((error) => {
+                  sourceErrors.push(`harvest: ${this.describe(error)}`);
+
+                  return {
+                    candidates: [] as Candidate[],
+                    spentUsd: 0,
+                    errors: [] as string[],
+                  };
+                }),
+            );
+
+            harvest.spentUsd += result.spentUsd;
+            spentUsd += result.spentUsd;
+            harvest.errors.push(...result.errors);
+
+            for (const candidate of result.candidates) {
+              candidate.query =
+                search.titleExpression ??
+                `${tierTitles.join(', ')} at ${company.name}`;
+              candidate.queriedRole = search.roles[0];
+
+              harvest.candidates.push(candidate);
+            }
+
+            if (result.candidates.length > 0) {
+              break;
+            }
+          }
+        }
+
         sourceErrors.push(...harvest.errors);
 
         if (harvest.candidates.length > 0) {
@@ -793,7 +1001,7 @@ export class FindPeopleCascadeService {
       }
     }
 
-    const topPeople = (await this.mergeDuplicates(verified, workspaceId))
+    const peopleInRole = (await this.mergeDuplicates(verified, workspaceId))
       // A rung-3 keep is a nearby role, but it must still be about the same
       // work: the judge calls a chief product officer "related" to a VP of
       // engineering, and that is not the person the user asked for
@@ -802,8 +1010,8 @@ export class FindPeopleCascadeService {
           person.roleScore === 2 ||
           ownerPass ||
           leadsRequestedFunction(person, input.roles),
-      )
-      .slice(0, maxPeoplePerCompany(input.roles));
+      );
+    const topPeople = selectPeoplePerRole(peopleInRole, input.roles);
     // nobody found while a source failed is not a miss: the answer is unknown
     const sourceFailed = sourceErrors.some((error) =>
       /deadline|fetch failed|timed out|aborted|HTTP (429|5\d\d)\b|non-JSON|rate/i.test(
@@ -867,7 +1075,9 @@ export class FindPeopleCascadeService {
           input.plan.freshnessDays,
         ),
         freshness,
-        evidence: this.evidenceOf(person, query, retrievedAt),
+        // The query that returned this person, not the merged list: a fan-out
+        // across roles must stay attributable per row
+        evidence: this.evidenceOf(person, person.query ?? query, retrievedAt),
       };
     });
     const { terminalState, reason } = terminalStateOf({
@@ -970,16 +1180,38 @@ export class FindPeopleCascadeService {
     query: string,
     retrievedAt: string,
   ): FindPeopleEvidence[] {
-    const evidence: FindPeopleEvidence[] = person.sources.map((source) => ({
-      source,
-      query,
-      retrievedAt,
-      snippet:
-        source === 'bright_data' || !isNonEmptyString(person.evidenceText)
-          ? `${person.title} at ${person.companyName}`.trim()
-          : person.evidenceText.slice(0, MAX_EVIDENCE_SNIPPET_LENGTH),
-      ...(isNonEmptyString(person.linkedinUrl) && { url: person.linkedinUrl }),
-    }));
+    const evidence: FindPeopleEvidence[] = [];
+
+    // A person listed on TheOrg or The Official Board names that page first,
+    // even though the pair counts them under the SERP source: the result keeps
+    // one evidence entry, and it must be the one that says where they came from
+    if (isDefined(person.provider)) {
+      evidence.push({
+        source: person.provider,
+        query: person.companyName,
+        retrievedAt,
+        snippet: person.evidenceText.slice(0, MAX_EVIDENCE_SNIPPET_LENGTH),
+        ...(isNonEmptyString(person.linkedinUrl) && {
+          url: person.linkedinUrl,
+        }),
+      });
+    }
+
+    evidence.push(
+      ...person.sources.map((source) => ({
+        source,
+        query,
+        retrievedAt,
+        snippet:
+          source === 'bright_data' || !isNonEmptyString(person.evidenceText)
+            ? `${person.title} at ${person.companyName}`.trim()
+            : person.evidenceText.slice(0, MAX_EVIDENCE_SNIPPET_LENGTH),
+        ...(isNonEmptyString(person.linkedinUrl) && {
+          url: person.linkedinUrl,
+        }),
+      })),
+    );
+
     const note = this.noteOf(person.verdict);
 
     if (isNonEmptyString(note)) {
@@ -1065,6 +1297,34 @@ export class FindPeopleCascadeService {
     return reasons;
   }
 
+  // TheOrg and The Official Board are SERP-side sources: they run only while
+  // the pair is asking Google, behind their own flags, and a provider that is
+  // slow or breaks is reported without costing the other
+  private async searchSerpSources({
+    company,
+    variants,
+  }: {
+    company: FindPeopleByCompanyTarget;
+    variants: string[];
+  }): Promise<SerpSourcePeople> {
+    if (
+      !isDefined(this.serpSourcesService) ||
+      !this.serpSourcesService.isEnabled()
+    ) {
+      return { candidates: [], errors: [] };
+    }
+
+    return this.serpSourcesService
+      .fetchPeople({
+        companyName: company.name,
+        alternateNames: variants.slice(1),
+      })
+      .catch((error) => ({
+        candidates: [],
+        errors: [`serp_sources: ${this.describe(error)}`],
+      }));
+  }
+
   // Tries the first names one at a time and stops at the first that yields a
   // verified person, so a brand that fails is retried under its legal name
   private async searchBrightData({
@@ -1096,7 +1356,12 @@ export class FindPeopleCascadeService {
     const errors: unknown[] = [];
     const results = await Promise.all(
       searchedVariants.map(async (variant) => {
-        const rawQuery = `${titles.join(', ')} of ${variant}${isNonEmptyString(location) ? ` ${location}` : ''}`;
+        // Curated taxonomy boolean owns the title filter; keep the NL prompt
+        // to company + location so the planner does not re-list title words.
+        const locationSuffix = isNonEmptyString(location) ? ` ${location}` : '';
+        const rawQuery = isNonEmptyString(titleExpression)
+          ? `people at ${variant}${locationSuffix}`
+          : `${titles.join(', ')} of ${variant}${locationSuffix}`;
 
         try {
           const { result } = await withBrightDataPeopleSlot(() =>
@@ -1297,6 +1562,7 @@ export class FindPeopleCascadeService {
     variants,
     roles,
     results,
+    aiOverviewTexts,
     workspaceId,
     sourceErrors,
   }: {
@@ -1304,10 +1570,11 @@ export class FindPeopleCascadeService {
     variants: string[];
     roles: string[];
     results: GoogleSerpOrganicItem[];
+    aiOverviewTexts: string[];
     workspaceId: string;
     sourceErrors: string[];
   }): Promise<ExtractedPerson[]> {
-    if (results.length === 0) {
+    if (results.length === 0 && aiOverviewTexts.length === 0) {
       return [];
     }
 
@@ -1317,6 +1584,7 @@ export class FindPeopleCascadeService {
         company,
         roles,
         results,
+        aiOverview: aiOverviewTexts.join('\n\n'),
       });
     } catch (error) {
       sourceErrors.push(
@@ -1480,10 +1748,14 @@ export class FindPeopleCascadeService {
     }
   }
 
-  // Worth a paid Bright Data lookup only when the company on the result
-  // matches by name. A person at a parent or operator is still read by the
+  // Worth a paid Bright Data lookup only when the title could hold the role and
+  // the company on the result matches by name. A person at a parent or operator is still read by the
   // judge, from the company and title their own result states.
   private worthLookingUp(candidate: Candidate, variants: string[]): boolean {
+    if (!isLeadershipCandidateTitle(candidate.title)) {
+      return false;
+    }
+
     return isNonEmptyString(candidate.companyName)
       ? matchesAnyCompanyVariant(variants, candidate.companyName)
       : textMentionsAnyCompanyVariant(variants, candidate.evidenceText);
@@ -1510,6 +1782,11 @@ export class FindPeopleCascadeService {
           // The employer their own results state comes first: a person at a
           // parent or operator is found under that name, not the target's
           companyNames: [candidate.companyName, ...variants],
+          title: candidate.title,
+          // A past holder or a namesake is dropped below, so only the current
+          // company search is paid for, and Google only when it misses
+          currentCompanyOnly: true,
+          googleOnlyWhenBrightDataMisses: true,
         }),
       ),
     );
@@ -1525,7 +1802,10 @@ export class FindPeopleCascadeService {
         resolution.profiles.length === 0 ? resolution.errors : [],
       ),
       candidates: candidates.flatMap((candidate, index) => {
-        const { profiles } = resolutions[index];
+        // A past role is the person, but not the current role holder
+        const profiles = resolutions[index].profiles.filter(
+          (profile) => profile.companyRelation !== 'past',
+        );
 
         // No profile: the name is still returned, as a lead without a URL
         if (profiles.length === 0) {
@@ -1710,6 +1990,7 @@ export class FindPeopleCascadeService {
     roles,
     requestedClasses,
     roleClasses,
+    scope = 'role',
     verdicts = new Map<string, PersonJudgement>(),
   }: {
     candidates: Candidate[];
@@ -1717,6 +1998,7 @@ export class FindPeopleCascadeService {
     roles: string[];
     requestedClasses: TitleClass[];
     roleClasses?: Record<string, TitleClass | null>;
+    scope?: 'role' | 'family';
     verdicts?: Map<string, PersonJudgement>;
   }): Promise<{
     verified: VerifiedCandidate[];
@@ -1750,6 +2032,7 @@ export class FindPeopleCascadeService {
             roles,
             requestedClasses,
             candidateClass,
+            scope,
           });
       const roleMatches = this.roleMatchesOf({
         title: candidate.title,
@@ -1757,6 +2040,8 @@ export class FindPeopleCascadeService {
         roleClasses,
         candidateClass,
         roleScore,
+        scope,
+        queriedRole: candidate.queriedRole,
       });
 
       if (!companyMatches || roleScore === 0) {
@@ -1775,21 +2060,26 @@ export class FindPeopleCascadeService {
       const key = isNonEmptyString(candidate.linkedinUrl)
         ? normalizeLinkedinProfileUrl(candidate.linkedinUrl)
         : `${candidate.name.toLowerCase()}|${candidate.companyName.toLowerCase()}`;
-      // One person read twice, once with a profile URL and once without, under
-      // a one-letter spelling slip
+      // One person read twice under a one-letter spelling slip or a dropped
+      // middle name: once with a profile URL and once without, or once with a
+      // member id (Harvest) and once with a vanity slug (Google)
       const existing =
         byKey.get(key) ??
         [...byKey.values()].find(
           (other) =>
-            (!isNonEmptyString(other.linkedinUrl) ||
-              !isNonEmptyString(candidate.linkedinUrl)) &&
-            personNamesRoughlyMatch(other.name, candidate.name),
+            !linkedinUrlsAreComparable(
+              other.linkedinUrl,
+              candidate.linkedinUrl,
+            ) && personNamesRoughlyMatch(other.name, candidate.name),
         );
 
       if (isDefined(existing)) {
+        // The vanity slug wins over a member id: it is the URL people can read
         if (
-          !isNonEmptyString(existing.linkedinUrl) &&
-          isNonEmptyString(candidate.linkedinUrl)
+          isNonEmptyString(candidate.linkedinUrl) &&
+          (!isNonEmptyString(existing.linkedinUrl) ||
+            (isOpaqueLinkedinId(existing.linkedinUrl) &&
+              !isOpaqueLinkedinId(candidate.linkedinUrl)))
         ) {
           existing.linkedinUrl = candidate.linkedinUrl;
           existing.name = candidate.name;
@@ -1940,20 +2230,24 @@ export class FindPeopleCascadeService {
   // The specific roles a title satisfies. The taxonomy class is shared by a
   // function and grade, so "VP Manufacturing" matches "Head of Manufacturing"
   // even though it contains none of its words. A judge-only match with no text
-  // or class match is assigned to the first requested role so every kept person
-  // counts once.
+  // or class match goes to the role its title is closest to, so every kept
+  // person counts once and a second role can still be filled.
   private roleMatchesOf({
     title,
     roles,
     roleClasses,
     candidateClass,
     roleScore,
+    scope = 'role',
+    queriedRole,
   }: {
     title: string;
     roles: string[];
     roleClasses: Record<string, TitleClass | null> | undefined;
     candidateClass: TitleClass | null;
     roleScore: 0 | 1 | 2;
+    scope?: 'role' | 'family';
+    queriedRole?: string;
   }): RoleMatch[] {
     const matches: RoleMatch[] = [];
 
@@ -1964,6 +2258,7 @@ export class FindPeopleCascadeService {
         roles: [role],
         requestedClasses: roleClass === null ? [] : [roleClass],
         candidateClass,
+        scope,
       });
 
       if (score === 2) {
@@ -1977,7 +2272,9 @@ export class FindPeopleCascadeService {
       return matches;
     }
 
-    return [{ role: roles[0], score: roleScore }];
+    const closest = closestRequestedRole(title, roles, queriedRole);
+
+    return isDefined(closest) ? [{ role: closest, score: roleScore }] : [];
   }
 
   private describe(error: unknown): string {

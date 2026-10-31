@@ -1,7 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/services/bright-data-serp.service';
 import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
+import {
+  ProviderCallLogService,
+  trackProviderCall,
+} from 'src/engine/core-modules/provider-call-log/services/provider-call-log.service';
 import type {
   TheOrgCompanyResponse,
   TheOrgFetchCompanyOptions,
@@ -41,6 +45,8 @@ export class TheOrgService {
   constructor(
     private readonly fileStorageService: FileStorageService,
     private readonly brightDataSerpService: BrightDataSerpService,
+    @Optional()
+    private readonly providerCallLog?: ProviderCallLogService,
   ) {}
 
   private get userAgent(): string {
@@ -91,6 +97,14 @@ export class TheOrgService {
   }
 
   private async fetchText(url: string): Promise<string> {
+    return trackProviderCall(
+      this.providerCallLog,
+      { provider: 'theorg', operation: 'theorg:page', request: { url } },
+      () => this.fetchTextUncached(url),
+    );
+  }
+
+  private async fetchTextUncached(url: string): Promise<string> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.requestTimeoutMs);
 
@@ -118,6 +132,17 @@ export class TheOrgService {
   }
 
   private async postJson<T>(url: string, payload: Record<string, unknown>): Promise<T> {
+    return trackProviderCall(
+      this.providerCallLog,
+      { provider: 'theorg', operation: 'theorg:api', request: { url, payload } },
+      () => this.postJsonUncached<T>(url, payload),
+    );
+  }
+
+  private async postJsonUncached<T>(
+    url: string,
+    payload: Record<string, unknown>,
+  ): Promise<T> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.requestTimeoutMs);
 

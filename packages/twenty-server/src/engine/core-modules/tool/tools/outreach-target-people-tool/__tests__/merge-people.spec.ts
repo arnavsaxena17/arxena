@@ -1,8 +1,14 @@
 import { type OutreachEphemeralPerson } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
 import {
+  compactPeople,
   mergePeople,
-  toEphemeralPerson,
-} from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
+} from 'src/engine/core-modules/outreach-command/utils/merge-people.util';
+import {
+  normalizeCompanyName,
+  normalizeLinkedinProfileKey,
+  personIdentityKeys,
+} from 'src/engine/core-modules/outreach-command/utils/person-identity.util';
+import { toEphemeralPerson } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
 
 const person = (
   name: string,
@@ -186,5 +192,156 @@ describe('mergePeople', () => {
       followers: 1264,
       educationSchools: 'IGNOU',
     });
+  });
+});
+
+describe('person identity keys', () => {
+  it('treats legal-entity suffixes as the same employer', () => {
+    expect(normalizeCompanyName('Jubilant FoodWorks Ltd.')).toBe(
+      'jubilant foodworks',
+    );
+    expect(normalizeCompanyName('Jubilant FoodWorks Private Limited')).toBe(
+      'jubilant foodworks',
+    );
+    expect(normalizeCompanyName('Jubilant FoodWorks')).toBe(
+      'jubilant foodworks',
+    );
+  });
+
+  it('keeps words that name a different employer', () => {
+    expect(normalizeCompanyName('Haldiram Group')).not.toBe(
+      normalizeCompanyName('Haldiram'),
+    );
+  });
+
+  it('reduces every form of one profile URL to one key', () => {
+    const forms = [
+      'https://www.linkedin.com/in/Naveen-SupplyChain-Strategy/',
+      'https://in.linkedin.com/in/naveen-supplychain-strategy?trk=public_profile',
+      'linkedin.com/in/naveen-supplychain-strategy',
+      'naveen-supplychain-strategy',
+    ];
+
+    expect(new Set(forms.map(normalizeLinkedinProfileKey)).size).toBe(1);
+  });
+
+  it('keeps an opaque member id apart from a vanity slug', () => {
+    expect(
+      normalizeLinkedinProfileKey(
+        'https://www.linkedin.com/in/ACwAAAOe40MBPIme-JeJEEBEnnp0xtsjypwL6ks',
+      ),
+    ).toBe('li:member:acwaaaoe40mbpime-jejeebennp0xtsjypwl6ks');
+    expect(
+      normalizeLinkedinProfileKey(
+        'https://in.linkedin.com/in/naveen-supplychain-strategy',
+      ),
+    ).toBe('li:in:naveen-supplychain-strategy');
+  });
+
+  it('uses a personal email as a key but not a shared inbox', () => {
+    expect(
+      personIdentityKeys({
+        name: 'Naveen Srivastava',
+        email: 'naveen@jubilant.com',
+      }),
+    ).toContain('email:naveen@jubilant.com');
+    expect(
+      personIdentityKeys({
+        name: 'Naveen Srivastava',
+        email: 'info@jubilant.com',
+      }),
+    ).not.toContain('email:info@jubilant.com');
+  });
+
+  it('shares the name + employer key across URL forms and suffixes', () => {
+    const harvest = personIdentityKeys({
+      name: 'Naveen Srivastava',
+      companyName: 'Jubilant FoodWorks Ltd.',
+      linkedinUrl:
+        'https://www.linkedin.com/in/ACwAAAOe40MBPIme-JeJEEBEnnp0xtsjypwL6ks',
+    });
+    const google = personIdentityKeys({
+      name: 'Naveen Srivastava',
+      companyName: 'Jubilant FoodWorks',
+      linkedinUrl: 'https://in.linkedin.com/in/naveen-supplychain-strategy',
+    });
+
+    expect(google.some((key) => harvest.includes(key))).toBe(true);
+  });
+});
+
+// The exact pair from project b47222b6: one Harvest row and one Google row for
+// the same person, with different URL forms and an employer suffix difference.
+describe('one person found through two providers', () => {
+  const harvestRow = () =>
+    person(
+      'Naveen Srivastava',
+      'Jubilant FoodWorks Ltd.',
+      'https://www.linkedin.com/in/ACwAAAOe40MBPIme-JeJEEBEnnp0xtsjypwL6ks',
+    );
+  const googleRow = () =>
+    person(
+      'Naveen Srivastava',
+      'Jubilant FoodWorks',
+      'https://in.linkedin.com/in/naveen-supplychain-strategy',
+    );
+
+  it('collapses the pair when the harvest row lands first', () => {
+    const merged = mergePeople([harvestRow()], [googleRow()]);
+
+    expect(merged).toHaveLength(1);
+    expect(merged[0].id).toBe(harvestRow().id);
+  });
+
+  it('collapses the pair when the google row lands first', () => {
+    const merged = mergePeople([googleRow()], [harvestRow()]);
+
+    expect(merged).toHaveLength(1);
+    expect(merged[0].id).toBe(googleRow().id);
+  });
+
+  it('keeps finding the merged row through the URL form it absorbed', () => {
+    const merged = mergePeople(
+      [googleRow(), harvestRow()],
+      [
+        person(
+          'Naveen Srivastava',
+          'JFL',
+          'https://www.linkedin.com/in/ACwAAAOe40MBPIme-JeJEEBEnnp0xtsjypwL6ks',
+        ),
+      ],
+    );
+
+    expect(merged).toHaveLength(1);
+  });
+
+  it('collapses the pair when neither row has a profile URL', () => {
+    const merged = mergePeople(
+      [person('Naveen Srivastava', 'Jubilant FoodWorks')],
+      [person('Naveen Srivastava', 'Jubilant FoodWorks Ltd.')],
+    );
+
+    expect(merged).toHaveLength(1);
+  });
+
+  it('compacts an already-duplicated list without adding rows', () => {
+    const compacted = compactPeople([googleRow(), harvestRow()]);
+
+    expect(compacted).toHaveLength(1);
+  });
+
+  it('keeps a different person with the same name at another employer', () => {
+    const merged = mergePeople(
+      [googleRow()],
+      [
+        person(
+          'Naveen Srivastava',
+          'Hatsun Agro',
+          'https://in.linkedin.com/in/naveen-srivastava-hatsun',
+        ),
+      ],
+    );
+
+    expect(merged).toHaveLength(2);
   });
 });

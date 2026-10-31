@@ -3,6 +3,10 @@ import { FindPeopleByCompanyTool } from 'src/engine/core-modules/tool/tools/find
 import { type CompanyOutcome } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company.types';
 import { FindPeopleRunService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-run.service';
 
+// the start stagger is a real delay, so it would stall these multi-company
+// runs on fake timers
+process.env.FIND_ROLE_COMPANY_STAGGER_MS = '0';
+
 const context = { workspaceId: 'w', userId: 'u' };
 
 const foundOutcome = (company: string): CompanyOutcome => ({

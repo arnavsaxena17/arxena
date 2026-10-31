@@ -1,13 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
-import { isDefined } from 'twenty-shared/utils';
+import { isDefined, isNonEmptyArray } from 'twenty-shared/utils';
 
 import {
   OUTREACH_CACHE_UPDATED_EVENT,
   outreachProjectCacheRoom,
   type OutreachAiColumnRunProgress,
   type OutreachCacheKind,
+  type OutreachCachePersonRow,
   type OutreachTableView,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-cache-realtime.constants';
 import { WebSocketService } from 'src/modules/websocket/websocket.service';
@@ -24,7 +25,14 @@ export class OutreachCacheRealtimeService {
 
   constructor(private readonly webSocketService: WebSocketService) {}
 
-  notifyProjectCacheUpdated(projectId: string, kind: OutreachCacheKind): void {
+  // `rows` names exactly what the write changed, so a client can apply the
+  // delta. Left out, the event means "refetch": rows may have gone, not just
+  // arrived.
+  notifyProjectCacheUpdated(
+    projectId: string,
+    kind: OutreachCacheKind,
+    rows?: OutreachCachePersonRow[],
+  ): void {
     if (!isNonEmptyString(projectId)) {
       return;
     }
@@ -35,21 +43,21 @@ export class OutreachCacheRealtimeService {
       return;
     }
 
-    this.emit(projectId, kind);
+    this.emit(projectId, kind, isNonEmptyArray(rows) ? { rows } : {});
   }
 
   notifyAiColumnProgress(
     projectId: string,
     aiColumnRun: OutreachAiColumnRunProgress,
   ): void {
-    this.emit(projectId, 'aiColumn', aiColumnRun);
+    this.emit(projectId, 'aiColumn', { aiColumnRun });
   }
 
   notifyTableViewUpdated(
     projectId: string,
     tableView: OutreachTableView,
   ): void {
-    this.emit(projectId, 'tableView', undefined, tableView);
+    this.emit(projectId, 'tableView', { tableView });
   }
 
   private scheduleJourneyNotify(projectId: string): void {
@@ -70,8 +78,11 @@ export class OutreachCacheRealtimeService {
   private emit(
     projectId: string,
     kind: OutreachCacheKind,
-    aiColumnRun?: OutreachAiColumnRunProgress,
-    tableView?: OutreachTableView,
+    extra?: {
+      aiColumnRun?: OutreachAiColumnRunProgress;
+      tableView?: OutreachTableView;
+      rows?: OutreachCachePersonRow[];
+    },
   ): void {
     try {
       this.webSocketService.sendToRoom(
@@ -80,8 +91,13 @@ export class OutreachCacheRealtimeService {
         {
           projectId,
           kind,
-          ...(isDefined(aiColumnRun) ? { aiColumnRun } : {}),
-          ...(isDefined(tableView) ? { tableView } : {}),
+          ...(isDefined(extra?.aiColumnRun)
+            ? { aiColumnRun: extra.aiColumnRun }
+            : {}),
+          ...(isDefined(extra?.tableView)
+            ? { tableView: extra.tableView }
+            : {}),
+          ...(isDefined(extra?.rows) ? { rows: extra.rows } : {}),
         },
       );
     } catch (error) {

@@ -49,6 +49,7 @@ const record = (overrides: Record<string, unknown>) => ({
 const runWith = (
   records: Array<Record<string, unknown>>,
   resultsToRead: typeof results,
+  aiOverview?: string,
 ) => {
   runGenerateObject.mockResolvedValue({ object: { people: records } });
 
@@ -60,6 +61,7 @@ const runWith = (
     company: '99 Pancakes',
     roles: ['founder'],
     results: resultsToRead,
+    aiOverview,
   });
 };
 const run = (records: Array<Record<string, unknown>>) =>
@@ -102,6 +104,31 @@ describe('GoogleResultExtractionService', () => {
 
     // Not in the results text, so dropped rather than invented
     expect(extracted).toBeUndefined();
+  });
+
+  it('should keep a person named only in the AI Overview, without inventing a URL', async () => {
+    const [extracted] = await runWith(
+      [
+        record({
+          name: 'Veeramani M P',
+          jobTitle: 'Head of Extension Services & Procurement',
+          companyName: 'Akshayakalpa Organic',
+          evidence:
+            'VEERAMANI M P is the Head of Extension Services & Procurement at Akshayakalpa Organic.',
+          // 0 means the person came from the overview, not a numbered result
+          resultIndex: 0,
+        }),
+      ],
+      results,
+      'VEERAMANI M P is the Head of Extension Services & Procurement at Akshayakalpa Organic.',
+    );
+
+    expect(extracted).toMatchObject({
+      name: 'Veeramani M P',
+      companyName: 'Akshayakalpa Organic',
+      linkedinUrl: '',
+      sourceUrl: '',
+    });
   });
 
   it('should never take a URL the model wrote itself', async () => {

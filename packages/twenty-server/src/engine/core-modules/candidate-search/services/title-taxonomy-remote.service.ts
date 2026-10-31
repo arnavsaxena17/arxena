@@ -23,6 +23,21 @@ export type TitleTaxonomyManualBooleanQueriesResponse = {
   items?: TitleTaxonomyManualBooleanQueryItem[];
 };
 
+/**
+ * One function x grade boolean at role or family scope. `boolean_query` is the
+ * role's own anchor set for `role`, or the whole root subtree for `family`.
+ */
+export type TitleTaxonomyRoleQueryResponse = {
+  status?: string;
+  function?: string;
+  grade?: string;
+  scope?: string;
+  terms?: string[];
+  grade_terms?: string[];
+  boolean_query?: string;
+  error?: string;
+};
+
 /** Plain titles for one function, ordered by how often the dataset uses them. */
 export type TitleTaxonomySimilarTitlesResponse = {
   status?: string;
@@ -34,6 +49,47 @@ export type TitleTaxonomySimilarTitlesResponse = {
   count?: number;
   titles?: string[];
   boolean_query?: string;
+};
+
+/** One whole title from the grade x function lattice. */
+export type TitleTaxonomySimilarJobTitleItem = {
+  title?: string;
+  grade_term?: string;
+  // Calibrated years of experience, not the tree depth
+  grade_coord?: number;
+  function_term?: string;
+  term_scope?: string;
+  pair_count?: number;
+  exact_count?: number;
+  cell?: string;
+};
+
+/** Titles partitioned by band relation and calibrated year distance. */
+export type TitleTaxonomySimilarJobTitleCell = {
+  id?: string;
+  label?: string;
+  count?: number;
+  items?: TitleTaxonomySimilarJobTitleItem[];
+};
+
+/**
+ * Whole titles for one function and seniority. `reason` is set when nothing is
+ * returned: unclassified, unknown_function, function_required, index_unavailable.
+ */
+export type TitleTaxonomySimilarJobTitlesResponse = {
+  status?: string;
+  title?: string;
+  std_function?: string;
+  std_function_root?: string;
+  std_grade?: string;
+  std_grade_term?: string;
+  scope?: string;
+  bands?: string;
+  count?: number;
+  titles?: string[];
+  cells?: TitleTaxonomySimilarJobTitleCell[];
+  boolean_query?: string;
+  reason?: string;
 };
 
 export type TitleTaxonomySearchKeywordsResponse = {
@@ -440,6 +496,28 @@ export class TitleTaxonomyRemoteService {
   }
 
   /**
+   * GET /api/title-taxonomy/role-query — the role-scope boolean for one
+   * function x grade. `scope=family` returns the department query instead.
+   *
+   * Null when the service cannot be reached, so the caller can fall back to
+   * the function's OR words rather than treating it as "no query".
+   */
+  async getRoleQuery(query: {
+    functionId: string;
+    grade?: string;
+    scope?: string;
+  }): Promise<TitleTaxonomyRoleQueryResponse | null> {
+    return this.fetchTitleTaxonomyJson<TitleTaxonomyRoleQueryResponse>(
+      '/api/title-taxonomy/role-query',
+      {
+        function: query.functionId,
+        grade: query.grade,
+        scope: query.scope,
+      },
+    );
+  }
+
+  /**
    * GET /api/title-taxonomy/similar-titles — every title the taxonomy files
    * under a function (root fallback), most common in the dataset first.
    *
@@ -469,6 +547,117 @@ export class TitleTaxonomyRemoteService {
     }
 
     return Array.isArray(json.titles) ? json.titles : [];
+  }
+
+  /**
+   * POST /api/title-taxonomy/keywords — the frequency-ranked OR terms for one
+   * function or root, with their job-title counts. This is the same ranking the
+   * taxonomy's own boolean query generator uses (`select_leaf_representative_
+   * or_terms` / `boolean_query_from_std_function`), so a caller that caps a
+   * curated query keeps the terms the dataset uses most.
+   *
+   * Null when the service cannot be reached, so a caller can fall back to the
+   * curated order instead of treating it as "no terms".
+   */
+  async getRankedKeywords(query: {
+    functionId?: string;
+    functionRoot?: string;
+    maxTerms?: number;
+  }): Promise<Array<{ term: string; count: number }> | null> {
+    const url = `${this.getBaseUrl()}/api/title-taxonomy/keywords`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          function_id: query.functionId,
+          function_root: query.functionRoot,
+          max_terms: query.maxTerms ?? 12,
+        }),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+
+        this.logger.warn(
+          `Title taxonomy keywords returned ${response.status}: ${text}`,
+        );
+
+        return null;
+      }
+
+      const json = (await response.json()) as {
+        primary_keywords?: string[];
+        synonym_keywords?: string[];
+        ranked_terms?: Array<{ term?: string; count?: number }>;
+      };
+      // ranked_terms carries the counts; primary + synonyms keep the same order
+      // when an older service omits it
+      const ranked = Array.isArray(json.ranked_terms)
+        ? json.ranked_terms
+            .map((entry) => ({
+              term: typeof entry.term === 'string' ? entry.term.trim() : '',
+              count: typeof entry.count === 'number' ? entry.count : 0,
+            }))
+            .filter((entry) => entry.term !== '')
+        : [...(json.primary_keywords ?? []), ...(json.synonym_keywords ?? [])]
+            .map((term) => term.trim())
+            .filter((term) => term !== '')
+            .map((term) => ({ term, count: 0 }));
+
+      return ranked;
+    } catch (error) {
+      this.logger.warn(
+        `Title taxonomy keywords failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+
+      return null;
+    }
+  }
+
+  /**
+   * GET /api/title-taxonomy/similar-job-titles — whole titles composed from the
+   * grade x function lattice, bucketed by calibrated years of experience.
+   *
+   * Unlike getSimilarTitles (a function's OR words), this keeps the seniority
+   * axis: `bands: 'same'` answers with the titles at the role's own level, so
+   * "VP Manufacturing" gets "head of production", not "plant".
+   *
+   * Null when the service cannot be reached, so callers can tell "no titles"
+   * from "no answer". An unreachable service and an empty `titles` list call
+   * for different fallbacks, so the response is returned whole.
+   */
+  async getSimilarJobTitles(query: {
+    // The role as typed: it carries the surface grade term ("vp", "head")
+    title?: string;
+    functionId?: string;
+    grade?: string;
+    scope?: 'function' | 'root' | 'all';
+    bands?: 'same' | 'adjacent' | 'all';
+    attestedOnly?: boolean;
+    maxTitles?: number;
+  }): Promise<TitleTaxonomySimilarJobTitlesResponse | null> {
+    return this.fetchTitleTaxonomyJson<TitleTaxonomySimilarJobTitlesResponse>(
+      '/api/title-taxonomy/similar-job-titles',
+      {
+        title: query.title,
+        function: query.functionId,
+        grade: query.grade,
+        scope: query.scope,
+        bands: query.bands,
+        // Omitted means the index default (attested only); a caller who wants
+        // the synthetic shapes has to say so
+        attested: query.attestedOnly === false ? 'false' : undefined,
+        max_titles:
+          query.maxTitles !== undefined ? String(query.maxTitles) : undefined,
+      },
+    );
   }
 
   /**

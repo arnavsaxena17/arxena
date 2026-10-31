@@ -27,6 +27,28 @@ describe('buildSerpEvidence', () => {
     expect(evidence?.snippets[0].description).toBe('Revenue 12,313 crore');
   });
 
+  it('should read the bullets of a list-shaped AI overview', () => {
+    const evidence = buildSerpEvidence('acme procurement head', {
+      ai_overview: {
+        texts: [
+          { type: 'paragraph', snippet: 'Procurement is led by:' },
+          {
+            type: 'list',
+            title: 'Veeramani M P - Head of Procurement',
+            list: [
+              { snippet: 'Veeramani M P - Head of Procurement' },
+              { snippet: 'Suresh N - Purchase Lead' },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(evidence?.aiOverview).toBe(
+      'Procurement is led by:\nVeeramani M P - Head of Procurement\nSuresh N - Purchase Lead',
+    );
+  });
+
   it('should work from organic snippets alone and cap them', () => {
     const organic = Array.from({ length: 10 }, (_, index) => ({
       title: `T${index}`,

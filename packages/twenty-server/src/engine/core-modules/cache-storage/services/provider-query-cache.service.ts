@@ -7,6 +7,7 @@ import { CacheStorageService } from 'src/engine/core-modules/cache-storage/servi
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { buildProviderQueryCacheKey } from 'src/engine/core-modules/cache-storage/utils/provider-query-cache-key.util';
 import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
+import { ProviderCallLogService } from 'src/engine/core-modules/provider-call-log/services/provider-call-log.service';
 
 export const PROVIDER_QUERY_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const PROVIDER_QUERY_S3_FOLDER = 'provider-query-cache';
@@ -17,8 +18,13 @@ type ProviderQueryCacheEnvelope<TValue> = {
   version: 1;
   fetchedAt: string;
   key: string;
+  // The hashed request, so a cache file can be read back as the query that
+  // produced it (absent on files written before it was kept)
+  parts?: unknown;
   value: TValue;
 };
+
+type CacheRead<TValue> = { value: TValue; source: 'redis_hit' | 's3_hit' };
 
 @Injectable()
 export class ProviderQueryCacheService {
@@ -32,6 +38,8 @@ export class ProviderQueryCacheService {
     private readonly cache: CacheStorageService,
     @Optional()
     private readonly fileStorageService?: FileStorageService,
+    @Optional()
+    private readonly providerCallLog?: ProviderCallLogService,
   ) {
     const configuredTtl = Number(
       process.env.PROVIDER_QUERY_CACHE_TTL_MS ?? PROVIDER_QUERY_CACHE_TTL_MS,
@@ -59,7 +67,16 @@ export class ProviderQueryCacheService {
       return undefined;
     }
 
-    return this.read<TValue>(buildProviderQueryCacheKey(prefix, parts), prefix);
+    const key = buildProviderQueryCacheKey(prefix, parts);
+    const cached = await this.read<TValue>(key, prefix);
+
+    // A miss is not logged here: the caller fetches and calls set(), which
+    // logs the provider request
+    if (cached !== undefined) {
+      this.logCall(prefix, parts, key, cached.source, cached.value);
+    }
+
+    return cached?.value;
   }
 
   async set<TValue>(
@@ -71,7 +88,10 @@ export class ProviderQueryCacheService {
       return;
     }
 
-    await this.write(buildProviderQueryCacheKey(prefix, parts), prefix, value);
+    const key = buildProviderQueryCacheKey(prefix, parts);
+
+    await this.write(key, prefix, parts, value);
+    this.logCall(prefix, parts, key, 'fetched', value);
   }
 
   async getOrFetch<TValue>(
@@ -80,7 +100,16 @@ export class ProviderQueryCacheService {
     fetcher: () => Promise<TValue>,
   ): Promise<TValue> {
     if (this.ttlMs <= 0) {
-      return fetcher();
+      return this.providerCallLog
+        ? this.providerCallLog.track(
+            {
+              provider: this.providerOf(prefix),
+              operation: prefix,
+              request: parts,
+            },
+            fetcher,
+          )
+        : fetcher();
     }
 
     const key = buildProviderQueryCacheKey(prefix, parts);
@@ -91,15 +120,20 @@ export class ProviderQueryCacheService {
       this.logger.log(
         `Provider query cache COALESCE prefix=${prefix} digest=${digest}`,
       );
+      this.logCall(prefix, parts, key, 'coalesced');
 
       return existing as Promise<TValue>;
     }
 
-    const pending = this.loadOrFetch(key, prefix, digest, fetcher).finally(
-      () => {
-        this.inFlight.delete(key);
-      },
-    );
+    const pending = this.loadOrFetch(
+      key,
+      prefix,
+      parts,
+      digest,
+      fetcher,
+    ).finally(() => {
+      this.inFlight.delete(key);
+    });
 
     this.inFlight.set(key, pending);
 
@@ -109,6 +143,7 @@ export class ProviderQueryCacheService {
   private async loadOrFetch<TValue>(
     key: string,
     prefix: string,
+    parts: unknown,
     digest: string,
     fetcher: () => Promise<TValue>,
   ): Promise<TValue> {
@@ -118,17 +153,33 @@ export class ProviderQueryCacheService {
       this.logger.log(
         `Provider query cache HIT prefix=${prefix} digest=${digest}`,
       );
+      this.logCall(prefix, parts, key, cached.source, cached.value);
 
-      return cached;
+      return cached.value;
     }
 
     this.logger.log(
       `Provider query cache MISS prefix=${prefix} digest=${digest}`,
     );
 
-    const response = await fetcher();
+    const startedAt = Date.now();
+    let response: TValue;
 
-    await this.write(key, prefix, response);
+    try {
+      response = await fetcher();
+    } catch (error) {
+      this.logCall(prefix, parts, key, 'error', undefined, {
+        durationMs: Date.now() - startedAt,
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
+
+      throw error;
+    }
+
+    await this.write(key, prefix, parts, response);
+    this.logCall(prefix, parts, key, 'fetched', response, {
+      durationMs: Date.now() - startedAt,
+    });
 
     return response;
   }
@@ -136,11 +187,11 @@ export class ProviderQueryCacheService {
   private async read<TValue>(
     key: string,
     prefix: string,
-  ): Promise<TValue | undefined> {
+  ): Promise<CacheRead<TValue> | undefined> {
     const fromRedis = await this.readRedis<TValue>(key);
 
     if (fromRedis !== undefined) {
-      return fromRedis;
+      return { value: fromRedis, source: 'redis_hit' };
     }
 
     const fromS3 = await this.readS3<TValue>(key, prefix);
@@ -152,18 +203,52 @@ export class ProviderQueryCacheService {
     // Rehydrate the hot path so the next hit skips S3
     await this.writeRedis(key, fromS3);
 
-    return fromS3;
+    return { value: fromS3, source: 's3_hit' };
   }
 
   private async write<TValue>(
     key: string,
     prefix: string,
+    parts: unknown,
     value: TValue,
   ): Promise<void> {
     await Promise.all([
       this.writeRedis(key, value),
-      this.writeS3(key, prefix, value),
+      this.writeS3(key, prefix, parts, value),
     ]);
+  }
+
+  private logCall(
+    prefix: string,
+    parts: unknown,
+    key: string,
+    cacheStatus: 'redis_hit' | 's3_hit' | 'coalesced' | 'fetched' | 'error',
+    response?: unknown,
+    extra: { durationMs?: number; errorMessage?: string } = {},
+  ): void {
+    if (!this.providerCallLog) {
+      return;
+    }
+
+    const { folder, filename } = this.s3Location(key, prefix);
+
+    this.providerCallLog.record({
+      provider: this.providerOf(prefix),
+      operation: prefix,
+      request: parts,
+      cacheKey: key,
+      cacheStatus,
+      response,
+      // An error leaves nothing in storage to point at
+      responseLocation:
+        cacheStatus === 'error' ? undefined : `${folder}/${filename}`,
+      ...extra,
+    });
+  }
+
+  // 'bright-data-search:v1' -> 'bright-data-search'
+  private providerOf(prefix: string): string {
+    return prefix.split(':')[0] || prefix;
   }
 
   private async readRedis<TValue>(key: string): Promise<TValue | undefined> {
@@ -239,6 +324,7 @@ export class ProviderQueryCacheService {
   private async writeS3<TValue>(
     key: string,
     prefix: string,
+    parts: unknown,
     value: TValue,
   ): Promise<void> {
     if (!this.fileStorageService || this.s3MaxAgeMs <= 0) {
@@ -250,6 +336,7 @@ export class ProviderQueryCacheService {
       version: 1,
       fetchedAt: new Date().toISOString(),
       key,
+      parts,
       value,
     };
 

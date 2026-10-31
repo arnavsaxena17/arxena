@@ -44,6 +44,9 @@ const collectText = (value: unknown, parts: string[]): void => {
     const record = value as Record<string, unknown>;
 
     collectText(record.text ?? record.snippet ?? record.texts, parts);
+    // Bullets arrive as a nested list; their text is not under texts[].snippet,
+    // so without this the overview silently loses every list item
+    collectText(record.list, parts);
   }
 };
 

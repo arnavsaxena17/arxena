@@ -1,5 +1,6 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 
+import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 import { z } from 'zod';
 
@@ -60,18 +61,21 @@ const extractionSchema = z.object({
 const SYSTEM_PROMPT = `You turn Google search results into structured records of the people they mention.
 Each result is numbered and has a title, a URL, a snippet and sometimes "details" (fields the search engine itself lifted out, such as location, role and company). Return one record per distinct person.
 
+An "AI Overview" block may follow the results. It is Google's own summary and it sometimes names the role holder that the top organic results do not. Use it only for people it names explicitly.
+
 Fields:
 - name: the person's full name as written, without emoji, credentials or honorifics.
 - jobTitle: the role the results state for them. LinkedIn result titles read "Name - Job title - Company | LinkedIn", "Name - Job title at Company" or "Name - Company": in the last form the text after the dash is the company, not a job title. Empty string when no role is stated. Never infer a role.
 - companyName: the employer the results state for that role. Empty string when none is stated.
 - location: city or region if stated, else an empty string.
 - isCurrentRole: false when the results say former, ex-, formerly or describe a past role; true otherwise.
-- resultIndex: the number of the result that is this person's own LinkedIn profile (URL contains linkedin.com/in/) when one is among the results; otherwise the number of the result that names them.
+- resultIndex: the number of the result that is this person's own LinkedIn profile (URL contains linkedin.com/in/) when one is among the results; otherwise the number of the result that names them; 0 when only the AI Overview names them.
 - evidence: the words from the results that state the name together with the role and company.
 
 Rules:
 - Include people at any company; a later step decides which company matters.
 - Skip results that name no person (company pages, directories, listings, news about deals).
+- A person named only in the AI Overview is kept: set resultIndex to 0 and copy the overview sentence into evidence. A summary that describes functions without naming a person is not a person.
 - Copy text exactly as written. Never invent a name, a role or a company.
 - At most ${MAX_PEOPLE} records.`;
 
@@ -96,13 +100,17 @@ export class GoogleResultExtractionService {
     company,
     roles,
     results,
+    aiOverview,
   }: {
     workspaceId: string;
     company: string;
     roles: string[];
     results: GoogleSerpOrganicItem[];
+    aiOverview?: string;
   }): Promise<ExtractedPerson[]> {
-    if (results.length === 0) {
+    const overview = aiOverview?.trim() ?? '';
+
+    if (results.length === 0 && overview === '') {
       return [];
     }
 
@@ -134,6 +142,14 @@ export class GoogleResultExtractionService {
                   : ''
               }`,
           ),
+          ...(isNonEmptyString(overview)
+            ? [
+                '',
+                // The summary can name the role holder the organic results miss
+                `AI Overview (Google's summary${results.length === 0 ? '' : '; names here may not be in the results'}):`,
+                overview,
+              ]
+            : []),
         ].join('\n'),
         maxOutputTokens: EXTRACTION_MAX_OUTPUT_TOKENS,
         abortSignal: AbortSignal.timeout(EXTRACTION_TIMEOUT_MS),
@@ -144,10 +160,11 @@ export class GoogleResultExtractionService {
     const people = this.toPeople(
       extractionSchema.parse(response.object).people,
       results,
+      overview,
     );
 
     this.logger.log(
-      `Extracted ${people.length} people from ${results.length} Google results for "${company}", ${people.filter((person) => person.linkedinUrl !== '').length} with a LinkedIn profile`,
+      `Extracted ${people.length} people from ${results.length} Google results for "${company}", ${people.filter((person) => person.linkedinUrl !== '').length} with a LinkedIn profile${overview !== '' ? ', AI Overview read' : ''}`,
     );
 
     return people;
@@ -159,8 +176,12 @@ export class GoogleResultExtractionService {
   private toPeople(
     records: z.infer<typeof extractionSchema>['people'],
     results: GoogleSerpOrganicItem[],
+    aiOverview = '',
   ): ExtractedPerson[] {
-    const haystack = results.map(textOf).join(' ');
+    const haystack = [
+      ...results.map(textOf),
+      aiOverview.toLowerCase().replace(/\s+/g, ' '),
+    ].join(' ');
     const people: ExtractedPerson[] = [];
     const seen = new Set<string>();
 
@@ -174,7 +195,9 @@ export class GoogleResultExtractionService {
         continue;
       }
 
-      const source = results[record.resultIndex - 1];
+      // 0 means the model read the person from the AI Overview, not a result
+      const source =
+        record.resultIndex > 0 ? results[record.resultIndex - 1] : undefined;
       // The model can point at the About page while the person's profile is
       // also in the results, so the profile is looked for by name too
       const profile = [source, ...results].find(

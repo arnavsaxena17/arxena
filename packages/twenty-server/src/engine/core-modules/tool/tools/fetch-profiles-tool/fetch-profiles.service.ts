@@ -446,11 +446,17 @@ export class FetchProfilesService {
         const { profiles, errors } = await resolver.resolve({
           name: target.name,
           companyNames: [companyName],
+          title: target.title,
           googleOnlyWhenBrightDataMisses: true,
           skipBrightData,
         });
+        // An alumnus is that person, but not the current role holder: keep the
+        // URL for the resolver caller, never fetch it as the live contact
+        const currentProfiles = profiles.filter(
+          (profile) => profile.companyRelation !== 'past',
+        );
 
-        if (profiles.length === 0) {
+        if (currentProfiles.length === 0) {
           if (errors.length > 0) {
             lookupErrors.count += 1;
             lookupErrors.lastError = errors[0];
@@ -463,7 +469,7 @@ export class FetchProfilesService {
         const chosen = await this.chooseProfile({
           workspaceId,
           target,
-          profiles,
+          profiles: currentProfiles,
         });
 
         if (!isDefined(chosen)) {

@@ -194,6 +194,7 @@ export class SuperImposeQueryBuilderService {
                 company_names: input.primaryCompanyName
                   ? [input.primaryCompanyName]
                   : [],
+                scope: 'family',
               },
               input.searchType,
               `Function root search for ${input.primaryCompanyName}`,

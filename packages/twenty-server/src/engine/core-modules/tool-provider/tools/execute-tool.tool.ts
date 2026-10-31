@@ -3,6 +3,7 @@ import { jsonSchema } from 'ai';
 import { type JSONSchema7 } from 'json-schema';
 import { z } from 'zod';
 
+import { withProviderCallContext } from 'src/engine/core-modules/provider-call-log/storage/provider-call-context.storage';
 import { type ToolRegistryService } from 'src/engine/core-modules/tool-provider/services/tool-registry.service';
 import { type ToolContext } from 'src/engine/core-modules/tool-provider/types/tool-context.type';
 import { coerceExecuteToolArguments } from 'src/engine/core-modules/tool-provider/utils/coerce-execute-tool-arguments.util';
@@ -60,7 +61,10 @@ export const createExecuteToolTool = (
 ) => ({
   description: MCP_TOOL_DESCRIPTIONS.execute_tool,
   inputSchema: executeToolInputSchema,
-  execute: async (parameters: ExecuteToolInput): Promise<ToolOutput> => {
+  execute: async (
+    parameters: ExecuteToolInput,
+    callOptions?: { toolCallId?: string },
+  ): Promise<ToolOutput> => {
     const { toolName, arguments: args = {} } = parameters;
     console.log('executeToolTool', toolName, args);
     if (options?.excludeTools?.has(toolName)) {
@@ -71,9 +75,15 @@ export const createExecuteToolTool = (
       };
     }
 
-    return toolRegistry.resolveAndExecute(toolName, args, context, {
-      compactOutput: options?.compactOutput,
-      spillLargeOutput: options?.spillLargeOutput,
-    });
+    // Provider requests made by the tool are logged under this call id, the
+    // one stored on the chat's message part
+    return withProviderCallContext(
+      { toolCallId: callOptions?.toolCallId },
+      () =>
+        toolRegistry.resolveAndExecute(toolName, args, context, {
+          compactOutput: options?.compactOutput,
+          spillLargeOutput: options?.spillLargeOutput,
+        }),
+    );
   },
 });

@@ -10,8 +10,59 @@ type Search = jest.Mock<
     documents: ReturnType<typeof brightDataDocument>[];
     matched: number;
   }>,
-  [{ query: string }]
+  [{ query: unknown }]
 >;
+
+// The resolver sends structured ludicrous queries; the tests key their answers
+// by the human-readable form of the same filter. One search can name several
+// companies (an or of company filters), so a query has one key per company.
+const queryKeys = (query: unknown): string[] => {
+  if (typeof query === 'string') {
+    return [query];
+  }
+
+  const and = (query as { and?: Array<Record<string, unknown>> })?.and ?? [];
+  const name =
+    (and[0] as { text?: { name?: { value?: string } } })?.text?.name?.value ??
+    (query as { text?: { name?: { value?: string } } })?.text?.name?.value ??
+    '';
+  const companyPart = and[1] as
+    | {
+        text?: Record<string, unknown>;
+        or?: Array<{ text?: Record<string, unknown> }>;
+      }
+    | undefined;
+  const companyFilters =
+    companyPart?.or?.map((filter) => filter.text) ??
+    (companyPart?.text !== undefined ? [companyPart.text] : []);
+
+  const valueOf = (filter: unknown): string | undefined => {
+    if (typeof filter === 'string') {
+      return filter;
+    }
+
+    if (filter !== null && typeof filter === 'object') {
+      return (filter as { value?: string }).value;
+    }
+
+    return undefined;
+  };
+
+  if (companyFilters.length === 0) {
+    return [name];
+  }
+
+  return companyFilters.map((filter) => {
+    const current = valueOf(filter?.current_company_name);
+    const past = valueOf(filter?.past_company_names);
+
+    if (current !== undefined) {
+      return `${name} ${current}`;
+    }
+
+    return `${name} ${past} past`;
+  });
+};
 
 const build = ({
   byQuery = {},
@@ -23,10 +74,11 @@ const build = ({
   organic?: Array<{ title: string; link: string; description?: string }>;
   googleFails?: boolean;
 }) => {
-  const search: Search = jest.fn(async ({ query }) => ({
-    documents: byQuery[query] ?? [],
-    matched: (byQuery[query] ?? []).length,
-  }));
+  const search: Search = jest.fn(async ({ query }) => {
+    const documents = queryKeys(query).flatMap((key) => byQuery[key] ?? []);
+
+    return { documents, matched: documents.length };
+  });
   const request = googleFails
     ? jest.fn().mockRejectedValue(new Error('HTTP 502'))
     : jest.fn().mockResolvedValue({ organic });
@@ -60,8 +112,8 @@ describe('LinkedinProfileResolverService', () => {
     expect(search).toHaveBeenCalledWith(
       expect.objectContaining({
         entity: 'people',
-        mode: 'instant',
-        query: 'Vikesh Shah 99 Pancakes',
+        mode: 'ludicrous',
+        query: expect.objectContaining({ and: expect.any(Array) }),
       }),
     );
     expect(profiles[0]).toEqual(
@@ -69,27 +121,63 @@ describe('LinkedinProfileResolverService', () => {
         linkedinUrl: 'https://www.linkedin.com/in/vikesh-shah-253a67204/',
         via: 'bright_data',
         sameNameProfileCount: null,
+        companyRelation: 'current',
       }),
     );
     expect(spentUsd).toBeCloseTo(0.002);
   });
 
-  it('should try every company name the person goes by', async () => {
+  it('should try every company name the person goes by in one search', async () => {
     const { resolver, search } = build({});
 
     await resolver.resolve({
       name: 'Smita Jatia',
       companyNames: ['Westlife Foodworld', 'Hardcastle Restaurants Pvt. Ltd.'],
+      currentCompanyOnly: true,
     });
 
-    const queries = search.mock.calls.map(([{ query }]) => query);
+    expect(search).toHaveBeenCalledTimes(1);
+    expect(queryKeys(search.mock.calls[0][0].query)).toEqual([
+      'Smita Jatia Westlife Foodworld',
+      'Smita Jatia Hardcastle Restaurants Pvt. Ltd.',
+    ]);
+  });
 
-    expect(queries).toEqual(
-      expect.arrayContaining([
-        'Smita Jatia Westlife Foodworld',
-        'Smita Jatia Hardcastle Restaurants Pvt. Ltd.',
-      ]),
-    );
+  it('should search one spelling of a company once', async () => {
+    const { resolver, search } = build({});
+
+    await resolver.resolve({
+      name: 'Aseem Gupta',
+      companyNames: ['Jubilant FoodWorks Ltd.', 'Jubilant Foodworks'],
+      currentCompanyOnly: true,
+    });
+
+    expect(queryKeys(search.mock.calls[0][0].query)).toEqual([
+      'Aseem Gupta Jubilant FoodWorks Ltd.',
+    ]);
+  });
+
+  it('should stop the Google name lookup at the first query that finds the person', async () => {
+    const { resolver, request } = build({
+      organic: [
+        {
+          title:
+            'Aseem Gupta - Head of Procurement - Jubilant FoodWorks | LinkedIn',
+          link: 'https://in.linkedin.com/in/aseem-gupta',
+        },
+      ],
+    });
+
+    const { profiles } = await resolver.resolve({
+      name: 'Aseem Gupta',
+      companyNames: ['Jubilant FoodWorks'],
+      title: 'Head of Procurement',
+      currentCompanyOnly: true,
+      googleOnlyWhenBrightDataMisses: true,
+    });
+
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(profiles[0]?.linkedinUrl).toContain('aseem-gupta');
   });
 
   it('should fall back to the name alone when no name-and-company query finds anyone', async () => {
@@ -110,15 +198,16 @@ describe('LinkedinProfileResolverService', () => {
       companyNames: ['Westlife Foodworld'],
     });
 
-    expect(search.mock.calls.map(([{ query }]) => query)).toContain(
-      'Smita Jatia',
-    );
+    expect(
+      search.mock.calls.map(([{ query }]) => queryKeys(query as never)).flat(),
+    ).toContain('Smita Jatia');
     expect(profiles).toEqual([
       expect.objectContaining({
         linkedinUrl: 'https://linkedin.com/in/smita-jatia',
         companyName: '',
         // One profile with that name, so a namesake is unlikely
         sameNameProfileCount: 1,
+        companyRelation: 'unknown',
       }),
     ]);
   });
@@ -141,9 +230,9 @@ describe('LinkedinProfileResolverService', () => {
       companyNames: ['Ghost Kitchens India'],
     });
 
-    expect(search.mock.calls.map(([{ query }]) => query)).not.toContain(
-      'Karan Tanna',
-    );
+    expect(
+      search.mock.calls.map(([{ query }]) => queryKeys(query as never)).flat(),
+    ).not.toContain('Karan Tanna');
   });
 
   it('should report how many profiles share the name, so a namesake can be told apart', async () => {
@@ -168,6 +257,48 @@ describe('LinkedinProfileResolverService', () => {
     expect(profiles[0]).toEqual(
       expect.objectContaining({ companyName: 'BNP Paribas CIB' }),
     );
+  });
+
+  it('should label a past-company hit as past, not current', async () => {
+    const { resolver } = build({
+      byQuery: {
+        'Veeramani M P Akshayakalpa Organic past': [
+          brightDataDocument({
+            name: 'Veeramani M P',
+            current_company_name: 'Somewhere Else',
+            url: 'https://www.linkedin.com/in/veeramani-m-p-54675467',
+          }),
+        ],
+      },
+    });
+
+    const { profiles } = await resolver.resolve({
+      name: 'Veeramani M P',
+      companyNames: ['Akshayakalpa Organic'],
+    });
+
+    expect(profiles[0]).toEqual(
+      expect.objectContaining({
+        linkedinUrl: 'https://www.linkedin.com/in/veeramani-m-p-54675467',
+        companyRelation: 'past',
+      }),
+    );
+  });
+
+  it('should use the title as a third Google query when one is given', async () => {
+    const { resolver, request } = build({});
+
+    await resolver.resolve({
+      name: 'Suresh N',
+      companyNames: ['Akshayakalpa'],
+      title: 'Purchase Lead',
+    });
+
+    expect(request.mock.calls.map(([query]) => query)).toEqual([
+      'Suresh N Akshayakalpa',
+      'Suresh N Akshayakalpa linkedin',
+      'Suresh N Akshayakalpa Purchase Lead',
+    ]);
   });
 
   it('should ask Google with the shortest name of the company, plain first', async () => {

@@ -45,6 +45,47 @@ describe('OutreachCacheRealtimeService', () => {
     );
   });
 
+  it('should send the written rows so the client can skip the refetch', () => {
+    const rows = [
+      {
+        id: 'row-1',
+        name: 'Gautam Jatia',
+        title: 'Managing Director',
+        companyId: 'company-1',
+        companyName: 'Jatia Group',
+        linkedinUrl: 'https://www.linkedin.com/in/gautam-jatia',
+        warmPath: '—',
+        stage: 'queued',
+        email: '',
+      },
+    ];
+
+    service.notifyProjectCacheUpdated('project-1', 'people', rows);
+
+    expect(sendToRoom).toHaveBeenCalledWith(
+      outreachProjectCacheRoom('project-1'),
+      OUTREACH_CACHE_UPDATED_EVENT,
+      {
+        projectId: 'project-1',
+        kind: 'people',
+        rows,
+      },
+    );
+  });
+
+  it('should send no rows when the write named none, so the client refetches', () => {
+    service.notifyProjectCacheUpdated('project-1', 'people', []);
+
+    expect(sendToRoom).toHaveBeenCalledWith(
+      outreachProjectCacheRoom('project-1'),
+      OUTREACH_CACHE_UPDATED_EVENT,
+      {
+        projectId: 'project-1',
+        kind: 'people',
+      },
+    );
+  });
+
   it('should debounce journey notifies per project', () => {
     service.notifyProjectCacheUpdated('project-1', 'journey');
     service.notifyProjectCacheUpdated('project-1', 'journey');

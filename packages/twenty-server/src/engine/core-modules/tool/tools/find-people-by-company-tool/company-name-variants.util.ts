@@ -26,6 +26,11 @@ const brandTokens = (name: string): string[] =>
 
 // The name as given, its alternates (brand, legal, parent), and the name
 // without a trailing country word
+// One key per company however it is spelled: "Jubilant FoodWorks Ltd." and
+// "Jubilant Foodworks" are one company and must cost one lookup, not two
+export const companyBrandKey = (name: string): string =>
+  brandTokens(name.trim()).join(' ');
+
 export const buildCompanyVariants = (
   name: string,
   alternateNames: string[] = [],

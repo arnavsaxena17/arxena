@@ -7,6 +7,7 @@ import { type ToolProviderContext } from 'src/engine/core-modules/tool-provider/
 import { type ToolProvider } from 'src/engine/core-modules/tool-provider/interfaces/tool-provider.interface';
 import { type ToolRetrievalOptions } from 'src/engine/core-modules/tool-provider/interfaces/tool-retrieval-options.type';
 
+import { withProviderCallContext } from 'src/engine/core-modules/provider-call-log/storage/provider-call-context.storage';
 import { TOOL_PROVIDERS } from 'src/engine/core-modules/tool-provider/constants/tool-providers.token';
 import { compactToolOutput } from 'src/engine/core-modules/tool-provider/output-transforms/compact-tool-output.util';
 import { ToolExecutorService } from 'src/engine/core-modules/tool-provider/services/tool-executor.service';
@@ -158,11 +159,12 @@ export class ToolRegistryService {
 
       const executeFn = async (
         args: Record<string, unknown>,
+        callOptions?: { toolCallId?: string },
       ): Promise<ToolOutput> => {
-        const result = await this.toolExecutorService.dispatch(
-          descriptor,
-          args,
-          context,
+        // The SDK passes the model's tool call id when it calls a native tool
+        const result = await withProviderCallContext(
+          { toolCallId: callOptions?.toolCallId },
+          () => this.toolExecutorService.dispatch(descriptor, args, context),
         );
 
         const compacted = compactOutput
@@ -481,6 +483,7 @@ export class ToolRegistryService {
       userId: context.userId,
       userWorkspaceId: context.userWorkspaceId,
       threadId: context.threadId,
+      turnId: context.turnId,
       projectId: context.projectId,
       locale: context.locale,
       onCodeExecutionUpdate: context.onCodeExecutionUpdate,

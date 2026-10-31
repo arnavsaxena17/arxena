@@ -73,6 +73,55 @@ describe('BrightDataSerpService', () => {
     );
   });
 
+  it('requests a named SERP zone through the API and reads its AI Overview', async () => {
+    process.env.BRIGHT_DATA_API_KEY = 'test-key';
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () =>
+        JSON.stringify({
+          ai_overview: { texts: [{ snippet: 'X is Head of Procurement' }] },
+          organic: [],
+        }),
+    }) as unknown as typeof fetch;
+
+    const result = await new BrightDataSerpService().requestSerpGoogleJsonInZone(
+      'https://www.google.com/search?q=Head+of+Procurement+Acme',
+      'serp_ai_overview',
+      { timeoutMs: 1_000 },
+    );
+
+    expect(result.ai_overview).toBeDefined();
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.brightdata.com/request',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          zone: 'serp_ai_overview',
+          url: 'https://www.google.com/search?q=Head+of+Procurement+Acme',
+          format: 'raw',
+        }),
+      }),
+    );
+  });
+
+  it('rejects an empty AI Overview page so the caller can retry', async () => {
+    process.env.BRIGHT_DATA_API_KEY = 'test-key';
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => '',
+    }) as unknown as typeof fetch;
+
+    await expect(
+      new BrightDataSerpService().requestSerpGoogleJsonInZone(
+        'https://www.google.com/search?q=Head+of+Procurement+Acme',
+        'serp_ai_overview',
+        { timeoutMs: 1_000 },
+      ),
+    ).rejects.toThrow('empty page');
+  });
+
   it('submits an async SERP job and polls until the result is ready', async () => {
     process.env.BRIGHT_DATA_API_KEY = 'test-key';
     process.env.BRIGHT_DATA_SERP_ASYNC = 'true';
@@ -270,13 +319,54 @@ describe('BrightDataSerpService', () => {
       expect(proxy).not.toHaveBeenCalled();
     });
 
-    it('should not resend a query Bright Data answered with a 502 to the next route', async () => {
-      const api = jest.fn().mockRejectedValue(new Error('HTTP 502 rejected'));
+    it('should move a rejected scrape to the next route, before the query cooldown', async () => {
+      const api = jest
+        .fn()
+        .mockRejectedValue(
+          new Error(
+            'Bright Data SERP failed: HTTP 502 redirect location was rejected: redirect location was rejected (captcha)',
+          ),
+        );
       const proxy = jest.fn().mockResolvedValue(answer);
+      const result = await configureRoutes(api, proxy).requestSerpJson(
+        searchUrl,
+      );
+
+      expect(result).toBe(answer);
+      expect(api).toHaveBeenCalledTimes(1);
+      expect(proxy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not move a rejected scrape more than once', async () => {
+      const api = jest
+        .fn()
+        .mockRejectedValue(
+          new Error('Bright Data SERP failed: HTTP 502 (expect_body)'),
+        );
+      const proxy = jest
+        .fn()
+        .mockRejectedValue(
+          new Error('Bright Data SERP failed: HTTP 502 (captcha)'),
+        );
 
       await expect(
         configureRoutes(api, proxy).requestSerpJson(searchUrl),
       ).rejects.toThrow('HTTP 502');
+      expect(api).toHaveBeenCalledTimes(1);
+      expect(proxy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not resend a query Bright Data answered with a 429', async () => {
+      const api = jest.fn().mockRejectedValue(
+        new Error(
+          'Bright Data SERP failed: HTTP 429 This query recently failed and cannot be attempted at this time',
+        ),
+      );
+      const proxy = jest.fn().mockResolvedValue(answer);
+
+      await expect(
+        configureRoutes(api, proxy).requestSerpJson(searchUrl),
+      ).rejects.toThrow('HTTP 429');
       expect(proxy).not.toHaveBeenCalled();
     });
 

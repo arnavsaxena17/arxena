@@ -26,6 +26,7 @@ import { McpFederationModule } from 'src/engine/core-modules/mcp-federation/mcp-
 import { BillingGraphqlApiExceptionFilter } from 'src/engine/core-modules/billing/filters/billing-graphql-api-exception.filter';
 import { GoogleCalendarModule } from 'src/engine/core-modules/calendar-events/google-calendar.module';
 import { CacheStorageModule } from 'src/engine/core-modules/cache-storage/cache-storage.module';
+import { ProviderCallLogModule } from 'src/engine/core-modules/provider-call-log/provider-call-log.module';
 import { TimelineCalendarEventModule } from 'src/engine/core-modules/calendar/timeline-calendar-event.module';
 import { CandidateAvatarModule } from 'src/engine/core-modules/candidate-avatar/candidate-avatar.module';
 import { CandidateSearchModule } from 'src/engine/core-modules/candidate-search/candidate-search.module';
@@ -196,6 +197,7 @@ import { FileModule } from './file/file.module';
       wildcard: true,
     }),
     CacheStorageModule,
+    ProviderCallLogModule,
     RawFetchArchiveModule,
     AiModelsModule,
     AiEvaluationModule,

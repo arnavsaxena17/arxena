@@ -161,6 +161,9 @@ export class OrgchartLinkedInQueryRouterService {
       pythonInput.function_root = [
         { name: args.functionRoot.trim(), exclude: false },
       ];
+      // Org-chart function-root mode covers the whole department, including
+      // every child function. Role search is a different caller and passes role.
+      pythonInput.scope = 'family';
     }
 
     if (mode === 'leadership') {
@@ -370,6 +373,7 @@ export class OrgchartLinkedInQueryRouterService {
                   company_names: args.primaryCompanyName
                     ? [args.primaryCompanyName]
                     : [],
+                  scope: 'family',
                 },
                 args.searchType,
                 args.requirement,

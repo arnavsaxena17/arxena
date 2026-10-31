@@ -33,7 +33,7 @@ import { BrightDataPersonFitFilterService } from 'src/engine/core-modules/bright
 import {
   buildDeprioritisationFields,
   type DeprioritisationReason,
-} from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/outreach-people-deprioritisation.util';
+} from 'src/engine/core-modules/outreach-command/utils/outreach-people-deprioritisation.util';
 import { UpsertOutreachTargetPeopleTool } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/upsert-outreach-target-people-tool';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';

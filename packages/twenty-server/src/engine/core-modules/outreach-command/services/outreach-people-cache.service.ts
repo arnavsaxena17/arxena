@@ -7,25 +7,14 @@ import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/typ
 import { OUTREACH_PROJECT_CACHE_TTL_MS } from 'src/engine/core-modules/outreach-command/constants/outreach-project-cache.constants';
 import { OutreachCacheRealtimeService } from 'src/engine/core-modules/outreach-command/services/outreach-cache-realtime.service';
 import { OutreachProjectCacheBackupService } from 'src/engine/core-modules/outreach-command/services/outreach-project-cache-backup.service';
+import { type OutreachCachePersonRow } from 'src/engine/core-modules/outreach-command/utils/outreach-cache-realtime.constants';
+import { compactPeople } from 'src/engine/core-modules/outreach-command/utils/merge-people.util';
 
 const MAX_PEOPLE_PER_PROJECT = OUTREACH_TAB_MAX_ROWS;
 
-export type OutreachEphemeralPerson = {
-  id: string;
-  name: string;
-  title: string;
-  headline?: string;
-  summary?: string;
-  companyId: string;
-  companyName: string;
-  linkedinUrl: string;
-  warmPath: string;
-  stage: string;
-  email: string;
-  connectionDegree?: number;
-  personaPriorityScore?: number;
-  otherFields?: Record<string, unknown>;
-};
+// The row shape is the wire shape: the realtime payload names the same type so
+// a client can apply a written row without importing server code.
+export type OutreachEphemeralPerson = OutreachCachePersonRow;
 
 export type OutreachPeopleCachePayload = {
   people: OutreachEphemeralPerson[];
@@ -86,19 +75,28 @@ export class OutreachPeopleCacheService {
     return fromBackup;
   }
 
+  // `writtenRows` names the rows this call added or updated, so listening
+  // clients can upsert just those. A write that cannot name its rows (a
+  // replace, the client's own PUT, an AI column run) leaves it out and clients
+  // refetch instead, which also covers rows that were removed.
   async set(
     workspaceId: string,
     projectId: string,
     people: OutreachEphemeralPerson[],
+    options?: { writtenRows?: OutreachEphemeralPerson[] },
   ): Promise<void> {
     if (!workspaceId || !projectId || isPlaceholderProjectId(projectId)) {
       return;
     }
 
+    // The cache is the single write boundary for the People tab: every writer
+    // (tools, spreadsheet import, the client PUT) passes through here, so a
+    // duplicate must not survive it whatever the caller sent.
+    const dedupedPeople = compactPeople(people);
     const limitedPeople =
-      people.length > MAX_PEOPLE_PER_PROJECT
-        ? people.slice(0, MAX_PEOPLE_PER_PROJECT)
-        : people;
+      dedupedPeople.length > MAX_PEOPLE_PER_PROJECT
+        ? dedupedPeople.slice(0, MAX_PEOPLE_PER_PROJECT)
+        : dedupedPeople;
 
     const payload: OutreachPeopleCachePayload = {
       people: limitedPeople,
@@ -118,9 +116,17 @@ export class OutreachPeopleCacheService {
       payload,
     );
 
+    // A row cut by the row cap is not in the cache, so it must not be sent as
+    // if it were
+    const keptIds = new Set(limitedPeople.map((person) => person.id));
+    const writtenRows = (options?.writtenRows ?? []).filter((person) =>
+      keptIds.has(person.id),
+    );
+
     this.outreachCacheRealtimeService.notifyProjectCacheUpdated(
       projectId,
       'people',
+      writtenRows.length > 0 ? writtenRows : undefined,
     );
   }
 

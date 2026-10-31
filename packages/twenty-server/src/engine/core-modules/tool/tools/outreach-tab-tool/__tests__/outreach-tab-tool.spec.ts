@@ -8,6 +8,13 @@ const row = (id: string, name: string, domain: string) => ({
   otherFields: {},
 });
 
+const personRow = (id: string, name: string) => ({
+  id,
+  source: 'ephemeral' as const,
+  name,
+  otherFields: {},
+});
+
 const buildTool = () => {
   const outreachTabService = {
     getAll: jest.fn(async () => [
@@ -26,13 +33,17 @@ const buildTool = () => {
   const dedupeService = {
     findExistingCrmKeys: jest.fn(async () => new Set(['d:acme.com'])),
   };
-  const companies = [row('a', 'Acme', 'acme.com'), row('b', 'Beta', 'beta.com')];
+  const companies = [
+    row('a', 'Acme', 'acme.com'),
+    row('b', 'Beta', 'beta.com'),
+  ];
   const companiesCacheService = {
     get: jest.fn(async () => ({ companies, projectId: 'project-1' })),
     set: jest.fn(async () => undefined),
   };
+  const people = [personRow('p1', 'Naveen'), personRow('p2', 'Aseem')];
   const peopleCacheService = {
-    get: jest.fn(async () => ({ people: [], projectId: 'project-1' })),
+    get: jest.fn(async () => ({ people, projectId: 'project-1' })),
     set: jest.fn(async () => undefined),
   };
   const tool = new OutreachTabTool(
@@ -48,6 +59,7 @@ const buildTool = () => {
     exportService,
     dedupeService,
     companiesCacheService,
+    peopleCacheService,
   };
 };
 
@@ -63,7 +75,10 @@ describe('OutreachTabTool', () => {
     );
 
     expect(exportService.export).toHaveBeenCalledWith(
-      expect.objectContaining({ workspaceId: 'workspace-1', entity: 'company' }),
+      expect.objectContaining({
+        workspaceId: 'workspace-1',
+        entity: 'company',
+      }),
     );
     expect(output.result).toEqual(
       expect.objectContaining({ count: 2, tab: 'companies' }),
@@ -109,12 +124,45 @@ describe('OutreachTabTool', () => {
     );
   });
 
+  it('should drop one ephemeral row by id', async () => {
+    const { tool, peopleCacheService } = buildTool();
+
+    const output = await tool.execute(
+      { action: 'remove', tab: 'people', rowIds: ['p1'] },
+      context,
+    );
+
+    expect(peopleCacheService.set).toHaveBeenCalledWith(
+      'workspace-1',
+      'project-1',
+      [expect.objectContaining({ id: 'p2' })],
+    );
+    expect(output.result).toEqual(
+      expect.objectContaining({ removed: 1, total: 1 }),
+    );
+  });
+
+  it('should refuse remove without row ids', async () => {
+    const { tool } = buildTool();
+
+    const output = await tool.execute(
+      { action: 'remove', tab: 'people' },
+      context,
+    );
+
+    expect(output.success).toBe(false);
+    expect(output.message).toContain('rowIds is required');
+  });
+
   it('should refuse without a project', async () => {
     const { tool } = buildTool();
 
-    const output = await tool.execute({ action: 'export', tab: 'companies' }, {
-      workspaceId: 'workspace-1',
-    });
+    const output = await tool.execute(
+      { action: 'export', tab: 'companies' },
+      {
+        workspaceId: 'workspace-1',
+      },
+    );
 
     expect(output.success).toBe(false);
     expect(output.message).toContain('projectId is required');

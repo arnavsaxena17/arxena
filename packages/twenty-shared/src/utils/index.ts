@@ -257,6 +257,11 @@ export { isLikelyBrowserLogoRequest } from './is-likely-browser-logo-request';
 export { isLikelyBrowserRequest } from './is-likely-browser-request';
 export { isAutoSelectModelId } from './isAutoSelectModelId';
 export { fastDeepEqual } from './json/fast-deep-equal';
+export type { LinkedInCompanySearchApi } from './linkedInSearchTypeCompanySearchApi';
+export {
+  linkedInSearchTypeToCompanySearchApi,
+  isLikelyLinkedInSearchTypeMismatchError,
+} from './linkedInSearchTypeCompanySearchApi';
 export {
   LINKEDIN_UNIPILE_CLASSIC_SEARCH_PAGE_LIMIT,
   LINKEDIN_UNIPILE_SALES_NAVIGATOR_SEARCH_PAGE_LIMIT,

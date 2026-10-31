@@ -7,18 +7,23 @@ import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 
 import {
+  getProviderCallContext,
+  withProviderCallContext,
+} from 'src/engine/core-modules/provider-call-log/storage/provider-call-context.storage';
+import {
   FindPeopleByCompanyInputZodSchema,
   type FindPeopleByCompanyInput,
   FIND_PEOPLE_BY_COMPANY_MAX_PROJECT_COMPANIES,
 } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool.schema';
 
 import { normalizeLinkedinProfileUrl } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/parse-linkedin-serp-result.util';
+import { createFindPeopleProgressReporter } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-progress.util';
 import { TitleExpansionService } from 'src/engine/core-modules/title-taxonomy/title-expansion.service';
 import { UpsertOutreachTargetCompaniesTool } from 'src/engine/core-modules/tool/tools/outreach-target-companies-tool/upsert-outreach-target-companies-tool';
 import { brightDataRecordToPersonOtherFields } from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/bright-data-person-row-fields.util';
 
 import { PROFILE_FIELD_KEY } from 'src/engine/core-modules/candidate-sourcing/services/profile-fetch/profile-row-fields.util';
-import { buildDeprioritisationFields } from 'src/engine/core-modules/tool/tools/outreach-target-people-tool/outreach-people-deprioritisation.util';
+import { buildDeprioritisationFields } from 'src/engine/core-modules/outreach-command/utils/outreach-people-deprioritisation.util';
 
 // A note on a kept person is a hint, not the evidence
 const MAX_RESULT_NOTE_LENGTH = 120;
@@ -71,6 +76,7 @@ import {
 import {
   FindPeopleCascadeService,
   getCompanyConcurrency,
+  getCompanyStaggerMs,
   toId,
 } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-cascade.service';
 
@@ -155,10 +161,21 @@ const runExclusivelyPerProject = async <TResult>(
   return next;
 };
 
+// Holds a company back until its turn in the spread. The wait sits inside the
+// worker, which is free here: the lookups themselves take tens of seconds, so
+// a few seconds of sleep before one starts costs no throughput.
+const waitForCompanyStart = async (startAt: number): Promise<void> => {
+  const delayMs = startAt - Date.now();
+
+  if (delayMs > 0) {
+    await new Promise<void>((resolve) => setTimeout(resolve, delayMs));
+  }
+};
+
 const runWithConcurrency = async <TItem, TResult>(
   items: TItem[],
   limit: number,
-  worker: (item: TItem) => Promise<TResult>,
+  worker: (item: TItem, index: number) => Promise<TResult>,
 ): Promise<TResult[]> => {
   const results: TResult[] = new Array(items.length);
   let next = 0;
@@ -168,7 +185,7 @@ const runWithConcurrency = async <TItem, TResult>(
       while (next < items.length) {
         const index = next++;
 
-        results[index] = await worker(items[index]);
+        results[index] = await worker(items[index], index);
       }
     }),
   );
@@ -357,10 +374,11 @@ export class FindPeopleByCompanyTool implements Tool {
       input.projectId,
     );
     const remainingUsd = status.remainingUsd ?? runCapUsd;
-    const affordable = Math.max(
-      0,
-      Math.floor(remainingUsd / input.plan.perPairUsd),
-    );
+    // One company costs the per-pair cap times its roles, because each role is
+    // searched on its own
+    const perCompanyUsd =
+      input.plan.perPairUsd * Math.max(input.roles?.length ?? 1, 1);
+    const affordable = Math.max(0, Math.floor(remainingUsd / perCompanyUsd));
 
     if (affordable === 0) {
       return `The run budget of $${runCapUsd.toFixed(2)} is spent ($${status.spentUsd.toFixed(2)}). Raise capsUsd.run before looking up more companies.`;
@@ -447,14 +465,28 @@ export class FindPeopleByCompanyTool implements Tool {
       brief?.capsUsd?.perPair ??
       SOURCING_PLAN_DEFAULTS.perPairUsd;
 
+    // Split a coordinated mention into one role per function before anything
+    // counts pairs or money: the atomic list is what the pairs, the per-role
+    // searches and the caps use
+    const resolvedRoles = await this.titleExpansionService.resolveRoles(
+      input.roles,
+    );
+    const roles =
+      Array.isArray(resolvedRoles.roles) && resolvedRoles.roles.length > 0
+        ? resolvedRoles.roles
+        : input.roles;
+    // The per-pair cap is per company x role, so a company costs one cap per
+    // role it is looked up for
+    const perCompanyUsd = perPairUsd * Math.max(roles.length, 1);
+
     // Exhaustive is a budgeted promise: without a run cap it would either stop
     // silently or spend without a ceiling, so it waits for the user to set one
     if (coverage === 'exhaustive' && !isDefined(runCapUsd)) {
       return 'This run is exhaustive, but the brief has no run cap. Ask the user for the maximum total spend, record it with get_sourcing_ledger({ projectId, brief: { capsUsd: { run } } }), then call again.';
     }
 
-    if (isDefined(runCapUsd) && runCapUsd < perPairUsd) {
-      return `The run cap ($${runCapUsd}) is below the per-company cap ($${perPairUsd}), so no company can be looked up. Raise capsUsd.run or lower capsUsd.perPair.`;
+    if (isDefined(runCapUsd) && runCapUsd < perCompanyUsd) {
+      return `The run cap ($${runCapUsd}) is below the per-company cap ($${perCompanyUsd.toFixed(2)} for ${roles.length} role(s)), so no company can be looked up. Raise capsUsd.run or lower capsUsd.perPair.`;
     }
 
     const plan: FindPeoplePlan = {
@@ -496,7 +528,7 @@ export class FindPeopleByCompanyTool implements Tool {
       );
     }
 
-    return { ...input, sources, plan };
+    return { ...input, roles, sources, plan };
   }
 
   // A list the model typed has no rows, so its pair states would have nowhere
@@ -592,10 +624,22 @@ export class FindPeopleByCompanyTool implements Tool {
       count: 0,
       errors: [],
     };
+    // Spread the starts so rows reach the People tab as each pair resolves.
+    // The first one still starts immediately
+    const staggerMs = getCompanyStaggerMs(input.companies.length);
+    const firstStartAt = Date.now();
+    const progress = createFindPeopleProgressReporter({
+      onToolProgress: context.onToolProgress,
+      companyCount: input.companies.length,
+      roleCount: resolvedRoles.roles?.length ?? input.roles.length,
+    });
     const outcomes = await runWithConcurrency(
       input.companies,
       getCompanyConcurrency(),
-      async (company) => {
+      async (company, index) => {
+        await waitForCompanyStart(firstStartAt + index * staggerMs);
+        progress.companyStarted(company.name);
+
         const outcome =
           company.unresolvable === true
             ? this.unresolvableOutcome(company, input)
@@ -619,10 +663,17 @@ export class FindPeopleByCompanyTool implements Tool {
         }
 
         onOutcome?.(outcome, written.count);
+        progress.companyFinished(company.name, outcome);
 
         return outcome;
       },
-    );
+    ).catch((error) => {
+      progress.finish('error', `Stopped: ${String(error)}`);
+
+      throw error;
+    });
+
+    progress.finish('completed');
 
     return {
       outcomes,
@@ -806,6 +857,8 @@ export class FindPeopleByCompanyTool implements Tool {
         userId: context.userId,
         userWorkspaceId: context.userWorkspaceId,
         threadId: context.threadId,
+        turnId: getProviderCallContext().turnId,
+        toolCallId: getProviderCallContext().toolCallId,
       });
       const state =
         (await runService.waitForRun(run.runId, input.waitSeconds * 1000)) ??
@@ -890,8 +943,26 @@ export class FindPeopleByCompanyTool implements Tool {
     };
   }
 
-  // One chunk of a background run; the job calls it and it queues the next
+  // One chunk of a background run; the job calls it and it queues the next.
+  // The worker has no chat context of its own, so the run's is put back.
   async processRunChunk(runId: string): Promise<void> {
+    const state = await this.findPeopleRunService?.getRun(runId);
+
+    return withProviderCallContext(
+      {
+        workspaceId: state?.workspaceId,
+        threadId: state?.threadId,
+        turnId: state?.turnId,
+        toolCallId: state?.toolCallId,
+        projectId: state?.projectId,
+        toolName: 'find_people_by_company',
+        runId,
+      },
+      () => this.processRunChunkInContext(runId),
+    );
+  }
+
+  private async processRunChunkInContext(runId: string): Promise<void> {
     const runService = this.findPeopleRunService;
     const state = await runService?.getRun(runId);
 

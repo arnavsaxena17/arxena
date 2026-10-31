@@ -16,6 +16,8 @@ export type ToolProviderContext = {
   userId?: string;
   userWorkspaceId?: string;
   threadId?: string;
+  // The chat turn, so provider requests can be traced back to it
+  turnId?: string;
   // The Outreach project the user is looking at, from the browsing context
   projectId?: string;
   locale?: keyof typeof APP_LOCALES;

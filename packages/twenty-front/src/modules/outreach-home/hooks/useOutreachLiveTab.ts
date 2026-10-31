@@ -45,6 +45,7 @@ import {
 } from '@/outreach-home/constants/outreach-cache-realtime.constants';
 import { useOutreachCacheSocket } from '@/outreach-home/hooks/useOutreachCacheSocket';
 import { useOutreachProjectJourneySummary } from '@/outreach-home/hooks/useOutreachProjectJourneySummary';
+import { applyOutreachPeopleDelta } from '@/outreach-home/utils/apply-outreach-people-delta.util';
 import { mergeEphemeralAndCrmPeople } from '@/outreach-home/utils/merge-ephemeral-and-crm-people.util';
 import {
   type OutreachCompanyRow,
@@ -152,6 +153,24 @@ const dedupePeopleById = (people: OutreachPersonRow[]): OutreachPersonRow[] => {
 
   return result;
 };
+
+// Cached rows and rows pushed over the socket must look the same, or a written
+// row would render differently from a fetched one
+const normalizeCachedOutreachPerson = (
+  person: OutreachPersonRow,
+): OutreachPersonRow => ({
+  ...person,
+  stage: mapCrmStageToOutreachStage(person.stage),
+  warmPath: person.warmPath || '—',
+  email: person.email || '',
+  companyId: person.companyId || '',
+  companyName: person.companyName || '',
+  title: person.title || '',
+  headline: person.headline || '',
+  summary: person.summary || '',
+  linkedinUrl: person.linkedinUrl || '',
+  candidateId: undefined,
+});
 
 const outreachCompanySignature = (companies: OutreachCompanyRow[]): string =>
   companies
@@ -470,19 +489,7 @@ export const useOutreachLiveTab = () => {
           return;
         }
 
-        const nextPeople = people.map((person) => ({
-          ...person,
-          stage: mapCrmStageToOutreachStage(person.stage),
-          warmPath: person.warmPath || '—',
-          email: person.email || '',
-          companyId: person.companyId || '',
-          companyName: person.companyName || '',
-          title: person.title || '',
-          headline: person.headline || '',
-          summary: person.summary || '',
-          linkedinUrl: person.linkedinUrl || '',
-          candidateId: undefined,
-        }));
+        const nextPeople = people.map(normalizeCachedOutreachPerson);
 
         setEphemeralPeople((previous) =>
           outreachPersonSignature(previous) ===
@@ -776,6 +783,20 @@ export const useOutreachLiveTab = () => {
     void refreshPeopleCache({ silent: true });
   }, [refreshPeopleCache]);
 
+  // The write named its rows, so upsert them instead of re-reading the list.
+  // Local only: the server already wrote this, and writing it back from here
+  // would race the next company's write
+  const handlePeopleRowsAppended = useCallback((rows: OutreachPersonRow[]) => {
+    const delta = rows.map(normalizeCachedOutreachPerson);
+
+    setEphemeralPeople((previous) => applyOutreachPeopleDelta(previous, delta));
+  }, []);
+
+  // A dropped connection lost whatever was emitted meanwhile
+  const handlePeopleResync = useCallback(() => {
+    void refreshPeopleCache({ silent: true });
+  }, [refreshPeopleCache]);
+
   const handleJourneySocketUpdate = useCallback(() => {
     void refreshEnrolledProgress({ silent: true });
     void refreshCrmCompanies();
@@ -842,6 +863,8 @@ export const useOutreachLiveTab = () => {
   useOutreachCacheSocket({
     projectId: activeProjectId,
     onPeopleUpdated: handlePeopleCacheSocketUpdate,
+    onPeopleRowsAppended: handlePeopleRowsAppended,
+    onResync: handlePeopleResync,
     onCompaniesUpdated: handleCompaniesCacheSocketUpdate,
     onJourneyUpdated: handleJourneySocketUpdate,
     onAiColumnProgress: handleAiColumnProgress,

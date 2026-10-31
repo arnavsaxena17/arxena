@@ -47,6 +47,8 @@ import { GetSourcingLedgerTool } from 'src/engine/core-modules/tool/tools/sourci
 import { GetSourceCapabilitiesTool } from 'src/engine/core-modules/tool/tools/source-capabilities-tool/get-source-capabilities-tool';
 import { GetScoringPlanTool } from 'src/engine/core-modules/tool/tools/source-capabilities-tool/get-scoring-plan-tool';
 import { FetchProfilesTool } from 'src/engine/core-modules/tool/tools/fetch-profiles-tool/fetch-profiles-tool';
+import { ResolveLinkedinUrlTool } from 'src/engine/core-modules/tool/tools/resolve-linkedin-url-tool/resolve-linkedin-url-tool';
+import { WriteLinkedinUrlTool } from 'src/engine/core-modules/tool/tools/write-linkedin-url-tool/write-linkedin-url-tool';
 import { StartOutreachTool } from 'src/engine/core-modules/tool/tools/outreach-start-tool/start-outreach-tool';
 import { NavigateAppTool } from 'src/engine/core-modules/tool/tools/navigate-tool/navigate-app-tool';
 import { HighlightOrgChartTool } from 'src/engine/core-modules/tool/tools/highlight-org-chart-tool/highlight-org-chart-tool';
@@ -80,6 +82,8 @@ export class ActionToolProvider implements ToolProvider {
     private readonly startOutreachTool: StartOutreachTool,
     private readonly findPeopleByCompanyTool: FindPeopleByCompanyTool,
     private readonly fetchProfilesTool: FetchProfilesTool,
+    private readonly resolveLinkedinUrlTool: ResolveLinkedinUrlTool,
+    private readonly writeLinkedinUrlTool: WriteLinkedinUrlTool,
     private readonly getSourcingLedgerTool: GetSourcingLedgerTool,
     private readonly getSourceCapabilitiesTool: GetSourceCapabilitiesTool,
     private readonly getScoringPlanTool: GetScoringPlanTool,
@@ -114,6 +118,8 @@ export class ActionToolProvider implements ToolProvider {
       ['start_outreach', this.startOutreachTool],
       ['find_people_by_company', this.findPeopleByCompanyTool],
       ['fetch_profiles', this.fetchProfilesTool],
+      ['resolve_linkedin_url', this.resolveLinkedinUrlTool],
+      ['write_linkedin_url', this.writeLinkedinUrlTool],
       ['get_sourcing_ledger', this.getSourcingLedgerTool],
       ['get_source_capabilities', this.getSourceCapabilitiesTool],
       ['get_scoring_plan', this.getScoringPlanTool],
@@ -323,6 +329,24 @@ export class ActionToolProvider implements ToolProvider {
       this.buildDescriptor(
         'fetch_profiles',
         this.fetchProfilesTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'resolve_linkedin_url',
+        this.resolveLinkedinUrlTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'write_linkedin_url',
+        this.writeLinkedinUrlTool,
         includeSchemas,
         context.locale,
       ),

@@ -11,6 +11,7 @@ import { Repository } from 'typeorm';
 
 import { type ObjectRecordGroupBy } from 'src/engine/api/graphql/workspace-query-builder/interfaces/object-record.interface';
 
+import { withProviderCallContext } from 'src/engine/core-modules/provider-call-log/storage/provider-call-context.storage';
 import { type ToolProviderContext } from 'src/engine/core-modules/tool-provider/interfaces/tool-provider-context.type';
 import { fromUserEntityToFlat } from 'src/engine/core-modules/user/utils/from-user-entity-to-flat.util';
 import { type FlatWorkspace } from 'src/engine/core-modules/workspace/types/flat-workspace.type';
@@ -70,6 +71,23 @@ export class ToolExecutorService {
   ): Promise<ToolOutput> {
     const safeArgs = args ?? {};
 
+    return withProviderCallContext(
+      {
+        workspaceId: context.workspaceId,
+        threadId: context.threadId,
+        turnId: context.turnId,
+        projectId: context.projectId,
+        toolName: descriptor.name,
+      },
+      () => this.dispatchByKind(descriptor, safeArgs, context),
+    );
+  }
+
+  private async dispatchByKind(
+    descriptor: ToolIndexEntry | ToolDescriptor,
+    safeArgs: Record<string, unknown>,
+    context: ToolProviderContext,
+  ): Promise<ToolOutput> {
     switch (descriptor.executionRef.kind) {
       case 'database_crud':
         return this.dispatchDatabaseCrud(

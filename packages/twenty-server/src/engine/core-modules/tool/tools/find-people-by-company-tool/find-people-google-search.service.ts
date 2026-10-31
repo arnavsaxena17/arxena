@@ -1,9 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
 
+import { extractAiOverviewText } from 'src/engine/core-modules/arx-web-search/utils/extract-serp-evidence.util';
 import { type BrightDataSerpGoogleJson } from 'src/engine/core-modules/bright-data/types/bright-data-serp.types';
 import { BrightDataSerpService } from 'src/engine/core-modules/bright-data/services/bright-data-serp.service';
+import { toSearchTerms } from 'src/engine/core-modules/title-taxonomy/role-mention-split.util';
+import { companyBrandKey } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/company-name-variants.util';
 import {
   buildGoogleSerpSearchUrl,
   mapGoogleSerpOrganicResults,
@@ -11,7 +14,6 @@ import {
 } from 'src/engine/core-modules/org-chart/utils/map-google-serp-organic.util';
 import {
   isGoogleTitleClauseUsable,
-  MAX_GOOGLE_TITLE_CLAUSES,
   toGoogleTitleClause,
 } from 'src/engine/core-modules/title-taxonomy/title-boolean.util';
 import {
@@ -25,20 +27,20 @@ const DEFAULT_SERP_CONCURRENCY = 100;
 const SERP_RESULT_LIMIT = 10;
 const SERP_MAX_RETRIES = 2;
 // A SERP attempt that works answers in 8s at the median and 35s at the 95th
-// percentile; one that fails takes 50-60s. So an attempt is cut off at 40s, and
-// when one is slow a second is started beside it instead of waiting it out.
+// percentile; one that fails takes 50-60s. So an attempt is cut off at 40s.
 const DEFAULT_ATTEMPT_TIMEOUT_MS = 40_000;
-const DEFAULT_HEDGE_DELAY_MS = 15_000;
 // Past this the company is read with the queries that have answered
 const DEFAULT_COMPANY_DEADLINE_MS = 75_000;
-// Async jobs are collected, not held open: they take longer, and a backup
-// attempt would be a second billable job, so none is started
+// Async jobs are collected, not held open: they take longer than a held request
 const ASYNC_ATTEMPT_TIMEOUT_MS = 240_000;
 const ASYNC_COMPANY_DEADLINE_MS = 270_000;
 
 const isSerpAsync = (): boolean =>
   process.env.BRIGHT_DATA_SERP_ASYNC === 'true';
-const MAX_NATURAL_ROLE_QUERIES = 3;
+// One natural query per role, so a four-role company asks about each role
+// instead of dropping the fourth. The whole company is still bounded below.
+const MAX_ROLE_QUERIES = 8;
+const MAX_SERP_QUERIES_PER_COMPANY = 12;
 const MAX_RESULTS = 40;
 
 // People type "MD"; the web writes "managing director"
@@ -46,12 +48,106 @@ const ROLE_SEARCH_WORDS: Record<string, string> = {
   md: 'managing director',
 };
 
+// The Google market for a location the caller named. Without one the egress
+// country decides the answer, and Bright Data spreads requests worldwide.
+const SERP_COUNTRY_BY_LOCATION: Record<string, string> = {
+  india: 'in',
+  'united arab emirates': 'ae',
+  uae: 'ae',
+  dubai: 'ae',
+  'united states': 'us',
+  'united states of america': 'us',
+  usa: 'us',
+  'united kingdom': 'gb',
+  uk: 'gb',
+  singapore: 'sg',
+  australia: 'au',
+  canada: 'ca',
+  germany: 'de',
+  france: 'fr',
+  netherlands: 'nl',
+  brazil: 'br',
+};
+
+const isAiOverviewEnabled = (): boolean => {
+  const value = process.env.FIND_ROLE_AI_OVERVIEW?.trim().toLowerCase();
+
+  return value === 'true' || value === '1' || value === 'yes';
+};
+
+// The market a search runs in when the request names no place Google knows.
+// Without gl the proxy's exit country decides, and on 31 Oct about 60% of the
+// cached answers came from Vietnam, Brazil and the like. "none" leaves it open.
+const DEFAULT_SERP_COUNTRY = 'in';
+
+const defaultSerpCountry = (): string | undefined => {
+  const configured =
+    process.env.FIND_ROLE_SERP_DEFAULT_COUNTRY?.trim().toLowerCase();
+
+  if (configured === 'none') {
+    return undefined;
+  }
+
+  return isNonEmptyString(configured) ? configured : DEFAULT_SERP_COUNTRY;
+};
+
+// An explicit env wins, so a run can be pinned to one market; otherwise the
+// place the request named ("Mumbai, India" counts as India), then the default
+export const resolveSerpCountry = (location?: string): string | undefined => {
+  const configured = process.env.FIND_ROLE_SERP_COUNTRY?.trim().toLowerCase();
+
+  if (isNonEmptyString(configured)) {
+    return configured;
+  }
+
+  if (!isNonEmptyString(location)) {
+    return defaultSerpCountry();
+  }
+
+  const lowered = location.trim().toLowerCase();
+  const named =
+    SERP_COUNTRY_BY_LOCATION[lowered] ??
+    Object.entries(SERP_COUNTRY_BY_LOCATION).find(([place]) =>
+      new RegExp(`(^|[^a-z])${place}($|[^a-z])`).test(lowered),
+    )?.[1];
+
+  return named ?? defaultSerpCountry();
+};
+
 export type GoogleCompanySearchResult = {
   // Every organic result from every query, one per URL, as Google gave them.
   // Reading them (who, which role, which company) is the extractor's job.
   results: GoogleSerpOrganicItem[];
+  // Google's own summary text, when a query returned one. Organic results do
+  // not carry it, and it often names the role holder before LinkedIn ranks them
+  aiOverviewTexts: string[];
   errors: string[];
 };
+
+// The AI Overview zone is a separate Bright Data product with its own proxy
+// password; the API route is the one that works for it here.
+const DEFAULT_AI_OVERVIEW_ZONE = 'serp_ai_overview';
+// A miss is an empty page (or a bare "this query recently failed" body), and
+// roughly three fetches in five miss, so one attempt is a coin flip
+const AI_OVERVIEW_ATTEMPTS = 3;
+const AI_OVERVIEW_QUERY_LIMIT = 3;
+const AI_OVERVIEW_REQUEST_TIMEOUT_MS = 35_000;
+// Bright Data refuses a query that has just missed for at least 15s, so an
+// instant second attempt is spent collecting the same refusal and looks like a
+// second miss. Waiting the documented cooldown is what turns attempt 2 and 3
+// into real chances to get the overview.
+const AI_OVERVIEW_RETRY_DELAY_MS = 16_000;
+// Past this the company is read with the base results; the overview can land
+// late without holding the whole lookup. Three attempts with their waits fit.
+const AI_OVERVIEW_DEADLINE_MS = 85_000;
+
+// The cooldown is read per call so a test can shorten it; production keeps the
+// documented 15s
+const getAiOverviewRetryDelayMs = (): number =>
+  readMilliseconds(
+    'FIND_ROLE_AI_OVERVIEW_RETRY_MS',
+    AI_OVERVIEW_RETRY_DELAY_MS,
+  );
 
 const getSerpConcurrency = (): number => {
   const configured = Number(process.env.FIND_ROLE_SERP_CONCURRENCY);
@@ -108,8 +204,34 @@ const pauseRequestSlots = (milliseconds: number): void => {
   nextRequestSlotAt = Math.max(nextRequestSlotAt, Date.now() + milliseconds);
 };
 
+// Waits out a provider cooldown, but gives up as soon as the caller's deadline
+// aborts instead of sleeping through it. True means the wait completed.
+const waitUnlessAborted = (
+  milliseconds: number,
+  signal: AbortSignal,
+): Promise<boolean> =>
+  new Promise((resolve) => {
+    if (signal.aborted) {
+      resolve(false);
+
+      return;
+    }
+
+    const onAbort = () => {
+      clearTimeout(timer);
+      resolve(false);
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort);
+      resolve(true);
+    }, milliseconds);
+
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
+
 @Injectable()
 export class FindPeopleGoogleSearchService {
+  private readonly logger = new Logger(FindPeopleGoogleSearchService.name);
   private active = 0;
   private readonly waiting: Array<() => void> = [];
 
@@ -119,42 +241,46 @@ export class FindPeopleGoogleSearchService {
     return this.brightDataSerpService.isConfigured();
   }
 
-  // One Google query, held back when too many are in flight. A slow attempt is
-  // not waited out: after a pause a second one starts beside it, a failed one
-  // is replaced at once, the first good answer wins and the rest are aborted.
-  // At most retries + 1 attempts are started.
+  // One Google query, held back when too many are in flight. A failed attempt
+  // is replaced after the provider's cooldown, the first good answer wins, and
+  // at most retries + 1 attempts are started. No backup is started beside a
+  // slow attempt: `BrightDataSerpService` sends one request per query and makes
+  // every concurrent caller share it, so a second attempt here would only wait
+  // on the first one's promise while paying for a second request.
   async request(
     query: string,
-    options: { retries?: number; signal?: AbortSignal } = {},
+    options: {
+      retries?: number;
+      signal?: AbortSignal;
+      country?: string;
+    } = {},
   ): Promise<BrightDataSerpGoogleJson> {
     return this.withinConcurrencyLimit(() =>
-      this.requestHedged(query, options),
+      this.requestWithRetries(query, options),
     );
   }
 
-  private requestHedged(
+  private requestWithRetries(
     query: string,
     {
       retries = SERP_MAX_RETRIES,
       signal,
-    }: { retries?: number; signal?: AbortSignal },
+      country,
+    }: {
+      retries?: number;
+      signal?: AbortSignal;
+      country?: string;
+    },
   ): Promise<BrightDataSerpGoogleJson> {
-    const searchUrl = buildGoogleSerpSearchUrl(query, SERP_RESULT_LIMIT);
+    // A caller that names no market (the name lookups) still gets one
+    const searchUrl = buildGoogleSerpSearchUrl(query, SERP_RESULT_LIMIT, {
+      country: country ?? resolveSerpCountry(),
+    });
     const maxAttempts = retries + 1;
     const attemptTimeoutMs = readMilliseconds(
       'FIND_ROLE_SERP_ATTEMPT_TIMEOUT_MS',
       isSerpAsync() ? ASYNC_ATTEMPT_TIMEOUT_MS : DEFAULT_ATTEMPT_TIMEOUT_MS,
     );
-    const hedgeDelayMs = readMilliseconds(
-      'FIND_ROLE_SERP_HEDGE_DELAY_MS',
-      isSerpAsync() ? 0 : DEFAULT_HEDGE_DELAY_MS,
-    );
-    // A zero delay fires a second attempt next to every healthy one, doubling
-    // the paid SERP load for no gain; a short pause keeps the hedge for the
-    // queries that are actually slow
-    const effectiveHedgeDelayMs = isSerpAsync()
-      ? 0
-      : Math.max(hedgeDelayMs, 750);
 
     return new Promise((resolve, reject) => {
       const controllers: AbortController[] = [];
@@ -162,7 +288,7 @@ export class FindPeopleGoogleSearchService {
       let failed = 0;
       let settled = false;
       let lastError: unknown;
-      let hedgeTimer: ReturnType<typeof setTimeout> | undefined;
+      let retryTimer: ReturnType<typeof setTimeout> | undefined;
 
       const settle = (outcome: () => void) => {
         if (settled) {
@@ -170,7 +296,7 @@ export class FindPeopleGoogleSearchService {
         }
 
         settled = true;
-        clearTimeout(hedgeTimer);
+        clearTimeout(retryTimer);
         signal?.removeEventListener('abort', onCallerAbort);
         controllers.forEach((controller) => controller.abort());
         outcome();
@@ -183,7 +309,7 @@ export class FindPeopleGoogleSearchService {
         }
 
         started += 1;
-        clearTimeout(hedgeTimer);
+        clearTimeout(retryTimer);
 
         const controller = new AbortController();
 
@@ -215,7 +341,7 @@ export class FindPeopleGoogleSearchService {
               } else if (started < maxAttempts) {
                 if (/HTTP 429\b/.test(String((error as Error).message))) {
                   pauseRequestSlots(RATE_LIMIT_BACKOFF_MS);
-                  hedgeTimer = setTimeout(startAttempt, RATE_LIMIT_BACKOFF_MS);
+                  retryTimer = setTimeout(startAttempt, RATE_LIMIT_BACKOFF_MS);
                 } else {
                   startAttempt();
                 }
@@ -224,11 +350,6 @@ export class FindPeopleGoogleSearchService {
               }
             },
           );
-
-        // Nothing back yet: start a backup beside this attempt
-        if (started < maxAttempts && hedgeDelayMs > 0) {
-          hedgeTimer = setTimeout(startAttempt, effectiveHedgeDelayMs);
-        }
       };
 
       if (signal?.aborted === true) {
@@ -268,12 +389,16 @@ export class FindPeopleGoogleSearchService {
   }): string[] {
     const orGroup = (terms: string[]) =>
       `(${terms.map((term) => `"${term}"`).join(' OR ')})`;
+    // Never the user's text as typed: a slash or quote inside a quoted OR term
+    // makes Google return nothing
+    const roleTerms = toSearchTerms(roles);
+    const titleTerms = toSearchTerms(titles);
     const locationTerm = isNonEmptyString(location) ? location : null;
     const build = (parts: Array<string | null>) =>
       parts.filter((part): part is string => part !== null).join(' ');
     const linkedin = 'site:linkedin.com/in';
-    const naturalQueries = roles
-      .slice(0, MAX_NATURAL_ROLE_QUERIES)
+    const naturalQueries = roleTerms
+      .slice(0, MAX_ROLE_QUERIES)
       .map((role) =>
         build([
           variants[0],
@@ -281,22 +406,39 @@ export class FindPeopleGoogleSearchService {
         ]),
       );
     const booleanQueries = (titleExpressions ?? [])
-      .slice(0, MAX_GOOGLE_TITLE_CLAUSES)
+      .slice(0, MAX_ROLE_QUERIES)
       .map((expression) => toGoogleTitleClause(expression))
       .filter(isGoogleTitleClauseUsable)
       .map((clause) =>
         build([linkedin, `"${variants[0]}"`, `(${clause})`, locationTerm]),
       );
+    // Each query has its own job. The roles-as-typed group only runs when the
+    // title list left a role out, and a second company name only when it is a
+    // different brand, not the same one with "Ltd." dropped.
+    const titleKeys = new Set(titleTerms.map((term) => term.toLowerCase()));
+    const rolesCovered = roleTerms.every((term) =>
+      titleKeys.has(term.toLowerCase()),
+    );
     const queries = [
       ...naturalQueries,
       ...booleanQueries,
-      build([linkedin, `"${variants[0]}"`, orGroup(titles), locationTerm]),
-      build([linkedin, `"${variants[0]}"`, orGroup(roles)]),
-    ];
+      build([linkedin, `"${variants[0]}"`, orGroup(titleTerms), locationTerm]),
+      rolesCovered
+        ? null
+        : build([linkedin, `"${variants[0]}"`, orGroup(roleTerms)]),
+    ].filter((query): query is string => query !== null);
 
-    if (variants.length > 1) {
+    if (
+      variants.length > 1 &&
+      companyBrandKey(variants[1]) !== companyBrandKey(variants[0])
+    ) {
       queries.push(
-        build([linkedin, `"${variants[1]}"`, orGroup(titles), locationTerm]),
+        build([
+          linkedin,
+          `"${variants[1]}"`,
+          orGroup(titleTerms),
+          locationTerm,
+        ]),
       );
     }
 
@@ -314,7 +456,165 @@ export class FindPeopleGoogleSearchService {
       );
     }
 
-    return [...new Set(queries)];
+    // A company's SERP spend is bounded even when it names many roles
+    return [...new Set(queries)].slice(0, MAX_SERP_QUERIES_PER_COMPANY);
+  }
+
+  // Google only writes an overview for a question, not for the keyword form
+  // the base search uses: "Head of Procurement Acme" returned no overview in
+  // live probes (Oct 2026) while "Who is Acme's Head of Procurement" named the
+  // holder. So the pass asks a question.
+  private buildAiOverviewQueries({
+    company,
+    roles,
+  }: {
+    company: string;
+    roles: string[];
+  }): string[] {
+    const designationFor = (role: string): string => {
+      if (/procurement/i.test(role)) {
+        return 'Head of Procurement';
+      }
+
+      if (/purchase|purchasing/i.test(role)) {
+        return 'Purchase Head';
+      }
+
+      if (/supply chain|logistics|scm/i.test(role)) {
+        return 'Supply Chain Head';
+      }
+
+      return role.trim();
+    };
+    const designations = [
+      ...new Set(roles.map((role) => designationFor(role).trim())),
+    ].filter((designation) => designation !== '');
+    const possessive = designations.map(
+      (designation) => `Who is ${company}'s ${designation}`,
+    );
+    // One question per designation: the second "at <company>" phrasing came
+    // back with no overview in most runs (26 of 36 on 31 Oct) and doubled the
+    // cost of every miss
+    return [...new Set(possessive)].slice(0, AI_OVERVIEW_QUERY_LIMIT);
+  }
+
+  private async requestAiOverview(
+    query: string,
+    {
+      country,
+      signal,
+    }: {
+      country?: string;
+      signal: AbortSignal;
+    },
+  ): Promise<BrightDataSerpGoogleJson | null> {
+    const zone =
+      process.env.BRIGHT_DATA_SERP_AI_OVERVIEW_ZONE?.trim() ||
+      DEFAULT_AI_OVERVIEW_ZONE;
+    const searchUrl = buildGoogleSerpSearchUrl(query, SERP_RESULT_LIMIT, {
+      aiOverview: true,
+      brdJson: true,
+      country,
+    });
+    let fallback: BrightDataSerpGoogleJson | null = null;
+
+    for (let attempt = 1; attempt <= AI_OVERVIEW_ATTEMPTS; attempt++) {
+      try {
+        const serp =
+          await this.brightDataSerpService.requestSerpGoogleJsonInZone(
+            searchUrl,
+            zone,
+            { signal, timeoutMs: AI_OVERVIEW_REQUEST_TIMEOUT_MS },
+          );
+
+        if (extractAiOverviewText(serp) !== null) {
+          return serp;
+        }
+
+        fallback = fallback ?? serp;
+      } catch {
+        if (signal.aborted) {
+          return fallback;
+        }
+      }
+
+      // The next attempt is only worth making once Bright Data's cooldown for
+      // this query has passed; the deadline still cuts the wait short
+      if (
+        attempt < AI_OVERVIEW_ATTEMPTS &&
+        !(await waitUnlessAborted(getAiOverviewRetryDelayMs(), signal))
+      ) {
+        break;
+      }
+    }
+
+    return fallback;
+  }
+
+  // The overview is a supplementary pass: it runs beside the normal queries and
+  // never fails the company. A miss (empty page) is retried once.
+  private async fetchAiOverview({
+    variants,
+    roles,
+    location,
+  }: {
+    variants: string[];
+    roles: string[];
+    location?: string;
+  }): Promise<{
+    texts: string[];
+    results: GoogleSerpOrganicItem[];
+  }> {
+    if (!isAiOverviewEnabled()) {
+      return { texts: [], results: [] };
+    }
+
+    const deadline = new AbortController();
+    const timer = setTimeout(() => deadline.abort(), AI_OVERVIEW_DEADLINE_MS);
+    const queries = this.buildAiOverviewQueries({
+      company: variants[0],
+      roles,
+    });
+    const responses = await Promise.all(
+      queries.map((query) =>
+        this.requestAiOverview(query, {
+          country: resolveSerpCountry(location),
+          signal: deadline.signal,
+        }),
+      ),
+    ).finally(() => clearTimeout(timer));
+    const texts: string[] = [];
+    const results: GoogleSerpOrganicItem[] = [];
+
+    for (const serp of responses) {
+      if (serp === null) {
+        continue;
+      }
+
+      const text = extractAiOverviewText(serp);
+
+      if (text !== null && !texts.includes(text)) {
+        texts.push(text);
+      }
+
+      results.push(
+        ...mapGoogleSerpOrganicResults(serp.organic, SERP_RESULT_LIMIT),
+      );
+    }
+
+    if (texts.length === 0) {
+      this.logger.warn(
+        `AI Overview zone returned none for "${variants[0]}" after ${queries.length} queries x ${AI_OVERVIEW_ATTEMPTS} attempts`,
+      );
+    } else {
+      // The overview names people the organic list does not, so a hit is worth
+      // seeing in the run log next to the miss
+      this.logger.log(
+        `AI Overview for "${variants[0]}": ${texts.length} overview(s), ${results.length} extra result(s)`,
+      );
+    }
+
+    return { texts, results };
   }
 
   async searchCompany(input: {
@@ -331,6 +631,7 @@ export class FindPeopleGoogleSearchService {
 
     const errors: string[] = [];
     const queries = this.buildCompanyQueries(input);
+    const country = resolveSerpCountry(input.location);
     // One stuck query must not hold the company: past the deadline it is read
     // with the queries that have answered, and the rest are cut off
     const deadline = new AbortController();
@@ -342,19 +643,28 @@ export class FindPeopleGoogleSearchService {
       ),
     );
     let unanswered = 0;
-    const responses = await Promise.all(
-      queries.map((query) =>
-        this.request(query, { signal: deadline.signal }).catch((error) => {
-          if (deadline.signal.aborted) {
-            unanswered += 1;
-          } else {
-            errors.push(error instanceof Error ? error.message : String(error));
-          }
+    const overview = this.fetchAiOverview(input);
+    const [responses, overviewResult] = await Promise.all([
+      Promise.all(
+        queries.map((query) =>
+          this.request(query, {
+            signal: deadline.signal,
+            country,
+          }).catch((error) => {
+            if (deadline.signal.aborted) {
+              unanswered += 1;
+            } else {
+              errors.push(
+                error instanceof Error ? error.message : String(error),
+              );
+            }
 
-          return null;
-        }),
-      ),
-    ).finally(() => clearTimeout(deadlineTimer));
+            return null;
+          }),
+        ),
+      ).finally(() => clearTimeout(deadlineTimer)),
+      overview,
+    ]);
 
     if (unanswered > 0) {
       errors.push(
@@ -363,24 +673,25 @@ export class FindPeopleGoogleSearchService {
     }
     const byUrl = new Map<string, GoogleSerpOrganicItem>();
 
-    for (const serp of responses) {
-      for (const item of mapGoogleSerpOrganicResults(
-        serp?.organic,
-        SERP_RESULT_LIMIT,
-      )) {
-        // The same profile comes back in different forms of its URL
-        const key = isLinkedinProfileUrl(item.url)
-          ? normalizeLinkedinProfileUrl(item.url)
-          : item.url;
+    for (const item of [
+      ...responses.flatMap((serp) =>
+        mapGoogleSerpOrganicResults(serp?.organic, SERP_RESULT_LIMIT),
+      ),
+      ...overviewResult.results,
+    ]) {
+      // The same profile comes back in different forms of its URL
+      const key = isLinkedinProfileUrl(item.url)
+        ? normalizeLinkedinProfileUrl(item.url)
+        : item.url;
 
-        if (!byUrl.has(key)) {
-          byUrl.set(key, item);
-        }
+      if (!byUrl.has(key)) {
+        byUrl.set(key, item);
       }
     }
 
     return {
       results: [...byUrl.values()].slice(0, MAX_RESULTS),
+      aiOverviewTexts: overviewResult.texts,
       errors: [...new Set(errors)],
     };
   }
