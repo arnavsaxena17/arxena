@@ -623,7 +623,14 @@ export class IncomingWhatsappMessages {
       JSON.stringify(payload, null, 2),
     );
 
-    const { sender, account_info, message, account_id } = payload;
+    const {
+      sender,
+      account_info,
+      message,
+      message_id,
+      chat_id,
+      account_id,
+    } = payload;
 
     const normalizeLinkedinIdentifier = (value: string): string => {
       if (!value) {
@@ -730,12 +737,56 @@ export class IncomingWhatsappMessages {
       incomingRecipientIdentifierId,
     );
 
-    const safeSenderIdentifier = escapeForLike(incomingSenderIdentifierId);
+    // _chatMessage.phoneFrom/phoneTo are only populated for WhatsApp. LinkedIn
+    // outreach rows are written by OutreachMessagePersistService, which stores
+    // the conversation link in personId/externalChatId instead — matching on
+    // the empty phone columns dropped every inbound LinkedIn reply.
+    const person = await this.findPersonForLinkedinSender({
+      dataSourceSchema,
+      workspaceId,
+      senderProviderId: sender.attendee_provider_id,
+      senderIdentifierId: incomingSenderIdentifierId,
+      senderSlug:
+        incomingSenderIdentifierId.split('/').pop()?.replace(/\?.*$/, '') ||
+        '',
+    });
+
+    if (person.length === 0) {
+      console.log(
+        'No person found for LinkedIn identifier:',
+        incomingSenderIdentifierId,
+      );
+
+      return null;
+    }
+
+    console.log(
+      'Person found for LinkedIn identifier::',
+      incomingSenderIdentifierId,
+    );
+
+    const safeChatId = escapeForLike(chat_id ?? '');
+
+    const recentMessageConditions = [
+      `("_chatMessage"."phoneFrom" ILIKE '%${escapeForLike(incomingSenderIdentifierId)}%' OR "_chatMessage"."phoneTo" ILIKE '%${escapeForLike(incomingSenderIdentifierId)}%')`,
+    ];
+
+    if (safeChatId) {
+      recentMessageConditions.push(
+        `"_chatMessage"."externalChatId" = '${safeChatId}'`,
+      );
+    }
+
+    if (person[0]?.id) {
+      recentMessageConditions.push(
+        `"_chatMessage"."personId" = '${escapeForLike(person[0].id)}'`,
+      );
+    }
 
     const recentMessageQuery = `SELECT * FROM ${dataSourceSchema}."_chatMessage"
-      WHERE ("_chatMessage"."phoneFrom" ILIKE '%${safeSenderIdentifier}%' OR "_chatMessage"."phoneTo" ILIKE '%${safeSenderIdentifier}%')
+      WHERE ${recentMessageConditions.join(' OR ')}
       ORDER BY "updatedAt" DESC
-      LIMIT 1`;
+      LIMIT 20`;
 
     console.log(
       'Recent message query for LinkedIn contact::',
@@ -751,18 +802,19 @@ export class IncomingWhatsappMessages {
 
     console.log('recentMessage for LinkedIn::', recentMessage);
 
-    if (recentMessage.length === 0) {
-      console.log(
-        'No messages found for this LinkedIn contact in workspace, skipping message:',
-        workspaceId,
-      );
-
-      return null;
-    }
-
     const normalizedRecipientIdentifierId = incomingRecipientIdentifierId;
 
     const isMessageDuplicate = recentMessage.some((msg) => {
+      // A webhook redelivery carries the same message_id; treat that as the
+      // authoritative duplicate signal now that the phone columns are unused.
+      if (
+        message_id &&
+        msg.externalMessageId &&
+        String(msg.externalMessageId).includes(message_id)
+      ) {
+        return true;
+      }
+
       const normalizedPhoneFrom = normalizeLinkedinIdentifier(
         msg.phoneFrom || '',
       );
@@ -786,46 +838,6 @@ export class IncomingWhatsappMessages {
 
       return null;
     }
-
-    const senderSlug =
-      incomingSenderIdentifierId.split('/').pop()?.replace(/\?.*$/, '') || '';
-    const safeSenderSlug = escapeForLike(senderSlug);
-
-    const personQueryConditions = [
-      `"person"."linkedinLinkPrimaryLinkUrl" ILIKE '%${safeSenderIdentifier}%'`,
-    ];
-
-    if (senderSlug) {
-      personQueryConditions.push(
-        `"person"."linkedinLinkPrimaryLinkUrl" ILIKE '%${safeSenderSlug}%'`,
-      );
-    }
-
-    const personQuery = `SELECT * FROM ${dataSourceSchema}.person WHERE ${personQueryConditions.join(
-      ' OR ',
-    )}`;
-
-    console.log('Person query for LinkedIn contact::', personQuery);
-
-    const person = await this.workspaceQueryService.executeWorkspaceRawQuery(
-      personQuery,
-      [],
-      workspaceId,
-    );
-
-    if (person.length === 0) {
-      console.log(
-        'No person found for LinkedIn identifier:',
-        incomingSenderIdentifierId,
-      );
-
-      return null;
-    }
-
-    console.log(
-      'Person found for LinkedIn identifier::',
-      incomingSenderIdentifierId,
-    );
 
     const apiKeys = await this.workspaceQueryService.getApiKeys(
       workspaceId,
@@ -862,6 +874,56 @@ export class IncomingWhatsappMessages {
       token: apiKeyToken.token,
       workspaceId,
     };
+  }
+
+  // LinkedIn profile URLs differ between capture paths (in.linkedin.com vanity
+  // slug vs linkedin.com/in/ACoA… id), so a URL-only match misses people that
+  // were captured with the vanity form. linkedinProfileId holds the stable
+  // ACoA… identifier and matches in both cases.
+  private async findPersonForLinkedinSender({
+    dataSourceSchema,
+    workspaceId,
+    senderProviderId,
+    senderIdentifierId,
+    senderSlug,
+  }: {
+    dataSourceSchema: string;
+    workspaceId: string;
+    senderProviderId?: string | null;
+    senderIdentifierId: string;
+    senderSlug: string;
+  }): Promise<Array<{ id: string }>> {
+    const escapeForLike = (value: string): string => value.replace(/'/g, "''");
+    const safeProviderId = escapeForLike(senderProviderId ?? '');
+
+    const conditions: string[] = [];
+
+    if (senderProviderId) {
+      conditions.push(`"person"."linkedinProfileId" = '${safeProviderId}'`);
+    }
+
+    conditions.push(
+      `"person"."linkedinLinkPrimaryLinkUrl" ILIKE '%${escapeForLike(senderIdentifierId)}%'`,
+    );
+
+    if (senderSlug) {
+      conditions.push(
+        `"person"."linkedinLinkPrimaryLinkUrl" ILIKE '%${escapeForLike(senderSlug)}%'`,
+      );
+    }
+
+    // Prefer the stable profile-id match over a vanity URL match.
+    const personQuery = `SELECT * FROM ${dataSourceSchema}.person WHERE ${conditions.join(
+      ' OR ',
+    )} ORDER BY ("person"."linkedinProfileId" = '${safeProviderId}') DESC LIMIT 1`;
+
+    console.log('Person query for LinkedIn contact::', personQuery);
+
+    return this.workspaceQueryService.executeWorkspaceRawQuery(
+      personQuery,
+      [],
+      workspaceId,
+    );
   }
 
   async getApiKeyToUseFromPhoneNumberMessageReceived(

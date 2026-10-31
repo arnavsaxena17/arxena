@@ -3,6 +3,7 @@ import {
   type ExecutionContext,
   Injectable,
   Logger,
+  UnauthorizedException,
 } from '@nestjs/common';
 
 import { isDefined } from 'twenty-shared/utils';
@@ -41,19 +42,26 @@ export class JwtAuthGuard implements CanActivate {
           `Auth failed: no apiKey, userWorkspaceId, or application in context`,
         );
 
-        return false;
+        // Without this the request falls through to Nest's default
+        // ForbiddenException (403), which hides expired/invalid tokens behind a
+        // permission error.
+        throw new UnauthorizedException('Invalid authentication token');
       }
 
       bindDataToRequestObject(data, request, metadataVersion);
 
       return true;
     } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+
       const errorMessage =
         error instanceof Error ? error.message : String(error);
 
       this.logger.warn(`Auth failed: ${errorMessage}`);
 
-      return false;
+      throw new UnauthorizedException('Invalid or expired authentication token');
     }
   }
 }
