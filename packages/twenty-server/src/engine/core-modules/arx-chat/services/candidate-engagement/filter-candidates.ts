@@ -763,9 +763,14 @@ export class FilterCandidates {
       console.log('LinkedIn search - Normalized URL:', normalizedUrl);
       console.log('LinkedIn search - Profile ID:', profileId);
 
+      // People captured from a vanity slug (in.linkedin.com/in/gautam-jatia-…)
+      // never match the webhook's ACoA… provider id on the URL alone, so try
+      // the stable profile id first.
       return {
         filter: {
           or: [
+            { linkedinProfileId: { eq: profileId } },
+            { linkedinProfileId: { eq: messageIdentifierToSearch } },
             {
               linkedinLink: {
                 primaryLinkUrl: {
