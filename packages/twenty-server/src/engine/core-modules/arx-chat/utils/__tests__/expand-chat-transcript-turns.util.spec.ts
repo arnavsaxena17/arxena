@@ -1,4 +1,4 @@
-import { expandLinkedinTranscriptRows } from '../expand-linkedin-chat-turns.util';
+import { expandChatTranscriptRows } from '../expand-chat-transcript-turns.util';
 
 const baseRow = {
   id: 'row-1',
@@ -25,9 +25,9 @@ const baseRow = {
   ],
 };
 
-describe('expandLinkedinTranscriptRows', () => {
+describe('expandChatTranscriptRows', () => {
   it('expands GTM LinkedIn transcripts into sent and received bubbles', () => {
-    const expanded = expandLinkedinTranscriptRows([baseRow]);
+    const expanded = expandChatTranscriptRows([baseRow]);
 
     expect(expanded).toHaveLength(2);
     expect(expanded[0]).toMatchObject({
@@ -44,6 +44,35 @@ describe('expandLinkedinTranscriptRows', () => {
     });
   });
 
+  it('expands email transcripts the same way so the drawer shows the whole thread', () => {
+    const emailRow = {
+      ...baseRow,
+      id: 'email-row',
+      name: 'EMAIL cand1234',
+      typeOfMessage: 'email',
+    };
+
+    const expanded = expandChatTranscriptRows([emailRow]);
+
+    expect(expanded.map((row) => row.message)).toEqual([
+      'Hi — are you hiring?',
+      'Yes, send a deck',
+    ]);
+    expect(expanded.map((row) => row.name)).toEqual([
+      'botMessage',
+      'candidateMessage',
+    ]);
+  });
+
+  it('expands rows stored with the CRM channel enum as typeOfMessage', () => {
+    const enumRows = [
+      { ...baseRow, typeOfMessage: 'LINKEDIN_CONNECT' },
+      { ...baseRow, typeOfMessage: 'EMAIL' },
+    ];
+
+    expect(expandChatTranscriptRows(enumRows)).toHaveLength(4);
+  });
+
   it('leaves WhatsApp rows unchanged', () => {
     const whatsapp = {
       ...baseRow,
@@ -53,6 +82,6 @@ describe('expandLinkedinTranscriptRows', () => {
       messageObj: [{ role: 'assistant', content: 'Hello' }],
     };
 
-    expect(expandLinkedinTranscriptRows([whatsapp])).toEqual([whatsapp]);
+    expect(expandChatTranscriptRows([whatsapp])).toEqual([whatsapp]);
   });
 });

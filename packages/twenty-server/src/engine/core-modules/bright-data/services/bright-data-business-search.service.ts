@@ -6,8 +6,16 @@ import {
 } from 'src/engine/core-modules/bright-data/utils/bright-data-request-rate-limiter.util';
 import { BRIGHT_DATA_LUDICROUS_MAX_RETRIES } from 'src/engine/core-modules/bright-data/ludicrous/constants/bright-data-ludicrous-pricing.const';
 import { type BrightDataLudicrousQuery } from 'src/engine/core-modules/bright-data/ludicrous/types/bright-data-ludicrous.types';
-import { assertValidLudicrousQuery } from 'src/engine/core-modules/bright-data/ludicrous/utils/bright-data-ludicrous-query.util';
+import {
+  assertValidLudicrousQuery,
+  canonicalizeLudicrousQuery,
+} from 'src/engine/core-modules/bright-data/ludicrous/utils/bright-data-ludicrous-query.util';
+import {
+  ProviderCallLogService,
+  trackProviderCall,
+} from 'src/engine/core-modules/provider-call-log/services/provider-call-log.service';
 import { ProviderQueryCacheService } from 'src/engine/core-modules/cache-storage/services/provider-query-cache.service';
+import { buildProviderQueryCacheKey } from 'src/engine/core-modules/cache-storage/utils/provider-query-cache-key.util';
 import { RawFetchArchiveService } from 'src/engine/core-modules/raw-fetch-archive/raw-fetch-archive.service';
 import { costForRecordsUsd } from 'src/engine/core-modules/bright-data/ludicrous/utils/bright-data-ludicrous-pricing.util';
 import {
@@ -17,7 +25,6 @@ import {
   type BrightDataBusinessSearchDocument,
   type BrightDataBusinessSearchEntity,
   type BrightDataBusinessSearchMode,
-  type BrightDataBusinessSearchView,
 } from 'src/engine/core-modules/bright-data/utils/bright-data-business-search.util';
 
 const BRIGHT_DATA_SEARCH_CACHE_PREFIX = 'bright-data-search:v1';
@@ -69,9 +76,6 @@ export type BrightDataBusinessSearchInput = {
   query: string | BrightDataLudicrousQuery;
   limit?: number;
   offset?: number;
-  view?: BrightDataBusinessSearchView;
-  // Ludicrous only: request just these fields instead of a named view
-  fields?: string[];
   // Scopes the raw-response archive to the workspace that paid for the call
   workspaceId?: string;
 };
@@ -84,7 +88,16 @@ export type BrightDataBusinessSearchResult = {
   documents: BrightDataBusinessSearchDocument[];
   // Bright Data bills per returned record
   costUsd: number;
+  // True when this answer was replayed from ProviderQueryCacheService: no
+  // provider request was made, so a caller that bills per record must not
+  // charge for it again
+  fromCache: boolean;
 };
+
+type BrightDataSearchResponse = Omit<
+  BrightDataBusinessSearchResult,
+  'fromCache'
+>;
 
 type BrightDataSearchPage = {
   req_id?: string;
@@ -117,6 +130,8 @@ export class BrightDataBusinessSearchService {
     private readonly rawFetchArchiveService?: RawFetchArchiveService,
     @Optional()
     private readonly providerQueryCache?: ProviderQueryCacheService,
+    @Optional()
+    private readonly providerCallLog?: ProviderCallLogService,
   ) {}
 
   private get apiKey(): string | undefined {
@@ -142,26 +157,79 @@ export class BrightDataBusinessSearchService {
 
     const mode = normalizeBrightDataBusinessSearchMode(input.mode);
     const query = this.prepareQuery(input, mode);
-    const run = () => this.searchUncached(key, input, mode, query);
+    // Planned once: an omitted limit takes the mode's page size, so two callers
+    // that end up asking for the same window must share one paid answer
+    const pages = planBrightDataBusinessSearchPages({
+      mode,
+      limit: input.limit,
+      offset: input.offset,
+    });
 
     if (!this.providerQueryCache) {
-      return run();
+      return {
+        ...(await this.searchUncached(key, input, mode, query, pages)),
+        fromCache: false,
+      };
     }
 
-    // workspaceId scopes archival only; same query is the same paid answer
-    return this.providerQueryCache.getOrFetch(
+    const parts = {
+      entity: input.entity,
+      mode,
+      query,
+      offset: Math.max(0, input.offset ?? 0),
+      limit: pages.reduce((total, page) => total + page.limit, 0),
+    };
+    const keyParts = this.cacheKeyParts(parts);
+    const cacheKey = buildProviderQueryCacheKey(
       BRIGHT_DATA_SEARCH_CACHE_PREFIX,
-      {
-        entity: input.entity,
-        mode,
-        query,
-        limit: input.limit,
-        offset: input.offset,
-        view: input.view ?? 'full',
-        fields: input.fields,
-      },
-      run,
+      keyParts,
     );
+    // The cache entry covers the whole window, so it names one request only
+    // when that window is a single page
+    const windowCacheKey = pages.length === 1 ? cacheKey : undefined;
+    let fetched = false;
+
+    // workspaceId scopes archival only; same query is the same paid answer
+    const response =
+      await this.providerQueryCache.getOrFetch<BrightDataSearchResponse>(
+        BRIGHT_DATA_SEARCH_CACHE_PREFIX,
+        parts,
+        () => {
+          fetched = true;
+
+          return this.searchUncached(
+            key,
+            input,
+            mode,
+            query,
+            pages,
+            windowCacheKey,
+          );
+        },
+        { keyParts, fetcherLogsRequest: true },
+      );
+
+    return { ...response, fromCache: !fetched };
+  }
+
+  // The key must describe the request Bright Data receives, or one paid answer
+  // is bought again under a second key. The request always asks for view
+  // "full", so nothing else may vary; the ordered parts are canonical, because
+  // and/or branches and in-lists are sets.
+  private cacheKeyParts<
+    TParts extends { query: string | BrightDataLudicrousQuery },
+  >(
+    parts: TParts,
+  ): Omit<TParts, 'query'> & {
+    query: string | BrightDataLudicrousQuery;
+  } {
+    return {
+      ...parts,
+      query:
+        typeof parts.query === 'string'
+          ? parts.query
+          : canonicalizeLudicrousQuery(parts.query),
+    };
   }
 
   private async searchUncached(
@@ -169,12 +237,9 @@ export class BrightDataBusinessSearchService {
     input: BrightDataBusinessSearchInput,
     mode: BrightDataBusinessSearchMode,
     query: string | BrightDataLudicrousQuery,
-  ): Promise<BrightDataBusinessSearchResult> {
-    const pages = planBrightDataBusinessSearchPages({
-      mode,
-      limit: input.limit,
-      offset: input.offset,
-    });
+    pages: Array<{ offset: number; limit: number }>,
+    pageCacheKey?: string,
+  ): Promise<BrightDataSearchResponse> {
     const documents: BrightDataBusinessSearchDocument[] = [];
     let reqId = '';
     let matched = 0;
@@ -188,9 +253,8 @@ export class BrightDataBusinessSearchService {
         query,
         offset: page.offset,
         limit: page.limit,
-        view: input.view ?? 'full',
-        fields: input.fields,
         workspaceId: input.workspaceId,
+        cacheKey: pageCacheKey,
       });
 
       reqId = response.reqId || reqId;
@@ -224,14 +288,12 @@ export class BrightDataBusinessSearchService {
     query,
     offset,
     limit,
-    fields,
     workspaceId,
   }: {
     entity: BrightDataBusinessSearchEntity;
     query: BrightDataLudicrousQuery;
     offset: number;
     limit: number;
-    fields?: string[];
     workspaceId?: string;
   }): Promise<BrightDataBusinessSearchResult> {
     const key = this.apiKey;
@@ -241,38 +303,80 @@ export class BrightDataBusinessSearchService {
     }
 
     const validated = assertValidLudicrousQuery({ entity, query });
-    const run = async (): Promise<BrightDataBusinessSearchResult> => {
-      const response = await this.fetchPage({
+    const parts = { entity, query: validated, offset, limit };
+    const runPage = (cacheKey?: string) =>
+      this.searchPageUncached({
         apiKey: key,
         entity,
-        mode: 'ludicrous',
         query: validated,
         offset,
         limit,
-        view: 'full',
-        fields,
         workspaceId,
+        cacheKey,
       });
 
-      return {
-        reqId: response.reqId,
-        matched: response.matched ?? 0,
-        coveragePercent: response.coveragePercent,
-        mode: 'ludicrous',
-        documents: response.documents,
-        costUsd: costForRecordsUsd(response.documents.length),
-      };
-    };
-
     if (!this.providerQueryCache) {
-      return run();
+      return { ...(await runPage()), fromCache: false };
     }
 
-    return this.providerQueryCache.getOrFetch(
+    const keyParts = this.cacheKeyParts(parts);
+    const cacheKey = buildProviderQueryCacheKey(
       BRIGHT_DATA_SEARCH_PAGE_CACHE_PREFIX,
-      { entity, query: validated, offset, limit, fields },
-      run,
+      keyParts,
     );
+    let fetched = false;
+
+    const response =
+      await this.providerQueryCache.getOrFetch<BrightDataSearchResponse>(
+        BRIGHT_DATA_SEARCH_PAGE_CACHE_PREFIX,
+        parts,
+        () => {
+          fetched = true;
+
+          return runPage(cacheKey);
+        },
+        { keyParts, fetcherLogsRequest: true },
+      );
+
+    return { ...response, fromCache: !fetched };
+  }
+
+  private async searchPageUncached({
+    apiKey,
+    entity,
+    query,
+    offset,
+    limit,
+    workspaceId,
+    cacheKey,
+  }: {
+    apiKey: string;
+    entity: BrightDataBusinessSearchEntity;
+    query: BrightDataLudicrousQuery;
+    offset: number;
+    limit: number;
+    workspaceId?: string;
+    cacheKey?: string;
+  }): Promise<BrightDataSearchResponse> {
+    const response = await this.fetchPage({
+      apiKey,
+      entity,
+      mode: 'ludicrous',
+      query,
+      offset,
+      limit,
+      workspaceId,
+      cacheKey,
+    });
+
+    return {
+      reqId: response.reqId,
+      matched: response.matched ?? 0,
+      coveragePercent: response.coveragePercent,
+      mode: 'ludicrous',
+      documents: response.documents,
+      costUsd: costForRecordsUsd(response.documents.length),
+    };
   }
 
   private prepareQuery(
@@ -318,9 +422,8 @@ export class BrightDataBusinessSearchService {
     query,
     offset,
     limit,
-    view,
-    fields,
     workspaceId,
+    cacheKey,
   }: {
     apiKey: string;
     entity: BrightDataBusinessSearchEntity;
@@ -328,9 +431,8 @@ export class BrightDataBusinessSearchService {
     query: string | BrightDataLudicrousQuery;
     offset: number;
     limit: number;
-    view: BrightDataBusinessSearchView;
-    fields?: string[];
     workspaceId?: string;
+    cacheKey?: string;
   }): Promise<{
     reqId: string;
     matched: number | undefined;
@@ -365,7 +467,7 @@ export class BrightDataBusinessSearchService {
         // every caller, so nobody retries on their own
         await rateLimiter.acquire();
 
-        const page = await this.postOnce({ apiKey, entity, body });
+        const page = await this.postOnce({ apiKey, entity, body, cacheKey });
 
         // Archive the untouched response before any filtering: the records
         // are billed per document the moment this call returns
@@ -377,7 +479,11 @@ export class BrightDataBusinessSearchService {
           response: page,
           pageKey: offset,
           costUsd: costForRecordsUsd(page.documents?.length ?? 0),
-          meta: { mode, reqId: page.req_id ?? null },
+          meta: {
+            mode,
+            reqId: page.req_id ?? null,
+            cacheKey: cacheKey ?? null,
+          },
         });
 
         return {
@@ -431,40 +537,68 @@ export class BrightDataBusinessSearchService {
     apiKey,
     entity,
     body,
+    cacheKey,
   }: {
     apiKey: string;
     entity: BrightDataBusinessSearchEntity;
     body: Record<string, unknown>;
+    cacheKey?: string;
   }): Promise<BrightDataSearchPage> {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), this.requestTimeoutMs);
-
-    try {
-      const response = await fetch(`${BRIGHT_DATA_SEARCH_URL}/${entity}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
+    // One ledger row per attempt: a retry is a second request, and a failed
+    // attempt is not billed by Bright Data, so it must not be priced
+    return trackProviderCall(
+      this.providerCallLog,
+      {
+        provider: 'bright-data',
+        operation: `business-search:${entity}`,
+        storeResponse: false,
+        cacheKey,
+        // The query is what identifies the request: without it every shard and
+        // page of a ludicrous run logs the same four numbers and the ledger
+        // cannot say what was bought
+        request: {
+          entity,
+          mode: body.mode,
+          query: body.query,
+          limit: body.limit,
+          offset: body.offset,
         },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      });
-      const rawText = await response.text();
-
-      if (!response.ok) {
-        this.logger.warn(
-          `Bright Data business search HTTP ${response.status}: ${rawText.slice(0, 500)}`,
+      },
+      async () => {
+        const controller = new AbortController();
+        const timeout = setTimeout(
+          () => controller.abort(),
+          this.requestTimeoutMs,
         );
-        throw new BrightDataBusinessSearchHttpError(
-          response.status,
-          `Bright Data business search failed (${response.status}): ${rawText.slice(0, 200)}`,
-          parseRetryAfterMs(response.headers?.get?.('retry-after')),
-        );
-      }
 
-      return JSON.parse(rawText) as BrightDataSearchPage;
-    } finally {
-      clearTimeout(timeout);
-    }
+        try {
+          const response = await fetch(`${BRIGHT_DATA_SEARCH_URL}/${entity}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify(body),
+            signal: controller.signal,
+          });
+          const rawText = await response.text();
+
+          if (!response.ok) {
+            this.logger.warn(
+              `Bright Data business search HTTP ${response.status}: ${rawText.slice(0, 500)}`,
+            );
+            throw new BrightDataBusinessSearchHttpError(
+              response.status,
+              `Bright Data business search failed (${response.status}): ${rawText.slice(0, 200)}`,
+              parseRetryAfterMs(response.headers?.get?.('retry-after')),
+            );
+          }
+
+          return JSON.parse(rawText) as BrightDataSearchPage;
+        } finally {
+          clearTimeout(timeout);
+        }
+      },
+    );
   }
 }

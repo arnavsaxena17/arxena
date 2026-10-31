@@ -565,7 +565,10 @@ describe('FindPeopleCascadeService source order on a redo', () => {
       {} as never,
       { classifyTitles: jest.fn(async () => new Map()) } as never,
       undefined,
-      { isConfigured: () => true } as never,
+      {
+        isConfigured: () => true,
+        findCompanyLinkedinUrl: jest.fn(async () => null),
+      } as never,
     );
     const internals = service as unknown as Record<string, jest.Mock>;
     const searchHarvest = jest

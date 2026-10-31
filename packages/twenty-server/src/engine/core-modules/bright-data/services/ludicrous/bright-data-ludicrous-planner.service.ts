@@ -6,6 +6,7 @@ import { isDefined } from 'twenty-shared/utils';
 
 import { TitleExpansionService } from 'src/engine/core-modules/title-taxonomy/title-expansion.service';
 import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
+import { withProviderCallContext } from 'src/engine/core-modules/provider-call-log/storage/provider-call-context.storage';
 import {
   BRIGHT_DATA_ESTIMATE_BUDGET_USD,
   BRIGHT_DATA_ESTIMATE_SAMPLE_SIZE,
@@ -71,6 +72,14 @@ export type BrightDataLudicrousEstimateInput = {
   // LinkedIn industry labels resolved by the sources skill. When set, the
   // planner may not substitute a broader or made-up label.
   industryLabels?: string[];
+  // Code-owned company context. The planner reads the company, place and
+  // industry out of a sentence, so "of Jubilant FoodWorks Ltd." reaches the
+  // engine as whatever the model decided. When the caller has already resolved
+  // the company, these overwrite the same filters the title expression owns,
+  // so one canonical spelling is searched instead of a guess.
+  companyNames?: string[];
+  countryCodes?: string[];
+  cities?: string[];
 };
 
 const escapeRegExp = (value: string): string =>
@@ -121,9 +130,29 @@ export class BrightDataLudicrousPlannerService {
     }
 
     // The industry label is the one thing the planner most often broadens or
-    // invents. When the sources skill has resolved it, it is code-owned too.
-    if (input.entity === 'company' && (input.industryLabels?.length ?? 0) > 0) {
+    // invents. When the caller has resolved it, it is code-owned too: for a
+    // company search it compiles to `industry`, for a people search to
+    // `current_company_industry`. Whether to send it at all is the caller's
+    // policy, not the planner's, because a company-anchored people search is
+    // already pinned and an industry filter there only removes rows.
+    if ((input.industryLabels?.length ?? 0) > 0) {
       this.applyIndustryLabels(generated, input.industryLabels ?? []);
+    }
+
+    // By the time a people search runs the company has been resolved, so its
+    // name and market are facts rather than something to read out of a
+    // sentence. Code owns them the same way it owns the title filter.
+    if (
+      input.entity === 'people' &&
+      ((input.companyNames?.length ?? 0) > 0 ||
+        (input.countryCodes?.length ?? 0) > 0 ||
+        (input.cities?.length ?? 0) > 0)
+    ) {
+      this.applyCompanyContext(generated, {
+        companyNames: input.companyNames ?? [],
+        countryCodes: input.countryCodes ?? [],
+        cities: input.cities ?? [],
+      });
     }
 
     const { shards, compileErrors } = this.compileShards(
@@ -144,7 +173,6 @@ export class BrightDataLudicrousPlannerService {
         input,
         projectId: input.projectId,
         shards,
-        fields,
         generated,
         rubric,
       });
@@ -260,6 +288,51 @@ export class BrightDataLudicrousPlannerService {
 
     this.logger.log(
       `Bright Data planner: taxonomy title expression replaces the planner's titles (${expression.length} chars)`,
+    );
+  }
+
+  // Overwrites the company, country and city filters with the values the
+  // caller resolved. The planner still writes the sentence-level intent, but a
+  // wrong or missing company spelling is the single largest source of empty
+  // people searches, so the anchors are not left to the model.
+  private applyCompanyContext(
+    generated: BrightDataLudicrousPlanLlmOutput,
+    {
+      companyNames,
+      countryCodes,
+      cities,
+    }: {
+      companyNames: string[];
+      countryCodes: string[];
+      cities: string[];
+    },
+  ): void {
+    const companies = [
+      ...new Set(companyNames.map((name) => name.trim())),
+    ].filter((name) => name.length > 0);
+    const countries = [
+      ...new Set(countryCodes.map((code) => code.trim().toUpperCase())),
+    ].filter((code) => code.length > 0);
+    const cityNames = [...new Set(cities.map((city) => city.trim()))].filter(
+      (city) => city.length > 0,
+    );
+
+    for (const shard of generated.shards) {
+      if (companies.length > 0) {
+        shard.filter.companyNames = companies;
+      }
+
+      if (countries.length > 0) {
+        shard.filter.countryCodes = countries;
+      }
+
+      if (cityNames.length > 0) {
+        shard.filter.cities = cityNames;
+      }
+    }
+
+    this.logger.log(
+      `Bright Data planner: company context forced (companies=${companies.join(', ') || 'none'}, countries=${countries.join(', ') || 'none'}, cities=${cityNames.join(', ') || 'none'})`,
     );
   }
 
@@ -462,14 +535,12 @@ export class BrightDataLudicrousPlannerService {
     input,
     projectId,
     shards,
-    fields,
     generated,
     rubric,
   }: {
     input: BrightDataLudicrousEstimateInput;
     projectId: string;
     shards: BrightDataLudicrousShard[];
-    fields: string[];
     generated: BrightDataLudicrousPlanLlmOutput;
     rubric: BrightDataLudicrousRubric;
   }): Promise<{
@@ -509,21 +580,31 @@ export class BrightDataLudicrousPlannerService {
       const results = await Promise.all(
         batch.map(async (shard) => {
           try {
-            const page = await this.brightDataBusinessSearchService.searchPage({
-              entity: input.entity,
-              query: shard.query,
-              offset: 0,
-              limit: sampleSize,
-              fields,
-            });
+            // The paid sample belongs to the workspace that is paying for the
+            // estimate, so its archived response must be scoped to it
+            const page = await withProviderCallContext(
+              { stage: 'bright-data-estimate', subject: shard.key },
+              () =>
+                this.brightDataBusinessSearchService.searchPage({
+                  entity: input.entity,
+                  query: shard.query,
+                  offset: 0,
+                  limit: sampleSize,
+                  workspaceId: input.workspaceId,
+                }),
+            );
 
-            await this.billing.billRecords({
-              workspaceId: input.workspaceId,
-              recordCount: page.documents.length,
-              entity: input.entity,
-              projectId,
-              userWorkspaceId: input.userWorkspaceId,
-            });
+            // A sample replayed from the cache was paid for by an earlier
+            // estimate of the same shard, so nothing is billed again
+            if (!page.fromCache) {
+              await this.billing.billRecords({
+                workspaceId: input.workspaceId,
+                recordCount: page.documents.length,
+                entity: input.entity,
+                projectId,
+                userWorkspaceId: input.userWorkspaceId,
+              });
+            }
 
             const judgement = await this.relevanceJudge.judge({
               entity: input.entity,
@@ -562,7 +643,11 @@ export class BrightDataLudicrousPlannerService {
           continue;
         }
 
-        spentRecords += result.page.documents.length;
+        // A replayed sample was paid for by an earlier estimate, so it is not
+        // part of what this estimate cost
+        if (!result.page.fromCache) {
+          spentRecords += result.page.documents.length;
+        }
         // Keep the judge's per-row verdict with the sample, so a probe row can
         // be written to the tab with relevant=Yes/No instead of a bare match.
         const relevantById = new Map(

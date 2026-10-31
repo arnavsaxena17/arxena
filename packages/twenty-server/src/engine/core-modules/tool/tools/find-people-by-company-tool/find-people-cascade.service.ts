@@ -12,8 +12,8 @@ import { BrightDataLudicrousSearchService } from 'src/engine/core-modules/bright
 import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
 import { HarvestLinkedinService } from 'src/engine/core-modules/org-chart/services/harvest-linkedin.service';
 import {
+  buildHarvestSearchQuery,
   HARVEST_COST_PER_RECORD_USD,
-  splitHarvestTitleList,
 } from 'src/engine/core-modules/org-chart/utils/harvest-search-params.util';
 
 import { BRIGHT_DATA_COST_PER_RECORD_USD } from 'src/engine/core-modules/bright-data/ludicrous/constants/bright-data-ludicrous-pricing.const';
@@ -26,7 +26,6 @@ import {
 } from 'src/engine/core-modules/outreach-command/utils/person-identity.util';
 
 import {
-  buildCompanyVariants,
   matchesAnyCompanyVariant,
   textMentionsAnyCompanyVariant,
 } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/company-name-variants.util';
@@ -82,6 +81,26 @@ import {
   cellStage,
   tieredSearchesOf,
 } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/role-search-plan.util';
+import {
+  buildCompanyIdentity,
+  identityVariants,
+  type CompanyIdentity,
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/company-identity.util';
+import {
+  buildBrightDataCellQueries,
+  buildHarvestCellParameters,
+  buildSerpCellQueries,
+  identityCountryCodes,
+  harvestParametersHaveCompany,
+  type QueryCell,
+} from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/search-params.util';
+import { resolveSalesNavFilters } from 'src/engine/core-modules/candidate-search/constants/taxonomy-platform-maps';
+import {
+  resolveHarvestFunctionIdForRoot,
+  resolveHarvestIndustryIds,
+  resolveHarvestSeniorityLevelIds,
+} from 'src/engine/core-modules/candidate-search/constants/harvest-filter-ids';
+import { CompanyNameResolverService } from 'src/engine/core-modules/org-chart/services/company-name-resolver.service';
 
 import {
   BrightDataPersonFitFilterService,
@@ -139,7 +158,10 @@ const MAX_COMPANY_STAGGER_WINDOW_MS = 30_000;
 // model sees it, so a blip or a laptop wake-up does not cost a model round
 const DEFAULT_COMPANY_LOOKUP_RETRIES = 2;
 const COMPANY_RETRY_BACKOFF_MS = [5_000, 15_000];
-const MAX_VARIANTS_PER_BRIGHT_DATA_SEARCH = 2;
+// The resolved company carries its own spellings; a filter rarely needs more
+// than the canonical name and one legal name, and every extra term costs
+// precision on a bag-of-words field
+const MAX_COMPANY_NAMES_PER_SEARCH = 2;
 const BRIGHT_DATA_CANDIDATES_PER_SEARCH = 5;
 // Harvest bills $0.004 a record; five is a $0.02 step, not the whole pair cap
 const HARVEST_CANDIDATES_PER_SEARCH = 5;
@@ -299,6 +321,17 @@ export const getCompanyStaggerMs = (companyCount: number): number => {
   );
 };
 
+// Company + titles is the primary GTM. An industry filter on a search that is
+// already anchored to one company cannot add recall: it can only drop rows
+// where LinkedIn's industry label for that employer differs from ours. So it
+// is opt-in, and a run can measure it before it is turned on by default.
+const shouldSendIndustryToQueries = (identity: CompanyIdentity): boolean => {
+  const flag = process.env.FIND_PEOPLE_SEND_INDUSTRY?.trim().toLowerCase();
+  const enabled = flag === 'true' || flag === '1' || flag === 'yes';
+
+  return enabled && isNonEmptyString(identity.industry);
+};
+
 const getCompanyLookupRetries = (): number => {
   const configured = Number(process.env.FIND_ROLE_COMPANY_LOOKUP_RETRIES);
 
@@ -394,6 +427,12 @@ export class FindPeopleCascadeService {
     // wired and switched on, and are skipped like Harvest otherwise
     @Optional()
     private readonly serpSourcesService?: FindPeopleSerpSourcesService,
+    // Optional: the company index. When it answers, one canonical name, its
+    // market, its industry and its LinkedIn URL are resolved once per company
+    // and handed to every source; without it the caller's own name spellings
+    // are used, which is what every source did before.
+    @Optional()
+    private readonly companyNameResolverService?: CompanyNameResolverService,
   ) {}
 
   // The whole pair: a found answer from an earlier run is reused inside the
@@ -577,6 +616,77 @@ export class FindPeopleCascadeService {
     return { ...(outcome as CompanyOutcome), spentUsd };
   }
 
+  // The company's identity, resolved once and shared by every source. The
+  // index is the only thing that knows the canonical spelling, the market and
+  // the LinkedIn company, so a failure there falls back to the caller's own
+  // spellings instead of failing the lookup: an unresolved name still
+  // searches, it just searches less well.
+  private async resolveCompanyIdentity(
+    company: FindPeopleByCompanyTarget,
+  ): Promise<CompanyIdentity> {
+    const resolver = this.companyNameResolverService;
+
+    if (!isDefined(resolver)) {
+      return buildCompanyIdentity({ target: company });
+    }
+
+    const resolved = await resolver
+      .resolveFromRawCompanyName(company.name)
+      .catch((error) => {
+        this.logger.warn(
+          `find_people_by_company "${company.name}": company index lookup failed: ${this.describe(error)}`,
+        );
+
+        return null;
+      });
+
+    return buildCompanyIdentity({ target: company, resolved });
+  }
+
+  // The queries the caller wrote for this company and this source. A query
+  // that names no company belongs to the first company only, so a multi-company
+  // call does not send one agent query N times.
+  private directQueriesFor({
+    company,
+    identity,
+    input,
+    source,
+  }: {
+    company: FindPeopleByCompanyTarget;
+    identity: CompanyIdentity;
+    input: ResolvedInput;
+    source: 'google' | 'bright_data' | 'harvest';
+  }): Array<{ query: string; role?: string }> {
+    const queries = input.queries ?? [];
+
+    if (queries.length === 0) {
+      return [];
+    }
+
+    const isFirstCompany = input.companies[0]?.name === company.name;
+
+    return queries
+      .filter((entry) => entry.source === source)
+      .filter((entry) => {
+        if (!isNonEmptyString(entry.company)) {
+          return isFirstCompany;
+        }
+
+        const wanted = entry.company.trim().toLowerCase();
+
+        return identity.aliases.some((alias) => {
+          const lowered = alias.toLowerCase();
+
+          return lowered.includes(wanted) || wanted.includes(lowered);
+        });
+      })
+      .map((entry) => ({
+        query: entry.query.trim(),
+        ...(isNonEmptyString(entry.role) && { role: entry.role.trim() }),
+      }))
+      .filter((entry) => entry.query !== '');
+  }
+
   // One company, cheapest source first: Bright Data people, and Google only
   // when Bright Data holds no one at the plan's confidence. The pair's spend
   // cap counts every paid step, and what was asked is kept on the outcome.
@@ -587,12 +697,10 @@ export class FindPeopleCascadeService {
     workspaceId: string,
     { ownerPass = false }: { ownerPass?: boolean } = {},
   ): Promise<CompanyOutcome> {
-    const variants = buildCompanyVariants(
-      company.name,
-      company.alternateNames ?? [],
-    );
+    const identity = await this.resolveCompanyIdentity(company);
+    const variants = identityVariants(identity);
     const titles = resolvedRoles.searchTitles.slice(0, MAX_TITLES_IN_QUERY);
-    const query = `${titles.join(', ')} at ${company.name}`;
+    const query = `${titles.join(', ')} at ${identity.canonicalName}`;
     const sourceErrors: string[] = [];
     // What actually put a kept person on the row. What was *asked* is kept
     // apart: a source that ran and returned nobody is not a source that worked,
@@ -655,7 +763,8 @@ export class FindPeopleCascadeService {
               cellStage({ familyKey: search.key, source: 'bright_data', tier }),
               () =>
                 this.searchBrightData({
-                  variants,
+                  identity,
+                  cell: search,
                   titles: tierTitles,
                   location: input.location,
                   maxBudgetUsd: shareUsd,
@@ -671,7 +780,7 @@ export class FindPeopleCascadeService {
             for (const candidate of result.candidates) {
               candidate.query =
                 search.titleExpression ??
-                `${tierTitles.join(', ')} at ${company.name}`;
+                `${tierTitles.join(', ')} at ${identity.canonicalName}`;
               candidate.queriedRole = search.roles[0];
 
               brightDataCandidates.candidates.push(candidate);
@@ -684,6 +793,60 @@ export class FindPeopleCascadeService {
             break;
           }
         }
+      }
+    }
+
+    // Queries the caller wrote for Bright Data, run as instant searches: they
+    // are usually a name or an exact phrase, which is what instant is good at,
+    // and they skip the planner they do not need
+    const directBrightData = this.directQueriesFor({
+      company,
+      identity,
+      input,
+      source: 'bright_data',
+    });
+
+    for (const direct of directBrightData) {
+      try {
+        const result = await timed(
+          `direct:bright_data:${direct.query.slice(0, 40)}`,
+          () =>
+            this.brightDataBusinessSearchService.search({
+              entity: 'people',
+              mode: 'instant',
+              query: direct.query,
+              limit: BRIGHT_DATA_CANDIDATES_PER_SEARCH,
+              workspaceId,
+            }),
+        );
+
+        spentUsd += result.costUsd;
+
+        for (const document of result.documents) {
+          const item = mapBrightDataPersonToSearchItem(document);
+          const name = typeof item.name === 'string' ? item.name : '';
+
+          if (name === '') {
+            continue;
+          }
+
+          brightDataCandidates.candidates.push({
+            id: document.brightId,
+            name,
+            title: typeof item.title === 'string' ? item.title : '',
+            companyName:
+              typeof item.companyName === 'string' ? item.companyName : '',
+            linkedinUrl: typeof item.url === 'string' ? item.url : '',
+            evidenceText: '',
+            source: 'bright_data',
+            location: typeof item.location === 'string' ? item.location : '',
+            rawProfile: document.data,
+            query: `direct:${direct.query}`,
+            queriedRole: direct.role ?? input.roles[0],
+          });
+        }
+      } catch (error) {
+        sourceErrors.push(`direct:bright_data: ${this.describe(error)}`);
       }
     }
 
@@ -742,6 +905,21 @@ export class FindPeopleCascadeService {
       } else {
         sourcesAttempted.push('google');
 
+        // One plain and one boolean query per role family, so a second role
+        // gets its own query instead of sharing one blended set
+        const families = roleSearches.map((search) => {
+          const cellQueries = buildSerpCellQueries({
+            identity,
+            cell: search,
+            location: input.location,
+          });
+
+          return {
+            key: search.key,
+            plain: cellQueries.plain,
+            boolean: cellQueries.boolean,
+          };
+        });
         // TheOrg and The Official Board publish a company's leadership as
         // structured people, so they are asked beside the Google queries, not
         // through them: the pair waits no longer than the slower of the two
@@ -758,7 +936,8 @@ export class FindPeopleCascadeService {
                   resolvedRoles.googleTitleExpressions ??
                   resolvedRoles.titleExpressions,
                 location: input.location,
-                domain: company.domain,
+                domain: company.domain ?? identity.domain,
+                families,
               })
               .then((result) => {
                 sourceErrors.push(
@@ -779,6 +958,30 @@ export class FindPeopleCascadeService {
         ]);
         sourceErrors.push(...serpSources.errors);
 
+        // Queries the caller wrote, added to the same result set so they are
+        // extracted, judged and checked exactly like a generated one
+        const directGoogle = this.directQueriesFor({
+          company,
+          identity,
+          input,
+          source: 'google',
+        });
+        const directGoogleResult =
+          directGoogle.length > 0
+            ? await timed('direct:google', () =>
+                this.googleSearchService.searchDirectQueries(
+                  directGoogle.map((entry) => entry.query),
+                  input.location,
+                ),
+              )
+            : { results: [], errors: [] };
+
+        sourceErrors.push(
+          ...directGoogleResult.errors.map(
+            (error) => `direct:google: ${error}`,
+          ),
+        );
+
         // The model reads the raw Google results into name, job title,
         // company and profile; what comes after only enriches and checks them
         const extracted = await timed('extract', () =>
@@ -786,7 +989,7 @@ export class FindPeopleCascadeService {
             company: company.name,
             variants,
             roles: input.roles,
-            results: google.results,
+            results: [...directGoogleResult.results, ...google.results],
             aiOverviewTexts: google.aiOverviewTexts,
             workspaceId,
             sourceErrors,
@@ -907,6 +1110,11 @@ export class FindPeopleCascadeService {
         sourceErrors.push('harvest: HARVEST_API_KEY is not set');
       } else {
         sourcesAttempted.push('harvest');
+        const harvestService = this.harvestLinkedinService;
+        const harvestCompanyLinkedinUrl = await this.resolveHarvestCompanyUrl(
+          harvestService,
+          identity,
+        );
 
         // One lead search per role class, like Bright Data: the merged
         // boolean represented only the first class
@@ -933,11 +1141,12 @@ export class FindPeopleCascadeService {
               cellStage({ familyKey: search.key, source: 'harvest', tier }),
               () =>
                 this.searchHarvest({
-                  variants,
+                  identity,
+                  cell: search,
                   titles: tierTitles,
-                  titleExpression: search.titleExpression ?? undefined,
                   location: input.location,
                   maxBudgetUsd: shareUsd,
+                  companyLinkedinUrl: harvestCompanyLinkedinUrl,
                 }).catch((error) => {
                   sourceErrors.push(`harvest: ${this.describe(error)}`);
 
@@ -969,6 +1178,82 @@ export class FindPeopleCascadeService {
         }
 
         sourceErrors.push(...harvest.errors);
+
+        // Queries the caller wrote for Sales Navigator, sent on the keyword
+        // field beside the company filter. This is where a factored boolean
+        // the generators did not produce gets through.
+        const directHarvest = this.directQueriesFor({
+          company,
+          identity,
+          input,
+          source: 'harvest',
+        });
+        // Resolved once per company: every direct query shares the location,
+        // and the lookup is cached by the service anyway
+        const directGeoIds =
+          directHarvest.length > 0
+            ? await harvestService.resolveGeoIds(input.location ?? '')
+            : [];
+
+        for (const direct of directHarvest) {
+          const directParameters = buildHarvestCellParameters({
+            identity,
+            cell: {
+              key: 'direct',
+              roles: [direct.role ?? input.roles[0] ?? ''],
+              titles: [],
+              titleExpression: `(${direct.query})`,
+            },
+            location: input.location,
+            geoIds: directGeoIds,
+            ...(harvestCompanyLinkedinUrl !== null && {
+              companyLinkedinUrl: harvestCompanyLinkedinUrl,
+            }),
+          });
+          const { query: directQuery, ignored: directIgnored } =
+            buildHarvestSearchQuery('leads', directParameters);
+
+          if (directIgnored.length > 0) {
+            sourceErrors.push(
+              `direct:harvest: unsupported parameters: ${directIgnored.join(', ')}`,
+            );
+          }
+
+          if (!harvestParametersHaveCompany(directQuery)) {
+            sourceErrors.push(
+              'direct:harvest: no company filter, so the query was not sent',
+            );
+
+            continue;
+          }
+
+          try {
+            const result = await timed(
+              `direct:harvest:${direct.query.slice(0, 40)}`,
+              () =>
+                harvestService.searchSalesNavigatorCollection({
+                  kind: 'leads',
+                  query: directQuery,
+                  limit: HARVEST_CANDIDATES_PER_SEARCH,
+                }),
+            );
+
+            for (const item of result.items) {
+              const candidate = this.toHarvestCandidate(item);
+
+              if (candidate === null) {
+                continue;
+              }
+
+              candidate.query = `direct:${direct.query}`;
+              candidate.queriedRole = direct.role ?? input.roles[0];
+
+              harvest.candidates.push(candidate);
+            }
+          } catch (error) {
+            sourceErrors.push(`direct:harvest: ${this.describe(error)}`);
+          }
+        }
 
         if (harvest.candidates.length > 0) {
           const harvestVerdicts = await timed('judge', () =>
@@ -1328,14 +1613,16 @@ export class FindPeopleCascadeService {
   // Tries the first names one at a time and stops at the first that yields a
   // verified person, so a brand that fails is retried under its legal name
   private async searchBrightData({
-    variants,
+    identity,
+    cell,
     titles,
     location,
     maxBudgetUsd,
     workspaceId,
     titleExpression,
   }: {
-    variants: string[];
+    identity: CompanyIdentity;
+    cell: QueryCell;
     titles: string[];
     location?: string;
     maxBudgetUsd: number;
@@ -1344,102 +1631,182 @@ export class FindPeopleCascadeService {
   }): Promise<{ candidates: Candidate[]; spentUsd: number }> {
     const candidates: Candidate[] = [];
     let spentUsd = 0;
-    const searchedVariants = variants.slice(
-      0,
-      MAX_VARIANTS_PER_BRIGHT_DATA_SEARCH,
-    );
-    // The brand and its legal name are two independent searches: run them
-    // together, each inside its share of the pair's cap, so a company costs one
-    // round trip instead of two. A variant that fails does not lose the other.
-    const budgetPerVariant =
-      maxBudgetUsd / Math.max(searchedVariants.length, 1);
     const errors: unknown[] = [];
-    const results = await Promise.all(
-      searchedVariants.map(async (variant) => {
-        // Curated taxonomy boolean owns the title filter; keep the NL prompt
-        // to company + location so the planner does not re-list title words.
-        const locationSuffix = isNonEmptyString(location) ? ` ${location}` : '';
-        const rawQuery = isNonEmptyString(titleExpression)
-          ? `people at ${variant}${locationSuffix}`
-          : `${titles.join(', ')} of ${variant}${locationSuffix}`;
+    const cellWithTier: QueryCell = {
+      ...cell,
+      titles,
+      titleExpression: titleExpression ?? null,
+    };
+    const queries = buildBrightDataCellQueries({
+      identity,
+      cell: cellWithTier,
+      location,
+    });
+    // One canonical company, not its spelling list: the filter is code-owned
+    // now, so two spellings would only duplicate the same rows
+    const companyNames = identity.aliases.slice(
+      0,
+      MAX_COMPANY_NAMES_PER_SEARCH,
+    );
+    const countryCodes = identityCountryCodes(identity, location);
+    // Two engines over the same cell. Ludicrous plans, samples and pages (the
+    // deep, expensive one); instant is one token-ranked call that is good at
+    // "the obvious few". Running both raises recall on the cells where the
+    // planner's filters are right and rescues the ones where they are not.
+    // The planner's deep search keeps the pair's whole per-cell budget: it is
+    // the one that pages. Instant is bounded by its record limit instead, so
+    // running it beside ludicrous adds recall without halving the depth of the
+    // engine that actually needs the money.
+    const instantLimit = BRIGHT_DATA_CANDIDATES_PER_SEARCH;
+    // Industry is resolved with the company, but it is off as a filter by
+    // default: the company anchor already pins the employer, and LinkedIn's
+    // industry label for that employer can differ from ours, so the filter
+    // would only drop rows. The flag lets a run measure it before that changes.
+    const industryLabels = shouldSendIndustryToQueries(identity)
+      ? [identity.industry as string]
+      : [];
+    const settle = <TValue>(
+      promise: Promise<TValue>,
+    ): Promise<TValue | undefined> =>
+      promise.catch((error) => {
+        errors.push(error);
 
-        try {
-          const { result } = await withBrightDataPeopleSlot(() =>
-            this.brightDataLudicrousSearchService.searchNaturalLanguage({
+        return undefined;
+      });
+
+    const [ludicrous, instant] = await Promise.all([
+      settle(
+        withBrightDataPeopleSlot(() =>
+          this.brightDataLudicrousSearchService
+            .searchNaturalLanguage({
               workspaceId,
               projectId: 'find-people-by-company',
               entity: 'people',
-              rawQuery,
-              maxBudgetUsd: budgetPerVariant,
+              rawQuery: queries.ludicrous,
+              maxBudgetUsd,
               targetCount: BRIGHT_DATA_CANDIDATES_PER_SEARCH,
               ...(isNonEmptyString(titleExpression) && { titleExpression }),
-            }),
-          );
+              ...(companyNames.length > 0 && { companyNames }),
+              ...(countryCodes.length > 0 && { countryCodes }),
+              ...(industryLabels.length > 0 && { industryLabels }),
+            })
+            .then(({ result }) => result),
+        ),
+      ),
+      settle(
+        this.brightDataBusinessSearchService.search({
+          entity: 'people',
+          mode: 'instant',
+          query: queries.instant,
+          limit: instantLimit,
+          workspaceId,
+        }),
+      ),
+    ]);
 
-          return result;
-        } catch (error) {
-          errors.push(error);
-
-          return undefined;
-        }
-      }),
-    );
-
-    // Every variant failing is a source_error, not an empty answer: the pair
-    // is retried and reported that way
-    if (results.every((result) => !isDefined(result)) && errors.length > 0) {
+    // Both engines failing is a source_error, not an empty answer: the pair is
+    // retried and reported that way. A planner failure that instant did not
+    // rescue is also still a failure: instant returning nothing means the
+    // source found nobody, not that the plan error did not happen.
+    if (
+      !isDefined(ludicrous) &&
+      (instant?.documents.length ?? 0) === 0 &&
+      errors.length > 0
+    ) {
       throw errors[0];
     }
 
-    for (const result of results) {
-      if (!isDefined(result)) {
+    const documents = [
+      ...(ludicrous?.documents ?? []),
+      ...(instant?.documents ?? []),
+    ];
+
+    spentUsd += ludicrous?.spentUsd ?? 0;
+    spentUsd += instant?.costUsd ?? 0;
+
+    // The same person can come back from both engines
+    const seen = new Set<string>();
+
+    for (const document of documents) {
+      const item = mapBrightDataPersonToSearchItem(document);
+      const name = typeof item.name === 'string' ? item.name : '';
+
+      if (name === '') {
         continue;
       }
 
-      spentUsd += result.spentUsd;
+      const key =
+        document.brightId ||
+        (typeof item.url === 'string' && item.url.trim() !== ''
+          ? item.url.trim().toLowerCase()
+          : `${name.toLowerCase()}|${String(item.companyName ?? '').toLowerCase()}`);
 
-      for (const document of result.documents) {
-        const item = mapBrightDataPersonToSearchItem(document);
-        const name = typeof item.name === 'string' ? item.name : '';
-
-        if (name === '') {
-          continue;
-        }
-
-        candidates.push({
-          id: document.brightId,
-          name,
-          title: typeof item.title === 'string' ? item.title : '',
-          companyName:
-            typeof item.companyName === 'string' ? item.companyName : '',
-          linkedinUrl: typeof item.url === 'string' ? item.url : '',
-          evidenceText: '',
-          source: 'bright_data',
-          location: typeof item.location === 'string' ? item.location : '',
-          rawProfile: document.data,
-        });
+      if (seen.has(key)) {
+        continue;
       }
+
+      seen.add(key);
+
+      candidates.push({
+        id: document.brightId,
+        name,
+        title: typeof item.title === 'string' ? item.title : '',
+        companyName:
+          typeof item.companyName === 'string' ? item.companyName : '',
+        linkedinUrl: typeof item.url === 'string' ? item.url : '',
+        evidenceText: '',
+        source: 'bright_data',
+        location: typeof item.location === 'string' ? item.location : '',
+        rawProfile: document.data,
+      });
     }
 
     return { candidates, spentUsd };
   }
 
+  // The company's LinkedIn URL, resolved once per company: the index supplies
+  // it for free, otherwise Harvest's own company search does. Before this it
+  // was re-resolved inside every role and every tier.
+  private async resolveHarvestCompanyUrl(
+    harvest: HarvestLinkedinService,
+    identity: CompanyIdentity,
+  ): Promise<string | null> {
+    if (isNonEmptyString(identity.linkedinUrl)) {
+      return identity.linkedinUrl;
+    }
+
+    for (const variant of identity.aliases.slice(0, 2)) {
+      const match = await harvest
+        .findCompanyLinkedinUrl(variant)
+        .catch(() => null);
+
+      if (isNonEmptyString(match?.linkedinUrl)) {
+        return match.linkedinUrl;
+      }
+    }
+
+    return null;
+  }
+
   // Harvest Sales Navigator lead search. Employers filter by LinkedIn URL, so
-  // the company is resolved first. A factored boolean title expression goes in
-  // `search`; a plain OR list becomes `currentJobTitles`, which is what Harvest
-  // filters exactly.
+  // the company is resolved once per company and passed in, instead of once per
+  // role and per tier. The query is built in Harvest's own parameter names and
+  // then passed through the allowlist, so a parameter Harvest does not
+  // document is reported instead of quietly returning no rows.
   private async searchHarvest({
-    variants,
+    identity,
+    cell,
     titles,
-    titleExpression,
     location,
     maxBudgetUsd,
+    companyLinkedinUrl,
   }: {
-    variants: string[];
+    identity: CompanyIdentity;
+    cell: QueryCell;
     titles: string[];
-    titleExpression?: string;
     location?: string;
     maxBudgetUsd: number;
+    companyLinkedinUrl: string | null;
   }): Promise<{
     candidates: Candidate[];
     spentUsd: number;
@@ -1458,18 +1825,6 @@ export class FindPeopleCascadeService {
         Math.floor(maxBudgetUsd / HARVEST_COST_PER_RECORD_USD),
       ),
     );
-    let companyLinkedinUrl: string | null = null;
-
-    for (const variant of variants.slice(0, 2)) {
-      const match = await harvest
-        .findCompanyLinkedinUrl(variant)
-        .catch(() => null);
-
-      if (isNonEmptyString(match?.linkedinUrl)) {
-        companyLinkedinUrl = match.linkedinUrl;
-        break;
-      }
-    }
 
     if (companyLinkedinUrl === null) {
       return {
@@ -1479,72 +1834,59 @@ export class FindPeopleCascadeService {
       };
     }
 
-    const expression =
-      (titleExpression ?? '').trim() !== ''
-        ? (titleExpression as string)
-        : `(${titles.join(' OR ')})`;
-    const titleList = splitHarvestTitleList(expression);
-    const query: Record<string, string> = {
-      currentCompanies: companyLinkedinUrl,
-      ...(titleList !== null && titleList.length > 0
-        ? { currentJobTitles: titleList.join(',') }
-        : { search: expression }),
-      ...(isNonEmptyString(location) ? { locations: location } : {}),
-    };
+    // Sales Nav facets: the taxonomy root and grade map to Harvest's own ids,
+    // which are exact filters where a title string is a fuzzy one. Industry
+    // stays opt-in for the reason above the Bright Data path: the company
+    // anchor already pins the employer, so an industry filter can only drop
+    // rows whose label LinkedIn spells differently.
+    const salesNavFilters = resolveSalesNavFilters({
+      functionRoot: cell.functionRoot,
+      stdGrade: cell.grade,
+    });
+    const functionId = resolveHarvestFunctionIdForRoot(cell.functionRoot);
+    const industryIds = shouldSendIndustryToQueries(identity)
+      ? resolveHarvestIndustryIds([identity.industry ?? ''])
+      : [];
+    // A location string with commas is read as several locations, so the id is
+    // what keeps "Mumbai, Maharashtra, India" from widening to all of India
+    const geoIds = await harvest.resolveGeoIds(location ?? '');
+    const parameters = buildHarvestCellParameters({
+      identity,
+      cell: { ...cell, titles },
+      location,
+      geoIds,
+      companyLinkedinUrl,
+      industryIds,
+      functionIds: functionId ? [functionId] : [],
+      seniorityLevelIds: resolveHarvestSeniorityLevelIds(
+        salesNavFilters.seniorities,
+      ),
+    });
+    const { query, ignored } = buildHarvestSearchQuery('leads', parameters);
+
+    if (ignored.length > 0) {
+      this.logger.warn(
+        `find_people_by_company "${identity.canonicalName}": Harvest ignored unsupported lead parameters: ${ignored.join(', ')}`,
+      );
+    }
+
+    if (!harvestParametersHaveCompany(query)) {
+      return {
+        candidates: [],
+        spentUsd: 0,
+        errors: ['harvest: query had no company filter, so it was not sent'],
+      };
+    }
+
     const result = await harvest.searchSalesNavigatorCollection({
       kind: 'leads',
       query,
       limit: maxRecords,
     });
-    const candidates = result.items.flatMap((item, index) => {
-      const record = item as Record<string, unknown>;
-      const firstName =
-        typeof record.firstName === 'string' ? record.firstName : '';
-      const lastName =
-        typeof record.lastName === 'string' ? record.lastName : '';
-      const headline =
-        typeof record.headline === 'string' ? record.headline : '';
-      const name =
-        `${firstName} ${lastName}`.trim() ||
-        (typeof record.name === 'string' ? record.name : '');
-      const position =
-        Array.isArray(record.currentPositions) &&
-        typeof record.currentPositions[0] === 'object' &&
-        record.currentPositions[0] !== null
-          ? (record.currentPositions[0] as Record<string, unknown>)
-          : {};
-      const title =
-        typeof position.title === 'string' ? position.title : headline;
-      const companyName =
-        typeof position.companyName === 'string' ? position.companyName : '';
-      const linkedinUrl =
-        typeof record.linkedinUrl === 'string' ? record.linkedinUrl : '';
-      const itemLocation =
-        typeof record.location === 'string'
-          ? record.location
-          : typeof record.location === 'object' && record.location !== null
-            ? String(
-                (record.location as Record<string, unknown>).linkedinText ?? '',
-              )
-            : '';
+    const candidates = result.items.flatMap((item) => {
+      const candidate = this.toHarvestCandidate(item);
 
-      if (name === '') {
-        return [];
-      }
-
-      return [
-        {
-          id: `harvest:${linkedinUrl || `${name}|${index}`}`,
-          name,
-          title,
-          companyName,
-          linkedinUrl,
-          evidenceText: headline,
-          source: 'harvest' as const,
-          location: itemLocation,
-          rawProfile: record,
-        },
-      ];
+      return candidate === null ? [] : [candidate];
     });
     const spentUsd = Math.min(
       candidates.length * HARVEST_COST_PER_RECORD_USD,
@@ -1552,6 +1894,56 @@ export class FindPeopleCascadeService {
     );
 
     return { candidates, spentUsd, errors: [] };
+  }
+
+  // One Sales Navigator lead row as a candidate. Shared by the generated
+  // search and the caller's direct queries so both reach the checks in the
+  // same shape.
+  private toHarvestCandidate(item: unknown): Candidate | null {
+    const record = item as Record<string, unknown>;
+    const firstName =
+      typeof record.firstName === 'string' ? record.firstName : '';
+    const lastName = typeof record.lastName === 'string' ? record.lastName : '';
+    const headline = typeof record.headline === 'string' ? record.headline : '';
+    const name =
+      `${firstName} ${lastName}`.trim() ||
+      (typeof record.name === 'string' ? record.name : '');
+    const position =
+      Array.isArray(record.currentPositions) &&
+      typeof record.currentPositions[0] === 'object' &&
+      record.currentPositions[0] !== null
+        ? (record.currentPositions[0] as Record<string, unknown>)
+        : {};
+    const title =
+      typeof position.title === 'string' ? position.title : headline;
+    const companyName =
+      typeof position.companyName === 'string' ? position.companyName : '';
+    const linkedinUrl =
+      typeof record.linkedinUrl === 'string' ? record.linkedinUrl : '';
+    const itemLocation =
+      typeof record.location === 'string'
+        ? record.location
+        : typeof record.location === 'object' && record.location !== null
+          ? String(
+              (record.location as Record<string, unknown>).linkedinText ?? '',
+            )
+          : '';
+
+    if (name === '') {
+      return null;
+    }
+
+    return {
+      id: `harvest:${linkedinUrl || name}`,
+      name,
+      title,
+      companyName,
+      linkedinUrl,
+      evidenceText: headline,
+      source: 'harvest',
+      location: itemLocation,
+      rawProfile: record,
+    };
   }
 
   // The model reads the raw results; if it is unavailable the LinkedIn result

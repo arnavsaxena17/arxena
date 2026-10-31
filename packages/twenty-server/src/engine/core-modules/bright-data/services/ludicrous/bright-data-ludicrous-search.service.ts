@@ -212,6 +212,11 @@ export class BrightDataLudicrousSearchService {
     userWorkspaceId?: string | null;
     titleExpression?: string;
     industryLabels?: string[];
+    // Code-owned company anchors: the resolved company name, its market and
+    // its city, so the planner cannot lose the company to a paraphrase
+    companyNames?: string[];
+    countryCodes?: string[];
+    cities?: string[];
   }): Promise<{
     summary: BrightDataLudicrousBudgetSummary;
     result: BrightDataLudicrousRunResult;

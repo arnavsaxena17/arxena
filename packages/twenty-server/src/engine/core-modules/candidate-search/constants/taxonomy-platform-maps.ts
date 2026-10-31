@@ -1,13 +1,13 @@
 import type { LinkedInSeniorityType } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-parameter.type';
 
 const normalizeTaxonomyLabel = (value: string | null | undefined): string =>
-  (value ?? '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ');
+  (value ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
 
 // LinkedIn Sales Nav function facet IDs (shared by Unipile + Harvest).
 // Seeded from battle-tested Harvest IDs; remaining roots mapped to closest SN function.
+// Harvest itself now reads harvest-filter-ids.ts, so the approximations below
+// (supply chain -> Purchasing, government -> Community and Social Services)
+// only steer Unipile.
 export const SALES_NAV_FUNCTION_ROOT_TO_IDS: Record<string, string> = {
   accounting: '1',
   administrative: '2',
@@ -17,7 +17,7 @@ export const SALES_NAV_FUNCTION_ROOT_TO_IDS: Record<string, string> = {
   'business development': '4',
   partnerships: '4',
   consulting: '6',
-  education: '9',
+  education: '7',
   engineering: '8',
   entrepreneurship: '9',
   finance: '10',
@@ -61,12 +61,7 @@ export const SALES_NAV_GRADE_TO_SENIORITIES: Record<
   ],
   ceo: ['owner/partner', 'cxo'],
   senior: ['vice_president', 'director', 'experienced_manager', 'strategic'],
-  mid: [
-    'experienced_manager',
-    'entry_level_manager',
-    'strategic',
-    'senior',
-  ],
+  mid: ['experienced_manager', 'entry_level_manager', 'strategic', 'senior'],
   entry: ['entry_level', 'in_training', 'senior'],
   intern: ['in_training'],
 };
@@ -268,7 +263,9 @@ export const resolveSalesNavFunctionIdsForRoot = (
     return direct;
   }
 
-  for (const [key, functionId] of Object.entries(SALES_NAV_FUNCTION_ROOT_TO_IDS)) {
+  for (const [key, functionId] of Object.entries(
+    SALES_NAV_FUNCTION_ROOT_TO_IDS,
+  )) {
     if (compactRootKey(key) === compact) {
       return functionId;
     }

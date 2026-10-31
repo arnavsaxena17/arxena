@@ -1,7 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { Client } from '@elastic/elasticsearch';
 
+import {
+  ProviderCallLogService,
+  trackProviderCall,
+} from 'src/engine/core-modules/provider-call-log/services/provider-call-log.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 import { buildCompanyWebsiteLookupVariants } from 'src/engine/core-modules/org-chart/utils/org-chart-resolve-domain.util';
 
@@ -66,7 +70,11 @@ export class CompaniesEsService {
   private readonly companiesSearchIndex: string;
   private readonly companiesLegacyIndex: string;
 
-  constructor(private readonly environmentService: EnvironmentService) {
+  constructor(
+    private readonly environmentService: EnvironmentService,
+    @Optional()
+    private readonly providerCallLog?: ProviderCallLogService,
+  ) {
     const endpoint = this.environmentService.get('ES_ENDPOINT');
     this.primaryIndex = this.environmentService.get(
       'FREE_COMPANY_DATASET_ES_INDEX',
@@ -260,18 +268,29 @@ export class CompaniesEsService {
         ).slice(0, 4000)}`,
       );
 
-      const response = await this.client.search<CompanyEsDocument>({
-        index,
-        from,
-        size,
-        track_total_hits: true,
-        query: esQuery,
-        _source: [...COMPANY_SOURCE_FIELDS],
-        sort: [
-          { _score: { order: 'desc' } },
-          { count_org: { order: 'desc', unmapped_type: 'long' } },
-        ],
-      });
+      // Every index request is charged, so each one is a ledger row
+      const response = await trackProviderCall(
+        this.providerCallLog,
+        {
+          provider: 'elasticsearch',
+          operation: 'search',
+          storeResponse: false,
+          request: { index, from, size },
+        },
+        () =>
+          this.client!.search<CompanyEsDocument>({
+            index,
+            from,
+            size,
+            track_total_hits: true,
+            query: esQuery,
+            _source: [...COMPANY_SOURCE_FIELDS],
+            sort: [
+              { _score: { order: 'desc' } },
+              { count_org: { order: 'desc', unmapped_type: 'long' } },
+            ],
+          }),
+      );
 
       const total =
         typeof response.hits.total === 'number'

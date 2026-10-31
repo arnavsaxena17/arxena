@@ -105,6 +105,40 @@ describe('BrightDataLudicrousExecutorService', () => {
     expect(result.shardReports[0]?.stoppedReason).toBe('exhausted');
   });
 
+  it('should not charge for a page that was replayed from the cache', async () => {
+    const billRecords = jest.fn();
+    const searchPage = jest.fn(async () => ({
+      documents: [document('cached-1')],
+      fromCache: true,
+    }));
+    const executor = new BrightDataLudicrousExecutorService(
+      { searchPage } as never,
+      { judge: jest.fn() } as never,
+      {
+        validateCreditsOrThrow: jest.fn(),
+        billRecords,
+      } as never,
+    );
+
+    const result = await executor.execute({
+      plan: {
+        ...plan,
+        needsSemanticCheck: false,
+        sampleDocuments: {},
+        estimates: [{ ...plan.estimates[0], matched: 2, fetchableRecords: 2 }],
+      },
+      maxBudgetUsd: 1,
+    });
+
+    // The row is already paid for: no provider cost, no credit charge
+    expect(billRecords).not.toHaveBeenCalled();
+    expect(result.shardReports[0]?.costUsd).toBe(0);
+    expect(result.spentUsd).toBe(plan.estimateCostUsd);
+    expect(result.fetchedDocuments.map((row) => row.brightId)).toEqual([
+      'cached-1',
+    ]);
+  });
+
   it('should fetch the next page when Jev precision is low', async () => {
     let call = 0;
     const searchPage = jest.fn(async ({ limit }: { limit: number }) => {

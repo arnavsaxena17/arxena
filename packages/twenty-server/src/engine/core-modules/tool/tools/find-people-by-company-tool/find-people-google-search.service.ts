@@ -24,7 +24,7 @@ import {
 // Bright Data's SERP did not fail more under load (strictly one at a time it
 // failed about as often), so the cap only has to stop a runaway
 const DEFAULT_SERP_CONCURRENCY = 100;
-const SERP_RESULT_LIMIT = 10;
+const SERP_RESULT_LIMIT = 20;
 const SERP_MAX_RETRIES = 2;
 // A SERP attempt that works answers in 8s at the median and 35s at the 95th
 // percentile; one that fails takes 50-60s. So an attempt is cut off at 40s.
@@ -42,6 +42,8 @@ const isSerpAsync = (): boolean =>
 const MAX_ROLE_QUERIES = 8;
 const MAX_SERP_QUERIES_PER_COMPANY = 12;
 const MAX_RESULTS = 40;
+// The agent is trusted to name a few queries, not to fan out: six a company
+const DIRECT_QUERY_LIMIT = 6;
 
 // People type "MD"; the web writes "managing director"
 const ROLE_SEARCH_WORDS: Record<string, string> = {
@@ -140,6 +142,11 @@ const AI_OVERVIEW_RETRY_DELAY_MS = 16_000;
 // Past this the company is read with the base results; the overview can land
 // late without holding the whole lookup. Three attempts with their waits fit.
 const AI_OVERVIEW_DEADLINE_MS = 85_000;
+// The overview is an enrichment, not the search: the organic results are
+// already in when it starts. A miss costs the zone's retries and cooldowns, so
+// it gets a budget of its own and is then left behind instead of holding the
+// company for the whole 85s deadline.
+const AI_OVERVIEW_BLOCKING_BUDGET_MS = 20_000;
 
 // The cooldown is read per call so a test can shorten it; production keeps the
 // documented 15s
@@ -374,6 +381,7 @@ export class FindPeopleGoogleSearchService {
     titleExpressions,
     location,
     domain,
+    families,
   }: {
     variants: string[];
     titles: string[];
@@ -386,6 +394,10 @@ export class FindPeopleGoogleSearchService {
     // The company's own site: its leadership page often names the role
     // holder before LinkedIn does
     domain?: string;
+    // Per role family queries built by the caller, one plain and one boolean
+    // each. When present they replace the company-wide groups, so a second
+    // role gets its own query instead of sharing one blended query set.
+    families?: Array<{ key: string; plain: string; boolean: string }>;
   }): string[] {
     const orGroup = (terms: string[]) =>
       `(${terms.map((term) => `"${term}"`).join(' OR ')})`;
@@ -397,6 +409,10 @@ export class FindPeopleGoogleSearchService {
     const build = (parts: Array<string | null>) =>
       parts.filter((part): part is string => part !== null).join(' ');
     const linkedin = 'site:linkedin.com/in';
+    const familyQueries = (families ?? []).flatMap((family) => [
+      family.plain,
+      family.boolean,
+    ]);
     const naturalQueries = roleTerms
       .slice(0, MAX_ROLE_QUERIES)
       .map((role) =>
@@ -419,14 +435,19 @@ export class FindPeopleGoogleSearchService {
     const rolesCovered = roleTerms.every((term) =>
       titleKeys.has(term.toLowerCase()),
     );
-    const queries = [
-      ...naturalQueries,
-      ...booleanQueries,
-      build([linkedin, `"${variants[0]}"`, orGroup(titleTerms), locationTerm]),
-      rolesCovered
-        ? null
-        : build([linkedin, `"${variants[0]}"`, orGroup(roleTerms)]),
-    ].filter((query): query is string => query !== null);
+    // Family queries already carry the company, the clause and the place, so
+    // the company-wide groups would only duplicate them
+    const queries =
+      familyQueries.length > 0
+        ? familyQueries
+        : [
+            ...naturalQueries,
+            ...booleanQueries,
+            build([linkedin, `"${variants[0]}"`, orGroup(titleTerms), locationTerm]),
+            rolesCovered
+              ? null
+              : build([linkedin, `"${variants[0]}"`, orGroup(roleTerms)]),
+          ].filter((query): query is string => query !== null);
 
     if (
       variants.length > 1 &&
@@ -617,6 +638,46 @@ export class FindPeopleGoogleSearchService {
     return { texts, results };
   }
 
+  // Queries the agent wrote, sent as written. They skip the generator because
+  // the agent knows something it does not (a site restriction, a boolean, a
+  // name it already holds); the market and the deadline still apply, so a
+  // direct query costs the same as a generated one.
+  async searchDirectQueries(
+    queries: string[],
+    location?: string,
+  ): Promise<{ results: GoogleSerpOrganicItem[]; errors: string[] }> {
+    const errors: string[] = [];
+    const results: GoogleSerpOrganicItem[] = [];
+    const country = resolveSerpCountry(location);
+    const bounded = [
+      ...new Set(
+        queries.map((query) => query.trim()).filter((query) => query !== ''),
+      ),
+    ].slice(0, DIRECT_QUERY_LIMIT);
+
+    const responses = await Promise.all(
+      bounded.map((query) =>
+        this.request(query, { country })
+          .then((serp) =>
+            mapGoogleSerpOrganicResults(serp?.organic, SERP_RESULT_LIMIT),
+          )
+          .catch((error) => {
+            errors.push(
+              `${query.slice(0, 60)}: ${error instanceof Error ? error.message : String(error)}`,
+            );
+
+            return [] as GoogleSerpOrganicItem[];
+          }),
+      ),
+    );
+
+    for (const items of responses) {
+      results.push(...items);
+    }
+
+    return { results, errors };
+  }
+
   async searchCompany(input: {
     variants: string[];
     titles: string[];
@@ -624,6 +685,8 @@ export class FindPeopleGoogleSearchService {
     titleExpressions?: string[];
     location?: string;
     domain?: string;
+    // One plain and one boolean query per role family
+    families?: Array<{ key: string; plain: string; boolean: string }>;
   }): Promise<GoogleCompanySearchResult> {
     if (!this.isConfigured()) {
       throw new Error('BRIGHT_DATA_API_KEY is not set');
@@ -643,7 +706,24 @@ export class FindPeopleGoogleSearchService {
       ),
     );
     let unanswered = 0;
-    const overview = this.fetchAiOverview(input);
+    // Enrichment, not the search: bounded so a missing overview cannot hold
+    // the company that the organic queries have already answered
+    const overview = Promise.race([
+      this.fetchAiOverview(input),
+      new Promise<{ texts: string[]; results: GoogleSerpOrganicItem[] }>(
+        (resolve) => {
+          const timer = setTimeout(
+            () => resolve({ texts: [], results: [] }),
+            readMilliseconds(
+              'FIND_ROLE_AI_OVERVIEW_BUDGET_MS',
+              AI_OVERVIEW_BLOCKING_BUDGET_MS,
+            ),
+          );
+
+          timer.unref?.();
+        },
+      ),
+    ]);
     const [responses, overviewResult] = await Promise.all([
       Promise.all(
         queries.map((query) =>

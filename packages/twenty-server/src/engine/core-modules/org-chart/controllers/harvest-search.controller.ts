@@ -36,7 +36,9 @@ type HarvestSearchBody = {
 export class HarvestSearchController {
   private readonly logger = new Logger(HarvestSearchController.name);
 
-  constructor(private readonly harvestLinkedinService: HarvestLinkedinService) {}
+  constructor(
+    private readonly harvestLinkedinService: HarvestLinkedinService,
+  ) {}
 
   @Post('leads')
   async searchLeads(@Body() body: HarvestSearchBody) {
@@ -48,8 +50,9 @@ export class HarvestSearchController {
     return this.search('accounts', body);
   }
 
-  // Generated query set (names) -> Harvest parameters. Titles and locations
-  // stay text; employers become LinkedIn company URLs.
+  // Generated query set (names) -> Harvest parameters. Titles stay text;
+  // employers become LinkedIn company URLs; a location stays text here and is
+  // resolved to a geo id when the search actually runs.
   @Post('query-set/parameters')
   async buildQuerySetParameters(
     @Body()
@@ -95,7 +98,10 @@ export class HarvestSearchController {
     return {
       provider: 'harvest',
       category,
-      tool: category === 'companies' ? 'search_harvest_accounts' : 'search_harvest_leads',
+      tool:
+        category === 'companies'
+          ? 'search_harvest_accounts'
+          : 'search_harvest_leads',
       queries: queries.map(({ companyNames, ...query }) => {
         const resolved = companyNames.flatMap(
           (name) => companyUrls.get(name) ?? [],
@@ -123,6 +129,8 @@ export class HarvestSearchController {
       kind,
       body?.searchParameters,
     );
+
+    await this.preferGeoIds(query);
 
     // An empty filter set would page through LinkedIn at our cost
     if (Object.keys(query).length === 0) {
@@ -162,10 +170,32 @@ export class HarvestSearchController {
     } catch (error) {
       this.logger.error(`Harvest ${kind} search failed`, error);
       throw new HttpException(
-        error instanceof Error ? error.message : `Harvest ${kind} search failed`,
+        error instanceof Error
+          ? error.message
+          : `Harvest ${kind} search failed`,
         HttpStatus.BAD_GATEWAY,
       );
     }
+  }
+
+  // Harvest reads `locations` as a comma-separated list, so a compound name
+  // like "Mumbai, Maharashtra, India" becomes three places and India swallows
+  // the filter. An id carries no comma, so it is preferred when one resolves.
+  private async preferGeoIds(query: Record<string, string>): Promise<void> {
+    if (query.geoIds || !query.locations) {
+      return;
+    }
+
+    const geoIds = await this.harvestLinkedinService.resolveGeoIds(
+      query.locations,
+    );
+
+    if (geoIds.length === 0) {
+      return;
+    }
+
+    query.geoIds = geoIds.join(',');
+    delete query.locations;
   }
 
   private assertConfigured(): void {

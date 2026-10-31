@@ -1,0 +1,642 @@
+{
+  "schemaVersion": "1.1.0",
+  "kind": "arxena-provider-pricing-catalog",
+  "currency": "USD",
+  "generatedAt": "2026-10-31",
+  "decisionsAppliedAt": "2026-10-31",
+  "description": "Canonical provider cost and per-query pricing for the people/company search generators. Source of truth for credit metering. All rates are the rates Arxena actually pays (no free tier assumed). Customer billing is per provider event at a 1.25 margin.",
+  "creditModel": {
+    "dollarToMicroCreditMultiplier": 1000000,
+    "microCreditUsd": 0.000001,
+    "displayCreditUsd": 1.0,
+    "microCreditsPerDisplayCredit": 1000000,
+    "marginMultiplier": 1.25,
+    "granularity": "per_provider_event",
+    "granularityNote": "Every billable provider event is charged on its own. Bundles in referenceBundles are display aggregations only and are never the charged unit.",
+    "calculationRule": "chargedMicroCredits = round(usdPerUnit * marginMultiplier * 1000000), rounded half-up in a single step from the USD rate. Do not re-round the at-cost micro-credit figure and then multiply.",
+    "minChargeMicroCredits": 1,
+    "cacheHitChargeMicroCredits": 0
+  },
+  "assumptions": {
+    "daysPerMonth": 30,
+    "freeTier": false,
+    "freeTierNote": "No free-tier allocation is counted for Arxena. Every provider request is a cost.",
+    "cacheHitsAreFree": true,
+    "cacheNote": "ProviderQueryCacheService dedupes SERP responses, Business Search pages and dataset snapshots. A cache hit costs $0 at the provider and is charged 0."
+  },
+  "providers": {
+    "brightDataSerp": {
+      "label": "Bright Data SERP API",
+      "plan": "pay-as-you-go",
+      "billingUnit": "successful_request",
+      "usdPerUnit": 0.0015,
+      "usdPerThousandUnits": 1.5,
+      "usedFor": [
+        "Google SERP organic queries (serp_api zone)",
+        "AI-Overview questions (serp_ai_overview zone)"
+      ],
+      "notes": [
+        "Failed or errored requests are not billed, and therefore must not be charged to the customer.",
+        "Async mode bills the submit and not the collect.",
+        "Parsing, unlocking, CAPTCHA and internal retries are included.",
+        "Custom headers or cookies on a zone switches the zone to bill-all-requests; do not enable them."
+      ],
+      "zones": {
+        "googleOrganic": "serp_api",
+        "aiOverview": "serp_ai_overview"
+      },
+      "sources": ["https://brightdata.com/pricing/serp", "https://docs.brightdata.com/products/serp-api/pricing-and-billing"]
+    },
+    "brightDataBusinessSearch": {
+      "label": "Bright Data Business Search",
+      "plan": "as configured (ludicrous + instant)",
+      "billingUnit": "search_block",
+      "usdPerUnit": 0.002,
+      "usdPerThousandUnits": 2.0,
+      "blockSize": {
+        "ludicrous": 100,
+        "instant": 100,
+        "smart": 10
+      },
+      "modeRates": {
+        "ludicrous": { "usdPerSearch": 0.002, "maxResults": 100 },
+        "instant": { "usdPerSearch": 0.002, "maxResults": 100 },
+        "smart": { "usdPerSearch": 0.003, "maxResults": 10 }
+      },
+      "usedFor": ["people search", "company search"],
+      "notes": [
+        "Billed per search block on the limit requested, not on rows returned.",
+        "A partially filled page still bills a whole block.",
+        "A zero-match search that ran is billable, so it must also be charged: charge per search that ran, not per search that returned rows.",
+        "Each page of a paginated search is a separate billable search.",
+        "The view parameter does not change the price."
+      ],
+      "sources": ["https://docs.brightdata.com/products/business-search/pricing"]
+    },
+    "brightDataScraper": {
+      "label": "Bright Data Scraper API (LinkedIn profile)",
+      "plan": "pay-as-you-go",
+      "billingUnit": "record",
+      "usdPerUnit": 0.0015,
+      "usdPerThousandUnits": 1.5,
+      "datasetId": "gd_l1viktl72bvl7bjuj0",
+      "usedFor": ["LinkedIn profile scrape", "fetch_profiles"],
+      "notes": [
+        "Billed per successfully delivered record; failed deliveries are not billed and must not be charged.",
+        "Field count does not change the price."
+      ],
+      "sources": ["https://brightdata.com/pricing/web-scraper"]
+    },
+    "harvestApi": {
+      "label": "HarvestAPI",
+      "plan": "pay-as-you-go credits",
+      "billingUnit": "per_endpoint",
+      "contractedRates": {
+        "applied": true,
+        "leadSearchPageUsd": 0.1,
+        "profileUsd": 0.004,
+        "profileMeter": "HARVEST_PROFILE_MAIN",
+        "note": "Contracted basis is the published rate: $0.10 for a whole lead-search page (up to 25 leads) and $0.004 for one individual profile fetched by URL via /linkedin/profile. The full-profile ($0.0064) and profile-with-email ($0.02) rates exist and are catalogued, but the default enrichment path uses the $0.004 profile."
+      },
+      "endpoints": {
+        "leadSearchPage": { "usdPerUnit": 0.1, "unit": "page", "maxLeadsPerPage": 25, "usdPerLead": 0.004, "inUse": true },
+        "profileSearchPage": { "usdPerUnit": 0.004, "unit": "page", "inUse": false },
+        "profileMain": { "usdPerUnit": 0.004, "unit": "profile", "inUse": true },
+        "profileFull": { "usdPerUnit": 0.0064, "unit": "profile", "inUse": false },
+        "profileWithEmail": { "usdPerUnit": 0.02, "unit": "profile", "inUse": false },
+        "company": { "usdPerUnit": 0.004, "unit": "company", "inUse": true },
+        "companySearchPage": { "usdPerUnit": 0.004, "unit": "page", "inUse": true },
+        "accountSearchPage": { "usdPerUnit": 0.1, "unit": "page", "inUse": false },
+        "jobRequest": { "usdPerUnit": 0.001, "unit": "request", "inUse": false }
+      },
+      "volumeDiscounts": {
+        "starter": { "packageUsd": 20, "discountPercent": 0, "concurrency": 1 },
+        "basic": { "packageUsd": 80, "discountPercent": 19, "concurrency": 5 },
+        "pro": { "packageUsd": 280, "discountPercent": 42, "concurrency": 10 },
+        "business": { "packageUsd": 780, "discountPercent": 50, "concurrency": 20 }
+      },
+      "usedFor": ["Harvest / Sales Navigator equivalent lead search", "profile enrichment"],
+      "notes": [
+        "Lead search pages return up to 25 short leads; a partially filled page bills the same $0.10.",
+        "Credits are pay-as-you-go and expire one year after top-up, so unused credit is a real loss.",
+        "Discounts apply to the whole top-up package, not to a single call."
+      ],
+      "sources": ["https://harvestapi.io/", "https://docs.harvestapi.io/linkedin-api-reference/leads/search-leads"]
+    },
+    "unipile": {
+      "label": "Unipile (LinkedIn / Sales Navigator / Recruiter / Premium access)",
+      "plan": "subscription",
+      "billingUnit": "request",
+      "subscriptionUsdPerMonth": 5.0,
+      "requestsPerDay": 10,
+      "requestsPerMonth": 300,
+      "usdPerUnit": 0.0166666667,
+      "usdPerThousandUnits": 16.6666667,
+      "usedFor": ["LinkedIn-native profile and messaging operations"],
+      "notes": [
+        "Derived: $5.00 per month / (10 requests/day * 30 days) = $0.0166666667 per request.",
+        "The daily cap is the binding constraint, not the price: 1,000 requests takes about 100 calendar days.",
+        "Per-request cost is 11x a Bright Data SERP request. Do not route people search through it; use it only where a real LinkedIn identity is required.",
+        "If the underlying subscription lapses, the derived per-request cost is invalid."
+      ],
+      "sources": ["internal decision, 2026-10-31"]
+    },
+    "elasticsearch": {
+      "label": "Elasticsearch (Arxena company index)",
+      "plan": "managed",
+      "billingUnit": "request",
+      "usdPerUnit": 0.002,
+      "usdPerThousandUnits": 2.0,
+      "usedFor": ["company index lookup and org-chart resolution"],
+      "notes": [
+        "Priced at $2 per 1,000 requests.",
+        "One logical company lookup may issue more than one HTTP search request (variants, retries, multi-search); meter HTTP requests, not logical lookups.",
+        "Company index lookups are currently unbilled."
+      ],
+      "sources": ["internal decision, 2026-10-31"]
+    }
+  },
+  "meters": [
+    {
+      "id": "SERP_REQUEST",
+      "provider": "brightDataSerp",
+      "unit": "successful request",
+      "usdPerUnit": 0.0015,
+      "microCreditsAtCost": 1500,
+      "microCreditsCharged": 1875,
+      "usdChargedPerUnit": 0.001875,
+      "billOn": "successful response only"
+    },
+    {
+      "id": "AI_OVERVIEW_REQUEST",
+      "provider": "brightDataSerp",
+      "unit": "successful request",
+      "usdPerUnit": 0.0015,
+      "microCreditsAtCost": 1500,
+      "microCreditsCharged": 1875,
+      "usdChargedPerUnit": 0.001875,
+      "billOn": "successful response only",
+      "note": "Bills at the SERP rate, not a premium rate."
+    },
+    {
+      "id": "BD_SEARCH_PAGE",
+      "provider": "brightDataBusinessSearch",
+      "unit": "search block (<=100 results)",
+      "usdPerUnit": 0.002,
+      "microCreditsAtCost": 2000,
+      "microCreditsCharged": 2500,
+      "usdChargedPerUnit": 0.0025,
+      "billOn": "every search that ran, including zero-match and partial pages",
+      "note": "Charge per page, never per returned row."
+    },
+    {
+      "id": "BD_SEARCH_PAGE_SMART",
+      "provider": "brightDataBusinessSearch",
+      "unit": "search block (<=10 results)",
+      "usdPerUnit": 0.003,
+      "microCreditsAtCost": 3000,
+      "microCreditsCharged": 3750,
+      "usdChargedPerUnit": 0.00375,
+      "billOn": "every search that ran"
+    },
+    {
+      "id": "BD_PROFILE_RECORD",
+      "provider": "brightDataScraper",
+      "unit": "record",
+      "usdPerUnit": 0.0015,
+      "microCreditsAtCost": 1500,
+      "microCreditsCharged": 1875,
+      "usdChargedPerUnit": 0.001875,
+      "billOn": "successfully delivered record"
+    },
+    {
+      "id": "HARVEST_LEAD_PAGE",
+      "provider": "harvestApi",
+      "unit": "lead search page (<=25 leads)",
+      "usdPerUnit": 0.1,
+      "microCreditsAtCost": 100000,
+      "microCreditsCharged": 125000,
+      "usdChargedPerUnit": 0.125,
+      "billOn": "every page requested"
+    },
+    {
+      "id": "HARVEST_PROFILE_SEARCH_PAGE",
+      "provider": "harvestApi",
+      "unit": "page",
+      "usdPerUnit": 0.004,
+      "microCreditsAtCost": 4000,
+      "microCreditsCharged": 5000,
+      "usdChargedPerUnit": 0.005,
+      "billOn": "every page requested"
+    },
+    {
+      "id": "HARVEST_PROFILE_MAIN",
+      "provider": "harvestApi",
+      "unit": "profile",
+      "usdPerUnit": 0.004,
+      "microCreditsAtCost": 4000,
+      "microCreditsCharged": 5000,
+      "usdChargedPerUnit": 0.005,
+      "inUse": true,
+      "note": "The contracted individual-profile rate: one /linkedin/profile fetch by URL."
+    },
+    {
+      "id": "HARVEST_PROFILE_FULL",
+      "provider": "harvestApi",
+      "unit": "profile",
+      "usdPerUnit": 0.0064,
+      "microCreditsAtCost": 6400,
+      "microCreditsCharged": 8000,
+      "usdChargedPerUnit": 0.008
+    },
+    {
+      "id": "HARVEST_PROFILE_WITH_EMAIL",
+      "provider": "harvestApi",
+      "unit": "profile",
+      "usdPerUnit": 0.02,
+      "microCreditsAtCost": 20000,
+      "microCreditsCharged": 25000,
+      "usdChargedPerUnit": 0.025
+    },
+    {
+      "id": "HARVEST_COMPANY",
+      "provider": "harvestApi",
+      "unit": "company",
+      "usdPerUnit": 0.004,
+      "microCreditsAtCost": 4000,
+      "microCreditsCharged": 5000,
+      "usdChargedPerUnit": 0.005
+    },
+    {
+      "id": "HARVEST_COMPANY_SEARCH_PAGE",
+      "provider": "harvestApi",
+      "unit": "page",
+      "usdPerUnit": 0.004,
+      "microCreditsAtCost": 4000,
+      "microCreditsCharged": 5000,
+      "usdChargedPerUnit": 0.005
+    },
+    {
+      "id": "HARVEST_ACCOUNT_SEARCH_PAGE",
+      "provider": "harvestApi",
+      "unit": "page",
+      "usdPerUnit": 0.1,
+      "microCreditsAtCost": 100000,
+      "microCreditsCharged": 125000,
+      "usdChargedPerUnit": 0.125
+    },
+    {
+      "id": "HARVEST_JOB_REQUEST",
+      "provider": "harvestApi",
+      "unit": "request",
+      "usdPerUnit": 0.001,
+      "microCreditsAtCost": 1000,
+      "microCreditsCharged": 1250,
+      "usdChargedPerUnit": 0.00125
+    },
+    {
+      "id": "UNIPILE_REQUEST",
+      "provider": "unipile",
+      "unit": "request",
+      "usdPerUnit": 0.0166666667,
+      "microCreditsAtCost": 16667,
+      "microCreditsCharged": 20833,
+      "usdChargedPerUnit": 0.020833,
+      "billOn": "every request",
+      "note": "20833 = round(0.0166666667 * 1.25 * 1e6). Deliberately not derived from the rounded at-cost 16667, which would give 20834."
+    },
+    {
+      "id": "ES_SEARCH_REQUEST",
+      "provider": "elasticsearch",
+      "unit": "HTTP search request",
+      "usdPerUnit": 0.002,
+      "microCreditsAtCost": 2000,
+      "microCreditsCharged": 2500,
+      "usdChargedPerUnit": 0.0025,
+      "billOn": "every search request sent"
+    }
+  ],
+  "routeModels": {
+    "googleSerpCompanySweep": {
+      "description": "find_people_by_company Google SERP route: one organic query per role plus boolean/company/site groups, then the AI-Overview question pass.",
+      "codeConstants": {
+        "MAX_ROLE_QUERIES": 8,
+        "MAX_SERP_QUERIES_PER_COMPANY": 12,
+        "AI_OVERVIEW_QUERY_LIMIT": 3,
+        "AI_OVERVIEW_ATTEMPTS": 3,
+        "SERP_RESULT_LIMIT": 20,
+        "actualMaxResultsPerQuery": 10,
+        "pagination": "none"
+      },
+      "eventCount": {
+        "typical": 14,
+        "typicalAssumption": "11 of 12 organic queries issued plus one attempt per AI-Overview question",
+        "ceiling": 21,
+        "ceilingBreakdown": "12 organic + 3 questions x 3 attempts"
+      },
+      "costPerCompany": {
+        "typicalUsd": 0.021,
+        "ceilingUsd": 0.0315,
+        "typicalMicroCredits": 21000,
+        "ceilingMicroCredits": 31500
+      },
+      "chargedPerCompany": {
+        "typicalUsd": 0.02625,
+        "ceilingUsd": 0.039375,
+        "typicalMicroCredits": 26250,
+        "ceilingMicroCredits": 39375,
+        "typicalEventMix": "14 x SERP_REQUEST/AI_OVERVIEW_REQUEST at 1875"
+      }
+    },
+    "brightDataPeopleCompany": {
+      "description": "find_people_by_company Bright Data route: one natural-language prompt per role variant, planned into shards; each shard samples then pages, and each cell also runs the instant engine.",
+      "codeConstants": {
+        "MAX_SHARDS": 24,
+        "MAX_OFFSET": 1000,
+        "PAGE_SIZE": 100,
+        "MAX_PAGES_PER_SHARD": 11,
+        "ESTIMATE_SEARCHES_PER_SHARD": 1
+      },
+      "eventCount": {
+        "typical": 12,
+        "typicalAssumption": "3 role cells x (1 estimate + 1 page + 2 instant)",
+        "ceiling": 288,
+        "ceilingBreakdown": "24 shards x (1 estimate + 11 pages)"
+      },
+      "costPerCompany": {
+        "typicalUsd": 0.024,
+        "ceilingUsd": 0.576,
+        "typicalMicroCredits": 24000,
+        "ceilingMicroCredits": 576000
+      },
+      "chargedPerCompany": {
+        "typicalUsd": 0.03,
+        "ceilingUsd": 0.72,
+        "typicalMicroCredits": 30000,
+        "ceilingMicroCredits": 720000,
+        "typicalEventMix": "12 x BD_SEARCH_PAGE at 2500"
+      }
+    },
+    "harvestCompanyOrgChart": {
+      "description": "Harvest lead-search pagination for one company, optionally enriched with Harvest profiles.",
+      "leadsPerPage": 25,
+      "scenarios": [
+        {
+          "leads": 100,
+          "pages": 4,
+          "costUsd": { "search": 0.4, "withMainProfile": 0.8, "withFullProfile": 1.04 },
+          "chargedUsd": { "search": 0.5, "withMainProfile": 1.0, "withFullProfile": 1.3 },
+          "chargedMicroCredits": { "search": 500000, "withMainProfile": 1000000, "withFullProfile": 1300000 }
+        },
+        {
+          "leads": 250,
+          "pages": 10,
+          "costUsd": { "search": 1.0, "withMainProfile": 2.0, "withFullProfile": 2.6 },
+          "chargedUsd": { "search": 1.25, "withMainProfile": 2.5, "withFullProfile": 3.25 },
+          "chargedMicroCredits": { "search": 1250000, "withMainProfile": 2500000, "withFullProfile": 3250000 }
+        }
+      ]
+    },
+    "elasticsearchCompanyLookup": {
+      "description": "Company index lookup in the Arxena index. Charged per HTTP search request, with no assumed 1:1 relationship to a logical lookup.",
+      "charging": "per_request",
+      "chargedPerRequestMicroCredits": 2500,
+      "chargedPerRequestUsd": 0.0025,
+      "examples": [
+        { "requests": 1, "chargedUsd": 0.0025 },
+        { "requests": 2, "chargedUsd": 0.005 },
+        { "requests": 5, "chargedUsd": 0.0125 },
+        { "requests": 10, "chargedUsd": 0.025 }
+      ],
+      "note": "Every search request sent is charged, so a lookup that fans out is not free. At 10 requests a single lookup costs more than a whole 14-event SERP sweep, which makes request count per lookup an efficiency target, not just a metering detail."
+    }
+  },
+  "costPerThousandPeople": [
+    {
+      "path": "brightDataBusinessSearch",
+      "costUsd": 0.02,
+      "chargedUsd": 0.025,
+      "chargedMicroCredits": 25000,
+      "derivation": "1000 / 100 rows per search = 10 searches x BD_SEARCH_PAGE",
+      "coverage": "search result rows only, no full profile"
+    },
+    {
+      "path": "brightDataScraperProfile",
+      "costUsd": 1.5,
+      "chargedUsd": 1.875,
+      "chargedMicroCredits": 1875000,
+      "derivation": "1000 x BD_PROFILE_RECORD",
+      "coverage": "full LinkedIn profile"
+    },
+    {
+      "path": "harvestLeadSearch",
+      "costUsd": 4.0,
+      "chargedUsd": 5.0,
+      "chargedMicroCredits": 5000000,
+      "derivation": "1000 / 25 = 40 x HARVEST_LEAD_PAGE",
+      "coverage": "short lead fields only"
+    },
+    {
+      "path": "harvestLeadSearchPlusMainProfile",
+      "costUsd": 8.0,
+      "chargedUsd": 10.0,
+      "chargedMicroCredits": 10000000,
+      "derivation": "40 lead pages + 1000 x HARVEST_PROFILE_MAIN",
+      "coverage": "short lead plus main profile"
+    },
+    {
+      "path": "harvestLeadSearchPlusFullProfile",
+      "costUsd": 10.4,
+      "chargedUsd": 13.0,
+      "chargedMicroCredits": 13000000,
+      "derivation": "40 lead pages + 1000 x HARVEST_PROFILE_FULL",
+      "coverage": "short lead plus full profile"
+    },
+    {
+      "path": "unipile",
+      "costUsd": 16.67,
+      "chargedUsd": 20.833,
+      "chargedMicroCredits": 20833000,
+      "derivation": "1000 x UNIPILE_REQUEST",
+      "coverage": "LinkedIn-native operation",
+      "caveat": "Capacity-bound: 10 requests/day means 1,000 requests needs about 100 days."
+    },
+    {
+      "path": "elasticsearchCompanyIndex",
+      "costUsd": null,
+      "chargedUsd": null,
+      "derivation": "priced per company lookup, not per person",
+      "coverage": "company resolution only"
+    }
+  ],
+  "referenceBundles": {
+    "note": "NOT charged. Billing is per provider event. These are the sums a customer will see for a typical run at the 1.25 margin, used for display aggregation and for forecasting only.",
+    "bundles": [
+      {
+        "id": "COMPANY_SERP_SWEEP",
+        "label": "Company people sweep, SERP route (typical)",
+        "eventCount": 14,
+        "chargedMicroCredits": 26250,
+        "chargedUsd": 0.02625
+      },
+      {
+        "id": "COMPANY_SERP_SWEEP_CEILING",
+        "label": "Company people sweep, SERP route (ceiling)",
+        "eventCount": 21,
+        "chargedMicroCredits": 39375,
+        "chargedUsd": 0.039375
+      },
+      {
+        "id": "COMPANY_BRIGHT_DATA_SWEEP",
+        "label": "Company people sweep, Bright Data route (typical)",
+        "eventCount": 12,
+        "chargedMicroCredits": 30000,
+        "chargedUsd": 0.03
+      },
+      {
+        "id": "COMPANY_ES_LOOKUP",
+        "label": "Company index lookup",
+        "eventCount": 1,
+        "chargedMicroCredits": 2500,
+        "chargedUsd": 0.0025
+      },
+      {
+        "id": "HARVEST_100_LEADS",
+        "label": "100 Harvest leads",
+        "eventCount": 4,
+        "chargedMicroCredits": 500000,
+        "chargedUsd": 0.5
+      },
+      {
+        "id": "PEOPLE_1000_BRIGHT_DATA",
+        "label": "1,000 people from Business Search",
+        "eventCount": 10,
+        "chargedMicroCredits": 25000,
+        "chargedUsd": 0.025
+      },
+      {
+        "id": "PEOPLE_1000_PROFILES",
+        "label": "1,000 full LinkedIn profiles",
+        "eventCount": 1000,
+        "chargedMicroCredits": 1875000,
+        "chargedUsd": 1.875
+      }
+    ]
+  },
+  "billingAudit": {
+    "asOf": "2026-10-31",
+    "summary": "Only two of the six providers are metered today, and the one metered per record is over-charged 100x while everything else is free to the workspace.",
+    "metered": [
+      {
+        "provider": "brightDataBusinessSearch",
+        "where": "bright-data-ludicrous-planner / executor -> billRecords",
+        "unit": "record",
+        "usdPerUnit": 0.002,
+        "defect": "Bills per returned row but the provider bills per search block. A full 100-row page costs $0.002 and is charged $0.20, a 100x over-charge.",
+        "fix": "Meter BD_SEARCH_PAGE per page using the executor's limit, not per row."
+      },
+      {
+        "provider": "brightDataSerp",
+        "where": "org-chart-company-news -> billSerpRequest",
+        "unit": "request",
+        "usdPerUnit": 0.0015,
+        "defect": "Correct unit, but only company news uses it."
+      },
+      {
+        "provider": "meteredLlm",
+        "where": "metered-llm service",
+        "unit": "tokens",
+        "defect": "Outside the scope of this catalog."
+      }
+    ],
+    "unmetered": [
+      {
+        "provider": "brightDataSerp",
+        "spend": "find_people_by_company organic sweep, up to 12 requests per company",
+        "costPerCompanyUsd": 0.018,
+        "chargedPerCompanyUsd": 0.0225
+      },
+      {
+        "provider": "brightDataSerp",
+        "spend": "AI-Overview question pass, up to 9 requests per company",
+        "costPerCompanyUsd": 0.0135,
+        "chargedPerCompanyUsd": 0.016875
+      },
+      {
+        "provider": "brightDataBusinessSearch",
+        "spend": "instant engine inside find_people_by_company, which calls BrightDataBusinessSearchService directly and bypasses billing",
+        "costPerCompanyUsd": "0.002 to 0.004 per cell",
+        "chargedPerCompanyUsd": "0.0025 to 0.005 per cell"
+      },
+      {
+        "provider": "harvestApi",
+        "spend": "lead-search pagination and profile enrichment",
+        "costPerCompanyUsd": "0.40 to 1.00 plus enrichment",
+        "chargedPerCompanyUsd": "0.50 to 1.25 plus enrichment"
+      },
+      {
+        "provider": "brightDataScraper",
+        "spend": "LinkedIn profile scrape and fetch_profiles",
+        "costPerProfileUsd": 0.0015,
+        "chargedPerProfileUsd": 0.001875
+      },
+      {
+        "provider": "elasticsearch",
+        "spend": "company index lookup and org-chart resolution",
+        "costPerRequestUsd": 0.002,
+        "chargedPerRequestUsd": 0.0025,
+        "note": "Charged on every HTTP search request; request count per lookup is unmeasured and is the open cost driver."
+      },
+      {
+        "provider": "unipile",
+        "spend": "LinkedIn-native profile and messaging operations",
+        "costPerRequestUsd": 0.0166666667,
+        "chargedPerRequestUsd": 0.020833
+      }
+    ]
+  },
+  "implementationNotes": [
+    "Meter the event, charge the event: one credit record per provider call, carrying meterId, provider, quantity and unit.",
+    "Replace costForRecordsUsd with a per-page unit; the ludicrous executor already knows its page limit, so quantity = pages.",
+    "Route find_people_by_company's instant calls through BrightDataBillingService so they are no longer free.",
+    "Meter the SERP sweep and the AI-Overview pass inside find-people-google-search.service.ts.",
+    "Charge 0 for a cache hit; ProviderQueryCacheService already dedupes SERP responses and Business Search pages.",
+    "Never charge a failed provider request, since the provider does not bill it.",
+    "Aggregate per-event charges per tool call for display only; the ledger keeps the individual events."
+  ],
+  "resolvedGaps": [
+    "Margin multiplier is 1.25 on provider cost.",
+    "Billing granularity is per provider event, not per bundle.",
+    "AI-Overview zone bills at the SERP rate ($1.50/1K).",
+    "No free-tier allocation is counted; all rates are marginal cost.",
+    "Elasticsearch is metered at $2 per 1,000 requests, charged on every request with no assumed requests-per-lookup.",
+    "LinkedIn-native access is priced from the Unipile $5/month, 10 requests/day subscription rather than a Sales Navigator seat.",
+    "Harvest contracted rate is the published rate: $0.10 per whole lead-search page, $0.004 per individual profile."
+  ],
+  "openQuestions": [
+    {
+      "id": "productionMix",
+      "question": "What are the observed averages for queries per company, shards per company, Harvest page fill rate and cache hit rate?",
+      "impact": "Converts unit prices into real per-run and per-workspace cost, and cache rate is the cheapest lever on the bill.",
+      "default": null
+    },
+    {
+      "id": "esRequestsPerLookup",
+      "question": "What is the observed request count per company lookup, now that every request is charged?",
+      "impact": "Pure cost driver with no rate to negotiate: 1 request is $0.0025, 10 requests is $0.025 and exceeds a whole SERP sweep.",
+      "default": null
+    },
+    {
+      "id": "unipileHeadroom",
+      "question": "Can the Unipile cap be raised, or is 10 requests/day hard?",
+      "impact": "Whether Unipile can serve any batch workload at all.",
+      "default": "hard cap"
+    },
+    {
+      "id": "marginOnUnipile",
+      "question": "Should the 1.25 margin apply to the Unipile subscription, given it is a fixed monthly cost that may go unused?",
+      "impact": "At 10 requests/day the full $5 is only recovered if the cap is actually consumed; otherwise the derived per-request cost under-recovers.",
+      "default": "1.25 like everything else"
+    }
+  ]
+}

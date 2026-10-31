@@ -1,4 +1,11 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
+import { isNonEmptyString } from '@sniptt/guards';
+import { companyIdentityKey } from 'twenty-shared/arx';
+
+import {
+  ProviderCallLogService,
+  trackProviderCall,
+} from 'src/engine/core-modules/provider-call-log/services/provider-call-log.service';
 import { ProviderQueryCacheService } from 'src/engine/core-modules/cache-storage/services/provider-query-cache.service';
 import { EnvironmentService } from 'src/engine/core-modules/environment/environment.service';
 
@@ -11,9 +18,18 @@ import {
   type HarvestSearchKind,
 } from 'src/engine/core-modules/org-chart/utils/harvest-search-params.util';
 import { isHarvestCompanyNameMatch } from 'src/engine/core-modules/org-chart/utils/harvest-company-name-match.util';
+import { pickHarvestGeoMatch } from 'src/engine/core-modules/org-chart/utils/harvest-geo-match.util';
 
-const HARVEST_SEARCH_CACHE_PREFIX = 'harvest-search:v1';
+// v2 keys a company search by the company's identity, so two spellings of one
+// employer cost one Harvest page instead of two.
+const HARVEST_SEARCH_CACHE_PREFIX = 'harvest-search:v2';
 const HARVEST_SALES_NAV_CACHE_PREFIX = 'harvest-sales-nav:v1';
+const HARVEST_GEO_CACHE_PREFIX = 'harvest-geo:v1';
+// One lead-search page is billed, and a normal sweep asks for page 1 twice:
+// once to size the batch and once to fetch it.
+const HARVEST_LEAD_PAGE_CACHE_PREFIX = 'harvest-lead-page:v1';
+const HARVEST_PROFILE_CACHE_PREFIX = 'harvest-profile:v1';
+const HARVEST_COMPANY_SEARCH_PATH = '/linkedin/company-search';
 
 type HarvestLeadItem = Record<string, unknown>;
 type HarvestProfileResponse = Record<string, unknown>;
@@ -22,6 +38,29 @@ type HarvestPagination = {
   totalElements?: number;
   pageNumber?: number;
   pageSize?: number;
+};
+
+// The ledger prices Harvest by endpoint, so the path decides the operation
+const harvestOperationForUrl = (url: string): string => {
+  const path = url.split('?')[0];
+
+  if (path.endsWith('/linkedin/lead-search')) {
+    return 'lead-search';
+  }
+
+  if (path.endsWith('/linkedin/company-search')) {
+    return 'company-search';
+  }
+
+  if (path.endsWith('/linkedin/profile')) {
+    return 'profile';
+  }
+
+  if (path.endsWith('/linkedin/company')) {
+    return 'company';
+  }
+
+  return 'lookup';
 };
 
 @Injectable()
@@ -36,6 +75,8 @@ export class HarvestLinkedinService {
     private readonly environmentService: EnvironmentService,
     @Optional()
     private readonly providerQueryCache?: ProviderQueryCacheService,
+    @Optional()
+    private readonly providerCallLog?: ProviderCallLogService,
   ) {}
 
   isConfigured(): boolean {
@@ -59,6 +100,59 @@ export class HarvestLinkedinService {
       location: input.location,
       limit: input.limit,
     });
+  }
+
+  // A location id, unlike a location string, has no comma to be mistaken for
+  // another location: Harvest reads `locations` as a comma-separated list, so
+  // "Mumbai, Maharashtra, India" is sent as three locations and the country
+  // swallows the filter. The wider metro node is also preferred, because it is
+  // the more inclusive of the two and is what LinkedIn itself suggests for a
+  // bare city name.
+  async resolveGeoIds(location: string): Promise<string[]> {
+    const trimmed = location.trim();
+    if (!trimmed) {
+      return [];
+    }
+
+    const run = async () => {
+      const json = await this.getJson(
+        `${this.getBaseUrl()}/linkedin/geo-id-search?search=${encodeURIComponent(
+          trimmed,
+        )}`,
+      );
+      const match = pickHarvestGeoMatch(
+        (json as Record<string, unknown> | null)?.elements,
+        trimmed,
+      );
+
+      this.logger.log(
+        `Harvest geo "${trimmed}" matched=${match.matchedVia} geoIds=${match.geoIds.join(',') || 'none'} titles="${match.titles.join(' | ')}"`,
+      );
+
+      return match.geoIds;
+    };
+
+    try {
+      if (!this.providerQueryCache) {
+        return await run();
+      }
+
+      return await this.providerQueryCache.getOrFetch(
+        HARVEST_GEO_CACHE_PREFIX,
+        { location: trimmed },
+        run,
+      );
+    } catch (error) {
+      // No id means the caller keeps sending the location text, which Harvest
+      // validates itself, so a lookup failure narrows nothing silently
+      this.logger.warn(
+        `Harvest geo lookup failed for "${trimmed}": ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+
+      return [];
+    }
   }
 
   // Sales Navigator lead or account search from `page` on, until `limit`
@@ -229,7 +323,10 @@ export class HarvestLinkedinService {
      */
     includePastEmployees?: boolean;
     onProgress?: (message: string) => void | Promise<void>;
-  }): Promise<{ current: HarvestLeadItem[]; pastWithProfiles: HarvestLeadItem[] }> {
+  }): Promise<{
+    current: HarvestLeadItem[];
+    pastWithProfiles: HarvestLeadItem[];
+  }> {
     const normalizedCompanyUrl = input.linkedinCompanyUrl.trim();
     const maxProfiles = Math.max(1, Math.min(1000, input.maxProfiles ?? 250));
     const includePastEmployees = input.includePastEmployees === true;
@@ -296,11 +393,12 @@ export class HarvestLinkedinService {
       if (params.search?.trim()) {
         searchParams.set('search', params.search.trim());
       }
-      if (params.locations?.trim()) {
-        searchParams.set('locations', params.locations.trim());
-      }
       if (params.geoIds?.trim()) {
         searchParams.set('geoIds', params.geoIds.trim());
+      } else if (params.locations?.trim()) {
+        // `locations` is a comma-separated list, so a compound name is read as
+        // several places and the widest one wins. A resolved id replaces it.
+        searchParams.set('locations', params.locations.trim());
       }
       if (params.functionIds?.trim()) {
         searchParams.set('functionIds', params.functionIds.trim());
@@ -316,9 +414,12 @@ export class HarvestLinkedinService {
 
   async fetchLeadSearchPageFromParams(
     params: SuperImposeHarvestQueryParams,
-  ): Promise<{ items: HarvestLeadItem[]; pagination: HarvestPagination | null }> {
+  ): Promise<{
+    items: HarvestLeadItem[];
+    pagination: HarvestPagination | null;
+  }> {
     const url = this.buildLeadSearchUrlFromParams(params);
-    const json = await this.getJson(url);
+    const json = await this.getCachedJson(HARVEST_LEAD_PAGE_CACHE_PREFIX, url);
     const items = this.extractLeadItems(json);
 
     this.logger.log(
@@ -335,11 +436,25 @@ export class HarvestLinkedinService {
     params: Omit<SuperImposeHarvestQueryParams, 'page'>,
   ): Promise<number> {
     const pageResult = await this.fetchLeadSearchPageFromParams({
-      ...params,
+      ...(await this.withResolvedGeoIds(params)),
       page: 1,
     });
 
     return pageResult.pagination?.totalElements ?? pageResult.items.length;
+  }
+
+  // A caller that already has an id keeps it; otherwise the location text is
+  // resolved once, so a compound name is not re-expanded into a wider list
+  private async withResolvedGeoIds(
+    params: Omit<SuperImposeHarvestQueryParams, 'page'>,
+  ): Promise<Omit<SuperImposeHarvestQueryParams, 'page'>> {
+    if (params.geoIds?.trim() || !params.locations?.trim()) {
+      return params;
+    }
+
+    const geoIds = await this.resolveGeoIds(params.locations);
+
+    return geoIds.length > 0 ? { ...params, geoIds: geoIds.join(',') } : params;
   }
 
   async fetchAllLeadsFromQueryParams(input: {
@@ -349,8 +464,9 @@ export class HarvestLinkedinService {
   }): Promise<HarvestLeadItem[]> {
     const maxProfiles = Math.max(1, Math.min(2500, input.maxProfiles ?? 500));
     const maxPages = Math.max(1, Math.ceil(maxProfiles / 25));
+    const params = await this.withResolvedGeoIds(input.params);
     const firstPage = await this.fetchLeadSearchPageFromParams({
-      ...input.params,
+      ...params,
       page: 1,
     });
     const out = [...firstPage.items];
@@ -372,7 +488,7 @@ export class HarvestLinkedinService {
     for (let page = 2; page <= lastPage; page += 1) {
       await input.onProgress?.(`Harvest: fetching page ${page}/${lastPage}...`);
       const pageResult = await this.fetchLeadSearchPageFromParams({
-        ...input.params,
+        ...params,
         page,
       });
       out.push(...pageResult.items);
@@ -449,9 +565,16 @@ export class HarvestLinkedinService {
     companyUrl: string;
     type: 'current' | 'past';
     page: number;
-  }): Promise<{ items: HarvestLeadItem[]; pagination: HarvestPagination | null }> {
-    const url = this.buildLeadSearchUrl(input.companyUrl, input.type, input.page);
-    const json = await this.getJson(url);
+  }): Promise<{
+    items: HarvestLeadItem[];
+    pagination: HarvestPagination | null;
+  }> {
+    const url = this.buildLeadSearchUrl(
+      input.companyUrl,
+      input.type,
+      input.page,
+    );
+    const json = await this.getCachedJson(HARVEST_LEAD_PAGE_CACHE_PREFIX, url);
     const items = this.extractLeadItems(json);
     this.logger.log(
       `Harvest lead-search type=${input.type} page=${input.page} companyUrl="${input.companyUrl}" parsedRows=${items.length} ${this.describeLeadSearchPayloadForLog(json)}`,
@@ -502,9 +625,7 @@ export class HarvestLinkedinService {
       }
     };
 
-    await Promise.all(
-      Array.from({ length: concurrency }, () => runWorker()),
-    );
+    await Promise.all(Array.from({ length: concurrency }, () => runWorker()));
 
     return results;
   }
@@ -596,9 +717,7 @@ export class HarvestLinkedinService {
       }
     };
 
-    await Promise.all(
-      Array.from({ length: concurrency }, () => runWorker()),
-    );
+    await Promise.all(Array.from({ length: concurrency }, () => runWorker()));
 
     return results;
   }
@@ -658,7 +777,7 @@ export class HarvestLinkedinService {
       linkedinUrl,
     )}`;
     try {
-      const json = await this.getJson(url);
+      const json = await this.getCachedJson(HARVEST_PROFILE_CACHE_PREFIX, url);
       if (!json || typeof json !== 'object') {
         return null;
       }
@@ -698,16 +817,32 @@ export class HarvestLinkedinService {
     items: HarvestLeadItem[];
   }> {
     const limit = Math.max(1, Math.min(100, input.limit ?? 20));
-    const run = () => this.searchPaginatedCollectionUncached({ ...input, limit });
+    const run = () =>
+      this.searchPaginatedCollectionUncached({ ...input, limit });
 
     if (!this.providerQueryCache) {
       return run();
     }
 
+    const parts = { ...input, limit };
+    // On the company-search path the query is the company name; on every other
+    // path `search` carries titles and words that must not be rewritten.
+    const keyParts = {
+      ...parts,
+      ...(isNonEmptyString(input.company) && {
+        company: companyIdentityKey(input.company),
+      }),
+      ...(input.path === HARVEST_COMPANY_SEARCH_PATH &&
+        isNonEmptyString(input.search) && {
+          search: companyIdentityKey(input.search),
+        }),
+    };
+
     return this.providerQueryCache.getOrFetch(
       HARVEST_SEARCH_CACHE_PREFIX,
-      { ...input, limit },
+      parts,
       run,
+      { keyParts },
     );
   }
 
@@ -785,7 +920,10 @@ export class HarvestLinkedinService {
     sortBy?: string;
     contentType?: string;
     page: number;
-  }): Promise<{ items: HarvestLeadItem[]; pagination: HarvestPagination | null }> {
+  }): Promise<{
+    items: HarvestLeadItem[];
+    pagination: HarvestPagination | null;
+  }> {
     const searchParams = new URLSearchParams();
     searchParams.set('page', String(input.page));
     if (input.search?.trim()) {
@@ -911,25 +1049,50 @@ export class HarvestLinkedinService {
       : HarvestLinkedinService.DEFAULT_BASE_URL;
   }
 
+  // The URL is the whole request, so it is also the cache key: a page or a
+  // profile that was already paid for is not paid for again on a rerun, and a
+  // concurrent identical request coalesces onto one call.
+  private async getCachedJson(prefix: string, url: string): Promise<unknown> {
+    if (!this.providerQueryCache) {
+      return this.getJson(url);
+    }
+
+    return this.providerQueryCache.getOrFetch(prefix, { url }, () =>
+      this.getJson(url),
+    );
+  }
+
   private async getJson(url: string): Promise<unknown> {
     const apiKey = this.getApiKey();
     if (!apiKey) {
       throw new Error('HARVEST_API_KEY is not configured');
     }
-    const response = await fetch(url, {
-      headers: {
-        'X-API-Key': apiKey,
+    // One ledger row per request, named by endpoint: the catalog prices a
+    // lead-search page differently from a profile fetch
+    return trackProviderCall(
+      this.providerCallLog,
+      {
+        provider: 'harvest',
+        operation: harvestOperationForUrl(url),
+        storeResponse: false,
       },
-    });
-    if (!response.ok) {
-      // Harvest explains a 400 (bad filter value) in the body
-      const detail = await response.text().catch(() => '');
-      throw new Error(
-        `Harvest request failed with status ${response.status}${
-          detail ? `: ${detail.slice(0, 300)}` : ''
-        }`,
-      );
-    }
-    return response.json();
+      async () => {
+        const response = await fetch(url, {
+          headers: {
+            'X-API-Key': apiKey,
+          },
+        });
+        if (!response.ok) {
+          // Harvest explains a 400 (bad filter value) in the body
+          const detail = await response.text().catch(() => '');
+          throw new Error(
+            `Harvest request failed with status ${response.status}${
+              detail ? `: ${detail.slice(0, 300)}` : ''
+            }`,
+          );
+        }
+        return response.json();
+      },
+    );
   }
 }

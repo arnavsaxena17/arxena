@@ -101,3 +101,7 @@ build-meta.json
 Arxena.code-workspace
 tmp/
 tmp/agent-runs/
+
+# Browser screenshots and run captures from local debugging (repo root only)
+/*.png
+/artifacts/

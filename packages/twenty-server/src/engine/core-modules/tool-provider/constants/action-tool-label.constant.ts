@@ -20,6 +20,7 @@ export const ACTION_TOOL_IDS = [
   'get_outreach_tab',
   'find_people_by_company',
   'fetch_profiles',
+  'get_project_costs',
   'get_sourcing_ledger',
   'get_source_capabilities',
   'get_scoring_plan',
@@ -83,6 +84,9 @@ export const ACTION_TOOL_LABELS: Record<ActionToolId, ActionToolLabel> = {
   },
   preview_sample_message_column: {
     label: i18nLabel(msg`Preview Sample Message Column`),
+  },
+  get_project_costs: {
+    label: i18nLabel(msg`Get Project Costs`),
   },
   get_sourcing_ledger: {
     label: i18nLabel(msg`Get Sourcing Ledger`),

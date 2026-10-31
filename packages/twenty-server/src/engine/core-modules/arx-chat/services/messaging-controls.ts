@@ -8,6 +8,7 @@ import { UpdateChat } from 'src/engine/core-modules/arx-chat/services/candidate-
 import { ExtSockWhatsappMessageProcessor } from 'src/engine/core-modules/arx-chat/services/ext-sock-whatsapp/ext-sock-whatsapp-message-process';
 import { LinkedinUnipileMessagingService } from 'src/engine/core-modules/arx-chat/services/linkedin-unipile/linkedin-unipile-messaging.service';
 import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
+import { SendEmailFunctionality } from 'src/engine/core-modules/arx-chat/utils/send-gmail';
 import { BaileysWhatsappAPI } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/baileys/callBaileys';
 import { FacebookWhatsappChatApi } from 'src/engine/core-modules/arx-chat/services/whatsapp-api/facebook-whatsapp/facebook-whatsapp-api';
 import { WhatsappOutboundRateLimiterService } from 'src/engine/core-modules/arx-chat/services/whatsapp-unipile/whatsapp-outbound-rate-limiter.service';
@@ -29,6 +30,8 @@ import {
   getAttachmentDownloadUrl,
   Project,
   whatappUpdateMessageObjType,
+  workspaceMemberDisplayName,
+  workspaceMemberEmail,
 } from 'twenty-shared';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -125,7 +128,6 @@ export class MessagingControls {
     apiToken: string,
     isChatEnabled?: boolean,
   ) {
-
     try {
       console.log(
         'Called sendWhatsappMessage ToCandidate to send message via any whatsapp api::',
@@ -237,6 +239,7 @@ export class MessagingControls {
   private async getMessagingChannelAndWhatsappKey(
     candidate: CandidateNode,
     apiToken: string,
+    channelOverride?: string,
   ): Promise<{ messagingChannel: string; whatsapp_key: string }> {
     const workspaceId =
       await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
@@ -249,18 +252,29 @@ export class MessagingControls {
     );
 
     if (whatsapp_key) {
-      console.log('whatsapp_key in getMessagingChannel AndWhatsappKey ::', whatsapp_key);
+      console.log(
+        'whatsapp_key in getMessagingChannel AndWhatsappKey ::',
+        whatsapp_key,
+      );
     } else {
       console.log('No valid whatsapp API selected');
     }
 
     const messagingChannel =
-      candidate?.messagingChannel || MessagingChannel.WHATSAPP_OFFICIAL;
-    console.log("messagingChannel in getMessagingChannel AndWhatsappKey ::", messagingChannel);
+      channelOverride ||
+      candidate?.messagingChannel ||
+      MessagingChannel.WHATSAPP_OFFICIAL;
+    console.log(
+      'messagingChannel in getMessagingChannel AndWhatsappKey ::',
+      messagingChannel,
+    );
 
     whatsapp_key =
       toMessagingChannelTransportKey(messagingChannel) ?? 'whatsapp-official';
-    console.log("whatsapp_key in getMessagingChannel And WhatsappKey ::", whatsapp_key);
+    console.log(
+      'whatsapp_key in getMessagingChannel And WhatsappKey ::',
+      whatsapp_key,
+    );
 
     return { messagingChannel, whatsapp_key };
   }
@@ -272,6 +286,7 @@ export class MessagingControls {
     mostRecentMessageArr: ChatHistoryItem[],
     chatControl: ChatControlsObjType,
     apiToken: string,
+    channelOverride?: string,
   ): Promise<{ status: 'success' | 'failed'; message?: string }> {
     try {
       if (
@@ -286,10 +301,12 @@ export class MessagingControls {
         return { status: 'success' };
       }
 
-      const { messagingChannel, whatsapp_key } = await this.getMessagingChannelAndWhatsappKey(
-        candidate,
-        apiToken,
-      );
+      const { messagingChannel, whatsapp_key } =
+        await this.getMessagingChannelAndWhatsappKey(
+          candidate,
+          apiToken,
+          channelOverride,
+        );
 
       console.log(
         'whatsapp_key in sendWhatsappMessage :::',
@@ -303,7 +320,7 @@ export class MessagingControls {
         await new FacebookWhatsappChatApi(
           this.workspaceQueryService,
           this.staticGraphQLService,
-          ).sendWhatsappMessageVIAFacebookAPI(
+        ).sendWhatsappMessageVIAFacebookAPI(
           whatappUpdateMessageObj,
           candidate,
           candidateJob,
@@ -404,14 +421,15 @@ export class MessagingControls {
         }
         return { status: 'success' };
       } else if (whatsapp_key === 'whatsapp-unipile') {
-        const response = await this.createWhatsappUnipileMessagingService().sendWhatsappMessageVIAUnipileAPI(
-          whatappUpdateMessageObj,
-          candidate,
-          candidateJob,
-          mostRecentMessageArr,
-          chatControl,
-          apiToken,
-        );
+        const response =
+          await this.createWhatsappUnipileMessagingService().sendWhatsappMessageVIAUnipileAPI(
+            whatappUpdateMessageObj,
+            candidate,
+            candidateJob,
+            mostRecentMessageArr,
+            chatControl,
+            apiToken,
+          );
 
         if (response?.status === 'failed') {
           return this.failSendAndPersist(
@@ -422,6 +440,35 @@ export class MessagingControls {
             'Failed to send message via WhatsApp Unipile',
           );
         }
+        return { status: 'success' };
+      } else if (messagingChannelEquals(whatsapp_key, MessagingChannel.EMAIL)) {
+        const response = await this.sendEmailToCandidate(
+          whatappUpdateMessageObj,
+          candidate,
+          candidateJob,
+          apiToken,
+        );
+
+        if (response.status === 'failed') {
+          return this.failSendAndPersist(
+            candidate,
+            whatappUpdateMessageObj,
+            apiToken,
+            response.message,
+            'Failed to send email',
+          );
+        }
+
+        // Email has no Unipile chat thread, so write the transcript row here.
+        await UpdateChat.create(
+          this.workspaceQueryService,
+          this.staticGraphQLService,
+        ).updateCandidateEngagementDataInTable(
+          candidate,
+          whatappUpdateMessageObj,
+          apiToken,
+          true,
+        );
         return { status: 'success' };
       } else {
         console.log('No valid whatsapp API selected');
@@ -436,7 +483,9 @@ export class MessagingControls {
     } catch (error) {
       console.log('Error in sendWhatsappMessage:', error);
       const msg =
-        error instanceof Error ? error.message : 'Error sending WhatsApp message';
+        error instanceof Error
+          ? error.message
+          : 'Error sending WhatsApp message';
       await this.persistFailedOutboundChatMessage(
         candidate,
         whatappUpdateMessageObj,
@@ -455,6 +504,7 @@ export class MessagingControls {
     candidateId: string,
     messageToSend: string,
     apiToken: string,
+    channelOverride?: string,
   ): Promise<{ status: 'success' | 'failed'; message?: string }> {
     const candidateNode: CandidateNode | undefined = await new FilterCandidates(
       this.workspaceQueryService,
@@ -466,27 +516,37 @@ export class MessagingControls {
     }
 
     const candidateJob = candidateNode?.project as Project;
-    const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(
-      candidateJob,
-      apiToken,
-    );
+    const workspaceMember = await new WorkspaceMemberArxService(
+      this.staticGraphQLService,
+    ).getByProject(candidateJob, apiToken);
     if (!workspaceMember) {
       throw new Error('Workspace member not found for job');
     }
 
-    const candidateChatHistory = candidateNode?.chatMessages?.edges[0]?.node?.messageObj || [];
+    const candidateChatHistory =
+      candidateNode?.chatMessages?.edges[0]?.node?.messageObj || [];
     const chatControl: ChatControlsObjType = {
       chatControlType: 'startChat',
     };
 
+    const effectiveChannel = channelOverride || candidateNode?.messagingChannel;
     const candidatePrimaryPhone =
       candidateNode?.people?.phones?.primaryPhoneNumber ?? '';
     let messageTo: string =
       candidatePrimaryPhone.length === 10
         ? '91' + candidatePrimaryPhone
         : candidatePrimaryPhone;
-    if (messagingChannelEquals(candidateNode?.messagingChannel, MessagingChannel.LINKEDIN_CONNECT)) {
+    if (
+      messagingChannelEquals(
+        effectiveChannel,
+        MessagingChannel.LINKEDIN_CONNECT,
+      )
+    ) {
       messageTo = candidateNode?.people?.linkedinLink?.primaryLinkUrl ?? '';
+    } else if (
+      messagingChannelEquals(effectiveChannel, MessagingChannel.EMAIL)
+    ) {
+      messageTo = candidateNode?.people?.emails?.primaryEmail ?? '';
     } else {
       messageTo =
         candidatePrimaryPhone.length === 10
@@ -507,10 +567,7 @@ export class MessagingControls {
       lastEngagementChatControl: chatControl.chatControlType,
       whatsappDeliveryStatus: 'created',
       externalMessageId: 'startChat',
-      typeOfMessage:
-        candidateNode?.messagingChannel ||
-        process.env.DEFAULT_WHATSAPP_CLIENT ||
-        'baileys',
+      typeOfMessage: effectiveChannel || 'baileys',
     };
 
     return this.sendWhatsappMessage(
@@ -520,7 +577,59 @@ export class MessagingControls {
       candidateChatHistory,
       chatControl,
       apiToken,
+      channelOverride,
     );
+  }
+
+  // Email has no chat thread in Unipile: send through the same Gmail path the
+  // drawer's "send-mail" flow uses, and keep the transcript row the caller writes.
+  private async sendEmailToCandidate(
+    whatappUpdateMessageObj: whatappUpdateMessageObjType,
+    candidate: CandidateNode,
+    candidateJob: Project,
+    apiToken: string,
+  ): Promise<{ status: 'success' | 'failed'; message?: string }> {
+    const personEmail = candidate?.people?.emails?.primaryEmail ?? '';
+    if (!personEmail) {
+      return { status: 'failed', message: 'Candidate has no email address' };
+    }
+
+    const workspaceMember = await new WorkspaceMemberArxService(
+      this.staticGraphQLService,
+    ).getByProject(candidateJob, apiToken);
+    const senderEmail = workspaceMemberEmail(workspaceMember);
+    if (!senderEmail) {
+      return { status: 'failed', message: 'Sender has no email connected' };
+    }
+
+    const body =
+      whatappUpdateMessageObj.messages[0]?.content ||
+      whatappUpdateMessageObj.messages[0]?.text ||
+      '';
+    if (!body.trim()) {
+      return { status: 'failed', message: 'Message is empty' };
+    }
+
+    const response = await new SendEmailFunctionality().sendEmailFunction(
+      {
+        sendEmailFrom: senderEmail,
+        sendEmailNameFrom: workspaceMemberDisplayName(workspaceMember),
+        sendEmailTo: personEmail,
+        subject: `Message from ${workspaceMemberDisplayName(workspaceMember) || 'your recruiter'}`,
+        message: body,
+      },
+      apiToken,
+    );
+
+    const failed =
+      typeof response === 'object' &&
+      response !== null &&
+      'error' in response &&
+      (response as { error?: unknown }).error;
+
+    return failed
+      ? { status: 'failed', message: String(failed) }
+      : { status: 'success' };
   }
 
   async sendAttachmentMessageOnWhatsapp(
@@ -535,13 +644,17 @@ export class MessagingControls {
       attachmentMessage,
     );
 
-    const { messagingChannel, whatsapp_key } = await this.getMessagingChannelAndWhatsappKey(
-      candidate,
-      apiToken,
-    );
+    const { messagingChannel, whatsapp_key } =
+      await this.getMessagingChannelAndWhatsappKey(candidate, apiToken);
 
-    console.log('messagingChannel in sendAttachmentMessageOnWhatsapp ::', messagingChannel);
-    console.log('whatsapp_key in sendAttachmentMessageOnWhatsapp ::', whatsapp_key);
+    console.log(
+      'messagingChannel in sendAttachmentMessageOnWhatsapp ::',
+      messagingChannel,
+    );
+    console.log(
+      'whatsapp_key in sendAttachmentMessageOnWhatsapp ::',
+      whatsapp_key,
+    );
     if (whatsapp_key === 'whatsapp-official') {
       await new FacebookWhatsappChatApi(
         this.workspaceQueryService,
@@ -600,12 +713,13 @@ export class MessagingControls {
         apiToken,
       );
     } else if (whatsapp_key === 'whatsapp-unipile') {
-      const response = await this.createWhatsappUnipileMessagingService().sendWhatsappAttachmentMessage(
-        attachmentMessage,
-        candidate,
-        candidateJob,
-        apiToken,
-      );
+      const response =
+        await this.createWhatsappUnipileMessagingService().sendWhatsappAttachmentMessage(
+          attachmentMessage,
+          candidate,
+          candidateJob,
+          apiToken,
+        );
 
       if (response?.status === 'failed') {
         return {
@@ -672,10 +786,9 @@ export class MessagingControls {
       return;
     }
 
-    const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(
-      candidateJob,
-      apiToken,
-    );
+    const workspaceMember = await new WorkspaceMemberArxService(
+      this.staticGraphQLService,
+    ).getByProject(candidateJob, apiToken);
     if (!workspaceMember) {
       throw new Error('Workspace member not found for job');
     }
@@ -692,9 +805,10 @@ export class MessagingControls {
       phoneNumberTo = candidate.people?.linkedinLink?.primaryLinkUrl ?? '';
       phoneNumberFrom = workspaceMember.linkedinUrl || '';
     } else if (candidate?.people?.phones?.primaryPhoneNumber) {
-      phoneNumberTo = candidate.people.phones.primaryPhoneNumber.length == 10
-        ? '91' + candidate.people.phones.primaryPhoneNumber
-        : candidate.people.phones.primaryPhoneNumber;
+      phoneNumberTo =
+        candidate.people.phones.primaryPhoneNumber.length == 10
+          ? '91' + candidate.people.phones.primaryPhoneNumber
+          : candidate.people.phones.primaryPhoneNumber;
       phoneNumberFrom = workspaceMember.phoneNumber;
     } else {
       console.warn('No phone number found for candidate, using empty string');
@@ -740,12 +854,20 @@ export class MessagingControls {
     chatControl: ChatControlsObjType,
     apiToken: string,
   ) {
-    console.log("Going to send attachment to ext-sock-whatsapp")
+    console.log('Going to send attachment to ext-sock-whatsapp');
     const messagingChannel = candidate.messagingChannel;
-    console.log("messagingChannel for sending attachment to ext-sock-whatsapp", messagingChannel);
-    if (messagingChannelEquals(messagingChannel, MessagingChannel.WHATSAPP_WEB)) {
+    console.log(
+      'messagingChannel for sending attachment to ext-sock-whatsapp',
+      messagingChannel,
+    );
+    if (
+      messagingChannelEquals(messagingChannel, MessagingChannel.WHATSAPP_WEB)
+    ) {
       try {
-        console.log("attachmentMessage for sending attachment to ext-sock-whatsapp", attachmentMessage);
+        console.log(
+          'attachmentMessage for sending attachment to ext-sock-whatsapp',
+          attachmentMessage,
+        );
         const arxenaSiteBaseUrl =
           process.env.ARXENA_SITE_BASE_URL || 'http://localhost:5050';
 
@@ -760,7 +882,11 @@ export class MessagingControls {
         // Add extension_id to form data - extract from apiToken or add as needed
         // formData.append('extension_id', 'YOUR_EXTENSION_ID'); // You'll need to get this value
         // @ts-expect-error
-        formData.append( 'file', new Blob([fileBuffer]), attachmentMessage.fileData.fileName, );
+        formData.append(
+          'file',
+          new Blob([fileBuffer]),
+          attachmentMessage.fileData.fileName,
+        );
 
         console.log('attachmentMessage:', attachmentMessage);
         console.log(

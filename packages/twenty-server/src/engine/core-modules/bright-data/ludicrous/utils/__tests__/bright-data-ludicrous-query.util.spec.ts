@@ -1,4 +1,5 @@
 import {
+  canonicalizeLudicrousQuery,
   compileBooleanTitleString,
   compileTitleGroups,
   stripBooleanSyntax,
@@ -215,6 +216,43 @@ describe('bright data ludicrous industry taxonomy guard', () => {
           ],
         },
       ],
+    });
+  });
+
+  describe('cache key canonicalisation', () => {
+    it('orders the operands of and, or and in the same way', () => {
+      const first = canonicalizeLudicrousQuery({
+        and: [
+          { in: { offices_country_codes: ['US', 'IN'] } },
+          {
+            or: [
+              { text: { about: { value: 'fintech', mode: 'all' } } },
+              { text: { specialties: { value: 'payments', mode: 'all' } } },
+            ],
+          },
+        ],
+      });
+      const second = canonicalizeLudicrousQuery({
+        and: [
+          {
+            or: [
+              { text: { specialties: { value: 'payments', mode: 'all' } } },
+              { text: { about: { value: 'fintech', mode: 'all' } } },
+            ],
+          },
+          { in: { offices_country_codes: ['IN', 'US'] } },
+        ],
+      });
+
+      expect(first).toEqual(second);
+    });
+
+    it('leaves a not and a single condition untouched', () => {
+      const query = {
+        not: { text: { about: { value: 'fintech', mode: 'all' as const } } },
+      };
+
+      expect(canonicalizeLudicrousQuery(query)).toEqual(query);
     });
   });
 });

@@ -211,6 +211,12 @@ export {
   cleanCompanyNameForDisplay,
   cleanPersonNameForDisplay,
 } from './cleanOutreachDisplayNames';
+export type { CompanyCacheKeyInput } from './companyName';
+export {
+  COMPANY_LEGAL_SUFFIXES,
+  companyIdentityKey,
+  companyCacheKeyOf,
+} from './companyName';
 export type { MessagingChannelValue } from './messagingChannel';
 export {
   MessagingChannel,

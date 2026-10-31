@@ -8,6 +8,11 @@ export type RoleSearchPlan = {
   roles: string[];
   titles: string[];
   titleExpression: string | null;
+  // The taxonomy class behind the search, when there is one. Sources that
+  // filter by platform id (Sales Navigator function facet) map these instead
+  // of re-deriving a function from a title string.
+  functionRoot?: string;
+  grade?: string;
 };
 
 // A role's own search carries its titles, so the cap is per role; the
@@ -57,6 +62,14 @@ export const buildRoleSearches = (
       roles: [plan.role],
       titles,
       titleExpression: plan.titleExpression,
+      ...(plan.titleClass?.functionRoot !== null &&
+        plan.titleClass?.functionRoot !== undefined && {
+          functionRoot: plan.titleClass.functionRoot,
+        }),
+      ...(plan.titleClass?.grade !== null &&
+        plan.titleClass?.grade !== undefined && {
+          grade: plan.titleClass.grade,
+        }),
     });
   }
 

@@ -4,6 +4,7 @@ import {
   BRIGHT_DATA_LUDICROUS_FIELDS,
   BRIGHT_DATA_PEOPLE_CITY_CANONICAL,
 } from 'src/engine/core-modules/bright-data/ludicrous/constants/bright-data-ludicrous-field-registry.const';
+import { stableStringifyProviderQueryCacheValue } from 'src/engine/core-modules/cache-storage/utils/provider-query-cache-key.util';
 import {
   type BrightDataLudicrousEntity,
   type BrightDataLudicrousQuery,
@@ -591,4 +592,53 @@ export const assertValidLudicrousQuery = ({
   }
 
   return result.query;
+};
+
+const byStableString = (left: unknown, right: unknown): number =>
+  stableStringifyProviderQueryCacheValue(left).localeCompare(
+    stableStringifyProviderQueryCacheValue(right),
+  );
+
+// and/or branches and in-lists are sets, not sequences: the engine returns the
+// same rows whichever order they are written in. The planner reshuffles titles
+// between two runs of the same sentence, so hashing the tree as written bought
+// every page again. Sorting the commutative parts keeps one paid entry per
+// distinct filter.
+export const canonicalizeLudicrousQuery = (
+  query: BrightDataLudicrousQuery,
+): BrightDataLudicrousQuery => {
+  const entries = Object.entries(query as Record<string, unknown>);
+
+  if (entries.length !== 1) {
+    return query;
+  }
+
+  const [operator, body] = entries[0];
+
+  if (operator === 'and' || operator === 'or') {
+    const children = (body as BrightDataLudicrousQuery[])
+      .map(canonicalizeLudicrousQuery)
+      .sort(byStableString);
+
+    return { [operator]: children } as BrightDataLudicrousQuery;
+  }
+
+  if (operator === 'not') {
+    return {
+      not: canonicalizeLudicrousQuery(body as BrightDataLudicrousQuery),
+    };
+  }
+
+  if (operator === 'in' && typeof body === 'object' && body !== null) {
+    const [field, values] =
+      Object.entries(body as Record<string, Array<string | number>>)[0] ?? [];
+
+    if (field === undefined || !Array.isArray(values)) {
+      return query;
+    }
+
+    return { in: { [field]: [...values].sort(byStableString) } };
+  }
+
+  return query;
 };

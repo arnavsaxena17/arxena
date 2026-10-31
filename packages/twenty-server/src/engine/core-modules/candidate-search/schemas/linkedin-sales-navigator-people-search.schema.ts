@@ -17,10 +17,14 @@ export const salesNavigatorPeopleSearchSchema = z.object({
   //     exclude: z.array(z.string()).nullable(),
   //     within_area: z.number().nullable(),
   // }).nullable().describe('Filter by postal code with optional radius in miles (within_area)'),
-  // industry: z.object({
-  //   include: z.array(z.string()).nullable(),
-  //   exclude: z.array(z.string()).nullable(),
-  // }).nullable().describe('Filter by the industry of their current company. Use include to only show results in listed industries, exclude to hide results from listed industries'),
+  // Available again, but off by default for people: our primary GTM is
+  // company + job titles, and an industry filter on a company-anchored search
+  // only removes rows when the platform's industry label differs from ours.
+  // Send it only when the search is not already anchored to a company.
+  industry: z.object({
+    include: z.array(z.string()).nullable(),
+    exclude: z.array(z.string()).nullable(),
+  }).nullable().describe('Filter by the industry of their current company. Use include to only show results in listed industries, exclude to hide results from listed industries'),
   // first_name: z.string().nullable().describe('First name of the person'),
   // last_name: z.string().nullable().describe('Last name of the person'),
   // tenure: z.array(z.object({
@@ -75,32 +79,35 @@ export const salesNavigatorPeopleSearchSchema = z.object({
   //   min: z.union([z.literal(0), z.literal(1), z.literal(3), z.literal(6), z.literal(10)]),
   //   max: z.union([z.literal(1), z.literal(2), z.literal(5), z.literal(10)]),
   // })).nullable().describe('Filter by years in current role (min and max in years, 0 or 1 for <1 year, 10+ for 10+ years)'),
-  // seniority: z.object({
-  //   include: z.array(z.union([
-  //     z.literal('owner/partner'),
-  //     z.literal('cxo'),
-  //     z.literal('vice_president'),
-  //     z.literal('director'),
-  //     z.literal('experienced_manager'),
-  //     z.literal('entry_level_manager'),
-  //     z.literal('strategic'),
-  //     z.literal('senior'),
-  //     z.literal('entry_level'),
-  //     z.literal('in_training'),
-  //   ])).nullable(),
-  //   exclude: z.array(z.union([
-  //     z.literal('owner/partner'),
-  //     z.literal('cxo'),
-  //     z.literal('vice_president'),
-  //     z.literal('director'),
-  //     z.literal('experienced_manager'),
-  //     z.literal('entry_level_manager'),
-  //     z.literal('strategic'),
-  //     z.literal('senior'),
-  //     z.literal('entry_level'),
-  //     z.literal('in_training'),
-  //   ])).nullable(),
-  // }).nullable().describe('Filter by seniority level. Use include to only show specified seniority levels, exclude to hide specified seniority levels'),
+  // Same rule as industry: expressible, and worth sending only when the
+  // search has no company anchor, where seniority is the cheapest way to keep
+  // a broad title match from returning the whole department.
+  seniority: z.object({
+    include: z.array(z.union([
+      z.literal('owner/partner'),
+      z.literal('cxo'),
+      z.literal('vice_president'),
+      z.literal('director'),
+      z.literal('experienced_manager'),
+      z.literal('entry_level_manager'),
+      z.literal('strategic'),
+      z.literal('senior'),
+      z.literal('entry_level'),
+      z.literal('in_training'),
+    ])).nullable(),
+    exclude: z.array(z.union([
+      z.literal('owner/partner'),
+      z.literal('cxo'),
+      z.literal('vice_president'),
+      z.literal('director'),
+      z.literal('experienced_manager'),
+      z.literal('entry_level_manager'),
+      z.literal('strategic'),
+      z.literal('senior'),
+      z.literal('entry_level'),
+      z.literal('in_training'),
+    ])).nullable(),
+  }).nullable().describe('Filter by seniority level. Use include to only show specified seniority levels, exclude to hide specified seniority levels'),
   // past_role: z.object({
   //   include: z.array(z.string()).nullable(),
   //   exclude: z.array(z.string()).nullable(),

@@ -105,6 +105,36 @@ export const FindPeopleByCompanyInputZodSchema = z.object({
     .describe(
       'bright_data = Bright Data people database, google = Google search of LinkedIn profiles, harvest = Harvest Sales Navigator lead search (paid, $0.004 a record). Results are merged. Harvest runs only after Bright Data and Google found no one at the plan confidence.',
     ),
+  queries: z
+    .array(
+      z.object({
+        source: z.enum(['google', 'bright_data', 'harvest']),
+        query: z
+          .string()
+          .min(1)
+          .max(500)
+          .describe(
+            'The query to send as written. For google and bright_data this may be a plain string or a boolean with quotes, AND, OR, NOT and brackets; for harvest it is the Sales Navigator keyword/boolean field.',
+          ),
+        company: z
+          .string()
+          .optional()
+          .describe(
+            'Which company in this call the query is for, by name. Defaults to the only company, or the first one when several were passed.',
+          ),
+        role: z
+          .string()
+          .optional()
+          .describe(
+            'The role the query is looking for, so results are attributed to it instead of the first role.',
+          ),
+      }),
+    )
+    .max(12)
+    .optional()
+    .describe(
+      'Extra queries to send verbatim, on top of the generated ones. Use when you know a query the generators would not build: a specific boolean, a name plus company, a site restriction. Each runs once, tagged in the trace as direct:<source>, and its rows join the same checks as every other candidate.',
+    ),
   projectId: z
     .string()
     .optional()

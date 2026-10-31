@@ -52,7 +52,12 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import type { ChatMessages, MessageNode } from 'twenty-shared/arx';
+import {
+  MessagingChannel,
+  normalizeMessagingChannel,
+  type ChatMessages,
+  type MessageNode,
+} from 'twenty-shared/arx';
 import { graphqlToFetchAllCandidateDataWithFieldValues } from 'twenty-shared/graphql';
 import {
   IconAlertTriangle,
@@ -179,6 +184,11 @@ const StyledInputWrapper = styled.div`
   width: 100%;
 `;
 
+const StyledChannelPicker = styled.div`
+  flex: none;
+  width: 116px;
+`;
+
 const StyledChatInput = styled.input`
   background-color: ${themeCssVariables.background.primary};
   border: 1px solid ${themeCssVariables.border.color.medium};
@@ -239,6 +249,14 @@ function isDoNotRespondMessage(content: string | undefined): boolean {
   if (!content || typeof content !== 'string') return false;
   return content.includes('#DONTRESPOND#') || content.includes('DONTRESPOND');
 }
+
+// Reply channels a recruiter can pick per message, independent of where the
+// candidate currently writes from.
+const SEND_CHANNEL_OPTIONS = [
+  { value: MessagingChannel.LINKEDIN_CONNECT, label: 'LinkedIn' },
+  { value: MessagingChannel.WHATSAPP_UNIPILE, label: 'WhatsApp' },
+  { value: MessagingChannel.EMAIL, label: 'Email' },
+];
 
 type CandidateData = {
   id: string;
@@ -475,6 +493,11 @@ export const CandidateChatDrawer = React.memo(() => {
     'direct' | 'template'
   >('direct');
   const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [sendChannel, setSendChannel] = useState<MessagingChannel>(
+    MessagingChannel.LINKEDIN_CONNECT,
+  );
+  // Only the WhatsApp template tab needs a phone number; direct messages now
+  // resolve their destination server-side from the candidate's channel.
   const [phoneNumber, setPhoneNumber] = useState<string>('');
 
   const scrollToBottom = useCallback(() => {
@@ -708,6 +731,12 @@ export const CandidateChatDrawer = React.memo(() => {
           if (candidate.name) {
             setCandidateName(candidate.name);
           }
+          const candidateChannel = normalizeMessagingChannel(
+            candidate?.messagingChannel,
+          );
+          if (candidateChannel !== null) {
+            setSendChannel(candidateChannel as MessagingChannel);
+          }
           if (candidate?.people?.phones?.primaryPhoneNumber) {
             setPhoneNumber(candidate.people.phones.primaryPhoneNumber);
           }
@@ -901,8 +930,8 @@ export const CandidateChatDrawer = React.memo(() => {
   ]);
 
   const sendMessage = async (messageText: string) => {
-    if (!phoneNumber) {
-      showSnackbar('Phone number not available', 'error');
+    if (!enrolledCandidateId) {
+      showSnackbar('Save this person to the CRM before messaging', 'error');
       return;
     }
 
@@ -910,10 +939,11 @@ export const CandidateChatDrawer = React.memo(() => {
 
     try {
       const response = await axios.post(
-        `${REACT_APP_SERVER_BASE_URL}/arx-chat/send-chat`,
+        `${REACT_APP_SERVER_BASE_URL}/arx-chat/send-chat-candidate-id`,
         {
           messageToSend: messageText,
-          phoneNumberTo: phoneNumber,
+          candidateId: enrolledCandidateId,
+          channel: sendChannel,
         },
         {
           headers: {
@@ -932,24 +962,9 @@ export const CandidateChatDrawer = React.memo(() => {
         return;
       }
 
-      const newMessage: MessageNode = {
-        recruiterId: '',
-        message: messageText,
-        candidateId: selectedCandidateId || '',
-        projectId: '',
-        position: messageHistory.length + 1,
-        messageType: 'direct',
-        phoneTo: phoneNumber || '',
-        updatedAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        id: Date.now().toString(),
-        name: 'botMessage',
-        phoneFrom: 'system',
-        messageObj: { content: messageText },
-        whatsappDeliveryStatus: 'sent',
-      };
-
-      setMessageHistory((prev) => [...prev, newMessage]);
+      // The server writes the transcript row for every channel; refetch rather
+      // than appending an optimistic bubble that the next poll would duplicate.
+      await fetchMessages();
 
       // Clear input
       if (inputRef.current) {
@@ -1110,6 +1125,17 @@ export const CandidateChatDrawer = React.memo(() => {
 
       {activeMessageTab === 'direct' ? (
         <StyledInputWrapper>
+          <StyledChannelPicker>
+            <Select<MessagingChannel>
+              dropdownId="candidate-chat-channel-select"
+              value={sendChannel}
+              options={SEND_CHANNEL_OPTIONS}
+              onChange={setSendChannel}
+              disabled={isSendingMessage}
+              selectSizeVariant="small"
+              needIconCheck={false}
+            />
+          </StyledChannelPicker>
           <StyledChatInput
             ref={inputRef}
             type="text"

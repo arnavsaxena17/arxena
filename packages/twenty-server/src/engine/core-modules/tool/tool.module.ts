@@ -21,6 +21,7 @@ import { FetchProfilesService } from 'src/engine/core-modules/tool/tools/fetch-p
 import { FetchProfilesTool } from 'src/engine/core-modules/tool/tools/fetch-profiles-tool/fetch-profiles-tool';
 import { ResolveLinkedinUrlTool } from 'src/engine/core-modules/tool/tools/resolve-linkedin-url-tool/resolve-linkedin-url-tool';
 import { WriteLinkedinUrlTool } from 'src/engine/core-modules/tool/tools/write-linkedin-url-tool/write-linkedin-url-tool';
+import { GetProjectCostsTool } from 'src/engine/core-modules/tool/tools/project-costs-tool/get-project-costs-tool';
 import { GetSourcingLedgerTool } from 'src/engine/core-modules/tool/tools/sourcing-ledger-tool/get-sourcing-ledger-tool';
 import { GetSourceCapabilitiesTool } from 'src/engine/core-modules/tool/tools/source-capabilities-tool/get-source-capabilities-tool';
 import { GetScoringPlanTool } from 'src/engine/core-modules/tool/tools/source-capabilities-tool/get-scoring-plan-tool';
@@ -162,6 +163,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     FetchProfilesTool,
     ResolveLinkedinUrlTool,
     WriteLinkedinUrlTool,
+    GetProjectCostsTool,
     GetSourcingLedgerTool,
     GetSourceCapabilitiesTool,
     GetScoringPlanTool,
@@ -231,6 +233,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     FetchProfilesTool,
     ResolveLinkedinUrlTool,
     WriteLinkedinUrlTool,
+    GetProjectCostsTool,
     GetSourcingLedgerTool,
     GetSourceCapabilitiesTool,
     GetScoringPlanTool,

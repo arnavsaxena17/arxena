@@ -71,8 +71,12 @@ const shouldExpandLinkedinTranscript = (
     return false;
   }
 
+  // LinkedIn and email rows both store the whole thread in messageObj and a
+  // single latest line in `message`. WhatsApp rows are written one per turn, so
+  // expanding them would duplicate bubbles.
   return (
     row.typeOfMessage === 'linkedin' ||
+    row.typeOfMessage === 'email' ||
     `${row.name ?? ''}`.toUpperCase().startsWith('LINKEDIN')
   );
 };
@@ -91,7 +95,9 @@ export const expandLinkedinTranscriptRows = <T extends ExpandableChatMessage>(
     didExpand = true;
     const ordered = turns
       .map((turn, index) => ({ turn, index, time: turnTime(turn, index) }))
-      .sort((left, right) => left.time - right.time || left.index - right.index);
+      .sort(
+        (left, right) => left.time - right.time || left.index - right.index,
+      );
 
     return ordered.map(({ turn, index }) => {
       const isSent = turn.role === 'assistant';

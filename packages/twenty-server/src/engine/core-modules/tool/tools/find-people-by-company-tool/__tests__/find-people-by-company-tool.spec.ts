@@ -105,7 +105,16 @@ const buildTool = ({
     result: { documents: brightDataDocuments, spentUsd: brightDataSpentUsd },
   });
   const requestSerpGoogleJson = jest.fn().mockResolvedValue({ organic });
-  const search = jest.fn().mockResolvedValue({ documents: enrichedDocuments });
+  // The instant engine answers two different questions: the people search
+  // (a natural phrase) and the per-profile enrichment lookup (a LinkedIn URL).
+  // Only the second one has fixture documents in these tests.
+  const search = jest.fn(
+    async (params: { query?: string; entity?: string; mode?: string }) =>
+      typeof params?.query === 'string' &&
+      params.query.includes('linkedin.com/in')
+        ? { documents: enrichedDocuments, costUsd: 0 }
+        : { documents: [], costUsd: 0 },
+  );
   const upsert = jest.fn().mockResolvedValue({
     success: upsertSucceeds,
     message: '',
@@ -239,6 +248,7 @@ const buildTool = ({
           name: 'Acme',
           linkedinUrl: 'https://www.linkedin.com/company/acme',
         })),
+        resolveGeoIds: jest.fn(async () => []),
         searchSalesNavigatorCollection: jest.fn(async () => ({
           items: harvest.items,
           firstPage: 1,
@@ -949,7 +959,15 @@ describe('FindPeopleByCompanyTool Google enrichment', () => {
       context,
     );
 
-    expect(search).not.toHaveBeenCalled();
+    // The instant people search is still allowed to run; what must not happen
+    // is a paid per-profile lookup for someone the people search returned
+    expect(
+      search.mock.calls.filter(([params]) =>
+        String((params as { query?: string })?.query ?? '').includes(
+          'linkedin.com/in',
+        ),
+      ),
+    ).toHaveLength(0);
   });
 
   it('should report an enrichment failure and still answer from Google', async () => {
@@ -1259,16 +1277,16 @@ describe('FindPeopleByCompanyTool Google queries', () => {
 
     const queries = decodedQueries(requestSerpGoogleJson.mock.calls);
 
-    // "MD" is already in the title list, so the roles-as-typed query would
-    // ask the same question twice and is not sent
+    // "MD" is spelled out for the plain query and kept as the abbreviation in
+    // the boolean, because that is how the profiles read
     expect(queries).toHaveLength(2);
-    expect(queries).toContain('Acme managing director');
+    expect(queries).toContain('Acme managing director India');
     expect(queries).toContain(
       'site:linkedin.com/in "Acme" ("md" OR "chief executive") India',
     );
   });
 
-  it('should run one plain query per requested role', async () => {
+  it('should give a role family one plain and one boolean query, not one per role', async () => {
     const { tool, requestSerpGoogleJson } = buildTool({
       brightDataDocuments: [],
       organic: [],
@@ -1281,8 +1299,12 @@ describe('FindPeopleByCompanyTool Google queries', () => {
 
     const queries = decodedQueries(requestSerpGoogleJson.mock.calls);
 
-    expect(queries).toContain('99 Pancakes founder');
-    expect(queries).toContain('99 Pancakes CEO');
+    // Founder and CEO are the same taxonomy class, so they are one cell: the
+    // plain query asks once and the boolean covers every title in the class
+    expect(queries).toHaveLength(2);
+    expect(queries[0]).toBe('99 Pancakes founder');
+    expect(queries[1]).toContain('site:linkedin.com/in "99 Pancakes"');
+    expect(queries[1]).toContain('"ceo"');
   });
 
   it('should add a LinkedIn query for the second company name', async () => {
@@ -1456,8 +1478,16 @@ describe('FindPeopleByCompanyTool model extraction', () => {
       ],
     });
 
-    expect(search).toHaveBeenCalledTimes(1);
-    expect(search.mock.calls[0][0].query).toBe(
+    // Only the per-profile lookups count: the instant people search also goes
+    // through this engine, but it is not an enrichment call
+    const lookups = search.mock.calls.filter(([params]) =>
+      String((params as { query?: string })?.query ?? '').includes(
+        'linkedin.com/in',
+      ),
+    );
+
+    expect(lookups).toHaveLength(1);
+    expect((lookups[0][0] as { query?: string }).query).toBe(
       'linkedin.com/in/vikesh-shah-253a67204',
     );
   });
@@ -1766,7 +1796,14 @@ describe('FindPeopleByCompanyTool judged by a model', () => {
     expect(resolve).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'Smita Jatia' }),
     );
-    expect(search).not.toHaveBeenCalled();
+    // The instant people search may run; no paid per-profile lookup may
+    expect(
+      search.mock.calls.filter(([params]) =>
+        String((params as { query?: string })?.query ?? '').includes(
+          'linkedin.com/in',
+        ),
+      ),
+    ).toHaveLength(0);
   });
 
   it('should ask the model about two rows the name rules cannot settle', async () => {

@@ -5,6 +5,7 @@ import {
   isToolIoLoggingEnabled,
   truncateForLog,
 } from 'src/engine/core-modules/tool-provider/utils/format-tool-call-log.util';
+import { withProviderCallContext } from 'src/engine/core-modules/provider-call-log/storage/provider-call-context.storage';
 import {
   BRIGHT_DATA_CLEARLY_GOOD_SAMPLE_PRECISION,
   BRIGHT_DATA_JUDGE_SAMPLE_PER_PAGE,
@@ -163,30 +164,38 @@ export class BrightDataLudicrousExecutorService {
               break;
             }
 
-            const response =
-              await this.brightDataBusinessSearchService.searchPage({
-                entity: plan.entity,
-                query: shard.query,
-                offset,
-                limit,
-                fields: plan.fields,
-                workspaceId: plan.workspaceId,
-              });
+            const response = await withProviderCallContext(
+              { stage: 'bright-data-fetch', subject: shard.key },
+              () =>
+                this.brightDataBusinessSearchService.searchPage({
+                  entity: plan.entity,
+                  query: shard.query,
+                  offset,
+                  limit,
+                  workspaceId: plan.workspaceId,
+                }),
+            );
 
             page = response.documents;
             offset += limit;
-            spentRecords += page.length;
-            report.costUsd = roundUsd(
-              report.costUsd + costForRecordsUsd(page.length),
-            );
 
-            await this.billing.billRecords({
-              workspaceId: plan.workspaceId,
-              recordCount: page.length,
-              entity: plan.entity,
-              projectId: plan.projectId,
-              userWorkspaceId: input.userWorkspaceId,
-            });
+            // A cached page is a request already paid for; Bright Data bills
+            // nothing for a replay, so neither the provider cost nor the
+            // workspace's credits are charged again
+            if (!response.fromCache) {
+              spentRecords += page.length;
+              report.costUsd = roundUsd(
+                report.costUsd + costForRecordsUsd(page.length),
+              );
+
+              await this.billing.billRecords({
+                workspaceId: plan.workspaceId,
+                recordCount: page.length,
+                entity: plan.entity,
+                projectId: plan.projectId,
+                userWorkspaceId: input.userWorkspaceId,
+              });
+            }
 
             // A short page means the shard is exhausted
             if (page.length < limit) {

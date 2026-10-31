@@ -210,9 +210,30 @@ export class ProviderCallTraceCommand extends CommandRunner {
     }
 
     if (listRequests) {
+      // One row per call, so a retry or a cache hit repeats the same request.
+      // The history is the distinct requests, with the repeat count beside it.
+      const distinct = new Map<
+        string,
+        { call: ProviderCallEntity; count: number }
+      >();
+
       for (const call of turn.calls) {
+        const signature = signatureOf(call);
+        const seen = distinct.get(signature);
+
+        if (seen !== undefined) {
+          seen.count += 1;
+          continue;
+        }
+
+        distinct.set(signature, { call, count: 1 });
+      }
+
+      for (const { call, count } of distinct.values()) {
         lines.push(
-          `    - [${call.cacheStatus}] ${call.provider} ${call.stage ?? ''} ${
+          `    - ${count > 1 ? `x${count} ` : ''}[${
+            call.cacheStatus
+          }] ${call.provider} ${call.stage ?? ''} ${
             call.subject ?? ''
           } results=${call.resultCount ?? '?'} ${describeRequest(call)}`,
         );

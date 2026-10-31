@@ -43,6 +43,7 @@ import {
 import { PreviewSampleMessageColumnTool } from 'src/engine/core-modules/tool/tools/outreach-sample-message-tool/preview-sample-message-column-tool';
 import { SaveOutreachTargetsToCrmTool } from 'src/engine/core-modules/tool/tools/outreach-save-to-crm-tool/save-outreach-targets-to-crm-tool';
 import { FindPeopleByCompanyTool } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool';
+import { GetProjectCostsTool } from 'src/engine/core-modules/tool/tools/project-costs-tool/get-project-costs-tool';
 import { GetSourcingLedgerTool } from 'src/engine/core-modules/tool/tools/sourcing-ledger-tool/get-sourcing-ledger-tool';
 import { GetSourceCapabilitiesTool } from 'src/engine/core-modules/tool/tools/source-capabilities-tool/get-source-capabilities-tool';
 import { GetScoringPlanTool } from 'src/engine/core-modules/tool/tools/source-capabilities-tool/get-scoring-plan-tool';
@@ -84,6 +85,7 @@ export class ActionToolProvider implements ToolProvider {
     private readonly fetchProfilesTool: FetchProfilesTool,
     private readonly resolveLinkedinUrlTool: ResolveLinkedinUrlTool,
     private readonly writeLinkedinUrlTool: WriteLinkedinUrlTool,
+    private readonly getProjectCostsTool: GetProjectCostsTool,
     private readonly getSourcingLedgerTool: GetSourcingLedgerTool,
     private readonly getSourceCapabilitiesTool: GetSourceCapabilitiesTool,
     private readonly getScoringPlanTool: GetScoringPlanTool,
@@ -120,6 +122,7 @@ export class ActionToolProvider implements ToolProvider {
       ['fetch_profiles', this.fetchProfilesTool],
       ['resolve_linkedin_url', this.resolveLinkedinUrlTool],
       ['write_linkedin_url', this.writeLinkedinUrlTool],
+      ['get_project_costs', this.getProjectCostsTool],
       ['get_sourcing_ledger', this.getSourcingLedgerTool],
       ['get_source_capabilities', this.getSourceCapabilitiesTool],
       ['get_scoring_plan', this.getScoringPlanTool],
@@ -293,6 +296,15 @@ export class ActionToolProvider implements ToolProvider {
       this.buildDescriptor(
         'preview_sample_message_column',
         this.previewSampleMessageColumnTool,
+        includeSchemas,
+        context.locale,
+      ),
+    );
+
+    descriptors.push(
+      this.buildDescriptor(
+        'get_project_costs',
+        this.getProjectCostsTool,
         includeSchemas,
         context.locale,
       ),

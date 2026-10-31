@@ -26,6 +26,17 @@ type ProviderQueryCacheEnvelope<TValue> = {
 
 type CacheRead<TValue> = { value: TValue; source: 'redis_hit' | 's3_hit' };
 
+type ProviderQueryCacheOptions = {
+  // What identifies the request for caching, when it differs from what we
+  // record. A company is recorded as the user typed it and cached by its
+  // identity, so two spellings share one entry while the ledger keeps both.
+  keyParts?: unknown;
+  // The fetcher records the provider request itself (Business Search does, per
+  // attempt). The cache then logs only what a fetch cannot: a hit, or a wait on
+  // another caller's fetch, so one paid request never lands twice in the ledger
+  fetcherLogsRequest?: boolean;
+};
+
 @Injectable()
 export class ProviderQueryCacheService {
   private readonly logger = new Logger(ProviderQueryCacheService.name);
@@ -98,6 +109,7 @@ export class ProviderQueryCacheService {
     prefix: string,
     parts: unknown,
     fetcher: () => Promise<TValue>,
+    options: ProviderQueryCacheOptions = {},
   ): Promise<TValue> {
     if (this.ttlMs <= 0) {
       return this.providerCallLog
@@ -112,7 +124,7 @@ export class ProviderQueryCacheService {
         : fetcher();
     }
 
-    const key = buildProviderQueryCacheKey(prefix, parts);
+    const key = buildProviderQueryCacheKey(prefix, options.keyParts ?? parts);
     const digest = key.slice(-12);
     const existing = this.inFlight.get(key);
 
@@ -131,6 +143,7 @@ export class ProviderQueryCacheService {
       parts,
       digest,
       fetcher,
+      options,
     ).finally(() => {
       this.inFlight.delete(key);
     });
@@ -146,6 +159,7 @@ export class ProviderQueryCacheService {
     parts: unknown,
     digest: string,
     fetcher: () => Promise<TValue>,
+    options: ProviderQueryCacheOptions,
   ): Promise<TValue> {
     const cached = await this.read<TValue>(key, prefix);
 
@@ -168,18 +182,24 @@ export class ProviderQueryCacheService {
     try {
       response = await fetcher();
     } catch (error) {
-      this.logCall(prefix, parts, key, 'error', undefined, {
-        durationMs: Date.now() - startedAt,
-        errorMessage: error instanceof Error ? error.message : String(error),
-      });
+      // The fetcher's own ledger row already recorded this failure
+      if (options.fetcherLogsRequest !== true) {
+        this.logCall(prefix, parts, key, 'error', undefined, {
+          durationMs: Date.now() - startedAt,
+          errorMessage: error instanceof Error ? error.message : String(error),
+        });
+      }
 
       throw error;
     }
 
     await this.write(key, prefix, parts, response);
-    this.logCall(prefix, parts, key, 'fetched', response, {
-      durationMs: Date.now() - startedAt,
-    });
+
+    if (options.fetcherLogsRequest !== true) {
+      this.logCall(prefix, parts, key, 'fetched', response, {
+        durationMs: Date.now() - startedAt,
+      });
+    }
 
     return response;
   }

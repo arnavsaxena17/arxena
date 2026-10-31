@@ -1,6 +1,7 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 
 import { isNonEmptyString } from '@sniptt/guards';
+import { companyIdentityKey } from 'twenty-shared/arx';
 import { isDefined } from 'twenty-shared/utils';
 
 import { ProviderQueryCacheService } from 'src/engine/core-modules/cache-storage/services/provider-query-cache.service';
@@ -12,7 +13,9 @@ import {
 } from 'src/engine/core-modules/wikidata/constants/wikidata.constants';
 
 const WIKIDATA_DOMAIN_CACHE_PREFIX = 'wikidata-domain:v1';
-const WIKIDATA_NAME_CACHE_PREFIX = 'wikidata-name:v1';
+// v2 keys the name search by the company's identity, so "Jubilant FoodWorks
+// Ltd." and "Jubilant Foodworks" cost one lookup instead of two.
+const WIKIDATA_NAME_CACHE_PREFIX = 'wikidata-name:v2';
 import {
   type WikidataCompanyProfile,
   type WikidataCompanySearchResult,
@@ -150,8 +153,9 @@ export class WikidataCompanySearchService {
 
     return this.providerQueryCache.getOrFetch(
       WIKIDATA_NAME_CACHE_PREFIX,
-      { name: trimmedName.toLowerCase(), limit },
+      { name: trimmedName, limit },
       run,
+      { keyParts: { name: companyIdentityKey(trimmedName), limit } },
     );
   }
 
@@ -222,9 +226,7 @@ export class WikidataCompanySearchService {
             entity,
             WIKIDATA_PROPERTY.HEADQUARTERS,
           )[0];
-          const countryId = hqId
-            ? placeCountryByPlaceId.get(hqId)
-            : undefined;
+          const countryId = hqId ? placeCountryByPlaceId.get(hqId) : undefined;
           const countryLabel = countryId ? labelById.get(countryId) : undefined;
 
           if (countryLabel) {

@@ -63,7 +63,7 @@ describe('LinkedInSearchService Unipile search cache', () => {
     expect(result).toBe(cachedResponse);
     expect(getOrFetch).toHaveBeenCalledTimes(1);
     expect(getOrFetch).toHaveBeenCalledWith(
-      'unipile-search:v1',
+      'unipile-search:v2',
       {
         accountId: 'acct-1',
         searchRequest,
@@ -71,6 +71,39 @@ describe('LinkedInSearchService Unipile search cache', () => {
         limit: 10,
       },
       expect.any(Function),
+      {
+        keyParts: {
+          accountId: 'acct-1',
+          searchRequest,
+          cursor: undefined,
+          limit: 10,
+        },
+      },
     );
+  });
+
+  it('keys two spellings of one employer the same and records both as typed', async () => {
+    const service = await createService();
+
+    await service.search(
+      {
+        api: 'classic',
+        category: 'people',
+        company: ['Jubilant FoodWorks Ltd.'],
+      },
+      'acct-1',
+    );
+    await service.search(
+      { api: 'classic', category: 'people', company: ['Jubilant Foodworks'] },
+      'acct-1',
+    );
+
+    const [[, firstParts, , firstOptions], [, , , secondOptions]] =
+      getOrFetch.mock.calls;
+
+    expect(firstOptions.keyParts).toEqual(secondOptions.keyParts);
+    expect(firstParts.searchRequest.company).toEqual([
+      'Jubilant FoodWorks Ltd.',
+    ]);
   });
 });

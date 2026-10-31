@@ -41,6 +41,7 @@ import {
   normalizeSalesNavigatorCompaniesSearchRequest,
   normalizeSalesNavigatorPeopleSearchRequest,
 } from '../utils/normalize-sales-navigator-search-request.util';
+import { canonicalizeLinkedInSearchRequest } from '../utils/canonicalize-linkedin-search-request.util';
 import {
   SALES_NAVIGATOR_ACCOUNT_LIST_DEFAULT_SORT_BY,
   SALES_NAVIGATOR_ACCOUNT_LIST_DEFAULT_SORT_ORDER,
@@ -60,7 +61,9 @@ import { RawFetchArchiveService } from 'src/engine/core-modules/raw-fetch-archiv
 import { ProviderQueryCacheService } from 'src/engine/core-modules/cache-storage/services/provider-query-cache.service';
 import { UnipileV2AccountResolver } from './unipile-v2-account.resolver';
 
-const UNIPILE_SEARCH_CACHE_PREFIX = 'unipile-search:v1';
+// v2 keys the search by company identity, so two spellings of one employer
+// share one Unipile search instead of paying for both.
+const UNIPILE_SEARCH_CACHE_PREFIX = 'unipile-search:v2';
 
 /** Default Apify actor: LinkedIn company profile / employee scraper (console id). Override via APIFY_LINKEDIN_COMPANY_PROFILE_ACTOR_ID. */
 export const LINKEDIN_COMPANY_PROFILE_SCRAPER_ACTOR_ID =
@@ -202,15 +205,24 @@ export class LinkedInSearchService {
         return fetcher();
       }
 
+      const parts = {
+        accountId: accountId.trim(),
+        searchRequest,
+        cursor: options.cursor?.trim() || undefined,
+        limit: options.limit,
+      };
+
+      // The request is sent as written; only the key is canonical
       return await this.providerQueryCache.getOrFetch(
         UNIPILE_SEARCH_CACHE_PREFIX,
-        {
-          accountId: accountId.trim(),
-          searchRequest,
-          cursor: options.cursor?.trim() || undefined,
-          limit: options.limit,
-        },
+        parts,
         fetcher,
+        {
+          keyParts: {
+            ...parts,
+            searchRequest: canonicalizeLinkedInSearchRequest(searchRequest),
+          },
+        },
       );
     } catch (error) {
       this.logger.error(`LinkedIn search failed exception: ${error}`);

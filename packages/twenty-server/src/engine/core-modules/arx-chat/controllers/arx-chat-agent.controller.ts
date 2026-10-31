@@ -20,7 +20,7 @@ import {
   Project,
   MessageNode,
   PersonNode,
-  whatappUpdateMessageObjType
+  whatappUpdateMessageObjType,
 } from 'twenty-shared';
 
 import { PageInfo } from 'cloudflare/core';
@@ -38,9 +38,7 @@ import { ToolCallsProcessing } from 'src/engine/core-modules/arx-chat/services/l
 import { MessagingControls } from 'src/engine/core-modules/arx-chat/services/messaging-controls';
 import { WorkspaceMemberArxService } from 'src/engine/core-modules/arx-chat/services/workspace-member-arx.service';
 import { WorkspaceMemberUnipileService } from 'src/engine/core-modules/arx-chat/services/workspace-member-unipile.service';
-import {
-  formatChat
-} from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
+import { formatChat } from 'src/engine/core-modules/arx-chat/utils/arx-chat-agent-utils';
 import { GoogleContactsService } from 'src/engine/core-modules/google-contacts/google-contacts.service';
 import { GoogleSheetsService } from 'src/engine/core-modules/google-sheets/google-sheets.service';
 import { StaticGraphQLService } from 'src/engine/core-modules/graphql/static-graphql.service';
@@ -75,7 +73,9 @@ export class ArxChatEndpoint {
   @Post('start-chat')
   @UseGuards(JwtAuthGuard)
   async startChat(@Req() request: any) {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, ''); // Assuming Bearer token
     const candidateId = request.body.candidateId;
 
     const chatControl: ChatControlsObjType = {
@@ -86,7 +86,7 @@ export class ArxChatEndpoint {
     const response = await this.candidateEngagementArx.createChatControl(
       candidateId,
       chatControl,
-      apiToken
+      apiToken,
     );
 
     console.log('Response from create start-Chat api', response);
@@ -97,22 +97,30 @@ export class ArxChatEndpoint {
       await this.updateChat.createInterimChatQueue(
         'startChat', // Simple greeting to start the conversation
         candidateId,
-        apiToken
+        apiToken,
       );
 
-      console.log('Successfully created interim chat message for candidate', candidateId);
+      console.log(
+        'Successfully created interim chat message for candidate',
+        candidateId,
+      );
     } catch (error) {
       console.error('Error creating interim chat message:', error);
       // Don't throw here as the main startChat operation was successful
     }
 
-    return { status: 'Success', message: 'Chat started and engagement enabled' };
+    return {
+      status: 'Success',
+      message: 'Chat started and engagement enabled',
+    };
   }
 
   @Post('start-chat-queue')
   @UseGuards(JwtAuthGuard)
   async startChatQueue(@Req() request: any) {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, ''); // Assuming Bearer token
     const candidateId = request.body.candidateId;
 
     // Queue the candidate for engagement processing with all operations moved to worker
@@ -121,16 +129,25 @@ export class ArxChatEndpoint {
       await this.updateChat.createInterimChatQueue(
         'startChat', // Simple greeting to start the conversation
         candidateId,
-        apiToken
+        apiToken,
       );
 
-      console.log('Successfully queued candidate for start chat processing', candidateId);
+      console.log(
+        'Successfully queued candidate for start chat processing',
+        candidateId,
+      );
     } catch (error) {
-      console.error('Error queuing candidate for start chat processing:', error);
+      console.error(
+        'Error queuing candidate for start chat processing:',
+        error,
+      );
       throw error;
     }
 
-    return { status: 'Success', message: 'Candidate queued for start chat processing' };
+    return {
+      status: 'Success',
+      message: 'Candidate queued for start chat processing',
+    };
   }
 
   // @Post('start-chats-by-job-candidate-ids')
@@ -159,7 +176,9 @@ export class ArxChatEndpoint {
 
   @Post('start-chats-by-candidate-ids')
   async startChatsByCandidateIds(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
     const candidateIds = request.body.candidateIds;
     console.log('candidateIds', candidateIds);
     console.log('Number of candidate Ids to start chats', candidateIds.length);
@@ -173,19 +192,25 @@ export class ArxChatEndpoint {
         await this.candidateEngagementArx.createChatControl(
           candidateId,
           chatControl,
-          apiToken
+          apiToken,
         );
 
         // Step 2: Create an incoming message to set engagementStatus to true
         await this.updateChat.createInterimChatQueue(
           'startChat', // Simple greeting to start the conversation
           candidateId,
-          apiToken
+          apiToken,
         );
 
-        console.log('Successfully started chat and engagement for candidate', candidateId);
+        console.log(
+          'Successfully started chat and engagement for candidate',
+          candidateId,
+        );
       } catch (error) {
-        console.error(`Error starting chat for candidate ${candidateId}:`, error);
+        console.error(
+          `Error starting chat for candidate ${candidateId}:`,
+          error,
+        );
         // Continue with next candidate even if this one fails
       }
     }
@@ -208,15 +233,23 @@ export class ArxChatEndpoint {
       }
     }
 
-    return { status: 'Success', message: `Processed ${candidateIds.length} candidates` };
+    return {
+      status: 'Success',
+      message: `Processed ${candidateIds.length} candidates`,
+    };
   }
 
   @Post('start-chats-queue-by-candidate-ids')
   async startChatsQueueByCandidateIds(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
     const candidateIds = request.body.candidateIds;
     console.log('candidateIds', candidateIds);
-    console.log('Number of candidate Ids to start chats queue', candidateIds.length);
+    console.log(
+      'Number of candidate Ids to start chats queue',
+      candidateIds.length,
+    );
 
     let jobForSpread: Project | null = null;
     if (candidateIds.length > 0) {
@@ -240,13 +273,13 @@ export class ArxChatEndpoint {
       typeof bodyMinutesPerMessage === 'number' &&
       !Number.isNaN(bodyMinutesPerMessage)
         ? bodyMinutesPerMessage
-        : jobForSpread?.startChatSpreadMinutesPerMessage ??
-          DEFAULT_START_CHAT_SPREAD_MINUTES_PER_MESSAGE;
+        : (jobForSpread?.startChatSpreadMinutesPerMessage ??
+          DEFAULT_START_CHAT_SPREAD_MINUTES_PER_MESSAGE);
     const maxSpreadMinutes =
       typeof bodyMaxSpread === 'number' && !Number.isNaN(bodyMaxSpread)
         ? bodyMaxSpread
-        : jobForSpread?.startChatMaxSpreadMinutes ??
-          DEFAULT_START_CHAT_MAX_SPREAD_MINUTES;
+        : (jobForSpread?.startChatMaxSpreadMinutes ??
+          DEFAULT_START_CHAT_MAX_SPREAD_MINUTES);
 
     const spreadDelaysMs = computeStartChatSpreadDelaysMs({
       candidateCount: candidateIds.length,
@@ -271,9 +304,15 @@ export class ArxChatEndpoint {
           { delayMs },
         );
 
-        console.log('Successfully queued chat and engagement for candidate', candidateId);
+        console.log(
+          'Successfully queued chat and engagement for candidate',
+          candidateId,
+        );
       } catch (error) {
-        console.error(`Error queuing chat for candidate ${candidateId}:`, error);
+        console.error(
+          `Error queuing chat for candidate ${candidateId}:`,
+          error,
+        );
         // Continue with next candidate even if this one fails
       }
     }
@@ -296,13 +335,18 @@ export class ArxChatEndpoint {
       }
     }
 
-    return { status: 'Success', message: `Queued ${candidateIds.length} candidates for engagement processing` };
+    return {
+      status: 'Success',
+      message: `Queued ${candidateIds.length} candidates for engagement processing`,
+    };
   }
 
   @Post('stop-chat')
   @UseGuards(JwtAuthGuard)
   async stopChat(@Req() request: any) {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, ''); // Assuming Bearer token
 
     const graphqlVariables = {
       idToUpdate: request.body.candidateId,
@@ -311,21 +355,26 @@ export class ArxChatEndpoint {
       },
     };
 
-
-    const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, graphqlVariables, apiToken);
+    const response = await this.staticGraphQLService.executeGraphQL(
+      graphQltoUpdateOneCandidate,
+      graphqlVariables,
+      apiToken,
+    );
   }
 
   @Post('fetch-candidate-by-phone-number-start-chat')
   @UseGuards(JwtAuthGuard)
   async fetchCandidateByPhoneNumber(@Req() request: any) {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, ''); // Assuming Bearer token
     const phoneNumber = request.body.phoneNumber;
 
     console.log('called fetchCandidateByPhoneNumber for phone:', phoneNumber);
-    const personObj : PersonNode | undefined = await new FilterCandidates(
+    const personObj: PersonNode | undefined = await new FilterCandidates(
       this.workspaceQueryService,
       this.staticGraphQLService,
-      ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
+    ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
     const candidateId = personObj?.candidates?.edges?.[0]?.node?.id;
     const graphqlVariables = {
       idToUpdate: candidateId,
@@ -338,7 +387,11 @@ export class ArxChatEndpoint {
       variables: graphqlVariables,
     });
 
-    const response = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, graphqlVariables, apiToken);
+    const response = await this.staticGraphQLService.executeGraphQL(
+      graphQltoUpdateOneCandidate,
+      graphqlVariables,
+      apiToken,
+    );
 
     console.log(
       'Response from create fetch-candidate-by-phone-number-start::',
@@ -400,7 +453,9 @@ export class ArxChatEndpoint {
   @Post('start-interim-chat-prompt')
   @UseGuards(JwtAuthGuard)
   async startInterimChat(@Req() request: any) {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, ''); // Assuming Bearer token
     const interimChat = request.body.interimChat;
     const candidateId = request.body.candidateId;
 
@@ -416,35 +471,41 @@ export class ArxChatEndpoint {
   @Post('reset-messages-from-whatsapp')
   @UseGuards(JwtAuthGuard)
   async resetMessagesFromWhatsapp(@Req() request: any) {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, ''); // Assuming Bearer token
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, ''); // Assuming Bearer token
     const candidateIds = request.body.candidateIds;
 
     console.log('called resetMessagesFromWhatsapp:', candidateIds);
     for (const candidateId of candidateIds) {
-    await this.updateChat.resetMessagesFromWhatsapp(
-      candidateId,
-      apiToken,
-    );
+      await this.updateChat.resetMessagesFromWhatsapp(candidateId, apiToken);
 
-    const graphqlVariablesStopChat = {
-      idToUpdate: candidateId,
-      input: {
-        startChat: true,
-        engagementStatus: false,
-      },
-    };
-    const responseStopChat = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, graphqlVariablesStopChat, apiToken);
+      const graphqlVariablesStopChat = {
+        idToUpdate: candidateId,
+        input: {
+          startChat: true,
+          engagementStatus: false,
+        },
+      };
+      const responseStopChat = await this.staticGraphQLService.executeGraphQL(
+        graphQltoUpdateOneCandidate,
+        graphqlVariablesStopChat,
+        apiToken,
+      );
 
-    const graphqlVariablesStartChat = {
-      idToUpdate: candidateId,
-      input: {
-        startChat: true,
-        engagementStatus: false,
-      },
-    };
-    const responseStartChat = await this.staticGraphQLService.executeGraphQL(graphQltoUpdateOneCandidate, graphqlVariablesStartChat, apiToken);
+      const graphqlVariablesStartChat = {
+        idToUpdate: candidateId,
+        input: {
+          startChat: true,
+          engagementStatus: false,
+        },
+      };
+      const responseStartChat = await this.staticGraphQLService.executeGraphQL(
+        graphQltoUpdateOneCandidate,
+        graphqlVariablesStartChat,
+        apiToken,
+      );
     }
-
 
     return;
   }
@@ -457,11 +518,13 @@ export class ArxChatEndpoint {
     const authHeader = request.headers.authorization;
     const apiToken =
       typeof authHeader === 'string'
-        ? authHeader.split(' ')[1]?.replace(/[\r\n]+/g, '') ?? ''
+        ? (authHeader.split(' ')[1]?.replace(/[\r\n]+/g, '') ?? '')
         : '';
 
     const candidateIdsRaw = request.body?.candidateIds;
-    const messagingChannel = request.body?.messagingChannel as string | undefined;
+    const messagingChannel = request.body?.messagingChannel as
+      | string
+      | undefined;
 
     if (!Array.isArray(candidateIdsRaw) || candidateIdsRaw.length === 0) {
       throw new BadRequestException('candidateIds must be a non-empty array');
@@ -475,7 +538,9 @@ export class ArxChatEndpoint {
     }
 
     const channel = messagingChannel.trim();
-    if (!isAllowedMessagingChannel(channel, ALLOWED_CANDIDATE_MESSAGING_CHANNELS)) {
+    if (
+      !isAllowedMessagingChannel(channel, ALLOWED_CANDIDATE_MESSAGING_CHANNELS)
+    ) {
       throw new BadRequestException(
         `Invalid messagingChannel: ${channel}. Allowed: ${[
           ...ALLOWED_CANDIDATE_MESSAGING_CHANNELS,
@@ -523,7 +588,7 @@ export class ArxChatEndpoint {
     const authHeader = request.headers.authorization;
     const apiToken =
       typeof authHeader === 'string'
-        ? authHeader.split(' ')[1]?.replace(/[\r\n]+/g, '') ?? ''
+        ? (authHeader.split(' ')[1]?.replace(/[\r\n]+/g, '') ?? '')
         : '';
 
     const candidateIdsRaw = request.body?.candidateIds;
@@ -574,7 +639,9 @@ export class ArxChatEndpoint {
   @Post('send-chat')
   @UseGuards(JwtAuthGuard)
   async sendChat(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
 
     const messageToSend = request?.body?.messageToSend;
     const phoneNumber = request.body.phoneNumberTo;
@@ -585,31 +652,30 @@ export class ArxChatEndpoint {
     ).getPersonDetailsByPhoneNumber(phoneNumber, apiToken);
 
     console.log('This is the chat reply:', messageToSend);
-    const candidateJob: Project | undefined = personObj?.candidates?.edges[0]?.node?.project;
-    const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getByProject(
-      candidateJob as Project,
-      apiToken,
-    );
+    const candidateJob: Project | undefined =
+      personObj?.candidates?.edges[0]?.node?.project;
+    const workspaceMember = await new WorkspaceMemberArxService(
+      this.staticGraphQLService,
+    ).getByProject(candidateJob as Project, apiToken);
     if (!workspaceMember) {
       throw new Error('Workspace member not found for job');
     }
 
     console.log('Workspace member profile', workspaceMember);
-    const chatMessages =
-      personObj?.candidates?.edges.filter(
-        (candidate) => candidate.node.project.id == candidateJob?.id,
-      )[0]?.node?.chatMessages?.edges;
+    const chatMessages = personObj?.candidates?.edges.filter(
+      (candidate) => candidate.node.project.id == candidateJob?.id,
+    )[0]?.node?.chatMessages?.edges;
     let chatHistory = chatMessages?.[0]?.node?.messageObj || [];
     const chatControl: ChatControlsObjType = {
       chatControlType: 'startChat',
     };
-    chatHistory =
-      personObj?.candidates?.edges.filter(
-        (candidate) => candidate.node.project.id == candidateJob?.id,
-      )[0]?.node?.chatMessages?.edges[0]?.node?.messageObj;
-    let messageTo:string = personObj?.phones?.primaryPhoneNumber?.length == 10
-      ? '91' + personObj?.phones?.primaryPhoneNumber
-    : personObj?.phones?.primaryPhoneNumber || '';
+    chatHistory = personObj?.candidates?.edges.filter(
+      (candidate) => candidate.node.project.id == candidateJob?.id,
+    )[0]?.node?.chatMessages?.edges[0]?.node?.messageObj;
+    let messageTo: string =
+      personObj?.phones?.primaryPhoneNumber?.length == 10
+        ? '91' + personObj?.phones?.primaryPhoneNumber
+        : personObj?.phones?.primaryPhoneNumber || '';
     if (
       messagingChannelEquals(
         personObj?.candidates?.edges[0]?.node?.messagingChannel,
@@ -617,18 +683,24 @@ export class ArxChatEndpoint {
       )
     ) {
       messageTo = personObj?.linkedinLink?.primaryLinkUrl || '';
-    }
-    else{
-      messageTo = personObj?.phones?.primaryPhoneNumber?.length == 10
+    } else {
+      messageTo =
+        personObj?.phones?.primaryPhoneNumber?.length == 10
           ? '91' + personObj?.phones?.primaryPhoneNumber
           : personObj?.phones?.primaryPhoneNumber || '';
     }
-    console.log("This is the messaging channel ::", personObj?.candidates?.edges.filter(
-      (candidate) => candidate.node.project.id == candidateJob?.id,
-    )[0]?.node.messagingChannel)
-    console.log("This is the whatsapp provider ::", personObj?.candidates?.edges.filter(
-      (candidate) => candidate.node.project.id == candidateJob?.id,
-    )[0]?.node.whatsappProvider)
+    console.log(
+      'This is the messaging channel ::',
+      personObj?.candidates?.edges.filter(
+        (candidate) => candidate.node.project.id == candidateJob?.id,
+      )[0]?.node.messagingChannel,
+    );
+    console.log(
+      'This is the whatsapp provider ::',
+      personObj?.candidates?.edges.filter(
+        (candidate) => candidate.node.project.id == candidateJob?.id,
+      )[0]?.node.whatsappProvider,
+    );
 
     const whatappUpdateMessageObj: whatappUpdateMessageObjType = {
       id: uuidv4(),
@@ -640,8 +712,7 @@ export class ArxChatEndpoint {
       whatsappMessageType:
         personObj?.candidates?.edges.filter(
           (candidate) => candidate.node.project.id == candidateJob?.id,
-        )[0]?.node.whatsappProvider ||
-        'application03',
+        )[0]?.node.whatsappProvider || 'application03',
       phoneNumberTo: messageTo,
       messages: [{ content: request?.body?.messageToSend }],
       messageType: 'recruiterMessage',
@@ -664,7 +735,8 @@ export class ArxChatEndpoint {
       (candidate) => candidate.node.project.id == candidateJob?.id,
     )[0]?.node as CandidateNode;
 
-    const candidateChatHistory = candidateNode?.chatMessages?.edges[0]?.node?.messageObj || [];
+    const candidateChatHistory =
+      candidateNode?.chatMessages?.edges[0]?.node?.messageObj || [];
     const candidateChatControl: ChatControlsObjType = {
       chatControlType: 'startChat',
     };
@@ -700,7 +772,10 @@ export class ArxChatEndpoint {
     );
 
     if (sendResult.status === 'failed') {
-      return { status: 'failed', message: sendResult.message || 'Failed to send message' };
+      return {
+        status: 'failed',
+        message: sendResult.message || 'Failed to send message',
+      };
     }
 
     return { status: 'success' };
@@ -708,10 +783,10 @@ export class ArxChatEndpoint {
 
   @Post('get-all-messages-by-candidate-id')
   @UseGuards(JwtAuthGuard)
-  async getChatMessagesByCandidateId(
-    @Req() request: any,
-  ): Promise<object[]> {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+  async getChatMessagesByCandidateId(@Req() request: any): Promise<object[]> {
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
     const candidateId = request.body.candidateId;
     const personId = request.body.personId;
     const allChatMessages = await new FilterCandidates(
@@ -725,7 +800,9 @@ export class ArxChatEndpoint {
   @Post('get-all-messages-by-phone-number')
   @UseGuards(JwtAuthGuard)
   async getAllMessagesByPhoneNumber(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
 
     console.log(
       'Going to get all messages by phone Number for :',
@@ -735,7 +812,8 @@ export class ArxChatEndpoint {
       this.workspaceQueryService,
       this.staticGraphQLService,
     ).getPersonDetailsByPhoneNumber(request.body.phoneNumber, apiToken);
-    const candidateId: string | undefined = personObj?.candidates?.edges[0]?.node?.id;
+    const candidateId: string | undefined =
+      personObj?.candidates?.edges[0]?.node?.id;
     const allChatMessages: MessageNode[] = await new FilterCandidates(
       this.workspaceQueryService,
       this.staticGraphQLService,
@@ -756,7 +834,9 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async countChats(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const { candidateIds } = request.body;
 
       console.log('going to refresh chats');
@@ -766,17 +846,19 @@ export class ArxChatEndpoint {
         this.workspaceQueryService,
         this.staticGraphQLService,
       ).getProjectIdsFromCandidateIds(candidateIds, apiToken);
-      const results = await this.updateChat.processCandidatesChatsGetStatuses(apiToken, projectIds, candidateIds, "countChats");
+      const results = await this.updateChat.processCandidatesChatsGetStatuses(
+        apiToken,
+        projectIds,
+        candidateIds,
+        'countChats',
+      );
 
       console.log(
         'Have received results and will try and update the sheets also from the controlelr',
       );
       await new GoogleSheetsService(
         this.staticGraphQLService,
-      ).updateGoogleSheetsWithChatData(
-        results,
-        apiToken,
-      );
+      ).updateGoogleSheetsWithChatData(results, apiToken);
 
       return { status: 'Success' };
     } catch (err) {
@@ -789,13 +871,18 @@ export class ArxChatEndpoint {
   @Post('refresh-chat-counts-by-candidates')
   @UseGuards(JwtAuthGuard)
   async refreshChats(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
 
     try {
       const { candidateIds } = request.body;
 
       console.log('going to refresh chat counts by candidate Ids');
-      await this.updateChat.updateCandidatesWithChatCount(candidateIds, apiToken);
+      await this.updateChat.updateCandidatesWithChatCount(
+        candidateIds,
+        apiToken,
+      );
 
       return { status: 'Success' };
     } catch (err) {
@@ -809,12 +896,12 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async testArxenaConnection(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
 
       console.log('going to test arxena connection');
-      await this.updateChat.testArxenaConnection(
-        apiToken,
-      );
+      await this.updateChat.testArxenaConnection(apiToken);
       console.log(
         'This is the response in create testArxenaConnection testArxenaConnection',
       );
@@ -827,14 +914,14 @@ export class ArxChatEndpoint {
     }
   }
 
-
-
   @Get('get-person-chat')
   @UseGuards(JwtAuthGuard)
   async getCandidateAndChat(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
     const candidateId = request.query.candidateId;
-    const person: PersonNode | undefined  = await new FilterCandidates(
+    const person: PersonNode | undefined = await new FilterCandidates(
       this.workspaceQueryService,
       this.staticGraphQLService,
     ).getPersonDetailsByCandidateId(candidateId, apiToken);
@@ -844,7 +931,7 @@ export class ArxChatEndpoint {
     const allPeople: PersonNode[] | undefined = await new FilterCandidates(
       this.workspaceQueryService,
       this.staticGraphQLService,
-      ).fetchAllPeopleByPeopleIds([person?.id as string], apiToken);
+    ).fetchAllPeopleByPeopleIds([person?.id as string], apiToken);
 
     console.log('All people length:', allPeople?.length);
 
@@ -861,7 +948,9 @@ export class ArxChatEndpoint {
   async checkHumanLike(@Req() request: any): Promise<object> {
     console.log('This is the request body', request.body);
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
 
       const personObj: PersonNode | undefined = await new FilterCandidates(
         this.workspaceQueryService,
@@ -887,7 +976,9 @@ export class ArxChatEndpoint {
   @Post('update-whatsapp-delivery-status')
   @UseGuards(JwtAuthGuard)
   async updateDeliveryStatus(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
     const listOfMessagesIds: string[] = request.body.listOfMessagesIds;
 
     try {
@@ -904,7 +995,12 @@ export class ArxChatEndpoint {
           variables: variablesToUpdateDeliveryStatus,
         });
 
-        const responseOfDeliveryStatus = await this.staticGraphQLService.executeGraphQL(graphqlToUpdateChatMessage, variablesToUpdateDeliveryStatus, apiToken);
+        const responseOfDeliveryStatus =
+          await this.staticGraphQLService.executeGraphQL(
+            graphqlToUpdateChatMessage,
+            variablesToUpdateDeliveryStatus,
+            apiToken,
+          );
 
         console.log(
           'responseOfDeliveryStatus::',
@@ -926,7 +1022,9 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async shareJDToCandidate(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const { candidateId } = request.body;
 
       if (!candidateId) {
@@ -939,17 +1037,22 @@ export class ArxChatEndpoint {
         variables: { filter: { id: { eq: candidateId } } },
       });
 
-      const candidateResponse = await this.staticGraphQLService.executeGraphQL(graphqlToFetchAllCandidateData, {
-        filter: { id: { eq: candidateId } },
-      }, apiToken);
+      const candidateResponse = await this.staticGraphQLService.executeGraphQL(
+        graphqlToFetchAllCandidateData,
+        {
+          filter: { id: { eq: candidateId } },
+        },
+        apiToken,
+      );
 
-      const candidates = candidateResponse?.data?.data?.candidates as {
-        edges: CandidateEdge[];
-        pageInfo: PageInfo;
-      } | undefined;
+      const candidates = candidateResponse?.data?.data?.candidates as
+        | {
+            edges: CandidateEdge[];
+            pageInfo: PageInfo;
+          }
+        | undefined;
 
-      const candidateNode =
-        candidates?.edges[0]?.node;
+      const candidateNode = candidates?.edges[0]?.node;
 
       if (!candidateNode) {
         throw new HttpException('Candidate not found', HttpStatus.NOT_FOUND);
@@ -1000,11 +1103,14 @@ export class ArxChatEndpoint {
   @UseGuards(JwtAuthGuard)
   async sendBaileysMessageToSelf(@Req() request: any): Promise<object> {
     try {
-      const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+      const apiToken = request.headers.authorization
+        .split(' ')[1]
+        .replace(/[\r\n]+/g, '');
       const origin = request.headers.origin;
 
       // Import the BaileysWhatsappAPI class
-      const { BaileysWhatsappAPI } = await import('../services/whatsapp-api/baileys/callBaileys');
+      const { BaileysWhatsappAPI } =
+        await import('../services/whatsapp-api/baileys/callBaileys');
 
       // Create instance of BaileysWhatsappAPI
       const baileysAPI = new BaileysWhatsappAPI(
@@ -1013,19 +1119,26 @@ export class ArxChatEndpoint {
       );
 
       // Get recruiter profile to get the actual phone number
-      const workspaceMember = await new WorkspaceMemberArxService(this.staticGraphQLService).getFromCurrentUser(apiToken, origin);
-      const currentUser = await new WorkspaceMemberArxService(this.staticGraphQLService).getCurrentUser(apiToken, origin);
+      const workspaceMember = await new WorkspaceMemberArxService(
+        this.staticGraphQLService,
+      ).getFromCurrentUser(apiToken, origin);
+      const currentUser = await new WorkspaceMemberArxService(
+        this.staticGraphQLService,
+      ).getCurrentUser(apiToken, origin);
       console.log('workspaceMember', workspaceMember);
 
       if (!workspaceMember?.phoneNumber) {
-        throw new HttpException('Recruiter phone number not found', HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          'Recruiter phone number not found',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       // Create a simple message object for sending text message
       const sendTextMessageObj = {
         phoneNumberFrom: workspaceMember.phoneNumber,
         phoneNumberTo: workspaceMember.phoneNumber,
-        messages: 'This is a sample test message from Arxena API'
+        messages: 'This is a sample test message from Arxena API',
       };
 
       // Create a minimal mock candidate for the API call
@@ -1036,8 +1149,8 @@ export class ArxChatEndpoint {
           id: 'test-job-id',
           title: 'Test Project',
           company: { name: 'Test Company' },
-          recruiterId: currentUser?.workspaceMember?.id
-        }
+          recruiterId: currentUser?.workspaceMember?.id,
+        },
       } as any;
 
       // Call the simpler sendWhatsappTextMessageViaBaileys function
@@ -1049,7 +1162,10 @@ export class ArxChatEndpoint {
 
       console.log('Baileys API response:', response);
 
-      return { status: 'success', message: 'Sample Baileys message sent successfully' };
+      return {
+        status: 'success',
+        message: 'Sample Baileys message sent successfully',
+      };
     } catch (error) {
       console.error('Error sending sample Baileys message:', error);
       throw new HttpException(
@@ -1062,13 +1178,33 @@ export class ArxChatEndpoint {
   @Post('send-chat-candidate-id')
   @UseGuards(JwtAuthGuard)
   async sendChatCandidateId(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
     const messageToSend = request?.body?.messageToSend;
     const candidateId = request.body.candidateId;
+    // Optional override so the drawer can send on LinkedIn, WhatsApp, or email
+    // regardless of the candidate's current messagingChannel.
+    const rawChannel = request?.body?.channel;
+    const channelOverride =
+      typeof rawChannel === 'string' && rawChannel.trim()
+        ? (normalizeMessagingChannel(rawChannel.trim()) ?? undefined)
+        : undefined;
+
+    if (
+      channelOverride &&
+      !ALLOWED_CANDIDATE_MESSAGING_CHANNELS.has(channelOverride)
+    ) {
+      throw new BadRequestException(
+        `Unsupported channel "${rawChannel}". Use one of: ${[...ALLOWED_CANDIDATE_MESSAGING_CHANNELS].join(', ')}`,
+      );
+    }
+
     const sendResult = await this.messagingControls.sendMessageToCandidateById(
       candidateId,
       messageToSend,
       apiToken,
+      channelOverride,
     );
     if (sendResult.status === 'failed') {
       return { status: 'failed', message: sendResult.message };
@@ -1078,7 +1214,9 @@ export class ArxChatEndpoint {
 
   @Post('send-bulk-chats-by-candidate-ids')
   async sendBulkChatsByCandidateIds(@Req() request: any): Promise<object> {
-    const apiToken = request.headers.authorization.split(' ')[1].replace(/[\r\n]+/g, '');
+    const apiToken = request.headers.authorization
+      .split(' ')[1]
+      .replace(/[\r\n]+/g, '');
     const candidateIds = request.body.candidateIds;
     for (const candidateId of candidateIds) {
       await this.messagingControls.sendMessageToCandidateById(

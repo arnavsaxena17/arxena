@@ -1,7 +1,7 @@
 import { isNonEmptyString } from '@sniptt/guards';
 import { type MessageNode } from 'twenty-shared';
 
-import { expandLinkedinTranscriptRows } from 'src/engine/core-modules/arx-chat/utils/expand-linkedin-chat-turns.util';
+import { expandChatTranscriptRows } from 'src/engine/core-modules/arx-chat/utils/expand-chat-transcript-turns.util';
 
 export type CandidateChatHydrationTarget = {
   id: string;
@@ -52,7 +52,7 @@ export const assignChatMessagesToCandidates = (
   candidates: CandidateChatHydrationTarget[],
   messages: MessageNode[],
 ): void => {
-  const expanded = expandLinkedinTranscriptRows(messages);
+  const expanded = expandChatTranscriptRows(messages);
   const byCandidateId = new Map<string, MessageNode[]>();
   const byPersonId = new Map<string, MessageNode[]>();
 

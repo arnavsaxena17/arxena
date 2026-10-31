@@ -232,5 +232,90 @@ describe('ProviderQueryCacheService', () => {
         'redis_hit',
       ]);
     });
+
+    it('leaves the fetch row to a fetcher that records its own request', async () => {
+      const fetcher = jest.fn().mockResolvedValue({ documents: [1] });
+
+      await loggedService.getOrFetch(
+        'bright-data-search-page:v1',
+        { q: 'b' },
+        fetcher,
+        {
+          fetcherLogsRequest: true,
+        },
+      );
+      await loggedService.getOrFetch(
+        'bright-data-search-page:v1',
+        { q: 'b' },
+        fetcher,
+        {
+          fetcherLogsRequest: true,
+        },
+      );
+
+      // Only the replay is logged here: the paid request is the fetcher's row
+      expect(record.mock.calls.map(([entry]) => entry.cacheStatus)).toEqual([
+        'redis_hit',
+      ]);
+    });
+
+    it('leaves an error row to a fetcher that records its own request', async () => {
+      await expect(
+        loggedService.getOrFetch(
+          'bright-data-search-page:v1',
+          { q: 'c' },
+          async () => {
+            throw new Error('HTTP 503');
+          },
+          { fetcherLogsRequest: true },
+        ),
+      ).rejects.toThrow('HTTP 503');
+
+      expect(record).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('canonical key parts', () => {
+    it('shares one entry for two spellings of the same company', async () => {
+      const fetcher = jest.fn().mockResolvedValue({ rows: [1] });
+
+      await service.getOrFetch(
+        'wikidata-name:v2',
+        { name: 'Jubilant FoodWorks Ltd.' },
+        fetcher,
+        { keyParts: { name: 'jubilant foodworks' } },
+      );
+      await service.getOrFetch(
+        'wikidata-name:v2',
+        { name: 'Jubilant Foodworks' },
+        fetcher,
+        { keyParts: { name: 'jubilant foodworks' } },
+      );
+
+      expect(fetcher).toHaveBeenCalledTimes(1);
+      expect(cache.set).toHaveBeenCalledTimes(1);
+    });
+
+    it('records the request as it was written, not as it was keyed', async () => {
+      const record = jest.fn();
+      const loggedService = new ProviderQueryCacheService(
+        cache as never,
+        fileStorage as never,
+        { record } as never,
+      );
+
+      await loggedService.getOrFetch(
+        'wikidata-name:v2',
+        { name: 'Jubilant FoodWorks Ltd.' },
+        async () => ({ rows: [] }),
+        { keyParts: { name: 'jubilant foodworks' } },
+      );
+
+      expect(record).toHaveBeenCalledWith(
+        expect.objectContaining({
+          request: { name: 'Jubilant FoodWorks Ltd.' },
+        }),
+      );
+    });
   });
 });
