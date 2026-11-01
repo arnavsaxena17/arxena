@@ -1,10 +1,11 @@
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import {
-    LinkedInLocationAutocompleteItem,
-    useLinkedInLocationAutocomplete,
+  LinkedInLocationAutocompleteItem,
+  useLinkedInLocationAutocomplete,
 } from '../hooks/useLinkedInLocationAutocomplete';
 
 export type LinkedInLocationAutocompleteProps = {
@@ -34,20 +35,20 @@ const StyledWrapper = styled.div`
 
 const StyledInput = styled.input`
   width: 100%;
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.primary};
-  background: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  padding: ${themeCssVariables.spacing['1']} ${themeCssVariables.spacing['2']};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.primary};
+  background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
 
   &::placeholder {
-    color: ${({ theme }) => theme.font.color.tertiary};
+    color: ${themeCssVariables.font.color.tertiary};
   }
 
   &:focus {
     outline: none;
-    border-color: ${({ theme }) => theme.color.blue};
+    border-color: ${themeCssVariables.color.blue};
   }
 
   &:disabled {
@@ -70,43 +71,43 @@ const StyledDropdown = styled.ul<{
   max-height: ${DROPDOWN_MAX_HEIGHT}px;
   overflow-y: auto;
   margin: 0;
-  padding: ${({ theme }) => theme.spacing(1)};
+  padding: ${themeCssVariables.spacing['1']};
   list-style: none;
-  background: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  box-shadow: ${({ theme }) => theme.boxShadow.strong};
+  background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.md};
+  box-shadow: ${themeCssVariables.boxShadow.strong};
   z-index: ${DROPDOWN_PORTAL_Z_INDEX};
 `;
 
 const StyledDropdownItem = styled.li`
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
+  padding: ${themeCssVariables.spacing['1.5']} ${themeCssVariables.spacing['2']};
   cursor: pointer;
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  font-size: ${themeCssVariables.font.size.sm};
 
   &:hover {
-    background: ${({ theme }) => theme.background.transparent.light};
+    background: ${themeCssVariables.background.transparent.light};
   }
 `;
 
 const StyledEmptyMessage = styled.div`
-  padding: ${({ theme }) => theme.spacing(2)};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  color: ${({ theme }) => theme.font.color.tertiary};
+  padding: ${themeCssVariables.spacing['2']};
+  font-size: ${themeCssVariables.font.size.sm};
+  color: ${themeCssVariables.font.color.tertiary};
   text-align: center;
 `;
 
 const StyledClearButton = styled.button`
   position: absolute;
-  right: ${({ theme }) => theme.spacing(1)};
+  right: ${themeCssVariables.spacing['1']};
   top: 50%;
   transform: translateY(-50%);
   border: none;
   background: transparent;
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
   cursor: pointer;
-  font-size: ${({ theme }) => theme.font.size.xs};
+  font-size: ${themeCssVariables.font.size.xs};
 `;
 
 export const LinkedInLocationAutocomplete = ({

@@ -65,6 +65,10 @@
         "outDir": "dist"
       },
       {
+        "include": "engine/core-modules/billing/constants/pricing-catalog.json",
+        "outDir": "dist"
+      },
+      {
         "include": "engine/core-modules/outreach-command/utils/mock-unipile-profiles/*.json",
         "outDir": "dist"
       },

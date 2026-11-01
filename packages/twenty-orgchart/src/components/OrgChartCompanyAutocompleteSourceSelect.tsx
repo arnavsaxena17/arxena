@@ -1,22 +1,23 @@
-import styled from '@emotion/styled';
+import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import {
-    ORG_CHART_COMPANY_AUTOCOMPLETE_SOURCE_LABELS,
-    ORG_CHART_COMPANY_AUTOCOMPLETE_SOURCES,
-    type OrgChartCompanyAutocompleteSource,
+  ORG_CHART_COMPANY_AUTOCOMPLETE_SOURCE_LABELS,
+  ORG_CHART_COMPANY_AUTOCOMPLETE_SOURCES,
+  type OrgChartCompanyAutocompleteSource,
 } from '../types/orgChartCompanyAutocompleteSource';
 
 const StyledSelect = styled.select<{ $dense?: boolean }>`
-  padding: ${({ theme, $dense }) =>
+  padding: ${({ $dense }) =>
     $dense
-      ? `${theme.spacing(0.75)} ${theme.spacing(1.5)}`
-      : `${theme.spacing(1)} ${theme.spacing(2)}`};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  background: ${({ theme }) => theme.background.primary};
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme, $dense }) =>
-    $dense ? theme.font.size.xs : theme.font.size.sm};
+      ? `calc(${themeCssVariables.spacing['1']} - ${themeCssVariables.spacing['0.5']} / 2) ${themeCssVariables.spacing['1.5']}`
+      : `${themeCssVariables.spacing['1']} ${themeCssVariables.spacing['2']}`};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  background: ${themeCssVariables.background.primary};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${({ $dense }) =>
+    $dense ? themeCssVariables.font.size.xs : themeCssVariables.font.size.sm};
   max-width: 220px;
 `;
 
@@ -39,8 +40,7 @@ export const OrgChartCompanyAutocompleteSourceSelect = ({
       disabled={disabled}
       value={value}
       onChange={(event) => {
-        const next = event.target
-          .value as OrgChartCompanyAutocompleteSource;
+        const next = event.target.value as OrgChartCompanyAutocompleteSource;
         onChange(next);
       }}
       aria-label="Company search API"
