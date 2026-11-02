@@ -69,6 +69,26 @@ export class UserWorkspaceEntity extends WorkspaceRelatedEntity {
   @Column({ nullable: false, default: SOURCE_LOCALE, type: 'varchar' })
   locale: keyof typeof APP_LOCALES;
 
+  // WhatsApp agent channel: the verified connection between one phone and one workspace.
+  // Deliberately not exposed over GraphQL yet (no @Field) so the schema does not churn.
+  @Column({ nullable: true, type: 'varchar' })
+  whatsappPhoneE164: string | null;
+
+  @Column({ nullable: true, type: 'varchar' })
+  whatsappAgentNumberId: string | null;
+
+  @Column({ nullable: true, type: 'uuid' })
+  whatsappActiveThreadId: string | null;
+
+  @Column({ nullable: true, type: 'timestamptz' })
+  whatsappConnectedAt: Date | null;
+
+  @Column({ nullable: true, type: 'timestamptz' })
+  whatsappLastInboundAt: Date | null;
+
+  @Column({ nullable: true, type: 'varchar' })
+  whatsappStatus: string | null;
+
   @Field()
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

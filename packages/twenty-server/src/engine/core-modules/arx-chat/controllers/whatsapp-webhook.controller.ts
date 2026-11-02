@@ -10,6 +10,7 @@ import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queu
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { WhatsappMediaStorageService } from 'src/engine/core-modules/whatsapp-media/services/whatsapp-media-storage.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
+import { WhatsappAgentService } from 'src/engine/core-modules/whatsapp-agent/whatsapp-agent.service';
 
 @Controller('webhook')
 export class WhatsappWebhook {
@@ -21,6 +22,7 @@ export class WhatsappWebhook {
     private readonly voiceCallService: VoiceCallService,
     private readonly whatsappMediaStorageService: WhatsappMediaStorageService,
     private readonly workflowFormWhatsappDecisionService: WorkflowFormWhatsappDecisionService,
+    private readonly whatsappAgentService: WhatsappAgentService,
     @InjectMessageQueue(MessageQueue.engagedCandidateProcessingQueue) private readonly messageQueueService?: MessageQueueService,
     private readonly gtmInboundReplyWindowService?: OutreachInboundReplyWindowService,
   ) {}
@@ -186,6 +188,21 @@ export class WhatsappWebhook {
       Array.isArray(value?.messages) && value.messages.length > 0;
     const hasStatuses =
       Array.isArray(value?.statuses) && value.statuses.length > 0;
+
+    // Ask-AI agent lane: acknowledge immediately, then run the agent off the request path.
+    if (
+      hasMessages &&
+      this.whatsappAgentService.isAgentNumber(
+        value?.metadata?.phone_number_id as string | undefined,
+      )
+    ) {
+      response.sendStatus(200);
+      void this.whatsappAgentService.handleInbound(value).catch((error) => {
+        this.logger.error('WhatsApp agent inbound failed', error as Error);
+      });
+
+      return;
+    }
 
     if (!hasMessages && !hasStatuses) {
       console.log('Response 200 sent to whatsapp webhook for message:');

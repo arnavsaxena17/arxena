@@ -90,6 +90,7 @@ import { UnipileAttachmentModule } from 'src/engine/core-modules/unipile-attachm
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { WarmPathsModule } from 'src/engine/core-modules/warm-paths/warm-paths.module';
+import { WhatsappAgentModule } from 'src/engine/core-modules/whatsapp-agent/whatsapp-agent.module';
 import { WhatsappMediaModule } from 'src/engine/core-modules/whatsapp-media/whatsapp-media.module';
 import { WorkspaceModificationsModule } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.module'; // Add this import
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -155,6 +156,7 @@ const conditionalImports = isWorker
     WorkspaceModificationsModule,
     CandidateAvatarModule,
     WhatsappMediaModule,
+    WhatsappAgentModule,
     UnipileAttachmentModule,
     CandidateSearchModule,
     forwardRef(() => CandidateSourcingModule),
