@@ -67,6 +67,7 @@ const createSignInUpServiceForTests = () => {
   };
 
   const mockOnboardingService = {
+    seedOnboardingSteps: jest.fn(),
     setOnboardingConnectAccountPending: jest.fn(),
     setOnboardingCreateProfilePending: jest.fn(),
     setOnboardingInstallAppsPending: jest.fn(),
@@ -334,7 +335,7 @@ describe('SignInUpService workspace-creation policy', () => {
 });
 
 describe('SignInUpService onboarding steps', () => {
-  it('flags the connect-account step but not the install-apps step for a new user joining an existing workspace', async () => {
+  it('seeds onboarding steps as a non-creator for a new user joining an existing workspace', async () => {
     const { service, mockOnboardingService } = createSignInUpServiceForTests();
 
     await service.signInUpOnExistingWorkspace({
@@ -352,18 +353,13 @@ describe('SignInUpService onboarding steps', () => {
       },
     });
 
-    expect(
-      mockOnboardingService.setOnboardingCreateProfilePending,
-    ).toHaveBeenCalledWith(expect.objectContaining({ value: true }), undefined);
-    expect(
-      mockOnboardingService.setOnboardingInstallAppsPending,
-    ).not.toHaveBeenCalled();
-    expect(
-      mockOnboardingService.setOnboardingConnectAccountPending,
-    ).toHaveBeenCalledWith(expect.objectContaining({ value: true }), undefined);
-    expect(
-      mockOnboardingService.setOnboardingExtensionInstallPending,
-    ).toHaveBeenCalledWith(expect.objectContaining({ value: true }), undefined);
+    expect(mockOnboardingService.seedOnboardingSteps).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspace: expect.objectContaining({ id: 'existing-workspace-id' }),
+        context: { isWorkspaceCreator: false },
+      }),
+      undefined,
+    );
   });
 
   it('rejects new workspace signup from free email providers', async () => {
@@ -431,7 +427,7 @@ describe('SignInUpService onboarding steps', () => {
     });
   });
 
-  it('flags the install-apps step for a user creating a new workspace', async () => {
+  it('seeds onboarding steps as the workspace creator for a user creating a new workspace', async () => {
     const {
       service,
       mockOnboardingService,
@@ -454,16 +450,10 @@ describe('SignInUpService onboarding steps', () => {
       { displayName: 'Acme Inc' },
     );
 
-    expect(
-      mockOnboardingService.setOnboardingInstallAppsPending,
-    ).toHaveBeenCalledWith(
-      expect.objectContaining({ value: true }),
-      expect.anything(),
-    );
-    expect(
-      mockOnboardingService.setOnboardingExtensionInstallPending,
-    ).toHaveBeenCalledWith(
-      expect.objectContaining({ value: true }),
+    expect(mockOnboardingService.seedOnboardingSteps).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: { isWorkspaceCreator: true },
+      }),
       expect.anything(),
     );
   });

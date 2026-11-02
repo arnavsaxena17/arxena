@@ -14,7 +14,6 @@ import { onboardingFreeCreditsState } from '@/onboarding/states/onboardingFreeCr
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
-import { useLoadCurrentUser } from '@/users/hooks/useLoadCurrentUser';
 import { CombinedGraphQLErrors } from '@apollo/client/errors';
 import { useMutation } from '@apollo/client/react';
 import { Trans, useLingui } from '@lingui/react/macro';
@@ -43,7 +42,6 @@ export const WorkspaceActivation = () => {
   const { t } = useLingui();
   const { enqueueErrorSnackBar } = useSnackBar();
   const setNextOnboardingStatus = useSetNextOnboardingStatus();
-  const { loadCurrentUser } = useLoadCurrentUser();
   const [activateWorkspace, { loading: isActivating }] = useMutation(
     ActivateWorkspaceDocument,
   );
@@ -75,8 +73,7 @@ export const WorkspaceActivation = () => {
       }
 
       setIsAppEffectRedirectEnabled(false);
-      await loadCurrentUser();
-      setNextOnboardingStatus();
+      await setNextOnboardingStatus();
       setIsCreatingWorkspace(false);
       setIsAppEffectRedirectEnabled(true);
     } catch (error) {
@@ -91,7 +88,6 @@ export const WorkspaceActivation = () => {
   }, [
     activateWorkspace,
     enqueueErrorSnackBar,
-    loadCurrentUser,
     setOnboardingActivationFailed,
     setIsAppEffectRedirectEnabled,
     setIsCreatingWorkspace,

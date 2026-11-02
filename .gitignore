@@ -105,3 +105,8 @@ tmp/agent-runs/
 # Browser screenshots and run captures from local debugging (repo root only)
 /*.png
 /artifacts/
+
+# Google OAuth scope-verification kit (screen recording, submission copy, recorder).
+# The recording contains real customer names, subjects and meeting titles from
+# Gmail/Calendar, so it must stay on the local machine.
+/google-verification/

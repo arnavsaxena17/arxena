@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import {
@@ -51,6 +51,8 @@ import { isDefined } from 'twenty-shared/utils';
 
 @Injectable()
 export class GoogleAPIsService {
+  private readonly logger = new Logger(GoogleAPIsService.name);
+
   constructor(
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     @InjectMessageQueue(MessageQueue.messagingQueue)
@@ -249,10 +251,18 @@ export class GoogleAPIsService {
             });
 
           if (isDefined(connectedAccountForAliases)) {
-            await this.emailAliasManagerService.refreshHandleAliases(
-              connectedAccountForAliases,
-              workspaceId,
-            );
+            // Resolving send-as aliases needs the Gmail settings scope. Losing that call must not
+            // lose the connection: the mailbox still syncs and sends from its primary address, so
+            // fall back to the aliases we already stored and let the user reconnect later.
+            await this.emailAliasManagerService
+              .refreshHandleAliases(connectedAccountForAliases, workspaceId)
+              .catch((error: unknown) => {
+                this.logger.warn(
+                  `Unable to refresh Gmail aliases for connected account ${connectedAccountForAliases.id}, keeping existing aliases: ${
+                    error instanceof Error ? error.message : String(error)
+                  }`,
+                );
+              });
           }
         }
 

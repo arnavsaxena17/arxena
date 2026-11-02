@@ -1,6 +1,7 @@
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useArxCandidateRecordsFromHeadlessContext } from '@/command-menu-item/engine-command/record/arx/hooks/useArxCandidateRecordsFromHeadlessContext';
 import { buildOutreachSelectionPayload } from '@/command-menu-item/engine-command/record/arx/utils/resolve-people-and-candidate-ids-from-records.util';
+import { outreachContextState } from '@/outreach-home/states/outreachContextState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import axios from 'axios';
 import { useCallback, useState } from 'react';
@@ -18,6 +19,10 @@ type OutreachSelectionCommandResponse = {
   startedCandidates?: number;
   stoppedCandidates?: number;
   stoppedRuns?: number;
+  // Present when Start Outreach also had to enroll the selection
+  enrollingPersonIds?: string[];
+  skippedDoNotContact?: number;
+  message?: string;
   error?: string;
 };
 
@@ -30,6 +35,7 @@ export const useArxOutreachSelectionCommand = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const tokenPair = useAtomStateValue(tokenPairState);
+  const outreachContext = useAtomStateValue(outreachContextState);
   const { objectMetadataItem, resolveRecords } =
     useArxCandidateRecordsFromHeadlessContext({
       recordGqlFields: {
@@ -64,7 +70,14 @@ export const useArxOutreachSelectionCommand = ({
       try {
         const response = await axios.post<OutreachSelectionCommandResponse>(
           `${REACT_APP_SERVER_BASE_URL}${endpoint}`,
-          body,
+          {
+            ...body,
+            // The server resolves People-tab hash ids against the project's
+            // people list, and enrolls the ones that are not Candidates yet.
+            ...(isDefined(outreachContext.projectId)
+              ? { projectId: outreachContext.projectId }
+              : {}),
+          },
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -89,6 +102,7 @@ export const useArxOutreachSelectionCommand = ({
       endpoint,
       failureMessage,
       objectMetadataItem?.nameSingular,
+      outreachContext.projectId,
       resolveRecords,
       tokenPair,
     ]);

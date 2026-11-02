@@ -1104,6 +1104,15 @@ export class ConfigVariables {
 
   @ConfigVariablesMetadata({
     group: ConfigVariablesGroup.SERVER_CONFIG,
+    description:
+      'Comma-separated list of optional onboarding steps to show. Supported values: PROFILE_CREATION, EXTENSION_INSTALL, SYNC_EMAIL, APPS_INSTALLATION, INVITE_TEAM. Steps omitted here are skipped entirely.',
+    type: ConfigVariableType.STRING,
+  })
+  @IsOptional()
+  ONBOARDING_ENABLED_STEPS = 'PROFILE_CREATION,EXTENSION_INSTALL';
+
+  @ConfigVariablesMetadata({
+    group: ConfigVariablesGroup.SERVER_CONFIG,
     description: 'Url for the frontend application',
     type: ConfigVariableType.STRING,
   })

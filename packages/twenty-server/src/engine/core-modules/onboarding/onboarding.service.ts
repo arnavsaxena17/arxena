@@ -11,32 +11,31 @@ import { InjectMessageQueue } from 'src/engine/core-modules/message-queue/decora
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { MessageQueueService } from 'src/engine/core-modules/message-queue/services/message-queue.service';
 import { ONBOARDING_INSTALLABLE_APP_UNIVERSAL_IDENTIFIERS } from 'src/engine/core-modules/onboarding/constants/onboarding-installable-app-universal-identifiers';
+import {
+  OnboardingStepKeys,
+  type OnboardingKeyValueTypeMap,
+} from 'src/engine/core-modules/onboarding/constants/onboarding-step-keys.constant';
+import { type OnboardingStepContext } from 'src/engine/core-modules/onboarding/constants/onboarding-steps.constant';
 import { OnboardingStatus } from 'src/engine/core-modules/onboarding/enums/onboarding-status.enum';
 import {
   INSTALL_ONBOARDING_APPS_JOB_NAME,
   type InstallOnboardingAppsJobData,
 } from 'src/engine/core-modules/onboarding/jobs/install-onboarding-apps.job-constants';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
+import {
+  getOnboardingStepsToSeed,
+  parseEnabledOnboardingStatuses,
+  resolveOnboardingStatus,
+} from 'src/engine/core-modules/onboarding/utils/onboarding-steps.util';
 import { UserVarsService } from 'src/engine/core-modules/user/user-vars/services/user-vars.service';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 
-export enum OnboardingStepKeys {
-  ONBOARDING_CONNECT_ACCOUNT_PENDING = 'ONBOARDING_CONNECT_ACCOUNT_PENDING',
-  ONBOARDING_INVITE_TEAM_PENDING = 'ONBOARDING_INVITE_TEAM_PENDING',
-  ONBOARDING_CREATE_PROFILE_PENDING = 'ONBOARDING_CREATE_PROFILE_PENDING',
-  ONBOARDING_INSTALL_APPS_PENDING = 'ONBOARDING_INSTALL_APPS_PENDING',
-  ONBOARDING_EXTENSION_INSTALL_PENDING = 'ONBOARDING_EXTENSION_INSTALL_PENDING',
-}
-
-export type OnboardingKeyValueTypeMap = {
-  [OnboardingStepKeys.ONBOARDING_CONNECT_ACCOUNT_PENDING]: boolean;
-  [OnboardingStepKeys.ONBOARDING_INVITE_TEAM_PENDING]: boolean;
-  [OnboardingStepKeys.ONBOARDING_CREATE_PROFILE_PENDING]: boolean;
-  [OnboardingStepKeys.ONBOARDING_INSTALL_APPS_PENDING]: boolean;
-  [OnboardingStepKeys.ONBOARDING_EXTENSION_INSTALL_PENDING]: boolean;
-};
+export {
+  OnboardingStepKeys,
+  type OnboardingKeyValueTypeMap,
+} from 'src/engine/core-modules/onboarding/constants/onboarding-step-keys.constant';
 
 @Injectable()
 export class OnboardingService {
@@ -82,7 +81,10 @@ export class OnboardingService {
       return null;
     }
 
-    if (this.isWorkspaceActivationPending(workspace)) {
+    const isWorkspaceActivationPending =
+      this.isWorkspaceActivationPending(workspace);
+
+    if (isWorkspaceActivationPending) {
       return OnboardingStatus.WORKSPACE_ACTIVATION;
     }
 
@@ -91,53 +93,104 @@ export class OnboardingService {
       workspaceId: workspace.id,
     });
 
-    const isProfileCreationPending =
-      userVars.get(OnboardingStepKeys.ONBOARDING_CREATE_PROFILE_PENDING) ===
-      true;
+    const pendingKeys = new Set<string>(
+      [...userVars.entries()]
+        .filter(([, value]) => value === true)
+        .map(([key]) => key),
+    );
 
-    const isConnectAccountPending =
-      userVars.get(OnboardingStepKeys.ONBOARDING_CONNECT_ACCOUNT_PENDING) ===
-      true;
+    return resolveOnboardingStatus({
+      pendingKeys,
+      enabledStatuses: this.getEnabledOnboardingStatuses(),
+      isWorkspaceActivationPending,
+      isPlanRequired: () =>
+        this.billingService.isSubscriptionIncompleteOnboardingStatus(
+          workspace.id,
+        ),
+    });
+  }
 
-    const isInstallAppsPending =
-      userVars.get(OnboardingStepKeys.ONBOARDING_INSTALL_APPS_PENDING) === true;
+  private getEnabledOnboardingStatuses() {
+    return parseEnabledOnboardingStatuses(
+      this.twentyConfigService.get('ONBOARDING_ENABLED_STEPS'),
+    );
+  }
 
-    const isInviteTeamPending =
-      userVars.get(OnboardingStepKeys.ONBOARDING_INVITE_TEAM_PENDING) === true;
+  async seedOnboardingSteps(
+    {
+      user,
+      workspace,
+      context,
+    }: {
+      user: Pick<UserEntity, 'id'>;
+      workspace: Pick<WorkspaceEntity, 'id'>;
+      context: OnboardingStepContext;
+    },
+    queryRunner?: QueryRunner,
+  ) {
+    const enabledStatuses = this.getEnabledOnboardingStatuses();
 
-    const isExtensionInstallPending =
-      userVars.get(OnboardingStepKeys.ONBOARDING_EXTENSION_INSTALL_PENDING) ===
-      true;
+    const stepsToSeed = getOnboardingStepsToSeed({
+      context,
+      enabledStatuses,
+    });
 
-    if (isExtensionInstallPending) {
-      return OnboardingStatus.EXTENSION_INSTALL;
+    for (const step of stepsToSeed) {
+      await this.setStepPending(
+        {
+          status: step.status,
+          userId: user.id,
+          workspaceId: workspace.id,
+          value: true,
+        },
+        queryRunner,
+      );
     }
+  }
 
-    if (isConnectAccountPending) {
-      return OnboardingStatus.SYNC_EMAIL;
+  private async setStepPending(
+    {
+      status,
+      userId,
+      workspaceId,
+      value,
+    }: {
+      status: OnboardingStatus;
+      userId: string;
+      workspaceId: string;
+      value: boolean;
+    },
+    queryRunner?: QueryRunner,
+  ) {
+    switch (status) {
+      case OnboardingStatus.PROFILE_CREATION:
+        return this.setOnboardingCreateProfilePending(
+          { userId, workspaceId, value },
+          queryRunner,
+        );
+      case OnboardingStatus.EXTENSION_INSTALL:
+        return this.setOnboardingExtensionInstallPending(
+          { userId, workspaceId, value },
+          queryRunner,
+        );
+      case OnboardingStatus.SYNC_EMAIL:
+        return this.setOnboardingConnectAccountPending(
+          { userId, workspaceId, value },
+          queryRunner,
+        );
+      case OnboardingStatus.APPS_INSTALLATION:
+        return this.setOnboardingInstallAppsPending(
+          { userId, workspaceId, value },
+          queryRunner,
+        );
+      case OnboardingStatus.INVITE_TEAM:
+        return this.setOnboardingInviteTeamPending(
+          { workspaceId, value },
+          queryRunner,
+        );
+      default:
+        return;
     }
-
-    if (isInstallAppsPending) {
-      return OnboardingStatus.APPS_INSTALLATION;
-    }
-
-    if (isProfileCreationPending) {
-      return OnboardingStatus.PROFILE_CREATION;
-    }
-
-    if (isInviteTeamPending) {
-      return OnboardingStatus.INVITE_TEAM;
-    }
-
-    if (
-      await this.billingService.isSubscriptionIncompleteOnboardingStatus(
-        workspace.id,
-      )
-    ) {
-      return OnboardingStatus.PLAN_REQUIRED;
-    }
-
-    return OnboardingStatus.COMPLETED;
   }
 
   async isOnboardingInviteTeamPending({

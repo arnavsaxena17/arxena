@@ -1,19 +1,17 @@
 import { styled } from '@linaria/react';
 import { isNonEmptyString } from '@sniptt/guards';
-import { useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import {
   OUTREACH_DRAFT_DEFAULT_TEMPLATES,
   OUTREACH_DRAFT_TEMPLATE_KEYS,
   OUTREACH_DRAFT_TEMPLATE_LABELS,
-  OUTREACH_DRAFT_VARIABLES,
-  renderOutreachDraftTemplate,
   validateOutreachDraftTemplate,
   type OutreachDraftTemplateKey,
   type OutreachDraftTemplateValidation,
-  type OutreachDraftTemplateValues,
 } from 'twenty-shared/arx';
 import { isDefined } from 'twenty-shared/utils';
 import { type WorkflowEmailFiles } from 'twenty-shared/workflow';
+import { IconPaperclip } from 'twenty-ui/icon';
 import { Button, SegmentedControl, type SelectOption } from 'twenty-ui/input';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
@@ -23,6 +21,12 @@ import { OutreachDraftTemplateEditor } from '@/outreach-home/components/Outreach
 import { OutreachSetupSectionCard } from '@/outreach-home/components/OutreachSetupSectionCard';
 import { useOutreachWorkflowEmbed } from '@/outreach-home/hooks/useOutreachWorkflowEmbed';
 import { type OutreachPersonRow } from '@/outreach-home/types/outreach-home.types';
+import {
+  buildOutreachDraftPreviewValues,
+  buildOutreachDraftVariableCoverage,
+  getOutreachDraftAttachmentFileNames,
+  renderOutreachDraftPreview,
+} from '@/outreach-home/utils/outreachDraftPreview';
 import {
   fetchOutreachDraftSettings,
   saveOutreachDraftSettings,
@@ -75,23 +79,77 @@ const StyledActions = styled.div`
   gap: ${themeCssVariables.spacing[2]};
 `;
 
-const StyledPreview = styled.div`
-  background-color: ${themeCssVariables.background.secondary};
-  border: 1px solid ${themeCssVariables.border.color.light};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  color: ${themeCssVariables.font.color.primary};
-  font-size: ${themeCssVariables.font.size.md};
-  line-height: 1.6;
-  padding: ${themeCssVariables.spacing[3]};
-  white-space: pre-wrap;
-`;
-
 const StyledValidationList = styled.ul<{ isValid: boolean }>`
   color: ${({ isValid }) =>
     isValid ? themeCssVariables.color.green : themeCssVariables.color.red};
   font-size: ${themeCssVariables.font.size.sm};
   margin: 0;
   padding-left: ${themeCssVariables.spacing[4]};
+`;
+
+// Numbers below the whole project, not the preview person: a message that is
+// valid for the sample can still stop a run for a prospect missing a field.
+const StyledCoverageList = styled.ul`
+  color: ${themeCssVariables.color.orange};
+  font-size: ${themeCssVariables.font.size.sm};
+  line-height: 1.5;
+  margin: 0;
+  padding-left: ${themeCssVariables.spacing[4]};
+`;
+
+const StyledTabLabel = styled.span`
+  align-items: center;
+  display: inline-flex;
+  gap: ${themeCssVariables.spacing[1]};
+`;
+
+const StyledTabCount = styled.span`
+  background-color: ${themeCssVariables.background.transparent.medium};
+  border-radius: ${themeCssVariables.border.radius.pill};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  padding: 0 ${themeCssVariables.spacing[1]};
+`;
+
+const StyledPreviewFrame = styled.div`
+  background-color: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.primary};
+  display: flex;
+  flex-direction: column;
+  font-size: ${themeCssVariables.font.size.md};
+`;
+
+const StyledPreviewBody = styled.div`
+  line-height: 1.6;
+  padding: ${themeCssVariables.spacing[3]};
+  white-space: pre-wrap;
+`;
+
+// Mirrors the attachment strip of the receiving LinkedIn message so the preview
+// is what the prospect gets, files included.
+const StyledPreviewFooter = styled.div`
+  align-items: center;
+  border-top: 1px solid ${themeCssVariables.border.color.light};
+  color: ${themeCssVariables.font.color.tertiary};
+  display: flex;
+  flex-wrap: wrap;
+  font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[1]};
+  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
+`;
+
+const StyledPreviewFileNames = styled.span`
+  color: ${themeCssVariables.font.color.secondary};
+  font-weight: ${themeCssVariables.font.weight.medium};
+`;
+
+const StyledWarning = styled.p`
+  color: ${themeCssVariables.color.orange};
+  font-size: ${themeCssVariables.font.size.sm};
+  line-height: 1.5;
+  margin: 0;
 `;
 
 const getPersonOptionLabel = (person: OutreachPersonRow): string => {
@@ -103,51 +161,6 @@ const getPersonOptionLabel = (person: OutreachPersonRow): string => {
   }
 
   return `${fullName} · ${companyName}`;
-};
-
-const buildPreviewValues = ({
-  settings,
-  person,
-}: {
-  settings: OutreachDraftSettings;
-  person: OutreachPersonRow | undefined;
-}): OutreachDraftTemplateValues => {
-  const values: OutreachDraftTemplateValues = {};
-
-  for (const variable of OUTREACH_DRAFT_VARIABLES) {
-    values[variable.key] = variable.sampleValue;
-  }
-
-  // The sender is the real signed-in member; a blank value must surface as missing.
-  values['sender.name'] = settings.senderName;
-  values['sender.website'] = settings.senderWebsite;
-
-  if (isDefined(person)) {
-    const fullName = person.name.trim();
-
-    values['person.firstName'] = fullName.split(/\s+/)[0] ?? '';
-    values['person.fullName'] = fullName;
-    values['company.name'] = person.companyName.trim();
-  }
-
-  return values;
-};
-
-const renderPreview = (
-  template: string,
-  values: OutreachDraftTemplateValues,
-): string => {
-  const valuesWithMarkers: OutreachDraftTemplateValues = {};
-
-  for (const variable of OUTREACH_DRAFT_VARIABLES) {
-    const value = values[variable.key];
-
-    valuesWithMarkers[variable.key] = isNonEmptyString(value?.trim())
-      ? value
-      : `[${variable.label} missing]`;
-  }
-
-  return renderOutreachDraftTemplate(template, valuesWithMarkers).message;
 };
 
 type OutreachSetupDraftMessagesSectionProps = {
@@ -251,7 +264,7 @@ export const OutreachSetupDraftMessagesSection = ({
   );
   const previewPerson = people.find((person) => person.id === previewPersonId);
   const previewValues = isDefined(settings)
-    ? buildPreviewValues({ settings, person: previewPerson })
+    ? buildOutreachDraftPreviewValues({ settings, person: previewPerson })
     : {};
   const previewLabel = isDefined(previewPerson)
     ? `Preview (${previewPerson.name.trim()})`
@@ -260,6 +273,22 @@ export const OutreachSetupDraftMessagesSection = ({
   const validation = validations[activeKey];
   const canHaveAttachments =
     !TEMPLATE_KEYS_WITHOUT_ATTACHMENTS.includes(activeKey);
+  const attachmentFiles = attachments[activeKey] ?? [];
+  const attachmentNames = getOutreachDraftAttachmentFileNames(attachmentFiles);
+  // Counting across the whole project walks every prospect, so it follows the
+  // typed text one beat behind rather than on every keystroke.
+  const deferredTemplate = useDeferredValue(drafts[activeKey]);
+  const coverageGaps = useMemo(
+    () =>
+      isDefined(settings)
+        ? buildOutreachDraftVariableCoverage({
+            template: deferredTemplate,
+            people,
+            settings,
+          })
+        : [],
+    [deferredTemplate, people, settings],
+  );
 
   const handleModeChange = async (nextMode: DraftMode) => {
     if (
@@ -413,10 +442,27 @@ export const OutreachSetupDraftMessagesSection = ({
         value={activeKey}
         onChange={setActiveKey}
         itemWidth="content"
-        options={OUTREACH_DRAFT_TEMPLATE_KEYS.map((key) => ({
-          value: key,
-          label: OUTREACH_DRAFT_TEMPLATE_LABELS[key],
-        }))}
+        options={OUTREACH_DRAFT_TEMPLATE_KEYS.map((key) => {
+          const attachmentCount = (attachments[key] ?? []).length;
+          const label = OUTREACH_DRAFT_TEMPLATE_LABELS[key];
+
+          return {
+            value: key,
+            ariaLabel:
+              attachmentCount > 0
+                ? `${label}, ${attachmentCount} attached file${attachmentCount === 1 ? '' : 's'}`
+                : label,
+            label:
+              attachmentCount > 0 ? (
+                <StyledTabLabel>
+                  {label}
+                  <StyledTabCount>{attachmentCount}</StyledTabCount>
+                </StyledTabLabel>
+              ) : (
+                label
+              ),
+          };
+        })}
       />
 
       <StyledFieldStack>
@@ -461,6 +507,31 @@ export const OutreachSetupDraftMessagesSection = ({
         )}
       </StyledFieldStack>
 
+      {canHaveAttachments ? (
+        <StyledFieldStack>
+          <WorkflowSendEmailAttachments
+            label="Attachments"
+            files={attachmentFiles}
+            onChange={handleAttachmentsChange}
+          />
+          {mode === 'MANUAL' ? (
+            <StyledMuted>
+              Attached to this message for every prospect. Leave empty to send
+              text only.
+            </StyledMuted>
+          ) : (
+            <StyledWarning>
+              Saved, not sent: AI-drafted messages go out without files. These
+              attach once you switch to Standard templates.
+            </StyledWarning>
+          )}
+        </StyledFieldStack>
+      ) : (
+        <StyledMuted>
+          LinkedIn connection requests cannot carry attachments.
+        </StyledMuted>
+      )}
+
       <StyledFieldStack>
         <StyledFieldLabel>Preview as</StyledFieldLabel>
         <Select<string>
@@ -486,29 +557,38 @@ export const OutreachSetupDraftMessagesSection = ({
           </StyledMuted>
         )}
         <StyledFieldLabel>{previewLabel}</StyledFieldLabel>
-        <StyledPreview>
-          {renderPreview(drafts[activeKey], previewValues)}
-        </StyledPreview>
+        <StyledPreviewFrame>
+          <StyledPreviewBody>
+            {renderOutreachDraftPreview(drafts[activeKey], previewValues)}
+          </StyledPreviewBody>
+          {canHaveAttachments && (
+            <StyledPreviewFooter>
+              {attachmentNames.length > 0 ? (
+                <>
+                  <IconPaperclip size={12} />
+                  <StyledPreviewFileNames>
+                    {attachmentNames.join(' · ')}
+                  </StyledPreviewFileNames>
+                  {mode === 'AI' && <span>· not sent in AI mode</span>}
+                </>
+              ) : (
+                <span>No attachment — text only</span>
+              )}
+            </StyledPreviewFooter>
+          )}
+        </StyledPreviewFrame>
+        {coverageGaps.length > 0 && (
+          <StyledCoverageList>
+            {coverageGaps.map((gap) => (
+              <li key={gap.variableKey}>
+                {gap.label} is empty for {gap.missingCount} of {people.length}{' '}
+                {people.length === 1 ? 'prospect' : 'prospects'} — their runs
+                stop before sending.
+              </li>
+            ))}
+          </StyledCoverageList>
+        )}
       </StyledFieldStack>
-
-      {canHaveAttachments ? (
-        <StyledFieldStack>
-          <StyledFieldLabel>Attachments</StyledFieldLabel>
-          <WorkflowSendEmailAttachments
-            label="Attachments"
-            files={attachments[activeKey] ?? []}
-            onChange={handleAttachmentsChange}
-          />
-          <StyledMuted>
-            Sent with this message to every prospect. Leave empty to send text
-            only.
-          </StyledMuted>
-        </StyledFieldStack>
-      ) : (
-        <StyledMuted>
-          LinkedIn connection requests cannot carry attachments.
-        </StyledMuted>
-      )}
     </OutreachSetupSectionCard>
   );
 };

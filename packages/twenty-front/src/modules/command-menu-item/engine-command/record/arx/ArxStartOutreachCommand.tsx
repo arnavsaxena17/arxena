@@ -15,11 +15,14 @@ export const ArxStartOutreachCommand = () => {
       const response = await execute();
       const started = response.startedCandidates ?? 0;
 
+      // The server enrolls unenrolled selections, so the reply may describe a
+      // mixed outcome ("started 13, enrolling 7") rather than one number.
       enqueueSuccessSnackBar({
         message:
-          started === 1
+          response.message ??
+          (started === 1
             ? 'Started outreach for 1 prospect'
-            : `Started outreach for ${started} prospects`,
+            : `Started outreach for ${started} prospects`),
       });
     } catch (error) {
       enqueueErrorSnackBar({

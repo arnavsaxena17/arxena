@@ -217,6 +217,14 @@ This handles everything: starts Postgres + Redis (auto-detects local services vs
 
 **Note:** CI workflows (GitHub Actions) manage services via Actions service containers and run setup steps individually — they don't use this script.
 
+## Local Artifacts
+
+Screenshots, browser captures, and other debug output never go in the repo root.
+
+- **Browser/UI screenshots** → `browser-screenshots/` (gitignored). This is the default output of the `browser_screenshot` tool, so prefer its default path over writing to the root.
+- **Run dumps, CSVs, scrapes, agent notes** → `tmp/agent-runs/`
+- Both are gitignored; `/*.png` and `/artifacts/` at the root are ignored defensively only — do not rely on that as an excuse to write there.
+
 ## Important Files
 - `nx.json` - Nx workspace configuration with task definitions
 - `tsconfig.base.json` - Base TypeScript configuration

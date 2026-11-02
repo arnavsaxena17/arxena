@@ -1395,7 +1395,8 @@ export class OutreachCommandController {
       personIds?: string[];
       projectId?: string;
     },
-    @Req() request: { headers?: { authorization?: string } },
+    @Req()
+    request: { headers?: { authorization?: string; origin?: string } },
   ) {
     const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
 
@@ -1420,28 +1421,62 @@ export class OutreachCommandController {
     try {
       const workspaceId =
         await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+      // Selections that are still People-tab search hits rather than enrolled
+      // Candidates are enrolled here first, so one Start click is enough.
       const result =
         await this.outreachProjectOutreachControlService.startCandidates({
           workspaceId,
           candidateIds,
           personIds,
           projectId: body?.projectId,
+          apiToken,
+          origin: request.headers?.origin,
         });
+
+      const skippedDoNotContactMessage =
+        result.skippedDoNotContact > 0
+          ? ` ${result.skippedDoNotContact} were skipped because they are marked do not contact.`
+          : '';
+
+      // Enrollment is queued and slower than this request: the Candidates are
+      // created shortly after, but nothing starts them automatically.
+      if (result.startedCandidates === 0 && result.enrollingPersonIds.length > 0) {
+        return {
+          success: true,
+          ok: true,
+          ...result,
+          message: `Enrolling ${result.enrollingPersonIds.length} selected prospect(s). Run Start Outreach again in a moment to start them.${skippedDoNotContactMessage}`,
+        };
+      }
 
       if (result.startedCandidates === 0) {
         const hasUnenrolledPeople = result.unenrolledPersonIds.length > 0;
 
         throw new HttpException(
           hasUnenrolledPeople
-            ? `None of the ${personIds.length} selected people are enrolled in ${
+            ? `None of the ${personIds.length} selected people could be matched to a prospect in ${
                 body?.projectId ? 'this project' : 'a project'
-              }, so outreach cannot start. Enroll them first.`
+              }, so outreach cannot start.${skippedDoNotContactMessage}`
             : 'No matching candidates found to start outreach',
           HttpStatus.UNPROCESSABLE_ENTITY,
         );
       }
 
-      return { success: true, ok: true, ...result };
+      return {
+        success: true,
+        ok: true,
+        ...result,
+        ...(result.enrollingPersonIds.length > 0 ||
+        result.skippedDoNotContact > 0
+          ? {
+              message: `Started outreach for ${result.startedCandidates} prospect(s).${
+                result.enrollingPersonIds.length > 0
+                  ? ` Enrolling ${result.enrollingPersonIds.length} more; run Start Outreach again to start those.`
+                  : ''
+              }${skippedDoNotContactMessage}`,
+            }
+          : {}),
+      };
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
@@ -1497,6 +1532,15 @@ export class OutreachCommandController {
           candidateIds,
           personIds,
         });
+
+      // Selected People-tab rows that were never enrolled have no outreach to
+      // stop; say so instead of reporting a silent success of 0.
+      if (result.stoppedCandidates === 0) {
+        throw new HttpException(
+          'None of the selected people are enrolled in outreach, so there is nothing to stop.',
+          HttpStatus.UNPROCESSABLE_ENTITY,
+        );
+      }
 
       return { success: true, ok: true, ...result };
     } catch (error) {

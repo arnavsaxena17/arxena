@@ -153,7 +153,7 @@ export const useInviteTeam = () => {
         });
       }
 
-      setNextOnboardingStatus();
+      await setNextOnboardingStatus();
       setIsNavigating(true);
     },
     [

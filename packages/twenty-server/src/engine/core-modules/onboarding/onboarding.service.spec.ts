@@ -50,6 +50,7 @@ describe('OnboardingService', () => {
           provide: UserVarsService,
           useValue: {
             get: jest.fn(),
+            getAll: jest.fn(),
             set: jest.fn(),
             delete: jest.fn(),
           },

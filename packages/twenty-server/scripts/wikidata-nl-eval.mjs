@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { z } from 'zod';
 
 const ENV_PATH =
-  '/Users/arnavsaxena/MEGA/arx/arxena/packages/twenty-server/.env';
+  '/Users/arnavsaxena/arx/arxena/packages/twenty-server/.env';
 const WIKIDATA_API = 'https://www.wikidata.org/w/api.php';
 const SPARQL_ENDPOINT = 'https://query.wikidata.org/sparql';
 const UA =

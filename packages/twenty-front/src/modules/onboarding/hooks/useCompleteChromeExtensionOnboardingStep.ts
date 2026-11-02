@@ -11,6 +11,6 @@ export const useCompleteChromeExtensionOnboardingStep = () => {
 
   return useCallback(async () => {
     await completeChromeExtensionOnboardingStepMutation();
-    setNextOnboardingStatus();
+    await setNextOnboardingStatus();
   }, [completeChromeExtensionOnboardingStepMutation, setNextOnboardingStatus]);
 };

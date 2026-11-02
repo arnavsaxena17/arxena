@@ -11,6 +11,6 @@ export const useSkipSyncEmailOnboardingStep = () => {
 
   return useCallback(async () => {
     await skipSyncEmailOnboardingStepMutation();
-    setNextOnboardingStatus();
+    await setNextOnboardingStatus();
   }, [skipSyncEmailOnboardingStepMutation, setNextOnboardingStatus]);
 };

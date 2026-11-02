@@ -335,8 +335,7 @@ export class SignInUpService {
       await this.activateOnboardingForUser({
         user,
         workspace: params.workspace,
-        shouldShowConnectAccountStep: true,
-        shouldShowInstallAppsStep: false,
+        isWorkspaceCreator: false,
       });
 
       await this.userWorkspaceService.addUserToWorkspaceIfUserNotInWorkspace(
@@ -368,55 +367,24 @@ export class SignInUpService {
     {
       user,
       workspace,
-      shouldShowConnectAccountStep,
-      shouldShowInstallAppsStep,
+      isWorkspaceCreator,
     }: {
       user: Pick<UserEntity, 'id' | 'firstName' | 'lastName'>;
       workspace: WorkspaceEntity;
-      shouldShowConnectAccountStep: boolean;
-      shouldShowInstallAppsStep: boolean;
+      isWorkspaceCreator: boolean;
     },
     queryRunner?: QueryRunner,
   ) {
-    if (shouldShowConnectAccountStep) {
-      await this.onboardingService.setOnboardingConnectAccountPending(
-        {
-          userId: user.id,
-          workspaceId: workspace.id,
-          value: true,
-        },
-        queryRunner,
-      );
-    }
-
-    await this.onboardingService.setOnboardingCreateProfilePending(
+    // Which steps get seeded (and in which order) is owned by the onboarding
+    // step registry, so the flow is configurable from ONBOARDING_ENABLED_STEPS.
+    await this.onboardingService.seedOnboardingSteps(
       {
-        userId: user.id,
-        workspaceId: workspace.id,
-        value: true,
+        user,
+        workspace,
+        context: { isWorkspaceCreator },
       },
       queryRunner,
     );
-
-    await this.onboardingService.setOnboardingExtensionInstallPending(
-      {
-        userId: user.id,
-        workspaceId: workspace.id,
-        value: true,
-      },
-      queryRunner,
-    );
-
-    if (shouldShowInstallAppsStep) {
-      await this.onboardingService.setOnboardingInstallAppsPending(
-        {
-          userId: user.id,
-          workspaceId: workspace.id,
-          value: true,
-        },
-        queryRunner,
-      );
-    }
   }
 
   private async saveNewUser(
@@ -705,16 +673,7 @@ export class SignInUpService {
             {
               user,
               workspace,
-              shouldShowConnectAccountStep: true,
-              shouldShowInstallAppsStep: true,
-            },
-            queryRunner,
-          );
-
-          await this.onboardingService.setOnboardingInviteTeamPending(
-            {
-              workspaceId: workspace.id,
-              value: true,
+              isWorkspaceCreator: true,
             },
             queryRunner,
           );

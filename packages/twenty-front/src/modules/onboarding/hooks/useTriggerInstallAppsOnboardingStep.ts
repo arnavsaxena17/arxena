@@ -14,7 +14,7 @@ export const useTriggerInstallAppsOnboardingStep = () => {
       await triggerInstallAppsOnboardingStep({
         variables: { universalIdentifiers },
       });
-      setNextOnboardingStatus();
+      await setNextOnboardingStatus();
     },
     [triggerInstallAppsOnboardingStep, setNextOnboardingStatus],
   );

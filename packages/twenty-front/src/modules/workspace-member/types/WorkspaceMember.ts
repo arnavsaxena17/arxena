@@ -21,6 +21,9 @@ export type WorkspaceMember = {
   updatedAt: string;
   userEmail: string;
   jobTitle?: string | null;
+  // Arx-specific field added to the workspace member by the Arxena standard
+  // metadata, so it is not part of the generated standard-object types.
+  phoneNumber?: string | null;
   userId: string;
   userWorkspaceId?: string | null;
   timeZone?: string | null;

@@ -33,7 +33,7 @@ Pushing the main `arxena` repo does not push Chatwoot changes.
 Point the local Chatwoot checkout to your fork:
 
 ```bash
-cd /Users/arnavsaxena/MEGA/arx/arxena/tools/chatwoot-source
+cd /Users/arnavsaxena/arx/arxena/tools/chatwoot-source
 git remote rename origin upstream
 git remote add origin https://github.com/arnavsaxena17/chatwoot.git
 git fetch origin
@@ -43,7 +43,7 @@ git checkout -b arxena/onboarding-workspace --track origin/arxena/onboarding-wor
 If the branch does not exist yet:
 
 ```bash
-cd /Users/arnavsaxena/MEGA/arx/arxena/tools/chatwoot-source
+cd /Users/arnavsaxena/arx/arxena/tools/chatwoot-source
 git remote rename origin upstream
 git remote add origin https://github.com/arnavsaxena17/chatwoot.git
 git checkout -b arxena/onboarding-workspace
@@ -86,7 +86,7 @@ Then push again and sign in as `arnavsaxena17`, or switch the remote to SSH
 after adding your GitHub SSH key:
 
 ```bash
-cd /Users/arnavsaxena/MEGA/arx/arxena/tools/chatwoot-source
+cd /Users/arnavsaxena/arx/arxena/tools/chatwoot-source
 git remote set-url origin git@github.com:arnavsaxena17/chatwoot.git
 ```
 
@@ -199,6 +199,6 @@ headers are correct. Remove those two headers from the `location /` block in
 
 ## Important note
 
-`git push` from the main repo at `/Users/arnavsaxena/MEGA/arx/arxena` will not
+`git push` from the main repo at `/Users/arnavsaxena/arx/arxena` will not
 deploy Chatwoot changes by itself. Chatwoot must be committed and pushed from
 its own repo at `tools/chatwoot-source`.

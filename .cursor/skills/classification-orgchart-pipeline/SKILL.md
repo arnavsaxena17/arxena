@@ -15,13 +15,13 @@ description: >-
 Canonical copies live in **arxena-site** (sibling repo). Read these first:
 
 1. Skill:
-   `/Users/arnavsaxena/MEGA/arx/arxena-site/.cursor/skills/classification-orgchart-pipeline/SKILL.md`
+   `/Users/arnavsaxena/arx/arxena-site/.cursor/skills/classification-orgchart-pipeline/SKILL.md`
 2. Reference:
-   `/Users/arnavsaxena/MEGA/arx/arxena-site/.cursor/skills/classification-orgchart-pipeline/reference.md`
+   `/Users/arnavsaxena/arx/arxena-site/.cursor/skills/classification-orgchart-pipeline/reference.md`
 3. Operator doc:
-   `/Users/arnavsaxena/MEGA/arx/arxena-site/arxenas3/docs/classification-orgchart-pipeline.md`
+   `/Users/arnavsaxena/arx/arxena-site/arxenas3/docs/classification-orgchart-pipeline.md`
 4. Rule (auto on matching globs in arxena-site):
-   `/Users/arnavsaxena/MEGA/arx/arxena-site/.cursor/rules/classification-orgchart-pipeline.mdc`
+   `/Users/arnavsaxena/arx/arxena-site/.cursor/rules/classification-orgchart-pipeline.mdc`
 
 Then follow that skill’s workflows. All CLI commands run from the **arxena-site**
 repo root, not from this monorepo.

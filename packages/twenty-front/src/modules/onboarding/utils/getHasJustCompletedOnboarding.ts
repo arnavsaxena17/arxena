@@ -3,7 +3,7 @@ import { OnboardingStatus } from '~/generated-metadata/graphql';
 
 type GetHasJustCompletedOnboardingArgs = {
   previousOnboardingStatus: OnboardingStatus | null | undefined;
-  nextOnboardingStatus: OnboardingStatus;
+  nextOnboardingStatus: OnboardingStatus | null | undefined;
 };
 
 export const getHasJustCompletedOnboarding = ({

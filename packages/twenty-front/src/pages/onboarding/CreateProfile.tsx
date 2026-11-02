@@ -1,6 +1,7 @@
 import { currentUserState } from '@/auth/states/currentUserState';
 import { currentWorkspaceMemberState } from '@/auth/states/currentWorkspaceMemberState';
 import { currentWorkspaceMembersState } from '@/auth/states/currentWorkspaceMembersState';
+import { OnboardingPhoneNumberInput } from '@/onboarding/components/OnboardingPhoneNumberInput';
 import { OnboardingProfilePictureUploader } from '@/onboarding/components/OnboardingProfilePictureUploader';
 import { OnboardingStepAnimatedItem } from '@/onboarding/components/OnboardingStepAnimatedItem';
 import { StyledOnboardingStepHeading } from '@/onboarding/components/StyledOnboardingStepHeading';
@@ -10,6 +11,7 @@ import { StyledOnboardingStepTitle } from '@/onboarding/components/StyledOnboard
 import { ONBOARDING_CONTENT_BLOCK_WIDTH } from '@/onboarding/constants/OnboardingContentBlockWidth';
 import { usePrefetchInviteSuggestions } from '@/onboarding/hooks/usePrefetchInviteSuggestions';
 import { useSetNextOnboardingStatus } from '@/onboarding/hooks/useSetNextOnboardingStatus';
+import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
 import { useUpdateWorkspaceMemberSettings } from '@/settings/profile/hooks/useUpdateWorkspaceMemberSettings';
 import { PageFocusId } from '@/types/PageFocusId';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
@@ -17,19 +19,29 @@ import { TextInput } from '@/ui/input/components/TextInput';
 import { useHotkeysOnFocusedElement } from '@/ui/utilities/hotkey/hooks/useHotkeysOnFocusedElement';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
+import { gql } from '@apollo/client';
 import { CombinedGraphQLErrors } from '@apollo/client/errors';
+import { useMutation } from '@apollo/client/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { styled } from '@linaria/react';
 import { i18n } from '@lingui/core';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react/macro';
+import { isNonEmptyString } from '@sniptt/guards';
+import { isValidPhoneNumber } from 'libphonenumber-js';
 import { useCallback, useState } from 'react';
 import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
 import { Key } from 'ts-key-enum';
+import { graphQLToUpdateOneWorkspaceMemberArx } from 'twenty-shared/graphql';
 import { isDefined } from 'twenty-shared/utils';
 import { MainButton } from 'twenty-ui/input';
 import { MOBILE_VIEWPORT, themeCssVariables } from 'twenty-ui/theme-constants';
 import { z } from 'zod';
+
+const UPDATE_WORKSPACE_MEMBER_PHONE_NUMBER = gql`
+  ${graphQLToUpdateOneWorkspaceMemberArx}
+`;
+
 
 const StyledForm = styled.div`
   display: flex;
@@ -91,8 +103,20 @@ export const CreateProfile = () => {
     currentWorkspaceMembersState,
   );
   const { updateWorkspaceMemberSettings } = useUpdateWorkspaceMemberSettings();
+  const apolloCoreClient = useApolloCoreClient();
+  const [updateMemberArx] = useMutation(
+    UPDATE_WORKSPACE_MEMBER_PHONE_NUMBER,
+    { client: apolloCoreClient },
+  );
 
+  // Phone is optional and lives in a custom workspace-member field, so it is
+  // persisted through the standard record mutation rather than the settings one.
+  const initialPhoneNumber = currentWorkspaceMember?.phoneNumber ?? '';
+  const [phoneNumber, setPhoneNumber] = useState<string>(initialPhoneNumber);
   const [isNavigating, setIsNavigating] = useState(false);
+
+  const isPhoneNumberValid =
+    !isNonEmptyString(phoneNumber) || isValidPhoneNumber(phoneNumber);
 
   const {
     control,
@@ -157,7 +181,30 @@ export const CreateProfile = () => {
           return current;
         });
 
-        setNextOnboardingStatus();
+        const trimmedPhoneNumber = phoneNumber.trim();
+
+        if (trimmedPhoneNumber !== initialPhoneNumber) {
+          const phoneNumberToSave = isNonEmptyString(trimmedPhoneNumber)
+            ? trimmedPhoneNumber
+            : null;
+
+          await updateMemberArx({
+            variables: {
+              idToUpdate: currentWorkspaceMember.id,
+              input: { phoneNumber: phoneNumberToSave },
+            },
+          });
+
+          setCurrentWorkspaceMembers((members) =>
+            members.map((member) =>
+              member.id === currentWorkspaceMember.id
+                ? { ...member, phoneNumber: phoneNumberToSave }
+                : member,
+            ),
+          );
+        }
+
+        await setNextOnboardingStatus();
         setIsNavigating(true);
       } catch (error: any) {
         setIsNavigating(false);
@@ -168,10 +215,13 @@ export const CreateProfile = () => {
     },
     [
       currentWorkspaceMember?.id,
+      initialPhoneNumber,
+      phoneNumber,
       setNextOnboardingStatus,
       enqueueErrorSnackBar,
       setCurrentWorkspaceMembers,
       setCurrentUser,
+      updateMemberArx,
       updateWorkspaceMemberSettings,
     ],
   );
@@ -280,6 +330,17 @@ export const CreateProfile = () => {
               />
             )}
           />
+          <OnboardingPhoneNumberInput
+            label={t`Phone number (optional)`}
+            placeholder={t`+1 555 0100`}
+            value={phoneNumber}
+            onChange={(nextPhoneNumber) =>
+              setPhoneNumber(nextPhoneNumber ?? '')
+            }
+            error={
+              isPhoneNumberValid ? undefined : t`Please enter a valid phone number`
+            }
+          />
         </StyledForm>
       </OnboardingStepAnimatedItem>
 
@@ -288,7 +349,9 @@ export const CreateProfile = () => {
           <MainButton
             title={t`Continue`}
             onClick={handleSubmit(onSubmit)}
-            disabled={!isValid || isSubmitting || isNavigating}
+            disabled={
+              !isValid || isSubmitting || isNavigating || !isPhoneNumberValid
+            }
             fullWidth
           />
         </StyledButtonContainer>

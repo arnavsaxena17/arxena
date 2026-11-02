@@ -4,17 +4,34 @@ import { isNonEmptyString } from '@sniptt/guards';
 import {
   buildCandidateFlagsPatchUpdate,
   isCandidateFlagTrue,
+  type CandidateFlags,
 } from 'twenty-shared/arx';
 import { isDefined } from 'twenty-shared/utils';
 import { StepStatus, WorkflowActionType } from 'twenty-shared/workflow';
 import { In, type ObjectLiteral } from 'typeorm';
 
 import { getRegisteredAccountRateLimiter } from 'src/engine/core-modules/account-rate-limit/account-rate-limiter.registry';
+import { ProcessCandidatesService } from 'src/engine/core-modules/candidate-sourcing/jobs/process-candidates.service';
+import { OutreachPeopleCacheService } from 'src/engine/core-modules/outreach-command/services/outreach-people-cache.service';
 import { OUTREACH_PROJECT_PAUSED_PENDING_REASON } from 'src/engine/core-modules/outreach-command/services/outreach-throttle.service';
 import {
   CAPACITY_PENDING_REASONS,
   SEQUENCE_DELAY_PENDING_REASON,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-experiment.util';
+import {
+  buildEnrollmentIndex,
+  buildEnrollmentProfileRows,
+  type EnrolledPersonIdentity,
+  type EnrollmentIndex,
+  type EnrollablePersonRow,
+  isPersonKnownDoNotContact,
+  matchCandidateByPersonIdentity,
+  partitionSelectedPersonIds,
+} from 'src/engine/core-modules/outreach-command/utils/outreach-selection-enrollment.util';
+import {
+  readPersonIdentity,
+  type PersonIdentityRecord,
+} from 'src/engine/core-modules/outreach-command/utils/read-person-identity.util';
 import {
   buildWorkflowRunStepDeferralClearPatch,
   normalizeWorkflowRunStepDeferralFields,
@@ -56,9 +73,30 @@ type ProjectRecord = ObjectLiteral & {
   experimentConfig?: string | null;
 };
 
+
+// upload-profiles is the same entry point the People tab's Enroll action uses.
+const OUTREACH_ENROLLMENT_DATA_SOURCE = 'linkedin_search';
+const OUTREACH_ENROLLMENT_JOB_NAME = 'Outreach';
+// Enrollment is queued, so the request waits for the worker to create the
+// Candidate rows. Long enough for a normal batch, short enough to answer.
+const OUTREACH_ENROLLMENT_POLL_TIMEOUT_MS = 20_000;
+const OUTREACH_ENROLLMENT_POLL_INTERVAL_MS = 750;
+const OUTREACH_ENROLLMENT_INDEX_LIMIT = 5_000;
+
+const sleep = (ms: number) =>
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
 type CandidateRecord = ObjectLiteral & {
   id: string;
   projectId?: string | null;
+};
+
+type OutreachCandidateRecord = CandidateRecord & {
+  peopleId?: string | null;
+  outreachSequenceStage?: string | null;
+  candidateFlags?: CandidateFlags | null;
 };
 
 type WorkflowRunRecord = ObjectLiteral & {
@@ -94,6 +132,8 @@ export class OutreachProjectOutreachControlService {
     private readonly workflowRunWorkspaceService: WorkflowRunWorkspaceService,
     private readonly outreachWorkflowRunFlowSyncService: OutreachWorkflowRunFlowSyncService,
     private readonly outreachWorkflowRunRepairService: OutreachWorkflowRunRepairService,
+    private readonly outreachPeopleCacheService: OutreachPeopleCacheService,
+    private readonly processCandidatesService: ProcessCandidatesService,
     @InjectMessageQueue(MessageQueue.delayedJobsQueue)
     private readonly delayedQueue: MessageQueueService,
     @InjectMessageQueue(MessageQueue.workflowQueue)
@@ -401,6 +441,10 @@ export class OutreachProjectOutreachControlService {
     personIds,
     projectId,
     startAllQueuedInProject,
+    apiToken,
+    workspaceMemberId,
+    origin,
+    enrollmentPollTimeoutMs = OUTREACH_ENROLLMENT_POLL_TIMEOUT_MS,
   }: {
     workspaceId: string;
     candidateIds?: string[];
@@ -408,13 +452,28 @@ export class OutreachProjectOutreachControlService {
     projectId?: string | null;
     // "Whole table": every enrolled, not-yet-started QUEUED candidate of the project
     startAllQueuedInProject?: boolean;
-  }): Promise<{ startedCandidates: number; unenrolledPersonIds: string[] }> {
+    // Only needed to enroll a selection the CRM has never seen: the queued
+    // upload-profiles job writes through the caller's token.
+    apiToken?: string;
+    workspaceMemberId?: string;
+    origin?: string;
+    enrollmentPollTimeoutMs?: number;
+  }): Promise<{
+    startedCandidates: number;
+    unenrolledPersonIds: string[];
+    enrollingPersonIds: string[];
+    skippedDoNotContact: number;
+  }> {
     const uniqueCandidateIds = [
       ...new Set((candidateIds ?? []).filter(isNonEmptyString)),
     ];
     const uniquePersonIds = [
       ...new Set((personIds ?? []).filter(isNonEmptyString)),
     ];
+    // People-tab rows that were never enrolled are keyed by content-hash ids;
+    // only UUIDs can be looked up in the person/candidate tables.
+    const { uuidPersonIds, hashPersonIds } =
+      partitionSelectedPersonIds(uniquePersonIds);
 
     const isProjectWideStart =
       startAllQueuedInProject === true && isNonEmptyString(projectId);
@@ -424,8 +483,31 @@ export class OutreachProjectOutreachControlService {
       uniqueCandidateIds.length === 0 &&
       uniquePersonIds.length === 0
     ) {
-      return { startedCandidates: 0, unenrolledPersonIds: [] };
+      return {
+        startedCandidates: 0,
+        unenrolledPersonIds: [],
+        enrollingPersonIds: [],
+        skippedDoNotContact: 0,
+      };
     }
+
+    // Selecting Start Outreach on a search hit used to reach Postgres as a hash
+    // id in a uuid column (500) and then as "not enrolled". Resolve the
+    // selection to Candidates by identity, enrolling the ones the CRM has never
+    // seen so one click still starts outreach.
+    const enrollmentResolution = await this.resolveAndEnrollSelectedPeople({
+      workspaceId,
+      projectId,
+      hashPersonIds,
+      apiToken,
+      workspaceMemberId,
+      origin,
+      enrollmentPollTimeoutMs,
+    });
+
+    const allCandidateIds = [
+      ...new Set([...uniqueCandidateIds, ...enrollmentResolution.candidateIds]),
+    ];
 
     const authContext = buildSystemAuthContext(workspaceId);
     const entryStages = new Set([
@@ -439,12 +521,7 @@ export class OutreachProjectOutreachControlService {
       async () => {
         const candidateRepository =
           await this.globalWorkspaceOrmManager.getRepository<
-            CandidateRecord & {
-              peopleId?: string | null;
-              outreachSequenceStage?: string | null;
-              candidateFlags?: unknown;
-              projectId?: string | null;
-            }
+            OutreachCandidateRecord
           >(workspaceId, 'candidate', { shouldBypassPermissionChecks: true });
 
         let candidates;
@@ -461,14 +538,29 @@ export class OutreachProjectOutreachControlService {
               !isCandidateFlagTrue(candidate, 'startOutreach') &&
               !isCandidateFlagTrue(candidate, 'stopOutreach'),
           );
-        } else if (uniqueCandidateIds.length > 0) {
-          candidates = await candidateRepository.find({
-            where: { id: In(uniqueCandidateIds) },
-          });
         } else {
-          candidates = await candidateRepository.find({
-            where: { peopleId: In(uniquePersonIds) },
-          });
+          const foundById =
+            allCandidateIds.length > 0
+              ? await candidateRepository.find({
+                  where: { id: In(allCandidateIds) },
+                })
+              : [];
+          const foundByPersonId =
+            uuidPersonIds.length > 0
+              ? await candidateRepository.find({
+                  where: { peopleId: In(uuidPersonIds) },
+                })
+              : [];
+
+          // One prospect can arrive as both a candidate id and a person id.
+          const candidateById = new Map(
+            [...foundById, ...foundByPersonId].map((candidate) => [
+              candidate.id,
+              candidate,
+            ]),
+          );
+
+          candidates = [...candidateById.values()];
         }
 
         if (isNonEmptyString(projectId)) {
@@ -514,14 +606,368 @@ export class OutreachProjectOutreachControlService {
             .map((candidate) => candidate.peopleId)
             .filter(isNonEmptyString),
         );
-        const unenrolledPersonIds = uniquePersonIds.filter(
+        const unenrolledPersonIds = uuidPersonIds.filter(
           (personId) => !enrolledPersonIds.has(personId),
         );
 
-        return { startedCandidates, unenrolledPersonIds };
+        return {
+          startedCandidates,
+          unenrolledPersonIds: [
+            ...unenrolledPersonIds,
+            ...enrollmentResolution.unenrolledPersonIds,
+          ],
+          enrollingPersonIds: enrollmentResolution.enrollingPersonIds,
+          skippedDoNotContact: enrollmentResolution.skippedDoNotContact,
+        };
       },
       authContext,
     );
+  }
+
+  // Maps a People-tab hash selection onto enrolled Candidates: people who are
+  // already Candidates resolve immediately, the rest are queued through
+  // upload-profiles and matched again until the worker creates them.
+  private async resolveAndEnrollSelectedPeople({
+    workspaceId,
+    projectId,
+    hashPersonIds,
+    apiToken,
+    workspaceMemberId,
+    origin,
+    enrollmentPollTimeoutMs,
+  }: {
+    workspaceId: string;
+    projectId?: string | null;
+    hashPersonIds: string[];
+    apiToken?: string;
+    workspaceMemberId?: string;
+    origin?: string;
+    enrollmentPollTimeoutMs: number;
+  }): Promise<{
+    candidateIds: string[];
+    unenrolledPersonIds: string[];
+    enrollingPersonIds: string[];
+    skippedDoNotContact: number;
+  }> {
+    const nothingResolved = {
+      candidateIds: [],
+      enrollingPersonIds: [],
+      skippedDoNotContact: 0,
+    };
+
+    if (hashPersonIds.length === 0) {
+      return { ...nothingResolved, unenrolledPersonIds: [] };
+    }
+
+    // The People cache is project-scoped, and upload-profiles writes through a
+    // caller token. Without either there is nothing to read and nothing to write.
+    const canEnroll =
+      isNonEmptyString(projectId) &&
+      projectId !== 'project-id' &&
+      isNonEmptyString(apiToken) &&
+      this.processCandidatesService.isDataSourceSupported(
+        OUTREACH_ENROLLMENT_DATA_SOURCE,
+      );
+
+    if (!canEnroll) {
+      return { ...nothingResolved, unenrolledPersonIds: hashPersonIds };
+    }
+
+    const payload = await this.outreachPeopleCacheService.get(
+      workspaceId,
+      projectId,
+    );
+    const rowById = new Map(
+      (payload?.people ?? []).map((person) => [person.id, person]),
+    );
+
+    const selectedRows: EnrollablePersonRow[] = [];
+    const unknownPersonIds: string[] = [];
+
+    for (const personId of hashPersonIds) {
+      const row = rowById.get(personId);
+
+      if (isDefined(row)) {
+        selectedRows.push({
+          id: row.id,
+          name: row.name,
+          title: row.title,
+          companyName: row.companyName,
+          linkedinUrl: row.linkedinUrl,
+          email: row.email,
+        });
+      } else {
+        unknownPersonIds.push(personId);
+      }
+    }
+
+    let enrollmentIndex = await this.loadEnrollmentIndex({
+      workspaceId,
+      projectId,
+      includeDoNotContact: true,
+    });
+
+    const candidateIds = new Set<string>();
+    const rowsToEnroll: EnrollablePersonRow[] = [];
+    const unenrollablePersonIds: string[] = [];
+    let skippedDoNotContact = 0;
+
+    for (const row of selectedRows) {
+      const candidateId = matchCandidateByPersonIdentity(row, enrollmentIndex);
+
+      if (isDefined(candidateId)) {
+        candidateIds.add(candidateId);
+        continue;
+      }
+
+      if (isPersonKnownDoNotContact(row, enrollmentIndex)) {
+        skippedDoNotContact += 1;
+        continue;
+      }
+
+      // upload-profiles matches on the LinkedIn profile, so a row without one
+      // can never become a Candidate.
+      if (!isNonEmptyString(row.name) || !isNonEmptyString(row.linkedinUrl)) {
+        unenrollablePersonIds.push(row.id);
+        continue;
+      }
+
+      rowsToEnroll.push(row);
+    }
+
+    const unresolvedPersonIds = [
+      ...unknownPersonIds,
+      ...unenrollablePersonIds,
+    ];
+
+    if (rowsToEnroll.length === 0) {
+      return {
+        candidateIds: [...candidateIds],
+        unenrolledPersonIds: unresolvedPersonIds,
+        enrollingPersonIds: [],
+        skippedDoNotContact,
+      };
+    }
+
+    try {
+      await this.processCandidatesService.queueRawDataForProcessing(
+        buildEnrollmentProfileRows(rowsToEnroll),
+        OUTREACH_ENROLLMENT_DATA_SOURCE,
+        projectId,
+        OUTREACH_ENROLLMENT_JOB_NAME,
+        workspaceMemberId ?? '',
+        new Date().toISOString(),
+        origin ?? '',
+        apiToken,
+        undefined,
+        { workspaceId },
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Failed to enroll selected prospects: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+
+      return {
+        candidateIds: [...candidateIds],
+        unenrolledPersonIds: [
+          ...unresolvedPersonIds,
+          ...rowsToEnroll.map((row) => row.id),
+        ],
+        enrollingPersonIds: [],
+        skippedDoNotContact,
+      };
+    }
+
+    // The upload is queued, so the Candidate rows land when the worker has
+    // transformed the batch. Wait a bounded time so one click ends in outreach
+    // actually starting rather than in a second manual step.
+    const pendingById = new Map(rowsToEnroll.map((row) => [row.id, row]));
+    const deadline = Date.now() + Math.max(0, enrollmentPollTimeoutMs);
+
+    while (pendingById.size > 0 && Date.now() < deadline) {
+      await sleep(OUTREACH_ENROLLMENT_POLL_INTERVAL_MS);
+
+      enrollmentIndex = await this.loadEnrollmentIndex({
+        workspaceId,
+        projectId,
+        includeDoNotContact: false,
+      });
+
+      for (const [personId, row] of pendingById) {
+        const candidateId = matchCandidateByPersonIdentity(
+          row,
+          enrollmentIndex,
+        );
+
+        if (isDefined(candidateId)) {
+          candidateIds.add(candidateId);
+          pendingById.delete(personId);
+        }
+      }
+    }
+
+    if (pendingById.size > 0) {
+      this.logger.log(
+        `Enrollment still running for ${pendingById.size} selected prospect(s) in project ${projectId}`,
+      );
+    }
+
+    return {
+      candidateIds: [...candidateIds],
+      unenrolledPersonIds: unresolvedPersonIds,
+      enrollingPersonIds: [...pendingById.keys()],
+      skippedDoNotContact,
+    };
+  }
+
+  // Identity keys of the project's Candidates, plus (on the first pass) every
+  // do-not-contact person in the workspace: a Stop in another project must
+  // still keep that person out of a fresh Start.
+  private async loadEnrollmentIndex({
+    workspaceId,
+    projectId,
+    includeDoNotContact,
+  }: {
+    workspaceId: string;
+    projectId: string;
+    includeDoNotContact: boolean;
+  }): Promise<EnrollmentIndex> {
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const candidateRepository =
+          await this.globalWorkspaceOrmManager.getRepository<
+            CandidateRecord & { peopleId?: string | null }
+          >(workspaceId, 'candidate', { shouldBypassPermissionChecks: true });
+        const candidates = await candidateRepository.find({
+          where: { projectId },
+          take: OUTREACH_ENROLLMENT_INDEX_LIMIT,
+        });
+
+        const personRepository =
+          await this.globalWorkspaceOrmManager.getRepository<PersonIdentityRecord>(
+            workspaceId,
+            'person',
+            { shouldBypassPermissionChecks: true },
+          );
+
+        const candidatePersonIds = candidates
+          .map((candidate) => candidate.peopleId)
+          .filter(isNonEmptyString);
+        const candidatePeople =
+          candidatePersonIds.length > 0
+            ? await personRepository.find({
+                where: { id: In(candidatePersonIds) },
+              })
+            : [];
+        const personById = new Map(
+          candidatePeople.map((person) => [person.id, person]),
+        );
+
+        const identities: EnrolledPersonIdentity[] = [];
+
+        for (const candidate of candidates) {
+          const person = isNonEmptyString(candidate.peopleId)
+            ? personById.get(candidate.peopleId)
+            : undefined;
+
+          if (!isDefined(person)) {
+            continue;
+          }
+
+          identities.push({
+            candidateId: candidate.id,
+            ...readPersonIdentity(person),
+            doNotContact: person.doNotContact === true,
+          });
+        }
+
+        if (includeDoNotContact) {
+          const blockedPeople = await personRepository.find({
+            where: { doNotContact: true },
+            take: OUTREACH_ENROLLMENT_INDEX_LIMIT,
+          });
+
+          for (const person of blockedPeople) {
+            identities.push({
+              ...readPersonIdentity(person),
+              doNotContact: true,
+            });
+          }
+        }
+
+        return buildEnrollmentIndex(identities);
+      },
+      authContext,
+    );
+  }
+
+  // Stop must not enroll anyone, so People-tab hash ids are only mapped onto
+  // Candidates that already exist. Anything still unmatched is left alone.
+  private async resolveEnrolledCandidateIdsForSelectedPeople({
+    workspaceId,
+    projectId,
+    hashPersonIds,
+  }: {
+    workspaceId: string;
+    projectId?: string | null;
+    hashPersonIds: string[];
+  }): Promise<string[]> {
+    if (hashPersonIds.length === 0) {
+      return [];
+    }
+
+    // The People cache is keyed by project; without one the hash ids cannot be
+    // mapped to a person at all.
+    if (
+      !isNonEmptyString(projectId) ||
+      projectId === 'project-id'
+    ) {
+      return [];
+    }
+
+    const payload = await this.outreachPeopleCacheService.get(
+      workspaceId,
+      projectId,
+    );
+    const rowById = new Map(
+      (payload?.people ?? []).map((person) => [person.id, person]),
+    );
+
+    const enrollmentIndex = await this.loadEnrollmentIndex({
+      workspaceId,
+      projectId,
+      includeDoNotContact: false,
+    });
+
+    const candidateIds = new Set<string>();
+
+    for (const personId of hashPersonIds) {
+      const row = rowById.get(personId);
+
+      if (!isDefined(row)) {
+        continue;
+      }
+
+      const candidateId = matchCandidateByPersonIdentity(
+        {
+          name: row.name,
+          companyName: row.companyName,
+          email: row.email,
+          linkedinUrl: row.linkedinUrl,
+        },
+        enrollmentIndex,
+      );
+
+      if (isDefined(candidateId)) {
+        candidateIds.add(candidateId);
+      }
+    }
+
+    return [...candidateIds];
   }
 
   async stopCandidates({
@@ -541,10 +987,25 @@ export class OutreachProjectOutreachControlService {
     const uniquePersonIds = [
       ...new Set((personIds ?? []).filter(isNonEmptyString)),
     ];
+    // A People-tab row that is not enrolled has a content-hash id, which
+    // Postgres rejects against the uuid peopleId column. Resolve what can be
+    // resolved and ignore the rest instead of failing the whole request.
+    const { uuidPersonIds, hashPersonIds } =
+      partitionSelectedPersonIds(uniquePersonIds);
 
     if (uniqueCandidateIds.length === 0 && uniquePersonIds.length === 0) {
       return { stoppedCandidates: 0, stoppedRuns: 0 };
     }
+
+    const candidateIdsFromPeopleCache =
+      await this.resolveEnrolledCandidateIdsForSelectedPeople({
+        workspaceId,
+        projectId,
+        hashPersonIds,
+      });
+    const allCandidateIds = [
+      ...new Set([...uniqueCandidateIds, ...candidateIdsFromPeopleCache]),
+    ];
 
     const authContext = buildSystemAuthContext(workspaceId);
 
@@ -552,22 +1013,30 @@ export class OutreachProjectOutreachControlService {
       async () => {
         const candidateRepository =
           await this.globalWorkspaceOrmManager.getRepository<
-            CandidateRecord & {
-              peopleId?: string | null;
-              outreachSequenceStage?: string | null;
-              candidateFlags?: unknown;
-              projectId?: string | null;
-            }
+            OutreachCandidateRecord
           >(workspaceId, 'candidate', { shouldBypassPermissionChecks: true });
 
-        let candidates =
-          uniqueCandidateIds.length > 0
+        const foundById =
+          allCandidateIds.length > 0
             ? await candidateRepository.find({
-                where: { id: In(uniqueCandidateIds) },
+                where: { id: In(allCandidateIds) },
               })
-            : await candidateRepository.find({
-                where: { peopleId: In(uniquePersonIds) },
-              });
+            : [];
+        const foundByPersonId =
+          uuidPersonIds.length > 0
+            ? await candidateRepository.find({
+                where: { peopleId: In(uuidPersonIds) },
+              })
+            : [];
+
+        let candidates = [
+          ...new Map(
+            [...foundById, ...foundByPersonId].map((candidate) => [
+              candidate.id,
+              candidate,
+            ]),
+          ).values(),
+        ];
 
         if (isNonEmptyString(projectId)) {
           candidates = candidates.filter(
