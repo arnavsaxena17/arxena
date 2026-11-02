@@ -1,5 +1,19 @@
 ## People
 
+### What each source hands back
+
+{{sources: returns people}}
+
+`returns` is a ceiling, not a promise: any field can be null on any row. A row
+without a `linkedinUrl` cannot be deduped, saved to the CRM or profile-fetched.
+
+**One key chains the sources: `linkedinUrl`.** A step is worth running only if it
+yields a key the next step consumes. Google search gives the URL but not the
+profile, so a SERP row needs `fetch_profiles` before it can be scored; Bright Data
+people returns the profile and the URL in one call, so for scoring it is usually
+cheaper end to end even at $0.002 a row. When the Arxena index is on, resolve
+there first: it is free and it can filter on `linkedinUrl` itself.
+
 ### What each source can filter on
 
 {{sources: capabilities people}}

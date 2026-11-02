@@ -83,6 +83,23 @@ export const GetOutreachTabInputZodSchema = z.object({
     .describe(
       'One or two column keys: returns the row count per value, or per value pair (for example ["finalState", "rung"]), over every row that passes onlyViewMatches and filter. Rows are left out unless fields is also passed.',
     ),
+  sort: z
+    .array(
+      z.object({
+        columnId: z
+          .string()
+          .min(1)
+          .describe(
+            'An otherFields key (employees, turnover, fitmentScore) or a built-in column (name, title, company, location, industry, employees).',
+          ),
+        direction: z.enum(['asc', 'desc']).default('desc'),
+      }),
+    )
+    .max(2)
+    .optional()
+    .describe(
+      'Order the rows before limit, so "top 10 by headcount" is a sort, not a page-through. Numbers compare as numbers. Applies to rows only, not to groupBy or summarize. Combine with filter to rank a subset.',
+    ),
 });
 
 export type GetOutreachTabInput = z.infer<typeof GetOutreachTabInputZodSchema>;

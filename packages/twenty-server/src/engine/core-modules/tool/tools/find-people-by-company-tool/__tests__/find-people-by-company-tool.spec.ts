@@ -1044,6 +1044,9 @@ describe('FindPeopleByCompanyTool concurrency and retries', () => {
           name: `Company ${index}`,
         })),
         roles: ['CEO'],
+        // This test is about the concurrency default, not the pilot: opt out
+        // so all 50 start before the first finishes
+        skipPilot: true,
       },
       context,
     );

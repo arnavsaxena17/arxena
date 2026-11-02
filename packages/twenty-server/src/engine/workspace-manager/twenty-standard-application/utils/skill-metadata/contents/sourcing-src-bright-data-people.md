@@ -13,22 +13,17 @@ A role at companies already named is `people-by-company`, not this estimate.
 
 ### Ludicrous query
 
-Pass the user's sentence as `query`; do not turn it into a taxonomy filter.
+**You pass one sentence and a budget. There is no filter argument.** The planner
+compiles the sentence, so every constraint must be in the words: *"sales heads at
+pharmaceutical companies in Mumbai, excluding contractors"*.
 
 **What a query may say.** Only ideas the people data holds: title (current or past), employer (current or past), the employer's industry, skills, certifications, location (country, city), name. A people search cannot filter on company attributes such as funding, size or headquarters; for those, search companies first, then people. Score facts that are not fields (years of experience, team size) afterwards with enrichment columns.
 
-**How the query is built (server side, you only pass the sentence).** The planner turns the request into a structured ludicrous `query` and always fetches `view: "full"`. Conditions are `and` / `or` / `not` over `text` (text fields), `equals` / `in` / `range` (typed fields). Titles use `text` on `current_title` with `mode: "all"` (every word required, any order), people locations use `country_code` / `city` (typed), employers use `current_company_name` / `current_company_industry` (text). Example:
-
-```json
-{ "and": [
-  { "or": [
-    { "text": { "current_title": { "value": "chief executive officer", "mode": "all" } } },
-    { "text": { "current_title": { "value": "managing director", "mode": "all" } } }
-  ] },
-  { "in": { "country_code": ["IN"] } },
-  { "text": { "current_company_industry": { "value": "restaurants", "mode": "all" } } }
-] }
-```
+**Before you fund it, read what it compiled.** The estimate returns
+`intentSummary`, `relevanceCriteria` and the compiled `query` per slice, plus
+each slice's `samplePrecision`. Check that the titles and the employer industry
+are what you wrote, that there is no slice you did not ask for, and that the
+precision is not low. If a check fails, rewrite the sentence and estimate again.
 
 {{include: boolean-title-strings}}
 

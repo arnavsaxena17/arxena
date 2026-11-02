@@ -14,6 +14,8 @@ import {
   FindPeopleByCompanyInputZodSchema,
   type FindPeopleByCompanyInput,
   FIND_PEOPLE_BY_COMPANY_MAX_PROJECT_COMPANIES,
+  FIND_PEOPLE_PILOT_SIZE,
+  FIND_PEOPLE_PILOT_THRESHOLD,
 } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool.schema';
 
 import { normalizeLinkedinProfileUrl } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/parse-linkedin-serp-result.util';
@@ -136,6 +138,18 @@ const parseEmployeeCount = (value: string | undefined): number | undefined => {
   return isDefined(numbers) && numbers.length > 0
     ? Math.max(...numbers)
     : undefined;
+};
+
+// A target is about people, but the work is per company: two companies per
+// wanted person, plus five of headroom, covers the companies that have no
+// holder of the role. Without this a "top 10" request reaches the whole list.
+const capCompaniesToTarget = <TCompany>(
+  companies: TCompany[],
+  target: number,
+): TCompany[] => {
+  const cap = Math.max(target * 2, target + 5);
+
+  return companies.length <= cap ? companies : companies.slice(0, cap);
 };
 
 // the upsert is a read-modify-write on the project's cached list, so writes
@@ -275,11 +289,25 @@ export class FindPeopleByCompanyTool implements Tool {
       };
     }
 
-    const isPilot = isDefined(planned.pilotSize);
-    const affordable = budgeted.companies;
-    const companies = isPilot
-      ? affordable.slice(0, planned.pilotSize)
-      : affordable;
+    // A "top 10" request must not fan out to the whole industry list: a
+    // best_effort target bounds how many companies this run may touch. A list
+    // the caller typed is already sized by the caller and is left alone.
+    const affordable =
+      !isDefined(planned.companies) &&
+      planned.plan.coverage !== 'exhaustive' &&
+      isDefined(planned.target)
+        ? capCompaniesToTarget(budgeted.companies, planned.target)
+        : budgeted.companies;
+
+    // One project's first lookup pilots the first few before the rest, so a
+    // wrong role reading costs ten lookups instead of hundreds
+    const pilotSize =
+      planned.pilotSize ??
+      (!planned.skipPilot && affordable.length > FIND_PEOPLE_PILOT_THRESHOLD
+        ? FIND_PEOPLE_PILOT_SIZE
+        : undefined);
+    const isPilot = isDefined(pilotSize);
+    const companies = isPilot ? affordable.slice(0, pilotSize) : affordable;
 
     // More than one chunk of the project's own companies runs in the
     // background, so a long list survives the chat turn and can be resumed
@@ -289,10 +317,15 @@ export class FindPeopleByCompanyTool implements Tool {
       companies.length > FIND_PEOPLE_COMPANIES_PER_CHUNK &&
       isDefined(this.findPeopleRunService)
     ) {
-      return this.startRun(
-        { ...planned, companies },
-        context,
-        budgeted.deferredByBudget,
+      return this.withEstimate(
+        await this.startRun(
+          { ...planned, companies },
+          context,
+          budgeted.deferredByBudget,
+        ),
+        companies.length,
+        planned.roles.length,
+        planned.plan.perPairUsd,
       );
     }
 
@@ -902,6 +935,36 @@ export class FindPeopleByCompanyTool implements Tool {
     }
 
     return this.runOutput(state);
+  }
+
+  // A run over many companies must say its size and ceiling before it starts,
+  // so the model can compare it to the number the user asked for and stop
+  private withEstimate(
+    output: ToolOutput,
+    companies: number,
+    roles: number,
+    perPairUsd: number,
+  ): ToolOutput {
+    if (!output.success) {
+      return output;
+    }
+
+    const maxUsd = companies * roles * perPairUsd;
+    const note =
+      `This run looks up ${companies} companies x ${roles} role(s): ` +
+      `$${perPairUsd.toFixed(2)} per pair, ceiling $${maxUsd.toFixed(2)}. ` +
+      'Compare that to the count the user asked for before it spends.';
+
+    return {
+      ...output,
+      message: `${note} ${output.message}`,
+      result: {
+        ...(typeof output.result === 'object' && output.result !== null
+          ? output.result
+          : {}),
+        estimate: { companies, roles, perPairCapUsd: perPairUsd, maxUsd },
+      },
+    };
   }
 
   private async runOutput(state: FindPeopleRunState): Promise<ToolOutput> {

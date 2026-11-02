@@ -32,6 +32,7 @@ import {
   groupOutreachTabRows,
   normalizeOutreachTabFilters,
   pickOutreachTabFields,
+  sortOutreachTabRows,
 } from 'src/engine/core-modules/tool/tools/outreach-ai-column-tool/query-outreach-tab-rows.util';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
 import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.type';
@@ -157,6 +158,7 @@ export class GetOutreachTabTool implements Tool {
       filter,
       fields,
       groupBy,
+      sort,
     } = parsed.data;
     const allRows = await this.outreachTabService.getAll({
       workspaceId: context.workspaceId,
@@ -188,7 +190,11 @@ export class GetOutreachTabTool implements Tool {
     );
     const isQuery = isDefined(view) || filters.length > 0;
     const offset = Math.max(0, Number.parseInt(cursor ?? '0', 10) || 0);
-    const pageRows = matchedRows.slice(offset, offset + limit);
+    // Rank before slicing, so "top N by …" is the first page, not a page hunt
+    const orderedRows = isDefined(sort)
+      ? sortOutreachTabRows(matchedRows, sort)
+      : matchedRows;
+    const pageRows = orderedRows.slice(offset, offset + limit);
     const next = offset + pageRows.length;
     // A group count answers the question; rows would only fill the context.
     const includeRows = !isDefined(groupBy) || isDefined(fields);

@@ -5,6 +5,12 @@ export const FIND_PEOPLE_BY_COMPANY_MAX_COMPANIES = 50;
 // model, so the cap is about run length, not output size
 export const FIND_PEOPLE_BY_COMPANY_MAX_PROJECT_COMPANIES = 500;
 
+// Above this many companies a lookup pilots the first few before the rest:
+// the user checks the role reading and the rung on ten rows, not on five
+// hundred, and a wrong reading costs ten lookups instead of hundreds
+export const FIND_PEOPLE_PILOT_THRESHOLD = 25;
+export const FIND_PEOPLE_PILOT_SIZE = 10;
+
 export const FindPeopleByCompanyInputZodSchema = z.object({
   companies: z
     .array(
@@ -168,7 +174,21 @@ export const FindPeopleByCompanyInputZodSchema = z.object({
     .max(FIND_PEOPLE_BY_COMPANY_MAX_COMPANIES)
     .optional()
     .describe(
-      'Look up only this many companies now and return, so the user can check the role reading and the rung before the rest run. Use 10 on the first lookup of a project.',
+      `Look up only this many companies now and return, so the user can check the role reading and the rung before the rest run. Defaults to ${FIND_PEOPLE_PILOT_SIZE} on the first lookup of a project when the resolved list is over ${FIND_PEOPLE_PILOT_THRESHOLD} companies; pass skipPilot to run the whole list at once.`,
+    ),
+  skipPilot: z
+    .boolean()
+    .default(false)
+    .describe(
+      `Run every company at once even when the resolved list is over ${FIND_PEOPLE_PILOT_THRESHOLD}; say why in one line when you use it.`),
+  target: z
+    .number()
+    .int()
+    .min(1)
+    .max(FIND_PEOPLE_BY_COMPANY_MAX_PROJECT_COMPANIES)
+    .optional()
+    .describe(
+      'How many people the user asked for. With best_effort coverage it bounds the run: only about target x 2 companies (at least target + 5) are looked up, so a "top 10" request cannot fan out to a whole industry list. Ignored when companies is passed, and never a substitute for the run cap.',
     ),
   waitSeconds: z
     .number()
@@ -191,7 +211,11 @@ export const FindPeopleByCompanyInputZodSchema = z.object({
     .describe(
       'With runId: stop the run. Companies already looked up keep their results.',
     ),
-});
+})
+  // An unknown key is a mistake, not a detail to drop: a `target` or an
+  // `industries` that silently vanishes makes the model believe it bounded a
+  // run that then spends on every row. Fail loudly instead.
+  .strict();
 
 export type FindPeopleByCompanyInput = z.infer<
   typeof FindPeopleByCompanyInputZodSchema

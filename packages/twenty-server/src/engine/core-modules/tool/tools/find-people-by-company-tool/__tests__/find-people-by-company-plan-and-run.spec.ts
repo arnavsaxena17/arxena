@@ -255,6 +255,8 @@ describe('FindPeopleByCompanyTool pilot and run', () => {
         projectId: 'p',
         roles: ['Head of E-commerce'],
         waitSeconds: 0,
+        // Exercising the chunked run itself, not the pilot default
+        skipPilot: true,
       },
       context,
     );
@@ -293,6 +295,8 @@ describe('FindPeopleByCompanyTool pilot and run', () => {
         projectId: 'p',
         roles: ['Head of E-commerce'],
         waitSeconds: 0,
+        // Exercising the chunked run itself, not the pilot default
+        skipPilot: true,
       },
       context,
     );
