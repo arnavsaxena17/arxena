@@ -57,8 +57,12 @@ describe('mapLinkedinQuerySetToHarvestParameters', () => {
     expect(mapped.searchParameters).not.toHaveProperty('headquarterLocations');
   });
 
-  it('should resolve industry labels and seniority to Harvest ids', () => {
-    const [mapped] = mapLinkedinQuerySetToHarvestParameters({
+  // A facet is a sieve, not a net: Harvest ANDs every parameter and the
+  // seniority/function/industry ids are labels a profile may never carry, so
+  // combining them with a title search silently loses people a direct search
+  // would find.
+  it('should send the direct title search and the facet browse separately', () => {
+    const mapped = mapLinkedinQuerySetToHarvestParameters({
       querySet: {
         search_query_set: [
           {
@@ -72,13 +76,45 @@ describe('mapLinkedinQuerySetToHarvestParameters', () => {
       category: 'people',
     });
 
-    // 15 is the vendor's id for Pharmaceutical Manufacturing (verified against
-    // linkedin_industry_code_v2_all_eng.json)
-    expect(mapped.searchParameters).toMatchObject({
+    expect(mapped).toHaveLength(2);
+
+    const [direct, faceted] = mapped;
+
+    expect(direct.id).toContain('direct');
+    expect(direct.searchParameters).toHaveProperty('currentJobTitles');
+    expect(direct.searchParameters).not.toHaveProperty('industryIds');
+    expect(direct.searchParameters).not.toHaveProperty('seniorityLevelIds');
+
+    expect(faceted.id).toContain('faceted');
+    // 15 is the vendor id for Pharmaceutical Manufacturing, 220 for director,
+    // 25 for sales (verified against the Harvest tables)
+    expect(faceted.searchParameters).toMatchObject({
       industryIds: ['15'],
       seniorityLevelIds: ['220'],
       functionIds: ['25'],
     });
+    expect(faceted.searchParameters).not.toHaveProperty('currentJobTitles');
+  });
+
+  it('should send only one search when there is no carrier or no facet', () => {
+    const directOnly = mapLinkedinQuerySetToHarvestParameters({
+      querySet: { search_query_set: [{ ...query, industry_terms: null }] },
+      category: 'people',
+    });
+
+    expect(directOnly).toHaveLength(1);
+
+    const facetedOnly = mapLinkedinQuerySetToHarvestParameters({
+      querySet: {
+        search_query_set: [
+          { ...query, keywords: null, job_title: null, industry_terms: ['Pharmaceutical Manufacturing'] },
+        ],
+      },
+      category: 'people',
+    });
+
+    expect(facetedOnly).toHaveLength(1);
+    expect(facetedOnly[0].searchParameters).toHaveProperty('industryIds');
   });
 
   it('should report an industry label it cannot resolve instead of sending it', () => {
