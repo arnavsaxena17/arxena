@@ -2,11 +2,12 @@ import { Command } from 'nest-commander';
 
 import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
-import { type ObjectLiteral } from 'typeorm';
+import { In, type ObjectLiteral } from 'typeorm';
 
 import { ProvisionedWorkspaceCommandRunner } from 'src/database/commands/command-runners/provisioned-workspace.command-runner';
 import { WorkspaceIteratorService } from 'src/database/commands/command-runners/workspace-iterator.service';
 import { type RunOnWorkspaceArgs } from 'src/database/commands/command-runners/workspace.command-runner';
+import { findEntitiesByIdInBatches } from 'src/database/commands/upgrade-version-command/common/find-entities-by-ids-in-batches.util';
 import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-workspace-command.decorator';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
@@ -22,9 +23,18 @@ type CandidateIdentityRow = ObjectLiteral & {
   uniqueStringKey?: string | null;
   avatarUrl?: string | null;
   outreachPreferredChannel?: string | null;
-  hiringNaukriUrl?: { primaryLinkUrl?: string; primaryLinkLabel?: string } | null;
-  resdexNaukriUrl?: { primaryLinkUrl?: string; primaryLinkLabel?: string } | null;
-  displayPicture?: { primaryLinkUrl?: string; primaryLinkLabel?: string } | null;
+  hiringNaukriUrl?: {
+    primaryLinkUrl?: string;
+    primaryLinkLabel?: string;
+  } | null;
+  resdexNaukriUrl?: {
+    primaryLinkUrl?: string;
+    primaryLinkLabel?: string;
+  } | null;
+  displayPicture?: {
+    primaryLinkUrl?: string;
+    primaryLinkLabel?: string;
+  } | null;
   linkedinUrl?: { primaryLinkUrl?: string; primaryLinkLabel?: string } | null;
   linkedinProfile?: unknown;
   linkedinPosts?: unknown;
@@ -196,10 +206,13 @@ export class BackfillPersonIdentityFromCandidateCommand extends ProvisionedWorks
         patchesByPersonId.set(peopleId, { ...existingPatch, ...incoming });
       }
 
+      const peopleById = await findEntitiesByIdInBatches(
+        (personIds) => personRepository.find({ where: { id: In(personIds) } }),
+        [...patchesByPersonId.keys()],
+      );
+
       for (const [personId, incoming] of patchesByPersonId) {
-        const person = await personRepository.findOne({
-          where: { id: personId },
-        });
+        const person = peopleById.get(personId);
 
         if (!isDefined(person)) {
           continue;
@@ -207,7 +220,10 @@ export class BackfillPersonIdentityFromCandidateCommand extends ProvisionedWorks
 
         const patch: Record<string, unknown> = {};
 
-        if (isEmptyText(person.jobTitle) && isNonEmptyString(incoming.jobTitle)) {
+        if (
+          isEmptyText(person.jobTitle) &&
+          isNonEmptyString(incoming.jobTitle)
+        ) {
           patch.jobTitle = incoming.jobTitle;
         }
 

@@ -1,10 +1,9 @@
 import {
-  HARVEST_INDUSTRY_ID_BY_LABEL,
-  normalizeHarvestFilterLabel,
   resolveHarvestFunctionIdForRoot,
   resolveHarvestIndustryIds,
   resolveHarvestSeniorityLevelIds,
 } from 'src/engine/core-modules/candidate-search/constants/harvest-filter-ids';
+import type { HarvestUnresolvedFilter } from 'src/engine/core-modules/candidate-search/constants/harvest-filter-ids';
 import type { SearchQuerySet } from 'src/engine/core-modules/linkedin-query-generation/types/linkedin-query-generation.types';
 import { type LinkedInSeniorityType } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-parameter.type';
 
@@ -43,6 +42,15 @@ const toNames = (values: string[] | null | undefined): string[] => [
   ...new Set((values ?? []).map((value) => value.trim()).filter(Boolean)),
 ];
 
+// One line per facet the resolver could not map, so a caller can say which
+// constraint a Harvest run silently lacks instead of only showing the results.
+const describeUnresolvedFilter = ({
+  facet,
+  label,
+  reason,
+}: HarvestUnresolvedFilter): string =>
+  `${facet} "${label}" was not sent: ${reason}`;
+
 const andClauses = (clauses: Array<string | undefined>): string | undefined => {
   const present = clauses.filter((clause): clause is string => !!clause);
 
@@ -72,7 +80,7 @@ const buildPeopleVariants = (query: {
   locations: string[];
   excludedLocations: string[];
   excludedCompanies: string[];
-}): { variants: Variant[]; unresolvedFilters: string[] } => {
+}): { variants: Variant[]; unresolvedFilters: HarvestUnresolvedFilter[] } => {
   const {
     keywords,
     jobTitle,
@@ -82,14 +90,13 @@ const buildPeopleVariants = (query: {
   } = query;
 
   const titles = jobTitle ? splitHarvestTitleList(jobTitle) : [];
-  const search = andClauses([
-    keywords,
-    titles === null ? jobTitle : undefined,
-  ]);
+  const search = andClauses([keywords, titles === null ? jobTitle : undefined]);
 
   const fence: HarvestParameters = {
     ...(locations.length > 0 ? { locations } : {}),
-    ...(excludedLocations.length > 0 && { excludeLocations: excludedLocations }),
+    ...(excludedLocations.length > 0 && {
+      excludeLocations: excludedLocations,
+    }),
     ...(excludedCompanies.length > 0 && {
       excludeCurrentCompanies: excludedCompanies,
     }),
@@ -149,7 +156,7 @@ const buildFacetVariant = (query: {
   seniority?: LinkedInSeniorityType | null;
   functionRoot?: string | null;
   excludedIndustries: string[];
-}): { variant?: Variant; unresolvedFilters: string[] } => {
+}): { variant?: Variant; unresolvedFilters: HarvestUnresolvedFilter[] } => {
   const {
     locations,
     excludedLocations,
@@ -160,41 +167,55 @@ const buildFacetVariant = (query: {
     excludedIndustries,
   } = query;
 
-  const industryIds = resolveHarvestIndustryIds(industryTerms);
-  const unresolvedFilters = industryTerms
-    .filter(
-      (label) => !HARVEST_INDUSTRY_ID_BY_LABEL[normalizeHarvestFilterLabel(label)],
-    )
-    .map(
-      (label) =>
-        `industry "${label}" has no Harvest industry id, so it was not sent`,
-    );
-
-  const seniorityIds = resolveHarvestSeniorityLevelIds(
+  const industryResolution = resolveHarvestIndustryIds(industryTerms);
+  const excludedIndustryResolution =
+    resolveHarvestIndustryIds(excludedIndustries);
+  const seniorityResolution = resolveHarvestSeniorityLevelIds(
     seniority ? [seniority] : [],
   );
-  const functionId = resolveHarvestFunctionIdForRoot(functionRoot ?? null);
-  const excludedIndustryIds = resolveHarvestIndustryIds(excludedIndustries);
+  const functionResolution = resolveHarvestFunctionIdForRoot(
+    functionRoot ?? null,
+  );
+
+  // an exclusion that failed to resolve is the dangerous one: the run returns
+  // rows the caller asked to exclude, and nothing about the payload says so
+  const unresolvedFilters = [
+    ...industryResolution.unresolved,
+    ...excludedIndustryResolution.unresolved,
+    ...seniorityResolution.unresolved,
+    ...functionResolution.unresolved,
+  ];
 
   const parameters: HarvestParameters = {
     ...(locations.length > 0 ? { locations } : {}),
-    ...(excludedLocations.length > 0 && { excludeLocations: excludedLocations }),
+    ...(excludedLocations.length > 0 && {
+      excludeLocations: excludedLocations,
+    }),
     ...(excludedCompanies.length > 0 && {
       excludeCurrentCompanies: excludedCompanies,
     }),
-    ...(industryIds.length > 0 && { industryIds }),
-    ...(seniorityIds.length > 0 && { seniorityLevelIds: seniorityIds }),
-    ...(functionId ? { functionIds: [functionId] } : {}),
-    ...(excludedIndustryIds.length > 0 && {
-      excludeIndustryIds: excludedIndustryIds,
+    ...(industryResolution.ids.length > 0 && {
+      industryIds: industryResolution.ids,
+    }),
+    ...(seniorityResolution.ids.length > 0 && {
+      seniorityLevelIds: seniorityResolution.ids,
+    }),
+    ...(functionResolution.id ? { functionIds: [functionResolution.id] } : {}),
+    ...(excludedIndustryResolution.ids.length > 0 && {
+      excludeIndustryIds: excludedIndustryResolution.ids,
     }),
   };
 
   const hasFacet =
-    industryIds.length > 0 || seniorityIds.length > 0 || Boolean(functionId);
+    industryResolution.ids.length > 0 ||
+    seniorityResolution.ids.length > 0 ||
+    Boolean(functionResolution.id);
 
   return hasFacet
-    ? { variant: { kind: 'facet', label: 'facet browse', parameters }, unresolvedFilters }
+    ? {
+        variant: { kind: 'facet', label: 'facet browse', parameters },
+        unresolvedFilters,
+      }
     : { variant: undefined, unresolvedFilters };
 };
 
@@ -227,7 +248,8 @@ export const mapLinkedinQuerySetToHarvestParameters = ({
       const signature = JSON.stringify([companySearch, companyNames]);
 
       if (
-        (Object.keys(companySearch).length === 0 && companyNames.length === 0) ||
+        (Object.keys(companySearch).length === 0 &&
+          companyNames.length === 0) ||
         seen.has(signature)
       ) {
         return [];
@@ -269,9 +291,13 @@ export const mapLinkedinQuerySetToHarvestParameters = ({
       excludedIndustries: toNames(query.exclude_industries ?? null),
     });
 
+    // identical across every variant of this query, so it is described once
     const unresolvedFilters = [
-      ...people.unresolvedFilters,
-      ...faceted.unresolvedFilters,
+      ...new Set(
+        [...people.unresolvedFilters, ...faceted.unresolvedFilters].map(
+          describeUnresolvedFilter,
+        ),
+      ),
     ];
 
     const variants = [

@@ -118,6 +118,10 @@ export class WorkspaceCommandRunnerService {
   }): Promise<void> {
     const { name, command: workspaceCommand } = workspaceCommandEntry;
 
+    // Upgrade duration is dominated by a long tail of per-workspace commands;
+    // without a per-command duration there is no way to tell which ones to fix.
+    const commandStart = performance.now();
+
     try {
       await workspaceCommand.runOnWorkspace({
         options,
@@ -126,6 +130,18 @@ export class WorkspaceCommandRunnerService {
         index: iteratorContext.index,
         total: iteratorContext.total,
       });
+
+      this.logger.log(
+        formatUpgradeLog({
+          humanMessage: `Workspace command "${name}" finished in ${(performance.now() - commandStart).toFixed(0)}ms`,
+          event: 'workspace.command.duration',
+          logFields: {
+            workspaceId,
+            command: name,
+            durationMs: Math.round(performance.now() - commandStart),
+          },
+        }),
+      );
 
       if (!options.dryRun) {
         await this.upgradeMigrationService.recordUpgradeMigration({

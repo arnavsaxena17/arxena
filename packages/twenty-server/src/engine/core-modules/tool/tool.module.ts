@@ -10,6 +10,7 @@ import { OutreachCommandModule } from 'src/engine/core-modules/outreach-command/
 import { JwtModule } from 'src/engine/core-modules/jwt/jwt.module';
 import { BrightDataModule } from 'src/engine/core-modules/bright-data/bright-data.module';
 import { LocalBusinessDataModule } from 'src/engine/core-modules/local-business-data/local-business-data.module';
+import { LinkedInSearchModule } from 'src/engine/core-modules/linkedin-search/linkedin-search.module';
 import { OrgChartModule } from 'src/engine/core-modules/org-chart/org-chart.module';
 import { SecureHttpClientModule } from 'src/engine/core-modules/secure-http-client/secure-http-client.module';
 import { CreateCalendarEventTool } from 'src/engine/core-modules/tool/tools/calendar-tool/create-calendar-event-tool';
@@ -43,6 +44,7 @@ import { TheOrgModule } from 'src/engine/core-modules/theorg/theorg.module';
 import { FindPeopleByCompanyTool } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-by-company-tool';
 import { CandidateJudgeService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/candidate-judge.service';
 import { FindPeopleCascadeService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-cascade.service';
+import { UnipileCompanyUrlResolverService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/unipile-company-url-resolver.service';
 import { FindPeopleRunService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-run.service';
 import { ProcessFindPeopleChunkJob } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/process-find-people-chunk.job';
 import { FindPeopleGoogleSearchService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/find-people-google-search.service';
@@ -117,6 +119,9 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     forwardRef(() => BrightDataModule),
     LocalBusinessDataModule,
     OrgChartModule,
+    // Unipile's LinkedIn parameter search, used to resolve a company's
+    // LinkedIn URL before paying Harvest's company search for it
+    forwardRef(() => LinkedInSearchModule),
     // TheOrg / The Official Board people for the SERP-side sources; both read
     // BrightDataModule, which already refers back here
     forwardRef(() => TheOrgModule),
@@ -168,6 +173,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     GetSourceCapabilitiesTool,
     GetScoringPlanTool,
     FindPeopleCascadeService,
+    UnipileCompanyUrlResolverService,
     FindPeopleRunService,
     ProcessFindPeopleChunkJob,
     FindPeopleGoogleSearchService,

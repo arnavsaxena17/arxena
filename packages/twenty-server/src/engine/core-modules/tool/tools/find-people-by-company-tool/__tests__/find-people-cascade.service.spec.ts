@@ -655,7 +655,7 @@ describe('FindPeopleCascadeService Harvest company resolution', () => {
       ...(linkedinUrl ? { linkedinUrl } : {}),
     }) as never;
 
-  const resolveOf = (harvest: unknown) => {
+  const resolveOf = (harvest: unknown, unipile?: unknown) => {
     const service = new FindPeopleCascadeService(
       {} as never,
       {} as never,
@@ -666,6 +666,7 @@ describe('FindPeopleCascadeService Harvest company resolution', () => {
       {} as never,
       undefined,
       harvest as never,
+      unipile as never,
     );
 
     return (
@@ -687,6 +688,83 @@ describe('FindPeopleCascadeService Harvest company resolution', () => {
 
     expect(resolved).toBe('https://www.linkedin.com/company/cipla');
     expect(findCompanyLinkedinUrl).not.toHaveBeenCalled();
+  });
+
+  // Harvest bills per returned record, so the free tiers must win whenever they
+  // can answer
+  it('should use the Unipile company typeahead without a Harvest company search', async () => {
+    const findCompanyLinkedinUrl = jest.fn();
+    const unipile = {
+      isAvailable: () => true,
+      resolveCompanyLinkedinUrl: jest.fn().mockResolvedValue({
+        linkedinUrl: 'https://www.linkedin.com/company/cipla/',
+        matchedName: 'Cipla',
+        accountId: 'acct-1',
+      }),
+    };
+
+    const resolved = await resolveOf({ findCompanyLinkedinUrl }, unipile)(
+      { findCompanyLinkedinUrl },
+      identityWith(['Cipla']),
+    );
+
+    expect(resolved).toBe('https://www.linkedin.com/company/cipla/');
+    expect(unipile.resolveCompanyLinkedinUrl).toHaveBeenCalledWith(['Cipla']);
+    expect(findCompanyLinkedinUrl).not.toHaveBeenCalled();
+  });
+
+  it('should fall back to the Harvest company search when Unipile has no match', async () => {
+    const findCompanyLinkedinUrl = jest.fn().mockResolvedValue({
+      name: 'Cipla',
+      linkedinUrl: 'https://www.linkedin.com/company/cipla',
+    });
+    const unipile = {
+      isAvailable: () => true,
+      resolveCompanyLinkedinUrl: jest.fn().mockResolvedValue(null),
+    };
+
+    const resolved = await resolveOf({ findCompanyLinkedinUrl }, unipile)(
+      { findCompanyLinkedinUrl },
+      identityWith(['Cipla']),
+    );
+
+    expect(resolved).toBe('https://www.linkedin.com/company/cipla');
+    expect(findCompanyLinkedinUrl).toHaveBeenCalledTimes(1);
+  });
+
+  it('should still reach Harvest when the Unipile lookup throws', async () => {
+    const findCompanyLinkedinUrl = jest.fn().mockResolvedValue({
+      name: 'Cipla',
+      linkedinUrl: 'https://www.linkedin.com/company/cipla',
+    });
+    const unipile = {
+      isAvailable: () => true,
+      resolveCompanyLinkedinUrl: jest
+        .fn()
+        .mockRejectedValue(new Error('unipile down')),
+    };
+
+    const resolved = await resolveOf({ findCompanyLinkedinUrl }, unipile)(
+      { findCompanyLinkedinUrl },
+      identityWith(['Cipla']),
+    );
+
+    expect(resolved).toBe('https://www.linkedin.com/company/cipla');
+  });
+
+  it('should skip Unipile entirely when it is not wired', async () => {
+    const findCompanyLinkedinUrl = jest.fn().mockResolvedValue({
+      name: 'Cipla',
+      linkedinUrl: 'https://www.linkedin.com/company/cipla',
+    });
+
+    const resolved = await resolveOf({ findCompanyLinkedinUrl })(
+      { findCompanyLinkedinUrl },
+      identityWith(['Cipla']),
+    );
+
+    expect(resolved).toBe('https://www.linkedin.com/company/cipla');
+    expect(findCompanyLinkedinUrl).toHaveBeenCalledTimes(1);
   });
 
   it('should try alternate names beyond the first two before giving up', async () => {

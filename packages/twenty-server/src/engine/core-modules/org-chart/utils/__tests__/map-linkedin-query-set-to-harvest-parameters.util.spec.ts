@@ -1,5 +1,8 @@
 import { isHarvestCompanyNameMatch } from 'src/engine/core-modules/org-chart/utils/harvest-company-name-match.util';
-import { HARVEST_MAX_SEARCHES_PER_QUERY, mapLinkedinQuerySetToHarvestParameters } from 'src/engine/core-modules/org-chart/utils/map-linkedin-query-set-to-harvest-parameters.util';
+import {
+  HARVEST_MAX_SEARCHES_PER_QUERY,
+  mapLinkedinQuerySetToHarvestParameters,
+} from 'src/engine/core-modules/org-chart/utils/map-linkedin-query-set-to-harvest-parameters.util';
 
 const query = {
   keywords: 'textile OR fabric',
@@ -112,9 +115,7 @@ describe('mapLinkedinQuerySetToHarvestParameters', () => {
   it('should produce fewer searches for a query with one carrier', () => {
     const mapped = mapLinkedinQuerySetToHarvestParameters({
       querySet: {
-        search_query_set: [
-          { ...query, keywords: null, industry_terms: null },
-        ],
+        search_query_set: [{ ...query, keywords: null, industry_terms: null }],
       },
       category: 'people',
     });
@@ -134,6 +135,66 @@ describe('mapLinkedinQuerySetToHarvestParameters', () => {
 
     expect(mapped.searchParameters).not.toHaveProperty('industryIds');
     expect(mapped.unresolvedFilters?.[0]).toContain('pharma-ish thing');
+  });
+
+  it('should recover a retired LinkedIn industry label through the alias table', () => {
+    const mapped = mapLinkedinQuerySetToHarvestParameters({
+      querySet: {
+        search_query_set: [
+          {
+            ...query,
+            industry_terms: ['Hospital & Health Care'],
+            seniority: 'director',
+          },
+        ],
+      },
+      category: 'people',
+    });
+
+    const facet = mapped.find((one) => one.id.endsWith('-facet'));
+
+    // 14 = Hospitals and Health Care; without the alias the facet would vanish
+    expect(facet?.searchParameters).toMatchObject({ industryIds: ['14'] });
+    expect(facet?.unresolvedFilters).toBeUndefined();
+  });
+
+  // An unmapped function root used to be indistinguishable from an unfiltered
+  // search: the facet was simply missing, and the run looked healthy
+  it('should report a function root Harvest cannot express', () => {
+    const mapped = mapLinkedinQuerySetToHarvestParameters({
+      querySet: {
+        search_query_set: [{ ...query, function: 'government' }],
+      },
+      category: 'people',
+    });
+
+    expect(mapped[0].searchParameters).not.toHaveProperty('functionIds');
+    expect(mapped[0].unresolvedFilters?.[0]).toContain('government');
+    expect(mapped[0].unresolvedFilters?.[0]).toContain('function');
+  });
+
+  // An exclusion that fails to resolve returns the rows the caller excluded,
+  // which is the more dangerous direction of the same bug
+  it('should report an excluded industry label it cannot resolve', () => {
+    const mapped = mapLinkedinQuerySetToHarvestParameters({
+      querySet: {
+        search_query_set: [
+          {
+            ...query,
+            industry_terms: ['Pharmaceutical Manufacturing'],
+            seniority: 'director',
+            exclude_industries: ['defence adjacent'],
+          },
+        ],
+      },
+      category: 'people',
+    });
+
+    const facet = mapped.find((one) => one.id.endsWith('-facet'));
+
+    expect(facet?.searchParameters).toHaveProperty('industryIds', ['15']);
+    expect(facet?.searchParameters).not.toHaveProperty('excludeIndustryIds');
+    expect(facet?.unresolvedFilters?.[0]).toContain('defence adjacent');
   });
 
   it('should send the leads-search exclude parameters for people', () => {
@@ -168,10 +229,12 @@ describe('mapLinkedinQuerySetToHarvestParameters', () => {
 
 describe('isHarvestCompanyNameMatch', () => {
   it('should accept a regional variant and ignore legal suffixes', () => {
-    expect(isHarvestCompanyNameMatch('Trident Group', 'Trident Group India')).toBe(
+    expect(
+      isHarvestCompanyNameMatch('Trident Group', 'Trident Group India'),
+    ).toBe(true);
+    expect(isHarvestCompanyNameMatch('Arvind Ltd', 'Arvind Limited')).toBe(
       true,
     );
-    expect(isHarvestCompanyNameMatch('Arvind Ltd', 'Arvind Limited')).toBe(true);
   });
 
   it('should reject a different firm', () => {

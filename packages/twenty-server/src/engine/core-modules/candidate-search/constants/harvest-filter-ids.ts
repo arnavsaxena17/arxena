@@ -7,7 +7,9 @@ import type { LinkedInSeniorityType } from 'src/engine/core-modules/linkedin-sea
 //   https://github.com/HarvestAPI/harvestapi-sdk (packages/scraper/README.md)
 //   industryIds -> https://github.com/HarvestAPI/linkedin-industry-codes-v2
 // An id that is valid but means a different function still returns rows, so a
-// wrong entry here is silently wrong rather than loudly rejected.
+// wrong entry here is silently wrong rather than loudly rejected. That is why the
+// resolvers below return what they could not map alongside the ids, and why every
+// label that misses is reported rather than filtered away.
 
 export const HARVEST_FUNCTION_ID_BY_NAME: Record<string, string> = {
   accounting: '1',
@@ -495,12 +497,103 @@ export const HARVEST_INDUSTRY_ID_BY_LABEL: Record<string, string> = {
   'wholesale recyclable materials': '1206',
 };
 
+// LinkedIn's retired industry vocabulary is what account rows and older query
+// sets still carry, and roughly two in five of those labels are not spelled the
+// way Harvest's v2 table spells them ("Hospital & Health Care" vs "Hospitals and
+// Health Care"). Exact matching therefore dropped them without a trace.
+//
+// These are curated renames, not a fuzzy match: each key maps to the Harvest row
+// that means the same industry. Legacy names with no single Harvest counterpart
+// (consumer goods, cosmetics, tourism, motion pictures) are deliberately absent,
+// because picking a neighbour would return a different population while looking
+// like a successful filter. An absent label is now reported by the resolver
+// instead of being dropped.
+//
+// Keys are stored already normalized; a test enforces that, and that no key
+// collides with a published label, so an alias can never shadow the vendor table.
+export const HARVEST_INDUSTRY_ALIASES: Record<string, string> = {
+  'hospital and health care': '14',
+  'health, wellness and fitness': '124',
+  'medical practice': '13',
+  'medical devices': '17',
+  veterinary: '16',
+  'information technology and services': '96',
+  'computer software': '4',
+  internet: '6',
+  'computer networking': '5',
+  'computer hardware': '3',
+  semiconductors: '7',
+  wireless: '119',
+  'marketing and advertising': '1862',
+  'public relations and communications': '98',
+  advertising: '80',
+  'management consulting': '11',
+  'human resources': '137',
+  'outsourcing and offshoring': '123',
+  'venture capital and private equity': '106',
+  'nonprofit organization management': '100',
+  philanthropy: '131',
+  'public policy': '79',
+  'government relations': '148',
+  judiciary: '3065',
+  'legislative office': '72',
+  'executive office': '76',
+  military: '71',
+  'civic and social organization': '90',
+  'education management': '69',
+  'primary/secondary education': '67',
+  'e-learning': '132',
+  pharmaceuticals: '15',
+  biotechnology: '12',
+  nanotechnology: '114',
+  research: '70',
+  'oil and energy': '57',
+  'mining and metals': '56',
+  chemicals: '54',
+  plastics: '117',
+  'paper and forest products': '61',
+  textiles: '60',
+  tobacco: '21',
+  machinery: '55',
+  'electrical and electronic manufacturing': '112',
+  'industrial automation': '147',
+  robotics: '3247',
+  automotive: '53',
+  'aviation and aerospace': '52',
+  'defense and space': '1',
+  furniture: '26',
+  'sporting goods': '20',
+  dairy: '65',
+  fishery: '66',
+  forestry: '298',
+  'food and beverages': '34',
+  supermarkets: '22',
+  'luxury goods and jewelry': '143',
+  'apparel and fashion': '19',
+  'online media': '113',
+  newspapers: '81',
+  printing: '83',
+  'broadcast media': '36',
+  entertainment: '28',
+  music: '115',
+  'logistics and supply chain': '116',
+  'package/freight delivery': '87',
+  'airlines/aviation': '94',
+  maritime: '95',
+  warehousing: '93',
+  'import and export': '134',
+  design: '99',
+  'recreational facilities and services': '40',
+  sports: '33',
+  'gambling and casinos': '29',
+};
+
 // The taxonomy root vocabulary is wider than Harvest's 26 functions, so only
 // roots with an unambiguous Harvest counterpart appear here. Roots that have no
 // equivalent (government, supply chain) are deliberately absent: pointing them
 // at a neighbouring function would return a different population than the one
 // asked for, which is the silent-result bug in another shape.
-const TAXONOMY_ROOT_TO_HARVEST_FUNCTION: Record<string, string> = {
+export const TAXONOMY_ROOT_TO_HARVEST_FUNCTION: Record<string, string> = {
   accounting: 'accounting',
   administrative: 'administrative',
   secretarial: 'administrative',
@@ -536,56 +629,177 @@ const TAXONOMY_ROOT_TO_HARVEST_FUNCTION: Record<string, string> = {
   'customer success and support': 'customer success and support',
 };
 
-// Half-width, lower-case, `&` as `and`; the same label shape Harvest publishes
-// and the same shape the account rows print in their `industry` field.
+// Roots the taxonomy uses that Harvest's 26-function facet genuinely cannot
+// express. They stay unmapped on purpose -- pointing them at a neighbouring
+// function returns a different population than the one asked for -- but they are
+// reported as unresolved rather than dropped, so a run can say the filter was
+// not applied instead of implying it was.
+const FUNCTION_ROOTS_WITHOUT_HARVEST_EQUIVALENT = new Set([
+  'government',
+  'supply chain',
+]);
+
+// The taxonomy's "any function" sentinel, matching
+// `resolveSalesNavFunctionIdsForRoot` in taxonomy-platform-maps.ts.
+const ANY_FUNCTION_ROOT = 'fullcompany';
+
+// Half-width, lower-case, `&` as the word `and`; the same label shape Harvest
+// publishes and the same shape the account rows print in their `industry` field.
+// The ampersand is padded rather than joined, so it stays a word boundary:
+// replacing it in place turned "R&D" into "randd" and "M&A" into "manda", which
+// then matched nothing and reported nothing.
 export const normalizeHarvestFilterLabel = (value: string): string =>
   value
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
-    .replace(/&/g, 'and')
+    .replace(/&/g, ' and ')
     .replace(/\s+/g, ' ')
     .trim();
 
+// Every resolution carries what it could not map. A dropped facet is the one
+// failure Harvest cannot signal: it accepts a valid but different id and returns
+// a plausible population, so an unresolved label has to travel with the ids
+// instead of disappearing behind a filter().
+export type HarvestFilterFacet = 'industry' | 'function' | 'seniority';
+
+export type HarvestUnresolvedFilter = {
+  facet: HarvestFilterFacet;
+  // the value exactly as passed in, so a caller can echo it back
+  label: string;
+  reason: string;
+};
+
+export type HarvestIdResolution = {
+  ids: string[];
+  unresolved: HarvestUnresolvedFilter[];
+};
+
+export type HarvestFunctionResolution = {
+  id?: string;
+  unresolved: HarvestUnresolvedFilter[];
+};
+
+const dedupeUnresolved = (
+  filters: HarvestUnresolvedFilter[],
+): HarvestUnresolvedFilter[] => {
+  const seen = new Set<string>();
+
+  return filters.filter(({ facet, label }) => {
+    const signature = `${facet}\u0000${label}`;
+
+    if (seen.has(signature)) {
+      return false;
+    }
+
+    seen.add(signature);
+
+    return true;
+  });
+};
+
 export const resolveHarvestFunctionIdForRoot = (
   functionRoot: string | null | undefined,
-): string | undefined => {
+): HarvestFunctionResolution => {
   const key = normalizeHarvestFilterLabel(functionRoot ?? '');
 
-  if (!key) {
-    return undefined;
+  // empty, and the taxonomy's "any function" sentinel, ask for no function at
+  // all, so there is nothing to report
+  if (!key || key === ANY_FUNCTION_ROOT) {
+    return { unresolved: [] };
   }
 
   const functionName = TAXONOMY_ROOT_TO_HARVEST_FUNCTION[key];
-  const functionId = functionName
-    ? HARVEST_FUNCTION_ID_BY_NAME[functionName]
-    : undefined;
 
-  return functionId;
+  if (!functionName) {
+    return {
+      unresolved: [
+        {
+          facet: 'function',
+          label: functionRoot ?? '',
+          reason: FUNCTION_ROOTS_WITHOUT_HARVEST_EQUIVALENT.has(key)
+            ? 'Harvest has no equivalent function facet, so it was not sent'
+            : 'not a taxonomy function root and has no Harvest mapping',
+        },
+      ],
+    };
+  }
+
+  const id = HARVEST_FUNCTION_ID_BY_NAME[functionName];
+
+  if (!id) {
+    // the taxonomy map names a function Harvest does not publish: a table edit
+    // on one side or the other, reported instead of silently yielding no facet
+    return {
+      unresolved: [
+        {
+          facet: 'function',
+          label: functionRoot ?? '',
+          reason: `taxonomy root maps to "${functionName}", which is not one of Harvest's 26 functions`,
+        },
+      ],
+    };
+  }
+
+  return { id, unresolved: [] };
 };
 
 export const resolveHarvestSeniorityLevelIds = (
   seniorities: readonly LinkedInSeniorityType[] | null | undefined,
-): string[] => [
-  ...new Set(
-    (seniorities ?? [])
-      .map((seniority) => HARVEST_SENIORITY_ID_BY_LEVEL[seniority])
-      .filter((id): id is string => typeof id === 'string'),
-  ),
-];
+): HarvestIdResolution => {
+  const ids = new Set<string>();
+  const unresolved: HarvestUnresolvedFilter[] = [];
 
-// Exact matches only. A near miss stays unsent rather than being widened,
-// because a wrong industry id is accepted by Harvest and quietly returns a
-// different population.
+  for (const seniority of seniorities ?? []) {
+    const id = HARVEST_SENIORITY_ID_BY_LEVEL[seniority];
+
+    if (id) {
+      ids.add(id);
+      continue;
+    }
+
+    // the enum is typed, but generated query sets arrive as JSON
+    unresolved.push({
+      facet: 'seniority',
+      label: String(seniority),
+      reason: 'not one of the 10 LinkedIn seniority levels Harvest accepts',
+    });
+  }
+
+  return { ids: [...ids], unresolved: dedupeUnresolved(unresolved) };
+};
+
+// Exact matches only -- a near miss is never widened, because Harvest accepts a
+// wrong-but-valid industry id and quietly returns a different population. The
+// vendor table is consulted before the alias table, so an alias can never shadow
+// a published label; whatever is left over comes back as unresolved, not dropped.
 export const resolveHarvestIndustryIds = (
   labels: readonly string[] | null | undefined,
-): string[] => [
-  ...new Set(
-    (labels ?? [])
-      .map(
-        (label) =>
-          HARVEST_INDUSTRY_ID_BY_LABEL[normalizeHarvestFilterLabel(label)],
-      )
-      .filter((id): id is string => typeof id === 'string'),
-  ),
-];
+): HarvestIdResolution => {
+  const ids = new Set<string>();
+  const unresolved: HarvestUnresolvedFilter[] = [];
+
+  for (const label of labels ?? []) {
+    const key = normalizeHarvestFilterLabel(label);
+
+    if (!key) {
+      continue;
+    }
+
+    const id =
+      HARVEST_INDUSTRY_ID_BY_LABEL[key] ?? HARVEST_INDUSTRY_ALIASES[key];
+
+    if (id) {
+      ids.add(id);
+      continue;
+    }
+
+    unresolved.push({
+      facet: 'industry',
+      label,
+      reason: "not one of Harvest's 434 industry labels and has no alias",
+    });
+  }
+
+  return { ids: [...ids], unresolved: dedupeUnresolved(unresolved) };
+};

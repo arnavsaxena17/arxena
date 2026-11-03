@@ -2,12 +2,13 @@ import { Command } from 'nest-commander';
 
 import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
-import { type ObjectLiteral } from 'typeorm';
+import { In, type ObjectLiteral } from 'typeorm';
 
 import { ProvisionedWorkspaceCommandRunner } from 'src/database/commands/command-runners/provisioned-workspace.command-runner';
 import { WorkspaceIteratorService } from 'src/database/commands/command-runners/workspace-iterator.service';
 import { type RunOnWorkspaceArgs } from 'src/database/commands/command-runners/workspace.command-runner';
 import { readPersonTitleCompanyFromCandidate } from 'src/database/commands/upgrade-version-command/2-25/utils/read-person-title-company-from-candidate.util';
+import { findEntitiesByIdInBatches } from 'src/database/commands/upgrade-version-command/common/find-entities-by-ids-in-batches.util';
 import { RegisteredWorkspaceCommand } from 'src/engine/core-modules/upgrade/decorators/registered-workspace-command.decorator';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
@@ -102,10 +103,13 @@ export class BackfillPersonJobTitleCompanyFromCandidateCommand extends Provision
         });
       }
 
+      const peopleById = await findEntitiesByIdInBatches(
+        (personIds) => personRepository.find({ where: { id: In(personIds) } }),
+        [...patchesByPersonId.keys()],
+      );
+
       for (const [personId, incoming] of patchesByPersonId) {
-        const person = await personRepository.findOne({
-          where: { id: personId },
-        });
+        const person = peopleById.get(personId);
 
         if (!isDefined(person)) {
           continue;

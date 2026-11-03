@@ -11,6 +11,7 @@ import { BrightDataLudicrousSearchService } from 'src/engine/core-modules/bright
 
 import { BrightDataBusinessSearchService } from 'src/engine/core-modules/bright-data/services/bright-data-business-search.service';
 import { HarvestLinkedinService } from 'src/engine/core-modules/org-chart/services/harvest-linkedin.service';
+import { UnipileCompanyUrlResolverService } from 'src/engine/core-modules/tool/tools/find-people-by-company-tool/unipile-company-url-resolver.service';
 import {
   buildHarvestSearchQuery,
   HARVEST_COST_PER_RECORD_USD,
@@ -427,6 +428,10 @@ export class FindPeopleCascadeService {
     // Optional: a workspace without Harvest keys simply skips the last step
     @Optional()
     private readonly harvestLinkedinService?: HarvestLinkedinService,
+    // Optional: resolves a company's LinkedIn URL from Unipile's own typeahead,
+    // so Harvest's paid company search is the last resort rather than the first
+    @Optional()
+    private readonly unipileCompanyUrlResolver?: UnipileCompanyUrlResolverService,
     // Optional: TheOrg / The Official Board are asked only where they are
     // wired and switched on, and are skipped like Harvest otherwise
     @Optional()
@@ -1768,15 +1773,24 @@ export class FindPeopleCascadeService {
     return { candidates, spentUsd };
   }
 
-  // The company's LinkedIn URL, resolved once per company: the index supplies
-  // it for free, otherwise Harvest's own company search does. Before this it
-  // was re-resolved inside every role and every tier.
+  // The company's LinkedIn URL, resolved once per company, cheapest tier first:
+  //   1. the index already supplied it (free),
+  //   2. Unipile's own company typeahead on an already-connected account (no
+  //      per-record charge), then
+  //   3. Harvest's company search, which bills $0.004 a returned record.
+  // Before this it was re-resolved inside every role and every tier.
   private async resolveHarvestCompanyUrl(
     harvest: HarvestLinkedinService,
     identity: CompanyIdentity,
   ): Promise<string | null> {
     if (isNonEmptyString(identity.linkedinUrl)) {
       return identity.linkedinUrl;
+    }
+
+    const viaUnipile = await this.resolveCompanyUrlViaUnipile(identity);
+
+    if (isNonEmptyString(viaUnipile)) {
+      return viaUnipile;
     }
 
     // Every spelling the identity carries, not the first two: the caller's
@@ -1797,6 +1811,33 @@ export class FindPeopleCascadeService {
     }
 
     return null;
+  }
+
+  // The middle tier: Unipile's LinkedIn company typeahead. Returns null rather
+  // than throwing when Unipile is not wired, not configured, or has no match,
+  // so the paid Harvest search below stays the fallback it always was.
+  private async resolveCompanyUrlViaUnipile(
+    identity: CompanyIdentity,
+  ): Promise<string | null> {
+    const resolver = this.unipileCompanyUrlResolver;
+
+    if (!isDefined(resolver) || !resolver.isAvailable()) {
+      return null;
+    }
+
+    try {
+      const resolved = await resolver.resolveCompanyLinkedinUrl(
+        identity.aliases,
+      );
+
+      return resolved?.linkedinUrl ?? null;
+    } catch (error) {
+      this.logger.warn(
+        `find_people_by_company "${identity.canonicalName}": Unipile company URL lookup failed: ${this.describe(error)}`,
+      );
+
+      return null;
+    }
   }
 
   // Harvest Sales Navigator lead search. Employers filter by LinkedIn URL, so
@@ -1854,10 +1895,17 @@ export class FindPeopleCascadeService {
       functionRoot: cell.functionRoot,
       stdGrade: cell.grade,
     });
-    const functionId = resolveHarvestFunctionIdForRoot(cell.functionRoot);
-    const industryIds = shouldSendIndustryToQueries(identity)
-      ? resolveHarvestIndustryIds([identity.industry ?? ''])
-      : [];
+    const functionResolution = resolveHarvestFunctionIdForRoot(
+      cell.functionRoot,
+    );
+    // an industry that fails to resolve now comes back as unresolved rather than
+    // silently widening the search to every industry
+    const industryResolution = resolveHarvestIndustryIds(
+      shouldSendIndustryToQueries(identity) ? [identity.industry ?? ''] : [],
+    );
+    const seniorityResolution = resolveHarvestSeniorityLevelIds(
+      salesNavFilters.seniorities,
+    );
     // A location string with commas is read as several locations, so the id is
     // what keeps "Mumbai, Maharashtra, India" from widening to all of India
     const geoIds = await harvest.resolveGeoIds(location ?? '');
@@ -1867,11 +1915,9 @@ export class FindPeopleCascadeService {
       location,
       geoIds,
       companyLinkedinUrl,
-      industryIds,
-      functionIds: functionId ? [functionId] : [],
-      seniorityLevelIds: resolveHarvestSeniorityLevelIds(
-        salesNavFilters.seniorities,
-      ),
+      industryIds: industryResolution.ids,
+      functionIds: functionResolution.id ? [functionResolution.id] : [],
+      seniorityLevelIds: seniorityResolution.ids,
     });
     const { query, ignored } = buildHarvestSearchQuery('leads', parameters);
 
