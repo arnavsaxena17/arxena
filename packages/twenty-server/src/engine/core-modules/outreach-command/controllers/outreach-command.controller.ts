@@ -12,6 +12,7 @@ import {
   Req,
 } from '@nestjs/common';
 
+import { isNonEmptyString } from '@sniptt/guards';
 import { isOutreachConversationStage } from 'twenty-shared/arx';
 import { isDefined } from 'twenty-shared/utils';
 
@@ -58,6 +59,7 @@ import {
   type OutreachMemberAssignmentConfig,
   type OutreachSplitMode,
 } from 'src/engine/core-modules/outreach-command/utils/outreach-member-assignment.util';
+import { OutreachCopyCandidatesService } from 'src/engine/core-modules/outreach-command/services/outreach-copy-candidates.service';
 import { WorkspaceQueryService } from 'src/engine/core-modules/workspace-modifications/workspace-modifications.service';
 
 @Controller('outreach-command')
@@ -87,6 +89,7 @@ export class OutreachCommandController {
     private readonly outreachAiColumnRunService: OutreachAiColumnRunService,
     private readonly outreachMemberAssignmentService: OutreachMemberAssignmentService,
     private readonly outreachTableViewService: OutreachTableViewService,
+    private readonly outreachCopyCandidatesService: OutreachCopyCandidatesService,
     private readonly outreachTabService: OutreachTabService,
     private readonly saveOutreachTargetsToCrmService: SaveOutreachTargetsToCrmService,
   ) {}
@@ -1553,6 +1556,69 @@ export class OutreachCommandController {
         error instanceof Error
           ? error.message
           : 'Failed to stop candidate outreach',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // Copies people from another project (another "round") into this one as fresh
+  // Candidates at QUEUED. Nothing is sent: the operator starts the round later.
+  @Post('projects/:projectId/candidates/copy')
+  async copyCandidates(
+    @Param('projectId') projectId: string,
+    @Body()
+    body: {
+      sourceProjectId?: string;
+      candidateIds?: string[];
+      personIds?: string[];
+    },
+    @Req() request: { headers?: { authorization?: string } },
+  ) {
+    const apiToken = request.headers?.authorization?.replace?.('Bearer ', '');
+
+    if (!apiToken) {
+      throw new HttpException('API token is required', HttpStatus.UNAUTHORIZED);
+    }
+
+    if (!isNonEmptyString(projectId) || projectId === 'project-id') {
+      throw new HttpException('projectId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const sourceProjectId = body?.sourceProjectId?.trim() ?? '';
+
+    if (!isNonEmptyString(sourceProjectId)) {
+      throw new HttpException(
+        'sourceProjectId is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (sourceProjectId === projectId) {
+      throw new HttpException(
+        'Select a different project to copy people from',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      const workspaceId =
+        await this.workspaceQueryService.getWorkspaceIdFromToken(apiToken);
+
+      return await this.outreachCopyCandidatesService.execute({
+        workspaceId,
+        sourceProjectId,
+        targetProjectId: projectId,
+        candidateIds: body?.candidateIds,
+        personIds: body?.personIds,
+      });
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      this.logger.error('Failed to copy candidates', error);
+      throw new HttpException(
+        error instanceof Error ? error.message : 'Failed to copy candidates',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

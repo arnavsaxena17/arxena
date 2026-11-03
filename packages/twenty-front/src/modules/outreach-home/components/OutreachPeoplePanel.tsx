@@ -51,6 +51,7 @@ import {
 } from '@/outreach-home/components/record-table/OutreachViewBar';
 import { OutreachTableEmptyState } from '@/outreach-home/components/record-table/OutreachTableEmptyState';
 import { OutreachAssignMemberSelect } from '@/outreach-home/components/OutreachAssignMemberSelect';
+import { OutreachCopyPeopleSelect } from '@/outreach-home/components/OutreachCopyPeopleSelect';
 import { useOutreachAssignment } from '@/outreach-home/hooks/useOutreachAssignment';
 import { useOutreachTablePresentation } from '@/outreach-home/hooks/useOutreachTablePresentation';
 import { useOutreachEnroll } from '@/outreach-home/hooks/useOutreachEnroll';
@@ -720,6 +721,10 @@ export const OutreachPeoplePanel = ({
         title="Import people"
         Icon={IconFileImport}
         onClick={handleImportPeople}
+      />
+      <OutreachCopyPeopleSelect
+        projectId={projectId}
+        onCopied={() => onRefresh?.()}
       />
       <OutreachViewBarDivider />
       <OutreachViewBarIconAction
