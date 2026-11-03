@@ -15,15 +15,22 @@ const querySet = (overrides: Record<string, unknown> = {}): SearchQuerySet => ({
 });
 
 describe('mapLinkedinSearchQueriesToGeneratedParameters — carried requirement', () => {
-  it('should send company_type as a Sales Navigator facet', () => {
+  it('should send company_type as a Sales Navigator facet browse', () => {
     const generated = mapLinkedinSearchQueriesToGeneratedParameters(
       querySet({ company_type: 'public_company' }),
       'sales_navigator',
     );
 
-    expect(
-      generated.salesNavigatorPeopleSearchStrategies?.[0]?.parameters,
-    ).toMatchObject({ company_type: ['public_company'] });
+    const facet = generated.salesNavigatorPeopleSearchStrategies?.find((one) =>
+      one.id.endsWith('-facets'),
+    );
+
+    expect(facet?.parameters).toMatchObject({
+      company_type: ['public_company'],
+    });
+    // The facet browse is its own search: no keyword or title carrier
+    expect(facet?.parameters).not.toHaveProperty('keywords');
+    expect(facet?.parameters).not.toHaveProperty('role');
   });
 
   it('should send excluded companies in the company facet include/exclude pair', () => {

@@ -11,6 +11,47 @@ import type {
 
 type PeopleSearchType = 'classic' | 'sales_navigator' | 'recruiter';
 
+// LinkedIn ANDs the facets with the keyword box, so one combination is a single
+// point of failure for the same reason it is on Harvest: a title worded
+// differently, or a keyword the profile never used, returns nothing. The
+// carriers are therefore varied and the results unioned. Capped because each
+// extra search spends the account's daily quota.
+export const LINKEDIN_MAX_STRATEGIES_PER_QUERY = 4;
+
+type CarrierVariant = {
+  kind: 'all' | 'titles' | 'keywords';
+  keywords?: string;
+  title?: string;
+};
+
+const carrierVariants = (
+  keywords: string | undefined,
+  title: string | undefined,
+): CarrierVariant[] => {
+  const variants: CarrierVariant[] = [];
+
+  if (keywords && title) {
+    variants.push({ kind: 'all', keywords, title });
+  }
+
+  if (title) {
+    variants.push({ kind: 'titles', title });
+  }
+
+  if (keywords) {
+    variants.push({ kind: 'keywords', keywords });
+  }
+
+  return variants.length > 0 ? variants : [{ kind: 'all' }];
+};
+
+const variantLabel = (variant: CarrierVariant): string =>
+  variant.kind === 'titles'
+    ? 'titles only'
+    : variant.kind === 'keywords'
+      ? 'keywords only'
+      : '';
+
 type ParamShape = Record<string, unknown>;
 
 function normalizeStringArray(values: string[] | null): string[] | undefined {
@@ -181,38 +222,53 @@ function buildClassicStrategies(
   querySet: SearchQuerySet,
   requirement?: string,
 ): ClassicPeopleSearchStrategyResult[] {
-  return querySet.search_query_set.map((query, index) => {
-    const id = `linkedin-query-classic-${index + 1}`;
-    const label = buildStrategyLabel(query, index);
-
+  return querySet.search_query_set.flatMap((query, index) => {
     const normalizedLocation = normalizeStringArray(query.location);
     const normalizedCompany = normalizeStringArray(query.company);
-
-    const parameters: ClassicPeopleSearchStrategyResult['parameters'] = {
-      keywords: query.keywords ?? undefined,
+    const jobTitle = query.job_title?.trim() || undefined;
+    const keywords = query.keywords?.trim() || undefined;
+    const fence = {
       ...(normalizedLocation && { location: normalizedLocation }),
       ...(normalizedCompany && { company: normalizedCompany }),
-      ...(query.job_title && {
-        advanced_keywords: {
-          first_name: undefined,
-          last_name: undefined,
-          title: query.job_title,
-          company: undefined,
-          school: undefined,
-        },
-      }),
     };
 
-    return {
-      id,
-      label,
-      description: label,
-      strategyText: label,
-      originalUserQuery: requirement,
-      clarificationQuestions: null,
-      clarificationAnswers: null,
-      parameters,
-    };
+    return carrierVariants(keywords, jobTitle).map((variant) => {
+      const label = buildStrategyLabel(
+        {
+          ...query,
+          keywords: variant.keywords ?? null,
+          job_title: variant.title ?? null,
+        },
+        index,
+      );
+
+      const parameters: ClassicPeopleSearchStrategyResult['parameters'] = {
+        ...(variant.keywords ? { keywords: variant.keywords } : {}),
+        ...fence,
+        ...(variant.title
+          ? {
+              advanced_keywords: {
+                first_name: undefined,
+                last_name: undefined,
+                title: variant.title,
+                company: undefined,
+                school: undefined,
+              },
+            }
+          : {}),
+      };
+
+      return {
+        id: `linkedin-query-classic-${index + 1}-${variant.kind}`,
+        label: [variantLabel(variant), label].filter(Boolean).join(' · '),
+        description: label,
+        strategyText: label,
+        originalUserQuery: requirement,
+        clarificationQuestions: null,
+        clarificationAnswers: null,
+        parameters,
+      };
+    });
   });
 }
 
@@ -220,55 +276,80 @@ function buildSalesNavigatorStrategies(
   querySet: SearchQuerySet,
   requirement?: string,
 ): SalesNavigatorPeopleSearchStrategyResult[] {
-  return querySet.search_query_set.map((query, index) => {
-    const id = `linkedin-query-sales-nav-${index + 1}`;
-    const label = buildStrategyLabel(query, index);
-
+  return querySet.search_query_set.flatMap((query, index) => {
     const normalizedLocation = normalizeStringArray(query.location);
     const normalizedCompany = normalizeStringArray(query.company);
     const excludedCompanies = normalizeStringArray(query.exclude_companies ?? null);
     const excludedLocations = normalizeStringArray(query.exclude_locations ?? null);
-    const jobTitle = query.job_title?.trim();
+    const jobTitle = query.job_title?.trim() || undefined;
+    const keywords = query.keywords?.trim() || undefined;
 
-    // Sales Navigator is the only seat whose facets take include *and* exclude,
-    // so an exclusion is expressed here and folded into keywords elsewhere
-    const locationFilter =
-      normalizedLocation || excludedLocations
+    const fence = {
+      ...(normalizedLocation || excludedLocations
         ? {
             location: {
               ...(normalizedLocation && { include: normalizedLocation }),
               ...(excludedLocations && { exclude: excludedLocations }),
             },
           }
-        : {};
-    const companyFilter =
-      normalizedCompany || excludedCompanies
+        : {}),
+      ...(normalizedCompany || excludedCompanies
         ? {
             company: {
               ...(normalizedCompany && { include: normalizedCompany }),
               ...(excludedCompanies && { exclude: excludedCompanies }),
             },
           }
-        : {};
-
-    const parameters: SalesNavigatorPeopleSearchStrategyResult['parameters'] = {
-      keywords: query.keywords ?? undefined,
-      ...locationFilter,
-      ...companyFilter,
-      ...(jobTitle ? { role: { include: [jobTitle] } } : {}),
-      ...(query.company_type ? { company_type: [query.company_type] } : {}),
+        : {}),
     };
 
-    return {
-      id,
-      label,
-      description: label,
-      strategyText: label,
-      originalUserQuery: requirement,
-      clarificationQuestions: null,
-      clarificationAnswers: null,
-      parameters,
+    const toStrategy = (
+      kind: string,
+      carrier: Record<string, unknown>,
+      labelPrefix = '',
+    ) => {
+      const parameters: SalesNavigatorPeopleSearchStrategyResult['parameters'] = {
+        ...fence,
+        ...carrier,
+      };
+      const label = buildStrategyLabel(
+        { ...query, keywords: null, job_title: null },
+        index,
+      );
+
+      return {
+        id: `linkedin-query-sales-nav-${index + 1}-${kind}`,
+        label: [labelPrefix, label].filter(Boolean).join(' · ') || `Sales Navigator ${kind}`,
+        description: label,
+        strategyText: label,
+        originalUserQuery: requirement,
+        clarificationQuestions: null,
+        clarificationAnswers: null,
+        parameters,
+      };
     };
+
+    const strategies = carrierVariants(keywords, jobTitle).map((variant) =>
+      toStrategy(
+        variant.kind,
+        {
+          ...(variant.keywords ? { keywords: variant.keywords } : {}),
+          ...(variant.title ? { role: { include: [variant.title] } } : {}),
+        },
+        variantLabel(variant),
+      ),
+    );
+
+    // The facet-only browse: the seat's own industry/company-type filters with
+    // no keyword or title carrier, which is what reaches people whose profile
+    // does not match the words
+    if (query.company_type) {
+      strategies.push(
+        toStrategy('facets', { company_type: [query.company_type] }, 'facet browse'),
+      );
+    }
+
+    return strategies;
   });
 }
 
@@ -276,19 +357,14 @@ function buildRecruiterStrategies(
   querySet: SearchQuerySet,
   requirement?: string,
 ): RecruiterPeopleSearchStrategyResult[] {
-  return querySet.search_query_set.map((query, index) => {
-    const id = `linkedin-query-recruiter-${index + 1}`;
-    const label = buildStrategyLabel(query, index);
-
+  return querySet.search_query_set.flatMap((query, index) => {
     const normalizedLocation = normalizeStringArray(query.location);
     const normalizedCompany = normalizeStringArray(query.company);
     const excludedCompany = normalizeStringArray(query.exclude_companies ?? null)?.join(' ');
+    const jobTitle = query.job_title?.trim() || undefined;
+    const keywords = query.keywords?.trim() || undefined;
 
-    const parameters: RecruiterPeopleSearchStrategyResult['parameters'] = {
-      keywords: query.keywords ?? undefined,
-      ...(query.job_title && {
-        role: [{ keywords: query.job_title }],
-      }),
+    const fence = {
       ...(normalizedLocation && {
         location: normalizedLocation.map((location) => ({
           id: location,
@@ -301,8 +377,8 @@ function buildRecruiterStrategies(
           keywords: company,
         })),
       }),
-      // Recruiter has no include/exclude pair on the company facet; DOESNT_HAVE
-      // is how this seat expresses "not these companies"
+      // Recruiter has no include/exclude pair on the company facet;
+      // DOESNT_HAVE is how this seat expresses "not these companies"
       ...(excludedCompany && {
         company: [
           ...(normalizedCompany ?? []).map((company) => ({
@@ -313,16 +389,33 @@ function buildRecruiterStrategies(
       }),
     };
 
-    return {
-      id,
-      label,
-      description: label,
-      strategyText: label,
-      originalUserQuery: requirement,
-      clarificationQuestions: null,
-      clarificationAnswers: null,
-      parameters,
-    };
+    return carrierVariants(keywords, jobTitle).map((variant) => {
+      const label = buildStrategyLabel(
+        {
+          ...query,
+          keywords: variant.keywords ?? null,
+          job_title: variant.title ?? null,
+        },
+        index,
+      );
+
+      const parameters: RecruiterPeopleSearchStrategyResult['parameters'] = {
+        ...(variant.keywords ? { keywords: variant.keywords } : {}),
+        ...(variant.title ? { role: [{ keywords: variant.title }] } : {}),
+        ...fence,
+      };
+
+      return {
+        id: `linkedin-query-recruiter-${index + 1}-${variant.kind}`,
+        label: [variantLabel(variant), label].filter(Boolean).join(' · '),
+        description: label,
+        strategyText: label,
+        originalUserQuery: requirement,
+        clarificationQuestions: null,
+        clarificationAnswers: null,
+        parameters,
+      };
+    });
   });
 }
 
@@ -336,7 +429,7 @@ export function mapLinkedinSearchQueriesToGeneratedParameters(
   if (searchType === 'classic') {
     const strategies = deduplicateStrategies(
       buildClassicStrategies(querySet, requirement),
-    );
+    ).slice(0, LINKEDIN_MAX_STRATEGIES_PER_QUERY);
 
     if (strategies.length > 0) {
       generated.classicPeopleSearchStrategies = strategies;
@@ -348,7 +441,7 @@ export function mapLinkedinSearchQueriesToGeneratedParameters(
   if (searchType === 'sales_navigator') {
     const strategies = deduplicateStrategies(
       buildSalesNavigatorStrategies(querySet, requirement),
-    );
+    ).slice(0, LINKEDIN_MAX_STRATEGIES_PER_QUERY);
 
     if (strategies.length > 0) {
       generated.salesNavigatorPeopleSearchStrategies = strategies;
@@ -359,7 +452,7 @@ export function mapLinkedinSearchQueriesToGeneratedParameters(
 
   const strategies = deduplicateStrategies(
     buildRecruiterStrategies(querySet, requirement),
-  );
+  ).slice(0, LINKEDIN_MAX_STRATEGIES_PER_QUERY);
 
   if (strategies.length > 0) {
     generated.recruiterPeopleSearchStrategies = strategies;

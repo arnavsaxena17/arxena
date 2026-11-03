@@ -22,7 +22,12 @@ describe('mapLinkedinSearchQueriesToGeneratedParameters', () => {
     );
 
     expect(result.classicPeopleSearchStrategies).toBeDefined();
-    expect(result.classicPeopleSearchStrategies?.length).toBe(1);
+    // A query with both a keyword and a title carrier yields the ladder:
+    // all, titles only, keywords only
+    expect(result.classicPeopleSearchStrategies?.length).toBe(3);
+    expect(
+      result.classicPeopleSearchStrategies?.map((one) => one.id.split('-').pop()),
+    ).toEqual(['all', 'titles', 'keywords']);
 
     const [strategy] = result.classicPeopleSearchStrategies ?? [];
     expect(strategy.parameters.keywords).toBe(
@@ -40,7 +45,9 @@ describe('mapLinkedinSearchQueriesToGeneratedParameters', () => {
     );
 
     expect(result.salesNavigatorPeopleSearchStrategies).toBeDefined();
-    expect(result.salesNavigatorPeopleSearchStrategies?.length).toBe(1);
+    expect(
+      result.salesNavigatorPeopleSearchStrategies?.map((one) => one.id.split('-').pop()),
+    ).toEqual(['all', 'titles', 'keywords']);
 
     const [strategy] = result.salesNavigatorPeopleSearchStrategies ?? [];
     expect(strategy.parameters.location?.include).toEqual([
@@ -92,7 +99,9 @@ describe('mapLinkedinSearchQueriesToGeneratedParameters', () => {
     );
 
     expect(result.recruiterPeopleSearchStrategies).toBeDefined();
-    expect(result.recruiterPeopleSearchStrategies?.length).toBe(1);
+    expect(
+      result.recruiterPeopleSearchStrategies?.map((one) => one.id.split('-').pop()),
+    ).toEqual(['all', 'titles', 'keywords']);
 
     const [strategy] = result.recruiterPeopleSearchStrategies ?? [];
     expect(strategy.parameters.location).toEqual([

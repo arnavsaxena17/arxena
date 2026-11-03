@@ -484,7 +484,10 @@ describe('OrgchartLinkedInQueryRouterService', () => {
         linkedinCompanyIds: ['2962'],
       });
 
-      expect(strategies).toHaveLength(1);
+      // The carrier ladder offers more than one shape; the router takes the
+      // first, which stays the full query, so no extra search is issued
+      expect(strategies.length).toBeGreaterThanOrEqual(1);
+      expect(strategies[0].id).toMatch(/-all$/);
       expect(strategies[0].parameters.role).toEqual({
         include: [titleBoolean],
       });
