@@ -332,23 +332,22 @@ export const SOURCE_CAPABILITIES: readonly SourceCapability[] = [
       COMPANY_FIELDS.industry,
       COMPANY_FIELDS.hqLocation,
     ],
-    // Sales Navigator has these, but our Harvest payload builder never emits
-    // them (it sends search, currentJobTitles, locations and companyNames), so
-    // offering them here would promise a filter the tool cannot produce
+    // Verified against the Harvest company search reference: its only filters
+    // are search, location, geoId, companySize and industryId
     notSearchable: [
       {
         field: 'annualRevenue',
         nearest: 'employees',
-        why: 'The Harvest search we build sends keywords, titles and locations only; revenue is not in the payload',
+        why: 'The Harvest company search has no revenue filter (filters: search, location, geoId, companySize, industryId)',
       },
       {
         field: 'departmentHeadcount',
         nearest: 'employees',
-        why: 'The Harvest search we build does not send a function-headcount facet',
+        why: 'The Harvest company search filters total company size, not function headcount',
       },
       {
         field: 'hiring',
-        why: 'The Harvest search we build does not send a hiring facet',
+        why: 'The Harvest company search has no hiring filter',
       },
     ],
     returns: ['name', 'linkedinUrl', 'employees', 'industry', 'hqLocation'],

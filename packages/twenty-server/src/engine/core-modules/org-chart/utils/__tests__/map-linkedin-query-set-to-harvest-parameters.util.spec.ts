@@ -40,7 +40,10 @@ describe('mapLinkedinQuerySetToHarvestParameters', () => {
     });
   });
 
-  it('should map companies to search and headquarter locations', () => {
+  // Harvest's company search documents `location`; `headquarterLocations` is a
+  // people-search name, and sending it to the company endpoint drops the filter
+  // with no error
+  it('should map companies to search and location', () => {
     const [mapped] = mapLinkedinQuerySetToHarvestParameters({
       querySet: { search_query_set: [query] },
       category: 'companies',
@@ -48,9 +51,30 @@ describe('mapLinkedinQuerySetToHarvestParameters', () => {
 
     expect(mapped.searchParameters).toEqual({
       search: 'textile OR fabric',
-      headquarterLocations: ['Mumbai', 'Surat'],
+      location: ['Mumbai', 'Surat'],
     });
     expect(mapped.companyNames).toEqual([]);
+    expect(mapped.searchParameters).not.toHaveProperty('headquarterLocations');
+  });
+
+  it('should send the leads-search exclude parameters for people', () => {
+    const [mapped] = mapLinkedinQuerySetToHarvestParameters({
+      querySet: {
+        search_query_set: [
+          {
+            ...query,
+            exclude_locations: ['Thane'],
+            exclude_companies: ['Acme Trading'],
+          },
+        ],
+      },
+      category: 'people',
+    });
+
+    expect(mapped.searchParameters).toMatchObject({
+      excludeLocations: ['Thane'],
+      excludeCurrentCompanies: ['Acme Trading'],
+    });
   });
 
   it('should drop duplicate queries', () => {

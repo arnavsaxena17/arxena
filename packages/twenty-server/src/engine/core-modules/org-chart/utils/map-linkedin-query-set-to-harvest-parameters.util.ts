@@ -52,15 +52,32 @@ export const mapLinkedinQuerySetToHarvestParameters = ({
       ]);
       companyNames = toNames(query.company);
 
+      // Harvest's leads search has a named exclude* parameter for each facet;
+      // sending "not these" as a keyword would be silently ignored instead
+      const excludedLocations = toNames(query.exclude_locations ?? null);
+      const excludedCompanies = toNames(query.exclude_companies ?? null);
+      const excludedIndustries = toNames(query.exclude_industries ?? null);
+
       searchParameters = {
         ...(search ? { search } : {}),
         ...(titles && titles.length > 0 ? { currentJobTitles: titles } : {}),
         ...(locations.length > 0 ? { locations } : {}),
+        ...(excludedLocations.length > 0 && {
+          excludeLocations: excludedLocations,
+        }),
+        ...(excludedCompanies.length > 0 && {
+          excludeCurrentCompanies: excludedCompanies,
+        }),
+        ...(excludedIndustries.length > 0 && {
+          excludeIndustryIds: excludedIndustries,
+        }),
       };
     } else {
+      // Harvest's company search takes `location`; `headquarterLocations` is a
+      // people-search name and would be dropped without an error
       searchParameters = {
         ...(keywords ? { search: keywords } : {}),
-        ...(locations.length > 0 ? { headquarterLocations: locations } : {}),
+        ...(locations.length > 0 ? { location: locations } : {}),
       };
     }
 
