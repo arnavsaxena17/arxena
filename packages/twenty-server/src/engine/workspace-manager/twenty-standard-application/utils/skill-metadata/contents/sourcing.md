@@ -12,6 +12,7 @@ parts:
   - places
   - people
   - people-by-company
+  - run-edge
   - industry-search
   - industry-labels
   - playbook-company-first

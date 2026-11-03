@@ -183,6 +183,7 @@ export class GetOutreachTabTool implements Tool {
             tab,
           })
         : null;
+    // The schema normalises the shorthand map into the canonical array
     const filters = normalizeOutreachTabFilters(filter ?? []);
     const matchedRows = filterOutreachTabRows(
       filterOutreachTabRows(allRows, view?.filters ?? []),

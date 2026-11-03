@@ -42,6 +42,7 @@ import {
   SearchQuery,
   SearchQuerySet,
 } from 'src/engine/core-modules/linkedin-query-generation/types/linkedin-query-generation.types';
+import { applyParsedRequirementToQuerySet } from 'src/engine/core-modules/linkedin-query-generation/utils/apply-parsed-requirement.util';
 
 type LlmOptions = {
   model?: string;
@@ -372,9 +373,22 @@ export class LinkedinQueryGenerationService {
     });
 
     // Deterministic splitting based on factored query
-    const query_set = this.enforceLinkedInLimits({
+    const splitQuerySet = this.enforceLinkedInLimits({
       search_query_set: [factoredQuery.factored_query],
     });
+
+    // Agent 3 and 4 are free to ignore what Agent 1 already extracted. Fold it
+    // back in here, so a stated industry, certification, company type, years or
+    // exclusion survives into the search parameters instead of disappearing.
+    const { querySet: query_set, dropped } =
+      applyParsedRequirementToQuerySet(splitQuerySet, parsedRequirement);
+
+    if (dropped.length > 0) {
+      this.logger.warn(
+        `Requirement terms that did not fit the keyword budget: ${dropped.join(', ')}`,
+      );
+    }
+
     const validation = this.validateQuerySet(query_set);
 
     // Create splitting strategy metadata

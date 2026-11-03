@@ -329,13 +329,29 @@ export const SOURCE_CAPABILITIES: readonly SourceCapability[] = [
     entity: 'company',
     searchable: [
       COMPANY_FIELDS.employees,
-      COMPANY_FIELDS.annualRevenue,
       COMPANY_FIELDS.industry,
       COMPANY_FIELDS.hqLocation,
-      COMPANY_FIELDS.departmentHeadcount,
-      COMPANY_FIELDS.hiring,
     ],
-    returns: ['name', 'linkedinUrl', 'employees', 'annualRevenue', 'industry', 'hqLocation', 'departmentHeadcount'],
+    // Sales Navigator has these, but our Harvest payload builder never emits
+    // them (it sends search, currentJobTitles, locations and companyNames), so
+    // offering them here would promise a filter the tool cannot produce
+    notSearchable: [
+      {
+        field: 'annualRevenue',
+        nearest: 'employees',
+        why: 'The Harvest search we build sends keywords, titles and locations only; revenue is not in the payload',
+      },
+      {
+        field: 'departmentHeadcount',
+        nearest: 'employees',
+        why: 'The Harvest search we build does not send a function-headcount facet',
+      },
+      {
+        field: 'hiring',
+        why: 'The Harvest search we build does not send a hiring facet',
+      },
+    ],
+    returns: ['name', 'linkedinUrl', 'employees', 'industry', 'hqLocation'],
   },
   {
     key: 'harvest',
