@@ -1,3 +1,4 @@
+import { type LinkedInSeniorityType } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-parameter.type';
 import { type LinkedInCompanyTypeValue } from 'src/engine/core-modules/linkedin-query-generation/types/linkedin-query-generation.types';
 import type {
   ParsedRequirement,
@@ -21,6 +22,36 @@ const COMPANY_TYPE_BY_PHRASE: Array<{
   { pattern: /\bpartnership\b/i, value: 'partnership' },
   { pattern: /\bself[- ]?(employed|owned)\b/i, value: 'self_employed' },
 ];
+
+// The parse returns a free phrase ("senior", "CXO", "reporting to"), and the
+// facets take the seat's own enum, so the common words map explicitly and
+// anything unrecognised stays unsent rather than becoming a wrong level
+const SENIORITY_BY_PHRASE: Array<{
+  pattern: RegExp;
+  value: LinkedInSeniorityType;
+}> = [
+  { pattern: /\b(owner|partner|founder|proprietor)\b/i, value: 'owner/partner' },
+  { pattern: /\b(cxo|chief|ceo|cfo|coo|cto|cmo)\b/i, value: 'cxo' },
+  { pattern: /\b(vp|vice president|svp|avp)\b/i, value: 'vice_president' },
+  { pattern: /\b(director|head of function)\b/i, value: 'director' },
+  { pattern: /\b(senior manager|manager)\b/i, value: 'experienced_manager' },
+  { pattern: /\b(entry level manager|team lead|lead)\b/i, value: 'entry_level_manager' },
+  { pattern: /\b(senior|sr\.?)\b/i, value: 'senior' },
+  { pattern: /\b(entry level|junior|associate|graduate)\b/i, value: 'entry_level' },
+  { pattern: /\b(intern|trainee|in training)\b/i, value: 'in_training' },
+];
+
+export const toLinkedInSeniority = (
+  raw: string | null | undefined,
+): LinkedInSeniorityType | undefined => {
+  const text = raw?.trim();
+
+  if (!text) {
+    return undefined;
+  }
+
+  return SENIORITY_BY_PHRASE.find(({ pattern }) => pattern.test(text))?.value;
+};
 
 /** "listed" / "public company" / "private" → the facet enum, or undefined */
 export const toLinkedInCompanyType = (
@@ -135,6 +166,11 @@ export const applyRequirementToQuery = (
         query.certifications && query.certifications.length > 0
           ? query.certifications
           : certifications,
+      seniority:
+        query.seniority ?? toLinkedInSeniority(requirement.seniority_level) ?? null,
+      function:
+        query.function ??
+        (requirement.domain_expertise?.[0]?.trim() || null),
       company_type: query.company_type ?? companyType ?? null,
       company_type_raw: query.company_type_raw ?? companyTypeRaw,
       years_min: yearsMin,

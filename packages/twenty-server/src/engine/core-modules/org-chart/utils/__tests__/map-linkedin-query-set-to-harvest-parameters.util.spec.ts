@@ -57,6 +57,42 @@ describe('mapLinkedinQuerySetToHarvestParameters', () => {
     expect(mapped.searchParameters).not.toHaveProperty('headquarterLocations');
   });
 
+  it('should resolve industry labels and seniority to Harvest ids', () => {
+    const [mapped] = mapLinkedinQuerySetToHarvestParameters({
+      querySet: {
+        search_query_set: [
+          {
+            ...query,
+            industry_terms: ['Pharmaceutical Manufacturing'],
+            seniority: 'director',
+            function: 'sales',
+          },
+        ],
+      },
+      category: 'people',
+    });
+
+    // 15 is the vendor's id for Pharmaceutical Manufacturing (verified against
+    // linkedin_industry_code_v2_all_eng.json)
+    expect(mapped.searchParameters).toMatchObject({
+      industryIds: ['15'],
+      seniorityLevelIds: ['220'],
+      functionIds: ['25'],
+    });
+  });
+
+  it('should report an industry label it cannot resolve instead of sending it', () => {
+    const [mapped] = mapLinkedinQuerySetToHarvestParameters({
+      querySet: {
+        search_query_set: [{ ...query, industry_terms: ['pharma-ish thing'] }],
+      },
+      category: 'people',
+    });
+
+    expect(mapped.searchParameters).not.toHaveProperty('industryIds');
+    expect(mapped.unresolvedFilters?.[0]).toContain('pharma-ish thing');
+  });
+
   it('should send the leads-search exclude parameters for people', () => {
     const [mapped] = mapLinkedinQuerySetToHarvestParameters({
       querySet: {

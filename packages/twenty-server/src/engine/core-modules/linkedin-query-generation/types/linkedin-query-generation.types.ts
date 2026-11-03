@@ -1,3 +1,5 @@
+import type { LinkedInSeniorityType } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-parameter.type';
+
 export type QueryType = 'A' | 'B' | 'C' | 'D';
 
 // The company types a LinkedIn facet accepts, in the API's spelling
@@ -23,6 +25,8 @@ export interface SearchQuery {
   certifications?: string[] | null;
   company_type?: LinkedInCompanyTypeValue | null;
   company_type_raw?: string | null;
+  seniority?: LinkedInSeniorityType | null;
+  function?: string | null;
   years_min?: number | null;
   years_max?: number | null;
   exclude_companies?: string[] | null;

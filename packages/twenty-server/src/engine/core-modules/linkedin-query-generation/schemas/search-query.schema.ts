@@ -30,6 +30,22 @@ export const searchQuerySchema = z.object({
     .optional()
     .nullable(),
   company_type_raw: z.string().optional().nullable(),
+  seniority: z
+    .enum([
+      'owner/partner',
+      'cxo',
+      'vice_president',
+      'director',
+      'experienced_manager',
+      'entry_level_manager',
+      'strategic',
+      'senior',
+      'entry_level',
+      'in_training',
+    ])
+    .optional()
+    .nullable(),
+  function: z.string().optional().nullable(),
   years_min: z.number().optional().nullable(),
   years_max: z.number().optional().nullable(),
   exclude_companies: z.array(z.string()).optional().nullable(),

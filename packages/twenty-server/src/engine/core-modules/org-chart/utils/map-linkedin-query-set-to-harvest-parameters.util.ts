@@ -1,5 +1,13 @@
 import type { SearchQuerySet } from 'src/engine/core-modules/linkedin-query-generation/types/linkedin-query-generation.types';
 
+import {
+  HARVEST_INDUSTRY_ID_BY_LABEL,
+  normalizeHarvestFilterLabel,
+  resolveHarvestFunctionIdForRoot,
+  resolveHarvestIndustryIds,
+  resolveHarvestSeniorityLevelIds,
+} from 'src/engine/core-modules/candidate-search/constants/harvest-filter-ids';
+
 import { splitHarvestTitleList } from './harvest-search-params.util';
 
 export type HarvestQuerySetCategory = 'people' | 'companies';
@@ -11,6 +19,11 @@ export type HarvestQuerySetSearch = {
   // Employer names still to turn into LinkedIn company URLs for
   // `currentCompanies`; Harvest does not match companies by name
   companyNames: string[];
+  // Facet values Harvest takes only as ids, that the taxonomy could not
+  // resolve. Harvest accepts a valid-but-wrong id and silently returns a
+  // different population, so an unresolved label is unsent and reported here
+  // rather than guessed at.
+  unresolvedFilters?: string[];
 };
 
 const toNames = (values: string[] | null): string[] =>
@@ -38,6 +51,7 @@ export const mapLinkedinQuerySetToHarvestParameters = ({
   const seen = new Set<string>();
 
   return querySet.search_query_set.flatMap((query, index) => {
+    const unresolvedFilters: string[] = [];
     const keywords = query.keywords?.trim() || undefined;
     const jobTitle = query.job_title?.trim() || undefined;
     const locations = toNames(query.location);
@@ -56,22 +70,54 @@ export const mapLinkedinQuerySetToHarvestParameters = ({
       // sending "not these" as a keyword would be silently ignored instead
       const excludedLocations = toNames(query.exclude_locations ?? null);
       const excludedCompanies = toNames(query.exclude_companies ?? null);
-      const excludedIndustries = toNames(query.exclude_industries ?? null);
+
+      // Harvest takes industries, seniority and function only as ids. The
+      // taxonomy resolves names against the vendor's own tables; a label it
+      // cannot match is reported rather than sent as a near-miss id, because
+      // Harvest accepts a valid-but-wrong id and quietly returns a different
+      // population.
+      const industryLabels = toNames(query.industry_terms ?? null);
+      const industryIds = resolveHarvestIndustryIds(industryLabels);
+      const unresolvedIndustries = industryLabels.filter(
+        (label) => !HARVEST_INDUSTRY_ID_BY_LABEL[normalizeHarvestFilterLabel(label)],
+      );
+      const seniorityIds = resolveHarvestSeniorityLevelIds(
+        query.seniority ? [query.seniority] : [],
+      );
+      const functionId = resolveHarvestFunctionIdForRoot(
+        query.function ?? null,
+      );
+      const excludedIndustryIds = resolveHarvestIndustryIds(
+        toNames(query.exclude_industries ?? null),
+      );
 
       searchParameters = {
         ...(search ? { search } : {}),
         ...(titles && titles.length > 0 ? { currentJobTitles: titles } : {}),
         ...(locations.length > 0 ? { locations } : {}),
+        ...(industryIds.length > 0 && { industryIds }),
+        ...(seniorityIds.length > 0 && { seniorityLevelIds: seniorityIds }),
+        ...(functionId ? { functionIds: [functionId] } : {}),
         ...(excludedLocations.length > 0 && {
           excludeLocations: excludedLocations,
         }),
         ...(excludedCompanies.length > 0 && {
           excludeCurrentCompanies: excludedCompanies,
         }),
-        ...(excludedIndustries.length > 0 && {
-          excludeIndustryIds: excludedIndustries,
+        ...(excludedIndustryIds.length > 0 && {
+          excludeIndustryIds: excludedIndustryIds,
         }),
       };
+
+      if (unresolvedIndustries.length > 0) {
+        unresolvedFilters.push(
+          ...unresolvedIndustries.map(
+            (label) =>
+              `industry "${label}" has no Harvest industry id, so it was not sent`,
+          ),
+        );
+      }
+
     } else {
       // Harvest's company search takes `location`; `headquarterLocations` is a
       // people-search name and would be dropped without an error
@@ -99,6 +145,7 @@ export const mapLinkedinQuerySetToHarvestParameters = ({
           .join(' · '),
         searchParameters,
         companyNames,
+        ...(unresolvedFilters.length > 0 && { unresolvedFilters }),
       },
     ];
   });
