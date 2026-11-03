@@ -66,7 +66,11 @@ export AWS_DEFAULT_REGION="$AWS_REGION"
 SSH_KEY_PATH="${SSH_KEY_PATH:-$HOME/.ssh/arxmukti-key.pem}"
 SSH_OPTS=(-o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=30 -o ServerAliveCountMax=6)
 REMOTE_BUILD_EXIT_GRACE_SECONDS="${REMOTE_BUILD_EXIT_GRACE_SECONDS:-90}"
-COMMAND_PROD_TIMEOUT_SECONDS="${COMMAND_PROD_TIMEOUT_SECONDS:-2700}"
+# Ceiling for prod `command:prod` calls. A full upgrade replays every workspace
+# command (~4 min/workspace at 16 workspaces), so 2700s killed it mid-run and the
+# script refused the server cutover. Resumes are cursor-based, but a killed run
+# leaves workspaces half-migrated on old code, so keep this well above a full pass.
+COMMAND_PROD_TIMEOUT_SECONDS="${COMMAND_PROD_TIMEOUT_SECONDS:-10800}"
 # not-run until run_production_upgrade records success, failed, or skipped.
 PROD_UPGRADE_STATUS="not-run"
 PROD_UPGRADE_LOG=""
