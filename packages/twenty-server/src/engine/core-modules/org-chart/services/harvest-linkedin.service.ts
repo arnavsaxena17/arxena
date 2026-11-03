@@ -267,7 +267,17 @@ export class HarvestLinkedinService {
       return null;
     }
 
-    const result = await this.searchCompanies({ search: trimmed, limit: 5 });
+    // Ten, not five: Harvest's keyword ranking puts a parent, a namesake or a
+    // regional unit above the company itself often enough that a match outside
+    // the first five is common for Indian legal names. It is still one call.
+    //
+    // The match stays one-directional on purpose. Accepting the reverse (a
+    // candidate that merely opens the wanted name) would let "Tata Steel"
+    // resolve to the "Tata" holding company, and a parent is a different
+    // employer with a different population. A shorter spelling is reached
+    // through the identity's alternate names instead, which is the caller's
+    // own list rather than a guess about the ranking.
+    const result = await this.searchCompanies({ search: trimmed, limit: 10 });
     const match = result.items.find((item) =>
       isHarvestCompanyNameMatch(trimmed, String(item.name ?? '')),
     );

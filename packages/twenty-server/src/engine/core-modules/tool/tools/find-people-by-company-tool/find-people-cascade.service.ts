@@ -164,6 +164,10 @@ const COMPANY_RETRY_BACKOFF_MS = [5_000, 15_000];
 const MAX_COMPANY_NAMES_PER_SEARCH = 2;
 const BRIGHT_DATA_CANDIDATES_PER_SEARCH = 5;
 // Harvest bills $0.004 a record; five is a $0.02 step, not the whole pair cap
+// Each variant is one Harvest company search. Five covers the caller's name,
+// the canonical name and the usual alternate spellings, and stops an
+// unresolvable company from becoming a long paid hunt.
+const MAX_COMPANY_URL_VARIANTS = 5;
 const HARVEST_CANDIDATES_PER_SEARCH = 5;
 const MIN_PEOPLE_PER_COMPANY = 3;
 const MAX_PEOPLE_PER_ROLE = 3;
@@ -1775,7 +1779,14 @@ export class FindPeopleCascadeService {
       return identity.linkedinUrl;
     }
 
-    for (const variant of identity.aliases.slice(0, 2)) {
+    // Every spelling the identity carries, not the first two: the caller's
+    // name, the canonical name, the caller's alternate names and the index's
+    // alternates are all plausible. Each attempt is one Harvest company search
+    // and stops at the first hit, so a resolvable company costs one or two.
+    // When none match there is nothing left to try: the lead search is skipped
+    // rather than run without an employer filter, which would spend money on
+    // people from any company.
+    for (const variant of identity.aliases.slice(0, MAX_COMPANY_URL_VARIANTS)) {
       const match = await harvest
         .findCompanyLinkedinUrl(variant)
         .catch(() => null);

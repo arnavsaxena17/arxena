@@ -646,3 +646,83 @@ describe('FindPeopleCascadeService source order on a redo', () => {
     ]);
   });
 });
+
+describe('FindPeopleCascadeService Harvest company resolution', () => {
+  const identityWith = (aliases: string[], linkedinUrl?: string) =>
+    ({
+      canonicalName: aliases[0],
+      aliases,
+      ...(linkedinUrl ? { linkedinUrl } : {}),
+    }) as never;
+
+  const resolveOf = (harvest: unknown) => {
+    const service = new FindPeopleCascadeService(
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      undefined,
+      harvest as never,
+    );
+
+    return (
+      service as unknown as {
+        resolveHarvestCompanyUrl: (
+          harvest: unknown,
+          identity: unknown,
+        ) => Promise<string | null>;
+      }
+    ).resolveHarvestCompanyUrl.bind(service);
+  };
+
+  it('should use the index URL without a Harvest call', async () => {
+    const findCompanyLinkedinUrl = jest.fn();
+    const resolved = await resolveOf({ findCompanyLinkedinUrl })(
+      { findCompanyLinkedinUrl },
+      identityWith(['Cipla'], 'https://www.linkedin.com/company/cipla'),
+    );
+
+    expect(resolved).toBe('https://www.linkedin.com/company/cipla');
+    expect(findCompanyLinkedinUrl).not.toHaveBeenCalled();
+  });
+
+  it('should try alternate names beyond the first two before giving up', async () => {
+    const findCompanyLinkedinUrl = jest
+      .fn()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        name: 'Sun Pharmaceutical Industries',
+        linkedinUrl: 'https://www.linkedin.com/company/sun-pharma',
+      });
+
+    const resolved = await resolveOf({ findCompanyLinkedinUrl })(
+      { findCompanyLinkedinUrl },
+      identityWith([
+        'Sun Pharma',
+        'Sun Pharmaceutical Industries Ltd',
+        'Sun Pharma Advanced Research',
+        'Sun Pharmaceutical Industries',
+      ]),
+    );
+
+    expect(resolved).toBe('https://www.linkedin.com/company/sun-pharma');
+    expect(findCompanyLinkedinUrl).toHaveBeenCalledTimes(4);
+  });
+
+  it('should return null when no spelling resolves, so the lead search is skipped', async () => {
+    const findCompanyLinkedinUrl = jest.fn().mockResolvedValue(null);
+
+    const resolved = await resolveOf({ findCompanyLinkedinUrl })(
+      { findCompanyLinkedinUrl },
+      identityWith(['An Obscure Trading House', 'AOTH']),
+    );
+
+    expect(resolved).toBeNull();
+    expect(findCompanyLinkedinUrl).toHaveBeenCalledTimes(2);
+  });
+});
