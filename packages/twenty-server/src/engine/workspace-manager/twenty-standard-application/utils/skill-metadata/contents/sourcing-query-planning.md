@@ -5,7 +5,17 @@ Break the request into queries before the first search, then measure before you 
 ### Build the queries
 
 1. **Track**: companies, people, or people at named companies (the Plan table).
-2. **One query = title words + industry + geography.** Expand titles with the synonym ladders in `playbook-shortfall` (loaded with this path). State the city list you expand to ("tier 1 = Mumbai, Delhi NCR, Bangalore, Hyderabad, Chennai, Pune, Kolkata, Ahmedabad").
+2. **One query, one carrier.** The carrier is the facet with a small known set; everything else fences it.
+
+   | The user gave you | Carrier | Fences |
+   | --- | --- | --- |
+   | up to 50 named companies | the company | title |
+   | an industry and a city | the title | industry, city |
+   | a title and no company | the title | city |
+
+   Expand titles with the synonym ladders in `playbook-shortfall`. State the cities you expand to ("tier 1 = Mumbai, Delhi NCR, Bangalore, Hyderabad, Chennai, Pune, Kolkata, Ahmedabad").
+   `industry` is a label; `keywords` is a bag over about and specialties. Label for the sector, keywords only for a segment the label cannot express ("oncology"); never the same word in both.
+   Two broad facets: run two queries and intersect on `linkedinUrl` — an AND loses rows silently, an OR floods.
 3. **Slice a big request** by city and title band so each slice stays under the source's cap (see its "Limits and exhaustion").
 4. **Variants.** Write two or three versions of the main query that differ by one word or phrase (a synonym, the industry term, with or without a skill word). One word can change the yield a lot, so do not assume.
 5. **Exhaustive: record the plan.** Write the queries you will run into the brief (`get_sourcing_ledger` `brief.queries`: source, query, slice, entity) before the first search. Run every one. The ledger's `coverage.frontier.unattempted` is the stop condition, not the target; a query counts only once its rows are on the project tab.

@@ -53,6 +53,16 @@ const SKILL_TOKEN_BUDGETS: Record<string, number> = {
 // entry of its own: this is the default, and a longer one belongs in a core skill
 const PLAYBOOK_TOKEN_BUDGET = 1_500;
 
+// The other half of the ratchet. A budget above a skill whose content has since
+// been cut is dead slack that the next addition quietly consumes, so a skill we
+// have tuned declares a floor; cutting below it means lowering the budget here.
+// Start a new entry only when you have just measured the skill.
+const SKILL_TOKEN_FLOORS: Record<string, number> = {
+  // measured 28_748 after the sourcing rewrite; raise the budget only by also
+  // deleting an equal amount elsewhere
+  sourcing: 27_300,
+};
+
 const budgetFor = (skillName: string): number | undefined =>
   SKILL_TOKEN_BUDGETS[skillName] ??
   (listPlaybookNames().includes(skillName) ? PLAYBOOK_TOKEN_BUDGET : undefined);
@@ -145,6 +155,23 @@ describe('standard skill content', () => {
         const tokens = Math.ceil(content.length / CHARACTERS_PER_TOKEN);
 
         expect(tokens).toBeLessThanOrEqual(budgetFor(skillName) ?? 0);
+      },
+    );
+
+    // The budget used to be a ceiling only, and it was raised six times to make
+    // room for new instructions with nothing ever removed. A floor makes the
+    // other direction fail too: if a skill shrinks, lower its budget in the same
+    // change, so the ratchet only turns one way — downwards.
+    it.each(Object.entries(SKILL_TOKEN_FLOORS))(
+      'should keep %s above its floor, and lower the budget when it shrinks',
+      (skillName, floor) => {
+        const content = skills[skillName];
+
+        expect(content).toBeDefined();
+
+        const tokens = Math.ceil((content ?? '').length / CHARACTERS_PER_TOKEN);
+
+        expect(tokens).toBeGreaterThanOrEqual(floor);
       },
     );
   });

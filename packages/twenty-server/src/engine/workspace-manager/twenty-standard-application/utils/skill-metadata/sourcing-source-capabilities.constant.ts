@@ -91,6 +91,64 @@ const COMPANY_FIELDS = {
     label: 'Hiring on LinkedIn',
     kind: 'boolean',
   },
+  // The Bright Data compiler has all of these; without a field here the model
+  // is told that a filter it can really use does not exist, and rounds down
+  organizationType: {
+    field: 'organizationType',
+    label: 'Company type',
+    kind: 'enum',
+    values: [
+      'Public Company',
+      'Privately Held',
+      'Nonprofit',
+      'Partnership',
+      'Government Agency',
+      'Self-Employed',
+    ],
+  },
+  foundedYear: {
+    field: 'foundedYear',
+    label: 'Founded year',
+    kind: 'range',
+  },
+  fundingStage: {
+    field: 'fundingStage',
+    label: 'Funding stage',
+    kind: 'enum',
+    values: [
+      'pre-seed',
+      'seed',
+      'angel',
+      'series-a',
+      'series-b',
+      'series-c',
+      'series-d',
+      'private-equity',
+      'convertible-note',
+      'undisclosed',
+    ],
+  },
+  fundingRaised: {
+    field: 'fundingRaised',
+    label: 'Funding raised',
+    kind: 'range',
+    unit: 'USD',
+  },
+  followers: {
+    field: 'followers',
+    label: 'LinkedIn followers',
+    kind: 'range',
+  },
+  officesLocation: {
+    field: 'officesLocation',
+    label: 'Office location (not headquarters)',
+    kind: 'text',
+  },
+  sizeExact: {
+    field: 'sizeExact',
+    label: 'Employees (exact, not a band)',
+    kind: 'range',
+  },
 } as const satisfies Record<string, CapabilityField>;
 
 const PERSON_FIELDS = {
@@ -139,6 +197,28 @@ const PERSON_FIELDS = {
     kind: 'range',
     unit: 'years',
   },
+  // Also in the Bright Data compiler; "ex-Cipla" and "Six Sigma certified" are
+  // ordinary requests, and neither had a field before
+  pastOwner: {
+    field: 'pastOwner',
+    label: 'Past employer',
+    kind: 'text',
+  },
+  pastTitle: {
+    field: 'pastTitle',
+    label: 'Past job title',
+    kind: 'text',
+  },
+  certifications: {
+    field: 'certifications',
+    label: 'Certifications',
+    kind: 'text',
+  },
+  skills: {
+    field: 'skills',
+    label: 'Skills',
+    kind: 'text',
+  },
 } as const satisfies Record<string, CapabilityField>;
 
 export const SOURCE_CAPABILITIES: readonly SourceCapability[] = [
@@ -149,7 +229,14 @@ export const SOURCE_CAPABILITIES: readonly SourceCapability[] = [
       COMPANY_FIELDS.keywords,
       COMPANY_FIELDS.industry,
       COMPANY_FIELDS.hqLocation,
+      COMPANY_FIELDS.officesLocation,
       COMPANY_FIELDS.employees,
+      COMPANY_FIELDS.sizeExact,
+      COMPANY_FIELDS.organizationType,
+      COMPANY_FIELDS.foundedYear,
+      COMPANY_FIELDS.fundingStage,
+      COMPANY_FIELDS.fundingRaised,
+      COMPANY_FIELDS.followers,
     ],
     notSearchable: [
       {
@@ -176,6 +263,11 @@ export const SOURCE_CAPABILITIES: readonly SourceCapability[] = [
       PERSON_FIELDS.currentTitle,
       PERSON_FIELDS.currentCompany,
       PERSON_FIELDS.location,
+      PERSON_FIELDS.industry,
+      PERSON_FIELDS.pastOwner,
+      PERSON_FIELDS.pastTitle,
+      PERSON_FIELDS.certifications,
+      PERSON_FIELDS.skills,
     ],
     returns: ['name', 'title', 'company', 'linkedinUrl', 'location', 'profile'],
   },
@@ -237,13 +329,28 @@ export const SOURCE_CAPABILITIES: readonly SourceCapability[] = [
     entity: 'company',
     searchable: [
       COMPANY_FIELDS.employees,
-      COMPANY_FIELDS.annualRevenue,
       COMPANY_FIELDS.industry,
       COMPANY_FIELDS.hqLocation,
-      COMPANY_FIELDS.departmentHeadcount,
-      COMPANY_FIELDS.hiring,
     ],
-    returns: ['name', 'linkedinUrl', 'employees', 'annualRevenue', 'industry', 'hqLocation', 'departmentHeadcount'],
+    // Verified against the Harvest company search reference: its only filters
+    // are search, location, geoId, companySize and industryId
+    notSearchable: [
+      {
+        field: 'annualRevenue',
+        nearest: 'employees',
+        why: 'The Harvest company search has no revenue filter (filters: search, location, geoId, companySize, industryId)',
+      },
+      {
+        field: 'departmentHeadcount',
+        nearest: 'employees',
+        why: 'The Harvest company search filters total company size, not function headcount',
+      },
+      {
+        field: 'hiring',
+        why: 'The Harvest company search has no hiring filter',
+      },
+    ],
+    returns: ['name', 'linkedinUrl', 'employees', 'industry', 'hqLocation'],
   },
   {
     key: 'harvest',

@@ -226,13 +226,37 @@ function buildSalesNavigatorStrategies(
 
     const normalizedLocation = normalizeStringArray(query.location);
     const normalizedCompany = normalizeStringArray(query.company);
+    const excludedCompanies = normalizeStringArray(query.exclude_companies ?? null);
+    const excludedLocations = normalizeStringArray(query.exclude_locations ?? null);
     const jobTitle = query.job_title?.trim();
+
+    // Sales Navigator is the only seat whose facets take include *and* exclude,
+    // so an exclusion is expressed here and folded into keywords elsewhere
+    const locationFilter =
+      normalizedLocation || excludedLocations
+        ? {
+            location: {
+              ...(normalizedLocation && { include: normalizedLocation }),
+              ...(excludedLocations && { exclude: excludedLocations }),
+            },
+          }
+        : {};
+    const companyFilter =
+      normalizedCompany || excludedCompanies
+        ? {
+            company: {
+              ...(normalizedCompany && { include: normalizedCompany }),
+              ...(excludedCompanies && { exclude: excludedCompanies }),
+            },
+          }
+        : {};
 
     const parameters: SalesNavigatorPeopleSearchStrategyResult['parameters'] = {
       keywords: query.keywords ?? undefined,
-      ...(normalizedLocation && { location: { include: normalizedLocation } }),
-      ...(normalizedCompany && { company: { include: normalizedCompany } }),
+      ...locationFilter,
+      ...companyFilter,
       ...(jobTitle ? { role: { include: [jobTitle] } } : {}),
+      ...(query.company_type ? { company_type: [query.company_type] } : {}),
     };
 
     return {
@@ -258,6 +282,7 @@ function buildRecruiterStrategies(
 
     const normalizedLocation = normalizeStringArray(query.location);
     const normalizedCompany = normalizeStringArray(query.company);
+    const excludedCompany = normalizeStringArray(query.exclude_companies ?? null)?.join(' ');
 
     const parameters: RecruiterPeopleSearchStrategyResult['parameters'] = {
       keywords: query.keywords ?? undefined,
@@ -275,6 +300,16 @@ function buildRecruiterStrategies(
         company: normalizedCompany.map((company) => ({
           keywords: company,
         })),
+      }),
+      // Recruiter has no include/exclude pair on the company facet; DOESNT_HAVE
+      // is how this seat expresses "not these companies"
+      ...(excludedCompany && {
+        company: [
+          ...(normalizedCompany ?? []).map((company) => ({
+            keywords: company,
+          })),
+          { keywords: excludedCompany, priority: 'DOESNT_HAVE' as const },
+        ],
       }),
     };
 

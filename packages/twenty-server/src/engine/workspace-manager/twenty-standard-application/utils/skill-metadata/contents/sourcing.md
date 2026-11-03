@@ -6,12 +6,13 @@ routes:
   - when: |-
       Find companies or people / LinkedIn / Harvest / Sales Nav / places on a map
     hint: |-
-      . Pass `sections`: always add `for-recruiting` (candidates for a role) or `for-sales` (prospects you sell to — not a Sales Rep / AE / BDR hire) to the search type: `["people", "for-recruiting"]`. The search type is `["people"]` for a population where any employer will do, `["companies"]` for companies, `["places"]` for places on a map (outlets across a city), `["people-by-company"]` for a role at companies already named. A role plus any company attribute — an industry, a segment, "startups", a stage, a size or revenue band, a peer set — is company-first, never a population: `["playbook-company-first", "for-sales"]` (or `for-recruiting`). Add `industry-search` when the request names an industry, sector or segment. A scored list of about N adds `scoring` and `playbook-shortfall` to those `sections`, and also `load_skills(["ai-filter-enrich"])`. Add `for-recruiting` or `for-sales`, and `query-planning` for about 1,000 rows or more.
+      . Always add `for-recruiting` (candidates for a role) or `for-sales` (prospects you sell to — not a Sales Rep / AE / BDR hire), plus the type: `people` for a population where any employer will do, `companies`, `places`, `people-by-company` for a role at companies already named, or `playbook-company-first` for a role at companies the user did not name. Add `industry-search` when an industry is named, `scoring` + `playbook-shortfall` for about N, `query-planning` above 1,000 rows. A count of about 25 or fewer is small: "top 10 <role> at <industry> companies in <city>" bounds the **companies**, so bound the company list to that N instead of building the whole industry. State what the number counts before any paid call.
 parts:
   - companies
   - places
   - people
   - people-by-company
+  - run-edge
   - industry-search
   - industry-labels
   - playbook-company-first
@@ -77,9 +78,10 @@ With no target count, ask for it with `ask_questions` before any paid fetch.
 
 Sort every open point before asking.
 
-- **Look it up:** `projectId`, the workspace ICP and target titles, HQ, connected channels, the tab, the columns that exist, what the user said earlier. Using these is not a question.
-- **Decide, and say so in one line:** the purpose — recruiting (`for-recruiting`) means candidates for a role; sales (`for-sales`) means prospects you sell to. Default to sales unless the request says you are hiring (a JD, "candidates", "applicants", "for our open role"); a bare "give me <title> at <kind of company>" is a prospect list, so say so and move on. Also decide source and order, title synonyms, slicing, batch sizes, scoring model, preview size, column names, must-have for every attribute the user stated that a profile can show (nice-to-have only for "preferably" or "ideally"), dedupe against the CRM. Later checks (and age) follow `requirements`: list in the brief, never score. A request that matches an earlier brief in `get_sourcing_ledger`: say so and ask once if it is the same, before any paid search. Ask only when the options would lead to different results or costs.
-- **Ask:** the target count when missing, on a population search only; a company-first run's size is its company list, so confirm the companies instead of asking "how many people". Only when the request implies completeness ("all", "every", "no gaps", "MECE"), also ask coverage: best effort at a target, or exhaustive over a named universe with a run cap; exhaustive without a bounded universe is not exhaustive. Also ask: what a match means when a term has two readings; the spend caps (once); relaxing a must-have; anything that sends, enrolls or deletes; sending a CV or a profile outside the project, every time. After writing rows onto a tab that already had others, which rows to score (`ai-filter-enrich` step 3). Reads, fetches and enrichment inside the approved caps need no yes (`scoring`).
+- **Look it up:** `projectId`, the workspace ICP and target titles, HQ, connected channels, the tab's columns, what the user said earlier. Not a question.
+- **Decide silently:** the purpose — sales unless the request says you are hiring; a bare "give me <title> at <kind of company>" is a prospect list. Also the source and its order, title synonyms, slicing, batch size, scoring model, preview size, column names, and a must-have for every attribute the user stated that a profile can show (nice-to-have only for "preferably" or "ideally"). Later checks and age follow `requirements`: list in the brief, never score.
+- **State in the plan line:** what the user's number counts, and any word you had to read one way.
+- **Ask:** when two readings would fetch more than about 2× the records or the cost — that threshold covers "top N vs the whole industry". Also ask: the target count when a population search has none; coverage when the request implies completeness ("all", "every", "no gaps"); the spend caps, once; relaxing a must-have; anything that sends, enrolls or deletes; sending a CV or a profile outside the project. Put every question in **one** batch, not one per turn; after rows land on a tab that already had others, ask once which rows to score (`ai-filter-enrich` step 3). Reads, fetches and enrichment inside the approved caps need no yes (`scoring`).
 
 ### Intake gate
 
@@ -96,9 +98,9 @@ Then state the brief, ask what is missing in one batch (at most four questions, 
 
 The user waits on every step. Fewer, bigger steps beat careful small ones.
 
-- No narration between calls; run independent calls in the same step. Never one call per company or per person: every tool takes the whole list.
-- Ask once, up front: count, caps, rubric. After a yes, do not ask again inside the caps; one exception, a company list you built or narrowed is confirmed before `find_people_by_company`.
-- Score the whole list with one `run_ai_column` after one 10-row preview. Do not preview twice. Status checks follow `ai-filter-enrich`.
+- No narration between calls; run independent calls in the same step. One call per list, not per company or per person.
+- Ask once, up front: count, caps, rubric. Inside the approved caps the first yes stands; a company list you built or narrowed is the one thing confirmed before `find_people_by_company`.
+- Score the whole list with one `run_ai_column` after one 10-row preview; one preview per column. Status checks follow `ai-filter-enrich`.
 - A long LinkedIn search is one `search_linkedin_continue` call with `maxPages` (up to 50), not a call per page.
 - Fetch profiles only for rows a snapshot leaves undecided (`fetch_profiles`), again only while `remaining` is above 0.
 - A source that errors or returns nothing: take the next one in Source order in the same turn.
@@ -146,9 +148,9 @@ Follow the loaded section, then these rules.
 
 ### Provider
 
-Use the default source in the Plan table unless the user names another provider (Apollo, LinkedIn / Sales Navigator, Harvest, Exa, a pasted Sales Navigator or LinkedIn search URL) or the request needs a feature only that provider has (a named Sales Nav list, facet ids). The Bright Data `src-*` sections say which mode to use: ludicrous for a described set, instant for a website or LinkedIn URL lookup or a quick probe of a short literal. Do not pick Apollo because it is listed first. Fall back only if the default errors or returns nothing, and say so.
+Use the default source in the Plan table unless the user names another provider (Apollo, LinkedIn / Sales Navigator, Harvest, Exa, a pasted Sales Navigator or LinkedIn search URL) or the request needs a feature only that provider has (a named Sales Nav list, facet ids). The Bright Data `src-*` sections say which mode to use: ludicrous for a described set, instant for a website or LinkedIn URL lookup or a quick probe of a short literal. Apollo is last-resort here even though it is listed first. Fall back only if the default errors or returns nothing, and say so.
 
-`people-by-company` is one `find_people_by_company` call for the whole company list. No estimate and no provider question. The tool searches every company and returns the matching people. Do not search those companies yourself and do not loop them.
+`people-by-company` is one `find_people_by_company` call for the whole company list — no estimate and no provider question. The tool searches every company and returns the matching people, so hand it the list once.
 
 
 

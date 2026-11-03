@@ -3,6 +3,34 @@
 Companion to [`outreach-multi-sender-connect-plan.md`](./outreach-multi-sender-connect-plan.md) (parallel race inside 14 days) and
 [`outreach-sequencer-overview.md`](./outreach-sequencer-overview.md) (how the sequencer works).
 
+## Read this first
+
+There are four ways to ship this. They are not layers of one plan — they are alternatives, and three of
+them share nothing.
+
+| # | Path | Build | Coordination | Complexity added |
+| --- | --- | --- | --- | --- |
+| 0 | **Rounds**: pilot by hand (duplicate project, one sender each) | 0 d | none | none |
+| 1 | **Rounds proper**: person-stop filter + next-round builder + round grouping | **~3.5 d** | live (person-level) | additive, generalises |
+| 2 | **Campaign-per-attempt** + enrolment guard | ~2.5 d | enrolment only | ops convention |
+| 3 | **Same candidate** (v0): 4 graph nodes + claim + sweep | ~6 d | live | bespoke mode |
+
+**Recommendation: ship path 0 this week as the pilot, then path 1.** Path 1 is the only option that is
+live-coordinated *and* additive — a project already is a round, `doNotContact` already exists on person,
+and nothing in path 3 is required. Path 3 (the 4-node design) is documented as the fallback for the case
+where a person must not appear twice in the `Candidate` object — see the wart in
+[Recommended shape](#recommended-shape-rounds-project--round).
+
+Everything below path 1 is reference depth, not a build order:
+
+- **[Simplest version (v0)](#simplest-version-v0--stop-sender-a-continue-with-sender-b)** — the 4-node
+  design if you ever need one candidate row per person.
+- **[Recommended shape: rounds](#recommended-shape-rounds-project--round)** — the 3.5-day build.
+- **[Alternative path: campaign-per-attempt](#alternative-path-campaign-per-attempt-new-project-per-touch)**
+  — the zero-code pilot and its guards.
+- Invariants, data model, graph changes, server changes, UI, edge cases and prospect-visible constraints
+  apply to the same-candidate path (3). Path 1 reuses almost none of it.
+
 ## Goal
 
 1. **Divide** (exists today): the list is partitioned — one sender owns each person for life.
@@ -167,6 +195,99 @@ For 20–50 people, prove the idea before writing anything: **Stop outreach** on
 Works today because everything except the gate is already wired. Fragile by hand (two fields must stay
 consistent) and it resets "Days to first contact", but it answers "does a second sender reactivate
 people?" before spending six days.
+
+## Recommended shape: rounds (project = round)
+
+The three paths below all encode "a second attempt" **on the candidate**. That encoding is what forces
+either graph surgery (same-candidate) or a coordination gap (two projects). Remove it: the client's own
+words — *"sender A in month 1, sender B in month 2"* — describe **two rounds of a campaign**, and a round
+already exists as a project.
+
+The two things the project-split paths were missing are not engine work; they are in the wrong place.
+
+### 1. Coordination belongs on the Person
+
+Candidate rows cannot talk to each other, but every project loads the **same Person**, and `doNotContact`
+is already a person field (`outreach-command-fields.data.ts:506`) that the graph loads but never checks.
+One FILTER node after `Load Person`:
+
+```
+Do not contact?   {{queuedPersonFind.first.doNotContact}}  IS  false
+```
+
+One node, **zero new fields**, and every project stops that person — including a decline arriving *after*
+round 2 has started. Enrolment-time guards cannot cover that; this can.
+
+### 2. The operator surface belongs on round grouping
+
+`outreach-home` is keyed by `projectId`. Group rounds under a campaign and add a round selector, and the
+operator gets one list with a `Round` column plus a cross-round journey, instead of two tables.
+
+### Build
+
+| Piece | Size | Buys |
+| --- | --- | --- |
+| Round = project (one sender each, same list) | 0 d (ops convention) | fresh candidate → no gate change, no attempt state, no claim lock |
+| Person-stop filter (1 node, reuses `doNotContact`) | 0.5 d | live cross-round coordination, in-flight included |
+| "Next round" builder — cohort → round N+1, excluding replied / declined / booked / DNC / company-already-contacted | 1 d | repeatable without hand-enrolment; restores the per-company guard |
+| Round grouping in outreach-home (`Round` column, cross-round journey) | 2 d | the single operator surface |
+
+**~3.5 d.** Nothing in the same-candidate design is required: no 4 nodes, no `outreachAttempt*` fields,
+no sweep, no claim lock, no revival, no resync. Double-accept stops being a defect (two people, two
+threads — what being connected to two colleagues actually looks like), so there is nothing to arbitrate.
+
+### Honest wart
+
+The person appears **twice** in the `Candidate` object, once per round. Round grouping fixes reporting and
+the People table; the raw Candidates nav still shows both rows and a naive count double-counts. Acceptable
+for campaign-shaped tooling; if it is not, that is the one thing that pushes back to the same-candidate v0.
+
+## Alternative path: campaign-per-attempt (new project per touch)
+
+Instead of a second attempt on the same candidate, create a **new project** and enrol the same people
+into it with a different sender. Zero code; it works today.
+
+Why it works:
+
+- `loadEnrollmentIndex` is **project-scoped** (`where: { projectId }`,
+  `outreach-project-outreach-control.service.ts:846`), and there is no unique constraint on
+  `(projectId, peopleId)` — so the same Person gets a **fresh candidate row** in the new project.
+- A fresh candidate starts at `QUEUED` with empty `outreachAnalytics`, so the
+  `Connection not yet sent?` gate passes naturally. **No graph changes at all.**
+- Do-not-contact is loaded **workspace-wide** in the same index builder, so a blocked person stays
+  blocked across every project.
+- Two accepted invites land as two openers in two different threads (Manoj's and Nishant's), not as a
+  duplicate in one thread — so the claim lock is not required in this model.
+
+| Plan component | Required? |
+| --- | --- |
+| 4 graph nodes, attempt fields, sweep cron, atomic claim, seat resolution | ❌ none |
+| Sender pinning **in the new project** | ✅ (else it sends from the first member row) |
+| Cross-project exclusion at enrolment | ✅ to be safe, see below |
+
+What it does not give you:
+
+1. **No cross-project coordination.** A reply or decline in project 1 is invisible to project 2 —
+   the two candidate rows share no state. This is the E31 failure (re-contacting someone who said no)
+   and it is the disqualifying risk if left unhandled.
+2. **Per-company dedupe breaks across projects** — `companySiblingFilters` includes
+   `projectId IS <this project>` (`graphs:711`), so project 2 can contact a second person at a company
+   project 1 is already working.
+3. **Two tables, split reporting** — the operator's only surface (outreach-home People) doubles, and
+   "did the second touch work?" needs a manual cross-project comparison.
+4. **Project sprawl** — one project per touch, each with its own sender config, send window and
+   templates.
+
+**If this becomes the production shape, the minimum guard (~2 days):** when enrolling into project N,
+exclude anyone whose candidate in any other project has replied, declined, booked a meeting, or been
+contacted at the same company. Add a listener that stamps `stopOutreach` across all projects for a
+person on reply/decline (~0.5 d). That covers both the enrolment-time and the in-flight case without
+touching the graph.
+
+**Recommendation:** use campaign-per-attempt as the **zero-code pilot** for the first cohort (better
+than the manual field-edit pilot below — no state scrubbing, DNC handled), then pick the production
+shape on evidence: 2-day guarded projects if reactivation is strong, or the 6-day same-candidate v0 if
+a single table and live coordination matter more.
 
 ## Invariants
 

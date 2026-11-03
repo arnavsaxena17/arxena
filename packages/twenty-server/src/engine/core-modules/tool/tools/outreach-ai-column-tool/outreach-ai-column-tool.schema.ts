@@ -7,6 +7,20 @@ const tabSchema = z
     "The project table tab. Default people (also for questions about those people's companies). companies only when the user is on the Companies tab.",
   );
 
+const OPERATORS = [
+  'contains',
+  'notContains',
+  'equals',
+  'empty',
+  'notEmpty',
+  'greaterThan',
+  'greaterThanOrEqual',
+  'lessThan',
+  'lessThanOrEqual',
+] as const;
+
+type OperatorName = (typeof OPERATORS)[number];
+
 const tableFilterSchema = z.union([
   z.object({
     columnId: z.string(),
@@ -16,20 +30,84 @@ const tableFilterSchema = z.union([
   z.object({
     columnId: z.string(),
     kind: z.literal('condition'),
-    operator: z.enum([
-      'contains',
-      'notContains',
-      'equals',
-      'empty',
-      'notEmpty',
-      'greaterThan',
-      'greaterThanOrEqual',
-      'lessThan',
-      'lessThanOrEqual',
-    ]),
+    operator: z.enum(OPERATORS),
     value: z.string(),
   }),
 ]);
+
+// Models write the conventional shapes first: `{ field, order }` and
+// `{ employees: { gte: 500 } }`. Accepting them, instead of only the canonical
+// array forms, keeps a correct intent from turning into a validation error.
+export const predicateToCondition = (
+  predicate: Record<string, unknown>,
+): Array<z.infer<typeof tableFilterSchema>> => {
+  const operatorByKey: Record<string, OperatorName> = {
+    gt: 'greaterThan',
+    gte: 'greaterThanOrEqual',
+    lt: 'lessThan',
+    lte: 'lessThanOrEqual',
+    eq: 'equals',
+    equals: 'equals',
+    contains: 'contains',
+    like: 'contains',
+    ilike: 'contains',
+    empty: 'empty',
+    exists: 'notEmpty',
+    notEmpty: 'notEmpty',
+  };
+  const conditions: Array<z.infer<typeof tableFilterSchema>> = [];
+
+  for (const [columnId, value] of Object.entries(predicate)) {
+    const predicates =
+      value !== null && typeof value === 'object' && !Array.isArray(value)
+        ? Object.entries(value as Record<string, unknown>)
+        : ([['eq', value]] as Array<[string, unknown]>);
+
+    for (const [operatorKey, operand] of predicates) {
+      const operator = operatorByKey[operatorKey];
+
+      if (!operator) {
+        continue;
+      }
+
+      conditions.push({
+        columnId,
+        kind: 'condition',
+        operator,
+        value: typeof operand === 'string' ? operand : String(operand ?? ''),
+      });
+    }
+  }
+
+  return conditions;
+};
+
+const flexibleFilterSchema = z
+  .union([z.array(tableFilterSchema), z.record(z.string(), z.unknown())])
+  .transform((value) =>
+    Array.isArray(value)
+      ? value
+      : (predicateToCondition(value) ?? []),
+  );
+
+const sortEntrySchema = z
+  .object({
+    columnId: z.string().min(1).optional(),
+    field: z.string().min(1).optional(),
+    direction: z.enum(['asc', 'desc']).optional(),
+    order: z.enum(['asc', 'desc']).optional(),
+  })
+  .transform((entry) => ({
+    columnId: (entry.columnId ?? entry.field) as string,
+    direction: entry.direction ?? entry.order ?? ('desc' as const),
+  }))
+  .refine((entry) => typeof entry.columnId === 'string' && entry.columnId.length > 0, {
+    message: 'each sort needs columnId (or field)',
+  });
+
+const flexibleSortSchema = z
+  .union([z.array(sortEntrySchema), sortEntrySchema])
+  .transform((value) => (Array.isArray(value) ? value : [value]));
 
 export const GetOutreachTabInputZodSchema = z.object({
   projectId: z
@@ -60,12 +138,10 @@ export const GetOutreachTabInputZodSchema = z.object({
     .describe(
       'Only rows that match the filters of the view currently applied to the table. Applies to rows, filter, groupBy and summarize.',
     ),
-  filter: z
-    .array(tableFilterSchema)
-    .max(12)
+  filter: flexibleFilterSchema
     .optional()
     .describe(
-      'Row predicates, all must match. Same shape as apply_table_view filters. columnId is an otherFields key (finalState, turnover) or a built-in column (name, title, company, location, domain, industry, employees). Yes/no columns compare as "Yes" / "No"; empty and notEmpty find unknowns. total stays the whole tab; matchCount is the rows that pass.',
+      'Row predicates, all must match. Either the apply_table_view array of { columnId, kind: "condition", operator, value }, or the shorthand { employees: { gte: 500 }, industry: { contains: "pharma" } }. Keys are an otherFields key (finalState, turnover) or a built-in column (name, title, company, location, domain, industry, employees). Operators: eq/equals, contains/ilike, gt, gte, lt, lte, empty, notEmpty. Yes/no columns compare as "Yes" / "No". total stays the whole tab; matchCount is the rows that pass.',
     ),
   fields: z
     .array(z.string().min(1))
@@ -82,6 +158,11 @@ export const GetOutreachTabInputZodSchema = z.object({
     .optional()
     .describe(
       'One or two column keys: returns the row count per value, or per value pair (for example ["finalState", "rung"]), over every row that passes onlyViewMatches and filter. Rows are left out unless fields is also passed.',
+    ),
+  sort: flexibleSortSchema
+    .optional()
+    .describe(
+      'Order the rows before limit, so "top 10 by headcount" is a sort, not a page-through. Write { field: "employees", order: "desc" } (or columnId/direction, or an array of up to two). A key is an otherFields key (employees, turnover, fitmentScore) or a built-in column (name, title, company, location, industry, employees). Numbers compare as numbers; a row with no value sorts last. Applies to rows only, not to groupBy or summarize.',
     ),
 });
 

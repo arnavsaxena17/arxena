@@ -26,6 +26,7 @@ Do NOT use `ask_questions` for:
 - Information you can look up with another tool.
 - Trivial choices with an obvious default — make the reasonable choice and proceed.
 - Confirming a column run, a model, a preview size or a column design: choose, state it in one line, and go on.
-- CSV column defaults, "top N vs full list" when the user already ordered download/import, or other format choices with a sensible default — pick the default and finish.
+- CSV column defaults, or other format choices whose readings fetch the same work — pick the default and finish.
+- **A reading that changes how much work happens is not a format choice.** If "top N" and "all" fetch a different number of companies or records, it is part of the plan: state the reading in the plan line, and ask when the two readings differ by more than about 2×.
 
 **Exception — Outreach `projectId`:** if browsing context has no `projectId` (or it says `none`), you MUST `ask_questions` which project to tag Find or import results to, before any paid fetch. List projects with `find_many_projects` (`select: ["id", "name"]`, `limit` 10–20), one option per project; if there are none, offer "Create a new project" and `create_one_project`. A similar project name is not an obvious default. Never pick a project from `find_many_projects` without the user's answer. Stop until they answer, then use that id for the rest of the conversation without asking again.

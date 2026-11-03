@@ -10,25 +10,10 @@ A role at companies already named, or already on the project. The unit of work i
    - "Filtered" or "selected" means the rows shown on the Companies tab: add `onlyViewMatches: true`. If the view filter does not narrow the list but the user named a criterion, read the column that answers it with `get_outreach_tab`, then pass the companies you keep as an explicit `companies` list (`{ id, name, domain?, employees?, alternateNames? }`).
    - Say in one line how many companies you took and which you left out and why. When you chose the subset yourself, confirm it first with `ask_questions`: **Yes, these {N}** (recommended), **Edit the list**, **Cancel**. Keep the confirmation short: the count, the criteria, and at most 10 names. Do not page a 100-row list into the chat to show it.
 3. **Pilot.** On the first lookup of a project, call with `pilotSize: 10`. Show the pilot in a short table (company, person, title, rung, confidence, state) and ask once whether the role reading and the rung are right. Adjust the brief if the user corrects them.
-4. **The rest.** Call again without `pilotSize`. More than 25 companies start a background run: the call returns a `runId` and progress. Read it with `find_people_by_company({ runId })` (it waits up to `waitSeconds`), never more than once a minute; report at 50% and at completion. `cancel: true` with the `runId` stops it and keeps what was found. An exhaustive run does not stop at a target; it stops when every pair is terminal or `capsUsd.run` is spent. If the result has `deferredByBudget`, report it and ask once whether to raise the cap.
-5. **Read each pair's `terminalState`**, then act once:
-
-   | `terminalState` | Means | Next |
-   | --- | --- | --- |
-   | `found` | Someone holds the role at or above the plan's confidence; `rungUsed` says how close the title is | Keep. Flag rung 3 and 4 in the report |
-   | `ambiguous` | Only low-confidence people, or a questionable company match (parent, brand, namesake) | Ask the user, with the people and the reason |
-   | `none_found` | Searched; `reason` says why: `no_such_role`, `profile_gaps`, `budget` | Report with the reason. `budget`: offer a higher `capsUsd.perPair`. Rerun only with new `alternateNames` |
-   | `none_found` + `source_error` | The lookup did not complete | Once more with `fromProject: true, onlyFailed: true` |
-   | `unresolvable` | The company could not be identified from the input | Ask for a domain or the legal name |
-
-   `rejected` lists people found who do not belong, including people above the plan's rung; they are not written to the tab. Each kept person has `confidence`, `freshness` and `evidence` (source, query, date, snippet).
-6. **Profiles.** Bright Data matches arrive with their profile stored on the row. A person found only by Google has a name and a LinkedIn URL at most: run `fetch_profiles` before scoring.
-7. **Report in the same turn.** The tool result already carries the summary, the pairs and `withoutResults`: write the report from it. Never end a turn on "let me pull the details" — a spilled file is not a reason to stop.
-8. **Report from data**: start with the coverage line from `get_sourcing_ledger` (`pairs.coverageLine`, pass `projectId` and `roles`), which counts company × role pairs, then one short table (company, role, person, title, rung, confidence, source), then the pairs without a person and why, the spend, and the budget left. A company with the CEO found and the manufacturing head none_found is one covered pair and one none_found pair, not "covered". If coverage is exhaustive, quote the universe and the deferred count; if it is best effort, say so.
-
-### Pool size
-
-The tool keeps up to 3 people per company, or one per role when more roles were asked, so N companies give at most max(3, roles) x N people. Name the pool in your report. If the target is larger (two named companies and a target of 30), say so before the call, build peer companies with `playbook-company-first`, and ask once whether to widen to peers.
+4. **The rest.** Call again without `pilotSize`. A background run, `deferredByBudget`, or a pair you cannot settle: load `sourcing` sections `["run-edge"]`.
+5. **Profiles.** Bright Data matches arrive with their profile stored on the row. A person found only by Google has a name and a LinkedIn URL at most: run `fetch_profiles` before scoring.
+6. **Report in the same turn.** The tool result already carries the summary, the pairs and `withoutResults`: write the report from it. Never end a turn on "let me pull the details" — a spilled file is not a reason to stop.
+7. **Report from data**: start with the coverage line from `get_sourcing_ledger` (`pairs.coverageLine`, pass `projectId` and `roles`), which counts company × role pairs, then one short table (company, role, person, title, rung, confidence, source), then the pairs without a person and why, the spend, and the budget left. A company with the CEO found and the manufacturing head none_found is one covered pair and one none_found pair, not "covered". If coverage is exhaustive, quote the universe and the deferred count; if it is best effort, say so.
 
 ### Only when the user names LinkedIn
 

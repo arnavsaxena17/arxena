@@ -95,6 +95,67 @@ const readFieldValue = (row: OutreachTabRow, key: string): unknown => {
   return (row as unknown as Record<string, unknown>)[key];
 };
 
+// "Top 10 companies by headcount" is a sort, not a filter: without this the
+// only way to rank a tab is to page it, which the skill forbids. Numbers
+// compare as numbers ("15578" over "307"), everything else as text; a row with
+// no value sorts last in both directions so it never poses as the smallest.
+export const sortOutreachTabRows = (
+  rows: OutreachTabRow[],
+  sort: Array<{ columnId: string; direction: 'asc' | 'desc' }>,
+): OutreachTabRow[] => {
+  if (sort.length === 0) {
+    return rows;
+  }
+
+  const toNumber = (value: unknown): number | undefined => {
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : undefined;
+    }
+
+    if (typeof value !== 'string') {
+      return undefined;
+    }
+
+    const digits = value.replace(/[,\s]/g, '').match(/-?\d+(\.\d+)?/g);
+
+    return digits === null ? undefined : Number(digits[0]);
+  };
+
+  const compare = (left: OutreachTabRow, right: OutreachTabRow): number => {
+    for (const { columnId, direction } of sort) {
+      const leftValue = readFieldValue(left, columnId);
+      const rightValue = readFieldValue(right, columnId);
+
+      const leftEmpty = leftValue === undefined || leftValue === null || leftValue === '';
+      const rightEmpty = rightValue === undefined || rightValue === null || rightValue === '';
+
+      if (leftEmpty || rightEmpty) {
+        if (leftEmpty !== rightEmpty) {
+          return leftEmpty ? 1 : -1;
+        }
+
+        continue;
+      }
+
+      const leftNumber = toNumber(leftValue);
+      const rightNumber = toNumber(rightValue);
+
+      const result =
+        leftNumber !== undefined && rightNumber !== undefined
+          ? leftNumber - rightNumber
+          : String(leftValue).localeCompare(String(rightValue));
+
+      if (result !== 0) {
+        return direction === 'asc' ? result : -result;
+      }
+    }
+
+    return 0;
+  };
+
+  return [...rows].sort(compare);
+};
+
 // Only the asked-for fields, so a sample row costs a few tokens instead of
 // the whole otherFields blob with its aiColumns meta.
 export const pickOutreachTabFields = (

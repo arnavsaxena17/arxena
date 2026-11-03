@@ -30,31 +30,19 @@ search_bright_data_business({
 
 ### Ludicrous query
 
-Pass the user's sentence as `query`; do not turn it into a taxonomy filter.
-
-**Pass the industry label with it.** Before the estimate, resolve the segment with `get_source_capabilities({ entity: "company", want: ["industry"], term: "<segment>" })` and pass `industries` with the exact label(s) it returns. The planner may not broaden "glass manufacturing" to "Manufacturing" or invent a label. A made-up label matches nothing; a real one is the strongest company filter the data has.
-
-```
-search_bright_data_business({
-  "entity": "company",
-  "query": "glass manufacturing companies in India",
-  "industries": ["Glass, Ceramics and Concrete Manufacturing"]
-})
-```
+**You pass one sentence and a budget. There is no filter argument.** The planner
+compiles the sentence into the query, so every constraint you care about must be
+in the words you write: *"glass manufacturing companies headquartered in Mumbai,
+founded after 2010, excluding trading houses"*. A label you try to pass as an
+argument is not a parameter and is dropped.
 
 **What a query may say.** Only ideas the company data holds: what the company is (industry, about, specialties, name), where (country, city), organization type, founded year, employee size, funding, followers. Write "cosmetics and beauty retail companies in India", never "... with stores and outlets", "chain", "franchise", store counts, revenue or ad activity: those words are not in the data, so they break matching. Score those facts afterwards with enrichment columns (see **Scored lists**, then `ai-filter-enrich`).
 
-**How the query is built (server side, you only pass the sentence).** The planner turns the request into a structured ludicrous `query` and always fetches `view: "full"`. Conditions are `and` / `or` / `not` over `text` (text fields), `equals` / `in` / `range` (typed fields). Text fields take only `text`, typed fields never take `text`, and single-value `in` on array fields stays `in`. Topic words use `mode: "all"` (every word required). Example:
-
-```json
-{ "and": [
-  { "or": [
-    { "text": { "about": { "value": "quick service restaurant", "mode": "all" } } },
-    { "text": { "specialties": { "value": "quick service restaurant", "mode": "all" } } }
-  ] },
-  { "in": { "offices_country_codes": ["IN"] } }
-] }
-```
+**Before you fund it, read what it compiled.** The estimate returns
+`intentSummary`, `relevanceCriteria` and the compiled `query` per slice, plus
+each slice's `samplePrecision`. Check three things: the industry is the one you
+wrote, there is no slice you did not ask for, and the precision is not low. If
+any check fails, rewrite the sentence and estimate again — do not fund it.
 
 {{include: bright-data-ludicrous-budget}}
 

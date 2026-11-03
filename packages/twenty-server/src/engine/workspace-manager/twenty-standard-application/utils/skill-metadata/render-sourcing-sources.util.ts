@@ -107,6 +107,32 @@ const renderLearnTools = (entity: SourcingEntity): string => {
   ].join('\n');
 };
 
+// What a source hands back is what makes chaining possible: a row without a
+// LinkedIn URL cannot be deduped, CRM-saved or profile-fetched. Only the keys a
+// next step can consume are rendered; the full field list is a runtime question
+// for get_source_capabilities, and listing it here costs more than it decides.
+const CHAIN_KEYS = ['linkedinUrl', 'profile', 'domain', 'employees'];
+
+const renderReturns = (entity: 'company' | 'person'): string => {
+  const labels = new Map(
+    SOURCING_SOURCES.map((source) => [source.key, source.label]),
+  );
+
+  return [
+    '| Source | Chains on |',
+    '| --- | --- |',
+    ...SOURCE_CAPABILITIES.filter((entry) => entry.entity === entity).map(
+      (entry) => {
+        const keys = CHAIN_KEYS.filter((key) => entry.returns.includes(key));
+
+        return `| ${labels.get(entry.key) ?? entry.key} | ${
+          keys.length > 0 ? keys.join(', ') : '— nothing to chain on'
+        } |`;
+      },
+    ),
+  ].join('\n');
+};
+
 // Which picked source can filter on which field; the table a question should be
 // built from instead of a filter the source does not have
 const renderCapabilities = (entity: 'company' | 'person'): string => {
@@ -216,6 +242,19 @@ const renderBlock = (
 
   if (block === 'limits' && argument !== undefined) {
     return renderLimits(argument);
+  }
+
+  if (block === 'returns') {
+    const entity =
+      argument === 'people' || argument === 'person'
+        ? 'person'
+        : argument === 'companies' || argument === 'company'
+          ? 'company'
+          : undefined;
+
+    if (entity !== undefined) {
+      return renderReturns(entity);
+    }
   }
 
   return undefined;

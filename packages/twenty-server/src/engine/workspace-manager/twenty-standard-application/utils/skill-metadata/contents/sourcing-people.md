@@ -1,5 +1,19 @@
 ## People
 
+### What each source hands back
+
+{{sources: returns people}}
+
+`returns` is a ceiling, not a promise: any field can be null on any row. A row
+without a `linkedinUrl` cannot be deduped, saved to the CRM or profile-fetched.
+
+**One key chains the sources: `linkedinUrl`.** A step is worth running only if it
+yields a key the next step consumes. Google search gives the URL but not the
+profile, so a SERP row needs `fetch_profiles` before it can be scored; Bright Data
+people returns the profile and the URL in one call, so for scoring it is usually
+cheaper end to end even at $0.002 a row. When the Arxena index is on, resolve
+there first: it is free and it can filter on `linkedinUrl` itself.
+
 ### What each source can filter on
 
 {{sources: capabilities people}}
@@ -46,9 +60,11 @@ Use only the sources the user picked for this run.
 
 ### Job title rules
 
-- **Always the current title.** Never filter on past titles unless the user asks for "ex-" or "former" people.
-- **Expand titles in the user's words.** Use the synonym ladders (`title-seniority`, in `playbook-shortfall`). `find_people_by_company` applies the title taxonomy on its own. Never drop a title the user named, and never add a lower-level one they did not ask for.
-- **Write each title the way the source expects:** boolean for Sales Navigator and Recruiter, plain words for Bright Data, one per entry for Harvest. Never send boolean syntax to Classic.
-- **Seniority depends on company size.** "Head of X" at a small company can be a manager; at a large company, "Director" can sit below VP. Read the scope on the profile (`scoring`).
-- **Headline against position.** When they disagree, trust the current position in the experience section.
-- **Title at named companies** is `find_people_by_company`, not a title search.
+- **Title and company carry the query; a facet only narrows it.** Seniority, function and industry filters are labels a profile may never have filled in, so a facet-only search misses people a direct title + company search finds: run both as **separate** searches and union the rows.
+- **Current titles**; past titles only for "ex-" or "former".
+- **Expand titles in the user's words** with the synonym ladders (`title-seniority`, in `playbook-shortfall`). Never drop a title the user named, and never add a lower level they did not ask for. `find_people_by_company` applies the taxonomy itself.
+- **Write each title the way the source expects:** boolean for Sales Navigator and Recruiter, plain words for Bright Data, one per entry for Harvest. Classic takes no boolean.
+- **Seniority follows company size.** "Head of X" at a small company can be a manager; "Director" at a large one can sit below VP. Read the scope on the profile (`scoring`).
+- **Headline against position:** trust the current position in experience.
+- **A title at named companies** is `find_people_by_company`, not a title search.
+

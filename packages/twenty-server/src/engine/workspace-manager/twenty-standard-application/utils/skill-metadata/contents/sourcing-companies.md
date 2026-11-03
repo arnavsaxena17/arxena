@@ -4,6 +4,15 @@
 
 {{sources: provider-map companies}}
 
+### What each source hands back
+
+{{sources: returns companies}}
+
+`returns` is a ceiling, not a promise: any field can be null on any row. For a
+company hop, the key you need next is usually the **domain** (it feeds the
+leadership page) or the **`linkedinUrl`** (it feeds the LinkedIn facets). Exa and
+Wikidata hand back neither, so a row from them cannot be carried forward.
+
 ### What each source can filter on
 
 {{sources: capabilities companies}}

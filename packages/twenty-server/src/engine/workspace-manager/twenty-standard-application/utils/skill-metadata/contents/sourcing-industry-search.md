@@ -26,7 +26,7 @@ Use only the sources the user picked for this run, and only those whose tool is 
 | Step | Source | How the industry is matched |
 | --- | --- | --- |
 | 1 | Arxena index, when on (`search_companies_index`, `industry`) | Free and fast, but shallow: name, website, LinkedIn URL, industry, size. A cheap first pool. Companies only |
-| 2 | Bright Data companies (`search_bright_data_business`, `entity: "company"`) | `industry` is a text field (bag of words); the planner also matches about and specialties. Pass the resolved label(s) as `industries` so the planner cannot broaden the segment. The pool, and the fields filtering needs. Estimate first |
+| 2 | Bright Data companies (`search_bright_data_business`, `entity: "company"`) | `industry` is a text field (bag of words); the planner also matches about and specialties. **Put the resolved label(s) in the sentence** — "glass manufacturing companies in India" — because the tool takes no filter argument. The pool, and the fields filtering needs. Estimate first |
 | 3 | Harvest or the user's Sales Navigator | Industry facet by id; resolve the ids with `generate_linkedin_query_set`. Can be multi-select |
 | 4 | Apollo, Exa, Wikidata | Only when the workspace has them switched on |
 
