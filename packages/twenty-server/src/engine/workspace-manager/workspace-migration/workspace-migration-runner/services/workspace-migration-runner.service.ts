@@ -110,10 +110,10 @@ export class WorkspaceMigrationRunnerService {
     allFlatEntityMapsKeys: (keyof AllFlatEntityMaps)[];
     workspaceId: string;
   }): Promise<void> {
-    this.logger.perfTime(
-      'Runner',
-      `Cache invalidation ${allFlatEntityMapsKeys.join()}`,
-    );
+    // this.logger.perfTime(
+    //   'Runner',
+    //   `Cache invalidation ${allFlatEntityMapsKeys.join()}`,
+    // );
 
     await this.flatEntityMapsCacheService.invalidateFlatEntityMaps({
       workspaceId,
@@ -143,10 +143,10 @@ export class WorkspaceMigrationRunnerService {
       );
     }
 
-    this.logger.perfTimeEnd(
-      'Runner',
-      `Cache invalidation ${allFlatEntityMapsKeys.join()}`,
-    );
+    // this.logger.perfTimeEnd(
+    //   'Runner',
+    //   `Cache invalidation ${allFlatEntityMapsKeys.join()}`,
+    // );
   }
 
   private async logBlockingDbActivity(): Promise<void> {
@@ -197,8 +197,8 @@ export class WorkspaceMigrationRunnerService {
       });
     }
 
-    this.logger.perfTime('Runner', 'Total execution');
-    this.logger.perfTime('Runner', 'Initial cache retrieval');
+    // this.logger.perfTime('Runner', 'Total execution');
+    // this.logger.perfTime('Runner', 'Initial cache retrieval');
 
     const initialCacheRetrievalStart = performance.now();
 
@@ -241,15 +241,15 @@ export class WorkspaceMigrationRunnerService {
         flatMapsKeys: allFlatEntityMapsKeys,
       });
 
-    this.logger.perfTimeEnd('Runner', 'Initial cache retrieval');
+    // this.logger.perfTimeEnd('Runner', 'Initial cache retrieval');
 
     const initialCacheRetrievalMs =
       performance.now() - initialCacheRetrievalStart;
 
-    this.logger.perf(
-      `[install-perf] Runner initial cache retrieval (getOrRecomputeManyOrAllFlatEntityMaps) took ${initialCacheRetrievalMs.toFixed(1)}ms for ${allFlatEntityMapsKeys.length} flat-maps keys`,
-      'Runner',
-    );
+    // this.logger.perf(
+    //   `[install-perf] Runner initial cache retrieval (getOrRecomputeManyOrAllFlatEntityMaps) took ${initialCacheRetrievalMs.toFixed(1)}ms for ${allFlatEntityMapsKeys.length} flat-maps keys`,
+    //   'Runner',
+    // );
 
     const { flatApplicationMaps } =
       await this.workspaceCacheService.getOrRecompute(workspaceId, [
@@ -274,7 +274,7 @@ export class WorkspaceMigrationRunnerService {
     const preallocatedIdByUniversalIdentifierByMetadataName =
       buildPreallocatedIdByUniversalIdentifierFromActions(actions);
 
-    this.logger.perfTime('Runner', 'Transaction execution');
+    // this.logger.perfTime('Runner', 'Transaction execution');
 
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -328,10 +328,10 @@ export class WorkspaceMigrationRunnerService {
         }
 
         if (actionMs > 50) {
-          this.logger.perf(
-            `[install-perf] slow action ${action.type}:${action.metadataName} took ${actionMs.toFixed(1)}ms`,
-            'Runner',
-          );
+          // this.logger.perf(
+          //   `[install-perf] slow action ${action.type}:${action.metadataName} took ${actionMs.toFixed(1)}ms`,
+          //   'Runner',
+          // );
         }
 
         allFlatEntityMaps = {
@@ -354,12 +354,12 @@ export class WorkspaceMigrationRunnerService {
       const commitMs = performance.now() - commitStart;
       const transactionMs = performance.now() - transactionStart;
 
-      this.logger.perf(
-        `[install-perf] Runner transaction summary: ${actionCount} actions, total transaction ${transactionMs.toFixed(1)}ms (commit ${commitMs.toFixed(1)}ms), slowest action ${slowestActionLabel} ${slowestActionMs.toFixed(1)}ms`,
-        'Runner',
-      );
+      // this.logger.perf(
+      //   `[install-perf] Runner transaction summary: ${actionCount} actions, total transaction ${transactionMs.toFixed(1)}ms (commit ${commitMs.toFixed(1)}ms), slowest action ${slowestActionLabel} ${slowestActionMs.toFixed(1)}ms`,
+      //   'Runner',
+      // );
 
-      this.logger.perfTimeEnd('Runner', 'Transaction execution');
+      // this.logger.perfTimeEnd('Runner', 'Transaction execution');
     } catch (error) {
       this.logger.error(
         `[install-perf] migration failed after ${actionCount} action(s): ${
@@ -443,10 +443,10 @@ export class WorkspaceMigrationRunnerService {
     const postCommitInvalidateMs =
       performance.now() - postCommitInvalidateStart;
 
-    this.logger.perf(
-      `[install-perf] Runner post-commit invalidateCache took ${postCommitInvalidateMs.toFixed(1)}ms for ${allFlatEntityMapsKeys.length} flat-maps keys`,
-      'Runner',
-    );
+    // this.logger.perf(
+    //   `[install-perf] Runner post-commit invalidateCache took ${postCommitInvalidateMs.toFixed(1)}ms for ${allFlatEntityMapsKeys.length} flat-maps keys`,
+    //   'Runner',
+    // );
 
     const sideEffectResults = await Promise.allSettled(
       allAfterCommitSideEffects.map((sideEffect) =>
@@ -471,7 +471,7 @@ export class WorkspaceMigrationRunnerService {
       allFlatEntityMapsKeys.includes('flatObjectMetadataMaps') ||
       allFlatEntityMapsKeys.includes('flatFieldMetadataMaps');
 
-    this.logger.perfTimeEnd('Runner', 'Total execution');
+    // this.logger.perfTimeEnd('Runner', 'Total execution');
 
     return {
       allFlatEntityMaps,

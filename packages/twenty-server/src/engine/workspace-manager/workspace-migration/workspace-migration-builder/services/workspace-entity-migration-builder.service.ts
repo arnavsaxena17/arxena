@@ -70,14 +70,14 @@ export abstract class WorkspaceEntityMigrationBuilderService<
     additionalCacheDataMaps,
     workspaceId,
   }: ValidateAndBuildArgs<T>): ValidateAndBuildReturnType<T> {
-    this.logger.perfTime(
-      `EntityBuilder ${this.metadataName}`,
-      'validateAndBuild',
-    );
-    this.logger.perfTime(
-      `EntityBuilder ${this.metadataName}`,
-      'matrix computation',
-    );
+    // this.logger.perfTime(
+    //   `EntityBuilder ${this.metadataName}`,
+    //   'validateAndBuild',
+    // );
+    // this.logger.perfTime(
+    //   `EntityBuilder ${this.metadataName}`,
+    //   'matrix computation',
+    // );
 
     const fromFlatEntities = Object.values(
       fromFlatEntityMaps.byUniversalIdentifier,
@@ -97,14 +97,14 @@ export abstract class WorkspaceEntityMigrationBuilderService<
       buildOptions,
     });
 
-    this.logger.perfTimeEnd(
-      `EntityBuilder ${this.metadataName}`,
-      'matrix computation',
-    );
-    this.logger.perfTime(
-      `EntityBuilder ${this.metadataName}`,
-      'entity processing',
-    );
+    // this.logger.perfTimeEnd(
+    //   `EntityBuilder ${this.metadataName}`,
+    //   'matrix computation',
+    // );
+    // this.logger.perfTime(
+    //   `EntityBuilder ${this.metadataName}`,
+    //   'entity processing',
+    // );
 
     const flatEntityMapsKey = getMetadataFlatEntityMapsKey(this.metadataName);
     const actionsResult = getMetadataEmptyWorkspaceMigrationActionRecord(
@@ -113,10 +113,10 @@ export abstract class WorkspaceEntityMigrationBuilderService<
     const allValidationResult: FailedFlatEntityValidateAndBuild<T>['errors'] =
       [];
 
-    this.logger.perfTime(
-      `EntityBuilder ${this.metadataName}`,
-      'deletion validation',
-    );
+    // this.logger.perfTime(
+    //   `EntityBuilder ${this.metadataName}`,
+    //   'deletion validation',
+    // );
 
     const remainingFlatEntityMapsToDelete = structuredClone(
       deletedFlatEntityMaps,
@@ -179,14 +179,14 @@ export abstract class WorkspaceEntityMigrationBuilderService<
       );
     }
 
-    this.logger.perfTimeEnd(
-      `EntityBuilder ${this.metadataName}`,
-      'deletion validation',
-    );
-    this.logger.perfTime(
-      `EntityBuilder ${this.metadataName}`,
-      'creation validation',
-    );
+    // this.logger.perfTimeEnd(
+    //   `EntityBuilder ${this.metadataName}`,
+    //   'deletion validation',
+    // );
+    // this.logger.perfTime(
+    //   `EntityBuilder ${this.metadataName}`,
+    //   'creation validation',
+    // );
 
     const remainingFlatEntityMapsToCreate = structuredClone(
       createdFlatEntityMaps,
@@ -259,14 +259,14 @@ export abstract class WorkspaceEntityMigrationBuilderService<
       actionsResult.create.push(formattedNewCreateAction);
     }
 
-    this.logger.perfTimeEnd(
-      `EntityBuilder ${this.metadataName}`,
-      'creation validation',
-    );
-    this.logger.perfTime(
-      `EntityBuilder ${this.metadataName}`,
-      'update validation',
-    );
+    // this.logger.perfTimeEnd(
+    //   `EntityBuilder ${this.metadataName}`,
+    //   'creation validation',
+    // );
+    // this.logger.perfTime(
+    //   `EntityBuilder ${this.metadataName}`,
+    //   'update validation',
+    // );
 
     for (const flatEntityToUpdateUniversalIdentifier in updatedFlatEntityMaps.byUniversalIdentifier) {
       const flatEntityUpdate =
@@ -346,14 +346,14 @@ export abstract class WorkspaceEntityMigrationBuilderService<
       );
     }
 
-    this.logger.perfTimeEnd(
-      `EntityBuilder ${this.metadataName}`,
-      'update validation',
-    );
-    this.logger.perfTimeEnd(
-      `EntityBuilder ${this.metadataName}`,
-      'entity processing',
-    );
+    // this.logger.perfTimeEnd(
+    //   `EntityBuilder ${this.metadataName}`,
+    //   'update validation',
+    // );
+    // this.logger.perfTimeEnd(
+    //   `EntityBuilder ${this.metadataName}`,
+    //   'entity processing',
+    // );
 
     if (allValidationResult.length > 0) {
       return {
@@ -362,10 +362,10 @@ export abstract class WorkspaceEntityMigrationBuilderService<
       };
     }
 
-    this.logger.perfTimeEnd(
-      `EntityBuilder ${this.metadataName}`,
-      'validateAndBuild',
-    );
+    // this.logger.perfTimeEnd(
+    //   `EntityBuilder ${this.metadataName}`,
+    //   'validateAndBuild',
+    // );
 
     return {
       status: 'success',

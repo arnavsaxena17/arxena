@@ -110,10 +110,10 @@ export class WorkspaceMigrationValidateBuildAndRunService {
         });
     const buildMs = performance.now() - buildStart;
 
-    this.logger.perf(
-      `[install-perf] buildWorkspaceMigration took ${buildMs.toFixed(1)}ms (status=${validateAndBuildResult.status})`,
-      WorkspaceMigrationValidateBuildAndRunService.name,
-    );
+    // this.logger.perf(
+    //   `[install-perf] buildWorkspaceMigration took ${buildMs.toFixed(1)}ms (status=${validateAndBuildResult.status})`,
+    //   WorkspaceMigrationValidateBuildAndRunService.name,
+    // );
 
     if (validateAndBuildResult.status === 'fail') {
       if (this.isDebugEnabled) {
@@ -149,10 +149,10 @@ export class WorkspaceMigrationValidateBuildAndRunService {
         (actionCountsByTypeAndMetadataName[key] ?? 0) + 1;
     }
 
-    this.logger.perf(
-      `[install-perf] validateBuildAndRunWorkspaceMigrationFromTo running ${workspaceMigration.actions.length} actions: ${JSON.stringify(actionCountsByTypeAndMetadataName)}`,
-      WorkspaceMigrationValidateBuildAndRunService.name,
-    );
+    // this.logger.perf(
+    //   `[install-perf] validateBuildAndRunWorkspaceMigrationFromTo running ${workspaceMigration.actions.length} actions: ${JSON.stringify(actionCountsByTypeAndMetadataName)}`,
+    //   WorkspaceMigrationValidateBuildAndRunService.name,
+    // );
 
     const runStart = performance.now();
     const { hasSchemaMetadataChanged, metadataEvents } =
@@ -162,10 +162,10 @@ export class WorkspaceMigrationValidateBuildAndRunService {
       });
     const runMs = performance.now() - runStart;
 
-    this.logger.perf(
-      `[install-perf] workspaceMigrationRunnerService.run took ${runMs.toFixed(1)}ms for ${workspaceMigration.actions.length} actions`,
-      WorkspaceMigrationValidateBuildAndRunService.name,
-    );
+    // this.logger.perf(
+    //   `[install-perf] workspaceMigrationRunnerService.run took ${runMs.toFixed(1)}ms for ${workspaceMigration.actions.length} actions`,
+    //   WorkspaceMigrationValidateBuildAndRunService.name,
+    // );
 
     this.metadataEventEmitter.emitMetadataEvents({
       metadataEvents: metadataEvents,

@@ -117,10 +117,10 @@ export class UpdateLogicFunctionActionHandlerService extends WorkspaceMigrationR
 
       const deleteFileMs = performance.now() - deleteFileStart;
 
-      this.logger.perf(
-        `[install-perf] update logicFunction fileStorageService.deleteFile took ${deleteFileMs.toFixed(1)}ms (fnId=${entityId})`,
-        UpdateLogicFunctionActionHandlerService.name,
-      );
+      // this.logger.perf(
+      //   `[install-perf] update logicFunction fileStorageService.deleteFile took ${deleteFileMs.toFixed(1)}ms (fnId=${entityId})`,
+      //   UpdateLogicFunctionActionHandlerService.name,
+      // );
     }
   }
 

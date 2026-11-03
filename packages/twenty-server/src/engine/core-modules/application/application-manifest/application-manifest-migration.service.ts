@@ -184,10 +184,10 @@ export class ApplicationManifestMigrationService {
     );
     const recomputeMs = performance.now() - recomputeStart;
 
-    this.logger.perf(
-      `[install-perf] syncMetadataFromManifest ALL_METADATA_NAME getOrRecompute flat-maps took ${recomputeMs.toFixed(1)}ms (logicFunctions=${manifest.logicFunctions.length})`,
-      ApplicationManifestMigrationService.name,
-    );
+    // this.logger.perf(
+    //   `[install-perf] syncMetadataFromManifest ALL_METADATA_NAME getOrRecompute flat-maps took ${recomputeMs.toFixed(1)}ms (logicFunctions=${manifest.logicFunctions.length})`,
+    //   ApplicationManifestMigrationService.name,
+    // );
 
     const { featureFlagsMap: _featureFlagsMap, ...existingAllFlatEntityMaps } =
       cacheResult;
@@ -231,10 +231,10 @@ export class ApplicationManifestMigrationService {
       );
     const validateBuildRunMs = performance.now() - validateBuildRunStart;
 
-    this.logger.perf(
-      `[install-perf] syncMetadataFromManifest validateBuildAndRunWorkspaceMigrationFromTo took ${validateBuildRunMs.toFixed(1)}ms (dryRun=${dryRun}, actions=${validateAndBuildResult.status === 'success' ? validateAndBuildResult.workspaceMigration.actions.length : 'n/a-failed'})`,
-      ApplicationManifestMigrationService.name,
-    );
+    // this.logger.perf(
+    //   `[install-perf] syncMetadataFromManifest validateBuildAndRunWorkspaceMigrationFromTo took ${validateBuildRunMs.toFixed(1)}ms (dryRun=${dryRun}, actions=${validateAndBuildResult.status === 'success' ? validateAndBuildResult.workspaceMigration.actions.length : 'n/a-failed'})`,
+    //   ApplicationManifestMigrationService.name,
+    // );
 
     if (validateAndBuildResult.status === 'fail') {
       throw new WorkspaceMigrationBuilderException(

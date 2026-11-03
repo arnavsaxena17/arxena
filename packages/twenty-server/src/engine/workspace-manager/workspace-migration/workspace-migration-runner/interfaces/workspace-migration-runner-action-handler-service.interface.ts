@@ -323,15 +323,15 @@ export abstract class BaseWorkspaceMigrationRunnerActionHandlerService<
     label: string;
     method: () => Promise<void>;
   }): Promise<void> {
-    this.logger.perfTime(
-      'BaseWorkspaceMigrationRunnerActionHandlerService',
-      `${this.actionType}_${this.metadataName} ${label}`,
-    );
+    // this.logger.perfTime(
+    //   'BaseWorkspaceMigrationRunnerActionHandlerService',
+    //   `${this.actionType}_${this.metadataName} ${label}`,
+    // );
     await method();
-    this.logger.perfTimeEnd(
-      'BaseWorkspaceMigrationRunnerActionHandlerService',
-      `${this.actionType}_${this.metadataName} ${label}`,
-    );
+    // this.logger.perfTimeEnd(
+    //   'BaseWorkspaceMigrationRunnerActionHandlerService',
+    //   `${this.actionType}_${this.metadataName} ${label}`,
+    // );
   }
 }
 
