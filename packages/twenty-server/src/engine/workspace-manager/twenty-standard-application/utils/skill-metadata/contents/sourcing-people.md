@@ -60,7 +60,7 @@ Use only the sources the user picked for this run.
 
 ### Job title rules
 
-- **Title and company carry the query; a facet only narrows it.** Seniority, function and industry filters are labels a profile may never have filled in, so a facet-only search misses people a direct title + company search finds: run both as **separate** searches and union the rows.
+- **Vary the carrier; never trust one combination.** Harvest ANDs every parameter, so one unmet word returns nothing. Run the query as several searches — title + company, title alone, keywords alone, and a facet browse — and union them. Facets are labels a profile may skip, so a facet-only search loses people a direct title search finds.
 - **Current titles**; past titles only for "ex-" or "former".
 - **Expand titles in the user's words** with the synonym ladders (`title-seniority`, in `playbook-shortfall`). Never drop a title the user named, and never add a lower level they did not ask for. `find_people_by_company` applies the taxonomy itself.
 - **Write each title the way the source expects:** boolean for Sales Navigator and Recruiter, plain words for Bright Data, one per entry for Harvest. Classic takes no boolean.

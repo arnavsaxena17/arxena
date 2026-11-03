@@ -1,5 +1,3 @@
-import type { SearchQuerySet } from 'src/engine/core-modules/linkedin-query-generation/types/linkedin-query-generation.types';
-
 import {
   HARVEST_INDUSTRY_ID_BY_LABEL,
   normalizeHarvestFilterLabel,
@@ -7,6 +5,8 @@ import {
   resolveHarvestIndustryIds,
   resolveHarvestSeniorityLevelIds,
 } from 'src/engine/core-modules/candidate-search/constants/harvest-filter-ids';
+import type { SearchQuerySet } from 'src/engine/core-modules/linkedin-query-generation/types/linkedin-query-generation.types';
+import { type LinkedInSeniorityType } from 'src/engine/core-modules/linkedin-search/types/linkedin-search-parameter.type';
 
 import { splitHarvestTitleList } from './harvest-search-params.util';
 
@@ -26,8 +26,22 @@ export type HarvestQuerySetSearch = {
   unresolvedFilters?: string[];
 };
 
-const toNames = (values: string[] | null): string[] =>
-  [...new Set((values ?? []).map((value) => value.trim()).filter(Boolean))];
+// Harvest bills per call, so the ladder is capped. The order is the order of
+// value: the full query first, then the two single-carrier relaxations, then
+// the facet browse. A query with fewer carriers produces fewer searches.
+export const HARVEST_MAX_SEARCHES_PER_QUERY = 4;
+
+type HarvestParameters = Record<string, string[] | string>;
+
+type Variant = {
+  kind: string;
+  label?: string;
+  parameters: HarvestParameters;
+};
+
+const toNames = (values: string[] | null | undefined): string[] => [
+  ...new Set((values ?? []).map((value) => value.trim()).filter(Boolean)),
+];
 
 const andClauses = (clauses: Array<string | undefined>): string | undefined => {
   const present = clauses.filter((clause): clause is string => !!clause);
@@ -37,6 +51,151 @@ const andClauses = (clauses: Array<string | undefined>): string | undefined => {
   }
 
   return present.map((clause) => `(${clause})`).join(' AND ');
+};
+
+/**
+ * One query, several searches.
+ *
+ * Harvest ANDs every parameter, so a single query silently returns nothing when
+ * one constraint is unmet: a person whose title is worded differently, whose
+ * employer's industry label differs, or who never filled in a seniority. Each
+ * AND is a chance to zero out, so the carriers are varied rather than trusted in
+ * combination — the same idea as relaxing one constraint at a time in
+ * `playbook-shortfall`, done up front instead of after a shortfall.
+ *
+ * Location and the excludes are fences the user stated, so every variant keeps
+ * them; only the carriers (titles, keywords) and the facet ids are varied.
+ */
+const buildPeopleVariants = (query: {
+  keywords?: string;
+  jobTitle?: string;
+  locations: string[];
+  excludedLocations: string[];
+  excludedCompanies: string[];
+}): { variants: Variant[]; unresolvedFilters: string[] } => {
+  const {
+    keywords,
+    jobTitle,
+    locations,
+    excludedLocations,
+    excludedCompanies,
+  } = query;
+
+  const titles = jobTitle ? splitHarvestTitleList(jobTitle) : [];
+  const search = andClauses([
+    keywords,
+    titles === null ? jobTitle : undefined,
+  ]);
+
+  const fence: HarvestParameters = {
+    ...(locations.length > 0 ? { locations } : {}),
+    ...(excludedLocations.length > 0 && { excludeLocations: excludedLocations }),
+    ...(excludedCompanies.length > 0 && {
+      excludeCurrentCompanies: excludedCompanies,
+    }),
+  };
+  const fenceKeys = Object.keys(fence).length;
+
+  const direct = (extra: HarvestParameters): HarvestParameters => ({
+    ...fence,
+    ...extra,
+  });
+  const isCarrier = (parameters: HarvestParameters): boolean =>
+    Object.keys(parameters).length > fenceKeys;
+
+  const variants: Variant[] = [];
+
+  // 1. everything the query holds, as written
+  const full = direct({
+    ...(search ? { search } : {}),
+    ...(titles && titles.length > 0 ? { currentJobTitles: titles } : {}),
+  });
+
+  if (isCarrier(full)) {
+    variants.push({ kind: 'all', parameters: full });
+  }
+
+  // 2. titles alone: a profile worded like the title but missing the keyword
+  if (titles && titles.length > 0) {
+    variants.push({
+      kind: 'titles',
+      label: 'titles only',
+      parameters: direct({ currentJobTitles: titles }),
+    });
+  }
+
+  // 3. keywords alone: the role described in words rather than a clean title
+  if (keywords) {
+    variants.push({
+      kind: 'keywords',
+      label: 'keywords only',
+      parameters: direct({ search: keywords }),
+    });
+  }
+
+  // 4. what the query carries at all, when only the fence is left
+  if (variants.length === 0) {
+    variants.push({ kind: 'all', parameters: fence });
+  }
+
+  return { variants, unresolvedFilters: [] };
+};
+
+const buildFacetVariant = (query: {
+  locations: string[];
+  excludedLocations: string[];
+  excludedCompanies: string[];
+  industryTerms: string[];
+  seniority?: LinkedInSeniorityType | null;
+  functionRoot?: string | null;
+  excludedIndustries: string[];
+}): { variant?: Variant; unresolvedFilters: string[] } => {
+  const {
+    locations,
+    excludedLocations,
+    excludedCompanies,
+    industryTerms,
+    seniority,
+    functionRoot,
+    excludedIndustries,
+  } = query;
+
+  const industryIds = resolveHarvestIndustryIds(industryTerms);
+  const unresolvedFilters = industryTerms
+    .filter(
+      (label) => !HARVEST_INDUSTRY_ID_BY_LABEL[normalizeHarvestFilterLabel(label)],
+    )
+    .map(
+      (label) =>
+        `industry "${label}" has no Harvest industry id, so it was not sent`,
+    );
+
+  const seniorityIds = resolveHarvestSeniorityLevelIds(
+    seniority ? [seniority] : [],
+  );
+  const functionId = resolveHarvestFunctionIdForRoot(functionRoot ?? null);
+  const excludedIndustryIds = resolveHarvestIndustryIds(excludedIndustries);
+
+  const parameters: HarvestParameters = {
+    ...(locations.length > 0 ? { locations } : {}),
+    ...(excludedLocations.length > 0 && { excludeLocations: excludedLocations }),
+    ...(excludedCompanies.length > 0 && {
+      excludeCurrentCompanies: excludedCompanies,
+    }),
+    ...(industryIds.length > 0 && { industryIds }),
+    ...(seniorityIds.length > 0 && { seniorityLevelIds: seniorityIds }),
+    ...(functionId ? { functionIds: [functionId] } : {}),
+    ...(excludedIndustryIds.length > 0 && {
+      excludeIndustryIds: excludedIndustryIds,
+    }),
+  };
+
+  const hasFacet =
+    industryIds.length > 0 || seniorityIds.length > 0 || Boolean(functionId);
+
+  return hasFacet
+    ? { variant: { kind: 'facet', label: 'facet browse', parameters }, unresolvedFilters }
+    : { variant: undefined, unresolvedFilters };
 };
 
 // Harvest takes titles and locations as text, so a generated query set maps
@@ -51,161 +210,101 @@ export const mapLinkedinQuerySetToHarvestParameters = ({
   const seen = new Set<string>();
 
   return querySet.search_query_set.flatMap((query, index) => {
-    const unresolvedFilters: string[] = [];
     const keywords = query.keywords?.trim() || undefined;
     const jobTitle = query.job_title?.trim() || undefined;
     const locations = toNames(query.location);
-    let searchParameters: Record<string, string[] | string>;
-    let companyNames: string[] = [];
 
-    if (category === 'people') {
-      const titles = jobTitle ? splitHarvestTitleList(jobTitle) : [];
-      const search = andClauses([
-        keywords,
-        titles === null ? jobTitle : undefined,
-      ]);
-      companyNames = toNames(query.company);
-
-      // Harvest's leads search has a named exclude* parameter for each facet;
-      // sending "not these" as a keyword would be silently ignored instead
-      const excludedLocations = toNames(query.exclude_locations ?? null);
-      const excludedCompanies = toNames(query.exclude_companies ?? null);
-
-      // Harvest takes industries, seniority and function only as ids. The
-      // taxonomy resolves names against the vendor's own tables; a label it
-      // cannot match is reported rather than sent as a near-miss id, because
-      // Harvest accepts a valid-but-wrong id and quietly returns a different
-      // population.
-      const industryLabels = toNames(query.industry_terms ?? null);
-      const industryIds = resolveHarvestIndustryIds(industryLabels);
-      const unresolvedIndustries = industryLabels.filter(
-        (label) => !HARVEST_INDUSTRY_ID_BY_LABEL[normalizeHarvestFilterLabel(label)],
-      );
-      const seniorityIds = resolveHarvestSeniorityLevelIds(
-        query.seniority ? [query.seniority] : [],
-      );
-      const functionId = resolveHarvestFunctionIdForRoot(
-        query.function ?? null,
-      );
-      const excludedIndustryIds = resolveHarvestIndustryIds(
-        toNames(query.exclude_industries ?? null),
-      );
-
-      // A facet is a sieve, not a net: Harvest ANDs every parameter, and the
-      // seniority, function and industry ids are labels a profile may never
-      // carry. A direct title + company search finds people the facets exclude,
-      // so the two are sent as separate searches and unioned on read rather
-      // than combined into one narrower query.
-      const shared = {
-        ...(locations.length > 0 ? { locations } : {}),
-        ...(excludedLocations.length > 0 && {
-          excludeLocations: excludedLocations,
-        }),
-        ...(excludedCompanies.length > 0 && {
-          excludeCurrentCompanies: excludedCompanies,
-        }),
+    if (category !== 'people') {
+      // A company search has no employer list to resolve; the names it was
+      // given are the companies themselves, not employers to turn into URLs
+      const companyNames: string[] = [];
+      // Harvest's company search takes `location`; `headquarterLocations` is a
+      // people-search name and would be dropped without an error
+      const companySearch: HarvestParameters = {
+        ...(keywords ? { search: keywords } : {}),
+        ...(locations.length > 0 ? { location: locations } : {}),
       };
-      const direct = {
-        ...shared,
-        ...(search ? { search } : {}),
-        ...(titles && titles.length > 0 ? { currentJobTitles: titles } : {}),
-      };
-      const faceted = {
-        ...shared,
-        ...(industryIds.length > 0 && { industryIds }),
-        ...(seniorityIds.length > 0 && { seniorityLevelIds: seniorityIds }),
-        ...(functionId ? { functionIds: [functionId] } : {}),
-        ...(excludedIndustryIds.length > 0 && {
-          excludeIndustryIds: excludedIndustryIds,
-        }),
-      };
-      const hasDirect = Object.keys(direct).length > Object.keys(shared).length;
-      const hasFaceted =
-        Object.keys(faceted).length > Object.keys(shared).length;
-      const variants: Array<{
-        kind: 'direct' | 'faceted';
-        parameters: Record<string, string[] | string>;
-      }> = [
-        ...(hasDirect ? [{ kind: 'direct' as const, parameters: direct }] : []),
-        ...(hasFaceted
-          ? [{ kind: 'faceted' as const, parameters: faceted }]
-          : []),
-        // Neither carrier nor facet: keep the location/company shell so a
-        // location-only search is still a search
-        ...(!hasDirect && !hasFaceted
-          ? [{ kind: 'direct' as const, parameters: shared }]
-          : []),
-      ];
+      const signature = JSON.stringify([companySearch, companyNames]);
 
-      if (unresolvedIndustries.length > 0) {
-        unresolvedFilters.push(
-          ...unresolvedIndustries.map(
-            (label) =>
-              `industry "${label}" has no Harvest industry id, so it was not sent`,
-          ),
-        );
+      if (
+        (Object.keys(companySearch).length === 0 && companyNames.length === 0) ||
+        seen.has(signature)
+      ) {
+        return [];
       }
 
-      return variants.flatMap((variant) => {
-        const signature = JSON.stringify([variant.parameters, companyNames]);
+      seen.add(signature);
 
-        if (
-          (Object.keys(variant.parameters).length === 0 &&
-            companyNames.length === 0) ||
-          seen.has(signature)
-        ) {
-          return [];
-        }
-
-        seen.add(signature);
-
-        return [
-          {
-            id: `harvest-query-${category}-${index + 1}-${variant.kind}`,
-            label: [
-              variant.kind === 'faceted' ? 'facet browse' : undefined,
-              keywords,
-              jobTitle,
-              ...locations,
-              ...companyNames,
-            ]
-              .filter(Boolean)
-              .join(' · '),
-            searchParameters: variant.parameters,
-            companyNames,
-            ...(unresolvedFilters.length > 0 && { unresolvedFilters }),
-          },
-        ];
-      });
-
+      return [
+        {
+          id: `harvest-query-${category}-${index + 1}`,
+          label: [keywords, jobTitle, ...locations, ...companyNames]
+            .filter(Boolean)
+            .join(' · '),
+          searchParameters: companySearch,
+          companyNames,
+        },
+      ];
     }
 
-    // Companies: Harvest's company search takes `location`; `headquarterLocations`
-    // is a people-search name and would be dropped without an error
-    const companySearch = {
-      ...(keywords ? { search: keywords } : {}),
-      ...(locations.length > 0 ? { location: locations } : {}),
-    };
-    const companySignature = JSON.stringify([companySearch, companyNames]);
+    const companyNames = toNames(query.company);
+    const excludedLocations = toNames(query.exclude_locations ?? null);
+    const excludedCompanies = toNames(query.exclude_companies ?? null);
+    const industryTerms = toNames(query.industry_terms ?? null);
 
-    if (
-      (Object.keys(companySearch).length === 0 && companyNames.length === 0) ||
-      seen.has(companySignature)
-    ) {
-      return [];
-    }
+    const people = buildPeopleVariants({
+      keywords,
+      jobTitle,
+      locations,
+      excludedLocations,
+      excludedCompanies,
+    });
+    const faceted = buildFacetVariant({
+      locations,
+      excludedLocations,
+      excludedCompanies,
+      industryTerms,
+      seniority: query.seniority ?? null,
+      functionRoot: query.function ?? null,
+      excludedIndustries: toNames(query.exclude_industries ?? null),
+    });
 
-    seen.add(companySignature);
-
-    return [
-      {
-        id: `harvest-query-${category}-${index + 1}`,
-        label: [keywords, jobTitle, ...locations, ...companyNames]
-          .filter(Boolean)
-          .join(' · '),
-        searchParameters: companySearch,
-        companyNames,
-      },
+    const unresolvedFilters = [
+      ...people.unresolvedFilters,
+      ...faceted.unresolvedFilters,
     ];
+
+    const variants = [
+      ...people.variants,
+      ...(faceted.variant ? [faceted.variant] : []),
+    ].slice(0, HARVEST_MAX_SEARCHES_PER_QUERY);
+
+    return variants.flatMap((variant) => {
+      const signature = JSON.stringify([variant.parameters, companyNames]);
+
+      if (seen.has(signature)) {
+        return [];
+      }
+
+      seen.add(signature);
+
+      return [
+        {
+          id: `harvest-query-${category}-${index + 1}-${variant.kind}`,
+          label: [
+            variant.label,
+            keywords,
+            jobTitle,
+            ...locations,
+            ...companyNames,
+          ]
+            .filter(Boolean)
+            .join(' · '),
+          searchParameters: variant.parameters,
+          companyNames,
+          ...(unresolvedFilters.length > 0 && { unresolvedFilters }),
+        },
+      ];
+    });
   });
 };

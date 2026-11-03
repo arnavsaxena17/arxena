@@ -1,5 +1,5 @@
 import { isHarvestCompanyNameMatch } from 'src/engine/core-modules/org-chart/utils/harvest-company-name-match.util';
-import { mapLinkedinQuerySetToHarvestParameters } from 'src/engine/core-modules/org-chart/utils/map-linkedin-query-set-to-harvest-parameters.util';
+import { HARVEST_MAX_SEARCHES_PER_QUERY, mapLinkedinQuerySetToHarvestParameters } from 'src/engine/core-modules/org-chart/utils/map-linkedin-query-set-to-harvest-parameters.util';
 
 const query = {
   keywords: 'textile OR fabric',
@@ -57,11 +57,10 @@ describe('mapLinkedinQuerySetToHarvestParameters', () => {
     expect(mapped.searchParameters).not.toHaveProperty('headquarterLocations');
   });
 
-  // A facet is a sieve, not a net: Harvest ANDs every parameter and the
-  // seniority/function/industry ids are labels a profile may never carry, so
-  // combining them with a title search silently loses people a direct search
-  // would find.
-  it('should send the direct title search and the facet browse separately', () => {
+  // Harvest ANDs every parameter, so one unmet constraint zeros the search.
+  // The carriers are therefore varied: the full query, each carrier alone, and
+  // a facet browse -- unioned on read.
+  it('should spread one query across the carrier ladder plus a facet browse', () => {
     const mapped = mapLinkedinQuerySetToHarvestParameters({
       querySet: {
         search_query_set: [
@@ -76,45 +75,53 @@ describe('mapLinkedinQuerySetToHarvestParameters', () => {
       category: 'people',
     });
 
-    expect(mapped).toHaveLength(2);
+    expect(mapped.map((one) => one.id.split('-').pop())).toEqual([
+      'all',
+      'titles',
+      'keywords',
+      'facet',
+    ]);
 
-    const [direct, faceted] = mapped;
+    const [all, titles, keywords, facet] = mapped;
 
-    expect(direct.id).toContain('direct');
-    expect(direct.searchParameters).toHaveProperty('currentJobTitles');
-    expect(direct.searchParameters).not.toHaveProperty('industryIds');
-    expect(direct.searchParameters).not.toHaveProperty('seniorityLevelIds');
+    expect(all.searchParameters).toMatchObject({
+      search: 'textile OR fabric',
+      currentJobTitles: ['Plant Manager', 'Factory Manager'],
+    });
+    expect(titles.searchParameters).not.toHaveProperty('search');
+    expect(titles.searchParameters).toHaveProperty('currentJobTitles');
+    expect(keywords.searchParameters).not.toHaveProperty('currentJobTitles');
+    expect(keywords.searchParameters).toHaveProperty('search');
+    expect(titles.label).toContain('titles only');
+    expect(keywords.label).toContain('keywords only');
 
-    expect(faceted.id).toContain('faceted');
-    // 15 is the vendor id for Pharmaceutical Manufacturing, 220 for director,
-    // 25 for sales (verified against the Harvest tables)
-    expect(faceted.searchParameters).toMatchObject({
+    // 15 = Pharmaceutical Manufacturing, 220 = director, 25 = sales
+    expect(facet.searchParameters).toMatchObject({
       industryIds: ['15'],
       seniorityLevelIds: ['220'],
       functionIds: ['25'],
     });
-    expect(faceted.searchParameters).not.toHaveProperty('currentJobTitles');
+    expect(facet.searchParameters).not.toHaveProperty('currentJobTitles');
+    expect(facet.searchParameters).not.toHaveProperty('search');
   });
 
-  it('should send only one search when there is no carrier or no facet', () => {
-    const directOnly = mapLinkedinQuerySetToHarvestParameters({
-      querySet: { search_query_set: [{ ...query, industry_terms: null }] },
-      category: 'people',
-    });
+  it('should keep every variant inside the per-query cap', () => {
+    expect(HARVEST_MAX_SEARCHES_PER_QUERY).toBe(4);
+  });
 
-    expect(directOnly).toHaveLength(1);
-
-    const facetedOnly = mapLinkedinQuerySetToHarvestParameters({
+  it('should produce fewer searches for a query with one carrier', () => {
+    const mapped = mapLinkedinQuerySetToHarvestParameters({
       querySet: {
         search_query_set: [
-          { ...query, keywords: null, job_title: null, industry_terms: ['Pharmaceutical Manufacturing'] },
+          { ...query, keywords: null, industry_terms: null },
         ],
       },
       category: 'people',
     });
 
-    expect(facetedOnly).toHaveLength(1);
-    expect(facetedOnly[0].searchParameters).toHaveProperty('industryIds');
+    // titles alone, and 'all' collapses into it via the signature dedupe
+    expect(mapped).toHaveLength(1);
+    expect(mapped[0].searchParameters).toHaveProperty('currentJobTitles');
   });
 
   it('should report an industry label it cannot resolve instead of sending it', () => {
