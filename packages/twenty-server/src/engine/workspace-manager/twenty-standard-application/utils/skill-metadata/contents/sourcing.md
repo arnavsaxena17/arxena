@@ -98,9 +98,9 @@ Then state the brief, ask what is missing in one batch (at most four questions, 
 
 The user waits on every step. Fewer, bigger steps beat careful small ones.
 
-- No narration between calls; run independent calls in the same step. Never one call per company or per person: every tool takes the whole list.
-- Ask once, up front: count, caps, rubric. After a yes, do not ask again inside the caps; one exception, a company list you built or narrowed is confirmed before `find_people_by_company`.
-- Score the whole list with one `run_ai_column` after one 10-row preview. Do not preview twice. Status checks follow `ai-filter-enrich`.
+- No narration between calls; run independent calls in the same step. One call per list, not per company or per person.
+- Ask once, up front: count, caps, rubric. Inside the approved caps the first yes stands; a company list you built or narrowed is the one thing confirmed before `find_people_by_company`.
+- Score the whole list with one `run_ai_column` after one 10-row preview; one preview per column. Status checks follow `ai-filter-enrich`.
 - A long LinkedIn search is one `search_linkedin_continue` call with `maxPages` (up to 50), not a call per page.
 - Fetch profiles only for rows a snapshot leaves undecided (`fetch_profiles`), again only while `remaining` is above 0.
 - A source that errors or returns nothing: take the next one in Source order in the same turn.
@@ -148,9 +148,9 @@ Follow the loaded section, then these rules.
 
 ### Provider
 
-Use the default source in the Plan table unless the user names another provider (Apollo, LinkedIn / Sales Navigator, Harvest, Exa, a pasted Sales Navigator or LinkedIn search URL) or the request needs a feature only that provider has (a named Sales Nav list, facet ids). The Bright Data `src-*` sections say which mode to use: ludicrous for a described set, instant for a website or LinkedIn URL lookup or a quick probe of a short literal. Do not pick Apollo because it is listed first. Fall back only if the default errors or returns nothing, and say so.
+Use the default source in the Plan table unless the user names another provider (Apollo, LinkedIn / Sales Navigator, Harvest, Exa, a pasted Sales Navigator or LinkedIn search URL) or the request needs a feature only that provider has (a named Sales Nav list, facet ids). The Bright Data `src-*` sections say which mode to use: ludicrous for a described set, instant for a website or LinkedIn URL lookup or a quick probe of a short literal. Apollo is last-resort here even though it is listed first. Fall back only if the default errors or returns nothing, and say so.
 
-`people-by-company` is one `find_people_by_company` call for the whole company list. No estimate and no provider question. The tool searches every company and returns the matching people. Do not search those companies yourself and do not loop them.
+`people-by-company` is one `find_people_by_company` call for the whole company list — no estimate and no provider question. The tool searches every company and returns the matching people, so hand it the list once.
 
 
 
