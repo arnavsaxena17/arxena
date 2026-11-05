@@ -1196,7 +1196,7 @@ export const prefillOutreachWorkflows = async ({
     [OUTREACH_WF_FIELD.chatCandidateId]: chatCandidateFieldId,
     [OUTREACH_WF_FIELD.chatCreatedAt]: chatCreatedAtFieldId,
     [OUTREACH_WF_FIELD.projectRecordId]: projectRecordIdFieldId,
-    // Only the pinSenderByWarmOverlap sequencer variant filters on member id.
+    // The sequencer's sender selector feeds a member FIND filtered on id.
     [OUTREACH_WF_FIELD.workspaceMemberId]: workspaceMemberIdFieldId,
   };
 

@@ -189,10 +189,13 @@ describe('GTM outreach workflow graphs', () => {
       )?.input?.objectName,
     ).toBe('person');
 
-    // Route load sits before member / stage router (not the QUEUED branch find).
+    // Route load → sender selector → member / stage router (not the QUEUED branch find).
     expect(byId(OUTREACH_SEQUENCER_STEP_IDS.routeFind)?.nextStepIds).toEqual([
-      byName('Load workspace member')?.id,
+      OUTREACH_SEQUENCER_STEP_IDS.selectProjectSender,
     ]);
+    expect(
+      byId(OUTREACH_SEQUENCER_STEP_IDS.selectProjectSender)?.nextStepIds,
+    ).toEqual([byName('Load workspace member')?.id]);
 
     const qualifyFetch = byName('Fetch LinkedIn profile (qualify)') as {
       settings?: {
@@ -459,6 +462,9 @@ describe('GTM outreach workflow graphs', () => {
     expect(routeFind?.name).toBe('Load Candidate');
     expect(routeFind?.type).toBe('FIND_RECORDS');
     expect(routeFind?.nextStepIds).toEqual([
+      byName('Select project sender')?.id,
+    ]);
+    expect(byName('Select project sender')?.nextStepIds).toEqual([
       byName('Load workspace member')?.id,
     ]);
     expect(byName('Load workspace member')?.nextStepIds).toEqual([
@@ -1602,56 +1608,92 @@ describe('GTM outreach workflow graphs', () => {
           step.settings?.input?.objectName === 'workspaceMember',
       );
 
-    it('keeps the unfiltered first-member lookup when the flag is off', () => {
+    it('resolves the sender from the project when the flag is off', () => {
       const graph = buildCandidateSequencerGraph();
       const steps = graph.steps as GraphStep[];
+      const load = steps.find(
+        (step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.routeFind,
+      );
+      const select = steps.find(
+        (step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.selectProjectSender,
+      );
+      const finds = memberFinds(steps);
 
       expect(
         steps.some(
           (step) => step.id === OUTREACH_SEQUENCER_STEP_IDS.selectMember,
         ),
       ).toBe(false);
-      expect(JSON.stringify(graph)).not.toContain(
+      expect(load?.nextStepIds).toEqual([
+        OUTREACH_SEQUENCER_STEP_IDS.selectProjectSender,
+      ]);
+      expect(select?.type).toBe('LOGIC_FUNCTION');
+      expect(JSON.stringify(select)).toContain(
         'select-outreach-workspace-member',
       );
-      expect(JSON.stringify(graph)).not.toContain(
-        '__FIELD_workspaceMember.id__',
-      );
-
-      const finds = memberFinds(steps);
-
       expect(finds).toHaveLength(1);
-      expect(finds[0].settings?.input?.filter).toEqual({});
+      expect(select?.nextStepIds).toEqual([finds[0].id]);
+      expect(JSON.stringify(finds[0].settings?.input?.filter)).toContain(
+        `{{${OUTREACH_SEQUENCER_STEP_IDS.selectProjectSender}.workspaceMemberId}}`,
+      );
+      expect(
+        inferOutreachSequencerGraphOptionsFromSteps(steps, graph.trigger)
+          .pinSenderByWarmOverlap,
+      ).toBe(false);
       expect(
         buildCandidateSequencerGraph({ pinSenderByWarmOverlap: false }),
       ).toEqual(graph);
     });
 
-    it('sends email from the pinned member mailbox only when on', () => {
-      const emailSenders = (steps: unknown[]) =>
+    it('sends and drafts email from the selected sender mailbox either way', () => {
+      const mailboxSenders = (steps: unknown[]) =>
         (
           steps as Array<{
             type: string;
             settings?: { input?: { connectedAccountId?: string } };
           }>
         )
-          .filter((step) => step.type === 'SEND_EMAIL')
+          .filter(
+            (step) => step.type === 'SEND_EMAIL' || step.type === 'DRAFT_EMAIL',
+          )
           .map((step) => step.settings?.input?.connectedAccountId);
 
-      const off = emailSenders(buildCandidateSequencerGraph().steps);
-      const on = emailSenders(
-        buildCandidateSequencerGraph({
-          pinSenderByWarmOverlap: true,
-          emailConnected: true,
-        }).steps,
+      for (const pinSenderByWarmOverlap of [false, true]) {
+        const senders = mailboxSenders(
+          buildCandidateSequencerGraph({
+            pinSenderByWarmOverlap,
+            emailConnected: true,
+          }).steps,
+        );
+
+        expect(senders.length).toBeGreaterThan(0);
+        expect(
+          senders.every(
+            (sender) =>
+              typeof sender === 'string' && sender.includes('.first.id'),
+          ),
+        ).toBe(true);
+      }
+    });
+
+    it('sends WhatsApp and LinkedIn from the selected sender member', () => {
+      const steps = buildCandidateSequencerGraph({
+        whatsappEnabled: true,
+        emailConnected: true,
+      }).steps as Array<{
+        type: string;
+        settings?: { input?: { workspaceMemberId?: string } };
+      }>;
+      const unipileSends = steps.filter(
+        (step) =>
+          step.type === 'SEND_WHATSAPP_MESSAGE' ||
+          step.type.startsWith('SEND_LINKEDIN'),
       );
 
-      expect(off.every((sender) => sender === '')).toBe(true);
-      expect(on.length).toBeGreaterThan(0);
+      expect(unipileSends.length).toBeGreaterThan(0);
       expect(
-        on.every(
-          (sender) =>
-            typeof sender === 'string' && sender.includes('.first.id'),
+        unipileSends.every((step) =>
+          step.settings?.input?.workspaceMemberId?.includes('.first.id'),
         ),
       ).toBe(true);
     });

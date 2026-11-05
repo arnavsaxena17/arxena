@@ -78,8 +78,8 @@ export const buildSubstitutedCandidateSequencerGraph = ({
     chatCandidateId: string;
     chatCreatedAt: string;
     projectRecordId: string;
-    // Only needed when options.pinSenderByWarmOverlap is on.
-    workspaceMemberId?: string;
+    // The sender selector's member FIND filters on it in every variant.
+    workspaceMemberId: string;
   };
   options: OutreachSequencerGraphOptions;
 }): {
@@ -108,12 +108,7 @@ export const buildSubstitutedCandidateSequencerGraph = ({
     [OUTREACH_WF_FIELD.chatCandidateId]: fieldMetadataIds.chatCandidateId,
     [OUTREACH_WF_FIELD.chatCreatedAt]: fieldMetadataIds.chatCreatedAt,
     [OUTREACH_WF_FIELD.projectRecordId]: fieldMetadataIds.projectRecordId,
-    ...(isDefined(fieldMetadataIds.workspaceMemberId)
-      ? {
-          [OUTREACH_WF_FIELD.workspaceMemberId]:
-            fieldMetadataIds.workspaceMemberId,
-        }
-      : {}),
+    [OUTREACH_WF_FIELD.workspaceMemberId]: fieldMetadataIds.workspaceMemberId,
   };
 
   for (const [token, idKey] of Object.entries(LF_TOKEN_TO_ID_KEY)) {

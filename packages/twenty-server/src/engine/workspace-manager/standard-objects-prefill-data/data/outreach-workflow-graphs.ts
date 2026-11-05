@@ -270,6 +270,8 @@ const IDS = {
   // Opt-in (pinSenderByWarmOverlap): resolves the candidate's owning member
   // before the member FIND so every send uses that member's seat.
   selectMember: '60a10008-aaaa-4fcb-a7d8-17a7736ed045',
+  // Default (toggle off): same selector, keyed apart so options read back off.
+  selectProjectSender: '60a10009-aaaa-4fcb-a7d8-17a7736ed045',
   stageRouter: '60a10000-aaaa-4fcb-a7d8-17a7736ed045',
   stageBranchAccepted: '60a10001-aaaa-4fcb-a7d8-17a7736ed045',
   stageBranchReplied: '60a10002-aaaa-4fcb-a7d8-17a7736ed045',
@@ -416,10 +418,13 @@ const sendEmailOrNotifyMember = ({
         nextStepIds: emailStep.nextStepIds,
       });
 
-// SEND_EMAIL steps default to an empty connected account (first mailbox). A
-// workspace member id is resolved to that member's own mailbox, so with the
-// sender pinned every email leaves from the owning member.
-const withPinnedEmailSender = <TStep extends { type?: unknown }>(
+const MAILBOX_STEP_TYPES = new Set(['SEND_EMAIL', 'DRAFT_EMAIL']);
+
+// Email steps default to an empty connected account (first mailbox in the
+// workspace). A workspace member id resolves to that member's own mailbox, so
+// emails and drafts leave from the selected sender (project recruiter or pin),
+// matching the LinkedIn and WhatsApp sends.
+const withSenderMailbox = <TStep extends { type?: unknown }>(
   steps: TStep[],
 ): TStep[] =>
   steps.map((step) => {
@@ -428,7 +433,8 @@ const withPinnedEmailSender = <TStep extends { type?: unknown }>(
     ).settings;
 
     if (
-      step.type !== 'SEND_EMAIL' ||
+      typeof step.type !== 'string' ||
+      !MAILBOX_STEP_TYPES.has(step.type) ||
       settings?.input?.connectedAccountId !== ''
     ) {
       return step;
@@ -464,7 +470,8 @@ export type OutreachSequencerGraphOptions = {
   // Collapses every DELAY step from days → 1 minute for rapid testing.
   testMode: boolean;
   // Pins each candidate to one workspace member (manual, split, or warm overlap)
-  // so every send and reply stays on that member's seat. Off = first member.
+  // so every send and reply stays on that member's seat. Off = project recruiter
+  // for LinkedIn, WhatsApp and email alike.
   pinSenderByWarmOverlap: boolean;
 };
 
@@ -3308,32 +3315,31 @@ export const buildCandidateSequencerGraph = (
     },
   ];
 
+  // An unfiltered member FIND sends every project from whichever member sorts
+  // first, burning one seat's LinkedIn quota for the whole workspace. Both
+  // variants resolve the sender per candidate (pin → project recruiter →
+  // fallback); the step id differs so the Edit Workflow toggle reads back.
+  const senderStepId = pinSenderByWarmOverlap
+    ? IDS.selectMember
+    : IDS.selectProjectSender;
+
   const steps = [
-    candidateFind(IDS.routeFind, 'Load Candidate', [
-      pinSenderByWarmOverlap ? IDS.selectMember : OUTREACH_WF_MEMBER_STEP_ID,
-    ]),
-    ...(pinSenderByWarmOverlap
-      ? [
-          gtmWfLogicFunctionStep({
-            id: IDS.selectMember,
-            name: 'Select outreach sender',
-            logicFunctionId: '__LF_select-outreach-workspace-member__',
-            logicFunctionInput: {
-              candidateId: gtmWfFindId(IDS.routeFind),
-            },
-            sampleOutput: OUTREACH_SELECT_WORKSPACE_MEMBER_SAMPLE_OUTPUT,
-            nextStepIds: [OUTREACH_WF_MEMBER_STEP_ID],
-          }),
-        ]
-      : []),
-    gtmWfMemberStep(
-      [OUTREACH_WF_PROJECT_STEP_ID],
-      pinSenderByWarmOverlap
-        ? {
-            pinnedMemberIdTemplate: `{{${IDS.selectMember}.workspaceMemberId}}`,
-          }
-        : {},
-    ),
+    candidateFind(IDS.routeFind, 'Load Candidate', [senderStepId]),
+    gtmWfLogicFunctionStep({
+      id: senderStepId,
+      name: pinSenderByWarmOverlap
+        ? 'Select outreach sender'
+        : 'Select project sender',
+      logicFunctionId: '__LF_select-outreach-workspace-member__',
+      logicFunctionInput: {
+        candidateId: gtmWfFindId(IDS.routeFind),
+      },
+      sampleOutput: OUTREACH_SELECT_WORKSPACE_MEMBER_SAMPLE_OUTPUT,
+      nextStepIds: [OUTREACH_WF_MEMBER_STEP_ID],
+    }),
+    gtmWfMemberStep([OUTREACH_WF_PROJECT_STEP_ID], {
+      pinnedMemberIdTemplate: `{{${senderStepId}.workspaceMemberId}}`,
+    }),
     gtmWfProjectStep({
       candidateFindId: IDS.routeFind,
       nextStepIds: [IDS.stageRouter],
@@ -3381,7 +3387,7 @@ export const buildCandidateSequencerGraph = (
       }),
       nextStepIds: [IDS.routeFind],
     }),
-    steps: pinSenderByWarmOverlap ? withPinnedEmailSender(steps) : steps,
+    steps: withSenderMailbox(steps),
   };
 };
 

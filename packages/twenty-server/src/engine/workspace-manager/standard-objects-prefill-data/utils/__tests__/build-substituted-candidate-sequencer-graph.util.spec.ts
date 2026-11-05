@@ -12,6 +12,7 @@ const fieldMetadataIds = {
   chatCandidateId: '88888888-8888-4888-8888-888888888888',
   chatCreatedAt: '99999999-9999-4999-8999-999999999999',
   projectRecordId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  workspaceMemberId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
 };
 
 describe('buildSubstitutedCandidateSequencerGraph', () => {
@@ -26,6 +27,20 @@ describe('buildSubstitutedCandidateSequencerGraph', () => {
         options: DEFAULT_OUTREACH_SEQUENCER_GRAPH_OPTIONS,
       }),
     ).not.toThrow();
+  });
+
+  // Regression: with the pin toggle off the member FIND had no filter, so
+  // every project sent from the first workspace member's LinkedIn seat.
+  it('filters the sender member lookup by id with default options', () => {
+    const { steps } = buildSubstitutedCandidateSequencerGraph({
+      workspaceId: 'workspace-id',
+      fieldMetadataIds,
+      options: DEFAULT_OUTREACH_SEQUENCER_GRAPH_OPTIONS,
+    });
+    const serialized = JSON.stringify(steps);
+
+    expect(serialized).toContain(fieldMetadataIds.workspaceMemberId);
+    expect(serialized).not.toContain('__FIELD_workspaceMember.id__');
   });
 
   it('resolves person filters with the person id field metadata', () => {
