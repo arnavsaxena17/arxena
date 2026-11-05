@@ -1440,20 +1440,36 @@ export class OutreachCommandController {
         result.skippedDoNotContact > 0
           ? ` ${result.skippedDoNotContact} were skipped because they are marked do not contact.`
           : '';
+      const skippedRepliedMessage =
+        result.skippedReplied > 0
+          ? ` ${result.skippedReplied} were skipped because they already replied.`
+          : '';
 
       // Enrollment is queued and slower than this request: the Candidates are
       // created shortly after, but nothing starts them automatically.
-      if (result.startedCandidates === 0 && result.enrollingPersonIds.length > 0) {
+      if (
+        result.startedCandidates === 0 &&
+        result.enrollingPersonIds.length > 0
+      ) {
         return {
           success: true,
           ok: true,
           ...result,
-          message: `Enrolling ${result.enrollingPersonIds.length} selected prospect(s). Run Start Outreach again in a moment to start them.${skippedDoNotContactMessage}`,
+          message: `Enrolling ${result.enrollingPersonIds.length} selected prospect(s). Run Start Outreach again in a moment to start them.${skippedDoNotContactMessage}${skippedRepliedMessage}`,
         };
       }
 
       if (result.startedCandidates === 0) {
         const hasUnenrolledPeople = result.unenrolledPersonIds.length > 0;
+
+        // Everyone selected answered earlier: that is a correct outcome, not a
+        // missing-candidate error, so say so instead of "no matching candidates".
+        if (!hasUnenrolledPeople && result.skippedReplied > 0) {
+          throw new HttpException(
+            `These prospects already replied, so outreach was not restarted.${skippedRepliedMessage}`,
+            HttpStatus.UNPROCESSABLE_ENTITY,
+          );
+        }
 
         throw new HttpException(
           hasUnenrolledPeople
@@ -1470,13 +1486,14 @@ export class OutreachCommandController {
         ok: true,
         ...result,
         ...(result.enrollingPersonIds.length > 0 ||
-        result.skippedDoNotContact > 0
+        result.skippedDoNotContact > 0 ||
+        result.skippedReplied > 0
           ? {
               message: `Started outreach for ${result.startedCandidates} prospect(s).${
                 result.enrollingPersonIds.length > 0
                   ? ` Enrolling ${result.enrollingPersonIds.length} more; run Start Outreach again to start those.`
                   : ''
-              }${skippedDoNotContactMessage}`,
+              }${skippedDoNotContactMessage}${skippedRepliedMessage}`,
             }
           : {}),
       };

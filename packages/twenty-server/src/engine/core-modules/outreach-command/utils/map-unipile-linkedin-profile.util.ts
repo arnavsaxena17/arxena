@@ -99,6 +99,30 @@ const mapSkills = (profile: Record<string, unknown>): string[] => {
     .filter((name) => name.length > 0);
 };
 
+// LinkedIn only shares contact_info with 1st-degree connections.
+const mapContactInfoList = (
+  profile: Record<string, unknown>,
+  key: 'emails' | 'phones',
+): string[] => {
+  const contactInfo = profile.contact_info;
+
+  if (!contactInfo || typeof contactInfo !== 'object') {
+    return [];
+  }
+
+  const raw = (contactInfo as Record<string, unknown>)[key];
+
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  const values = raw
+    .map((item) => (typeof item === 'string' ? item.trim() : ''))
+    .filter((value) => value.length > 0);
+
+  return [...new Set(values)];
+};
+
 const buildLinkedinProfileUrl = (
   profile: Record<string, unknown>,
   publicIdentifier: string,
@@ -178,6 +202,8 @@ export const mapUnipileLinkedinProfile = (
     ]),
     experience: mapExperience(profile),
     skills: mapSkills(profile),
+    emails: mapContactInfoList(profile, 'emails'),
+    phones: mapContactInfoList(profile, 'phones'),
     ...(connectionsCount !== undefined ? { connectionsCount } : {}),
     ...(followersCount !== undefined ? { followersCount } : {}),
     ...(sharedConnectionsCount !== undefined ? { sharedConnectionsCount } : {}),

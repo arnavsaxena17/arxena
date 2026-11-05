@@ -164,7 +164,6 @@ export class CronRegisterAllCommand extends CommandRunner {
         name: 'CleanSuspendedWorkspaces',
         command: this.cleanSuspendedWorkspacesCronCommand,
         isEnabled: false,
-
       },
       {
         name: 'CleanOnboardingWorkspaces',

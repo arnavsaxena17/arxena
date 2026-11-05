@@ -286,6 +286,30 @@ export class CleanerWorkspaceService {
     );
   }
 
+  // ponytail: subscription + member history is a cheap proxy for "someone is
+  // using this". A workspace whose only member deleted their account before
+  // adding any data could still be kept alive by this check.
+  private async isWorkspaceStillAlive(workspaceId: string): Promise<boolean> {
+    if (this.twentyConfigService.get('IS_BILLING_ENABLED')) {
+      const subscription = await this.billingSubscriptionRepository.findOne(
+        workspaceId,
+        { where: {} },
+      );
+
+      if (isDefined(subscription)) {
+        return true;
+      }
+    }
+
+    // withDeleted: a member who was removed still proves real usage
+    const userWorkspaces = await this.userWorkspaceRepository.find({
+      where: { workspaceId },
+      withDeleted: true,
+    });
+
+    return userWorkspaces.length > 0;
+  }
+
   async batchCleanOnboardingWorkspaces(
     workspaceIds: string[],
     dryRun = false,
@@ -308,6 +332,18 @@ export class CleanerWorkspaceService {
 
     if (workspaces.length !== 0) {
       for (const workspace of workspaces) {
+        // CREATED only means "no subscription at activation time": checkout
+        // completes minutes later, so it never proves the onboarding was
+        // abandoned. Refuse to touch any workspace that has a subscription or
+        // ever had a member.
+        if (await this.isWorkspaceStillAlive(workspace.id)) {
+          this.logger.log(
+            `${dryRun ? 'DRY RUN - ' : ''}Keeping onboarding workspace ${workspace.id}: has subscription or member history`,
+          );
+
+          continue;
+        }
+
         if (!isDefined(workspace.deletedAt)) {
           this.logger.log(
             `${dryRun ? 'DRY RUN - ' : ''}Soft deleting onboarding workspace ${workspace.id}`,

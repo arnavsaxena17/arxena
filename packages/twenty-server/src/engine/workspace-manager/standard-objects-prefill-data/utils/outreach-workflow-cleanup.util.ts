@@ -1,28 +1,33 @@
 import { type EntityManager } from 'typeorm';
 
-import { OUTREACH_WORKFLOW_NAMES_TO_DEACTIVATE } from 'src/engine/workspace-manager/standard-objects-prefill-data/constants/seeded-outreach-workflow-names.const';
+import {
+  OUTREACH_WORKFLOW_NAMES_TO_DEACTIVATE,
+  SEEDED_OUTREACH_WORKFLOW,
+} from 'src/engine/workspace-manager/standard-objects-prefill-data/constants/seeded-outreach-workflow-names.const';
 
-const tableExists = async ({
+type RetiredWorkflow = { id: string; coreWorkflowId: string | null };
+
+// Custom-object workspaces store Project as `_project`, older ones as `project`.
+const resolveProjectTableWithOutreachWorkflowId = async ({
   schemaName,
-  tableName,
   entityManager,
 }: {
   schemaName: string;
-  tableName: string;
   entityManager: EntityManager;
-}) => {
+}): Promise<string | null> => {
   const rows = (await entityManager.query(
     `
-      SELECT 1
-      FROM information_schema.tables
+      SELECT table_name
+      FROM information_schema.columns
       WHERE table_schema = $1
-        AND table_name = $2
+        AND table_name IN ('project', '_project')
+        AND column_name = 'outreachWorkflowId'
       LIMIT 1
     `,
-    [schemaName, tableName],
-  )) as unknown[];
+    [schemaName],
+  )) as Array<{ table_name: string }>;
 
-  return rows.length > 0;
+  return rows[0]?.table_name ?? null;
 };
 
 export const deactivateOutreachWorkflowsByName = async ({
@@ -52,34 +57,60 @@ export const deactivateOutreachWorkflowsByName = async ({
     return { workflowIds: [] as string[] };
   }
 
-  const workflowIds = retired.map((row) => row.id);
-  const coreWorkflowIds = retired
+  return deactivateOutreachWorkflowsByIds({
+    schemaName,
+    entityManager,
+    workflows: retired,
+  });
+};
+
+export const deactivateOutreachWorkflowsByIds = async ({
+  schemaName,
+  entityManager,
+  workflows,
+  replacementWorkflowId = null,
+}: {
+  schemaName: string;
+  entityManager: EntityManager;
+  workflows: readonly RetiredWorkflow[];
+  // Projects pinned to a retired workflow move here; null unpins them.
+  replacementWorkflowId?: string | null;
+}) => {
+  if (workflows.length === 0) {
+    return { workflowIds: [] as string[] };
+  }
+
+  const workflowIds = workflows.map((row) => row.id);
+  const coreWorkflowIds = workflows
     .map((row) => row.coreWorkflowId)
     .filter((id): id is string => typeof id === 'string');
 
-  if (await tableExists({ schemaName, tableName: 'project', entityManager })) {
-    const projectColumns = (await entityManager.query(
-      `
-        SELECT column_name
-        FROM information_schema.columns
-        WHERE table_schema = $1
-          AND table_name = 'project'
-          AND column_name = 'outreachWorkflowId'
-      `,
-      [schemaName],
-    )) as Array<{ column_name: string }>;
+  const projectTable = await resolveProjectTableWithOutreachWorkflowId({
+    schemaName,
+    entityManager,
+  });
 
-    if (projectColumns.length > 0) {
-      await entityManager.query(
-        `
-          UPDATE ${schemaName}.project
-          SET "outreachWorkflowId" = NULL, "updatedAt" = NOW()
-          WHERE "outreachWorkflowId" = ANY($1)
-        `,
-        [workflowIds],
-      );
-    }
+  if (projectTable !== null) {
+    await entityManager.query(
+      `
+        UPDATE ${schemaName}."${projectTable}"
+        SET "outreachWorkflowId" = $2, "updatedAt" = NOW()
+        WHERE "outreachWorkflowId" = ANY($1)
+      `,
+      [workflowIds, replacementWorkflowId],
+    );
   }
+
+  // Soft-deleting a run does not halt it; mark in-flight runs stopped first.
+  await entityManager.query(
+    `
+      UPDATE ${schemaName}."workflowRun"
+      SET status = 'STOPPED', "updatedAt" = NOW()
+      WHERE "workflowId" = ANY($1)
+        AND status IN ('NOT_STARTED', 'ENQUEUED', 'RUNNING', 'STOPPING')
+    `,
+    [workflowIds],
+  );
 
   await entityManager.query(
     `
@@ -157,3 +188,46 @@ export const deactivateObsoleteOutreachWorkflows = async ({
     entityManager,
     workflowNames: OUTREACH_WORKFLOW_NAMES_TO_DEACTIVATE,
   });
+
+// Keeps exactly one "Outreach — Candidate Sequencer": the seeded workflow
+// (deterministic id), else the oldest. Copies — e.g. ones the Outreach page
+// used to create client-side — share the name, so name-based resyncs rewrote
+// and activated them too, and every candidate update fired both sequencers.
+export const retireDuplicateOutreachSequencerWorkflows = async ({
+  schemaName,
+  entityManager,
+  seededSequencerWorkflowId,
+}: {
+  schemaName: string;
+  entityManager: EntityManager;
+  seededSequencerWorkflowId: string;
+}) => {
+  const sequencers = (await entityManager.query(
+    `
+      SELECT id, "coreWorkflowId"
+      FROM ${schemaName}.workflow
+      WHERE name = $1
+        AND "deletedAt" IS NULL
+      ORDER BY (id = $2) DESC, "createdAt" ASC, id ASC
+    `,
+    [
+      SEEDED_OUTREACH_WORKFLOW.candidateSequencer.name,
+      seededSequencerWorkflowId,
+    ],
+  )) as RetiredWorkflow[];
+
+  const [keeper, ...duplicates] = sequencers;
+
+  if (keeper === undefined || duplicates.length === 0) {
+    return { keptWorkflowId: keeper?.id ?? null, workflowIds: [] as string[] };
+  }
+
+  const { workflowIds } = await deactivateOutreachWorkflowsByIds({
+    schemaName,
+    entityManager,
+    workflows: duplicates,
+    replacementWorkflowId: keeper.id,
+  });
+
+  return { keptWorkflowId: keeper.id, workflowIds };
+};

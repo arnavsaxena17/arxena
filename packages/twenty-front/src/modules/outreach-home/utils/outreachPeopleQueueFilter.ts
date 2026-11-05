@@ -1,3 +1,4 @@
+import { isNonEmptyString } from '@sniptt/guards';
 import { isDefined } from 'twenty-shared/utils';
 
 import { type OutreachPersonRow } from '@/outreach-home/types/outreach-home.types';
@@ -6,6 +7,7 @@ export const OUTREACH_PEOPLE_QUEUE_FILTERS = [
   { id: 'QUEUED', label: 'To send' },
   { id: 'CONNECTION_SENT', label: 'Connect sent' },
   { id: 'awaiting_reply', label: 'Awaiting reply' },
+  { id: 'not_replied', label: 'No reply' },
   { id: 'needs_approval', label: 'Needs approval' },
   { id: 'workflow_failed', label: 'Workflow failed' },
   { id: 'intent', label: 'Intent' },
@@ -32,6 +34,26 @@ const AWAITING_REPLY_STAGES = new Set([
   'FOLLOW_UP_2',
   'FOLLOW_UP_3',
   'WAITING_REPLY',
+]);
+
+// Touched at least once and silent: the cohort a second sender can pick up.
+const CONTACTED_WITHOUT_REPLY_STAGES = new Set([
+  'CONNECTION_SENT',
+  'CONNECTION_IGNORED',
+  'CONNECTION_ACCEPTED',
+  'EMAIL_SENT',
+  'INMAIL_SENT',
+  'WAITING_REPLY',
+  'FAILED_NO_REPLY',
+]);
+
+// Replied, negotiating, booked or explicitly stopped — never re-touch these,
+// in any round. Mirrors hasOutreachReply on the server.
+const ENGAGED_STAGES = new Set([
+  'REPLIED',
+  'NEGOTIATING',
+  'MEETING_BOOKED',
+  'STOPPED',
 ]);
 
 const isFollowUpDue = (resumeAt: string | null | undefined): boolean => {
@@ -63,6 +85,14 @@ export const matchesOutreachPeopleQueueFilter = (
       // Journey chips are enrolled-only; Redis discovery defaults to QUEUED.
       return (
         isDefined(person.candidateId) && AWAITING_REPLY_STAGES.has(person.stage)
+      );
+    case 'not_replied':
+      // Handover cohort: reached out, never answered, still engaged elsewhere.
+      return (
+        isDefined(person.candidateId) &&
+        CONTACTED_WITHOUT_REPLY_STAGES.has(person.stage) &&
+        !ENGAGED_STAGES.has(person.stage) &&
+        !isNonEmptyString(person.lastInboundAt)
       );
     case 'intent':
       return person.outreachConversationStage === 'INTENT';

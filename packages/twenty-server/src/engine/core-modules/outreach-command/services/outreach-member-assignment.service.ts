@@ -125,10 +125,16 @@ export class OutreachMemberAssignmentService {
           };
         }
 
-        if (hasPinnedMember(candidate)) {
+        // The pin still wins while it exists so deployed projects keep their
+        // seats, but nothing writes it any more: a round's sender comes from the
+        // project recruiter (Phase 1 of the pinned-member removal).
+        const pinnedMemberId =
+          candidate.outreachWorkspaceMemberId?.trim() ?? '';
+
+        if (isNonEmptyString(pinnedMemberId)) {
           return {
             success: true,
-            workspaceMemberId: candidate.outreachWorkspaceMemberId as string,
+            workspaceMemberId: pinnedMemberId,
             reason: candidate.outreachAssignmentReason ?? 'manual',
             alreadyPinned: true,
           };
@@ -147,56 +153,35 @@ export class OutreachMemberAssignmentService {
           members,
           config,
         });
-        const decision = await this.decide({
-          workspaceId,
-          candidate,
-          project,
-          config,
-          members,
-          eligibleMemberIds,
-        });
 
-        if (decision.kind === 'suggestion') {
-          // Suggest mode stores the winner but does not pin; send falls back
-          // to the policy-free default until someone confirms.
-          await candidateRepository.update(candidate.id, {
-            outreachSuggestedMemberId: decision.memberId,
-            outreachSuggestionReasons: { scores: decision.scores },
-          });
-        }
+        // Recruiter first, but only when it can actually send: a recruiter with
+        // no LinkedIn seat would park every send on a dead account, so the
+        // seated cohort decides whenever one exists.
+        const senderMemberId =
+          eligibleMemberIds.length > 0
+            ? this.pickFallback({
+                project,
+                members: members.filter((member) =>
+                  eligibleMemberIds.includes(member.id),
+                ),
+                eligibleMemberIds,
+              })
+            : this.pickFallback({ project, members, eligibleMemberIds });
 
-        const memberId =
-          decision.kind === 'suggestion'
-            ? decision.fallbackMemberId
-            : decision.memberId;
-        const reason: OutreachAssignmentReason =
-          decision.kind === 'suggestion' ? 'fallback' : decision.reason;
-
-        const pinWon = await this.pinIfEmpty({
-          workspaceId,
-          candidateId: candidate.id,
-          memberId,
-          reason,
-          assignedById: null,
-        });
-
-        if (!pinWon) {
-          const winner = await candidateRepository.findOne({
-            where: { id: candidate.id },
-          });
-
+        if (!isNonEmptyString(senderMemberId)) {
           return {
-            success: true,
-            workspaceMemberId: winner?.outreachWorkspaceMemberId ?? memberId,
-            reason: winner?.outreachAssignmentReason ?? reason,
-            alreadyPinned: true,
+            success: false,
+            workspaceMemberId: '',
+            reason: 'no_sender',
+            alreadyPinned: false,
+            error: 'No workspace member is available to send outreach',
           };
         }
 
         return {
           success: true,
-          workspaceMemberId: memberId,
-          reason,
+          workspaceMemberId: senderMemberId,
+          reason: 'fallback',
           alreadyPinned: false,
         };
       },

@@ -14,7 +14,7 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-id: ezLHny
-#: src/pages/settings/ai/components/SettingsAiMcpServersTab.tsx
+#: src/pages/settings/ai/components/SettingsAiMcpServerCard.tsx
 msgid " · Auth configured"
 msgstr " · Auth configured"
 
@@ -230,6 +230,12 @@ msgstr "{0} credits"
 msgid "{0} days"
 msgstr "{0} days"
 
+#. js-lingui-id: O1gnpH
+#. placeholder {0}: outputValidation.attempts
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/AiAgentExecutionResult.tsx
+msgid "{0} drafts"
+msgstr "{0} drafts"
+
 #. js-lingui-id: okrK9q
 #. placeholder {0}: preview.duplicateEmails
 #: src/modules/activities/emails/components/CampaignComposerFields.tsx
@@ -309,6 +315,12 @@ msgstr "{0} selected"
 #: src/modules/side-panel/pages/page-layout/hooks/useRecordTableSettingsDescriptions.ts
 msgid "{0} shown"
 msgstr "{0} shown"
+
+#. js-lingui-id: 1pHAUh
+#. placeholder {0}: server.toolCount
+#: src/pages/settings/ai/components/SettingsAiMcpServerCard.tsx
+msgid "{0} tools enabled"
+msgstr "{0} tools enabled"
 
 #. js-lingui-id: nZUq+6
 #. placeholder {0}: preview.globallyUnsubscribed
@@ -756,6 +768,11 @@ msgstr "#"
 msgid "% left"
 msgstr "% left"
 
+#. js-lingui-id: YYgpgI
+#: src/pages/onboarding/CreateProfile.tsx
+msgid "+1 555 0100"
+msgstr "+1 555 0100"
+
 #. js-lingui-id: n9nj+X
 #. placeholder {0}: aiChatThreadPendingDelete?.threadTitle ?? ''
 #: src/modules/ai/components/AiChatThreadDeleteConfirmationModal.tsx
@@ -795,6 +812,11 @@ msgstr "0"
 #: src/modules/workflow/workflow-trigger/components/WorkflowEditTriggerCronForm.tsx
 msgid "0 */1 * * *"
 msgstr "0 */1 * * *"
+
+#. js-lingui-id: u9J9LB
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/AiAgentExecutionResult.tsx
+msgid "1 draft"
+msgstr "1 draft"
 
 #. js-lingui-id: 4pzLrc
 #: src/modules/settings/data-model/object-details/components/SettingsObjectRelationItemTableRow.tsx
@@ -1016,6 +1038,11 @@ msgstr "About this workspace"
 msgid "About your app"
 msgstr "About your app"
 
+#. js-lingui-id: j/bmTv
+#: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionAcceptLinkedinReceivedInvitation.tsx
+msgid "Accept as"
+msgstr "Accept as"
+
 #. js-lingui-id: nJJAYH
 #: src/pages/settings/legal/SettingsLegalDpa.tsx
 msgid "Accepted and signed DPAs for this workspace, with their template version and date."
@@ -1212,6 +1239,11 @@ msgstr "Add a Group"
 msgid "Add a new company we're in touch with (e.g. name, website, industry). Details: "
 msgstr "Add a new company we're in touch with (e.g. name, website, industry). Details: "
 
+#. js-lingui-id: Zf1mdk
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-filtering-action/components/WorkflowAiFilteringTestTab.tsx
+msgid "Add a prompt and at least one structured output field before testing."
+msgstr "Add a prompt and at least one structured output field before testing."
+
 #. js-lingui-id: nGv1DN
 #: src/modules/side-panel/utils/getSidePanelSubPageTitle.ts
 msgid "Add a record"
@@ -1221,6 +1253,11 @@ msgstr "Add a record"
 #: src/modules/workflow/workflow-diagram/components/WorkflowDiagramCreateStepElement.tsx
 msgid "Add a step"
 msgstr "Add a step"
+
+#. js-lingui-id: zC5s3V
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentOutputValidationConfig.tsx
+msgid "Add a text output field to choose what Jev checks."
+msgstr "Add a text output field to choose what Jev checks."
 
 #. js-lingui-id: KKfos4
 #: src/modules/workflow/workflow-diagram/workflow-nodes/components/WorkflowDiagramEmptyTriggerEditable.tsx
@@ -1288,6 +1325,11 @@ msgstr "Add card"
 #: src/modules/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionEmailBase.tsx
 msgid "Add CC"
 msgstr "Add CC"
+
+#. js-lingui-id: sObb4W
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentOutputValidationConfig.tsx
+msgid "Add check"
+msgstr "Add check"
 
 #. js-lingui-id: 3iIvQg
 #: src/modules/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionCreateCalendarEvent.tsx
@@ -2280,6 +2322,12 @@ msgstr "Allow uploading files and attachments"
 msgid "Allow users to sign in with an email and password."
 msgstr "Allow users to sign in with an email and password."
 
+#. js-lingui-id: CALvx3
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentOutputValidationCheckCard.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentOutputValidationCheckCard.tsx
+msgid "Allow when"
+msgstr "Allow when"
+
 #. js-lingui-id: JZ2Avo
 #: src/pages/settings/developers/org-chart-embed/SettingsDevelopersOrgChartEmbedDetail.tsx
 msgid "Allowed origins"
@@ -2328,7 +2376,6 @@ msgid "Amount Micros"
 msgstr "Amount Micros"
 
 #. js-lingui-id: Vw8l6h
-#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/AiAgentExecutionResult.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/http-request-action/components/HttpRequestExecutionResult.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/send-action-test/components/WorkflowSendActionExecutionResult.tsx
 msgid "An error occurred"
@@ -2578,6 +2625,11 @@ msgstr "App ID"
 msgid "App URL"
 msgstr "App URL"
 
+#. js-lingui-id: kNBEAR
+#: src/modules/workflow/workflow-steps/workflow-actions/bright-data-business-search-action/components/WorkflowEditActionSearchBrightDataBusiness.tsx
+msgid "Apparel brands in India with more than 50 stores"
+msgstr "Apparel brands in India with more than 50 stores"
+
 #. js-lingui-id: aAIQg2
 #: src/pages/settings/profile/appearance/components/SettingsExperience.tsx
 msgid "Appearance"
@@ -2684,15 +2736,15 @@ msgstr "Applications below are not vetted. Use at your own risk."
 msgid "Apply"
 msgstr "Apply"
 
+#. js-lingui-id: c0aIzy
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Apply rebuilds the Candidate Sequencer draft from the outreach template and discards hand-edits. Activate when ready. Start Outreach to ignite; replies continue until Stop Outreach."
+msgstr "Apply rebuilds the Candidate Sequencer draft from the outreach template and discards hand-edits. Activate when ready. Start Outreach to ignite; replies continue until Stop Outreach."
+
 #. js-lingui-id: 9re43z
 #: src/modules/object-record/record-update-multiple/components/UpdateMultipleRecordsFooter.tsx
 msgid "Apply{progressText}"
 msgstr "Apply{progressText}"
-
-#. js-lingui-id: IVSgKJ
-#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
-msgid "Applying rebuilds the Candidate Sequencer draft from the outreach template and discards hand-edits on the draft. Activate when ready."
-msgstr "Applying rebuilds the Candidate Sequencer draft from the outreach template and discards hand-edits on the draft. Activate when ready."
 
 #. js-lingui-id: Z7ZXbT
 #: src/modules/workflow/workflow-steps/workflow-actions/form-action/components/WorkflowEditActionFormFiller.tsx
@@ -3002,6 +3054,7 @@ msgstr "Attach files"
 #. js-lingui-id: w/Sphq
 #: src/modules/activities/emails/components/EmailComposerFields.tsx
 #: src/modules/workflow/workflow-run/observability/WorkflowRunStepLogsEmailDetail.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentSendFilesConfig.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionEmailBase.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionSendLinkedinMessage.tsx
 msgid "Attachments"
@@ -3112,11 +3165,6 @@ msgstr "Auto-generated role for {agentDisplayName}"
 #: src/pages/settings/applications/tabs/SettingsApplicationGeneralSection.tsx
 msgid "Auto-upgrade"
 msgstr "Auto-upgrade"
-
-#. js-lingui-id: APzGjl
-#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
-msgid "Automated trigger"
-msgstr "Automated trigger"
 
 #. js-lingui-id: YRT7ZW
 #: src/modules/settings/accounts/components/SettingsAccountsCalendarChannelDetails.tsx
@@ -3412,6 +3460,11 @@ msgstr "Breakdown across AI models."
 msgid "Brief explanation of this output field"
 msgstr "Brief explanation of this output field"
 
+#. js-lingui-id: VXNyBH
+#: src/modules/settings/usage/utils/getOperationTypeLabel.ts
+msgid "Bright Data Search"
+msgstr "Bright Data Search"
+
 #. js-lingui-id: CSDv65
 #: src/modules/settings/data-model/fields/forms/select/components/SettingsDataModelFieldSelectFormOptionRow.tsx
 msgid "Bronze"
@@ -3493,6 +3546,11 @@ msgstr "Bundled with {applicationName}"
 #: src/modules/orgchart/arxOrgChart/ArxOrgChartContainer.tsx
 msgid "Business division"
 msgstr "Business division"
+
+#. js-lingui-id: CO9IX2
+#: src/modules/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionGetLocalBusinessDetails.tsx
+msgid "Business IDs"
+msgstr "Business IDs"
 
 #. js-lingui-id: qiOIiY
 #: src/modules/settings/billing/components/SettingsBillingRazorpayCatalog.tsx
@@ -3780,6 +3838,11 @@ msgstr "Cancels on"
 msgid "Candidate"
 msgstr "Candidate"
 
+#. js-lingui-id: 2bky2l
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-filtering-action/components/WorkflowAiFilteringConfigureTab.tsx
+msgid "Candidates"
+msgstr "Candidates"
+
 #. js-lingui-id: XDbjjW
 #: src/modules/object-record/object-options-dropdown/components/ObjectOptionsDropdownCustomView.tsx
 msgid "Cannot delete the only view"
@@ -3796,6 +3859,11 @@ msgstr "Cannot display message"
 #: src/pages/settings/members/SettingsWorkspaceMember.tsx
 msgid "Cannot impersonate selected user"
 msgstr "Cannot impersonate selected user"
+
+#. js-lingui-id: r3gMVf
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-filtering-action/components/WorkflowAiFilteringTestTab.tsx
+msgid "Cannot run with Jev"
+msgstr "Cannot run with Jev"
 
 #. js-lingui-id: H1Ddy9
 #: src/modules/object-record/record-field/ui/meta-types/input/components/FilesFieldInput.tsx
@@ -3927,6 +3995,11 @@ msgstr "Change to Yearly?"
 msgid "Change visibility?"
 msgstr "Change visibility?"
 
+#. js-lingui-id: DOxCFX
+#: src/pages/settings/ai/components/SettingsAiMcpServersTab.tsx
+msgid "Changes save automatically when you click outside the editor"
+msgstr "Changes save automatically when you click outside the editor"
+
 #. js-lingui-id: rnTfap
 #: src/pages/settings/applications/SettingsApplicationConnectionDetail.tsx
 msgid "Changing visibility requires reconnecting this OAuth connection. You will be redirected to authorize it again."
@@ -3958,6 +4031,11 @@ msgstr "Chat actions"
 msgid "Chat conversation"
 msgstr "Chat conversation"
 
+#. js-lingui-id: knNSuY
+#: src/modules/side-panel/components/SidePanelCopyAiChatIdButton.tsx
+msgid "Chat ID copied to clipboard"
+msgstr "Chat ID copied to clipboard"
+
 #. js-lingui-id: tDlhkF
 #: src/modules/ai/components/NavigationDrawerAiChatThreadItem.tsx
 msgid "Chat name"
@@ -3982,6 +4060,16 @@ msgstr "ChatGPT"
 #: src/pages/settings/admin-panel/SettingsAdminWorkspaceDetail.tsx
 msgid "Chats"
 msgstr "Chats"
+
+#. js-lingui-id: +46X22
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Check deduplication per company"
+msgstr "Check deduplication per company"
+
+#. js-lingui-id: VSs8Ya
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentOutputValidationCheckCard.tsx
+msgid "Check name"
+msgstr "Check name"
 
 #. js-lingui-id: h5C4B4
 #: src/modules/settings/emailing-domains/components/SettingsEmailingDomainVerifyButton.tsx
@@ -4018,6 +4106,11 @@ msgstr "Checkout failed"
 #: src/modules/settings/billing/hooks/useHandleCheckoutSession.ts
 msgid "Checkout session error. Please retry or contact Arxena team"
 msgstr "Checkout session error. Please retry or contact Arxena team"
+
+#. js-lingui-id: SYZzGm
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentOutputValidationConfig.tsx
+msgid "Checks"
+msgstr "Checks"
 
 #. js-lingui-id: SviKkE
 #: src/pages/settings/profile/appearance/components/LocalePicker.tsx
@@ -4404,6 +4497,11 @@ msgstr "Columns not matched:"
 msgid "Columns shown in this view, in display order"
 msgstr "Columns shown in this view, in display order"
 
+#. js-lingui-id: QlB/8N
+#: src/modules/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionGetLocalBusinessDetails.tsx
+msgid "Comma-separated business_id / place_id values (max 20)"
+msgstr "Comma-separated business_id / place_id values (max 20)"
+
 #. js-lingui-id: yOK4cW
 #: src/pages/settings/developers/org-chart-embed/SettingsDevelopersOrgChartEmbedDetail.tsx
 msgid "Comma-separated list of origins allowed to load this embed."
@@ -4488,6 +4586,11 @@ msgstr "Comment"
 msgid "Comment as"
 msgstr "Comment as"
 
+#. js-lingui-id: nIpyj+
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Comment before connect"
+msgstr "Comment before connect"
+
 #. js-lingui-id: FLSCyy
 #: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionLikeLinkedinPost.tsx
 msgid "Comment ID"
@@ -4555,8 +4658,14 @@ msgstr "Company LinkedIn URL"
 #: src/modules/billing/components/InvoiceRequestModal.tsx
 #: src/modules/billing/components/InvoiceRequestModal.tsx
 #: src/modules/settings/workspace/components/SettingsWorkspaceCompanyProfileFields.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/company-name-resolver-action/components/WorkflowEditActionResolveCompanyFromRawName.tsx
 msgid "Company name"
 msgstr "Company name"
+
+#. js-lingui-id: VLZeQb
+#: src/modules/workflow/workflow-steps/workflow-actions/company-name-resolver-action/components/WorkflowEditActionResolveCompanyFromRawName.tsx
+msgid "Company names (comma-separated)"
+msgstr "Company names (comma-separated)"
 
 #. js-lingui-id: zrwZDz
 #: src/pages/settings/general/SettingsGeneral.tsx
@@ -4675,6 +4784,7 @@ msgid "Configuration of this command menu item"
 msgstr "Configuration of this command menu item"
 
 #. js-lingui-id: iAL9tI
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-filtering-action/components/WorkflowEditActionAiFiltering.tsx
 #: src/pages/settings/admin-panel/SettingsAdminAiProviderDetail.tsx
 #: src/pages/settings/applications/tabs/SettingsApplicationRegistrationGeneralTab.tsx
 msgid "Configure"
@@ -4775,6 +4885,11 @@ msgstr "Configure your emails and calendar settings."
 #: src/modules/settings/admin-panel/apps/components/SettingsAdminApps.tsx
 msgid "Configured"
 msgstr "Configured"
+
+#. js-lingui-id: zV9W8M
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentSendFilesConfig.tsx
+msgid "Configured files"
+msgstr "Configured files"
 
 #. js-lingui-id: 7VpPHA
 #: src/modules/settings/admin-panel/components/SettingsAdminServerAdminAccess.tsx
@@ -5198,6 +5313,11 @@ msgstr "Conversations"
 msgid "Cook"
 msgstr "Cook"
 
+#. js-lingui-id: PUOVtW
+#: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
+msgid "Cookie fetch failed"
+msgstr "Cookie fetch failed"
+
 #. js-lingui-id: n494KL
 #: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
 msgid "Cookie validation failed"
@@ -5238,6 +5358,11 @@ msgstr "Copied to clipboard"
 #: src/pages/settings/communications/SettingsWorkspaceCommunicationGroupChannelDetail.tsx
 msgid "Copy"
 msgstr "Copy"
+
+#. js-lingui-id: 0e6ksS
+#: src/modules/side-panel/components/SidePanelCopyAiChatIdButton.tsx
+msgid "Copy chat ID"
+msgstr "Copy chat ID"
 
 #. js-lingui-id: NmPNJJ
 #: src/modules/ai/components/CodeExecutionDisplay.tsx
@@ -5923,6 +6048,11 @@ msgstr "Cron will be triggered at UTC time"
 msgid "CRUD"
 msgstr "CRUD"
 
+#. js-lingui-id: t4nQF4
+#: src/modules/settings/profile/components/SettingsMemberArxProfileFields.tsx
+msgid "Crunchbase cookies (JSON)"
+msgstr "Crunchbase cookies (JSON)"
+
 #. js-lingui-id: 8RWevB
 #: src/modules/settings/billing/constants/SettingsBillingPlanComparisonRows.ts
 msgid "CSV import & export"
@@ -5961,11 +6091,6 @@ msgstr "Current"
 #: src/modules/settings/billing/components/SettingsBillingMapsRevealsSection.tsx
 msgid "Current balances"
 msgstr "Current balances"
-
-#. js-lingui-id: VT4irJ
-#: src/pages/settings/ai/SettingsAiPrompts.tsx
-msgid "Current date"
-msgstr "Current date"
 
 #. js-lingui-id: sGGZAV
 #: src/modules/orgchart/components/OrgChartResultModal.tsx
@@ -6423,6 +6548,11 @@ msgstr "Days"
 msgid "Days between triggers"
 msgstr "Days between triggers"
 
+#. js-lingui-id: nBq9X8
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Days to wait for an inbound invite before sending outbound connect."
+msgstr "Days to wait for an inbound invite before sending outbound connect."
+
 #. js-lingui-id: nBvgc7
 #: src/modules/onboarding/components/upgrade-free-trial/OnboardingTrialExtensionTag.tsx
 msgid "days trial"
@@ -6477,6 +6607,11 @@ msgstr "Deactivated"
 #: src/modules/ai/components/RoutingDebugDisplay.tsx
 msgid "Debug Info"
 msgstr "Debug Info"
+
+#. js-lingui-id: dfbB2h
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-filtering-action/components/WorkflowAiFilteringConfigureTab.tsx
+msgid "Decide whether each profile matches…"
+msgstr "Decide whether each profile matches…"
 
 #. js-lingui-id: dPDEh6
 #: src/modules/settings/data-model/fields/forms/address/components/SettingsDataModelFieldAddressForm.tsx
@@ -6647,7 +6782,7 @@ msgstr "delete"
 #: src/pages/settings/admin-panel/SettingsAdminApplicationRegistrationDangerZone.tsx
 #: src/pages/settings/ai/components/SettingsAgentEvalsTab.tsx
 #: src/pages/settings/ai/components/SettingsAgentEvalsTab.tsx
-#: src/pages/settings/ai/components/SettingsAiMcpServersTab.tsx
+#: src/pages/settings/ai/components/SettingsAiMcpServerCard.tsx
 #: src/pages/settings/ai/components/SettingsSkillInactiveMenuDropDown.tsx
 #: src/pages/settings/ai/SettingsSkillForm.tsx
 #: src/pages/settings/ai/SettingsSkillForm.tsx
@@ -7312,6 +7447,11 @@ msgstr "Download File"
 msgid "Download Files"
 msgstr "Download Files"
 
+#. js-lingui-id: KMdYRY
+#: src/modules/workflow/workflow-diagram/components/WorkflowDiagramRightClickCommandMenu.tsx
+msgid "Download PDF"
+msgstr "Download PDF"
+
 #. js-lingui-id: BU+6gf
 #: src/modules/spreadsheet-import/steps/components/UploadStep/components/DropZone.tsx
 msgid "Download sample"
@@ -7341,6 +7481,11 @@ msgstr "Drafted email"
 #: src/modules/ai/constants/action-tool-status-labels.constant.ts
 msgid "Drafting email"
 msgstr "Drafting email"
+
+#. js-lingui-id: M8kJqa
+#: src/modules/workflow/workflow-run/observability/WorkflowRunStepLogsAiAgentDetail.tsx
+msgid "Drafts"
+msgstr "Drafts"
 
 #. js-lingui-id: XKUtpI
 #: src/modules/activities/files/components/DropZone.tsx
@@ -7476,6 +7621,11 @@ msgstr "e.g., summary, status, count"
 #: src/pages/settings/data-model/new-index/SettingsObjectNewIndex.tsx
 msgid "Each index speeds up reads on the fields it covers, but slows down every insert and update, and uses disk space. Only add an index when you know which queries it serves."
 msgstr "Each index speeds up reads on the fields it covers, but slows down every insert and update, and uses disk space. Only add an index when you know which queries it serves."
+
+#. js-lingui-id: RZllTN
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentOutputValidationConfig.tsx
+msgid "Each selected field is judged with the checks below. Jev rejects the draft when its yes score is 0.50 or higher. Reject when is a yes. Allow when is a no. Template tokens are always rejected in code. A failed field is rewritten, up to three drafts."
+msgstr "Each selected field is judged with the checks below. Jev rejects the draft when its yes score is 0.50 or higher. Reject when is a yes. Allow when is a no. Template tokens are always rejected in code. A failed field is rewritten, up to three drafts."
 
 #. js-lingui-id: 79hamt
 #: src/modules/side-panel/pages/page-layout/constants/settings/ChartConfigurationSettingLabels.ts
@@ -7677,6 +7827,11 @@ msgstr "else if"
 #: src/pages/settings/members/tabs/SettingsWorkspaceMembersTeamTab.tsx
 msgid "Email"
 msgstr "Email"
+
+#. js-lingui-id: PyRrc7
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Email account connected"
+msgstr "Email account connected"
 
 #. js-lingui-id: ATGYL1
 #: src/modules/settings/unsubscribers/components/SettingsUnsubscribersList.tsx
@@ -8375,6 +8530,7 @@ msgstr "Erasure of soft-deleted records"
 #: src/modules/workflow/workflow-run/observability/WorkflowRunStepLogsCodeDetail.tsx
 #: src/modules/workflow/workflow-run/observability/WorkflowRunStepLogsEmailDetail.tsx
 #: src/modules/workflow/workflow-run/observability/WorkflowRunStepLogsHttpRequestDetail.tsx
+#: src/modules/workflow/workflow-run/observability/WorkflowRunStepLogsStatusFallback.tsx
 msgid "Error"
 msgstr "Error"
 
@@ -8680,6 +8836,11 @@ msgstr "Exclude group emails"
 msgid "Exclude non-professional emails"
 msgstr "Exclude non-professional emails"
 
+#. js-lingui-id: Ud/HRs
+#: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionFetchLinkedinActivity.tsx
+msgid "Exclude post social IDs"
+msgstr "Exclude post social IDs"
+
 #. js-lingui-id: ccv57g
 #: src/modules/settings/accounts/components/SettingsAccountsBlocklistSection.tsx
 msgid "Exclude the following people and domains from my email sync."
@@ -8875,6 +9036,22 @@ msgstr "Extension detected. Continuing…"
 msgid "Extension ID"
 msgstr "Extension ID"
 
+#. js-lingui-id: r0lnCQ
+#: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
+msgid "Extension is offline. Cookie fetch will retry until {deadlineLabel}."
+msgstr "Extension is offline. Cookie fetch will retry until {deadlineLabel}."
+
+#. js-lingui-id: vA8Mbr
+#: src/modules/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionGetLocalBusinessDetails.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionSearchLocalBusinesses.tsx
+msgid "Extract emails and contacts"
+msgstr "Extract emails and contacts"
+
+#. js-lingui-id: A9cW+Z
+#: src/modules/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionGetLocalBusinessDetails.tsx
+msgid "Extract share link"
+msgstr "Extract share link"
+
 #. js-lingui-id: 7Bj3x9
 #: src/modules/ai/components/CodeExecutionDisplay.tsx
 #: src/modules/settings/admin-panel/components/SettingsAdminWorkspaceContent.tsx
@@ -9007,6 +9184,11 @@ msgstr "Failed to delete workspace"
 #: src/modules/unipile/components/LinkedinStoredProfileUnipileActions.tsx
 msgid "Failed to disconnect."
 msgstr "Failed to disconnect."
+
+#. js-lingui-id: odZGIM
+#: src/modules/workflow/workflow-diagram/components/WorkflowDiagramRightClickCommandMenu.tsx
+msgid "Failed to download the workflow PDF"
+msgstr "Failed to download the workflow PDF"
 
 #. js-lingui-id: NUmmdc
 #: src/modules/command-menu-item/engine-command/record/single-record/dashboard/components/DuplicateDashboardSingleRecordCommand.tsx
@@ -9220,6 +9402,11 @@ msgstr "Failed to update default model"
 msgid "Failed to update embed"
 msgstr "Failed to update embed"
 
+#. js-lingui-id: jCbuH7
+#: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
+msgid "Failed to update keep LinkedIn connected"
+msgstr "Failed to update keep LinkedIn connected"
+
 #. js-lingui-id: 1R13Ov
 #: src/pages/settings/ai/hooks/useSettingsAiModelsActions.ts
 msgid "Failed to update model"
@@ -9311,6 +9498,12 @@ msgstr "Failed to upload file: {fileName}"
 msgid "Failed to upload picture"
 msgstr "Failed to upload picture"
 
+#. js-lingui-id: xDRSy0
+#. placeholder {0}: data.message
+#: src/modules/ai/components/ToolProgressDisplay.tsx
+msgid "Failed: {0}"
+msgstr "Failed: {0}"
+
 #. js-lingui-id: K0joU5
 #: src/modules/settings/admin-panel/health-status/components/SettingsAdminHealthAccountSyncCountersTable.tsx
 msgid "Failure Rate"
@@ -9358,15 +9551,35 @@ msgstr "Feature Flags"
 msgid "Features"
 msgstr "Features"
 
+#. js-lingui-id: xD4Xm2
+#: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
+msgid "Fetch"
+msgstr "Fetch"
+
 #. js-lingui-id: 7ouWtb
 #: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionFetchLinkedinActivity.tsx
 msgid "Fetch as"
 msgstr "Fetch as"
 
+#. js-lingui-id: KBlNL7
+#: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
+msgid "Fetch cookies"
+msgstr "Fetch cookies"
+
+#. js-lingui-id: 5tr+Pg
+#: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
+msgid "Fetch LinkedIn cookies from the member's Chrome extension."
+msgstr "Fetch LinkedIn cookies from the member's Chrome extension."
+
 #. js-lingui-id: Xyxf7H
 #: src/modules/orgchart/components/OrgChartResultModal.tsx
 msgid "Fetch without adding"
 msgstr "Fetch without adding"
+
+#. js-lingui-id: UTiUFs
+#: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
+msgid "Fetching…"
+msgstr "Fetching…"
 
 #. js-lingui-id: 2lOBKV
 #: src/modules/metadata-error-handler/hooks/useMetadataErrorHandler.ts
@@ -9547,6 +9760,11 @@ msgstr "File label"
 msgid "File no longer exists - {label}"
 msgstr "File no longer exists - {label}"
 
+#. js-lingui-id: hSwwjn
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-filtering-action/components/WorkflowAiFilteringTestTab.tsx
+msgid "Fill configure tab first"
+msgstr "Fill configure tab first"
+
 #. js-lingui-id: Y0gTX9
 #: src/modules/workflow/workflow-steps/workflow-actions/form-action/components/WorkflowEditActionFormBuilder.tsx
 msgid "Fill test variables (use your own Official recipient phone), then press Test. The editor waits until you reply in WhatsApp or submit the fill form. This does not resume the workflow."
@@ -9593,6 +9811,11 @@ msgstr "Filter by workspace, email, name, phone, LinkedIn, company…"
 #: src/modules/ai/components/AiChatThreadFilterDropdown.tsx
 msgid "Filter chats"
 msgstr "Filter chats"
+
+#. js-lingui-id: aZjNSa
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-filtering-action/components/WorkflowAiFilteringConfigureTab.tsx
+msgid "Filter description"
+msgstr "Filter description"
 
 #. js-lingui-id: /VmB4B
 #: src/modules/object-record/advanced-filter/components/AdvancedFilterRecordFilterGroupOptionsDropdown.tsx
@@ -9646,11 +9869,6 @@ msgstr "Finished thinking"
 #: src/pages/settings/profile/appearance/components/LocalePicker.tsx
 msgid "Finnish"
 msgstr "Finnish"
-
-#. js-lingui-id: HjSH/k
-#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
-msgid "Fires when a candidate is created or updated (outreach sequence stage)."
-msgstr "Fires when a candidate is created or updated (outreach sequence stage)."
 
 #. js-lingui-id: hy+Mfg
 #: src/modules/workflow/workflow-trigger/utils/cron-to-human/descriptors/getDayOfWeekDescription.ts
@@ -9898,6 +10116,11 @@ msgstr "Fulfillment mode set to {mode}"
 msgid "Full"
 msgstr "Full"
 
+#. js-lingui-id: iF8Oxt
+#: src/modules/workflow/workflow-steps/workflow-actions/bright-data-business-search-action/components/WorkflowEditActionSearchBrightDataBusiness.tsx
+msgid "full | summary | id_only"
+msgstr "full | summary | id_only"
+
 #. js-lingui-id: aerYcp
 #: src/modules/settings/admin-panel/components/SettingsAdminServerAdminAccess.tsx
 msgid "full admin panel access"
@@ -10020,6 +10243,11 @@ msgstr "Generates a Google Meet or Microsoft Teams link depending on the account
 #: src/modules/orgchart/components/OrgChartShareModal.tsx
 msgid "Generating..."
 msgstr "Generating..."
+
+#. js-lingui-id: B1MVWs
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-filtering-action/components/WorkflowAiFilteringConfigureTab.tsx
+msgid "Generating…"
+msgstr "Generating…"
 
 #. js-lingui-id: xedxPb
 #: src/modules/orgchart/arxOrgChart/ArxOrgChartContainer.tsx
@@ -10532,6 +10760,11 @@ msgstr ""
 "\n"
 "See the [Getting Started guide](https://arxena.com) for the full walkthrough, and [Building Apps](https://arxena.com) for the `defineApplication` / `defineEntity` APIs."
 
+#. js-lingui-id: hH78sr
+#: src/modules/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionSearchLocalBusinesses.tsx
+msgid "Hotels in San Francisco, USA"
+msgstr "Hotels in San Francisco, USA"
+
 #. js-lingui-id: yY8wAv
 #: src/modules/workflow/workflow-steps/workflow-actions/delay-actions/components/WorkflowEditActionDelay.tsx
 msgid "Hours"
@@ -10905,6 +11138,11 @@ msgstr "Inactive Object Options"
 msgid "Inactive Skill Options"
 msgstr "Inactive Skill Options"
 
+#. js-lingui-id: aj4nJQ
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Inbound invite wait (days)"
+msgstr "Inbound invite wait (days)"
+
 #. js-lingui-id: j8Bj7e
 #: src/modules/settings/security/components/SettingsSecuritySettings.tsx
 msgid "Include emails where all participants share the same domain."
@@ -10991,11 +11229,6 @@ msgstr "Inferred version"
 msgid "Info"
 msgstr "Info"
 
-#. js-lingui-id: iaXnN5
-#: src/pages/settings/ai/SettingsAiPrompts.tsx
-msgid "Information about the current user (auto-generated and included in each request)"
-msgstr "Information about the current user (auto-generated and included in each request)"
-
 #. js-lingui-id: 623chP
 #: src/pages/settings/members/SettingsWorkspaceMember.tsx
 msgid "Infos"
@@ -11035,6 +11268,11 @@ msgstr "Input"
 #: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentPromptTab.tsx
 msgid "Input (Prompt)"
 msgstr "Input (Prompt)"
+
+#. js-lingui-id: RlM4y5
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-filtering-action/components/WorkflowAiFilteringConfigureTab.tsx
+msgid "Input fields"
+msgstr "Input fields"
 
 #. js-lingui-id: JE2tjr
 #: src/modules/settings/data-model/fields/forms/components/SettingsDataModelFieldIconLabelForm.tsx
@@ -11208,11 +11446,6 @@ msgstr "Instruction for AI"
 msgid "Instructions"
 msgstr "Instructions"
 
-#. js-lingui-id: 77QeTr
-#: src/pages/settings/ai/SettingsSkillForm.tsx
-msgid "Instructions Editor"
-msgstr "Instructions Editor"
-
 #. js-lingui-id: RGm66q
 #: src/utils/title-utils.ts
 msgid "Integrations - Settings"
@@ -11314,6 +11547,11 @@ msgstr "Invalid hour value '{newHour}'. Should be integer between 0 and 23"
 #: src/modules/workflow/workflow-trigger/components/WorkflowEditTriggerCronForm.tsx
 msgid "Invalid hour value '{newHour}'. Should be integer greater than 1"
 msgstr "Invalid hour value '{newHour}'. Should be integer greater than 1"
+
+#. js-lingui-id: Deej3j
+#: src/modules/settings/profile/components/SettingsMemberArxProfileFields.tsx
+msgid "Invalid JSON"
+msgstr "Invalid JSON"
 
 #. js-lingui-id: +Yi3bs
 #: src/modules/workflow/workflow-trigger/components/WorkflowEditTriggerCronForm.tsx
@@ -11562,6 +11800,23 @@ msgstr "Japanese"
 msgid "JetBrains AI / Junie"
 msgstr "JetBrains AI / Junie"
 
+#. js-lingui-id: vpeAJ2
+#: src/modules/workflow/workflow-run/observability/WorkflowRunStepLogsAiAgentDetail.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/AiAgentExecutionResult.tsx
+msgid "Jev cleared this draft"
+msgstr "Jev cleared this draft"
+
+#. js-lingui-id: 8vocJv
+#: src/modules/workflow/workflow-run/observability/WorkflowRunStepLogsAiAgentDetail.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/AiAgentExecutionResult.tsx
+msgid "Jev did not clear this draft"
+msgstr "Jev did not clear this draft"
+
+#. js-lingui-id: A1+Im+
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-filtering-action/components/WorkflowEditActionAiFiltering.tsx
+msgid "Jev requires all structured fields to be boolean or enum with at least 2 values. Switch field types or pick an OpenAI model."
+msgstr "Jev requires all structured fields to be boolean or enum with at least 2 values. Switch field types or pick an OpenAI model."
+
 #. js-lingui-id: q1Vgs9
 #: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
 msgid "Job / company"
@@ -11665,6 +11920,26 @@ msgstr "Kanban"
 msgid "Kanban widget"
 msgstr "Kanban widget"
 
+#. js-lingui-id: kPMgYZ
+#: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
+msgid "Keep LI"
+msgstr "Keep LI"
+
+#. js-lingui-id: VzaZ1U
+#: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
+msgid "Keep LinkedIn connected"
+msgstr "Keep LinkedIn connected"
+
+#. js-lingui-id: PJZh5p
+#: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
+msgid "Keep LinkedIn connected disabled"
+msgstr "Keep LinkedIn connected disabled"
+
+#. js-lingui-id: 0dtSZM
+#: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
+msgid "Keep LinkedIn connected enabled"
+msgstr "Keep LinkedIn connected enabled"
+
 #. js-lingui-id: 7sMeHQ
 #: src/modules/workflow/workflow-steps/workflow-actions/http-request-action/components/KeyValuePairInput.tsx
 msgid "Key"
@@ -11725,6 +12000,8 @@ msgid "Label must contain at least one alphanumeric character"
 msgstr "Label must contain at least one alphanumeric character"
 
 #. js-lingui-id: vXIe7J
+#: src/modules/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionGetLocalBusinessDetails.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionSearchLocalBusinesses.tsx
 #: src/pages/settings/profile/appearance/components/SettingsExperience.tsx
 msgid "Language"
 msgstr "Language"
@@ -11738,6 +12015,11 @@ msgstr "Languages"
 #: src/modules/advanced-text-editor/extensions/slash-command/DefaultSlashCommands.ts
 msgid "Large section heading"
 msgstr "Large section heading"
+
+#. js-lingui-id: RGLHpu
+#: src/modules/workflow/workflow-steps/workflow-actions/company-name-resolver-action/components/WorkflowEditActionResolveCompanyFromRawName.tsx
+msgid "Larsen & Toubro (L&T)"
+msgstr "Larsen & Toubro (L&T)"
 
 #. Short label (keep brief) indicating the most recently used login method
 #. js-lingui-id: RtKKbA
@@ -11905,7 +12187,7 @@ msgstr "Last signed in"
 
 #. js-lingui-id: fWCpro
 #. placeholder {0}: new Date(server.lastSyncAt).toLocaleString()
-#: src/pages/settings/ai/components/SettingsAiMcpServersTab.tsx
+#: src/pages/settings/ai/components/SettingsAiMcpServerCard.tsx
 msgid "Last sync: {0}"
 msgstr "Last sync: {0}"
 
@@ -11913,6 +12195,11 @@ msgstr "Last sync: {0}"
 #: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
 msgid "Last synced"
 msgstr "Last synced"
+
+#. js-lingui-id: 8Bvnhy
+#: src/modules/settings/profile/components/SettingsMemberArxProfileFields.tsx
+msgid "Last synced from extension:"
+msgstr "Last synced from extension:"
 
 #. js-lingui-id: C3yOz3
 #: src/modules/settings/admin-panel/components/SettingsAdminWorkspaceContent.tsx
@@ -11945,6 +12232,7 @@ msgstr "Latest version"
 
 #. js-lingui-id: Q7hYLw
 #: src/modules/object-metadata/hooks/useSortSubFieldChoicesForField.ts
+#: src/modules/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionSearchLocalBusinesses.tsx
 msgid "Latitude"
 msgstr "Latitude"
 
@@ -11952,11 +12240,6 @@ msgstr "Latitude"
 #: src/modules/settings/mcp-and-apis/components/PlaygroundSetupForm.tsx
 msgid "Launch"
 msgstr "Launch"
-
-#. js-lingui-id: VzFSFs
-#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
-msgid "Launch from a candidate record, selected candidates, or Start sequencer on the Outreach People tab."
-msgstr "Launch from a candidate record, selected candidates, or Start sequencer on the Outreach People tab."
 
 #. js-lingui-id: 9BjbLR
 #: src/modules/side-panel/components/SidePanelWorkflowStepInfo.tsx
@@ -12133,7 +12416,9 @@ msgstr "Lime"
 
 #. js-lingui-id: yRkqG9
 #: src/modules/side-panel/pages/page-layout/components/dashboard/SidePanelDashboardRecordTableSettings.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/bright-data-business-search-action/components/WorkflowEditActionSearchBrightDataBusiness.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/find-records-action/components/WorkflowEditActionFindRecords.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionSearchLocalBusinesses.tsx
 msgid "Limit"
 msgstr "Limit"
 
@@ -12264,6 +12549,11 @@ msgstr "LinkedIn connected with stored cookies."
 msgid "LinkedIn connection failed with stored cookies."
 msgstr "LinkedIn connection failed with stored cookies."
 
+#. js-lingui-id: KW/tRL
+#: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
+msgid "LinkedIn cookie fetch sent to the extension."
+msgstr "LinkedIn cookie fetch sent to the extension."
+
 #. js-lingui-id: jgqsTb
 #: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
 msgid "LinkedIn country"
@@ -12291,6 +12581,8 @@ msgid "LinkedIn matches"
 msgstr "LinkedIn matches"
 
 #. js-lingui-id: yjp5Uv
+#: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionAcceptLinkedinReceivedInvitation.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionCommentOnLinkedinPost.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionFetchLinkedinActivity.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionFollowLinkedinProfile.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionSendLinkedinConnectionRequest.tsx
@@ -12348,6 +12640,8 @@ msgstr "LinkedIn Unipile ID"
 
 #. js-lingui-id: Gg69LR
 #: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionAcceptLinkedinReceivedInvitation.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionCommentOnLinkedinPost.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionFetchLinkedinActivity.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionFollowLinkedinProfile.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionSendLinkedinConnectionRequest.tsx
@@ -12548,11 +12842,6 @@ msgstr "Loading…"
 msgid "Local, Production"
 msgstr "Local, Production"
 
-#. js-lingui-id: 8NbHF7
-#: src/pages/settings/ai/SettingsAiPrompts.tsx
-msgid "Locale"
-msgstr "Locale"
-
 #. js-lingui-id: wJijgU
 #: src/modules/settings/accounts/components/SettingsAccountsWebsite.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionCreateCalendarEvent.tsx
@@ -12633,6 +12922,7 @@ msgstr "Logs require ClickHouse to be configured. Please contact your administra
 
 #. js-lingui-id: FJBbw5
 #: src/modules/object-metadata/hooks/useSortSubFieldChoicesForField.ts
+#: src/modules/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionSearchLocalBusinesses.tsx
 msgid "Longitude"
 msgstr "Longitude"
 
@@ -12645,6 +12935,11 @@ msgstr "Look up"
 #: src/modules/workflow/workflow-diagram/utils/generateNodesAndEdgesForIteratorNode.ts
 msgid "loop"
 msgstr "loop"
+
+#. js-lingui-id: QtKFk/
+#: src/modules/workflow/workflow-steps/workflow-actions/bright-data-business-search-action/components/WorkflowEditActionSearchBrightDataBusiness.tsx
+msgid "ludicrous | smart | instant"
+msgstr "ludicrous | smart | instant"
 
 #. js-lingui-id: MsaCqr
 #: src/modules/settings/accounts/components/SettingsAccountsConnectionForm.tsx
@@ -12797,11 +13092,6 @@ msgstr "Manual"
 msgid "Manual configuration"
 msgstr "Manual configuration"
 
-#. js-lingui-id: FD1NX6
-#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
-msgid "Manual trigger"
-msgstr "Manual trigger"
-
 #. js-lingui-id: UkKR1W
 #: src/modules/information-banner/components/billing/InformationBannerNoMoreArxenaCredits.tsx
 msgid "map"
@@ -12849,6 +13139,11 @@ msgstr "Match Columns"
 #: src/modules/side-panel/pages/page-layout/constants/settings/RangeMaxSetting.ts
 msgid "Max"
 msgstr "Max"
+
+#. js-lingui-id: itaxG8
+#: src/modules/workflow/workflow-steps/workflow-actions/bright-data-business-search-action/components/WorkflowEditActionSearchBrightDataBusiness.tsx
+msgid "Max budget (USD)"
+msgstr "Max budget (USD)"
 
 #. js-lingui-id: HFjNu6
 #: src/modules/spreadsheet-import/steps/components/UploadStep/components/DropZone.tsx
@@ -12967,11 +13262,6 @@ msgstr "MCP server removed"
 #: src/pages/settings/ai/SettingsAI.tsx
 msgid "MCP servers"
 msgstr "MCP servers"
-
-#. js-lingui-id: czM3BP
-#: src/pages/settings/ai/components/SettingsAiMcpServersTab.tsx
-msgid "mcp.json"
-msgstr "mcp.json"
 
 #. js-lingui-id: upbzgm
 #: src/modules/object-record/record-field/ui/form-types/components/FormWorkspaceMemberFilterValueInput.tsx
@@ -13110,6 +13400,11 @@ msgstr "Messages"
 msgid "Messaging"
 msgstr "Messaging"
 
+#. js-lingui-id: u8Q7/4
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Messaging & review"
+msgstr "Messaging & review"
+
 #. js-lingui-id: 6GBt0m
 #: src/modules/settings/accounts/components/SettingsAccountsCalendarVisibilitySettingsCard.tsx
 #: src/modules/settings/accounts/components/SettingsAccountsMessageVisibilityCard.tsx
@@ -13212,8 +13507,20 @@ msgstr "Mission accomplished!"
 msgid "Mobile"
 msgstr "Mobile"
 
+#. js-lingui-id: zZeOKF
+#: src/modules/outreach-home/components/OutreachStatusBanners.tsx
+msgid "Mock Unipile is enabled for this workspace."
+msgstr "Mock Unipile is enabled for this workspace."
+
+#. js-lingui-id: A5Zf0a
+#: src/modules/outreach-home/components/OutreachNeedsConnectionBanner.tsx
+msgid "Mock Unipile is enabled for this workspace. Connect {channels} to start live outreach."
+msgstr "Mock Unipile is enabled for this workspace. Connect {channels} to start live outreach."
+
 #. js-lingui-id: zz/Wd/
 #: src/modules/settings/developers/components/SettingsOrgChartEmbedTable.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/bright-data-business-search-action/components/WorkflowEditActionSearchBrightDataBusiness.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionSearchLocalBusinesses.tsx
 #: src/pages/settings/developers/org-chart-embed/SettingsDevelopersOrgChartEmbedDetail.tsx
 #: src/pages/settings/developers/org-chart-embed/SettingsDevelopersOrgChartEmbedNew.tsx
 msgid "Mode"
@@ -13239,6 +13546,7 @@ msgstr "Mode: split"
 
 #. js-lingui-id: scu3wk
 #: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentPromptTab.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-filtering-action/components/WorkflowAiFilteringConfigureTab.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/logic-function-action/components/WorkflowLogicFunctionAiModelSelect.tsx
 msgid "Model"
 msgstr "Model"
@@ -13449,6 +13757,8 @@ msgid "Move work forward across teams and agents"
 msgstr "Move work forward across teams and agents"
 
 #. js-lingui-id: OwB6cC
+#: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionAcceptLinkedinReceivedInvitation.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionCommentOnLinkedinPost.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionFetchLinkedinActivity.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionFollowLinkedinProfile.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionSendLinkedinConnectionRequest.tsx
@@ -13458,6 +13768,11 @@ msgstr "Move work forward across teams and agents"
 #: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionViewLinkedinProfile.tsx
 msgid "muizesmail, ACoAA…, or https://linkedin.com/in/muizesmail"
 msgstr "muizesmail, ACoAA…, or https://linkedin.com/in/muizesmail"
+
+#. js-lingui-id: +nc2TM
+#: src/modules/settings/profile/components/SettingsMemberArxProfileFields.tsx
+msgid "Must be a JSON array of Crunchbase cookie objects"
+msgstr "Must be a JSON array of Crunchbase cookie objects"
 
 #. js-lingui-id: asWVA5
 #: src/modules/object-record/spreadsheet-import/utils/getSpreadSheetFieldValidationDefinitions.ts
@@ -13537,6 +13852,8 @@ msgstr "N/A"
 #: src/modules/settings/usage/components/UsageByUserTableSection.tsx
 #: src/modules/settings/workflow-approvals/components/SettingsWorkflowApprovals.tsx
 #: src/modules/settings/workspace/components/NameField.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentOutputValidationCheckCard.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-filtering-action/components/WorkflowAiFilteringConfigureTab.tsx
 #: src/pages/settings/admin-panel/SettingsAdminAiProviderDetail.tsx
 #: src/pages/settings/admin-panel/SettingsAdminUserDetail.tsx
 #: src/pages/settings/admin-panel/SettingsAdminWorkspaceDetail.tsx
@@ -14207,6 +14524,11 @@ msgstr "No deleted records matching the filter criteria were found."
 msgid "No description available for this application"
 msgstr "No description available for this application"
 
+#. js-lingui-id: pEf075
+#: src/modules/workflow/workflow-run/observability/WorkflowRunStepLogsStatusFallback.tsx
+msgid "No detailed logs were recorded for this step. Showing the run status instead."
+msgstr "No detailed logs were recorded for this step. Showing the run status instead."
+
 #. js-lingui-id: MIzfcC
 #: src/modules/settings/accounts/components/SettingsAccountsWebsite.tsx
 msgid "No domains yet. Add your marketing site to start tracking."
@@ -14525,6 +14847,11 @@ msgstr "No request body"
 #: src/modules/workflow/workflow-run/observability/WorkflowRunStepLogsHttpRequestDetail.tsx
 msgid "No response body"
 msgstr "No response body"
+
+#. js-lingui-id: inJWZ2
+#: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
+msgid "No response from cookie fetch"
+msgstr "No response from cookie fetch"
 
 #. js-lingui-id: uLJj26
 #: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
@@ -14863,7 +15190,7 @@ msgid "Not synced"
 msgstr "Not synced"
 
 #. js-lingui-id: oL535e
-#: src/pages/settings/ai/components/SettingsAiMcpServersTab.tsx
+#: src/pages/settings/ai/components/SettingsAiMcpServerCard.tsx
 msgid "Not synced yet"
 msgstr "Not synced yet"
 
@@ -15098,6 +15425,36 @@ msgstr "of"
 msgid "Off the beaten path"
 msgstr "Off the beaten path"
 
+#. js-lingui-id: fJt+eL
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Off: blank connection request with no draft/approve nodes."
+msgstr "Off: blank connection request with no draft/approve nodes."
+
+#. js-lingui-id: 4rSqEB
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Off: remove approve steps and send drafted messages directly."
+msgstr "Off: remove approve steps and send drafted messages directly."
+
+#. js-lingui-id: UdGOzJ
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Off: replies and follow-ups only use email and LinkedIn."
+msgstr "Off: replies and follow-ups only use email and LinkedIn."
+
+#. js-lingui-id: /aMP3q
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Off: skip qualify, enrichment stamp, and go/no-go — profile fetch goes straight to connect."
+msgstr "Off: skip qualify, enrichment stamp, and go/no-go — profile fetch goes straight to connect."
+
+#. js-lingui-id: OYAxML
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Off: skip the meeting reminder / no-show / reschedule tree."
+msgstr "Off: skip the meeting reminder / no-show / reschedule tree."
+
+#. js-lingui-id: 0LzEF3
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Off: wherever an email would be sent, a system email asks the workspace member to send it instead."
+msgstr "Off: wherever an email would be sent, a system email asks the workspace member to send it instead."
+
 #. js-lingui-id: s1X4Cm
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
 msgid "Official app"
@@ -15109,6 +15466,7 @@ msgid "Official recipient phone"
 msgstr "Official recipient phone"
 
 #. js-lingui-id: Zd5vVt
+#: src/modules/workflow/workflow-steps/workflow-actions/bright-data-business-search-action/components/WorkflowEditActionSearchBrightDataBusiness.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/find-records-action/components/WorkflowEditActionFindRecords.tsx
 msgid "Offset"
 msgstr "Offset"
@@ -15189,6 +15547,36 @@ msgstr "on weekdays only"
 #: src/modules/workflow/workflow-trigger/components/WorkflowEditTriggerManual.tsx
 msgid "On which object(s) should this trigger be available"
 msgstr "On which object(s) should this trigger be available"
+
+#. js-lingui-id: GviuD6
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "On: after the connection wait, draft and send InMail before enriching email."
+msgstr "On: after the connection wait, draft and send InMail before enriching email."
+
+#. js-lingui-id: BWEz7M
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "On: comment on a second distinct post after a 1-day wait."
+msgstr "On: comment on a second distinct post after a 1-day wait."
+
+#. js-lingui-id: pTPIyV
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "On: connection note, first message and follow-ups use the templates from Setup → Draft messages, with no AI draft or approve step before them."
+msgstr "On: connection note, first message and follow-ups use the templates from Setup → Draft messages, with no AI draft or approve step before them."
+
+#. js-lingui-id: i1SAoT
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "On: defer prospects whose company already has someone contacted or an earlier QUEUED sibling."
+msgstr "On: defer prospects whose company already has someone contacted or an earlier QUEUED sibling."
+
+#. js-lingui-id: lyUY7O
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "On: each prospect is pinned to one workspace member (assigned manually, split across members, or chosen by warm overlap) and every send and reply stays on that member's seat. Needs two or more members with a connected LinkedIn account. Off: LinkedIn, WhatsApp and email all send from the project's recruiter (an existing assignment still wins). Turning this off later does not unpin anyone."
+msgstr "On: each prospect is pinned to one workspace member (assigned manually, split across members, or chosen by warm overlap) and every send and reply stays on that member's seat. Needs two or more members with a connected LinkedIn account. Off: LinkedIn, WhatsApp and email all send from the project's recruiter (an existing assignment still wins). Turning this off later does not unpin anyone."
+
+#. js-lingui-id: +x1y1e
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "On: every wait (3–7 days) becomes 1 minute for rapid branch testing."
+msgstr "On: every wait (3–7 days) becomes 1 minute for rapid branch testing."
 
 #. js-lingui-id: gukxZ5
 #: src/modules/ai/components/AiChatPageHeader.tsx
@@ -15383,11 +15771,23 @@ msgstr "Operational"
 msgid "Option 1"
 msgstr "Option 1"
 
+#. js-lingui-id: LLAa/9
+#: src/modules/workflow/workflow-steps/workflow-actions/bright-data-business-search-action/components/WorkflowEditActionSearchBrightDataBusiness.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionSearchLocalBusinesses.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionSearchLocalBusinesses.tsx
+msgid "Optional"
+msgstr "Optional"
+
 #. js-lingui-id: gUeG+X
 #: src/pages/settings/admin-panel/SettingsAdminNewAiProvider.tsx
 #: src/pages/settings/admin-panel/SettingsAdminNewAiProvider.tsx
 msgid "Optional — uses IAM role if empty"
 msgstr "Optional — uses IAM role if empty"
+
+#. js-lingui-id: 81/zYR
+#: src/modules/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionSearchLocalBusinesses.tsx
+msgid "Optional (for search / search-in-area)"
+msgstr "Optional (for search / search-in-area)"
 
 #. js-lingui-id: 3Qh5MI
 #: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionSendLinkedinConnectionRequest.tsx
@@ -15416,6 +15816,8 @@ msgid "Optional. Leave empty for voice-only"
 msgstr "Optional. Leave empty for voice-only"
 
 #. js-lingui-id: rdRYHK
+#: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionAcceptLinkedinReceivedInvitation.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionCommentOnLinkedinPost.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionFetchLinkedinActivity.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionFollowLinkedinProfile.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionSendLinkedinConnectionRequest.tsx
@@ -15435,6 +15837,16 @@ msgstr "Optional. React to a comment instead of the post"
 #: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionCommentOnLinkedinPost.tsx
 msgid "Optional. Reply to an existing comment instead of the post"
 msgstr "Optional. Reply to an existing comment instead of the post"
+
+#. js-lingui-id: Z30taR
+#: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionFetchLinkedinActivity.tsx
+msgid "Optional. Skip these social_ids when picking mostRecentPost"
+msgstr "Optional. Skip these social_ids when picking mostRecentPost"
+
+#. js-lingui-id: t6tQKE
+#: src/modules/workflow/workflow-steps/workflow-actions/bright-data-business-search-action/components/WorkflowEditActionSearchBrightDataBusiness.tsx
+msgid "Optional. Writes the Outreach tab when set"
+msgstr "Optional. Writes the Outreach tab when set"
 
 #. js-lingui-id: 0zpgxV
 #: src/modules/candidate-table/ChatOptionsDropdownButton.tsx
@@ -15801,15 +16213,20 @@ msgstr "Past due"
 msgid "Past employee at this company (from profile experience)"
 msgstr "Past employee at this company (from profile experience)"
 
-#. js-lingui-id: /hvufo
+#. js-lingui-id: KE6eOG
 #: src/pages/settings/ai/components/SettingsAiMcpServersTab.tsx
-msgid "Paste a Cursor-style mcp.json. Remote HTTP and mcp-remote servers sync into Ask AI as slug__tool via learn_tools / execute_tool."
-msgstr "Paste a Cursor-style mcp.json. Remote HTTP and mcp-remote servers sync into Ask AI as slug__tool via learn_tools / execute_tool."
+msgid "Paste a Cursor-style mcp.json. Remote HTTP servers sync into Ask AI as slug__tool via learn_tools / execute_tool."
+msgstr "Paste a Cursor-style mcp.json. Remote HTTP servers sync into Ask AI as slug__tool via learn_tools / execute_tool."
 
 #. js-lingui-id: RjSkbk
 #: src/modules/workflow/workflow-steps/workflow-actions/code-action/components/WorkflowEditActionCodeFieldLeaf.tsx
 msgid "Paste a JSON array"
 msgstr "Paste a JSON array"
+
+#. js-lingui-id: eXkZj4
+#: src/modules/settings/profile/components/SettingsMemberArxProfileFields.tsx
+msgid "Paste Chrome cookie export JSON array"
+msgstr "Paste Chrome cookie export JSON array"
 
 #. js-lingui-id: cpStVq
 #: src/modules/auth/sign-in-up/components/internal/SignInUpTwoFactorAuthenticationVerification.tsx
@@ -15990,6 +16407,11 @@ msgstr "Phone number"
 msgid "Phone Number"
 msgstr "Phone Number"
 
+#. js-lingui-id: 7uQP1I
+#: src/pages/onboarding/CreateProfile.tsx
+msgid "Phone number (optional)"
+msgstr "Phone number (optional)"
+
 #. js-lingui-id: qlqT9z
 #: src/modules/object-record/record-field/ui/meta-types/display/components/PhonesFieldDisplay.tsx
 #: src/modules/object-record/record-table/record-table-cell/hooks/useGetSecondaryRecordTableCellButton.ts
@@ -16068,6 +16490,11 @@ msgstr "Picture"
 msgid "Pie Chart"
 msgstr "Pie Chart"
 
+#. js-lingui-id: vA12Et
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Pin outreach sender by warm overlap"
+msgstr "Pin outreach sender by warm overlap"
+
 #. js-lingui-id: 3pU8e+
 #: src/modules/side-panel/pages/page-layout/components/SoloTabSettingsContent.tsx
 msgid "Pin tab"
@@ -16133,6 +16560,11 @@ msgstr "Please check your cron expression syntax."
 #: src/pages/settings/security/SettingsSecurityApprovedAccessDomain.tsx
 msgid "Please check your email for a verification link."
 msgstr "Please check your email for a verification link."
+
+#. js-lingui-id: o07d6o
+#: src/pages/onboarding/CreateProfile.tsx
+msgid "Please enter a valid phone number"
+msgstr "Please enter a valid phone number"
 
 #. js-lingui-id: jEw0Mr
 #: src/modules/side-panel/pages/page-layout/components/dashboard/SidePanelDashboardIframeSettings.tsx
@@ -16245,6 +16677,11 @@ msgstr "Postcode"
 msgid "Posts limit"
 msgstr "Posts limit"
 
+#. js-lingui-id: pvl0at
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Pre-connect engagement"
+msgstr "Pre-connect engagement"
+
 #. js-lingui-id: W88dRa
 #: src/modules/logic-functions/utils/getLogicFunctionTriggerLabel.ts
 msgid "Pre-install"
@@ -16284,6 +16721,13 @@ msgstr "Prepaid balances for org charts, contact reveals, and People API searche
 #: src/pages/settings/baileys/BaileysAccounts.tsx
 msgid "Preparing new QR code..."
 msgstr "Preparing new QR code..."
+
+#. js-lingui-id: G2Iv7a
+#. placeholder {0}: pdfExportProgress.pageNumber
+#. placeholder {1}: pdfExportProgress.pageCount
+#: src/modules/workflow/workflow-diagram/components/WorkflowDiagramCanvasBase.tsx
+msgid "Preparing PDF… {0}/{1}"
+msgstr "Preparing PDF… {0}/{1}"
 
 #. js-lingui-id: NwnQoz
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
@@ -16424,6 +16868,11 @@ msgstr "pro plan"
 msgid "Pro plan"
 msgstr "Pro plan"
 
+#. js-lingui-id: Yt0R+w
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-filtering-action/components/WorkflowAiFilteringConfigureTab.tsx
+msgid "Process AI Filter"
+msgstr "Process AI Filter"
+
 #. js-lingui-id: k1ifdL
 #: src/modules/spreadsheet-import/steps/components/UploadStep/components/DropZone.tsx
 #: src/modules/workflow/components/WorkflowStepExecutionResult.tsx
@@ -16454,6 +16903,11 @@ msgstr "Profile Picture"
 msgid "Project"
 msgstr "Project"
 
+#. js-lingui-id: mSfwLL
+#: src/modules/workflow/workflow-steps/workflow-actions/bright-data-business-search-action/components/WorkflowEditActionSearchBrightDataBusiness.tsx
+msgid "Project ID"
+msgstr "Project ID"
+
 #. js-lingui-id: +0B+ue
 #: src/modules/navigation/components/ProjectsNavigationDrawerItems.tsx
 msgid "Projects"
@@ -16461,6 +16915,7 @@ msgstr "Projects"
 
 #. js-lingui-id: W9uQXX
 #: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowEditActionAiAgent.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-filtering-action/components/WorkflowAiFilteringConfigureTab.tsx
 msgid "Prompt"
 msgstr "Prompt"
 
@@ -16488,6 +16943,11 @@ msgstr "Property name"
 #: src/modules/workflow/workflow-steps/workflow-actions/http-request-action/components/BodyInput.tsx
 msgid "Property value"
 msgstr "Property value"
+
+#. js-lingui-id: 9zzngK
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Prospect filters"
+msgstr "Prospect filters"
 
 #. js-lingui-id: GVxbU6
 #: src/modules/settings/security/components/SSO/SettingsSSOOIDCForm.tsx
@@ -16581,6 +17041,11 @@ msgstr "Purple"
 msgid "Python Code Execution"
 msgstr "Python Code Execution"
 
+#. js-lingui-id: DOWQry
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Qualify prospect"
+msgstr "Qualify prospect"
+
 #. js-lingui-id: 2vudsu
 #: src/modules/side-panel/pages/page-layout/utils/getDateGranularityLabel.ts
 msgid "Quarter"
@@ -16601,6 +17066,18 @@ msgstr "quarters"
 #: src/modules/settings/data-model/object-details/components/tabs/SettingsObjectIndexesSection.tsx
 msgid "Queries that relied on it will fall back to a sequential scan. You can recreate it later."
 msgstr "Queries that relied on it will fall back to a sequential scan. You can recreate it later."
+
+#. js-lingui-id: 0mx5ow
+#: src/modules/workflow/workflow-steps/workflow-actions/bright-data-business-search-action/components/WorkflowEditActionSearchBrightDataBusiness.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionSearchLocalBusinesses.tsx
+msgid "Query"
+msgstr "Query"
+
+#. js-lingui-id: bfgr/e
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentOutputValidationCheckCard.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentOutputValidationCheckCard.tsx
+msgid "Question"
+msgstr "Question"
 
 #. js-lingui-id: /IUt/5
 #: src/modules/settings/admin-panel/health-status/components/SettingsAdminWorkerHealthStatus.tsx
@@ -16962,6 +17439,8 @@ msgid "Regenerate Key"
 msgstr "Regenerate Key"
 
 #. js-lingui-id: uJ+Ve2
+#: src/modules/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionGetLocalBusinessDetails.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionSearchLocalBusinesses.tsx
 #: src/pages/settings/admin-panel/SettingsAdminAiProviderDetail.tsx
 #: src/pages/settings/admin-panel/SettingsAdminNewAiProvider.tsx
 msgid "Region"
@@ -16996,6 +17475,12 @@ msgstr "Registered as a development instance. This instance will not be billed."
 #: src/modules/workflow/workflow-steps/workflow-actions/form-action/components/WorkflowEditActionFormFiller.tsx
 msgid "Reject"
 msgstr "Reject"
+
+#. js-lingui-id: KG1cVo
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentOutputValidationCheckCard.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentOutputValidationCheckCard.tsx
+msgid "Reject when"
+msgstr "Reject when"
 
 #. js-lingui-id: h9AYFD
 #: src/modules/settings/data-model/fields/forms/components/SettingsObjectNewFieldSelector.tsx
@@ -17110,6 +17595,11 @@ msgstr "Remove all"
 msgid "Remove as default"
 msgstr "Remove as default"
 
+#. js-lingui-id: 5oY9AZ
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentOutputValidationCheckCard.tsx
+msgid "Remove check"
+msgstr "Remove check"
+
 #. js-lingui-id: 2HpFUd
 #: src/modules/object-record/record-table/empty-state/components/RecordTableEmptyStateSoftDelete.tsx
 msgid "Remove Deleted filter"
@@ -17202,6 +17692,11 @@ msgstr "Remove this provider and disconnect all its models"
 #: src/modules/object-record/record-field/ui/form-types/components/VariableChip.tsx
 msgid "Remove variable"
 msgstr "Remove variable"
+
+#. js-lingui-id: B1honP
+#: src/modules/side-panel/components/SidePanelUndoAiChatButton.tsx
+msgid "Removes AI columns this chat added and clears any table filters it applied. Does not restore overwritten values or undo list, CRM, or send actions."
+msgstr "Removes AI columns this chat added and clears any table filters it applied. Does not restore overwritten values or undo list, CRM, or send actions."
 
 #. js-lingui-id: 2wxgft
 #: src/modules/activities/files/components/AttachmentDropdown.tsx
@@ -17720,10 +18215,20 @@ msgstr "Running function"
 msgid "Running..."
 msgstr "Running..."
 
+#. js-lingui-id: lziBgy
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-filtering-action/components/WorkflowAiFilteringTestTab.tsx
+msgid "Running…"
+msgstr "Running…"
+
 #. js-lingui-id: vxOZrm
 #: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentTestTab.tsx
 msgid "Runs the agent with its tools"
 msgstr "Runs the agent with its tools"
+
+#. js-lingui-id: 4Dn7tz
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-filtering-action/components/WorkflowAiFilteringTestTab.tsx
+msgid "Runs the configured prompt on a fixed sample of 2 candidates using TypeSafe Jev by default. Does not write CRM fields or enqueue a workflow run."
+msgstr "Runs the configured prompt on a fixed sample of 2 candidates using TypeSafe Jev by default. Does not write CRM fields or enqueue a workflow run."
 
 #. js-lingui-id: nji0/X
 #: src/pages/settings/profile/appearance/components/LocalePicker.tsx
@@ -17735,10 +18240,20 @@ msgstr "Russian"
 msgid "Sales Navigator"
 msgstr "Sales Navigator"
 
+#. js-lingui-id: bThcnE
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Sales Navigator InMail before email"
+msgstr "Sales Navigator InMail before email"
+
 #. js-lingui-id: 3hNFUc
 #: src/modules/settings/logic-functions/components/triggers/SettingsLogicFunctionTriggerPayloadFormat.tsx
 msgid "Sample input"
 msgstr "Sample input"
+
+#. js-lingui-id: B5e50y
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-filtering-action/components/WorkflowAiFilteringTestTab.tsx
+msgid "Sample run (sync)"
+msgstr "Sample run (sync)"
 
 #. js-lingui-id: +5kO8P
 #: src/pages/settings/profile/appearance/components/DateTimeSettingsCalendarStartDaySelect.tsx
@@ -17772,11 +18287,6 @@ msgstr "Save changes"
 msgid "Save Changes"
 msgstr "Save Changes"
 
-#. js-lingui-id: NuyJJO
-#: src/pages/settings/ai/components/SettingsAiMcpServersTab.tsx
-msgid "Save MCP servers"
-msgstr "Save MCP servers"
-
 #. js-lingui-id: 7byqGp
 #: src/modules/layout-customization/hooks/useEnterLayoutCustomizationMode.ts
 msgid "Save or cancel dashboard changes before editing the layout."
@@ -17786,6 +18296,11 @@ msgstr "Save or cancel dashboard changes before editing the layout."
 #: src/modules/settings/account-rate-limits/components/AccountRateLimitsPanel.tsx
 msgid "Save settings"
 msgstr "Save settings"
+
+#. js-lingui-id: idD8Ev
+#: src/pages/settings/ai/components/SettingsAiMcpServersTab.tsx
+msgid "Saved"
+msgstr "Saved"
 
 #. js-lingui-id: TDxNi4
 #: src/pages/settings/ai/components/SettingsAiMcpServersTab.tsx
@@ -17806,6 +18321,11 @@ msgstr "Saved."
 #: src/pages/settings/ApiKeysForm.tsx
 msgid "Saving..."
 msgstr "Saving..."
+
+#. js-lingui-id: K/F6pa
+#: src/pages/settings/ai/components/SettingsAiMcpServersTab.tsx
+msgid "Saving…"
+msgstr "Saving…"
 
 #. js-lingui-id: AdmaFq
 #: src/pages/settings/baileys/BaileysAccounts.tsx
@@ -17886,6 +18406,11 @@ msgstr "SDK"
 #: src/modules/ui/navigation/navigation-drawer/components/NavigationDrawerHeader.tsx
 msgid "Search"
 msgstr "Search"
+
+#. js-lingui-id: XQkwVG
+#: src/modules/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionSearchLocalBusinesses.tsx
+msgid "search | search-nearby | search-in-area"
+msgstr "search | search-nearby | search-in-area"
 
 #. js-lingui-id: g2dQp/
 #: src/modules/settings/roles/role-permissions/object-level-permissions/record-level-permissions/components/SettingsRolePermissionsObjectLevelRecordLevelPermissionMeValueSelect.tsx
@@ -18619,6 +19144,16 @@ msgstr "Send Email"
 msgid "Send emails via connected accounts"
 msgstr "Send emails via connected accounts"
 
+#. js-lingui-id: EeGj55
+#: src/modules/settings/roles/role-permissions/permission-flags/hooks/useActionRolePermissionFlagConfig.ts
+msgid "Send Files"
+msgstr "Send Files"
+
+#. js-lingui-id: XYCXI1
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentSendFilesConfig.tsx
+msgid "Send Files source"
+msgstr "Send Files source"
+
 #. js-lingui-id: 6nwEi6
 #: src/modules/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionCreateCalendarEvent.tsx
 msgid "Send invitations"
@@ -18630,6 +19165,21 @@ msgstr "Send invitations"
 #: src/modules/workflow/workflow-steps/workflow-actions/send-action-test/hooks/useTestWorkflowSendAction.ts
 msgid "Send test failed"
 msgstr "Send test failed"
+
+#. js-lingui-id: GZstL7
+#: src/modules/settings/roles/role-permissions/permission-flags/hooks/useActionRolePermissionFlagConfig.ts
+msgid "Send uploaded files via LinkedIn, email, or WhatsApp"
+msgstr "Send uploaded files via LinkedIn, email, or WhatsApp"
+
+#. js-lingui-id: HW5fQk
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Sender"
+msgstr "Sender"
+
+#. js-lingui-id: Xk28Bg
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentSendFilesConfig.tsx
+msgid "Sender collateral (Outreach setup)"
+msgstr "Sender collateral (Outreach setup)"
 
 #. js-lingui-id: LFupHB
 #: src/pages/settings/communications/SettingsWorkspaceCommunicationGroupChannelDetail.tsx
@@ -18678,6 +19228,16 @@ msgstr "Sends a real LinkedIn message"
 #: src/modules/workflow/workflow-steps/workflow-actions/send-action-test/components/WorkflowSendActionTestTab.tsx
 msgid "Sends a real WhatsApp message"
 msgstr "Sends a real WhatsApp message"
+
+#. js-lingui-id: zMSNti
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-filtering-action/components/WorkflowAiFilteringConfigureTab.tsx
+msgid "Senior GTM decision makers only"
+msgstr "Senior GTM decision makers only"
+
+#. js-lingui-id: 00MmZl
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-filtering-action/components/WorkflowAiFilteringConfigureTab.tsx
+msgid "SeniorGtmFilter"
+msgstr "SeniorGtmFilter"
 
 #. js-lingui-id: h69WC6
 #: src/modules/settings/accounts/components/SettingsAccountsMessageAutoCreationCard.tsx
@@ -19115,7 +19675,6 @@ msgstr "skill"
 #. js-lingui-id: OZJeTZ
 #: src/pages/settings/ai/SettingsSkillForm.tsx
 #: src/pages/settings/ai/SettingsSkillForm.tsx
-#: src/pages/settings/ai/SettingsSkillForm.tsx
 msgid "Skill"
 msgstr "Skill"
 
@@ -19415,6 +19974,11 @@ msgstr "Stages"
 msgid "Standard"
 msgstr "Standard"
 
+#. js-lingui-id: 6oi/Z7
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Standard draft messages (manual)"
+msgstr "Standard draft messages (manual)"
+
 #. js-lingui-id: ASqWQi
 #: src/pages/settings/enterprise/SettingsEnterprise.tsx
 msgid "Start a new enterprise subscription to re-enable enterprise features."
@@ -19507,6 +20071,11 @@ msgstr "Step filter group options"
 #: src/modules/workflow/workflow-steps/filters/components/WorkflowStepFilterOptionsDropdown.tsx
 msgid "Step filter options"
 msgstr "Step filter options"
+
+#. js-lingui-id: YcY7X9
+#: src/modules/workflow/workflow-run/observability/WorkflowRunStepLogsStatusFallback.tsx
+msgid "Step status"
+msgstr "Step status"
 
 #. js-lingui-id: w0xNpc
 #: src/modules/command-menu-item/engine-command/record/single-record/workflow/components/BulkForceStopWorkflowRunsSingleRecordCommand.tsx
@@ -19828,6 +20397,7 @@ msgstr "Sync email and calendar accounts"
 
 #. js-lingui-id: 5TRY4+
 #: src/modules/settings/accounts/components/SettingsAccountsConnectedAccountsRowRightContainer.tsx
+#: src/pages/settings/ai/components/SettingsAiMcpServerCard.tsx
 msgid "Sync failed"
 msgstr "Sync failed"
 
@@ -19842,7 +20412,7 @@ msgid "Sync lost with mailbox {mailboxHandle}. Please reconnect for updates:"
 msgstr "Sync lost with mailbox {mailboxHandle}. Please reconnect for updates:"
 
 #. js-lingui-id: cxRmVd
-#: src/pages/settings/ai/components/SettingsAiMcpServersTab.tsx
+#: src/pages/settings/ai/components/SettingsAiMcpServerCard.tsx
 msgid "Sync tools"
 msgstr "Sync tools"
 
@@ -20019,6 +20589,11 @@ msgstr "Team member"
 msgid "Template"
 msgstr "Template"
 
+#. js-lingui-id: xT4/Ac
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentOutputValidationConfig.tsx
+msgid "template tokens"
+msgstr "template tokens"
+
 #. js-lingui-id: lKXcJz
 #: src/pages/settings/emailing-domains/utils/getEmailingDomainStatusText.ts
 msgid "Temporary Failure"
@@ -20040,6 +20615,8 @@ msgstr "Terms of Service"
 #: src/modules/settings/logic-functions/components/tabs/SettingsLogicFunctionCodeEditorTab.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowEditActionAiAgent.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowEditActionAiAgent.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-filtering-action/components/WorkflowEditActionAiFiltering.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-filtering-action/components/WorkflowEditActionAiFiltering.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/code-action/components/WorkflowEditActionCode.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/code-action/components/WorkflowEditActionCode.tsx
 #: src/modules/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionEmailBase.tsx
@@ -20073,10 +20650,20 @@ msgstr "Test cookie connection."
 msgid "Test cookies"
 msgstr "Test cookies"
 
+#. js-lingui-id: m+GmPe
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Test mode"
+msgstr "Test mode"
+
 #. js-lingui-id: 3nWPN6
 #: src/modules/settings/logic-functions/components/tabs/SettingsLogicFunctionTestTab.tsx
 msgid "Test your function"
 msgstr "Test your function"
+
+#. js-lingui-id: qIJIrD
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Testing"
+msgstr "Testing"
 
 #. js-lingui-id: ZuV38b
 #: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
@@ -20508,6 +21095,11 @@ msgstr "This application has already been claimed."
 msgid "This application's registration is claimed by your workspace"
 msgstr "This application's registration is claimed by your workspace"
 
+#. js-lingui-id: Utrj5j
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentOutputValidationCheckCard.tsx
+msgid "This check runs after the question, reject when, and allow when are filled in."
+msgstr "This check runs after the question, reject when, and allow when are filled in."
+
 #. js-lingui-id: WCa/7U
 #: src/pages/settings/applications/tabs/SettingsApplicationFrontComponentPreviewTab.tsx
 msgid "This component runs without a UI and renders nothing here."
@@ -20744,6 +21336,11 @@ msgstr "This will permanently delete your two factor authentication method.<0/>S
 msgid "This will revoke {0} for {userLabel}."
 msgstr "This will revoke {0} for {userLabel}."
 
+#. js-lingui-id: Avy0AZ
+#: src/modules/workflow/workflow-diagram/components/WorkflowDiagramRightClickCommandMenu.tsx
+msgid "This workflow has nothing to export"
+msgstr "This workflow has nothing to export"
+
 #. js-lingui-id: f8HOUp
 #: src/modules/ai/components/ThinkingStepsDisplay.tsx
 msgid "Thought"
@@ -20799,11 +21396,6 @@ msgstr "Timestamp"
 #: src/modules/settings/accounts/components/SettingsAccountsMessageVisibilityCard.tsx
 msgid "Timestamp and participants will be shared with your team."
 msgstr "Timestamp and participants will be shared with your team."
-
-#. js-lingui-id: 40Gx0U
-#: src/pages/settings/ai/SettingsAiPrompts.tsx
-msgid "Timezone"
-msgstr "Timezone"
 
 #. js-lingui-id: y3HaQk
 #: src/modules/ai/components/RoutingDebugDisplay.tsx
@@ -20973,6 +21565,11 @@ msgstr "Topic"
 #: src/pages/settings/communications/SettingsWorkspaceUnsubscribe.tsx
 msgid "Topics"
 msgstr "Topics"
+
+#. js-lingui-id: 0723s1
+#: src/modules/workflow/workflow-steps/workflow-actions/company-name-resolver-action/components/WorkflowEditActionResolveCompanyFromRawName.tsx
+msgid "Torrent Power, Nestle India Ltd"
+msgstr "Torrent Power, Nestle India Ltd"
 
 #. js-lingui-id: 72c5Qo
 #: src/modules/billing/components/SettingsBillingPricing.tsx
@@ -21217,6 +21814,11 @@ msgstr "Twilio credentials for SMS and voice integrations."
 msgid "Twitter/X Search"
 msgstr "Twitter/X Search"
 
+#. js-lingui-id: pjMM+i
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "Two comment rounds"
+msgstr "Two comment rounds"
+
 #. js-lingui-id: tuvLv1
 #: src/modules/settings/security/components/Toggle2FA.tsx
 #: src/pages/settings/profile/SettingsProfile.tsx
@@ -21366,6 +21968,21 @@ msgstr "Undisplayed data: max {maxItems} data points per chart."
 msgid "Undisplayed data: max {maxItems} slices per chart."
 msgstr "Undisplayed data: max {maxItems} slices per chart."
 
+#. js-lingui-id: 9uI/rE
+#: src/modules/side-panel/components/SidePanelUndoAiChatButton.tsx
+msgid "Undo"
+msgstr "Undo"
+
+#. js-lingui-id: kYM+jV
+#: src/modules/side-panel/components/SidePanelUndoAiChatButton.tsx
+msgid "Undo AI columns from this chat"
+msgstr "Undo AI columns from this chat"
+
+#. js-lingui-id: yd+PKf
+#: src/modules/side-panel/components/SidePanelUndoAiChatButton.tsx
+msgid "Undo this chat's AI columns?"
+msgstr "Undo this chat's AI columns?"
+
 #. js-lingui-id: fo0VXg
 #: src/modules/logic-functions/utils/getLogicFunctionTriggerLabel.ts
 #: src/pages/settings/applications/tabs/SettingsApplicationDetailAboutTab.tsx
@@ -21382,6 +21999,11 @@ msgstr "Uninstall Application?"
 #: src/pages/settings/admin-panel/SettingsAdminApplicationRegistrationDangerZone.tsx
 msgid "Uninstall this app from all workspaces before deleting it"
 msgstr "Uninstall this app from all workspaces before deleting it"
+
+#. js-lingui-id: J4CCwC
+#: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
+msgid "Uninstalled"
+msgstr "Uninstalled"
 
 #. js-lingui-id: ItfvBz
 #: src/pages/settings/applications/tabs/SettingsApplicationDetailAboutTab.tsx
@@ -22100,11 +22722,6 @@ msgstr "Use the whole list"
 msgid "Use this email"
 msgstr "Use this email"
 
-#. js-lingui-id: 7TFWLH
-#: src/pages/settings/ai/components/SettingsAiMcpServersTab.tsx
-msgid "Use url + headers, or command/args with mcp-remote. Save creates or updates by server name."
-msgstr "Use url + headers, or command/args with mcp-remote. Save creates or updates by server name."
-
 #. js-lingui-id: A6rEDx
 #: src/modules/settings/billing/components/SettingsBillingCreditsSection.tsx
 msgid "Used by workflows, AI chats, agents, and approved apps. Contact support to change your plan."
@@ -22140,7 +22757,6 @@ msgstr "Useful for pivot/junction tables"
 #: src/pages/settings/accounts/SettingsAccountsEmails.tsx
 #: src/pages/settings/accounts/SettingsNewAccount.tsx
 #: src/pages/settings/ai/SettingsAgentTurnDetail.tsx
-#: src/pages/settings/ai/SettingsAiPrompts.tsx
 #: src/pages/settings/baileys/BaileysAccounts.tsx
 #: src/pages/settings/linkedin/LinkedinAccounts.tsx
 #: src/pages/settings/profile/appearance/components/SettingsExperience.tsx
@@ -22155,11 +22771,6 @@ msgstr "User"
 #: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionFetchLinkedinActivity.tsx
 msgid "User comments limit"
 msgstr "User comments limit"
-
-#. js-lingui-id: zw/lpB
-#: src/pages/settings/ai/SettingsAiPrompts.tsx
-msgid "User Context"
-msgstr "User Context"
 
 #. js-lingui-id: B3auEV
 #: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
@@ -22182,11 +22793,6 @@ msgstr "User ID"
 #: src/pages/settings/admin-panel/SettingsAdminUserDetail.tsx
 msgid "User Info"
 msgstr "User Info"
-
-#. js-lingui-id: J5T9NW
-#: src/pages/settings/ai/SettingsAiPrompts.tsx
-msgid "User Information"
-msgstr "User Information"
 
 #. js-lingui-id: IjyOjp
 #: src/modules/settings/security/components/SettingsSecurityAuthBypassOptionsList.tsx
@@ -22224,6 +22830,11 @@ msgstr "Users with server-level access. Open a user to grant or revoke access; u
 msgid "Uses (last {verifyWindowDays}d)"
 msgstr "Uses (last {verifyWindowDays}d)"
 
+#. js-lingui-id: 6QG3Sx
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentSendFilesConfig.tsx
+msgid "Uses files uploaded under Outreach setup → Sender profile → Attachments. The agent decides whether to call send_files."
+msgstr "Uses files uploaded under Outreach setup → Sender profile → Attachments. The agent decides whether to call send_files."
+
 #. js-lingui-id: mnudjQ
 #: src/pages/settings/applications/tabs/SettingsApplicationFrontComponentSettingsTab.tsx
 msgid "Uses SDK client"
@@ -22249,6 +22860,12 @@ msgstr "Valid until"
 #: src/modules/spreadsheet-import/steps/components/SpreadsheetImportStepperContainer.tsx
 msgid "Validate Data"
 msgstr "Validate Data"
+
+#. js-lingui-id: I6qF05
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentOutputValidationConfig.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowAiAgentOutputValidationConfig.tsx
+msgid "Validate outputs with Jev"
+msgstr "Validate outputs with Jev"
 
 #. js-lingui-id: PWZBIT
 #: src/pages/settings/enterprise/SettingsEnterprise.tsx
@@ -22415,6 +23032,7 @@ msgstr "view"
 #: src/modules/side-panel/components/hooks/usePageLayoutHeaderInfo.ts
 #: src/modules/side-panel/components/SidePanelObjectViewRecordInfo.tsx
 #: src/modules/side-panel/pages/page-layout/components/SidePanelPageLayoutDashboardWidgetTypeSelect.tsx
+#: src/modules/workflow/workflow-steps/workflow-actions/bright-data-business-search-action/components/WorkflowEditActionSearchBrightDataBusiness.tsx
 #: src/pages/settings/layout/SettingsLayoutViewDetail.tsx
 msgid "View"
 msgstr "View"
@@ -22515,6 +23133,11 @@ msgstr "View not shared"
 #: src/modules/command-menu-item/engine-command/constants/EngineComponentKeyHeadlessComponentMap.tsx
 msgid "View Previous AI Chats"
 msgstr "View Previous AI Chats"
+
+#. js-lingui-id: q4I5U7
+#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
+msgid "View profile, wait, comment on posts, wait for inbound invite, then connect if none arrives."
+msgstr "View profile, wait, comment on posts, wait for inbound invite, then connect if none arrives."
 
 #. js-lingui-id: hAAsm/
 #: src/modules/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowEditActionAiAgent.tsx
@@ -22642,6 +23265,7 @@ msgid "VS Code"
 msgstr "VS Code"
 
 #. js-lingui-id: uUehLT
+#: src/modules/settings/admin-panel/components/SettingsAdminUsers.tsx
 #: src/modules/settings/admin-panel/health-status/components/SettingsAdminQueueJobsTable.tsx
 msgid "Waiting"
 msgstr "Waiting"
@@ -23018,26 +23642,6 @@ msgstr "When any deal with amount over $100,000 has its stage or amount updated,
 #: src/modules/unipile/components/LinkedinCookieSyncConsentSetting.tsx
 msgid "When enabled, the extension can send your LinkedIn session to connect Unipile without opening the extension popup each time. You stay signed in on linkedin.com in this browser profile."
 msgstr "When enabled, the extension can send your LinkedIn session to connect Unipile without opening the extension popup each time. You stay signed in on linkedin.com in this browser profile."
-
-#. js-lingui-id: jGIJvB
-#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
-msgid "When off (automated), remove approve steps and send drafted messages directly."
-msgstr "When off (automated), remove approve steps and send drafted messages directly."
-
-#. js-lingui-id: Nit92a
-#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
-msgid "When off, replies and follow-ups only use email and LinkedIn."
-msgstr "When off, replies and follow-ups only use email and LinkedIn."
-
-#. js-lingui-id: I8PZ18
-#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
-msgid "When off, send a blank connection request with no draft/approve nodes."
-msgstr "When off, send a blank connection request with no draft/approve nodes."
-
-#. js-lingui-id: 0g78G1
-#: src/modules/workflow/components/EditOutreachSequencerOptionsModal.tsx
-msgid "When off, skip the meeting reminder / no-show / reschedule tree."
-msgstr "When off, skip the meeting reminder / no-show / reschedule tree."
 
 #. js-lingui-id: aEaoKJ
 #: src/modules/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionCreateCalendarEvent.tsx
@@ -23416,6 +24020,11 @@ msgstr "Write a description for this agent"
 #: src/modules/workflow/workflow-steps/workflow-actions/unipile-messaging-action/components/WorkflowEditActionCommentOnLinkedinPost.tsx
 msgid "Write the LinkedIn comment…"
 msgstr "Write the LinkedIn comment…"
+
+#. js-lingui-id: dNtPWC
+#: src/pages/settings/ai/SettingsSkillForm.tsx
+msgid "Write the skill instructions in markdown"
+msgstr "Write the skill instructions in markdown"
 
 #. js-lingui-id: zeCIJi
 #: src/modules/settings/logic-functions/components/tabs/SettingsLogicFunctionCodeEditorTab.tsx
@@ -23801,3 +24410,8 @@ msgstr "Your workspace will be disabled"
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
 msgid "Zed"
 msgstr "Zed"
+
+#. js-lingui-id: ACjxWW
+#: src/modules/workflow/workflow-steps/workflow-actions/local-business-data-action/components/WorkflowEditActionSearchLocalBusinesses.tsx
+msgid "Zoom"
+msgstr "Zoom"

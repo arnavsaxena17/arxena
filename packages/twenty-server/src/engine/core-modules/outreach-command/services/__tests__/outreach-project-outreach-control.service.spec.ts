@@ -42,10 +42,7 @@ describe('OutreachProjectOutreachControlService outreach selection', () => {
 
   const buildModule = async () => {
     const repositoryByName = new Map<string, unknown>([
-      [
-        'candidate',
-        { find: candidateFind, update: candidateUpdate },
-      ],
+      ['candidate', { find: candidateFind, update: candidateUpdate }],
       ['person', { find: personFind, update: personUpdate }],
       ['workflowRun', { find: workflowRunFind }],
     ]);
@@ -75,10 +72,16 @@ describe('OutreachProjectOutreachControlService outreach selection', () => {
         { provide: WorkflowRunWorkspaceService, useValue: {} },
         { provide: OutreachWorkflowRunFlowSyncService, useValue: {} },
         { provide: OutreachWorkflowRunRepairService, useValue: {} },
-        { provide: OutreachPeopleCacheService, useValue: { get: peopleCacheGet } },
+        {
+          provide: OutreachPeopleCacheService,
+          useValue: { get: peopleCacheGet },
+        },
         {
           provide: ProcessCandidatesService,
-          useValue: { queueRawDataForProcessing, isDataSourceSupported: () => true },
+          useValue: {
+            queueRawDataForProcessing,
+            isDataSourceSupported: () => true,
+          },
         },
         { provide: getQueueToken(MessageQueue.delayedJobsQueue), useValue: {} },
         { provide: getQueueToken(MessageQueue.workflowQueue), useValue: {} },
@@ -108,7 +111,10 @@ describe('OutreachProjectOutreachControlService outreach selection', () => {
 
   // The candidate lookups the service makes: the project index (where.projectId)
   // and the explicit id/personId lookups. A hash id must never reach peopleId.
-  const installCandidateLookups = (projectCandidates: unknown[]) => {
+  const installCandidateLookups = (
+    projectCandidates: unknown[],
+    siblingCandidates: unknown[] = [],
+  ) => {
     candidateFind.mockImplementation(
       async (options: { where: Record<string, { value?: string[] }> }) => {
         const where = options?.where ?? {};
@@ -120,7 +126,7 @@ describe('OutreachProjectOutreachControlService outreach selection', () => {
         if (where.peopleId) {
           peopleIdLookups.push(where.peopleId.value);
 
-          return [];
+          return siblingCandidates;
         }
 
         if (where.id) {
@@ -137,7 +143,9 @@ describe('OutreachProjectOutreachControlService outreach selection', () => {
   };
 
   it('should start an enrolled person matched by LinkedIn slug instead of failing on the hash id', async () => {
-    installCandidateLookups([{ id: 'candidate-1', peopleId: 'person-1', projectId: PROJECT_ID }]);
+    installCandidateLookups([
+      { id: 'candidate-1', peopleId: 'person-1', projectId: PROJECT_ID },
+    ]);
     personFind.mockResolvedValue([
       {
         id: 'person-1',
@@ -166,7 +174,41 @@ describe('OutreachProjectOutreachControlService outreach selection', () => {
       expect.objectContaining({ outreachSequenceStage: 'QUEUED' }),
     );
     // The regression: a 40-hex row id must never be sent to the uuid column.
-    expect(peopleIdLookups).toEqual([]);
+    expect(peopleIdLookups.flat()).not.toContain(PERSON_HASH_ID);
+  });
+
+  it('should not start a person whose other round already replied', async () => {
+    installCandidateLookups(
+      [
+        {
+          id: 'candidate-1',
+          peopleId: 'person-1',
+          projectId: PROJECT_ID,
+          outreachSequenceStage: 'QUEUED',
+        },
+      ],
+      [
+        {
+          id: 'candidate-round-1',
+          peopleId: 'person-1',
+          projectId: 'another-project',
+          outreachSequenceStage: 'REPLIED',
+        },
+      ],
+    );
+    personFind.mockResolvedValue([]);
+
+    const result = await service.startCandidates({
+      workspaceId: WORKSPACE_ID,
+      projectId: PROJECT_ID,
+      candidateIds: ['candidate-1'],
+      personIds: [],
+      apiToken: 'token',
+    });
+
+    expect(result.startedCandidates).toBe(0);
+    expect(result.skippedReplied).toBe(1);
+    expect(candidateUpdate).not.toHaveBeenCalled();
   });
 
   it('should enroll a selected person the project has never seen', async () => {
@@ -235,7 +277,9 @@ describe('OutreachProjectOutreachControlService outreach selection', () => {
   });
 
   it('should resolve a hash id to its candidate when stopping outreach', async () => {
-    installCandidateLookups([{ id: 'candidate-1', peopleId: 'person-1', projectId: PROJECT_ID }]);
+    installCandidateLookups([
+      { id: 'candidate-1', peopleId: 'person-1', projectId: PROJECT_ID },
+    ]);
     personFind.mockResolvedValue([
       {
         id: 'person-1',

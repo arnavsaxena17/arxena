@@ -1,8 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { isNonEmptyString } from '@sniptt/guards';
 import { graphQltoUpdateOneCandidate } from 'twenty-shared';
 import {
   buildCandidateAnalyticsUpdate,
+  buildCandidateFlagsPatchUpdate,
   buildCompanyAnalyticsRollup,
   isCandidateFlagTrue,
   parseOutreachAnalytics,
@@ -10,6 +12,7 @@ import {
   resolveOutreachFirstOutboundAt,
   resolveOutreachLastInboundAt,
   resolveOutreachLastOutboundAt,
+  type CandidateFlags,
 } from 'twenty-shared/arx';
 import { isDefined } from 'twenty-shared/utils';
 
@@ -194,6 +197,23 @@ export class OutreachCommandMaterializeService {
           apiToken,
           firstContactChannel:
             mapMessagingChannelToOutreachChannel(messagingChannel),
+        });
+      }
+
+      // One person can be enrolled in several rounds: a reply or a booked
+      // meeting on one round's candidate must stop every other round's
+      // candidate, or a second sender keeps following up on someone who has
+      // already answered.
+      if (
+        (event === 'inbound_reply' ||
+          event === 'inbound_reply_flush' ||
+          event === 'meeting_booked') &&
+        isNonEmptyString(candidateSnapshot?.peopleId)
+      ) {
+        await this.stopSiblingRoundOutreach({
+          candidateId,
+          peopleId: candidateSnapshot?.peopleId?.trim() ?? '',
+          apiToken,
         });
       }
     } catch (error) {
@@ -626,6 +646,71 @@ export class OutreachCommandMaterializeService {
     });
   }
 
+  // Stops every other Candidate row of the same Person (other rounds/projects)
+  // so a reply never keeps a second sender following up. Best-effort: a failure
+  // here must not break the materialised update or the company rollup.
+  private async stopSiblingRoundOutreach({
+    candidateId,
+    peopleId,
+    apiToken,
+  }: {
+    candidateId: string;
+    peopleId: string;
+    apiToken: string;
+  }): Promise<void> {
+    try {
+      const response = (await this.staticGraphQLService.executeGraphQL(
+        `query SiblingRoundCandidates($filter: CandidateFilterInput) {
+          candidates(first: 50, filter: $filter) {
+            edges {
+              node {
+                id
+                candidateFlags
+              }
+            }
+          }
+        }`,
+        { filter: { peopleId: { eq: peopleId } } },
+        apiToken,
+      )) as GraphqlEnvelope;
+
+      const siblings = (
+        (
+          response?.data?.data?.candidates as {
+            edges?: Array<{
+              node: { id: string; candidateFlags?: CandidateFlags | null };
+            }>;
+          }
+        )?.edges ?? []
+      )
+        .map((edge) => edge.node)
+        .filter(
+          (node) =>
+            node.id !== candidateId &&
+            !isCandidateFlagTrue(node, 'stopOutreach'),
+        );
+
+      for (const sibling of siblings) {
+        await this.staticGraphQLService.executeGraphQL(
+          graphQltoUpdateOneCandidate,
+          {
+            idToUpdate: sibling.id,
+            input: buildCandidateFlagsPatchUpdate(sibling, {
+              stopOutreach: true,
+            }),
+          },
+          apiToken,
+        );
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Stop-broadcast to sibling rounds failed for person ${peopleId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
   private async fetchCandidateMaterializeSnapshot(
     candidateId: string,
     apiToken: string,
@@ -633,6 +718,7 @@ export class OutreachCommandMaterializeService {
     createdAt?: string;
     outreachAnalytics?: unknown;
     projectId?: string | null;
+    peopleId?: string | null;
     outreachSequenceStage?: string | null;
     candidateFlags?: unknown;
   } | null> {
@@ -646,6 +732,7 @@ export class OutreachCommandMaterializeService {
                 createdAt
                 outreachAnalytics
                 projectId
+                peopleId
                 outreachSequenceStage
                 candidateFlags
               }
@@ -664,6 +751,7 @@ export class OutreachCommandMaterializeService {
                 createdAt?: string;
                 outreachAnalytics?: unknown;
                 projectId?: string | null;
+                peopleId?: string | null;
                 outreachSequenceStage?: string | null;
                 candidateFlags?: unknown;
               };

@@ -988,6 +988,9 @@ export class LinkedinUnipileRequestService {
       // Viewer-relative reads (shared connections, network distance) must not
       // be served from, or written to, the slug-keyed cache shared by all seats.
       viewerScoped?: boolean;
+      // LinkedIn only shares contact_info with 1st-degree connections, so a copy
+      // cached before the invite was accepted is refetched (and re-cached).
+      requireFirstDegree?: boolean;
       cleanupContext?: LinkedinUnipileAccountCleanupContext;
     },
   ): Promise<Record<string, unknown> | null> {
@@ -1016,11 +1019,21 @@ export class LinkedinUnipileRequestService {
         slug: trimmedIdentifier.toLowerCase(),
       });
 
-      if (cachedProfile) {
+      const isStaleForConnection =
+        options?.requireFirstDegree === true &&
+        cachedProfile?.network_distance !== 'FIRST_DEGREE';
+
+      if (cachedProfile && !isStaleForConnection) {
         this.logger.log(
           `fetchLinkedinUserProfile cache HIT for ${trimmedIdentifier}`,
         );
         return cachedProfile;
+      }
+
+      if (cachedProfile) {
+        this.logger.log(
+          `fetchLinkedinUserProfile cache is not 1st-degree for ${trimmedIdentifier}; refetching for contact info`,
+        );
       }
     }
 

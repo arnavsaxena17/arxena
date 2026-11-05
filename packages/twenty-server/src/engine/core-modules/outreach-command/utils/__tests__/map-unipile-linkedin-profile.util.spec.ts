@@ -83,4 +83,28 @@ describe('mapUnipileLinkedinProfile', () => {
       networkDistance: 'SECOND_DEGREE',
     });
   });
+
+  it('reads emails and phones from contact_info', () => {
+    expect(
+      mapUnipileLinkedinProfile(
+        {
+          provider_id: VALID_PROVIDER_ID,
+          contact_info: {
+            emails: [' jane@example.com ', 'jane@example.com', ''],
+            phones: ['+91 98765 43210'],
+          },
+        },
+        'jane-doe',
+      ),
+    ).toMatchObject({
+      emails: ['jane@example.com'],
+      phones: ['+91 98765 43210'],
+    });
+  });
+
+  it('returns empty contact lists when contact_info is missing', () => {
+    expect(
+      mapUnipileLinkedinProfile({ provider_id: VALID_PROVIDER_ID }, 'jane-doe'),
+    ).toMatchObject({ emails: [], phones: [] });
+  });
 });

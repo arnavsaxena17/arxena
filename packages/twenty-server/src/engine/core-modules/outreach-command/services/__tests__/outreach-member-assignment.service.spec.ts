@@ -92,35 +92,28 @@ describe('OutreachMemberAssignmentService', () => {
       expect(candidateUpdate).not.toHaveBeenCalled();
     });
 
-    it('should pin the least loaded member for an unassigned candidate', async () => {
-      const { service, candidates } = buildHarness({
+    it('should use the project recruiter for an unassigned candidate', async () => {
+      const { service, candidateUpdate } = buildHarness({
         candidates: [
           { id: 'c1', projectId: 'p1', outreachSequenceStage: 'QUEUED' },
-          {
-            id: 'c2',
-            projectId: 'p1',
-            outreachWorkspaceMemberId: 'm1',
-            outreachSequenceStage: 'CONNECTION_SENT',
-          },
         ],
         members,
+        project: { id: 'p1', recruiterId: 'm2', outreachConfig: null },
       });
 
-      const result = await service.selectForCandidate({
-        workspaceId: 'w',
-        candidateId: 'c1',
-      });
-
-      expect(result).toMatchObject({
+      await expect(
+        service.selectForCandidate({ workspaceId: 'w', candidateId: 'c1' }),
+      ).resolves.toMatchObject({
+        success: true,
         workspaceMemberId: 'm2',
-        reason: 'least_loaded',
+        reason: 'fallback',
         alreadyPinned: false,
       });
-      expect(candidates[0].outreachWorkspaceMemberId).toBe('m2');
+      expect(candidateUpdate).not.toHaveBeenCalled();
     });
 
-    it('should alternate members under round robin', async () => {
-      const { service } = buildHarness({
+    it('should ignore the assignment policy when resolving the sender', async () => {
+      const { service, candidateUpdate } = buildHarness({
         candidates: [
           { id: 'c1', projectId: 'p1' },
           { id: 'c2', projectId: 'p1' },
@@ -129,6 +122,7 @@ describe('OutreachMemberAssignmentService', () => {
         members,
         project: {
           id: 'p1',
+          recruiterId: 'm2',
           outreachConfig: { memberAssignment: { policy: 'round_robin' } },
         },
       });
@@ -143,30 +137,28 @@ describe('OutreachMemberAssignmentService', () => {
         picked.push(result.workspaceMemberId);
       }
 
-      expect(picked).toEqual(['m1', 'm2', 'm1']);
+      expect(picked).toEqual(['m2', 'm2', 'm2']);
+      expect(candidateUpdate).not.toHaveBeenCalled();
     });
 
-    it('should keep the first writer when two runs race', async () => {
-      const candidates: Row[] = [{ id: 'c1', projectId: 'p1' }];
-      const { service } = buildHarness({ candidates, members });
+    it('should fall back to the lowest seated member when there is no recruiter', async () => {
+      const { service } = buildHarness({
+        candidates: [{ id: 'c1', projectId: 'p1' }],
+        members,
+      });
 
-      const [first, second] = await Promise.all([
+      await expect(
         service.selectForCandidate({ workspaceId: 'w', candidateId: 'c1' }),
-        service.selectForCandidate({ workspaceId: 'w', candidateId: 'c1' }),
-      ]);
-
-      expect(first.workspaceMemberId).toBe(second.workspaceMemberId);
-      expect(candidates[0].outreachWorkspaceMemberId).toBe(
-        first.workspaceMemberId,
-      );
+      ).resolves.toMatchObject({ workspaceMemberId: 'm1' });
     });
 
-    it('should honour the participant allow list', async () => {
+    it('should honour the participant allow list over the recruiter', async () => {
       const { service } = buildHarness({
         candidates: [{ id: 'c1', projectId: 'p1' }],
         members,
         project: {
           id: 'p1',
+          recruiterId: 'm2',
           outreachConfig: {
             memberAssignment: {
               policy: 'least_loaded',
@@ -181,23 +173,17 @@ describe('OutreachMemberAssignmentService', () => {
       ).resolves.toMatchObject({ workspaceMemberId: 'm1' });
     });
 
-    it('should fall back to the project recruiter under manual only', async () => {
+    it('should not use a recruiter that has no LinkedIn seat', async () => {
       const { service } = buildHarness({
         candidates: [{ id: 'c1', projectId: 'p1' }],
-        members,
-        project: {
-          id: 'p1',
-          recruiterId: 'm2',
-          outreachConfig: { memberAssignment: { policy: 'manual_only' } },
-        },
+        members: [{ id: 'm1' }, { id: 'm2', linkedinUnipileAccountId: 'acc2' }],
+        project: { id: 'p1', recruiterId: 'm1', outreachConfig: null },
+        isMock: false,
       });
 
       await expect(
         service.selectForCandidate({ workspaceId: 'w', candidateId: 'c1' }),
-      ).resolves.toMatchObject({
-        workspaceMemberId: 'm2',
-        reason: 'fallback',
-      });
+      ).resolves.toMatchObject({ workspaceMemberId: 'm2' });
     });
 
     it('should skip members without a LinkedIn seat outside mock mode', async () => {

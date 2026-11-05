@@ -133,8 +133,9 @@ describe('OutreachCopyCandidatesService', () => {
       peopleId: 'pe1',
       projectId: 'p2',
       outreachSequenceStage: 'QUEUED',
-      outreachWorkspaceMemberId: 'm2',
     });
+    // The sender is resolved from the target project's recruiter at run time.
+    expect(harness.saved[0]).not.toHaveProperty('outreachWorkspaceMemberId');
   });
 
   it('should skip do-not-contact people', async () => {
@@ -237,7 +238,7 @@ describe('OutreachCopyCandidatesService', () => {
     expect(result.skippedEngaged).toBe(2);
   });
 
-  it('should not pin a sender when the target project has no recruiter', async () => {
+  it('should never write a sender on the copied row', async () => {
     const harness = buildHarness({
       candidates: [
         {
@@ -248,7 +249,6 @@ describe('OutreachCopyCandidatesService', () => {
         },
       ],
       persons,
-      targetProject: { id: 'p2', recruiterId: null },
     });
 
     await run(harness);

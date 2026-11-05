@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { isNonEmptyString } from '@sniptt/guards';
 import { CoreObjectNameSingular } from 'twenty-shared/types';
@@ -6,7 +6,6 @@ import { isDefined } from 'twenty-shared/utils';
 
 import { OUTREACH_WORKFLOW_SEQUENCER_NAME } from '@/outreach-home/constants/outreach-command.constants';
 import { outreachContextState } from '@/outreach-home/states/outreachContextState';
-import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { useUpdateOneRecord } from '@/object-record/hooks/useUpdateOneRecord';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
@@ -35,7 +34,9 @@ type OutreachProjectRecord = ObjectRecord & {
   outreachWorkflowId?: string | null;
 };
 
-const isAvailableActiveWorkflow = (workflow: OutreachWorkflowRecord): boolean => {
+const isAvailableActiveWorkflow = (
+  workflow: OutreachWorkflowRecord,
+): boolean => {
   const statuses = workflow.statuses ?? [];
 
   return statuses.includes('ACTIVE') === true;
@@ -49,21 +50,11 @@ export const useOutreachWorkflowEmbed = (options?: { enabled?: boolean }) => {
   const outreachContext = useAtomStateValue(outreachContextState);
   const setOutreachContext = useSetAtomState(outreachContextState);
   const { updateOneRecord } = useUpdateOneRecord();
-  const { createOneRecord: createWorkflow } = useCreateOneRecord({
-    objectNameSingular: CoreObjectNameSingular.Workflow,
-  });
-
-  const [ensuredWorkflowId, setEnsuredWorkflowId] = useState<string | null>(
-    null,
-  );
-  const [isEnsuringDefaultWorkflow, setIsEnsuringDefaultWorkflow] =
-    useState(false);
   const [isSelectingWorkflow, setIsSelectingWorkflow] = useState(false);
   // Bridges the gap between dropdown click and Project/Apollo pin catching up.
   const [selectedWorkflowIdOverride, setSelectedWorkflowIdOverride] = useState<
     string | null
   >(null);
-  const ensureInFlightRef = useRef(false);
 
   const { records: projects, loading: projectsLoading } =
     useFindManyRecords<OutreachProjectRecord>({
@@ -97,6 +88,8 @@ export const useOutreachWorkflowEmbed = (options?: { enabled?: boolean }) => {
           eq: OUTREACH_WORKFLOW_SEQUENCER_NAME,
         },
       },
+      // Oldest first so the server-seeded Sequencer wins over any later copy.
+      orderBy: [{ createdAt: 'AscNullsLast' }],
       limit: 1,
       skip: !isEnabled,
       recordGqlFields: {
@@ -121,9 +114,10 @@ export const useOutreachWorkflowEmbed = (options?: { enabled?: boolean }) => {
 
   const defaultOutreachWorkflowId =
     defaultOutreachWorkflows[0]?.id ??
-    workflows.find((workflow) => workflow.name === OUTREACH_WORKFLOW_SEQUENCER_NAME)
-      ?.id ??
-    ensuredWorkflowId;
+    workflows.find(
+      (workflow) => workflow.name === OUTREACH_WORKFLOW_SEQUENCER_NAME,
+    )?.id ??
+    null;
 
   const resolvedWorkflowId =
     selectedWorkflowIdOverride ??
@@ -261,18 +255,15 @@ export const useOutreachWorkflowEmbed = (options?: { enabled?: boolean }) => {
     setSelectedWorkflowIdOverride(null);
   }, [projectId]);
 
-  // Create the Sequencer default when missing, and bind it only if Project has none.
+  // Bind the seeded Sequencer only if Project has none. Never create one here:
+  // the server seeds it, and a client-side create raced the lookup and left
+  // workspaces with two live Sequencers firing on the same candidate.
   useEffect(() => {
     if (!isEnabled || !isDefined(projectId)) {
       return;
     }
 
-    if (
-      projectsLoading ||
-      defaultWorkflowLoading ||
-      workflowsLoading ||
-      ensureInFlightRef.current
-    ) {
+    if (projectsLoading || defaultWorkflowLoading || workflowsLoading) {
       return;
     }
 
@@ -287,33 +278,9 @@ export const useOutreachWorkflowEmbed = (options?: { enabled?: boolean }) => {
 
     if (isNonEmptyString(defaultOutreachWorkflowId)) {
       void bindOutreachWorkflowToProject(defaultOutreachWorkflowId);
-
-      return;
     }
-
-    ensureInFlightRef.current = true;
-    setIsEnsuringDefaultWorkflow(true);
-
-    void (async () => {
-      try {
-        const created = await createWorkflow({
-          name: OUTREACH_WORKFLOW_SEQUENCER_NAME,
-        });
-
-        if (!isDefined(created?.id)) {
-          return;
-        }
-
-        setEnsuredWorkflowId(created.id);
-        await bindOutreachWorkflowToProject(created.id);
-      } finally {
-        ensureInFlightRef.current = false;
-        setIsEnsuringDefaultWorkflow(false);
-      }
-    })();
   }, [
     bindOutreachWorkflowToProject,
-    createWorkflow,
     defaultOutreachWorkflowId,
     defaultWorkflowLoading,
     isEnabled,
@@ -331,16 +298,12 @@ export const useOutreachWorkflowEmbed = (options?: { enabled?: boolean }) => {
     selectOutreachWorkflow,
     isSelectingWorkflow,
     workflowsLoading:
-      workflowsLoading ||
-      projectsLoading ||
-      defaultWorkflowLoading ||
-      isEnsuringDefaultWorkflow,
+      workflowsLoading || projectsLoading || defaultWorkflowLoading,
     runsLoading,
     hasWorkflow: resolvedWorkflowId !== null,
     hasWorkflowRun: resolvedWorkflowRunId !== null,
     projectId,
     projectOutreachWorkflowId,
     defaultOutreachWorkflowId,
-    isEnsuringDefaultWorkflow,
   };
 };

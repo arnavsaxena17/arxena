@@ -97,4 +97,50 @@ describe('LinkedinUnipileRequestService profile cache', () => {
 
     expect(cache.set).not.toHaveBeenCalled();
   });
+
+  it('refetches and re-caches a non-1st-degree copy when 1st-degree is required', async () => {
+    const connectedProfile = {
+      ...profile,
+      network_distance: 'FIRST_DEGREE',
+      contact_info: { emails: ['jane@example.com'], phones: [] },
+    };
+
+    cache.get.mockResolvedValue({
+      ...profile,
+      network_distance: 'SECOND_DEGREE',
+    });
+    const makeUnipileRequest = jest
+      .spyOn(service, 'makeUnipileRequest')
+      .mockResolvedValue(connectedProfile);
+
+    await expect(
+      service.fetchLinkedinUserProfile('acc-1', 'jane-doe', {
+        requireFirstDegree: true,
+      }),
+    ).resolves.toEqual(connectedProfile);
+
+    expect(makeUnipileRequest).toHaveBeenCalledTimes(1);
+    expect(cache.set).toHaveBeenCalledWith(
+      LINKEDIN_USER_PROFILE_CACHE_PREFIX,
+      { slug: 'jane-doe' },
+      connectedProfile,
+    );
+  });
+
+  it('serves a cached 1st-degree copy when 1st-degree is required', async () => {
+    const connectedProfile = { ...profile, network_distance: 'FIRST_DEGREE' };
+
+    cache.get.mockResolvedValue(connectedProfile);
+    const makeUnipileRequest = jest
+      .spyOn(service, 'makeUnipileRequest')
+      .mockResolvedValue({});
+
+    await expect(
+      service.fetchLinkedinUserProfile('acc-1', 'jane-doe', {
+        requireFirstDegree: true,
+      }),
+    ).resolves.toEqual(connectedProfile);
+
+    expect(makeUnipileRequest).not.toHaveBeenCalled();
+  });
 });

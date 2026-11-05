@@ -282,6 +282,13 @@ export const OutreachPeoplePanel = ({
         return people.filter((person) => !isDefined(person.candidateId)).length;
       }
 
+      // Row-level cohort (stage + last inbound), not a journey-summary bucket:
+      // count it from the loaded rows so the pill appears without waiting on
+      // the summary.
+      if (filterId === 'not_replied') {
+        return resolveOutreachPeopleQueueRows(people, 'not_replied').length;
+      }
+
       if (isJourneySummaryLoading || !isDefined(journeySummary)) {
         return null;
       }

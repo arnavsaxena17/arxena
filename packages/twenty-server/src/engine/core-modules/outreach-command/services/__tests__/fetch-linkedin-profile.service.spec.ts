@@ -203,4 +203,183 @@ describe('FetchLinkedinProfileService', () => {
     expect(update).not.toHaveBeenCalled();
     expect(result.outreachProspectEnrichment).toEqual(qualifyStamp);
   });
+
+  describe('LinkedIn contact_info', () => {
+    const candidateRepository = {
+      findOne: jest.fn(),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    const personRepository = {
+      findOne: jest.fn(),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+
+    beforeEach(() => {
+      let workspaceContextCalls = 0;
+
+      globalWorkspaceOrmManager.executeInWorkspaceContext.mockImplementation(
+        async (callback: () => Promise<unknown>) => {
+          workspaceContextCalls += 1;
+
+          if (workspaceContextCalls === 1) {
+            return {
+              accountId: 'acc-1',
+              identifier: 'jane-doe',
+              workspaceMemberId: 'member-1',
+            };
+          }
+
+          return callback();
+        },
+      );
+      globalWorkspaceOrmManager.getRepository.mockImplementation(
+        async (_workspaceId: string, objectName: string) =>
+          objectName === 'person' ? personRepository : candidateRepository,
+      );
+      candidateRepository.findOne.mockResolvedValue({
+        id: 'cand-1',
+        peopleId: 'person-1',
+        outreachProspectEnrichment: null,
+      });
+      linkedinUnipileRequestService.fetchLinkedinUserProfile.mockResolvedValue({
+        provider_id: VALID_PROVIDER_ID,
+        first_name: 'Jane',
+        network_distance: 'FIRST_DEGREE',
+        contact_info: {
+          emails: ['jane@example.com', 'jane.doe@example.org'],
+          phones: ['+91 98765 43210'],
+        },
+      });
+    });
+
+    it('saves email and phone on a person who has neither', async () => {
+      personRepository.findOne.mockResolvedValue({
+        id: 'person-1',
+        emails: { primaryEmail: '', additionalEmails: [] },
+        phones: { primaryPhoneNumber: '' },
+      });
+
+      const result = await service.execute({
+        workspaceId: 'ws-1',
+        input: { candidateId: 'cand-1', linkedinProfileId: 'jane-doe' },
+      });
+
+      expect(result).toMatchObject({
+        emails: ['jane@example.com', 'jane.doe@example.org'],
+        phones: ['+91 98765 43210'],
+      });
+      expect(personRepository.update).toHaveBeenCalledWith('person-1', {
+        emails: {
+          primaryEmail: 'jane@example.com',
+          additionalEmails: ['jane.doe@example.org'],
+        },
+        phones: {
+          primaryPhoneNumber: '9876543210',
+          primaryPhoneCountryCode: 'IN',
+          primaryPhoneCallingCode: '+91',
+          additionalPhones: null,
+        },
+      });
+    });
+
+    it('keeps an email and phone the person already has', async () => {
+      personRepository.findOne.mockResolvedValue({
+        id: 'person-1',
+        emails: { primaryEmail: 'work@acme.com', additionalEmails: [] },
+        phones: { primaryPhoneNumber: '5550100' },
+      });
+
+      await service.execute({
+        workspaceId: 'ws-1',
+        input: { candidateId: 'cand-1', linkedinProfileId: 'jane-doe' },
+      });
+
+      expect(personRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('still returns the profile when saving contact info fails', async () => {
+      personRepository.findOne.mockRejectedValue(new Error('db down'));
+
+      await expect(
+        service.execute({
+          workspaceId: 'ws-1',
+          input: { candidateId: 'cand-1', linkedinProfileId: 'jane-doe' },
+        }),
+      ).resolves.toMatchObject({
+        success: true,
+        emails: ['jane@example.com', 'jane.doe@example.org'],
+      });
+    });
+  });
+
+  describe('after the connection request is accepted', () => {
+    const candidateRepository = {
+      findOne: jest.fn(),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+
+    beforeEach(() => {
+      globalWorkspaceOrmManager.executeInWorkspaceContext.mockImplementation(
+        async (callback: () => Promise<unknown>) => callback(),
+      );
+      globalWorkspaceOrmManager.getRepository.mockImplementation(
+        async (_workspaceId: string, objectName: string) =>
+          objectName === 'workspaceMember'
+            ? {
+                findOne: jest.fn().mockResolvedValue({
+                  id: 'member-1',
+                  linkedinUnipileAccountId: 'acc-1',
+                }),
+                find: jest.fn().mockResolvedValue([]),
+              }
+            : candidateRepository,
+      );
+      linkedinUnipileRequestService.fetchLinkedinUserProfile.mockResolvedValue({
+        provider_id: VALID_PROVIDER_ID,
+        first_name: 'Jane',
+      });
+    });
+
+    it('asks for a 1st-degree profile once the candidate has accepted', async () => {
+      candidateRepository.findOne.mockResolvedValue({
+        id: 'cand-1',
+        outreachSequenceStage: 'CONNECTION_ACCEPTED',
+        outreachProspectEnrichment: null,
+      });
+
+      await service.execute({
+        workspaceId: 'ws-1',
+        input: {
+          candidateId: 'cand-1',
+          linkedinProfileId: 'jane-doe',
+          workspaceMemberId: 'member-1',
+        },
+      });
+
+      expect(
+        linkedinUnipileRequestService.fetchLinkedinUserProfile,
+      ).toHaveBeenCalledWith('acc-1', 'jane-doe', { requireFirstDegree: true });
+    });
+
+    it('allows any cached copy before the candidate has accepted', async () => {
+      candidateRepository.findOne.mockResolvedValue({
+        id: 'cand-1',
+        outreachSequenceStage: 'QUEUED',
+        outreachProspectEnrichment: null,
+      });
+
+      await service.execute({
+        workspaceId: 'ws-1',
+        input: {
+          candidateId: 'cand-1',
+          linkedinProfileId: 'jane-doe',
+          workspaceMemberId: 'member-1',
+        },
+      });
+
+      expect(
+        linkedinUnipileRequestService.fetchLinkedinUserProfile,
+      ).toHaveBeenCalledWith('acc-1', 'jane-doe', undefined);
+    });
+  });
 });

@@ -23,6 +23,7 @@ import {
 } from 'src/engine/core-modules/outreach-command/prompts/outreach-seeded-agent-schemas';
 
 import { getOutreachLogicFunctionIds } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/prefill-outreach-logic-functions.util';
+import { retireDuplicateOutreachSequencerWorkflows } from 'src/engine/workspace-manager/standard-objects-prefill-data/utils/outreach-workflow-cleanup.util';
 import {
   buildCandidateSequencerGraph,
   inferOutreachSequencerGraphOptionsFromSteps,
@@ -1203,6 +1204,14 @@ export const prefillOutreachWorkflows = async ({
   for (const [token, idKey] of Object.entries(LF_TOKEN_TO_ID_KEY)) {
     replacements[token] = lfIds[idKey as keyof typeof lfIds];
   }
+
+  // Every seed/resync funnels through here, so collapsing same-name copies
+  // first keeps the name-based lookups below on the one seeded Sequencer.
+  await retireDuplicateOutreachSequencerWorkflows({
+    schemaName,
+    entityManager,
+    seededSequencerWorkflowId: prefillIds.candidateSequencer.workflowId,
+  });
 
   const deactivatedNames = new Set<string>(
     OUTREACH_WORKFLOW_NAMES_TO_DEACTIVATE,

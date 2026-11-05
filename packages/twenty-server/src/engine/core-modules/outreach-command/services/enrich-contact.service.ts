@@ -20,6 +20,7 @@ type CandidateRecord = ObjectLiteral & {
 type PersonRecord = ObjectLiteral & {
   id: string;
   emails?: { primaryEmail?: string | null; additionalEmails?: string[] | null };
+  phones?: { primaryPhoneNumber?: string | null } | null;
   linkedinLink?: { primaryLinkUrl?: string | null } | null;
 };
 
@@ -89,17 +90,35 @@ export class EnrichContactService {
           }
 
           personId = candidate.peopleId ?? null;
-          if (!isNonEmptyString(linkedinUrl) && isNonEmptyString(personId)) {
-            const personRepository =
-              await this.globalWorkspaceOrmManager.getRepository<PersonRecord>(
-                workspaceId,
-                'person',
-                { shouldBypassPermissionChecks: true },
-              );
-            const person = await personRepository.findOne({
-              where: { id: personId },
-            });
 
+          const person = isNonEmptyString(personId)
+            ? await (
+                await this.globalWorkspaceOrmManager.getRepository<PersonRecord>(
+                  workspaceId,
+                  'person',
+                  { shouldBypassPermissionChecks: true },
+                )
+              ).findOne({ where: { id: personId } })
+            : null;
+
+          // Contact details already on the person (e.g. from LinkedIn
+          // contact_info) win over a paid provider lookup.
+          const storedContact = readStoredContact(person, {
+            wantEmail: input.wantEmail !== false,
+            wantPhone: input.wantPhone !== false,
+          });
+
+          if (isDefined(storedContact)) {
+            await this.stampCandidate(
+              candidateRepository,
+              candidateId,
+              'FOUND',
+            );
+
+            return storedContact;
+          }
+
+          if (!isNonEmptyString(linkedinUrl)) {
             linkedinUrl = person?.linkedinLink?.primaryLinkUrl?.trim() ?? '';
           }
 
@@ -291,3 +310,39 @@ export class EnrichContactService {
     });
   }
 }
+
+const readStoredContact = (
+  person: PersonRecord | null,
+  { wantEmail, wantPhone }: { wantEmail: boolean; wantPhone: boolean },
+) => {
+  const primaryEmail = person?.emails?.primaryEmail?.trim() ?? '';
+  const primaryPhone = person?.phones?.primaryPhoneNumber?.trim() ?? '';
+  const hasEmail = isNonEmptyString(primaryEmail);
+  const hasPhone = isNonEmptyString(primaryPhone);
+
+  // Only skip the providers when every requested channel is already stored.
+  if ((!wantEmail && !wantPhone) || (wantEmail && !hasEmail)) {
+    return null;
+  }
+
+  if (wantPhone && !hasPhone) {
+    return null;
+  }
+
+  const emails = hasEmail
+    ? [
+        primaryEmail,
+        ...(person?.emails?.additionalEmails ?? []).filter(isNonEmptyString),
+      ]
+    : [];
+
+  return {
+    success: true,
+    email: hasEmail ? primaryEmail : '',
+    emails,
+    phones: hasPhone ? [primaryPhone] : [],
+    source: 'person',
+    enrichStatus: 'FOUND',
+    error: '',
+  };
+};

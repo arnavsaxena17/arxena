@@ -32,6 +32,7 @@ import {
   readPersonIdentity,
   type PersonIdentityRecord,
 } from 'src/engine/core-modules/outreach-command/utils/read-person-identity.util';
+import { hasOutreachReply } from 'src/engine/core-modules/outreach-command/utils/outreach-replied.util';
 import {
   buildWorkflowRunStepDeferralClearPatch,
   normalizeWorkflowRunStepDeferralFields,
@@ -73,7 +74,6 @@ type ProjectRecord = ObjectLiteral & {
   experimentConfig?: string | null;
 };
 
-
 // upload-profiles is the same entry point the People tab's Enroll action uses.
 const OUTREACH_ENROLLMENT_DATA_SOURCE = 'linkedin_search';
 const OUTREACH_ENROLLMENT_JOB_NAME = 'Outreach';
@@ -96,6 +96,7 @@ type CandidateRecord = ObjectLiteral & {
 type OutreachCandidateRecord = CandidateRecord & {
   peopleId?: string | null;
   outreachSequenceStage?: string | null;
+  outreachAnalytics?: unknown;
   candidateFlags?: CandidateFlags | null;
 };
 
@@ -463,6 +464,7 @@ export class OutreachProjectOutreachControlService {
     unenrolledPersonIds: string[];
     enrollingPersonIds: string[];
     skippedDoNotContact: number;
+    skippedReplied: number;
   }> {
     const uniqueCandidateIds = [
       ...new Set((candidateIds ?? []).filter(isNonEmptyString)),
@@ -488,6 +490,7 @@ export class OutreachProjectOutreachControlService {
         unenrolledPersonIds: [],
         enrollingPersonIds: [],
         skippedDoNotContact: 0,
+        skippedReplied: 0,
       };
     }
 
@@ -569,6 +572,23 @@ export class OutreachProjectOutreachControlService {
           );
         }
 
+        // A reply can land on any round's candidate (round 1 usually owns it
+        // while we are starting round 2), so the check is workspace-wide. Rows
+        // whose prospect already engaged are dropped instead of started, and
+        // the caller reports the count instead of silently doing nothing.
+        const repliedPersonIds = await this.loadRepliedPersonIds({
+          candidateRepository,
+          personIds: candidates
+            .map((candidate) => candidate.peopleId)
+            .filter(isNonEmptyString),
+        });
+        const startableCandidates = candidates.filter(
+          (candidate) => !repliedPersonIds.has(candidate.peopleId ?? ''),
+        );
+        const skippedReplied = candidates.length - startableCandidates.length;
+
+        candidates = startableCandidates;
+
         let startedCandidates = 0;
 
         for (const candidate of candidates) {
@@ -618,9 +638,42 @@ export class OutreachProjectOutreachControlService {
           ],
           enrollingPersonIds: enrollmentResolution.enrollingPersonIds,
           skippedDoNotContact: enrollmentResolution.skippedDoNotContact,
+          skippedReplied,
         };
       },
       authContext,
+    );
+  }
+
+  // Workspace-wide on purpose: a reply is recorded on whichever round's
+  // candidate received it, and starting another round must not reopen a thread
+  // the prospect already answered.
+  private async loadRepliedPersonIds({
+    candidateRepository,
+    personIds,
+  }: {
+    candidateRepository: {
+      find: (options: {
+        where: Record<string, unknown>;
+      }) => Promise<OutreachCandidateRecord[]>;
+    };
+    personIds: string[];
+  }): Promise<Set<string>> {
+    const uniquePersonIds = [...new Set(personIds)];
+
+    if (uniquePersonIds.length === 0) {
+      return new Set();
+    }
+
+    const rows = await candidateRepository.find({
+      where: { peopleId: In(uniquePersonIds) },
+    });
+
+    return new Set(
+      rows
+        .filter((row) => hasOutreachReply(row))
+        .map((row) => row.peopleId)
+        .filter(isNonEmptyString),
     );
   }
 
@@ -922,10 +975,7 @@ export class OutreachProjectOutreachControlService {
 
     // The People cache is keyed by project; without one the hash ids cannot be
     // mapped to a person at all.
-    if (
-      !isNonEmptyString(projectId) ||
-      projectId === 'project-id'
-    ) {
+    if (!isNonEmptyString(projectId) || projectId === 'project-id') {
       return [];
     }
 

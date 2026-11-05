@@ -166,8 +166,10 @@ import { SyncSpreadsheetImportSkillCommand } from 'src/database/commands/upgrade
 import { SyncAiFilterEnrichSkillCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000169-sync-ai-filter-enrich-skill.command';
 import { SyncOutreachSkillDirectMessagingCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000168-sync-outreach-skill-direct-messaging.command';
 import { BackfillLocalBusinessSearchSkillCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000167-backfill-local-business-search-skill.command';
-import { ResyncOutreachSequencerProjectSenderCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000190-resync-outreach-sequencer-project-sender.command';
 import { AddOutreachMemberPinFieldsCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000166-add-outreach-member-pin-fields.command';
+import { BackfillOutreachProjectRecruiterCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000188-backfill-outreach-project-recruiter.command';
+import { RetireDuplicateOutreachSequencersCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000189-retire-duplicate-outreach-sequencers.command';
+import { ResyncOutreachSequencerProjectSenderCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000190-resync-outreach-sequencer-project-sender.command';
 import { AddOutreachTableLayoutCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000161-add-outreach-table-layout.command';
 import { SimplifyOutreachDashboardCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000158-simplify-outreach-dashboard.command';
 import { SetOutreachExtractSignalsDeepseekCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000106-set-outreach-extract-signals-deepseek.command';
@@ -355,6 +357,8 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     AddAiFilterToFindWorkflowsCommand,
     AddOutreachTableLayoutCommand,
     AddOutreachMemberPinFieldsCommand,
+    BackfillOutreachProjectRecruiterCommand,
+    RetireDuplicateOutreachSequencersCommand,
     ResyncOutreachSequencerProjectSenderCommand,
     BackfillLocalBusinessSearchSkillCommand,
     SyncOutreachSkillDirectMessagingCommand,

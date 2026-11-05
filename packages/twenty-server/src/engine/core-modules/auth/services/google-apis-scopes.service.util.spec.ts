@@ -93,18 +93,16 @@ describe('GoogleAPIScopesService', () => {
     });
 
     it('should work with the current Google API scopes', () => {
+      // What the tokeninfo endpoint returns for a freshly connected account.
       const actualGoogleScopes = [
-        'https://www.googleapis.com/auth/calendar.events',
-        'https://www.googleapis.com/auth/gmail.readonly',
-        'https://www.googleapis.com/auth/gmail.send',
-        'https://www.googleapis.com/auth/gmail.modify',
-        'https://www.googleapis.com/auth/gmail.compose',
-        'https://www.googleapis.com/auth/contacts',
-        'https://www.googleapis.com/auth/drive',
-        'https://www.googleapis.com/auth/profile.emails.read',
+        'openid',
         'https://www.googleapis.com/auth/userinfo.email',
         'https://www.googleapis.com/auth/userinfo.profile',
-        'openid',
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/gmail.send',
+        'https://www.googleapis.com/auth/gmail.compose',
+        'https://www.googleapis.com/auth/calendar.events',
+        'https://www.googleapis.com/auth/contacts',
       ];
       const expectedScopes = getGoogleApisOauthScopes();
 
@@ -112,5 +110,35 @@ describe('GoogleAPIScopesService', () => {
 
       expect(result).toBe(true);
     });
+
+    it('should fail when the token is missing a scope the app still requests', () => {
+      const scopesWithoutCompose = [
+        'https://www.googleapis.com/auth/userinfo.email',
+        'https://www.googleapis.com/auth/userinfo.profile',
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/gmail.send',
+        'https://www.googleapis.com/auth/calendar.events',
+        'https://www.googleapis.com/auth/contacts',
+      ];
+
+      expect(
+        includesExpectedScopes(scopesWithoutCompose, getGoogleApisOauthScopes()),
+      ).toBe(false);
+    });
+  });
+
+  // The requested set is verified scope-by-scope with Google. Pinning it here means a scope cannot be
+  // added to the request (or dropped from it) without this test failing and sending the developer to
+  // google-verification/2-scope-audit.md.
+  it('should request exactly the verified scope set', () => {
+    expect(getGoogleApisOauthScopes()).toEqual([
+      'email',
+      'profile',
+      'https://www.googleapis.com/auth/gmail.readonly',
+      'https://www.googleapis.com/auth/gmail.send',
+      'https://www.googleapis.com/auth/gmail.compose',
+      'https://www.googleapis.com/auth/calendar.events',
+      'https://www.googleapis.com/auth/contacts',
+    ]);
   });
 });

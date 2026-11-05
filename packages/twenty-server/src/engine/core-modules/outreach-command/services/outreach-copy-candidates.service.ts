@@ -6,6 +6,7 @@ import { In, type ObjectLiteral } from 'typeorm';
 
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
+import { hasOutreachReply } from 'src/engine/core-modules/outreach-command/utils/outreach-replied.util';
 
 type CandidateRow = ObjectLiteral & {
   id: string;
@@ -13,17 +14,13 @@ type CandidateRow = ObjectLiteral & {
   peopleId?: string | null;
   projectId?: string | null;
   outreachSequenceStage?: string | null;
+  outreachAnalytics?: unknown;
 };
 
 type PersonRow = ObjectLiteral & {
   id: string;
   name?: { firstName?: string | null; lastName?: string | null } | null;
   doNotContact?: boolean | null;
-};
-
-type ProjectRow = ObjectLiteral & {
-  id: string;
-  recruiterId?: string | null;
 };
 
 export type OutreachCopyCandidatesResult = {
@@ -38,12 +35,6 @@ export type OutreachCopyCandidatesResult = {
 // A person who already replied, negotiated, booked or was explicitly stopped
 // must not be re-touched from a second seat: that is the one outcome the client
 // would notice. Everything cold (sent / ignored / waiting) is copyable.
-const ENGAGED_STAGES = new Set([
-  'REPLIED',
-  'NEGOTIATING',
-  'MEETING_BOOKED',
-  'STOPPED',
-]);
 
 // Copying people copies their Person-identity only: a fresh Candidate row in the
 // target project, back at QUEUED with no analytics. Outreach starts only when an
@@ -92,7 +83,6 @@ export class OutreachCopyCandidatesService {
           );
         const candidateRepository = await repo<CandidateRow>('candidate');
         const personRepository = await repo<PersonRow>('person');
-        const projectRepository = await repo<ProjectRow>('project');
 
         const sourceCandidates = await this.loadSourceCandidates({
           candidateRepository,
@@ -114,8 +104,8 @@ export class OutreachCopyCandidatesService {
           return emptyResult;
         }
 
-        const [persons, peopleCandidates, targetCandidates, targetProject] =
-          await Promise.all([
+        const [persons, peopleCandidates, targetCandidates] = await Promise.all(
+          [
             personRepository.find({
               where: { id: In(orderedPersonIds) },
             }),
@@ -125,8 +115,8 @@ export class OutreachCopyCandidatesService {
             candidateRepository.find({
               where: { projectId: target, peopleId: In(orderedPersonIds) },
             }),
-            projectRepository.findOne({ where: { id: target } }),
-          ]);
+          ],
+        );
 
         const personById = new Map(
           persons.map((person) => [person.id, person]),
@@ -138,9 +128,7 @@ export class OutreachCopyCandidatesService {
         );
         const engagedPersonIds = new Set(
           peopleCandidates
-            .filter((candidate) =>
-              ENGAGED_STAGES.has(candidate.outreachSequenceStage ?? ''),
-            )
+            .filter((candidate) => hasOutreachReply(candidate))
             .map((candidate) => candidate.peopleId)
             .filter(isNonEmptyString),
         );
@@ -156,10 +144,6 @@ export class OutreachCopyCandidatesService {
           }
         }
 
-        // The target project's recruiter is the seat that will send, so pinning
-        // it at copy time keeps the round deterministic even before the
-        // sequencer's sender selector runs.
-        const senderMemberId = targetProject?.recruiterId?.trim() ?? '';
         const result = { ...emptyResult };
 
         for (const personId of orderedPersonIds) {
@@ -188,14 +172,13 @@ export class OutreachCopyCandidatesService {
           const name =
             sourceNameByPersonId.get(personId) ?? buildPersonName(person);
 
+          // No sender is written here: the sequencer resolves it from the
+          // target project's recruiter when the round starts.
           const candidate = await candidateRepository.save({
             name,
             peopleId: personId,
             projectId: target,
             outreachSequenceStage: COPY_SEQUENCE_STAGE,
-            ...(isNonEmptyString(senderMemberId)
-              ? { outreachWorkspaceMemberId: senderMemberId }
-              : {}),
           });
 
           // Guards against copying the same person twice in one call when the
