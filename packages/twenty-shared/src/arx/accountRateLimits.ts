@@ -14,6 +14,11 @@ export const MS_PER_THIRTY_SECONDS = 30_000;
 export type LinkedinAccountRateLimits = {
   // Shared daily budget across every LinkedIn Unipile method on the account
   endpointPerDay: number;
+  // Share of endpointPerDay reserved for outbound sends (connection request,
+  // comment, message, inMail). Read methods (profile, company profile, search)
+  // are capped at endpointPerDay - sendReservePerDay so bulk enrichment cannot
+  // drain the day before the sends go out.
+  sendReservePerDay: number;
   companyProfilePer10Seconds: number;
   companyProfilePerDay: number;
   profilePer10Seconds: number;
@@ -49,6 +54,7 @@ export type WhatsappAccountRateLimitsMap = Record<
 
 export const DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS: LinkedinAccountRateLimits = {
   endpointPerDay: 100,
+  sendReservePerDay: 40,
   companyProfilePer10Seconds: 1,
   companyProfilePerDay: 100,
   profilePer10Seconds: 1,
@@ -77,6 +83,7 @@ export const LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS: Record<
   { min: number; max: number }
 > = {
   endpointPerDay: { min: 1, max: 500 },
+  sendReservePerDay: { min: 0, max: 500 },
   companyProfilePer10Seconds: { min: 1, max: 3 },
   companyProfilePerDay: { min: 1, max: 200 },
   profilePer10Seconds: { min: 1, max: 3 },
@@ -139,6 +146,9 @@ export const LINKEDIN_ACCOUNT_RATE_LIMIT_USAGE_WINDOWS: Record<
   AccountRateLimitUsageWindow
 > = {
   endpointPerDay: { method: 'endpoint', windowName: 'day' },
+  // Not a cap of its own: the reserve is enforced through the read-only
+  // enrichment window, so the panel reads enrichment usage next to it.
+  sendReservePerDay: { method: 'endpoint_enrichment', windowName: 'day' },
   companyProfilePer10Seconds: { method: 'company_profile', windowName: '10s' },
   companyProfilePerDay: { method: 'company_profile', windowName: 'day' },
   profilePer10Seconds: { method: 'profile', windowName: '10s' },
@@ -262,8 +272,27 @@ export const sanitizeLinkedinAccountRateLimits = (
     );
   });
 
+  // The reserve is a slice of the daily budget, never more than all of it.
+  result.sendReservePerDay = Math.min(
+    result.sendReservePerDay,
+    Math.max(0, result.endpointPerDay - 1),
+  );
+
   return result;
 };
+
+// Read methods may spend at most this much of the shared daily budget; the
+// remainder is held for outbound sends so bulk enrichment cannot starve them.
+export const getLinkedinEnrichmentEndpointPerDay = (
+  limits: LinkedinAccountRateLimits,
+): number =>
+  Math.max(
+    1,
+    Math.min(
+      limits.endpointPerDay,
+      limits.endpointPerDay - limits.sendReservePerDay,
+    ),
+  );
 
 export const sanitizeWhatsappAccountRateLimits = (
   value?: Partial<WhatsappAccountRateLimits> | null,

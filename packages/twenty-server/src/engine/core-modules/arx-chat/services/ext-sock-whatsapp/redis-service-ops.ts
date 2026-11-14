@@ -414,6 +414,22 @@ export class RedisService implements OnModuleInit {
     });
   }
 
+  // Read-only: scores of one sliding window, ascending. Mirrors what the
+  // reservation Lua sees so callers can peek at the next free slot.
+  async getSlidingWindowScores(key: string): Promise<number[]> {
+    const members = await this.redisClient.zrange(key, 0, -1, 'WITHSCORES');
+    const scores: number[] = [];
+
+    for (let index = 1; index < members.length; index += 2) {
+      const score = Number(members[index]);
+      if (Number.isFinite(score)) {
+        scores.push(score);
+      }
+    }
+
+    return scores;
+  }
+
   async getString(key: string): Promise<string | null> {
     return this.redisClient.get(key);
   }

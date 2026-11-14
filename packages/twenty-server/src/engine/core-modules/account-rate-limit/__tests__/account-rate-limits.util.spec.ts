@@ -3,6 +3,7 @@ import {
   DEFAULT_WHATSAPP_ACCOUNT_RATE_LIMITS,
   getAccountRateLimitWindowMs,
   getLinkedinAccountRateLimitUsageWindow,
+  getLinkedinEnrichmentEndpointPerDay,
   getWhatsappAccountRateLimitUsageWindow,
   parseLinkedinAccountRateLimitsMap,
   sanitizeLinkedinAccountRateLimits,
@@ -124,6 +125,27 @@ describe('account rate limit sanitization', () => {
       windowName: 'minute',
     });
     expect(getWhatsappAccountRateLimitUsageWindow('unknown')).toBeUndefined();
+  });
+
+  it('reserves part of the daily LinkedIn budget for sends', () => {
+    expect(DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.sendReservePerDay).toBe(40);
+    expect(sanitizeLinkedinAccountRateLimits({}).sendReservePerDay).toBe(40);
+
+    const clamped = sanitizeLinkedinAccountRateLimits({
+      endpointPerDay: 30,
+      sendReservePerDay: 90,
+    });
+
+    expect(clamped.sendReservePerDay).toBe(29);
+    expect(getLinkedinEnrichmentEndpointPerDay(clamped)).toBe(1);
+
+    const defaults = sanitizeLinkedinAccountRateLimits({});
+
+    expect(getLinkedinEnrichmentEndpointPerDay(defaults)).toBe(60);
+    expect(getLinkedinAccountRateLimitUsageWindow('sendReservePerDay')).toEqual({
+      method: 'endpoint_enrichment',
+      windowName: 'day',
+    });
   });
 
   it('maps window names to sliding-window durations', () => {

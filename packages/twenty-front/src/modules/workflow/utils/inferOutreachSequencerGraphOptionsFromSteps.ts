@@ -7,7 +7,8 @@ export const OUTREACH_SEQUENCER_INFERENCE_STEP_IDS = {
   sendReplyWhatsapp: '51a10027-aaaa-4fcb-a7d8-17a7736ed045',
   sendReplyEmail: '51a10026-aaaa-4fcb-a7d8-17a7736ed045',
   meetingBookedFind: 'c7a10020-aaaa-4fcb-a7d8-17a7736ed045',
-  hasCompanyIf: 'c7a10001-aaaa-4fcb-a7d8-17a7736ed045',
+  // Company dedupe node (LOGIC_FUNCTION); the old 7-step chain is gone.
+  companyDedupe: 'c7a10030-aaaa-4fcb-a7d8-17a7736ed045',
   qualifyDraft: 'c7a1000c-aaaa-4fcb-a7d8-17a7736ed045',
   viewBeforeComment: 'c7a10100-aaaa-4fcb-a7d8-17a7736ed045',
   fetchActivity2: 'c7a10109-aaaa-4fcb-a7d8-17a7736ed045',
@@ -95,7 +96,7 @@ export const inferOutreachSequencerGraphOptionsFromSteps = (
       OUTREACH_SEQUENCER_INFERENCE_STEP_IDS.meetingBookedFind,
     ),
     checkDeduplicationPerCompany: stepIds.has(
-      OUTREACH_SEQUENCER_INFERENCE_STEP_IDS.hasCompanyIf,
+      OUTREACH_SEQUENCER_INFERENCE_STEP_IDS.companyDedupe,
     ),
     qualifyProspectEnabled: stepIds.has(
       OUTREACH_SEQUENCER_INFERENCE_STEP_IDS.qualifyDraft,

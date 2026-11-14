@@ -59,6 +59,14 @@ export const LinkedinAccountRateLimitsPanel = ({
           recommended: DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.endpointPerDay,
         },
         {
+          key: 'sendReservePerDay',
+          label: 'Keep free for sending',
+          windowLabel: 'per 1 day',
+          ...LINKEDIN_ACCOUNT_RATE_LIMIT_BOUNDS.sendReservePerDay,
+          recommended:
+            DEFAULT_LINKEDIN_ACCOUNT_RATE_LIMITS.sendReservePerDay,
+        },
+        {
           key: 'companyProfilePer10Seconds',
           label: 'Get company profile',
           windowLabel: 'per 10 sec',

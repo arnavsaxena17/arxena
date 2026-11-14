@@ -129,11 +129,11 @@ pre-fills that member's profile number.
 
 | ID | Task | Files | Done when |
 | --- | --- | --- | --- |
-| T3.1 | Connection resolution | `whatsapp-connection.service.ts` | Phone → `userWorkspace` + workspace + active thread; a dangling/archived `whatsappActiveThreadId` creates a fresh thread instead of throwing |
+| T3.1 | Connection resolution | `whatsapp-connection.service.ts` | Phone → `userWorkspace` + workspace + active thread; a dangling/archived `whatsappActiveThreadId` creates a fresh thread instead of throwing. **Session lifetime across turns is not covered here** — see [whatsapp-long-running-session-design.md](whatsapp-long-running-session-design.md) |
 | T3.2 | Commands | `whatsapp-command.parser.ts` | `/session`, `/session N`, `/session list`, `/session name X`, `/help`, `/whoami`, `/disconnect`, `/workspace`, `/cancel` — all answered before any model call |
 | T3.3 | Pending-question policy | `send-agent-chat-message.service.ts` | `findPendingQuestionPart` drives option/free-text mapping; multi-question asked sequentially; `/cancel` clears with a conditional update; `QUESTION_NOT_PENDING` mapped to a friendly line |
 | T3.4 | Formatting | `utils/format-for-whatsapp.util.ts` | Tables → `label: value`; ≤4096 chars on paragraph boundaries; numbered questions; tests for each |
-| T3.5 | Delivery port | `ai-chat/services/agent-chat-delivery.port.ts` + WhatsApp implementation | Both `message-persisted` publishes delivered (job `:547-554`, streaming `:630`); `wa:out:{messageId}` key makes retries idempotent |
+| T3.5 | Delivery port | `ai-chat/services/agent-chat-delivery.port.ts` + WhatsApp implementation | **Superseded by** [whatsapp-long-running-session-design.md](whatsapp-long-running-session-design.md) §3 W3–W4 (reconcile-based delivery, not event-only); both `message-persisted` publishes delivered (job `:547-554`, streaming `:630`); `wa:out:{messageId}` key makes retries idempotent |
 | T3.6 | Window + errors | outbound service | `>24h` holds the send; `131047` holds silently; `131026` replies "couldn't deliver"; `stream-error` and `credits-exhausted` each produce one sentence |
 | T3.7 | Media | `whatsapp-agent/services/whatsapp-media.service.ts` | Voice note → `handleAudioMessage` → transcribed text with `[voice note]` prefix; image/document → deterministic refusal |
 | T3.8 | Presence | outbound service | Inbound marked read; typing indicator before the first token |

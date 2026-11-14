@@ -170,6 +170,8 @@ import { AddOutreachMemberPinFieldsCommand } from 'src/database/commands/upgrade
 import { BackfillOutreachProjectRecruiterCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000188-backfill-outreach-project-recruiter.command';
 import { RetireDuplicateOutreachSequencersCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000189-retire-duplicate-outreach-sequencers.command';
 import { ResyncOutreachSequencerProjectSenderCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000190-resync-outreach-sequencer-project-sender.command';
+import { AdmitOutreachSendsInWavesCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000191-admit-outreach-sends-in-waves.command';
+import { ResyncOutreachSequencerManualReplyGatesCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000192-resync-outreach-sequencer-manual-reply-gates.command';
 import { AddOutreachTableLayoutCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000161-add-outreach-table-layout.command';
 import { SimplifyOutreachDashboardCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000158-simplify-outreach-dashboard.command';
 import { SetOutreachExtractSignalsDeepseekCommand } from 'src/database/commands/upgrade-version-command/2-25/2-25-workspace-command-1785600000106-set-outreach-extract-signals-deepseek.command';
@@ -360,6 +362,8 @@ import { WorkspaceMigrationRunnerModule } from 'src/engine/workspace-manager/wor
     BackfillOutreachProjectRecruiterCommand,
     RetireDuplicateOutreachSequencersCommand,
     ResyncOutreachSequencerProjectSenderCommand,
+    AdmitOutreachSendsInWavesCommand,
+    ResyncOutreachSequencerManualReplyGatesCommand,
     BackfillLocalBusinessSearchSkillCommand,
     SyncOutreachSkillDirectMessagingCommand,
     SyncSearchSkillBrightDataCommand,

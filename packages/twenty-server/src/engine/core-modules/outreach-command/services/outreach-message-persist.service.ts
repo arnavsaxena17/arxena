@@ -19,8 +19,10 @@ import { OutreachCommandMaterializeService } from 'src/engine/core-modules/outre
 import { OutreachWorkspaceAuthTokenService } from 'src/engine/core-modules/outreach-command/services/outreach-workspace-auth-token.service';
 import {
   asChatTurns,
+  isChatTurnOrigin,
   mergeChatTurns,
   type ChatTurn,
+  type ChatTurnOrigin,
 } from 'src/engine/core-modules/outreach-command/utils/chat-message-turns.util';
 import { extractLinkedinProfileId } from 'src/engine/core-modules/outreach-command/utils/extract-linkedin-profile-id.util';
 import { concatenatedUserBurst } from 'src/engine/core-modules/outreach-command/utils/inbound-reply-window.util';
@@ -173,6 +175,9 @@ export class OutreachMessagePersistService {
       chatId,
       latestExternalMessageId: hasBody ? externalMessageId : undefined,
       typeOfMessage: channelTypeOfMessage(channel, false),
+      // The sequencer wrote this message, so a later pull can never mistake it
+      // for a workspace member typing into LinkedIn by hand.
+      defaultOrigin: 'agent',
     });
 
     if (!materializeOutbound || !hasBody) {
@@ -285,6 +290,7 @@ export class OutreachMessagePersistService {
       timestamp: string;
       senderId: string;
       isSender: boolean;
+      origin?: ChatTurnOrigin;
     }>;
   }> {
     const resolvedCandidateId = await this.resolveCandidateId({
@@ -314,13 +320,21 @@ export class OutreachMessagePersistService {
           'LINKEDIN',
         );
         const turns = asChatTurns(existing?.messageObj);
-        const messages = turns.slice(-pageLimit).map((turn) => ({
-          id: turn.id ?? '',
-          text: turn.content,
-          timestamp: turn.timestamp ?? '',
-          senderId: '',
-          isSender: turn.role === 'assistant',
-        }));
+        const messages = turns.slice(-pageLimit).map((turn) => {
+          // System notes written before the origin tag have no author marker;
+          // treat them as notes so they cannot read as an inbound reply.
+          const origin =
+            turn.origin ?? (turn.role === 'system' ? 'system' : undefined);
+
+          return {
+            id: turn.id ?? '',
+            text: turn.content,
+            timestamp: turn.timestamp ?? '',
+            senderId: '',
+            isSender: turn.role === 'assistant',
+            ...(isChatTurnOrigin(origin) ? { origin } : {}),
+          };
+        });
 
         return {
           candidateId: resolvedCandidateId,
@@ -367,6 +381,13 @@ export class OutreachMessagePersistService {
         content: item.text?.trim() ?? '',
         id: item.id,
         timestamp: item.timestamp,
+        // Unipile's webhook never reports a member's own outbound LinkedIn
+        // message, so this pull is the only place it can surface. A pull cannot
+        // tell who typed an outbound turn: propose 'member' and let the id match
+        // against a recorded sequencer send upgrade it to 'agent'.
+        origin: item.isSender
+          ? ('member' as ChatTurnOrigin)
+          : ('prospect' as ChatTurnOrigin),
       }));
 
     await this.mergeTurns({
@@ -405,6 +426,7 @@ export class OutreachMessagePersistService {
         },
       ],
       typeOfMessage: channelTypeOfMessage('LINKEDIN', false),
+      defaultOrigin: 'system',
     });
   }
 
@@ -434,6 +456,7 @@ export class OutreachMessagePersistService {
       latestExternalMessageId: turns.at(-1)?.id,
       typeOfMessage: channelTypeOfMessage(channel, true),
       messageFromUserBurst: true,
+      defaultOrigin: 'prospect',
     });
 
     return true;
@@ -719,6 +742,7 @@ export class OutreachMessagePersistService {
     latestExternalMessageId,
     typeOfMessage,
     messageFromUserBurst,
+    defaultOrigin,
   }: {
     workspaceId: string;
     candidateId: string;
@@ -728,6 +752,7 @@ export class OutreachMessagePersistService {
     latestExternalMessageId?: string | null;
     typeOfMessage: string;
     messageFromUserBurst?: boolean;
+    defaultOrigin?: ChatTurnOrigin;
   }): Promise<void> {
     const authContext = buildSystemAuthContext(workspaceId);
 
@@ -752,9 +777,18 @@ export class OutreachMessagePersistService {
         candidateId,
         channel,
       );
+      // Tag untagged turns before merging so a later pull cannot downgrade
+      // 'agent' to 'member' on the same provider message id.
+      const taggedTurns = isChatTurnOrigin(defaultOrigin)
+        ? turns.map((turn) =>
+            isChatTurnOrigin(turn.origin)
+              ? turn
+              : { ...turn, origin: defaultOrigin },
+          )
+        : turns;
       const mergedTurns = mergeChatTurns(
         asChatTurns(existing?.messageObj),
-        turns,
+        taggedTurns,
       );
       const lastContent = mergedTurns.at(-1)?.content ?? '';
       const burstContent = concatenatedUserBurst(mergedTurns);

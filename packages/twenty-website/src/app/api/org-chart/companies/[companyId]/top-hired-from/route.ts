@@ -35,6 +35,8 @@ export async function GET(
   try {
     const response = await fetch(
       `${serverBaseUrl}/org-chart/companies/${encodeURIComponent(companyId)}/top-hired-from`,
+      // Keyed per companyId; keep it out of the Next Data Cache.
+      { cache: 'no-store' },
     );
     const data = await response.json();
     return NextResponse.json(data, { status: response.status });

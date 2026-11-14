@@ -11,6 +11,7 @@ import {
   MS_PER_THIRTY_SECONDS,
   WHATSAPP_ACCOUNT_RATE_LIMIT_USAGE_WINDOWS,
   getAccountRateLimitWindowMs,
+  getLinkedinEnrichmentEndpointPerDay,
   sanitizeLinkedinAccountRateLimits,
   sanitizeWhatsappAccountRateLimits,
   type LinkedinAccountRateLimits,
@@ -29,7 +30,10 @@ import {
   workflowRunIdFromReservationBase,
   type AccountRateLimitAcquireRecord,
 } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-reservation.context';
-import { shouldPaceAccountRateLimitWindow } from 'src/engine/core-modules/account-rate-limit/account-rate-limit-slot.util';
+import {
+  nextSlotForWindowMs,
+  shouldPaceAccountRateLimitWindow,
+} from 'src/engine/core-modules/account-rate-limit/account-rate-limit-slot.util';
 import { registerAccountRateLimiter } from 'src/engine/core-modules/account-rate-limit/account-rate-limiter.registry';
 
 export type AccountRateLimitProvider = 'linkedin' | 'whatsapp';
@@ -460,6 +464,127 @@ export class AccountRateLimiterService implements OnModuleInit {
     }
   }
 
+  // Read-only view of whether the next queued candidate would be admitted.
+  // Mirrors reserveLinkedinSendWaveSlot without booking a slot.
+  async peekLinkedinSendAdmission(params: {
+    accountId: string;
+  }): Promise<{ admitted: boolean; waitMs: number }> {
+    const accountId = params.accountId.trim();
+    if (!accountId) {
+      return { admitted: true, waitMs: 0 };
+    }
+
+    const limits = await this.resolveLinkedinLimits(accountId);
+    const now = Date.now();
+    const waitMs = await this.peekWaitMsForWindows(
+      [
+        this.buildSendWaveWindow(accountId, limits),
+        this.buildEnrichmentDayWindow(accountId, limits),
+      ],
+      now,
+    );
+
+    return { admitted: waitMs <= 0, waitMs };
+  }
+
+  // Atomically take one of today's send-wave slots. A read-only check would let
+  // every queued run pass and then race for the same budget, so the gate hands
+  // out at most connectionRequestPerDay starts per rolling day.
+  async reserveLinkedinSendWaveSlot(params: {
+    accountId: string;
+  }): Promise<{ admitted: boolean; waitMs: number }> {
+    const accountId = params.accountId.trim();
+    if (!accountId) {
+      return { admitted: true, waitMs: 0 };
+    }
+
+    const limits = await this.resolveLinkedinLimits(accountId);
+    const now = Date.now();
+
+    // Reads still have to fit in the slice that is not reserved for sends.
+    const enrichmentWaitMs = await this.peekWaitMsForWindows(
+      [this.buildEnrichmentDayWindow(accountId, limits)],
+      now,
+    );
+
+    if (enrichmentWaitMs > 0) {
+      return { admitted: false, waitMs: enrichmentWaitMs };
+    }
+
+    const waveWindow = this.buildSendWaveWindow(accountId, limits);
+    const member = `${now}:${Math.random().toString(36).slice(2)}`;
+    const { acquired, waitMs } = await this.redisService.tryAcquireMultiWindowSlots(
+      [waveWindow],
+      member,
+      now,
+    );
+
+    if (acquired) {
+      return { admitted: true, waitMs: 0 };
+    }
+
+    // Do not keep a future hold for a candidate we are bouncing: it would let a
+    // whole batch of deferred runs resume as one burst tomorrow. Re-checking on
+    // resume is cheap and keeps the wave at one day's send capacity.
+    await this.redisService.removeMemberFromWindows(
+      [waveWindow.key],
+      member,
+    );
+
+    return { admitted: false, waitMs };
+  }
+
+  private buildSendWaveWindow(
+    accountId: string,
+    limits: LinkedinAccountRateLimits,
+  ): RateLimitWindow {
+    return {
+      key: buildAccountRateLimitUsageKey(
+        'linkedin',
+        accountId,
+        'send_wave',
+        'day',
+      ),
+      limit: Math.max(1, limits.connectionRequestPerDay),
+      windowMs: MS_PER_DAY,
+      pace: false,
+    };
+  }
+
+  private async peekWaitMsForWindows(
+    windows: RateLimitWindow[],
+    now: number,
+  ): Promise<number> {
+    let waitMs = 0;
+
+    for (const window of windows) {
+      const scores = (
+        await this.redisService.getSlidingWindowScores(window.key)
+      ).filter((score) => score > now - window.windowMs);
+
+      waitMs = Math.max(
+        waitMs,
+        nextSlotForWindowMs({ ...window, scores }, now) - now,
+      );
+    }
+
+    return waitMs;
+  }
+
+  private buildEnrichmentDayWindow(
+    accountId: string,
+    limits: LinkedinAccountRateLimits,
+  ): RateLimitWindow {
+    return this.window(
+      accountId,
+      'linkedin',
+      'endpoint_enrichment',
+      'day',
+      getLinkedinEnrichmentEndpointPerDay(limits),
+      MS_PER_DAY,
+    );
+  }
+
   private async buildWindows(params: {
     provider: AccountRateLimitProvider;
     accountId: string;
@@ -521,10 +646,13 @@ export class AccountRateLimiterService implements OnModuleInit {
       limits.endpointPerDay,
       MS_PER_DAY,
     );
+    // Reads stop at the budget minus the send reserve, so the reserved slice
+    // is always still there when a queued connection request or message runs.
+    const enrichmentDay = this.buildEnrichmentDayWindow(accountId, limits);
 
     switch (method) {
       case 'endpoint':
-        return [endpointDay];
+        return [endpointDay, enrichmentDay];
       case 'company_profile':
         return [
           this.window(
@@ -544,6 +672,7 @@ export class AccountRateLimiterService implements OnModuleInit {
             MS_PER_DAY,
           ),
           endpointDay,
+          enrichmentDay,
         ];
       case 'profile':
         return [
@@ -564,6 +693,7 @@ export class AccountRateLimiterService implements OnModuleInit {
             MS_PER_DAY,
           ),
           endpointDay,
+          enrichmentDay,
         ];
       case 'connection_request':
         return [
@@ -664,6 +794,7 @@ export class AccountRateLimiterService implements OnModuleInit {
             MS_PER_DAY,
           ),
           endpointDay,
+          enrichmentDay,
         ];
       default:
         return [];

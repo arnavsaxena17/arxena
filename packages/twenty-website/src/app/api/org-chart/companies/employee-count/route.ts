@@ -53,6 +53,9 @@ export async function GET(request: NextRequest) {
     const response = await fetch(
       `${serverBaseUrl}${BACKEND_PATH}?${params.toString()}`,
       {
+        // Keyed per companyId/linkedinUrl; keep it out of the Next Data Cache
+        // so unique keys cannot accumulate on disk forever.
+        cache: 'no-store',
         headers: buildOrgChartUpstreamHeaders(request.headers, {
           allowPdlProxy,
         }),

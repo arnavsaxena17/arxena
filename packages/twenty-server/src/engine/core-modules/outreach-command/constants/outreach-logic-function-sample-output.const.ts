@@ -27,6 +27,8 @@ import {
   OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_LOGIC_FUNCTION_NAME,
   OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME,
+  OUTREACH_SEND_WAVE_ADMISSION_LOGIC_FUNCTION_NAME,
+  OUTREACH_COMPANY_DEDUPE_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-names.const';
 
 import { withLlmFormattedText } from 'src/engine/core-modules/outreach-command/utils/with-llm-formatted-text.util';
@@ -316,6 +318,9 @@ export const OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT =
     total: 1,
     hasInboundReply: true,
     inboundCount: 1,
+    hasManualOutbound: false,
+    manualOutboundCount: 0,
+    memberSentLast: false,
     error: '',
     messages: [
       {
@@ -543,6 +548,24 @@ export const OUTREACH_SELECT_WORKSPACE_MEMBER_SAMPLE_OUTPUT = {
   alreadyPinned: false,
 };
 
+export const OUTREACH_SEND_WAVE_ADMISSION_SAMPLE_OUTPUT = {
+  success: true,
+  admitted: true,
+  waitMs: 0,
+  nextSlotAt: '',
+  linkedinAccountId: 'linkedin-account-id',
+  reason: 'admitted',
+};
+
+export const OUTREACH_COMPANY_DEDUPE_SAMPLE_OUTPUT = {
+  deferred: false,
+  reason: 'clear',
+  matchedCandidateId: '',
+  companyKey: 'acme technologies',
+  consideredSiblings: 3,
+  truncated: false,
+};
+
 export const OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT = {
   success: true,
   startsAt: '2026-08-24T16:00:00.000Z',
@@ -678,6 +701,10 @@ export const OUTREACH_LOGIC_FUNCTION_SAMPLE_OUTPUT_BY_NAME: Record<
     OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT,
   [OUTREACH_SELECT_WORKSPACE_MEMBER_LOGIC_FUNCTION_NAME]:
     OUTREACH_SELECT_WORKSPACE_MEMBER_SAMPLE_OUTPUT,
+  [OUTREACH_SEND_WAVE_ADMISSION_LOGIC_FUNCTION_NAME]:
+    OUTREACH_SEND_WAVE_ADMISSION_SAMPLE_OUTPUT,
+  [OUTREACH_COMPANY_DEDUPE_LOGIC_FUNCTION_NAME]:
+    OUTREACH_COMPANY_DEDUPE_SAMPLE_OUTPUT,
   [OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_LOGIC_FUNCTION_NAME]:
     OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_SAMPLE_OUTPUT,
   [OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_LOGIC_FUNCTION_NAME]:

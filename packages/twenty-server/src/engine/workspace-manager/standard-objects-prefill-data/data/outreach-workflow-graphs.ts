@@ -30,6 +30,8 @@ import {
   OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT,
   OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
   OUTREACH_SELECT_WORKSPACE_MEMBER_SAMPLE_OUTPUT,
+  OUTREACH_SEND_WAVE_ADMISSION_SAMPLE_OUTPUT,
+  OUTREACH_COMPANY_DEDUPE_SAMPLE_OUTPUT,
   OUTREACH_GET_CALENDAR_AVAILABILITY_SAMPLE_OUTPUT,
   OUTREACH_SEARCH_COMPANIES_SAMPLE_OUTPUT,
   OUTREACH_SEARCH_PEOPLE_FOR_COMPANY_SAMPLE_OUTPUT,
@@ -59,11 +61,9 @@ import {
   OUTREACH_WF_AI_REPLY_OUTPUT,
   OUTREACH_WF_REPLY_OUTPUT_VALIDATION,
   OUTREACH_WF_FIELD,
-  OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID,
   OUTREACH_WF_MEMBER_STEP_ID,
   OUTREACH_WF_PROJECT_STEP_ID,
   OUTREACH_WF_ERROR_HANDLING,
-  type OutreachWfFindRecordFilter,
   gtmWfAiAgentStep,
   gtmWfDatabaseEventTrigger,
   gtmWfDelayStep,
@@ -156,15 +156,11 @@ const IDS = {
   stampFu3: '4bd37dd4-e71f-4248-99d8-077bf61c9c6f',
   queuedFilter: 'd649c1e2-2c96-4ad0-bbaa-931bbd879946',
   queuedFind: 'bf5db0df-c7ec-4392-8c41-0845300ba790',
-  hasCompanyIf: 'c7a10001-aaaa-4fcb-a7d8-17a7736ed045',
-  findContacted: 'c7a10002-aaaa-4fcb-a7d8-17a7736ed045',
-  contactedIf: 'c7a10003-aaaa-4fcb-a7d8-17a7736ed045',
-  findEarlierQueued: 'c7a10004-aaaa-4fcb-a7d8-17a7736ed045',
-  earlierQueuedIf: 'c7a10005-aaaa-4fcb-a7d8-17a7736ed045',
-  markDeferredContacted: 'c7a10006-aaaa-4fcb-a7d8-17a7736ed045',
-  markDeferredEarlierQueued: 'c7a10009-aaaa-4fcb-a7d8-17a7736ed045',
+  // Company dedupe: one code node + one branch. The code node id is also what
+  // the Edit Workflow toggle infers from (frontend OUTREACH_SEQUENCER_* map).
+  companyDedupe: 'c7a10030-aaaa-4fcb-a7d8-17a7736ed045',
+  companyDedupeIf: 'c7a10031-aaaa-4fcb-a7d8-17a7736ed045',
   sendConnect: 'c416d226-a466-4915-b9ab-282fb79ff044',
-  sendConnectNoCompany: 'c7a1000a-aaaa-4fcb-a7d8-17a7736ed045',
   markSent: 'f2350842-a4ff-4c24-874c-9f016c20f3a9',
   waitAccept: '67f433aa-9f97-4b87-aa9e-792d23839323',
   reloadAfterWait: '69577635-4f2f-4596-8828-441c8484ad38',
@@ -285,14 +281,14 @@ const IDS = {
   stageFilterQueued: '60a10106-aaaa-4fcb-a7d8-17a7736ed045',
   // QUEUED qualify + connection note
   queuedFetchProfile: 'c7a1000b-aaaa-4fcb-a7d8-17a7736ed045',
+  // QUEUED entry gate: only start a candidate while the send wave has room.
+  queuedSendWaveAdmission: 'c7a1002e-aaaa-4fcb-a7d8-17a7736ed045',
   qualifyDraft: 'c7a1000c-aaaa-4fcb-a7d8-17a7736ed045',
   qualifyGoIf: 'c7a1000d-aaaa-4fcb-a7d8-17a7736ed045',
   stampEnrich: 'c7a1000e-aaaa-4fcb-a7d8-17a7736ed045',
   markSkippedQualify: 'c7a1000f-aaaa-4fcb-a7d8-17a7736ed045',
   draftConnectNote: 'c7a10010-aaaa-4fcb-a7d8-17a7736ed045',
   approveConnectNote: 'c7a10011-aaaa-4fcb-a7d8-17a7736ed045',
-  draftConnectNoteNoCompany: 'c7a10012-aaaa-4fcb-a7d8-17a7736ed045',
-  approveConnectNoteNoCompany: 'c7a10013-aaaa-4fcb-a7d8-17a7736ed045',
   // Comment-before-connect warm-up (Edit Workflow option)
   viewBeforeComment: 'c7a10100-aaaa-4fcb-a7d8-17a7736ed045',
   delayAfterView: 'c7a10101-aaaa-4fcb-a7d8-17a7736ed045',
@@ -314,12 +310,24 @@ const IDS = {
   markInboundAccepted: 'c7a10111-aaaa-4fcb-a7d8-17a7736ed045',
   // QUEUED re-entry: skip Send LinkedIn connection if already stamped
   connectionNotSentIf: 'c7a10014-aaaa-4fcb-a7d8-17a7736ed045',
-  connectionNotSentNoCompanyIf: 'c7a10015-aaaa-4fcb-a7d8-17a7736ed045',
   // CONNECTION_ACCEPTED calendar before opener
   acceptCalendar: '51a1002a-aaaa-4fcb-a7d8-17a7736ed045',
   // CONNECTION_ACCEPTED: prior inbound in history → stamp REPLIED and stop
   hasInboundIf: '51a1002b-aaaa-4fcb-a7d8-17a7736ed045',
   stampRepliedFromHistory: '51a1002c-aaaa-4fcb-a7d8-17a7736ed045',
+  // CONNECTION_ACCEPTED: a member already replied by hand → park the run.
+  // Unipile only pushes inbound messages, so this can only be decided from the
+  // pulled thread (fetch-linkedin-messages), never from a webhook event.
+  acceptMemberRepliedIf: '7c3f0001-aaaa-4fcb-a7d8-17a7736ed045',
+  stampMemberRepliedDeferred: '7c3f0002-aaaa-4fcb-a7d8-17a7736ed045',
+  // Follow-up gates: the accepted run outlives each 7-day wait, so the thread has
+  // to be re-read before every scheduled send instead of trusting the opener's fetch.
+  fetchFu1Messages: '7c3f0003-aaaa-4fcb-a7d8-17a7736ed045',
+  memberRepliedFu1If: '7c3f0004-aaaa-4fcb-a7d8-17a7736ed045',
+  fetchFu2Messages: '7c3f0005-aaaa-4fcb-a7d8-17a7736ed045',
+  memberRepliedFu2If: '7c3f0006-aaaa-4fcb-a7d8-17a7736ed045',
+  fetchFu3Messages: '7c3f0007-aaaa-4fcb-a7d8-17a7736ed045',
+  memberRepliedFu3If: '7c3f0008-aaaa-4fcb-a7d8-17a7736ed045',
   // REPLIED meeting stamp (channel/email stamps moved to reply agent tools)
   stampMeetingBooked: '51a1002d-aaaa-4fcb-a7d8-17a7736ed045',
   // Prospect asked to speak later: wait until followUpAt, then follow up
@@ -633,7 +641,7 @@ export const inferOutreachSequencerGraphOptionsFromSteps = (
       (steps ?? []).find((step) => step.id === IDS.sendReplyEmail)?.type !==
       'LOGIC_FUNCTION',
     meetingFollowUpEnabled: stepIds.has(IDS.meetingBookedFind),
-    checkDeduplicationPerCompany: stepIds.has(IDS.hasCompanyIf),
+    checkDeduplicationPerCompany: stepIds.has(IDS.companyDedupe),
     qualifyProspectEnabled: stepIds.has(IDS.qualifyDraft),
     commentBeforeConnect: stepIds.has(IDS.viewBeforeComment),
     commentRounds: stepIds.has(IDS.fetchActivity2) ? 2 : 1,
@@ -683,66 +691,19 @@ const personFind = (
     nextStepIds,
   });
 
-const CONTACTED_COMPANY_SIBLING_STAGES = [
-  'CONNECTION_SENT',
-  'CONNECTION_ACCEPTED',
-  'CONNECTION_IGNORED',
-  'PROFILE_CHECKED',
-  'WARM_PATH',
-  'COMMENTED',
-  'EMAIL_ENRICHING',
-  'EMAIL_SENT',
-  'INMAIL_SENT',
-  'WHATSAPP_SENT',
-  'REPLIED',
-  'WAITING_REPLY',
-  'NEGOTIATING',
-  'MEETING_BOOKED',
-  'FAILED_ENRICH',
-  'FAILED_NO_REPLY',
-];
-
-const companySiblingFilters = (
-  extra: OutreachWfFindRecordFilter[],
-): OutreachWfFindRecordFilter[] => [
-  {
-    fieldMetadataId: OUTREACH_WF_FIELD.jobCompanyName,
-    filterValue: gtmWfFindField(
-      IDS.queuedPersonFind,
-      OUTREACH_WF_FIELD.jobCompanyNamePath,
-    ),
-    filterType: 'TEXT',
-    filterLabel: 'Job Company Name',
-    filterOperand: 'CONTAINS',
-  },
-  {
-    fieldMetadataId: OUTREACH_WF_FIELD.projectId,
-    filterValue: gtmWfFindField(IDS.queuedFind, 'projectId'),
-    filterType: 'UUID',
-    filterLabel: 'Project',
-    filterOperand: 'IS',
-  },
-  {
-    fieldMetadataId: OUTREACH_WF_FIELD.candidateId,
-    filterValue: gtmWfFindId(IDS.queuedFind),
-    filterType: 'UUID',
-    filterLabel: 'Id',
-    filterOperand: 'IS_NOT',
-  },
-  ...extra,
-];
-
 const linkedinDraftPrompt = (
   findId: string,
   kind: 'opener' | 'fu1' | 'fu2' | 'fu3',
+  chatHistoryStepId: string = IDS.fetchMessages,
 ) =>
   buildOutreachFirstMessagePrompt({
     senderJson: senderJson(),
     prospectEnrichmentJson: prospectEnrichment(findId),
-    // Accepted-branch fetch; FU steps hydrate this by chip reference when needed.
+    // Each step reads the fetch it gates on: follow-ups re-pull the thread, so the
+    // draft sees what the member and prospect exchanged since the opener.
     prospectProfileText: `{{${IDS.fetchProfile}.text}}`,
     prospectPostsText: `{{${IDS.fetchPostsAccept}.text}}`,
-    chatHistory: `{{${IDS.fetchMessages}.text}}`,
+    chatHistory: `{{${chatHistoryStepId}.text}}`,
     calendarSlots: `{{${IDS.acceptCalendar}.text}}`,
     personaGuidance: gtmWfProjectPersonaGuidance(),
     // Deterministic shape/variant from candidate id after chip resolve.
@@ -754,6 +715,8 @@ const followUpSteps = ({
   n,
   findId,
   personFindId,
+  fetchMessagesId,
+  memberRepliedIfId,
   filterId,
   draftId,
   approveId,
@@ -769,6 +732,8 @@ const followUpSteps = ({
   n: 1 | 2 | 3;
   findId: string;
   personFindId: string;
+  fetchMessagesId: string;
+  memberRepliedIfId: string;
   filterId: string;
   draftId: string;
   approveId: string;
@@ -784,7 +749,34 @@ const followUpSteps = ({
   candidateFind(findId, `Reload candidate before follow-up ${n}`, [
     personFindId,
   ]),
-  personFind(personFindId, `Load Person (follow-up ${n})`, findId, [filterId]),
+  personFind(personFindId, `Load Person (follow-up ${n})`, findId, [
+    fetchMessagesId,
+  ]),
+  // Unipile only pushes inbound messages, so a reply the member typed in LinkedIn
+  // is visible only by pulling the thread again. Stamping DEFERRED on takeover also
+  // fails the stage FILTER below, which stops follow-up n+1..3 with no extra edges.
+  gtmWfLogicFunctionStep({
+    id: fetchMessagesId,
+    name: `Fetch LinkedIn messages (follow-up ${n})`,
+    logicFunctionId: '__LF_fetch-linkedin-messages__',
+    logicFunctionInput: {
+      candidateId: gtmWfFindId(findId),
+      workspaceMemberId: gtmWfMemberId(),
+      forceRefresh: true,
+    },
+    sampleOutput: OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT,
+    nextStepIds: [memberRepliedIfId],
+  }),
+  gtmWfIfElseStep({
+    id: memberRepliedIfId,
+    name: `Member already replied before follow-up ${n}?`,
+    stepOutputKey: `{{${fetchMessagesId}.memberSentLast}}`,
+    value: 'true',
+    type: 'BOOLEAN',
+    operand: 'IS',
+    ifNextStepIds: [IDS.stampMemberRepliedDeferred],
+    elseNextStepIds: [filterId],
+  }),
   gtmWfFilterStep({
     id: filterId,
     name: `No reply yet (follow-up ${n})`,
@@ -803,7 +795,11 @@ const followUpSteps = ({
     : gtmWfAiAgentStep({
         id: draftId,
         name: `Draft LinkedIn follow-up ${n}`,
-        prompt: linkedinDraftPrompt(findId, `fu${n}` as 'fu1' | 'fu2' | 'fu3'),
+        prompt: linkedinDraftPrompt(
+          findId,
+          `fu${n}` as 'fu1' | 'fu2' | 'fu3',
+          fetchMessagesId,
+        ),
         agentId: OUTREACH_WF_AGENT_LINKEDIN,
         outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
         nextStepIds: [humanInTheLoop ? approveId : sendId],
@@ -895,6 +891,9 @@ const acceptedBranchSteps = ({
     logicFunctionInput: {
       candidateId: gtmWfFindId(IDS.acceptFind),
       workspaceMemberId: gtmWfMemberId(),
+      // A manual member reply never reaches the webhook, so a cached transcript
+      // cannot prove the thread is untouched. Always pull before deciding.
+      forceRefresh: true,
     },
     sampleOutput: OUTREACH_FETCH_LINKEDIN_MESSAGES_SAMPLE_OUTPUT,
     nextStepIds: [IDS.hasInboundIf],
@@ -907,7 +906,7 @@ const acceptedBranchSteps = ({
     type: 'BOOLEAN',
     operand: 'IS',
     ifNextStepIds: [IDS.stampRepliedFromHistory],
-    elseNextStepIds: [IDS.fetchProfile],
+    elseNextStepIds: [IDS.acceptMemberRepliedIf],
   }),
   gtmWfUpdateRecordStep({
     id: IDS.stampRepliedFromHistory,
@@ -915,6 +914,26 @@ const acceptedBranchSteps = ({
     objectRecordId: gtmWfFindId(IDS.acceptFind),
     objectRecord: {
       outreachSequenceStage: 'REPLIED',
+    },
+  }),
+  // A member already replied by hand: DEFERRED stops the opener and, because it is
+  // not an entry stage, no new run is created. Parked for a human (no resumeAt).
+  gtmWfIfElseStep({
+    id: IDS.acceptMemberRepliedIf,
+    name: 'Member already replied manually?',
+    stepOutputKey: `{{${IDS.fetchMessages}.memberSentLast}}`,
+    value: 'true',
+    type: 'BOOLEAN',
+    operand: 'IS',
+    ifNextStepIds: [IDS.stampMemberRepliedDeferred],
+    elseNextStepIds: [IDS.fetchProfile],
+  }),
+  gtmWfUpdateRecordStep({
+    id: IDS.stampMemberRepliedDeferred,
+    name: 'Mark DEFERRED — member replied manually',
+    objectRecordId: gtmWfFindId(IDS.acceptFind),
+    objectRecord: {
+      outreachSequenceStage: 'DEFERRED',
     },
   }),
   gtmWfLogicFunctionStep({
@@ -1028,6 +1047,8 @@ const acceptedBranchSteps = ({
     n: 1,
     findId: IDS.reloadFu1,
     personFindId: IDS.reloadFu1PersonFind,
+    fetchMessagesId: IDS.fetchFu1Messages,
+    memberRepliedIfId: IDS.memberRepliedFu1If,
     filterId: IDS.filterFu1,
     draftId: IDS.draftFu1,
     approveId: IDS.approveFu1,
@@ -1044,6 +1065,8 @@ const acceptedBranchSteps = ({
     n: 2,
     findId: IDS.reloadFu2,
     personFindId: IDS.reloadFu2PersonFind,
+    fetchMessagesId: IDS.fetchFu2Messages,
+    memberRepliedIfId: IDS.memberRepliedFu2If,
     filterId: IDS.filterFu2,
     draftId: IDS.draftFu2,
     approveId: IDS.approveFu2,
@@ -1060,6 +1083,8 @@ const acceptedBranchSteps = ({
     n: 3,
     findId: IDS.reloadFu3,
     personFindId: IDS.reloadFu3PersonFind,
+    fetchMessagesId: IDS.fetchFu3Messages,
+    memberRepliedIfId: IDS.memberRepliedFu3If,
     filterId: IDS.filterFu3,
     draftId: IDS.draftFu3,
     approveId: IDS.approveFu3,
@@ -2197,30 +2222,20 @@ const queuedBranchSteps = ({
   const companyConnectEntryId = useLlmConnectionNote
     ? IDS.draftConnectNote
     : IDS.connectionNotSentIf;
-  const noCompanyConnectEntryId = useLlmConnectionNote
-    ? IDS.draftConnectNoteNoCompany
-    : IDS.connectionNotSentNoCompanyIf;
-  // Warm-up joins the single (company) connection path after inbound wait timeout.
+  // Warm-up joins the single connection path after inbound wait timeout.
   const connectAfterWarmupId = companyConnectEntryId;
   const warmUpEntryId = commentBeforeConnect
     ? IDS.viewBeforeComment
     : companyConnectEntryId;
   // Same destination Qualify go? uses on true — fetch jumps here when qualify is off.
   const postQualifyEntryId = checkDeduplicationPerCompany
-    ? IDS.hasCompanyIf
+    ? IDS.companyDedupe
     : warmUpEntryId;
   const connectMessage = !useLlmConnectionNote
     ? ''
     : hitlOrDraftMessage({
         draftId: IDS.draftConnectNote,
         approveId: IDS.approveConnectNote,
-        humanInTheLoop: connectNoteHumanInTheLoop,
-      });
-  const connectMessageNoCompany = !useLlmConnectionNote
-    ? ''
-    : hitlOrDraftMessage({
-        draftId: IDS.draftConnectNoteNoCompany,
-        approveId: IDS.approveConnectNoteNoCompany,
         humanInTheLoop: connectNoteHumanInTheLoop,
       });
 
@@ -2237,49 +2252,66 @@ const queuedBranchSteps = ({
   const afterComment1Id =
     commentRounds === 2 ? IDS.delayBetweenCommentRounds : IDS.waitInboundInvite;
 
+  // Qualify scores the prospect from the profile, so that mode keeps the read
+  // ahead of the send. Every other mode sends first and reads after, which is
+  // what stops a bulk queue from spending the account's shared daily request
+  // budget on profile lookups before a single connection request goes out.
+  const fetchProfileBeforeConnect = qualifyProspectEnabled;
+
   return [
+    // A queued candidate costs a profile read plus a connection request. Park it
+    // here until the wave has room so 100 enrollments cannot spend the account's
+    // shared daily budget on reads before a single invitation leaves.
+    gtmWfLogicFunctionStep({
+      id: IDS.queuedSendWaveAdmission,
+      name: 'Wait for a send slot',
+      logicFunctionId: '__LF_outreach-send-wave-admission__',
+      logicFunctionInput: {
+        workspaceMemberId: gtmWfMemberId(),
+        candidateId: gtmWfFindId(IDS.routeFind),
+      },
+      sampleOutput: OUTREACH_SEND_WAVE_ADMISSION_SAMPLE_OUTPUT,
+      nextStepIds: [IDS.queuedFind],
+    }),
     candidateFind(IDS.queuedFind, 'Load Candidate', [IDS.queuedPersonFind]),
     personFind(
       IDS.queuedPersonFind,
       'Load Person',
       IDS.queuedFind,
-      hoistedMember ? [IDS.queuedFetchProfile] : [OUTREACH_WF_MEMBER_STEP_ID],
+      hoistedMember
+        ? [
+            fetchProfileBeforeConnect
+              ? IDS.queuedFetchProfile
+              : postQualifyEntryId,
+          ]
+        : [OUTREACH_WF_MEMBER_STEP_ID],
     ),
     ...(hoistedMember
       ? []
       : [
-          gtmWfMemberStep([IDS.queuedFetchProfile]),
-          ...(checkDeduplicationPerCompany
-            ? [
-                gtmWfMemberStep(
-                  useLlmConnectionNote
-                    ? [IDS.draftConnectNoteNoCompany]
-                    : [IDS.connectionNotSentNoCompanyIf],
-                  {
-                    memberStepId: OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID,
-                    memberStepName: 'Load workspace member (no company)',
-                  },
-                ),
-              ]
-            : []),
+          gtmWfMemberStep([
+            fetchProfileBeforeConnect
+              ? IDS.queuedFetchProfile
+              : postQualifyEntryId,
+          ]),
         ]),
-    gtmWfLogicFunctionStep({
-      id: IDS.queuedFetchProfile,
-      name: qualifyProspectEnabled
-        ? 'Fetch LinkedIn profile (qualify)'
-        : 'Fetch LinkedIn profile',
-      logicFunctionId: '__LF_fetch-linkedin-profile__',
-      logicFunctionInput: {
-        linkedinUrl,
-        linkedinProfileId,
-        candidateId,
-        workspaceMemberId: gtmWfMemberId(),
-      },
-      sampleOutput: OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
-      nextStepIds: [
-        qualifyProspectEnabled ? IDS.qualifyDraft : postQualifyEntryId,
-      ],
-    }),
+    ...(fetchProfileBeforeConnect
+      ? [
+          gtmWfLogicFunctionStep({
+            id: IDS.queuedFetchProfile,
+            name: 'Fetch LinkedIn profile (qualify)',
+            logicFunctionId: '__LF_fetch-linkedin-profile__',
+            logicFunctionInput: {
+              linkedinUrl,
+              linkedinProfileId,
+              candidateId,
+              workspaceMemberId: gtmWfMemberId(),
+            },
+            sampleOutput: OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
+            nextStepIds: [IDS.qualifyDraft],
+          }),
+        ]
+      : []),
     ...(qualifyProspectEnabled
       ? [
           gtmWfAiAgentStep({
@@ -2347,95 +2379,37 @@ const queuedBranchSteps = ({
           }),
         ]
       : []),
+    // Company dedupe, one gate for the whole section: the code node reads the
+    // project's siblings, compares employers through a normalized company key
+    // and stamps DEFERRED itself; the branch below only stops the run. Because
+    // nothing forks, both the "company" and the (former) "no company" cases
+    // continue into the single connection path below.
     ...(checkDeduplicationPerCompany
       ? [
-          gtmWfIfElseStep({
-            id: IDS.hasCompanyIf,
-            name: 'Has company name?',
-            stepOutputKey: gtmWfFindField(
-              IDS.queuedPersonFind,
-              OUTREACH_WF_FIELD.jobCompanyNamePath,
-            ),
-            value: '',
-            type: 'TEXT',
-            operand: 'IS_NOT_EMPTY',
-            ifNextStepIds: [IDS.findContacted],
-            elseNextStepIds: hoistedMember
-              ? [commentBeforeConnect ? warmUpEntryId : noCompanyConnectEntryId]
-              : [OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID],
-          }),
-          gtmWfFindRecordsStep({
-            id: IDS.findContacted,
-            name: 'Find contacted company sibling',
-            objectName: 'candidate',
-            filters: companySiblingFilters([
-              {
-                fieldMetadataId: OUTREACH_WF_FIELD.outreachSequenceStage,
-                filterValue: JSON.stringify(CONTACTED_COMPANY_SIBLING_STAGES),
-                filterType: 'SELECT',
-                filterLabel: 'Outreach Sequence Stage',
-                filterOperand: 'IS',
-              },
-            ]),
-            nextStepIds: [IDS.contactedIf],
+          gtmWfLogicFunctionStep({
+            id: IDS.companyDedupe,
+            name: 'Company dedupe',
+            logicFunctionId: '__LF_outreach-company-dedupe__',
+            logicFunctionInput: {
+              candidateId,
+              companyName: gtmWfFindField(
+                IDS.queuedPersonFind,
+                OUTREACH_WF_FIELD.jobCompanyNamePath,
+              ),
+            },
+            sampleOutput: OUTREACH_COMPANY_DEDUPE_SAMPLE_OUTPUT,
+            nextStepIds: [IDS.companyDedupeIf],
           }),
           gtmWfIfElseStep({
-            id: IDS.contactedIf,
-            name: 'Company already contacted?',
-            stepOutputKey: gtmWfFindId(IDS.findContacted),
-            value: '',
-            type: 'TEXT',
-            operand: 'IS_NOT_EMPTY',
-            ifNextStepIds: [IDS.markDeferredContacted],
-            elseNextStepIds: [IDS.findEarlierQueued],
-          }),
-          gtmWfFindRecordsStep({
-            id: IDS.findEarlierQueued,
-            name: 'Find earlier QUEUED sibling',
-            objectName: 'candidate',
-            filters: companySiblingFilters([
-              {
-                fieldMetadataId: OUTREACH_WF_FIELD.outreachSequenceStage,
-                filterValue: gtmWfSelectIsValue('QUEUED'),
-                filterType: 'SELECT',
-                filterLabel: 'Outreach Sequence Stage',
-                filterOperand: 'IS',
-              },
-              {
-                fieldMetadataId: OUTREACH_WF_FIELD.createdAt,
-                filterValue: gtmWfFindField(IDS.queuedFind, 'createdAt'),
-                filterType: 'DATE_TIME',
-                filterLabel: 'Creation date',
-                filterOperand: 'IS_BEFORE',
-              },
-            ]),
-            nextStepIds: [IDS.earlierQueuedIf],
-          }),
-          gtmWfIfElseStep({
-            id: IDS.earlierQueuedIf,
-            name: 'Earlier QUEUED sibling?',
-            stepOutputKey: gtmWfFindId(IDS.findEarlierQueued),
-            value: '',
-            type: 'TEXT',
-            operand: 'IS_NOT_EMPTY',
-            ifNextStepIds: [IDS.markDeferredEarlierQueued],
+            id: IDS.companyDedupeIf,
+            name: 'Company already reached?',
+            stepOutputKey: `{{${IDS.companyDedupe}.deferred}}`,
+            value: 'true',
+            type: 'BOOLEAN',
+            operand: 'IS',
+            // Deferred: the code node already stamped the stage, stop here.
+            ifNextStepIds: [],
             elseNextStepIds: [warmUpEntryId],
-          }),
-          gtmWfUpdateRecordStep({
-            id: IDS.markDeferredContacted,
-            name: 'Mark DEFERRED — company already contacted',
-            objectRecordId: candidateId,
-            objectRecord: {
-              outreachSequenceStage: 'DEFERRED',
-            },
-          }),
-          gtmWfUpdateRecordStep({
-            id: IDS.markDeferredEarlierQueued,
-            name: 'Mark DEFERRED — earlier QUEUED sibling',
-            objectRecordId: candidateId,
-            objectRecord: {
-              outreachSequenceStage: 'DEFERRED',
-            },
           }),
         ]
       : []),
@@ -2658,7 +2632,11 @@ const queuedBranchSteps = ({
                   // (or default {}). Do not chip qualifyDraft.* (AI_AGENT predecessors
                   // are not hydrated by AI agent Test).
                   prospectEnrichmentJson: prospectEnrichment(IDS.queuedFind),
-                  prospectProfileText: `{{${IDS.queuedFetchProfile}.text}}`,
+                  ...(fetchProfileBeforeConnect
+                    ? {
+                        prospectProfileText: `{{${IDS.queuedFetchProfile}.text}}`,
+                      }
+                    : {}),
                   personaGuidance: gtmWfProjectPersonaGuidance(),
                 }),
                 agentId: OUTREACH_WF_AGENT_LINKEDIN,
@@ -2686,54 +2664,6 @@ const queuedBranchSteps = ({
                 }),
               ]
             : []),
-          ...(checkDeduplicationPerCompany
-            ? [
-                manualDraftTemplates
-                  ? manualDraftRenderStep({
-                      id: IDS.draftConnectNoteNoCompany,
-                      name: 'Render connection note template (no company)',
-                      templateKey: 'connectionNote',
-                      personFindId: IDS.queuedPersonFind,
-                      nextStepIds: [IDS.connectionNotSentNoCompanyIf],
-                    })
-                  : gtmWfAiAgentStep({
-                      id: IDS.draftConnectNoteNoCompany,
-                      name: 'Draft connection note (no company)',
-                      prompt: buildOutreachConnectionNotePrompt({
-                        senderJson: senderJson(),
-                        prospectEnrichmentJson: prospectEnrichment(
-                          IDS.queuedFind,
-                        ),
-                        prospectProfileText: `{{${IDS.queuedFetchProfile}.text}}`,
-                        personaGuidance: gtmWfProjectPersonaGuidance(),
-                      }),
-                      agentId: OUTREACH_WF_AGENT_LINKEDIN,
-                      outputSchema: OUTREACH_WF_AI_MESSAGE_OUTPUT,
-                      nextStepIds: [
-                        connectNoteHumanInTheLoop
-                          ? IDS.approveConnectNoteNoCompany
-                          : IDS.connectionNotSentNoCompanyIf,
-                      ],
-                    }),
-                ...(connectNoteHumanInTheLoop
-                  ? [
-                      gtmWfFormStep({
-                        id: IDS.approveConnectNoteNoCompany,
-                        name: 'Approve connection note (no company)',
-                        editedBodyValue: `{{${IDS.draftConnectNoteNoCompany}.message}}`,
-                        contextTemplate:
-                          OUTREACH_HITL_CONTEXT_TEMPLATES.linkedInConnectionNote,
-                        detailsTemplate: gtmWfFormDetailsTemplate({
-                          findId: IDS.queuedFind,
-                          personFindId: IDS.queuedPersonFind,
-                          draftStepId: IDS.draftConnectNoteNoCompany,
-                        }),
-                        nextStepIds: [IDS.connectionNotSentNoCompanyIf],
-                      }),
-                    ]
-                  : []),
-              ]
-            : []),
         ]
       : []),
     // Under candidate.upserted, a later QUEUED restamp (deferred resume / re-enroll)
@@ -2751,23 +2681,6 @@ const queuedBranchSteps = ({
       ifNextStepIds: [IDS.sendConnect],
       elseNextStepIds: [],
     }),
-    ...(checkDeduplicationPerCompany
-      ? [
-          gtmWfIfElseStep({
-            id: IDS.connectionNotSentNoCompanyIf,
-            name: 'Connection not yet sent? (no company)',
-            stepOutputKey: gtmWfFindField(
-              IDS.queuedFind,
-              'outreachAnalytics.connectionSentAt',
-            ),
-            value: '',
-            type: 'TEXT',
-            operand: 'IS_EMPTY',
-            ifNextStepIds: [IDS.sendConnectNoCompany],
-            elseNextStepIds: [],
-          }),
-        ]
-      : []),
     {
       id: IDS.sendConnect,
       name: 'Send LinkedIn connection',
@@ -2792,36 +2705,6 @@ const queuedBranchSteps = ({
       },
       nextStepIds: [IDS.markSent],
     },
-    ...(checkDeduplicationPerCompany
-      ? [
-          {
-            id: IDS.sendConnectNoCompany,
-            name: 'Send LinkedIn connection (no company)',
-            type: 'SEND_LINKEDIN_CONNECTION_REQUEST',
-            valid: true,
-            settings: {
-              input: {
-                message: connectMessageNoCompany,
-                linkedinUrl: gtmWfFindField(
-                  IDS.queuedPersonFind,
-                  OUTREACH_WF_FIELD.linkedinLinkUrlPath,
-                ),
-                linkedinProfileId: gtmWfFindField(
-                  IDS.queuedPersonFind,
-                  OUTREACH_WF_FIELD.linkedinProfileIdPath,
-                ),
-                candidateId: gtmWfFindId(IDS.queuedFind),
-                workspaceMemberId: hoistedMember
-                  ? gtmWfMemberId()
-                  : gtmWfMemberId(OUTREACH_WF_MEMBER_NO_COMPANY_STEP_ID),
-              },
-              outputSchema: {},
-              errorHandlingOptions: OUTREACH_WF_ERROR_HANDLING,
-            },
-            nextStepIds: [IDS.markSent],
-          },
-        ]
-      : []),
     gtmWfUpdateRecordStep({
       id: IDS.markSent,
       name: 'Mark CONNECTION_SENT',
@@ -2829,8 +2712,29 @@ const queuedBranchSteps = ({
       objectRecord: {
         outreachSequenceStage: 'CONNECTION_SENT',
       },
-      nextStepIds: [IDS.waitAccept],
+      nextStepIds: [
+        fetchProfileBeforeConnect ? IDS.waitAccept : IDS.queuedFetchProfile,
+      ],
     }),
+    ...(fetchProfileBeforeConnect
+      ? []
+      : [
+          // Send first, enrich after: the read still fills the person and the
+          // provider id store, but it no longer holds the invitation back.
+          gtmWfLogicFunctionStep({
+            id: IDS.queuedFetchProfile,
+            name: 'Fetch LinkedIn profile (after connection)',
+            logicFunctionId: '__LF_fetch-linkedin-profile__',
+            logicFunctionInput: {
+              linkedinUrl,
+              linkedinProfileId,
+              candidateId,
+              workspaceMemberId: gtmWfMemberId(),
+            },
+            sampleOutput: OUTREACH_FETCH_LINKEDIN_PROFILE_SAMPLE_OUTPUT,
+            nextStepIds: [IDS.waitAccept],
+          }),
+        ]),
     gtmWfDelayStep({
       id: IDS.waitAccept,
       name: 'Wait 3 days for accept',
@@ -3279,7 +3183,7 @@ export const buildCandidateSequencerGraph = (
       filterId: IDS.stageFilterQueued,
       stepOutputKey: stageStepOutputKey,
       value: 'QUEUED',
-      nextStepIds: [IDS.queuedFind],
+      nextStepIds: [IDS.queuedSendWaveAdmission],
     },
     {
       id: IDS.stageBranchAccepted,
@@ -3893,6 +3797,13 @@ Return JSON with companyName, isMultiOutlet, numberOutlets, confidence, reasonin
   //   empty outreachAnalytics.connectionSentAt (see queuedBranchSteps).
   // - CONNECTION_ACCEPTED: hasInboundIf stamps REPLIED when fetch-linkedin-messages
   //   already has an inbound turn, so the run stops and upsert re-enters replied.
+  // - Manual member replies: Unipile's webhook only pushes inbound LinkedIn
+  //   messages, so a reply a member types in LinkedIn is invisible until a pull.
+  //   Every accepted-branch decision point therefore pulls with forceRefresh
+  //   (opener + each follow-up) and stamps DEFERRED when memberSentLast is true —
+  //   the newest turn came from a member, not the sequencer. DEFERRED is not an
+  //   entry stage and fails the follow-up stage FILTER, so the remaining chain
+  //   stops without duplicate or out-of-context sends.
   // - Sibling cancel: creating a Candidate Sequencer run on CONNECTION_ACCEPTED /
   //   REPLIED stops older open runs for the same candidate+workflow (accept wait,
   //   accepted FU waits, prior post-reply waits).

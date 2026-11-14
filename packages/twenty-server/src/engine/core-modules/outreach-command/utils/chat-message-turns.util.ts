@@ -1,5 +1,22 @@
 import { isNonEmptyString } from '@sniptt/guards';
 
+// Who wrote a turn. Unipile's webhook only pushes inbound LinkedIn messages, so a
+// member replying from LinkedIn never reaches us as an event: 'agent' is stamped
+// when the sequencer persists its own send, 'member' is inferred at pull time for
+// any outbound turn the sequencer never recorded, and 'prospect' is inbound.
+export type ChatTurnOrigin = 'agent' | 'member' | 'prospect' | 'system';
+
+const CHAT_TURN_ORIGINS: ChatTurnOrigin[] = [
+  'agent',
+  'member',
+  'prospect',
+  'system',
+];
+
+export const isChatTurnOrigin = (value: unknown): value is ChatTurnOrigin =>
+  typeof value === 'string' &&
+  CHAT_TURN_ORIGINS.includes(value as ChatTurnOrigin);
+
 export type ChatTurn = {
   role: string;
   content: string;
@@ -7,6 +24,7 @@ export type ChatTurn = {
   timestamp?: string;
   // Set when the thread spans several channels (see the transcript formatter).
   channel?: string;
+  origin?: ChatTurnOrigin;
 };
 
 export const asChatTurns = (value: unknown): ChatTurn[] => {
@@ -52,6 +70,7 @@ export const asChatTurns = (value: unknown): ChatTurn[] => {
           ? { timestamp: row.timestamp }
           : {}),
         ...(typeof row.channel === 'string' ? { channel: row.channel } : {}),
+        ...(isChatTurnOrigin(row.origin) ? { origin: row.origin } : {}),
       },
     ];
   });
@@ -94,21 +113,43 @@ const isSameMessage = (existing: ChatTurn, incoming: ChatTurn): boolean => {
   return Math.abs(existingTime - incomingTime) <= SAME_MESSAGE_WINDOW_MS;
 };
 
+// Attribution only ever strengthens. A pull cannot tell a sequencer send from a
+// human one, so it proposes 'member'; a recorded sequencer send proves 'agent'
+// and wins whichever order the two writes land in. Flipping 'agent' back to
+// 'member' would pause a candidate the sequencer legitimately messaged.
+const mergeTurnOrigin = (
+  existing: ChatTurnOrigin | undefined,
+  incoming: ChatTurnOrigin | undefined,
+): ChatTurnOrigin | undefined => {
+  if (existing === 'agent' || incoming === 'agent') {
+    return 'agent';
+  }
+
+  return existing ?? incoming;
+};
+
 export const mergeChatTurns = (
   existing: ChatTurn[],
   incoming: ChatTurn[],
 ): ChatTurn[] => {
   const merged = [...existing];
   // Each stored turn can absorb one incoming duplicate, so repeats survive.
-  const unmatched = [...existing];
+  const unmatchedIndexes = merged.map((_, index) => index);
 
   for (const turn of incoming) {
-    const matchIndex = unmatched.findIndex((candidate) =>
-      isSameMessage(candidate, turn),
+    const matchPosition = unmatchedIndexes.findIndex((index) =>
+      isSameMessage(merged[index], turn),
     );
 
-    if (matchIndex >= 0) {
-      unmatched.splice(matchIndex, 1);
+    if (matchPosition >= 0) {
+      const mergedIndex = unmatchedIndexes[matchPosition];
+      const origin = mergeTurnOrigin(merged[mergedIndex].origin, turn.origin);
+
+      if (isChatTurnOrigin(origin) && origin !== merged[mergedIndex].origin) {
+        merged[mergedIndex] = { ...merged[mergedIndex], origin };
+      }
+
+      unmatchedIndexes.splice(matchPosition, 1);
       continue;
     }
 

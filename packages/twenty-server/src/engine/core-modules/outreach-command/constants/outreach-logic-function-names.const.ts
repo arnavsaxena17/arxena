@@ -46,6 +46,12 @@ export const OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_LOGIC_FUNCTION_NAME =
   'fetch-and-upsert-local-businesses';
 export const OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME =
   'classify-and-upsert-local-places';
+/** Native GTM gate: admit a queued candidate only while the send wave has room. */
+export const OUTREACH_SEND_WAVE_ADMISSION_LOGIC_FUNCTION_NAME =
+  'outreach-send-wave-admission';
+/** Native GTM gate: defer a queued candidate whose company is already worked. */
+export const OUTREACH_COMPANY_DEDUPE_LOGIC_FUNCTION_NAME =
+  'outreach-company-dedupe';
 
 export const OUTREACH_NATIVE_LOGIC_FUNCTION_NAMES = new Set([
   OUTREACH_RENDER_DRAFT_TEMPLATE_LOGIC_FUNCTION_NAME,
@@ -76,4 +82,6 @@ export const OUTREACH_NATIVE_LOGIC_FUNCTION_NAMES = new Set([
   OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_LOGIC_FUNCTION_NAME,
   OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME,
+  OUTREACH_SEND_WAVE_ADMISSION_LOGIC_FUNCTION_NAME,
+  OUTREACH_COMPANY_DEDUPE_LOGIC_FUNCTION_NAME,
 ]);

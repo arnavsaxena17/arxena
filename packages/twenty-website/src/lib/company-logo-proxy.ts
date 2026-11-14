@@ -50,6 +50,8 @@ export const proxyCompanyLogoRequest = async (
 
     const response = await fetch(upstreamPath, {
       method: 'GET',
+      // Keyed per website; keep logo fetches out of the Next Data Cache.
+      cache: 'no-store',
       signal: controller.signal,
       headers: upstreamHeaders,
     });

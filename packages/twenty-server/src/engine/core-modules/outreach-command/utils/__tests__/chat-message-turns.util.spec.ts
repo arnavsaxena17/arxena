@@ -255,4 +255,51 @@ describe('chat-message-turns.util', () => {
 
     expect(merged).toHaveLength(2);
   });
+
+  describe('turn origin', () => {
+    it('keeps a known origin and ignores an unknown one', () => {
+      expect(
+        asChatTurns([
+          { role: 'assistant', content: 'Hi', origin: 'agent' },
+          { role: 'user', content: 'Hello', origin: 'prospect' },
+          { role: 'user', content: 'Hmm', origin: 'robot' },
+        ]),
+      ).toEqual([
+        { role: 'assistant', content: 'Hi', origin: 'agent' },
+        { role: 'user', content: 'Hello', origin: 'prospect' },
+        { role: 'user', content: 'Hmm' },
+      ]);
+    });
+
+    it('upgrades a pull-proposed member turn to agent when a send is recorded', () => {
+      // The webhook never reports our own outbound, so the pull lands first and
+      // proposes 'member'; appendOutbound then proves the same id was ours.
+      const merged = mergeChatTurns(
+        [{ role: 'assistant', content: 'Hi', id: 'msg-1', origin: 'member' }],
+        [{ role: 'assistant', content: 'Hi', id: 'msg-1', origin: 'agent' }],
+      );
+
+      expect(merged).toEqual([
+        { role: 'assistant', content: 'Hi', id: 'msg-1', origin: 'agent' },
+      ]);
+    });
+
+    it('never downgrades a recorded agent send back to member', () => {
+      const merged = mergeChatTurns(
+        [{ role: 'assistant', content: 'Hi', id: 'msg-1', origin: 'agent' }],
+        [{ role: 'assistant', content: 'Hi', id: 'msg-1', origin: 'member' }],
+      );
+
+      expect(merged[0].origin).toBe('agent');
+    });
+
+    it('keeps a member origin intact when the pull repeats the same message', () => {
+      const merged = mergeChatTurns(
+        [{ role: 'assistant', content: 'Sure', id: 'msg-9', origin: 'member' }],
+        [{ role: 'assistant', content: 'Sure', id: 'msg-9', origin: 'member' }],
+      );
+
+      expect(merged[0].origin).toBe('member');
+    });
+  });
 });

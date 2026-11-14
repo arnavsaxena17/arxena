@@ -30,6 +30,7 @@ export async function OPTIONS(request: NextRequest) {
     const checkUrl = `${serverBaseUrl}/org-chart/embed/resolve?domain=ping`;
     const response = await fetch(checkUrl, {
       method: 'GET',
+      cache: 'no-store',
       headers: {
         'X-Embed-Key': embedKey.trim(),
         Origin: origin,

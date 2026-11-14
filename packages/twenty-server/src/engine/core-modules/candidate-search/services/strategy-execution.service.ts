@@ -36,6 +36,17 @@ type StrategyResultItem = {
   result: SearchExecutionResult | null;
 };
 
+// How many of the generated strategies to execute. The compiler emits a ranked
+// ladder; 1 reproduces the single-query behaviour, a higher value spends part of
+// the request budget on the fallback rungs.
+const DEFAULT_STRATEGY_LIMIT = 1;
+
+const getStrategyLimit = (): number => {
+  const raw = Number.parseInt(process.env.SOURCING_STRATEGY_LIMIT ?? '', 10);
+
+  return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_STRATEGY_LIMIT;
+};
+
 @Injectable()
 export class StrategyExecutionService {
   private readonly logger = new Logger(StrategyExecutionService.name);
@@ -74,13 +85,15 @@ export class StrategyExecutionService {
       `Found ${strategies.length} strategies to execute searches for ${searchType} ${searchCategory}`,
     );
 
-    const strategyLimit = 1;
+    const strategyLimit = getStrategyLimit();
     const strategiesToRun =
       strategies.length > strategyLimit
         ? strategies.slice(0, strategyLimit)
         : strategies;
     if (strategies.length > strategyLimit) {
-      this.logger.log(`Limited to ${strategyLimit} strategy for debugging`);
+      this.logger.log(
+        `Running ${strategyLimit} of ${strategies.length} ranked strategies (SOURCING_STRATEGY_LIMIT)`,
+      );
     }
 
     if (strategiesToRun.length === 0) {

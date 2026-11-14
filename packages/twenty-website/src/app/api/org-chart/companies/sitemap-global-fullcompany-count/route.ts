@@ -22,6 +22,7 @@ export async function GET() {
   try {
     const response = await fetch(
       `${serverBaseUrl}/org-chart/companies/sitemap-global-fullcompany-count`,
+      { cache: 'no-store' },
     );
     const data = await response.json();
     return NextResponse.json(data, { status: response.status });

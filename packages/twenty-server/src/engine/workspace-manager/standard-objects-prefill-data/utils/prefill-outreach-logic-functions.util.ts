@@ -32,6 +32,8 @@ import {
   OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_LOGIC_FUNCTION_NAME,
   OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_LOGIC_FUNCTION_NAME,
   OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_LOGIC_FUNCTION_NAME,
+  OUTREACH_SEND_WAVE_ADMISSION_LOGIC_FUNCTION_NAME,
+  OUTREACH_COMPANY_DEDUPE_LOGIC_FUNCTION_NAME,
 } from 'src/engine/core-modules/outreach-command/constants/outreach-logic-function-names.const';
 import {
   OUTREACH_FETCH_COMPANY_DETAILS_SAMPLE_OUTPUT,
@@ -59,6 +61,8 @@ import {
   OUTREACH_FILTER_PROFILES_SAMPLE_OUTPUT,
   OUTREACH_VALIDATE_INBOUND_SIGNALS_SAMPLE_OUTPUT,
   OUTREACH_SELECT_WORKSPACE_MEMBER_SAMPLE_OUTPUT,
+  OUTREACH_SEND_WAVE_ADMISSION_SAMPLE_OUTPUT,
+  OUTREACH_COMPANY_DEDUPE_SAMPLE_OUTPUT,
   OUTREACH_PLAN_LOCAL_BUSINESS_CITY_COVERAGE_SAMPLE_OUTPUT,
   OUTREACH_FETCH_AND_UPSERT_LOCAL_BUSINESSES_SAMPLE_OUTPUT,
   OUTREACH_CLASSIFY_AND_UPSERT_LOCAL_PLACES_SAMPLE_OUTPUT,
@@ -254,6 +258,14 @@ export const getOutreachLogicFunctionIds = (workspaceId: string) => ({
   ),
   classifyAndUpsertLocalPlacesId: uuidv5(
     `${workspaceId}:classify-and-upsert-local-places`,
+    OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  sendWaveAdmissionId: uuidv5(
+    `${workspaceId}:outreach-send-wave-admission`,
+    OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
+  ),
+  companyDedupeId: uuidv5(
+    `${workspaceId}:outreach-company-dedupe`,
     OUTREACH_LOGIC_FUNCTION_ID_NAMESPACE,
   ),
 });
@@ -1730,6 +1742,91 @@ export const getOutreachLogicFunctionDefinitions = (
           },
         ],
         sampleOutput: OUTREACH_SELECT_WORKSPACE_MEMBER_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.sendWaveAdmissionId,
+      name: OUTREACH_SEND_WAVE_ADMISSION_LOGIC_FUNCTION_NAME,
+      description:
+        'Gate a queued candidate before it spends any LinkedIn request: admits only while the account still has a connection-request slot and enough of the shared daily budget left, otherwise defers the run to the next free slot. Keeps a bulk queue from burning the day on profile lookups before the connection requests go out.',
+      sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
+        OUTREACH_SEND_WAVE_ADMISSION_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Wait for a send slot',
+        icon: 'IconClock',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              workspaceMemberId: {
+                type: 'string',
+                label: 'Workspace member ID',
+              },
+              candidateId: { type: 'string', label: 'Candidate ID' },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', label: 'Success' },
+              admitted: { type: 'boolean', label: 'Admitted' },
+              waitMs: { type: 'number', label: 'Wait ms' },
+              nextSlotAt: { type: 'string', label: 'Next slot at' },
+              linkedinAccountId: {
+                type: 'string',
+                label: 'LinkedIn account ID',
+              },
+              reason: { type: 'string', label: 'Reason' },
+            },
+          },
+        ],
+        sampleOutput: OUTREACH_SEND_WAVE_ADMISSION_SAMPLE_OUTPUT,
+      },
+    },
+    {
+      id: ids.companyDedupeId,
+      name: OUTREACH_COMPANY_DEDUPE_LOGIC_FUNCTION_NAME,
+      description:
+        'Company-level dedupe for the QUEUED branch: reads every sibling candidate in the project, compares their employer through a normalized company key, and returns deferred=true when someone at that company is already in outreach or an earlier QUEUED sibling holds it. Stamps DEFERRED itself, so the sequencer keeps one connection path instead of a parallel no-company thread.',
+      sourceHandlerCode: getOutreachNativeLogicFunctionHandler(
+        OUTREACH_COMPANY_DEDUPE_LOGIC_FUNCTION_NAME,
+      ),
+      workflowActionTriggerSettings: {
+        label: 'Check company dedupe',
+        icon: 'IconBuildingSkyscraper',
+        inputSchema: [
+          {
+            type: 'object',
+            properties: {
+              candidateId: { type: 'string', label: 'Candidate ID' },
+              // Read off the candidate person when chipped empty.
+              companyName: { type: 'string', label: 'Company name' },
+            },
+          },
+        ],
+        outputSchema: [
+          {
+            type: 'object',
+            properties: {
+              deferred: { type: 'boolean', label: 'Deferred' },
+              reason: { type: 'string', label: 'Reason' },
+              matchedCandidateId: {
+                type: 'string',
+                label: 'Matched candidate ID',
+              },
+              companyKey: { type: 'string', label: 'Company key' },
+              consideredSiblings: {
+                type: 'number',
+                label: 'Siblings considered',
+              },
+              truncated: { type: 'boolean', label: 'Sibling list truncated' },
+            },
+          },
+        ],
+        sampleOutput: OUTREACH_COMPANY_DEDUPE_SAMPLE_OUTPUT,
       },
     },
     {
